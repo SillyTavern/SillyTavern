@@ -165,7 +165,7 @@ async function onButtonClick() {
                 const downloadDesc = downloadedCharacter.description.replace("\"", "");
    
                 const isPersonalityMatch = diceCoefficient(character.personality, downloadedCharacter.title) > 0.8;
-                const isDescriptionMatch = diceCoefficient(character.description, downloadedCharacter.description) > .8;
+                const isDescriptionMatch = diceCoefficient(character.description, downloadedCharacter.description) > 0.8;
                 //purge newlines and returns from mes_example and definition during comparison
                 let temp_mes_example = character.mes_example.replace(/(\r\n|\n|\r)/gm, "");
                 let tempDefinition = downloadedCharacter.definition.replace(/(\r\n|\n|\r)/gm, "");
@@ -175,24 +175,6 @@ async function onButtonClick() {
                 if (author && character.creator){
                     isAuthorMatch = character.creator.includes(author);
                 }
-                //print if not match
-                // if (!isPersonalityMatch) {
-                //     console.log(`Personality does not match. ${character.personality} vs ${downloadedCharacter.title}`);
-                // }
-                // if (!isDescriptionMatch) {
-                //     console.log(`Description does not match. ${character.data.description} vs ${downloadedCharacter.description}`);
-                // }
-                // if (!isScenarioMatch) {
-                //     console.log(`Scenario does not match. ${character.scenario} vs ${downloadedCharacter.definition}`);
-                // }
-                // if (!isGreetingMatch) {
-                //     console.log(`Greeting does not match. ${character.data.first_mes} vs ${downloadedCharacter.greeting}`);
-                // }
-                // if (!isAuthorMatch) {
-                //     console.log(`Author does not match. ${character.creator} vs ${author}`);
-                // }
-
-                // if any 2 of these are true, add tags, isPersonalityMatch, isDescriptionMatch, isScenarioMatch, isGreetingMatch
 
                 if ([isPersonalityMatch, isDescriptionMatch, isScenarioMatch, isGreetingMatch, isAuthorMatch].filter(value => value === true).length >= 2) {
 
@@ -273,7 +255,7 @@ jQuery(() => {
     <div class="auto-tagger-settings">
         <div class="inline-drawer">
             <div class="inline-drawer-toggle inline-drawer-header">
-            <b>auto-tagger</b>
+            <b>CHub Tag Importer</b>
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
