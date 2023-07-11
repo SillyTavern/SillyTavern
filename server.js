@@ -1026,10 +1026,19 @@ app.post("/editcharacter", urlencodedParser, async function (request, response) 
     }
 });
 
-// take the name of a character, the field to be chaged, and the new value
-// and change the value of the field in the character's json file
-// and save the file. 
-app.post("/editcharacterattribute", urlencodedParser, async function (request, response) {
+
+/**
+ * Handle a POST request to edit a character attribute.
+ *
+ * This function reads the character data from a file, updates the specified attribute,
+ * and writes the updated data back to the file. 
+ *
+ * @param {Object} request - The HTTP request object.
+ * @param {Object} response - The HTTP response object.
+ * @returns {void}
+ */
+app.post("/editcharacterattribute", jsonParser, async function (request, response) {
+    console.log(request.body);
     if (!request.body) {
         console.error('Error: no response body detected');
         response.status(400).send('Error: no response body detected');
@@ -1048,9 +1057,11 @@ app.post("/editcharacterattribute", urlencodedParser, async function (request, r
             char = JSON.parse(char);
             char[request.body.field] = request.body.value;
             char = JSON.stringify(char);
-
-        }).then(() => {
-            charaWrite(avatarPath, char, request.body.avatar_url, response, 'Character saved');
+            return { char };
+        }).then(({ char }) => {
+            charaWrite(avatarPath, char, (request.body.avatar_url).replace('.png', ''), response, 'Character saved');
+        }).catch((err) => {
+            console.error('An error occured, character edit invalidated.', err);
         });
     }
     catch {
