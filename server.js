@@ -1056,6 +1056,7 @@ app.post("/editcharacterattribute", jsonParser, async function (request, respons
         charaRead(avatarPath).then((char) => {
             char = JSON.parse(char);
             char[request.body.field] = request.body.value;
+            char.data[request.body.field] = request.body.value;
             char = JSON.stringify(char);
             return { char };
         }).then(({ char }) => {
