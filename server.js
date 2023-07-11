@@ -4345,3 +4345,75 @@ async function getImageBuffers(zipFilePath) {
         });
     });
 }
+
+/**
+ * This function is used ensure the list of extensions is up to date.
+ * @param {object} extensionList
+ * @returns 
+ */
+function getExtensions(extensionList) {
+    const extensions = [];
+
+    // if the extension folder does not exist, git clone the extension, also check if the extension is up to date with the git repo, but don't pull if it is not up to date
+    for (const extension of extensionList) {
+        const extensionPath = path.join(directories.extensions, extension.name);
+        if (!fs.existsSync(extensionPath)) {
+            console.log(`Extension ${extension.name} does not exist. Cloning...`);
+            try {
+                git.clone(extension.url, extensionPath);
+            } catch (error) {
+                console.error(`Failed to clone extension ${extension.name}`);
+                console.error(error);
+            }
+        } else {
+            console.log(`Extension ${extension.name} exists
+            Checking if extension is up to date...`);
+            try {
+                git.fetch(extensionPath);
+                const status = git.status(extensionPath);
+                if (status.behind > 0) {
+                    console.log(`Extension ${extension.name} is not up to date. Pulling...`);
+                    git.pull(extensionPath);
+                }
+            } catch (error) {
+                console.error(`Failed to check if extension ${extension.name} is up to date`);
+                console.error(error);
+            }
+        }
+        extensions.push(extension.name);
+    }
+
+}
+
+/** 
+ * This function is used to git clone a single extension into the thrid-party-extensions folder
+*/
+app.post('/get_extension', jsonParser, async (request, response) => {
+    if (!request.body.url) {
+        return response.sendStatus(400);
+    }
+
+    try {
+        const url = request.body.url;
+        let result;
+
+        // git clone and then get the resulting folder path of the extension
+        const extensionPath = git.clone(url, directories.extensions + '/third-party');
+        
+        // load the info from the manifest.json in the extension folder
+        const manifest = JSON.parse(fs.readFileSync(extensionPath + '/manifest.json', 'utf8'));
+        // pull version, author, display_name
+        const version = manifest.version;
+        const author = manifest.author;
+        const display_name = manifest.display_name;
+        console.log(`Extension ${display_name} has been cloned`);
+        // return the version, author, display_name, and the path to the extension folder
+        return response.send({ version, author, display_name, extensionPath });
+
+    } catch (error) {
+        console.log('Importing custom content failed', error);
+        return response.sendStatus(500);
+    }
+});
+
+

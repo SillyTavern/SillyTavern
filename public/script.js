@@ -8494,6 +8494,38 @@ $(document).ready(function () {
         }
     });
 
+    $('#thrid_party_extension_button').on('click', async () => {
+        const html = `<h3>Enter the URL of the content to import</h3>
+        Supported sources:<br>
+        <ul class="justifyLeft">
+            <li>Chub characters (direct link or id)<br>Example: <tt>Anonymous/example-character</tt></li>
+            <li>Chub lorebooks (direct link or id)<br>Example: <tt>lorebooks/bartleby/example-lorebook</tt></li>
+            <li>More coming soon...</li>
+        <ul>`
+        const input = await callPopup(html, 'input');
+
+        if (!input) {
+            console.debug('Custom content import cancelled');
+            return;
+        }
+
+        const url = input.trim();
+        console.debug('Custom content import started', url);
+
+        const request = await fetch('/get_extension', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ url }),
+        });
+
+        if (!request.ok) {
+            toastr.info(request.statusText, 'Custom content import failed');
+            console.error('Custom content import failed', request.status, request.statusText);
+            return;
+        }
+
+    });
+
     const $dropzone = $(document.body);
 
     $dropzone.on('dragover', (event) => {
