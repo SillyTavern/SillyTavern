@@ -12,8 +12,7 @@ const regex_placement = {
     USER_INPUT: 1,
     AI_OUTPUT: 2,
     SYSTEM: 3,
-    SENDAS: 4,
-	SYSGEN: 5
+    SENDAS: 4
 }
 
 const regex_replace_strategy = {
