@@ -1146,15 +1146,17 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
         let regexPlacement;
         if (isUser) {
             regexPlacement = regex_placement.USER_INPUT;
-        } else if (ch_name === "System") {
-            regexPlacement = regex_placement.SYSTEM;
         } else if (ch_name !== name2) {
-            regexPlacement = regex_placement.SENDAS;
+            regexPlacement = regex_placement.SLASH_COMMAND;
         } else {
             regexPlacement = regex_placement.AI_OUTPUT;
         }
 
-        mes = getRegexedString(mes, regexPlacement, { isMarkdown: true });
+        // Always override the character name
+        mes = getRegexedString(mes, regexPlacement, {
+            characterOverride: ch_name,
+            isMarkdown: true
+        });
     }
 
     if (power_user.auto_fix_generated_markdown) {
@@ -5047,24 +5049,23 @@ function updateMessage(div) {
     const mesBlock = div.closest(".mes_block");
     let text = mesBlock.find(".edit_textarea").val();
     const mes = chat[this_edit_mes_id];
+
     let regexPlacement;
-    if (mes.is_name && !mes.is_user && mes.name !== name2) {
-        regexPlacement = regex_placement.SENDAS;
-    } else if (mes.is_name && !mes.is_user) {
-        regexPlacement = regex_placement.AI_OUTPUT;
-    } else if (mes.is_name && mes.is_user) {
+    if (mes.is_name && mes.is_user) {
         regexPlacement = regex_placement.USER_INPUT;
-    } else if (mes.extra?.type === "narrator") {
-        regexPlacement = regex_placement.SYSTEM;
+    } else if (mes.is_name && mes.name === name2) {
+        regexPlacement = regex_placement.AI_OUTPUT;
+    } else if (mes.is_name && mes.name !== name2 || mes.extra?.type === "narrator") {
+        regexPlacement = regex_placement.SLASH_COMMAND;
     }
 
+    // Ignore character override if sent as system
     text = getRegexedString(
-        text,
-        regexPlacement,
-        {
-            characterOverride: regexPlacement === regex_placement.SENDAS ? mes.name : undefined
-        }
+        text, 
+        regexPlacement, 
+        { characterOverride: mes.extra?.type === "narrator" ? undefined : mes.name }
     );
+
 
     if (power_user.trim_spaces) {
         text = text.trim();
