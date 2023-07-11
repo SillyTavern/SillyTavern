@@ -345,6 +345,8 @@ async function importData(
             character.name
         );
         await getCharacters();
+        $("#creator_textarea").val(character.data?.creator);
+        $("#creator_notes_textarea").val(character.data?.creator_notes || character.creatorcomment);
     }
     toastr.success(
         `${importCreatorInfo ? "Creator info and " : ""}${
