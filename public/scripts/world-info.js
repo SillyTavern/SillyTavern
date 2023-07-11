@@ -1331,23 +1331,6 @@ function onWorldInfoChange(_, text) {
     saveSettingsDebounced();
 }
 
-export function WItoChroma(wi) {
-    const worldInfo = world_info[wi];
-    if (worldInfo === undefined) {
-        return;
-    }
-
-    const color = worldInfo.color;
-    const colorArray = color.split(",");
-
-    return {
-        r: colorArray[0],
-        g: colorArray[1],
-        b: colorArray[2],
-        a: colorArray[3],
-    };
-}
-
 export async function importWorldInfo(file) {
     if (!file) {
         return;
