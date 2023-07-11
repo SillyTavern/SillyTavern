@@ -2,7 +2,6 @@
     "display_name": "STT",
     "loading_order": 13,
     "requires": [
-        "vosk-stt"
     ],
     "optional": [],
     "js": "index.js",

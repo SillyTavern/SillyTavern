@@ -4,6 +4,7 @@ import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper
 import { power_user } from "../../power-user.js";
 import { onlyUnique, debounce, getCharaFilename } from "../../utils.js";
 import { VoskSttProvider } from './vosk.js'
+import { WhisperSttProvider } from './whisper.js'
 export { MODULE_NAME };
 
 const MODULE_NAME = 'stt';
@@ -13,10 +14,11 @@ let inApiCall = false;
 
 let sttProviders = {
     Vosk: VoskSttProvider,
+    Whisper: WhisperSttProvider,
 }
 
 let sttProvider = new VoskSttProvider
-let sttProviderName
+let sttProviderName = "Vosk"
 
 let pushToTalkKeyDown = false
 
@@ -69,11 +71,12 @@ async function moduleWorker() {
                 case "auto_send":
 
                     // Detect trigger words
-                    if (extension_settings.stt.triggerWords.length > 0) {
+                    if (extension_settings.stt.triggerWords.length > 0 & extension_settings.stt.recordMode == "voice_detection") {
                         let messageStart = -1
-
+                        
+                        const userMessageLower = userMessageFormatted.toLowerCase()
                         for (const triggerWord of extension_settings.stt.triggerWords) {
-                            const triggerPos = userMessageFormatted.indexOf(triggerWord);
+                            const triggerPos = userMessageLower.indexOf(triggerWord.toLowerCase());
                             
                             // Trigger word not found or not starting message and just a substring
                             if (triggerPos == -1 | (triggerPos > 0 & userMessageFormatted[triggerPos-1] != " ")) {
