@@ -318,10 +318,18 @@ async function setImage(img, path) {
 
             //add animation flags to both images
             //to prevent multiple expression changes happening simultaneously
-            img.addClass('expression-animating')
+            img.addClass('expression-animating');
+
+            // Set the parent container's min width and height before running the transition
+            const imgWidth = img.width();
+            const imgHeight = img.height();
+            const expressionHolder = img.parent();
+            expressionHolder.css('min-width', imgWidth > 100 ? imgWidth : 100);
+            expressionHolder.css('min-height', imgHeight > 100 ? imgHeight : 100);
+
             //position absolute prevent the original from jumping around during transition
-            img.css('position', 'absolute')
-            expressionClone.addClass('expression-animating')
+            img.css('position', 'absolute');
+            expressionClone.addClass('expression-animating');
             //fade the clone in
             expressionClone.css({
                 opacity: 0
@@ -338,6 +346,11 @@ async function setImage(img, path) {
                     //replace ID so it becomes the new 'original' expression for next change
                     expressionClone.attr('id', originalId);
                     expressionClone.removeClass('expression-animating');
+
+                    // Reset the expression holder min height and width
+                    expressionHolder.css('min-width', 100);
+                    expressionHolder.css('min-height', 100);
+
                     resolve();
                 });
 
