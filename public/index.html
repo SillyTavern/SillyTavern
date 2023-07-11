@@ -45,7 +45,7 @@
     <link rel="stylesheet" href="css/bg_load.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <script>
-        $(document).ready(function () {
+        function applyLocale() {
             var language = navigator.language || navigator.userLanguage;
             language = language.toLowerCase();
             console.log(language)
@@ -74,7 +74,9 @@
                     }
                 });
             });
-        });
+        }
+        $(document).ready(applyLocale);
+        window["applyLocale"] = applyLocale;
     </script>
     <script type=module src="script.js"></script>
 
