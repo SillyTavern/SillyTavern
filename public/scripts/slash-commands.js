@@ -176,6 +176,8 @@ async function generateSystemMessage(_, prompt) {
         toastr.warning('You must provide a prompt for the system message');
         return;
     }
+	
+	prompt = getRegexedString(prompt, regex_placement.SYSGEN, { isMarkdown: true })
 
     toastr.info('Please wait', 'Generating...');
     const message = await generateQuietPrompt(prompt);
