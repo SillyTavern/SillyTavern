@@ -57,10 +57,20 @@
                 //find all the elements with `data-i18n` attribute
                 $("[data-i18n]").each(function () {
                     //read the translation from the language data
-                    const key = $(this).data("i18n");
-                    const text = data?.[language]?.[key];    // Ensure that the translated text is loaded correctly.
-                    if (text) {
-                        $(this).text(text);
+                    const keys = $(this).data("i18n").split(';'); // Multi-key entries are ; delimited
+                    for (const key of keys) {
+                        const attrmatch = key.match(/\[(\S+)\](.+)/); // [attribute]key
+                        if (attrmatch) { // attribute-tagged key
+                            const locval = data?.[language]?.[attrmatch[2]];
+                            if (locval) {
+                                $(this).attr(attrmatch[1], locval);
+                            }
+                        } else { // No attribute tag, treat as 'text'
+                            const locval = data?.[language]?.[key];
+                            if (locval) {
+                                $(this).text(locval);
+                            }
+                        }
                     }
                 });
             });
