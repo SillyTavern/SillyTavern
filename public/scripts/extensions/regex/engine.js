@@ -46,7 +46,7 @@ function getRegexedString(rawString, placement, { characterOverride, isMarkdown 
     }
 
     extension_settings.regex.forEach((script) => {
-        if (script.markdownOnly && !isMarkdown) {
+        if ((script.markdownOnly && !isMarkdown) || (!script.markdownOnly && isMarkdown)) {
             return;
         }
 
