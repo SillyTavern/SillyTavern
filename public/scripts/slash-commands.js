@@ -177,6 +177,8 @@ async function generateSystemMessage(_, prompt) {
         return;
     }
 
+    prompt = getRegexedString(prompt, regex_placement.SYSTEM);
+
     toastr.info('Please wait', 'Generating...');
     const message = await generateQuietPrompt(prompt);
     sendNarratorMessage(_, message);
