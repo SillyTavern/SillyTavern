@@ -3073,7 +3073,7 @@ function convertClaudePrompt(messages, addHumanPrefix, addAssistantPostfix) {
                 } else if (v.name === "example_user") {
                     prefix = "\n\nH: ";
                 } else {
-                    prefix = "\n\nSystem: ";
+                    prefix = "\n\n";
                 }
                 break
         }
