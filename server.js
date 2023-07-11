@@ -1026,6 +1026,49 @@ app.post("/editcharacter", urlencodedParser, async function (request, response) 
     }
 });
 
+
+/**
+ * Handle a POST request to edit a character attribute.
+ *
+ * This function reads the character data from a file, updates the specified attribute,
+ * and writes the updated data back to the file. 
+ *
+ * @param {Object} request - The HTTP request object.
+ * @param {Object} response - The HTTP response object.
+ * @returns {void}
+ */
+app.post("/editcharacterattribute", jsonParser, async function (request, response) {
+    console.log(request.body);
+    if (!request.body) {
+        console.error('Error: no response body detected');
+        response.status(400).send('Error: no response body detected');
+        return;
+    }
+
+    if (request.body.ch_name === '' || request.body.ch_name === undefined || request.body.ch_name === '.') {
+        console.error('Error: invalid name.');
+        response.status(400).send('Error: invalid name.');
+        return;
+    }
+
+    try {
+        const avatarPath = path.join(charactersPath, request.body.avatar_url);
+        charaRead(avatarPath).then((char) => {
+            char = JSON.parse(char);
+            char[request.body.field] = request.body.value;
+            char = JSON.stringify(char);
+            return { char };
+        }).then(({ char }) => {
+            charaWrite(avatarPath, char, (request.body.avatar_url).replace('.png', ''), response, 'Character saved');
+        }).catch((err) => {
+            console.error('An error occured, character edit invalidated.', err);
+        } );   
+    }
+    catch {
+        console.error('An error occured, character edit invalidated.');
+    }
+});
+
 app.post("/deletecharacter", urlencodedParser, function (request, response) {
     if (!request.body || !request.body.avatar_url) {
         return response.sendStatus(400);

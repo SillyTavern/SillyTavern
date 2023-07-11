@@ -1,4 +1,4 @@
-import { saveCharacterDebounced, this_chid, saveSettingsDebounced, getSettings, getRequestHeaders } from "../../../script.js";
+import { saveCharacterDebounced, this_chid, saveSettingsDebounced, getSettings, getRequestHeaders, getCharacters } from "../../../script.js";
 import { getContext } from "../../extensions.js";
 import { applyTagsOnCharacterSelect, importTags } from "../../tags.js";
 import { generateQuietPrompt } from "../../../script.js";
@@ -110,8 +110,18 @@ async function tagCharMain(character) {
 }
 
 
-// Function to filter out topics like "ROOT" and "Tavern"
-function filterTopics(topics) {
+/**
+ * Add tags to a character and update the UI and internal map.
+ *
+ * This function takes a character object and an array of tag names to add to the character.
+ * If a tag with the specified name does not exist, a new tag is created. The function then
+ * adds the tag to the UI and internal map, and saves the updated settings. Finally, the function
+ * prints the updated tags to the console.
+ *
+ * @param {Object} character - The character object to add tags to.
+ * @param {string[]} tagsToAdd - An array of tag names to add to the character.
+ * @returns {boolean} - Returns false to keep the input clear.
+ */function filterTopics(topics) {
     return topics.filter(topic => topic !== "ROOT" && topic !== "TAVERN");
 }
 
@@ -200,36 +210,34 @@ async function onButtonClick() {
                     await importTags(character);
 
                     
-                    // if(importCreatorInfo){
-                    //     //add creator
-                    //     if (author && !character.creator) {
-                    //         character.creator = author;
-                    //     }
-                    //     //add creator notes
-                    //     if (downloadedCharacter.description && !character.creator_notes) {
-                    //         character.creator_notes = searchedCharacter.description;
-                    //     }
-                    //     let url = '/editcharacter';
-                    //     character.ch_name = character.name;
-
-                    //     const formData = new FormData();
-                    //     let headers = getRequestHeaders();
-                    //     headers["Content-Type"] = "multipart/form-data" + "; boundary=" + formData._boundary
-
-                    //     for (let key in character) {
-                    //         formData.append(key, character[key]);
-                    //     }
-                    //     const response = await fetch("/editcharacter", {
-                    //         method: 'POST',
-                    //         headers: headers,
-                    //         body: (formData)
-                    //     });
-                    //     if (response.ok) {
-                    //         await getCharacters();
-                    //         console.log(`Imported creator info for ${character.name}.`);
-                    //     }
-                    //     saveSettingsDebounced();
-                    // }
+                    if(importCreatorInfo){
+                        //add creator
+                        let headers = getRequestHeaders();
+                        if (author && !character.creator) {
+                            // send field, value, avatar_url, ch_name
+                            const response = await fetch("/editcharacterattribute", {
+                                method: 'POST',
+                                headers: headers,
+                                body: JSON.stringify({ field : "creator", value : author, avatar_url : character.avatar, ch_name : character.name })
+                            });
+                            if (response.ok) {
+                                console.log(`Imported creator for ${character.name}.`);
+                            }
+                        }
+                        //add creator notes
+                        if (downloadedCharacter.description && !character.creator_notes) {
+                            //character.creator_notes = searchedCharacter.description;
+                            const response = await fetch("/editcharacterattribute", {
+                                method: 'POST',
+                                headers: headers,
+                                body: JSON.stringify({ field : "creator_notes", value : searchedCharacter.description, avatar_url : character.avatar, ch_name : character.name })
+                            });
+                            if (response.ok) {
+                                console.log(`Imported creator notes for ${character.name}.`);
+                            }
+                        }
+                        saveSettingsDebounced();
+                    }
                     break;
 
                     
@@ -245,6 +253,7 @@ async function onButtonClick() {
                 }
             }
         }
+        await getCharacters();
     } catch (error) {
         console.error(error);
     }
