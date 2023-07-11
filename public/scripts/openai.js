@@ -629,6 +629,9 @@ function prepareOpenAIMessages({
                                          extensionPrompts,
                                          cyclePrompt
                                      } = {}, dryRun) {
+    // When there is no character selected, there is no way to accurately calculate tokens
+    if (!promptManager.activeCharacter && dryRun) return [null, false];
+
     const prompts = promptManager.getPromptCollection();
     const chatCompletion = new ChatCompletion();
     const userSettings = promptManager.serviceSettings;
