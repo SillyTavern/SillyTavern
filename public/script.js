@@ -8523,6 +8523,8 @@ $(document).ready(function () {
         }
 
         const response = await request.json();
+        await loadExtensionSettings(settings);
+        eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED);
         toastr.success(`Extension "${response.display_name}" by ${response.author} (version ${response.version}) has been imported successfully!`, 'Extension import successful');
         console.debug(`Extension "${response.display_name}" has been imported successfully at ${response.extensionPath}`);
     });
