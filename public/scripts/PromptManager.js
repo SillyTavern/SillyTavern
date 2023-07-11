@@ -369,7 +369,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     // Export user prompts and order for this character
     this.handleCharacterExport = () => {
         const characterPrompts = this.getPromptsForCharacter(this.activeCharacter).reduce((userPrompts, prompt) => {
-            if (false === prompt.system_prompt && false === prompt.marker) userPrompts.push(prompt);
+            if (false === prompt.system_prompt && !prompt.marker) userPrompts.push(prompt);
             return userPrompts;
         }, []);
 
@@ -813,7 +813,7 @@ PromptManagerModule.prototype.getPromptById = function (identifier) {
  * @returns {number|null} Index of the prompt, or null if not found
  */
 PromptManagerModule.prototype.getPromptIndexById = function (identifier) {
-    return this.serviceSettings.prompts.findIndex(item => item.position === identifier) ?? null;
+    return this.serviceSettings.prompts.findIndex(item => item.identifier === identifier) ?? null;
 }
 
 PromptManagerModule.prototype.getSettings = function(settings) {
@@ -1302,6 +1302,20 @@ PromptManagerModule.prototype.import = function (importData) {
         return merged;
     }
 
+    const controlObj = {
+        version: 1,
+        type: '',
+        data: {
+            prompts: [],
+            promptList: null
+        }
+    }
+
+    if (false === this.validateObject(controlObj, importData)) {
+        toastr.warning('Could not import prompts. Export failed validation.');
+        return;
+    }
+
     const prompts = mergeKeepNewer(this.serviceSettings.prompts, importData.data.prompts);
 
     this.setPrompts(prompts);
@@ -1313,8 +1327,27 @@ PromptManagerModule.prototype.import = function (importData) {
         this.log(`Prompt order import for character ${this.activeCharacter.name} completed`);
     }
 
+    toastr.success('Prompt import complete.');
     this.saveServiceSettings().then(() => this.render());
 };
+
+PromptManagerModule.prototype.validateObject = function(controlObj, object) {
+    for (let key in controlObj) {
+        if (!object.hasOwnProperty(key)) {
+            if (controlObj[key] === null) continue;
+            else return false;
+        }
+
+        if (typeof controlObj[key] === 'object' && controlObj[key] !== null) {
+            if (typeof object[key] !== 'object') return false;
+            if (!this.validateObject(controlObj[key], object[key])) return false;
+        } else {
+            if (typeof object[key] !== typeof controlObj[key]) return false;
+        }
+    }
+
+    return true;
+}
 
 PromptManagerModule.prototype.getFormattedDate = function() {
     const date = new Date();
