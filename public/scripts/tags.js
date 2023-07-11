@@ -255,18 +255,14 @@ async function importTags(imported_char) {
         selected_tags = selected_tags.slice(0, 15);
     }
     for (let tagName of selected_tags) {
-        console.log('tagName', tagName);
         let tag = tags.find(t => t.name === tagName);
-        console.log('tag', tag);
 
         if (!tag) {
             tag = createNewTag(tagName);
-            console.log('created tag', tag);
         }
 
         if (!tag_map[imported_char.avatar].includes(tag.id)) {
             tag_map[imported_char.avatar].push(tag.id);
-            console.debug('added tag to map', tag, imported_char.name);
         }
     };
     saveSettingsDebounced();
