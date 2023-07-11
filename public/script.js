@@ -2251,10 +2251,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             force_name2 = false;
         }
 
-        if (isInstruct) {
-            storyString = formatInstructStoryString(storyString, systemPrompt);
-        }
-
         //////////////////////////////////
 
         let chat2 = [];
@@ -2301,6 +2297,14 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         const afterScenarioAnchor = getExtensionPrompt(extension_prompt_types.AFTER_SCENARIO);
         let zeroDepthAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, 0, ' ');
 
+        // Pre-format the World Info into the story string
+        storyString = worldInfoBefore + storyString + worldInfoAfter;
+
+        // Format the instruction string
+        if (isInstruct) {
+            storyString = formatInstructStoryString(storyString, systemPrompt);
+        }
+
         if (main_api === 'openai') {
             message_already_generated = ''; // OpenAI doesn't have multigen
             setOpenAIMessages(coreChat);
@@ -2322,7 +2326,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         let chatString = '';
         function getMessagesTokenCount() {
             const encodeString = [
-                worldInfoString,
                 storyString,
                 examplesString,
                 chatString,
@@ -2535,7 +2538,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 console.debug('---checking Prompt size');
                 setPromtString();
                 const prompt = [
-                    worldInfoString,
                     storyString,
                     mesExmString,
                     mesSendString,
@@ -2571,9 +2573,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             mesSendString = adjustChatsSeparator(mesSendString);
 
             let finalPromt =
-                worldInfoBefore +
                 storyString +
-                worldInfoAfter +
                 afterScenarioAnchor +
                 mesExmString +
                 mesSendString +
@@ -2670,14 +2670,12 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 ...thisPromptBits[currentArrayEntry],
                 rawPrompt: generate_data.prompt,
                 mesId: getNextMessageId(type),
-                worldInfoBefore: worldInfoBefore,
                 allAnchors: allAnchors,
                 summarizeString: (extension_prompts['1_memory']?.value || ''),
                 authorsNoteString: (extension_prompts['2_floating_prompt']?.value || ''),
                 smartContextString: (extension_prompts['chromadb']?.value || ''),
                 worldInfoString: worldInfoString,
                 storyString: storyString,
-                worldInfoAfter: worldInfoAfter,
                 afterScenarioAnchor: afterScenarioAnchor,
                 examplesString: examplesString,
                 mesSendString: mesSendString,
@@ -2690,6 +2688,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 this_max_context: this_max_context,
                 padding: power_user.token_padding,
                 main_api: main_api,
+                instruction: isInstruct ? substituteParams(power_user.prefer_character_prompt && systemPrompt ? systemPrompt : power_user.instruct.system_prompt) : '',
+                userPersona: (power_user.persona_description || ''),
             };
 
             thisPromptBits = additionalPromptStuff;
@@ -3178,6 +3178,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
     var thisPrompt_padding = itemizedPrompts[thisPromptSet].padding;
     var promptBiasTokens = getTokenCount(itemizedPrompts[thisPromptSet].promptBias);
     var this_main_api = itemizedPrompts[thisPromptSet].main_api;
+    var userPersonaStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].userPersona);
 
     if (this_main_api == 'openai') {
         //for OAI API
@@ -3213,10 +3214,11 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         //for non-OAI APIs
         //console.log('-- Counting non-OAI Tokens');
         var finalPromptTokens = getTokenCount(itemizedPrompts[thisPromptSet].finalPromt);
-        var storyStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].storyString);
+        var storyStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].storyString) - worldInfoStringTokens;
         var examplesStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].examplesString);
         var mesSendStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].mesSendString)
         var ActualChatHistoryTokens = mesSendStringTokens - allAnchorsTokens + power_user.token_padding;
+        var instructionTokens = getTokenCount(itemizedPrompts[thisPromptSet].instruction);
 
         var totalTokensInPrompt =
             storyStringTokens +     //chardefs total
@@ -3255,14 +3257,16 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         //console.log('-- calling popup for OAI tokens');
         callPopup(
             `
-        <h3>Prompt Itemization</h3>
+        <h3 class="flex-container justifyCenter alignitemscenter">
+            Prompt Itemization
+            <div id="showRawPrompt" class="fa-solid fa-square-poll-horizontal menu_button"></div>
+        </h3>
         Tokenizer: ${selectedTokenizer}<br>
         API Used: ${this_main_api}<br>
         <span class="tokenItemizingSubclass">
             Only the white numbers really matter. All numbers are estimates.
             Grey color items may not have been included in the context due to certain prompt format settings.
         </span>
-        <div id="showRawPrompt" class="fa-solid fa-square-poll-horizontal menu_button"></div>
         <hr>
         <div class="justifyLeft">
             <div class="flex-container">
@@ -3323,6 +3327,10 @@ function promptItemize(itemizedPrompts, requestedMesId) {
                             <div  class=" flex1 tokenItemizingSubclass">-- Examples:</div>
                             <div  class="tokenItemizingSubclass"> ${examplesStringTokens}</div>
                         </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- User Persona:</div>
+                            <div  class="tokenItemizingSubclass"> ${userPersonaStringTokens}</div>
+                        </div>
                     </div>
                     <div class="wide100p flex-container">
                         <div  class="flex1" style="color: gold;">World Info:</div>
@@ -3374,14 +3382,16 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         //console.log('-- calling popup for non-OAI tokens');
         callPopup(
             `
-        <h3>Prompt Itemization</h3>
+        <h3 class="flex-container justifyCenter alignitemscenter">
+            Prompt Itemization
+            <div id="showRawPrompt" class="fa-solid fa-square-poll-horizontal menu_button"></div>
+        </h3>
         Tokenizer: ${selectedTokenizer}<br>
         API Used: ${this_main_api}<br>
         <span class="tokenItemizingSubclass">
             Only the white numbers really matter. All numbers are estimates.
             Grey color items may not have been included in the context due to certain prompt format settings.
         </span>
-        <div id="showRawPrompt" class="fa-solid fa-square-poll-horizontal menu_button"></div>
         <hr>
         <div class="justifyLeft">
             <div class="flex-container">
@@ -3413,6 +3423,14 @@ function promptItemize(itemizedPrompts, requestedMesId) {
                         <div class="flex-container ">
                             <div  class=" flex1 tokenItemizingSubclass">-- Examples:</div>
                             <div  class="tokenItemizingSubclass"> ${examplesStringTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- User Persona:</div>
+                            <div  class="tokenItemizingSubclass"> ${userPersonaStringTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- System Prompt (Instruct):</div>
+                            <div class="tokenItemizingSubclass"> ${instructionTokens}</div>
                         </div>
                     </div>
                     <div class="wide100p flex-container">
