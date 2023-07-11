@@ -8494,23 +8494,21 @@ $(document).ready(function () {
         }
     });
 
-    $('#thrid_party_extension_button').on('click', async () => {
-        const html = `<h3>Enter the URL of the content to import</h3>
-        Supported sources:<br>
-        <ul class="justifyLeft">
-            <li>Chub characters (direct link or id)<br>Example: <tt>Anonymous/example-character</tt></li>
-            <li>Chub lorebooks (direct link or id)<br>Example: <tt>lorebooks/bartleby/example-lorebook</tt></li>
-            <li>More coming soon...</li>
-        <ul>`
+    $('#third_party_extension_button').on('click', async () => {
+        const html = `<h3>Enter the Git URL of the extension to import</h3>
+        <br>
+        <p><b>Disclaimer:</b> Please be aware that using external extensions can have unintended side effects and may pose security risks. Always make sure you trust the source before importing an extension. We are not responsible for any damage caused by third-party extensions.</p>
+        <br>
+        <p>Example: <tt> https://github.com/author/extension-name </tt></p>`
         const input = await callPopup(html, 'input');
 
         if (!input) {
-            console.debug('Custom content import cancelled');
+            console.debug('Extension import cancelled');
             return;
         }
 
         const url = input.trim();
-        console.debug('Custom content import started', url);
+        console.debug('Extension import started', url);
 
         const request = await fetch('/get_extension', {
             method: 'POST',
@@ -8519,11 +8517,14 @@ $(document).ready(function () {
         });
 
         if (!request.ok) {
-            toastr.info(request.statusText, 'Custom content import failed');
-            console.error('Custom content import failed', request.status, request.statusText);
+            toastr.info(request.statusText, 'Extension import failed');
+            console.error('Extension import failed', request.status, request.statusText);
             return;
         }
 
+        const response = await request.json();
+        toastr.success(`Extension "${response.display_name}" by ${response.author} (version ${response.version}) has been imported successfully!`, 'Extension import successful');
+        console.debug(`Extension "${response.display_name}" has been imported successfully at ${response.extensionPath}`);
     });
 
     const $dropzone = $(document.body);

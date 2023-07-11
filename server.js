@@ -2711,10 +2711,27 @@ app.post('/poe_suggest', jsonParser, async function (request, response) {
 
 });
 
+/**
+ * Discover the extension folders
+ * If the folder is called third-party, search for subfolders instead
+ */
 app.get('/discover_extensions', jsonParser, function (_, response) {
+    
+    // get all folders in the extensions folder, except third-party
     const extensions = fs
         .readdirSync(directories.extensions)
-        .filter(f => fs.statSync(path.join(directories.extensions, f)).isDirectory());
+        .filter(f => fs.statSync(path.join(directories.extensions, f)).isDirectory())
+        .filter(f => f !== 'third-party');
+
+    // get all folders in the third-party folder
+    const thirdPartyExtensions = fs
+        .readdirSync(path.join(directories.extensions, 'third-party'))
+        .filter(f => fs.statSync(path.join(directories.extensions, 'third-party', f)).isDirectory());
+
+    // add the third-party extensions to the extensions array
+    extensions.push(...thirdPartyExtensions.map(f => `third-party/${f}`));
+    console.log(extensions);
+
 
     return response.send(extensions);
 });
@@ -4346,74 +4363,63 @@ async function getImageBuffers(zipFilePath) {
     });
 }
 
-/**
- * This function is used ensure the list of extensions is up to date.
- * @param {object} extensionList
- * @returns 
- */
-function getExtensions(extensionList) {
-    const extensions = [];
 
-    // if the extension folder does not exist, git clone the extension, also check if the extension is up to date with the git repo, but don't pull if it is not up to date
-    for (const extension of extensionList) {
-        const extensionPath = path.join(directories.extensions, extension.name);
-        if (!fs.existsSync(extensionPath)) {
-            console.log(`Extension ${extension.name} does not exist. Cloning...`);
-            try {
-                git.clone(extension.url, extensionPath);
-            } catch (error) {
-                console.error(`Failed to clone extension ${extension.name}`);
-                console.error(error);
-            }
-        } else {
-            console.log(`Extension ${extension.name} exists
-            Checking if extension is up to date...`);
-            try {
-                git.fetch(extensionPath);
-                const status = git.status(extensionPath);
-                if (status.behind > 0) {
-                    console.log(`Extension ${extension.name} is not up to date. Pulling...`);
-                    git.pull(extensionPath);
-                }
-            } catch (error) {
-                console.error(`Failed to check if extension ${extension.name} is up to date`);
-                console.error(error);
-            }
-        }
-        extensions.push(extension.name);
-    }
-
-}
+const simpleGit = require('simple-git');
 
 /** 
- * This function is used to git clone a single extension into the thrid-party-extensions folder
-*/
+ * This function extracts the extension information from the manifest file.
+ * @param {string} extensionPath - The path of the extension folder
+ * @returns {Object} - Returns the manifest data as an object
+ */
+async function getManifest(extensionPath) {
+    const manifestPath = path.join(extensionPath, 'manifest.json');
+
+    // Check if manifest.json exists
+    if (!fs.existsSync(manifestPath)) {
+        throw new Error(`Manifest file not found at ${manifestPath}`);
+    }
+
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    return manifest;
+}
+
+/**
+ * HTTP POST handler function to clone a git repository from a provided URL, read the extension manifest,
+ * and return extension information and path.
+ * 
+ * @param {Object} request - HTTP Request object, expects a JSON body with a 'url' property.
+ * @param {Object} response - HTTP Response object used to respond to the HTTP request.
+ * 
+ * @returns {void}
+ */
 app.post('/get_extension', jsonParser, async (request, response) => {
     if (!request.body.url) {
-        return response.sendStatus(400);
+        return response.status(400).send('Bad Request: URL is required in the request body.');
     }
 
     try {
         const url = request.body.url;
-        let result;
+        const git = simpleGit();
 
-        // git clone and then get the resulting folder path of the extension
-        const extensionPath = git.clone(url, directories.extensions + '/third-party');
-        
-        // load the info from the manifest.json in the extension folder
-        const manifest = JSON.parse(fs.readFileSync(extensionPath + '/manifest.json', 'utf8'));
-        // pull version, author, display_name
-        const version = manifest.version;
-        const author = manifest.author;
-        const display_name = manifest.display_name;
-        console.log(`Extension ${display_name} has been cloned`);
-        // return the version, author, display_name, and the path to the extension folder
+        // get the name of the repo from the url and create the extensions folder path
+        const extensionPath = path.join(directories.extensions, 'third-party', path.basename(url, '.git'));
+
+        // Check if a folder already exists at the specified location
+        if (fs.existsSync(extensionPath)) {
+            return response.status(409).send(`Directory already exists at ${extensionPath}`);
+        }
+
+        await git.clone(url, extensionPath);
+        console.log(`Extension has been cloned at ${extensionPath}`);
+
+        // Load the info from the manifest.json in the extension folder
+        const { version, author, display_name } = await getManifest(extensionPath);
+
+        // Return the version, author, display_name, and the path to the extension folder
         return response.send({ version, author, display_name, extensionPath });
 
     } catch (error) {
         console.log('Importing custom content failed', error);
-        return response.sendStatus(500);
+        return response.status(500).send(`Server Error: ${error.message}`);
     }
 });
-
-
