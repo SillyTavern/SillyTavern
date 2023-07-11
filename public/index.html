@@ -564,7 +564,7 @@
                                         <input type="number" id="openai_max_tokens" name="openai_max_tokens" class="text_pole" min="50" max="1000">
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,windowai">
+                                <div class="range-block" data-source="openai,claude,windowai,openrouter">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
@@ -1340,7 +1340,7 @@
                             <option value="koboldhorde"><span data-i18n="KoboldAI Horde">KoboldAI Horde</span></option>
                             <option value="textgenerationwebui"><span data-i18n="Text Gen WebUI (ooba)">Text Gen WebUI (ooba)</span></option>
                             <option value="novel"><span data-i18n="NovelAI">NovelAI</span></option>
-                            <option value="openai"><span data-i18n="Chat Completion (OpenAI, Claude, Window/OpenRouter, Scale)">Chat Completion (OpenAI, Claude, Window/OpenRouter, Scale)</span></option>
+                            <option value="openai"><span data-i18n="Chat Completion (OpenAI, Claude, Window/OpenRouter, Scale)">Chat Completion (OpenAI, Claude, Window, OpenRouter, Scale)</span></option>
                             <option value="poe"><span data-i18n="Poe">Poe</span></option>
                         </select>
                     </div>
@@ -1497,7 +1497,8 @@
                         </h3>
                         <select id="chat_completion_source">
                             <option value="openai">OpenAI</option>
-                            <option value="windowai">Window AI / OpenRouter</option>
+                            <option value="windowai">Window AI</option>
+                            <option value="openrouter">OpenRouter</option>
                             <option value="claude">Claude</option>
                             <option value="scale">Scale</option>
                         </select>
@@ -1612,6 +1613,15 @@
                                     <option value="cohere/command-nightly">cohere/command-nightly</option>
                                 </select>
                             </div>
+                        </form>
+
+                        <form id="openrouter_form" data-source="openrouter" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                            <div>
+                                <h4 data-i18n="OpenRouter Model">OpenRouter Model</h4>
+                                <select id="model_openrouter_select">
+                                    <option data-i18n="Connect to the API">-- Connect to the API --</option>
+                                </select>
+                            </div>
                             <h4 data-i18n="OpenRouter API Key">OpenRouter API Key</h4>
                             <div>
                                 <small>
@@ -1625,10 +1635,6 @@
                             <div data-for="api_key_openrouter" class="neutral_warning">
                                 For privacy reasons, your API key will be hidden after you reload the page.
                             </div>
-                            <label class="checkbox_label" for="use_openrouter">
-                                <input id="use_openrouter" type="checkbox" />
-                                <span data-i18n="Use OpenRouter">Use OpenRouter directly</span>
-                            </label>
                         </form>
 
                         <form id="scale_form" data-source="scale" action="javascript:void(null);" method="post" enctype="multipart/form-data">
@@ -1648,7 +1654,7 @@
 
                         <div class="flex-container flex">
                             <input id="api_button_openai" class="menu_button" type="submit" value="Connect">
-                            <input data-source="windowai" id="openrouter_authorize" class="menu_button" type="button" value="Authorize" title="Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai">
+                            <input data-source="openrouter" id="openrouter_authorize" class="menu_button" type="button" value="Authorize" title="Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai">
                             <input id="test_api_button" class="menu_button" type="button" value="Test Message" title="Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!">
                         </div>
                         <div id="api_loading_openai" class=" api-load-icon fa-solid fa-hourglass fa-spin"></div>
