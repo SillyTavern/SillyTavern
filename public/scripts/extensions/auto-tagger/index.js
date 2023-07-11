@@ -28,7 +28,21 @@ function diceCoefficient(str1, str2) {
 const API_ENDPOINT_SEARCH = "https://api.chub.ai/api/characters/search";
 const API_ENDPOINT_DOWNLOAD = "https://api.chub.ai/api/characters/download";
 
-// Function to fetch character data, search for both the name and the first 40 characters of he description
+
+/**
+ * Fetch character data from the API based on name and description.
+ *
+ * This function sends two separate requests to the API to search for character data based on name and description.
+ * The function expects a name and description string as input, and returns a Promise that resolves to an array
+ * of character data objects. The function searches for both the name and the first 40 characters of the description.
+ * If both searches return results, the function combines the results into a single array. If only one search returns
+ * results, the function returns the results from that search. If neither search returns results, the function returns
+ * an empty array.
+ *
+ * @param {string} name - The name of the character to search for.
+ * @param {string} description - The description of the character to search for.
+ * @returns {Promise<Object[]>} - A Promise that resolves to an array of character data objects.
+ */
 async function fetchCharacterData(name, description) {
     let name_response = await fetch(`${API_ENDPOINT_SEARCH}?search=${encodeURIComponent(name)}&first=3&nsfw=true`);
     let name_data = await name_response.json();
@@ -52,7 +66,16 @@ async function fetchCharacterData(name, description) {
 }
 
 
-
+/**
+ * Download a character file from the server.
+ *
+ * This function sends a POST request to the server to download a character file in the specified format.
+ * The function expects a full path to the character file, which is used to identify the file on the server.
+ * The function returns a Promise that resolves to the downloaded character data.
+ *
+ * @param {string} fullPath - The full path to the character file on the server.
+ * @returns {Promise<Object>} - A Promise that resolves to the downloaded character data.
+ */
 async function downloadCharacter(fullPath) {
     const response = await fetch(API_ENDPOINT_DOWNLOAD, {
         method: 'POST',
@@ -69,47 +92,6 @@ async function downloadCharacter(fullPath) {
     return data;
 }
 
-async function tagCharMain(character) {
-    
-
-    //const defaultPrompt = '[Pause your roleplay. Summarize the most important facts and events that have happened in the chat so far. If a summary already exists in your memory, use that as a base and expand with new facts. Limit the summary to {{words}} words or less. Your response should include nothing but the summary.]';
-
-    let prompt = `\n[Using the prior character descriptions, produce a list of 5 tags that describe the character including a content rating(SFW, NSFW, NSFL). Only reply with a comma separated list of tags and nothing else.]`
-
-    let context = getContext();
-    console.log(context);
-    let currentChar = this_chid;
-    let currentCharName = character.name;
-    //get description, personality, scenario, from context.characters[currentChar]
-    console.log(currentChar, context.characters);
-    console.log(context.characters[currentChar]);
-    let description = context.characters[currentChar].description;
-    let personality = context.characters[currentChar].personality;
-    let scenario = context.characters[currentChar].scenario;
-    let greeting = context.characters[currentChar].first_mes;
-
-    //build prompt from description, personality, scenario, greeting
-
-    prompt = description + personality + scenario + greeting + prompt;
-
-
-    const summary = await generateQuietPrompt(prompt, true);
-    console.log(summary);
-    // const newContext = getContext();
-
-    // // something changed during summarization request
-    // if (newContext.groupId !== context.groupId
-    //     || newContext.chatId !== context.chatId
-    //     || (!newContext.groupId && (newContext.characterId !== context.characterId))) {
-    //     console.log('Context changed, summary discarded');
-    //     return;
-    // }
-
-    // setMemoryContext(summary, true);
-    // return summary;
-}
-
-
 /**
  * Add tags to a character and update the UI and internal map.
  *
@@ -125,38 +107,11 @@ async function tagCharMain(character) {
     return topics.filter(topic => topic !== "ROOT" && topic !== "TAVERN");
 }
 
-function addTagsToChar(character, tagsToAdd) {
-    for (let add of tagsToAdd) {
-
-        let tagName = ui.item.value;
-        let tag = tags.find(t => t.name === tagName);
-
-        // create new tag if it doesn't exist
-        if (!tag) {
-            tag = createNewTag(tagName);
-        }
-
-        // add tag to the UI and internal map
-        appendTagToList(listSelector, tag, { removable: true });
-        appendTagToList(getInlineListSelector(), tag, { removable: false });
-        addTagToMap(tag.id);
-    }
-
-
-    saveSettingsDebounced();
-    printTags();
-
-    // need to return false to keep the input clear
-    return false;
-}
-
 // Function to execute on button click
 async function onButtonClick() {
     console.log("Comparing characters...")
     const characters = getContext().characters;
-    let context = getContext();
     let importCreatorInfo = true;
-    console.log(context);
     try {
         for (let character of characters) {
 
@@ -165,15 +120,12 @@ async function onButtonClick() {
             for (let searchedCharacterKey in searchedCharacters) {
                 let searchedCharacter = searchedCharacters[searchedCharacterKey];
                 const downloadedCharacter = await downloadCharacter(searchedCharacter.fullPath);
-                // console.log(downloadedCharacter);
-                // console.log(searchedCharacter);
-                // console.log(character);
 
                 let author = searchedCharacter.fullPath.split("/")[0];
                 let isAuthorMatch = false;
                 //Check if character.data.description and character.scenerio are in downloadedCharacter.description, log each comparison
                 const downloadDesc = downloadedCharacter.description.replace("\"", "");
-   
+
                 const isPersonalityMatch = diceCoefficient(character.personality, downloadedCharacter.title) > 0.8;
                 const isDescriptionMatch = diceCoefficient(character.description, downloadedCharacter.description) > 0.8;
                 //purge newlines and returns from mes_example and definition during comparison
@@ -182,15 +134,13 @@ async function onButtonClick() {
                 const isScenarioMatch = diceCoefficient(temp_mes_example, tempDefinition) > 0.8;
                 const isGreetingMatch = diceCoefficient(character.first_mes, downloadedCharacter.greeting) > 0.8;
 
-                if (author && character.creator){
+                if (author && character.creator) {
                     isAuthorMatch = character.creator.includes(author);
                 }
 
                 if ([isPersonalityMatch, isDescriptionMatch, isScenarioMatch, isGreetingMatch, isAuthorMatch].filter(value => value === true).length >= 2) {
 
                     //if we matched with 2 cases, add tags, creator, creator notes
-                    //console.log(`Character ${character.name} matches.`);
-
                     //add tags
                     let tags = filterTopics(searchedCharacter.topics);
                     //console.log(tags);
@@ -206,11 +156,11 @@ async function onButtonClick() {
                         }
                     }
 
-                    console.log(`Importing ${tags.length} tags for ${character.name}.`);
+                    console.debug(`Importing ${tags.length} tags for ${character.name}.`);
                     await importTags(character);
 
-                    
-                    if(importCreatorInfo){
+
+                    if (importCreatorInfo) {
                         //add creator
                         let headers = getRequestHeaders();
                         if (author && !character.creator) {
@@ -218,7 +168,7 @@ async function onButtonClick() {
                             const response = await fetch("/editcharacterattribute", {
                                 method: 'POST',
                                 headers: headers,
-                                body: JSON.stringify({ field : "creator", value : author, avatar_url : character.avatar, ch_name : character.name })
+                                body: JSON.stringify({ field: "creator", value: author, avatar_url: character.avatar, ch_name: character.name })
                             });
                             if (response.ok) {
                                 console.log(`Imported creator for ${character.name}.`);
@@ -230,7 +180,7 @@ async function onButtonClick() {
                             const response = await fetch("/editcharacterattribute", {
                                 method: 'POST',
                                 headers: headers,
-                                body: JSON.stringify({ field : "creator_notes", value : searchedCharacter.description, avatar_url : character.avatar, ch_name : character.name })
+                                body: JSON.stringify({ field: "creator_notes", value: searchedCharacter.description, avatar_url: character.avatar, ch_name: character.name })
                             });
                             if (response.ok) {
                                 console.log(`Imported creator notes for ${character.name}.`);
@@ -239,17 +189,8 @@ async function onButtonClick() {
                         saveSettingsDebounced();
                     }
                     break;
-
-                    
-
                 } else {
                     console.log(`Character ${character.name} does not match.`);
-                    if (!isPersonalityMatch) {
-                        //console.log(`- Personality does not match. Generated: ${character.data.description}, API: ${downloadedCharacter.description}`);
-                        console.log(character);
-                        console.log(downloadedCharacter);
-                        console.log(searchedCharacter);
-                    }
                 }
             }
         }
