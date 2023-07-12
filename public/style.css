@@ -85,6 +85,7 @@ body {
     padding: 0;
     width: 100%;
     /*fallback for JS load*/
+	height: 100vh;
     height: 100svh;
     /*defaults as 100%, then reassigned via JS as pixels, will work on PC and Android*/
     height: calc(var(--doc-height) - 1px);
@@ -352,10 +353,12 @@ hr {
 #sheld {
     display: grid;
     grid-template-rows: auto min-content;
+    height: calc(100vh - 42px);
     height: calc(100svh - 42px);
     overflow-x: hidden;
     max-width: 800px;
     position: absolute;
+    left: calc((100vw - var(--sheldWidth))/2);
     left: calc((100svw - var(--sheldWidth))/2);
     top: 41px;
     margin: 0 auto;
@@ -891,6 +894,7 @@ select {
 
 #send_textarea {
     min-height: 40px;
+    max-height: 50vh;
     max-height: 50svh;
     word-wrap: break-word;
     height: 40px;
@@ -1463,6 +1467,7 @@ body.big-avatars .ch_description {
     display: flex;
     flex-wrap: wrap;
     width: calc(var(--sheldWidth) - 10px);
+    max-width: 100vw;
     max-width: 100svw;
     justify-content: center;
 }
@@ -1770,6 +1775,7 @@ grammarly-extension {
 
 #dialogue_popup {
     width: 500px;
+    max-width: 90vw;
     max-width: 90svw;
     position: absolute;
     z-index: 9999;
@@ -1785,6 +1791,7 @@ grammarly-extension {
     padding: 4px;
     background-color: var(--black30a);
     border-radius: 10px;
+    max-height: 90vh;
     max-height: 90svh;
     display: flex;
     flex-direction: column;
@@ -1792,11 +1799,14 @@ grammarly-extension {
 }
 
 .large_dialogue_popup {
+    height: 90vh !important;
     height: 90svh !important;
+    max-width: 90vw !important;
     max-width: 90svw !important;
 }
 
 .wide_dialogue_popup {
+    max-width: 90vh !important;
     max-width: 90svh !important;
     width: fit-content !important;
 }
@@ -1913,6 +1923,7 @@ grammarly-extension {
     opacity: 0.0;
     position: absolute;
     width: 100%;
+    height: 100vh;
     height: 100svh;
     z-index: 9999;
     top: 0;
@@ -1920,7 +1931,9 @@ grammarly-extension {
 
 #bgtest {
     display: none;
+    width: 100vw;
     width: 100svw;
+    height: 100vh;
     height: 100svh;
     position: absolute;
     z-index: -100;
@@ -2447,6 +2460,7 @@ input[type="range"]::-webkit-slider-thumb {
     opacity: 0.0;
     position: absolute;
     width: 100%;
+    height: 100vh;
     height: 100svh;
     z-index: 2055;
     background-color: var(--black70a);
@@ -2591,6 +2605,7 @@ input[type="range"]::-webkit-slider-thumb {
     opacity: 1.0;
     position: absolute;
     width: 100%;
+    height: 100vh;
     height: 100svh;
     z-index: 2058;
 }
@@ -2603,8 +2618,11 @@ input[type="range"]::-webkit-slider-thumb {
 
     min-width: 100px;
     max-width: var(--sheldWidth);
+    height: calc(100vh - 84px);
     height: calc(100svh - 84px);
+    min-height: calc(100vh - 84px);
     min-height: calc(100svh - 84px);
+    max-height: calc(100vh - 84px);
     max-height: calc(100svh - 84px);
     position: absolute;
     z-index: 3002;
@@ -2683,6 +2701,7 @@ h5 {
     opacity: 1.0;
     position: absolute;
     width: 100%;
+    height: 100vh;
     height: 100svh;
     z-index: 3001;
     top: 0;
@@ -2696,6 +2715,7 @@ h5 {
     grid-template-rows: auto auto;
     max-width: var(--sheldWidth);
     height: min-content;
+    max-height: calc(100vh - 40px);
     max-height: calc(100svh - 40px);
     min-height: 100px;
     position: absolute;
@@ -3565,11 +3585,14 @@ a {
     display: block;
     overflow-wrap: break-word;
     white-space: normal;
+    max-width: calc(((100vw - 500px) / 2) - 10px);
     max-width: calc(((100svw - 500px) / 2) - 10px);
     position: absolute;
     z-index: 9999;
+    max-height: 90vh;
     max-height: 90svh;
     /*unsure why, but this prevents scrollbars*/
+    height: 49vh;
     height: 49svh;
 
     padding: 5px;
@@ -3604,8 +3627,11 @@ a {
 /* ############################################################# */
 
 #right-nav-panel {
+    width: calc((100vw - var(--sheldWidth) - 2px) /2);
     width: calc((100svw - var(--sheldWidth) - 2px) /2);
+    max-height: calc(100vh - 42px);
     max-height: calc(100svh - 42px);
+    height: calc(100vh - 42px);
     height: calc(100svh - 42px);
     position: fixed;
     top: 0;
@@ -3665,6 +3691,7 @@ a {
 .mes_img {
     border-radius: 10px;
     max-width: 100%;
+    max-height: 40vh;
     max-height: 40svh;
     image-rendering: -webkit-optimize-contrast;
 }
@@ -3950,6 +3977,7 @@ label[for="extensions_autoconnect"] {
     min-width: 450px;
     width: var(--sheldWidth);
     overflow-y: auto;
+    max-height: calc(100vh - 70px);
     max-height: calc(100svh - 70px);
     display: none;
     position: absolute;
@@ -3973,8 +4001,11 @@ label[for="extensions_autoconnect"] {
 }
 
 .fillLeft {
+    width: calc((100vw - var(--sheldWidth) - 2px) /2);
     width: calc((100svw - var(--sheldWidth) - 2px) /2);
+    height: calc(100vh - 42px);
     height: calc(100svh - 42px);
+    max-height: calc(100vh - 42px);
     max-height: calc(100svh - 42px);
     position: fixed;
     top: 0;
@@ -4411,6 +4442,7 @@ body.waifuMode #top-bar {
 }
 
 body.waifuMode #sheld {
+    height: 40vh;
     height: 40svh;
     top: calc(100% - 40vh);
     bottom: 0;
@@ -4597,7 +4629,9 @@ body.waifuMode .zoomed_avatar {
         top: 50px;
         aspect-ratio: 2 / 3;
         width: fit-content;
+        max-height: calc(60vh - 60px);
         max-height: calc(60svh - 60px);
+        max-width: 90vw;
         max-width: 90svw;
     }
 
@@ -4648,6 +4682,7 @@ body.waifuMode .zoomed_avatar {
     .drawer-content {
         min-width: unset;
         width: 100%;
+        max-height: calc(100vh - 45px);
         max-height: calc(100svh - 45px);
         position: fixed;
         left: 0;
@@ -4665,12 +4700,15 @@ body.waifuMode .zoomed_avatar {
     #top-bar {
         position: fixed;
         padding-top: 8px;
+        width: 100vw;
         width: 100svw;
     }
 
     #bg1,
     #bg_custom {
+        height: 100vh !important;
         height: 100svh !important;
+        width: 100vw !important;
         width: 100svw !important;
         background-position: center;
 
@@ -4684,6 +4722,7 @@ body.waifuMode .zoomed_avatar {
     /* ,
     #world_popup  */
         {
+        max-height: calc(100vh - 40px);
         max-height: calc(100svh - 40px);
         width: 100% !important;
         margin: 0 auto;
@@ -4742,6 +4781,7 @@ body.waifuMode .zoomed_avatar {
     #right-nav-panel,
     #left-nav-panel,
     #floatingPrompt {
+        height: calc(100vh - 45px);
         height: calc(100svh - 45px);
         min-width: 100% !important;
         width: 100% !important;
@@ -4805,7 +4845,9 @@ body.waifuMode .zoomed_avatar {
     }
 
     body.waifuMode #sheld {
+        height: 40vh;
         height: 40svh;
+        top: 60vh;
         top: 60svh;
         bottom: 0 !important;
     }
@@ -4829,13 +4871,16 @@ body.waifuMode .zoomed_avatar {
 
     body.waifuMode .zoomed_avatar {
         width: fit-content;
+        max-height: calc(60vh - 60px);
         max-height: calc(60svh - 60px);
+        max-width: 90vw;
         max-width: 90svw;
     }
 
     .scrollableInner {
         overflow-y: auto;
         overflow-x: hidden;
+        max-height: calc(100vh - 90px);
         max-height: calc(100svh - 90px);
     }
 
@@ -4861,7 +4906,9 @@ body.waifuMode .zoomed_avatar {
     body:not(.waifuMode) .zoomed_avatar {
 
         width: fit-content;
+        max-height: calc(60vh - 60px);
         max-height: calc(60svh - 60px);
+        max-width: 90vw;
         max-width: 90svw;
     }
 }
@@ -4926,7 +4973,9 @@ body.waifuMode .zoomed_avatar {
         max-width: unset;
         min-height: unset;
         max-height: unset;
+        width: 100vw;
         width: 100svw;
+        height: calc(100vh - 40px);
         height: calc(100svh - 40px);
         padding-right: max(env(safe-area-inset-right), 0px);
         padding-left: max(env(safe-area-inset-left), 0px);
@@ -4956,8 +5005,10 @@ body.waifuMode .zoomed_avatar {
         right: 0;
         top: 0;
         margin: 0 auto;
+        height: calc(100vh - 70px);
         height: calc(100svh - 70px);
         width: calc(100% - 5px);
+        max-height: calc(100vh - 70px);
         max-height: calc(100svh - 70px);
         max-width: calc(100% - 5px);
 
