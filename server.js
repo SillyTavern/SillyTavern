@@ -3401,6 +3401,27 @@ function createTokenizationHandler(getTokenizerFn) {
 app.post("/tokenize_llama", jsonParser, createTokenizationHandler(() => spp_llama));
 app.post("/tokenize_nerdstash", jsonParser, createTokenizationHandler(() => spp_nerd));
 app.post("/tokenize_nerdstash_v2", jsonParser, createTokenizationHandler(() => spp_nerd_v2));
+app.post("/tokenize_via_api", jsonParser, async function(request, response) {
+    if (!request.body) {
+        return response.sendStatus(400);
+    }
+    const text = request.body.text || '';
+    
+    try {
+        const args = {
+            body: JSON.stringify({"prompt": text}),
+            headers: { "Content-Type": "application/json" }
+        };
+
+        const data = await postAsync(api_server + "/v1/token-count", args);
+        console.log(data);
+        return response.send({ count: data['results'][0]['tokens'] });
+    } catch (error) {
+        console.log(error);
+        return response.send({ error: true });
+    }
+});
+
 
 // ** REST CLIENT ASYNC WRAPPERS **
 

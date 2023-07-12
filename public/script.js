@@ -581,6 +581,8 @@ function getTokenCount(str, padding = undefined) {
             return countTokensRemote('/tokenize_nerdstash', str, padding);
         case tokenizers.NERD2:
             return countTokensRemote('/tokenize_nerdstash_v2', str, padding);
+        case tokenizers.API:
+            return countTokensRemote('/tokenize_via_api', str, padding);
         default:
             console.warn("Unknown tokenizer type", tokenizerType);
             return Math.ceil(str.length / CHARACTERS_PER_TOKEN_RATIO) + padding;
