@@ -4894,6 +4894,10 @@ body.waifuMode .zoomed_avatar {
     .horde_multiple_hint {
         display: none;
     }
+
+    #bg_menu_content {
+        width: unset;
+    }
 }
 
 .lastInContext {
@@ -4918,6 +4922,8 @@ body.waifuMode .zoomed_avatar {
         max-width: 90vw;
         max-width: 90svw;
     }
+
+
 }
 
 @media screen and (max-width: 450px) {
