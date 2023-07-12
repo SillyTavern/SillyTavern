@@ -615,7 +615,6 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
     const lastMessage = chat[chat.length - 1];
 
     let queriedMessages;
-    console.debug(recallStrategy)
     if (lastMessage) {
         let queryBlob = "";
         if (chromaQueryLastOnly) {
@@ -626,7 +625,7 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
                 queryBlob += `${msg.mes}\n`
             }
         }
-        console.log("CHROMADB: Query text:", queryBlob);
+        console.debug("CHROMADB: Query text:", queryBlob);
 
         if (recallStrategy === 'multichat') {
             console.log("Utilizing multichat")
@@ -688,20 +687,23 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
                 memoryMsg += " {{message}}";
             }
 
-            // Reversed because we want the most important messages at the bottom.
+            // Reversed because we want the most 'important' messages at the bottom.
             let recalledMemories = queriedMessages.map(m => m.meta).filter(onlyUnique).map(JSON.parse).reverse();
             let tokenApprox = 0;
             let allMemoryBlob = "";
-            for (let msg of recalledMemories) {
-                let memoryBlob = memoryMsg.replace('{{name}}', msg.name).replace('{{message}}', msg.mes);
-                tokenApprox += (memoryBlob.length / CHARACTERS_PER_TOKEN_RATIO);
-                if (tokenApprox > chromaTokenLimit) {
-                    break;
+            let seenMemories = new Set(); // Why are there even duplicates in chromadb anyway?
+            for (const msg of recalledMemories) {
+                const memoryBlob = memoryMsg.replace('{{name}}', msg.name).replace('{{message}}', msg.mes);
+                const memoryTokens = (memoryBlob.length / CHARACTERS_PER_TOKEN_RATIO);
+                if (!seenMemories.has(memoryBlob) && tokenApprox + memoryTokens <= chromaTokenLimit) {
+                    allMemoryBlob += memoryBlob;
+                    tokenApprox += memoryTokens;
+                    seenMemories.add(memoryBlob);
                 }
-                allMemoryBlob += memoryBlob;
             }
 
-            const promptBlob = wrapperMsg.replace('{{memories}}', allMemoryBlob);
+            // No memories? No prompt.
+            const promptBlob = (tokenApprox == 0) ? "" : wrapperMsg.replace('{{memories}}', allMemoryBlob);
             console.debug("CHROMADB: prompt blob: %o", promptBlob);
             context.setExtensionPrompt(MODULE_NAME, promptBlob, extension_prompt_types.AFTER_SCENARIO);
         }

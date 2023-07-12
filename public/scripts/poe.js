@@ -279,7 +279,8 @@ async function generatePoe(type, finalPrompt, signal) {
     const suggestReplies = !isQuiet && !isImpersonate && !isContinue;
     let reply = '';
 
-    if (max_context > POE_TOKEN_LENGTH && poe_settings.bot !== 'a2_100k') {
+    const unchunkedBots = ['vizcacha', 'agouti', 'a2_100k', 'a2_2'];
+    if (max_context > POE_TOKEN_LENGTH && !unchunkedBots.includes(poe_settings.bot)) {
         console.debug('Prompt is too long, sending in chunks');
         const result = await sendChunkedMessage(finalPrompt, !isQuiet, suggestReplies, signal)
         reply = result.reply;

@@ -406,8 +406,8 @@ function RA_autoconnect(PrevApi) {
                 if (   (secret_state[SECRET_KEYS.OPENAI] && oai_settings.chat_completion_source == chat_completion_sources.OPENAI)
                     || (secret_state[SECRET_KEYS.CLAUDE] && oai_settings.chat_completion_source == chat_completion_sources.CLAUDE)
                     || (secret_state[SECRET_KEYS.SCALE] && oai_settings.chat_completion_source == chat_completion_sources.SCALE)
-                    || (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI && !oai_settings.use_openrouter)
-                    || (secret_state[SECRET_KEYS.OPENROUTER] && oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI && oai_settings.use_openrouter)
+                    || (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI)
+                    || (secret_state[SECRET_KEYS.OPENROUTER] && oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER)
                     ) {
                     $("#api_button_openai").click();
                 }

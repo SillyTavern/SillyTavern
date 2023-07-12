@@ -11,8 +11,7 @@ const regex_placement = {
     MD_DISPLAY: 0,
     USER_INPUT: 1,
     AI_OUTPUT: 2,
-    SYSTEM: 3,
-    SENDAS: 4
+    SLASH_COMMAND: 3
 }
 
 const regex_replace_strategy = {
@@ -46,7 +45,7 @@ function getRegexedString(rawString, placement, { characterOverride, isMarkdown 
     }
 
     extension_settings.regex.forEach((script) => {
-        if (script.markdownOnly && !isMarkdown) {
+        if ((script.markdownOnly && !isMarkdown) || (!script.markdownOnly && isMarkdown)) {
             return;
         }
 

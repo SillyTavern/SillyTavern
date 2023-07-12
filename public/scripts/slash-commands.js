@@ -19,6 +19,7 @@ import {
     system_message_types,
     replaceCurrentChat,
     setCharacterId,
+    generateQuietPrompt,
 } from "../script.js";
 import { humanizedDateTime } from "./RossAscends-mods.js";
 import { resetSelectedGroup } from "./group-chats.js";
@@ -60,6 +61,7 @@ class SlashCommandParser {
     }
 
     parse(text) {
+        const excludedFromRegex = ["sendas"]
         const firstSpace = text.indexOf(' ');
         const command = firstSpace !== -1 ? text.substring(1, firstSpace) : text.substring(1);
         const args = firstSpace !== -1 ? text.substring(firstSpace + 1) : '';
@@ -81,6 +83,14 @@ class SlashCommandParser {
             }
 
             unnamedArg = argsArray.slice(Object.keys(argObj).length).join(' ');
+
+            // Excluded commands format in their own function
+            if (!excludedFromRegex.includes(command)) {
+                unnamedArg = getRegexedString(
+                    unnamedArg,
+                    regex_placement.SLASH_COMMAND
+                );
+            }
         }
 
         if (this.commands[command]) {
@@ -114,6 +124,7 @@ parser.addCommand('bubble', setBubbleModeCallback, ['bubbles'], ' – sets the m
 parser.addCommand('flat', setFlatModeCallback, ['default'], ' – sets the message style to flat chat mode', true, true);
 parser.addCommand('continue', continueChatCallback, ['cont'], ' – continues the last message in the chat', true, true);
 parser.addCommand('go', goToCharacterCallback, ['char'], '<span class="monospace">(name)</span> – opens up a chat with the character by its name', true, true);
+parser.addCommand('sysgen', generateSystemMessage, [], '<span class="monospace">(prompt)</span> – generates a system message using a specified prompt', true, true);
 
 const NARRATOR_NAME_KEY = 'narrator_name';
 const NARRATOR_NAME_DEFAULT = 'System';
@@ -164,6 +175,23 @@ function continueChatCallback() {
     // Prevent infinite recursion
     $('#send_textarea').val('');
     $('#option_continue').trigger('click', { fromSlashCommand: true });
+}
+
+async function generateSystemMessage(_, prompt) {
+    $('#send_textarea').val('');
+
+    if (!prompt) {
+        console.warn('WARN: No prompt provided for /sysgen command');
+        toastr.warning('You must provide a prompt for the system message');
+        return;
+    }
+
+    // Generate and regex the output if applicable
+    toastr.info('Please wait', 'Generating...');
+    let message = await generateQuietPrompt(prompt);
+    message = getRegexedString(message, regex_placement.SLASH_COMMAND);
+
+    sendNarratorMessage(_, message);
 }
 
 function syncCallback() {
@@ -226,7 +254,9 @@ async function sendMessageAs(_, text) {
 
     const name = parts.shift().trim();
     let mesText = parts.join('\n').trim();
-    mesText = getRegexedString(mesText, regex_placement.SENDAS, { characterOverride: name });
+
+    // Requires a regex check after the slash command is pushed to output
+    mesText = getRegexedString(mesText, regex_placement.SLASH_COMMAND, { characterOverride: name });
 
     // Messages that do nothing but set bias will be hidden from the context
     const bias = extractMessageBias(mesText);
@@ -269,8 +299,6 @@ async function sendNarratorMessage(_, text) {
     if (!text) {
         return;
     }
-
-    text = getRegexedString(text, regex_placement.SYSTEM);
 
     const name = chat_metadata[NARRATOR_NAME_KEY] || NARRATOR_NAME_DEFAULT;
     // Messages that do nothing but set bias will be hidden from the context

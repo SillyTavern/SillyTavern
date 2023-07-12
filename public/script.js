@@ -74,6 +74,7 @@ import {
     formatInstructModePrompt,
     persona_description_positions,
     loadMovingUIState,
+    getCustomStoppingStrings,
 } from "./scripts/power-user.js";
 
 import {
@@ -90,6 +91,7 @@ import {
     getTokenCountOpenAI,
     chat_completion_sources,
     getTokenizerModel,
+    getChatCompletionModel,
 } from "./scripts/openai.js";
 
 import {
@@ -579,6 +581,8 @@ function getTokenCount(str, padding = undefined) {
             return countTokensRemote('/tokenize_nerdstash', str, padding);
         case tokenizers.NERD2:
             return countTokensRemote('/tokenize_nerdstash_v2', str, padding);
+        case tokenizers.API:
+            return countTokensRemote('/tokenize_via_api', str, padding);
         default:
             console.warn("Unknown tokenizer type", tokenizerType);
             return Math.ceil(str.length / CHARACTERS_PER_TOKEN_RATIO) + padding;
@@ -729,6 +733,8 @@ var css_mes_bg = $('<div class="mes"></div>').css("background");
 var css_send_form_display = $("<div id=send_form></div>").css("display");
 let generate_loop_counter = 0;
 const MAX_GENERATION_LOOPS = 5;
+
+var kobold_horde_model = "";
 
 let token;
 
@@ -1142,15 +1148,17 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
         let regexPlacement;
         if (isUser) {
             regexPlacement = regex_placement.USER_INPUT;
-        } else if (ch_name === "System") {
-            regexPlacement = regex_placement.SYSTEM;
         } else if (ch_name !== name2) {
-            regexPlacement = regex_placement.SENDAS;
+            regexPlacement = regex_placement.SLASH_COMMAND;
         } else {
             regexPlacement = regex_placement.AI_OUTPUT;
-        } 
+        }
 
-        mes = getRegexedString(mes, regexPlacement, { isMarkdown: true });
+        // Always override the character name
+        mes = getRegexedString(mes, regexPlacement, {
+            characterOverride: ch_name,
+            isMarkdown: true
+        });
     }
 
     if (power_user.auto_fix_generated_markdown) {
@@ -1229,6 +1237,7 @@ function getMessageFromTemplate({
     bookmarkLink,
     forceAvatar,
     timestamp,
+    extra,
 } = {}) {
     const mes = $('#message_template .mes').clone();
     mes.attr({
@@ -1243,7 +1252,7 @@ function getMessageFromTemplate({
     mes.find('.avatar img').attr('src', avatarImg);
     mes.find('.ch_name .name_text').text(characterName);
     mes.find('.mes_bias').html(bias);
-    mes.find('.timestamp').text(timestamp);
+    mes.find('.timestamp').text(timestamp).attr('title', `${extra?.api ? extra.api + ' - ' : ''}${extra?.model ?? ''}`);
     mes.find('.mesIDDisplay').text(`#${mesId}`);
     title && mes.attr('title', title);
     timerValue && mes.find('.mes_timer').attr('title', timerTitle).text(timerValue);
@@ -1294,6 +1303,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     var messageText = mes["mes"];
     const momentDate = timestampToMoment(mes.send_date);
     const timestamp = momentDate.isValid() ? momentDate.format('LL LT') : '';
+
 
     if (mes?.extra?.display_text) {
         messageText = mes.extra.display_text;
@@ -1363,6 +1373,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         bookmarkLink: bookmarkLink,
         forceAvatar: mes.force_avatar,
         timestamp: timestamp,
+        extra: mes.extra,
         ...formatGenerationTimer(mes.gen_started, mes.gen_finished),
     };
 
@@ -1440,7 +1451,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.mes_text').append(messageText);
         appendImageToMessage(mes, $("#chat").find(`[mesid="${count_view_mes - 1}"]`));
         $("#chat").find(`[mesid="${count_view_mes - 1}"]`).attr('title', title);
-        $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.timestamp').text(timestamp);
+        $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.timestamp').text(timestamp).attr('title', `${params.extra.api} - ${params.extra.model}`);
 
         if (mes.swipe_id == mes.swipes.length - 1) {
             $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.mes_timer').text(params.timerValue);
@@ -1616,6 +1627,11 @@ function getStoppingStrings(isImpersonate, addSpace) {
         if (power_user.instruct.output_sequence) {
             result.push(substituteParams(wrap(power_user.instruct.output_sequence), name1, name2));
         }
+    }
+
+    if (power_user.custom_stopping_strings) {
+        const customStoppingStrings = getCustomStoppingStrings();
+        result.push(...customStoppingStrings);
     }
 
     return addSpace ? result.map(x => `${x} `) : result;
@@ -1914,7 +1930,7 @@ class StreamingProcessor {
 
             if (this.type == 'swipe' && Array.isArray(chat[messageId]['swipes'])) {
                 chat[messageId]['swipes'][chat[messageId]['swipe_id']] = processedText;
-                chat[messageId]['swipe_info'][chat[messageId]['swipe_id']] = { 'send_date': chat[messageId]['send_date'], 'gen_started': chat[messageId]['gen_started'], 'gen_finished': chat[messageId]['gen_finished'] };
+                chat[messageId]['swipe_info'][chat[messageId]['swipe_id']] = { 'send_date': chat[messageId]['send_date'], 'gen_started': chat[messageId]['gen_started'], 'gen_finished': chat[messageId]['gen_finished'], 'extra': JSON.parse(JSON.stringify(chat[messageId]['extra'])) };
             }
 
             let formattedText = messageFormatting(
@@ -1996,7 +2012,7 @@ class StreamingProcessor {
         if (this.type !== 'swipe' && this.type !== 'impersonate') {
             if (Array.isArray(chat[messageId]['swipes']) && chat[messageId]['swipes'].length === 1 && chat[messageId]['swipe_id'] === 0) {
                 chat[messageId]['swipes'][0] = chat[messageId]['mes'];
-                chat[messageId]['swipe_info'][0] = { 'send_date': chat[messageId]['send_date'], 'gen_started': chat[messageId]['gen_started'], 'gen_finished': chat[messageId]['gen_finished'] };
+                chat[messageId]['swipe_info'][0] = { 'send_date': chat[messageId]['send_date'], 'gen_started': chat[messageId]['gen_started'], 'gen_finished': chat[messageId]['gen_finished'], 'extra': JSON.parse(JSON.stringify(chat[messageId]['extra'])) };
             }
         }
     }
@@ -2239,10 +2255,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             force_name2 = false;
         }
 
-        if (isInstruct) {
-            storyString = formatInstructStoryString(storyString, systemPrompt);
-        }
-
         //////////////////////////////////
 
         let chat2 = [];
@@ -2255,9 +2267,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
             chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct);
 
-            // Do not format the message for continuation
+            // Do not suffix the message for continuation
             if (i === 0 && type == 'continue') {
-                chat2[i] = coreChat[j].mes;
+                chat2[i] = chat2[i].slice(0, chat2[i].lastIndexOf(coreChat[j].mes) + coreChat[j].mes.length);
             }
         }
 
@@ -2289,6 +2301,16 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         const afterScenarioAnchor = getExtensionPrompt(extension_prompt_types.AFTER_SCENARIO);
         let zeroDepthAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, 0, ' ');
 
+        // Pre-format the World Info into the story string
+        if (main_api !== 'openai') {
+            storyString = worldInfoBefore + storyString + worldInfoAfter;
+        }
+
+        // Format the instruction string
+        if (isInstruct) {
+            storyString = formatInstructStoryString(storyString, systemPrompt);
+        }
+
         if (main_api === 'openai') {
             message_already_generated = ''; // OpenAI doesn't have multigen
             setOpenAIMessages(coreChat);
@@ -2310,7 +2332,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         let chatString = '';
         function getMessagesTokenCount() {
             const encodeString = [
-                worldInfoString,
                 storyString,
                 examplesString,
                 chatString,
@@ -2475,6 +2496,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     const name = is_pygmalion ? 'You' : name1;
                     const quietAppend = isInstruct ? formatInstructModeChat(name, quiet_prompt, false, true, false, name1, name2) : `\n${name}: ${quiet_prompt}`;
                     mesSendString += quietAppend;
+                    // Bail out early
+                    return mesSendString;
                 }
 
                 // Get instruct mode line
@@ -2521,7 +2544,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 console.debug('---checking Prompt size');
                 setPromtString();
                 const prompt = [
-                    worldInfoString,
                     storyString,
                     mesExmString,
                     mesSendString,
@@ -2557,9 +2579,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             mesSendString = adjustChatsSeparator(mesSendString);
 
             let finalPromt =
-                worldInfoBefore +
                 storyString +
-                worldInfoAfter +
                 afterScenarioAnchor +
                 mesExmString +
                 mesSendString +
@@ -2656,14 +2676,12 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 ...thisPromptBits[currentArrayEntry],
                 rawPrompt: generate_data.prompt,
                 mesId: getNextMessageId(type),
-                worldInfoBefore: worldInfoBefore,
                 allAnchors: allAnchors,
                 summarizeString: (extension_prompts['1_memory']?.value || ''),
                 authorsNoteString: (extension_prompts['2_floating_prompt']?.value || ''),
                 smartContextString: (extension_prompts['chromadb']?.value || ''),
                 worldInfoString: worldInfoString,
                 storyString: storyString,
-                worldInfoAfter: worldInfoAfter,
                 afterScenarioAnchor: afterScenarioAnchor,
                 examplesString: examplesString,
                 mesSendString: mesSendString,
@@ -2676,6 +2694,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 this_max_context: this_max_context,
                 padding: power_user.token_padding,
                 main_api: main_api,
+                instruction: isInstruct ? substituteParams(power_user.prefer_character_prompt && systemPrompt ? systemPrompt : power_user.instruct.system_prompt) : '',
+                userPersona: (power_user.persona_description || ''),
             };
 
             thisPromptBits = additionalPromptStuff;
@@ -2755,6 +2775,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     //const getData = await response.json();
                     let getMessage = extractMessageFromData(data);
                     let title = extractTitleFromData(data);
+                    kobold_horde_model = title;
 
                     //Pygmalion run again
                     // to make it continue generating so long as it's under max_amount and hasn't signaled
@@ -3157,12 +3178,13 @@ function promptItemize(itemizedPrompts, requestedMesId) {
     var authorsNoteStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].authorsNoteString);
     var smartContextStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].smartContextString);
     var afterScenarioAnchorTokens = getTokenCount(itemizedPrompts[thisPromptSet].afterScenarioAnchor);
-    var zeroDepthAnchorTokens = getTokenCount(itemizedPrompts[thisPromptSet].afterScenarioAnchor);
+    var zeroDepthAnchorTokens = getTokenCount(itemizedPrompts[thisPromptSet].zeroDepthAnchor);
     var worldInfoStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].worldInfoString);
     var thisPrompt_max_context = itemizedPrompts[thisPromptSet].this_max_context;
     var thisPrompt_padding = itemizedPrompts[thisPromptSet].padding;
     var promptBiasTokens = getTokenCount(itemizedPrompts[thisPromptSet].promptBias);
     var this_main_api = itemizedPrompts[thisPromptSet].main_api;
+    var userPersonaStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].userPersona);
 
     if (this_main_api == 'openai') {
         //for OAI API
@@ -3170,7 +3192,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
 
         //var finalPromptTokens = itemizedPrompts[thisPromptSet].oaiTotalTokens;
         var oaiStartTokens = itemizedPrompts[thisPromptSet].oaiStartTokens;
-        var oaiPromptTokens = itemizedPrompts[thisPromptSet].oaiPromptTokens;
+        var oaiPromptTokens = itemizedPrompts[thisPromptSet].oaiPromptTokens - worldInfoStringTokens - afterScenarioAnchorTokens;
         var ActualChatHistoryTokens = itemizedPrompts[thisPromptSet].oaiConversationTokens;
         var examplesStringTokens = itemizedPrompts[thisPromptSet].oaiExamplesTokens;
         var oaiBiasTokens = itemizedPrompts[thisPromptSet].oaiBiasTokens;
@@ -3198,14 +3220,16 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         //for non-OAI APIs
         //console.log('-- Counting non-OAI Tokens');
         var finalPromptTokens = getTokenCount(itemizedPrompts[thisPromptSet].finalPromt);
-        var storyStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].storyString);
+        var storyStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].storyString) - worldInfoStringTokens;
         var examplesStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].examplesString);
         var mesSendStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].mesSendString)
-        var ActualChatHistoryTokens = mesSendStringTokens - allAnchorsTokens + power_user.token_padding;
+        var ActualChatHistoryTokens = mesSendStringTokens - (allAnchorsTokens - afterScenarioAnchorTokens)  + power_user.token_padding;
+        var instructionTokens = getTokenCount(itemizedPrompts[thisPromptSet].instruction);
 
         var totalTokensInPrompt =
             storyStringTokens +     //chardefs total
             worldInfoStringTokens +
+            examplesStringTokens + // example messages
             ActualChatHistoryTokens +  //chat history
             allAnchorsTokens +      // AN and/or legacy anchors
             //afterScenarioAnchorTokens +       //only counts if AN is set to 'after scenario'
@@ -3240,14 +3264,16 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         //console.log('-- calling popup for OAI tokens');
         callPopup(
             `
-        <h3>Prompt Itemization</h3>
+        <h3 class="flex-container justifyCenter alignitemscenter">
+            Prompt Itemization
+            <div id="showRawPrompt" class="fa-solid fa-square-poll-horizontal menu_button"></div>
+        </h3>
         Tokenizer: ${selectedTokenizer}<br>
         API Used: ${this_main_api}<br>
         <span class="tokenItemizingSubclass">
             Only the white numbers really matter. All numbers are estimates.
             Grey color items may not have been included in the context due to certain prompt format settings.
         </span>
-        <div id="showRawPrompt" class="fa-solid fa-square-poll-horizontal menu_button"></div>
         <hr>
         <div class="justifyLeft">
             <div class="flex-container">
@@ -3308,6 +3334,10 @@ function promptItemize(itemizedPrompts, requestedMesId) {
                             <div  class=" flex1 tokenItemizingSubclass">-- Examples:</div>
                             <div  class="tokenItemizingSubclass"> ${examplesStringTokens}</div>
                         </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- User Persona:</div>
+                            <div  class="tokenItemizingSubclass"> ${userPersonaStringTokens}</div>
+                        </div>
                     </div>
                     <div class="wide100p flex-container">
                         <div  class="flex1" style="color: gold;">World Info:</div>
@@ -3359,14 +3389,16 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         //console.log('-- calling popup for non-OAI tokens');
         callPopup(
             `
-        <h3>Prompt Itemization</h3>
+        <h3 class="flex-container justifyCenter alignitemscenter">
+            Prompt Itemization
+            <div id="showRawPrompt" class="fa-solid fa-square-poll-horizontal menu_button"></div>
+        </h3>
         Tokenizer: ${selectedTokenizer}<br>
         API Used: ${this_main_api}<br>
         <span class="tokenItemizingSubclass">
             Only the white numbers really matter. All numbers are estimates.
             Grey color items may not have been included in the context due to certain prompt format settings.
         </span>
-        <div id="showRawPrompt" class="fa-solid fa-square-poll-horizontal menu_button"></div>
         <hr>
         <div class="justifyLeft">
             <div class="flex-container">
@@ -3398,6 +3430,14 @@ function promptItemize(itemizedPrompts, requestedMesId) {
                         <div class="flex-container ">
                             <div  class=" flex1 tokenItemizingSubclass">-- Examples:</div>
                             <div  class="tokenItemizingSubclass"> ${examplesStringTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- User Persona:</div>
+                            <div  class="tokenItemizingSubclass"> ${userPersonaStringTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- System Prompt (Instruct):</div>
+                            <div class="tokenItemizingSubclass"> ${instructionTokens}</div>
                         </div>
                     </div>
                     <div class="wide100p flex-container">
@@ -3439,7 +3479,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
                 </div>
                     <!-- <div  class="flex1">finalPromt:</div><div  class=""> ${finalPromptTokens}</div> -->
                 <div class="flex-container wide100p">
-                    <div  class="flex1">Max Context:</div><div  class="">${thisPrompt_max_context}</div>
+                    <div  class="flex1">Max Context (Context Size - Response Length):</div><div  class="">${thisPrompt_max_context}</div>
                 </div>
                 <div class="flex-container wide100p">
                     <div  class="flex1">- Padding:</div><div  class=""> ${thisPrompt_padding}</div>
@@ -3660,7 +3700,6 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
     const generationFinished = new Date();
     const img = extractImageFromMessage(getMessage);
     getMessage = img.getMessage;
-
     if (type === 'swipe') {
         chat[chat.length - 1]['swipes'].length++;
         if (chat[chat.length - 1]['swipe_id'] === chat[chat.length - 1]['swipes'].length - 1) {
@@ -3669,6 +3708,8 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
             chat[chat.length - 1]['gen_started'] = generation_started;
             chat[chat.length - 1]['gen_finished'] = generationFinished;
             chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
+            chat[chat.length - 1]['extra']['api'] = main_api;
+            chat[chat.length - 1]['extra']['model'] = getGeneratingModel();
             addOneMessage(chat[chat.length - 1], { type: 'swipe' });
         } else {
             chat[chat.length - 1]['mes'] = getMessage;
@@ -3680,6 +3721,8 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         chat[chat.length - 1]['gen_started'] = generation_started;
         chat[chat.length - 1]['gen_finished'] = generationFinished;
         chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
+        chat[chat.length - 1]["extra"]["api"] = main_api;
+        chat[chat.length - 1]["extra"]["model"] = getGeneratingModel();
         addOneMessage(chat[chat.length - 1], { type: 'swipe' });
     } else if (type === 'appendFinal') {
         console.debug("Trying to appendFinal.")
@@ -3688,6 +3731,8 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         chat[chat.length - 1]['gen_started'] = generation_started;
         chat[chat.length - 1]['gen_finished'] = generationFinished;
         chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
+        chat[chat.length - 1]["extra"]["api"] = main_api;
+        chat[chat.length - 1]["extra"]["model"] = getGeneratingModel();
         addOneMessage(chat[chat.length - 1], { type: 'swipe' });
 
     } else {
@@ -3698,6 +3743,8 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         chat[chat.length - 1]['is_user'] = false;
         chat[chat.length - 1]['is_name'] = this_mes_is_name;
         chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
+        chat[chat.length - 1]["extra"]["api"] = main_api;
+        chat[chat.length - 1]["extra"]["model"] = getGeneratingModel();
         if (power_user.trim_spaces) {
             getMessage = getMessage.trim();
         }
@@ -3721,18 +3768,29 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         saveImageToMessage(img, chat[chat.length - 1]);
         addOneMessage(chat[chat.length - 1]);
     }
+
     const item = chat[chat.length - 1];
-    if (item['swipe_info'] === undefined) {
-        item['swipe_info'] = [];
+    if (item["swipe_info"] === undefined) {
+        item["swipe_info"] = [];
     }
-    if (item['swipe_id'] !== undefined) {
-        item['swipes'][item['swipes'].length - 1] = item['mes'];
-        item['swipe_info'][item['swipes'].length - 1] = { 'send_date': item['send_date'], 'gen_started': item['gen_started'], 'gen_finished': item['gen_finished'] };
+    if (item["swipe_id"] !== undefined) {
+        item["swipes"][item["swipes"].length - 1] = item["mes"];
+        item["swipe_info"][item["swipes"].length - 1] = {
+            send_date: item["send_date"],
+            gen_started: item["gen_started"],
+            gen_finished: item["gen_finished"],
+            extra: JSON.parse(JSON.stringify(item["extra"])),
+        };
     } else {
-        item['swipe_id'] = 0;
-        item['swipes'] = [];
-        item['swipes'][0] = chat[chat.length - 1]['mes'];
-        item['swipe_info'][0] = { 'send_date': chat[chat.length - 1]['send_date'], 'gen_started': chat[chat.length - 1]['gen_started'], 'gen_finished': chat[chat.length - 1]['gen_finished'] };
+        item["swipe_id"] = 0;
+        item["swipes"] = [];
+        item["swipes"][0] = chat[chat.length - 1]["mes"];
+        item["swipe_info"][0] = {
+            send_date: chat[chat.length - 1]["send_date"],
+            gen_started: chat[chat.length - 1]["gen_started"],
+            gen_finished: chat[chat.length - 1]["gen_finished"],
+            extra: JSON.parse(JSON.stringify(chat[chat.length - 1]["extra"])),
+        };
     }
     return { type, getMessage };
 }
@@ -3745,6 +3803,31 @@ function saveImageToMessage(img, mes) {
         mes.extra.image = img.image;
         mes.extra.title = img.title;
     }
+}
+
+function getGeneratingModel(mes) {
+    let model = '';
+    switch (main_api) {
+        case 'kobold':
+            model = online_status;
+            break;
+        case 'novel':
+            model = nai_settings.model_novel;
+            break;
+        case 'openai':
+            model = getChatCompletionModel();
+            break;
+        case 'textgenerationwebui':
+            model = online_status;
+            break;
+        case 'koboldhorde':
+            model = kobold_horde_model;
+            break;
+        case 'poe':
+            model = poe_settings.bot;
+            break;
+    }
+    return model
 }
 
 function extractImageFromMessage(getMessage) {
@@ -4989,24 +5072,23 @@ function updateMessage(div) {
     const mesBlock = div.closest(".mes_block");
     let text = mesBlock.find(".edit_textarea").val();
     const mes = chat[this_edit_mes_id];
+
     let regexPlacement;
-    if (mes.is_name && !mes.is_user && mes.name !== name2) {
-        regexPlacement = regex_placement.SENDAS;
-    } else if (mes.is_name && !mes.is_user) {
-        regexPlacement = regex_placement.AI_OUTPUT;
-    } else if (mes.is_name && mes.is_user) {
+    if (mes.is_name && mes.is_user) {
         regexPlacement = regex_placement.USER_INPUT;
-    } else if (mes.extra?.type === "narrator") {
-        regexPlacement = regex_placement.SYSTEM;
+    } else if (mes.is_name && mes.name === name2) {
+        regexPlacement = regex_placement.AI_OUTPUT;
+    } else if (mes.is_name && mes.name !== name2 || mes.extra?.type === "narrator") {
+        regexPlacement = regex_placement.SLASH_COMMAND;
     }
 
+    // Ignore character override if sent as system
     text = getRegexedString(
-        text,
-        regexPlacement,
-        {
-            characterOverride: regexPlacement === regex_placement.SENDAS ? mes.name : undefined
-        }
+        text, 
+        regexPlacement, 
+        { characterOverride: mes.extra?.type === "narrator" ? undefined : mes.name }
     );
+
 
     if (power_user.trim_spaces) {
         text = text.trim();
@@ -5479,7 +5561,7 @@ function onScenarioOverrideRemoveClick() {
     $(this).closest('.scenario_override').find('.chat_scenario').val('').trigger('input');
 }
 
-function callPopup(text, type, inputValue = '', okButton) {
+function callPopup(text, type, inputValue = '', { okButton, rows } = {}) {
     if (type) {
         popup_type = type;
     }
@@ -5507,6 +5589,7 @@ function callPopup(text, type, inputValue = '', okButton) {
     }
 
     $("#dialogue_popup_input").val(inputValue);
+    $("#dialogue_popup_input").attr("rows", rows ?? 1);
 
     if (popup_type == 'input') {
         $("#dialogue_popup_input").css("display", "block");
@@ -6237,6 +6320,7 @@ function swipe_left() {      // when we swipe left..but no generation.
         const this_mes_block_height = this_mes_block[0].scrollHeight;
         chat[chat.length - 1]['mes'] = chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipe_id']];
         chat[chat.length - 1]['send_date'] = chat[chat.length - 1].swipe_info[chat[chat.length - 1]['swipe_id']]?.send_date || chat[chat.length - 1].send_date; //load the last mes box with the latest generation
+        chat[chat.length - 1]['extra'] = JSON.parse(JSON.stringify(chat[chat.length - 1].swipe_info[chat[chat.length - 1]['swipe_id']]?.extra || chat[chat.length - 1].extra));
 
         if (chat[chat.length - 1].extra) {
             // if message has memory attached - remove it to allow regen
@@ -6352,7 +6436,8 @@ const swipe_right = () => {
         chat[chat.length - 1]['swipes'] = [];                         // empty the array
         chat[chat.length - 1]['swipe_info'] = [];
         chat[chat.length - 1]['swipes'][0] = chat[chat.length - 1]['mes'];  //assign swipe array with last message from chat
-        chat[chat.length - 1]['swipe_info'][0] = { 'send_date': chat[chat.length - 1]['send_date'], 'gen_started': chat[chat.length - 1]['gen_started'], 'gen_finished': chat[chat.length - 1]['gen_finished'] }; //assign swipe info array with last message from chat
+        chat[chat.length - 1]['swipe_info'][0] = { 'send_date': chat[chat.length - 1]['send_date'], 'gen_started': chat[chat.length - 1]['gen_started'], 'gen_finished': chat[chat.length - 1]['gen_finished'], 'extra': JSON.parse(JSON.stringify(chat[chat.length - 1]['extra'])) };
+        //assign swipe info array with last message from chat
     }
     chat[chat.length - 1]['swipe_id']++;                                      //make new slot in array
     if (chat[chat.length - 1].extra) {
@@ -6376,6 +6461,7 @@ const swipe_right = () => {
     } else if (parseInt(chat[chat.length - 1]['swipe_id']) < chat[chat.length - 1]['swipes'].length) { //otherwise, if the id is less than the number of swipes
         chat[chat.length - 1]['mes'] = chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipe_id']]; //load the last mes box with the latest generation
         chat[chat.length - 1]['send_date'] = chat[chat.length - 1]?.swipe_info[chat[chat.length - 1]['swipe_id']]?.send_date || chat[chat.length - 1]['send_date']; //update send date
+        chat[chat.length - 1]['extra'] = JSON.parse(JSON.stringify(chat[chat.length - 1].swipe_info[chat[chat.length - 1]['swipe_id']]?.extra || chat[chat.length - 1].extra));
         run_swipe_right = true; //then prepare to do normal right swipe to show next message
     }
 

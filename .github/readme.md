@@ -65,7 +65,7 @@ Get in touch with the developers directly:
 * Chat bookmarks / branching (duplicates the dialogue in its current state)
 * Advanced KoboldAI / TextGen generation settings with a lot of community-made presets
 * World Info support: create rich lore or save tokens on your character card
-* Window AI browser extension support (run models like Claude, GPT 4): https://windowai.io/
+* Window AI browser extension support (run models like Claude, GPT 4): <https://windowai.io/>
 * [Oobabooga's TextGen WebUI](https://github.com/oobabooga/text-generation-webui) API connection
 * [AI Horde](https://horde.koboldai.net/) connection
 * [Poe.com](https://poe.com) (ChatGPT / Claude) connection
@@ -224,7 +224,7 @@ If you (or someone else) want to connect to your hosted ST while not being on th
 
 * While using the ST-hosting device, access [this page](https://whatismyipaddress.com/) and look for for `IPv4`. This is what you would use to connect from the remote device.
 
-### 3. Connect the remote device to the ST host machine.
+### 3. Connect the remote device to the ST host machine
 
 Whatever IP you ended up with for your situation, you will put that IP address and port number into the remote device's web browser.
 
@@ -303,6 +303,8 @@ GNU Affero General Public License for more details.**
 * KoboldAI Presets from KAI Lite: <https://lite.koboldai.net/>
 * Noto Sans font by Google (OFL license)
 * Icon theme by Font Awesome <https://fontawesome.com> (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License)
-* AI Horde client library by ZeldaFan0225: https://github.com/ZeldaFan0225/ai_horde
+* AI Horde client library by ZeldaFan0225: <https://github.com/ZeldaFan0225/ai_horde>
 * Linux startup script by AlpinDale
 * Thanks paniphons for providing a FAQ document
+* 10K Discord Users Celebratory Background by @kallmeflocc
+* Korean translation by @doloroushyeonse
