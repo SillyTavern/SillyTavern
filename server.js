@@ -1031,7 +1031,7 @@ app.post("/editcharacter", urlencodedParser, async function (request, response) 
  * Handle a POST request to edit a character attribute.
  *
  * This function reads the character data from a file, updates the specified attribute,
- * and writes the updated data back to the file. 
+ * and writes the updated data back to the file.
  *
  * @param {Object} request - The HTTP request object.
  * @param {Object} response - The HTTP response object.
@@ -1069,7 +1069,7 @@ app.post("/editcharacterattribute", jsonParser, async function (request, respons
             charaWrite(avatarPath, char, (request.body.avatar_url).replace('.png', ''), response, 'Character saved');
         }).catch((err) => {
             console.error('An error occured, character edit invalidated.', err);
-        } );   
+        } );
     }
     catch {
         console.error('An error occured, character edit invalidated.');
@@ -3323,6 +3323,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
             "presence_penalty": request.body.presence_penalty,
             "frequency_penalty": request.body.frequency_penalty,
             "top_p": request.body.top_p,
+            "top_k": request.body.top_k,
             "stop": request.body.stop,
             "logit_bias": request.body.logit_bias
         },
@@ -3456,7 +3457,7 @@ app.post("/tokenize_via_api", jsonParser, async function(request, response) {
         return response.sendStatus(400);
     }
     const text = request.body.text || '';
-    
+
     try {
         const args = {
             body: JSON.stringify({"prompt": text}),

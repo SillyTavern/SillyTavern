@@ -741,7 +741,6 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
         "frequency_penalty": parseFloat(oai_settings.freq_pen_openai),
         "presence_penalty": parseFloat(oai_settings.pres_pen_openai),
         "top_p": parseFloat(oai_settings.top_p_openai),
-        "top_k": parseFloat(oai_settings.top_k_openai),
         "max_tokens": oai_settings.openai_max_tokens,
         "stream": stream,
         "logit_bias": logit_bias,
@@ -755,10 +754,12 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
 
     if (isClaude) {
         generate_data['use_claude'] = true;
+        generate_data['top_k'] = parseFloat(oai_settings.top_k_openai);
     }
 
     if (isOpenRouter) {
         generate_data['use_openrouter'] = true;
+        generate_data['top_k'] = parseFloat(oai_settings.top_k_openai);
     }
 
     if (isScale) {
@@ -1749,7 +1750,7 @@ async function onModelChange() {
         } else {
             const model = model_list.find(m => m.id == oai_settings.openrouter_model);
             if (model?.context_length) {
-                $('#openai_max_context').attr('max', model.context_length - 1); // waiting for openrouter to fix this
+                $('#openai_max_context').attr('max', model.context_length);
             } else {
                 $('#openai_max_context').attr('max', max_4k); // placeholder
             }
