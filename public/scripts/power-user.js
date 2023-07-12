@@ -75,6 +75,7 @@ const tokenizers = {
     LLAMA: 3,
     NERD: 4,
     NERD2: 5,
+    API: 6,
 }
 
 const send_on_enter_options = {
