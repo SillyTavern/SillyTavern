@@ -1,4 +1,4 @@
-import { callPopup, eventSource, event_types, saveSettings, saveSettingsDebounced } from "../script.js";
+import { callPopup, eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders } from "../script.js";
 import { isSubsetOf, debounce } from "./utils.js";
 export {
     getContext,
@@ -376,28 +376,41 @@ function addExtensionScript(name, manifest) {
     return Promise.resolve();
 }
 
-function showExtensionsDetails() {
-    let html = '<h3>Modules provided by your Extensions API:</h3>';
-    html += modules.length ? `<p>${DOMPurify.sanitize(modules.join(', '))}</p>` : '<p class="failure">Not connected to the API!</p>';
-    html += '<h3>Available extensions:</h3>';
 
-    Object.entries(manifests).sort((a, b) => a[1].loading_order - b[1].loading_order).forEach(extension => {
+
+
+function showExtensionsDetails() {
+    let htmlDefault = '<h3>Default Extensions:</h3>';
+    let htmlExternal = '<h3>External Extensions:</h3>';
+
+    Object.entries(manifests).sort((a, b) => a[1].loading_order - b[1].loading_order).forEach(extension => async () =>{
         const name = extension[0];
         const manifest = extension[1];
         const isActive = activeExtensions.has(name);
         const isDisabled = extension_settings.disabledExtensions.includes(name);
+        const isExternal = name.startsWith('third-party');
 
         const titleClass = isActive ? "extension_enabled" : isDisabled ? "extension_disabled" : "extension_missing";
-        const iconString = isActive ? "\u2705" : isDisabled ? "\u274C" : "";
+        const checkboxClass = isDisabled ? "checkbox_disabled" : "";
 
-        let toggleElement = `<span title="Cannot enable extension" data-name="${name}" class="extension_missing">Unavailable</span>`;
-        if (isActive) {
-            toggleElement = `<a href="javascript:void" title="Click to disable" data-name="${name}" class="toggle_disable">Disable</a>`;
+        const displayName = manifest.display_name;
+        // if external, get the version from a requst to get_extension_verion
+        let displayVersion = manifest.version ? ` v${manifest.version}` : "";
+        if(isExternal) {
+            let data = await getExtensionVersion(name.replace('third-party', ''));
+            let branch = data.currentBranchName;
+            let commitHash = data.currentCommitHash;
+            displayVersion = ` v${branch}-${commitHash}`;
         }
-        else if (isDisabled) {
-            toggleElement = `<a href="javascript:void" title="Click to enable" data-name="${name}" class="toggle_enable">Enable</a>`;
+
+
+        let toggleElement = `<input type="checkbox" title="Cannot enable extension" data-name="${name}" class="extension_missing ${checkboxClass}" disabled>`;
+        if (isActive || isDisabled) {
+            toggleElement = `<input type="checkbox" title="Click to toggle" data-name="${name}" class="${isActive ? 'toggle_disable' : 'toggle_enable'} ${checkboxClass}" ${isActive ? 'checked' : ''}>`;
         }
-        html += `<hr><h4>${iconString} <span class="${titleClass}">${DOMPurify.sanitize(manifest.display_name)}</span> <span style="float:right;">${toggleElement}<span></h4>`;
+
+        let updateButton = isExternal ? `<button class="btn_update" data-name= ${name.replace('third-party', '')} + ">Update</button>` : '';
+        let extensionHtml = `<hr><h4><span class="${titleClass}">${DOMPurify.sanitize(displayName)}${displayVersion}</span> <span style="float:right;">${toggleElement}<span>${updateButton}</h4>`;
 
         if (isActive) {
             if (Array.isArray(manifest.optional)) {
@@ -405,7 +418,7 @@ function showExtensionsDetails() {
                 modules.forEach(x => optional.delete(x));
                 if (optional.size > 0) {
                     const optionalString = DOMPurify.sanitize([...optional].join(', '));
-                    html += `<p>Optional modules: <span class="optional">${optionalString}</span></p>`;
+                    extensionHtml += `<p>Optional modules: <span class="optional">${optionalString}</span></p>`;
                 }
             }
         }
@@ -413,12 +426,68 @@ function showExtensionsDetails() {
             const requirements = new Set(manifest.requires);
             modules.forEach(x => requirements.delete(x));
             const requirementsString = DOMPurify.sanitize([...requirements].join(', '));
-            html += `<p>Missing modules: <span class="failure">${requirementsString}</span></p>`
+            extensionHtml += `<p>Missing modules: <span class="failure">${requirementsString}</span></p>`
+        }
+
+        // Append the HTML to the correct section
+        if (isExternal) {
+            htmlExternal += extensionHtml;
+        } else {
+            htmlDefault += extensionHtml;
         }
     });
 
+    let html = '<h3>Modules provided by your Extensions API:</h3>';
+    html += modules.length ? `<p>${DOMPurify.sanitize(modules.join(', '))}</p>` : '<p class="failure">Not connected to the API!</p>';
+    html += htmlDefault + htmlExternal;
+
     callPopup(`<div class="extensions_info">${html}</div>`, 'text');
 }
+
+
+
+async function onUpdateClick() {
+    const extensionName = $(this).data('name');
+    try {
+        const response = await fetch('/update_extension', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ extensionName })
+        });
+
+        console.log('Response', response);
+        const data = await response.json();
+        console.log('Data', data);
+        if (data.isUpToDate) {
+            console.log('Extension is up to date');
+            toastr.success('Extension is already up to date');
+        } else {
+            console.log('Extension updated');
+            toastr.success(`Extension updated to ${data.shortCommitHash}`);
+        }
+        $(this).text(data.shortCommitHash);
+        console.log(data);
+    } catch (error) {
+        console.error('Error:', error);
+    }
+};
+
+async function getExtensionVersion(extensionName) {
+    try {
+        const response = await fetch('/get_extension_version', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ extensionName })
+        });
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+
 
 async function loadExtensionSettings(settings) {
     if (settings.extension_settings) {
@@ -463,4 +532,5 @@ $(document).ready(async function () {
     $("#extensions_details").on('click', showExtensionsDetails);
     $(document).on('click', '.toggle_disable', onDisableExtensionClick);
     $(document).on('click', '.toggle_enable', onEnableExtensionClick);
+    $(document).on('click', '.btn_update', onUpdateClick);
 });
