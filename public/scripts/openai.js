@@ -94,6 +94,7 @@ const claude_100k_max = 99000;
 const unlocked_max = 100 * 1024;
 const oai_max_temp = 2.0;
 const claude_max_temp = 1.0;
+const openrouter_website_model = 'OR_Website';
 
 let biasCache = undefined;
 let model_list = [];
@@ -133,7 +134,7 @@ const default_settings = {
     openai_model: 'gpt-3.5-turbo',
     claude_model: 'claude-instant-v1',
     windowai_model: '',
-    openrouter_model: 'openai/gpt-3.5-turbo',
+    openrouter_model: openrouter_website_model,
     jailbreak_system: false,
     reverse_proxy: '',
     legacy_streaming: false,
@@ -168,7 +169,7 @@ const oai_settings = {
     openai_model: 'gpt-3.5-turbo',
     claude_model: 'claude-instant-v1',
     windowai_model: '',
-    openrouter_model: 'openai/gpt-3.5-turbo',
+    openrouter_model: openrouter_website_model,
     jailbreak_system: false,
     reverse_proxy: '',
     legacy_streaming: false,
@@ -678,7 +679,7 @@ function getChatCompletionModel() {
         case chat_completion_sources.SCALE:
             return '';
         case chat_completion_sources.OPENROUTER:
-            return oai_settings.openrouter_model;
+            return oai_settings.openrouter_model !== openrouter_website_model ? oai_settings.openrouter_model : null;
         default:
             throw new Error(`Unknown chat completion source: ${oai_settings.chat_completion_source}`);
     }
@@ -689,6 +690,7 @@ function saveModelList(data) {
 
     if (oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER) {
         $('#model_openrouter_select').empty();
+        $('#model_openrouter_select').append($('<option>', { value: openrouter_website_model, text: 'Use OpenRouter website setting' }));
         model_list.forEach((model) => {
             const selected = model.id == oai_settings.openrouter_model;
             $('#model_openrouter_select').append(
@@ -697,10 +699,8 @@ function saveModelList(data) {
                     text: model.id,
                     selected: selected,
                 }));
-            if (selected) {
-                $('#model_openrouter_select').val(model.id).trigger('change');
-            }
         });
+        $('#model_openrouter_select').val(oai_settings.openrouter_model).trigger('change');
     }
 
     // TODO Add ability to select OpenAI model from endpoint-provided list
@@ -1752,7 +1752,7 @@ async function onModelChange() {
             if (model?.context_length) {
                 $('#openai_max_context').attr('max', model.context_length);
             } else {
-                $('#openai_max_context').attr('max', max_4k); // placeholder
+                $('#openai_max_context').attr('max', max_8k);
             }
         }
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);

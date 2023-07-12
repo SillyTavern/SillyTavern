@@ -3295,7 +3295,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
         return response_generate_openai.status(401).send({ error: true });
     }
 
-    const isTextCompletion = request.body.model.startsWith('text-') || request.body.model.startsWith('code-');
+    const isTextCompletion = Boolean(request.body.model && (request.body.model.startsWith('text-') || request.body.model.startsWith('code-')));
     const textPrompt = isTextCompletion ? convertChatMLPrompt(request.body.messages) : '';
     const endpointUrl = isTextCompletion ? `${api_url}/completions` : `${api_url}/chat/completions`;
 
