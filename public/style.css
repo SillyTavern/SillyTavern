@@ -47,7 +47,8 @@
     --SmartThemeShadowColor: rgba(0, 0, 0, 0.5);
 
 
-    --sheldWidth: 800px;
+    --sheldWidth: 50vw;
+    /* 800px; */
     /*base variable calculated in rems*/
     --fontScale: 1;
     --mainFontSize: calc(var(--fontScale) * 1rem);
@@ -356,7 +357,7 @@ hr {
     height: calc(100vh - 42px);
     height: calc(100svh - 42px);
     overflow-x: hidden;
-    max-width: 800px;
+    /* max-width: 50vw; */
     position: absolute;
     left: calc((100vw - var(--sheldWidth))/2);
     left: calc((100svw - var(--sheldWidth))/2);
@@ -3883,13 +3884,14 @@ label[for="extensions_autoconnect"] {
     margin: 0 auto;
     padding-top: 5px;
     height: 40px;
-    max-width: var(--sheldWidth);
+    /* max-width: var(--sheldWidth); */
     justify-content: center;
     display: grid;
     grid-template-columns: 10% 10% 10% 10% 10% 10% 10% 10% 10%;
     z-index: 3000;
     position: relative;
     grid-gap: 1%;
+    width: var(--sheldWidth);
 
 }
 
@@ -4353,9 +4355,10 @@ body.bubblechat .mes[is_user="true"] {
     background-color: var(--SmartThemeUserMesBlurTintColor);
 }
 
-body.w1000px #sheld {
+/* body.w1000px #sheld {
     max-width: 1000px !important;
-}
+}*/
+
 
 /* Document Style */
 
