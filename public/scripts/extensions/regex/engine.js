@@ -11,8 +11,7 @@ const regex_placement = {
     MD_DISPLAY: 0,
     USER_INPUT: 1,
     AI_OUTPUT: 2,
-    SYSTEM: 3,
-    SENDAS: 4
+    SLASH_COMMAND: 3
 }
 
 const regex_replace_strategy = {
