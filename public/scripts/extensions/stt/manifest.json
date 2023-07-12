@@ -3,7 +3,10 @@
     "loading_order": 13,
     "requires": [
     ],
-    "optional": [],
+    "optional": [
+        "vosk-stt",
+        "whisper-stt"
+    ],
     "js": "index.js",
     "css": "style.css",
     "author": "Tony-sama",

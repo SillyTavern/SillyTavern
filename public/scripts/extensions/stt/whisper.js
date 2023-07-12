@@ -55,7 +55,7 @@ class WhisperSttProvider {
         console.debug("<STT-Whisper-module> Recording user message")
         // Return if module is not loaded
         if (!modules.includes('whisper-stt')) {
-            console.debug("<STT-whisper-module> Module Whisper-stt must be activated in SillytaverExtra for streaming user voice.")
+            console.debug("<STT-whisper-module> Module Whisper-stt must be activated in Sillytavern Extra for streaming user voice.")
             return "";
         }
     
@@ -72,7 +72,7 @@ class WhisperSttProvider {
         });
 
         if (!apiResult.ok) {
-            toastr.error(apiResult.statusText, 'STT Generation Failed');
+            toastr.error(apiResult.statusText, 'STT Generation Failed', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
             throw new Error(`HTTP ${apiResult.status}: ${await apiResult.text()}`);
         }
         

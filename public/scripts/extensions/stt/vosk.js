@@ -72,7 +72,7 @@ class VoskSttProvider {
         });
 
         if (!apiResult.ok) {
-            toastr.error(apiResult.statusText, 'STT Generation Failed');
+            toastr.error(apiResult.statusText, 'STT Generation Failed', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
             throw new Error(`HTTP ${apiResult.status}: ${await apiResult.text()}`);
         }
         

@@ -13,12 +13,12 @@ const UPDATE_INTERVAL = 100;
 let inApiCall = false;
 
 let sttProviders = {
-    Vosk: VoskSttProvider,
     Whisper: WhisperSttProvider,
+    Vosk: VoskSttProvider,
 }
 
-let sttProvider = new VoskSttProvider
-let sttProviderName = "Vosk"
+let sttProvider = new WhisperSttProvider
+let sttProviderName = "Whisper"
 
 let pushToTalkKeyDown = false
 
@@ -42,99 +42,141 @@ async function moduleWorker() {
 
     try {
         inApiCall = true;
-        //await sttProvider.enabled(true)
-        const userMessageOriginal = await sttProvider.getUserMessage()
-        let userMessageFormatted = userMessageOriginal;
+        const userMessageOriginal = await sttProvider.getUserMessage();
+        let userMessageFormatted = userMessageOriginal.trim();
 
-        console.debug("<STT-module> recorded transcript: \""+userMessageFormatted+"\"")
+        console.debug("<STT-module> recorded transcript: \""+userMessageFormatted+"\"");
 
         if (userMessageFormatted.length > 0)
         {
-            const messageMode = extension_settings.stt.messageMode
+            const messageMode = extension_settings.stt.messageMode;
 
-            console.debug("<STT-module> mode: "+messageMode)
+            console.debug("<STT-module> mode: "+messageMode);
 
             // Prevent double message
-            const chat_log = getContext().chat
-            if (chat_log.length > 0) {
-                const last_message = chat_log[chat_log.length-1]
-                if (last_message.is_user) {
-                    if (extension_settings.stt.debug) {
-                        $('#debug_output').text("<SST-module DEBUG>: message ignored, waiting for AI message. Voice transcript: \""+ userMessageFormatted +"\"");
+            if (extension_settings.stt.waitResponse) {
+                const chat_log = getContext().chat
+                if (chat_log.length > 0) {
+                    const last_message = chat_log[chat_log.length-1]
+                    if (last_message.is_user) {
+                        if (extension_settings.stt.debug) {
+                            $('#debug_output').text("<SST-module DEBUG>: message ignored, waiting for AI message. Voice transcript: \""+ userMessageFormatted +"\"");
+                            toastr.info(
+                                "Waiting for character message. Voice transcript: \""+ userMessageFormatted +"\"",
+                                "<SST-module DEBUG> message ignored",
+                                { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true },
+                            );
+                        }
+                        console.debug("<STT-module> Already waiting for response from last message, ignore message.");
+                        return;
                     }
-                    console.debug("<STT-module> Already waiting for response from last message, ignore message.")
-                    return;
                 }
             }
 
-            switch (messageMode) {
-                case "auto_send":
+            let userMessageLower = userMessageFormatted.toLowerCase()
+            // remove punctuation
+            let userMessageRaw = userMessageLower.replace(/[^\w\s\']|_/g, "").replace(/\s+/g, " ");
+            let commandDetected = false;
 
-                    // Detect trigger words
-                    if (extension_settings.stt.triggerWords.length > 0 & extension_settings.stt.recordMode == "voice_detection") {
-                        let messageStart = -1
-                        
-                        const userMessageLower = userMessageFormatted.toLowerCase()
-                        for (const triggerWord of extension_settings.stt.triggerWords) {
-                            const triggerPos = userMessageLower.indexOf(triggerWord.toLowerCase());
+            // Check message mapping
+            if (extension_settings.stt.messageMappingEnabled) {
+                console.debug("<STT-module> Start searching message mapping into:",userMessageRaw)
+                for (const key in extension_settings.stt.messageMapping) {
+                    console.debug("<STT-module> message mapping searching: ", key,"=>",extension_settings.stt.messageMapping[key]);
+                    if (userMessageRaw.includes(key)) {
+                        userMessageFormatted = extension_settings.stt.messageMapping[key];
+                        commandDetected = true;
+                        console.debug("<STT-module> message mapping found: ", key,"=>",extension_settings.stt.messageMapping[key]);
+                        $("#send_textarea").val(userMessageFormatted);
+                        const context = getContext();
+                        await context.generate();
+                        break;
+                    }
+                }
+            }
+
+            if (!commandDetected) {
+                console.debug("<STT-module> no message mapping found, processing normal message");
+
+                switch (messageMode) {
+                    case "auto_send":
+
+                        // Detect trigger words
+                        if (commandDetected == false & extension_settings.stt.triggerWordsEnabled & extension_settings.stt.triggerWords.length > 0 & extension_settings.stt.recordMode == "voice_detection") {
+                            let messageStart = -1
                             
-                            // Trigger word not found or not starting message and just a substring
-                            if (triggerPos == -1 | (triggerPos > 0 & userMessageFormatted[triggerPos-1] != " ")) {
-                                console.debug("<STT-module> trigger word not found: ", triggerWord);
-                            }
-                            else {
-                                console.debug("<STT-module> Found trigger word: ", triggerWord, " at index ", triggerPos);
-                                if (triggerPos < messageStart | (messageStart == -1 & (triggerPos + triggerWord.length) < userMessageFormatted.length)) {
-                                    messageStart = triggerPos + triggerWord.length + 1
+                            for (const triggerWord of extension_settings.stt.triggerWords) {
+                                const triggerPos = userMessageLower.indexOf(triggerWord.toLowerCase());
+                                
+                                // Trigger word not found or not starting message and just a substring
+                                if (triggerPos == -1 | (triggerPos > 0 & userMessageFormatted[triggerPos-1] != " ")) {
+                                    console.debug("<STT-module> trigger word not found: ", triggerWord);
+                                }
+                                else {
+                                    console.debug("<STT-module> Found trigger word: ", triggerWord, " at index ", triggerPos);
+                                    if (triggerPos < messageStart | (messageStart == -1 & (triggerPos + triggerWord.length) < userMessageFormatted.length)) {
+                                        messageStart = triggerPos + triggerWord.length + 1
+                                    }
                                 }
                             }
-                        }
 
-                        if (messageStart == -1) {
-                            if (extension_settings.stt.debug) {
+                            if (messageStart == -1) {
                                 $('#debug_output').text("<SST-module DEBUG>: message ignored, no trigger word preceding a message. Voice transcript: \""+ userMessageOriginal +"\"");
+                                if (extension_settings.stt.debug) {
+                                    toastr.info(
+                                        "No trigger word preceding a message. Voice transcript: \""+ userMessageOriginal +"\"",
+                                        "<SST-module DEBUG>: message ignored.",
+                                        { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true },
+                                    );
+                                }
+                                return
                             }
-                            return
+                            else{
+                                userMessageFormatted = userMessageFormatted.substring(messageStart)
+                            }
                         }
-                        else{
-                            userMessageFormatted = userMessageFormatted.substring(messageStart)
-                        }
-                    }
 
-                    $('#send_textarea').val("") // clear message area to avoid double message
+                        $('#send_textarea').val("") // clear message area to avoid double message
 
-                    console.debug("<STT-module> Sending message")
-                    const context = getContext();
-                    const messageText = userMessageFormatted;
-                    const message = {
-                        name: context.name1,
-                        is_user: true,
-                        is_name: true,
-                        send_date: Date.now(),
-                        mes: messageText,
-                    };
-                    context.chat.push(message);
-                    context.addOneMessage(message);
-                    
-                    await context.generate();
-                    if (extension_settings.stt.debug) {
+                        console.debug("<STT-module> Sending message")
+                        const context = getContext();
+                        const messageText = userMessageFormatted;
+                        const message = {
+                            name: context.name1,
+                            is_user: true,
+                            is_name: true,
+                            send_date: Date.now(),
+                            mes: messageText,
+                        };
+                        context.chat.push(message);
+                        context.addOneMessage(message);
+                        
+                        await context.generate();
+
                         $('#debug_output').text("<SST-module DEBUG>: message sent, cut using trigger word. Voice transcript: \""+ userMessageOriginal +"\"");
-                    }
-                    break;
+                        /*if (extension_settings.stt.debug) {
+                            toastr.info(
+                                "<SST-module DEBUG>:",
+                                "message sent, cut using trigger word. Voice transcript: \""+ userMessageOriginal +"\"",
+                                { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true },
+                            );
+                        }*/
+                        break;
 
-                case "replace":
-                    console.debug("<STT-module> Replacing message")
-                    $('#send_textarea').val(userMessageFormatted);
-                    break;
+                    case "replace":
+                        console.debug("<STT-module> Replacing message")
+                        $('#send_textarea').val(userMessageFormatted);
+                        break;
 
-                case "append":
-                    console.debug("<STT-module> Appending message")
-                    $('#send_textarea').val($('#send_textarea').val()+" "+userMessageFormatted);
-                    break;
+                    case "append":
+                        console.debug("<STT-module> Appending message")
+                        $('#send_textarea').val($('#send_textarea').val()+" "+userMessageFormatted);
+                        break;
 
-                default:
-                    console.debug("<STT-module> Not supported stt message mode: "+messageMode)
+                    default:
+                        console.debug("<STT-module> Not supported stt message mode: "+messageMode)
 
+                }
             }
         }
         else
@@ -198,13 +240,18 @@ function onSttProviderSettingsInput() {
 //#############################//
 
 const defaultSettings = {
-    currentProvider: "Vosk",
+    currentProvider: "Whisper",
     enabled: true,
     recordMode: "voice_detection",
     messageMode: "replace",
+    waitResponse: true,
     pushToTalkKey: null,
     triggerWords: [],
-    debug: true,
+    triggerWordsEnabled: false,
+    messageMappingText: "",
+    messageMapping: [],
+    messageMappingEnabled: false,
+    debug: false,
 }
 
 function loadSettings() {
@@ -215,6 +262,7 @@ function loadSettings() {
     $('body').toggleClass('stt', extension_settings.stt.enabled);
     $('#stt_message_mode').val(extension_settings.stt.messageMode);
     $('#stt_record_mode').val(extension_settings.stt.recordMode);
+    $('#stt_wait_response').prop('checked',extension_settings.stt.waitResponse);
     $('#stt_debug').prop('checked',extension_settings.stt.debug);
 
     if (extension_settings.stt.pushToTalkKey != null) {
@@ -224,11 +272,27 @@ function loadSettings() {
     if (extension_settings.stt.triggerWords.length > 0) {
         $('#stt_trigger_words').val(extension_settings.stt.triggerWords);
     }
+    
+    $('#stt_trigger_words_enabled').prop('checked',extension_settings.stt.triggerWordsEnabled);
 
-    if (extension_settings.stt.debug) {
-        $('#stt_status').show()
-    } else {
-        $('#stt_status').hide()
+    if (extension_settings.stt.messageMappingText.length > 0) {
+        $('#stt_message_mapping').val(extension_settings.stt.messageMappingText);
+    }
+
+    $('#stt_message_mapping_enabled').prop('checked',extension_settings.stt.messageMappingEnabled);
+    
+    if (extension_settings.stt.recordMode == "push_to_talk") {
+        $("#stt_push_to_talk_key_div").show()
+    }
+    else {
+        $("#stt_push_to_talk_key_div").hide()
+    }
+
+    if(extension_settings.stt.messageMode == "auto_send") {
+        $("#stt_wait_response_div").show()
+    }
+    else {
+        $("#stt_wait_response_div").hide()
     }
 }
 
@@ -239,12 +303,31 @@ async function onEnableClick() {
 
 async function onRecordModeChange() {
     extension_settings.stt.recordMode = $('#stt_record_mode').val();
+    if (extension_settings.stt.recordMode == "push_to_talk") {
+        $("#stt_push_to_talk_key_div").show()
+    }
+    else {
+        $("#stt_push_to_talk_key_div").hide()
+    }
     saveSettingsDebounced();
 }
 
 async function onMessageModeChange() {
     extension_settings.stt.messageMode = $('#stt_message_mode').val();
+
+    if(extension_settings.stt.messageMode == "auto_send") {
+        $("#stt_wait_response_div").show()
+    }
+    else {
+        $("#stt_wait_response_div").hide()
+    }
+
     saveSettingsDebounced();
+}
+
+async function onWaitResponseClick() {
+    extension_settings.stt.waitResponse = $('#stt_wait_response').is(':checked');
+    saveSettingsDebounced()
 }
 
 async function onPushToTalkKeyChange() {
@@ -254,20 +337,48 @@ async function onPushToTalkKeyChange() {
 
 async function onTriggerWordsChange() {
     let array = $('#stt_trigger_words').val().split(",");
-    array = array.map(element => {return element.trim();});
+    array = array.map(element => {return element.trim().toLowerCase();});
     array = array.filter((str) => str !== '');
+    $("#stt_trigger_words_status").text("Trigger words updated to: "+array)
     console.debug("<STT-module> Updated trigger words", array);
     extension_settings.stt.triggerWords = array;
     saveSettingsDebounced();
 }
 
+async function onTriggerWordsEnabledClick() {
+    extension_settings.stt.triggerWordsEnabled = $('#stt_trigger_words_enabled').is(':checked');
+    saveSettingsDebounced()
+}
+
+async function onMessageMappingChange() {
+    let array = $('#stt_message_mapping').val().split(",");
+    array = array.map(element => {return element.trim();});
+    array = array.filter((str) => str !== '');
+    extension_settings.stt.messageMapping = {};
+    for (const text of array) {
+        if (text.includes("=")) {
+            const pair = text.toLowerCase().split("=")
+            extension_settings.stt.messageMapping[pair[0].trim()] = pair[1].trim()
+            console.debug("<STT-module> Added mapping", pair[0],"=>", extension_settings.stt.messageMapping[pair[0]]);
+        }
+        else {
+            console.debug("<STT-module> Wrong syntax for message mapping, no '=' found in:", text);
+        }
+    }
+    
+    $("#stt_message_mapping_status").text("Message mapping updated to: "+JSON.stringify(extension_settings.stt.messageMapping))
+    console.debug("<STT-module> Updated message mapping", extension_settings.stt.messageMapping);
+    extension_settings.stt.messageMappingText = $('#stt_message_mapping').val()
+    saveSettingsDebounced();
+}
+
+async function onMessageMappingEnabledClick() {
+    extension_settings.stt.messageMappingEnabled = $('#stt_message_mapping_enabled').is(':checked');
+    saveSettingsDebounced()
+}
+
 async function onDebugClick() {
     extension_settings.stt.debug = $('#stt_debug').is(':checked');
-    if (extension_settings.stt.debug) {
-        $('#stt_status').show();
-    } else {
-        $('#stt_status').hide();
-    }
     saveSettingsDebounced()
 }
 
@@ -299,6 +410,10 @@ $(document).ready(function () {
                             <option value="push_to_talk">Push to talk</option>
                         </select>
                     </div>
+                    <div id="stt_push_to_talk_key_div">
+                        <span>Push to talk key</span>
+                        <input id="stt_push_to_talk_key" class="text_pole" placeholder="(click here and press key)">
+                    </div>
                     <div>
                         <span>Message mode</span> </br>
                         <select id="stt_message_mode">
@@ -307,23 +422,35 @@ $(document).ready(function () {
                             <option value="auto_send">Auto send</option>
                         </select>
                     </div>
-                    <div>
-                        <span>Push to talk key</span>
-                        <input id="stt_push_to_talk_key" class="text_pole" placeholder="(click here and press key)">
+                    <div id="stt_wait_response_div">
+                        <label class="checkbox_label" for="stt_wait_response">
+                            <input type="checkbox" id="stt_wait_response" name="stt_wait_response">
+                            <small>Wait for response</small>
+                        </label>
                     </div>
                     <div>
                         <span>Trigger words</span>
-                        <textarea id="stt_trigger_words" class="text_pole textarea_compact" type="text" rows="4" placeholder="Enter comma separated words that trigger new message, example:\nhey, hey google, aqua, record, listen"></textarea>
+                        <textarea id="stt_trigger_words" class="text_pole textarea_compact" type="text" rows="4" placeholder="Enter comma separated words that trigger new message, example:\nhey, hey aqua, record, listen"></textarea>
+                        <span id="stt_trigger_words_status"></span>
+                        <label class="checkbox_label" for="stt_trigger_words_enabled">
+                            <input type="checkbox" id="stt_trigger_words_enabled" name="stt_trigger_words_enabled">
+                            <small>Enable trigger words</small>
+                        </label>
+                    </div>
+                    <div>
+                        <span>Message mapping</span>
+                        <textarea id="stt_message_mapping" class="text_pole textarea_compact" type="text" rows="4" placeholder="Enter comma separated phrases mapping, example:\ncommand delete = /del 1,\nslash delete = /del 1,\nsystem roll = /roll 2d6,\nhey continue = /continue"></textarea>
+                        <span id="stt_message_mapping_status"></span>
+                        <label class="checkbox_label" for="stt_message_mapping_enabled">
+                            <input type="checkbox" id="stt_message_mapping_enabled" name="stt_message_mapping_enabled">
+                            <small>Enable messages mapping</small>
+                        </label>
                     </div>
                     <div>
                         <label class="checkbox_label" for="stt_debug">
                             <input type="checkbox" id="stt_debug" name="stt_debug">
-                            <small>Debug</small>
+                            <small>Debug pop up</small>
                         </label>
-                    </div>
-                    <div id="stt_status">
-                        <span>Debug output:</span><br />
-                        <span id="debug_output">None</span>
                     </div>
                     <form id="stt_provider_settings" class="inline-drawer-content">
                     </form>
@@ -344,6 +471,10 @@ $(document).ready(function () {
         $('#stt_record_mode').on('change', onRecordModeChange);
         $('#stt_push_to_talk_key').on('change', onPushToTalkKeyChange);
         $('#stt_trigger_words').on('change', onTriggerWordsChange);
+        $('#stt_trigger_words_enabled').on('click', onTriggerWordsEnabledClick);
+        $('#stt_message_mapping').on('change', onMessageMappingChange);
+        $('#stt_message_mapping_enabled').on('click', onMessageMappingEnabledClick);
+        $('#stt_wait_response').on('click', onWaitResponseClick);
         $('#stt_debug').on('click', onDebugClick);
         $('#stt_status').hide();
 
