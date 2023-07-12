@@ -85,7 +85,7 @@ body {
     padding: 0;
     width: 100%;
     /*fallback for JS load*/
-	height: 100vh;
+    height: 100vh;
     height: 100svh;
     /*defaults as 100%, then reassigned via JS as pixels, will work on PC and Android*/
     height: calc(var(--doc-height) - 1px);
@@ -1901,7 +1901,8 @@ grammarly-extension {
     aspect-ratio: 1 / 1;
 }
 
-.menu_button:hover, .menu_button.active {
+.menu_button:hover,
+.menu_button.active {
     background-color: var(--white30a);
 }
 
@@ -3807,6 +3808,7 @@ label[for="extensions_autoconnect"] {
 .extensions_info .toggle_enable {
     color: lightgreen;
 }
+
 .extensions_info .toggle_disable {
     color: rgb(238, 144, 144);
 }
@@ -3814,9 +3816,11 @@ label[for="extensions_autoconnect"] {
 .extensions_info .extension_enabled {
     color: green;
 }
+
 .extensions_info .extension_disabled {
     color: lightgray;
 }
+
 .extensions_info .extension_missing {
     color: gray;
 }
