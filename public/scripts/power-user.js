@@ -16,7 +16,8 @@ import {
     name1,
     name2,
     replaceCurrentChat,
-    setCharacterId
+    setCharacterId,
+    setEditedMessageId
 } from "../script.js";
 import { favsToHotswap, isMobile, initMovingUI } from "./RossAscends-mods.js";
 import {
@@ -1123,8 +1124,8 @@ async function doMesCut(_, text) {
         return
     }
 
-    mesToCut.find('.mes_edit_delete').trigger('click');
-    $('#dialogue_popup_ok').trigger('click');
+    setEditedMessageId(mesIDToCut);
+    mesToCut.find('.mes_edit_delete').trigger('click', { fromSlashCommand: true });
 }
 
 

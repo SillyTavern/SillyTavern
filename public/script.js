@@ -7967,8 +7967,9 @@ $(document).ready(function () {
     });
 
 
-    $(document).on("click", ".mes_edit_delete", async function () {
-        if (power_user.confirm_message_delete) {
+    $(document).on("click", ".mes_edit_delete", async function (event, customData) {
+        const fromSlashCommand = customData?.fromSlashCommand || false;
+        if (power_user.confirm_message_delete && fromSlashCommand !== true) {
             const confirmation = await callPopup("Are you sure you want to delete this message?", 'confirm');
             if (!confirmation) {
                 return;
