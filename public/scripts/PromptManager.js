@@ -139,7 +139,7 @@ class PromptCollection {
     /**
      * Retrieves the index of a Prompt instance in the collection by its identifier.
      *
-     * @param {string} identifier - The identifier of the Prompt instance to find.
+     * @param {null} identifier - The identifier of the Prompt instance to find.
      * @returns {number} The index of the Prompt instance in the collection, or -1 if not found.
      */
     index(identifier) {
@@ -1589,12 +1589,7 @@ const openAiDefaultPromptList = [
 
 const defaultPromptManagerSettings = {
     prompt_manager_settings: {
-        showAdvancedSettings: false,
-        utilityPrompts: {
-            newChat: '[Start a new Chat]',
-            newGroupChat: '[Start a new group chat. Group members: {{names}}]',
-            newExampleChat: '[Start a new Chat]',
-        }
+        showAdvancedSettings: false
     }
 };
 
