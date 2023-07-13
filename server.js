@@ -43,7 +43,6 @@ const fs = require('fs');
 const readline = require('readline');
 const open = require('open');
 
-const rimraf = require("rimraf");
 const multer = require("multer");
 const http = require("http");
 const https = require('https');

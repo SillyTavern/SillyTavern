@@ -29,7 +29,6 @@
         "png-chunks-encode": "^1.0.0",
         "png-chunks-extract": "^1.0.0",
         "response-time": "^2.3.2",
-        "rimraf": "^3.0.2",
         "sanitize-filename": "^1.6.3",
         "sentencepiece-js": "^1.1.0",
         "simple-git": "^3.19.1",
