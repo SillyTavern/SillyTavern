@@ -4560,6 +4560,7 @@ body.noShadows * {
     padding: 0;
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
     background-color: var(--SmartThemeBlurTintColor);
+    overflow: auto;
 }
 
 #groupMemberListPopout #rm_group_members {
