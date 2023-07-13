@@ -7132,9 +7132,11 @@ $(document).ready(function () {
                 " -- Name: " +
                 characters[this_chid].name
             );
+            const delete_chats = !!$("#del_char_checkbox").prop("checked");
             const avatar = characters[this_chid].avatar;
             const name = characters[this_chid].name;
-            var msg = jQuery("#form_create").serialize(); // ID form
+            const msg = new FormData($("#form_create").get(0)); // ID form
+            msg.append("delete_chats", delete_chats);
             jQuery.ajax({
                 method: "POST",
                 url: "/deletecharacter",
@@ -7142,6 +7144,8 @@ $(document).ready(function () {
                 },
                 data: msg,
                 cache: false,
+                contentType: false,
+                processData: false,
                 success: async function (html) {
                     //RossAscends: New handling of character deletion that avoids page refreshes and should have
                     // fixed char corruption due to cache problems.
@@ -7259,8 +7263,10 @@ $(document).ready(function () {
         callPopup(`
                 <h3>Delete the character?</h3>
                 <b>THIS IS PERMANENT!<br><br>
-                THIS WILL ALSO DELETE ALL<br>
-                OF THE CHARACTER'S CHAT FILES.<br><br></b>`
+                <label for="del_char_checkbox" class="checkbox_label justifyCenter">
+                    <input type="checkbox" id="del_char_checkbox" checked />
+                    <span>Also delete the chat files</span>
+                </label><br></b>`
         );
     });
 

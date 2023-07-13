@@ -43,7 +43,6 @@ const fs = require('fs');
 const readline = require('readline');
 const open = require('open');
 
-const rimraf = require("rimraf");
 const multer = require("multer");
 const http = require("http");
 const https = require('https');
@@ -1078,7 +1077,7 @@ app.post("/editcharacterattribute", jsonParser, async function (request, respons
     }
 });
 
-app.post("/deletecharacter", urlencodedParser, function (request, response) {
+app.post("/deletecharacter", urlencodedParser, async function (request, response) {
     if (!request.body || !request.body.avatar_url) {
         return response.sendStatus(400);
     }
@@ -1102,16 +1101,16 @@ app.post("/deletecharacter", urlencodedParser, function (request, response) {
         return response.sendStatus(403);
     }
 
-    rimraf(path.join(chatsPath, sanitize(dir_name)), (err) => {
-        if (err) {
-            response.send(err);
-            return console.log(err);
-        } else {
-            //response.redirect("/");
-
-            response.send('ok');
+    if (request.body.delete_chats == 'true') {
+        try {
+            await fs.promises.rm(path.join(chatsPath, sanitize(dir_name)), { recursive: true, force: true })
+        } catch (err) {
+            console.error(err);
+            return response.sendStatus(500);
         }
-    });
+    }
+
+    return response.sendStatus(200);
 });
 
 async function charaWrite(img_url, data, target_img, response = undefined, mes = 'ok', crop = undefined) {
@@ -2768,7 +2767,7 @@ app.post('/poe_suggest', jsonParser, async function (request, response) {
  * If the folder is called third-party, search for subfolders instead
  */
 app.get('/discover_extensions', jsonParser, function (_, response) {
-    
+
     // get all folders in the extensions folder, except third-party
     const extensions = fs
         .readdirSync(directories.extensions)
@@ -4444,7 +4443,7 @@ async function getImageBuffers(zipFilePath) {
 
 
 
-/** 
+/**
  * This function extracts the extension information from the manifest file.
  * @param {string} extensionPath - The path of the extension folder
  * @returns {Object} - Returns the manifest data as an object
@@ -4473,7 +4472,7 @@ async function checkIfRepoIsUpToDate(extensionPath) {
 
   // Fetch remote repository information
   const remotes = await git.cwd(extensionPath).getRemotes(true);
-  
+
   return {
     isUpToDate: log.total === 0,
     remoteUrl: remotes[0].refs.fetch, // URL of the remote repository
@@ -4488,7 +4487,7 @@ async function checkIfRepoIsUpToDate(extensionPath) {
  *
  * @param {Object} request - HTTP Request object, expects a JSON body with a 'url' property.
  * @param {Object} response - HTTP Response object used to respond to the HTTP request.
- * 
+ *
  * @returns {void}
  */
 app.post('/get_extension', jsonParser, async (request, response) => {
@@ -4526,14 +4525,14 @@ app.post('/get_extension', jsonParser, async (request, response) => {
 });
 
 /**
- * HTTP POST handler function to pull the latest updates from a git repository 
- * based on the extension name provided in the request body. It returns the latest commit hash, 
- * the path of the extension, the status of the repository (whether it's up-to-date or not), 
+ * HTTP POST handler function to pull the latest updates from a git repository
+ * based on the extension name provided in the request body. It returns the latest commit hash,
+ * the path of the extension, the status of the repository (whether it's up-to-date or not),
  * and the remote URL of the repository.
  *
  * @param {Object} request - HTTP Request object, expects a JSON body with an 'extensionName' property.
  * @param {Object} response - HTTP Response object used to respond to the HTTP request.
- * 
+ *
  * @returns {void}
  */
 app.post('/update_extension', jsonParser, async (request, response) => {
@@ -4578,7 +4577,7 @@ app.post('/update_extension', jsonParser, async (request, response) => {
  *
  * @param {Object} request - HTTP Request object, expects a JSON body with an 'extensionName' property.
  * @param {Object} response - HTTP Response object used to respond to the HTTP request.
- * 
+ *
  * @returns {void}
  */
 app.post('/get_extension_version', jsonParser, async (request, response) => {
@@ -4586,17 +4585,17 @@ app.post('/get_extension_version', jsonParser, async (request, response) => {
     if (!request.body.extensionName) {
         return response.status(400).send('Bad Request: extensionName is required in the request body.');
     }
-    
+
     try {
         const extensionName = request.body.extensionName;
         const extensionPath = path.join(directories.extensions, 'third-party', extensionName);
-    
+
         if (!fs.existsSync(extensionPath)) {
         return response.status(404).send(`Directory does not exist at ${extensionPath}`);
         }
-    
+
         const currentBranch = await git.cwd(extensionPath).branch();
-        // get only the working branch 
+        // get only the working branch
         const currentBranchName = currentBranch.current;
         await git.cwd(extensionPath).fetch('origin');
         const currentCommitHash = await git.cwd(extensionPath).revparse(['HEAD']);
@@ -4604,7 +4603,7 @@ app.post('/get_extension_version', jsonParser, async (request, response) => {
         const { isUpToDate, remoteUrl } = await checkIfRepoIsUpToDate(extensionPath);
 
         return response.send({ currentBranchName, currentCommitHash, isUpToDate, remoteUrl });
-    
+
     } catch (error) {
         console.log('Getting extension version failed', error);
         return response.status(500).send(`Server Error: ${error.message}`);
@@ -4617,7 +4616,7 @@ app.post('/get_extension_version', jsonParser, async (request, response) => {
  *
  * @param {Object} request - HTTP Request object, expects a JSON body with a 'url' property.
  * @param {Object} response - HTTP Response object used to respond to the HTTP request.
- * 
+ *
  * @returns {void}
  */
 app.post('/delete_extension', jsonParser, async (request, response) => {
