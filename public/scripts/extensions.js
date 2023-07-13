@@ -378,12 +378,13 @@ function addExtensionScript(name, manifest) {
 
 
 
-
-function showExtensionsDetails() {
+async function showExtensionsDetails() {
     let htmlDefault = '<h3>Default Extensions:</h3>';
     let htmlExternal = '<h3>External Extensions:</h3>';
 
-    Object.entries(manifests).sort((a, b) => a[1].loading_order - b[1].loading_order).forEach(extension => async () =>{
+    const extensions = Object.entries(manifests).sort((a, b) => a[1].loading_order - b[1].loading_order);
+
+    for (const extension of extensions) {
         const name = extension[0];
         const manifest = extension[1];
         const isActive = activeExtensions.has(name);
@@ -394,23 +395,23 @@ function showExtensionsDetails() {
         const checkboxClass = isDisabled ? "checkbox_disabled" : "";
 
         const displayName = manifest.display_name;
-        // if external, get the version from a requst to get_extension_verion
         let displayVersion = manifest.version ? ` v${manifest.version}` : "";
-        if(isExternal) {
+        let isUpToDate = true;
+        if (isExternal) {
             let data = await getExtensionVersion(name.replace('third-party', ''));
             let branch = data.currentBranchName;
             let commitHash = data.currentCommitHash;
-            displayVersion = ` v${branch}-${commitHash}`;
+            isUpToDate = data.isUpToDate;
+            displayVersion = ` (${branch}-${commitHash.substring(0, 7)})`;
         }
-
 
         let toggleElement = `<input type="checkbox" title="Cannot enable extension" data-name="${name}" class="extension_missing ${checkboxClass}" disabled>`;
         if (isActive || isDisabled) {
             toggleElement = `<input type="checkbox" title="Click to toggle" data-name="${name}" class="${isActive ? 'toggle_disable' : 'toggle_enable'} ${checkboxClass}" ${isActive ? 'checked' : ''}>`;
         }
 
-        let updateButton = isExternal ? `<button class="btn_update" data-name= ${name.replace('third-party', '')} + ">Update</button>` : '';
-        let extensionHtml = `<hr><h4><span class="${titleClass}">${DOMPurify.sanitize(displayName)}${displayVersion}</span> <span style="float:right;">${toggleElement}<span>${updateButton}</h4>`;
+        let updateButton = isExternal && !isUpToDate ? `<button class="btn_update" data-name="${name.replace('third-party', '')}">Update</button>` : '';
+        let extensionHtml = `<hr><h4><span class="update-button">${updateButton}</span> <span class="${titleClass}">${DOMPurify.sanitize(displayName)}${displayVersion}</span> <span style="float:right;">${toggleElement}</span></h4>`;
 
         if (isActive) {
             if (Array.isArray(manifest.optional)) {
@@ -435,8 +436,8 @@ function showExtensionsDetails() {
         } else {
             htmlDefault += extensionHtml;
         }
-    });
-
+    }
+    // Do something with htmlDefault and htmlExternal here
     let html = '<h3>Modules provided by your Extensions API:</h3>';
     html += modules.length ? `<p>${DOMPurify.sanitize(modules.join(', '))}</p>` : '<p class="failure">Not connected to the API!</p>';
     html += htmlDefault + htmlExternal;

@@ -8496,10 +8496,10 @@ $(document).ready(function () {
 
     $('#third_party_extension_button').on('click', async () => {
         const html = `<h3>Enter the Git URL of the extension to import</h3>
-        <br>
-        <p><b>Disclaimer:</b> Please be aware that using external extensions can have unintended side effects and may pose security risks. Always make sure you trust the source before importing an extension. We are not responsible for any damage caused by third-party extensions.</p>
-        <br>
-        <p>Example: <tt> https://github.com/author/extension-name </tt></p>`
+    <br>
+    <p><b>Disclaimer:</b> Please be aware that using external extensions can have unintended side effects and may pose security risks. Always make sure you trust the source before importing an extension. We are not responsible for any damage caused by third-party extensions.</p>
+    <br>
+    <p>Example: <tt> https://github.com/author/extension-name </tt></p>`
         const input = await callPopup(html, 'input');
 
         if (!input) {
@@ -8523,11 +8523,12 @@ $(document).ready(function () {
         }
 
         const response = await request.json();
-        await loadExtensionSettings(settings);
-        eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED);
         toastr.success(`Extension "${response.display_name}" by ${response.author} (version ${response.version}) has been imported successfully!`, 'Extension import successful');
         console.debug(`Extension "${response.display_name}" has been imported successfully at ${response.extensionPath}`);
+        await loadExtensionSettings(settings);
+        eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED);
     });
+
 
     const $dropzone = $(document.body);
 

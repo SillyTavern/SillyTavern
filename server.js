@@ -4390,6 +4390,17 @@ async function getManifest(extensionPath) {
     return manifest;
 }
 
+async function checkIfRepoIsUpToDate(extensionPath) {
+    const currentBranch = await git.cwd(extensionPath).branch();
+    const currentCommitHash = await git.cwd(extensionPath).revparse(['HEAD']);
+    const log = await git.cwd(extensionPath).log({
+        from: currentCommitHash,
+        to: `origin/${currentBranch.current}`,
+    });
+
+    return log.total === 0;
+}
+
 /**
  * HTTP POST handler function to clone a git repository from a provided URL, read the extension manifest,
  * and return extension information and path.
@@ -4449,19 +4460,14 @@ app.post('/update_extension', jsonParser, async (request, response) => {
       return response.status(404).send(`Directory does not exist at ${extensionPath}`);
     }
 
-    const currentBranch = await git.cwd(extensionPath).branch();
-    const currentCommitHash = await git.cwd(extensionPath).revparse(['HEAD']);
-    const isUpToDate = await git.cwd(extensionPath).log({
-      from: currentCommitHash,
-      to: `origin/${currentBranch.current}`,
-    });
+      const isUpToDate = await checkIfRepoIsUpToDate(extensionPath);
 
-    if (isUpToDate.total === 0) {
-      await git.cwd(extensionPath).pull('origin', currentBranch.current);
-      console.log(`Extension has been updated at ${extensionPath}`);
-    } else {
-      console.log(`Extension is up to date at ${extensionPath}`);
-    }
+      if (!isUpToDate) {
+          await git.cwd(extensionPath).pull('origin', currentBranch.current);
+          console.log(`Extension has been updated at ${extensionPath}`);
+      } else {
+          console.log(`Extension is up to date at ${extensionPath}`);
+      }
 
     const fullCommitHash = await git.cwd(extensionPath).revparse(['HEAD']);
     const shortCommitHash = fullCommitHash.slice(0, 7);
@@ -4495,7 +4501,9 @@ app.post('/get_extension_version', jsonParser, async (request, response) => {
         const currentBranchName = currentBranch.current;
         const currentCommitHash = await git.cwd(extensionPath).revparse(['HEAD']);
         console.log(currentBranch, currentCommitHash);
-        return response.send({ currentBranchName, currentCommitHash });
+        const isUpToDate = await checkIfRepoIsUpToDate(extensionPath);
+
+        return response.send({ currentBranchName, currentCommitHash, isUpToDate });
     
     } catch (error) {
         console.log('Getting extension version failed', error);
