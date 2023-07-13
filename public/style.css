@@ -1197,7 +1197,59 @@ input[type="file"] {
     flex-grow: 1;
     display: flex;
     /* row-gap: 5px; */
-    justify-content: space-between;
+}
+
+body.charListGrid #rm_print_characters_block {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    flex-direction: row;
+    justify-content: space-around;
+}
+
+body.charListGrid #rm_print_characters_block .character_select {
+    width: 30%;
+    align-items: flex-start;
+    height: min-content;
+    flex-direction: column;
+    overflow: hidden;
+    max-width: 100px;
+}
+
+body.charListGrid #rm_print_characters_block .character_select .ch_name,
+body.charListGrid #rm_print_characters_block .group_select .ch_name {
+    width: 100%;
+    max-width: 100px;
+    text-align: center;
+    font-size: calc(var(--mainFontSize) * .8);
+}
+
+body.charListGrid #rm_print_characters_block .character_select .character_name_block {
+    width: 100%;
+}
+
+body.charListGrid #rm_print_characters_block .character_select .character_select_container {
+    width: 100%;
+    justify-content: center;
+    max-width: 100px;
+}
+
+body.charListGrid #rm_print_characters_block .group_select {
+    width: 30%;
+    height: min-content;
+    align-items: center !important;
+    flex-direction: column;
+    overflow: hidden;
+    max-width: 100px;
+}
+
+body.charListGrid #rm_print_characters_block .group_select .group_name_block {
+    width: 100%;
+}
+
+body.charListGrid #rm_print_characters_block .ch_description,
+body.charListGrid #rm_print_characters_block .tags_inline {
+    display: none;
 }
 
 #rm_ch_create_block {

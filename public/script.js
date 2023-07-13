@@ -916,7 +916,6 @@ async function printCharacters() {
     sortCharactersList();
     favsToHotswap();
     await delay(300);
-    doCharListDisplaySwitch();
     updateVisibleDivs('#rm_print_characters_block', true);
     displayOverrideWarnings();
 
@@ -6798,33 +6797,12 @@ async function doImpersonate() {
 const isPwaMode = window.navigator.standalone;
 if (isPwaMode) { $("body").addClass('PWA') }
 
-function doCharListDisplaySwitch(flipSwitch) {
-
-    if (!flipSwitch) {
-        console.debug('toggling body charListGrid state')
-        $("body").toggleClass('charListGrid')
-        power_user.charListGrid = $("body").hasClass("charListGrid") ? true : false;
-        saveSettingsDebounced()
-    }
-
-    //(wide100p alignitemsflexstart) removed, the rest added
-    if (power_user.charListGrid === true && $("body").hasClass('charListGrid')
-        || power_user.charListGrid === false && !$("body").hasClass('charListGrid')) {
-        $("#rm_print_characters_block").toggleClass('flexFlowColumn flex-container')
-
-        $("#rm_print_characters_block .character_select").toggleClass('wide100p alignitemsflexstart heightMinContent flexFlowColumn wide30p overflowHidden wideMax100px')
-        $("#rm_print_characters_block .character_select .ch_name").toggleClass('wide100p wideMax100px')
-        $("#rm_print_characters_block .character_select .ch_name").parent().toggleClass('wide100p')
-        $("#rm_print_characters_block .character_select .ch_name").parent().parent().toggleClass('wide100pLess70px justifyCenter wideMax100px')
-
-        $("#rm_print_characters_block .group_select").toggleClass('wide100p alignitemsflexstart heightMinContent alignitemscenter flexFlowColumn wide30p overflowHidden wideMax100px')
-        $("#rm_print_characters_block .group_select .ch_name").toggleClass('wide100p wideMax100px')
-        $("#rm_print_characters_block .group_select .ch_name").parent().toggleClass('wide100pLess70px')
-
-        $(".character_select .ch_description").toggle()
-        $("#rm_print_characters_block .tags_inline").toggle()
-        select_rm_characters()
-    }
+function doCharListDisplaySwitch() {
+    console.debug('toggling body charListGrid state')
+    $("body").toggleClass('charListGrid')
+    power_user.charListGrid = $("body").hasClass("charListGrid") ? true : false;
+    saveSettingsDebounced()
+    updateVisibleDivs('#rm_print_characters_block', true);
 }
 
 $(document).ready(function () {
@@ -8652,8 +8630,6 @@ $(document).ready(function () {
     }
 
     $("#charListGridToggle").on('click', async () => {
-        doCharListDisplaySwitch(true)
-    })
-
-
+        doCharListDisplaySwitch();
+    });
 })
