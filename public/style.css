@@ -3654,6 +3654,7 @@ a {
     overflow: hidden;
     scrollbar-width: thin;
     flex-flow: column;
+    min-width: 100px;
 }
 
 #nav-toggle {
