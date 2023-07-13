@@ -1190,6 +1190,7 @@ input[type="file"] {
     flex-grow: 1;
     display: flex;
     /* row-gap: 5px; */
+    justify-content: space-between;
 }
 
 #rm_ch_create_block {
