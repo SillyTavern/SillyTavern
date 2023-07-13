@@ -378,6 +378,72 @@ function addExtensionScript(name, manifest) {
 
 
 
+async function generateExtensionHtml(name, manifest, isActive, isDisabled, isExternal, checkboxClass) {
+    const displayName = manifest.display_name;
+    let displayVersion = manifest.version ? ` v${manifest.version}` : "";
+    let isUpToDate = true;
+    if (isExternal) {
+        let data = await getExtensionVersion(name.replace('third-party', ''));
+        let branch = data.currentBranchName;
+        let commitHash = data.currentCommitHash;
+        isUpToDate = data.isUpToDate;
+        displayVersion = ` (${branch}-${commitHash.substring(0, 7)})`;
+    }
+
+    let toggleElement = isActive || isDisabled ?
+        `<input type="checkbox" title="Click to toggle" data-name="${name}" class="${isActive ? 'toggle_disable' : 'toggle_enable'} ${checkboxClass}" ${isActive ? 'checked' : ''}>` :
+        `<input type="checkbox" title="Cannot enable extension" data-name="${name}" class="extension_missing ${checkboxClass}" disabled>`;
+
+    let updateButton = isExternal && !isUpToDate ? `<button class="btn_update" data-name="${name.replace('third-party', '')}">Update</button>` : '';
+    let extensionHtml = `<hr>
+        <h4>
+            <span class="update-button">${updateButton}</span> 
+            <span class="${isActive ? "extension_enabled" : isDisabled ? "extension_disabled" : "extension_missing"}">
+                ${DOMPurify.sanitize(displayName)}${displayVersion}
+            </span> 
+            <span style="float:right;">${toggleElement}</span>
+        </h4>`;
+
+    if (isActive && Array.isArray(manifest.optional)) {
+        const optional = new Set(manifest.optional);
+        modules.forEach(x => optional.delete(x));
+        if (optional.size > 0) {
+            const optionalString = DOMPurify.sanitize([...optional].join(', '));
+            extensionHtml += `<p>Optional modules: <span class="optional">${optionalString}</span></p>`;
+        }
+    } else if (!isDisabled) { // Neither active nor disabled
+        const requirements = new Set(manifest.requires);
+        modules.forEach(x => requirements.delete(x));
+        const requirementsString = DOMPurify.sanitize([...requirements].join(', '));
+        extensionHtml += `<p>Missing modules: <span class="failure">${requirementsString}</span></p>`;
+    }
+
+    return extensionHtml;
+}
+
+async function getExtensionData(extension) {
+    const name = extension[0];
+    const manifest = extension[1];
+    const isActive = activeExtensions.has(name);
+    const isDisabled = extension_settings.disabledExtensions.includes(name);
+    const isExternal = name.startsWith('third-party');
+
+    const checkboxClass = isDisabled ? "checkbox_disabled" : "";
+
+    const extensionHtml = await generateExtensionHtml(name, manifest, isActive, isDisabled, isExternal, checkboxClass);
+
+    return { isExternal, extensionHtml };
+}
+
+
+function getModuleInformation() {
+    let moduleInfo = modules.length ? `<p>${DOMPurify.sanitize(modules.join(', '))}</p>` : '<p class="failure">Not connected to the API!</p>';
+    return `
+        <h3>Modules provided by your Extensions API:</h3>
+        ${moduleInfo}
+    `;
+}
+
 async function showExtensionsDetails() {
     let htmlDefault = '<h3>Default Extensions:</h3>';
     let htmlExternal = '<h3>External Extensions:</h3>';
@@ -385,63 +451,19 @@ async function showExtensionsDetails() {
     const extensions = Object.entries(manifests).sort((a, b) => a[1].loading_order - b[1].loading_order);
 
     for (const extension of extensions) {
-        const name = extension[0];
-        const manifest = extension[1];
-        const isActive = activeExtensions.has(name);
-        const isDisabled = extension_settings.disabledExtensions.includes(name);
-        const isExternal = name.startsWith('third-party');
-
-        const titleClass = isActive ? "extension_enabled" : isDisabled ? "extension_disabled" : "extension_missing";
-        const checkboxClass = isDisabled ? "checkbox_disabled" : "";
-
-        const displayName = manifest.display_name;
-        let displayVersion = manifest.version ? ` v${manifest.version}` : "";
-        let isUpToDate = true;
-        if (isExternal) {
-            let data = await getExtensionVersion(name.replace('third-party', ''));
-            let branch = data.currentBranchName;
-            let commitHash = data.currentCommitHash;
-            isUpToDate = data.isUpToDate;
-            displayVersion = ` (${branch}-${commitHash.substring(0, 7)})`;
-        }
-
-        let toggleElement = `<input type="checkbox" title="Cannot enable extension" data-name="${name}" class="extension_missing ${checkboxClass}" disabled>`;
-        if (isActive || isDisabled) {
-            toggleElement = `<input type="checkbox" title="Click to toggle" data-name="${name}" class="${isActive ? 'toggle_disable' : 'toggle_enable'} ${checkboxClass}" ${isActive ? 'checked' : ''}>`;
-        }
-
-        let updateButton = isExternal && !isUpToDate ? `<button class="btn_update" data-name="${name.replace('third-party', '')}">Update</button>` : '';
-        let extensionHtml = `<hr><h4><span class="update-button">${updateButton}</span> <span class="${titleClass}">${DOMPurify.sanitize(displayName)}${displayVersion}</span> <span style="float:right;">${toggleElement}</span></h4>`;
-
-        if (isActive) {
-            if (Array.isArray(manifest.optional)) {
-                const optional = new Set(manifest.optional);
-                modules.forEach(x => optional.delete(x));
-                if (optional.size > 0) {
-                    const optionalString = DOMPurify.sanitize([...optional].join(', '));
-                    extensionHtml += `<p>Optional modules: <span class="optional">${optionalString}</span></p>`;
-                }
-            }
-        }
-        else if (!isDisabled) { // Neither active nor disabled
-            const requirements = new Set(manifest.requires);
-            modules.forEach(x => requirements.delete(x));
-            const requirementsString = DOMPurify.sanitize([...requirements].join(', '));
-            extensionHtml += `<p>Missing modules: <span class="failure">${requirementsString}</span></p>`
-        }
-
-        // Append the HTML to the correct section
+        const { isExternal, extensionHtml } = await getExtensionData(extension);
         if (isExternal) {
             htmlExternal += extensionHtml;
         } else {
             htmlDefault += extensionHtml;
         }
     }
-    // Do something with htmlDefault and htmlExternal here
-    let html = '<h3>Modules provided by your Extensions API:</h3>';
-    html += modules.length ? `<p>${DOMPurify.sanitize(modules.join(', '))}</p>` : '<p class="failure">Not connected to the API!</p>';
-    html += htmlDefault + htmlExternal;
 
+    const html = `
+        ${getModuleInformation()}
+        ${htmlDefault}
+        ${htmlExternal}
+    `;
     callPopup(`<div class="extensions_info">${html}</div>`, 'text');
 }
 
