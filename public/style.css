@@ -396,6 +396,20 @@ hr {
     opacity: 1;
 }
 
+.panelControlBar {
+    position: absolute;
+    right: 5px;
+    top: 5px;
+    margin-right: 5px;
+    z-index: 2000;
+}
+
+.panelControlBar .drag-grabber {
+    position: unset;
+}
+
+
+
 #sheldheader:active {
     cursor: grabbing;
     cursor: -moz-grabbing;
@@ -4488,7 +4502,8 @@ body.movingUI #sheld,
 body.movingUI .drawer-content,
 body.movingUI #expression-holder,
 body.movingUI .zoomed_avatar,
-body.movingUI #floatingPrompt {
+body.movingUI #floatingPrompt,
+body.movingUI #groupMemberListPopout {
     resize: both;
 }
 
@@ -4514,7 +4529,8 @@ body.noShadows * {
     color: var(--SmartThemeBodyColor);
 }
 
-.zoomed_avatar {
+.zoomed_avatar,
+#groupMemberListPopout {
     min-width: 100px;
     min-height: 100px;
     max-height: 90vh;
@@ -4528,6 +4544,37 @@ body.noShadows * {
     display: none;
     bottom: 0;
     aspect-ratio: 2 / 3;
+    border-radius: 10px;
+}
+
+#groupMemberListPopoutClose {
+    height: 15px;
+    aspect-ratio: 1 / 1;
+    font-size: 20px;
+    opacity: 0.5;
+    transition: all 250ms;
+}
+
+#groupMemberListPopout {
+    aspect-ratio: unset;
+    padding: 0;
+    backdrop-filter: blur(var(--SmartThemeBlurStrength));
+    background-color: var(--SmartThemeBlurTintColor);
+}
+
+#groupMemberListPopout #rm_group_members {
+    /*     background-color: var(--SmartThemeBlurTintColor); */
+
+    margin: 0;
+    padding: 0;
+    padding-top: 20px;
+
+}
+
+.hoverglow:hover {
+    opacity: 1 !important;
+    cursor: pointer;
+
 }
 
 body.waifuMode .zoomed_avatar {
