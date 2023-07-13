@@ -8619,4 +8619,32 @@ $(document).ready(function () {
             }
         }
     }
+
+    $("#charListGridToggle").on('click', async () => {
+        doCharListDisplaySwitch()
+    })
+
+    function doCharListDisplaySwitch() {
+
+        $("body").toggleClass('charListGrid')
+
+        //(wide100p alignitemsflexstart) removed, the rest added
+        $("#rm_print_characters_block").toggleClass('flexFlowColumn flex-container')
+
+        $("#rm_print_characters_block .character_select").toggleClass('wide100p alignitemsflexstart heightMinContent flexFlowColumn wide30p overflowHidden wideMax100px')
+        $("#rm_print_characters_block .character_select .ch_name").toggleClass('wide100p wideMax100px')
+        $("#rm_print_characters_block .character_select .ch_name").parent().toggleClass('wide100p')
+        $("#rm_print_characters_block .character_select .ch_name").parent().parent().toggleClass('wide100pLess70px justifyCenter wideMax100px')
+
+        $("#rm_print_characters_block .group_select").toggleClass('wide100p alignitemsflexstart heightMinContent alignitemscenter flexFlowColumn wide30p overflowHidden wideMax100px')
+        $("#rm_print_characters_block .group_select .ch_name").toggleClass('wide100p wideMax100px')
+        $("#rm_print_characters_block .group_select .ch_name").parent().toggleClass('wide100pLess70px')
+
+        $(".character_select .ch_description").toggle()
+        $("#rm_print_characters_block .tags_inline").toggle()
+        power_user.charListGrid = $("body").hasClass("charListGrid") ? true : false;
+        saveSettingsDebounced()
+        select_rm_characters()
+
+    }
 })
