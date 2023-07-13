@@ -1102,7 +1102,7 @@ function doRandomChat() {
 }
 
 async function doMesCut(_, text) {
-
+    console.debug(`was asked to cut message id #${text}`)
     //reject invalid args or no args
     if (text && isNaN(text) || !text) {
         toastr.error(`Must enter a single number only, non-number characters disallowed.`)
@@ -1110,7 +1110,7 @@ async function doMesCut(_, text) {
     }
 
     //reject attempts to delete firstmes
-    if (text === 0) {
+    if (text === '0') {
         toastr.error('Cannot delete the First Message')
         return
     }
