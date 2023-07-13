@@ -412,16 +412,20 @@ async function generateExtensionHtml(name, manifest, isActive, isDisabled, isExt
         `<input type="checkbox" title="Click to toggle" data-name="${name}" class="${isActive ? 'toggle_disable' : 'toggle_enable'} ${checkboxClass}" ${isActive ? 'checked' : ''}>` :
         `<input type="checkbox" title="Cannot enable extension" data-name="${name}" class="extension_missing ${checkboxClass}" disabled>`;
     
+    let deleteButton = isExternal ? `<span class="delete-button"><button class="btn_delete menu_button" data-name="${name.replace('third-party', '')}" title="Delete"><i class="fa-solid fa-trash-can"></i></button></span>` : '';
+    
     // if external, wrap the name in a link to the repo
 
     let extensionHtml = `<hr>
         <h4>
-            ${updateButton} 
+            ${updateButton}
+            ${deleteButton}
             ${originHtml}
             <span class="${isActive ? "extension_enabled" : isDisabled ? "extension_disabled" : "extension_missing"}">
                 ${DOMPurify.sanitize(displayName)}${displayVersion}
             </span> 
             ${isExternal ? '</a>' : ''}
+
             <span style="float:right;">${toggleElement}</span>
         </h4>`;
 
@@ -530,6 +534,32 @@ async function onUpdateClick() {
     }
 };
 
+/**
+ * Handles the click event for the delete button of an extension.
+ * This function makes a POST request to '/delete_extension' with the extension's name.
+ * If the extension is deleted, it displays a success message.
+ * Creates a popup for the user to confirm before delete.
+ */
+async function onDeleteClick() {
+    const extensionName = $(this).data('name');
+    // use callPopup to create a popup for the user to confirm before delete
+    const confirmation = await callPopup(`Are you sure you want to delete ${extensionName}?`, 'delete_extension');
+    if (confirmation) {
+        try {
+            const response = await fetch('/delete_extension', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify({ extensionName })
+            });
+        } catch (error) {
+            console.error('Error:', error);
+        }
+        toastr.success(`Extension ${extensionName} deleted`);
+        showExtensionsDetails();
+    }
+};
+
+
 
 /**
  * Fetches the version details of a specific extension.
@@ -600,4 +630,5 @@ $(document).ready(async function () {
     $(document).on('click', '.toggle_disable', onDisableExtensionClick);
     $(document).on('click', '.toggle_enable', onEnableExtensionClick);
     $(document).on('click', '.btn_update', onUpdateClick);
+    $(document).on('click', '.btn_delete', onDeleteClick);
 });

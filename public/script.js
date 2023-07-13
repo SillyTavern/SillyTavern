@@ -5553,6 +5553,9 @@ function callPopup(text, type, inputValue = '', { okButton, rows } = {}) {
             $("#dialogue_popup_ok").text(okButton ?? "Ok");
             $("#dialogue_popup_cancel").css("display", "none");
             break;
+        case "delete_extension":
+            $("#dialogue_popup_ok").text(okButton ?? "Ok");
+            break;
         case "new_chat":
         case "confirm":
             $("#dialogue_popup_ok").text(okButton ?? "Yes");

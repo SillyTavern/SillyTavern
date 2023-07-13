@@ -4532,5 +4532,36 @@ app.post('/get_extension_version', jsonParser, async (request, response) => {
     }
 );
 
+/**
+ * HTTP POST handler function to delete a git repository based on the extension name provided in the request body.
+ *
+ * @param {Object} request - HTTP Request object, expects a JSON body with a 'url' property.
+ * @param {Object} response - HTTP Response object used to respond to the HTTP request.
+ * 
+ * @returns {void}
+ */
+app.post('/delete_extension', jsonParser, async (request, response) => {
+    if (!request.body.extensionName) {
+        return response.status(400).send('Bad Request: extensionName is required in the request body.');
+    }
 
+    // Sanatize the extension name to prevent directory traversal
+    const extensionName = sanitize(request.body.extensionName);
 
+    try {
+        const extensionPath = path.join(directories.extensions, 'third-party', extensionName);
+
+        if (!fs.existsSync(extensionPath)) {
+            return response.status(404).send(`Directory does not exist at ${extensionPath}`);
+        }
+
+        await fs.promises.rmdir(extensionPath, { recursive: true });
+        console.log(`Extension has been deleted at ${extensionPath}`);
+
+        return response.send(`Extension has been deleted at ${extensionPath}`);
+
+    } catch (error) {
+        console.log('Deleting custom content failed', error);
+        return response.status(500).send(`Server Error: ${error.message}`);
+    }
+});

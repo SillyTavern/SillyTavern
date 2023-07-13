@@ -3807,6 +3807,13 @@ input.extension_missing[type="checkbox"] {
     display: inline-flex;
 }
 
+/* Align the content of this span to the right */
+.delete-button {
+    margin-right: 10px;
+    display: inline-flex;
+
+}
+
 /* possible place for WI Entry header styling */
 /* .world_entry_form .inline-drawer-header {
     background-color: var(--SmartThemeShadowColor);
