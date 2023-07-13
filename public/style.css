@@ -3793,10 +3793,18 @@ label[for="extensions_autoconnect"] {
 .extensions_info .extension_missing {
     color: gray;
 }
+input.extension_missing[type="checkbox"] {
+    opacity: 0.5;
+}
 
 #extensions_list .disabled {
     text-decoration: line-through;
     color: lightgray;
+}
+
+.update-button {
+    margin-right: 10px;
+    /* Adjust the value as needed */
 }
 
 /* possible place for WI Entry header styling */
