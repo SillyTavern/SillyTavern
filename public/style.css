@@ -4664,6 +4664,8 @@ body.waifuMode .zoomed_avatar {
 
 @media screen and (max-width: 1000px) {
 
+
+
     #extensions_settings,
     #extensions_settings2 {
         width: 100% !important;
@@ -4825,7 +4827,8 @@ body.waifuMode .zoomed_avatar {
 
     }
 
-    #showRawPrompt {
+    #showRawPrompt,
+    #groupCurrentMemberPopoutButton {
         display: none;
     }
 
