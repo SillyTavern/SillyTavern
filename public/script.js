@@ -3223,7 +3223,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         var storyStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].storyString) - worldInfoStringTokens;
         var examplesStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].examplesString);
         var mesSendStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].mesSendString)
-        var ActualChatHistoryTokens = mesSendStringTokens - (allAnchorsTokens - afterScenarioAnchorTokens)  + power_user.token_padding;
+        var ActualChatHistoryTokens = mesSendStringTokens - (allAnchorsTokens - afterScenarioAnchorTokens) + power_user.token_padding;
         var instructionTokens = getTokenCount(itemizedPrompts[thisPromptSet].instruction);
 
         var totalTokensInPrompt =
@@ -5084,8 +5084,8 @@ function updateMessage(div) {
 
     // Ignore character override if sent as system
     text = getRegexedString(
-        text, 
-        regexPlacement, 
+        text,
+        regexPlacement,
         { characterOverride: mes.extra?.type === "narrator" ? undefined : mes.name }
     );
 
@@ -6786,6 +6786,11 @@ async function importFromURL(items, files) {
     }
 }
 
+async function doImpersonate() {
+    $('#send_textarea').val('');
+    $("#option_impersonate").trigger('click', { fromSlashCommand: true })
+}
+
 const isPwaMode = window.navigator.standalone;
 if (isPwaMode) { $("body").addClass('PWA') }
 
@@ -6800,6 +6805,8 @@ $(document).ready(function () {
 
     registerSlashCommand('dupe', DupeChar, [], "– duplicates the currently selected character", true, true);
     registerSlashCommand('api', connectAPISlash, [], "(kobold, horde, novel, ooba, oai, claude, poe, windowai) – connect to an API", true, true);
+    registerSlashCommand('impersonate', doImpersonate, ['imp'], "- calls an impersonation response", true, true);
+
 
     setTimeout(function () {
         $("#groupControlsToggle").trigger('click');
@@ -7531,7 +7538,7 @@ $(document).ready(function () {
         }
 
         else if (id == "option_impersonate") {
-            if (is_send_press == false) {
+            if (is_send_press == false || fromSlashCommand) {
                 is_send_press = true;
                 Generate("impersonate");
             }
