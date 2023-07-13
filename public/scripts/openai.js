@@ -629,7 +629,7 @@ function prepareOpenAIMessages({
                                          extensionPrompts,
                                          cyclePrompt
                                      } = {}, dryRun) {
-    // When there is no character selected, there is no way to accurately calculate tokens
+    // Without a character selected, there is no way to accurately calculate tokens
     if (!promptManager.activeCharacter && dryRun) return [null, false];
 
     const prompts = promptManager.getPromptCollection();
@@ -717,7 +717,7 @@ function prepareOpenAIMessages({
         promptManager.populateTokenHandler(messages);
         promptManager.setMessages(messages);
 
-        // All information are up-to-date, render without dry-run.
+        // All information are up-to-date, render.
         if (false === dryRun) promptManager.render(false);
     }
 
