@@ -4413,7 +4413,7 @@ async function checkIfRepoIsUpToDate(extensionPath) {
 /**
  * HTTP POST handler function to clone a git repository from a provided URL, read the extension manifest,
  * and return extension information and path.
- * 
+ *
  * @param {Object} request - HTTP Request object, expects a JSON body with a 'url' property.
  * @param {Object} response - HTTP Response object used to respond to the HTTP request.
  * 
@@ -4448,9 +4448,11 @@ app.post('/get_extension', jsonParser, async (request, response) => {
 });
 
 /**
- * HTTP POST handler function to pull the latest updates from a given git repository 
- * based on the extension name and return the latest commit hash.
- * 
+ * HTTP POST handler function to pull the latest updates from a git repository 
+ * based on the extension name provided in the request body. It returns the latest commit hash, 
+ * the path of the extension, the status of the repository (whether it's up-to-date or not), 
+ * and the remote URL of the repository.
+ *
  * @param {Object} request - HTTP Request object, expects a JSON body with an 'extensionName' property.
  * @param {Object} response - HTTP Response object used to respond to the HTTP request.
  * 
@@ -4491,7 +4493,14 @@ app.post('/update_extension', jsonParser, async (request, response) => {
 });
 
 /**
- * Function to get current git commit hash and branch name for a given extension.
+ * HTTP POST handler function to get the current git commit hash and branch name for a given extension.
+ * It checks whether the repository is up-to-date with the remote, and returns the status along with
+ * the remote URL of the repository.
+ *
+ * @param {Object} request - HTTP Request object, expects a JSON body with an 'extensionName' property.
+ * @param {Object} response - HTTP Response object used to respond to the HTTP request.
+ * 
+ * @returns {void}
  */
 app.post('/get_extension_version', jsonParser, async (request, response) => {
     if (!request.body.extensionName) {

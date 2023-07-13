@@ -378,6 +378,17 @@ function addExtensionScript(name, manifest) {
 
 
 
+/**
+ * Generates HTML string for displaying an extension in the UI.
+ *
+ * @param {string} name - The name of the extension.
+ * @param {object} manifest - The manifest of the extension.
+ * @param {boolean} isActive - Whether the extension is active or not.
+ * @param {boolean} isDisabled - Whether the extension is disabled or not.
+ * @param {boolean} isExternal - Whether the extension is external or not.
+ * @param {string} checkboxClass - The class for the checkbox HTML element.
+ * @return {string} - The HTML string that represents the extension.
+ */
 async function generateExtensionHtml(name, manifest, isActive, isDisabled, isExternal, checkboxClass) {
     const displayName = manifest.display_name;
     let displayVersion = manifest.version ? ` v${manifest.version}` : "";
@@ -431,6 +442,12 @@ async function generateExtensionHtml(name, manifest, isActive, isDisabled, isExt
     return extensionHtml;
 }
 
+/**
+ * Gets extension data and generates the corresponding HTML for displaying the extension.
+ *
+ * @param {Array} extension - An array where the first element is the extension name and the second element is the extension manifest.
+ * @return {object} - An object with 'isExternal' indicating whether the extension is external, and 'extensionHtml' for the extension's HTML string.
+ */
 async function getExtensionData(extension) {
     const name = extension[0];
     const manifest = extension[1];
@@ -446,6 +463,11 @@ async function getExtensionData(extension) {
 }
 
 
+/**
+ * Gets the module information to be displayed.
+ *
+ * @return {string} - The HTML string for the module information.
+ */
 function getModuleInformation() {
     let moduleInfo = modules.length ? `<p>${DOMPurify.sanitize(modules.join(', '))}</p>` : '<p class="failure">Not connected to the API!</p>';
     return `
@@ -454,6 +476,9 @@ function getModuleInformation() {
     `;
 }
 
+/**
+ * Generates the HTML strings for all extensions and displays them in a popup.
+ */
 async function showExtensionsDetails() {
     let htmlDefault = '<h3>Default Extensions:</h3>';
     let htmlExternal = '<h3>External Extensions:</h3>';
@@ -478,7 +503,12 @@ async function showExtensionsDetails() {
 }
 
 
-
+/**
+ * Handles the click event for the update button of an extension.
+ * This function makes a POST request to '/update_extension' with the extension's name.
+ * If the extension is already up to date, it displays a success message.
+ * If the extension is not up to date, it updates the extension and displays a success message with the new commit hash.
+ */
 async function onUpdateClick() {
     const extensionName = $(this).data('name');
     try {
@@ -488,14 +518,10 @@ async function onUpdateClick() {
             body: JSON.stringify({ extensionName })
         });
 
-        console.log('Response', response);
         const data = await response.json();
-        console.log('Data', data);
         if (data.isUpToDate) {
-            console.log('Extension is up to date');
             toastr.success('Extension is already up to date');
         } else {
-            console.log('Extension updated');
             toastr.success(`Extension updated to ${data.shortCommitHash}`);
         }
         showExtensionsDetails();
@@ -504,6 +530,15 @@ async function onUpdateClick() {
     }
 };
 
+
+/**
+ * Fetches the version details of a specific extension.
+ *
+ * @param {string} extensionName - The name of the extension.
+ * @return {object} - An object containing the extension's version details.
+ * This object includes the currentBranchName, currentCommitHash, isUpToDate, and remoteUrl.
+ * @throws {error} - If there is an error during the fetch operation, it logs the error to the console.
+ */
 async function getExtensionVersion(extensionName) {
     try {
         const response = await fetch('/get_extension_version', {

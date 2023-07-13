@@ -8494,6 +8494,16 @@ $(document).ready(function () {
         }
     });
 
+    /**
+     * Handles the click event for the third-party extension import button.
+     * Prompts the user to enter the Git URL of the extension to import.
+     * After obtaining the Git URL, makes a POST request to '/get_extension' to import the extension.
+     * If the extension is imported successfully, a success message is displayed.
+     * If the extension import fails, an error message is displayed and the error is logged to the console.
+     * After successfully importing the extension, the extension settings are reloaded and a 'EXTENSION_SETTINGS_LOADED' event is emitted.
+     *
+     * @listens #third_party_extension_button#click - The click event of the '#third_party_extension_button' element.
+     */
     $('#third_party_extension_button').on('click', async () => {
         const html = `<h3>Enter the Git URL of the extension to import</h3>
     <br>
