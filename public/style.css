@@ -3804,7 +3804,7 @@ input.extension_missing[type="checkbox"] {
 
 .update-button {
     margin-right: 10px;
-    /* Adjust the value as needed */
+    display: inline-flex;
 }
 
 /* possible place for WI Entry header styling */

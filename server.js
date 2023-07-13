@@ -4391,16 +4391,23 @@ async function getManifest(extensionPath) {
 }
 
 async function checkIfRepoIsUpToDate(extensionPath) {
-    await git.cwd(extensionPath).fetch('origin');
-    const currentBranch = await git.cwd(extensionPath).branch();
-    const currentCommitHash = await git.cwd(extensionPath).revparse(['HEAD']);
-    const log = await git.cwd(extensionPath).log({
-        from: currentCommitHash,
-        to: `origin/${currentBranch.current}`,
-    });
+  await git.cwd(extensionPath).fetch('origin');
+  const currentBranch = await git.cwd(extensionPath).branch();
+  const currentCommitHash = await git.cwd(extensionPath).revparse(['HEAD']);
+  const log = await git.cwd(extensionPath).log({
+    from: currentCommitHash,
+    to: `origin/${currentBranch.current}`,
+  });
 
-    return log.total === 0;
+  // Fetch remote repository information
+  const remotes = await git.cwd(extensionPath).getRemotes(true);
+  
+  return {
+    isUpToDate: log.total === 0,
+    remoteUrl: remotes[0].refs.fetch, // URL of the remote repository
+  };
 }
+
 
 
 /**
@@ -4450,36 +4457,37 @@ app.post('/get_extension', jsonParser, async (request, response) => {
  * @returns {void}
  */
 app.post('/update_extension', jsonParser, async (request, response) => {
-  if (!request.body.extensionName) {
-    return response.status(400).send('Bad Request: extensionName is required in the request body.');
-  }
-
-  try {
-    const extensionName = request.body.extensionName;
-    const extensionPath = path.join(directories.extensions, 'third-party', extensionName);
-
-    if (!fs.existsSync(extensionPath)) {
-      return response.status(404).send(`Directory does not exist at ${extensionPath}`);
+    if (!request.body.extensionName) {
+        return response.status(400).send('Bad Request: extensionName is required in the request body.');
     }
 
-      const isUpToDate = await checkIfRepoIsUpToDate(extensionPath);
+    try {
+        const extensionName = request.body.extensionName;
+        const extensionPath = path.join(directories.extensions, 'third-party', extensionName);
 
-      if (!isUpToDate) {
-          await git.cwd(extensionPath).pull('origin', currentBranch.current);
-          console.log(`Extension has been updated at ${extensionPath}`);
-      } else {
-          console.log(`Extension is up to date at ${extensionPath}`);
-      }
+        if (!fs.existsSync(extensionPath)) {
+            return response.status(404).send(`Directory does not exist at ${extensionPath}`);
+        }
 
-    const fullCommitHash = await git.cwd(extensionPath).revparse(['HEAD']);
-    const shortCommitHash = fullCommitHash.slice(0, 7);
+        const { isUpToDate, remoteUrl } = await checkIfRepoIsUpToDate(extensionPath);
+        const currentBranch = await git.cwd(extensionPath).branch();
+        if (!isUpToDate) {
 
-    return response.send({ shortCommitHash, extensionPath, isUpToDate: isUpToDate.total === 0 });
+            await git.cwd(extensionPath).pull('origin', currentBranch.current);
+            console.log(`Extension has been updated at ${extensionPath}`);
+        } else {
+            console.log(`Extension is up to date at ${extensionPath}`);
+        }
+        await git.cwd(extensionPath).fetch('origin');
+        const fullCommitHash = await git.cwd(extensionPath).revparse(['HEAD']);
+        const shortCommitHash = fullCommitHash.slice(0, 7);
 
-  } catch (error) {
-    console.log('Updating custom content failed', error);
-    return response.status(500).send(`Server Error: ${error.message}`);
-  }
+        return response.send({ shortCommitHash, extensionPath, isUpToDate, remoteUrl });
+
+    } catch (error) {
+        console.log('Updating custom content failed', error);
+        return response.status(500).send(`Server Error: ${error.message}`);
+    }
 });
 
 /**
@@ -4501,11 +4509,12 @@ app.post('/get_extension_version', jsonParser, async (request, response) => {
         const currentBranch = await git.cwd(extensionPath).branch();
         // get only the working branch 
         const currentBranchName = currentBranch.current;
+        await git.cwd(extensionPath).fetch('origin');
         const currentCommitHash = await git.cwd(extensionPath).revparse(['HEAD']);
         console.log(currentBranch, currentCommitHash);
-        const isUpToDate = await checkIfRepoIsUpToDate(extensionPath);
+        const { isUpToDate, remoteUrl } = await checkIfRepoIsUpToDate(extensionPath);
 
-        return response.send({ currentBranchName, currentCommitHash, isUpToDate });
+        return response.send({ currentBranchName, currentCommitHash, isUpToDate, remoteUrl });
     
     } catch (error) {
         console.log('Getting extension version failed', error);

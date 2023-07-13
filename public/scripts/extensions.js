@@ -382,25 +382,35 @@ async function generateExtensionHtml(name, manifest, isActive, isDisabled, isExt
     const displayName = manifest.display_name;
     let displayVersion = manifest.version ? ` v${manifest.version}` : "";
     let isUpToDate = true;
+    let updateButton = '';
+    let originHtml = '';
     if (isExternal) {
         let data = await getExtensionVersion(name.replace('third-party', ''));
         let branch = data.currentBranchName;
         let commitHash = data.currentCommitHash;
+        let origin = data.remoteUrl
         isUpToDate = data.isUpToDate;
         displayVersion = ` (${branch}-${commitHash.substring(0, 7)})`;
+        updateButton = isUpToDate ?
+            `<span class="update-button"><button class="btn_update menu_button" data-name="${name.replace('third-party', '')}" title="Up to date"><i class="fa-solid fa-code-commit"></i></button></span>` :
+            `<span class="update-button"><button class="btn_update menu_button" data-name="${name.replace('third-party', '')}" title="Update available"><i class="fa-solid fa-download"></i></button></span>`;
+        originHtml = `<a href="${origin}" target="_blank" rel="noopener noreferrer">`;
     }
 
     let toggleElement = isActive || isDisabled ?
         `<input type="checkbox" title="Click to toggle" data-name="${name}" class="${isActive ? 'toggle_disable' : 'toggle_enable'} ${checkboxClass}" ${isActive ? 'checked' : ''}>` :
         `<input type="checkbox" title="Cannot enable extension" data-name="${name}" class="extension_missing ${checkboxClass}" disabled>`;
+    
+    // if external, wrap the name in a link to the repo
 
-    let updateButton = isExternal && !isUpToDate ? `<button class="btn_update" data-name="${name.replace('third-party', '')}">Update</button>` : '';
     let extensionHtml = `<hr>
         <h4>
-            <span class="update-button">${updateButton}</span> 
+            ${updateButton} 
+            ${originHtml}
             <span class="${isActive ? "extension_enabled" : isDisabled ? "extension_disabled" : "extension_missing"}">
                 ${DOMPurify.sanitize(displayName)}${displayVersion}
             </span> 
+            ${isExternal ? '</a>' : ''}
             <span style="float:right;">${toggleElement}</span>
         </h4>`;
 
@@ -488,8 +498,7 @@ async function onUpdateClick() {
             console.log('Extension updated');
             toastr.success(`Extension updated to ${data.shortCommitHash}`);
         }
-        $(this).text(data.shortCommitHash);
-        console.log(data);
+        showExtensionsDetails();
     } catch (error) {
         console.error('Error:', error);
     }
