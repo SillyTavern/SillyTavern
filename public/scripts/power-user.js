@@ -750,10 +750,13 @@ function loadPowerUserSettings(settings, data) {
 
 async function loadCharListState() {
     if (document.getElementById('CharID0') !== null) {
+        console.debug('setting charlist state to...')
         if (power_user.charListGrid === true) {
+            console.debug('..to grid')
             $("#charListGridToggle").trigger('click')
-        }
+        } else { console.debug('..to list') }
     } else {
+        console.debug('charlist not ready yet')
         await delay(100)
         loadCharListState();
     }
