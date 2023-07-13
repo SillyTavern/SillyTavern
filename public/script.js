@@ -2172,9 +2172,28 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         reject = () => { };
     }
 
-    if (selected_group && !is_group_generating) {
+    if (selected_group && !is_group_generating && !dryRun) {
         generateGroupWrapper(false, type, { resolve, reject, quiet_prompt, force_chid, signal: abortController.signal });
         return;
+    } else if (selected_group && !is_group_generating && dryRun) {
+        const characterIndexMap = new Map(characters.map((char, index) => [char.avatar, index]));
+        const group = groups.find((x) => x.id === selected_group);
+
+        const enabledMembers = group.members.reduce((acc, member) => {
+            if (!group.disabled_members.includes(member) && !acc.includes(member)) {
+                acc.push(member);
+            }
+            return acc;
+        }, []);
+
+        const memberIds = enabledMembers
+            .map((member) => characterIndexMap.get(member))
+            .filter((index) => index !== undefined);
+
+        if (memberIds.length > 0) {
+            setCharacterId(memberIds[0]);
+            setCharacterName('');
+        }
     }
 
     if (true === dryRun ||
