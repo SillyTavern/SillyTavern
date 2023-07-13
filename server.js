@@ -4391,6 +4391,7 @@ async function getManifest(extensionPath) {
 }
 
 async function checkIfRepoIsUpToDate(extensionPath) {
+    await git.cwd(extensionPath).fetch('origin');
     const currentBranch = await git.cwd(extensionPath).branch();
     const currentCommitHash = await git.cwd(extensionPath).revparse(['HEAD']);
     const log = await git.cwd(extensionPath).log({
@@ -4400,6 +4401,7 @@ async function checkIfRepoIsUpToDate(extensionPath) {
 
     return log.total === 0;
 }
+
 
 /**
  * HTTP POST handler function to clone a git repository from a provided URL, read the extension manifest,
