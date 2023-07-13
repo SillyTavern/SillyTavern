@@ -725,8 +725,9 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
         return sendWindowAIRequest(openai_msgs_tosend, signal, stream);
     }
 
+    const logitBiasSources = [chat_completion_sources.OPENAI, chat_completion_sources.OPENROUTER];
     if (oai_settings.bias_preset_selected
-        && oai_settings.chat_completion_source == chat_completion_sources.OPENAI
+        && logitBiasSources.includes(oai_settings.chat_completion_source)
         && Array.isArray(oai_settings.bias_presets[oai_settings.bias_preset_selected])
         && oai_settings.bias_presets[oai_settings.bias_preset_selected].length) {
         logit_bias = biasCache || await calculateLogitBias();
