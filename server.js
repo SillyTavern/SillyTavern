@@ -35,7 +35,6 @@ const compression = require('compression');
 const app = express();
 const responseTime = require('response-time');
 const simpleGit = require('simple-git');
-const git = simpleGit();
 
 app.use(compression());
 app.use(responseTime());
@@ -4391,6 +4390,7 @@ async function getManifest(extensionPath) {
 }
 
 async function checkIfRepoIsUpToDate(extensionPath) {
+  const git = simpleGit();
   await git.cwd(extensionPath).fetch('origin');
   const currentBranch = await git.cwd(extensionPath).branch();
   const currentCommitHash = await git.cwd(extensionPath).revparse(['HEAD']);
@@ -4420,11 +4420,17 @@ async function checkIfRepoIsUpToDate(extensionPath) {
  * @returns {void}
  */
 app.post('/get_extension', jsonParser, async (request, response) => {
+    const git = simpleGit();
     if (!request.body.url) {
         return response.status(400).send('Bad Request: URL is required in the request body.');
     }
 
     try {
+        // make sure the third-party directory exists
+        if (!fs.existsSync(directories.extensions + '/third-party')) {
+            fs.mkdirSync(directories.extensions + '/third-party');
+        }
+
         const url = request.body.url;
         const extensionPath = path.join(directories.extensions, 'third-party', path.basename(url, '.git'));
 
@@ -4459,6 +4465,7 @@ app.post('/get_extension', jsonParser, async (request, response) => {
  * @returns {void}
  */
 app.post('/update_extension', jsonParser, async (request, response) => {
+    const git = simpleGit();
     if (!request.body.extensionName) {
         return response.status(400).send('Bad Request: extensionName is required in the request body.');
     }
@@ -4503,6 +4510,7 @@ app.post('/update_extension', jsonParser, async (request, response) => {
  * @returns {void}
  */
 app.post('/get_extension_version', jsonParser, async (request, response) => {
+    const git = simpleGit();
     if (!request.body.extensionName) {
         return response.status(400).send('Bad Request: extensionName is required in the request body.');
     }

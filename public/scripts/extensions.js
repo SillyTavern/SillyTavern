@@ -556,6 +556,8 @@ async function onDeleteClick() {
         }
         toastr.success(`Extension ${extensionName} deleted`);
         showExtensionsDetails();
+        // reload the page to remove the extension from the list
+        location.reload();
     }
 };
 
