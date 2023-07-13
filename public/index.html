@@ -2868,11 +2868,14 @@
                             <div class="tags rm_tag_filter"></div>
                         </div>
                         <!-- a div containing a dynamically updated count of characters currently displayed -->
-                        <div id="rm_character_count"></div>
+                        <div class="flex-container">
+                            <div id="rm_character_count"></div>
+                            <i id="charListGridToggle" class="fa-solid fa-table-cells-large menu_button"></i>
+                        </div>
                         <hr>
                     </div>
 
-                    <div id="rm_print_characters_block"></div>
+                    <div id="rm_print_characters_block" class="flexFlowColumn"></div>
                 </div>
 
                 <!-- only displays after creating/deleting a character/group -->
@@ -3367,7 +3370,10 @@
                 <img src="">
             </div>
             <div class="flex-container wide100pLess70px">
-                <div class="wide100p"><span class="ch_name"></span> <i class="ch_avatar_url"></i></div>
+                <div class="wide100p">
+                    <span class="ch_name"></span>
+                    <i class="ch_avatar_url"></i>
+                </div>
                 <i class="ch_fav_icon fa-solid fa-star"></i>
                 <input class="ch_fav" value="" hidden />
                 <div class="ch_description"></div>

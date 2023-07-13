@@ -1189,7 +1189,6 @@ input[type="file"] {
     overflow-y: auto;
     flex-grow: 1;
     display: flex;
-    flex-direction: column;
     /* row-gap: 5px; */
 }
 
@@ -1377,6 +1376,10 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 }
 
+.heightMinContent {
+    height: min-content;
+}
+
 /*applies to char list and mes_text char display name*/
 
 .ch_name {
@@ -1420,9 +1423,10 @@ body.big-avatars .ch_description {
 #rm_print_characters_block .ch_name {
     width: 100%;
     white-space: nowrap;
-    max-width: calc(100% - 29px);
+    /* max-width: calc(100% - 29px); */
     overflow: hidden;
     text-overflow: ellipsis;
+    display: block;
 }
 
 .character_select:hover {
@@ -3378,10 +3382,13 @@ body .ui-widget-content li:hover {
 
 body:not(.big-avatars) .avatar_collage {
     min-width: 50px;
+    aspect-ratio: 1 / 1;
 }
 
 body.big-avatars .avatar_collage {
     min-width: 60px;
+    max-width: 60px;
+    aspect-ratio: 2 / 3;
 }
 
 
@@ -3840,6 +3847,7 @@ label[for="extensions_autoconnect"] {
 .extensions_info .extension_missing {
     color: gray;
 }
+
 input.extension_missing[type="checkbox"] {
     opacity: 0.5;
 }
@@ -4110,6 +4118,18 @@ toolcool-color-picker {
     text-overflow: ellipsis;
 }
 
+.maxWidth200px {
+    max-width: 200px;
+}
+
+.alignContentFlexStart {
+    align-content: flex-start;
+}
+
+.overflowHidden {
+    overflow: hidden;
+}
+
 .padding5 {
     padding: 5px;
 }
@@ -4152,6 +4172,10 @@ toolcool-color-picker {
 
 .wide50p {
     width: 50% !important;
+}
+
+.wide25p {
+    width: 25%;
 }
 
 .wide30p {

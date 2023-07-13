@@ -742,8 +742,20 @@ function loadPowerUserSettings(settings, data) {
     switchWaifuMode();
     switchSpoilerMode();
     loadMovingUIState();
+    loadCharListState();
 
     //console.log(power_user)
+}
+
+async function loadCharListState() {
+    if (document.getElementById('CharID0') !== null) {
+        if (power_user.charListGrid === true) {
+            $("#charListGridToggle").trigger('click')
+        }
+    } else {
+        await delay(100)
+        loadCharListState();
+    }
 }
 
 function loadMovingUIState() {
