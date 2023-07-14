@@ -58,11 +58,6 @@ export const chat_styles = {
     DOCUMENT: 2,
 }
 
-const sheld_width = {
-    DEFAULT: 0,
-    w1000px: 1,
-}
-
 const pygmalion_options = {
     DISABLED: -1,
     AUTO: 0,
@@ -117,7 +112,7 @@ let power_user = {
     fast_ui_mode: true,
     avatar_style: avatar_styles.ROUND,
     chat_display: chat_styles.DEFAULT,
-    sheld_width: sheld_width.DEFAULT,
+    chat_width: 50,
     never_resize_avatars: false,
     show_card_avatar_urls: false,
     play_message_sound: false,
@@ -199,7 +194,7 @@ const storage_keys = {
     fast_ui_mode: "TavernAI_fast_ui_mode",
     avatar_style: "TavernAI_avatar_style",
     chat_display: "TavernAI_chat_display",
-    sheld_width: "TavernAI_sheld_width",
+    chat_width: "chat_width",
     font_scale: "TavernAI_font_scale",
 
     main_text_color: "TavernAI_main_text_color",
@@ -406,18 +401,11 @@ function applyChatDisplay() {
     }
 }
 
-function applySheldWidth() {
-    //disabled due to 50vw conversion
-    return
-    power_user.sheld_width = Number(localStorage.getItem(storage_keys.sheld_width) ?? chat_styles.DEFAULT);
-    $("body").toggleClass("w1000px", power_user.sheld_width === sheld_width.w1000px);
+function applyChatWidth() {
+    power_user.chat_width = Number(localStorage.getItem(storage_keys.chat_width) ?? 50);
     let r = document.documentElement;
-    if (power_user.sheld_width === 1) {
-        r.style.setProperty('--sheldWidth', '1000px');
-    } else {
-        r.style.setProperty('--sheldWidth', '800px');
-    }
-    $(`input[name="sheld_width"][value="${power_user.sheld_width}"]`).prop("checked", true);
+    r.style.setProperty('--sheldWidth', `${power_user.chat_width}vw`);
+    $('#chat_width_slider').val(power_user.chat_width);
 }
 
 async function applyThemeColor(type) {
@@ -542,10 +530,10 @@ async function applyTheme(name) {
             }
         },
         {
-            key: 'sheld_width',
+            key: 'chat_width',
             action: async () => {
-                localStorage.setItem(storage_keys.sheld_width, power_user.sheld_width);
-                applySheldWidth();
+                localStorage.setItem(storage_keys.chat_width, power_user.chat_width);
+                applyChatWidth();
             }
         },
         {
@@ -597,7 +585,7 @@ async function applyTheme(name) {
 switchUiMode();
 applyFontScale();
 applyThemeColor();
-applySheldWidth();
+applyChatWidth();
 applyAvatarStyle();
 applyBlurStrength();
 applyShadowWidth();
@@ -639,7 +627,7 @@ function loadPowerUserSettings(settings, data) {
     power_user.mesIDDisplay_enabled = mesIDDisplay === null ? true : mesIDDisplay == "true";
     power_user.avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? avatar_styles.ROUND);
     //power_user.chat_display = Number(localStorage.getItem(storage_keys.chat_display) ?? chat_styles.DEFAULT);
-    power_user.sheld_width = Number(localStorage.getItem(storage_keys.sheld_width) ?? sheld_width.DEFAULT);
+    power_user.chat_width = Number(localStorage.getItem(storage_keys.chat_width) ?? 50);
     power_user.font_scale = Number(localStorage.getItem(storage_keys.font_scale) ?? 1);
     power_user.blur_strength = Number(localStorage.getItem(storage_keys.blur_strength) ?? 10);
 
@@ -706,7 +694,7 @@ function loadPowerUserSettings(settings, data) {
     $("#prefer_character_jailbreak").prop("checked", power_user.prefer_character_jailbreak);
     $(`input[name="avatar_style"][value="${power_user.avatar_style}"]`).prop("checked", true);
     $(`#chat_display option[value=${power_user.chat_display}]`).attr("selected", true).trigger('change');
-    $(`input[name="sheld_width"][value="${power_user.sheld_width}"]`).prop("checked", true);
+    $('#chat_width_slider').val(power_user.chat_width);
     $("#token_padding").val(power_user.token_padding);
 
     $("#font_scale").val(power_user.font_scale);
@@ -1000,7 +988,7 @@ async function saveTheme() {
         avatar_style: power_user.avatar_style,
         chat_display: power_user.chat_display,
         noShadows: power_user.noShadows,
-        sheld_width: power_user.sheld_width,
+        chat_width: power_user.chat_width,
         timer_enabled: power_user.timer_enabled,
         timestamps_enabled: power_user.timestamps_enabled,
         mesIDDisplay_enabled: power_user.mesIDDisplay_enabled,
@@ -1579,11 +1567,10 @@ $(document).ready(() => {
 
     });
 
-    $(`input[name="sheld_width"]`).on('input', function (e) {
-        power_user.sheld_width = Number(e.target.value);
-        localStorage.setItem(storage_keys.sheld_width, power_user.sheld_width);
-        //console.log("sheld width changing now");
-        applySheldWidth();
+    $('#chat_width_slider').on('input', function (e) {
+        power_user.chat_width = Number(e.target.value);
+        localStorage.setItem(storage_keys.chat_width, power_user.chat_width);
+        applyChatWidth();
     });
 
     $(`input[name="font_scale"]`).on('input', async function (e) {

@@ -695,6 +695,7 @@ hr {
     display: flex;
     flex-direction: column;
     gap: 5px;
+    flex-grow: 1;
 }
 
 #avatars-style .range-block-range,
@@ -3650,12 +3651,13 @@ span.warning {
     font-weight: bolder;
 }
 
-#talkativeness_hint {
+.slider_hint {
     display: flex;
     flex-direction: row;
     align-items: baseline;
     justify-content: space-between;
     width: 100%;
+    position: relative;
 }
 
 #talkativeness_expander {
@@ -3667,21 +3669,14 @@ span.warning {
     width: 100%;
 }
 
-#talkativeness_hint span {
-    min-width: 10em;
+.slider_hint span {
     font-size: calc(var(--mainFontSize) - .25rem);
 }
 
-#talkativeness_hint span:nth-child(1) {
-    text-align: left;
-}
-
-#talkativeness_hint span:nth-child(2) {
-    text-align: center;
-}
-
-#talkativeness_hint span:nth-child(3) {
-    text-align: right;
+.slider_hint span:nth-child(2) {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 p {
@@ -5047,10 +5042,6 @@ body.waifuMode .zoomed_avatar {
 
     #rm_ch_create_block textarea {
         max-height: 190px;
-    }
-
-    #talkativeness_hint span {
-        min-width: 33%;
     }
 
     .drawer25pWidth {

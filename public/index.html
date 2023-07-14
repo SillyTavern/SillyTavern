@@ -2301,6 +2301,21 @@
                     <div name="UI Customization" class="flex-container drawer33pWidth">
                         <div class="ui-settings">
                             <h4><span data-i18n="UI Customization">UI Customization</span></h4>
+                            <div class="range-block">
+                                <div class="range-block-title" data-i18n="Chat Width (PC)">
+                                    Chat Width (PC)
+                                </div>
+                                <div class="range-block-range-and-counter">
+                                    <div class="range-block-range">
+                                        <input id="chat_width_slider" class="wide100p" type="range" min="25" max="75" step="1" value="50">
+                                        <div class="slider_hint">
+                                            <span>25%</span>
+                                            <span>50%</span>
+                                            <span>75%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             <div>
                                 <span data-i18n="Avatar Style">Avatar Style:</span><br>
                                 <label>
@@ -3042,7 +3057,7 @@
             <h5 data-i18n="How often the character speaks in group chats!">How often the character speaks in &nbsp;<span class="warning">group chats!</span>
             </h5>
             <input id="talkativeness_slider" name="talkativeness" type="range" min="0" max="1" step="0.05" value="0.5" form="form_create">
-            <div id="talkativeness_hint">
+            <div class="slider_hint">
                 <span data-i18n="Shy">Shy</span>
                 <span data-i18n="Normal">Normal</span>
                 <span data-i18n="Chatty">Chatty</span>
