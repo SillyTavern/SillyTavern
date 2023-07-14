@@ -552,6 +552,10 @@ async function getClientVersion() {
 }
 
 function getTokenCount(str, padding = undefined) {
+    if (typeof str !== 'string') {
+        return 0;
+    }
+
     let tokenizerType = power_user.tokenizer;
 
     if (main_api === 'openai') {
