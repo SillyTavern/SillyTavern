@@ -2717,6 +2717,7 @@ input[type="range"]::-webkit-slider-thumb {
     display: flex;
     flex-direction: column;
     row-gap: 5px;
+    flex-grow: 1;
 }
 
 #anchor_checkbox label,
