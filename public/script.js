@@ -949,13 +949,10 @@ async function getCharacters() {
 
         await getGroups();
         await printCharacters();
-<<<<<<< HEAD
         await AA_CountCharTime(this_chid);
 
 
-=======
         updateCharacterCount('#rm_print_characters_block > div');
->>>>>>> 040380e0fb8612b3017d7c6c119172ab2b34a107
     }
 }
 
