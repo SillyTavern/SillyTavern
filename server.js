@@ -1057,7 +1057,7 @@ app.post("/editcharacterattribute", jsonParser, async function (request, respons
         charaRead(avatarPath).then((char) => {
             char = JSON.parse(char);
             //check if the field exists
-            if (char[request.body.field] === undefined || char.data[request.body.field] === undefined) {
+            if (char[request.body.field] === undefined && char.data[request.body.field] === undefined) {
                 console.error('Error: invalid field.');
                 response.status(400).send('Error: invalid field.');
                 return;
