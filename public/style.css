@@ -4912,6 +4912,7 @@ body.waifuMode .zoomed_avatar {
         align-items: start;
         height: min-content;
         align-content: start;
+        max-width: unset;
     }
 
     #top-settings-holder,
