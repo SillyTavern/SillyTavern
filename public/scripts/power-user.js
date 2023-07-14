@@ -906,6 +906,10 @@ export function formatInstructModePrompt(name, isImpersonate, promptBias, name1,
 
 const sortFunc = (a, b) => power_user.sort_order == 'asc' ? compareFunc(a, b) : compareFunc(b, a);
 const compareFunc = (first, second) => {
+    if (power_user.sort_order == 'random') {
+        return Math.random() > 0.5 ? 1 : -1;
+    }
+
     switch (power_user.sort_rule) {
         case 'boolean':
             const a = first[power_user.sort_field];

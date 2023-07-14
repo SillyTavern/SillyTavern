@@ -1206,6 +1206,7 @@ body.charListGrid #rm_print_characters_block {
     flex-wrap: wrap;
     flex-direction: row;
     justify-content: space-around;
+    align-content: flex-start;
 }
 
 body.charListGrid #rm_print_characters_block .character_select {
