@@ -93,6 +93,7 @@
     <script type="module" src="scripts/secrets.js"></script>
     <script type="module" src="scripts/context-template.js"></script>
     <script type="module" src="scripts/extensions.js"></script>
+    <script type="module" src="scripts/authors-note.js"></script>
     <script type="text/javascript" src="scripts/toolcool-color-picker.js"></script>
 
     <title>SillyTavern</title>
@@ -3554,7 +3555,105 @@
     <div id="typing_indicator_template" class="template_element">
         <div class="typing_indicator"><span class="typing_indicator_name">CHAR</span> is typing</div>
     </div>
-    <div id="movingDivs"></div>
+    <div id="movingDivs">
+        <div id="floatingPrompt" class="drawer-content flexGap5">
+            <div class="panelControlBar flex-container">
+                <div id="floatingPromptheader" class="fa-solid fa-grip drag-grabber"></div>
+                <div id="ANClose" class="fa-solid fa-circle-xmark"></div>
+            </div>
+            <div name="floatingPromptHolder">
+                <div class="inline-drawer">
+                    <div id="ANBlockToggle" class="inline-drawer-toggle inline-drawer-header">
+                        <b>Author's Note</b>
+                        <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                    </div>
+                    <div class="inline-drawer-content">
+                        <small>
+                            <b>Unique to this chat</b>.<br>
+                            Bookmarks inherit the Note from their parent, and can be changed individually after that.<br>
+                        </small>
+                        <textarea id="extension_floating_prompt" class="text_pole" rows="8" maxlength="10000"></textarea>
+                        <div class="extension_token_counter">
+                            Tokens: <span id="extension_floating_prompt_token_counter">0</span>
+                        </div>
+
+                        <div class="floating_prompt_radio_group">
+                            <label>
+                                <input type="radio" name="extension_floating_position" value="0" />
+                                After scenario
+                            </label>
+                            <label>
+                                <input type="radio" name="extension_floating_position" value="1" />
+                                In-chat @ Depth <input id="extension_floating_depth" class="text_pole widthUnset" type="number"
+                                    min="0" max="99" />
+                            </label>
+                        </div>
+                        <!--<label for="extension_floating_interval">In-Chat Insertion Depth</label>-->
+
+                        <label for="extension_floating_interval">Insertion Frequency</label>
+
+                        <input id="extension_floating_interval" class="text_pole widthUnset" type="number" min="0"
+                            max="999" /><small> (0 = Disable, 1 = Always)</small>
+                        <br>
+
+                        <span>User inputs until next insertion: <span id="extension_floating_counter">(disabled)</span></span>
+                    </div>
+                </div>
+                <hr class="sysHR">
+                <div class="inline-drawer">
+                    <div id="charaANBlockToggle" class="inline-drawer-toggle inline-drawer-header">
+                        <b>Character Author's Note</b>
+                        <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                    </div>
+                    <div class="inline-drawer-content">
+                        <small>Will be automatically added as the author's note for this character. Will be used in groups, but
+                            can't be modified when a group chat is open.</small>
+
+                        <textarea id="extension_floating_chara" class="text_pole" rows="8" maxlength="10000"
+                            placeholder="Example:\n[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
+                        <div class="extension_token_counter">
+                            Tokens: <span id="extension_floating_chara_token_counter">0</span>
+                        </div>
+
+                        <label class="checkbox_label" for="extension_use_floating_chara">
+                            <input id="extension_use_floating_chara" type="checkbox" />
+                            <span data-i18n="Use character author's note">Use character author's note</span>
+                        </label>
+                        <div class="floating_prompt_radio_group">
+                            <label>
+                                <input type="radio" name="extension_floating_char_position" value="0" />
+                                Replace Author's Note
+                            </label>
+                            <label>
+                                <input type="radio" name="extension_floating_char_position" value="1" />
+                                Top of Author's Note
+                            </label>
+                            <label>
+                                <input type="radio" name="extension_floating_char_position" value="2" />
+                                Bottom of Author's Note
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <hr class="sysHR">
+                <div class="inline-drawer">
+                    <div id="defaultANBlockToggle" class="inline-drawer-toggle inline-drawer-header">
+                        <b>Default Author's Note</b>
+                        <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                    </div>
+                    <div class="inline-drawer-content">
+                        <small>Will be automatically added as the Author's Note for all new chats.</small>
+
+                        <textarea id="extension_floating_default" class="text_pole" rows="8" maxlength="10000"
+                            placeholder="Example:\n[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
+                        <div class="extension_token_counter">
+                            Tokens: <span id="extension_floating_default_token_counter">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <div id="sheld">
         <div id="sheldheader" class="fa-solid fa-grip drag-grabber"></div>
         <div id="chat">
@@ -3580,6 +3679,10 @@
     <!-- popups live outside sheld to avoid blur conflicts -->
     <div id="options" class="font-family-reset" style="display: none;">
         <div class="options-content">
+            <a id="option_toggle_AN">
+                <i class="fa-lg fa-solid fa-note-sticky"></i>
+                <span data-i18n="Author's Note">Author's Note</span>
+            </a>
             <a id="option_back_to_main">
                 <i class="fa-lg fa-solid fa-left-long"></i>
                 <span data-i18n="Back to parent chat">Back to parent chat</span>
