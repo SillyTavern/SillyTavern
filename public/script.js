@@ -8319,7 +8319,7 @@ $(document).ready(function () {
         var icon = $(this).find('.inline-drawer-icon');
         icon.toggleClass('down up');
         icon.toggleClass('fa-circle-chevron-down fa-circle-chevron-up');
-        $(this).closest('.inline-drawer').find('.inline-drawer-content').slideToggle();
+        $(this).closest('.inline-drawer').find('.inline-drawer-content').stop().slideToggle();
     });
 
     $(document).on('click', '.mes .avatar', function () {

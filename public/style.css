@@ -4118,6 +4118,7 @@ input.extension_missing[type="checkbox"] {
     justify-content: space-between;
     align-items: center;
     padding: 5px 0;
+    cursor: pointer;
 }
 
 .inline-drawer-content {
