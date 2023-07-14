@@ -581,6 +581,8 @@ function getTokenCount(str, padding = undefined) {
             return countTokensRemote('/tokenize_nerdstash', str, padding);
         case tokenizers.NERD2:
             return countTokensRemote('/tokenize_nerdstash_v2', str, padding);
+        case tokenizers.API:
+            return countTokensRemote('/tokenize_via_api', str, padding);
         default:
             console.warn("Unknown tokenizer type", tokenizerType);
             return Math.ceil(str.length / CHARACTERS_PER_TOKEN_RATIO) + padding;
@@ -1150,15 +1152,17 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
         let regexPlacement;
         if (isUser) {
             regexPlacement = regex_placement.USER_INPUT;
-        } else if (ch_name === "System") {
-            regexPlacement = regex_placement.SYSTEM;
         } else if (ch_name !== name2) {
-            regexPlacement = regex_placement.SENDAS;
+            regexPlacement = regex_placement.SLASH_COMMAND;
         } else {
             regexPlacement = regex_placement.AI_OUTPUT;
         }
 
-        mes = getRegexedString(mes, regexPlacement, { isMarkdown: true });
+        // Always override the character name
+        mes = getRegexedString(mes, regexPlacement, {
+            characterOverride: ch_name,
+            isMarkdown: true
+        });
     }
 
     if (power_user.auto_fix_generated_markdown) {
@@ -2255,10 +2259,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             force_name2 = false;
         }
 
-        if (isInstruct) {
-            storyString = formatInstructStoryString(storyString, systemPrompt);
-        }
-
         //////////////////////////////////
 
         let chat2 = [];
@@ -2271,9 +2271,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
             chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct);
 
-            // Do not format the message for continuation
+            // Do not suffix the message for continuation
             if (i === 0 && type == 'continue') {
-                chat2[i] = coreChat[j].mes;
+                chat2[i] = chat2[i].slice(0, chat2[i].lastIndexOf(coreChat[j].mes) + coreChat[j].mes.length);
             }
         }
 
@@ -2305,6 +2305,16 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         const afterScenarioAnchor = getExtensionPrompt(extension_prompt_types.AFTER_SCENARIO);
         let zeroDepthAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, 0, ' ');
 
+        // Pre-format the World Info into the story string
+        if (main_api !== 'openai') {
+            storyString = worldInfoBefore + storyString + worldInfoAfter;
+        }
+
+        // Format the instruction string
+        if (isInstruct) {
+            storyString = formatInstructStoryString(storyString, systemPrompt);
+        }
+
         if (main_api === 'openai') {
             message_already_generated = ''; // OpenAI doesn't have multigen
             setOpenAIMessages(coreChat);
@@ -2326,7 +2336,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         let chatString = '';
         function getMessagesTokenCount() {
             const encodeString = [
-                worldInfoString,
                 storyString,
                 examplesString,
                 chatString,
@@ -2539,7 +2548,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 console.debug('---checking Prompt size');
                 setPromtString();
                 const prompt = [
-                    worldInfoString,
                     storyString,
                     mesExmString,
                     mesSendString,
@@ -2575,9 +2583,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             mesSendString = adjustChatsSeparator(mesSendString);
 
             let finalPromt =
-                worldInfoBefore +
                 storyString +
-                worldInfoAfter +
                 afterScenarioAnchor +
                 mesExmString +
                 mesSendString +
@@ -2674,14 +2680,12 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 ...thisPromptBits[currentArrayEntry],
                 rawPrompt: generate_data.prompt,
                 mesId: getNextMessageId(type),
-                worldInfoBefore: worldInfoBefore,
                 allAnchors: allAnchors,
                 summarizeString: (extension_prompts['1_memory']?.value || ''),
                 authorsNoteString: (extension_prompts['2_floating_prompt']?.value || ''),
                 smartContextString: (extension_prompts['chromadb']?.value || ''),
                 worldInfoString: worldInfoString,
                 storyString: storyString,
-                worldInfoAfter: worldInfoAfter,
                 afterScenarioAnchor: afterScenarioAnchor,
                 examplesString: examplesString,
                 mesSendString: mesSendString,
@@ -2694,6 +2698,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 this_max_context: this_max_context,
                 padding: power_user.token_padding,
                 main_api: main_api,
+                instruction: isInstruct ? substituteParams(power_user.prefer_character_prompt && systemPrompt ? systemPrompt : power_user.instruct.system_prompt) : '',
+                userPersona: (power_user.persona_description || ''),
             };
 
             thisPromptBits = additionalPromptStuff;
@@ -3176,12 +3182,13 @@ function promptItemize(itemizedPrompts, requestedMesId) {
     var authorsNoteStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].authorsNoteString);
     var smartContextStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].smartContextString);
     var afterScenarioAnchorTokens = getTokenCount(itemizedPrompts[thisPromptSet].afterScenarioAnchor);
-    var zeroDepthAnchorTokens = getTokenCount(itemizedPrompts[thisPromptSet].afterScenarioAnchor);
+    var zeroDepthAnchorTokens = getTokenCount(itemizedPrompts[thisPromptSet].zeroDepthAnchor);
     var worldInfoStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].worldInfoString);
     var thisPrompt_max_context = itemizedPrompts[thisPromptSet].this_max_context;
     var thisPrompt_padding = itemizedPrompts[thisPromptSet].padding;
     var promptBiasTokens = getTokenCount(itemizedPrompts[thisPromptSet].promptBias);
     var this_main_api = itemizedPrompts[thisPromptSet].main_api;
+    var userPersonaStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].userPersona);
 
     if (this_main_api == 'openai') {
         //for OAI API
@@ -3189,7 +3196,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
 
         //var finalPromptTokens = itemizedPrompts[thisPromptSet].oaiTotalTokens;
         var oaiStartTokens = itemizedPrompts[thisPromptSet].oaiStartTokens;
-        var oaiPromptTokens = itemizedPrompts[thisPromptSet].oaiPromptTokens;
+        var oaiPromptTokens = itemizedPrompts[thisPromptSet].oaiPromptTokens - worldInfoStringTokens - afterScenarioAnchorTokens;
         var ActualChatHistoryTokens = itemizedPrompts[thisPromptSet].oaiConversationTokens;
         var examplesStringTokens = itemizedPrompts[thisPromptSet].oaiExamplesTokens;
         var oaiBiasTokens = itemizedPrompts[thisPromptSet].oaiBiasTokens;
@@ -3217,14 +3224,16 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         //for non-OAI APIs
         //console.log('-- Counting non-OAI Tokens');
         var finalPromptTokens = getTokenCount(itemizedPrompts[thisPromptSet].finalPromt);
-        var storyStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].storyString);
+        var storyStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].storyString) - worldInfoStringTokens;
         var examplesStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].examplesString);
         var mesSendStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].mesSendString)
-        var ActualChatHistoryTokens = mesSendStringTokens - allAnchorsTokens + power_user.token_padding;
+        var ActualChatHistoryTokens = mesSendStringTokens - (allAnchorsTokens - afterScenarioAnchorTokens) + power_user.token_padding;
+        var instructionTokens = getTokenCount(itemizedPrompts[thisPromptSet].instruction);
 
         var totalTokensInPrompt =
             storyStringTokens +     //chardefs total
             worldInfoStringTokens +
+            examplesStringTokens + // example messages
             ActualChatHistoryTokens +  //chat history
             allAnchorsTokens +      // AN and/or legacy anchors
             //afterScenarioAnchorTokens +       //only counts if AN is set to 'after scenario'
@@ -3259,14 +3268,16 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         //console.log('-- calling popup for OAI tokens');
         callPopup(
             `
-        <h3>Prompt Itemization</h3>
+        <h3 class="flex-container justifyCenter alignitemscenter">
+            Prompt Itemization
+            <div id="showRawPrompt" class="fa-solid fa-square-poll-horizontal menu_button"></div>
+        </h3>
         Tokenizer: ${selectedTokenizer}<br>
         API Used: ${this_main_api}<br>
         <span class="tokenItemizingSubclass">
             Only the white numbers really matter. All numbers are estimates.
             Grey color items may not have been included in the context due to certain prompt format settings.
         </span>
-        <div id="showRawPrompt" class="fa-solid fa-square-poll-horizontal menu_button"></div>
         <hr>
         <div class="justifyLeft">
             <div class="flex-container">
@@ -3327,6 +3338,10 @@ function promptItemize(itemizedPrompts, requestedMesId) {
                             <div  class=" flex1 tokenItemizingSubclass">-- Examples:</div>
                             <div  class="tokenItemizingSubclass"> ${examplesStringTokens}</div>
                         </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- User Persona:</div>
+                            <div  class="tokenItemizingSubclass"> ${userPersonaStringTokens}</div>
+                        </div>
                     </div>
                     <div class="wide100p flex-container">
                         <div  class="flex1" style="color: gold;">World Info:</div>
@@ -3378,14 +3393,16 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         //console.log('-- calling popup for non-OAI tokens');
         callPopup(
             `
-        <h3>Prompt Itemization</h3>
+        <h3 class="flex-container justifyCenter alignitemscenter">
+            Prompt Itemization
+            <div id="showRawPrompt" class="fa-solid fa-square-poll-horizontal menu_button"></div>
+        </h3>
         Tokenizer: ${selectedTokenizer}<br>
         API Used: ${this_main_api}<br>
         <span class="tokenItemizingSubclass">
             Only the white numbers really matter. All numbers are estimates.
             Grey color items may not have been included in the context due to certain prompt format settings.
         </span>
-        <div id="showRawPrompt" class="fa-solid fa-square-poll-horizontal menu_button"></div>
         <hr>
         <div class="justifyLeft">
             <div class="flex-container">
@@ -3417,6 +3434,14 @@ function promptItemize(itemizedPrompts, requestedMesId) {
                         <div class="flex-container ">
                             <div  class=" flex1 tokenItemizingSubclass">-- Examples:</div>
                             <div  class="tokenItemizingSubclass"> ${examplesStringTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- User Persona:</div>
+                            <div  class="tokenItemizingSubclass"> ${userPersonaStringTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- System Prompt (Instruct):</div>
+                            <div class="tokenItemizingSubclass"> ${instructionTokens}</div>
                         </div>
                     </div>
                     <div class="wide100p flex-container">
@@ -3458,7 +3483,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
                 </div>
                     <!-- <div  class="flex1">finalPromt:</div><div  class=""> ${finalPromptTokens}</div> -->
                 <div class="flex-container wide100p">
-                    <div  class="flex1">Max Context:</div><div  class="">${thisPrompt_max_context}</div>
+                    <div  class="flex1">Max Context (Context Size - Response Length):</div><div  class="">${thisPrompt_max_context}</div>
                 </div>
                 <div class="flex-container wide100p">
                     <div  class="flex1">- Padding:</div><div  class=""> ${thisPrompt_padding}</div>
@@ -5054,24 +5079,23 @@ function updateMessage(div) {
     const mesBlock = div.closest(".mes_block");
     let text = mesBlock.find(".edit_textarea").val();
     const mes = chat[this_edit_mes_id];
+
     let regexPlacement;
-    if (mes.is_name && !mes.is_user && mes.name !== name2) {
-        regexPlacement = regex_placement.SENDAS;
-    } else if (mes.is_name && !mes.is_user) {
-        regexPlacement = regex_placement.AI_OUTPUT;
-    } else if (mes.is_name && mes.is_user) {
+    if (mes.is_name && mes.is_user) {
         regexPlacement = regex_placement.USER_INPUT;
-    } else if (mes.extra?.type === "narrator") {
-        regexPlacement = regex_placement.SYSTEM;
+    } else if (mes.is_name && mes.name === name2) {
+        regexPlacement = regex_placement.AI_OUTPUT;
+    } else if (mes.is_name && mes.name !== name2 || mes.extra?.type === "narrator") {
+        regexPlacement = regex_placement.SLASH_COMMAND;
     }
 
+    // Ignore character override if sent as system
     text = getRegexedString(
         text,
         regexPlacement,
-        {
-            characterOverride: regexPlacement === regex_placement.SENDAS ? mes.name : undefined
-        }
+        { characterOverride: mes.extra?.type === "narrator" ? undefined : mes.name }
     );
+
 
     if (power_user.trim_spaces) {
         text = text.trim();
@@ -5559,6 +5583,9 @@ function callPopup(text, type, inputValue = '', { okButton, rows } = {}) {
         case "char_not_selected":
             $("#dialogue_popup_ok").text(okButton ?? "Ok");
             $("#dialogue_popup_cancel").css("display", "none");
+            break;
+        case "delete_extension":
+            $("#dialogue_popup_ok").text(okButton ?? "Ok");
             break;
         case "new_chat":
         case "confirm":
@@ -6769,8 +6796,21 @@ async function importFromURL(items, files) {
     }
 }
 
+async function doImpersonate() {
+    $('#send_textarea').val('');
+    $("#option_impersonate").trigger('click', { fromSlashCommand: true })
+}
+
 const isPwaMode = window.navigator.standalone;
 if (isPwaMode) { $("body").addClass('PWA') }
+
+function doCharListDisplaySwitch() {
+    console.debug('toggling body charListGrid state')
+    $("body").toggleClass('charListGrid')
+    power_user.charListGrid = $("body").hasClass("charListGrid") ? true : false;
+    saveSettingsDebounced()
+    updateVisibleDivs('#rm_print_characters_block', true);
+}
 
 $(document).ready(function () {
 
@@ -6783,6 +6823,8 @@ $(document).ready(function () {
 
     registerSlashCommand('dupe', DupeChar, [], "– duplicates the currently selected character", true, true);
     registerSlashCommand('api', connectAPISlash, [], "(kobold, horde, novel, ooba, oai, claude, poe, windowai) – connect to an API", true, true);
+    registerSlashCommand('impersonate', doImpersonate, ['imp'], "- calls an impersonation response", true, true);
+
 
     setTimeout(function () {
         $("#groupControlsToggle").trigger('click');
@@ -7105,9 +7147,11 @@ $(document).ready(function () {
                 " -- Name: " +
                 characters[this_chid].name
             );
+            const delete_chats = !!$("#del_char_checkbox").prop("checked");
             const avatar = characters[this_chid].avatar;
             const name = characters[this_chid].name;
-            var msg = jQuery("#form_create").serialize(); // ID form
+            const msg = new FormData($("#form_create").get(0)); // ID form
+            msg.append("delete_chats", delete_chats);
             jQuery.ajax({
                 method: "POST",
                 url: "/deletecharacter",
@@ -7115,6 +7159,8 @@ $(document).ready(function () {
                 },
                 data: msg,
                 cache: false,
+                contentType: false,
+                processData: false,
                 success: async function (html) {
                     //RossAscends: New handling of character deletion that avoids page refreshes and should have
                     // fixed char corruption due to cache problems.
@@ -7232,8 +7278,10 @@ $(document).ready(function () {
         callPopup(`
                 <h3>Delete the character?</h3>
                 <b>THIS IS PERMANENT!<br><br>
-                THIS WILL ALSO DELETE ALL<br>
-                OF THE CHARACTER'S CHAT FILES.<br><br></b>`
+                <label for="del_char_checkbox" class="checkbox_label justifyCenter">
+                    <input type="checkbox" id="del_char_checkbox" checked />
+                    <span>Also delete the chat files</span>
+                </label><br></b>`
         );
     });
 
@@ -7514,7 +7562,7 @@ $(document).ready(function () {
         }
 
         else if (id == "option_impersonate") {
-            if (is_send_press == false) {
+            if (is_send_press == false || fromSlashCommand) {
                 is_send_press = true;
                 Generate("impersonate");
             }
@@ -7934,8 +7982,9 @@ $(document).ready(function () {
     });
 
 
-    $(document).on("click", ".mes_edit_delete", async function () {
-        if (power_user.confirm_message_delete) {
+    $(document).on("click", ".mes_edit_delete", async function (event, customData) {
+        const fromSlashCommand = customData?.fromSlashCommand || false;
+        if (power_user.confirm_message_delete && fromSlashCommand !== true) {
             const confirmation = await callPopup("Are you sure you want to delete this message?", 'confirm');
             if (!confirmation) {
                 return;
@@ -8501,6 +8550,52 @@ $(document).ready(function () {
         }
     });
 
+    /**
+     * Handles the click event for the third-party extension import button.
+     * Prompts the user to enter the Git URL of the extension to import.
+     * After obtaining the Git URL, makes a POST request to '/get_extension' to import the extension.
+     * If the extension is imported successfully, a success message is displayed.
+     * If the extension import fails, an error message is displayed and the error is logged to the console.
+     * After successfully importing the extension, the extension settings are reloaded and a 'EXTENSION_SETTINGS_LOADED' event is emitted.
+     *
+     * @listens #third_party_extension_button#click - The click event of the '#third_party_extension_button' element.
+     */
+    $('#third_party_extension_button').on('click', async () => {
+        const html = `<h3>Enter the Git URL of the extension to import</h3>
+    <br>
+    <p><b>Disclaimer:</b> Please be aware that using external extensions can have unintended side effects and may pose security risks. Always make sure you trust the source before importing an extension. We are not responsible for any damage caused by third-party extensions.</p>
+    <br>
+    <p>Example: <tt> https://github.com/author/extension-name </tt></p>`
+        const input = await callPopup(html, 'input');
+
+        if (!input) {
+            console.debug('Extension import cancelled');
+            return;
+        }
+
+        const url = input.trim();
+        console.debug('Extension import started', url);
+
+        const request = await fetch('/get_extension', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ url }),
+        });
+
+        if (!request.ok) {
+            toastr.info(request.statusText, 'Extension import failed');
+            console.error('Extension import failed', request.status, request.statusText);
+            return;
+        }
+
+        const response = await request.json();
+        toastr.success(`Extension "${response.display_name}" by ${response.author} (version ${response.version}) has been imported successfully!`, 'Extension import successful');
+        console.debug(`Extension "${response.display_name}" has been imported successfully at ${response.extensionPath}`);
+        await loadExtensionSettings(settings);
+        eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED);
+    });
+
+
     const $dropzone = $(document.body);
 
     $dropzone.on('dragover', (event) => {
@@ -8540,4 +8635,8 @@ $(document).ready(function () {
             }
         }
     }
+
+    $("#charListGridToggle").on('click', async () => {
+        doCharListDisplaySwitch();
+    });
 })

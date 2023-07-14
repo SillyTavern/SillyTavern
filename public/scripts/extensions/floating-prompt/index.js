@@ -9,7 +9,7 @@ import {
 import { selected_group } from "../../group-chats.js";
 import { ModuleWorkerWrapper, extension_settings, getContext, saveMetadataDebounced } from "../../extensions.js";
 import { registerSlashCommand } from "../../slash-commands.js";
-import { getCharaFilename, debounce, waitUntilCondition } from "../../utils.js";
+import { getCharaFilename, debounce, waitUntilCondition, delay } from "../../utils.js";
 export { MODULE_NAME as NOTE_MODULE_NAME };
 
 const MODULE_NAME = '2_floating_prompt'; // <= Deliberate, for sorting lower than memory
@@ -280,24 +280,37 @@ export function setFloatingPrompt() {
 
 function onANMenuItemClick() {
     if (selected_group || this_chid) {
+        //show AN if it's hidden
         if ($("#floatingPrompt").css("display") !== 'flex') {
+            $("#floatingPrompt").addClass('resizing')
             $("#floatingPrompt").css("display", "flex");
             $("#floatingPrompt").css("opacity", 0.0);
             $("#floatingPrompt").transition({
                 opacity: 1.0,
                 duration: 250,
+            }, async function () {
+                await delay(50);
+                $("#floatingPrompt").removeClass('resizing')
             });
 
+            //auto-open the main AN inline drawer
             if ($("#ANBlockToggle")
                 .siblings('.inline-drawer-content')
                 .css('display') !== 'block') {
+                $("#floatingPrompt").addClass('resizing')
                 $("#ANBlockToggle").click();
             }
         } else {
+            //hide AN if it's already displayed
+            $("#floatingPrompt").addClass('resizing')
             $("#floatingPrompt").transition({
                 opacity: 0.0,
                 duration: 250,
-            });
+            },
+                async function () {
+                    await delay(50);
+                    $("#floatingPrompt").removeClass('resizing')
+                });
             setTimeout(function () {
                 $("#floatingPrompt").hide();
             }, 250);

@@ -94,6 +94,7 @@ const claude_100k_max = 99000;
 const unlocked_max = 100 * 1024;
 const oai_max_temp = 2.0;
 const claude_max_temp = 1.0;
+const openrouter_website_model = 'OR_Website';
 
 let biasCache = undefined;
 let model_list = [];
@@ -133,7 +134,7 @@ const default_settings = {
     openai_model: 'gpt-3.5-turbo',
     claude_model: 'claude-instant-v1',
     windowai_model: '',
-    openrouter_model: 'openai/gpt-3.5-turbo',
+    openrouter_model: openrouter_website_model,
     jailbreak_system: false,
     reverse_proxy: '',
     legacy_streaming: false,
@@ -168,7 +169,7 @@ const oai_settings = {
     openai_model: 'gpt-3.5-turbo',
     claude_model: 'claude-instant-v1',
     windowai_model: '',
-    openrouter_model: 'openai/gpt-3.5-turbo',
+    openrouter_model: openrouter_website_model,
     jailbreak_system: false,
     reverse_proxy: '',
     legacy_streaming: false,
@@ -678,7 +679,7 @@ function getChatCompletionModel() {
         case chat_completion_sources.SCALE:
             return '';
         case chat_completion_sources.OPENROUTER:
-            return oai_settings.openrouter_model;
+            return oai_settings.openrouter_model !== openrouter_website_model ? oai_settings.openrouter_model : null;
         default:
             throw new Error(`Unknown chat completion source: ${oai_settings.chat_completion_source}`);
     }
@@ -689,6 +690,7 @@ function saveModelList(data) {
 
     if (oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER) {
         $('#model_openrouter_select').empty();
+        $('#model_openrouter_select').append($('<option>', { value: openrouter_website_model, text: 'Use OpenRouter website setting' }));
         model_list.forEach((model) => {
             const selected = model.id == oai_settings.openrouter_model;
             $('#model_openrouter_select').append(
@@ -697,10 +699,8 @@ function saveModelList(data) {
                     text: model.id,
                     selected: selected,
                 }));
-            if (selected) {
-                $('#model_openrouter_select').val(model.id).trigger('change');
-            }
         });
+        $('#model_openrouter_select').val(oai_settings.openrouter_model).trigger('change');
     }
 
     // TODO Add ability to select OpenAI model from endpoint-provided list
@@ -725,8 +725,9 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
         return sendWindowAIRequest(openai_msgs_tosend, signal, stream);
     }
 
+    const logitBiasSources = [chat_completion_sources.OPENAI, chat_completion_sources.OPENROUTER];
     if (oai_settings.bias_preset_selected
-        && oai_settings.chat_completion_source == chat_completion_sources.OPENAI
+        && logitBiasSources.includes(oai_settings.chat_completion_source)
         && Array.isArray(oai_settings.bias_presets[oai_settings.bias_preset_selected])
         && oai_settings.bias_presets[oai_settings.bias_preset_selected].length) {
         logit_bias = biasCache || await calculateLogitBias();
@@ -741,7 +742,6 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
         "frequency_penalty": parseFloat(oai_settings.freq_pen_openai),
         "presence_penalty": parseFloat(oai_settings.pres_pen_openai),
         "top_p": parseFloat(oai_settings.top_p_openai),
-        "top_k": parseFloat(oai_settings.top_k_openai),
         "max_tokens": oai_settings.openai_max_tokens,
         "stream": stream,
         "logit_bias": logit_bias,
@@ -755,10 +755,12 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
 
     if (isClaude) {
         generate_data['use_claude'] = true;
+        generate_data['top_k'] = parseFloat(oai_settings.top_k_openai);
     }
 
     if (isOpenRouter) {
         generate_data['use_openrouter'] = true;
+        generate_data['top_k'] = parseFloat(oai_settings.top_k_openai);
     }
 
     if (isScale) {
@@ -1749,9 +1751,9 @@ async function onModelChange() {
         } else {
             const model = model_list.find(m => m.id == oai_settings.openrouter_model);
             if (model?.context_length) {
-                $('#openai_max_context').attr('max', model.context_length - 1); // waiting for openrouter to fix this
+                $('#openai_max_context').attr('max', model.context_length);
             } else {
-                $('#openai_max_context').attr('max', max_4k); // placeholder
+                $('#openai_max_context').attr('max', max_8k);
             }
         }
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);
@@ -1771,7 +1773,7 @@ async function onModelChange() {
         if (oai_settings.max_context_unlocked) {
             $('#openai_max_context').attr('max', unlocked_max);
         }
-        else if (value.endsWith('100k')) {
+        else if (value.endsWith('100k') || value.startsWith('claude-2')) {
             $('#openai_max_context').attr('max', claude_100k_max);
         }
         else {

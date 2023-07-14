@@ -61,6 +61,7 @@ class SlashCommandParser {
     }
 
     parse(text) {
+        const excludedFromRegex = ["sendas"]
         const firstSpace = text.indexOf(' ');
         const command = firstSpace !== -1 ? text.substring(1, firstSpace) : text.substring(1);
         const args = firstSpace !== -1 ? text.substring(firstSpace + 1) : '';
@@ -82,6 +83,14 @@ class SlashCommandParser {
             }
 
             unnamedArg = argsArray.slice(Object.keys(argObj).length).join(' ');
+
+            // Excluded commands format in their own function
+            if (!excludedFromRegex.includes(command)) {
+                unnamedArg = getRegexedString(
+                    unnamedArg,
+                    regex_placement.SLASH_COMMAND
+                );
+            }
         }
 
         if (this.commands[command]) {
@@ -177,8 +186,11 @@ async function generateSystemMessage(_, prompt) {
         return;
     }
 
+    // Generate and regex the output if applicable
     toastr.info('Please wait', 'Generating...');
-    const message = await generateQuietPrompt(prompt);
+    let message = await generateQuietPrompt(prompt);
+    message = getRegexedString(message, regex_placement.SLASH_COMMAND);
+
     sendNarratorMessage(_, message);
 }
 
@@ -242,7 +254,9 @@ async function sendMessageAs(_, text) {
 
     const name = parts.shift().trim();
     let mesText = parts.join('\n').trim();
-    mesText = getRegexedString(mesText, regex_placement.SENDAS, { characterOverride: name });
+
+    // Requires a regex check after the slash command is pushed to output
+    mesText = getRegexedString(mesText, regex_placement.SLASH_COMMAND, { characterOverride: name });
 
     // Messages that do nothing but set bias will be hidden from the context
     const bias = extractMessageBias(mesText);
@@ -285,8 +299,6 @@ async function sendNarratorMessage(_, text) {
     if (!text) {
         return;
     }
-
-    text = getRegexedString(text, regex_placement.SYSTEM);
 
     const name = chat_metadata[NARRATOR_NAME_KEY] || NARRATOR_NAME_DEFAULT;
     // Messages that do nothing but set bias will be hidden from the context

@@ -55,13 +55,6 @@
     opacity: 1;
 }
 
-.panelControlBar {
-    position: absolute;
-    right: 5px;
-    top: 5px;
-    margin-right: 5px;
-}
-
 #floatingPrompt .drag-grabber {
     position: unset;
 }

@@ -47,7 +47,8 @@
     --SmartThemeShadowColor: rgba(0, 0, 0, 0.5);
 
 
-    --sheldWidth: 800px;
+    --sheldWidth: 50vw;
+    /* 800px; */
     /*base variable calculated in rems*/
     --fontScale: 1;
     --mainFontSize: calc(var(--fontScale) * 1rem);
@@ -85,6 +86,7 @@ body {
     padding: 0;
     width: 100%;
     /*fallback for JS load*/
+    height: 100vh;
     height: 100svh;
     /*defaults as 100%, then reassigned via JS as pixels, will work on PC and Android*/
     height: calc(var(--doc-height) - 1px);
@@ -166,7 +168,7 @@ table.responsiveTable {
 .tokenItemizingSubclass {
     font-size: calc(var(--mainFontSize) * 0.8);
     color: var(--SmartThemeEmColor);
-    white-space: pre-wrap;
+    /*white-space: pre-wrap;*/
 }
 
 .tokenGraph {
@@ -352,10 +354,12 @@ hr {
 #sheld {
     display: grid;
     grid-template-rows: auto min-content;
+    height: calc(100vh - 42px);
     height: calc(100svh - 42px);
     overflow-x: hidden;
-    max-width: 800px;
+    /* max-width: 50vw; */
     position: absolute;
+    left: calc((100vw - var(--sheldWidth))/2);
     left: calc((100svw - var(--sheldWidth))/2);
     top: 41px;
     margin: 0 auto;
@@ -391,6 +395,20 @@ hr {
 .drag-grabber:hover {
     opacity: 1;
 }
+
+.panelControlBar {
+    position: absolute;
+    right: 5px;
+    top: 5px;
+    margin-right: 5px;
+    z-index: 2000;
+}
+
+.panelControlBar .drag-grabber {
+    position: unset;
+}
+
+
 
 #sheldheader:active {
     cursor: grabbing;
@@ -434,6 +452,13 @@ hr {
     width: 100%;
     margin: 1px auto 0 auto;
     z-index: 30;
+}
+
+/* special case for desktop Safari to allow #sheld resizing */
+@media only screen and (min-width: 1024px) and (-webkit-min-device-pixel-ratio: 2) and (pointer: fine) {
+    #form_sheld {
+        margin-bottom: 5px;
+    }
 }
 
 #send_form {
@@ -891,6 +916,7 @@ select {
 
 #send_textarea {
     min-height: 40px;
+    max-height: 50vh;
     max-height: 50svh;
     word-wrap: break-word;
     height: 40px;
@@ -1170,8 +1196,60 @@ input[type="file"] {
     overflow-y: auto;
     flex-grow: 1;
     display: flex;
-    flex-direction: column;
     /* row-gap: 5px; */
+}
+
+body.charListGrid #rm_print_characters_block {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    flex-direction: row;
+    justify-content: space-around;
+}
+
+body.charListGrid #rm_print_characters_block .character_select {
+    width: 30%;
+    align-items: flex-start;
+    height: min-content;
+    flex-direction: column;
+    overflow: hidden;
+    max-width: 100px;
+}
+
+body.charListGrid #rm_print_characters_block .character_select .ch_name,
+body.charListGrid #rm_print_characters_block .group_select .ch_name {
+    width: 100%;
+    max-width: 100px;
+    text-align: center;
+    font-size: calc(var(--mainFontSize) * .8);
+}
+
+body.charListGrid #rm_print_characters_block .character_select .character_name_block {
+    width: 100%;
+}
+
+body.charListGrid #rm_print_characters_block .character_select .character_select_container {
+    width: 100%;
+    justify-content: center;
+    max-width: 100px;
+}
+
+body.charListGrid #rm_print_characters_block .group_select {
+    width: 30%;
+    height: min-content;
+    align-items: center !important;
+    flex-direction: column;
+    overflow: hidden;
+    max-width: 100px;
+}
+
+body.charListGrid #rm_print_characters_block .group_select .group_name_block {
+    width: 100%;
+}
+
+body.charListGrid #rm_print_characters_block .ch_description,
+body.charListGrid #rm_print_characters_block .tags_inline {
+    display: none;
 }
 
 #rm_ch_create_block {
@@ -1358,6 +1436,10 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 }
 
+.heightMinContent {
+    height: min-content;
+}
+
 /*applies to char list and mes_text char display name*/
 
 .ch_name {
@@ -1401,9 +1483,10 @@ body.big-avatars .ch_description {
 #rm_print_characters_block .ch_name {
     width: 100%;
     white-space: nowrap;
-    max-width: calc(100% - 29px);
+    /* max-width: calc(100% - 29px); */
     overflow: hidden;
     text-overflow: ellipsis;
+    display: block;
 }
 
 .character_select:hover {
@@ -1463,6 +1546,7 @@ body.big-avatars .ch_description {
     display: flex;
     flex-wrap: wrap;
     width: calc(var(--sheldWidth) - 10px);
+    max-width: 100vw;
     max-width: 100svw;
     justify-content: center;
 }
@@ -1770,6 +1854,7 @@ grammarly-extension {
 
 #dialogue_popup {
     width: 500px;
+    max-width: 90vw;
     max-width: 90svw;
     position: absolute;
     z-index: 9999;
@@ -1785,6 +1870,7 @@ grammarly-extension {
     padding: 4px;
     background-color: var(--black30a);
     border-radius: 10px;
+    max-height: 90vh;
     max-height: 90svh;
     display: flex;
     flex-direction: column;
@@ -1792,11 +1878,14 @@ grammarly-extension {
 }
 
 .large_dialogue_popup {
+    height: 90vh !important;
     height: 90svh !important;
+    max-width: 90vw !important;
     max-width: 90svw !important;
 }
 
 .wide_dialogue_popup {
+    max-width: 90vh !important;
     max-width: 90svh !important;
     width: fit-content !important;
 }
@@ -1891,7 +1980,8 @@ grammarly-extension {
     aspect-ratio: 1 / 1;
 }
 
-.menu_button:hover, .menu_button.active {
+.menu_button:hover,
+.menu_button.active {
     background-color: var(--white30a);
 }
 
@@ -1913,6 +2003,7 @@ grammarly-extension {
     opacity: 0.0;
     position: absolute;
     width: 100%;
+    height: 100vh;
     height: 100svh;
     z-index: 9999;
     top: 0;
@@ -1920,7 +2011,9 @@ grammarly-extension {
 
 #bgtest {
     display: none;
+    width: 100vw;
     width: 100svw;
+    height: 100vh;
     height: 100svh;
     position: absolute;
     z-index: -100;
@@ -2447,6 +2540,7 @@ input[type="range"]::-webkit-slider-thumb {
     opacity: 0.0;
     position: absolute;
     width: 100%;
+    height: 100vh;
     height: 100svh;
     z-index: 2055;
     background-color: var(--black70a);
@@ -2591,6 +2685,7 @@ input[type="range"]::-webkit-slider-thumb {
     opacity: 1.0;
     position: absolute;
     width: 100%;
+    height: 100vh;
     height: 100svh;
     z-index: 2058;
 }
@@ -2603,8 +2698,11 @@ input[type="range"]::-webkit-slider-thumb {
 
     min-width: 100px;
     max-width: var(--sheldWidth);
+    height: calc(100vh - 84px);
     height: calc(100svh - 84px);
+    min-height: calc(100vh - 84px);
     min-height: calc(100svh - 84px);
+    max-height: calc(100vh - 84px);
     max-height: calc(100svh - 84px);
     position: absolute;
     z-index: 3002;
@@ -2683,6 +2781,7 @@ h5 {
     opacity: 1.0;
     position: absolute;
     width: 100%;
+    height: 100vh;
     height: 100svh;
     z-index: 3001;
     top: 0;
@@ -2696,6 +2795,7 @@ h5 {
     grid-template-rows: auto auto;
     max-width: var(--sheldWidth);
     height: min-content;
+    max-height: calc(100vh - 40px);
     max-height: calc(100svh - 40px);
     min-height: 100px;
     position: absolute;
@@ -3342,10 +3442,13 @@ body .ui-widget-content li:hover {
 
 body:not(.big-avatars) .avatar_collage {
     min-width: 50px;
+    aspect-ratio: 1 / 1;
 }
 
 body.big-avatars .avatar_collage {
     min-width: 60px;
+    max-width: 60px;
+    aspect-ratio: 2 / 3;
 }
 
 
@@ -3565,11 +3668,14 @@ a {
     display: block;
     overflow-wrap: break-word;
     white-space: normal;
+    max-width: calc(((100vw - 500px) / 2) - 10px);
     max-width: calc(((100svw - 500px) / 2) - 10px);
     position: absolute;
     z-index: 9999;
+    max-height: 90vh;
     max-height: 90svh;
     /*unsure why, but this prevents scrollbars*/
+    height: 49vh;
     height: 49svh;
 
     padding: 5px;
@@ -3604,8 +3710,11 @@ a {
 /* ############################################################# */
 
 #right-nav-panel {
+    width: calc((100vw - var(--sheldWidth) - 2px) /2);
     width: calc((100svw - var(--sheldWidth) - 2px) /2);
+    max-height: calc(100vh - 42px);
     max-height: calc(100svh - 42px);
+    height: calc(100vh - 42px);
     height: calc(100svh - 42px);
     position: fixed;
     top: 0;
@@ -3626,6 +3735,7 @@ a {
     overflow: hidden;
     scrollbar-width: thin;
     flex-flow: column;
+    min-width: 100px;
 }
 
 #nav-toggle {
@@ -3665,6 +3775,7 @@ a {
 .mes_img {
     border-radius: 10px;
     max-width: 100%;
+    max-height: 40vh;
     max-height: 40svh;
     image-rendering: -webkit-optimize-contrast;
 }
@@ -3780,6 +3891,7 @@ label[for="extensions_autoconnect"] {
 .extensions_info .toggle_enable {
     color: lightgreen;
 }
+
 .extensions_info .toggle_disable {
     color: rgb(238, 144, 144);
 }
@@ -3787,16 +3899,34 @@ label[for="extensions_autoconnect"] {
 .extensions_info .extension_enabled {
     color: green;
 }
+
 .extensions_info .extension_disabled {
     color: lightgray;
 }
+
 .extensions_info .extension_missing {
     color: gray;
+}
+
+input.extension_missing[type="checkbox"] {
+    opacity: 0.5;
 }
 
 #extensions_list .disabled {
     text-decoration: line-through;
     color: lightgray;
+}
+
+.update-button {
+    margin-right: 10px;
+    display: inline-flex;
+}
+
+/* Align the content of this span to the right */
+.delete-button {
+    margin-right: 10px;
+    display: inline-flex;
+
 }
 
 /* possible place for WI Entry header styling */
@@ -3852,13 +3982,14 @@ label[for="extensions_autoconnect"] {
     margin: 0 auto;
     padding-top: 5px;
     height: 40px;
-    max-width: var(--sheldWidth);
+    /* max-width: var(--sheldWidth); */
     justify-content: center;
     display: grid;
     grid-template-columns: 10% 10% 10% 10% 10% 10% 10% 10% 10%;
     z-index: 3000;
     position: relative;
     grid-gap: 1%;
+    width: var(--sheldWidth);
 
 }
 
@@ -3950,6 +4081,7 @@ label[for="extensions_autoconnect"] {
     min-width: 450px;
     width: var(--sheldWidth);
     overflow-y: auto;
+    max-height: calc(100vh - 70px);
     max-height: calc(100svh - 70px);
     display: none;
     position: absolute;
@@ -3973,8 +4105,11 @@ label[for="extensions_autoconnect"] {
 }
 
 .fillLeft {
+    width: calc((100vw - var(--sheldWidth) - 2px) /2);
     width: calc((100svw - var(--sheldWidth) - 2px) /2);
+    height: calc(100vh - 42px);
     height: calc(100svh - 42px);
+    max-height: calc(100vh - 42px);
     max-height: calc(100svh - 42px);
     position: fixed;
     top: 0;
@@ -4043,6 +4178,18 @@ toolcool-color-picker {
     text-overflow: ellipsis;
 }
 
+.maxWidth200px {
+    max-width: 200px;
+}
+
+.alignContentFlexStart {
+    align-content: flex-start;
+}
+
+.overflowHidden {
+    overflow: hidden;
+}
+
 .padding5 {
     padding: 5px;
 }
@@ -4085,6 +4232,10 @@ toolcool-color-picker {
 
 .wide50p {
     width: 50% !important;
+}
+
+.wide25p {
+    width: 25%;
 }
 
 .wide30p {
@@ -4318,9 +4469,10 @@ body.bubblechat .mes[is_user="true"] {
     background-color: var(--SmartThemeUserMesBlurTintColor);
 }
 
-body.w1000px #sheld {
+/* body.w1000px #sheld {
     max-width: 1000px !important;
-}
+}*/
+
 
 /* Document Style */
 
@@ -4411,6 +4563,7 @@ body.waifuMode #top-bar {
 }
 
 body.waifuMode #sheld {
+    height: 40vh;
     height: 40svh;
     top: calc(100% - 40vh);
     bottom: 0;
@@ -4448,7 +4601,8 @@ body.movingUI #sheld,
 body.movingUI .drawer-content,
 body.movingUI #expression-holder,
 body.movingUI .zoomed_avatar,
-body.movingUI #floatingPrompt {
+body.movingUI #floatingPrompt,
+body.movingUI #groupMemberListPopout {
     resize: both;
 }
 
@@ -4474,7 +4628,8 @@ body.noShadows * {
     color: var(--SmartThemeBodyColor);
 }
 
-.zoomed_avatar {
+.zoomed_avatar,
+#groupMemberListPopout {
     min-width: 100px;
     min-height: 100px;
     max-height: 90vh;
@@ -4488,6 +4643,38 @@ body.noShadows * {
     display: none;
     bottom: 0;
     aspect-ratio: 2 / 3;
+    border-radius: 10px;
+}
+
+#groupMemberListPopoutClose {
+    height: 15px;
+    aspect-ratio: 1 / 1;
+    font-size: 20px;
+    opacity: 0.5;
+    transition: all 250ms;
+}
+
+#groupMemberListPopout {
+    aspect-ratio: unset;
+    padding: 0;
+    backdrop-filter: blur(var(--SmartThemeBlurStrength));
+    background-color: var(--SmartThemeBlurTintColor);
+    overflow: auto;
+}
+
+#groupMemberListPopout #rm_group_members {
+    /*     background-color: var(--SmartThemeBlurTintColor); */
+
+    margin: 0;
+    padding: 0;
+    padding-top: 20px;
+
+}
+
+.hoverglow:hover {
+    opacity: 1 !important;
+    cursor: pointer;
+
 }
 
 body.waifuMode .zoomed_avatar {
@@ -4577,6 +4764,8 @@ body.waifuMode .zoomed_avatar {
 
 @media screen and (max-width: 1000px) {
 
+
+
     #extensions_settings,
     #extensions_settings2 {
         width: 100% !important;
@@ -4597,7 +4786,9 @@ body.waifuMode .zoomed_avatar {
         top: 50px;
         aspect-ratio: 2 / 3;
         width: fit-content;
+        max-height: calc(60vh - 60px);
         max-height: calc(60svh - 60px);
+        max-width: 90vw;
         max-width: 90svw;
     }
 
@@ -4648,6 +4839,7 @@ body.waifuMode .zoomed_avatar {
     .drawer-content {
         min-width: unset;
         width: 100%;
+        max-height: calc(100vh - 45px);
         max-height: calc(100svh - 45px);
         position: fixed;
         left: 0;
@@ -4665,12 +4857,15 @@ body.waifuMode .zoomed_avatar {
     #top-bar {
         position: fixed;
         padding-top: 8px;
+        width: 100vw;
         width: 100svw;
     }
 
     #bg1,
     #bg_custom {
+        height: 100vh !important;
         height: 100svh !important;
+        width: 100vw !important;
         width: 100svw !important;
         background-position: center;
 
@@ -4684,6 +4879,7 @@ body.waifuMode .zoomed_avatar {
     /* ,
     #world_popup  */
         {
+        max-height: calc(100vh - 40px);
         max-height: calc(100svh - 40px);
         width: 100% !important;
         margin: 0 auto;
@@ -4731,7 +4927,8 @@ body.waifuMode .zoomed_avatar {
 
     }
 
-    #showRawPrompt {
+    #showRawPrompt,
+    #groupCurrentMemberPopoutButton {
         display: none;
     }
 
@@ -4742,6 +4939,7 @@ body.waifuMode .zoomed_avatar {
     #right-nav-panel,
     #left-nav-panel,
     #floatingPrompt {
+        height: calc(100vh - 45px);
         height: calc(100svh - 45px);
         min-width: 100% !important;
         width: 100% !important;
@@ -4805,7 +5003,9 @@ body.waifuMode .zoomed_avatar {
     }
 
     body.waifuMode #sheld {
+        height: 40vh;
         height: 40svh;
+        top: 60vh;
         top: 60svh;
         bottom: 0 !important;
     }
@@ -4829,18 +5029,25 @@ body.waifuMode .zoomed_avatar {
 
     body.waifuMode .zoomed_avatar {
         width: fit-content;
+        max-height: calc(60vh - 60px);
         max-height: calc(60svh - 60px);
+        max-width: 90vw;
         max-width: 90svw;
     }
 
     .scrollableInner {
         overflow-y: auto;
         overflow-x: hidden;
+        max-height: calc(100vh - 90px);
         max-height: calc(100svh - 90px);
     }
 
     .horde_multiple_hint {
         display: none;
+    }
+
+    #bg_menu_content {
+        width: unset;
     }
 }
 
@@ -4861,9 +5068,13 @@ body.waifuMode .zoomed_avatar {
     body:not(.waifuMode) .zoomed_avatar {
 
         width: fit-content;
+        max-height: calc(60vh - 60px);
         max-height: calc(60svh - 60px);
+        max-width: 90vw;
         max-width: 90svw;
     }
+
+
 }
 
 @media screen and (max-width: 450px) {
@@ -4926,7 +5137,9 @@ body.waifuMode .zoomed_avatar {
         max-width: unset;
         min-height: unset;
         max-height: unset;
+        width: 100vw;
         width: 100svw;
+        height: calc(100vh - 40px);
         height: calc(100svh - 40px);
         padding-right: max(env(safe-area-inset-right), 0px);
         padding-left: max(env(safe-area-inset-left), 0px);
@@ -4956,8 +5169,10 @@ body.waifuMode .zoomed_avatar {
         right: 0;
         top: 0;
         margin: 0 auto;
+        height: calc(100vh - 70px);
         height: calc(100svh - 70px);
         width: calc(100% - 5px);
+        max-height: calc(100vh - 70px);
         max-height: calc(100svh - 70px);
         max-width: calc(100% - 5px);
 

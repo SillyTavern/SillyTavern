@@ -33,7 +33,9 @@ process.chdir(directory);
 const express = require('express');
 const compression = require('compression');
 const app = express();
-const responseTime = require('response-time')
+const responseTime = require('response-time');
+const simpleGit = require('simple-git');
+
 app.use(compression());
 app.use(responseTime());
 
@@ -41,7 +43,6 @@ const fs = require('fs');
 const readline = require('readline');
 const open = require('open');
 
-const rimraf = require("rimraf");
 const multer = require("multer");
 const http = require("http");
 const https = require('https');
@@ -1075,7 +1076,57 @@ app.post("/editcharacter", urlencodedParser, async function (request, response) 
     }
 });
 
-app.post("/deletecharacter", urlencodedParser, function (request, response) {
+
+/**
+ * Handle a POST request to edit a character attribute.
+ *
+ * This function reads the character data from a file, updates the specified attribute,
+ * and writes the updated data back to the file.
+ *
+ * @param {Object} request - The HTTP request object.
+ * @param {Object} response - The HTTP response object.
+ * @returns {void}
+ */
+app.post("/editcharacterattribute", jsonParser, async function (request, response) {
+    console.log(request.body);
+    if (!request.body) {
+        console.error('Error: no response body detected');
+        response.status(400).send('Error: no response body detected');
+        return;
+    }
+
+    if (request.body.ch_name === '' || request.body.ch_name === undefined || request.body.ch_name === '.') {
+        console.error('Error: invalid name.');
+        response.status(400).send('Error: invalid name.');
+        return;
+    }
+
+    try {
+        const avatarPath = path.join(charactersPath, request.body.avatar_url);
+        charaRead(avatarPath).then((char) => {
+            char = JSON.parse(char);
+            //check if the field exists
+            if (char[request.body.field] === undefined || char.data[request.body.field] === undefined) {
+                console.error('Error: invalid field.');
+                response.status(400).send('Error: invalid field.');
+                return;
+            }
+            char[request.body.field] = request.body.value;
+            char.data[request.body.field] = request.body.value;
+            char = JSON.stringify(char);
+            return { char };
+        }).then(({ char }) => {
+            charaWrite(avatarPath, char, (request.body.avatar_url).replace('.png', ''), response, 'Character saved');
+        }).catch((err) => {
+            console.error('An error occured, character edit invalidated.', err);
+        } );
+    }
+    catch {
+        console.error('An error occured, character edit invalidated.');
+    }
+});
+
+app.post("/deletecharacter", urlencodedParser, async function (request, response) {
     if (!request.body || !request.body.avatar_url) {
         return response.sendStatus(400);
     }
@@ -1099,16 +1150,16 @@ app.post("/deletecharacter", urlencodedParser, function (request, response) {
         return response.sendStatus(403);
     }
 
-    rimraf(path.join(chatsPath, sanitize(dir_name)), (err) => {
-        if (err) {
-            response.send(err);
-            return console.log(err);
-        } else {
-            //response.redirect("/");
-
-            response.send('ok');
+    if (request.body.delete_chats == 'true') {
+        try {
+            await fs.promises.rm(path.join(chatsPath, sanitize(dir_name)), { recursive: true, force: true })
+        } catch (err) {
+            console.error(err);
+            return response.sendStatus(500);
         }
-    });
+    }
+
+    return response.sendStatus(200);
 });
 
 async function charaWrite(img_url, data, target_img, response = undefined, mes = 'ok', crop = undefined) {
@@ -2787,10 +2838,32 @@ app.post('/poe_suggest', jsonParser, async function (request, response) {
 
 });
 
+/**
+ * Discover the extension folders
+ * If the folder is called third-party, search for subfolders instead
+ */
 app.get('/discover_extensions', jsonParser, function (_, response) {
+
+    // get all folders in the extensions folder, except third-party
     const extensions = fs
         .readdirSync(directories.extensions)
-        .filter(f => fs.statSync(path.join(directories.extensions, f)).isDirectory());
+        .filter(f => fs.statSync(path.join(directories.extensions, f)).isDirectory())
+        .filter(f => f !== 'third-party');
+
+    // get all folders in the third-party folder, if it exists
+
+    if (!fs.existsSync(path.join(directories.extensions, 'third-party'))) {
+        return response.send(extensions);
+    }
+
+    const thirdPartyExtensions = fs
+        .readdirSync(path.join(directories.extensions, 'third-party'))
+        .filter(f => fs.statSync(path.join(directories.extensions, 'third-party', f)).isDirectory());
+
+    // add the third-party extensions to the extensions array
+    extensions.push(...thirdPartyExtensions.map(f => `third-party/${f}`));
+    console.log(extensions);
+
 
     return response.send(extensions);
 });
@@ -3149,7 +3222,7 @@ function convertClaudePrompt(messages, addHumanPrefix, addAssistantPostfix) {
                 } else if (v.name === "example_user") {
                     prefix = "\n\nH: ";
                 } else {
-                    prefix = "\n\nSystem: ";
+                    prefix = "\n\n";
                 }
                 break
         }
@@ -3321,7 +3394,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
         return response_generate_openai.status(401).send({ error: true });
     }
 
-    const isTextCompletion = request.body.model.startsWith('text-') || request.body.model.startsWith('code-');
+    const isTextCompletion = Boolean(request.body.model && (request.body.model.startsWith('text-') || request.body.model.startsWith('code-')));
     const textPrompt = isTextCompletion ? convertChatMLPrompt(request.body.messages) : '';
     const endpointUrl = isTextCompletion ? `${api_url}/completions` : `${api_url}/chat/completions`;
 
@@ -3349,6 +3422,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
             "presence_penalty": request.body.presence_penalty,
             "frequency_penalty": request.body.frequency_penalty,
             "top_p": request.body.top_p,
+            "top_k": request.body.top_k,
             "stop": request.body.stop,
             "logit_bias": request.body.logit_bias
         },
@@ -3477,6 +3551,27 @@ function createTokenizationHandler(getTokenizerFn) {
 app.post("/tokenize_llama", jsonParser, createTokenizationHandler(() => spp_llama));
 app.post("/tokenize_nerdstash", jsonParser, createTokenizationHandler(() => spp_nerd));
 app.post("/tokenize_nerdstash_v2", jsonParser, createTokenizationHandler(() => spp_nerd_v2));
+app.post("/tokenize_via_api", jsonParser, async function(request, response) {
+    if (!request.body) {
+        return response.sendStatus(400);
+    }
+    const text = request.body.text || '';
+
+    try {
+        const args = {
+            body: JSON.stringify({"prompt": text}),
+            headers: { "Content-Type": "application/json" }
+        };
+
+        const data = await postAsync(api_server + "/v1/token-count", args);
+        console.log(data);
+        return response.send({ count: data['results'][0]['tokens'] });
+    } catch (error) {
+        console.log(error);
+        return response.send({ error: true });
+    }
+});
+
 
 // ** REST CLIENT ASYNC WRAPPERS **
 
@@ -4421,3 +4516,207 @@ async function getImageBuffers(zipFilePath) {
         });
     });
 }
+
+
+
+/**
+ * This function extracts the extension information from the manifest file.
+ * @param {string} extensionPath - The path of the extension folder
+ * @returns {Object} - Returns the manifest data as an object
+ */
+async function getManifest(extensionPath) {
+    const manifestPath = path.join(extensionPath, 'manifest.json');
+
+    // Check if manifest.json exists
+    if (!fs.existsSync(manifestPath)) {
+        throw new Error(`Manifest file not found at ${manifestPath}`);
+    }
+
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+    return manifest;
+}
+
+async function checkIfRepoIsUpToDate(extensionPath) {
+  const git = simpleGit();
+  await git.cwd(extensionPath).fetch('origin');
+  const currentBranch = await git.cwd(extensionPath).branch();
+  const currentCommitHash = await git.cwd(extensionPath).revparse(['HEAD']);
+  const log = await git.cwd(extensionPath).log({
+    from: currentCommitHash,
+    to: `origin/${currentBranch.current}`,
+  });
+
+  // Fetch remote repository information
+  const remotes = await git.cwd(extensionPath).getRemotes(true);
+
+  return {
+    isUpToDate: log.total === 0,
+    remoteUrl: remotes[0].refs.fetch, // URL of the remote repository
+  };
+}
+
+
+
+/**
+ * HTTP POST handler function to clone a git repository from a provided URL, read the extension manifest,
+ * and return extension information and path.
+ *
+ * @param {Object} request - HTTP Request object, expects a JSON body with a 'url' property.
+ * @param {Object} response - HTTP Response object used to respond to the HTTP request.
+ *
+ * @returns {void}
+ */
+app.post('/get_extension', jsonParser, async (request, response) => {
+    const git = simpleGit();
+    if (!request.body.url) {
+        return response.status(400).send('Bad Request: URL is required in the request body.');
+    }
+
+    try {
+        // make sure the third-party directory exists
+        if (!fs.existsSync(directories.extensions + '/third-party')) {
+            fs.mkdirSync(directories.extensions + '/third-party');
+        }
+
+        const url = request.body.url;
+        const extensionPath = path.join(directories.extensions, 'third-party', path.basename(url, '.git'));
+
+        if (fs.existsSync(extensionPath)) {
+            return response.status(409).send(`Directory already exists at ${extensionPath}`);
+        }
+
+        await git.clone(url, extensionPath);
+        console.log(`Extension has been cloned at ${extensionPath}`);
+
+
+        const { version, author, display_name } = await getManifest(extensionPath);
+
+
+        return response.send({ version, author, display_name, extensionPath });
+
+    } catch (error) {
+        console.log('Importing custom content failed', error);
+        return response.status(500).send(`Server Error: ${error.message}`);
+    }
+});
+
+/**
+ * HTTP POST handler function to pull the latest updates from a git repository
+ * based on the extension name provided in the request body. It returns the latest commit hash,
+ * the path of the extension, the status of the repository (whether it's up-to-date or not),
+ * and the remote URL of the repository.
+ *
+ * @param {Object} request - HTTP Request object, expects a JSON body with an 'extensionName' property.
+ * @param {Object} response - HTTP Response object used to respond to the HTTP request.
+ *
+ * @returns {void}
+ */
+app.post('/update_extension', jsonParser, async (request, response) => {
+    const git = simpleGit();
+    if (!request.body.extensionName) {
+        return response.status(400).send('Bad Request: extensionName is required in the request body.');
+    }
+
+    try {
+        const extensionName = request.body.extensionName;
+        const extensionPath = path.join(directories.extensions, 'third-party', extensionName);
+
+        if (!fs.existsSync(extensionPath)) {
+            return response.status(404).send(`Directory does not exist at ${extensionPath}`);
+        }
+
+        const { isUpToDate, remoteUrl } = await checkIfRepoIsUpToDate(extensionPath);
+        const currentBranch = await git.cwd(extensionPath).branch();
+        if (!isUpToDate) {
+
+            await git.cwd(extensionPath).pull('origin', currentBranch.current);
+            console.log(`Extension has been updated at ${extensionPath}`);
+        } else {
+            console.log(`Extension is up to date at ${extensionPath}`);
+        }
+        await git.cwd(extensionPath).fetch('origin');
+        const fullCommitHash = await git.cwd(extensionPath).revparse(['HEAD']);
+        const shortCommitHash = fullCommitHash.slice(0, 7);
+
+        return response.send({ shortCommitHash, extensionPath, isUpToDate, remoteUrl });
+
+    } catch (error) {
+        console.log('Updating custom content failed', error);
+        return response.status(500).send(`Server Error: ${error.message}`);
+    }
+});
+
+/**
+ * HTTP POST handler function to get the current git commit hash and branch name for a given extension.
+ * It checks whether the repository is up-to-date with the remote, and returns the status along with
+ * the remote URL of the repository.
+ *
+ * @param {Object} request - HTTP Request object, expects a JSON body with an 'extensionName' property.
+ * @param {Object} response - HTTP Response object used to respond to the HTTP request.
+ *
+ * @returns {void}
+ */
+app.post('/get_extension_version', jsonParser, async (request, response) => {
+    const git = simpleGit();
+    if (!request.body.extensionName) {
+        return response.status(400).send('Bad Request: extensionName is required in the request body.');
+    }
+
+    try {
+        const extensionName = request.body.extensionName;
+        const extensionPath = path.join(directories.extensions, 'third-party', extensionName);
+
+        if (!fs.existsSync(extensionPath)) {
+        return response.status(404).send(`Directory does not exist at ${extensionPath}`);
+        }
+
+        const currentBranch = await git.cwd(extensionPath).branch();
+        // get only the working branch
+        const currentBranchName = currentBranch.current;
+        await git.cwd(extensionPath).fetch('origin');
+        const currentCommitHash = await git.cwd(extensionPath).revparse(['HEAD']);
+        console.log(currentBranch, currentCommitHash);
+        const { isUpToDate, remoteUrl } = await checkIfRepoIsUpToDate(extensionPath);
+
+        return response.send({ currentBranchName, currentCommitHash, isUpToDate, remoteUrl });
+
+    } catch (error) {
+        console.log('Getting extension version failed', error);
+        return response.status(500).send(`Server Error: ${error.message}`);
+    }
+    }
+);
+
+/**
+ * HTTP POST handler function to delete a git repository based on the extension name provided in the request body.
+ *
+ * @param {Object} request - HTTP Request object, expects a JSON body with a 'url' property.
+ * @param {Object} response - HTTP Response object used to respond to the HTTP request.
+ *
+ * @returns {void}
+ */
+app.post('/delete_extension', jsonParser, async (request, response) => {
+    if (!request.body.extensionName) {
+        return response.status(400).send('Bad Request: extensionName is required in the request body.');
+    }
+
+    // Sanatize the extension name to prevent directory traversal
+    const extensionName = sanitize(request.body.extensionName);
+
+    try {
+        const extensionPath = path.join(directories.extensions, 'third-party', extensionName);
+
+        if (!fs.existsSync(extensionPath)) {
+            return response.status(404).send(`Directory does not exist at ${extensionPath}`);
+        }
+
+        await fs.promises.rmdir(extensionPath, { recursive: true });
+        console.log(`Extension has been deleted at ${extensionPath}`);
+
+        return response.send(`Extension has been deleted at ${extensionPath}`);
+
+    } catch (error) {
+        console.log('Deleting custom content failed', error);
+        return response.status(500).send(`Server Error: ${error.message}`);
+    }
+});
