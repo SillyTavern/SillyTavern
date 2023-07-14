@@ -1109,6 +1109,7 @@ function clearChat() {
         $('.zoomed_avatar[forChar]').remove();
     } else { console.debug('saw no avatars') }
     itemizedPrompts = [];
+    chat_metadata = {};
 }
 
 async function deleteLastMessage() {
