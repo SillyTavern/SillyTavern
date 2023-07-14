@@ -1427,6 +1427,10 @@ function sortByModifiedDate(directory) {
     return (a, b) => new Date(fs.statSync(`${directory}/${b}`).mtime) - new Date(fs.statSync(`${directory}/${a}`).mtime);
 }
 
+function sortByName(_) {
+    return (a, b) => a.localeCompare(b);
+}
+
 function readPresetsFromDirectory(directoryPath, options = {}) {
     const {
         sortFunction,
@@ -1463,7 +1467,7 @@ app.post('/getsettings', jsonParser, (request, response) => {
     // NovelAI Settings
     const { fileContents: novelai_settings, fileNames: novelai_setting_names }
         = readPresetsFromDirectory(directories.novelAI_Settings, {
-            sortFunction: sortByModifiedDate(directories.novelAI_Settings),
+            sortFunction: sortByName(directories.novelAI_Settings),
             removeFileExtension: true
         });
 
@@ -1476,13 +1480,13 @@ app.post('/getsettings', jsonParser, (request, response) => {
     // TextGenerationWebUI Settings
     const { fileContents: textgenerationwebui_presets, fileNames: textgenerationwebui_preset_names }
         = readPresetsFromDirectory(directories.textGen_Settings, {
-            sortFunction: sortByModifiedDate(directories.textGen_Settings), removeFileExtension: true
+            sortFunction: sortByName(directories.textGen_Settings), removeFileExtension: true
         });
 
     //Kobold
     const { fileContents: koboldai_settings, fileNames: koboldai_setting_names }
         = readPresetsFromDirectory(directories.koboldAI_Settings, {
-            sortFunction: sortByModifiedDate(directories.koboldAI_Settings), removeFileExtension: true
+            sortFunction: sortByName(directories.koboldAI_Settings), removeFileExtension: true
         })
 
     const worldFiles = fs
