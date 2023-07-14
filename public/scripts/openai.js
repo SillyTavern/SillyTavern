@@ -999,30 +999,50 @@ export function getTokenizerModel() {
         return oai_settings.openai_model;
     }
 
+    const turboTokenizer = 'gpt-3.5-turbo';
+    const gpt4Tokenizer = 'gpt-4';
+    const gpt2Tokenizer = 'gpt2';
+    const claudeTokenizer = 'claude';
+
     // Assuming no one would use it for different models.. right?
     if (oai_settings.chat_completion_source == chat_completion_sources.SCALE) {
-        return 'gpt-4';
+        return gpt4Tokenizer;
     }
 
-    const turboTokenizer = 'gpt-3.5-turbo'
     // Select correct tokenizer for WindowAI proxies
-    if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
+    if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI && oai_settings.windowai_model) {
         if (oai_settings.windowai_model.includes('gpt-4')) {
-            return 'gpt-4';
+            return gpt4Tokenizer;
         }
         else if (oai_settings.windowai_model.includes('gpt-3.5-turbo')) {
             return turboTokenizer;
         }
         else if (oai_settings.windowai_model.includes('claude')) {
-            return 'claude';
+            return claudeTokenizer;
         }
         else if (oai_settings.windowai_model.includes('GPT-NeoXT')) {
-            return 'gpt2';
+            return gpt2Tokenizer;
+        }
+    }
+
+    // And for OpenRouter (if not a site model, then it's impossible to determine the tokenizer)
+    if (oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER && oai_settings.openrouter_model) {
+        if (oai_settings.openrouter_model.includes('gpt-4')) {
+            return gpt4Tokenizer;
+        }
+        else if (oai_settings.openrouter_model.includes('gpt-3.5-turbo')) {
+            return turboTokenizer;
+        }
+        else if (oai_settings.openrouter_model.includes('claude')) {
+            return claudeTokenizer;
+        }
+        else if (oai_settings.openrouter_model.includes('GPT-NeoXT')) {
+            return gpt2Tokenizer;
         }
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
-        return 'claude';
+        return claudeTokenizer;
     }
 
     // Default to Turbo 3.5
