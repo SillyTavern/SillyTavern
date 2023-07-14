@@ -2537,7 +2537,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         console.debug(`A prompt bias was found: ${promptBias}`);
                         mesSendString += `${name2}: ${promptBias}`;
                     }
-                } else if (power_user.user_prompt_bias) {
+                } else if (power_user.user_prompt_bias && !isImpersonate) {
                     console.debug(`A prompt bias was found without character's name appended: ${promptBias}`);
                     mesSendString += substituteParams(power_user.user_prompt_bias);
                 }
@@ -2943,6 +2943,10 @@ function getNextMessageId(type) {
 }
 
 export function getBiasStrings(textareaText, type) {
+    if (type == 'impersonate') {
+        return { messageBias: '', promptBias: '', isUserPromptBias: false };
+    }
+
     let promptBias = '';
     let messageBias = extractMessageBias(textareaText);
 
