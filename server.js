@@ -761,7 +761,7 @@ function convertToV2(char) {
         tags: char.tags,
     });
 
-    result.chat = char.chat;
+    result.chat = char.chat ?? humanizedISO8601DateTime();
     result.create_date = char.create_date;
     return result;
 }
@@ -819,6 +819,8 @@ function readFromV2(char) {
         }
         char[charField] = v2Value;
     });
+
+    char['chat'] = char['chat'] ?? humanizedISO8601DateTime();
 
     return char;
 }
