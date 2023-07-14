@@ -1172,7 +1172,7 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
             .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
             .replace(/\n/g, "<br/>");
     } else if (!isSystem) {
-        mes = mes.replace(/[\"“](.+?)[\"”]/gm, '<q>"$1"</q>') // Wrap quotes in <q></q>. Even if they don't *quite* match.
+        mes = mes.replace(/[\"“]([^\"“”]*)[\"”]/g, '<q>"$1"</q>') // Wrap quotes in <q></q>. Even if they don't *quite* match.
 
         mes = mes.replaceAll('\\begin{align*}', '$$');
         mes = mes.replaceAll('\\end{align*}', '$$');
