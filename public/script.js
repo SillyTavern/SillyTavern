@@ -363,7 +363,7 @@ const system_messages = {
         is_user: false,
         is_system: true,
         is_name: true,
-        mes: [
+        mes:
             `Hello there! Please select the help topic you would like to learn more about:
             <ul>
             <li><a href="javascript:displayHelp('1')">Slash Commands</a> (or <tt>/help slash</tt>)</li>
@@ -372,7 +372,6 @@ const system_messages = {
             <li><a href="javascript:displayHelp('4')">{{Macros}}</a> (or <tt>/help macros</tt>)</li>
             </ul>
             <br><b>Still got questions left? The <a target="_blank" href="https://docs.sillytavern.app/">Official SillyTavern Documentation Website</a> has much more information!</b>`
-        ]
     },
     slash_commands: {
         name: systemUserName,
@@ -388,7 +387,7 @@ const system_messages = {
         is_user: false,
         is_system: true,
         is_name: true,
-        mes: [
+        mes:
             `Hotkeys/Keybinds:
             <ul>
             <li><tt>Up</tt> = Edit last message in chat</li>
@@ -402,7 +401,6 @@ const system_messages = {
             <li><tt>Ctrl+Shift+Up</tt> = Scroll to context line</li>
             <li><tt>Ctrl+Shift+Down</tt> = Scroll chat to bottom</li>
             </ul>`
-        ]
     },
     formatting: {
         name: systemUserName,
@@ -410,7 +408,7 @@ const system_messages = {
         is_user: false,
         is_system: true,
         is_name: true,
-        mes: [
+        mes:
             `Text formatting commands:
             <ul>
             <li><tt>{​{text}​}</tt> - sets a one-time behavioral bias for the AI. Resets when you send the next message.</li>
@@ -422,7 +420,6 @@ const system_messages = {
             <li><tt>$$ text $$</tt> - renders a LaTeX formula (if enabled)</li>
             <li><tt>$ text $</tt> - renders an AsciiMath formula (if enabled)</li>
             </ul>`
-        ]
     },
     macros: {
         name: systemUserName,
@@ -430,7 +427,7 @@ const system_messages = {
         is_user: false,
         is_system: true,
         is_name: true,
-        mes: [
+        mes:
             `System-wide Replacement Macros:
             <ul>
             <li><tt>{​{user}​}</tt> - your current Persona username</li>
@@ -441,7 +438,6 @@ const system_messages = {
             <li><tt>{{idle_duration}}</tt> - the time since the last user message was sent</li>
             <li><tt>{{random:(args)}}</tt> - returns a random item from the list. (ex: {{random:1,2,3,4}} will return 1 of the 4 numbers at random. Works with text lists too.</li>
             </ul>`
-        ]
     },
     welcome:
     {
