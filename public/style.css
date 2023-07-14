@@ -193,7 +193,8 @@ table.responsiveTable {
     text-align: right;
 }
 
-.mes_text br, .mes_bias br {
+.mes_text br,
+.mes_bias br {
     content: ' ';
 }
 
@@ -230,7 +231,8 @@ table.responsiveTable {
     padding: 1em;
 }
 
-.mes .mes_timer {
+.mes .mes_timer,
+.mes .mesIDDisplay {
     cursor: default;
     opacity: 0.7;
     font-size: calc(var(--mainFontSize) * 0.9);
@@ -291,6 +293,7 @@ code {
     padding: 0 3px;
     /* max-width: calc(100svw - 95px); */
     line-height: var(--mainFontSize);
+    color: var(--white70a);
 }
 
 
@@ -743,7 +746,7 @@ hr {
     min-width: 50px !important;
 }
 
-.hotswapAvatar.group_select .avatar img {
+.hotswapAvatar.group_select .avatar.avatar_collage img {
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -800,7 +803,8 @@ body.no-timer .mes_timer {
     display: none !important;
 }
 
-body.no-timestamps .timestamp {
+body.no-timestamps .timestamp,
+body.no-mesIDDisplay .mesIDDisplay {
     display: none !important;
 }
 
@@ -1155,6 +1159,12 @@ input[type="file"] {
     filter: brightness(150%);
 }
 
+#rm_character_count {
+    padding: 5px;
+    font-size: calc(var(--mainFontSize) * .8);
+    font-weight: bold;
+}
+
 #rm_print_characters_block {
     /* padding: 5px 0; */
     overflow-y: auto;
@@ -1402,6 +1412,10 @@ body.big-avatars .ch_description {
 
 .alignitemsflexstart {
     align-items: flex-start !important;
+}
+
+.alignItemsFlexEnd {
+    align-items: flex-end !important;
 }
 
 .alignSelfStart {
@@ -1877,13 +1891,13 @@ grammarly-extension {
     aspect-ratio: 1 / 1;
 }
 
-.menu_button:hover {
+.menu_button:hover, .menu_button.active {
     background-color: var(--white30a);
 }
 
-
-
-
+.height32px {
+    height: 32px;
+}
 
 #dialogue_del_mes .menu_button {
 
@@ -2123,9 +2137,9 @@ grammarly-extension {
     flex-direction: row;
 }
 
-.world_entry_thin_controls>div {
+/* .world_entry_thin_controls>div {
     flex: 1;
-}
+} */
 
 .world_entry_form_control label h4 {
     margin-bottom: 0;
@@ -2145,7 +2159,7 @@ grammarly-extension {
 }
 
 .delete_entry_button {
-    align-self: center;
+    height: min-content;
 }
 
 .world_entry_form_control.world_entry_form_horizontal {
@@ -2322,6 +2336,7 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
     font-size: calc(var(--mainFontSize) * 0.95);
     color: var(--SmartThemeBodyColor);
     flex: 1;
+    gap: 5px;
     display: flex;
 }
 
@@ -2466,6 +2481,7 @@ input[type="range"]::-webkit-slider-thumb {
 
 .mes_buttons .mes_edit,
 .mes_buttons .mes_bookmark,
+.mes_buttons .mes_create_bookmark,
 .extraMesButtonsHint,
 .tagListHint,
 .extraMesButtons div {
@@ -2477,6 +2493,7 @@ input[type="range"]::-webkit-slider-thumb {
 
 .mes_buttons .mes_edit:hover,
 .mes_buttons .mes_bookmark:hover,
+.mes_buttons .mes_create_bookmark:hover,
 .extraMesButtonsHint:hover,
 .tagListHint:hover,
 .extraMesButtons div:hover {
@@ -3753,16 +3770,39 @@ label[for="extensions_autoconnect"] {
 
 .extensions_info p {
     margin-bottom: 0.5em;
+    margin-left: 1em;
 }
 
 .extensions_info .disabled {
     color: lightgray;
 }
 
+.extensions_info .toggle_enable {
+    color: lightgreen;
+}
+.extensions_info .toggle_disable {
+    color: rgb(238, 144, 144);
+}
+
+.extensions_info .extension_enabled {
+    color: green;
+}
+.extensions_info .extension_disabled {
+    color: lightgray;
+}
+.extensions_info .extension_missing {
+    color: gray;
+}
+
 #extensions_list .disabled {
     text-decoration: line-through;
     color: lightgray;
 }
+
+/* possible place for WI Entry header styling */
+/* .world_entry_form .inline-drawer-header {
+    background-color: var(--SmartThemeShadowColor);
+} */
 
 #extensions_settings .inline-drawer-toggle.inline-drawer-header,
 #extensions_settings2 .inline-drawer-toggle.inline-drawer-header {
@@ -3922,11 +3962,13 @@ label[for="extensions_autoconnect"] {
     z-index: 9999 !important;
 }
 
+/*to prevent draggables from being made too small to see*/
 .fillRight,
 .fillLeft,
 #WorldInfo,
 #floatingPrompt {
-    min-width: unset;
+    min-width: 100px !important;
+    min-height: 100px !important;
     position: fixed;
 }
 
@@ -3989,6 +4031,16 @@ toolcool-color-picker {
 
 .alignitemscenter {
     align-items: center;
+}
+
+.alignitemsstart {
+    align-items: start;
+}
+
+.overflow-hidden {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
 .padding5 {
@@ -4054,6 +4106,10 @@ toolcool-color-picker {
     justify-content: space-around;
 }
 
+.justifyContentFlexStart {
+    justify-content: flex-start;
+}
+
 .justifyContentFlexEnd {
     justify-content: flex-end;
 }
@@ -4079,6 +4135,10 @@ toolcool-color-picker {
 
 .wide100p {
     width: 100%;
+}
+
+.wide50p {
+    width: 50%;
 }
 
 .wide50px {
@@ -4262,6 +4322,51 @@ body.w1000px #sheld {
     max-width: 1000px !important;
 }
 
+/* Document Style */
+
+body.documentstyle #chat .mes:not(.last_mes) {
+    padding: 0 10px;
+}
+
+body.documentstyle .last_mes {
+    padding-top: 0;
+}
+
+body.documentstyle #chat .mes .mes_text {
+    padding: 0;
+}
+
+body.documentstyle #chat .mes .mes_block {
+    margin-right: 30px;
+}
+
+body.documentstyle #chat .mes .mes_text {
+    margin-left: 20px;
+}
+
+body.documentstyle #chat .last_mes .mes_text {
+    margin-left: 20px;
+    min-height: 70px;
+}
+
+body.documentstyle #chat .last_mes:has(> .del_checkbox[style*="display: block"]) .mes_text {
+    margin-left: 0px;
+}
+
+body.documentstyle #chat .last_mes .swipe_left {
+    left: 5px;
+}
+
+body.documentstyle #chat .mes .mesAvatarWrapper,
+body.documentstyle #chat .mes .mes_block .ch_name .name_text,
+body.documentstyle #chat .mes .mes_block .ch_name .timestamp,
+body.documentstyle .mes:not(.last_mes) .ch_name .mes_buttons {
+    display: none !important;
+}
+
+
+
+
 /*FastUI blur removal*/
 
 body.no-blur * {
@@ -4328,6 +4433,9 @@ body.waifuMode .expression-holder {
     bottom: 0;
     filter: drop-shadow(2px 2px 2px #51515199);
     z-index: 2;
+    margin: 0 auto;
+    left: 0;
+    right: 0;
 }
 
 /* movingUI*/
@@ -4608,8 +4716,14 @@ body.waifuMode .zoomed_avatar {
         align-items: start;
         align-content: start;
         overflow-y: auto;
-        overflow-x: hidden;
+        overflow-x: hidden
     }
+
+    .mes_buttons {
+        font-size: calc(var(--mainFontSize)*1.2)
+    }
+
+    ;
 
     .drag-grabber,
     .pull-tab {
@@ -4698,16 +4812,13 @@ body.waifuMode .zoomed_avatar {
 
     body.waifuMode .expression-holder {
         display: inline;
-        width: unset;
-        max-height: unset;
-        max-width: unset;
-        bottom: unset;
-        left: unset;
-        top: unset;
+
         height: 100vh;
-        width: 100vw;
+        width: max-content;
         margin: 0 auto;
         position: absolute;
+        left: 0;
+        right: 0;
         filter: drop-shadow(2px 2px 2px #51515199);
         z-index: 1;
     }

@@ -1,7 +1,7 @@
 import { callPopup, eventSource, event_types, getRequestHeaders, saveSettingsDebounced } from "../../../script.js";
 import { dragElement, isMobile } from "../../RossAscends-mods.js";
 import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch } from "../../extensions.js";
-import { power_user } from "../../power-user.js";
+import { loadMovingUIState, power_user } from "../../power-user.js";
 import { onlyUnique, debounce, getCharaFilename } from "../../utils.js";
 export { MODULE_NAME };
 
@@ -152,7 +152,7 @@ async function visualNovelSetCharacterSprites(container, name, expression) {
 
                 const path = currentSpritePath || defaultSpritePath || '';
                 const img = expressionImage.find('img');
-                setImage(img, path);
+                await setImage(img, path);
             }
             expressionImage.toggleClass('hidden', noSprites);
         } else {
@@ -163,7 +163,7 @@ async function visualNovelSetCharacterSprites(container, name, expression) {
             $('#visual-novel-wrapper').append(template);
             dragElement($(template[0]));
             template.toggleClass('hidden', noSprites);
-            setImage(template.find('img'), defaultSpritePath || '');
+            await setImage(template.find('img'), defaultSpritePath || '');
             const fadeInPromise = new Promise(resolve => {
                 template.fadeIn(250, () => resolve());
             });
@@ -182,20 +182,20 @@ async function visualNovelUpdateLayers(container) {
     const group = context.groups.find(x => x.id == context.groupId);
     const recentMessages = context.chat.map(x => x.original_avatar).filter(x => x).reverse().filter(onlyUnique);
     const filteredMembers = group.members.filter(x => !group.disabled_members.includes(x));
-    const layerIndices = filteredMembers.slice().sort((a, b) =>  {
+    const layerIndices = filteredMembers.slice().sort((a, b) => {
         const aRecentIndex = recentMessages.indexOf(a);
         const bRecentIndex = recentMessages.indexOf(b);
         const aFilteredIndex = filteredMembers.indexOf(a);
         const bFilteredIndex = filteredMembers.indexOf(b);
 
         if (aRecentIndex !== -1 && bRecentIndex !== -1) {
-          return bRecentIndex - aRecentIndex;
+            return bRecentIndex - aRecentIndex;
         } else if (aRecentIndex !== -1) {
-          return 1;
+            return 1;
         } else if (bRecentIndex !== -1) {
-          return -1;
+            return -1;
         } else {
-          return aFilteredIndex - bFilteredIndex;
+            return aFilteredIndex - bFilteredIndex;
         }
     });
 
@@ -284,7 +284,9 @@ async function setLastMessageSprite(img, avatar, labels) {
     }
 }
 
-function setImage(img, path) {
+async function setImage(img, path) {
+    // Cohee: If something goes wrong, uncomment this to return to the old behavior
+    /*
     img.attr('src', path);
     img.removeClass('default');
     img.off('error');
@@ -292,6 +294,79 @@ function setImage(img, path) {
         console.debug('Error loading image', path);
         $(this).off('error');
         $(this).attr('src', '');
+    });
+    */
+
+    return new Promise(resolve => {
+        const prevExpressionSrc = img.attr('src');
+        const expressionClone = img.clone();
+        const originalId = img.attr('id');
+
+        //only swap expressions when necessary
+        if (prevExpressionSrc !== path && !img.hasClass('expression-animating')) {
+            //clone expression
+            expressionClone.addClass('expression-clone')
+            //make invisible and remove id to prevent double ids
+            //must be made invisible to start because they share the same Z-index
+            expressionClone.attr('id', '').css({ opacity: 0 });
+            //add new sprite path to clone src
+            expressionClone.attr('src', path);
+            //add invisible clone to html
+            expressionClone.appendTo(img.parent());
+
+            const duration = 200;
+
+            //add animation flags to both images
+            //to prevent multiple expression changes happening simultaneously
+            img.addClass('expression-animating');
+
+            // Set the parent container's min width and height before running the transition
+            const imgWidth = img.width();
+            const imgHeight = img.height();
+            const expressionHolder = img.parent();
+            expressionHolder.css('min-width', imgWidth > 100 ? imgWidth : 100);
+            expressionHolder.css('min-height', imgHeight > 100 ? imgHeight : 100);
+
+            //position absolute prevent the original from jumping around during transition
+            img.css('position', 'absolute');
+            expressionClone.addClass('expression-animating');
+            //fade the clone in
+            expressionClone.css({
+                opacity: 0
+            }).animate({
+                opacity: 1
+            }, duration)
+                //when finshed fading in clone, fade out the original
+                .promise().done(function () {
+                    img.animate({
+                        opacity: 0
+                    }, duration);
+                    //remove old expression
+                    img.remove();
+                    //replace ID so it becomes the new 'original' expression for next change
+                    expressionClone.attr('id', originalId);
+                    expressionClone.removeClass('expression-animating');
+
+                    // Reset the expression holder min height and width
+                    expressionHolder.css('min-width', 100);
+                    expressionHolder.css('min-height', 100);
+
+                    resolve();
+                });
+
+            expressionClone.removeClass('expression-clone');
+
+            expressionClone.removeClass('default');
+            expressionClone.off('error');
+            expressionClone.on('error', function () {
+                console.debug('Expression image error', sprite.path);
+                $(this).attr('src', '');
+                $(this).off('error');
+                resolve();
+            });
+        } else {
+            resolve();
+        }
     });
 }
 
@@ -566,7 +641,7 @@ function getListItem(item, imageSrc, textClass) {
             <span class="expression_list_title ${textClass}">${item}</span>
             <img class="expression_list_image" src="${imageSrc}" />
         </div>
-    `;
+        `;
 }
 
 async function getSpritesList(name) {
@@ -620,6 +695,8 @@ async function setExpression(character, expression, force) {
     console.debug('entered setExpressions');
     await validateImages(character);
     const img = $('img.expression');
+    const prevExpressionSrc = img.attr('src');
+    const expressionClone = img.clone()
 
     const sprite = (spriteCache[character] && spriteCache[character].find(x => x.label === expression));
     console.debug('checking for expression images to show..');
@@ -638,26 +715,79 @@ async function setExpression(character, expression, force) {
                 }
 
                 if (groupMember.name == character) {
-                    setImage($(`.expression-holder[data-avatar="${member}"] img`), sprite.path);
+                    await setImage($(`.expression-holder[data-avatar="${member}"] img`), sprite.path);
                     return;
                 }
             }
         }
+        //only swap expressions when necessary
+        if (prevExpressionSrc !== sprite.path
+            && !img.hasClass('expression-animating')) {
+            //clone expression
+            expressionClone.addClass('expression-clone')
+            //make invisible and remove id to prevent double ids
+            //must be made invisible to start because they share the same Z-index
+            expressionClone.attr('id', '').css({ opacity: 0 });
+            //add new sprite path to clone src
+            expressionClone.attr('src', sprite.path);
+            //add invisible clone to html
+            expressionClone.appendTo($("#expression-holder"))
 
-        img.attr('src', sprite.path);
-        img.removeClass('default');
-        img.off('error');
-        img.on('error', function () {
-            console.debug('Expression image error', sprite.path);
-            $(this).attr('src', '');
-            $(this).off('error');
-            if (force && extension_settings.expressions.showDefault) {
+            const duration = 200;
+
+            //add animation flags to both images
+            //to prevent multiple expression changes happening simultaneously
+            img.addClass('expression-animating');
+
+            // Set the parent container's min width and height before running the transition
+            const imgWidth = img.width();
+            const imgHeight = img.height();
+            const expressionHolder = img.parent();
+            expressionHolder.css('min-width', imgWidth > 100 ? imgWidth : 100);
+            expressionHolder.css('min-height', imgHeight > 100 ? imgHeight : 100);
+
+            //position absolute prevent the original from jumping around during transition
+            img.css('position', 'absolute');
+            expressionClone.addClass('expression-animating');
+            //fade the clone in
+            expressionClone.css({
+                opacity: 0
+            }).animate({
+                opacity: 1
+            }, duration)
+                //when finshed fading in clone, fade out the original
+                .promise().done(function () {
+                    img.animate({
+                        opacity: 0
+                    }, duration);
+                    //remove old expression
+                    img.remove();
+                    //replace ID so it becomes the new 'original' expression for next change
+                    expressionClone.attr('id', 'expression-image');
+                    expressionClone.removeClass('expression-animating');
+
+                    // Reset the expression holder min height and width
+                    expressionHolder.css('min-width', 100);
+                    expressionHolder.css('min-height', 100);
+                });
+
+
+            expressionClone.removeClass('expression-clone');
+
+            expressionClone.removeClass('default');
+            expressionClone.off('error');
+            expressionClone.on('error', function () {
+                console.debug('Expression image error', sprite.path);
+                $(this).attr('src', '');
+                $(this).off('error');
+                if (force && extension_settings.expressions.showDefault) {
+                    setDefault();
+                }
+            });
+        } else {
+            if (extension_settings.expressions.showDefault) {
                 setDefault();
             }
-        });
-    } else {
-        if (extension_settings.expressions.showDefault) {
-            setDefault();
         }
     }
 
@@ -665,8 +795,8 @@ async function setExpression(character, expression, force) {
         console.debug('setting default');
         const defImgUrl = `/img/default-expressions/${expression}.png`;
         //console.log(defImgUrl);
-        img.attr('src', defImgUrl);
-        img.addClass('default');
+        expressionClone.attr('src', defImgUrl);
+        expressionClone.addClass('default');
     }
     document.getElementById("expression-holder").style.display = '';
 }
@@ -905,6 +1035,7 @@ function setExpressionOverrideHtml(forceClear = false) {
             </div>
         </div>`;
         $('body').append(html);
+        loadMovingUIState();
     }
     function addVisualNovelMode() {
         const html = `
@@ -959,6 +1090,10 @@ function setExpressionOverrideHtml(forceClear = false) {
         $('#expression_upload_pack_button').on('click', onClickExpressionUploadPackButton);
         $('#expressions_show_default').prop('checked', extension_settings.expressions.showDefault).trigger('input');
         $('#expression_override_cleanup_button').on('click', onClickExpressionOverrideRemoveAllButton);
+        $(document).on('dragstart', '.expression', (e) => {
+            e.preventDefault()
+            return false
+        })
         $(document).on('click', '.expression_list_item', onClickExpressionImage);
         $(document).on('click', '.expression_list_upload', onClickExpressionUpload);
         $(document).on('click', '.expression_list_delete', onClickExpressionDelete);
@@ -973,6 +1108,7 @@ function setExpressionOverrideHtml(forceClear = false) {
     const updateFunction = wrapper.update.bind(wrapper);
     setInterval(updateFunction, UPDATE_INTERVAL);
     moduleWorker();
+    dragElement($("#expression-holder"))
     eventSource.on(event_types.CHAT_CHANGED, () => {
         setExpressionOverrideHtml();
 

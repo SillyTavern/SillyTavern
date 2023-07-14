@@ -501,7 +501,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
                 activatedMembers = activateListOrder(group.members.slice(0, 1));
             }
         }
-        else if (type === "swipe") {
+        else if (type === "swipe" || type === 'continue') {
             activatedMembers = activateSwipe(group.members);
 
             if (activatedMembers.length === 0) {
@@ -534,7 +534,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         for (const chId of activatedMembers) {
             deactivateSendButtons();
             isGenerationDone = false;
-            const generateType = type == "swipe" || type == "impersonate" || type == "quiet" ? type : "group_chat";
+            const generateType = type == "swipe" || type == "impersonate" || type == "quiet" || type == 'continue' ? type : "group_chat";
             setCharacterId(chId);
             setCharacterName(characters[chId].name)
 
@@ -1235,7 +1235,7 @@ function filterGroupMembers() {
         $("#rm_group_add_members .group_member").removeClass('hiddenBySearch');
     } else {
         $("#rm_group_add_members .group_member").each(function () {
-            const isValidSearch = $(this).children(".ch_name").text().toLowerCase().includes(searchValue);
+            const isValidSearch = $(this).find(".ch_name").text().toLowerCase().includes(searchValue);
             $(this).toggleClass('hiddenBySearch', !isValidSearch);
         });
     }
@@ -1441,7 +1441,7 @@ export async function importGroupChat(formData) {
     });
 }
 
-export async function saveGroupBookmarkChat(groupId, name, metadata) {
+export async function saveGroupBookmarkChat(groupId, name, metadata, mesId) {
     const group = groups.find(x => x.id === groupId);
 
     if (!group) {
@@ -1451,12 +1451,16 @@ export async function saveGroupBookmarkChat(groupId, name, metadata) {
     group.past_metadata[name] = { ...chat_metadata, ...(metadata || {}) };
     group.chats.push(name);
 
+    const trimmed_chat = (mesId !== undefined && mesId >= 0 && mesId < chat.length)
+        ? chat.slice(0, parseInt(mesId) + 1)
+        : chat;
+
     await editGroup(groupId, true);
 
     await fetch("/savegroupchat", {
         method: "POST",
         headers: getRequestHeaders(),
-        body: JSON.stringify({ id: name, chat: [...chat] }),
+        body: JSON.stringify({ id: name, chat: [...trimmed_chat] }),
     });
 }
 

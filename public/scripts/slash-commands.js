@@ -17,11 +17,14 @@ import {
     comment_avatar,
     system_avatar,
     system_message_types,
-    name1,
-    saveSettings,
+    replaceCurrentChat,
+    setCharacterId,
+    generateQuietPrompt,
 } from "../script.js";
 import { humanizedDateTime } from "./RossAscends-mods.js";
-import { power_user } from "./power-user.js";
+import { resetSelectedGroup } from "./group-chats.js";
+import { getRegexedString, regex_placement } from "./extensions/regex/engine.js";
+import { chat_styles, power_user } from "./power-user.js";
 export {
     executeSlashCommands,
     registerSlashCommand,
@@ -107,10 +110,77 @@ parser.addCommand('sendas', sendMessageAs, [], ` – sends message as a specific
 parser.addCommand('sys', sendNarratorMessage, [], '<span class="monospace">(text)</span> – sends message as a system narrator', false, true);
 parser.addCommand('sysname', setNarratorName, [], '<span class="monospace">(name)</span> – sets a name for future system narrator messages in this chat (display only). Default: System. Leave empty to reset.', true, true);
 parser.addCommand('comment', sendCommentMessage, [], '<span class="monospace">(text)</span> – adds a note/comment message not part of the chat', false, true);
+parser.addCommand('single', setStoryModeCallback, ['story'], ' – sets the message style to single document mode without names or avatars visible', true, true);
+parser.addCommand('bubble', setBubbleModeCallback, ['bubbles'], ' – sets the message style to bubble chat mode', true, true);
+parser.addCommand('flat', setFlatModeCallback, ['default'], ' – sets the message style to flat chat mode', true, true);
+parser.addCommand('continue', continueChatCallback, ['cont'], ' – continues the last message in the chat', true, true);
+parser.addCommand('go', goToCharacterCallback, ['char'], '<span class="monospace">(name)</span> – opens up a chat with the character by its name', true, true);
+parser.addCommand('sysgen', generateSystemMessage, [], '<span class="monospace">(prompt)</span> – generates a system message using a specified prompt', true, true);
 
 const NARRATOR_NAME_KEY = 'narrator_name';
 const NARRATOR_NAME_DEFAULT = 'System';
 const COMMENT_NAME_DEFAULT = 'Note';
+
+function findCharacterIndex(name) {
+    const matchTypes = [
+        (a, b) => a === b,
+        (a, b) => a.startsWith(b),
+        (a, b) => a.includes(b),
+    ];
+
+    for (const matchType of matchTypes) {
+        const index = characters.findIndex(x => matchType(x.name.toLowerCase(), name.toLowerCase()));
+        if (index !== -1) {
+            return index;
+        }
+    }
+
+    return -1;
+}
+
+function goToCharacterCallback(_, name) {
+    if (!name) {
+        console.warn('WARN: No character name provided for /go command');
+        return;
+    }
+
+    name = name.trim();
+    const characterIndex = findCharacterIndex(name);
+
+    if (characterIndex !== -1) {
+        openChat(characterIndex);
+    } else {
+        console.warn(`No matches found for name "${name}"`);
+    }
+}
+
+function openChat(id) {
+    resetSelectedGroup();
+    setCharacterId(id);
+    setTimeout(() => {
+        replaceCurrentChat();
+    }, 1);
+}
+
+function continueChatCallback() {
+    // Prevent infinite recursion
+    $('#send_textarea').val('');
+    $('#option_continue').trigger('click', { fromSlashCommand: true });
+}
+
+async function generateSystemMessage(_, prompt) {
+    $('#send_textarea').val('');
+
+    if (!prompt) {
+        console.warn('WARN: No prompt provided for /sysgen command');
+        toastr.warning('You must provide a prompt for the system message');
+        return;
+    }
+
+    toastr.info('Please wait', 'Generating...');
+    const message = await generateQuietPrompt(prompt);
+    sendNarratorMessage(_, message);
+}
 
 function syncCallback() {
     $('#sync_name_button').trigger('click');
@@ -118,6 +188,18 @@ function syncCallback() {
 
 function bindCallback() {
     $('#lock_user_name').trigger('click');
+}
+
+function setStoryModeCallback() {
+    $('#chat_display').val(chat_styles.DOCUMENT).trigger('change');
+}
+
+function setBubbleModeCallback() {
+    $('#chat_display').val(chat_styles.BUBBLES).trigger('change');
+}
+
+function setFlatModeCallback() {
+    $('#chat_display').val(chat_styles.DEFAULT).trigger('change');
 }
 
 function setNameCallback(_, name) {
@@ -153,14 +235,15 @@ async function sendMessageAs(_, text) {
     }
 
     const parts = text.split('\n');
-
     if (parts.length <= 1) {
         toastr.warning('Both character name and message are required. Separate them with a new line.');
         return;
     }
 
     const name = parts.shift().trim();
-    const mesText = parts.join('\n').trim();
+    let mesText = parts.join('\n').trim();
+    mesText = getRegexedString(mesText, regex_placement.SENDAS, { characterOverride: name });
+
     // Messages that do nothing but set bias will be hidden from the context
     const bias = extractMessageBias(mesText);
     const isSystem = replaceBiasMarkup(mesText).trim().length === 0;
@@ -202,6 +285,8 @@ async function sendNarratorMessage(_, text) {
     if (!text) {
         return;
     }
+
+    text = getRegexedString(text, regex_placement.SYSTEM);
 
     const name = chat_metadata[NARRATOR_NAME_KEY] || NARRATOR_NAME_DEFAULT;
     // Messages that do nothing but set bias will be hidden from the context
@@ -254,9 +339,31 @@ async function sendCommentMessage(_, text) {
     saveChatConditional();
 }
 
-function helpCommandCallback() {
-    sendSystemMessage(system_message_types.HELP);
+function helpCommandCallback(_, type) {
+    switch (type?.trim()) {
+        case 'slash':
+        case '1':
+            sendSystemMessage(system_message_types.SLASH_COMMANDS);
+            break;
+        case 'format':
+        case '2':
+            sendSystemMessage(system_message_types.FORMATTING);
+            break;
+        case 'hotkeys':
+        case '3':
+            sendSystemMessage(system_message_types.HOTKEYS);
+            break;
+        case 'macros':
+        case '4':
+            sendSystemMessage(system_message_types.MACROS);
+            break;
+        default:
+            sendSystemMessage(system_message_types.HELP);
+            break;
+    }
 }
+
+window['displayHelp'] = (page) => helpCommandCallback(null, page);
 
 function setBackgroundCallback(_, bg) {
     if (!bg) {

@@ -5,6 +5,7 @@ declare enum ModelGenerationInputStableSamplers {
     "k_lms" = "k_lms",
     "k_heun" = "k_heun",
     "k_euler" = "k_euler",
+    "k_euler_a" = "k_euler_a",
     "k_dpm_2" = "k_dpm_2",
     "k_dpm_2_a" = "k_dpm_2_a",
     "DDIM" = "DDIM",

@@ -668,3 +668,15 @@ export async function waitUntilCondition(condition, timeout = 1000, interval = 1
         }, interval);
     });
 }
+
+export function uuidv4() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
+
+export function deepClone(obj) {
+    return JSON.parse(JSON.stringify(obj));
+}
