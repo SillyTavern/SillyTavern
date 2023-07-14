@@ -311,7 +311,7 @@ function appendTagToList(listElement, tag, { removable, selectable, action, isGe
     }
 
     if (tag.excluded) {
-        isGeneralList ? $(tagElement).addClass('excluded') : $(listElement).parent().parent().addClass('hiddenByTag');
+        isGeneralList ? $(tagElement).addClass('excluded') : $(listElement).closest('.character_select, .group_select').addClass('hiddenByTag');
     }
 
     if (selectable) {
@@ -329,7 +329,7 @@ function appendTagToList(listElement, tag, { removable, selectable, action, isGe
     $(listElement).append(tagElement);
 }
 
-function onTagFilterClick(listElement, characterSelector) { 
+function onTagFilterClick(listElement, characterSelector) {
     let excludeTag;
     if ($(this).hasClass('selected')) {
         $(this).removeClass('selected');
