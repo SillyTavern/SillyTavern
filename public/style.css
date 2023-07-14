@@ -548,7 +548,7 @@ hr {
 #options,
 #extensionsMenu {
     display: flex;
-    z-index: 100;
+    z-index: 29999;
     background-color: var(--SmartThemeBlurTintColor);
     -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
@@ -4152,7 +4152,7 @@ input.extension_missing[type="checkbox"] {
     margin: 0 auto;
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
     -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
-    z-index: 9999 !important;
+    z-index: 1000 !important;
 }
 
 /*to prevent draggables from being made too small to see*/
