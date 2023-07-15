@@ -539,9 +539,9 @@ function getSystemPrompt(systemPrompt, nsfw_toggle_prompt, enhance_definitions_p
     return whole_prompt;
 }
 
-function tryParseStreamingError(str) {
+function tryParseStreamingError(response, decoded) {
     try {
-        const data = JSON.parse(str);
+        const data = JSON.parse(decoded);
 
         if (!data) {
             return;
@@ -550,7 +550,7 @@ function tryParseStreamingError(str) {
         checkQuotaError(data);
 
         if (data.error) {
-            toastr.error(response.statusText, 'API returned an error');
+            toastr.error(data.error.message || response.statusText, 'API returned an error');
             throw new Error(data);
         }
     }
@@ -784,26 +784,26 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
             let messageBuffer = "";
             while (true) {
                 const { done, value } = await reader.read();
-                let response = decoder.decode(value);
+                let decoded = decoder.decode(value);
 
                 // Claude's streaming SSE messages are separated by \r
                 if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
-                    response = response.replace(/\r/g, "");
+                    decoded = decoded.replace(/\r/g, "");
                 }
 
-                tryParseStreamingError(response);
+                tryParseStreamingError(response, decoded);
 
                 let eventList = [];
 
                 // ReadableStream's buffer is not guaranteed to contain full SSE messages as they arrive in chunks
                 // We need to buffer chunks until we have one or more full messages (separated by double newlines)
                 if (!oai_settings.legacy_streaming) {
-                    messageBuffer += response;
+                    messageBuffer += decoded;
                     eventList = messageBuffer.split("\n\n");
                     // Last element will be an empty string or a leftover partial message
                     messageBuffer = eventList.pop();
                 } else {
-                    eventList = response.split("\n");
+                    eventList = decoded.split("\n");
                 }
 
                 for (let event of eventList) {
@@ -837,7 +837,7 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
         checkQuotaError(data);
 
         if (data.error) {
-            toastr.error(response.statusText, 'API returned an error');
+            toastr.error(data.error.message || response.statusText, 'API returned an error');
             throw new Error(data);
         }
 
