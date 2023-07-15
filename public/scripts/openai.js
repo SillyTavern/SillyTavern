@@ -640,16 +640,19 @@ function prepareOpenAIMessages({
 
     if (power_user.console_log_prompts) chatCompletion.enableLogging();
 
+    const scenarioText = Scenario ? `Circumstances and context of the dialogue: ${Scenario}` : '';
+    const charPersonalityText = charPersonality ?  `${name2}'s personality: ${charPersonality}` : '';
+
     // Merge items to send, whose are managed by the prompt manager, with items from other places in silly tavern
     // While the position in this array matters for positioning items inside the chat completion, elements
-    // may simply be appended for later reference, as long as the initial order is not altered.
+    // may be appended for later reference, as long as the initial order is not altered.
     const mappedPrompts = [
         // Ordered prompts for which a marker should exist
         {role: 'system', content: formatWorldInfo(worldInfoBefore), identifier: 'worldInfoBefore'},
         {role: 'system', content: formatWorldInfo(worldInfoAfter), identifier: 'worldInfoAfter'},
         {role: 'system', content: charDescription, identifier: 'charDescription'},
-        {role: 'system', content: `${name2}'s personality: ${charPersonality}`, identifier: 'charPersonality'},
-        {role: 'system', content: `Circumstances and context of the dialogue: ${Scenario}`, identifier: 'scenario'},
+        {role: 'system', content: charPersonalityText, identifier: 'charPersonality'},
+        {role: 'system', content: scenarioText, identifier: 'scenario'},
         // Unordered prompts without marker
         {role: 'system', content: oai_settings.nsfw_avoidance_prompt, identifier: 'nsfwAvoidance'},
         {role: 'system', content: oai_settings.impersonation_prompt, identifier: 'impersonate'},
