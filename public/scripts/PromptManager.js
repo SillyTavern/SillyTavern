@@ -5,7 +5,7 @@ import {power_user} from "./power-user.js";
 const registerPromptManagerMigration = () => {
     const migrate = (settings) => {
         if (settings.main_prompt || settings.nsfw_prompt || settings.jailbreak_prompt) {
-            console.log('Running configuration migration for prompt manager.')
+            console.log('Running one-time configuration migration for prompt manager.')
             if (settings.prompts === undefined) settings.prompts = [];
 
             if (settings.main_prompt) {
@@ -198,6 +198,7 @@ function PromptManagerModule() {
     this.handleImport = () => { };
     this.handleFullExport = () => { };
     this.handleCharacterExport = () => { };
+    this.handleCharacterReset = () => {};
     this.handleAdvancedSettingsToggle = () => { };
 }
 
@@ -417,6 +418,18 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
 
             fileOpener.click();
         });
+    }
+
+    this.handleCharacterReset = () => {
+        callPopup('This will reset the prompt order for this character. You will not loose any prompts.', 'confirm',)
+            .then(userChoice => {
+                if (false === userChoice) return;
+
+                this.removePromptListForCharacter(this.activeCharacter);
+                this.addPromptListForCharacter(this.activeCharacter, openAiDefaultPromptList);
+
+                this.saveServiceSettings().then(() => this.render());
+            });
     }
 
     // Re-render when the character changes.
@@ -1060,6 +1073,7 @@ PromptManagerModule.prototype.renderPromptManager = function () {
                 ${ this.serviceSettings.prompt_manager_settings.showAdvancedSettings
                  ? `<a class="menu_button fa-file-arrow-down fa-solid" id="prompt-manager-export" title="Export this prompt list" data-i18n="Export"></a>
                     <a class="menu_button fa-file-arrow-up fa-solid" id="prompt-manager-import" title="Import a prompt list" data-i18n="Import"></a>` : '' }
+                <a class="menu_button fa-undo fa-solid" id="prompt-manager-reset-character" title="Reset current character" data-i18n="Reset current character"></a>
                 <a class="menu_button fa-plus-square fa-solid" title="New prompt" data-i18n="New"></a>
             </div>
         `;
@@ -1111,6 +1125,7 @@ PromptManagerModule.prototype.renderPromptManager = function () {
             footerDiv.querySelector('#prompt-manager-export').addEventListener('click', showExportSelection);
             rangeBlockDiv.querySelector('.export-promptmanager-prompts-full').addEventListener('click', this.handleFullExport);
             rangeBlockDiv.querySelector('.export-promptmanager-prompts-character').addEventListener('click', this.handleCharacterExport);
+            rangeBlockDiv.querySelector('#prompt-manager-reset-character').addEventListener('click', this.handleCharacterReset);
         }
     }
 };
