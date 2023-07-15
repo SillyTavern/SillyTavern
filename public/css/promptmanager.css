@@ -38,6 +38,15 @@
     color: var(--white50a);
 }
 
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt_invisible {
+    display: none;
+}
+
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt_visible {
+    display: grid;
+}
+
+
 #completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_list_head .prompt_manager_prompt_tokens,
 #completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt .prompt_manager_prompt_tokens {
     text-align: right;

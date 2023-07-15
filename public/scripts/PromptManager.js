@@ -1,4 +1,3 @@
-import {DraggablePromptListModule as DraggableList} from "./DraggableList.js";
 import {callPopup, event_types, eventSource, substituteParams} from "../script.js";
 import {TokenHandler} from "./openai.js";
 import {power_user} from "./power-user.js";
@@ -1142,18 +1141,18 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
         if (!prompt) return;
 
         const advancedEnabled = this.serviceSettings.prompt_manager_settings.showAdvancedSettings;
-        let draggableEnabled = true;
-        if (prompt.system_prompt && !advancedEnabled) draggableEnabled = false;
 
+
+        let visibleClass = `${prefix}prompt_manager_prompt_visible`;
         if (prompt.marker &&
             prompt.identifier !== 'newMainChat' &&
             prompt.identifier !== 'chatHistory' &&
             prompt.identifier !== 'characterInfo' &&
-            !advancedEnabled) return;
+            !advancedEnabled) visibleClass = `${prefix}prompt_manager_prompt_invisible`;
 
         const listEntry = this.getPromptListEntry(this.activeCharacter, prompt.identifier);
         const enabledClass = listEntry.enabled ? '' : `${prefix}prompt_manager_prompt_disabled`;
-        const draggableClass = draggableEnabled ? 'draggable' : 'droppable';
+        const draggableClass = `${prefix}prompt_manager_prompt_draggable`;
         const markerClass = prompt.marker ? `${prefix}prompt_manager_marker` : '';
         const tokens = this.tokenHandler?.getCounts()[prompt.identifier] ?? 0;
 
@@ -1209,7 +1208,7 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
         }
 
         listItemHtml += `
-            <li class="${prefix}prompt_manager_prompt ${draggableClass} ${enabledClass} ${markerClass}" draggable="${draggableEnabled}" data-pm-identifier="${prompt.identifier}">
+            <li class="${prefix}prompt_manager_prompt ${visibleClass} ${draggableClass} ${enabledClass} ${markerClass}" data-pm-identifier="${prompt.identifier}">
                 <span class="${prefix}prompt_manager_prompt_name" data-pm-name="${prompt.name}">
                     ${prompt.marker ? '<span class="fa-solid fa-thumb-tack" title="Prompt Marker"></span>' : ''}
                     ${!prompt.marker && prompt.system_prompt ? '<span class="fa-solid fa-globe" title="Global Prompt"></span>' : ''}
@@ -1368,30 +1367,21 @@ PromptManagerModule.prototype.getFormattedDate = function() {
  * @returns {void}
  */
 PromptManagerModule.prototype.makeDraggable = function () {
-    const handleOrderChange = (target, origin, direction) => {
-        const promptList = this.getPromptListForCharacter(this.activeCharacter);
+    $('#completion_prompt_manager_list').sortable({
+        items: `.${this.configuration.prefix}prompt_manager_prompt_draggable`,
+        update: ( event, ui ) => {
+            const promptList = this.getPromptListForCharacter(this.activeCharacter);
+            const promptOrder = $('#completion_prompt_manager_list').sortable('toArray', {attribute: 'data-pm-identifier'});
+            const idToObjectMap = new Map(promptList.map(prompt => [prompt.identifier, prompt]));
+            const newPromptList = promptOrder.map(identifier => idToObjectMap.get(identifier));
 
-        const targetIndex = promptList.findIndex(entry => entry.identifier === target.dataset.pmIdentifier);
-        const originIndex = promptList.findIndex(entry => entry.identifier === origin.dataset.pmIdentifier);
+            this.removePromptListForCharacter(this.activeCharacter);
+            this.addPromptListForCharacter(this.activeCharacter, newPromptList);
 
-        const [entry] = promptList.splice(originIndex, 1);
+            this.log('Prompt order updated.')
 
-        const insertAfter = 'after' === direction;
-        const newIndex = originIndex < targetIndex ? (insertAfter ? targetIndex : targetIndex - 1) : (insertAfter ? targetIndex + 1 : targetIndex);
-        promptList.splice(newIndex, 0, entry);
-
-        if (power_user.console_log_prompts) {
-            // For debugging purpose, fetch the actual position instead of using calculations.
-            const targetDebug = promptList.findIndex(prompt => prompt.identifier === target.dataset.pmIdentifier);
-            const originDebug = promptList.findIndex(prompt => prompt.identifier === origin.dataset.pmIdentifier);
-
-            this.log(`Moved ${origin.dataset.pmIdentifier} from position ${originIndex + 1} to position ${originDebug + 1} ${direction} ${target.dataset.pmIdentifier}, which now has position ${targetDebug + 1}`);
-
-        }
-        this.saveServiceSettings();
-    };
-
-    if (true === this.configuration.draggable) new DraggableList(this.listElement, handleOrderChange);
+            this.saveServiceSettings();
+        }});
 };
 
 /**
