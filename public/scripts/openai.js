@@ -555,8 +555,13 @@ function populateChatCompletion (prompts, chatCompletion, {bias, quietPrompt, ty
     // Authors Note
     if (prompts.has('authorsNote')) {
         const authorsNote = Message.fromPrompt(prompts.get('authorsNote'));
-        if (extension_prompt_types.AFTER_SCENARIO) chatCompletion.insert(authorsNote, 'scenario');
-        else chatCompletion.insert(authorsNote, 'main')
+
+        // ToDo: This should not be retrieved from the ui during runtime
+        const afterScenario = document.querySelector('input[name="extension_floating_position"]').checked;
+
+        // Add authors notes
+        if (true === afterScenario) chatCompletion.insert(authorsNote, 'scenario');
+        else chatCompletion.insert(authorsNote, 'main');
     }
 
     // Persona Description
@@ -666,7 +671,7 @@ function prepareOpenAIMessages({
 
     // Authors Note
     const authorsNote = extensionPrompts['2_floating_prompt'];
-    if (authorsNote && authorsNote.content) mappedPrompts.push({role: 'system', content: authorsNote.content, identifier: 'authorsNote'});
+    if (authorsNote && authorsNote.value) mappedPrompts.push({role: 'system', content: authorsNote.value, identifier: 'authorsNote'});
 
     // Persona Description
     if (power_user.persona_description) {
