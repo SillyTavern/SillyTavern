@@ -133,6 +133,7 @@
     margin-top:1em;
 }
 
+#prompt-manager-reset-character,
 #completion_prompt_manager_popup .completion_prompt_manager_popup_entry_form_footer #completion_prompt_manager_popup_entry_form_reset {
     color: rgb(220 173 16);
 }
@@ -154,7 +155,7 @@
     margin-top: 1em;
 }
 
-#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt.draggable {
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt_draggable {
     cursor: grab;
 }
 
