@@ -1080,6 +1080,7 @@ PromptManagerModule.prototype.renderPromptManager = function () {
 
         const rangeBlockDiv = promptManagerDiv.querySelector('.range-block');
         rangeBlockDiv.insertAdjacentHTML('beforeend', footerHtml);
+        rangeBlockDiv.querySelector('#prompt-manager-reset-character').addEventListener('click', this.handleCharacterReset);
 
         const footerDiv = rangeBlockDiv.querySelector(`.${this.configuration.prefix}prompt_manager_footer`);
         footerDiv.querySelector('.menu_button:nth-child(2)').addEventListener('click', this.handleAppendPrompt);
@@ -1125,7 +1126,6 @@ PromptManagerModule.prototype.renderPromptManager = function () {
             footerDiv.querySelector('#prompt-manager-export').addEventListener('click', showExportSelection);
             rangeBlockDiv.querySelector('.export-promptmanager-prompts-full').addEventListener('click', this.handleFullExport);
             rangeBlockDiv.querySelector('.export-promptmanager-prompts-character').addEventListener('click', this.handleCharacterExport);
-            rangeBlockDiv.querySelector('#prompt-manager-reset-character').addEventListener('click', this.handleCharacterReset);
         }
     }
 };
