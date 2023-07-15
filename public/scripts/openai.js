@@ -443,7 +443,7 @@ function populateChatHistory(prompts, chatCompletion, type = null, cyclePrompt =
 
         if (true === promptManager.serviceSettings.names_in_completion && prompt.name)
             if (promptManager.isValidName(prompt.name)) chatMessage.name = prompt.name;
-            else throw InvalidCharacterNameError();
+            else throw new InvalidCharacterNameError();
 
         if (chatCompletion.canAfford(chatMessage)) chatCompletion.insertAtStart(chatMessage, 'chatHistory');
         else return false;
@@ -714,7 +714,7 @@ function prepareOpenAIMessages({
         }
     } finally {
         const messages = chatCompletion.getMessages();
-        promptManager.populateTokenHandler(messages);
+        if (null === promptManager.error) promptManager.populateTokenHandler(messages);
         promptManager.setMessages(messages);
 
         // All information are up-to-date, render.
