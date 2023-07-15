@@ -125,14 +125,27 @@ export function humanizeGenTime(character) {
     return time_spent;
 }
 
+
+
+/**
+ * AA_CountCharTime logs the time spent and word count of a given character.
+ * 
+ * @param {String} chid - Character ID; undefined or 'invalid-safety-id' will not be processed.
+ * 
+ * It fetches the character using the ID, calculates human-readable interaction time and word count,
+ * logs the time, and appends this information to the 'result_info' HTML element.
+ */
 export function AA_CountCharTime(chid){
     console.log("AA_CountCharTime");
     if (chid !== undefined && chid !== "invalid-safety-id") {    // if we are counting a valid pre-saved char
         let selected_character = characters[chid];
         let timeStirng = humanizeGenTime(selected_character);
+
+        //get character stats from the server 
+
         //get total word counts
-        let user_words = selected_character.user_word_count;
-        let char_words = selected_character.word_count;
+        let user_words = selected_character.stats.user_word_count;
+        let char_words = selected_character.stats.word_count;
 
 
 

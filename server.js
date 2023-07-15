@@ -107,6 +107,8 @@ client.on('error', (err) => {
 
 const poe = require('./src/poe-client');
 
+var charStats = {};
+
 let api_server = "http://0.0.0.0:5000";
 let api_novelai = "https://api.novelai.net";
 let api_openai = "https://api.openai.com/v1";
@@ -767,52 +769,188 @@ function convertToV2(char) {
     return result;
 }
 
+
+/**
+ * @todo One shot collection of all stats for all characters
+ * @todo Endpoint for getting stats for a single character
+ * @todo Endpoint for writing stats on update
+ * @todo Frontend for viewing stats
+ * @todo Frontend for viewing stats for a single character
+ * @todo Frontend for viewing stats for all characters
+ */
+
+
+async function collectAndCreateStats() {
+    const files = await readdir(charactersPath);
+
+    const pngFiles = files.filter(file => file.endsWith('.png'));
+    let characters = {};
+
+    let processingPromises = pngFiles.map((file, index) => processCharacter(file, index));
+    await Promise.all(processingPromises);
+
+    const obs = new PerformanceObserver((items) => {
+        console.log(items.getEntries()[0].duration);
+        performance.clearMarks();
+    });
+
+    obs.observe({ entryTypes: ['measure'] });
+
+    return characters;
+}
+
+const statsFilePath = 'public/stats.json';
+
+// Function to load the stats file into memory
+async function loadStatsFile() {
+    try {
+        const statsFileContent = await readFile(statsFilePath);
+        charStats = JSON.parse(statsFileContent);
+    } catch (err) {
+        // If the file doesn't exist or is invalid, initialize stats
+        if (err.code === 'ENOENT' || err instanceof SyntaxError) {
+            charStats = await collectAndCreateStats(); // Call your function to collect and create stats
+            await saveStatsToFile();
+        } else {
+            throw err; // Rethrow the error if it's something we didn't expect
+        }
+    }
+}
+
+// Function to save the stats to file
+async function saveStatsToFile() {
+    await writeFile(statsFilePath, JSON.stringify(charStats));
+}
+
+async function writeStatsToFileAndExit() {
+    try {
+        await saveStatsToFile();
+    } catch (err) {
+        console.error('Failed to write stats to file:', err);
+    } finally {
+        process.exit();
+    }
+}
+
+
+
+/**
+ * Reads the contents of a file and returns the lines in the file as an array.
+ *
+ * @param {string} filepath - The path of the file to be read.
+ * @returns {Array<string>} - The lines in the file.
+ * @throws Will throw an error if the file cannot be read.
+ */
+function readAndParseFile(filepath) {
+    try {
+        let file = fs.readFileSync(filepath, 'utf8');
+        let lines = file.split('\n');
+        return lines;
+    } catch (error) {
+        console.error(`Error reading file at ${filepath}: ${error}`);
+        return [];
+    }
+}
+
+/**
+ * Calculates the time difference between two dates.
+ *
+ * @param {string} gen_started - The start time in ISO 8601 format.
+ * @param {string} gen_finished - The finish time in ISO 8601 format.
+ * @returns {number} - The difference in time in milliseconds.
+ */
+function calculateGenTime(gen_started, gen_finished) {
+    let startDate = new Date(gen_started);
+    let endDate = new Date(gen_finished);
+    return endDate - startDate;
+}
+
+/**
+ * Counts the number of words in a string.
+ *
+ * @param {string} str - The string to count words in.
+ * @returns {number} - The number of words in the string.
+ */
+function countWordsInString(str) {
+    return str.split(" ").length;
+}
+
+
+/**
+ * Calculates the total generation time and word count for a chat with a character.
+ *
+ * @param {string} char_dir - The directory path where character chat files are stored.
+ * @param {string} chat - The name of the chat file.
+ * @returns {Object} - An object containing the total generation time, user word count, and non-user word count.
+ * @throws Will throw an error if the file cannot be read or parsed.
+ */
 function calculateTotalGenTimeAndWordCount(char_dir, chat) {
     let filepath = path.join(char_dir, chat);
-    let file = fs.readFileSync(filepath, 'utf8');
-    let lines = file.split('\n');
+    let lines = readAndParseFile(filepath);
+
     let totalGenTime = 0;
     let userWordCount = 0;
     let nonUserWordCount = 0;
+    let nonUserMsgCount = 0;
+    let userMsgCount = 0;
+    let totalSwipeCount = 0;
+    let firstNonUserMsgSkipped = false;
+
     for (let line of lines) {
         if (line.length) {
-            let json = JSON.parse(line);
-            if (json.gen_started && json.gen_finished) {
-                let gen_started = new Date(json.gen_started);
-                let gen_finished = new Date(json.gen_finished);
-                let gen_time = gen_finished - gen_started;
-                totalGenTime += gen_time;
-            }
-            if (json.mes) {
-                if (json.is_user) {
-                    userWordCount += json.mes.split(" ").length;
-                } else {
-                    nonUserWordCount += json.mes.split(" ").length;
-                }
-            }
-            if (json.swipes) {
-                for (let swipeText of json.swipes) {
-                    if (json.is_user) {
-                        userWordCount += swipeText.split(" ").length;
-                    } else {
-                        nonUserWordCount += swipeText.split(" ").length;
+            try {
+                let json = JSON.parse(line);
+
+                if (json.gen_started && json.gen_finished) {
+                    let genTime = calculateGenTime(json.gen_started, json.gen_finished);
+                    totalGenTime += genTime;
+
+                    if (json.swipes && !json.swipe_info) {
+                        // If there are swipes but no swipe_info, estimate the genTime
+                        totalGenTime += genTime * json.swipes.length;
                     }
                 }
-            }
-            if (json.swipe_info) {
-                for (let swipe of json.swipe_info) {
-                    if (swipe.gen_started && swipe.gen_finished) {
-                        let gen_started = new Date(swipe.gen_started);
-                        let gen_finished = new Date(swipe.gen_finished);
-                        let gen_time = gen_finished - gen_started;
-                        totalGenTime += gen_time;
+
+                if (json.mes) {
+                    if (!firstNonUserMsgSkipped || json.is_user) {
+                        let wordCount = countWordsInString(json.mes);
+                        json.is_user ? userWordCount += wordCount : nonUserWordCount += wordCount;
+                        json.is_user ? userMsgCount++ : nonUserMsgCount++;
+                    }
+                    if (!json.is_user) {
+                        firstNonUserMsgSkipped = true;
                     }
                 }
+
+                if (json.swipes) {
+                    totalSwipeCount += json.swipes.length;
+                    for (let swipeText of json.swipes) {
+                        if (!firstNonUserMsgSkipped || json.is_user) {
+                            let wordCount = countWordsInString(swipeText);
+                            json.is_user ? userWordCount += wordCount : nonUserWordCount += wordCount;
+                        }
+                        if (!json.is_user) {
+                            firstNonUserMsgSkipped = true;
+                        }
+                    }
+                }
+
+                if (json.swipe_info) {
+                    for (let swipe of json.swipe_info) {
+                        if (swipe.gen_started && swipe.gen_finished) {
+                            totalGenTime += calculateGenTime(swipe.gen_started, swipe.gen_finished);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error(`Error parsing line ${line}: ${error}`);
             }
         }
     }
-    return { totalGenTime, userWordCount, nonUserWordCount };
+    return { totalGenTime, userWordCount, nonUserWordCount, userMsgCount, nonUserMsgCount, totalSwipeCount };
 }
+
+
 
 
 function unsetFavFlag(char) {
@@ -1106,7 +1244,7 @@ app.post("/editcharacterattribute", jsonParser, async function (request, respons
         charaRead(avatarPath).then((char) => {
             char = JSON.parse(char);
             //check if the field exists
-            if (char[request.body.field] === undefined || char.data[request.body.field] === undefined) {
+            if (char[request.body.field] === undefined && char.data[request.body.field] === undefined) {
                 console.error('Error: invalid field.');
                 response.status(400).send('Error: invalid field.');
                 return;
@@ -1218,6 +1356,113 @@ async function charaRead(img_url, input_format) {
     return characterCardParser.parse(img_url, input_format);
 }
 
+
+
+/**
+ * calculateStats - Calculate statistics for a given character chat directory.
+ *
+ * @param  {string} char_dir The directory containing the chat files.
+ * @param  {string} item     The name of the character.
+ * @return {object}          An object containing the calculated statistics.
+ */
+const calculateStats = (char_dir, item) => {
+    let chat_size = 0;
+    let date_last_chat = 0;
+    const stats = {
+        total_gen_time: 0,
+        user_word_count: 0,
+        non_user_word_count: 0,
+        user_msg_count: 0,
+        non_user_msg_count: 0,
+        total_swipe_count: 0
+    };
+
+    if (fs.existsSync(char_dir)) {
+        const chats = fs.readdirSync(char_dir);
+        if (Array.isArray(chats) && chats.length) {
+            for (const chat of chats) {
+                const result = calculateTotalGenTimeAndWordCount(char_dir, chat);
+                stats.total_gen_time += result.totalGenTime || 0;
+                stats.user_word_count += result.userWordCount || 0;
+                stats.non_user_word_count += result.nonUserWordCount || 0;
+                stats.user_msg_count += result.userMsgCount || 0;
+                stats.non_user_msg_count += result.nonUserMsgCount || 0;
+                stats.total_swipe_count += result.totalSwipeCount || 0;
+
+                const chatStat = fs.statSync(path.join(char_dir, chat));
+                chat_size += chatStat.size;
+                date_last_chat = Math.max(date_last_chat, chatStat.mtimeMs);
+            }
+        }
+    }
+
+    return { chat_size, date_last_chat, stats };
+}
+
+
+
+/**
+ * processCharacter - Process a given character, read its data and calculate its statistics.
+ *
+ * @param  {string} item The name of the character.
+ * @param  {number} i    The index of the character in the characters list.
+ * @return {Promise}     A Promise that resolves when the character processing is done.
+ */const processCharacter = async (item, i) => {
+    try {
+        const img_data = await charaRead(charactersPath + item);
+        let jsonObject = getCharaCardV2(json5.parse(img_data));
+        jsonObject.avatar = item;
+        characters[i] = {};
+        characters[i] = jsonObject;
+        characters[i]['json_data'] = img_data;
+        const charStat = fs.statSync(path.join(charactersPath, item));
+        characters[i]['date_added'] = charStat.birthtimeMs;
+        const char_dir = path.join(chatsPath, item.replace('.png', ''));
+
+        if (first_run && !charStats[item]) {
+            //console.log(`Calculating stats for ${item}`);
+            const calculatedStats = calculateStats(char_dir, item);
+            charStats[item] = calculatedStats;
+        }
+
+        characters[i]['stats'] = charStats[item];
+
+        //console.debug(`Total gen time for ${item} is ${characters[i]['stats']['total_gen_time']}`);
+        //console.debug(`User word count for ${item} is ${characters[i]['stats']['user_word_count']}`);
+        //console.debug(`Non-user word count for ${item} is ${characters[i]['stats']['non_user_word_count']}`);
+    }
+    catch (err) {
+        characters[i]['date_added'] = 0;
+        characters[i]['stats'] = {
+            total_gen_time: 0,
+            user_word_count: 0,
+            non_user_word_count: 0,
+            user_msg_count: 0,
+            non_user_msg_count: 0,
+            total_swipe_count: 0,
+            chat_size: 0,
+            date_last_chat: 0
+        };
+        console.log(`Could not process character: ${item}`, err);
+    }
+}
+
+
+
+/**
+ * HTTP POST endpoint for the "/getcharacters" route.
+ *
+ * This endpoint is responsible for reading character files from the `charactersPath` directory,
+ * parsing character data, calculating stats for each character and responding with the data.
+ * Stats are calculated only on the first run, on subsequent runs the stats are fetched from 
+ * the `charStats` variable.
+ * The stats are calculated by the `calculateStats` function.
+ * The characters are processed by the `processCharacter` function.
+ *
+ * @param  {object}   request  The HTTP request object.
+ * @param  {object}   response The HTTP response object.
+ * @return {undefined}         Does not return a value.
+ */
 app.post("/getcharacters", jsonParser, function (request, response) {
     fs.readdir(charactersPath, async (err, files) => {
         if (err) {
@@ -1226,90 +1471,92 @@ app.post("/getcharacters", jsonParser, function (request, response) {
         }
 
         const pngFiles = files.filter(file => file.endsWith('.png'));
-
-        //console.log(pngFiles);
         characters = {};
-        var i = 0;
-        for (const item of pngFiles) {
-            try {
-                var img_data = await charaRead(charactersPath + item);
-                let jsonObject = getCharaCardV2(json5.parse(img_data));
-                jsonObject.avatar = item;
-                characters[i] = {};
-                characters[i] = jsonObject;
-                characters[i]['json_data'] = img_data;
 
-                try {
-                    const charStat = fs.statSync(path.join(charactersPath, item));
-                    characters[i]['date_added'] = charStat.birthtimeMs;
-                    const char_dir = path.join(chatsPath, item.replace('.png', ''));
+        const { performance, PerformanceObserver } = require('perf_hooks');
 
-                    let chat_size = 0;
-                    let date_last_chat = 0;
+        performance.mark('A');
 
-                    if (fs.existsSync(char_dir)) {
-                        const chats = fs.readdirSync(char_dir);
+        let processingPromises = pngFiles.map((file, index) => processCharacter(file, index));
+        await Promise.all(processingPromises); performance.mark('B');
+        performance.measure('A to B', 'A', 'B');
 
-                        if (Array.isArray(chats) && chats.length) {
-                            for (const chat of chats) {
-                                //open the jsonl file and read the lines
-                                //extract the gen_started and gen_finished from each line, calculating the difference and adding it to a running total
-                                if (first_run) {
-                                    let result = calculateTotalGenTimeAndWordCount(char_dir, chat);
-                                    if (result.totalGenTime) {
-                                        //console.debug(`Total gen time for ${item} is ${result.totalGenTime}`)
-                                        characters[i]['total_gen_time'] = characters[i]['total_gen_time'] ?
-                                            characters[i]['total_gen_time'] + result.totalGenTime : result.totalGenTime;
-                                    }
-                                    if (result.userWordCount) {
-                                        //console.debug(`User word count for ${item} is ${result.userWordCount}`)
-                                        characters[i]['user_word_count'] = characters[i]['user_word_count'] ?
-                                            characters[i]['user_word_count'] + result.userWordCount : result.userWordCount;
-                                    }
-                                    if (result.nonUserWordCount) {
-                                        //console.debug(`Non-user word count for ${item} is ${result.nonUserWordCount}`)
-                                        characters[i]['word_count'] = characters[i]['word_count'] ?
-                                            characters[i]['word_count'] + result.nonUserWordCount : result.nonUserWordCount;
-                                    }
+        const obs = new PerformanceObserver((items) => {
+            console.log(items.getEntries()[0].duration);
+            performance.clearMarks();
+        });
 
-                            }
-                                
-                                const chatStat = fs.statSync(path.join(char_dir, chat));
-                                chat_size += chatStat.size;
-                                date_last_chat = Math.max(date_last_chat, chatStat.mtimeMs);
-                            }
-                        }
-                    }
-                    //log the total gen time and word counts to the console
-                    console.debug(`Total gen time for ${item} is ${characters[i]['total_gen_time']}`)
-                    console.debug(`User word count for ${item} is ${characters[i]['user_word_count']}`)
-                    console.debug(`Non-user word count for ${item} is ${characters[i]['word_count']}`)
+        obs.observe({ entryTypes: ['measure'] });
 
-                    characters[i]['date_last_chat'] = date_last_chat;
-                    characters[i]['chat_size'] = chat_size;
-                }
-                catch {
-                    characters[i]['date_added'] = 0;
-                    characters[i]['date_last_chat'] = 0;
-                    characters[i]['chat_size'] = 0;
-                }
-
-                i++;
-            } catch (error) {
-                console.log(`Could not read character: ${item}`);
-                if (error instanceof SyntaxError) {
-                    console.log("String [" + (i) + "] is not valid JSON!");
-                } else {
-                    console.log("An unexpected error occurred: ", error);
-                }
-            }
-        };
         first_run = false;
-        //console.log(characters);
         response.send(JSON.stringify(characters));
     });
-
 });
+
+
+
+/**
+ * Handle a POST request to pull stats for a character.
+ *
+ * This function reads the stats for a character from the 'stats' object and sends it as a JSON response.,
+ *
+ *
+ * @param {Object} request - The HTTP request object.
+ * @param {Object} response - The HTTP response object.
+ * @returns {void}
+ */
+app.post("/getcharacterstats", jsonParser, function (request, response) {
+    if (!request.body || !request.body.avatar_url) {
+        return response.sendStatus(400);
+    }
+
+    if (request.body.avatar_url !== sanitize(request.body.avatar_url)) {
+        console.error('Malicious filename prevented');
+        return response.sendStatus(403);
+    }
+
+    const avatarName = request.body.avatar_url;
+    if (!stats[avatarName]) {
+        return response.sendStatus(400);
+    }
+
+    return response.send(stats[avatarName]);
+});
+
+/**
+ * Handle a POST request to update stats for a character.
+ *
+ * This function takes the stat name, value, and character from the request body and updates the 'stats' object
+ * with the new value. It then sends the updated 'stats' object for the character as a JSON response 
+ *
+ * @param {Object} request - The HTTP request object.
+ * @param {Object} response - The HTTP response object.
+ * @returns {void}
+ */
+app.post("/updatecharacterstats", jsonParser, function (request, response) {
+    if (!request.body || !request.body.avatar_url || !request.body.stat_name || !request.body.stat_value) {
+        return response.sendStatus(400);
+    }
+
+    if (request.body.avatar_url !== sanitize(request.body.avatar_url)) {
+        console.error('Malicious filename prevented');
+        return response.sendStatus(403);
+    }
+
+    const avatarName = request.body.avatar_url;
+    if (!stats[avatarName]) {
+        return response.sendStatus(400);
+    }
+
+    const statName = request.body.stat_name;
+    const statValue = request.body.stat_value;
+    stats[avatarName][statName] = statValue;
+
+    return response.send(stats[avatarName]);
+});
+
+
+
 app.post("/getbackgrounds", jsonParser, function (request, response) {
     var images = getImages("public/backgrounds");
     response.send(JSON.stringify(images));
@@ -3642,6 +3889,16 @@ const setupTasks = async function () {
         loadClaudeTokenizer('src/claude.json'),
     ]);
 
+    await loadStatsFile();
+
+    // Set up event listeners for a graceful shutdown
+    process.on('SIGINT', writeStatsToFileAndExit);
+    process.on('SIGTERM', writeStatsToFileAndExit);
+    process.on('uncaughtException', (err) => {
+        console.error('Uncaught exception:', err);
+        writeStatsToFileAndExit();
+    });
+    
     console.log('Launching...');
 
     if (autorun) open(autorunUrl.toString());
