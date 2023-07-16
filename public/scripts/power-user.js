@@ -595,6 +595,7 @@ async function applyMovingUIPreset(name) {
 
     power_user.movingUIState = movingUIPreset.movingUIState;
 
+
     console.log('MovingUI Preset applied: ' + name);
     loadMovingUIState()
 }
@@ -748,7 +749,7 @@ function loadPowerUserSettings(settings, data) {
         const option = document.createElement('option');
         option.value = movingUIPreset.name;
         option.innerText = movingUIPreset.name;
-        option.selected = movingUIPreset.name == power_user.MovingUIPreset;
+        option.selected = movingUIPreset.name == power_user.movingUIPreset;
         $("#movingUIPresets").append(option);
     }
 
@@ -1137,15 +1138,25 @@ async function resetMovablePanels(type) {
     await delay(50)
 
     power_user.movingUIState = {};
+
+    //if user manually resets panels, deselect the current preset
+    if (type !== 'quiet' && type !== 'resize') {
+        power_user.movingUIPreset = 'Default'
+        $(`#movingUIPresets option[value="Default"]`).prop('selected', true);
+    }
+
     saveSettingsDebounced();
     eventSource.emit(event_types.MOVABLE_PANELS_RESET);
 
     eventSource.once(event_types.SETTINGS_UPDATED, () => {
         $(".resizing").removeClass('resizing');
-        if (type === 'resize') {
-            toastr.warning('Panel positions reset due to zoom/resize');
-        } else if (type === 'quiet') {
+        //if happening as part of preset application, do it quietly.
+        if (type === 'quiet') {
             return
+            //if happening due to resize, tell user.    
+        } else if (type === 'resize') {
+            toastr.warning('Panel positions reset due to zoom/resize');
+            //if happening due to manual button press    
         } else {
             toastr.success('Panel positions reset');
         }
