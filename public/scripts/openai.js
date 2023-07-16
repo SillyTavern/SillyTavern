@@ -288,18 +288,17 @@ function setOpenAIMessageExamples(mesExamplesArray) {
 }
 
 function setupOpenAIPromptManager(openAiSettings) {
+    // Do not set up prompt manager more than once
+    if (promptManager) return true; 
+    
     promptManager = new PromptManager();
+
     const configuration = {
         prefix: 'completion_',
         containerIdentifier: 'completion_prompt_manager',
         listIdentifier: 'completion_prompt_manager_list',
         toggleDisabled: ['main'],
         draggable: true,
-        defaultPrompts: {
-            main: default_main_prompt,
-            nsfw: default_nsfw_prompt,
-            jailbreak: default_jailbreak_prompt
-        }
     };
 
     promptManager.saveServiceSettings = () => {
@@ -606,7 +605,6 @@ function populateChatCompletion (prompts, chatCompletion, {bias, quietPrompt, ty
  * Take a configuration object and prepares messages for a chat with OpenAI's chat completion API.
  * Handles prompts, prepares chat history, manages token budget, and processes various user settings.
  *
- * @async
  * @param {Object} options - The options for the function.
  * @param {string} options.name2 - The second name to be used in the messages.
  * @param {string} options.charDescription - Description of the character.
