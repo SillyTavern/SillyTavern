@@ -6805,6 +6805,18 @@ async function doImpersonate() {
     $("#option_impersonate").trigger('click', { fromSlashCommand: true })
 }
 
+async function doDeleteChat() {
+    $("#option_select_chat").trigger('click', { fromSlashCommand: true })
+    await delay(100)
+    let currentChatDeleteButton = $(".select_chat_block[highlight='true']").parent().find('.PastChat_cross')
+    $(currentChatDeleteButton).trigger('click', { fromSlashCommand: true })
+    await delay(1)
+    $("#dialogue_popup_ok").trigger('click')
+    //200 delay needed let the past chat view reshow first
+    await delay(200)
+    $("#select_chat_cross").trigger('click')
+}
+
 const isPwaMode = window.navigator.standalone;
 if (isPwaMode) { $("body").addClass('PWA') }
 
@@ -6828,6 +6840,7 @@ $(document).ready(function () {
     registerSlashCommand('dupe', DupeChar, [], "– duplicates the currently selected character", true, true);
     registerSlashCommand('api', connectAPISlash, [], "(kobold, horde, novel, ooba, oai, claude, poe, windowai) – connect to an API", true, true);
     registerSlashCommand('impersonate', doImpersonate, ['imp'], "- calls an impersonation response", true, true);
+    registerSlashCommand('delchat', doDeleteChat, [], "- deletes the current chat", true, true);
 
 
     setTimeout(function () {
@@ -7072,7 +7085,7 @@ $(document).ready(function () {
 
     $(document).on("click", ".PastChat_cross", function () {
         chat_file_for_del = $(this).attr('file_name');
-        console.log('detected cross click for' + chat_file_for_del);
+        console.debug('detected cross click for' + chat_file_for_del);
         popup_type = "del_chat";
         callPopup("<h3>Delete the Chat File?</h3>");
     });
@@ -7532,15 +7545,20 @@ $(document).ready(function () {
         var id = $(this).attr("id");
 
         if (id == "option_select_chat") {
-            if ((selected_group && !is_group_generating) || (this_chid !== undefined && !is_send_press)) {
+            if ((selected_group && !is_group_generating) || (this_chid !== undefined && !is_send_press) || fromSlashCommand) {
                 displayPastChats();
-                $("#shadow_select_chat_popup").css("display", "block");
-                $("#shadow_select_chat_popup").css("opacity", 0.0);
-                $("#shadow_select_chat_popup").transition({
-                    opacity: 1.0,
-                    duration: animation_duration,
-                    easing: animation_easing,
-                });
+                //this is just to avoid the shadow for past chat view when using /delchat
+                //however, the dialog popup still gets one..
+                if (!fromSlashCommand) {
+                    console.log('displaying shadow')
+                    $("#shadow_select_chat_popup").css("display", "block");
+                    $("#shadow_select_chat_popup").css("opacity", 0.0);
+                    $("#shadow_select_chat_popup").transition({
+                        opacity: 1.0,
+                        duration: animation_duration,
+                        easing: animation_easing,
+                    });
+                }
             }
         }
 
