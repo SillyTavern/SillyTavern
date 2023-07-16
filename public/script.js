@@ -325,6 +325,7 @@ let crop_data = undefined;
 let is_delete_mode = false;
 let fav_ch_checked = false;
 let scrollLock = false;
+export let charStats = {};
 
 //initialize global var for future cropped blobs
 let currentCroppedAvatar = '';
@@ -951,10 +952,10 @@ async function getCharacters() {
 
         await getGroups();
         await printCharacters();
-        await AA_CountCharTime(this_chid);
 
 
         updateCharacterCount('#rm_print_characters_block > div');
+        await AA_CountCharTime(this_chid);
     }
 }
 
@@ -1307,6 +1308,8 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     var messageText = mes["mes"];
     const momentDate = timestampToMoment(mes.send_date);
     const timestamp = momentDate.isValid() ? momentDate.format('LL LT') : '';
+
+    statMesProcess(mes, type);
 
 
     if (mes?.extra?.display_text) {
@@ -3695,6 +3698,59 @@ function cleanUpMessage(getMessage, isImpersonate, displayIncompleteSentences = 
     return getMessage;
 }
 
+
+/**
+ * Calculates the time difference between two dates.
+ *
+ * @param {string} gen_started - The start time in ISO 8601 format.
+ * @param {string} gen_finished - The finish time in ISO 8601 format.
+ * @returns {number} - The difference in time in milliseconds.
+ */
+function calculateGenTime(gen_started, gen_finished) {
+    let startDate = new Date(gen_started);
+    let endDate = new Date(gen_finished);
+    return endDate - startDate;
+}
+
+function updateStats() {
+    const response = fetch('/updatestats', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify(charStats),
+
+    });
+    if (response.status !== 200) {
+        console.error('Failed to update stats');
+    }
+}
+
+
+function statMesProcess(line, type){
+    if(this_chid === undefined) {
+        console.log(charStats);
+        return;
+    }
+
+    let stat = charStats[characters[this_chid].avatar];
+    console.log(stat); // add this line to check the value of stat
+
+    stat.total_gen_time += calculateGenTime(line.gen_started, line.gen_finished);
+    if(line.is_user) {
+        stat.user_msg_count++;
+        stat.user_word_count += line.mes.split(' ').length;
+    }
+    else {
+        stat.non_user_msg_count++;
+        stat.non_user_word_count += line.mes.split(' ').length;
+    }
+
+    if(type === 'swipe') {
+        stat.total_swipe_count++;
+    }
+    stat.date_last_chat = Date.now();
+    updateStats();
+}
+
 function saveReply(type, getMessage, this_mes_is_name, title) {
     if (type != 'append' && type != 'continue' && type != 'appendFinal' && chat.length && (chat[chat.length - 1]['swipe_id'] === undefined ||
         chat[chat.length - 1]['is_user'])) {
@@ -4836,7 +4892,7 @@ async function getSettings(type) {
     }
 
     const data = await response.json();
-
+    getStats();
     if (data.result != "file not find" && data.settings) {
         settings = JSON.parse(data.settings);
         if (settings.username !== undefined) {
@@ -5061,6 +5117,27 @@ async function saveSettings(type) {
         },
     });
 }
+
+
+async function getStats() {
+    const response = await fetch("/getstats", {
+        method: "POST",
+        headers: getRequestHeaders(),
+        body: JSON.stringify({}),
+        cache: "no-cache",
+    });
+
+    if (!response.ok) {
+        toastr.error('Stats could not be loaded. Try reloading the page.');
+        throw new Error('Error getting stats');
+    }
+
+    const data = await response.json();
+    charStats = data;
+    console.log(charStats);
+
+}
+
 
 function setCharacterBlockHeight() {
     const $children = $("#rm_print_characters_block").children();

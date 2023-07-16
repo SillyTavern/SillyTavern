@@ -68,7 +68,7 @@ const utf8Encode = new TextEncoder();
 const commandExistsSync = require('command-exists').sync;
 
 // impoort from statsHelpers.js
-const statHelpers = require('./statsHelpers.js');
+const statsHelpers = require('./statsHelpers.js');
 
 const characterCardParser = require('./src/character-card-parser.js');
 const config = require(path.join(process.cwd(), './config.conf'));
@@ -1272,63 +1272,34 @@ app.post("/getcharacters", jsonParser, function (request, response) {
 
 
 /**
- * Handle a POST request to pull stats for a character.
+ * Handle a POST request to get the stats object
  *
- * This function reads the stats for a character from the 'stats' object and sends it as a JSON response.,
+ * This function returns the stats object that was calculated by the `calculateStats` function.
  *
  *
  * @param {Object} request - The HTTP request object.
  * @param {Object} response - The HTTP response object.
  * @returns {void}
  */
-app.post("/getcharacterstats", jsonParser, function (request, response) {
-    if (!request.body || !request.body.avatar_url) {
-        return response.sendStatus(400);
-    }
-
-    if (request.body.avatar_url !== sanitize(request.body.avatar_url)) {
-        console.error('Malicious filename prevented');
-        return response.sendStatus(403);
-    }
-
-    const avatarName = request.body.avatar_url;
-    if (!stats[avatarName]) {
-        return response.sendStatus(400);
-    }
-
-    return response.send(charStats[avatarName]);
+app.post("/getstats", jsonParser, function (request, response) {
+    console.log(statsHelpers.charStats);
+    response.send(JSON.stringify(statsHelpers.getCharStats()));
 });
 
 /**
- * Handle a POST request to update stats for a character.
- *
- * This function takes the stat name, value, and character from the request body and updates the 'stats' object
- * with the new value. It then sends the updated 'stats' object for the character as a JSON response 
- *
+ * Handle a POST request to update the stats object
+ * 
+ * This function updates the stats object with the data from the request body.
+ * 
  * @param {Object} request - The HTTP request object.
  * @param {Object} response - The HTTP response object.
  * @returns {void}
- */
-app.post("/updatecharacterstats", jsonParser, function (request, response) {
-    if (!request.body || !request.body.avatar_url || !request.body.stat_name || !request.body.stat_value) {
-        return response.sendStatus(400);
-    }
-
-    if (request.body.avatar_url !== sanitize(request.body.avatar_url)) {
-        console.error('Malicious filename prevented');
-        return response.sendStatus(403);
-    }
-
-    const avatarName = request.body.avatar_url;
-    if (!stats[avatarName]) {
-        return response.sendStatus(400);
-    }
-
-    const statName = request.body.stat_name;
-    const statValue = request.body.stat_value;
-    stats[avatarName][statName] = statValue;
-
-    return response.send(stats[avatarName]);
+ * 
+*/
+app.post("/updatestats", jsonParser, function (request, response) {
+    if (!request.body) return response.sendStatus(400);
+    statsHelpers.setCharStats(request.body);
+    return response.sendStatus(200);
 });
 
 
@@ -3665,17 +3636,17 @@ const setupTasks = async function () {
         loadClaudeTokenizer('src/claude.json'),
     ]);
 
-    await statHelpers.loadStatsFile(directories.chats, directories.characters);
+    await statsHelpers.loadStatsFile(directories.chats, directories.characters);
 
     // Set up event listeners for a graceful shutdown
-    process.on('SIGINT', statHelpers.writeStatsToFileAndExit);
-    process.on('SIGTERM', statHelpers.writeStatsToFileAndExit);
+    process.on('SIGINT', statsHelpers.writeStatsToFileAndExit);
+    process.on('SIGTERM', statsHelpers.writeStatsToFileAndExit);
     process.on('uncaughtException', (err) => {
         console.error('Uncaught exception:', err);
-        statHelpers.writeStatsToFileAndExit();
+        statsHelpers.writeStatsToFileAndExit();
     });
 
-    setInterval(statHelpers.saveStatsToFile, 5 * 60 * 1000);
+    setInterval(statsHelpers.saveStatsToFile, 5 * 60 * 1000);
     
     console.log('Launching...');
 

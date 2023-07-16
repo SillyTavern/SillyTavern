@@ -53,6 +53,7 @@ async function loadStatsFile(chatsPath, charactersPath) {
             throw err; // Rethrow the error if it's something we didn't expect
         }
     }
+    console.log('Stats loaded from file:', charStats);
 }
 
 // Function to save the stats to file
@@ -163,6 +164,13 @@ const calculateStats = (chatsPath, item, index) => {
     return { [item]: stats };
 }
 
+function getCharStats() {
+    return charStats;
+}
+
+function setCharStats(stats) {
+    charStats = stats;
+}
 
 
 
@@ -255,4 +263,6 @@ module.exports = {
     saveStatsToFile,
     loadStatsFile,
     writeStatsToFileAndExit,
+    getCharStats,
+    setCharStats,
 };
