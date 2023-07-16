@@ -1524,7 +1524,7 @@ function substituteParams(content, _name1, _name2, _original) {
     _name1 = _name1 ?? name1;
     _name2 = _name2 ?? name2;
     if (!content) {
-        return ''
+        return '';
     }
 
     // Replace {{original}} with the original message
@@ -1542,6 +1542,11 @@ function substituteParams(content, _name1, _name2, _original) {
     content = content.replace(/{{time}}/gi, moment().format('LT'));
     content = content.replace(/{{date}}/gi, moment().format('LL'));
     content = content.replace(/{{idle_duration}}/gi, () => getTimeSinceLastMessage());
+    content = content.replace(/{{time_UTC([-+]\d+)}}/gi, (_, offset) => {
+        const utcOffset = parseInt(offset, 10);
+        const utcTime = moment().utc().utcOffset(utcOffset).format('LT');
+        return utcTime;
+    });
     content = randomReplace(content);
     return content;
 }
