@@ -67,6 +67,9 @@ const { TextEncoder, TextDecoder } = require('util');
 const utf8Encode = new TextEncoder();
 const commandExistsSync = require('command-exists').sync;
 
+// impoort from statsHelpers.js
+const statHelpers = require('./statsHelpers.js');
+
 const characterCardParser = require('./src/character-card-parser.js');
 const config = require(path.join(process.cwd(), './config.conf'));
 
@@ -106,8 +109,6 @@ client.on('error', (err) => {
 });
 
 const poe = require('./src/poe-client');
-
-var charStats = {};
 
 let api_server = "http://0.0.0.0:5000";
 let api_novelai = "https://api.novelai.net";
@@ -770,189 +771,6 @@ function convertToV2(char) {
 }
 
 
-/**
- * @todo One shot collection of all stats for all characters
- * @todo Endpoint for getting stats for a single character
- * @todo Endpoint for writing stats on update
- * @todo Frontend for viewing stats
- * @todo Frontend for viewing stats for a single character
- * @todo Frontend for viewing stats for all characters
- */
-
-
-async function collectAndCreateStats() {
-    const files = await readdir(charactersPath);
-
-    const pngFiles = files.filter(file => file.endsWith('.png'));
-    let characters = {};
-
-    let processingPromises = pngFiles.map((file, index) => processCharacter(file, index));
-    await Promise.all(processingPromises);
-
-    const obs = new PerformanceObserver((items) => {
-        console.log(items.getEntries()[0].duration);
-        performance.clearMarks();
-    });
-
-    obs.observe({ entryTypes: ['measure'] });
-
-    return characters;
-}
-
-const statsFilePath = 'public/stats.json';
-
-// Function to load the stats file into memory
-async function loadStatsFile() {
-    try {
-        const statsFileContent = await readFile(statsFilePath);
-        charStats = JSON.parse(statsFileContent);
-    } catch (err) {
-        // If the file doesn't exist or is invalid, initialize stats
-        if (err.code === 'ENOENT' || err instanceof SyntaxError) {
-            charStats = await collectAndCreateStats(); // Call your function to collect and create stats
-            await saveStatsToFile();
-        } else {
-            throw err; // Rethrow the error if it's something we didn't expect
-        }
-    }
-}
-
-// Function to save the stats to file
-async function saveStatsToFile() {
-    await writeFile(statsFilePath, JSON.stringify(charStats));
-}
-
-async function writeStatsToFileAndExit() {
-    try {
-        await saveStatsToFile();
-    } catch (err) {
-        console.error('Failed to write stats to file:', err);
-    } finally {
-        process.exit();
-    }
-}
-
-
-
-/**
- * Reads the contents of a file and returns the lines in the file as an array.
- *
- * @param {string} filepath - The path of the file to be read.
- * @returns {Array<string>} - The lines in the file.
- * @throws Will throw an error if the file cannot be read.
- */
-function readAndParseFile(filepath) {
-    try {
-        let file = fs.readFileSync(filepath, 'utf8');
-        let lines = file.split('\n');
-        return lines;
-    } catch (error) {
-        console.error(`Error reading file at ${filepath}: ${error}`);
-        return [];
-    }
-}
-
-/**
- * Calculates the time difference between two dates.
- *
- * @param {string} gen_started - The start time in ISO 8601 format.
- * @param {string} gen_finished - The finish time in ISO 8601 format.
- * @returns {number} - The difference in time in milliseconds.
- */
-function calculateGenTime(gen_started, gen_finished) {
-    let startDate = new Date(gen_started);
-    let endDate = new Date(gen_finished);
-    return endDate - startDate;
-}
-
-/**
- * Counts the number of words in a string.
- *
- * @param {string} str - The string to count words in.
- * @returns {number} - The number of words in the string.
- */
-function countWordsInString(str) {
-    return str.split(" ").length;
-}
-
-
-/**
- * Calculates the total generation time and word count for a chat with a character.
- *
- * @param {string} char_dir - The directory path where character chat files are stored.
- * @param {string} chat - The name of the chat file.
- * @returns {Object} - An object containing the total generation time, user word count, and non-user word count.
- * @throws Will throw an error if the file cannot be read or parsed.
- */
-function calculateTotalGenTimeAndWordCount(char_dir, chat) {
-    let filepath = path.join(char_dir, chat);
-    let lines = readAndParseFile(filepath);
-
-    let totalGenTime = 0;
-    let userWordCount = 0;
-    let nonUserWordCount = 0;
-    let nonUserMsgCount = 0;
-    let userMsgCount = 0;
-    let totalSwipeCount = 0;
-    let firstNonUserMsgSkipped = false;
-
-    for (let line of lines) {
-        if (line.length) {
-            try {
-                let json = JSON.parse(line);
-
-                if (json.gen_started && json.gen_finished) {
-                    let genTime = calculateGenTime(json.gen_started, json.gen_finished);
-                    totalGenTime += genTime;
-
-                    if (json.swipes && !json.swipe_info) {
-                        // If there are swipes but no swipe_info, estimate the genTime
-                        totalGenTime += genTime * json.swipes.length;
-                    }
-                }
-
-                if (json.mes) {
-                    if (!firstNonUserMsgSkipped || json.is_user) {
-                        let wordCount = countWordsInString(json.mes);
-                        json.is_user ? userWordCount += wordCount : nonUserWordCount += wordCount;
-                        json.is_user ? userMsgCount++ : nonUserMsgCount++;
-                    }
-                    if (!json.is_user) {
-                        firstNonUserMsgSkipped = true;
-                    }
-                }
-
-                if (json.swipes) {
-                    totalSwipeCount += json.swipes.length;
-                    for (let swipeText of json.swipes) {
-                        if (!firstNonUserMsgSkipped || json.is_user) {
-                            let wordCount = countWordsInString(swipeText);
-                            json.is_user ? userWordCount += wordCount : nonUserWordCount += wordCount;
-                        }
-                        if (!json.is_user) {
-                            firstNonUserMsgSkipped = true;
-                        }
-                    }
-                }
-
-                if (json.swipe_info) {
-                    for (let swipe of json.swipe_info) {
-                        if (swipe.gen_started && swipe.gen_finished) {
-                            totalGenTime += calculateGenTime(swipe.gen_started, swipe.gen_finished);
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error(`Error parsing line ${line}: ${error}`);
-            }
-        }
-    }
-    return { totalGenTime, userWordCount, nonUserWordCount, userMsgCount, nonUserMsgCount, totalSwipeCount };
-}
-
-
-
-
 function unsetFavFlag(char) {
     const _ = require('lodash');
     _.set(char, 'fav', false);
@@ -1356,50 +1174,29 @@ async function charaRead(img_url, input_format) {
     return characterCardParser.parse(img_url, input_format);
 }
 
-
-
 /**
- * calculateStats - Calculate statistics for a given character chat directory.
+ * calculateChatSize - Calculates the total chat size for a given character.
  *
- * @param  {string} char_dir The directory containing the chat files.
- * @param  {string} item     The name of the character.
- * @return {object}          An object containing the calculated statistics.
+ * @param  {string} charDir The directory where the chats are stored.
+ * @return {number}         The total chat size.
  */
-const calculateStats = (char_dir, item) => {
-    let chat_size = 0;
-    let date_last_chat = 0;
-    const stats = {
-        total_gen_time: 0,
-        user_word_count: 0,
-        non_user_word_count: 0,
-        user_msg_count: 0,
-        non_user_msg_count: 0,
-        total_swipe_count: 0
-    };
+const calculateChatSize = (charDir) => {
+    let chatSize = 0;
+    let dateLastChat = 0;
 
-    if (fs.existsSync(char_dir)) {
-        const chats = fs.readdirSync(char_dir);
+    if (fs.existsSync(charDir)) {
+        const chats = fs.readdirSync(charDir);
         if (Array.isArray(chats) && chats.length) {
             for (const chat of chats) {
-                const result = calculateTotalGenTimeAndWordCount(char_dir, chat);
-                stats.total_gen_time += result.totalGenTime || 0;
-                stats.user_word_count += result.userWordCount || 0;
-                stats.non_user_word_count += result.nonUserWordCount || 0;
-                stats.user_msg_count += result.userMsgCount || 0;
-                stats.non_user_msg_count += result.nonUserMsgCount || 0;
-                stats.total_swipe_count += result.totalSwipeCount || 0;
-
-                const chatStat = fs.statSync(path.join(char_dir, chat));
-                chat_size += chatStat.size;
-                date_last_chat = Math.max(date_last_chat, chatStat.mtimeMs);
+                const chatStat = fs.statSync(path.join(charDir, chat));
+                chatSize += chatStat.size;
+                dateLastChat = Math.max(dateLastChat, chatStat.mtimeMs);
             }
         }
     }
 
-    return { chat_size, date_last_chat, stats };
+    return { chatSize, dateLastChat };
 }
-
-
 
 /**
  * processCharacter - Process a given character, read its data and calculate its statistics.
@@ -1407,46 +1204,38 @@ const calculateStats = (char_dir, item) => {
  * @param  {string} item The name of the character.
  * @param  {number} i    The index of the character in the characters list.
  * @return {Promise}     A Promise that resolves when the character processing is done.
- */const processCharacter = async (item, i) => {
+ */
+const processCharacter = async (item, i) => {
     try {
         const img_data = await charaRead(charactersPath + item);
         let jsonObject = getCharaCardV2(json5.parse(img_data));
         jsonObject.avatar = item;
-        characters[i] = {};
         characters[i] = jsonObject;
         characters[i]['json_data'] = img_data;
         const charStat = fs.statSync(path.join(charactersPath, item));
         characters[i]['date_added'] = charStat.birthtimeMs;
         const char_dir = path.join(chatsPath, item.replace('.png', ''));
 
-        if (first_run && !charStats[item]) {
-            //console.log(`Calculating stats for ${item}`);
-            const calculatedStats = calculateStats(char_dir, item);
-            charStats[item] = calculatedStats;
-        }
-
-        characters[i]['stats'] = charStats[item];
-
-        //console.debug(`Total gen time for ${item} is ${characters[i]['stats']['total_gen_time']}`);
-        //console.debug(`User word count for ${item} is ${characters[i]['stats']['user_word_count']}`);
-        //console.debug(`Non-user word count for ${item} is ${characters[i]['stats']['non_user_word_count']}`);
+        const { chatSize, dateLastChat } = calculateChatSize(char_dir);
+        characters[i]['chat_size'] = chatSize;
+        characters[i]['date_last_chat'] = dateLastChat;
     }
     catch (err) {
-        characters[i]['date_added'] = 0;
-        characters[i]['stats'] = {
-            total_gen_time: 0,
-            user_word_count: 0,
-            non_user_word_count: 0,
-            user_msg_count: 0,
-            non_user_msg_count: 0,
-            total_swipe_count: 0,
-            chat_size: 0,
-            date_last_chat: 0
+        characters[i] = {
+            date_added: 0,
+            date_last_chat: 0,
+            chat_size: 0
         };
-        console.log(`Could not process character: ${item}`, err);
+
+        console.log(`Could not process character: ${item}`);
+
+        if (err instanceof SyntaxError) {
+            console.log("String [" + i + "] is not valid JSON!");
+        } else {
+            console.log("An unexpected error occurred: ", err);
+        }
     }
 }
-
 
 
 /**
@@ -1473,22 +1262,9 @@ app.post("/getcharacters", jsonParser, function (request, response) {
         const pngFiles = files.filter(file => file.endsWith('.png'));
         characters = {};
 
-        const { performance, PerformanceObserver } = require('perf_hooks');
-
-        performance.mark('A');
-
         let processingPromises = pngFiles.map((file, index) => processCharacter(file, index));
         await Promise.all(processingPromises); performance.mark('B');
-        performance.measure('A to B', 'A', 'B');
 
-        const obs = new PerformanceObserver((items) => {
-            console.log(items.getEntries()[0].duration);
-            performance.clearMarks();
-        });
-
-        obs.observe({ entryTypes: ['measure'] });
-
-        first_run = false;
         response.send(JSON.stringify(characters));
     });
 });
@@ -1520,7 +1296,7 @@ app.post("/getcharacterstats", jsonParser, function (request, response) {
         return response.sendStatus(400);
     }
 
-    return response.send(stats[avatarName]);
+    return response.send(charStats[avatarName]);
 });
 
 /**
@@ -2155,7 +1931,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     response.send({ error: true });
                 }
 
-                let = jsonData = json5.parse(data);
+                let jsonData = json5.parse(data);
 
                 if (jsonData.spec !== undefined) {
                     console.log('importing from v2 json');
@@ -3889,15 +3665,17 @@ const setupTasks = async function () {
         loadClaudeTokenizer('src/claude.json'),
     ]);
 
-    await loadStatsFile();
+    await statHelpers.loadStatsFile(directories.chats, directories.characters);
 
     // Set up event listeners for a graceful shutdown
-    process.on('SIGINT', writeStatsToFileAndExit);
-    process.on('SIGTERM', writeStatsToFileAndExit);
+    process.on('SIGINT', statHelpers.writeStatsToFileAndExit);
+    process.on('SIGTERM', statHelpers.writeStatsToFileAndExit);
     process.on('uncaughtException', (err) => {
         console.error('Uncaught exception:', err);
-        writeStatsToFileAndExit();
+        statHelpers.writeStatsToFileAndExit();
     });
+
+    setInterval(statHelpers.saveStatsToFile, 5 * 60 * 1000);
     
     console.log('Launching...');
 
