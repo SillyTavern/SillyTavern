@@ -258,6 +258,7 @@ const directories = {
     thumbnailsBg: 'thumbnails/bg/',
     thumbnailsAvatar: 'thumbnails/avatar/',
     themes: 'public/themes',
+    movingUI: 'public/movingUI',
     extensions: 'public/scripts/extensions',
     instruct: 'public/instruct',
     context: 'public/context',
@@ -1072,7 +1073,7 @@ app.post("/editcharacterattribute", jsonParser, async function (request, respons
             charaWrite(avatarPath, char, (request.body.avatar_url).replace('.png', ''), response, 'Character saved');
         }).catch((err) => {
             console.error('An error occured, character edit invalidated.', err);
-        } );
+        });
     }
     catch {
         console.error('An error occured, character edit invalidated.');
@@ -1496,6 +1497,7 @@ app.post('/getsettings', jsonParser, (request, response) => {
     const world_names = worldFiles.map(item => path.parse(item).name);
 
     const themes = readAndParseFromDirectory(directories.themes);
+    const movingUIPresets = readAndParseFromDirectory(directories.movingUI);
     const instruct = readAndParseFromDirectory(directories.instruct);
     const context = readAndParseFromDirectory(directories.context);
 
@@ -1511,6 +1513,7 @@ app.post('/getsettings', jsonParser, (request, response) => {
         textgenerationwebui_presets,
         textgenerationwebui_preset_names,
         themes,
+        movingUIPresets,
         instruct,
         context,
         enable_extensions: enableExtensions,
@@ -1551,6 +1554,17 @@ app.post('/savetheme', jsonParser, (request, response) => {
     }
 
     const filename = path.join(directories.themes, sanitize(request.body.name) + '.json');
+    fs.writeFileSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
+
+    return response.sendStatus(200);
+});
+
+app.post('/savemovingui', jsonParser, (request, response) => {
+    if (!request.body || !request.body.name) {
+        return response.sendStatus(400);
+    }
+
+    const filename = path.join(directories.movingUI, sanitize(request.body.name) + '.json');
     fs.writeFileSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
 
     return response.sendStatus(200);
@@ -3481,7 +3495,7 @@ function createTokenizationHandler(getTokenizerFn) {
 app.post("/tokenize_llama", jsonParser, createTokenizationHandler(() => spp_llama));
 app.post("/tokenize_nerdstash", jsonParser, createTokenizationHandler(() => spp_nerd));
 app.post("/tokenize_nerdstash_v2", jsonParser, createTokenizationHandler(() => spp_nerd_v2));
-app.post("/tokenize_via_api", jsonParser, async function(request, response) {
+app.post("/tokenize_via_api", jsonParser, async function (request, response) {
     if (!request.body) {
         return response.sendStatus(400);
     }
@@ -3489,7 +3503,7 @@ app.post("/tokenize_via_api", jsonParser, async function(request, response) {
 
     try {
         const args = {
-            body: JSON.stringify({"prompt": text}),
+            body: JSON.stringify({ "prompt": text }),
             headers: { "Content-Type": "application/json" }
         };
 
@@ -4467,22 +4481,22 @@ async function getManifest(extensionPath) {
 }
 
 async function checkIfRepoIsUpToDate(extensionPath) {
-  const git = simpleGit();
-  await git.cwd(extensionPath).fetch('origin');
-  const currentBranch = await git.cwd(extensionPath).branch();
-  const currentCommitHash = await git.cwd(extensionPath).revparse(['HEAD']);
-  const log = await git.cwd(extensionPath).log({
-    from: currentCommitHash,
-    to: `origin/${currentBranch.current}`,
-  });
+    const git = simpleGit();
+    await git.cwd(extensionPath).fetch('origin');
+    const currentBranch = await git.cwd(extensionPath).branch();
+    const currentCommitHash = await git.cwd(extensionPath).revparse(['HEAD']);
+    const log = await git.cwd(extensionPath).log({
+        from: currentCommitHash,
+        to: `origin/${currentBranch.current}`,
+    });
 
-  // Fetch remote repository information
-  const remotes = await git.cwd(extensionPath).getRemotes(true);
+    // Fetch remote repository information
+    const remotes = await git.cwd(extensionPath).getRemotes(true);
 
-  return {
-    isUpToDate: log.total === 0,
-    remoteUrl: remotes[0].refs.fetch, // URL of the remote repository
-  };
+    return {
+        isUpToDate: log.total === 0,
+        remoteUrl: remotes[0].refs.fetch, // URL of the remote repository
+    };
 }
 
 
@@ -4597,7 +4611,7 @@ app.post('/get_extension_version', jsonParser, async (request, response) => {
         const extensionPath = path.join(directories.extensions, 'third-party', extensionName);
 
         if (!fs.existsSync(extensionPath)) {
-        return response.status(404).send(`Directory does not exist at ${extensionPath}`);
+            return response.status(404).send(`Directory does not exist at ${extensionPath}`);
         }
 
         const currentBranch = await git.cwd(extensionPath).branch();
@@ -4614,7 +4628,7 @@ app.post('/get_extension_version', jsonParser, async (request, response) => {
         console.log('Getting extension version failed', error);
         return response.status(500).send(`Server Error: ${error.message}`);
     }
-    }
+}
 );
 
 /**

@@ -2295,6 +2295,21 @@
                                     </div>
                                 </div>
                             </div>
+                            <div id="MovingUI-presets-block" class="flex-container flexFlowColumn">
+                                <h4>
+                                    <span data-i18n="MovingUI Preset">MovingUI Preset</span>
+                                </h4>
+                                <div class="flex-container flexnowrap alignitemscenter">
+                                    <select id="movingUIPresets" class="margin0 margin-r5">
+                                    </select>
+                                    <div id="movingui-preset-save-button" title="Save changes to a new MovingUI preset file" data-i18n="[title]Save movingUI changes to a new file" class="menu_button padding5 margin0">
+                                        <i class="fa-solid fa-save"></i>
+                                    </div>
+                                </div>
+                                <div id="movingUIreset" class="menu_button whitespacenowrap" data-i18n="Reset Panels">
+                                    Reset MovingUI
+                                </div>
+                            </div>
                         </div>
 
                     </div>
@@ -2335,17 +2350,6 @@
                                     <option value="2" data-i18n="Document">Single Document</option>
                                 </select>
                             </div>
-                            <!--                             <div id="sheldWidthToggleBlock">
-                                <span data-i18n="Chat Width (PC):">Chat Width (PC):</span><br>
-                                <label>
-                                    <input name="sheld_width" type="radio" value="0" />
-                                    800px
-                                </label>
-                                <label>
-                                    <input name="sheld_width" type="radio" value="1" />
-                                    1000px
-                                </label>
-                            </div> -->
                             <div>
                                 <label for="play_message_sound" class="checkbox_label">
                                     <input id="play_message_sound" type="checkbox" />
@@ -2415,8 +2419,7 @@
                                     </select>
                                 </div>
 
-                                <div id="movingUIreset" class="menu_button whitespacenowrap" data-i18n="Reset Panels">
-                                    Reset Panels</div>
+
                             </div>
                         </div>
 
@@ -3648,16 +3651,14 @@
                             </label>
                             <label>
                                 <input type="radio" name="extension_floating_position" value="1" />
-                                In-chat @ Depth <input id="extension_floating_depth" class="text_pole widthUnset" type="number"
-                                    min="0" max="99" />
+                                In-chat @ Depth <input id="extension_floating_depth" class="text_pole widthUnset" type="number" min="0" max="99" />
                             </label>
                         </div>
                         <!--<label for="extension_floating_interval">In-Chat Insertion Depth</label>-->
 
                         <label for="extension_floating_interval">Insertion Frequency</label>
 
-                        <input id="extension_floating_interval" class="text_pole widthUnset" type="number" min="0"
-                            max="999" /><small> (0 = Disable, 1 = Always)</small>
+                        <input id="extension_floating_interval" class="text_pole widthUnset" type="number" min="0" max="999" /><small> (0 = Disable, 1 = Always)</small>
                         <br>
 
                         <span>User inputs until next insertion: <span id="extension_floating_counter">(disabled)</span></span>
@@ -3673,8 +3674,7 @@
                         <small>Will be automatically added as the author's note for this character. Will be used in groups, but
                             can't be modified when a group chat is open.</small>
 
-                        <textarea id="extension_floating_chara" class="text_pole" rows="8" maxlength="10000"
-                            placeholder="Example:\n[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
+                        <textarea id="extension_floating_chara" class="text_pole" rows="8" maxlength="10000" placeholder="Example:\n[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
                         <div class="extension_token_counter">
                             Tokens: <span id="extension_floating_chara_token_counter">0</span>
                         </div>
@@ -3708,8 +3708,7 @@
                     <div class="inline-drawer-content">
                         <small>Will be automatically added as the Author's Note for all new chats.</small>
 
-                        <textarea id="extension_floating_default" class="text_pole" rows="8" maxlength="10000"
-                            placeholder="Example:\n[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
+                        <textarea id="extension_floating_default" class="text_pole" rows="8" maxlength="10000" placeholder="Example:\n[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
                         <div class="extension_token_counter">
                             Tokens: <span id="extension_floating_default_token_counter">0</span>
                         </div>

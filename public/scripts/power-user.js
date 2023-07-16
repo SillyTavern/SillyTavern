@@ -138,8 +138,10 @@ let power_user = {
     waifuMode: false,
     movingUI: false,
     movingUIState: {},
+    movingUIPreset: '',
     noShadows: false,
     theme: 'Default (Dark) 1.7.1',
+
 
     auto_swipe: false,
     auto_swipe_minimum_length: 0,
@@ -188,6 +190,7 @@ let power_user = {
 };
 
 let themes = [];
+let movingUIPresets = [];
 let instruct_presets = [];
 
 const storage_keys = {
@@ -582,6 +585,20 @@ async function applyTheme(name) {
     console.log('theme applied: ' + name);
 }
 
+async function applyMovingUIPreset(name) {
+    resetMovablePanels('quiet')
+    const movingUIPreset = movingUIPresets.find(x => x.name == name);
+
+    if (!movingUIPreset) {
+        return;
+    }
+
+    power_user.movingUIState = movingUIPreset.movingUIState;
+
+    console.log('MovingUI Preset applied: ' + name);
+    loadMovingUIState()
+}
+
 switchUiMode();
 applyFontScale();
 applyThemeColor();
@@ -604,6 +621,10 @@ function loadPowerUserSettings(settings, data) {
 
     if (data.themes !== undefined) {
         themes = data.themes;
+    }
+
+    if (data.movingUIPresets !== undefined) {
+        movingUIPresets = data.movingUIPresets;
     }
 
     if (data.instruct !== undefined) {
@@ -722,6 +743,15 @@ function loadPowerUserSettings(settings, data) {
         option.selected = theme.name == power_user.theme;
         $("#themes").append(option);
     }
+
+    for (const movingUIPreset of movingUIPresets) {
+        const option = document.createElement('option');
+        option.value = movingUIPreset.name;
+        option.innerText = movingUIPreset.name;
+        option.selected = movingUIPreset.name == power_user.MovingUIPreset;
+        $("#movingUIPresets").append(option);
+    }
+
 
     $(`#character_sort_order option[data-order="${power_user.sort_order}"][data-field="${power_user.sort_field}"]`).prop("selected", true);
     sortCharactersList();
@@ -1027,6 +1057,48 @@ async function saveTheme() {
     }
 }
 
+async function saveMovingUI() {
+    const name = await callPopup('Enter a name for the MovingUI Preset:', 'input');
+
+    if (!name) {
+        return;
+    }
+
+    const movingUIPreset = {
+        name,
+        movingUIState: power_user.movingUIState
+    }
+    console.log(movingUIPreset)
+
+    const response = await fetch('/savemovingui', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify(movingUIPreset)
+    });
+
+    if (response.ok) {
+        const movingUIPresetIndex = movingUIPresets.findIndex(x => x.name == name);
+
+        if (movingUIPresetIndex == -1) {
+            movingUIPresets.push(movingUIPreset);
+            const option = document.createElement('option');
+            option.selected = true;
+            option.value = name;
+            option.innerText = name;
+            $('#movingUIPresets').append(option);
+        }
+        else {
+            movingUIPresets[movingUIPresetIndex] = movingUIPreset;
+            $(`#movingUIPresets option[value="${name}"]`).attr('selected', true);
+        }
+
+        power_user.movingUIPreset = name;
+        saveSettingsDebounced();
+    } else {
+        toastr.warning('failed to save MovingUI state.')
+    }
+}
+
 async function resetMovablePanels(type) {
     const panelIds = [
         'sheld',
@@ -1072,6 +1144,8 @@ async function resetMovablePanels(type) {
         $(".resizing").removeClass('resizing');
         if (type === 'resize') {
             toastr.warning('Panel positions reset due to zoom/resize');
+        } else if (type === 'quiet') {
+            return
         } else {
             toastr.success('Panel positions reset');
         }
@@ -1647,7 +1721,17 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
+    $("#movingUIPresets").on('change', async function () {
+        console.log('saw MUI preset change')
+        const movingUIPresetSelected = $(this).find(':selected').val();
+        power_user.movingUIPreset = movingUIPresetSelected;
+        applyMovingUIPreset(movingUIPresetSelected);
+        saveSettingsDebounced();
+
+    });
+
     $("#ui-preset-save-button").on('click', saveTheme);
+    $("#movingui-preset-save-button").on('click', saveMovingUI);
 
     $("#never_resize_avatars").on('input', function () {
         power_user.never_resize_avatars = !!$(this).prop('checked');
