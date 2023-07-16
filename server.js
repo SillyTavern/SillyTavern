@@ -392,7 +392,7 @@ app.post("/generate", jsonParser, async function (request, response_generate = r
     const controller = new AbortController();
     request.socket.removeAllListeners('close');
     request.socket.on('close', async function () {
-        if (request.body.can_abort && !response_generate.finished) {
+        if (request.body.can_abort && !response_generate.writableEnded) {
             try {
                 console.log('Aborting Kobold generation...');
                 // send abort signal to koboldcpp
@@ -3420,9 +3420,26 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
 
     function handleError(error, response_generate_openai, request) {
         console.error('Error:', error.message);
+
+        let message = error?.response?.statusText;
+
+        switch (error?.response?.status) {
+            case 402:
+                message = 'Credit limit reached';
+                console.log(message);
+                break;
+            case 403:
+                message = 'API key disabled or exhausted';
+                console.log(message);
+                break;
+        }
+
         const quota_error = error?.response?.status === 429 && error?.response?.data?.error?.type === 'insufficient_quota';
+        const response = { error: { message }, quota_error: quota_error }
         if (!response_generate_openai.headersSent) {
-            response_generate_openai.send({ error: true, quota_error: quota_error });
+            response_generate_openai.send(response);
+        } else if (!response_generate_openai.writableEnded) {
+            response_generate_openai.write(response);
         }
     }
 
