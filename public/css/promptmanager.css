@@ -291,6 +291,9 @@
 }
 
 @media screen and (max-width: 412px) {
+    #completion_prompt_manager_popup {
+        max-width: 100%;
+    }
     #completion_prompt_manager #completion_prompt_manager_list {
         font-size: 1.25em !important;
     }
