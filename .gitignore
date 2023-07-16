@@ -22,6 +22,6 @@ secrets.json
 /dist
 poe_device.json
 /backups/
-/movingUI/
+public/movingUI/
 poe-error.log
 poe-success.log
