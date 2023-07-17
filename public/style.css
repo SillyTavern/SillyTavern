@@ -4756,7 +4756,7 @@ body.waifuMode .zoomed_avatar {
 }
 
 .zoomed_avatar img {
-    border: 1px solid var(--white50a);
+    /* border: 1px solid var(--white50a); */
     border-radius: 20px;
     height: 100%;
     width: 100%;
