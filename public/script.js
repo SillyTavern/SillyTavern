@@ -7236,7 +7236,6 @@ $(document).ready(function () {
                 chat_metadata = {};
                 characters[this_chid].chat = name2 + " - " + humanizedDateTime();
                 $("#selected_chat_pole").val(characters[this_chid].chat);
-                saveCharacterDebounced();
                 getChat();
             }
         }
