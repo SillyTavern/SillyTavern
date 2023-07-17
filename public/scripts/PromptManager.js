@@ -170,7 +170,8 @@ function PromptManagerModule() {
         defaultPrompts: {
             main: '',
             nsfw: '',
-            jailbreak: ''
+            jailbreak: '',
+            enhanceDefinitions: ''
         },
     };
 
@@ -309,6 +310,9 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
                 break;
             case 'jailbreak':
                 prompt.content = this.configuration.defaultPrompts.jailbreak;
+                break;
+            case 'enhanceDefinitions':
+                prompt.content = this.configuration.defaultPrompts.enhanceDefinitions;
                 break;
         }
 
