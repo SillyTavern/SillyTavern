@@ -2,8 +2,14 @@ import {callPopup, event_types, eventSource, substituteParams} from "../script.j
 import {TokenHandler} from "./openai.js";
 import {power_user} from "./power-user.js";
 
+/**
+ * Register migrations for the prompt manager when settings are loaded or an open ai preset is loaded.
+ *
+ * @function registerPromptManagerMigration
+ */
 const registerPromptManagerMigration = () => {
     const migrate = (settings) => {
+        // If any of the specified settings exist, run the migration
         if (settings.main_prompt || settings.nsfw_prompt || settings.jailbreak_prompt) {
             console.log('Running one-time configuration migration for prompt manager.')
             if (settings.prompts === undefined) settings.prompts = [];
@@ -303,19 +309,25 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
 
         switch (promptId) {
             case 'main':
+                prompt.name = 'Main Prompt';
                 prompt.content = this.configuration.defaultPrompts.main;
                 break;
             case 'nsfw':
+                prompt.name = 'Nsfw Prompt';
                 prompt.content = this.configuration.defaultPrompts.nsfw;
                 break;
             case 'jailbreak':
+                prompt.name = 'Jailbreak Prompt';
                 prompt.content = this.configuration.defaultPrompts.jailbreak;
                 break;
             case 'enhanceDefinitions':
+                prompt.name = 'Enhance Definitions';
                 prompt.content = this.configuration.defaultPrompts.enhanceDefinitions;
                 break;
         }
 
+        document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_name').value = prompt.name;
+        document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_role').value = 'system';
         document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt').value = prompt.content;
     }
 
