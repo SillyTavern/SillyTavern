@@ -889,7 +889,12 @@ PromptManagerModule.prototype.loadPromptIntoEditForm = function (prompt) {
     }
 
     const resetPromptButton = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_reset');
-    resetPromptButton.dataset.pmPrompt = prompt.identifier;
+    if (true === prompt.system_prompt) {
+        resetPromptButton.style.display = 'block';
+        resetPromptButton.dataset.pmPrompt = prompt.identifier;
+    } else {
+        resetPromptButton.style.display = 'none';
+    }
 
     const savePromptButton = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_save');
     savePromptButton.dataset.pmPrompt = prompt.identifier;
