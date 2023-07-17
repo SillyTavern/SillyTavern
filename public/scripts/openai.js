@@ -289,8 +289,8 @@ function setOpenAIMessageExamples(mesExamplesArray) {
 
 function setupOpenAIPromptManager(openAiSettings) {
     // Do not set up prompt manager more than once
-    if (promptManager) return true; 
-    
+    if (promptManager) return true;
+
     promptManager = new PromptManager();
 
     const configuration = {
@@ -501,6 +501,7 @@ function populateDialogueExamples(prompts, chatCompletion) {
 function populateChatCompletion (prompts, chatCompletion, {bias, quietPrompt, type, cyclePrompt} = {}) {
     //Helper function for the recurring task of preparing a prompt for the chat completion
     const addToChatCompletion = (source, target = null) => {
+        // We need the prompts array to determine a position for the source.
         if (false === prompts.has(source)) return;
 
         const prompt = prompts.get(source);
@@ -521,7 +522,7 @@ function populateChatCompletion (prompts, chatCompletion, {bias, quietPrompt, ty
     if (type === "impersonate") addToChatCompletion('impersonate', 'main');
     else addToChatCompletion('main');
 
-    // Add managed system and user prompts
+    // Add ordered system and user prompts
     const systemPrompts = ['nsfw', 'jailbreak'];
     const userPrompts = prompts.collection
         .filter((prompt) => false === prompt.system_prompt)
@@ -605,17 +606,17 @@ function populateChatCompletion (prompts, chatCompletion, {bias, quietPrompt, ty
  * Take a configuration object and prepares messages for a chat with OpenAI's chat completion API.
  * Handles prompts, prepares chat history, manages token budget, and processes various user settings.
  *
- * @param {Object} options - The options for the function.
- * @param {string} options.name2 - The second name to be used in the messages.
- * @param {string} options.charDescription - Description of the character.
- * @param {string} options.charPersonality - Description of the character's personality.
- * @param {string} options.Scenario - The scenario or context of the dialogue.
- * @param {string} options.worldInfoBefore - The world info to be added before the main conversation.
- * @param {string} options.worldInfoAfter - The world info to be added after the main conversation.
- * @param {string} options.bias - The bias to be added in the conversation.
- * @param {string} options.type - The type of the chat, can be 'impersonate'.
- * @param {string} options.quietPrompt - The quiet prompt to be used in the conversation.
- * @param {Array} options.extensionPrompts - An array of additional prompts.
+ * @param {Object} content - System prompts provided by SillyTavern
+ * @param {string} content.name2 - The second name to be used in the messages.
+ * @param {string} content.charDescription - Description of the character.
+ * @param {string} content.charPersonality - Description of the character's personality.
+ * @param {string} content.Scenario - The scenario or context of the dialogue.
+ * @param {string} content.worldInfoBefore - The world info to be added before the main conversation.
+ * @param {string} content.worldInfoAfter - The world info to be added after the main conversation.
+ * @param {string} content.bias - The bias to be added in the conversation.
+ * @param {string} content.type - The type of the chat, can be 'impersonate'.
+ * @param {string} content.quietPrompt - The quiet prompt to be used in the conversation.
+ * @param {Array} content.extensionPrompts - An array of additional prompts.
  * @param dryRun - Whether this is a live call or not.
  * @returns {(*[]|boolean)[]} An array where the first element is the prepared chat and the second element is a boolean flag.
  */
@@ -635,21 +636,11 @@ function prepareOpenAIMessages({
     // Without a character selected, there is no way to accurately calculate tokens
     if (!promptManager.activeCharacter && dryRun) return [null, false];
 
-    const prompts = promptManager.getPromptCollection();
-    const chatCompletion = new ChatCompletion();
-    const userSettings = promptManager.serviceSettings;
-
-    chatCompletion.setTokenBudget(userSettings.openai_max_context, userSettings.openai_max_tokens);
-
-    if (power_user.console_log_prompts) chatCompletion.enableLogging();
-
     const scenarioText = Scenario ? `Circumstances and context of the dialogue: ${Scenario}` : '';
     const charPersonalityText = charPersonality ?  `${name2}'s personality: ${charPersonality}` : '';
 
-    // Merge items to send, whose are managed by the prompt manager, with items from other places in silly tavern
-    // While the position in this array matters for positioning items inside the chat completion, elements
-    // may be appended for later reference, as long as the initial order is not altered.
-    const mappedPrompts = [
+    // Create entries for system prompts
+    const systemPrompts = [
         // Ordered prompts for which a marker should exist
         {role: 'system', content: formatWorldInfo(worldInfoBefore), identifier: 'worldInfoBefore'},
         {role: 'system', content: formatWorldInfo(worldInfoAfter), identifier: 'worldInfoAfter'},
@@ -665,19 +656,22 @@ function prepareOpenAIMessages({
 
     // Tavern Extras - Summary
     const summary = extensionPrompts['1_memory'];
-    if (summary && summary.content) mappedPrompts.push({role: 'system', content: summary.content, identifier: 'summary'});
+    if (summary && summary.content) systemPrompts.push({role: 'system', content: summary.content, identifier: 'summary'});
 
     // Authors Note
     const authorsNote = extensionPrompts['2_floating_prompt'];
-    if (authorsNote && authorsNote.value) mappedPrompts.push({role: 'system', content: authorsNote.value, identifier: 'authorsNote'});
+    if (authorsNote && authorsNote.value) systemPrompts.push({role: 'system', content: authorsNote.value, identifier: 'authorsNote'});
 
     // Persona Description
     if (power_user.persona_description) {
-        mappedPrompts.push({role: 'system', content: power_user.persona_description, identifier: 'personaDescription'});
+        systemPrompts.push({role: 'system', content: power_user.persona_description, identifier: 'personaDescription'});
     }
 
-    // Create prompt objects and substitute markers
-    mappedPrompts.forEach(prompt => {
+    // This is the prompt order defined by the user
+    const prompts = promptManager.getPromptCollection();
+
+    // Merge system prompts with prompt manager prompts
+    systemPrompts.forEach(prompt => {
         const newPrompt = promptManager.preparePrompt(prompt);
         const markerIndex = prompts.index(prompt.identifier);
 
@@ -685,7 +679,7 @@ function prepareOpenAIMessages({
         else prompts.add(newPrompt);
     });
 
-    // Replace original-placeholder for supported prompts
+    // Replace {{original}} placeholder for supported prompts
     const originalReplacements = {
         main: default_main_prompt,
         nsfw: default_nsfw_prompt,
@@ -702,7 +696,14 @@ function prepareOpenAIMessages({
     // Allow subscribers to manipulate the prompts object
     eventSource.emit(event_types.OAI_BEFORE_CHATCOMPLETION, prompts);
 
+    const chatCompletion = new ChatCompletion();
+    if (power_user.console_log_prompts) chatCompletion.enableLogging();
+
+    const userSettings = promptManager.serviceSettings;
+    chatCompletion.setTokenBudget(userSettings.openai_max_context, userSettings.openai_max_tokens);
+
     try {
+        // Fill the chat completion with as much context as the budget allows
         populateChatCompletion(prompts, chatCompletion, {bias, quietPrompt, type, cyclePrompt});
     } catch (error) {
         if (error instanceof TokenBudgetExceededError) {
