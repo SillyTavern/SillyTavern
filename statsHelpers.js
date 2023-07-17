@@ -18,6 +18,7 @@ const crypto = require('crypto');
 
 
 let charStats = {};
+let lastSaveTimestamp = 0;
 const statsFilePath = 'public/stats.json';
 
 
@@ -34,7 +35,8 @@ async function collectAndCreateStats(chatsPath, charactersPath) {
     for (let stat of statsArr) {
         finalStats = { ...finalStats, ...stat }
     }
-
+    // tag with timestamp on when stats were generated
+    finalStats.timestamp = Date.now();
     return finalStats;
 }
 
@@ -57,9 +59,15 @@ async function loadStatsFile(chatsPath, charactersPath) {
 }
 
 // Function to save the stats to file
+
 async function saveStatsToFile() {
-    console.debug('Saving stats to file...');
-    await writeFile(statsFilePath, JSON.stringify(charStats));
+    if (charStats.timestamp > lastSaveTimestamp) {
+        console.debug('Saving stats to file...');
+        await writeFile(statsFilePath, JSON.stringify(charStats));
+        lastSaveTimestamp = Date.now();
+    } else {
+        //console.debug('Stats have not changed since last save. Skipping file write.');
+    }
 }
 
 async function writeStatsToFileAndExit(charStats) {
@@ -170,6 +178,7 @@ function getCharStats() {
 
 function setCharStats(stats) {
     charStats = stats;
+    charStats.timestamp = Date.now();
 }
 
 
@@ -219,27 +228,20 @@ function calculateTotalGenTimeAndWordCount(char_dir, chat, uniqueGenStartTimes) 
                 }
 
                 if (json.mes) {
-                    if (!firstNonUserMsgSkipped || json.is_user) {
-                        let wordCount = countWordsInString(json.mes);
-                        json.is_user ? userWordCount += wordCount : nonUserWordCount += wordCount;
-                        json.is_user ? userMsgCount++ : nonUserMsgCount++;
-                    }
-                    if (!json.is_user) {
-                        firstNonUserMsgSkipped = true;
-                    }
+                    let wordCount = countWordsInString(json.mes);
+                    json.is_user ? userWordCount += wordCount : nonUserWordCount += wordCount;
+                    json.is_user ? userMsgCount++ : nonUserMsgCount++;
                 }
 
                 if (json.swipes && json.swipes.length > 1) {
                     totalSwipeCount += json.swipes.length - 1; // Subtract 1 to not count the first swipe
                     for (let i = 1; i < json.swipes.length; i++) { // Start from the second swipe
                         let swipeText = json.swipes[i];
-                        if (!firstNonUserMsgSkipped || json.is_user) {
-                            let wordCount = countWordsInString(swipeText);
-                            json.is_user ? userWordCount += wordCount : nonUserWordCount += wordCount;
-                        }
-                        if (!json.is_user) {
-                            firstNonUserMsgSkipped = true;
-                        }
+
+                        let wordCount = countWordsInString(swipeText);
+                        json.is_user ? userWordCount += wordCount : nonUserWordCount += wordCount;
+                        json.is_user ? userMsgCount++ : nonUserMsgCount++;
+
                     }
                 }
 

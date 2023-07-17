@@ -1309,7 +1309,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     const momentDate = timestampToMoment(mes.send_date);
     const timestamp = momentDate.isValid() ? momentDate.format('LL LT') : '';
 
-    statMesProcess(mes, type);
+
 
 
     if (mes?.extra?.display_text) {
@@ -3712,15 +3712,17 @@ function calculateGenTime(gen_started, gen_finished) {
     return endDate - startDate;
 }
 
-function updateStats() {
-    const response = fetch('/updatestats', {
+async function updateStats() {
+    const response = await fetch('/updatestats', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify(charStats),
 
     });
+
     if (response.status !== 200) {
         console.error('Failed to update stats');
+        console.log(response).status;
     }
 }
 
@@ -3756,7 +3758,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         chat[chat.length - 1]['is_user'])) {
         type = 'normal';
     }
-    console.log(chat);
+
     const generationFinished = new Date();
     const img = extractImageFromMessage(getMessage);
     getMessage = img.getMessage;
@@ -3852,6 +3854,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
             extra: JSON.parse(JSON.stringify(chat[chat.length - 1]["extra"])),
         };
     }
+    statMesProcess(chat[chat.length - 1], type);
     return { type, getMessage };
 }
 

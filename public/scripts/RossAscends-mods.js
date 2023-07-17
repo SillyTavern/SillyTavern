@@ -13,6 +13,7 @@ import {
     menu_type,
     max_context,
     saveSettingsDebounced,
+    charStats,
 } from "../script.js";
 
 
@@ -71,6 +72,7 @@ const observer = new MutationObserver(function (mutations) {
             RA_checkOnlineStatus();
         } else if (mutation.target.parentNode === SelectedCharacterTab) {
             setTimeout(RA_CountCharTokens, 200);
+            setTimeout(AA_CountCharTime, 200);
         }
     });
 });
@@ -107,8 +109,9 @@ function waitForElement(querySelector, timeout) {
 
 //humanize character generation time
 export function humanizeGenTime(character) {
+    let stat = charStats[character.avatar]
     //convert time_spent to humanized format of "_ Hours, _ Minutes, _ Seconds" from milliseconds
-    let time_spent = character.total_gen_time
+    let time_spent = stat.total_gen_time
     time_spent = Math.floor(time_spent / 1000);
     let seconds = time_spent % 60;
     time_spent = Math.floor(time_spent / 60);
@@ -144,8 +147,9 @@ export function AA_CountCharTime(chid){
         //get character stats from the server 
 
         //get total word counts
-        let user_words = selected_character.stats.user_word_count;
-        let char_words = selected_character.stats.word_count;
+        let stat = charStats[selected_character.avatar]
+        let user_words = stat.user_word_count;
+        let char_words = stat.non_user_word_count;
 
 
 
@@ -155,6 +159,7 @@ export function AA_CountCharTime(chid){
         $("#result_info").append(`<div class="result_info_item"><span class="result_info_item_title"></span><small class="result_info_item_value">Total words: ${user_words} / ${char_words}</small></div>`);
 
     }
+    else { console.debug("AA_CountCharTime -- no valid char found, closing."); }
 }
 
 // Device detection
