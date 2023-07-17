@@ -1338,39 +1338,22 @@ app.post("/delchat", jsonParser, function (request, response) {
     return response.send('ok');
 });
 
-
 app.post("/downloadbackground", urlencodedParser, function (request, response) {
     response_dw_bg = response;
-    if (!request.body) return response.sendStatus(400);
+    if (!request.body || !request.file) return response.sendStatus(400);
 
-    let filedata = request.file;
-    //console.log(filedata.mimetype);
-    var fileType = ".png";
-    var img_file = "ai";
-    var img_path = "public/img/";
+    const img_path = path.join("uploads/", request.file.filename);
+    const filename = request.file.originalname;
 
-    img_path = "uploads/";
-    img_file = filedata.filename;
-    if (filedata.mimetype == "image/jpeg") fileType = ".jpeg";
-    if (filedata.mimetype == "image/png") fileType = ".png";
-    if (filedata.mimetype == "image/gif") fileType = ".gif";
-    if (filedata.mimetype == "image/bmp") fileType = ".bmp";
-    fs.copyFile(img_path + img_file, 'public/backgrounds/' + img_file + fileType, (err) => {
-        invalidateThumbnail('bg', img_file + fileType);
-        if (err) {
-
-            return console.log(err);
-        } else {
-            //console.log(img_file+fileType);
-            response_dw_bg.send(img_file + fileType);
-        }
-        //console.log('The image was copied from temp directory.');
-    });
-
-
+    try {
+        fs.copyFileSync(img_path, path.join('public/backgrounds/', filename));
+        invalidateThumbnail('bg', filename);
+        response_dw_bg.send(filename);
+    } catch (err) {
+        console.error(err);
+        response_dw_bg.sendStatus(500);
+    }
 });
-
-
 
 app.post("/savesettings", jsonParser, function (request, response) {
     fs.writeFile('public/settings.json', JSON.stringify(request.body, null, 4), 'utf8', function (err) {
@@ -1852,7 +1835,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     response.send({ error: true });
                 }
 
-                let = jsonData = json5.parse(data);
+                let jsonData = json5.parse(data);
 
                 if (jsonData.spec !== undefined) {
                     console.log('importing from v2 json');
