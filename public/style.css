@@ -1626,6 +1626,7 @@ body.big-avatars .ch_description {
     cursor: pointer;
     aspect-ratio: 16/9;
     justify-content: flex-end;
+    position: relative;
 }
 
 .BGSampleTitle {
@@ -1642,12 +1643,10 @@ body.big-avatars .ch_description {
     font-size: calc(var(--fontScale) * 0.9em);
 }
 
-.bg_example_cross {
+.bg_button {
     width: 15px;
     height: 15px;
-    position: relative;
-    /* float: right; */
-    right: 10px;
+    position: absolute;
     top: 5px;
     cursor: pointer;
     opacity: 0.7;
@@ -1658,6 +1657,19 @@ body.big-avatars .ch_description {
     padding: 0;
     margin: 0;
     filter: drop-shadow(0px 0px 3px white);
+    transition: opacity 0.2s ease-in-out;
+}
+
+.bg_button:hover {
+    opacity: 1;
+}
+
+.bg_example_cross {
+    right: 10px;
+}
+
+.bg_example_edit {
+    left: 10px;
 }
 
 .no-border {

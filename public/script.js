@@ -966,22 +966,25 @@ async function getBackgrounds() {
         const getData = await response.json();
         //background = getData;
         //console.log(getData.length);
+        $("#bg_menu_content").empty();
         for (const bg of getData) {
-            const thumbPath = getThumbnailUrl('bg', bg);
-            $("#bg_menu_content").append(
-                `<div class="bg_example flex-container" bgfile="${bg}" class="bg_example_img" title="${bg}" style="background-image: url('${thumbPath}');">
-                    <div bgfile="${bg}" class="bg_example_cross fa-solid fa-circle-xmark"></div>
-                    <div class="BGSampleTitle">
-                        ${bg
-                    .replace('.png', '')
-                    .replace('.jpg', '')
-                    .replace('.webp', '')}
-                </div>
-                </div>`
-            );
+            const template = getBackgroundFromTemplate(bg);
+            $("#bg_menu_content").append(template);
         }
     }
 }
+
+function getBackgroundFromTemplate(bg) {
+    const thumbPath = getThumbnailUrl('bg', bg);
+    const template = $('#background_template .bg_example').clone();
+    template.attr('bgfile', bg);
+    template.attr('title', bg);
+    template.find('.bg_button').attr('bgfile', bg);
+    template.css('background-image', `url('${thumbPath}')`);
+    template.find('.BGSampleTitle').text(bg.slice(0, bg.lastIndexOf('.')));
+    return template;
+}
+
 async function isColab() {
     is_checked_colab = true;
     const response = await fetch("/iscolab", {
@@ -5673,11 +5676,7 @@ function read_bg_load(input) {
                         "background-image",
                         `url("${e.target.result}")`
                     );
-                    $("#form_bg_download").after(
-                        `<div class="bg_example" bgfile="${html}" style="background-image: url('${getThumbnailUrl('bg', html)}');">
-                            <div class="bg_example_cross fa-solid fa-circle-xmark"></div>
-                        </div>`
-                    );
+                    $("#form_bg_download").after(getBackgroundFromTemplate(html));
                 },
                 error: function (jqXHR, exception) {
                     console.log(exception);
@@ -7074,6 +7073,41 @@ $(document).ready(function () {
         });
 
     });
+
+    $(document).on('click', '.bg_example_edit', async function (e) {
+        e.stopPropagation();
+        const old_bg = $(this).attr('bgfile');
+
+        if (!old_bg) {
+            console.debug('no bgfile');
+            return;
+        }
+
+        const fileExtension = old_bg.split('.').pop();
+        const old_bg_extensionless = old_bg.replace(`.${fileExtension}`, '');
+        const new_bg_extensionless = await callPopup('<h3>Enter new background name:</h3>', 'input', old_bg_extensionless);
+        const new_bg = `${new_bg_extensionless}.${fileExtension}`;
+
+        if (old_bg_extensionless === new_bg_extensionless) {
+            console.debug('new_bg === old_bg');
+            return;
+        }
+
+        const data = { old_bg, new_bg };
+        const response = await fetch('/renamebackground', {
+            method: 'POST',
+            headers:getRequestHeaders(),
+            body: JSON.stringify(data),
+            cache: 'no-cache',
+        });
+
+        if (response.ok) {
+            await getBackgrounds();
+        } else {
+            toastr.warning('Failed to rename background');
+        }
+    });
+
     $(document).on("click", ".bg_example_cross", function (e) {
         e.stopPropagation();
         bg_file_for_del = $(this);

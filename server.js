@@ -1338,6 +1338,27 @@ app.post("/delchat", jsonParser, function (request, response) {
     return response.send('ok');
 });
 
+app.post('/renamebackground', jsonParser, function (request, response) {
+    if (!request.body) return response.sendStatus(400);
+
+    const oldFileName = path.join('public/backgrounds/', sanitize(request.body.old_bg));
+    const newFileName = path.join('public/backgrounds/', sanitize(request.body.new_bg));
+
+    if (!fs.existsSync(oldFileName)) {
+        console.log('BG file not found');
+        return response.sendStatus(400);
+    }
+
+    if (fs.existsSync(newFileName)) {
+        console.log('New BG file already exists');
+        return response.sendStatus(400);
+    }
+
+    fs.renameSync(oldFileName, newFileName);
+    invalidateThumbnail('bg', request.body.old_bg);
+    return response.send('ok');
+});
+
 app.post("/downloadbackground", urlencodedParser, function (request, response) {
     response_dw_bg = response;
     if (!request.body || !request.file) return response.sendStatus(400);
