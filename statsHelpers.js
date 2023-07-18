@@ -22,6 +22,40 @@ let lastSaveTimestamp = 0;
 const statsFilePath = 'public/stats.json';
 
 
+function timestampToMoment(timestamp) {
+    if (!timestamp) {
+        return null;
+    }
+
+    if (typeof timestamp === 'number') {
+        return timestamp;
+    }
+
+    const pattern1 = /(\d{4})-(\d{1,2})-(\d{1,2}) @(\d{1,2})h (\d{1,2})m (\d{1,2})s (\d{1,3})ms/;
+    const replacement1 = (match, year, month, day, hour, minute, second, millisecond) => {
+        return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}T${hour.padStart(2, "0")}:${minute.padStart(2, "0")}:${second.padStart(2, "0")}.${millisecond.padStart(3, "0")}Z`;
+    };
+    const isoTimestamp1 = timestamp.replace(pattern1, replacement1);
+    if (!isNaN(new Date(isoTimestamp1))) {
+        return new Date(isoTimestamp1).getTime();
+    }
+
+    const pattern2 = /(\w+)\s(\d{1,2}),\s(\d{4})\s(\d{1,2}):(\d{1,2})(am|pm)/i;
+    const replacement2 = (match, month, day, year, hour, minute, meridiem) => {
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        const monthNum = monthNames.indexOf(month) + 1;
+        const hour24 = meridiem.toLowerCase() === 'pm' ? (parseInt(hour, 10) % 12) + 12 : parseInt(hour, 10) % 12;
+        return `${year}-${monthNum.toString().padStart(2, "0")}-${day.padStart(2, "0")}T${hour24.toString().padStart(2, "0")}:${minute.padStart(2, "0")}:00Z`;
+    };
+    const isoTimestamp2 = timestamp.replace(pattern2, replacement2);
+    if (!isNaN(new Date(isoTimestamp2))) {
+        return new Date(isoTimestamp2).getTime();
+    }
+
+    return null;
+}
+
+
 async function collectAndCreateStats(chatsPath, charactersPath) {
     console.log('Collecting and creating stats...');
     const files = await readdir(charactersPath);
@@ -120,7 +154,8 @@ function calculateGenTime(gen_started, gen_finished) {
  * @returns {number} - The number of words in the string.
  */
 function countWordsInString(str) {
-    return str.split(" ").length;
+    const match = str.match(/\b\w+\b/g);
+    return match ? match.length : 0;
 }
 
 
@@ -143,7 +178,8 @@ const calculateStats = (chatsPath, item, index) => {
         non_user_msg_count: 0,
         total_swipe_count: 0,
         chat_size: 0,
-        date_last_chat: 0
+        date_last_chat: 0,
+        date_first_chat: new Date('9999-12-31T23:59:59.999Z').getTime(),
     };
     let uniqueGenStartTimes = new Set();
 
@@ -161,7 +197,8 @@ const calculateStats = (chatsPath, item, index) => {
 
                 const chatStat = fs.statSync(path.join(char_dir, chat));
                 stats.chat_size += chatStat.size;
-                stats.date_last_chat = Math.max(stats.date_last_chat, chatStat.mtimeMs);
+                stats.date_last_chat = Math.max(stats.date_last_chat, Math.floor(chatStat.mtimeMs));
+                stats.date_first_chat = Math.min(stats.date_first_chat, result.firstChatTime);
             }
         }
     }
@@ -198,7 +235,7 @@ function calculateTotalGenTimeAndWordCount(char_dir, chat, uniqueGenStartTimes) 
     let nonUserMsgCount = 0;
     let userMsgCount = 0;
     let totalSwipeCount = 0;
-    let firstNonUserMsgSkipped = false;
+    let firstChatTime = new Date('9999-12-31T23:59:59.999Z').getTime();
 
     for (let [index, line] of lines.entries()) {
         if (line.length) {
@@ -250,12 +287,19 @@ function calculateTotalGenTimeAndWordCount(char_dir, chat, uniqueGenStartTimes) 
                         }
                     }
                 }
+
+                // If this is the first user message, set the first chat time
+                if (json.is_user && firstChatTime > Date.now()) {
+                    firstChatTime = timestampToMoment(json.send_date);
+                }
+
+
             } catch (error) {
                 console.error(`Error parsing line ${line}: ${error}`);
             }
         }
     }
-    return { totalGenTime, userWordCount, nonUserWordCount, userMsgCount, nonUserMsgCount, totalSwipeCount };
+    return { totalGenTime, userWordCount, nonUserWordCount, userMsgCount, nonUserMsgCount, totalSwipeCount, firstChatTime };
 }
 
 module.exports = {

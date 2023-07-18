@@ -67,11 +67,19 @@ function calculateTotalStats() {
  * @param {Object} stats - The stats data.
  */
 function createHtml(statsType, stats) {
+    console.log(stats);
     // Get time string
     let timeStirng = humanizeGenTime(stats.total_gen_time);
+    let chatAge = "Never";
+    console.log(stats.date_first_chat, Date.now());
+    if(stats.date_first_chat <  Date.now()) {
+        console.log(moment.duration(stats.date_last_chat - stats.date_first_chat).humanize());
+        chatAge = moment.duration(stats.date_last_chat - stats.date_first_chat).humanize();
+    }
 
     // Create popup HTML with stats
     let html = `<h3>${statsType} Stats</h3>`;
+    html += createStatBlock("Chat Age", chatAge);
     html += createStatBlock("Chat Time", timeStirng);
     html += createStatBlock("Total User Messages", stats.user_msg_count);
     html += createStatBlock(
@@ -111,10 +119,23 @@ async function userStatsHandler() {
 async function characterStatsHandler(characters, this_chid) {
     // Get stats from server
    await getStats();
-
+    console.log(charStats);
     // Get character stats
     let myStats = charStats[characters[this_chid].avatar];
-
+    if (myStats === undefined) {
+        myStats = {
+            total_gen_time: 0,
+            user_msg_count: 0,
+            non_user_msg_count: 0,
+            user_word_count: 0,
+            non_user_word_count: countWords(characters[this_chid].first_mes),
+            total_swipe_count: 0,
+            date_last_chat: 0,
+            date_first_chat: new Date('9999-12-31T23:59:59.999Z').getTime(),
+        };
+        charStats[characters[this_chid].avatar] = myStats;
+        updateStats();
+    }
     // Create HTML with stats
     createHtml("Character", myStats);
 }
@@ -240,6 +261,7 @@ async function statMesProcess(
         stat.total_swipe_count++;
     }
     stat.date_last_chat = Date.now();
+    stat.first_chat_time = Math.min(stat.date_first_chat ?? new Date('9999-12-31T23:59:59.999Z').getTime(), Date.now());
     console.log(stat);
     updateStats();
 }
