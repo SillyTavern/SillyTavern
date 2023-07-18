@@ -1058,6 +1058,7 @@ async function delChat(chatfile) {
     if (response.ok === true) {
         // choose another chat if current was deleted
         if (chatfile.replace('.jsonl', '') === characters[this_chid].chat) {
+            chat_metadata = {};
             await replaceCurrentChat();
         }
     }
@@ -1109,7 +1110,6 @@ function clearChat() {
         $('.zoomed_avatar[forChar]').remove();
     } else { console.debug('saw no avatars') }
     itemizedPrompts = [];
-    chat_metadata = {};
 }
 
 async function deleteLastMessage() {
