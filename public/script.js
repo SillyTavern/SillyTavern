@@ -4393,15 +4393,18 @@ function changeMainAPI() {
 
     switch (oai_settings.chat_completion_source) {
         case chat_completion_sources.OPENAI:
-            console.log('Setting up OpenAI prompt manager');
             setupOpenAIPromptManager(oai_settings);
             break;
         case chat_completion_sources.CLAUDE:
-            console.log('Setting up Claude prompt manager');
             setupClaudePromptManager(oai_settings);
             break;
         case chat_completion_sources.WINDOWAI:
-            console.log('Setting up WindowAI prompt manager');
+            setupWindowAiPromptManager(oai_settings);
+            break;
+        case chat_completion_sources.OPENROUTER:
+            setupWindowAiPromptManager(oai_settings);
+            break;
+        case chat_completion_sources.SCALE:
             setupWindowAiPromptManager(oai_settings);
             break;
     }
