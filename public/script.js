@@ -5165,7 +5165,10 @@ function messageEditAuto(div) {
 }
 
 async function messageEditDone(div) {
-    const { mesBlock, text, mes, bias } = updateMessage(div);
+    let { mesBlock, text, mes, bias } = updateMessage(div);
+    if (this_edit_mes_id == 0) {
+        text = substituteParams(text);
+    }
 
     mesBlock.find(".mes_text").empty();
     mesBlock.find(".mes_edit_buttons").css("display", "none");
