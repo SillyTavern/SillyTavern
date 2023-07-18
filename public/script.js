@@ -956,7 +956,6 @@ async function getCharacters() {
 
 
         updateCharacterCount('#rm_print_characters_block > div');
-        //await AA_CountCharTime(this_chid);
     }
 }
 

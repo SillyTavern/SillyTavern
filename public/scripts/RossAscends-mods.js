@@ -76,7 +76,6 @@ const observer = new MutationObserver(function (mutations) {
             RA_checkOnlineStatus();
         } else if (mutation.target.parentNode === SelectedCharacterTab) {
             setTimeout(RA_CountCharTokens, 200);
-            //setTimeout(AA_CountCharTime, 200);
         }
     });
 });
@@ -110,8 +109,16 @@ function waitForElement(querySelector, timeout) {
     });
 }
 
-
-//humanize character generation time
+/**
+ * Converts generation time from milliseconds to a human-readable format.
+ * 
+ * The function takes total generation time as an input, then converts it to a format 
+ * of "_ Days, _ Hours, _ Minutes, _ Seconds". If the generation time does not exceed a 
+ * particular measure (like days or hours), that measure will not be included in the output.
+ *
+ * @param {number} total_gen_time - The total generation time in milliseconds.
+ * @returns {string} - A human-readable string that represents the time spent generating characters.
+ */
 export function humanizeGenTime(total_gen_time) {
 
     //convert time_spent to humanized format of "_ Hours, _ Minutes, _ Seconds" from milliseconds
@@ -133,38 +140,6 @@ export function humanizeGenTime(total_gen_time) {
 }
 
 
-
-/**
- * AA_CountCharTime logs the time spent and word count of a given character.
- * 
- * @param {String} chid - Character ID; undefined or 'invalid-safety-id' will not be processed.
- * 
- * It fetches the character using the ID, calculates human-readable interaction time and word count,
- * logs the time, and appends this information to the 'result_info' HTML element.
- */
-export function AA_CountCharTime(chid){
-    console.log("AA_CountCharTime");
-    if (chid !== undefined && chid !== "invalid-safety-id") {    // if we are counting a valid pre-saved char
-        let selected_character = characters[chid];
-        let timeStirng = humanizeGenTime(selected_character);
-
-        //get character stats from the server 
-
-        //get total word counts
-        let stat = charStats[selected_character.avatar]
-        let user_words = stat.user_word_count;
-        let char_words = stat.non_user_word_count;
-
-
-
-        console.log("Time spent generating: " + timeStirng)
-        //append to #result_info html
-        $("#result_info").append(`<div class="result_info_item"><span class="result_info_item_title"></span><small class="result_info_item_value">Chat time: ${timeStirng}</small></div>`);
-        $("#result_info").append(`<div class="result_info_item"><span class="result_info_item_title"></span><small class="result_info_item_value">Total words: ${user_words} / ${char_words}</small></div>`);
-
-    }
-    else { console.debug("AA_CountCharTime -- no valid char found, closing."); }
-}
 
 // Device detection
 export const deviceInfo = await getDeviceInfo();
