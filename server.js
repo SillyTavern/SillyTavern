@@ -262,6 +262,7 @@ const directories = {
     thumbnailsBg: 'thumbnails/bg/',
     thumbnailsAvatar: 'thumbnails/avatar/',
     themes: 'public/themes',
+    movingUI: 'public/movingUI',
     extensions: 'public/scripts/extensions',
     instruct: 'public/instruct',
     context: 'public/context',
@@ -395,7 +396,7 @@ app.post("/generate", jsonParser, async function (request, response_generate = r
     const controller = new AbortController();
     request.socket.removeAllListeners('close');
     request.socket.on('close', async function () {
-        if (request.body.can_abort && !response_generate.finished) {
+        if (request.body.can_abort && !response_generate.writableEnded) {
             try {
                 console.log('Aborting Kobold generation...');
                 // send abort signal to koboldcpp
@@ -765,7 +766,7 @@ function convertToV2(char) {
         tags: char.tags,
     });
 
-    result.chat = char.chat;
+    result.chat = char.chat ?? humanizedISO8601DateTime();
     result.create_date = char.create_date;
     return result;
 }
@@ -824,6 +825,8 @@ function readFromV2(char) {
         }
         char[charField] = v2Value;
     });
+
+    char['chat'] = char['chat'] ?? humanizedISO8601DateTime();
 
     return char;
 }
@@ -1075,7 +1078,7 @@ app.post("/editcharacterattribute", jsonParser, async function (request, respons
             charaWrite(avatarPath, char, (request.body.avatar_url).replace('.png', ''), response, 'Character saved');
         }).catch((err) => {
             console.error('An error occured, character edit invalidated.', err);
-        } );
+        });
     }
     catch {
         console.error('An error occured, character edit invalidated.');
@@ -1404,39 +1407,43 @@ app.post("/delchat", jsonParser, function (request, response) {
     return response.send('ok');
 });
 
+app.post('/renamebackground', jsonParser, function (request, response) {
+    if (!request.body) return response.sendStatus(400);
+
+    const oldFileName = path.join('public/backgrounds/', sanitize(request.body.old_bg));
+    const newFileName = path.join('public/backgrounds/', sanitize(request.body.new_bg));
+
+    if (!fs.existsSync(oldFileName)) {
+        console.log('BG file not found');
+        return response.sendStatus(400);
+    }
+
+    if (fs.existsSync(newFileName)) {
+        console.log('New BG file already exists');
+        return response.sendStatus(400);
+    }
+
+    fs.renameSync(oldFileName, newFileName);
+    invalidateThumbnail('bg', request.body.old_bg);
+    return response.send('ok');
+});
 
 app.post("/downloadbackground", urlencodedParser, function (request, response) {
     response_dw_bg = response;
-    if (!request.body) return response.sendStatus(400);
+    if (!request.body || !request.file) return response.sendStatus(400);
 
-    let filedata = request.file;
-    //console.log(filedata.mimetype);
-    var fileType = ".png";
-    var img_file = "ai";
-    var img_path = "public/img/";
+    const img_path = path.join("uploads/", request.file.filename);
+    const filename = request.file.originalname;
 
-    img_path = "uploads/";
-    img_file = filedata.filename;
-    if (filedata.mimetype == "image/jpeg") fileType = ".jpeg";
-    if (filedata.mimetype == "image/png") fileType = ".png";
-    if (filedata.mimetype == "image/gif") fileType = ".gif";
-    if (filedata.mimetype == "image/bmp") fileType = ".bmp";
-    fs.copyFile(img_path + img_file, 'public/backgrounds/' + img_file + fileType, (err) => {
-        invalidateThumbnail('bg', img_file + fileType);
-        if (err) {
-
-            return console.log(err);
-        } else {
-            //console.log(img_file+fileType);
-            response_dw_bg.send(img_file + fileType);
-        }
-        //console.log('The image was copied from temp directory.');
-    });
-
-
+    try {
+        fs.copyFileSync(img_path, path.join('public/backgrounds/', filename));
+        invalidateThumbnail('bg', filename);
+        response_dw_bg.send(filename);
+    } catch (err) {
+        console.error(err);
+        response_dw_bg.sendStatus(500);
+    }
 });
-
-
 
 app.post("/savesettings", jsonParser, function (request, response) {
     fs.writeFile('public/settings.json', JSON.stringify(request.body, null, 4), 'utf8', function (err) {
@@ -1494,6 +1501,10 @@ function sortByModifiedDate(directory) {
     return (a, b) => new Date(fs.statSync(`${directory}/${b}`).mtime) - new Date(fs.statSync(`${directory}/${a}`).mtime);
 }
 
+function sortByName(_) {
+    return (a, b) => a.localeCompare(b);
+}
+
 function readPresetsFromDirectory(directoryPath, options = {}) {
     const {
         sortFunction,
@@ -1530,7 +1541,7 @@ app.post('/getsettings', jsonParser, (request, response) => {
     // NovelAI Settings
     const { fileContents: novelai_settings, fileNames: novelai_setting_names }
         = readPresetsFromDirectory(directories.novelAI_Settings, {
-            sortFunction: sortByModifiedDate(directories.novelAI_Settings),
+            sortFunction: sortByName(directories.novelAI_Settings),
             removeFileExtension: true
         });
 
@@ -1543,13 +1554,13 @@ app.post('/getsettings', jsonParser, (request, response) => {
     // TextGenerationWebUI Settings
     const { fileContents: textgenerationwebui_presets, fileNames: textgenerationwebui_preset_names }
         = readPresetsFromDirectory(directories.textGen_Settings, {
-            sortFunction: sortByModifiedDate(directories.textGen_Settings), removeFileExtension: true
+            sortFunction: sortByName(directories.textGen_Settings), removeFileExtension: true
         });
 
     //Kobold
     const { fileContents: koboldai_settings, fileNames: koboldai_setting_names }
         = readPresetsFromDirectory(directories.koboldAI_Settings, {
-            sortFunction: sortByModifiedDate(directories.koboldAI_Settings), removeFileExtension: true
+            sortFunction: sortByName(directories.koboldAI_Settings), removeFileExtension: true
         })
 
     const worldFiles = fs
@@ -1559,6 +1570,7 @@ app.post('/getsettings', jsonParser, (request, response) => {
     const world_names = worldFiles.map(item => path.parse(item).name);
 
     const themes = readAndParseFromDirectory(directories.themes);
+    const movingUIPresets = readAndParseFromDirectory(directories.movingUI);
     const instruct = readAndParseFromDirectory(directories.instruct);
     const context = readAndParseFromDirectory(directories.context);
 
@@ -1574,6 +1586,7 @@ app.post('/getsettings', jsonParser, (request, response) => {
         textgenerationwebui_presets,
         textgenerationwebui_preset_names,
         themes,
+        movingUIPresets,
         instruct,
         context,
         enable_extensions: enableExtensions,
@@ -1614,6 +1627,17 @@ app.post('/savetheme', jsonParser, (request, response) => {
     }
 
     const filename = path.join(directories.themes, sanitize(request.body.name) + '.json');
+    fs.writeFileSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
+
+    return response.sendStatus(200);
+});
+
+app.post('/savemovingui', jsonParser, (request, response) => {
+    if (!request.body || !request.body.name) {
+        return response.sendStatus(400);
+    }
+
+    const filename = path.join(directories.movingUI, sanitize(request.body.name) + '.json');
     fs.writeFileSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
 
     return response.sendStatus(200);
@@ -3469,9 +3493,26 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
 
     function handleError(error, response_generate_openai, request) {
         console.error('Error:', error.message);
+
+        let message = error?.response?.statusText;
+
+        switch (error?.response?.status) {
+            case 402:
+                message = 'Credit limit reached';
+                console.log(message);
+                break;
+            case 403:
+                message = 'API key disabled or exhausted';
+                console.log(message);
+                break;
+        }
+
         const quota_error = error?.response?.status === 429 && error?.response?.data?.error?.type === 'insufficient_quota';
+        const response = { error: { message }, quota_error: quota_error }
         if (!response_generate_openai.headersSent) {
-            response_generate_openai.send({ error: true, quota_error: quota_error });
+            response_generate_openai.send(response);
+        } else if (!response_generate_openai.writableEnded) {
+            response_generate_openai.write(response);
         }
     }
 
@@ -3544,7 +3585,7 @@ function createTokenizationHandler(getTokenizerFn) {
 app.post("/tokenize_llama", jsonParser, createTokenizationHandler(() => spp_llama));
 app.post("/tokenize_nerdstash", jsonParser, createTokenizationHandler(() => spp_nerd));
 app.post("/tokenize_nerdstash_v2", jsonParser, createTokenizationHandler(() => spp_nerd_v2));
-app.post("/tokenize_via_api", jsonParser, async function(request, response) {
+app.post("/tokenize_via_api", jsonParser, async function (request, response) {
     if (!request.body) {
         return response.sendStatus(400);
     }
@@ -3552,7 +3593,7 @@ app.post("/tokenize_via_api", jsonParser, async function(request, response) {
 
     try {
         const args = {
-            body: JSON.stringify({"prompt": text}),
+            body: JSON.stringify({ "prompt": text }),
             headers: { "Content-Type": "application/json" }
         };
 
@@ -4542,22 +4583,22 @@ async function getManifest(extensionPath) {
 }
 
 async function checkIfRepoIsUpToDate(extensionPath) {
-  const git = simpleGit();
-  await git.cwd(extensionPath).fetch('origin');
-  const currentBranch = await git.cwd(extensionPath).branch();
-  const currentCommitHash = await git.cwd(extensionPath).revparse(['HEAD']);
-  const log = await git.cwd(extensionPath).log({
-    from: currentCommitHash,
-    to: `origin/${currentBranch.current}`,
-  });
+    const git = simpleGit();
+    await git.cwd(extensionPath).fetch('origin');
+    const currentBranch = await git.cwd(extensionPath).branch();
+    const currentCommitHash = await git.cwd(extensionPath).revparse(['HEAD']);
+    const log = await git.cwd(extensionPath).log({
+        from: currentCommitHash,
+        to: `origin/${currentBranch.current}`,
+    });
 
-  // Fetch remote repository information
-  const remotes = await git.cwd(extensionPath).getRemotes(true);
+    // Fetch remote repository information
+    const remotes = await git.cwd(extensionPath).getRemotes(true);
 
-  return {
-    isUpToDate: log.total === 0,
-    remoteUrl: remotes[0].refs.fetch, // URL of the remote repository
-  };
+    return {
+        isUpToDate: log.total === 0,
+        remoteUrl: remotes[0].refs.fetch, // URL of the remote repository
+    };
 }
 
 
@@ -4672,7 +4713,7 @@ app.post('/get_extension_version', jsonParser, async (request, response) => {
         const extensionPath = path.join(directories.extensions, 'third-party', extensionName);
 
         if (!fs.existsSync(extensionPath)) {
-        return response.status(404).send(`Directory does not exist at ${extensionPath}`);
+            return response.status(404).send(`Directory does not exist at ${extensionPath}`);
         }
 
         const currentBranch = await git.cwd(extensionPath).branch();
@@ -4689,7 +4730,7 @@ app.post('/get_extension_version', jsonParser, async (request, response) => {
         console.log('Getting extension version failed', error);
         return response.status(500).send(`Server Error: ${error.message}`);
     }
-    }
+}
 );
 
 /**

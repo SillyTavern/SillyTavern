@@ -236,5 +236,25 @@ jQuery(async () => {
         onRegexEditorOpenClick(false);
     });
 
+    $('#saved_regex_scripts').sortable({
+        stop: function () {
+            let newScripts = [];
+            $('#saved_regex_scripts').children().each(function () {
+                const scriptName = $(this).find(".regex_script_name").text();
+                const existingScript = extension_settings.regex.find((e) => e.scriptName === scriptName);
+                if (existingScript) {
+                    newScripts.push(existingScript);
+                }
+            });
+
+            extension_settings.regex = newScripts;
+            saveSettingsDebounced();
+
+            console.debug("Regex scripts reordered");
+            // TODO: Maybe reload regex scripts after move
+        },
+    });
+
     await loadRegexScripts();
+    $("#saved_regex_scripts").sortable("enable");
 });
