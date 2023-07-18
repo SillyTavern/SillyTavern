@@ -1,4 +1,5 @@
-import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, AA_CountCharTime } from "./scripts/RossAscends-mods.js";
+import { humanizedDateTime, humanizeGenTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, AA_CountCharTime } from "./scripts/RossAscends-mods.js";
+import { userStatsHandler, characterStatsHandler } from './scripts/stats.js';
 import { encode } from "../scripts/gpt-2-3-tokenizer/mod.js";
 import { GPT3BrowserTokenizer } from "../scripts/gpt-3-tokenizer/gpt3-tokenizer.js";
 import {
@@ -955,7 +956,7 @@ async function getCharacters() {
 
 
         updateCharacterCount('#rm_print_characters_block > div');
-        await AA_CountCharTime(this_chid);
+        //await AA_CountCharTime(this_chid);
     }
 }
 
@@ -4895,7 +4896,6 @@ async function getSettings(type) {
     }
 
     const data = await response.json();
-    getStats();
     if (data.result != "file not find" && data.settings) {
         settings = JSON.parse(data.settings);
         if (settings.username !== undefined) {
@@ -5121,25 +5121,6 @@ async function saveSettings(type) {
     });
 }
 
-
-async function getStats() {
-    const response = await fetch("/getstats", {
-        method: "POST",
-        headers: getRequestHeaders(),
-        body: JSON.stringify({}),
-        cache: "no-cache",
-    });
-
-    if (!response.ok) {
-        toastr.error('Stats could not be loaded. Try reloading the page.');
-        throw new Error('Error getting stats');
-    }
-
-    const data = await response.json();
-    charStats = data;
-    console.log(charStats);
-
-}
 
 
 function setCharacterBlockHeight() {
@@ -8581,6 +8562,10 @@ $(document).ready(function () {
         restoreCaretPosition($(this).get(0), caretPosition);
     });
 
+    $(".user_stats_button").on('click', function () {
+        userStatsHandler(charStats);
+    });
+
     $('#external_import_button').on('click', async () => {
         const html = `<h3>Enter the URL of the content to import</h3>
         Supported sources:<br>
@@ -8719,4 +8704,4 @@ $(document).ready(function () {
     $("#charListGridToggle").on('click', async () => {
         doCharListDisplaySwitch();
     });
-})
+});

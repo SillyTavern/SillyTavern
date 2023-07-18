@@ -16,6 +16,10 @@ import {
     charStats,
 } from "../script.js";
 
+import {
+    characterStatsHandler,
+} from "./stats.js";
+
 
 import {
     power_user,
@@ -72,7 +76,7 @@ const observer = new MutationObserver(function (mutations) {
             RA_checkOnlineStatus();
         } else if (mutation.target.parentNode === SelectedCharacterTab) {
             setTimeout(RA_CountCharTokens, 200);
-            setTimeout(AA_CountCharTime, 200);
+            //setTimeout(AA_CountCharTime, 200);
         }
     });
 });
@@ -108,10 +112,10 @@ function waitForElement(querySelector, timeout) {
 
 
 //humanize character generation time
-export function humanizeGenTime(character) {
-    let stat = charStats[character.avatar]
+export function humanizeGenTime(total_gen_time) {
+
     //convert time_spent to humanized format of "_ Hours, _ Minutes, _ Seconds" from milliseconds
-    let time_spent = stat.total_gen_time
+    let time_spent = total_gen_time || 0;
     time_spent = Math.floor(time_spent / 1000);
     let seconds = time_spent % 60;
     time_spent = Math.floor(time_spent / 60);
@@ -327,7 +331,10 @@ export function RA_CountCharTokens() {
             // if neither, probably safety char or some error in loading
         } else { console.debug("RA_TC -- no valid char found, closing."); }
     }
-    $("#result_info").html(`<small>${count_tokens} Tokens (${perm_tokens} Permanent)</small>`);
+    //label rm_stats_button with a tooltip indicating stats
+    $("#result_info").html(`<small>${count_tokens} Tokens (${perm_tokens} Permanent)</small>
+
+    <i title='Click for stats!' class="fa-solid fa-circle-info rm_stats_button"></i>`);
     // display the counted tokens
     const tokenLimit = Math.max(((main_api !== 'openai' ? max_context : oai_settings.openai_max_context) / 2), 1024);
     if (count_tokens < tokenLimit && perm_tokens < tokenLimit) {
@@ -339,10 +346,16 @@ export function RA_CountCharTokens() {
                 <small class="flex-container flexnowrap flexNoGap">
                     <div class="neutral_warning">${count_tokens}</div>&nbsp;Tokens (<div class="neutral_warning">${perm_tokens}</div><div>&nbsp;Permanent)</div>
                 </small>
+                <i title='Click for stats!' class="fa-solid fa-circle-info rm_stats_button"></i>
             </div>
             <div id="chartokenwarning" class="menu_button margin0 whitespacenowrap"><a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-tokens" target="_blank">About Token 'Limits'</a></div>
         </div>`);
+
+
     } //warn if either are over 1024
+    $(".rm_stats_button").on('click', function () {
+        characterStatsHandler(charStats, characters, this_chid);
+    });
 }
 //Auto Load Last Charcter -- (fires when active_character is defined and auto_load_chat is true)
 async function RA_autoloadchat() {

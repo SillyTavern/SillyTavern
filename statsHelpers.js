@@ -132,7 +132,6 @@ function countWordsInString(str) {
  * @return {object}          An object containing the calculated statistics.
  */
 const calculateStats = (chatsPath, item, index) => {
-    console.log('Calculating stats for', item);
     const char_dir = path.join(chatsPath, item.replace('.png', ''));
     let chat_size = 0;
     let date_last_chat = 0;
@@ -152,7 +151,6 @@ const calculateStats = (chatsPath, item, index) => {
         const chats = fs.readdirSync(char_dir);
         if (Array.isArray(chats) && chats.length) {
             for (const chat of chats) {
-                console.log(uniqueGenStartTimes);
                 const result = calculateTotalGenTimeAndWordCount(char_dir, chat, uniqueGenStartTimes);
                 stats.total_gen_time += result.totalGenTime || 0;
                 stats.user_word_count += result.userWordCount || 0;
@@ -164,7 +162,6 @@ const calculateStats = (chatsPath, item, index) => {
                 const chatStat = fs.statSync(path.join(char_dir, chat));
                 stats.chat_size += chatStat.size;
                 stats.date_last_chat = Math.max(stats.date_last_chat, chatStat.mtimeMs);
-                console.log(stats);
             }
         }
     }

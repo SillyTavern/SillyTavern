@@ -1877,6 +1877,11 @@ grammarly-extension {
     overflow-y: hidden;
 }
 
+.rm_stat_block {
+    display: flex;
+    justify-content: space-between;
+}
+
 .large_dialogue_popup {
     height: 90vh !important;
     height: 90svh !important;
