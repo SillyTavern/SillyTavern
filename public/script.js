@@ -2541,7 +2541,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         console.debug(`A prompt bias was found: ${promptBias}`);
                         mesSendString += `${name2}: ${promptBias}`;
                     }
-                } else if (power_user.user_prompt_bias && !isImpersonate) {
+                } else if (power_user.user_prompt_bias && !isImpersonate && !isInstruct) {
                     console.debug(`A prompt bias was found without character's name appended: ${promptBias}`);
                     mesSendString += substituteParams(power_user.user_prompt_bias);
                 }
