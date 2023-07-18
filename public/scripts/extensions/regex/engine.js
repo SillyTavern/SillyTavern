@@ -128,19 +128,46 @@ function substituteRegexParams(rawString, regexMatch, { characterOverride, repla
     finalString = substituteParams(finalString, undefined, characterOverride);
 
     let overlaidMatch = regexMatch;
+    // TODO: Maybe move the for loops into a separate function?
     if (replaceStrategy === regex_replace_strategy.OVERLAY) {
         const splitReplace = finalString.split("{{match}}");
 
         // There's a prefix
         if (splitReplace[0]) {
+            // Fetch the prefix
             const splicedPrefix = spliceSymbols(splitReplace[0], false);
-            overlaidMatch = overlaidMatch.replace(splicedPrefix, "").trim();
+
+            // Sequentially remove all occurrences of prefix from start of split
+            const splitMatch = overlaidMatch.split(splicedPrefix);
+            let sliceNum = 0;
+            for (let index = 0; index < splitMatch.length; index++) {
+                if (splitMatch[index].length === 0) {
+                    sliceNum++;
+                } else {
+                    break;
+                }
+            }
+
+            overlaidMatch = splitMatch.slice(sliceNum, splitMatch.length).join(splicedPrefix);
         }
 
         // There's a suffix
         if (splitReplace[1]) {
+            // Fetch the suffix
             const splicedSuffix = spliceSymbols(splitReplace[1], true);
-            overlaidMatch = overlaidMatch.replace(new RegExp(`${splicedSuffix}$`), "").trim();
+
+            // Sequential removal of all suffix occurrences from end of split
+            const splitMatch = overlaidMatch.split(splicedSuffix);
+            let sliceNum = 0;
+            for (let index = splitMatch.length - 1; index >= 0; index--) {
+                if (splitMatch[index].length === 0) {
+                    sliceNum++;
+                } else {
+                    break;
+                }
+            }
+
+            overlaidMatch = splitMatch.slice(0, splitMatch.length - sliceNum).join(splicedSuffix);
         }
     }
 
@@ -150,7 +177,7 @@ function substituteRegexParams(rawString, regexMatch, { characterOverride, repla
     return finalString;
 }
 
-// Splices symbols and whitespace from the beginning and end of a string
+// Splices common sentence symbols and whitespace from the beginning and end of a string
 // Using a for loop due to sequential ordering
 function spliceSymbols(rawString, isSuffix) {
     let offset = 0;
@@ -163,5 +190,5 @@ function spliceSymbols(rawString, isSuffix) {
         }
     }
 
-    return isSuffix ? rawString.substring(0, rawString.length - offset) : rawString.substring(offset);;
+    return isSuffix ? rawString.substring(0, rawString.length - offset) : rawString.substring(offset);
 }
