@@ -1,4 +1,4 @@
-import { callPopup, eventSource, event_types, saveSettings, saveSettingsDebounced } from "../script.js";
+import { callPopup, eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders } from "../script.js";
 import { isSubsetOf, debounce } from "./utils.js";
 export {
     getContext,
@@ -53,7 +53,9 @@ const extension_settings = {
         chara: [],
         wiAddition: [],
     },
-    caption: {},
+    caption: {
+        refine_mode: false,
+    },
     expressions: {},
     dice: {},
     regex: [],
@@ -377,49 +379,217 @@ function addExtensionScript(name, manifest) {
     return Promise.resolve();
 }
 
-function showExtensionsDetails() {
-    let html = '<h3>Modules provided by your Extensions API:</h3>';
-    html += modules.length ? `<p>${DOMPurify.sanitize(modules.join(', '))}</p>` : '<p class="failure">Not connected to the API!</p>';
-    html += '<h3>Available extensions:</h3>';
 
-    Object.entries(manifests).sort((a, b) => a[1].loading_order - b[1].loading_order).forEach(extension => {
-        const name = extension[0];
-        const manifest = extension[1];
-        const isActive = activeExtensions.has(name);
-        const isDisabled = extension_settings.disabledExtensions.includes(name);
 
-        const titleClass = isActive ? "extension_enabled" : isDisabled ? "extension_disabled" : "extension_missing";
-        const iconString = isActive ? "\u2705" : isDisabled ? "\u274C" : "";
+/**
+ * Generates HTML string for displaying an extension in the UI.
+ *
+ * @param {string} name - The name of the extension.
+ * @param {object} manifest - The manifest of the extension.
+ * @param {boolean} isActive - Whether the extension is active or not.
+ * @param {boolean} isDisabled - Whether the extension is disabled or not.
+ * @param {boolean} isExternal - Whether the extension is external or not.
+ * @param {string} checkboxClass - The class for the checkbox HTML element.
+ * @return {string} - The HTML string that represents the extension.
+ */
+async function generateExtensionHtml(name, manifest, isActive, isDisabled, isExternal, checkboxClass) {
+    const displayName = manifest.display_name;
+    let displayVersion = manifest.version ? ` v${manifest.version}` : "";
+    let isUpToDate = true;
+    let updateButton = '';
+    let originHtml = '';
+    if (isExternal) {
+        let data = await getExtensionVersion(name.replace('third-party', ''));
+        let branch = data.currentBranchName;
+        let commitHash = data.currentCommitHash;
+        let origin = data.remoteUrl
+        isUpToDate = data.isUpToDate;
+        displayVersion = ` (${branch}-${commitHash.substring(0, 7)})`;
+        updateButton = isUpToDate ?
+            `<span class="update-button"><button class="btn_update menu_button" data-name="${name.replace('third-party', '')}" title="Up to date"><i class="fa-solid fa-code-commit"></i></button></span>` :
+            `<span class="update-button"><button class="btn_update menu_button" data-name="${name.replace('third-party', '')}" title="Update available"><i class="fa-solid fa-download"></i></button></span>`;
+        originHtml = `<a href="${origin}" target="_blank" rel="noopener noreferrer">`;
+    }
 
-        let toggleElement = `<span title="Cannot enable extension" data-name="${name}" class="extension_missing">Unavailable</span>`;
-        if (isActive) {
-            toggleElement = `<a href="javascript:void" title="Click to disable" data-name="${name}" class="toggle_disable">Disable</a>`;
+    let toggleElement = isActive || isDisabled ?
+        `<input type="checkbox" title="Click to toggle" data-name="${name}" class="${isActive ? 'toggle_disable' : 'toggle_enable'} ${checkboxClass}" ${isActive ? 'checked' : ''}>` :
+        `<input type="checkbox" title="Cannot enable extension" data-name="${name}" class="extension_missing ${checkboxClass}" disabled>`;
+
+    let deleteButton = isExternal ? `<span class="delete-button"><button class="btn_delete menu_button" data-name="${name.replace('third-party', '')}" title="Delete"><i class="fa-solid fa-trash-can"></i></button></span>` : '';
+
+    // if external, wrap the name in a link to the repo
+
+    let extensionHtml = `<hr>
+        <h4>
+            ${updateButton}
+            ${deleteButton}
+            ${originHtml}
+            <span class="${isActive ? "extension_enabled" : isDisabled ? "extension_disabled" : "extension_missing"}">
+                ${DOMPurify.sanitize(displayName)}${displayVersion}
+            </span>
+            ${isExternal ? '</a>' : ''}
+
+            <span style="float:right;">${toggleElement}</span>
+        </h4>`;
+
+    if (isActive && Array.isArray(manifest.optional)) {
+        const optional = new Set(manifest.optional);
+        modules.forEach(x => optional.delete(x));
+        if (optional.size > 0) {
+            const optionalString = DOMPurify.sanitize([...optional].join(', '));
+            extensionHtml += `<p>Optional modules: <span class="optional">${optionalString}</span></p>`;
         }
-        else if (isDisabled) {
-            toggleElement = `<a href="javascript:void" title="Click to enable" data-name="${name}" class="toggle_enable">Enable</a>`;
-        }
-        html += `<hr><h4>${iconString} <span class="${titleClass}">${DOMPurify.sanitize(manifest.display_name)}</span> <span style="float:right;">${toggleElement}<span></h4>`;
+    } else if (!isDisabled) { // Neither active nor disabled
+        const requirements = new Set(manifest.requires);
+        modules.forEach(x => requirements.delete(x));
+        const requirementsString = DOMPurify.sanitize([...requirements].join(', '));
+        extensionHtml += `<p>Missing modules: <span class="failure">${requirementsString}</span></p>`;
+    }
 
-        if (isActive) {
-            if (Array.isArray(manifest.optional)) {
-                const optional = new Set(manifest.optional);
-                modules.forEach(x => optional.delete(x));
-                if (optional.size > 0) {
-                    const optionalString = DOMPurify.sanitize([...optional].join(', '));
-                    html += `<p>Optional modules: <span class="optional">${optionalString}</span></p>`;
-                }
-            }
-        }
-        else if (!isDisabled) { // Neither active nor disabled
-            const requirements = new Set(manifest.requires);
-            modules.forEach(x => requirements.delete(x));
-            const requirementsString = DOMPurify.sanitize([...requirements].join(', '));
-            html += `<p>Missing modules: <span class="failure">${requirementsString}</span></p>`
-        }
-    });
+    return extensionHtml;
+}
 
+/**
+ * Gets extension data and generates the corresponding HTML for displaying the extension.
+ *
+ * @param {Array} extension - An array where the first element is the extension name and the second element is the extension manifest.
+ * @return {object} - An object with 'isExternal' indicating whether the extension is external, and 'extensionHtml' for the extension's HTML string.
+ */
+async function getExtensionData(extension) {
+    const name = extension[0];
+    const manifest = extension[1];
+    const isActive = activeExtensions.has(name);
+    const isDisabled = extension_settings.disabledExtensions.includes(name);
+    const isExternal = name.startsWith('third-party');
+
+    const checkboxClass = isDisabled ? "checkbox_disabled" : "";
+
+    const extensionHtml = await generateExtensionHtml(name, manifest, isActive, isDisabled, isExternal, checkboxClass);
+
+    return { isExternal, extensionHtml };
+}
+
+
+/**
+ * Gets the module information to be displayed.
+ *
+ * @return {string} - The HTML string for the module information.
+ */
+function getModuleInformation() {
+    let moduleInfo = modules.length ? `<p>${DOMPurify.sanitize(modules.join(', '))}</p>` : '<p class="failure">Not connected to the API!</p>';
+    return `
+        <h3>Modules provided by your Extensions API:</h3>
+        ${moduleInfo}
+    `;
+}
+
+/**
+ * Generates the HTML strings for all extensions and displays them in a popup.
+ */
+async function showExtensionsDetails() {
+    let htmlDefault = '<h3>Default Extensions:</h3>';
+    let htmlExternal = '<h3>External Extensions:</h3>';
+
+    const extensions = Object.entries(manifests).sort((a, b) => a[1].loading_order - b[1].loading_order);
+
+    for (const extension of extensions) {
+        const { isExternal, extensionHtml } = await getExtensionData(extension);
+        if (isExternal) {
+            htmlExternal += extensionHtml;
+        } else {
+            htmlDefault += extensionHtml;
+        }
+    }
+
+    const html = `
+        ${getModuleInformation()}
+        ${htmlDefault}
+        ${htmlExternal}
+    `;
     callPopup(`<div class="extensions_info">${html}</div>`, 'text');
 }
+
+
+/**
+ * Handles the click event for the update button of an extension.
+ * This function makes a POST request to '/update_extension' with the extension's name.
+ * If the extension is already up to date, it displays a success message.
+ * If the extension is not up to date, it updates the extension and displays a success message with the new commit hash.
+ */
+async function onUpdateClick() {
+    const extensionName = $(this).data('name');
+    try {
+        const response = await fetch('/update_extension', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ extensionName })
+        });
+
+        const data = await response.json();
+        if (data.isUpToDate) {
+            toastr.success('Extension is already up to date');
+        } else {
+            toastr.success(`Extension updated to ${data.shortCommitHash}`);
+        }
+        showExtensionsDetails();
+    } catch (error) {
+        console.error('Error:', error);
+    }
+};
+
+/**
+ * Handles the click event for the delete button of an extension.
+ * This function makes a POST request to '/delete_extension' with the extension's name.
+ * If the extension is deleted, it displays a success message.
+ * Creates a popup for the user to confirm before delete.
+ */
+async function onDeleteClick() {
+    const extensionName = $(this).data('name');
+    // use callPopup to create a popup for the user to confirm before delete
+    const confirmation = await callPopup(`Are you sure you want to delete ${extensionName}?`, 'delete_extension');
+    if (confirmation) {
+        try {
+            const response = await fetch('/delete_extension', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify({ extensionName })
+            });
+        } catch (error) {
+            console.error('Error:', error);
+        }
+        toastr.success(`Extension ${extensionName} deleted`);
+        showExtensionsDetails();
+        // reload the page to remove the extension from the list
+        location.reload();
+    }
+};
+
+
+
+/**
+ * Fetches the version details of a specific extension.
+ *
+ * @param {string} extensionName - The name of the extension.
+ * @return {object} - An object containing the extension's version details.
+ * This object includes the currentBranchName, currentCommitHash, isUpToDate, and remoteUrl.
+ * @throws {error} - If there is an error during the fetch operation, it logs the error to the console.
+ */
+async function getExtensionVersion(extensionName) {
+    try {
+        const response = await fetch('/get_extension_version', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ extensionName })
+        });
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+
 
 async function loadExtensionSettings(settings) {
     if (settings.extension_settings) {
@@ -464,4 +634,6 @@ $(document).ready(async function () {
     $("#extensions_details").on('click', showExtensionsDetails);
     $(document).on('click', '.toggle_disable', onDisableExtensionClick);
     $(document).on('click', '.toggle_enable', onEnableExtensionClick);
+    $(document).on('click', '.btn_update', onUpdateClick);
+    $(document).on('click', '.btn_delete', onDeleteClick);
 });

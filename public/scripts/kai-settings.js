@@ -213,7 +213,7 @@ const sliders = [
         sliderId: "#no_op_selector",
         counterId: "#no_op_selector",
         format: (val) => val,
-        setValue: (val) => { sortItemsByOrder(val); },
+        setValue: (val) => { sortItemsByOrder(val); kai_settings.sampler_order = val; },
     }
 ];
 

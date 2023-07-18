@@ -165,7 +165,7 @@ import {
 import { EventEmitter } from './scripts/eventemitter.js';
 import { context_settings, loadContextTemplatesFromSettings } from "./scripts/context-template.js";
 import { markdownExclusionExt } from "./scripts/showdown-exclusion.js";
-import { NOTE_MODULE_NAME, metadata_keys, setFloatingPrompt, shouldWIAddPrompt } from "./scripts/extensions/floating-prompt/index.js";
+import { NOTE_MODULE_NAME, metadata_keys, setFloatingPrompt, shouldWIAddPrompt } from "./scripts/authors-note.js";
 import { deviceInfo } from "./scripts/RossAscends-mods.js";
 import { getRegexedString, regex_placement } from "./scripts/extensions/regex/engine.js";
 
@@ -363,7 +363,7 @@ const system_messages = {
         is_user: false,
         is_system: true,
         is_name: true,
-        mes: [
+        mes:
             `Hello there! Please select the help topic you would like to learn more about:
             <ul>
             <li><a href="javascript:displayHelp('1')">Slash Commands</a> (or <tt>/help slash</tt>)</li>
@@ -372,7 +372,6 @@ const system_messages = {
             <li><a href="javascript:displayHelp('4')">{{Macros}}</a> (or <tt>/help macros</tt>)</li>
             </ul>
             <br><b>Still got questions left? The <a target="_blank" href="https://docs.sillytavern.app/">Official SillyTavern Documentation Website</a> has much more information!</b>`
-        ]
     },
     slash_commands: {
         name: systemUserName,
@@ -388,7 +387,7 @@ const system_messages = {
         is_user: false,
         is_system: true,
         is_name: true,
-        mes: [
+        mes:
             `Hotkeys/Keybinds:
             <ul>
             <li><tt>Up</tt> = Edit last message in chat</li>
@@ -402,7 +401,6 @@ const system_messages = {
             <li><tt>Ctrl+Shift+Up</tt> = Scroll to context line</li>
             <li><tt>Ctrl+Shift+Down</tt> = Scroll chat to bottom</li>
             </ul>`
-        ]
     },
     formatting: {
         name: systemUserName,
@@ -410,7 +408,7 @@ const system_messages = {
         is_user: false,
         is_system: true,
         is_name: true,
-        mes: [
+        mes:
             `Text formatting commands:
             <ul>
             <li><tt>{​{text}​}</tt> - sets a one-time behavioral bias for the AI. Resets when you send the next message.</li>
@@ -422,7 +420,6 @@ const system_messages = {
             <li><tt>$$ text $$</tt> - renders a LaTeX formula (if enabled)</li>
             <li><tt>$ text $</tt> - renders an AsciiMath formula (if enabled)</li>
             </ul>`
-        ]
     },
     macros: {
         name: systemUserName,
@@ -430,7 +427,7 @@ const system_messages = {
         is_user: false,
         is_system: true,
         is_name: true,
-        mes: [
+        mes:
             `System-wide Replacement Macros:
             <ul>
             <li><tt>{​{user}​}</tt> - your current Persona username</li>
@@ -441,7 +438,6 @@ const system_messages = {
             <li><tt>{{idle_duration}}</tt> - the time since the last user message was sent</li>
             <li><tt>{{random:(args)}}</tt> - returns a random item from the list. (ex: {{random:1,2,3,4}} will return 1 of the 4 numbers at random. Works with text lists too.</li>
             </ul>`
-        ]
     },
     welcome:
     {
@@ -552,6 +548,10 @@ async function getClientVersion() {
 }
 
 function getTokenCount(str, padding = undefined) {
+    if (typeof str !== 'string') {
+        return 0;
+    }
+
     let tokenizerType = power_user.tokenizer;
 
     if (main_api === 'openai') {
@@ -966,22 +966,25 @@ async function getBackgrounds() {
         const getData = await response.json();
         //background = getData;
         //console.log(getData.length);
+        $("#bg_menu_content").empty();
         for (const bg of getData) {
-            const thumbPath = getThumbnailUrl('bg', bg);
-            $("#bg_menu_content").append(
-                `<div class="bg_example flex-container" bgfile="${bg}" class="bg_example_img" title="${bg}" style="background-image: url('${thumbPath}');">
-                    <div bgfile="${bg}" class="bg_example_cross fa-solid fa-circle-xmark"></div>
-                    <div class="BGSampleTitle">
-                        ${bg
-                    .replace('.png', '')
-                    .replace('.jpg', '')
-                    .replace('.webp', '')}
-                </div>
-                </div>`
-            );
+            const template = getBackgroundFromTemplate(bg);
+            $("#bg_menu_content").append(template);
         }
     }
 }
+
+function getBackgroundFromTemplate(bg) {
+    const thumbPath = getThumbnailUrl('bg', bg);
+    const template = $('#background_template .bg_example').clone();
+    template.attr('bgfile', bg);
+    template.attr('title', bg);
+    template.find('.bg_button').attr('bgfile', bg);
+    template.css('background-image', `url('${thumbPath}')`);
+    template.find('.BGSampleTitle').text(bg.slice(0, bg.lastIndexOf('.')));
+    return template;
+}
+
 async function isColab() {
     is_checked_colab = true;
     const response = await fetch("/iscolab", {
@@ -1105,6 +1108,7 @@ function clearChat() {
         $('.zoomed_avatar[forChar]').remove();
     } else { console.debug('saw no avatars') }
     itemizedPrompts = [];
+    chat_metadata = {};
 }
 
 async function deleteLastMessage() {
@@ -1523,7 +1527,7 @@ function substituteParams(content, _name1, _name2, _original) {
     _name1 = _name1 ?? name1;
     _name2 = _name2 ?? name2;
     if (!content) {
-        return ''
+        return '';
     }
 
     // Replace {{original}} with the original message
@@ -1541,6 +1545,11 @@ function substituteParams(content, _name1, _name2, _original) {
     content = content.replace(/{{time}}/gi, moment().format('LT'));
     content = content.replace(/{{date}}/gi, moment().format('LL'));
     content = content.replace(/{{idle_duration}}/gi, () => getTimeSinceLastMessage());
+    content = content.replace(/{{time_UTC([-+]\d+)}}/gi, (_, offset) => {
+        const utcOffset = parseInt(offset, 10);
+        const utcTime = moment().utc().utcOffset(utcOffset).format('LT');
+        return utcTime;
+    });
     content = randomReplace(content);
     return content;
 }
@@ -1902,8 +1911,9 @@ class StreamingProcessor {
 
     onProgressStreaming(messageId, text, isFinal) {
         const isImpersonate = this.type == "impersonate";
+        const isContinue = this.type == "continue";
         text = this.removePrefix(text);
-        let processedText = cleanUpMessage(text, isImpersonate, !isFinal);
+        let processedText = cleanUpMessage(text, isImpersonate, isContinue, !isFinal);
         let result = extractNameFromMessage(processedText, this.force_name2, isImpersonate);
         let isName = result.this_mes_is_name;
         processedText = result.getMessage;
@@ -2082,6 +2092,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     // OpenAI doesn't need instruct mode. Use OAI main prompt instead.
     const isInstruct = power_user.instruct.enabled && main_api !== 'openai';
     const isImpersonate = type == "impersonate";
+    const isContinue = type == 'continue';
 
     message_already_generated = isImpersonate ? `${name1}: ` : `${name2}: `;
     // Name for the multigen prefix
@@ -2258,6 +2269,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         //////////////////////////////////
 
         let chat2 = [];
+        let continue_mag = '';
         for (let i = coreChat.length - 1, j = 0; i >= 0; i--, j++) {
             // For OpenAI it's only used in WI
             if (main_api == 'openai' && (!world_info || world_info.length === 0)) {
@@ -2268,8 +2280,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct);
 
             // Do not suffix the message for continuation
-            if (i === 0 && type == 'continue') {
+            if (i === 0 && isContinue) {
                 chat2[i] = chat2[i].slice(0, chat2[i].lastIndexOf(coreChat[j].mes) + coreChat[j].mes.length);
+                continue_mag = coreChat[j].mes;
             }
         }
 
@@ -2348,7 +2361,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         }
 
         let cyclePrompt = '';
-        if (type == 'continue') {
+        if (isContinue) {
             cyclePrompt = chat2.shift();
         }
 
@@ -2397,15 +2410,16 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         console.debug('calling runGenerate');
         streamingProcessor = isStreamingEnabled() ? new StreamingProcessor(type, force_name2) : false;
 
-        if (type == 'continue') {
+        if (isContinue) {
             // Coping mechanism for OAI spacing
             if ((main_api === 'openai' || main_api === 'poe') && !cyclePrompt.endsWith(' ')) {
                 cyclePrompt += ' ';
+                continue_mag += ' ';
             }
 
             // Save reply does add cycle text to the prompt, so it's not needed here
             streamingProcessor && (streamingProcessor.firstMessageText = '');
-            message_already_generated = cyclePrompt;
+            message_already_generated = continue_mag;
             tokens_already_generated = 1; // Multigen copium
         }
 
@@ -2532,7 +2546,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         console.debug(`A prompt bias was found: ${promptBias}`);
                         mesSendString += `${name2}: ${promptBias}`;
                     }
-                } else if (power_user.user_prompt_bias) {
+                } else if (power_user.user_prompt_bias && !isImpersonate && !isInstruct) {
                     console.debug(`A prompt bias was found without character's name appended: ${promptBias}`);
                     mesSendString += substituteParams(power_user.user_prompt_bias);
                 }
@@ -2758,8 +2772,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 hideSwipeButtons();
                 let getMessage = await streamingProcessor.generate();
 
-                if (type == 'continue') {
-                    getMessage = message_already_generated + getMessage;
+                if (isContinue) {
+                    getMessage = continue_mag + getMessage;
                 }
 
                 if (streamingProcessor && !streamingProcessor.isStopped && streamingProcessor.isFinished) {
@@ -2797,7 +2811,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                                 ({ type, getMessage } = saveReply('append', getMessage, this_mes_is_name, title));
                             }
                         } else {
-                            let chunk = cleanUpMessage(message_already_generated, true, true);
+                            let chunk = cleanUpMessage(message_already_generated, true, isContinue, true);
                             let extract = extractNameFromMessage(chunk, force_name2, isImpersonate);
                             $('#send_textarea').val(extract.getMessage).trigger('input');
                         }
@@ -2821,12 +2835,12 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         getMessage = message_already_generated.substring(substringStart);
                     }
 
-                    if (type == 'continue') {
-                        getMessage = message_already_generated + getMessage;
+                    if (isContinue) {
+                        getMessage = continue_mag + getMessage;
                     }
 
                     //Formating
-                    getMessage = cleanUpMessage(getMessage, isImpersonate);
+                    getMessage = cleanUpMessage(getMessage, isImpersonate, isContinue);
 
                     let this_mes_is_name;
                     ({ this_mes_is_name, getMessage } = extractNameFromMessage(getMessage, force_name2, isImpersonate));
@@ -2938,6 +2952,10 @@ function getNextMessageId(type) {
 }
 
 export function getBiasStrings(textareaText, type) {
+    if (type == 'impersonate') {
+        return { messageBias: '', promptBias: '', isUserPromptBias: false };
+    }
+
     let promptBias = '';
     let messageBias = extractMessageBias(textareaText);
 
@@ -3210,7 +3228,8 @@ function promptItemize(itemizedPrompts, requestedMesId) {
             //charDescriptionTokens +
             //charPersonalityTokens +
             //allAnchorsTokens +
-            //worldInfoStringTokens +
+            worldInfoStringTokens +
+            afterScenarioAnchorTokens +
             examplesStringTokens;
         // OAI doesn't use padding
         thisPrompt_padding = 0;
@@ -3223,7 +3242,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         var storyStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].storyString) - worldInfoStringTokens;
         var examplesStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].examplesString);
         var mesSendStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].mesSendString)
-        var ActualChatHistoryTokens = mesSendStringTokens - (allAnchorsTokens - afterScenarioAnchorTokens)  + power_user.token_padding;
+        var ActualChatHistoryTokens = mesSendStringTokens - (allAnchorsTokens - afterScenarioAnchorTokens) + power_user.token_padding;
         var instructionTokens = getTokenCount(itemizedPrompts[thisPromptSet].instruction);
 
         var totalTokensInPrompt =
@@ -3241,7 +3260,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
     if (this_main_api == 'openai') {
         //console.log('-- applying % on OAI tokens');
         var oaiStartTokensPercentage = ((oaiStartTokens / (finalPromptTokens)) * 100).toFixed(2);
-        var storyStringTokensPercentage = ((oaiPromptTokens / (finalPromptTokens)) * 100).toFixed(2);
+        var storyStringTokensPercentage = (((examplesStringTokens + afterScenarioAnchorTokens + oaiPromptTokens) / (finalPromptTokens)) * 100).toFixed(2);
         var ActualChatHistoryTokensPercentage = ((ActualChatHistoryTokens / (finalPromptTokens)) * 100).toFixed(2);
         var promptBiasTokensPercentage = ((oaiBiasTokens / (finalPromptTokens)) * 100).toFixed(2);
         var worldInfoStringTokensPercentage = ((worldInfoStringTokens / (finalPromptTokens)) * 100).toFixed(2);
@@ -3598,11 +3617,12 @@ function extractMessageFromData(data) {
     }
 }
 
-function cleanUpMessage(getMessage, isImpersonate, displayIncompleteSentences = false) {
+function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncompleteSentences = false) {
     // Add the prompt bias before anything else
     if (
         power_user.user_prompt_bias &&
         !isImpersonate &&
+        !isContinue &&
         power_user.user_prompt_bias.length !== 0
     ) {
         getMessage = substituteParams(power_user.user_prompt_bias) + getMessage;
@@ -5084,8 +5104,8 @@ function updateMessage(div) {
 
     // Ignore character override if sent as system
     text = getRegexedString(
-        text, 
-        regexPlacement, 
+        text,
+        regexPlacement,
         { characterOverride: mes.extra?.type === "narrator" ? undefined : mes.name }
     );
 
@@ -5151,7 +5171,10 @@ function messageEditAuto(div) {
 }
 
 async function messageEditDone(div) {
-    const { mesBlock, text, mes, bias } = updateMessage(div);
+    let { mesBlock, text, mes, bias } = updateMessage(div);
+    if (this_edit_mes_id == 0) {
+        text = substituteParams(text);
+    }
 
     mesBlock.find(".mes_text").empty();
     mesBlock.find(".mes_edit_buttons").css("display", "none");
@@ -5577,6 +5600,9 @@ function callPopup(text, type, inputValue = '', { okButton, rows } = {}) {
             $("#dialogue_popup_ok").text(okButton ?? "Ok");
             $("#dialogue_popup_cancel").css("display", "none");
             break;
+        case "delete_extension":
+            $("#dialogue_popup_ok").text(okButton ?? "Ok");
+            break;
         case "new_chat":
         case "confirm":
             $("#dialogue_popup_ok").text(okButton ?? "Yes");
@@ -5659,11 +5685,7 @@ function read_bg_load(input) {
                         "background-image",
                         `url("${e.target.result}")`
                     );
-                    $("#form_bg_download").after(
-                        `<div class="bg_example" bgfile="${html}" style="background-image: url('${getThumbnailUrl('bg', html)}');">
-                            <div class="bg_example_cross fa-solid fa-circle-xmark"></div>
-                        </div>`
-                    );
+                    $("#form_bg_download").after(getBackgroundFromTemplate(html));
                 },
                 error: function (jqXHR, exception) {
                     console.log(exception);
@@ -6786,8 +6808,33 @@ async function importFromURL(items, files) {
     }
 }
 
+async function doImpersonate() {
+    $('#send_textarea').val('');
+    $("#option_impersonate").trigger('click', { fromSlashCommand: true })
+}
+
+async function doDeleteChat() {
+    $("#option_select_chat").trigger('click', { fromSlashCommand: true })
+    await delay(100)
+    let currentChatDeleteButton = $(".select_chat_block[highlight='true']").parent().find('.PastChat_cross')
+    $(currentChatDeleteButton).trigger('click', { fromSlashCommand: true })
+    await delay(1)
+    $("#dialogue_popup_ok").trigger('click')
+    //200 delay needed let the past chat view reshow first
+    await delay(200)
+    $("#select_chat_cross").trigger('click')
+}
+
 const isPwaMode = window.navigator.standalone;
 if (isPwaMode) { $("body").addClass('PWA') }
+
+function doCharListDisplaySwitch() {
+    console.debug('toggling body charListGrid state')
+    $("body").toggleClass('charListGrid')
+    power_user.charListGrid = $("body").hasClass("charListGrid") ? true : false;
+    saveSettingsDebounced()
+    updateVisibleDivs('#rm_print_characters_block', true);
+}
 
 $(document).ready(function () {
 
@@ -6800,6 +6847,9 @@ $(document).ready(function () {
 
     registerSlashCommand('dupe', DupeChar, [], "– duplicates the currently selected character", true, true);
     registerSlashCommand('api', connectAPISlash, [], "(kobold, horde, novel, ooba, oai, claude, poe, windowai) – connect to an API", true, true);
+    registerSlashCommand('impersonate', doImpersonate, ['imp'], "- calls an impersonation response", true, true);
+    registerSlashCommand('delchat', doDeleteChat, [], "- deletes the current chat", true, true);
+
 
     setTimeout(function () {
         $("#groupControlsToggle").trigger('click');
@@ -7032,6 +7082,41 @@ $(document).ready(function () {
         });
 
     });
+
+    $(document).on('click', '.bg_example_edit', async function (e) {
+        e.stopPropagation();
+        const old_bg = $(this).attr('bgfile');
+
+        if (!old_bg) {
+            console.debug('no bgfile');
+            return;
+        }
+
+        const fileExtension = old_bg.split('.').pop();
+        const old_bg_extensionless = old_bg.replace(`.${fileExtension}`, '');
+        const new_bg_extensionless = await callPopup('<h3>Enter new background name:</h3>', 'input', old_bg_extensionless);
+        const new_bg = `${new_bg_extensionless}.${fileExtension}`;
+
+        if (old_bg_extensionless === new_bg_extensionless) {
+            console.debug('new_bg === old_bg');
+            return;
+        }
+
+        const data = { old_bg, new_bg };
+        const response = await fetch('/renamebackground', {
+            method: 'POST',
+            headers:getRequestHeaders(),
+            body: JSON.stringify(data),
+            cache: 'no-cache',
+        });
+
+        if (response.ok) {
+            await getBackgrounds();
+        } else {
+            toastr.warning('Failed to rename background');
+        }
+    });
+
     $(document).on("click", ".bg_example_cross", function (e) {
         e.stopPropagation();
         bg_file_for_del = $(this);
@@ -7043,7 +7128,7 @@ $(document).ready(function () {
 
     $(document).on("click", ".PastChat_cross", function () {
         chat_file_for_del = $(this).attr('file_name');
-        console.log('detected cross click for' + chat_file_for_del);
+        console.debug('detected cross click for' + chat_file_for_del);
         popup_type = "del_chat";
         callPopup("<h3>Delete the Chat File?</h3>");
     });
@@ -7122,9 +7207,11 @@ $(document).ready(function () {
                 " -- Name: " +
                 characters[this_chid].name
             );
+            const delete_chats = !!$("#del_char_checkbox").prop("checked");
             const avatar = characters[this_chid].avatar;
             const name = characters[this_chid].name;
-            var msg = jQuery("#form_create").serialize(); // ID form
+            const msg = new FormData($("#form_create").get(0)); // ID form
+            msg.append("delete_chats", delete_chats);
             jQuery.ajax({
                 method: "POST",
                 url: "/deletecharacter",
@@ -7132,6 +7219,8 @@ $(document).ready(function () {
                 },
                 data: msg,
                 cache: false,
+                contentType: false,
+                processData: false,
                 success: async function (html) {
                     //RossAscends: New handling of character deletion that avoids page refreshes and should have
                     // fixed char corruption due to cache problems.
@@ -7190,7 +7279,6 @@ $(document).ready(function () {
                 chat_metadata = {};
                 characters[this_chid].chat = name2 + " - " + humanizedDateTime();
                 $("#selected_chat_pole").val(characters[this_chid].chat);
-                saveCharacterDebounced();
                 getChat();
             }
         }
@@ -7249,8 +7337,10 @@ $(document).ready(function () {
         callPopup(`
                 <h3>Delete the character?</h3>
                 <b>THIS IS PERMANENT!<br><br>
-                THIS WILL ALSO DELETE ALL<br>
-                OF THE CHARACTER'S CHAT FILES.<br><br></b>`
+                <label for="del_char_checkbox" class="checkbox_label justifyCenter">
+                    <input type="checkbox" id="del_char_checkbox" checked />
+                    <span>Also delete the chat files</span>
+                </label><br></b>`
         );
     });
 
@@ -7497,15 +7587,20 @@ $(document).ready(function () {
         var id = $(this).attr("id");
 
         if (id == "option_select_chat") {
-            if ((selected_group && !is_group_generating) || (this_chid !== undefined && !is_send_press)) {
+            if ((selected_group && !is_group_generating) || (this_chid !== undefined && !is_send_press) || fromSlashCommand) {
                 displayPastChats();
-                $("#shadow_select_chat_popup").css("display", "block");
-                $("#shadow_select_chat_popup").css("opacity", 0.0);
-                $("#shadow_select_chat_popup").transition({
-                    opacity: 1.0,
-                    duration: animation_duration,
-                    easing: animation_easing,
-                });
+                //this is just to avoid the shadow for past chat view when using /delchat
+                //however, the dialog popup still gets one..
+                if (!fromSlashCommand) {
+                    console.log('displaying shadow')
+                    $("#shadow_select_chat_popup").css("display", "block");
+                    $("#shadow_select_chat_popup").css("opacity", 0.0);
+                    $("#shadow_select_chat_popup").transition({
+                        opacity: 1.0,
+                        duration: animation_duration,
+                        easing: animation_easing,
+                    });
+                }
             }
         }
 
@@ -7531,7 +7626,7 @@ $(document).ready(function () {
         }
 
         else if (id == "option_impersonate") {
-            if (is_send_press == false) {
+            if (is_send_press == false || fromSlashCommand) {
                 is_send_press = true;
                 Generate("impersonate");
             }
@@ -7951,8 +8046,9 @@ $(document).ready(function () {
     });
 
 
-    $(document).on("click", ".mes_edit_delete", async function () {
-        if (power_user.confirm_message_delete) {
+    $(document).on("click", ".mes_edit_delete", async function (event, customData) {
+        const fromSlashCommand = customData?.fromSlashCommand || false;
+        if (power_user.confirm_message_delete && fromSlashCommand !== true) {
             const confirmation = await callPopup("Are you sure you want to delete this message?", 'confirm');
             if (!confirmation) {
                 return;
@@ -8289,7 +8385,7 @@ $(document).ready(function () {
         var icon = $(this).find('.inline-drawer-icon');
         icon.toggleClass('down up');
         icon.toggleClass('fa-circle-chevron-down fa-circle-chevron-up');
-        $(this).closest('.inline-drawer').find('.inline-drawer-content').slideToggle();
+        $(this).closest('.inline-drawer').find('.inline-drawer-content').stop().slideToggle();
     });
 
     $(document).on('click', '.mes .avatar', function () {
@@ -8518,6 +8614,52 @@ $(document).ready(function () {
         }
     });
 
+    /**
+     * Handles the click event for the third-party extension import button.
+     * Prompts the user to enter the Git URL of the extension to import.
+     * After obtaining the Git URL, makes a POST request to '/get_extension' to import the extension.
+     * If the extension is imported successfully, a success message is displayed.
+     * If the extension import fails, an error message is displayed and the error is logged to the console.
+     * After successfully importing the extension, the extension settings are reloaded and a 'EXTENSION_SETTINGS_LOADED' event is emitted.
+     *
+     * @listens #third_party_extension_button#click - The click event of the '#third_party_extension_button' element.
+     */
+    $('#third_party_extension_button').on('click', async () => {
+        const html = `<h3>Enter the Git URL of the extension to import</h3>
+    <br>
+    <p><b>Disclaimer:</b> Please be aware that using external extensions can have unintended side effects and may pose security risks. Always make sure you trust the source before importing an extension. We are not responsible for any damage caused by third-party extensions.</p>
+    <br>
+    <p>Example: <tt> https://github.com/author/extension-name </tt></p>`
+        const input = await callPopup(html, 'input');
+
+        if (!input) {
+            console.debug('Extension import cancelled');
+            return;
+        }
+
+        const url = input.trim();
+        console.debug('Extension import started', url);
+
+        const request = await fetch('/get_extension', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ url }),
+        });
+
+        if (!request.ok) {
+            toastr.info(request.statusText, 'Extension import failed');
+            console.error('Extension import failed', request.status, request.statusText);
+            return;
+        }
+
+        const response = await request.json();
+        toastr.success(`Extension "${response.display_name}" by ${response.author} (version ${response.version}) has been imported successfully!`, 'Extension import successful');
+        console.debug(`Extension "${response.display_name}" has been imported successfully at ${response.extensionPath}`);
+        await loadExtensionSettings(settings);
+        eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED);
+    });
+
+
     const $dropzone = $(document.body);
 
     $dropzone.on('dragover', (event) => {
@@ -8557,4 +8699,8 @@ $(document).ready(function () {
             }
         }
     }
+
+    $("#charListGridToggle").on('click', async () => {
+        doCharListDisplaySwitch();
+    });
 })

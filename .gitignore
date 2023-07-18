@@ -9,6 +9,7 @@ public/worlds/
 public/css/bg_load.css
 public/themes/
 public/OpenAI Settings/
+public/scripts/extensions/third-party/
 /uploads/
 *.jsonl
 config.conf
@@ -21,5 +22,6 @@ secrets.json
 /dist
 poe_device.json
 /backups/
+public/movingUI/
 poe-error.log
 poe-success.log

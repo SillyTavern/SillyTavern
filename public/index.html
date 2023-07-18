@@ -93,6 +93,7 @@
     <script type="module" src="scripts/secrets.js"></script>
     <script type="module" src="scripts/context-template.js"></script>
     <script type="module" src="scripts/extensions.js"></script>
+    <script type="module" src="scripts/authors-note.js"></script>
     <script type="text/javascript" src="scripts/toolcool-color-picker.js"></script>
 
     <title>SillyTavern</title>
@@ -649,9 +650,9 @@
                                 </div>
                                 <h4 data-i18n="Safe Context Size values for Poe bots:">Safe Context Size values for Poe bots:</h4>
                                 <ul class="margin0auto">
-                                    <li data-i18n="ChatGPT / Sage = 3600-4000 tokens">ChatGPT / Sage = 3600-4000 tokens</li>
-                                    <li data-i18n="Claude-instant / Claude+ = 5000-5500 tokens">Claude-instant / Claude+ = 5000-5500 tokens</li>
-                                    <li data-i18n="GPT-4 = 7600-8000">GPT-4 = 7600-8000 tokens</li>
+                                    <li data-i18n="ChatGPT / Sage / GPT-4 = 2500 tokens">ChatGPT / Sage / GPT-4 = 2500 tokens</li>
+                                    <li data-i18n="Claude-instant = 5500 tokens">Claude-instant = 5500 tokens</li>
+                                    <li data-i18n="16k/32k/100k = model-defined maximum">16k/32k/100k = model-defined maximum</li>
                                 </ul>
                                 <div class="flex-container spaceEvenly">
                                     <div id="poe_send_jailbreak" class="menu_button widthFitContent" data-i18n="[title]Attempts to automatically jailbreak the bot" title="Attempts to automatically jailbreak the bot">
@@ -1033,6 +1034,54 @@
                                         </div>
                                     </div>
                                 </div>
+                                <hr>
+                                <h4 data-i18n="Mirostat (mode=1 is only for llama.cpp)">Mirostat (mode=1 is only for llama.cpp)</h4>
+                                <div class="range-block">
+                                    <div class="range-block-title" data-i18n="Mirostat Mode">
+                                        Mirostat Mode
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="mirostat_mode_textgenerationwebui" name="volume" min="0" max="2" step="1" />
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="mirostat_mode_textgenerationwebui" id="mirostat_mode_counter_textgenerationwebui">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title" data-i18n="Mirostat Tau">
+                                        Mirostat Tau
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="mirostat_tau_textgenerationwebui" name="volume" min="0" max="10" step="0.01" />
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="mirostat_tau_textgenerationwebui" id="mirostat_tau_counter_textgenerationwebui">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title" data-i18n="Mirostat Eta">
+                                        Mirostat Eta
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="mirostat_eta_textgenerationwebui" name="volume" min="0" max="1" step="0.01" />
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="mirostat_eta_textgenerationwebui" id="mirostat_eta_counter_textgenerationwebui">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <hr>
                                 <div class="range-block">
                                     <div class="range-block-title" data-i18n="Seed">
                                         Seed
@@ -1045,9 +1094,9 @@
                                     <div class="range-block">
                                         <label title="Inserts jailbreak as a last system message" class="checkbox_label widthFreeExpand" data-i18n="[title]Inserts jailbreak as a last system message">
                                             <input id="jailbreak_system" type="checkbox" />
-                                                <span data-i18n="Send Jailbreak">
-                                                    Send Jailbreak
-                                                </span>
+                                            <span data-i18n="Send Jailbreak">
+                                                Send Jailbreak
+                                            </span>
                                         </label>
                                         <div class="toggle-description justifyLeft">
                                             <span data-i18n="Inserts jailbreak as a last system message.">Inserts
@@ -1113,9 +1162,9 @@
                                     </div>
                                     <div class="range-block">
                                         <div class="range-block-title justifyLeft">
-                                                <span data-i18n="Replace empty message">
-                                                    Replace empty message
-                                                </span>
+                                            <span data-i18n="Replace empty message">
+                                                Replace empty message
+                                            </span>
                                         </div>
                                         <div class="toggle-description justifyLeft">
                                             <span data-i18n="Send this text instead of nothing when the text box is empty.">
@@ -1232,7 +1281,7 @@
                                     </div>
                                 </div>
 
-                                <div class="range-block" data-source="openai">
+                                <div class="range-block" data-source="openai,openrouter">
                                     <div class="range-block-title openai_restorable" data-i18n="Logit Bias">
                                         Logit Bias
                                     </div>
@@ -2246,12 +2295,42 @@
                                     </div>
                                 </div>
                             </div>
+                            <div id="MovingUI-presets-block" class="flex-container flexFlowColumn">
+                                <h4>
+                                    <span data-i18n="MovingUI Preset">MovingUI Preset</span>
+                                </h4>
+                                <div class="flex-container flexnowrap alignitemscenter">
+                                    <select id="movingUIPresets" class="margin0 margin-r5">
+                                    </select>
+                                    <div id="movingui-preset-save-button" title="Save changes to a new MovingUI preset file" data-i18n="[title]Save movingUI changes to a new file" class="menu_button padding5 margin0">
+                                        <i class="fa-solid fa-save"></i>
+                                    </div>
+                                </div>
+                                <div id="movingUIreset" class="menu_button whitespacenowrap" data-i18n="Reset Panels">
+                                    Reset MovingUI
+                                </div>
+                            </div>
                         </div>
 
                     </div>
                     <div name="UI Customization" class="flex-container drawer33pWidth">
                         <div class="ui-settings">
                             <h4><span data-i18n="UI Customization">UI Customization</span></h4>
+                            <div class="range-block">
+                                <div class="range-block-title" data-i18n="Chat Width (PC)">
+                                    Chat Width (PC)
+                                </div>
+                                <div class="range-block-range-and-counter">
+                                    <div class="range-block-range">
+                                        <input id="chat_width_slider" class="wide100p" type="range" min="25" max="75" step="1" value="50">
+                                        <div class="slider_hint">
+                                            <span>25%</span>
+                                            <span>50%</span>
+                                            <span>75%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             <div>
                                 <span data-i18n="Avatar Style">Avatar Style:</span><br>
                                 <label>
@@ -2270,17 +2349,6 @@
                                     <option value="1" data-i18n="Bubbles">Bubble Chat</option>
                                     <option value="2" data-i18n="Document">Single Document</option>
                                 </select>
-                            </div>
-                            <div id="sheldWidthToggleBlock">
-                                <span data-i18n="Chat Width (PC):">Chat Width (PC):</span><br>
-                                <label>
-                                    <input name="sheld_width" type="radio" value="0" />
-                                    800px
-                                </label>
-                                <label>
-                                    <input name="sheld_width" type="radio" value="1" />
-                                    1000px
-                                </label>
                             </div>
                             <div>
                                 <label for="play_message_sound" class="checkbox_label">
@@ -2351,8 +2419,7 @@
                                     </select>
                                 </div>
 
-                                <div id="movingUIreset" class="menu_button whitespacenowrap" data-i18n="Reset Panels">
-                                    Reset Panels</div>
+
                             </div>
                         </div>
 
@@ -2506,6 +2573,7 @@
                                 <input id="extensions_connect" class="menu_button" type="submit" value="Connect">
                             </div>
                             <input id="extensions_details" class="alignitemsflexstart menu_button" type="button" value="Manage extensions">
+                            <div id="third_party_extension_button" title="Import Extension From Git Repo" class="menu_button fa-solid fa-cloud-arrow-down faSmallFontSquareFix"></div>
                         </div>
                     </div>
                     <div id="extensions_settings" class="flex1 wide50p">
@@ -2808,7 +2876,7 @@
                     </div>
                     <div class="inline-drawer wide100p flexFlowColumn">
                         <div id="groupCurrentMemberListToggle" class="inline-drawer-toggle inline-drawer-header">
-                            <span data-i18n="Current Members">Current Members</span>
+                            <span data-i18n="Current Members">Current Members </span><i id="groupCurrentMemberPopoutButton" class="fa-solid fa-window-restore menu_button"></i>
                             <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                         </div>
                         <div class="inline-drawer-content">
@@ -2861,17 +2929,21 @@
                                 <option data-field="date_last_chat" data-order="desc" data-i18n="Recent">Recent</option>
                                 <option data-field="chat_size" data-order="desc" data-i18n="Most chats">Most chats</option>
                                 <option data-field="chat_size" data-order="asc" data-i18n="Least chats">Least chats</option>
+                                <option data-field="name" data-order="random" data-i18n="Random">Random</option>
                             </select>
                         </form>
                         <div class="rm_tag_controls">
                             <div class="tags rm_tag_filter"></div>
                         </div>
                         <!-- a div containing a dynamically updated count of characters currently displayed -->
-                        <div id="rm_character_count"></div>
+                        <div class="flex-container alignitemscenter">
+                            <div id="rm_character_count"></div>
+                            <i id="charListGridToggle" class="fa-solid fa-table-cells-large menu_button" title="Toggle character grid view"></i>
+                        </div>
                         <hr>
                     </div>
 
-                    <div id="rm_print_characters_block"></div>
+                    <div id="rm_print_characters_block" class="flexFlowColumn"></div>
                 </div>
 
                 <!-- only displays after creating/deleting a character/group -->
@@ -2989,7 +3061,7 @@
             <h5 data-i18n="How often the character speaks in group chats!">How often the character speaks in &nbsp;<span class="warning">group chats!</span>
             </h5>
             <input id="talkativeness_slider" name="talkativeness" type="range" min="0" max="1" step="0.05" value="0.5" form="form_create">
-            <div id="talkativeness_hint">
+            <div class="slider_hint">
                 <span data-i18n="Shy">Shy</span>
                 <span data-i18n="Normal">Normal</span>
                 <span data-i18n="Chatty">Chatty</span>
@@ -3031,6 +3103,15 @@
             </div>
             <div id="load_select_chat_div">
                 <div class="fa-solid fa-hourglass fa-spin"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="background_template" class="template_element">
+        <div class="bg_example flex-container" bgfile="" class="bg_example_img" title="">
+            <div title="Rename background" bgfile="" class="bg_button bg_example_edit fa-solid fa-pencil"></div>
+            <div title="Delete background" bgfile="" class="bg_button bg_example_cross fa-solid fa-circle-xmark"></div>
+            <div class="BGSampleTitle">
             </div>
         </div>
     </div>
@@ -3365,8 +3446,11 @@
             <div class="avatar" title="">
                 <img src="">
             </div>
-            <div class="flex-container wide100pLess70px">
-                <div class="wide100p"><span class="ch_name"></span> <i class="ch_avatar_url"></i></div>
+            <div class="flex-container wide100pLess70px character_select_container">
+                <div class="wide100p character_name_block">
+                    <span class="ch_name"></span>
+                    <i class="ch_avatar_url"></i>
+                </div>
                 <i class="ch_fav_icon fa-solid fa-star"></i>
                 <input class="ch_fav" value="" hidden />
                 <div class="ch_description"></div>
@@ -3425,7 +3509,7 @@
                     <div class="mes_edit_buttons">
                         <div class="mes_edit_done menu_button  fa-solid fa-check" title="Confirm" data-i18n="[title]Confirm"></div>
                         <div class="mes_edit_copy menu_button  fa-solid fa-copy" title="Copy this message" data-i18n="[title]Copy this message"></div>
-                        <div class="mes_edit_delete menu_button  fa-solid fa-scissors" title="Delete this message" data-i18n="[title]Delete this message">
+                        <div class="mes_edit_delete menu_button  fa-solid fa-trash-can" title="Delete this message" data-i18n="[title]Delete this message">
                         </div>
                         <div class="mes_edit_up menu_button  fa-solid fa-chevron-up " title="Move message up" data-i18n="[title]Move message up"></div>
                         <div class="mes_edit_down menu_button  fa-solid fa-chevron-down" title="Move message down" data-i18n="[title]Move message down">
@@ -3499,7 +3583,7 @@
             <div class="avatar">
                 <img src="">
             </div>
-            <div class="flex-container wide100pLess70px gap5px">
+            <div class="flex-container wide100pLess70px gap5px group_name_block">
                 <div class="ch_name"></div>
                 <i class='group_fav_icon fa-solid fa-star'></i>
                 <input class="ch_fav" value="" hidden />
@@ -3547,7 +3631,101 @@
     <div id="typing_indicator_template" class="template_element">
         <div class="typing_indicator"><span class="typing_indicator_name">CHAR</span> is typing</div>
     </div>
-    <div id="movingDivs"></div>
+    <div id="movingDivs">
+        <div id="floatingPrompt" class="drawer-content flexGap5">
+            <div class="panelControlBar flex-container">
+                <div id="floatingPromptheader" class="fa-solid fa-grip drag-grabber"></div>
+                <div id="ANClose" class="fa-solid fa-circle-xmark"></div>
+            </div>
+            <div name="floatingPromptHolder">
+                <div class="inline-drawer">
+                    <div id="ANBlockToggle" class="inline-drawer-toggle inline-drawer-header">
+                        <b>Author's Note</b>
+                        <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                    </div>
+                    <div class="inline-drawer-content">
+                        <small>
+                            <b>Unique to this chat</b>.<br>
+                            Bookmarks inherit the Note from their parent, and can be changed individually after that.<br>
+                        </small>
+                        <textarea id="extension_floating_prompt" class="text_pole" rows="8" maxlength="10000"></textarea>
+                        <div class="extension_token_counter">
+                            Tokens: <span id="extension_floating_prompt_token_counter">0</span>
+                        </div>
+
+                        <div class="floating_prompt_radio_group">
+                            <label>
+                                <input type="radio" name="extension_floating_position" value="0" />
+                                After scenario
+                            </label>
+                            <label>
+                                <input type="radio" name="extension_floating_position" value="1" />
+                                In-chat @ Depth <input id="extension_floating_depth" class="text_pole widthUnset" type="number" min="0" max="99" />
+                            </label>
+                        </div>
+                        <!--<label for="extension_floating_interval">In-Chat Insertion Depth</label>-->
+
+                        <label for="extension_floating_interval">Insertion Frequency</label>
+
+                        <input id="extension_floating_interval" class="text_pole widthUnset" type="number" min="0" max="999" /><small> (0 = Disable, 1 = Always)</small>
+                        <br>
+
+                        <span>User inputs until next insertion: <span id="extension_floating_counter">(disabled)</span></span>
+                    </div>
+                </div>
+                <hr class="sysHR">
+                <div class="inline-drawer">
+                    <div id="charaANBlockToggle" class="inline-drawer-toggle inline-drawer-header">
+                        <b>Character Author's Note</b>
+                        <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                    </div>
+                    <div class="inline-drawer-content">
+                        <small>Will be automatically added as the author's note for this character. Will be used in groups, but
+                            can't be modified when a group chat is open.</small>
+
+                        <textarea id="extension_floating_chara" class="text_pole" rows="8" maxlength="10000" placeholder="Example:\n[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
+                        <div class="extension_token_counter">
+                            Tokens: <span id="extension_floating_chara_token_counter">0</span>
+                        </div>
+
+                        <label class="checkbox_label" for="extension_use_floating_chara">
+                            <input id="extension_use_floating_chara" type="checkbox" />
+                            <span data-i18n="Use character author's note">Use character author's note</span>
+                        </label>
+                        <div class="floating_prompt_radio_group">
+                            <label>
+                                <input type="radio" name="extension_floating_char_position" value="0" />
+                                Replace Author's Note
+                            </label>
+                            <label>
+                                <input type="radio" name="extension_floating_char_position" value="1" />
+                                Top of Author's Note
+                            </label>
+                            <label>
+                                <input type="radio" name="extension_floating_char_position" value="2" />
+                                Bottom of Author's Note
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <hr class="sysHR">
+                <div class="inline-drawer">
+                    <div id="defaultANBlockToggle" class="inline-drawer-toggle inline-drawer-header">
+                        <b>Default Author's Note</b>
+                        <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                    </div>
+                    <div class="inline-drawer-content">
+                        <small>Will be automatically added as the Author's Note for all new chats.</small>
+
+                        <textarea id="extension_floating_default" class="text_pole" rows="8" maxlength="10000" placeholder="Example:\n[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
+                        <div class="extension_token_counter">
+                            Tokens: <span id="extension_floating_default_token_counter">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     <div id="sheld">
         <div id="sheldheader" class="fa-solid fa-grip drag-grabber"></div>
         <div id="chat">
@@ -3573,6 +3751,10 @@
     <!-- popups live outside sheld to avoid blur conflicts -->
     <div id="options" class="font-family-reset" style="display: none;">
         <div class="options-content">
+            <a id="option_toggle_AN">
+                <i class="fa-lg fa-solid fa-note-sticky"></i>
+                <span data-i18n="Author's Note">Author's Note</span>
+            </a>
             <a id="option_back_to_main">
                 <i class="fa-lg fa-solid fa-left-long"></i>
                 <span data-i18n="Back to parent chat">Back to parent chat</span>

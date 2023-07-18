@@ -1,7 +1,7 @@
 import { saveSettings, callPopup, substituteParams, getTokenCount, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type } from "../script.js";
 import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, delay, getCharaFilename, deepClone } from "./utils.js";
 import { getContext } from "./extensions.js";
-import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from "./extensions/floating-prompt/index.js";
+import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from "./authors-note.js";
 import { registerSlashCommand } from "./slash-commands.js";
 import { deviceInfo } from "./RossAscends-mods.js";
 
@@ -961,9 +961,13 @@ async function checkWorldInfo(chat, maxContext) {
                             console.debug(`uid:${entry.uid}: checking logic: ${entry.selectiveLogic}`)
                             secondary: for (let keysecondary of entry.keysecondary) {
                                 const secondarySubstituted = substituteParams(keysecondary);
-                                console.debug(`uid:${entry.uid}: filtering ${secondarySubstituted}`)
+                                console.debug(`uid:${entry.uid}: filtering ${secondarySubstituted}`);
+
+                                // If selectiveLogic isn't found, assume it's AND
+                                const selectiveLogic = entry.selectiveLogic ?? 0;
+
                                 //AND operator
-                                if (entry.selectiveLogic === 0) {
+                                if (selectiveLogic === 0) {
                                     console.debug('saw AND logic, checking..')
                                     if (secondarySubstituted && matchKeys(textToScan, secondarySubstituted.trim())) {
                                         console.log(`activating entry ${entry.uid} with AND found`)
@@ -972,7 +976,7 @@ async function checkWorldInfo(chat, maxContext) {
                                     }
                                 }
                                 //NOT operator
-                                if (entry.selectiveLogic === 1) {
+                                if (selectiveLogic === 1) {
                                     console.debug(`uid ${entry.uid}: checking NOT logic for ${secondarySubstituted}`)
                                     if (secondarySubstituted && matchKeys(textToScan, secondarySubstituted.trim())) {
                                         console.debug(`uid ${entry.uid}: canceled; filtered out by ${secondarySubstituted}`)

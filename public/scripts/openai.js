@@ -94,6 +94,7 @@ const claude_100k_max = 99000;
 const unlocked_max = 100 * 1024;
 const oai_max_temp = 2.0;
 const claude_max_temp = 1.0;
+const openrouter_website_model = 'OR_Website';
 
 let biasCache = undefined;
 let model_list = [];
@@ -133,7 +134,7 @@ const default_settings = {
     openai_model: 'gpt-3.5-turbo',
     claude_model: 'claude-instant-v1',
     windowai_model: '',
-    openrouter_model: 'openai/gpt-3.5-turbo',
+    openrouter_model: openrouter_website_model,
     jailbreak_system: false,
     reverse_proxy: '',
     legacy_streaming: false,
@@ -168,7 +169,7 @@ const oai_settings = {
     openai_model: 'gpt-3.5-turbo',
     claude_model: 'claude-instant-v1',
     windowai_model: '',
-    openrouter_model: 'openai/gpt-3.5-turbo',
+    openrouter_model: openrouter_website_model,
     jailbreak_system: false,
     reverse_proxy: '',
     legacy_streaming: false,
@@ -538,9 +539,9 @@ function getSystemPrompt(systemPrompt, nsfw_toggle_prompt, enhance_definitions_p
     return whole_prompt;
 }
 
-function tryParseStreamingError(str) {
+function tryParseStreamingError(response, decoded) {
     try {
-        const data = JSON.parse(str);
+        const data = JSON.parse(decoded);
 
         if (!data) {
             return;
@@ -549,7 +550,7 @@ function tryParseStreamingError(str) {
         checkQuotaError(data);
 
         if (data.error) {
-            toastr.error(response.statusText, 'API returned an error');
+            toastr.error(data.error.message || response.statusText, 'API returned an error');
             throw new Error(data);
         }
     }
@@ -678,7 +679,7 @@ function getChatCompletionModel() {
         case chat_completion_sources.SCALE:
             return '';
         case chat_completion_sources.OPENROUTER:
-            return oai_settings.openrouter_model;
+            return oai_settings.openrouter_model !== openrouter_website_model ? oai_settings.openrouter_model : null;
         default:
             throw new Error(`Unknown chat completion source: ${oai_settings.chat_completion_source}`);
     }
@@ -689,6 +690,7 @@ function saveModelList(data) {
 
     if (oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER) {
         $('#model_openrouter_select').empty();
+        $('#model_openrouter_select').append($('<option>', { value: openrouter_website_model, text: 'Use OpenRouter website setting' }));
         model_list.forEach((model) => {
             const selected = model.id == oai_settings.openrouter_model;
             $('#model_openrouter_select').append(
@@ -697,10 +699,8 @@ function saveModelList(data) {
                     text: model.id,
                     selected: selected,
                 }));
-            if (selected) {
-                $('#model_openrouter_select').val(model.id).trigger('change');
-            }
         });
+        $('#model_openrouter_select').val(oai_settings.openrouter_model).trigger('change');
     }
 
     // TODO Add ability to select OpenAI model from endpoint-provided list
@@ -725,8 +725,9 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
         return sendWindowAIRequest(openai_msgs_tosend, signal, stream);
     }
 
+    const logitBiasSources = [chat_completion_sources.OPENAI, chat_completion_sources.OPENROUTER];
     if (oai_settings.bias_preset_selected
-        && oai_settings.chat_completion_source == chat_completion_sources.OPENAI
+        && logitBiasSources.includes(oai_settings.chat_completion_source)
         && Array.isArray(oai_settings.bias_presets[oai_settings.bias_preset_selected])
         && oai_settings.bias_presets[oai_settings.bias_preset_selected].length) {
         logit_bias = biasCache || await calculateLogitBias();
@@ -783,26 +784,26 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
             let messageBuffer = "";
             while (true) {
                 const { done, value } = await reader.read();
-                let response = decoder.decode(value);
+                let decoded = decoder.decode(value);
 
                 // Claude's streaming SSE messages are separated by \r
                 if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
-                    response = response.replace(/\r/g, "");
+                    decoded = decoded.replace(/\r/g, "");
                 }
 
-                tryParseStreamingError(response);
+                tryParseStreamingError(response, decoded);
 
                 let eventList = [];
 
                 // ReadableStream's buffer is not guaranteed to contain full SSE messages as they arrive in chunks
                 // We need to buffer chunks until we have one or more full messages (separated by double newlines)
                 if (!oai_settings.legacy_streaming) {
-                    messageBuffer += response;
+                    messageBuffer += decoded;
                     eventList = messageBuffer.split("\n\n");
                     // Last element will be an empty string or a leftover partial message
                     messageBuffer = eventList.pop();
                 } else {
-                    eventList = response.split("\n");
+                    eventList = decoded.split("\n");
                 }
 
                 for (let event of eventList) {
@@ -836,7 +837,7 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
         checkQuotaError(data);
 
         if (data.error) {
-            toastr.error(response.statusText, 'API returned an error');
+            toastr.error(data.error.message || response.statusText, 'API returned an error');
             throw new Error(data);
         }
 
@@ -998,30 +999,50 @@ export function getTokenizerModel() {
         return oai_settings.openai_model;
     }
 
+    const turboTokenizer = 'gpt-3.5-turbo';
+    const gpt4Tokenizer = 'gpt-4';
+    const gpt2Tokenizer = 'gpt2';
+    const claudeTokenizer = 'claude';
+
     // Assuming no one would use it for different models.. right?
     if (oai_settings.chat_completion_source == chat_completion_sources.SCALE) {
-        return 'gpt-4';
+        return gpt4Tokenizer;
     }
 
-    const turboTokenizer = 'gpt-3.5-turbo'
     // Select correct tokenizer for WindowAI proxies
-    if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
+    if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI && oai_settings.windowai_model) {
         if (oai_settings.windowai_model.includes('gpt-4')) {
-            return 'gpt-4';
+            return gpt4Tokenizer;
         }
         else if (oai_settings.windowai_model.includes('gpt-3.5-turbo')) {
             return turboTokenizer;
         }
         else if (oai_settings.windowai_model.includes('claude')) {
-            return 'claude';
+            return claudeTokenizer;
         }
         else if (oai_settings.windowai_model.includes('GPT-NeoXT')) {
-            return 'gpt2';
+            return gpt2Tokenizer;
+        }
+    }
+
+    // And for OpenRouter (if not a site model, then it's impossible to determine the tokenizer)
+    if (oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER && oai_settings.openrouter_model) {
+        if (oai_settings.openrouter_model.includes('gpt-4')) {
+            return gpt4Tokenizer;
+        }
+        else if (oai_settings.openrouter_model.includes('gpt-3.5-turbo')) {
+            return turboTokenizer;
+        }
+        else if (oai_settings.openrouter_model.includes('claude')) {
+            return claudeTokenizer;
+        }
+        else if (oai_settings.openrouter_model.includes('GPT-NeoXT')) {
+            return gpt2Tokenizer;
         }
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
-        return 'claude';
+        return claudeTokenizer;
     }
 
     // Default to Turbo 3.5
@@ -1752,7 +1773,7 @@ async function onModelChange() {
             if (model?.context_length) {
                 $('#openai_max_context').attr('max', model.context_length);
             } else {
-                $('#openai_max_context').attr('max', max_4k); // placeholder
+                $('#openai_max_context').attr('max', max_8k);
             }
         }
         oai_settings.openai_max_context = Math.min(Number($('#openai_max_context').attr('max')), oai_settings.openai_max_context);

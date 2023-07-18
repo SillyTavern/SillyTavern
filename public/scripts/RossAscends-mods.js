@@ -403,12 +403,12 @@ function RA_autoconnect(PrevApi) {
                 }
                 break;
             case 'openai':
-                if (   (secret_state[SECRET_KEYS.OPENAI] && oai_settings.chat_completion_source == chat_completion_sources.OPENAI)
+                if ((secret_state[SECRET_KEYS.OPENAI] && oai_settings.chat_completion_source == chat_completion_sources.OPENAI)
                     || (secret_state[SECRET_KEYS.CLAUDE] && oai_settings.chat_completion_source == chat_completion_sources.CLAUDE)
                     || (secret_state[SECRET_KEYS.SCALE] && oai_settings.chat_completion_source == chat_completion_sources.SCALE)
                     || (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI)
                     || (secret_state[SECRET_KEYS.OPENROUTER] && oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER)
-                    ) {
+                ) {
                     $("#api_button_openai").click();
                 }
                 break;
@@ -472,7 +472,7 @@ export function dragElement(elmnt) {
     var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     var height, width, top, left, right, bottom,
         maxX, maxY, winHeight, winWidth,
-        topBarFirstX, topBarLastX, sheldWidth;
+        topbar, topbarWidth, topBarFirstX, topBarLastX, sheldWidth;
 
     var elmntName = elmnt.attr('id');
 
@@ -514,8 +514,25 @@ export function dragElement(elmnt) {
         winWidth = window.innerWidth;
         winHeight = window.innerHeight;
         sheldWidth = parseInt($('html').css('--sheldWidth').slice(0, -2));
-        topBarFirstX = (winWidth - sheldWidth) / 2;
-        topBarLastX = topBarFirstX + sheldWidth;
+
+        topbar = document.getElementById("top-bar")
+        const topbarstyle = getComputedStyle(topbar)
+        topBarFirstX = parseInt(topbarstyle.marginInline)
+        topbarWidth = parseInt(topbarstyle.width)
+        topBarLastX = topBarFirstX + topbarWidth;
+
+        /*console.log(`
+        winWidth: ${winWidth}, winHeight: ${winHeight}
+        sheldWidth: ${sheldWidth}
+        X: ${$(elmnt).css('left')}
+        Y: ${$(elmnt).css('top')}
+        MaxX: ${maxX}, MaxY: ${maxY}
+        height: ${height}
+        width: ${width}
+        Topbar 1st X: ${topBarFirstX}
+        TopBar lastX: ${topBarLastX}
+        `);*/
+
 
         //prepare an empty poweruser object for the item being altered if we don't have one already
         if (!power_user.movingUIState[elmntName]) {
@@ -534,24 +551,30 @@ export function dragElement(elmnt) {
 
         //handle resizing
         if (!hasBeenDraggedByUser && isMouseDown) {
-            console.log('saw resize, NOT header drag')
-            //set css to prevent weird resize behavior (does not save)
-            elmnt.css('left', left)
-            elmnt.css('top', top)
+            console.debug('saw resize, NOT header drag')
 
             //prevent resizing offscreen
             if (top + elmnt.height() >= winHeight) {
+                console.debug('resizing height to prevent offscreen')
                 elmnt.css('height', winHeight - top - 1 + "px");
             }
 
             if (left + elmnt.width() >= winWidth) {
+                console.debug('resizing width to prevent offscreen')
                 elmnt.css('width', winWidth - left - 1 + "px");
             }
 
-            //prevent resizing into the top bar
-            if (top <= 40 && maxX > topBarFirstX) {
+            //prevent resizing from top left into the top bar
+            if (top <= 40 && maxX >= topBarFirstX && left <= topBarFirstX
+            ) {
+                console.debug('prevent topbar underlap resize')
                 elmnt.css('width', width - 1 + "px");
             }
+
+            //set css to prevent weird resize behavior (does not save)
+            elmnt.css('left', left)
+            elmnt.css('top', top)
+
             //set a listener for mouseup to save new width/height
             elmnt.off('mouseup').on('mouseup', () => {
                 console.debug(`Saving ${elmntName} Height/Width`)
@@ -577,9 +600,13 @@ export function dragElement(elmnt) {
             }
 
             //prevent underlap with topbar div
-            if (top < 40 && (maxX > topBarFirstX && maxX < topBarLastX || left < topBarLastX && left > topBarFirstX)) {
-                console.log('saw topbar hit')
-                elmnt.css('top', '42px');
+            if (top < 40
+                && (maxX >= topBarFirstX && left <= topBarFirstX //elmnt is hitting topbar from left side
+                    || left <= topBarLastX && maxX >= topBarLastX //elmnt is hitting topbar from right side
+                    || left >= topBarFirstX && maxX <= topBarLastX) //elmnt hitting topbar in the middle
+            ) {
+                console.debug('topbar hit')
+                elmnt.css('top', top + 1 + "px");
             }
         }
 
@@ -637,18 +664,22 @@ export function dragElement(elmnt) {
         // Height/Width here are for visuals only, and are not saved to settings
         // required because some divs do hot have a set width/height..
         // and will defaults to shrink to min value of 100px set in CSS file
-        elmnt.css('height', height + "px")
-        elmnt.css('width', width + "px")
+        elmnt.css('height', height)
+        elmnt.css('width', width)
+        /*
+                console.log(`
+                             winWidth: ${winWidth}, winHeight: ${winHeight}
+                             sheldWidth: ${sheldWidth}
+                             X: ${$(elmnt).css('left')}
+                             Y: ${$(elmnt).css('top')}
+                             MaxX: ${maxX}, MaxY: ${maxY}
+                             height: ${height}
+                             width: ${width}
+                             Topbar 1st X: ${topBarFirstX}
+                             TopBar lastX: ${topBarLastX}
+                             `);
+                             */
 
-        /*  console.log(`
-             winWidth: ${winWidth}, winHeight: ${winHeight}
-             sheldWidth: ${sheldWidth}
-             X: ${$(elmnt).css('left')}
-             Y: ${$(elmnt).css('top')}
-             MaxX: ${maxX}, MaxY: ${maxY}
-             Topbar 1st X: ${((winWidth - sheldWidth) / 2)}
-             TopBar lastX: ${((winWidth - sheldWidth) / 2) + sheldWidth}
-             `); */
         return
     }
 

@@ -86,6 +86,10 @@ export async function parseJsonFile(file) {
 }
 
 export function getStringHash(str, seed = 0) {
+    if (typeof str !== 'string') {
+        return 0;
+    }
+
     let h1 = 0xdeadbeef ^ seed,
         h2 = 0x41c6ce57 ^ seed;
     for (let i = 0, ch; i < str.length; i++) {

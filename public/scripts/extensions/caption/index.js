@@ -1,5 +1,6 @@
 import { getBase64Async } from "../../utils.js";
-import { getContext, getApiUrl, doExtrasFetch } from "../../extensions.js";
+import { getContext, getApiUrl, doExtrasFetch, extension_settings } from "../../extensions.js";
+import { callPopup, saveSettingsDebounced } from "../../../script.js";
 export { MODULE_NAME };
 
 const MODULE_NAME = 'caption';
@@ -33,7 +34,20 @@ async function setSpinnerIcon() {
 
 async function sendCaptionedMessage(caption, image) {
     const context = getContext();
-    const messageText = `[${context.name1} sends ${context.name2 ?? ''} a picture that contains: ${caption}]`;
+    let messageText = `[${context.name1} sends ${context.name2 ?? ''} a picture that contains: ${caption}]`;
+
+    if (extension_settings.caption.refine_mode) {
+        messageText = await callPopup(
+            '<h3>Review and edit the generated message:</h3>Press "Cancel" to abort the caption sending.',
+            'input',
+            messageText,
+            { rows: 5, okButton: 'Send' });
+
+        if (!messageText) {
+            throw new Error('User aborted the caption sending.');
+        }
+    }
+
     const message = {
         name: context.name1,
         is_user: true,
@@ -42,12 +56,12 @@ async function sendCaptionedMessage(caption, image) {
         mes: messageText,
         extra: {
             image: image,
-            title: caption,
+            title: messageText,
         },
     };
     context.chat.push(message);
     context.addOneMessage(message);
-    await context.generate();
+    await context.generate('caption');
 }
 
 async function onSelectImage(e) {
@@ -88,6 +102,11 @@ async function onSelectImage(e) {
     }
 }
 
+function onRefineModeInput() {
+    extension_settings.caption.refine_mode = $('#caption_refine_mode').prop('checked');
+    saveSettingsDebounced();
+}
+
 jQuery(function () {
     function addSendPictureButton() {
         const sendButton = $(`
@@ -109,10 +128,32 @@ jQuery(function () {
         $('#form_sheld').append(imgForm);
         $('#img_file').on('change', onSelectImage);
     }
+    function addSettings() {
+        const html = `
+        <div class="background_settings">
+            <div class="inline-drawer">
+                <div class="inline-drawer-toggle inline-drawer-header">
+                    <b>Image Captioning</b>
+                    <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                </div>
+                <div class="inline-drawer-content">
+                    <label class="checkbox_label" for="caption_refine_mode">
+                        <input id="caption_refine_mode" type="checkbox" class="checkbox">
+                        Edit captions before generation
+                    </label>
+                </div>
+            </div>
+        </div>
+        `;
+        $('#extensions_settings2').append(html);
+    }
 
+    addSettings();
     addPictureSendForm();
     addSendPictureButton();
     setImageIcon();
     moduleWorker();
+    $('#caption_refine_mode').prop('checked', !!(extension_settings.caption.refine_mode));
+    $('#caption_refine_mode').on('input', onRefineModeInput);
     setInterval(moduleWorker, UPDATE_INTERVAL);
 });
