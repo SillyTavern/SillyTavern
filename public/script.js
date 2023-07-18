@@ -1911,8 +1911,9 @@ class StreamingProcessor {
 
     onProgressStreaming(messageId, text, isFinal) {
         const isImpersonate = this.type == "impersonate";
+        const isContinue = this.type == "continue";
         text = this.removePrefix(text);
-        let processedText = cleanUpMessage(text, isImpersonate, !isFinal);
+        let processedText = cleanUpMessage(text, isImpersonate, isContinue, !isFinal);
         let result = extractNameFromMessage(processedText, this.force_name2, isImpersonate);
         let isName = result.this_mes_is_name;
         processedText = result.getMessage;
@@ -2091,6 +2092,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     // OpenAI doesn't need instruct mode. Use OAI main prompt instead.
     const isInstruct = power_user.instruct.enabled && main_api !== 'openai';
     const isImpersonate = type == "impersonate";
+    const isContinue = type == 'continue';
 
     message_already_generated = isImpersonate ? `${name1}: ` : `${name2}: `;
     // Name for the multigen prefix
@@ -2267,6 +2269,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         //////////////////////////////////
 
         let chat2 = [];
+        let continue_mag = '';
         for (let i = coreChat.length - 1, j = 0; i >= 0; i--, j++) {
             // For OpenAI it's only used in WI
             if (main_api == 'openai' && (!world_info || world_info.length === 0)) {
@@ -2277,8 +2280,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct);
 
             // Do not suffix the message for continuation
-            if (i === 0 && type == 'continue') {
+            if (i === 0 && isContinue) {
                 chat2[i] = chat2[i].slice(0, chat2[i].lastIndexOf(coreChat[j].mes) + coreChat[j].mes.length);
+                continue_mag = coreChat[j].mes;
             }
         }
 
@@ -2357,7 +2361,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         }
 
         let cyclePrompt = '';
-        if (type == 'continue') {
+        if (isContinue) {
             cyclePrompt = chat2.shift();
         }
 
@@ -2406,15 +2410,16 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         console.debug('calling runGenerate');
         streamingProcessor = isStreamingEnabled() ? new StreamingProcessor(type, force_name2) : false;
 
-        if (type == 'continue') {
+        if (isContinue) {
             // Coping mechanism for OAI spacing
             if ((main_api === 'openai' || main_api === 'poe') && !cyclePrompt.endsWith(' ')) {
                 cyclePrompt += ' ';
+                continue_mag += ' ';
             }
 
             // Save reply does add cycle text to the prompt, so it's not needed here
             streamingProcessor && (streamingProcessor.firstMessageText = '');
-            message_already_generated = cyclePrompt;
+            message_already_generated = continue_mag;
             tokens_already_generated = 1; // Multigen copium
         }
 
@@ -2767,8 +2772,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 hideSwipeButtons();
                 let getMessage = await streamingProcessor.generate();
 
-                if (type == 'continue') {
-                    getMessage = message_already_generated + getMessage;
+                if (isContinue) {
+                    getMessage = continue_mag + getMessage;
                 }
 
                 if (streamingProcessor && !streamingProcessor.isStopped && streamingProcessor.isFinished) {
@@ -2806,7 +2811,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                                 ({ type, getMessage } = saveReply('append', getMessage, this_mes_is_name, title));
                             }
                         } else {
-                            let chunk = cleanUpMessage(message_already_generated, true, true);
+                            let chunk = cleanUpMessage(message_already_generated, true, isContinue, true);
                             let extract = extractNameFromMessage(chunk, force_name2, isImpersonate);
                             $('#send_textarea').val(extract.getMessage).trigger('input');
                         }
@@ -2830,12 +2835,12 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         getMessage = message_already_generated.substring(substringStart);
                     }
 
-                    if (type == 'continue') {
-                        getMessage = message_already_generated + getMessage;
+                    if (isContinue) {
+                        getMessage = continue_mag + getMessage;
                     }
 
                     //Formating
-                    getMessage = cleanUpMessage(getMessage, isImpersonate);
+                    getMessage = cleanUpMessage(getMessage, isImpersonate, isContinue);
 
                     let this_mes_is_name;
                     ({ this_mes_is_name, getMessage } = extractNameFromMessage(getMessage, force_name2, isImpersonate));
@@ -3612,11 +3617,12 @@ function extractMessageFromData(data) {
     }
 }
 
-function cleanUpMessage(getMessage, isImpersonate, displayIncompleteSentences = false) {
+function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncompleteSentences = false) {
     // Add the prompt bias before anything else
     if (
         power_user.user_prompt_bias &&
         !isImpersonate &&
+        !isContinue &&
         power_user.user_prompt_bias.length !== 0
     ) {
         getMessage = substituteParams(power_user.user_prompt_bias) + getMessage;
