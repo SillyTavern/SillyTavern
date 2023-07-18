@@ -1282,7 +1282,6 @@ app.post("/getcharacters", jsonParser, function (request, response) {
  * @returns {void}
  */
 app.post("/getstats", jsonParser, function (request, response) {
-    console.log(statsHelpers.charStats);
     response.send(JSON.stringify(statsHelpers.getCharStats()));
 });
 
@@ -1297,7 +1296,6 @@ app.post("/getstats", jsonParser, function (request, response) {
  * 
 */
 app.post("/updatestats", jsonParser, function (request, response) {
-    console.log(request.body)
     if (!request.body) return response.sendStatus(400);
     statsHelpers.setCharStats(request.body);
     return response.sendStatus(200);
