@@ -17,7 +17,6 @@ import {
     comment_avatar,
     system_avatar,
     system_message_types,
-    replaceCurrentChat,
     setCharacterId,
     generateQuietPrompt,
     reloadCurrentChat,
@@ -203,7 +202,7 @@ function openChat(id) {
     resetSelectedGroup();
     setCharacterId(id);
     setTimeout(() => {
-        replaceCurrentChat();
+        reloadCurrentChat();
     }, 1);
 }
 

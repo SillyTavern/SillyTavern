@@ -15,7 +15,6 @@ import {
     printCharacters,
     name1,
     name2,
-    replaceCurrentChat,
     setCharacterId,
     setEditedMessageId
 } from "../script.js";
@@ -1177,7 +1176,7 @@ function doRandomChat() {
     resetSelectedGroup();
     setCharacterId(Math.floor(Math.random() * characters.length));
     setTimeout(() => {
-        replaceCurrentChat();
+        reloadCurrentChat();
     }, 1);
 
 }
