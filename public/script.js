@@ -437,6 +437,7 @@ const system_messages = {
             <li><tt>{​{date}​}</tt> - the current date</li>
             <li><tt>{{idle_duration}}</tt> - the time since the last user message was sent</li>
             <li><tt>{{random:(args)}}</tt> - returns a random item from the list. (ex: {{random:1,2,3,4}} will return 1 of the 4 numbers at random. Works with text lists too.</li>
+            <li><tt>{{roll:(formula)}}</tt> - rolls a dice. (ex: {{roll:1d6}} will roll a 6-sided dice and return a number between 1 and 6)</li>
             </ul>`
     },
     welcome:
@@ -1551,6 +1552,7 @@ function substituteParams(content, _name1, _name2, _original) {
         return utcTime;
     });
     content = randomReplace(content);
+    content = diceRollReplace(content);
     return content;
 }
 
@@ -1601,6 +1603,23 @@ function randomReplace(input, emptyListPlaceholder = '') {
 
         //const randomIndex = Math.floor(Math.random() * list.length);
         return list[randomIndex];
+    });
+}
+
+function diceRollReplace(input, invalidRollPlaceholder = '') {
+    const randomPattern = /{{roll:([^}]+)}}/gi;
+
+    return input.replace(randomPattern, (match, matchValue) => {
+        const formula = matchValue.trim();
+        const isValid = droll.validate(formula);
+
+        if (!isValid) {
+            console.debug(`Invalid roll formula: ${formula}`);
+            return invalidRollPlaceholder;
+        }
+
+        const result = droll.roll(formula);
+        return new String(result.total);
     });
 }
 
@@ -1710,7 +1729,7 @@ export function extractMessageBias(message) {
         return null;
     }
 
-    const forbiddenMatches = ['user', 'char', 'time', 'date', 'random', 'idle_duration'];
+    const forbiddenMatches = ['user', 'char', 'time', 'date', 'random', 'idle_duration', 'roll'];
     const found = [];
     const rxp = /\{\{([\s\S]+?)\}\}/gm;
     //const rxp = /{([^}]+)}/g;
@@ -1719,8 +1738,8 @@ export function extractMessageBias(message) {
     while ((curMatch = rxp.exec(message))) {
         const match = curMatch[1].trim();
 
-        // Ignore random pattern matches
-        if (/^random:.+/i.test(match)) {
+        // Ignore random/roll pattern matches
+        if (/^random:.+/i.test(match) || /^roll:.+/i.test(match)) {
             continue;
         }
 

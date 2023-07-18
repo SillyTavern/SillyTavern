@@ -76,20 +76,11 @@ function addDiceRollButton() {
     });
 }
 
-function addDiceScript() {
-    if (!window.droll) {
-        const script = document.createElement('script');
-        script.src = "/scripts/extensions/dice/droll.js";
-        document.body.appendChild(script);
-    }
-}
-
 async function moduleWorker() {
     $('#roll_dice').toggle(getContext().onlineStatus !== 'no_connection');
 }
 
 jQuery(function () {
-    addDiceScript();
     addDiceRollButton();
     moduleWorker();
     setInterval(moduleWorker, UPDATE_INTERVAL);
