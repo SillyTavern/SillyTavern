@@ -13,7 +13,6 @@ import {
     menu_type,
     max_context,
     saveSettingsDebounced,
-    charStats,
 } from "../script.js";
 
 import {
@@ -329,7 +328,7 @@ export function RA_CountCharTokens() {
 
     } //warn if either are over 1024
     $(".rm_stats_button").on('click', function () {
-        characterStatsHandler(charStats, characters, this_chid);
+        characterStatsHandler(characters, this_chid);
     });
 }
 //Auto Load Last Charcter -- (fires when active_character is defined and auto_load_chat is true)

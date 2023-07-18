@@ -326,7 +326,7 @@ let crop_data = undefined;
 let is_delete_mode = false;
 let fav_ch_checked = false;
 let scrollLock = false;
-export let charStats = {};
+
 
 //initialize global var for future cropped blobs
 let currentCroppedAvatar = '';
@@ -3806,7 +3806,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
             extra: JSON.parse(JSON.stringify(chat[chat.length - 1]["extra"])),
         };
     }
-    statMesProcess(chat[chat.length - 1], type, characters, this_chid, charStats, oldMessage);
+    statMesProcess(chat[chat.length - 1], type, characters, this_chid, oldMessage);
     return { type, getMessage };
 }
 
@@ -8514,7 +8514,7 @@ $(document).ready(function () {
     });
 
     $(".user_stats_button").on('click', function () {
-        userStatsHandler(charStats);
+        userStatsHandler();
     });
 
     $('#external_import_button').on('click', async () => {

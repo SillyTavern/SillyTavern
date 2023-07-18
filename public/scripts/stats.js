@@ -2,6 +2,8 @@
 import { getRequestHeaders, callPopup, token } from "../script.js";
 import { humanizeGenTime } from "./RossAscends-mods.js";
 
+let charStats = {};
+
 /**
  * Creates an HTML stat block.
  *
@@ -32,7 +34,7 @@ function calculateTotal(stat) {
  * @param {Object} charStats - Object containing character statistics.
  * @returns {Object} - Object containing total statistics.
  */
-function calculateTotalStats(charStats) {
+function calculateTotalStats() {
     let totalStats = {
         total_gen_time: 0,
         user_msg_count: 0,
@@ -88,12 +90,12 @@ function createHtml(statsType, stats) {
  *
  * @param {Object} charStats - Object containing character statistics.
  */
-async function userStatsHandler(charStats) {
+async function userStatsHandler() {
     // Get stats from server
-    let stats = await getStats(charStats);
+    await getStats();
 
     // Calculate total stats
-    let totalStats = calculateTotalStats(stats);
+    let totalStats = calculateTotalStats(charStats);
 
     // Create HTML with stats
     createHtml("User", totalStats);
@@ -106,12 +108,12 @@ async function userStatsHandler(charStats) {
  * @param {Object} characters - Object containing character data.
  * @param {string} this_chid - The character id.
  */
-async function characterStatsHandler(charStats, characters, this_chid) {
+async function characterStatsHandler(characters, this_chid) {
     // Get stats from server
-    let stats = await getStats(charStats);
+   await getStats();
 
     // Get character stats
-    let myStats = stats[characters[this_chid].avatar];
+    let myStats = charStats[characters[this_chid].avatar];
 
     // Create HTML with stats
     createHtml("Character", myStats);
@@ -123,7 +125,7 @@ async function characterStatsHandler(charStats, characters, this_chid) {
  * @param {Object} charStats - Object containing character statistics.
  * @returns {Object} - Object containing fetched character statistics.
  */
-async function getStats(charStats) {
+async function getStats() {
     const response = await fetch("/getstats", {
         method: "POST",
         headers: getRequestHeaders(),
@@ -136,7 +138,6 @@ async function getStats(charStats) {
         throw new Error("Error getting stats");
     }
     charStats = await response.json();
-    return charStats;
 }
 
 /**
@@ -157,11 +158,11 @@ function calculateGenTime(gen_started, gen_finished) {
  *
  * @param {Object} stats - The stats data to update.
  */
-async function updateStats(stats) {
+async function updateStats() {
     const response = await fetch("/updatestats", {
         method: "POST",
         headers: getRequestHeaders(),
-        body: JSON.stringify(stats),
+        body: JSON.stringify(charStats),
     });
 
     if (response.status !== 200) {
@@ -185,14 +186,13 @@ async function statMesProcess(
     type,
     characters,
     this_chid,
-    charStats,
     oldMesssage
 ) {
     if (this_chid === undefined) {
         return;
     }
-    let stats = await getStats(charStats);
-    let stat = stats[characters[this_chid].avatar];
+    await getStats();
+    let stat = charStats[characters[this_chid].avatar];
 
     stat.total_gen_time += calculateGenTime(
         line.gen_started,
@@ -222,7 +222,7 @@ async function statMesProcess(
         stat.total_swipe_count++;
     }
     stat.date_last_chat = Date.now();
-    updateStats(stats);
+    updateStats();
 }
 
 export { userStatsHandler, characterStatsHandler, getStats, statMesProcess };
