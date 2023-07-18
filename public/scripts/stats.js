@@ -84,7 +84,7 @@ function createHtml(statsType, stats) {
     html += createStatBlock("Total User Messages", stats.user_msg_count);
     html += createStatBlock(
         "Total Character Messages",
-        stats.non_user_msg_count
+        stats.non_user_msg_count - stats.total_swipe_count
     );
     html += createStatBlock("Total User Words", stats.user_word_count);
     html += createStatBlock("Total Character Words", stats.non_user_word_count);
