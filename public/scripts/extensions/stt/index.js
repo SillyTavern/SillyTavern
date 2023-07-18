@@ -25,8 +25,7 @@ let pushToTalkKeyDown = false
 async function moduleWorker() {
     const enabled = extension_settings.stt.enabled
     const record_mode = extension_settings.stt.recordMode
-    //const enabled = $('#stt_enabled').is(':checked')
-    //$('body').toggleClass('stt', enabled);
+
     if (!enabled) {
         return
     }
@@ -154,13 +153,6 @@ async function moduleWorker() {
                         await context.generate();
 
                         $('#debug_output').text("<SST-module DEBUG>: message sent, cut using trigger word. Voice transcript: \""+ userMessageOriginal +"\"");
-                        /*if (extension_settings.stt.debug) {
-                            toastr.info(
-                                "<SST-module DEBUG>:",
-                                "message sent, cut using trigger word. Voice transcript: \""+ userMessageOriginal +"\"",
-                                { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true },
-                            );
-                        }*/
                         break;
 
                     case "replace":
@@ -200,9 +192,6 @@ function loadSttProvider(provider) {
     //Clear the current config and add new config
     $("#stt_provider_settings").html("")
 
-    if (!provider) {
-        provider
-    }
     // Init provider references
     extension_settings.stt.currentProvider = provider
     sttProviderName = provider
@@ -229,7 +218,6 @@ function onSttProviderSettingsInput() {
     sttProvider.onSettingsChange()
 
     // Persist changes to SillyTavern stt extension settings
-
     extension_settings.stt[sttProviderName] = sttProvider.setttings
     saveSettingsDebounced()
     console.info(`Saved settings ${sttProviderName} ${JSON.stringify(sttProvider.settings)}`)
@@ -459,7 +447,6 @@ $(document).ready(function () {
         </div>
         `;
         $('#extensions_settings').append(settingsHtml);
-        //$('#stt_apply').on('click', onApplyClick);
         $('#stt_enabled').on('click', onEnableClick);
         $('#stt_provider_settings').on('input', onSttProviderSettingsInput);
         for (const provider in sttProviders) {
