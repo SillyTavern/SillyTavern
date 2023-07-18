@@ -20,7 +20,6 @@ import {
     setEditedMessageId
 } from "../script.js";
 import { favsToHotswap, isMobile, initMovingUI } from "./RossAscends-mods.js";
-import { getContext } from "./extensions.js";
 import {
     groups,
     resetSelectedGroup,

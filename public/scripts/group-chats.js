@@ -1223,7 +1223,6 @@ function openCharacterDefinition(characterSelect) {
     select_selected_character(chid);
     // Gentle nudge to recalculate tokens
     RA_CountCharTokens();
-    //AA_CountCharTime(chid);
     // Do a little tomfoolery to spoof the tag selector
     applyTagsOnCharacterSelect.call(characterSelect);
 }
