@@ -1,5 +1,5 @@
 // statsHelper.js
-import { getRequestHeaders, callPopup, token } from "../script.js";
+import { getRequestHeaders, callPopup, token, chat } from "../script.js";
 import { humanizeGenTime } from "./RossAscends-mods.js";
 
 let charStats = {};
@@ -42,6 +42,8 @@ function calculateTotalStats() {
         user_word_count: 0,
         non_user_word_count: 0,
         total_swipe_count: 0,
+        date_last_chat: 0,
+        date_first_chat: new Date('9999-12-31T23:59:59.999Z').getTime(),
     };
 
     for (let stats of Object.values(charStats)) {
@@ -55,39 +57,64 @@ function calculateTotalStats() {
             stats.non_user_word_count
         );
         totalStats.total_swipe_count += verifyStatValue(stats.total_swipe_count);
-    }
+
+        if(verifyStatValue(stats.date_last_chat) != 0){
+            totalStats.date_last_chat = Math.max(
+                totalStats.date_last_chat,
+                stats.date_last_chat
+            );
+        }
+        if (verifyStatValue(stats.date_first_chat) != 0){
+            totalStats.date_first_chat = Math.min(
+                totalStats.date_first_chat,
+                stats.date_first_chat
+            );
+        }
+     }
 
     return totalStats;
 }
 
 /**
  * Generates an HTML report of stats.
+ * 
+ * This function creates an HTML report from the provided stats, including chat age,
+ * chat time, number of user messages and character messages, word count, and swipe count.
+ * The stat blocks are tailored depending on the stats type ("User" or "Character").
  *
  * @param {string} statsType - The type of stats (e.g., "User", "Character").
- * @param {Object} stats - The stats data.
+ * @param {Object} stats - The stats data. Expected keys in this object include:
+ *      total_gen_time - total generation time
+ *      date_first_chat - timestamp of the first chat
+ *      date_last_chat - timestamp of the most recent chat
+ *      user_msg_count - count of user messages
+ *      non_user_msg_count - count of non-user messages
+ *      user_word_count - count of words used by the user
+ *      non_user_word_count - count of words used by the non-user
+ *      total_swipe_count - total swipe count
  */
 function createHtml(statsType, stats) {
-    console.log(stats);
     // Get time string
     let timeStirng = humanizeGenTime(stats.total_gen_time);
     let chatAge = "Never";
-    console.log(stats.date_first_chat, Date.now());
     if(stats.date_first_chat <  Date.now()) {
-        console.log(moment.duration(stats.date_last_chat - stats.date_first_chat).humanize());
         chatAge = moment.duration(stats.date_last_chat - stats.date_first_chat).humanize();
     }
 
     // Create popup HTML with stats
     let html = `<h3>${statsType} Stats</h3>`;
-    html += createStatBlock("Chat Age", chatAge);
+    if(statsType === "User") {
+        html += createStatBlock("Chatting Since", `${chatAge} ago`);
+    }
+    else{ html += createStatBlock("Chat Age", chatAge); }
     html += createStatBlock("Chat Time", timeStirng);
-    html += createStatBlock("Total User Messages", stats.user_msg_count);
+    html += createStatBlock("User Messages", stats.user_msg_count);
     html += createStatBlock(
-        "Total Character Messages",
+        "Character Messages",
         stats.non_user_msg_count - stats.total_swipe_count
     );
-    html += createStatBlock("Total User Words", stats.user_word_count);
-    html += createStatBlock("Total Character Words", stats.non_user_word_count);
+    html += createStatBlock("User Words", stats.user_word_count);
+    html += createStatBlock("Character Words", stats.non_user_word_count);
     html += createStatBlock("Swipes", stats.total_swipe_count);
 
     callPopup(html, "text");
@@ -119,7 +146,6 @@ async function userStatsHandler() {
 async function characterStatsHandler(characters, this_chid) {
     // Get stats from server
    await getStats();
-    console.log(charStats);
     // Get character stats
     let myStats = charStats[characters[this_chid].avatar];
     if (myStats === undefined) {
@@ -231,7 +257,6 @@ async function statMesProcess(
     await getStats();
 
     let stat = charStats[characters[this_chid].avatar];
-    console.log(stat);
 
     stat.total_gen_time += calculateGenTime(
         line.gen_started,
@@ -262,7 +287,6 @@ async function statMesProcess(
     }
     stat.date_last_chat = Date.now();
     stat.first_chat_time = Math.min(stat.date_first_chat ?? new Date('9999-12-31T23:59:59.999Z').getTime(), Date.now());
-    console.log(stat);
     updateStats();
 }
 
