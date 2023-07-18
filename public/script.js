@@ -1038,8 +1038,8 @@ async function replaceCurrentChat() {
         const chats = Object.values(await chatsResponse.json());
 
         // pick existing chat
-        if (chats.length && typeof chats[0] === 'object') {
-            characters[this_chid].chat = chats[0].file_name.replace('.jsonl', '');
+        if (chats.length && typeof chats[chats.length - 1] === 'object') {
+            characters[this_chid].chat = chats[chats.length - 1].file_name.replace('.jsonl', '');
             $("#selected_chat_pole").val(characters[this_chid].chat);
             saveCharacterDebounced();
             await getChat();
