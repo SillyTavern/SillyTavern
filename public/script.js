@@ -1,5 +1,5 @@
-import { humanizedDateTime, humanizeGenTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, AA_CountCharTime } from "./scripts/RossAscends-mods.js";
-import { userStatsHandler, characterStatsHandler } from './scripts/stats.js';
+import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, } from "./scripts/RossAscends-mods.js";
+import { userStatsHandler, statMesProcess } from './scripts/stats.js';
 import { encode } from "../scripts/gpt-2-3-tokenizer/mod.js";
 import { GPT3BrowserTokenizer } from "../scripts/gpt-3-tokenizer/gpt3-tokenizer.js";
 import {
@@ -3700,59 +3700,7 @@ function cleanUpMessage(getMessage, isImpersonate, displayIncompleteSentences = 
 }
 
 
-/**
- * Calculates the time difference between two dates.
- *
- * @param {string} gen_started - The start time in ISO 8601 format.
- * @param {string} gen_finished - The finish time in ISO 8601 format.
- * @returns {number} - The difference in time in milliseconds.
- */
-function calculateGenTime(gen_started, gen_finished) {
-    let startDate = new Date(gen_started);
-    let endDate = new Date(gen_finished);
-    return endDate - startDate;
-}
 
-async function updateStats() {
-    const response = await fetch('/updatestats', {
-        method: 'POST',
-        headers: getRequestHeaders(),
-        body: JSON.stringify(charStats),
-
-    });
-
-    if (response.status !== 200) {
-        console.error('Failed to update stats');
-        console.log(response).status;
-    }
-}
-
-
-function statMesProcess(line, type){
-    if(this_chid === undefined) {
-        console.log(charStats);
-        return;
-    }
-
-    let stat = charStats[characters[this_chid].avatar];
-    console.log(stat); // add this line to check the value of stat
-
-    stat.total_gen_time += calculateGenTime(line.gen_started, line.gen_finished);
-    if(line.is_user) {
-        stat.user_msg_count++;
-        stat.user_word_count += line.mes.split(' ').length;
-    }
-    else {
-        stat.non_user_msg_count++;
-        stat.non_user_word_count += line.mes.split(' ').length;
-    }
-
-    if(type === 'swipe') {
-        stat.total_swipe_count++;
-    }
-    stat.date_last_chat = Date.now();
-    updateStats();
-}
 
 function saveReply(type, getMessage, this_mes_is_name, title) {
     if (type != 'append' && type != 'continue' && type != 'appendFinal' && chat.length && (chat[chat.length - 1]['swipe_id'] === undefined ||
@@ -3760,10 +3708,12 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         type = 'normal';
     }
 
+    let oldMessage = ''
     const generationFinished = new Date();
     const img = extractImageFromMessage(getMessage);
     getMessage = img.getMessage;
     if (type === 'swipe') {
+        oldMessage = chat[chat.length - 1]['mes'];
         chat[chat.length - 1]['swipes'].length++;
         if (chat[chat.length - 1]['swipe_id'] === chat[chat.length - 1]['swipes'].length - 1) {
             chat[chat.length - 1]['title'] = title;
@@ -3779,6 +3729,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         }
     } else if (type === 'append' || type === 'continue') {
         console.debug("Trying to append.")
+        oldMessage = chat[chat.length - 1]['mes'];
         chat[chat.length - 1]['title'] = title;
         chat[chat.length - 1]['mes'] += getMessage;
         chat[chat.length - 1]['gen_started'] = generation_started;
@@ -3788,6 +3739,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         chat[chat.length - 1]["extra"]["model"] = getGeneratingModel();
         addOneMessage(chat[chat.length - 1], { type: 'swipe' });
     } else if (type === 'appendFinal') {
+        oldMessage = chat[chat.length - 1]['mes'];
         console.debug("Trying to appendFinal.")
         chat[chat.length - 1]['title'] = title;
         chat[chat.length - 1]['mes'] = getMessage;
@@ -3855,7 +3807,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
             extra: JSON.parse(JSON.stringify(chat[chat.length - 1]["extra"])),
         };
     }
-    statMesProcess(chat[chat.length - 1], type);
+    statMesProcess(chat[chat.length - 1], type, characters, this_chid, charStats, oldMessage);
     return { type, getMessage };
 }
 
