@@ -490,7 +490,7 @@ async function generatePrompt(quiet_prompt) {
         }));
 
     if (extension_settings.sd.refine_mode) {
-        const refinedPrompt = await callPopup('<h3>Review and edit the generated prompt:</h3>Press "Cancel" to abort the image generation.', 'input', reply, { rows: 5 });
+        const refinedPrompt = await callPopup('<h3>Review and edit the generated prompt:</h3>Press "Cancel" to abort the image generation.', 'input', reply, { rows: 5, okButton: 'Generate' });
 
         if (refinedPrompt) {
             reply = refinedPrompt;

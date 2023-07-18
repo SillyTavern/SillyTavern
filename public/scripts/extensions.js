@@ -53,7 +53,9 @@ const extension_settings = {
         chara: [],
         wiAddition: [],
     },
-    caption: {},
+    caption: {
+        refine_mode: false,
+    },
     expressions: {},
     dice: {},
     regex: [],
