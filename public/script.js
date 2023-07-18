@@ -3033,7 +3033,7 @@ export async function sendMessageAsUser(textareaText, messageBias) {
         console.debug('checking bias');
         chat[chat.length - 1]['extra']['bias'] = messageBias;
     }
-
+    statMesProcess(chat[chat.length - 1], 'user', characters, this_chid, '');
     addOneMessage(chat[chat.length - 1]);
     // Wait for all handlers to finish before continuing with the prompt
     await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));

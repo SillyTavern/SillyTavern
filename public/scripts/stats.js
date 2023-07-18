@@ -24,7 +24,7 @@ function createStatBlock(statName, statValue) {
  * @param {number|string} stat - The stat value to be checked and returned.
  * @returns {number} - The stat value if it is a number, otherwise 0.
  */
-function calculateTotal(stat) {
+function verifyStatValue(stat) {
     return isNaN(stat) ? 0 : stat;
 }
 
@@ -45,16 +45,16 @@ function calculateTotalStats() {
     };
 
     for (let stats of Object.values(charStats)) {
-        totalStats.total_gen_time += calculateTotal(stats.total_gen_time);
-        totalStats.user_msg_count += calculateTotal(stats.user_msg_count);
-        totalStats.non_user_msg_count += calculateTotal(
+        totalStats.total_gen_time += verifyStatValue(stats.total_gen_time);
+        totalStats.user_msg_count += verifyStatValue(stats.user_msg_count);
+        totalStats.non_user_msg_count += verifyStatValue(
             stats.non_user_msg_count
         );
-        totalStats.user_word_count += calculateTotal(stats.user_word_count);
-        totalStats.non_user_word_count += calculateTotal(
+        totalStats.user_word_count += verifyStatValue(stats.user_word_count);
+        totalStats.non_user_word_count += verifyStatValue(
             stats.non_user_word_count
         );
-        totalStats.total_swipe_count += calculateTotal(stats.total_swipe_count);
+        totalStats.total_swipe_count += verifyStatValue(stats.total_swipe_count);
     }
 
     return totalStats;
@@ -148,6 +148,9 @@ async function getStats() {
  * @returns {number} - The difference in time in milliseconds.
  */
 function calculateGenTime(gen_started, gen_finished) {
+    if (gen_started === undefined || gen_finished === undefined) {
+        return 0;
+    }
     let startDate = new Date(gen_started);
     let endDate = new Date(gen_finished);
     return endDate - startDate;
@@ -171,6 +174,19 @@ async function updateStats() {
     }
 }
 
+
+/**
+ * Returns the count of words in the given string. 
+ * A word is a sequence of alphanumeric characters (including underscore).
+ *
+ * @param {string} str - The string to count words in.
+ * @returns {number} - Number of words.
+ */
+function countWords(str) {
+    const match = str.match(/\b\w+\b/g);
+    return match ? match.length : 0;
+}
+
 /**
  * Handles stat processing for messages.
  *
@@ -192,7 +208,9 @@ async function statMesProcess(
         return;
     }
     await getStats();
+
     let stat = charStats[characters[this_chid].avatar];
+    console.log(stat);
 
     stat.total_gen_time += calculateGenTime(
         line.gen_started,
@@ -201,20 +219,20 @@ async function statMesProcess(
     if (line.is_user) {
         if (type != "append" && type != "continue" && type != "appendFinal") {
             stat.user_msg_count++;
-            stat.user_word_count += line.mes.split(" ").length;
+            stat.user_word_count += countWords(line.mes);
         } else {
             let oldLen = oldMesssage.split(" ").length;
-            stat.user_word_count += line.mes.split(" ").length - oldLen;
+            stat.user_word_count += countWords(line.mes) - oldLen;
         }
     } else {
         // if continue, don't add a message, get the last message and subtract it from the word count of
         // the new message
         if (type != "append" && type != "continue" && type != "appendFinal") {
             stat.non_user_msg_count++;
-            stat.non_user_word_count += line.mes.split(" ").length;
+            stat.non_user_word_count += countWords(line.mes);
         } else {
             let oldLen = oldMesssage.split(" ").length;
-            stat.non_user_word_count += line.mes.split(" ").length - oldLen;
+            stat.non_user_word_count += countWords(line.mes) - oldLen;
         }
     }
 
@@ -222,6 +240,7 @@ async function statMesProcess(
         stat.total_swipe_count++;
     }
     stat.date_last_chat = Date.now();
+    console.log(stat);
     updateStats();
 }
 
