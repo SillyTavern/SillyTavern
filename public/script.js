@@ -7522,8 +7522,9 @@ $(document).ready(function () {
                 .closest(".mes_block")
                 .find(".mes_text")
                 .append(
-                    `<textarea id='curEditTextarea' class='edit_textarea' style='max-width:auto; '>${text}</textarea>`
+                    `<textarea id='curEditTextarea' class='edit_textarea' style='max-width:auto;'></textarea>`
                 );
+                $('#curEditTextarea').val(text);
             let edit_textarea = $(this)
                 .closest(".mes_block")
                 .find(".edit_textarea");
