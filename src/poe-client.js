@@ -30,6 +30,18 @@ const UserAgent = require('user-agents');
 
 const directory = __dirname;
 
+const graphHashes = {
+    'chatHelpers_sendMessageMutation_Mutation': "5fd489242adf25bf399a95c6b16de9665e521b76618a97621167ae5e11e4bce4",
+    'chatHelpers_addMessageBreakEdgeMutation_Mutation': "9450e06185f46531eca3e650c26fa8524f876924d1a8e9a3fb322305044bdac3",
+    'subscriptionsMutation': "61c1bfa1ba167fd0857e3f6eaf9699e847e6c3b09d69926b12b5390076fe36e6",
+    'ChatListPaginationQuery': "1ba2ab6a4d133b585a848f04bcb10a6bf33c0bf7f07a86aa2970b88900d82ed6",
+    'BotSwitcherModalQuery': "54023ee8b691543982b2819491532532c317b899918e049617928137c26d47f5",
+    'MessageDeleteConfirmationModal_deleteMessageMutation_Mutation': "8d1879c2e851ba163badb6065561183600fc1b9de99fc8b48b654eb65af92bed",
+    'viewerStateUpdated': "ee640951b5670b559d00b6928e20e4ac29e33d225237f5bdfcb043155f16ef54",
+    'messageAdded': "343d50a327e93b9104af175f1320fe157a377f1dbb33eaeb18c6a95a11d1b512",
+    'messageLimitUpdated': "38a2aada35e6cf3c47d9062c84533373cad2ec9205b37919a4ba8e5386115a17",
+}
+
 function uuidv4() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
         const r = Math.random() * 16 | 0;
@@ -86,7 +98,7 @@ function extractFormKey(html) {
     }
     const formKey = formKeyList.join("");
 
-    return formKey.slice(0, -1);
+    return formKey.slice(0, -2);
 }
 
 
@@ -263,11 +275,51 @@ function load_queries() {
     }
 }
 
+
+function generate_recv_payload(variables) {
+    let payload = [
+        {
+            "category": "poe/bot_response_speed",
+            "data": variables,
+        }
+    ];
+
+    if (Math.random() > 0.9) {
+        payload.push({
+            "category": "poe/statsd_event",
+            "data": {
+                "key": "poe.speed.web_vitals.INP",
+                "value": Math.round(Math.random() * 25) + 100,
+                "category": "time",
+                "path": "/[handle]",
+                "extra_data": {},
+            },
+        });
+
+    };
+
+    return payload;
+}
+
 function generate_payload(query, variables) {
-    return {
+    if (query == 'recv') {
+        return generate_recv_payload(variables);
+    }
+
+    const object = {
         query: queries[query],
         variables: variables,
+    };
+
+    if (graphHashes.hasOwnProperty(query)) {
+        delete object.query;
+        object.queryName = query;
+        object.extensions = {
+            hash: graphHashes[query],
+        }
     }
+
+    return object;
 }
 
 function findKey(obj, key, path = []) {
@@ -323,7 +375,7 @@ class Client {
 
         this._fetch = async (url, options) => {
             const retry = 20;
-            const retryMsInterval = 3000;
+            const retryMsInterval = 300;
             // Cohee: ONLY NODE DEFAULT FETCH WORKS
             // DON'T ASK ME WHY, I DON'T KNOW
             const thisFetch = fetch || require('node-fetch').default;
@@ -331,7 +383,7 @@ class Client {
             return new Promise(async (resolve, reject) => {
                 for (let i = 0; i <= retry; ++i) {
                     if (i > 0) {
-                        logger.info(`retrying ${url}, ${i}/${retry}...${new Date().getSeconds()}`);
+                        logger.info(`retrying ${url}, ${i}/${retry}`);
                         await delay(retryMsInterval);
                     }
                     try {
@@ -570,20 +622,26 @@ class Client {
             if (queryDisplayName) payload['queryName'] = queryDisplayName;
             const scramblePayload = JSON.stringify(payload);
             const _headers = Object.assign({}, this.gql_headers);
-            _headers['poe-tag-id'] = md5()(scramblePayload + this.formkey + "WpuLMiXEKKE98j56k");
+            _headers['poe-tag-id'] = md5()(scramblePayload + this.formkey + "IjKnJyR3605rLc1Ek");
             _headers['poe-formkey'] = this.formkey;
             _headers['content-type'] = 'application/json';
             //console.log(`------GQL HEADERS-----`)
             //console.log(this.gql_headers)
             //console.log(`----------------------`)
-            const r = await this._fetch(this.gql_url, {
+            const url = queryName == 'recv' ? this.gql_recv_url : this.gql_url;
+            const r = await this._fetch(url, {
                 method: 'POST',
                 body: JSON.stringify(payload),
                 headers: _headers,
             });
+
+            if (queryName == 'recv') {
+                return null;
+            }
+
             const data = await r.json();
             if (!(data?.data)) {
-                logger.warn(`${queryName} returned an error | Retrying (${i + 1}/20)`);
+                logger.warn(`${queryName} returned an error: ${r.status} ${r.statusText} | Retrying (${i + 1}/20)`);
                 await delay(2000);
                 continue;
             }
@@ -591,7 +649,7 @@ class Client {
             return data;
         }
 
-        throw new Error(`${queryName} failed too many times.`);
+        console.error(`${queryName} failed too many times.`);
     }
 
     async ws_ping() {
@@ -619,23 +677,25 @@ class Client {
 
     async subscribe() {
         logger.info("Subscribing to mutations")
-        await this.send_query("SubscriptionsMutation", {
+        await this.send_query("subscriptionsMutation", {
             "subscriptions": [
                 {
                     "subscriptionName": "messageAdded",
-                    "query": queries["MessageAddedSubscription"]
+                    "query": null,
+                    "queryHash": graphHashes['messageAdded'],
                 },
                 {
                     "subscriptionName": "viewerStateUpdated",
-                    "query": queries["ViewerStateUpdatedSubscription"]
+                    "query": null,
+                    "queryHash": graphHashes['viewerStateUpdated'],
                 },
                 {
-                    "subscriptionName": "viewerMessageLimitUpdated",
-                    "query": queries["ViewerMessageLimitUpdatedSubscription"]
+                    "subscriptionName": "messageLimitUpdated",
+                    "query": null,
+                    "queryHash": graphHashes['messageLimitUpdated'],
                 },
             ]
-        },
-            'subscriptionsMutation');
+        }, "subscriptionsMutation");
     }
 
     ws_run_thread() {
@@ -757,14 +817,21 @@ class Client {
 
         console.log(`Sending message to ${chatbot}: ${message}`);
 
-        const messageData = await this.send_query("SendMessageMutation", {
+        const messageData = await this.send_query("chatHelpers_sendMessageMutation_Mutation", {
+            "attachments": [],
             "bot": chatbot,
             "query": message,
             "chatId": this.bots[chatbot]["chatId"],
             "source": null,
             "clientNonce": generateNonce(),
             "sdid": this.device_id,
-            "withChatBreak": with_chat_break
+            "withChatBreak": with_chat_break,
+            "source": {
+                "sourceType": "chat_input",
+                "chatInputMetadata": {
+                    useVoiceRecord: false,
+                },
+            }
         });
 
         delete this.active_messages["pending"];
@@ -829,39 +896,57 @@ class Client {
 
         delete this.active_messages[humanMessageId];
         delete this.message_queues[humanMessageId];
+
+        setTimeout(async () => {
+            this.send_query("recv", {
+              "bot": chatbot,
+              "time_to_first_typing_indicator": 300,
+              "time_to_first_subscription_response": 600,
+              "time_to_full_bot_response": 1100,
+              "full_response_length": lastText.length + 1,
+              "full_response_word_count": lastText.split(" ").length + 1,
+              "human_message_id": humanMessageId,
+              "bot_message_id": messageId,
+              "chat_id": this.bots[chatbot]["chatId"],
+              "bot_response_status": "success",
+            });
+            await delay(500);
+        })
     }
 
     async send_chat_break(chatbot) {
         logger.info(`Sending chat break to ${chatbot}`);
-        const result = await this.send_query("AddMessageBreakMutation", {
+        const result = await this.send_query("chatHelpers_addMessageBreakEdgeMutation_Mutation", {
             "chatId": this.bots[chatbot]["chatId"]
         });
-        return result["data"]["messageBreakCreate"]["message"];
+        return result["data"]["messageBreakEdgeCreate"]["message"];
     }
 
-    async get_message_history(chatbot, count = 25, cursor = null) {
+    async get_message_history(chatbot, count = 5, cursor = null) {
         logger.info(`Downloading ${count} messages from ${chatbot}`);
         const result = await this.send_query("ChatListPaginationQuery", {
             "count": count,
             "cursor": cursor,
             "id": this.bots[chatbot]["id"]
-        });
+        }, "ChatListPaginationQuery");
         return result["data"]["node"]["messagesConnection"]["edges"];
     }
 
-    async delete_message(message_ids) {
+    async delete_message(message_ids, chatbot) {
         logger.info(`Deleting messages: ${message_ids}`);
         if (!Array.isArray(message_ids)) {
             message_ids = [parseInt(message_ids)];
         }
-        const result = await this.send_query("DeleteMessageMutation", {
-            "messageIds": message_ids
+        const result = await this.send_query("MessageDeleteConfirmationModal_deleteMessageMutation_Mutation", {
+            "messageIds": message_ids,
+            "connections": [`client:${this.bots[chatbot]["id"]}:__ChatMessagesView_chat_messagesConnection_connection`]
         });
     }
 
     async purge_conversation(chatbot, count = -1) {
+        //return this.send_chat_break(chatbot);
         logger.info(`Purging messages from ${chatbot}`);
-        let last_messages = (await this.get_message_history(chatbot, 50)).reverse();
+        let last_messages = (await this.get_message_history(chatbot, 5)).reverse();
         while (last_messages.length) {
             const message_ids = [];
             for (const message of last_messages) {
@@ -872,12 +957,12 @@ class Client {
                 message_ids.push(message["node"]["messageId"]);
             }
 
-            await this.delete_message(message_ids);
+            await this.delete_message(message_ids, chatbot);
 
             if (count === 0) {
                 return;
             }
-            last_messages = (await this.get_message_history(chatbot, 50)).reverse();
+            last_messages = (await this.get_message_history(chatbot, 5)).reverse();
         }
         logger.info("No more messages left to delete.");
     }
