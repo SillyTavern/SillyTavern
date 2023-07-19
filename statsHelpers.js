@@ -1,39 +1,73 @@
 /**
- * @todo One shot collection of all stats for all characters
- * @todo Endpoint for getting stats for a single character
- * @todo Endpoint for writing stats on update
- * @todo Frontend for viewing stats
- * @todo Frontend for viewing stats for a single character
- * @todo Frontend for viewing stats for all characters
+ * @fileoverview This file contains various utility functions related to
+ * character and user statistics, such as creating an HTML stat block,
+ * calculating total stats, and creating an HTML report from the provided stats.
+ * It also provides methods for handling user stats and character stats,
+ * as well as a utility for humanizing generation time from milliseconds.
  */
 
-const fs = require('fs');
-const path = require('path');
-const util = require('util');
+const fs = require("fs");
+const path = require("path");
+const util = require("util");
 const writeFile = util.promisify(fs.writeFile);
 const readFile = util.promisify(fs.readFile);
 const readdir = util.promisify(fs.readdir);
-const crypto = require('crypto');
-
-
+const crypto = require("crypto");
 
 let charStats = {};
 let lastSaveTimestamp = 0;
-const statsFilePath = 'public/stats.json';
+const statsFilePath = "public/stats.json";
 
-
+/**
+ * Convert a timestamp to an integer timestamp.
+ * (sorry, it's momentless for now, didn't want to add a package just for this)
+ * This function can handle several different timestamp formats:
+ * 1. Unix timestamps (the number of seconds since the Unix Epoch)
+ * 2. ST "humanized" timestamps, formatted like "YYYY-MM-DD @HHh MMm SSs ms"
+ * 3. Date strings in the format "Month DD, YYYY H:MMam/pm"
+ *
+ * The function returns the timestamp as the number of milliseconds since
+ * the Unix Epoch, which can be converted to a JavaScript Date object with new Date().
+ *
+ * @param {string|number} timestamp - The timestamp to convert.
+ * @returns {number|null} The timestamp in milliseconds since the Unix Epoch, or null if the input cannot be parsed.
+ *
+ * @example
+ * // Unix timestamp
+ * timestampToMoment(1609459200);
+ * // ST humanized timestamp
+ * timestampToMoment("2021-01-01 @00h 00m 00s 000ms");
+ * // Date string
+ * timestampToMoment("January 1, 2021 12:00am");
+ */
 function timestampToMoment(timestamp) {
     if (!timestamp) {
         return null;
     }
 
-    if (typeof timestamp === 'number') {
+    if (typeof timestamp === "number") {
         return timestamp;
     }
 
-    const pattern1 = /(\d{4})-(\d{1,2})-(\d{1,2}) @(\d{1,2})h (\d{1,2})m (\d{1,2})s (\d{1,3})ms/;
-    const replacement1 = (match, year, month, day, hour, minute, second, millisecond) => {
-        return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}T${hour.padStart(2, "0")}:${minute.padStart(2, "0")}:${second.padStart(2, "0")}.${millisecond.padStart(3, "0")}Z`;
+    const pattern1 =
+        /(\d{4})-(\d{1,2})-(\d{1,2}) @(\d{1,2})h (\d{1,2})m (\d{1,2})s (\d{1,3})ms/;
+    const replacement1 = (
+        match,
+        year,
+        month,
+        day,
+        hour,
+        minute,
+        second,
+        millisecond
+    ) => {
+        return `${year}-${month.padStart(2, "0")}-${day.padStart(
+            2,
+            "0"
+        )}T${hour.padStart(2, "0")}:${minute.padStart(
+            2,
+            "0"
+        )}:${second.padStart(2, "0")}.${millisecond.padStart(3, "0")}Z`;
     };
     const isoTimestamp1 = timestamp.replace(pattern1, replacement1);
     if (!isNaN(new Date(isoTimestamp1))) {
@@ -42,10 +76,32 @@ function timestampToMoment(timestamp) {
 
     const pattern2 = /(\w+)\s(\d{1,2}),\s(\d{4})\s(\d{1,2}):(\d{1,2})(am|pm)/i;
     const replacement2 = (match, month, day, year, hour, minute, meridiem) => {
-        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        const monthNames = [
+            "January",
+            "February",
+            "March",
+            "April",
+            "May",
+            "June",
+            "July",
+            "August",
+            "September",
+            "October",
+            "November",
+            "December",
+        ];
         const monthNum = monthNames.indexOf(month) + 1;
-        const hour24 = meridiem.toLowerCase() === 'pm' ? (parseInt(hour, 10) % 12) + 12 : parseInt(hour, 10) % 12;
-        return `${year}-${monthNum.toString().padStart(2, "0")}-${day.padStart(2, "0")}T${hour24.toString().padStart(2, "0")}:${minute.padStart(2, "0")}:00Z`;
+        const hour24 =
+            meridiem.toLowerCase() === "pm"
+                ? (parseInt(hour, 10) % 12) + 12
+                : parseInt(hour, 10) % 12;
+        return `${year}-${monthNum.toString().padStart(2, "0")}-${day.padStart(
+            2,
+            "0"
+        )}T${hour24.toString().padStart(2, "0")}:${minute.padStart(
+            2,
+            "0"
+        )}:00Z`;
     };
     const isoTimestamp2 = timestamp.replace(pattern2, replacement2);
     if (!isNaN(new Date(isoTimestamp2))) {
@@ -55,48 +111,61 @@ function timestampToMoment(timestamp) {
     return null;
 }
 
-
+/**
+ * Collects and aggregates stats for all characters.
+ *
+ * @param {string} chatsPath - The path to the directory containing the chat files.
+ * @param {string} charactersPath - The path to the directory containing the character files.
+ * @returns {Object} The aggregated stats object.
+ */
 async function collectAndCreateStats(chatsPath, charactersPath) {
-    console.log('Collecting and creating stats...');
+    console.log("Collecting and creating stats...");
     const files = await readdir(charactersPath);
 
-    const pngFiles = files.filter(file => file.endsWith('.png'));
+    const pngFiles = files.filter((file) => file.endsWith(".png"));
 
-    let processingPromises = pngFiles.map((file, index) => calculateStats(chatsPath, file, index));
+    let processingPromises = pngFiles.map((file, index) =>
+        calculateStats(chatsPath, file, index)
+    );
     const statsArr = await Promise.all(processingPromises);
 
     let finalStats = {};
     for (let stat of statsArr) {
-        finalStats = { ...finalStats, ...stat }
+        finalStats = { ...finalStats, ...stat };
     }
     // tag with timestamp on when stats were generated
     finalStats.timestamp = Date.now();
     return finalStats;
 }
 
-
-// Function to load the stats file into memory
+/**
+ * Loads the stats file into memory. If the file doesn't exist or is invalid,
+ * initializes stats by collecting and creating them for each character.
+ *
+ * @param {string} chatsPath - The path to the directory containing the chat files.
+ * @param {string} charactersPath - The path to the directory containing the character files.
+ */
 async function loadStatsFile(chatsPath, charactersPath) {
     try {
-        const statsFileContent = await readFile(statsFilePath, 'utf-8');
+        const statsFileContent = await readFile(statsFilePath, "utf-8");
         charStats = JSON.parse(statsFileContent);
     } catch (err) {
         // If the file doesn't exist or is invalid, initialize stats
-        if (err.code === 'ENOENT' || err instanceof SyntaxError) {
+        if (err.code === "ENOENT" || err instanceof SyntaxError) {
             charStats = await collectAndCreateStats(chatsPath, charactersPath); // Call your function to collect and create stats
             await saveStatsToFile();
         } else {
             throw err; // Rethrow the error if it's something we didn't expect
         }
     }
-    console.log('Stats loaded from file:', charStats);
+    console.debug("Stats loaded from files.");
 }
-
-// Function to save the stats to file
-
+/**
+ * Saves the current state of charStats to a file, only if the data has changed since the last save.
+ */
 async function saveStatsToFile() {
     if (charStats.timestamp > lastSaveTimestamp) {
-        console.debug('Saving stats to file...');
+        console.debug("Saving stats to file...");
         await writeFile(statsFilePath, JSON.stringify(charStats));
         lastSaveTimestamp = Date.now();
     } else {
@@ -104,17 +173,19 @@ async function saveStatsToFile() {
     }
 }
 
+/**
+ * Attempts to save charStats to a file and then terminates the process.
+ * If an error occurs during the file write, it logs the error before exiting.
+ */
 async function writeStatsToFileAndExit(charStats) {
     try {
         await saveStatsToFile(charStats);
     } catch (err) {
-        console.error('Failed to write stats to file:', err);
+        console.error("Failed to write stats to file:", err);
     } finally {
         process.exit();
     }
 }
-
-
 
 /**
  * Reads the contents of a file and returns the lines in the file as an array.
@@ -125,8 +196,8 @@ async function writeStatsToFileAndExit(charStats) {
  */
 function readAndParseFile(filepath) {
     try {
-        let file = fs.readFileSync(filepath, 'utf8');
-        let lines = file.split('\n');
+        let file = fs.readFileSync(filepath, "utf8");
+        let lines = file.split("\n");
         return lines;
     } catch (error) {
         console.error(`Error reading file at ${filepath}: ${error}`);
@@ -158,7 +229,6 @@ function countWordsInString(str) {
     return match ? match.length : 0;
 }
 
-
 /**
  * calculateStats - Calculate statistics for a given character chat directory.
  *
@@ -167,7 +237,7 @@ function countWordsInString(str) {
  * @return {object}          An object containing the calculated statistics.
  */
 const calculateStats = (chatsPath, item, index) => {
-    const char_dir = path.join(chatsPath, item.replace('.png', ''));
+    const char_dir = path.join(chatsPath, item.replace(".png", ""));
     let chat_size = 0;
     let date_last_chat = 0;
     const stats = {
@@ -179,7 +249,7 @@ const calculateStats = (chatsPath, item, index) => {
         total_swipe_count: 0,
         chat_size: 0,
         date_last_chat: 0,
-        date_first_chat: new Date('9999-12-31T23:59:59.999Z').getTime(),
+        date_first_chat: new Date("9999-12-31T23:59:59.999Z").getTime(),
     };
     let uniqueGenStartTimes = new Set();
 
@@ -187,7 +257,11 @@ const calculateStats = (chatsPath, item, index) => {
         const chats = fs.readdirSync(char_dir);
         if (Array.isArray(chats) && chats.length) {
             for (const chat of chats) {
-                const result = calculateTotalGenTimeAndWordCount(char_dir, chat, uniqueGenStartTimes);
+                const result = calculateTotalGenTimeAndWordCount(
+                    char_dir,
+                    chat,
+                    uniqueGenStartTimes
+                );
                 stats.total_gen_time += result.totalGenTime || 0;
                 stats.user_word_count += result.userWordCount || 0;
                 stats.non_user_word_count += result.nonUserWordCount || 0;
@@ -197,25 +271,37 @@ const calculateStats = (chatsPath, item, index) => {
 
                 const chatStat = fs.statSync(path.join(char_dir, chat));
                 stats.chat_size += chatStat.size;
-                stats.date_last_chat = Math.max(stats.date_last_chat, Math.floor(chatStat.mtimeMs));
-                stats.date_first_chat = Math.min(stats.date_first_chat, result.firstChatTime);
+                stats.date_last_chat = Math.max(
+                    stats.date_last_chat,
+                    Math.floor(chatStat.mtimeMs)
+                );
+                stats.date_first_chat = Math.min(
+                    stats.date_first_chat,
+                    result.firstChatTime
+                );
             }
         }
     }
 
     return { [item]: stats };
-}
+};
 
+/**
+ * Returns the current charStats object.
+ * @returns {Object} The current charStats object.
+ **/
 function getCharStats() {
     return charStats;
 }
 
+/**
+ * Sets the current charStats object.
+ * @param {Object} stats - The new charStats object.
+ **/
 function setCharStats(stats) {
     charStats = stats;
     charStats.timestamp = Date.now();
 }
-
-
 
 /**
  * Calculates the total generation time and word count for a chat with a character.
@@ -225,7 +311,11 @@ function setCharStats(stats) {
  * @returns {Object} - An object containing the total generation time, user word count, and non-user word count.
  * @throws Will throw an error if the file cannot be read or parsed.
  */
-function calculateTotalGenTimeAndWordCount(char_dir, chat, uniqueGenStartTimes) {
+function calculateTotalGenTimeAndWordCount(
+    char_dir,
+    chat,
+    uniqueGenStartTimes
+) {
     let filepath = path.join(char_dir, chat);
     let lines = readAndParseFile(filepath);
 
@@ -235,14 +325,17 @@ function calculateTotalGenTimeAndWordCount(char_dir, chat, uniqueGenStartTimes) 
     let nonUserMsgCount = 0;
     let userMsgCount = 0;
     let totalSwipeCount = 0;
-    let firstChatTime = new Date('9999-12-31T23:59:59.999Z').getTime();
+    let firstChatTime = new Date("9999-12-31T23:59:59.999Z").getTime();
 
     for (let [index, line] of lines.entries()) {
         if (line.length) {
             try {
                 let json = JSON.parse(line);
                 if (json.mes) {
-                    let hash = crypto.createHash('sha256').update(json.mes).digest('hex');
+                    let hash = crypto
+                        .createHash("sha256")
+                        .update(json.mes)
+                        .digest("hex");
                     if (uniqueGenStartTimes.has(hash)) {
                         continue;
                     }
@@ -252,7 +345,10 @@ function calculateTotalGenTimeAndWordCount(char_dir, chat, uniqueGenStartTimes) 
                 }
 
                 if (json.gen_started && json.gen_finished) {
-                    let genTime = calculateGenTime(json.gen_started, json.gen_finished);
+                    let genTime = calculateGenTime(
+                        json.gen_started,
+                        json.gen_finished
+                    );
                     totalGenTime += genTime;
 
                     if (json.swipes && !json.swipe_info) {
@@ -263,27 +359,35 @@ function calculateTotalGenTimeAndWordCount(char_dir, chat, uniqueGenStartTimes) 
 
                 if (json.mes) {
                     let wordCount = countWordsInString(json.mes);
-                    json.is_user ? userWordCount += wordCount : nonUserWordCount += wordCount;
+                    json.is_user
+                        ? (userWordCount += wordCount)
+                        : (nonUserWordCount += wordCount);
                     json.is_user ? userMsgCount++ : nonUserMsgCount++;
                 }
 
                 if (json.swipes && json.swipes.length > 1) {
                     totalSwipeCount += json.swipes.length - 1; // Subtract 1 to not count the first swipe
-                    for (let i = 1; i < json.swipes.length; i++) { // Start from the second swipe
+                    for (let i = 1; i < json.swipes.length; i++) {
+                        // Start from the second swipe
                         let swipeText = json.swipes[i];
 
                         let wordCount = countWordsInString(swipeText);
-                        json.is_user ? userWordCount += wordCount : nonUserWordCount += wordCount;
+                        json.is_user
+                            ? (userWordCount += wordCount)
+                            : (nonUserWordCount += wordCount);
                         json.is_user ? userMsgCount++ : nonUserMsgCount++;
-
                     }
                 }
 
                 if (json.swipe_info && json.swipe_info.length > 1) {
-                    for (let i = 1; i < json.swipe_info.length; i++) { // Start from the second swipe
+                    for (let i = 1; i < json.swipe_info.length; i++) {
+                        // Start from the second swipe
                         let swipe = json.swipe_info[i];
                         if (swipe.gen_started && swipe.gen_finished) {
-                            totalGenTime += calculateGenTime(swipe.gen_started, swipe.gen_finished);
+                            totalGenTime += calculateGenTime(
+                                swipe.gen_started,
+                                swipe.gen_finished
+                            );
                         }
                     }
                 }
@@ -292,14 +396,20 @@ function calculateTotalGenTimeAndWordCount(char_dir, chat, uniqueGenStartTimes) 
                 if (json.is_user && firstChatTime > Date.now()) {
                     firstChatTime = timestampToMoment(json.send_date);
                 }
-
-
             } catch (error) {
                 console.error(`Error parsing line ${line}: ${error}`);
             }
         }
     }
-    return { totalGenTime, userWordCount, nonUserWordCount, userMsgCount, nonUserMsgCount, totalSwipeCount, firstChatTime };
+    return {
+        totalGenTime,
+        userWordCount,
+        nonUserWordCount,
+        userMsgCount,
+        nonUserMsgCount,
+        totalSwipeCount,
+        firstChatTime,
+    };
 }
 
 module.exports = {
