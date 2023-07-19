@@ -23,7 +23,7 @@ class WhisperSttProvider {
     }
 
     loadSettings(settings) {
-        // Pupulate Provider UI given input settings
+        // Populate Provider UI given input settings
         if (Object.keys(settings).length == 0) {
             console.debug("<STT-whisper-module> Using default Whisper STT extension settings")
         }

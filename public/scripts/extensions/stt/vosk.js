@@ -23,7 +23,7 @@ class VoskSttProvider {
     }
 
     loadSettings(settings) {
-        // Pupulate Provider UI given input settings
+        // Populate Provider UI given input settings
         if (Object.keys(settings).length == 0) {
             console.debug("<STT-Vosk-module> Using default vosk STT extension settings")
         }
