@@ -1923,6 +1923,12 @@ grammarly-extension {
     font-size: calc(var(--mainFontSize) - 0.1rem);
     font-weight: bold;
     margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+}
+
+.rm_stats_button {
+    cursor: pointer;
 }
 
 /* Focus */
