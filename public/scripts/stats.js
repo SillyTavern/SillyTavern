@@ -110,7 +110,7 @@ function createHtml(statsType, stats) {
     if (statsType === "User") {
         html += createStatBlock("Chatting Since", `${chatAge} ago`);
     } else {
-        html += createStatBlock("Chat Age", chatAge);
+        html += createStatBlock("First Interaction", `${chatAge} ago`);
     }
     html += createStatBlock("Chat Time", timeStirng);
     html += createStatBlock("User Messages", stats.user_msg_count);
@@ -284,11 +284,11 @@ async function statMesProcess(line, type, characters, this_chid, oldMesssage) {
         stat.total_swipe_count++;
     }
     stat.date_last_chat = Date.now();
-    stat.first_chat_time = Math.min(
+    stat.date_first_chat = Math.min(
         stat.date_first_chat ?? new Date("9999-12-31T23:59:59.999Z").getTime(),
         Date.now()
     );
     updateStats();
 }
 
-export { userStatsHandler, characterStatsHandler, getStats, statMesProcess };
+export { userStatsHandler, characterStatsHandler, getStats, statMesProcess, charStats };

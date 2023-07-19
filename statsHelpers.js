@@ -393,8 +393,9 @@ function calculateTotalGenTimeAndWordCount(
                 }
 
                 // If this is the first user message, set the first chat time
-                if (json.is_user && firstChatTime > Date.now()) {
-                    firstChatTime = timestampToMoment(json.send_date);
+                if (json.is_user) {
+                    //get min between firstChatTime and timestampToMoment(json.send_date)
+                    firstChatTime = Math.min(timestampToMoment(json.send_date), firstChatTime);
                 }
             } catch (error) {
                 console.error(`Error parsing line ${line}: ${error}`);
