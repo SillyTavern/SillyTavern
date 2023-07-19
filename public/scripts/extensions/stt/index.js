@@ -5,6 +5,7 @@ import { power_user } from "../../power-user.js";
 import { onlyUnique, debounce, getCharaFilename } from "../../utils.js";
 import { VoskSttProvider } from './vosk.js'
 import { WhisperSttProvider } from './whisper.js'
+import { BrowserSttProvider } from './browser.js'
 export { MODULE_NAME };
 
 const MODULE_NAME = 'stt';
@@ -13,12 +14,15 @@ const UPDATE_INTERVAL = 100;
 let inApiCall = false;
 
 let sttProviders = {
+    Browser: BrowserSttProvider,
     Whisper: WhisperSttProvider,
     Vosk: VoskSttProvider,
 }
 
-let sttProvider = new WhisperSttProvider
-let sttProviderName = "Whisper"
+let sttProvider = new BrowserSttProvider
+let sttProviderName = "Browser"
+//let sttProvider = new WhisperSttProvider
+//let sttProviderName = "Whisper"
 
 let pushToTalkKeyDown = false
 
@@ -26,7 +30,7 @@ async function moduleWorker() {
     const enabled = extension_settings.stt.enabled
     const record_mode = extension_settings.stt.recordMode
 
-    if (!enabled) {
+    if (!enabled | sttProviderName == "Browser") {
         return
     }
 
@@ -41,13 +45,12 @@ async function moduleWorker() {
 
     try {
         inApiCall = true;
-        const userMessageOriginal = await sttProvider.getUserMessage();
+        const userMessageOriginal =  await sttProvider.getUserMessage();
         let userMessageFormatted = userMessageOriginal.trim();
-
-        console.debug("<STT-module> recorded transcript: \""+userMessageFormatted+"\"");
 
         if (userMessageFormatted.length > 0)
         {
+            console.debug("<STT-module> recorded transcript: \""+userMessageFormatted+"\"");
             const messageMode = extension_settings.stt.messageMode;
 
             console.debug("<STT-module> mode: "+messageMode);
@@ -173,7 +176,7 @@ async function moduleWorker() {
         }
         else
         {
-            console.debug("<STT-module> Empty record, do nothing");
+            //console.debug("<STT-module> Empty record, do nothing");
         }
     }
     catch (error) {
@@ -207,20 +210,51 @@ function loadSttProvider(provider) {
     $('#stt_provider').val(sttProviderName)
 
     sttProvider.loadSettings(extension_settings.stt[sttProviderName])
+
+    // Use microphone button as push to talk
+    if (sttProviderName != "Browser") {
+        $("#microphone_button").show();
+        $("#microphone_button").off('click').on("click", function () {
+            if (!pushToTalkKeyDown) {
+                console.debug("<STT-module> UI microphone button pressed (recording start).");
+                pushToTalkKeyDown = true
+                $("#microphone_button").toggleClass('fa-microphone fa-microphone-slash');
+            } else {
+                console.debug("<STT-module> UI microphone button pressed (recording end).");
+                pushToTalkKeyDown = false
+                $("#microphone_button").toggleClass('fa-microphone fa-microphone-slash');
+            }
+        });
+        
+        $("#stt_record_mode_div").show();
+        $("#stt_push_to_talk_key_div").show();
+        $("#stt_trigger_words_div").show();
+        $("#stt_message_mapping_div").show();
+        $("#stt_wait_response_div").show();
+
+    }
+    else {
+        $("#stt_record_mode_div").hide();
+        $("#stt_push_to_talk_key_div").hide();
+        $("#stt_trigger_words_div").hide();
+        $("#stt_message_mapping_div").hide();
+        $("#stt_wait_response_div").hide();
+    }
 }
 
 function onSttProviderChange() {
     const sttProviderSelection = $('#stt_provider').val()
     loadSttProvider(sttProviderSelection)
+    saveSettingsDebounced();
 }
 
 function onSttProviderSettingsInput() {
-    sttProvider.onSettingsChange()
+    sttProvider.onSettingsChange();
 
     // Persist changes to SillyTavern stt extension settings
-    extension_settings.stt[sttProviderName] = sttProvider.setttings
-    saveSettingsDebounced()
-    console.info(`Saved settings ${sttProviderName} ${JSON.stringify(sttProvider.settings)}`)
+    extension_settings.stt[sttProviderName] = sttProvider.setttings;
+    saveSettingsDebounced();
+    console.info(`Saved settings ${sttProviderName} ${JSON.stringify(sttProvider.settings)}`);
 }
 
 //#############################//
@@ -247,7 +281,7 @@ function loadSettings() {
         Object.assign(extension_settings.stt, defaultSettings)
     }
     $('#stt_enabled').prop('checked',extension_settings.stt.enabled);
-    $('body').toggleClass('stt', extension_settings.stt.enabled);
+    //$('body').toggleClass('stt', extension_settings.stt.enabled);
     $('#stt_message_mode').val(extension_settings.stt.messageMode);
     $('#stt_record_mode').val(extension_settings.stt.recordMode);
     $('#stt_wait_response').prop('checked',extension_settings.stt.waitResponse);
@@ -286,6 +320,8 @@ function loadSettings() {
 
 async function onEnableClick() {
     extension_settings.stt.enabled = $('#stt_enabled').is(':checked');
+    if (!extension_settings.stt.enabled) $("#microphone_button").hide();
+    else $("#microphone_button").show();
     saveSettingsDebounced()
 }
 
@@ -303,7 +339,7 @@ async function onRecordModeChange() {
 async function onMessageModeChange() {
     extension_settings.stt.messageMode = $('#stt_message_mode').val();
 
-    if(extension_settings.stt.messageMode == "auto_send") {
+    if(sttProviderName != "Browser" & extension_settings.stt.messageMode == "auto_send") {
         $("#stt_wait_response_div").show()
     }
     else {
@@ -391,7 +427,7 @@ $(document).ready(function () {
                             <small>Enabled</small>
                         </label>
                     </div>
-                    <div>
+                    <div id="stt_record_mode_div">
                         <span>Record mode</span> </br>
                         <select id="stt_record_mode">
                             <option value="voice_detection">Voice detection</option>
@@ -402,7 +438,7 @@ $(document).ready(function () {
                         <span>Push to talk key</span>
                         <input id="stt_push_to_talk_key" class="text_pole" placeholder="(click here and press key)">
                     </div>
-                    <div>
+                    <div id="stt_message_mode_div">
                         <span>Message mode</span> </br>
                         <select id="stt_message_mode">
                             <option value="append">Append</option>
@@ -416,7 +452,7 @@ $(document).ready(function () {
                             <small>Wait for response</small>
                         </label>
                     </div>
-                    <div>
+                    <div id="stt_trigger_words_div">
                         <span>Trigger words</span>
                         <textarea id="stt_trigger_words" class="text_pole textarea_compact" type="text" rows="4" placeholder="Enter comma separated words that trigger new message, example:\nhey, hey aqua, record, listen"></textarea>
                         <span id="stt_trigger_words_status"></span>
@@ -425,7 +461,7 @@ $(document).ready(function () {
                             <small>Enable trigger words</small>
                         </label>
                     </div>
-                    <div>
+                    <div id="stt_message_mapping_div">
                         <span>Message mapping</span>
                         <textarea id="stt_message_mapping" class="text_pole textarea_compact" type="text" rows="4" placeholder="Enter comma separated phrases mapping, example:\ncommand delete = /del 1,\nslash delete = /del 1,\nsystem roll = /roll 2d6,\nhey continue = /continue"></textarea>
                         <span id="stt_message_mapping_status"></span>
@@ -488,7 +524,11 @@ $(document).ready(function () {
         };
         });
 
+        
+        const $button = $('<div id="microphone_button" class="fa-solid fa-microphone speech-toggle" title="Click to speak"></div>');
+        $('#send_but_sheld').prepend($button);
 
+        if (!extension_settings.stt.enabled) $button.hide();
     }
     addExtensionControls(); // No init dependencies
     loadSettings(); // Depends on Extension Controls and loadTtsProvider
@@ -496,4 +536,5 @@ $(document).ready(function () {
     const wrapper = new ModuleWorkerWrapper(moduleWorker);
     setInterval(wrapper.update.bind(wrapper), UPDATE_INTERVAL); // Init depends on all the things
     moduleWorker();
+
 })
