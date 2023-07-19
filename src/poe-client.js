@@ -26,6 +26,8 @@ const http = require('http');
 const https = require('https');
 const _ = require('lodash');
 
+const UserAgent = require('user-agents');
+
 const directory = __dirname;
 
 function uuidv4() {
@@ -64,7 +66,10 @@ const cached_bots = {};
 const logger = console;
 const delay = ms => new Promise(res => setTimeout(res, ms));
 
-const user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36";
+const userAgent = new UserAgent();
+const user_agent = userAgent.toString();
+
+//const user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36";
 
 function extractFormKey(html) {
     const scriptRegex = /<script>if\(.+\)throw new Error;(.+)<\/script>/;
@@ -267,11 +272,19 @@ function generate_payload(query, variables) {
 
 async function request_with_retries(method, attempts = 10) {
     for (let i = 0; i < attempts; i++) {
-
+        //console.log(user_agent)
         try {
             var ResponseHasFreeSocket = false;
             const response = await method();
             if (response.status === 200) {
+                const responseStringRaw = JSON.stringify(response, null, 4)
+                fs.writeFile('poe-success-raw.log', responseStringRaw, 'utf-8', (err) => {
+                    if (err) {
+                        console.error(err);
+                    } else {
+                        console.log('Successful query logged to poe-success-raw.log');
+                    }
+                });
 
                 const circularReference = new Set();
                 const responseString = JSON.stringify(response, function (key, value) {
@@ -327,7 +340,8 @@ async function request_with_retries(method, attempts = 10) {
         } catch (err) {
             var ErrorHasFreeSocket = false;
             const circularReference = new Set();
-            //const errStringRaw = JSON.stringify(err, null, 4)
+            const errStringRaw = JSON.stringify(err, null, 4)
+
             const errString = JSON.stringify(err, function (key, value) {
                 if (key === 'data' && Array.isArray(value)) {
                     return '[removed data spam]';
@@ -366,8 +380,13 @@ async function request_with_retries(method, attempts = 10) {
             //});
             fs.writeFile('poe-error.log', errString, 'utf-8', (err) => {
                 if (err) throw err;
-                console.log(`Error saved to poe-error.log Free socket? ${ErrorHasFreeSocket}`);
+                //console.log(`Error saved to poe-error.log Free socket? ${ErrorHasFreeSocket}`);
             });
+            fs.writeFile('poe-error-raw.log', errStringRaw, 'utf-8', (err) => {
+                if (err) throw err;
+                //console.log(`Error saved to poe-error-raw.log Free socket? ${ErrorHasFreeSocket}`);
+            });
+            console.log(`Error log files saved`)
             await delay(3000)
         }
     }
