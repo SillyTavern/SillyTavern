@@ -67,6 +67,9 @@ const { TextEncoder, TextDecoder } = require('util');
 const utf8Encode = new TextEncoder();
 const commandExistsSync = require('command-exists').sync;
 
+// impoort from statsHelpers.js
+const statsHelpers = require('./statsHelpers.js');
+
 const characterCardParser = require('./src/character-card-parser.js');
 const config = require(path.join(process.cwd(), './config.conf'));
 
@@ -117,6 +120,7 @@ let response_generate_novel;
 let characters = {};
 let response_dw_bg;
 let response_getstatus;
+let first_run = true;
 
 
 //RossAscends: Added function to format dates used in files and chat timestamps to a humanized format.
@@ -767,6 +771,7 @@ function convertToV2(char) {
     return result;
 }
 
+
 function unsetFavFlag(char) {
     const _ = require('lodash');
     _.set(char, 'fav', false);
@@ -1172,6 +1177,84 @@ async function charaRead(img_url, input_format) {
     return characterCardParser.parse(img_url, input_format);
 }
 
+/**
+ * calculateChatSize - Calculates the total chat size for a given character.
+ *
+ * @param  {string} charDir The directory where the chats are stored.
+ * @return {number}         The total chat size.
+ */
+const calculateChatSize = (charDir) => {
+    let chatSize = 0;
+    let dateLastChat = 0;
+
+    if (fs.existsSync(charDir)) {
+        const chats = fs.readdirSync(charDir);
+        if (Array.isArray(chats) && chats.length) {
+            for (const chat of chats) {
+                const chatStat = fs.statSync(path.join(charDir, chat));
+                chatSize += chatStat.size;
+                dateLastChat = Math.max(dateLastChat, chatStat.mtimeMs);
+            }
+        }
+    }
+
+    return { chatSize, dateLastChat };
+}
+
+/**
+ * processCharacter - Process a given character, read its data and calculate its statistics.
+ *
+ * @param  {string} item The name of the character.
+ * @param  {number} i    The index of the character in the characters list.
+ * @return {Promise}     A Promise that resolves when the character processing is done.
+ */
+const processCharacter = async (item, i) => {
+    try {
+        const img_data = await charaRead(charactersPath + item);
+        let jsonObject = getCharaCardV2(json5.parse(img_data));
+        jsonObject.avatar = item;
+        characters[i] = jsonObject;
+        characters[i]['json_data'] = img_data;
+        const charStat = fs.statSync(path.join(charactersPath, item));
+        characters[i]['date_added'] = charStat.birthtimeMs;
+        const char_dir = path.join(chatsPath, item.replace('.png', ''));
+
+        const { chatSize, dateLastChat } = calculateChatSize(char_dir);
+        characters[i]['chat_size'] = chatSize;
+        characters[i]['date_last_chat'] = dateLastChat;
+    }
+    catch (err) {
+        characters[i] = {
+            date_added: 0,
+            date_last_chat: 0,
+            chat_size: 0
+        };
+
+        console.log(`Could not process character: ${item}`);
+
+        if (err instanceof SyntaxError) {
+            console.log("String [" + i + "] is not valid JSON!");
+        } else {
+            console.log("An unexpected error occurred: ", err);
+        }
+    }
+}
+
+
+/**
+ * HTTP POST endpoint for the "/getcharacters" route.
+ *
+ * This endpoint is responsible for reading character files from the `charactersPath` directory,
+ * parsing character data, calculating stats for each character and responding with the data.
+ * Stats are calculated only on the first run, on subsequent runs the stats are fetched from 
+ * the `charStats` variable.
+ * The stats are calculated by the `calculateStats` function.
+ * The characters are processed by the `processCharacter` function.
+ *
+ * @param  {object}   request  The HTTP request object.
+ * @param  {object}   response The HTTP response object.
+ * @return {undefined}         Does not return a value.
+ */
 app.post("/getcharacters", jsonParser, function (request, response) {
     fs.readdir(charactersPath, async (err, files) => {
         if (err) {
@@ -1180,63 +1263,49 @@ app.post("/getcharacters", jsonParser, function (request, response) {
         }
 
         const pngFiles = files.filter(file => file.endsWith('.png'));
-
-        //console.log(pngFiles);
         characters = {};
-        var i = 0;
-        for (const item of pngFiles) {
-            try {
-                var img_data = await charaRead(charactersPath + item);
-                let jsonObject = getCharaCardV2(json5.parse(img_data));
-                jsonObject.avatar = item;
-                characters[i] = {};
-                characters[i] = jsonObject;
-                characters[i]['json_data'] = img_data;
 
-                try {
-                    const charStat = fs.statSync(path.join(charactersPath, item));
-                    characters[i]['date_added'] = charStat.birthtimeMs;
-                    const char_dir = path.join(chatsPath, item.replace('.png', ''));
+        let processingPromises = pngFiles.map((file, index) => processCharacter(file, index));
+        await Promise.all(processingPromises); performance.mark('B');
 
-                    let chat_size = 0;
-                    let date_last_chat = 0;
-
-                    if (fs.existsSync(char_dir)) {
-                        const chats = fs.readdirSync(char_dir);
-
-                        if (Array.isArray(chats) && chats.length) {
-                            for (const chat of chats) {
-                                const chatStat = fs.statSync(path.join(char_dir, chat));
-                                chat_size += chatStat.size;
-                                date_last_chat = Math.max(date_last_chat, chatStat.mtimeMs);
-                            }
-                        }
-                    }
-
-                    characters[i]['date_last_chat'] = date_last_chat;
-                    characters[i]['chat_size'] = chat_size;
-                }
-                catch {
-                    characters[i]['date_added'] = 0;
-                    characters[i]['date_last_chat'] = 0;
-                    characters[i]['chat_size'] = 0;
-                }
-
-                i++;
-            } catch (error) {
-                console.log(`Could not read character: ${item}`);
-                if (error instanceof SyntaxError) {
-                    console.log("String [" + (i) + "] is not valid JSON!");
-                } else {
-                    console.log("An unexpected error occurred: ", error);
-                }
-            }
-        };
-        //console.log(characters);
         response.send(JSON.stringify(characters));
     });
-
 });
+
+
+
+/**
+ * Handle a POST request to get the stats object
+ *
+ * This function returns the stats object that was calculated by the `calculateStats` function.
+ *
+ *
+ * @param {Object} request - The HTTP request object.
+ * @param {Object} response - The HTTP response object.
+ * @returns {void}
+ */
+app.post("/getstats", jsonParser, function (request, response) {
+    response.send(JSON.stringify(statsHelpers.getCharStats()));
+});
+
+/**
+ * Handle a POST request to update the stats object
+ * 
+ * This function updates the stats object with the data from the request body.
+ * 
+ * @param {Object} request - The HTTP request object.
+ * @param {Object} response - The HTTP response object.
+ * @returns {void}
+ * 
+*/
+app.post("/updatestats", jsonParser, function (request, response) {
+    if (!request.body) return response.sendStatus(400);
+    statsHelpers.setCharStats(request.body);
+    return response.sendStatus(200);
+});
+
+
+
 app.post("/getbackgrounds", jsonParser, function (request, response) {
     var images = getImages("public/backgrounds");
     response.send(JSON.stringify(images));
@@ -3607,6 +3676,18 @@ const setupTasks = async function () {
         loadClaudeTokenizer('src/claude.json'),
     ]);
 
+    await statsHelpers.loadStatsFile(directories.chats, directories.characters);
+
+    // Set up event listeners for a graceful shutdown
+    process.on('SIGINT', statsHelpers.writeStatsToFileAndExit);
+    process.on('SIGTERM', statsHelpers.writeStatsToFileAndExit);
+    process.on('uncaughtException', (err) => {
+        console.error('Uncaught exception:', err);
+        statsHelpers.writeStatsToFileAndExit();
+    });
+
+    setInterval(statsHelpers.saveStatsToFile, 5 * 60 * 1000);
+    
     console.log('Launching...');
 
     if (autorun) open(autorunUrl.toString());

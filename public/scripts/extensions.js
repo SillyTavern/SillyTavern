@@ -167,6 +167,8 @@ async function getManifests(names) {
                     const json = await response.json();
                     obj[name] = json;
                     resolve();
+                } else {
+                    reject();
                 }
             }).catch(err => reject() && console.log('Could not load manifest.json for ' + name, err));
         });
