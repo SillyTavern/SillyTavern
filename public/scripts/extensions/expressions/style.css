@@ -47,6 +47,7 @@
     filter: drop-shadow(2px 2px 2px #51515199);
     z-index: 2;
     overflow: hidden;
+    resize: both;
 
 }
 
