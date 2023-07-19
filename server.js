@@ -1246,7 +1246,7 @@ const processCharacter = async (item, i) => {
  *
  * This endpoint is responsible for reading character files from the `charactersPath` directory,
  * parsing character data, calculating stats for each character and responding with the data.
- * Stats are calculated only on the first run, on subsequent runs the stats are fetched from 
+ * Stats are calculated only on the first run, on subsequent runs the stats are fetched from
  * the `charStats` variable.
  * The stats are calculated by the `calculateStats` function.
  * The characters are processed by the `processCharacter` function.
@@ -1290,13 +1290,13 @@ app.post("/getstats", jsonParser, function (request, response) {
 
 /**
  * Handle a POST request to update the stats object
- * 
+ *
  * This function updates the stats object with the data from the request body.
- * 
+ *
  * @param {Object} request - The HTTP request object.
  * @param {Object} response - The HTTP response object.
  * @returns {void}
- * 
+ *
 */
 app.post("/updatestats", jsonParser, function (request, response) {
     if (!request.body) return response.sendStatus(400);
@@ -3687,7 +3687,7 @@ const setupTasks = async function () {
     });
 
     setInterval(statsHelpers.saveStatsToFile, 5 * 60 * 1000);
-    
+
     console.log('Launching...');
 
     if (autorun) open(autorunUrl.toString());
