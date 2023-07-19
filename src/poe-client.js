@@ -327,6 +327,7 @@ async function request_with_retries(method, attempts = 10) {
         } catch (err) {
             var ErrorHasFreeSocket = false;
             const circularReference = new Set();
+            //const errStringRaw = JSON.stringify(err, null, 4)
             const errString = JSON.stringify(err, function (key, value) {
                 if (key === 'data' && Array.isArray(value)) {
                     return '[removed data spam]';
@@ -360,11 +361,14 @@ async function request_with_retries(method, attempts = 10) {
                 }
                 return value;
             }, 4);
+            //fs.writeFile('poe-error-raw.log', errStringRaw, 'utf-8', (err) => {
+            //    console.log(`Error saved to poe-error-raw.log`);
+            //});
             fs.writeFile('poe-error.log', errString, 'utf-8', (err) => {
                 if (err) throw err;
                 console.log(`Error saved to poe-error.log Free socket? ${ErrorHasFreeSocket}`);
             });
-            await delay(100)
+            await delay(3000)
         }
     }
     throw new Error(`Failed to download too many times.`);
