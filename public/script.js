@@ -1,4 +1,5 @@
-import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile } from "./scripts/RossAscends-mods.js";
+import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, } from "./scripts/RossAscends-mods.js";
+import { userStatsHandler, statMesProcess } from './scripts/stats.js';
 import { encode } from "../scripts/gpt-2-3-tokenizer/mod.js";
 import { GPT3BrowserTokenizer } from "../scripts/gpt-3-tokenizer/gpt3-tokenizer.js";
 import {
@@ -326,6 +327,7 @@ let is_delete_mode = false;
 let fav_ch_checked = false;
 let scrollLock = false;
 
+
 //initialize global var for future cropped blobs
 let currentCroppedAvatar = '';
 
@@ -437,6 +439,7 @@ const system_messages = {
             <li><tt>{​{date}​}</tt> - the current date</li>
             <li><tt>{{idle_duration}}</tt> - the time since the last user message was sent</li>
             <li><tt>{{random:(args)}}</tt> - returns a random item from the list. (ex: {{random:1,2,3,4}} will return 1 of the 4 numbers at random. Works with text lists too.</li>
+            <li><tt>{{roll:(formula)}}</tt> - rolls a dice. (ex: {{roll:1d6}} will roll a 6-sided dice and return a number between 1 and 6)</li>
             </ul>`
     },
     welcome:
@@ -948,8 +951,11 @@ async function getCharacters() {
         if (this_chid != undefined && this_chid != "invalid-safety-id") {
             $("#avatar_url_pole").val(characters[this_chid].avatar);
         }
+
         await getGroups();
         await printCharacters();
+
+
         updateCharacterCount('#rm_print_characters_block > div');
     }
 }
@@ -1057,6 +1063,7 @@ async function delChat(chatfile) {
     if (response.ok === true) {
         // choose another chat if current was deleted
         if (chatfile.replace('.jsonl', '') === characters[this_chid].chat) {
+            chat_metadata = {};
             await replaceCurrentChat();
         }
     }
@@ -1108,7 +1115,6 @@ function clearChat() {
         $('.zoomed_avatar[forChar]').remove();
     } else { console.debug('saw no avatars') }
     itemizedPrompts = [];
-    chat_metadata = {};
 }
 
 async function deleteLastMessage() {
@@ -1307,6 +1313,8 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     var messageText = mes["mes"];
     const momentDate = timestampToMoment(mes.send_date);
     const timestamp = momentDate.isValid() ? momentDate.format('LL LT') : '';
+
+
 
 
     if (mes?.extra?.display_text) {
@@ -1551,6 +1559,7 @@ function substituteParams(content, _name1, _name2, _original) {
         return utcTime;
     });
     content = randomReplace(content);
+    content = diceRollReplace(content);
     return content;
 }
 
@@ -1601,6 +1610,23 @@ function randomReplace(input, emptyListPlaceholder = '') {
 
         //const randomIndex = Math.floor(Math.random() * list.length);
         return list[randomIndex];
+    });
+}
+
+function diceRollReplace(input, invalidRollPlaceholder = '') {
+    const randomPattern = /{{roll:([^}]+)}}/gi;
+
+    return input.replace(randomPattern, (match, matchValue) => {
+        const formula = matchValue.trim();
+        const isValid = droll.validate(formula);
+
+        if (!isValid) {
+            console.debug(`Invalid roll formula: ${formula}`);
+            return invalidRollPlaceholder;
+        }
+
+        const result = droll.roll(formula);
+        return new String(result.total);
     });
 }
 
@@ -1710,7 +1736,7 @@ export function extractMessageBias(message) {
         return null;
     }
 
-    const forbiddenMatches = ['user', 'char', 'time', 'date', 'random', 'idle_duration'];
+    const forbiddenMatches = ['user', 'char', 'time', 'date', 'random', 'idle_duration', 'roll'];
     const found = [];
     const rxp = /\{\{([\s\S]+?)\}\}/gm;
     //const rxp = /{([^}]+)}/g;
@@ -1719,8 +1745,8 @@ export function extractMessageBias(message) {
     while ((curMatch = rxp.exec(message))) {
         const match = curMatch[1].trim();
 
-        // Ignore random pattern matches
-        if (/^random:.+/i.test(match)) {
+        // Ignore random/roll pattern matches
+        if (/^random:.+/i.test(match) || /^roll:.+/i.test(match)) {
             continue;
         }
 
@@ -3026,7 +3052,7 @@ export async function sendMessageAsUser(textareaText, messageBias) {
         console.debug('checking bias');
         chat[chat.length - 1]['extra']['bias'] = messageBias;
     }
-
+    statMesProcess(chat[chat.length - 1], 'user', characters, this_chid, '');
     addOneMessage(chat[chat.length - 1]);
     // Wait for all handlers to finish before continuing with the prompt
     await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
@@ -3711,16 +3737,21 @@ function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete
     return getMessage;
 }
 
+
+
+
 function saveReply(type, getMessage, this_mes_is_name, title) {
     if (type != 'append' && type != 'continue' && type != 'appendFinal' && chat.length && (chat[chat.length - 1]['swipe_id'] === undefined ||
         chat[chat.length - 1]['is_user'])) {
         type = 'normal';
     }
 
+    let oldMessage = ''
     const generationFinished = new Date();
     const img = extractImageFromMessage(getMessage);
     getMessage = img.getMessage;
     if (type === 'swipe') {
+        oldMessage = chat[chat.length - 1]['mes'];
         chat[chat.length - 1]['swipes'].length++;
         if (chat[chat.length - 1]['swipe_id'] === chat[chat.length - 1]['swipes'].length - 1) {
             chat[chat.length - 1]['title'] = title;
@@ -3736,6 +3767,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         }
     } else if (type === 'append' || type === 'continue') {
         console.debug("Trying to append.")
+        oldMessage = chat[chat.length - 1]['mes'];
         chat[chat.length - 1]['title'] = title;
         chat[chat.length - 1]['mes'] += getMessage;
         chat[chat.length - 1]['gen_started'] = generation_started;
@@ -3745,6 +3777,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         chat[chat.length - 1]["extra"]["model"] = getGeneratingModel();
         addOneMessage(chat[chat.length - 1], { type: 'swipe' });
     } else if (type === 'appendFinal') {
+        oldMessage = chat[chat.length - 1]['mes'];
         console.debug("Trying to appendFinal.")
         chat[chat.length - 1]['title'] = title;
         chat[chat.length - 1]['mes'] = getMessage;
@@ -3812,6 +3845,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
             extra: JSON.parse(JSON.stringify(chat[chat.length - 1]["extra"])),
         };
     }
+    statMesProcess(chat[chat.length - 1], type, characters, this_chid, oldMessage);
     return { type, getMessage };
 }
 
@@ -4186,12 +4220,15 @@ async function getChat() {
             chat.push(...response);
             chat_create_date = chat[0]['create_date'];
             chat_metadata = chat[0]['chat_metadata'] ?? {};
+
             chat.shift();
         } else {
             chat_create_date = humanizedDateTime();
         }
         await getChatResult();
         await saveChat();
+
+
         setTimeout(function () {
             $('#send_textarea').click();
             $('#send_textarea').focus();
@@ -4213,19 +4250,17 @@ async function getChatResult() {
             is_user: false,
             is_name: true,
             send_date: getMessageTimeStamp(),
-            mes: firstMes,
+            mes: getRegexedString(firstMes, regex_placement.AI_OUTPUT),
         };
 
         if (Array.isArray(alternateGreetings) && alternateGreetings.length > 0) {
             chat[0]['swipe_id'] = 0;
-            chat[0]['swipes'] = [];
+            chat[0]['swipes'] = [chat[0]['mes']].concat(
+                alternateGreetings.map(
+                    (greeting) => substituteParams(getRegexedString(greeting, regex_placement.AI_OUTPUT))
+                )
+            );
             chat[0]['swipe_info'] = [];
-            chat[0]['swipes'][0] = chat[0]['mes'];
-
-            for (let i = 0; i < alternateGreetings.length; i++) {
-                const alternateGreeting = alternateGreetings[i];
-                chat[0]['swipes'].push(substituteParams(alternateGreeting));
-            }
         }
     }
     printMessages();
@@ -4849,7 +4884,6 @@ async function getSettings(type) {
     }
 
     const data = await response.json();
-
     if (data.result != "file not find" && data.settings) {
         settings = JSON.parse(data.settings);
         if (settings.username !== undefined) {
@@ -5041,7 +5075,7 @@ async function saveSettings(type) {
             extension_settings: extension_settings,
             context_settings: context_settings,
             tags: tags,
-            tag_map: tag_map,
+            tag_map: tag_map,           
             ...nai_settings,
             ...kai_settings,
             ...oai_settings,
@@ -5074,6 +5108,8 @@ async function saveSettings(type) {
         },
     });
 }
+
+
 
 function setCharacterBlockHeight() {
     const $children = $("#rm_print_characters_block").children();
@@ -6251,7 +6287,7 @@ async function createOrEditCharacter(e) {
                             chat[0]['swipes'][0] = chat[0]['mes'];
 
                             for (let i = 0; i < alternateGreetings.length; i++) {
-                                const alternateGreeting = alternateGreetings[i];
+                                const alternateGreeting = getRegexedString(alternateGreetings[i], regex_placement.AI_OUTPUT);
                                 chat[0]['swipes'].push(substituteParams(alternateGreeting));
                             }
                         }
@@ -6483,7 +6519,7 @@ const swipe_right = () => {
     } else if (parseInt(chat[chat.length - 1]['swipe_id']) < chat[chat.length - 1]['swipes'].length) { //otherwise, if the id is less than the number of swipes
         chat[chat.length - 1]['mes'] = chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipe_id']]; //load the last mes box with the latest generation
         chat[chat.length - 1]['send_date'] = chat[chat.length - 1]?.swipe_info[chat[chat.length - 1]['swipe_id']]?.send_date || chat[chat.length - 1]['send_date']; //update send date
-        chat[chat.length - 1]['extra'] = JSON.parse(JSON.stringify(chat[chat.length - 1].swipe_info[chat[chat.length - 1]['swipe_id']]?.extra || chat[chat.length - 1].extra));
+        chat[chat.length - 1]['extra'] = JSON.parse(JSON.stringify(chat[chat.length - 1].swipe_info[chat[chat.length - 1]['swipe_id']]?.extra || chat[chat.length - 1].extra || []));
         run_swipe_right = true; //then prepare to do normal right swipe to show next message
     }
 
@@ -8565,6 +8601,10 @@ $(document).ready(function () {
         restoreCaretPosition($(this).get(0), caretPosition);
     });
 
+    $(".user_stats_button").on('click', function () {
+        userStatsHandler();
+    });
+
     $('#external_import_button').on('click', async () => {
         const html = `<h3>Enter the URL of the content to import</h3>
         Supported sources:<br>
@@ -8703,4 +8743,4 @@ $(document).ready(function () {
     $("#charListGridToggle").on('click', async () => {
         doCharListDisplaySwitch();
     });
-})
+});

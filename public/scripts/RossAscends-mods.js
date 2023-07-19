@@ -15,6 +15,10 @@ import {
     saveSettingsDebounced,
 } from "../script.js";
 
+import {
+    characterStatsHandler,
+} from "./stats.js";
+
 
 import {
     power_user,
@@ -103,6 +107,37 @@ function waitForElement(querySelector, timeout) {
         }, timeout);
     });
 }
+
+/**
+ * Converts generation time from milliseconds to a human-readable format.
+ * 
+ * The function takes total generation time as an input, then converts it to a format 
+ * of "_ Days, _ Hours, _ Minutes, _ Seconds". If the generation time does not exceed a 
+ * particular measure (like days or hours), that measure will not be included in the output.
+ *
+ * @param {number} total_gen_time - The total generation time in milliseconds.
+ * @returns {string} - A human-readable string that represents the time spent generating characters.
+ */
+export function humanizeGenTime(total_gen_time) {
+
+    //convert time_spent to humanized format of "_ Hours, _ Minutes, _ Seconds" from milliseconds
+    let time_spent = total_gen_time || 0;
+    time_spent = Math.floor(time_spent / 1000);
+    let seconds = time_spent % 60;
+    time_spent = Math.floor(time_spent / 60);
+    let minutes = time_spent % 60;
+    time_spent = Math.floor(time_spent / 60);
+    let hours = time_spent % 24;
+    time_spent = Math.floor(time_spent / 24);
+    let days = time_spent;
+    time_spent = "";
+    if (days > 0) { time_spent += `${days} Days, `; }
+    if (hours > 0) { time_spent += `${hours} Hours, `; }
+    if (minutes > 0) { time_spent += `${minutes} Minutes, `; }
+    time_spent += `${seconds} Seconds`;
+    return time_spent;
+}
+
 
 
 // Device detection
@@ -270,10 +305,14 @@ export function RA_CountCharTokens() {
             // if neither, probably safety char or some error in loading
         } else { console.debug("RA_TC -- no valid char found, closing."); }
     }
+    //label rm_stats_button with a tooltip indicating stats
+    $("#result_info").html(`<small>${count_tokens} Tokens (${perm_tokens} Permanent)</small>
+
+    <i title='Click for stats!' class="fa-solid fa-circle-info rm_stats_button"></i>`);
     // display the counted tokens
     const tokenLimit = Math.max(((main_api !== 'openai' ? max_context : oai_settings.openai_max_context) / 2), 1024);
     if (count_tokens < tokenLimit && perm_tokens < tokenLimit) {
-        $("#result_info").html(`<small>${count_tokens} Tokens (${perm_tokens} Permanent)</small>`);
+
     } else {
         $("#result_info").html(`
         <div class="flex-container alignitemscenter">
@@ -281,10 +320,16 @@ export function RA_CountCharTokens() {
                 <small class="flex-container flexnowrap flexNoGap">
                     <div class="neutral_warning">${count_tokens}</div>&nbsp;Tokens (<div class="neutral_warning">${perm_tokens}</div><div>&nbsp;Permanent)</div>
                 </small>
+                <i title='Click for stats!' class="fa-solid fa-circle-info rm_stats_button"></i>
             </div>
             <div id="chartokenwarning" class="menu_button margin0 whitespacenowrap"><a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-tokens" target="_blank">About Token 'Limits'</a></div>
         </div>`);
+
+
     } //warn if either are over 1024
+    $(".rm_stats_button").on('click', function () {
+        characterStatsHandler(characters, this_chid);
+    });
 }
 //Auto Load Last Charcter -- (fires when active_character is defined and auto_load_chat is true)
 async function RA_autoloadchat() {

@@ -232,10 +232,15 @@ async function visualNovelUpdateLayers(container) {
 
     images.sort(sortFunction).each((index, current) => {
         const element = $(current);
+        const elementID = element.attr('id')
 
         // skip repositioning of dragged elements
-        if (element.data('dragged')) {
-            currentPosition += imagesWidth[index];
+        if (element.data('dragged')
+            || (power_user.movingUIState[elementID]
+                && (typeof power_user.movingUIState[elementID] === 'object')
+                && Object.keys(power_user.movingUIState[elementID]).length > 0)) {
+            loadMovingUIState()
+            //currentPosition += imagesWidth[index];
             return;
         }
 

@@ -763,7 +763,6 @@ function loadPowerUserSettings(settings, data) {
     loadMovingUIState();
     loadCharListState();
 
-    //console.log(power_user)
 }
 
 async function loadCharListState() {
