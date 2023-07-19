@@ -266,20 +266,112 @@ function generate_payload(query, variables) {
 }
 
 async function request_with_retries(method, attempts = 10) {
-    const url = '';
     for (let i = 0; i < attempts; i++) {
+
         try {
+            var ResponseHasFreeSocket = false;
             const response = await method();
             if (response.status === 200) {
+
+                const circularReference = new Set();
+                const responseString = JSON.stringify(response, function (key, value) {
+                    if (typeof value === 'object' && value !== null) {
+                        if (circularReference.has(value)) {
+                            return;
+                        }
+                        circularReference.add(value);
+                    }
+                    if (key === 'data' && typeof value === 'object' && value !== null) {
+                        return '[removed data spam]';
+                    }
+                    if (typeof value === 'object' && value !== null) {
+                        return Array.isArray(value) ? value : { ...value };
+                    }
+
+                    if (key === "freeSockets" && key.length) {
+                        ResponseHasFreeSocket = true;
+                    }
+                    if (key === "Cookie" || key === "set-cookie" || key === "Set-Cookie") {
+                        return "[PB COOKIE DATA REDACTED BY ST CODE]"
+                    }
+                    if (typeof value === 'string' && value.includes('p-b=')) {
+                        const startIndex = value.indexOf('p-b=');
+                        const endIndex = value.indexOf(';', startIndex);
+                        if (endIndex === -1) {
+                            return value.substring(0, startIndex) + '[P-B COOKIE REDACTED BY ST]';
+                        }
+                        return value.substring(0, startIndex) + '[P-B COOKIE REDACTED BY ST]' + value.substring(endIndex);
+                    }
+                    if (typeof value === 'string' && value.includes('__cf_bm=')) {
+                        const startIndex = value.indexOf('__cf_bm=');
+                        const endIndex = value.indexOf(';', startIndex);
+                        if (endIndex === -1) {
+                            return value.substring(0, startIndex) + '[Cloudflare COOKIE REDACTED BY ST]';
+                        }
+                        return value.substring(0, startIndex) + '[CloudFlare COOKIE REDACTED BY ST]' + value.substring(endIndex);
+                    }
+
+
+                    return value;
+                }, 4);
+                fs.writeFile('poe-success.log', responseString, 'utf-8', () => {
+                    //console.log('Successful query logged to poe-success.log');
+                });
+
+
                 return response;
             }
-            logger.warn(`Server returned a status code of ${response.status} while downloading ${url}. Retrying (${i + 1}/${attempts})...`);
-        }
-        catch (err) {
-            console.log(err);
+
+            //this never actually gets seen as any non-200 response jumps to the catch code
+            logger.warn(`Server returned a status code of ${response.status} while downloading. Retrying (${i + 1}/${attempts})...`);
+        } catch (err) {
+            var ErrorHasFreeSocket = false;
+            const circularReference = new Set();
+            //const errStringRaw = JSON.stringify(err, null, 4)
+            const errString = JSON.stringify(err, function (key, value) {
+                if (key === 'data' && Array.isArray(value)) {
+                    return '[removed data spam]';
+                } else if (typeof value === 'object' && value !== null) {
+                    if (circularReference.has(value)) {
+                        return '[Circular]';
+                    }
+                    circularReference.add(value);
+                }
+                if (key === "Cookie" || key === "set-cookie" || key === "Set-Cookie") {
+                    return "[PB COOKIE DATA REDACTED BY ST CODE]"
+                }
+                if (typeof value === 'string' && value.includes('p-b=')) {
+                    const startIndex = value.indexOf('p-b=');
+                    const endIndex = value.indexOf(';', startIndex);
+                    if (endIndex === -1) {
+                        return value.substring(0, startIndex) + '[P-B COOKIE REDACTED BY ST]';
+                    }
+                    return value.substring(0, startIndex) + '[P-B COOKIE REDACTED BY ST]' + value.substring(endIndex);
+                }
+                if (typeof value === 'string' && value.includes('__cf_bm=')) {
+                    const startIndex = value.indexOf('__cf_bm=');
+                    const endIndex = value.indexOf(';', startIndex);
+                    if (endIndex === -1) {
+                        return value.substring(0, startIndex) + '[Cloudflare COOKIE REDACTED BY ST]';
+                    }
+                    return value.substring(0, startIndex) + '[CloudFlare COOKIE REDACTED BY ST]' + value.substring(endIndex);
+                }
+                if (key === "freeSockets" && key.length) {
+                    ErrorHasFreeSocket = true;
+                }
+                return value;
+            }, 4);
+            //fs.writeFile('poe-error-raw.log', errStringRaw, 'utf-8', (err) => {
+            //    console.log(`Error saved to poe-error-raw.log`);
+            //});
+            fs.writeFile('poe-error.log', errString, 'utf-8', (err) => {
+                if (err) throw err;
+                console.log(`Error saved to poe-error.log Free socket? ${ErrorHasFreeSocket}`);
+            });
+            await delay(3000)
         }
     }
-    throw new Error(`Failed to download ${url} too many times.`);
+    throw new Error(`Failed to download too many times.`);
 }
 
 function findKey(obj, key, path = []) {
@@ -381,7 +473,7 @@ class Client {
         await this.connect_ws();
         console.log('Client initialized.');
     }
-    
+
 
     get_device_id() {
         const user_id = this.viewer["poeUser"]["id"];
