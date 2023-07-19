@@ -4232,19 +4232,17 @@ async function getChatResult() {
             is_user: false,
             is_name: true,
             send_date: getMessageTimeStamp(),
-            mes: firstMes,
+            mes: getRegexedString(firstMes, regex_placement.AI_OUTPUT),
         };
 
         if (Array.isArray(alternateGreetings) && alternateGreetings.length > 0) {
             chat[0]['swipe_id'] = 0;
-            chat[0]['swipes'] = [];
+            chat[0]['swipes'] = [chat[0]['mes']].concat(
+                alternateGreetings.map(
+                    (greeting) => substituteParams(getRegexedString(greeting, regex_placement.AI_OUTPUT))
+                )
+            );
             chat[0]['swipe_info'] = [];
-            chat[0]['swipes'][0] = chat[0]['mes'];
-
-            for (let i = 0; i < alternateGreetings.length; i++) {
-                const alternateGreeting = alternateGreetings[i];
-                chat[0]['swipes'].push(substituteParams(alternateGreeting));
-            }
         }
     }
     printMessages();
@@ -6270,7 +6268,7 @@ async function createOrEditCharacter(e) {
                             chat[0]['swipes'][0] = chat[0]['mes'];
 
                             for (let i = 0; i < alternateGreetings.length; i++) {
-                                const alternateGreeting = alternateGreetings[i];
+                                const alternateGreeting = getRegexedString(alternateGreetings[i], regex_placement.AI_OUTPUT);
                                 chat[0]['swipes'].push(substituteParams(alternateGreeting));
                             }
                         }
@@ -6502,7 +6500,7 @@ const swipe_right = () => {
     } else if (parseInt(chat[chat.length - 1]['swipe_id']) < chat[chat.length - 1]['swipes'].length) { //otherwise, if the id is less than the number of swipes
         chat[chat.length - 1]['mes'] = chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipe_id']]; //load the last mes box with the latest generation
         chat[chat.length - 1]['send_date'] = chat[chat.length - 1]?.swipe_info[chat[chat.length - 1]['swipe_id']]?.send_date || chat[chat.length - 1]['send_date']; //update send date
-        chat[chat.length - 1]['extra'] = JSON.parse(JSON.stringify(chat[chat.length - 1].swipe_info[chat[chat.length - 1]['swipe_id']]?.extra || chat[chat.length - 1].extra));
+        chat[chat.length - 1]['extra'] = JSON.parse(JSON.stringify(chat[chat.length - 1].swipe_info[chat[chat.length - 1]['swipe_id']]?.extra || chat[chat.length - 1].extra || []));
         run_swipe_right = true; //then prepare to do normal right swipe to show next message
     }
 
