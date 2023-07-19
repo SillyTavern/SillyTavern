@@ -270,129 +270,6 @@ function generate_payload(query, variables) {
     }
 }
 
-async function request_with_retries(method, attempts = 10) {
-    for (let i = 0; i < attempts; i++) {
-        //console.log(user_agent)
-        try {
-            var ResponseHasFreeSocket = false;
-            const response = await method();
-            if (response.status === 200) {
-                const responseStringRaw = JSON.stringify(response, null, 4)
-                fs.writeFile('poe-success-raw.log', responseStringRaw, 'utf-8', (err) => {
-                    if (err) {
-                        console.error(err);
-                    } else {
-                        console.log('Successful query logged to poe-success-raw.log');
-                    }
-                });
-
-                const circularReference = new Set();
-                const responseString = JSON.stringify(response, function (key, value) {
-                    if (typeof value === 'object' && value !== null) {
-                        if (circularReference.has(value)) {
-                            return;
-                        }
-                        circularReference.add(value);
-                    }
-                    if (key === 'data' && typeof value === 'object' && value !== null) {
-                        return '[removed data spam]';
-                    }
-                    if (typeof value === 'object' && value !== null) {
-                        return Array.isArray(value) ? value : { ...value };
-                    }
-
-                    if (key === "freeSockets" && key.length) {
-                        ResponseHasFreeSocket = true;
-                    }
-                    if (key === "Cookie" || key === "set-cookie" || key === "Set-Cookie") {
-                        return "[PB COOKIE DATA REDACTED BY ST CODE]"
-                    }
-                    if (typeof value === 'string' && value.includes('p-b=')) {
-                        const startIndex = value.indexOf('p-b=');
-                        const endIndex = value.indexOf(';', startIndex);
-                        if (endIndex === -1) {
-                            return value.substring(0, startIndex) + '[P-B COOKIE REDACTED BY ST]';
-                        }
-                        return value.substring(0, startIndex) + '[P-B COOKIE REDACTED BY ST]' + value.substring(endIndex);
-                    }
-                    if (typeof value === 'string' && value.includes('__cf_bm=')) {
-                        const startIndex = value.indexOf('__cf_bm=');
-                        const endIndex = value.indexOf(';', startIndex);
-                        if (endIndex === -1) {
-                            return value.substring(0, startIndex) + '[Cloudflare COOKIE REDACTED BY ST]';
-                        }
-                        return value.substring(0, startIndex) + '[CloudFlare COOKIE REDACTED BY ST]' + value.substring(endIndex);
-                    }
-
-
-                    return value;
-                }, 4);
-                fs.writeFile('poe-success.log', responseString, 'utf-8', () => {
-                    //console.log('Successful query logged to poe-success.log');
-                });
-
-
-                return response;
-            }
-
-            //this never actually gets seen as any non-200 response jumps to the catch code
-            logger.warn(`Server returned a status code of ${response.status} while downloading. Retrying (${i + 1}/${attempts})...`);
-        } catch (err) {
-            var ErrorHasFreeSocket = false;
-            const circularReference = new Set();
-            const errStringRaw = JSON.stringify(err, null, 4)
-
-            const errString = JSON.stringify(err, function (key, value) {
-                if (key === 'data' && Array.isArray(value)) {
-                    return '[removed data spam]';
-                } else if (typeof value === 'object' && value !== null) {
-                    if (circularReference.has(value)) {
-                        return '[Circular]';
-                    }
-                    circularReference.add(value);
-                }
-                if (key === "Cookie" || key === "set-cookie" || key === "Set-Cookie") {
-                    return "[PB COOKIE DATA REDACTED BY ST CODE]"
-                }
-                if (typeof value === 'string' && value.includes('p-b=')) {
-                    const startIndex = value.indexOf('p-b=');
-                    const endIndex = value.indexOf(';', startIndex);
-                    if (endIndex === -1) {
-                        return value.substring(0, startIndex) + '[P-B COOKIE REDACTED BY ST]';
-                    }
-                    return value.substring(0, startIndex) + '[P-B COOKIE REDACTED BY ST]' + value.substring(endIndex);
-                }
-                if (typeof value === 'string' && value.includes('__cf_bm=')) {
-                    const startIndex = value.indexOf('__cf_bm=');
-                    const endIndex = value.indexOf(';', startIndex);
-                    if (endIndex === -1) {
-                        return value.substring(0, startIndex) + '[Cloudflare COOKIE REDACTED BY ST]';
-                    }
-                    return value.substring(0, startIndex) + '[CloudFlare COOKIE REDACTED BY ST]' + value.substring(endIndex);
-                }
-                if (key === "freeSockets" && key.length) {
-                    ErrorHasFreeSocket = true;
-                }
-                return value;
-            }, 4);
-            //fs.writeFile('poe-error-raw.log', errStringRaw, 'utf-8', (err) => {
-            //    console.log(`Error saved to poe-error-raw.log`);
-            //});
-            fs.writeFile('poe-error.log', errString, 'utf-8', (err) => {
-                if (err) throw err;
-                //console.log(`Error saved to poe-error.log Free socket? ${ErrorHasFreeSocket}`);
-            });
-            fs.writeFile('poe-error-raw.log', errStringRaw, 'utf-8', (err) => {
-                if (err) throw err;
-                //console.log(`Error saved to poe-error-raw.log Free socket? ${ErrorHasFreeSocket}`);
-            });
-            console.log(`Error log files saved`)
-            await delay(3000)
-        }
-    }
-    throw new Error(`Failed to download too many times.`);
-}
-
 function findKey(obj, key, path = []) {
     if (obj && typeof obj === 'object') {
         if (key in obj) {
@@ -443,6 +320,39 @@ class Client {
     constructor(auto_reconnect = false, use_cached_bots = false) {
         this.auto_reconnect = auto_reconnect;
         this.use_cached_bots = use_cached_bots;
+
+        this._fetch = async (url, options) => {
+            const retry = 20;
+            const retryMsInterval = 3000;
+            // Cohee: ONLY NODE DEFAULT FETCH WORKS
+            // DON'T ASK ME WHY, I DON'T KNOW
+            const thisFetch = fetch || require('node-fetch').default;
+            logger.info(options, `fetch: ${url}, options:`);
+            return new Promise(async (resolve, reject) => {
+                for (let i = 0; i <= retry; ++i) {
+                    if (i > 0) {
+                        logger.info(`retrying ${url}, ${i}/${retry}...${new Date().getSeconds()}`);
+                        await delay(retryMsInterval);
+                    }
+                    try {
+                        const retryRes = await thisFetch(url, { ...options });
+                        if (retryRes.ok) {
+                            return resolve(retryRes);
+                        }
+                        else {
+                            logger.error(`\tfetch failed: ${url}, ${retryRes.status}, ${retryRes.statusText}`);
+                            if (+retryRes.status === 400) {
+                                logger.error(`\t[Note] Make sure you put the correct cookie.`);
+                            }
+                        }
+                    }
+                    catch (e) {
+                        logger.error(e);
+                    }
+                }
+                reject(new Error(`Failed to fetch ${url} after ${retry} retries`));
+            });
+        };
     }
 
     async reconnect() {
@@ -468,11 +378,8 @@ class Client {
             };
             logger.info(`Proxy enabled: ${proxy}`);
         }
-        const cookies = `p-b=${token}; Domain=poe.com`;
+        const cookies = `p-b=${token}`;
         this.headers = {
-            "User-Agent": user_agent,
-            "Referrer": "https://poe.com/",
-            "Origin": "https://poe.com",
             "Cookie": cookies,
         };
         this.session.defaults.headers.common = this.headers;
@@ -507,9 +414,13 @@ class Client {
         const botNameKeyName = 'chatOfBotHandle'
         const defaultBotKeyName = 'defaultBotNickname'
         //console.log('this.session.get(this.home_url)')
-        const r = await request_with_retries(() => this.session.post(this.home_url));
+        const r = await this._fetch(this.home_url, {
+            method: 'GET',
+            headers: { cookie: `p-b=${this.token}` },
+        });
+        const text = await r.text();
         const jsonRegex = /<script id="__NEXT_DATA__" type="application\/json">(.+?)<\/script>/;
-        const jsonText = jsonRegex.exec(r.data)[1];
+        const jsonText = jsonRegex.exec(text)[1];
         const nextData = JSON.parse(jsonText);
 
         const viewerPath = findKey(nextData, viewerKeyName);
@@ -553,7 +464,7 @@ class Client {
             console.log("-----------------")
         }
 
-        this.formkey = extractFormKey(r.data);
+        this.formkey = extractFormKey(text);
         this.viewer = viewer;
 
         //old hard coded message no longer needed
@@ -590,7 +501,7 @@ class Client {
             const promise = new Promise(async (resolve, reject) => {
                 try {
                     const url = `https://poe.com/_next/data/${this.next_data.buildId}/${bot.displayName}.json`;
-                    let r;
+                    let r, botData;
 
                     if (this.use_cached_bots && cached_bots[url]) {
                         r = cached_bots[url];
@@ -598,11 +509,15 @@ class Client {
                     else {
                         logger.info(`Downloading ${bot.displayName}`);
                         //console.log('this.session.get(url)')
-                        r = await request_with_retries(() => this.session.get(url), retries);
-                        cached_bots[url] = r;
+                        r = await this._fetch(url, {
+                            method: 'GET',
+                            headers: { cookie: `p-b=${this.token}` },
+                        });
+                        botData = await r.json();
+                        cached_bots[url] = botData;
                     }
 
-                    const chatData = r.data.pageProps.payload?.chatOfBotDisplayName || r.data.pageProps.data?.chatOfBotHandle;
+                    const chatData = botData.pageProps.payload?.chatOfBotDisplayName || botData.pageProps.data?.chatOfBotHandle;
                     bots[chatData.defaultBotObject.nickname] = chatData;
                     resolve();
 
@@ -632,8 +547,11 @@ class Client {
     async get_channel_data(channel = null) {
         logger.info('Downloading channel data...');
         //console.log('this.session.get(this.settings_url)')
-        const r = await request_with_retries(() => this.session.get(this.settings_url));
-        const data = r.data;
+        const r = await this._fetch(this.settings_url, {
+            method: 'GET',
+            headers: { cookie: `p-b=${this.token}` },
+        });
+        const data = await r.json();
 
         return data.tchannelData;
     }
@@ -651,20 +569,26 @@ class Client {
             const payload = generate_payload(queryName, variables);
             if (queryDisplayName) payload['queryName'] = queryDisplayName;
             const scramblePayload = JSON.stringify(payload);
-            const _headers = this.gql_headers;
+            const _headers = Object.assign({}, this.gql_headers);
             _headers['poe-tag-id'] = md5()(scramblePayload + this.formkey + "WpuLMiXEKKE98j56k");
             _headers['poe-formkey'] = this.formkey;
+            _headers['content-type'] = 'application/json';
             //console.log(`------GQL HEADERS-----`)
             //console.log(this.gql_headers)
             //console.log(`----------------------`)
-            const r = await request_with_retries(() => this.session.post(this.gql_url, payload, { headers: this.gql_headers }));
-            if (!(r?.data?.data)) {
+            const r = await this._fetch(this.gql_url, {
+                method: 'POST',
+                body: JSON.stringify(payload),
+                headers: _headers,
+            });
+            const data = await r.json();
+            if (!(data?.data)) {
                 logger.warn(`${queryName} returned an error | Retrying (${i + 1}/20)`);
                 await delay(2000);
                 continue;
             }
 
-            return r.data;
+            return data;
         }
 
         throw new Error(`${queryName} failed too many times.`);
