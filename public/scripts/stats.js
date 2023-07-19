@@ -43,7 +43,7 @@ function calculateTotalStats() {
         non_user_word_count: 0,
         total_swipe_count: 0,
         date_last_chat: 0,
-        date_first_chat: new Date('9999-12-31T23:59:59.999Z').getTime(),
+        date_first_chat: new Date("9999-12-31T23:59:59.999Z").getTime(),
     };
 
     for (let stats of Object.values(charStats)) {
@@ -56,28 +56,30 @@ function calculateTotalStats() {
         totalStats.non_user_word_count += verifyStatValue(
             stats.non_user_word_count
         );
-        totalStats.total_swipe_count += verifyStatValue(stats.total_swipe_count);
+        totalStats.total_swipe_count += verifyStatValue(
+            stats.total_swipe_count
+        );
 
-        if(verifyStatValue(stats.date_last_chat) != 0){
+        if (verifyStatValue(stats.date_last_chat) != 0) {
             totalStats.date_last_chat = Math.max(
                 totalStats.date_last_chat,
                 stats.date_last_chat
             );
         }
-        if (verifyStatValue(stats.date_first_chat) != 0){
+        if (verifyStatValue(stats.date_first_chat) != 0) {
             totalStats.date_first_chat = Math.min(
                 totalStats.date_first_chat,
                 stats.date_first_chat
             );
         }
-     }
+    }
 
     return totalStats;
 }
 
 /**
  * Generates an HTML report of stats.
- * 
+ *
  * This function creates an HTML report from the provided stats, including chat age,
  * chat time, number of user messages and character messages, word count, and swipe count.
  * The stat blocks are tailored depending on the stats type ("User" or "Character").
@@ -97,16 +99,19 @@ function createHtml(statsType, stats) {
     // Get time string
     let timeStirng = humanizeGenTime(stats.total_gen_time);
     let chatAge = "Never";
-    if(stats.date_first_chat <  Date.now()) {
-        chatAge = moment.duration(stats.date_last_chat - stats.date_first_chat).humanize();
+    if (stats.date_first_chat < Date.now()) {
+        chatAge = moment
+            .duration(stats.date_last_chat - stats.date_first_chat)
+            .humanize();
     }
 
     // Create popup HTML with stats
     let html = `<h3>${statsType} Stats</h3>`;
-    if(statsType === "User") {
+    if (statsType === "User") {
         html += createStatBlock("Chatting Since", `${chatAge} ago`);
+    } else {
+        html += createStatBlock("Chat Age", chatAge);
     }
-    else{ html += createStatBlock("Chat Age", chatAge); }
     html += createStatBlock("Chat Time", timeStirng);
     html += createStatBlock("User Messages", stats.user_msg_count);
     html += createStatBlock(
@@ -145,7 +150,7 @@ async function userStatsHandler() {
  */
 async function characterStatsHandler(characters, this_chid) {
     // Get stats from server
-   await getStats();
+    await getStats();
     // Get character stats
     let myStats = charStats[characters[this_chid].avatar];
     if (myStats === undefined) {
@@ -157,7 +162,7 @@ async function characterStatsHandler(characters, this_chid) {
             non_user_word_count: countWords(characters[this_chid].first_mes),
             total_swipe_count: 0,
             date_last_chat: 0,
-            date_first_chat: new Date('9999-12-31T23:59:59.999Z').getTime(),
+            date_first_chat: new Date("9999-12-31T23:59:59.999Z").getTime(),
         };
         charStats[characters[this_chid].avatar] = myStats;
         updateStats();
@@ -221,9 +226,8 @@ async function updateStats() {
     }
 }
 
-
 /**
- * Returns the count of words in the given string. 
+ * Returns the count of words in the given string.
  * A word is a sequence of alphanumeric characters (including underscore).
  *
  * @param {string} str - The string to count words in.
@@ -244,13 +248,7 @@ function countWords(str) {
  * @param {Object} charStats - Object containing character statistics.
  * @param {string} oldMesssage - The old message that's being processed.
  */
-async function statMesProcess(
-    line,
-    type,
-    characters,
-    this_chid,
-    oldMesssage
-) {
+async function statMesProcess(line, type, characters, this_chid, oldMesssage) {
     if (this_chid === undefined) {
         return;
     }
@@ -286,7 +284,10 @@ async function statMesProcess(
         stat.total_swipe_count++;
     }
     stat.date_last_chat = Date.now();
-    stat.first_chat_time = Math.min(stat.date_first_chat ?? new Date('9999-12-31T23:59:59.999Z').getTime(), Date.now());
+    stat.first_chat_time = Math.min(
+        stat.date_first_chat ?? new Date("9999-12-31T23:59:59.999Z").getTime(),
+        Date.now()
+    );
     updateStats();
 }
 
