@@ -21,3 +21,7 @@ secrets.json
 /dist
 poe_device.json
 /backups/
+poe-error.log
+poe-success.log
+poe-error-raw.log
+poe-success-raw.log
