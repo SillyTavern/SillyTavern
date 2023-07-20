@@ -28,9 +28,9 @@ import {
 import {groups, selected_group} from "./group-chats.js";
 
 import {
-    defaultPromptManagerSettings,
-    openAiDefaultPromptLists,
-    openAiDefaultPrompts, Prompt,
+    promptManagerDefaultSettings,
+    promptManagerDefaultPromptLists,
+    chatCompletionDefaultPrompts, Prompt,
     PromptManagerModule as PromptManager
 } from "./PromptManager.js";
 
@@ -144,9 +144,9 @@ const default_settings = {
     openai_max_tokens: 300,
     wrap_in_quotes: false,
     names_in_completion: false,
-    ...openAiDefaultPrompts,
-    ...openAiDefaultPromptLists,
-    ...defaultPromptManagerSettings,
+    ...chatCompletionDefaultPrompts,
+    ...promptManagerDefaultPromptLists,
+    ...promptManagerDefaultSettings,
     send_if_empty: '',
     impersonation_prompt: default_impersonation_prompt,
     new_chat_prompt: default_new_chat_prompt,
@@ -180,9 +180,9 @@ const oai_settings = {
     openai_max_tokens: 300,
     wrap_in_quotes: false,
     names_in_completion: false,
-    ...openAiDefaultPrompts,
-    ...openAiDefaultPromptLists,
-    ...defaultPromptManagerSettings,
+    ...chatCompletionDefaultPrompts,
+    ...promptManagerDefaultPromptLists,
+    ...promptManagerDefaultSettings,
     send_if_empty: '',
     impersonation_prompt: default_impersonation_prompt,
     new_chat_prompt: default_new_chat_prompt,
