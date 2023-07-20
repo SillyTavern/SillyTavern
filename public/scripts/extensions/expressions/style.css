@@ -20,6 +20,9 @@
 
 #visual-novel-wrapper .expression-holder {
     width: max-content;
+    display: flex;
+    left: unset;
+    right: unset;
 }
 
 #visual-novel-wrapper .hidden {
@@ -31,21 +34,6 @@
     object-fit: cover;
 }*/
 
-/* .expression-holder {
-    min-width: 100px;
-    min-height: 100px;
-    max-height: 90vh;
-    max-width: 90vh;
-    width: calc((100vw - var(--sheldWidth)) /2);
-    position: absolute;
-    padding: 0;
-    filter: drop-shadow(2px 2px 2px #51515199);
-    z-index: 29;
-    overflow: hidden;
-    display: none;
-    bottom: 0;
-} */
-
 .expression-holder {
     min-width: 100px;
     min-height: 100px;
@@ -55,15 +43,23 @@
     position: absolute;
     bottom: 0;
     padding: 0;
+    left: 0;
     filter: drop-shadow(2px 2px 2px #51515199);
     z-index: 2;
     overflow: hidden;
+    resize: both;
 
 }
 
 img.expression {
+    min-width: 100px;
+    min-height: 100px;
+    max-height: 90vh;
+    max-width: 90vh;
     width: 100%;
-    height: 100%;
+    top: 0;
+    bottom: 0;
+    padding: 0;
     vertical-align: bottom;
     object-fit: contain;
 }
@@ -77,6 +73,10 @@ img.expression.default {
     max-height: 120px;
     object-fit: contain !important;
     margin-top: 50px;
+}
+
+.expression-clone {
+    position: absolute;
 }
 
 .debug-image {

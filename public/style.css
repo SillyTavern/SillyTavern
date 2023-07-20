@@ -47,7 +47,8 @@
     --SmartThemeShadowColor: rgba(0, 0, 0, 0.5);
 
 
-    --sheldWidth: 800px;
+    --sheldWidth: 50vw;
+    /* 800px; */
     /*base variable calculated in rems*/
     --fontScale: 1;
     --mainFontSize: calc(var(--fontScale) * 1rem);
@@ -85,7 +86,7 @@ body {
     padding: 0;
     width: 100%;
     /*fallback for JS load*/
-	height: 100vh;
+    height: 100vh;
     height: 100svh;
     /*defaults as 100%, then reassigned via JS as pixels, will work on PC and Android*/
     height: calc(var(--doc-height) - 1px);
@@ -167,7 +168,7 @@ table.responsiveTable {
 .tokenItemizingSubclass {
     font-size: calc(var(--mainFontSize) * 0.8);
     color: var(--SmartThemeEmColor);
-    white-space: pre-wrap;
+    /*white-space: pre-wrap;*/
 }
 
 .tokenGraph {
@@ -356,7 +357,7 @@ hr {
     height: calc(100vh - 42px);
     height: calc(100svh - 42px);
     overflow-x: hidden;
-    max-width: 800px;
+    /* max-width: 50vw; */
     position: absolute;
     left: calc((100vw - var(--sheldWidth))/2);
     left: calc((100svw - var(--sheldWidth))/2);
@@ -394,6 +395,20 @@ hr {
 .drag-grabber:hover {
     opacity: 1;
 }
+
+.panelControlBar {
+    position: absolute;
+    right: 5px;
+    top: 5px;
+    margin-right: 5px;
+    z-index: 2000;
+}
+
+.panelControlBar .drag-grabber {
+    position: unset;
+}
+
+
 
 #sheldheader:active {
     cursor: grabbing;
@@ -437,6 +452,13 @@ hr {
     width: 100%;
     margin: 1px auto 0 auto;
     z-index: 30;
+}
+
+/* special case for desktop Safari to allow #sheld resizing */
+@media only screen and (min-width: 1024px) and (-webkit-min-device-pixel-ratio: 2) and (pointer: fine) {
+    #form_sheld {
+        margin-bottom: 5px;
+    }
 }
 
 #send_form {
@@ -526,7 +548,7 @@ hr {
 #options,
 #extensionsMenu {
     display: flex;
-    z-index: 100;
+    z-index: 29999;
     background-color: var(--SmartThemeBlurTintColor);
     -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
@@ -673,6 +695,7 @@ hr {
     display: flex;
     flex-direction: column;
     gap: 5px;
+    flex-grow: 1;
 }
 
 #avatars-style .range-block-range,
@@ -1163,13 +1186,72 @@ input[type="file"] {
     filter: brightness(150%);
 }
 
+#rm_character_count {
+    padding: 5px;
+    font-size: calc(var(--mainFontSize) * .8);
+    font-weight: bold;
+}
+
 #rm_print_characters_block {
     /* padding: 5px 0; */
     overflow-y: auto;
     flex-grow: 1;
     display: flex;
-    flex-direction: column;
     /* row-gap: 5px; */
+}
+
+body.charListGrid #rm_print_characters_block {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+    flex-direction: row;
+    justify-content: space-around;
+    align-content: flex-start;
+}
+
+body.charListGrid #rm_print_characters_block .character_select {
+    width: 30%;
+    align-items: flex-start;
+    height: min-content;
+    flex-direction: column;
+    overflow: hidden;
+    max-width: 100px;
+}
+
+body.charListGrid #rm_print_characters_block .character_select .ch_name,
+body.charListGrid #rm_print_characters_block .group_select .ch_name {
+    width: 100%;
+    max-width: 100px;
+    text-align: center;
+    font-size: calc(var(--mainFontSize) * .8);
+}
+
+body.charListGrid #rm_print_characters_block .character_select .character_name_block {
+    width: 100%;
+}
+
+body.charListGrid #rm_print_characters_block .character_select .character_select_container {
+    width: 100%;
+    justify-content: center;
+    max-width: 100px;
+}
+
+body.charListGrid #rm_print_characters_block .group_select {
+    width: 30%;
+    height: min-content;
+    align-items: center !important;
+    flex-direction: column;
+    overflow: hidden;
+    max-width: 100px;
+}
+
+body.charListGrid #rm_print_characters_block .group_select .group_name_block {
+    width: 100%;
+}
+
+body.charListGrid #rm_print_characters_block .ch_description,
+body.charListGrid #rm_print_characters_block .tags_inline {
+    display: none;
 }
 
 #rm_ch_create_block {
@@ -1182,6 +1264,67 @@ input[type="file"] {
 #rm_extensions_block {
     display: none;
     overflow-y: auto;
+}
+
+#floatingPrompt {
+    overflow-y: auto;
+    max-width: 90svw;
+    max-height: 90svh;
+    min-width: 100px;
+    min-height: 100px;
+    border-radius: 10px;
+    border: 1px solid var(--white30a);
+    position: fixed;
+    padding: 10px;
+    padding-top: 25px;
+    display: none;
+    flex-direction: column;
+    box-shadow: 0 0 10px var(--black70a);
+    z-index: 3000;
+    left: 0;
+    top: 0;
+    margin: 0;
+    right: unset;
+    width: calc(((100svw - var(--sheldWidth)) / 2) - 1px);
+
+}
+
+.floating_prompt_radio_group {
+    display: flex;
+    flex-direction: column;
+}
+
+#extension_floating_counter {
+    font-weight: 600;
+    color: orange;
+}
+
+.extension_token_counter {
+    font-size: calc(var(--mainFontSize) * 0.9);
+    width: 100%;
+    text-align: right;
+}
+
+.floating_prompt_settings textarea {
+    font-size: calc(var(--mainFontSize) * 0.9);
+    line-height: 1.2;
+}
+
+#ANClose {
+    height: 15px;
+    aspect-ratio: 1 / 1;
+    font-size: 20px;
+    opacity: 0.5;
+    transition: all 250ms;
+}
+
+#ANClose:hover {
+    cursor: pointer;
+    opacity: 1;
+}
+
+#floatingPrompt .drag-grabber {
+    position: unset;
 }
 
 /* ################################################################*/
@@ -1256,8 +1399,7 @@ select option:not(:checked) {
 
 #api_button:hover,
 #api_button_novel:hover,
-#api_button_textgenerationwebui:hover,
-#poe_connect:hover {
+#api_button_textgenerationwebui:hover {
     background-color: green;
 }
 
@@ -1356,6 +1498,10 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 }
 
+.heightMinContent {
+    height: min-content;
+}
+
 /*applies to char list and mes_text char display name*/
 
 .ch_name {
@@ -1399,9 +1545,10 @@ body.big-avatars .ch_description {
 #rm_print_characters_block .ch_name {
     width: 100%;
     white-space: nowrap;
-    max-width: calc(100% - 29px);
+    /* max-width: calc(100% - 29px); */
     overflow: hidden;
     text-overflow: ellipsis;
+    display: block;
 }
 
 .character_select:hover {
@@ -1410,6 +1557,10 @@ body.big-avatars .ch_description {
 
 .alignitemsflexstart {
     align-items: flex-start !important;
+}
+
+.alignItemsFlexEnd {
+    align-items: flex-end !important;
 }
 
 .alignSelfStart {
@@ -1474,6 +1625,7 @@ body.big-avatars .ch_description {
     cursor: pointer;
     aspect-ratio: 16/9;
     justify-content: flex-end;
+    position: relative;
 }
 
 .BGSampleTitle {
@@ -1490,12 +1642,10 @@ body.big-avatars .ch_description {
     font-size: calc(var(--fontScale) * 0.9em);
 }
 
-.bg_example_cross {
+.bg_button {
     width: 15px;
     height: 15px;
-    position: relative;
-    /* float: right; */
-    right: 10px;
+    position: absolute;
     top: 5px;
     cursor: pointer;
     opacity: 0.7;
@@ -1506,6 +1656,19 @@ body.big-avatars .ch_description {
     padding: 0;
     margin: 0;
     filter: drop-shadow(0px 0px 3px white);
+    transition: opacity 0.2s ease-in-out;
+}
+
+.bg_button:hover {
+    opacity: 1;
+}
+
+.bg_example_cross {
+    right: 10px;
+}
+
+.bg_example_edit {
+    left: 10px;
 }
 
 .no-border {
@@ -1759,6 +1922,12 @@ grammarly-extension {
     font-size: calc(var(--mainFontSize) - 0.1rem);
     font-weight: bold;
     margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+}
+
+.rm_stats_button {
+    cursor: pointer;
 }
 
 /* Focus */
@@ -1786,6 +1955,17 @@ grammarly-extension {
     display: flex;
     flex-direction: column;
     overflow-y: hidden;
+}
+
+.rm_stat_block {
+    display: flex;
+    justify-content: space-between;
+}
+
+.user_stats_button {
+    position: absolute;
+    right: 0;
+    bottom: 0;
 }
 
 .large_dialogue_popup {
@@ -1891,13 +2071,14 @@ grammarly-extension {
     aspect-ratio: 1 / 1;
 }
 
-.menu_button:hover {
+.menu_button:hover,
+.menu_button.active {
     background-color: var(--white30a);
 }
 
-
-
-
+.height32px {
+    height: 32px;
+}
 
 #dialogue_del_mes .menu_button {
 
@@ -2140,9 +2321,9 @@ grammarly-extension {
     flex-direction: row;
 }
 
-.world_entry_thin_controls>div {
+/* .world_entry_thin_controls>div {
     flex: 1;
-}
+} */
 
 .world_entry_form_control label h4 {
     margin-bottom: 0;
@@ -2339,6 +2520,7 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
     font-size: calc(var(--mainFontSize) * 0.95);
     color: var(--SmartThemeBodyColor);
     flex: 1;
+    gap: 5px;
     display: flex;
 }
 
@@ -2484,6 +2666,7 @@ input[type="range"]::-webkit-slider-thumb {
 
 .mes_buttons .mes_edit,
 .mes_buttons .mes_bookmark,
+.mes_buttons .mes_create_bookmark,
 .extraMesButtonsHint,
 .tagListHint,
 .extraMesButtons div {
@@ -2495,6 +2678,7 @@ input[type="range"]::-webkit-slider-thumb {
 
 .mes_buttons .mes_edit:hover,
 .mes_buttons .mes_bookmark:hover,
+.mes_buttons .mes_create_bookmark:hover,
 .extraMesButtonsHint:hover,
 .tagListHint:hover,
 .extraMesButtons div:hover {
@@ -2562,6 +2746,7 @@ input[type="range"]::-webkit-slider-thumb {
     display: flex;
     flex-direction: column;
     row-gap: 5px;
+    flex-grow: 1;
 }
 
 #anchor_checkbox label,
@@ -3349,10 +3534,13 @@ body .ui-widget-content li:hover {
 
 body:not(.big-avatars) .avatar_collage {
     min-width: 50px;
+    aspect-ratio: 1 / 1;
 }
 
 body.big-avatars .avatar_collage {
     min-width: 60px;
+    max-width: 60px;
+    aspect-ratio: 2 / 3;
 }
 
 
@@ -3493,12 +3681,13 @@ span.warning {
     font-weight: bolder;
 }
 
-#talkativeness_hint {
+.slider_hint {
     display: flex;
     flex-direction: row;
     align-items: baseline;
     justify-content: space-between;
     width: 100%;
+    position: relative;
 }
 
 #talkativeness_expander {
@@ -3510,21 +3699,14 @@ span.warning {
     width: 100%;
 }
 
-#talkativeness_hint span {
-    min-width: 10em;
+.slider_hint span {
     font-size: calc(var(--mainFontSize) - .25rem);
 }
 
-#talkativeness_hint span:nth-child(1) {
-    text-align: left;
-}
-
-#talkativeness_hint span:nth-child(2) {
-    text-align: center;
-}
-
-#talkativeness_hint span:nth-child(3) {
-    text-align: right;
+.slider_hint span:nth-child(2) {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 p {
@@ -3639,6 +3821,7 @@ a {
     overflow: hidden;
     scrollbar-width: thin;
     flex-flow: column;
+    min-width: 100px;
 }
 
 #nav-toggle {
@@ -3784,16 +3967,58 @@ label[for="extensions_autoconnect"] {
 
 .extensions_info p {
     margin-bottom: 0.5em;
+    margin-left: 1em;
 }
 
 .extensions_info .disabled {
     color: lightgray;
 }
 
+.extensions_info .toggle_enable {
+    color: lightgreen;
+}
+
+.extensions_info .toggle_disable {
+    color: rgb(238, 144, 144);
+}
+
+.extensions_info .extension_enabled {
+    color: green;
+}
+
+.extensions_info .extension_disabled {
+    color: lightgray;
+}
+
+.extensions_info .extension_missing {
+    color: gray;
+}
+
+input.extension_missing[type="checkbox"] {
+    opacity: 0.5;
+}
+
 #extensions_list .disabled {
     text-decoration: line-through;
     color: lightgray;
 }
+
+.update-button {
+    margin-right: 10px;
+    display: inline-flex;
+}
+
+/* Align the content of this span to the right */
+.delete-button {
+    margin-right: 10px;
+    display: inline-flex;
+
+}
+
+/* possible place for WI Entry header styling */
+/* .world_entry_form .inline-drawer-header {
+    background-color: var(--SmartThemeShadowColor);
+} */
 
 #extensions_settings .inline-drawer-toggle.inline-drawer-header,
 #extensions_settings2 .inline-drawer-toggle.inline-drawer-header {
@@ -3843,13 +4068,14 @@ label[for="extensions_autoconnect"] {
     margin: 0 auto;
     padding-top: 5px;
     height: 40px;
-    max-width: var(--sheldWidth);
+    /* max-width: var(--sheldWidth); */
     justify-content: center;
     display: grid;
     grid-template-columns: 10% 10% 10% 10% 10% 10% 10% 10% 10%;
     z-index: 3000;
     position: relative;
     grid-gap: 1%;
+    width: var(--sheldWidth);
 
 }
 
@@ -3917,6 +4143,7 @@ label[for="extensions_autoconnect"] {
     justify-content: space-between;
     align-items: center;
     padding: 5px 0;
+    cursor: pointer;
 }
 
 .inline-drawer-content {
@@ -3951,7 +4178,7 @@ label[for="extensions_autoconnect"] {
     margin: 0 auto;
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
     -webkit-backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)));
-    z-index: 9999 !important;
+    z-index: 1000 !important;
 }
 
 /*to prevent draggables from being made too small to see*/
@@ -4028,6 +4255,28 @@ toolcool-color-picker {
     align-items: center;
 }
 
+.alignitemsstart {
+    align-items: start;
+}
+
+.overflow-hidden {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.maxWidth200px {
+    max-width: 200px;
+}
+
+.alignContentFlexStart {
+    align-content: flex-start;
+}
+
+.overflowHidden {
+    overflow: hidden;
+}
+
 .padding5 {
     padding: 5px;
 }
@@ -4072,6 +4321,10 @@ toolcool-color-picker {
     width: 50% !important;
 }
 
+.wide25p {
+    width: 25%;
+}
+
 .wide30p {
     width: 30% !important;
 }
@@ -4089,6 +4342,10 @@ toolcool-color-picker {
 
 .justifyContentSpaceAround {
     justify-content: space-around;
+}
+
+.justifyContentFlexStart {
+    justify-content: flex-start;
 }
 
 .justifyContentFlexEnd {
@@ -4116,6 +4373,10 @@ toolcool-color-picker {
 
 .wide100p {
     width: 100%;
+}
+
+.wide50p {
+    width: 50%;
 }
 
 .wide50px {
@@ -4207,7 +4468,6 @@ toolcool-color-picker {
 }
 
 .openai_restorable,
-.poe_restorable,
 .title_restorable {
     display: flex;
     flex-direction: row;
@@ -4295,9 +4555,10 @@ body.bubblechat .mes[is_user="true"] {
     background-color: var(--SmartThemeUserMesBlurTintColor);
 }
 
-body.w1000px #sheld {
+/* body.w1000px #sheld {
     max-width: 1000px !important;
-}
+}*/
+
 
 /* Document Style */
 
@@ -4411,6 +4672,9 @@ body.waifuMode .expression-holder {
     bottom: 0;
     filter: drop-shadow(2px 2px 2px #51515199);
     z-index: 2;
+    margin: 0 auto;
+    left: 0;
+    right: 0;
 }
 
 /* movingUI*/
@@ -4423,7 +4687,8 @@ body.movingUI #sheld,
 body.movingUI .drawer-content,
 body.movingUI #expression-holder,
 body.movingUI .zoomed_avatar,
-body.movingUI #floatingPrompt {
+body.movingUI #floatingPrompt,
+body.movingUI #groupMemberListPopout {
     resize: both;
 }
 
@@ -4449,7 +4714,8 @@ body.noShadows * {
     color: var(--SmartThemeBodyColor);
 }
 
-.zoomed_avatar {
+.zoomed_avatar,
+#groupMemberListPopout {
     min-width: 100px;
     min-height: 100px;
     max-height: 90vh;
@@ -4463,6 +4729,38 @@ body.noShadows * {
     display: none;
     bottom: 0;
     aspect-ratio: 2 / 3;
+    border-radius: 10px;
+}
+
+#groupMemberListPopoutClose {
+    height: 15px;
+    aspect-ratio: 1 / 1;
+    font-size: 20px;
+    opacity: 0.5;
+    transition: all 250ms;
+}
+
+#groupMemberListPopout {
+    aspect-ratio: unset;
+    padding: 0;
+    backdrop-filter: blur(var(--SmartThemeBlurStrength));
+    background-color: var(--SmartThemeBlurTintColor);
+    overflow: auto;
+}
+
+#groupMemberListPopout #rm_group_members {
+    /*     background-color: var(--SmartThemeBlurTintColor); */
+
+    margin: 0;
+    padding: 0;
+    padding-top: 20px;
+
+}
+
+.hoverglow:hover {
+    opacity: 1 !important;
+    cursor: pointer;
+
 }
 
 body.waifuMode .zoomed_avatar {
@@ -4485,7 +4783,7 @@ body.waifuMode .zoomed_avatar {
 }
 
 .zoomed_avatar img {
-    border: 1px solid var(--white50a);
+    /* border: 1px solid var(--white50a); */
     border-radius: 20px;
     height: 100%;
     width: 100%;
@@ -4551,6 +4849,8 @@ body.waifuMode .zoomed_avatar {
 /*will apply to anything 1000px or less. this catches ipads, horizontal phones, and vertical phones)*/
 
 @media screen and (max-width: 1000px) {
+
+
 
     #extensions_settings,
     #extensions_settings2 {
@@ -4637,6 +4937,7 @@ body.waifuMode .zoomed_avatar {
         align-items: start;
         height: min-content;
         align-content: start;
+        max-width: unset;
     }
 
     #top-settings-holder,
@@ -4713,7 +5014,8 @@ body.waifuMode .zoomed_avatar {
 
     }
 
-    #showRawPrompt {
+    #showRawPrompt,
+    #groupCurrentMemberPopoutButton {
         display: none;
     }
 
@@ -4771,10 +5073,6 @@ body.waifuMode .zoomed_avatar {
         max-height: 190px;
     }
 
-    #talkativeness_hint span {
-        min-width: 33%;
-    }
-
     .drawer25pWidth {
         flex-basis: max(calc(100% / 4 - 10px), 190px);
     }
@@ -4797,16 +5095,13 @@ body.waifuMode .zoomed_avatar {
 
     body.waifuMode .expression-holder {
         display: inline;
-        width: unset;
-        max-height: unset;
-        max-width: unset;
-        bottom: unset;
-        left: unset;
-        top: unset;
+
         height: 100vh;
-        width: 100vw;
+        width: max-content;
         margin: 0 auto;
         position: absolute;
+        left: 0;
+        right: 0;
         filter: drop-shadow(2px 2px 2px #51515199);
         z-index: 1;
     }
@@ -4833,6 +5128,10 @@ body.waifuMode .zoomed_avatar {
     .horde_multiple_hint {
         display: none;
     }
+
+    #bg_menu_content {
+        width: unset;
+    }
 }
 
 .lastInContext {
@@ -4857,6 +5156,8 @@ body.waifuMode .zoomed_avatar {
         max-width: 90vw;
         max-width: 90svw;
     }
+
+
 }
 
 @media screen and (max-width: 450px) {

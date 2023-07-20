@@ -5,15 +5,14 @@ import {
     getTokenCount,
     saveSettingsDebounced,
     this_chid,
-} from "../../../script.js";
-import { selected_group } from "../../group-chats.js";
-import { ModuleWorkerWrapper, extension_settings, getContext, saveMetadataDebounced } from "../../extensions.js";
-import { registerSlashCommand } from "../../slash-commands.js";
-import { getCharaFilename, debounce } from "../../utils.js";
+} from "../script.js";
+import { selected_group } from "./group-chats.js";
+import { extension_settings, getContext, saveMetadataDebounced } from "./extensions.js";
+import { registerSlashCommand } from "./slash-commands.js";
+import { getCharaFilename, debounce, waitUntilCondition, delay } from "./utils.js";
 export { MODULE_NAME as NOTE_MODULE_NAME };
 
 const MODULE_NAME = '2_floating_prompt'; // <= Deliberate, for sorting lower than memory
-const UPDATE_INTERVAL = 1000;
 
 const DEFAULT_DEPTH = 4;
 const DEFAULT_POSITION = 1;
@@ -280,24 +279,37 @@ export function setFloatingPrompt() {
 
 function onANMenuItemClick() {
     if (selected_group || this_chid) {
+        //show AN if it's hidden
         if ($("#floatingPrompt").css("display") !== 'flex') {
+            $("#floatingPrompt").addClass('resizing')
             $("#floatingPrompt").css("display", "flex");
             $("#floatingPrompt").css("opacity", 0.0);
             $("#floatingPrompt").transition({
                 opacity: 1.0,
                 duration: 250,
+            }, async function () {
+                await delay(50);
+                $("#floatingPrompt").removeClass('resizing')
             });
 
+            //auto-open the main AN inline drawer
             if ($("#ANBlockToggle")
                 .siblings('.inline-drawer-content')
                 .css('display') !== 'block') {
+                $("#floatingPrompt").addClass('resizing')
                 $("#ANBlockToggle").click();
             }
         } else {
+            //hide AN if it's already displayed
+            $("#floatingPrompt").addClass('resizing')
             $("#floatingPrompt").transition({
                 opacity: 0.0,
                 duration: 250,
-            });
+            },
+                async function () {
+                    await delay(50);
+                    $("#floatingPrompt").removeClass('resizing')
+                });
             setTimeout(function () {
                 $("#floatingPrompt").hide();
             }, 250);
@@ -339,136 +351,31 @@ function onChatChanged() {
     $('#extension_floating_default_token_counter').text(tokenCounter3);
 }
 
-//for some reason exporting metadata_keys for WI usage caused this to throw errors
-//"accessing eventSource before initialization"
-//putting it on a 1ms Timeout solved this.
-setTimeout(function () {
-    function addExtensionsSettings() {
-        const settingsHtml = `
-        <div id="floatingPrompt" class="drawer-content flexGap5">
-            <div class="panelControlBar flex-container">
-                <div id="floatingPromptheader" class="fa-solid fa-grip drag-grabber"></div>
-                <div id="ANClose" class="fa-solid fa-circle-xmark"></div>
-            </div>
-            <div name="floatingPromptHolder">
-                <div class="inline-drawer">
-                    <div id="ANBlockToggle" class="inline-drawer-toggle inline-drawer-header">
-                        <b>Author's Note</b>
-                        <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+// Inject extension when extensions_activating is fired
+// Inserts the extension first since it's statically imported
+jQuery(async () => {
+    await waitUntilCondition(() => eventSource !== undefined);
+    $('#extension_floating_prompt').on('input', onExtensionFloatingPromptInput);
+    $('#extension_floating_interval').on('input', onExtensionFloatingIntervalInput);
+    $('#extension_floating_depth').on('input', onExtensionFloatingDepthInput);
+    $('#extension_floating_chara').on('input', onExtensionFloatingCharaPromptInput);
+    $('#extension_use_floating_chara').on('input', onExtensionFloatingCharaCheckboxChanged);
+    $('#extension_floating_default').on('input', onExtensionFloatingDefaultInput);
+    $('input[name="extension_floating_position"]').on('change', onExtensionFloatingPositionInput);
+    $('input[name="extension_floating_char_position"]').on('change', onExtensionFloatingCharPositionInput);
+    $('#ANClose').on('click', function () {
+        $("#floatingPrompt").transition({
+            opacity: 0,
+            duration: 200,
+            easing: 'ease-in-out',
+        });
+        setTimeout(function () { $('#floatingPrompt').hide() }, 200);
+    })
+    $("#option_toggle_AN").on('click', onANMenuItemClick);
 
-                </div>
-                <div class="inline-drawer-content">
-                    <small>
-                        <b>Unique to this chat</b>.<br>
-                        Bookmarks inherit the Note from their parent, and can be changed individually after that.<br>
-                    </small>
-
-                    <textarea id="extension_floating_prompt" class="text_pole" rows="8" maxlength="10000"></textarea>
-                    <div class="extension_token_counter">Tokens: <span id="extension_floating_prompt_token_counter">0</small></div>
-
-                    <div class="floating_prompt_radio_group">
-                        <label>
-                            <input type="radio" name="extension_floating_position" value="0" />
-                            After scenario
-                        </label>
-                        <label>
-                            <input type="radio" name="extension_floating_position" value="1" />
-                            In-chat @ Depth <input id="extension_floating_depth" class="text_pole widthUnset" type="number" min="0" max="99" />
-                        </label>
-                    </div>
-                    <!--<label for="extension_floating_interval">In-Chat Insertion Depth</label>-->
-
-                    <label for="extension_floating_interval">Insertion Frequency</label>
-
-                    <input id="extension_floating_interval" class="text_pole widthUnset" type="number" min="0" max="999"  /><small> (0 = Disable, 1 = Always)</small>
-                    <br>
-
-                    <span>User inputs until next insertion: <span id="extension_floating_counter">(disabled)</span></span>
-
-                    </div>
-                </div>
-                <hr class="sysHR">
-                <div class="inline-drawer">
-                    <div id="charaANBlockToggle" class="inline-drawer-toggle inline-drawer-header">
-                        <b>Character Author's Note</b>
-                        <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
-                    </div>
-                    <div class="inline-drawer-content">
-                    <small>Will be automatically added as the author's note for this character. Will be used in groups, but can't be modified when a group chat is open.</small>
-
-                        <textarea id="extension_floating_chara" class="text_pole" rows="8" maxlength="10000"
-                        placeholder="Example:\n[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
-                        <div class="extension_token_counter">Tokens: <span id="extension_floating_chara_token_counter">0</small></div>
-
-                        <label class="checkbox_label" for="extension_use_floating_chara">
-                            <input id="extension_use_floating_chara" type="checkbox" />
-                            <span data-i18n="Use character author's note">Use character author's note</span>
-                        </label>
-                        <div class="floating_prompt_radio_group">
-                            <label>
-                                <input type="radio" name="extension_floating_char_position" value="0" />
-                                Replace Author's Note
-                            </label>
-                            <label>
-                                <input type="radio" name="extension_floating_char_position" value="1" />
-                                Top of Author's Note
-                            </label>
-                            <label>
-                                <input type="radio" name="extension_floating_char_position" value="2" />
-                                Bottom of Author's Note
-                            </label>
-                        </div>
-                    </div>
-                </div>
-                <hr class="sysHR">
-                <div class="inline-drawer">
-                    <div id="defaultANBlockToggle" class="inline-drawer-toggle inline-drawer-header">
-                        <b>Default Author's Note</b>
-                        <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
-                    </div>
-                    <div class="inline-drawer-content">
-                    <small>Will be automatically added as the Author's Note for all new chats.</small>
-
-                        <textarea id="extension_floating_default" class="text_pole" rows="8" maxlength="10000"
-                        placeholder="Example:\n[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
-                        <div class="extension_token_counter">Tokens: <span id="extension_floating_default_token_counter">0</small></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        `;
-
-        const ANButtonHtml = `
-        <a id="option_toggle_AN">
-           <i class="fa-lg fa-solid fa-note-sticky"></i>
-           <span data-i18n="Author's Note">Author's Note</span>
-        </a>
-    `;
-        $('#options .options-content').prepend(ANButtonHtml);
-        $('#movingDivs').append(settingsHtml);
-        $('#extension_floating_prompt').on('input', onExtensionFloatingPromptInput);
-        $('#extension_floating_interval').on('input', onExtensionFloatingIntervalInput);
-        $('#extension_floating_depth').on('input', onExtensionFloatingDepthInput);
-        $('#extension_floating_chara').on('input', onExtensionFloatingCharaPromptInput);
-        $('#extension_use_floating_chara').on('input', onExtensionFloatingCharaCheckboxChanged);
-        $('#extension_floating_default').on('input', onExtensionFloatingDefaultInput);
-        $('input[name="extension_floating_position"]').on('change', onExtensionFloatingPositionInput);
-        $('input[name="extension_floating_char_position"]').on('change', onExtensionFloatingCharPositionInput);
-        $('#ANClose').on('click', function () {
-            $("#floatingPrompt").transition({
-                opacity: 0,
-                duration: 200,
-                easing: 'ease-in-out',
-            });
-            setTimeout(function () { $('#floatingPrompt').hide() }, 200);
-        })
-        $("#option_toggle_AN").on('click', onANMenuItemClick);
-    }
-
-    addExtensionsSettings();
     registerSlashCommand('note', setNoteTextCommand, [], "<span class='monospace'>(text)</span> – sets an author's note for the currently selected chat", true, true);
     registerSlashCommand('depth', setNoteDepthCommand, [], "<span class='monospace'>(number)</span> – sets an author's note depth for in-chat positioning", true, true);
     registerSlashCommand('freq', setNoteIntervalCommand, ['interval'], "<span class='monospace'>(number)</span> – sets an author's note insertion frequency", true, true);
     registerSlashCommand('pos', setNotePositionCommand, ['position'], "(<span class='monospace'>chat</span> or <span class='monospace'>scenario</span>) – sets an author's note position", true, true);
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
-}, 1);
+});

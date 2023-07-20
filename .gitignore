@@ -9,6 +9,8 @@ public/worlds/
 public/css/bg_load.css
 public/themes/
 public/OpenAI Settings/
+public/scripts/extensions/third-party/
+public/stats.json
 /uploads/
 *.jsonl
 config.conf
@@ -19,9 +21,5 @@ whitelist.txt
 .vscode
 secrets.json
 /dist
-poe_device.json
 /backups/
-poe-error.log
-poe-success.log
-poe-error-raw.log
-poe-success-raw.log
+public/movingUI/

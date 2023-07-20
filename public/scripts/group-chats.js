@@ -6,8 +6,8 @@ import {
     isDataURL,
     createThumbnail,
 } from './utils.js';
-import { RA_CountCharTokens, humanizedDateTime } from "./RossAscends-mods.js";
-import { sortCharactersList, sortGroupMembers } from './power-user.js';
+import { RA_CountCharTokens, humanizedDateTime, dragElement } from "./RossAscends-mods.js";
+import { sortCharactersList, sortGroupMembers, loadMovingUIState } from './power-user.js';
 
 import {
     chat,
@@ -1440,7 +1440,7 @@ export async function importGroupChat(formData) {
     });
 }
 
-export async function saveGroupBookmarkChat(groupId, name, metadata) {
+export async function saveGroupBookmarkChat(groupId, name, metadata, mesId) {
     const group = groups.find(x => x.id === groupId);
 
     if (!group) {
@@ -1450,12 +1450,16 @@ export async function saveGroupBookmarkChat(groupId, name, metadata) {
     group.past_metadata[name] = { ...chat_metadata, ...(metadata || {}) };
     group.chats.push(name);
 
+    const trimmed_chat = (mesId !== undefined && mesId >= 0 && mesId < chat.length)
+        ? chat.slice(0, parseInt(mesId) + 1)
+        : chat;
+
     await editGroup(groupId, true);
 
     await fetch("/savegroupchat", {
         method: "POST",
         headers: getRequestHeaders(),
-        body: JSON.stringify({ id: name, chat: [...chat] }),
+        body: JSON.stringify({ id: name, chat: [...trimmed_chat] }),
     });
 }
 
@@ -1476,6 +1480,36 @@ function stopAutoModeGeneration() {
     $("#rm_group_automode").prop("checked", false);
 }
 
+function doCurMemberListPopout() {
+    //repurposes the zoomed avatar template to server as a floating group member list
+    if ($("#groupMemberListPopout").length === 0) {
+        console.debug('did not see popout yet, creating')
+        const memberListClone = $(this).parent().parent().find('.inline-drawer-content').html()
+        const template = $('#zoomed_avatar_template').html();
+        const controlBarHtml = `<div class="panelControlBar flex-container">
+        <div id="groupMemberListPopoutheader" class="fa-solid fa-grip drag-grabber hoverglow"></div>
+        <div id="groupMemberListPopoutClose" class="fa-solid fa-circle-xmark hoverglow"></div>
+    </div>`
+        const newElement = $(template);
+        newElement.attr('id', 'groupMemberListPopout');
+        newElement.removeClass('zoomed_avatar')
+        newElement.empty()
+
+        newElement.append(controlBarHtml).append(memberListClone)
+        $('body').append(newElement);
+        loadMovingUIState();
+        $("#groupMemberListPopout").fadeIn(250)
+        dragElement(newElement)
+        $('#groupMemberListPopoutClose').off('click').on('click', function () {
+            $("#groupMemberListPopout").fadeOut(250, () => { $("#groupMemberListPopout").remove() })
+        })
+
+    } else {
+        console.debug('saw existing popout, removing')
+        $("#groupMemberListPopout").fadeOut(250, () => { $("#groupMemberListPopout").remove() });
+    }
+}
+
 jQuery(() => {
     $(document).on("click", ".group_select", selectGroup);
     $("#rm_group_filter").on("input", filterGroupMembers);
@@ -1487,4 +1521,5 @@ jQuery(() => {
         eventSource.once(event_types.GENERATION_STOPPED, stopAutoModeGeneration);
     });
     $("#send_textarea").on("keyup", onSendTextareaInput);
+    $("#groupCurrentMemberPopoutButton").on('click', doCurMemberListPopout);
 });

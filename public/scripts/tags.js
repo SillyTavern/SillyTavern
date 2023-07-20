@@ -6,6 +6,7 @@ import {
     menu_type,
     updateVisibleDivs,
     getCharacters,
+    updateCharacterCount,
 } from "../script.js";
 
 import { selected_group } from "./group-chats.js";
@@ -82,6 +83,7 @@ function applyFavFilter(characterSelector) {
         }
 
     });
+    updateCharacterCount(characterSelector);
     updateVisibleDivs('#rm_print_characters_block', true);
 }
 
@@ -94,6 +96,7 @@ function filterByGroups(characterSelector) {
     $(characterSelector).each((_, element) => {
         $(element).toggleClass('hiddenByGroup', displayGroupsOnly && !$(element).hasClass('group_select'));
     });
+    updateCharacterCount(characterSelector);
     updateVisibleDivs('#rm_print_characters_block', true);
 }
 
@@ -240,9 +243,9 @@ async function importTags(imported_char) {
     let selected_tags = "";
     const existingTagsString = existingTags.length ? (': ' + existingTags.join(', ')) : '';
     if (newTags.length === 0) {
-        await callPopup(`<h3>Importing Tags</h3><p>${existingTags.length} existing tags have been found${existingTagsString}.</p>`, 'text');
+        await callPopup(`<h3>Importing Tags For ${imported_char.name}</h3><p>${existingTags.length} existing tags have been found${existingTagsString}.</p>`, 'text');
     } else {
-        selected_tags = await callPopup(`<h3>Importing Tags</h3><p>${existingTags.length} existing tags have been found${existingTagsString}.</p><p>The following ${newTags.length} new tags will be imported.</p>`, 'input', newTags.join(', '));
+        selected_tags = await callPopup(`<h3>Importing Tags For ${imported_char.name}</h3><p>${existingTags.length} existing tags have been found${existingTagsString}.</p><p>The following ${newTags.length} new tags will be imported.</p>`, 'input', newTags.join(', '));
     }
     selected_tags = existingTags.concat(selected_tags.split(','));
     selected_tags = selected_tags.map(t => t.trim()).filter(t => t !== "");
@@ -257,12 +260,13 @@ async function importTags(imported_char) {
             tag = createNewTag(tagName);
         }
 
-        addTagToMap(tag.id);
-        tag_map[imported_char.avatar].push(tag.id);
+        if (!tag_map[imported_char.avatar].includes(tag.id)) {
+            tag_map[imported_char.avatar].push(tag.id);
+            console.debug('added tag to map', tag, imported_char.name);
+        }
     };
     saveSettingsDebounced();
     await getCharacters();
-    await getSettings();
     printTagFilters(tag_filter_types.character);
     printTagFilters(tag_filter_types.group_member);
 
@@ -307,7 +311,7 @@ function appendTagToList(listElement, tag, { removable, selectable, action, isGe
     }
 
     if (tag.excluded) {
-        isGeneralList ? $(tagElement).addClass('excluded') : $(listElement).parent().parent().addClass('hiddenByTag');
+        isGeneralList ? $(tagElement).addClass('excluded') : $(listElement).closest('.character_select, .group_select').addClass('hiddenByTag');
     }
 
     if (selectable) {
@@ -325,7 +329,7 @@ function appendTagToList(listElement, tag, { removable, selectable, action, isGe
     $(listElement).append(tagElement);
 }
 
-function onTagFilterClick(listElement, characterSelector) { 
+function onTagFilterClick(listElement, characterSelector) {
     let excludeTag;
     if ($(this).hasClass('selected')) {
         $(this).removeClass('selected');
@@ -355,6 +359,7 @@ function onTagFilterClick(listElement, characterSelector) {
     const tagIds = [...($(listElement).find(".tag.selected:not(.actionable)").map((_, el) => $(el).attr("id")))];
     const excludedTagIds = [...($(listElement).find(".tag.excluded:not(.actionable)").map((_, el) => $(el).attr("id")))];
     $(characterSelector).each((_, element) => applyFilterToElement(tagIds, excludedTagIds, element));
+    updateCharacterCount(characterSelector);
     updateVisibleDivs('#rm_print_characters_block', true);
 }
 

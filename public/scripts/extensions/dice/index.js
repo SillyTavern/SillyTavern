@@ -10,7 +10,7 @@ async function doDiceRoll(customDiceFormula) {
     let value = typeof customDiceFormula === 'string' ? customDiceFormula.trim() : $(this).data('value');
 
     if (value == 'custom') {
-        value = await callPopup('Enter the dice formula:<br><i>(for example, <tt>2d6</tt>)</i>', 'input');x
+        value = await callPopup('Enter the dice formula:<br><i>(for example, <tt>2d6</tt>)</i>', 'input');
     }
 
     if (!value) {
@@ -76,20 +76,11 @@ function addDiceRollButton() {
     });
 }
 
-function addDiceScript() {
-    if (!window.droll) {
-        const script = document.createElement('script');
-        script.src = "/scripts/extensions/dice/droll.js";
-        document.body.appendChild(script);
-    }
-}
-
 async function moduleWorker() {
     $('#roll_dice').toggle(getContext().onlineStatus !== 'no_connection');
 }
 
 jQuery(function () {
-    addDiceScript();
     addDiceRollButton();
     moduleWorker();
     setInterval(moduleWorker, UPDATE_INTERVAL);

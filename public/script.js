@@ -1,4 +1,5 @@
-import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile } from "./scripts/RossAscends-mods.js";
+import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, } from "./scripts/RossAscends-mods.js";
+import { userStatsHandler, statMesProcess } from './scripts/stats.js';
 import { encode } from "../scripts/gpt-2-3-tokenizer/mod.js";
 import { GPT3BrowserTokenizer } from "../scripts/gpt-3-tokenizer/gpt3-tokenizer.js";
 import {
@@ -74,6 +75,7 @@ import {
     formatInstructModePrompt,
     persona_description_positions,
     loadMovingUIState,
+    getCustomStoppingStrings,
 } from "./scripts/power-user.js";
 
 import {
@@ -90,6 +92,7 @@ import {
     getTokenCountOpenAI,
     chat_completion_sources,
     getTokenizerModel,
+    getChatCompletionModel,
 } from "./scripts/openai.js";
 
 import {
@@ -101,7 +104,10 @@ import {
     nai_settings,
 } from "./scripts/nai-settings.js";
 
-import { showBookmarksButtons } from "./scripts/bookmarks.js";
+import {
+    createNewBookmark,
+    showBookmarksButtons
+} from "./scripts/bookmarks.js";
 
 import {
     horde_settings,
@@ -112,15 +118,6 @@ import {
     adjustHordeGenerationParams,
     MIN_AMOUNT_GEN,
 } from "./scripts/horde.js";
-
-import {
-    poe_settings,
-    loadPoeSettings,
-    generatePoe,
-    is_get_status_poe,
-    setPoeOnlineStatus,
-    appendPoeAnchors,
-} from "./scripts/poe.js";
 
 import {
     debounce,
@@ -160,8 +157,9 @@ import {
 import { EventEmitter } from './scripts/eventemitter.js';
 import { context_settings, loadContextTemplatesFromSettings } from "./scripts/context-template.js";
 import { markdownExclusionExt } from "./scripts/showdown-exclusion.js";
-import { NOTE_MODULE_NAME, metadata_keys, setFloatingPrompt, shouldWIAddPrompt } from "./scripts/extensions/floating-prompt/index.js";
+import { NOTE_MODULE_NAME, metadata_keys, setFloatingPrompt, shouldWIAddPrompt } from "./scripts/authors-note.js";
 import { deviceInfo } from "./scripts/RossAscends-mods.js";
+import { getRegexedString, regex_placement } from "./scripts/extensions/regex/engine.js";
 
 //exporting functions and vars for mods
 export {
@@ -238,6 +236,26 @@ export {
 // API OBJECT FOR EXTERNAL WIRING
 window["SillyTavern"] = {};
 
+// Event source init
+export const event_types = {
+    EXTRAS_CONNECTED: 'extras_connected',
+    MESSAGE_SWIPED: 'message_swiped',
+    MESSAGE_SENT: 'message_sent',
+    MESSAGE_RECEIVED: 'message_received',
+    MESSAGE_EDITED: 'message_edited',
+    MESSAGE_DELETED: 'message_deleted',
+    IMPERSONATE_READY: 'impersonate_ready',
+    CHAT_CHANGED: 'chat_id_changed',
+    GENERATION_STOPPED: 'generation_stopped',
+    EXTENSIONS_FIRST_LOAD: 'extensions_first_load',
+    SETTINGS_LOADED: 'settings_loaded',
+    SETTINGS_UPDATED: 'settings_updated',
+    GROUP_UPDATED: 'group_updated',
+    MOVABLE_PANELS_RESET: 'movable_panels_reset',
+}
+
+export const eventSource = new EventEmitter();
+
 const gpt3 = new GPT3BrowserTokenizer({ type: 'gpt3' });
 hljs.addPlugin({ "before:highlightElement": ({ el }) => { el.textContent = el.innerText } });
 
@@ -300,6 +318,7 @@ let is_delete_mode = false;
 let fav_ch_checked = false;
 let scrollLock = false;
 
+
 //initialize global var for future cropped blobs
 let currentCroppedAvatar = '';
 
@@ -322,6 +341,7 @@ const system_message_types = {
     SLASH_COMMANDS: "slash_commands",
     FORMATTING: "formatting",
     HOTKEYS: "hotkeys",
+    MACROS: "macros",
 };
 
 const extension_prompt_types = {
@@ -336,15 +356,15 @@ const system_messages = {
         is_user: false,
         is_system: true,
         is_name: true,
-        mes: [
+        mes:
             `Hello there! Please select the help topic you would like to learn more about:
             <ul>
             <li><a href="javascript:displayHelp('1')">Slash Commands</a> (or <tt>/help slash</tt>)</li>
             <li><a href="javascript:displayHelp('2')">Formatting</a> (or <tt>/help format</tt>)</li>
             <li><a href="javascript:displayHelp('3')">Hotkeys</a> (or <tt>/help hotkeys</tt>)</li>
+            <li><a href="javascript:displayHelp('4')">{{Macros}}</a> (or <tt>/help macros</tt>)</li>
             </ul>
             <br><b>Still got questions left? The <a target="_blank" href="https://docs.sillytavern.app/">Official SillyTavern Documentation Website</a> has much more information!</b>`
-        ]
     },
     slash_commands: {
         name: systemUserName,
@@ -360,7 +380,7 @@ const system_messages = {
         is_user: false,
         is_system: true,
         is_name: true,
-        mes: [
+        mes:
             `Hotkeys/Keybinds:
             <ul>
             <li><tt>Up</tt> = Edit last message in chat</li>
@@ -374,7 +394,6 @@ const system_messages = {
             <li><tt>Ctrl+Shift+Up</tt> = Scroll to context line</li>
             <li><tt>Ctrl+Shift+Down</tt> = Scroll chat to bottom</li>
             </ul>`
-        ]
     },
     formatting: {
         name: systemUserName,
@@ -382,7 +401,7 @@ const system_messages = {
         is_user: false,
         is_system: true,
         is_name: true,
-        mes: [
+        mes:
             `Text formatting commands:
             <ul>
             <li><tt>{​{text}​}</tt> - sets a one-time behavioral bias for the AI. Resets when you send the next message.</li>
@@ -394,13 +413,32 @@ const system_messages = {
             <li><tt>$$ text $$</tt> - renders a LaTeX formula (if enabled)</li>
             <li><tt>$ text $</tt> - renders an AsciiMath formula (if enabled)</li>
             </ul>`
-        ]
+    },
+    macros: {
+        name: systemUserName,
+        force_avatar: system_avatar,
+        is_user: false,
+        is_system: true,
+        is_name: true,
+        mes:
+            `System-wide Replacement Macros:
+            <ul>
+            <li><tt>{​{user}​}</tt> - your current Persona username</li>
+            <li><tt>{​{char}​}</tt> - the Character's name</li>
+            <li><tt>{​{input}​}</tt> - the user input</li>
+            <li><tt>{​{time}​}</tt> - the current time</li>
+            <li><tt>{​{date}​}</tt> - the current date</li>
+            <li><tt>{{idle_duration}}</tt> - the time since the last user message was sent</li>
+            <li><tt>{{random:(args)}}</tt> - returns a random item from the list. (ex: {{random:1,2,3,4}} will return 1 of the 4 numbers at random. Works with text lists too.</li>
+            <li><tt>{{roll:(formula)}}</tt> - rolls a dice. (ex: {{roll:1d6}} will roll a 6-sided dice and return a number between 1 and 6)</li>
+            </ul>`
     },
     welcome:
     {
         name: systemUserName,
         force_avatar: system_avatar,
         is_user: false,
+        is_system: true,
         is_name: true,
         mes: [
             '<h3><span id="version_display_welcome">SillyTavern</span><div id="version_display_welcome"></div></h3>',
@@ -479,23 +517,6 @@ const system_messages = {
     },
 };
 
-export const event_types = {
-    EXTRAS_CONNECTED: 'extras_connected',
-    MESSAGE_SWIPED: 'message_swiped',
-    MESSAGE_SENT: 'message_sent',
-    MESSAGE_RECEIVED: 'message_received',
-    MESSAGE_EDITED: 'message_edited',
-    MESSAGE_DELETED: 'message_deleted',
-    IMPERSONATE_READY: 'impersonate_ready',
-    CHAT_CHANGED: 'chat_id_changed',
-    GENERATION_STOPPED: 'generation_stopped',
-    SETTINGS_UPDATED: 'settings_updated',
-    GROUP_UPDATED: 'group_updated',
-    MOVABLE_PANELS_RESET: 'movable_panels_reset',
-}
-
-export const eventSource = new EventEmitter();
-
 $(document).ajaxError(function myErrorHandler(_, xhr) {
     if (xhr.status == 403) {
         toastr.warning("doubleCsrf errors in console are NORMAL in this case. Just reload the page or close this tab.", "Looks like you've opened SillyTavern in another browser tab", { timeOut: 0, extendedTimeOut: 0, preventDuplicates: true });
@@ -521,6 +542,10 @@ async function getClientVersion() {
 }
 
 function getTokenCount(str, padding = undefined) {
+    if (typeof str !== 'string') {
+        return 0;
+    }
+
     let tokenizerType = power_user.tokenizer;
 
     if (main_api === 'openai') {
@@ -550,6 +575,8 @@ function getTokenCount(str, padding = undefined) {
             return countTokensRemote('/tokenize_nerdstash', str, padding);
         case tokenizers.NERD2:
             return countTokensRemote('/tokenize_nerdstash_v2', str, padding);
+        case tokenizers.API:
+            return countTokensRemote('/tokenize_via_api', str, padding);
         default:
             console.warn("Unknown tokenizer type", tokenizerType);
             return Math.ceil(str.length / CHARACTERS_PER_TOKEN_RATIO) + padding;
@@ -701,6 +728,8 @@ var css_send_form_display = $("<div id=send_form></div>").css("display");
 let generate_loop_counter = 0;
 const MAX_GENERATION_LOOPS = 5;
 
+var kobold_horde_model = "";
+
 let token;
 
 var PromptArrayItemForRawPromptDisplay;
@@ -730,7 +759,6 @@ $.get("/csrf-token").then(async (data) => {
 
 function checkOnlineStatus() {
     ///////// REMOVED LINES THAT DUPLICATE RA_CHeckOnlineStatus FEATURES
-
     if (online_status == "no_connection") {
         $("#online_status_indicator2").css("background-color", "red");  //Kobold
         $("#online_status_text2").html("No connection...");
@@ -743,7 +771,6 @@ function checkOnlineStatus() {
         is_get_status = false;
         is_get_status_novel = false;
         setOpenAIOnlineStatus(false);
-        setPoeOnlineStatus(false);
     } else {
         $("#online_status_indicator2").css("background-color", "green"); //kobold
         $("#online_status_text2").html(online_status);
@@ -824,7 +851,7 @@ async function getStatus() {
             },
         });
     } else {
-        if (is_get_status_novel != true && is_get_status_openai != true && main_api != "poe") {
+        if (is_get_status_novel != true && is_get_status_openai != true) {
             online_status = "no_connection";
         }
     }
@@ -914,8 +941,12 @@ async function getCharacters() {
         if (this_chid != undefined && this_chid != "invalid-safety-id") {
             $("#avatar_url_pole").val(characters[this_chid].avatar);
         }
+
         await getGroups();
         await printCharacters();
+
+
+        updateCharacterCount('#rm_print_characters_block > div');
     }
 }
 
@@ -931,22 +962,25 @@ async function getBackgrounds() {
         const getData = await response.json();
         //background = getData;
         //console.log(getData.length);
+        $("#bg_menu_content").empty();
         for (const bg of getData) {
-            const thumbPath = getThumbnailUrl('bg', bg);
-            $("#bg_menu_content").append(
-                `<div class="bg_example flex-container" bgfile="${bg}" class="bg_example_img" title="${bg}" style="background-image: url('${thumbPath}');">
-                    <div bgfile="${bg}" class="bg_example_cross fa-solid fa-circle-xmark"></div>
-                    <div class="BGSampleTitle">
-                        ${bg
-                    .replace('.png', '')
-                    .replace('.jpg', '')
-                    .replace('.webp', '')}
-                </div>
-                </div>`
-            );
+            const template = getBackgroundFromTemplate(bg);
+            $("#bg_menu_content").append(template);
         }
     }
 }
+
+function getBackgroundFromTemplate(bg) {
+    const thumbPath = getThumbnailUrl('bg', bg);
+    const template = $('#background_template .bg_example').clone();
+    template.attr('bgfile', bg);
+    template.attr('title', bg);
+    template.find('.bg_button').attr('bgfile', bg);
+    template.css('background-image', `url('${thumbPath}')`);
+    template.find('.BGSampleTitle').text(bg.slice(0, bg.lastIndexOf('.')));
+    return template;
+}
+
 async function isColab() {
     is_checked_colab = true;
     const response = await fetch("/iscolab", {
@@ -1019,6 +1053,7 @@ async function delChat(chatfile) {
     if (response.ok === true) {
         // choose another chat if current was deleted
         if (chatfile.replace('.jsonl', '') === characters[this_chid].chat) {
+            chat_metadata = {};
             await replaceCurrentChat();
         }
     }
@@ -1109,6 +1144,23 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
         mes = mes.replaceAll(substituteParams(power_user.user_prompt_bias), "");
     }
 
+    if (!isSystem) {
+        let regexPlacement;
+        if (isUser) {
+            regexPlacement = regex_placement.USER_INPUT;
+        } else if (ch_name !== name2) {
+            regexPlacement = regex_placement.SLASH_COMMAND;
+        } else {
+            regexPlacement = regex_placement.AI_OUTPUT;
+        }
+
+        // Always override the character name
+        mes = getRegexedString(mes, regexPlacement, {
+            characterOverride: ch_name,
+            isMarkdown: true
+        });
+    }
+
     if (power_user.auto_fix_generated_markdown) {
         mes = fixMarkdown(mes);
     }
@@ -1185,6 +1237,7 @@ function getMessageFromTemplate({
     bookmarkLink,
     forceAvatar,
     timestamp,
+    extra,
 } = {}) {
     const mes = $('#message_template .mes').clone();
     mes.attr({
@@ -1199,7 +1252,7 @@ function getMessageFromTemplate({
     mes.find('.avatar img').attr('src', avatarImg);
     mes.find('.ch_name .name_text').text(characterName);
     mes.find('.mes_bias').html(bias);
-    mes.find('.timestamp').text(timestamp);
+    mes.find('.timestamp').text(timestamp).attr('title', `${extra?.api ? extra.api + ' - ' : ''}${extra?.model ?? ''}`);
     mes.find('.mesIDDisplay').text(`#${mesId}`);
     title && mes.attr('title', title);
     timerValue && mes.find('.mes_timer').attr('title', timerTitle).text(timerValue);
@@ -1250,6 +1303,9 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     var messageText = mes["mes"];
     const momentDate = timestampToMoment(mes.send_date);
     const timestamp = momentDate.isValid() ? momentDate.format('LL LT') : '';
+
+
+
 
     if (mes?.extra?.display_text) {
         messageText = mes.extra.display_text;
@@ -1319,6 +1375,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         bookmarkLink: bookmarkLink,
         forceAvatar: mes.force_avatar,
         timestamp: timestamp,
+        extra: mes.extra,
         ...formatGenerationTimer(mes.gen_started, mes.gen_finished),
     };
 
@@ -1396,7 +1453,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.mes_text').append(messageText);
         appendImageToMessage(mes, $("#chat").find(`[mesid="${count_view_mes - 1}"]`));
         $("#chat").find(`[mesid="${count_view_mes - 1}"]`).attr('title', title);
-        $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.timestamp').text(timestamp);
+        $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.timestamp').text(timestamp).attr('title', `${params.extra.api} - ${params.extra.model}`);
 
         if (mes.swipe_id == mes.swipes.length - 1) {
             $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.mes_timer').text(params.timerValue);
@@ -1468,7 +1525,7 @@ function substituteParams(content, _name1, _name2, _original) {
     _name1 = _name1 ?? name1;
     _name2 = _name2 ?? name2;
     if (!content) {
-        return ''
+        return '';
     }
 
     // Replace {{original}} with the original message
@@ -1478,13 +1535,89 @@ function substituteParams(content, _name1, _name2, _original) {
         content = content.replace(/{{original}}/i, _original);
     }
 
+    content = content.replace(/{{input}}/gi, $('#send_textarea').val());
     content = content.replace(/{{user}}/gi, _name1);
     content = content.replace(/{{char}}/gi, _name2);
     content = content.replace(/<USER>/gi, _name1);
     content = content.replace(/<BOT>/gi, _name2);
     content = content.replace(/{{time}}/gi, moment().format('LT'));
     content = content.replace(/{{date}}/gi, moment().format('LL'));
+    content = content.replace(/{{idle_duration}}/gi, () => getTimeSinceLastMessage());
+    content = content.replace(/{{time_UTC([-+]\d+)}}/gi, (_, offset) => {
+        const utcOffset = parseInt(offset, 10);
+        const utcTime = moment().utc().utcOffset(utcOffset).format('LT');
+        return utcTime;
+    });
+    content = randomReplace(content);
+    content = diceRollReplace(content);
     return content;
+}
+
+function getTimeSinceLastMessage() {
+    const now = moment();
+
+    if (Array.isArray(chat) && chat.length > 0) {
+        let lastMessage;
+        let takeNext = false;
+
+        for (let i = chat.length - 1; i >= 0; i--) {
+            const message = chat[i];
+
+            if (message.is_system) {
+                continue;
+            }
+
+            if (message.is_user && takeNext) {
+                lastMessage = message;
+                break;
+            }
+
+            takeNext = true;
+        }
+
+        if (lastMessage?.send_date) {
+            const lastMessageDate = timestampToMoment(lastMessage.send_date);
+            const duration = moment.duration(now.diff(lastMessageDate));
+            return duration.humanize();
+        }
+    }
+
+    return 'just now';
+}
+
+function randomReplace(input, emptyListPlaceholder = '') {
+    const randomPattern = /{{random:([^}]+)}}/gi;
+
+    return input.replace(randomPattern, (match, listString) => {
+        const list = listString.split(',').map(item => item.trim()).filter(item => item.length > 0);
+
+        if (list.length === 0) {
+            return emptyListPlaceholder;
+        }
+
+        var rng = new Math.seedrandom('added entropy.', { entropy: true });
+        const randomIndex = Math.floor(rng() * list.length);
+
+        //const randomIndex = Math.floor(Math.random() * list.length);
+        return list[randomIndex];
+    });
+}
+
+function diceRollReplace(input, invalidRollPlaceholder = '') {
+    const randomPattern = /{{roll:([^}]+)}}/gi;
+
+    return input.replace(randomPattern, (match, matchValue) => {
+        const formula = matchValue.trim();
+        const isValid = droll.validate(formula);
+
+        if (!isValid) {
+            console.debug(`Invalid roll formula: ${formula}`);
+            return invalidRollPlaceholder;
+        }
+
+        const result = droll.roll(formula);
+        return new String(result.total);
+    });
 }
 
 function getStoppingStrings(isImpersonate, addSpace) {
@@ -1519,6 +1652,11 @@ function getStoppingStrings(isImpersonate, addSpace) {
         if (power_user.instruct.output_sequence) {
             result.push(substituteParams(wrap(power_user.instruct.output_sequence), name1, name2));
         }
+    }
+
+    if (power_user.custom_stopping_strings) {
+        const customStoppingStrings = getCustomStoppingStrings();
+        result.push(...customStoppingStrings);
     }
 
     return addSpace ? result.map(x => `${x} `) : result;
@@ -1588,7 +1726,7 @@ export function extractMessageBias(message) {
         return null;
     }
 
-    const forbiddenMatches = ['user', 'char', 'time', 'date'];
+    const forbiddenMatches = ['user', 'char', 'time', 'date', 'random', 'idle_duration', 'roll'];
     const found = [];
     const rxp = /\{\{([\s\S]+?)\}\}/gm;
     //const rxp = /{([^}]+)}/g;
@@ -1597,7 +1735,12 @@ export function extractMessageBias(message) {
     while ((curMatch = rxp.exec(message))) {
         const match = curMatch[1].trim();
 
-        if (forbiddenMatches.includes(match)) {
+        // Ignore random/roll pattern matches
+        if (/^random:.+/i.test(match) || /^roll:.+/i.test(match)) {
+            continue;
+        }
+
+        if (forbiddenMatches.includes(match.toLowerCase())) {
             continue;
         }
 
@@ -1715,10 +1858,9 @@ function appendToStoryString(value, prefix) {
 }
 
 function isStreamingEnabled() {
-    return ((main_api == 'openai' && oai_settings.stream_openai)
+    return ((main_api == 'openai' && oai_settings.stream_openai && oai_settings.chat_completion_source !== chat_completion_sources.SCALE)
         || (main_api == 'kobold' && kai_settings.streaming_kobold && kai_settings.can_use_streaming)
         || (main_api == 'novel' && nai_settings.streaming_novel)
-        || (main_api == 'poe' && poe_settings.streaming)
         || (main_api == 'textgenerationwebui' && textgenerationwebui_settings.streaming))
         && !isMultigenEnabled(); // Multigen has a quasi-streaming mode which breaks the real streaming
 }
@@ -1784,8 +1926,9 @@ class StreamingProcessor {
 
     onProgressStreaming(messageId, text, isFinal) {
         const isImpersonate = this.type == "impersonate";
+        const isContinue = this.type == "continue";
         text = this.removePrefix(text);
-        let processedText = cleanUpMessage(text, isImpersonate, !isFinal);
+        let processedText = cleanUpMessage(text, isImpersonate, isContinue, !isFinal);
         let result = extractNameFromMessage(processedText, this.force_name2, isImpersonate);
         let isName = result.this_mes_is_name;
         processedText = result.getMessage;
@@ -1812,7 +1955,7 @@ class StreamingProcessor {
 
             if (this.type == 'swipe' && Array.isArray(chat[messageId]['swipes'])) {
                 chat[messageId]['swipes'][chat[messageId]['swipe_id']] = processedText;
-                chat[messageId]['swipe_info'][chat[messageId]['swipe_id']] = { 'send_date': chat[messageId]['send_date'], 'gen_started': chat[messageId]['gen_started'], 'gen_finished': chat[messageId]['gen_finished'] };
+                chat[messageId]['swipe_info'][chat[messageId]['swipe_id']] = { 'send_date': chat[messageId]['send_date'], 'gen_started': chat[messageId]['gen_started'], 'gen_finished': chat[messageId]['gen_finished'], 'extra': JSON.parse(JSON.stringify(chat[messageId]['extra'])) };
             }
 
             let formattedText = messageFormatting(
@@ -1894,7 +2037,7 @@ class StreamingProcessor {
         if (this.type !== 'swipe' && this.type !== 'impersonate') {
             if (Array.isArray(chat[messageId]['swipes']) && chat[messageId]['swipes'].length === 1 && chat[messageId]['swipe_id'] === 0) {
                 chat[messageId]['swipes'][0] = chat[messageId]['mes'];
-                chat[messageId]['swipe_info'][0] = { 'send_date': chat[messageId]['send_date'], 'gen_started': chat[messageId]['gen_started'], 'gen_finished': chat[messageId]['gen_finished'] };
+                chat[messageId]['swipe_info'][0] = { 'send_date': chat[messageId]['send_date'], 'gen_started': chat[messageId]['gen_started'], 'gen_finished': chat[messageId]['gen_finished'], 'extra': JSON.parse(JSON.stringify(chat[messageId]['extra'])) };
             }
         }
     }
@@ -1964,6 +2107,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     // OpenAI doesn't need instruct mode. Use OAI main prompt instead.
     const isInstruct = power_user.instruct.enabled && main_api !== 'openai';
     const isImpersonate = type == "impersonate";
+    const isContinue = type == 'continue';
 
     message_already_generated = isImpersonate ? `${name1}: ` : `${name2}: `;
     // Name for the multigen prefix
@@ -2112,10 +2256,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         // Determine token limit
         let this_max_context = getMaxContextSize();
 
-        if (extension_settings.chromadb.n_results !== 0) {
-            await runGenerationInterceptors(coreChat, this_max_context);
-            console.log(`Core/all messages: ${coreChat.length}/${chat.length}`);
-        }
+        // Always run the extension interceptors.
+        await runGenerationInterceptors(coreChat, this_max_context);
+        console.log(`Core/all messages: ${coreChat.length}/${chat.length}`);
 
         let storyString = "";
 
@@ -2138,13 +2281,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             force_name2 = false;
         }
 
-        if (isInstruct) {
-            storyString = formatInstructStoryString(storyString, systemPrompt);
-        }
-
         //////////////////////////////////
 
         let chat2 = [];
+        let continue_mag = '';
         for (let i = coreChat.length - 1, j = 0; i >= 0; i--, j++) {
             // For OpenAI it's only used in WI
             if (main_api == 'openai' && (!world_info || world_info.length === 0)) {
@@ -2154,9 +2294,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
             chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct);
 
-            // Do not format the message for continuation
-            if (i === 0 && type == 'continue') {
-                chat2[i] = coreChat[j].mes;
+            // Do not suffix the message for continuation
+            if (i === 0 && isContinue) {
+                chat2[i] = chat2[i].slice(0, chat2[i].lastIndexOf(coreChat[j].mes) + coreChat[j].mes.length);
+                continue_mag = coreChat[j].mes;
             }
         }
 
@@ -2188,16 +2329,20 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         const afterScenarioAnchor = getExtensionPrompt(extension_prompt_types.AFTER_SCENARIO);
         let zeroDepthAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, 0, ' ');
 
+        // Pre-format the World Info into the story string
+        if (main_api !== 'openai') {
+            storyString = worldInfoBefore + storyString + worldInfoAfter;
+        }
+
+        // Format the instruction string
+        if (isInstruct) {
+            storyString = formatInstructStoryString(storyString, systemPrompt);
+        }
+
         if (main_api === 'openai') {
             message_already_generated = ''; // OpenAI doesn't have multigen
             setOpenAIMessages(coreChat);
             setOpenAIMessageExamples(mesExamplesArray);
-        }
-
-        // Moved here to not overflow the Poe context with added prompt bits
-        if (main_api == 'poe') {
-            allAnchors = appendPoeAnchors(type, allAnchors, jailbreakPrompt);
-            zeroDepthAnchor = appendPoeAnchors(type, zeroDepthAnchor, jailbreakPrompt);
         }
 
         // hack for regeneration of the first message
@@ -2209,7 +2354,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         let chatString = '';
         function getMessagesTokenCount() {
             const encodeString = [
-                worldInfoString,
                 storyString,
                 examplesString,
                 chatString,
@@ -2226,7 +2370,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         }
 
         let cyclePrompt = '';
-        if (type == 'continue') {
+        if (isContinue) {
             cyclePrompt = chat2.shift();
         }
 
@@ -2275,15 +2419,16 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         console.debug('calling runGenerate');
         streamingProcessor = isStreamingEnabled() ? new StreamingProcessor(type, force_name2) : false;
 
-        if (type == 'continue') {
+        if (isContinue) {
             // Coping mechanism for OAI spacing
-            if ((main_api === 'openai' || main_api === 'poe') && !cyclePrompt.endsWith(' ')) {
+            if ((main_api === 'openai') && !cyclePrompt.endsWith(' ')) {
                 cyclePrompt += ' ';
+                continue_mag += ' ';
             }
 
             // Save reply does add cycle text to the prompt, so it's not needed here
             streamingProcessor && (streamingProcessor.firstMessageText = '');
-            message_already_generated = cyclePrompt;
+            message_already_generated = continue_mag;
             tokens_already_generated = 1; // Multigen copium
         }
 
@@ -2374,6 +2519,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     const name = is_pygmalion ? 'You' : name1;
                     const quietAppend = isInstruct ? formatInstructModeChat(name, quiet_prompt, false, true, false, name1, name2) : `\n${name}: ${quiet_prompt}`;
                     mesSendString += quietAppend;
+                    // Bail out early
+                    return mesSendString;
                 }
 
                 // Get instruct mode line
@@ -2408,7 +2555,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         console.debug(`A prompt bias was found: ${promptBias}`);
                         mesSendString += `${name2}: ${promptBias}`;
                     }
-                } else if (power_user.user_prompt_bias) {
+                } else if (power_user.user_prompt_bias && !isImpersonate && !isInstruct) {
                     console.debug(`A prompt bias was found without character's name appended: ${promptBias}`);
                     mesSendString += substituteParams(power_user.user_prompt_bias);
                 }
@@ -2420,7 +2567,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 console.debug('---checking Prompt size');
                 setPromtString();
                 const prompt = [
-                    worldInfoString,
                     storyString,
                     mesExmString,
                     mesSendString,
@@ -2456,9 +2602,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             mesSendString = adjustChatsSeparator(mesSendString);
 
             let finalPromt =
-                worldInfoBefore +
                 storyString +
-                worldInfoAfter +
                 afterScenarioAnchor +
                 mesExmString +
                 mesSendString +
@@ -2535,8 +2679,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
 
                 setInContextMessages(openai_messages_count, type);
-            } else if (main_api == 'poe') {
-                generate_data = { prompt: finalPromt };
             }
 
             if (power_user.console_log_prompts) {
@@ -2555,13 +2697,12 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 ...thisPromptBits[currentArrayEntry],
                 rawPrompt: generate_data.prompt,
                 mesId: getNextMessageId(type),
-                worldInfoBefore: worldInfoBefore,
                 allAnchors: allAnchors,
                 summarizeString: (extension_prompts['1_memory']?.value || ''),
                 authorsNoteString: (extension_prompts['2_floating_prompt']?.value || ''),
+                smartContextString: (extension_prompts['chromadb']?.value || ''),
                 worldInfoString: worldInfoString,
                 storyString: storyString,
-                worldInfoAfter: worldInfoAfter,
                 afterScenarioAnchor: afterScenarioAnchor,
                 examplesString: examplesString,
                 mesSendString: mesSendString,
@@ -2574,6 +2715,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 this_max_context: this_max_context,
                 padding: power_user.token_padding,
                 main_api: main_api,
+                instruction: isInstruct ? substituteParams(power_user.prefer_character_prompt && systemPrompt ? systemPrompt : power_user.instruct.system_prompt) : '',
+                userPersona: (power_user.persona_description || ''),
             };
 
             thisPromptBits = additionalPromptStuff;
@@ -2593,14 +2736,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
             else if (main_api == 'koboldhorde') {
                 generateHorde(finalPromt, generate_data, abortController.signal).then(onSuccess).catch(onError);
-            }
-            else if (main_api == 'poe') {
-                if (isStreamingEnabled() && type !== 'quiet') {
-                    streamingProcessor.generator = await generatePoe(type, finalPromt, streamingProcessor.abortController.signal);
-                }
-                else {
-                    generatePoe(type, finalPromt, abortController.signal).then(onSuccess).catch(onError);
-                }
             }
             else if (main_api == 'textgenerationwebui' && isStreamingEnabled() && type !== 'quiet') {
                 streamingProcessor.generator = await generateTextGenWithStreaming(generate_data, streamingProcessor.abortController.signal);
@@ -2636,8 +2771,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 hideSwipeButtons();
                 let getMessage = await streamingProcessor.generate();
 
-                if (type == 'continue') {
-                    getMessage = message_already_generated + getMessage;
+                if (isContinue) {
+                    getMessage = continue_mag + getMessage;
                 }
 
                 if (streamingProcessor && !streamingProcessor.isStopped && streamingProcessor.isFinished) {
@@ -2653,6 +2788,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     //const getData = await response.json();
                     let getMessage = extractMessageFromData(data);
                     let title = extractTitleFromData(data);
+                    kobold_horde_model = title;
 
                     //Pygmalion run again
                     // to make it continue generating so long as it's under max_amount and hasn't signaled
@@ -2674,7 +2810,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                                 ({ type, getMessage } = saveReply('append', getMessage, this_mes_is_name, title));
                             }
                         } else {
-                            let chunk = cleanUpMessage(message_already_generated, true, true);
+                            let chunk = cleanUpMessage(message_already_generated, true, isContinue, true);
                             let extract = extractNameFromMessage(chunk, force_name2, isImpersonate);
                             $('#send_textarea').val(extract.getMessage).trigger('input');
                         }
@@ -2698,12 +2834,12 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         getMessage = message_already_generated.substring(substringStart);
                     }
 
-                    if (type == 'continue') {
-                        getMessage = message_already_generated + getMessage;
+                    if (isContinue) {
+                        getMessage = continue_mag + getMessage;
                     }
 
                     //Formating
-                    getMessage = cleanUpMessage(getMessage, isImpersonate);
+                    getMessage = cleanUpMessage(getMessage, isImpersonate, isContinue);
 
                     let this_mes_is_name;
                     ({ this_mes_is_name, getMessage } = extractNameFromMessage(getMessage, force_name2, isImpersonate));
@@ -2815,6 +2951,10 @@ function getNextMessageId(type) {
 }
 
 export function getBiasStrings(textareaText, type) {
+    if (type == 'impersonate') {
+        return { messageBias: '', promptBias: '', isUserPromptBias: false };
+    }
+
     let promptBias = '';
     let messageBias = extractMessageBias(textareaText);
 
@@ -2866,6 +3006,8 @@ export function replaceBiasMarkup(str) {
 }
 
 export async function sendMessageAsUser(textareaText, messageBias) {
+    textareaText = getRegexedString(textareaText, regex_placement.USER_INPUT);
+
     chat[chat.length] = {};
     chat[chat.length - 1]['name'] = name1;
     chat[chat.length - 1]['is_user'] = true;
@@ -2883,7 +3025,7 @@ export async function sendMessageAsUser(textareaText, messageBias) {
         console.debug('checking bias');
         chat[chat.length - 1]['extra']['bias'] = messageBias;
     }
-
+    statMesProcess(chat[chat.length - 1], 'user', characters, this_chid, '');
     addOneMessage(chat[chat.length - 1]);
     // Wait for all handlers to finish before continuing with the prompt
     await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
@@ -2910,9 +3052,6 @@ function getMaxContextSize() {
     }
     if (main_api == 'openai') {
         this_max_context = oai_settings.openai_max_context;
-    }
-    if (main_api == 'poe') {
-        this_max_context = Number(max_context);
     }
     return this_max_context;
 }
@@ -3051,13 +3190,15 @@ function promptItemize(itemizedPrompts, requestedMesId) {
     var allAnchorsTokens = getTokenCount(itemizedPrompts[thisPromptSet].allAnchors);
     var summarizeStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].summarizeString);
     var authorsNoteStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].authorsNoteString);
+    var smartContextStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].smartContextString);
     var afterScenarioAnchorTokens = getTokenCount(itemizedPrompts[thisPromptSet].afterScenarioAnchor);
-    var zeroDepthAnchorTokens = getTokenCount(itemizedPrompts[thisPromptSet].afterScenarioAnchor);
+    var zeroDepthAnchorTokens = getTokenCount(itemizedPrompts[thisPromptSet].zeroDepthAnchor);
     var worldInfoStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].worldInfoString);
     var thisPrompt_max_context = itemizedPrompts[thisPromptSet].this_max_context;
     var thisPrompt_padding = itemizedPrompts[thisPromptSet].padding;
     var promptBiasTokens = getTokenCount(itemizedPrompts[thisPromptSet].promptBias);
     var this_main_api = itemizedPrompts[thisPromptSet].main_api;
+    var userPersonaStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].userPersona);
 
     if (this_main_api == 'openai') {
         //for OAI API
@@ -3065,7 +3206,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
 
         //var finalPromptTokens = itemizedPrompts[thisPromptSet].oaiTotalTokens;
         var oaiStartTokens = itemizedPrompts[thisPromptSet].oaiStartTokens;
-        var oaiPromptTokens = itemizedPrompts[thisPromptSet].oaiPromptTokens;
+        var oaiPromptTokens = itemizedPrompts[thisPromptSet].oaiPromptTokens - worldInfoStringTokens - afterScenarioAnchorTokens;
         var ActualChatHistoryTokens = itemizedPrompts[thisPromptSet].oaiConversationTokens;
         var examplesStringTokens = itemizedPrompts[thisPromptSet].oaiExamplesTokens;
         var oaiBiasTokens = itemizedPrompts[thisPromptSet].oaiBiasTokens;
@@ -3083,7 +3224,8 @@ function promptItemize(itemizedPrompts, requestedMesId) {
             //charDescriptionTokens +
             //charPersonalityTokens +
             //allAnchorsTokens +
-            //worldInfoStringTokens +
+            worldInfoStringTokens +
+            afterScenarioAnchorTokens +
             examplesStringTokens;
         // OAI doesn't use padding
         thisPrompt_padding = 0;
@@ -3093,14 +3235,16 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         //for non-OAI APIs
         //console.log('-- Counting non-OAI Tokens');
         var finalPromptTokens = getTokenCount(itemizedPrompts[thisPromptSet].finalPromt);
-        var storyStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].storyString);
+        var storyStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].storyString) - worldInfoStringTokens;
         var examplesStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].examplesString);
         var mesSendStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].mesSendString)
-        var ActualChatHistoryTokens = mesSendStringTokens - allAnchorsTokens + power_user.token_padding;
+        var ActualChatHistoryTokens = mesSendStringTokens - (allAnchorsTokens - afterScenarioAnchorTokens) + power_user.token_padding;
+        var instructionTokens = getTokenCount(itemizedPrompts[thisPromptSet].instruction);
 
         var totalTokensInPrompt =
             storyStringTokens +     //chardefs total
             worldInfoStringTokens +
+            examplesStringTokens + // example messages
             ActualChatHistoryTokens +  //chat history
             allAnchorsTokens +      // AN and/or legacy anchors
             //afterScenarioAnchorTokens +       //only counts if AN is set to 'after scenario'
@@ -3112,7 +3256,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
     if (this_main_api == 'openai') {
         //console.log('-- applying % on OAI tokens');
         var oaiStartTokensPercentage = ((oaiStartTokens / (finalPromptTokens)) * 100).toFixed(2);
-        var storyStringTokensPercentage = ((oaiPromptTokens / (finalPromptTokens)) * 100).toFixed(2);
+        var storyStringTokensPercentage = (((examplesStringTokens + afterScenarioAnchorTokens + oaiPromptTokens) / (finalPromptTokens)) * 100).toFixed(2);
         var ActualChatHistoryTokensPercentage = ((ActualChatHistoryTokens / (finalPromptTokens)) * 100).toFixed(2);
         var promptBiasTokensPercentage = ((oaiBiasTokens / (finalPromptTokens)) * 100).toFixed(2);
         var worldInfoStringTokensPercentage = ((worldInfoStringTokens / (finalPromptTokens)) * 100).toFixed(2);
@@ -3135,14 +3279,16 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         //console.log('-- calling popup for OAI tokens');
         callPopup(
             `
-        <h3>Prompt Itemization</h3>
+        <h3 class="flex-container justifyCenter alignitemscenter">
+            Prompt Itemization
+            <div id="showRawPrompt" class="fa-solid fa-square-poll-horizontal menu_button"></div>
+        </h3>
         Tokenizer: ${selectedTokenizer}<br>
         API Used: ${this_main_api}<br>
         <span class="tokenItemizingSubclass">
             Only the white numbers really matter. All numbers are estimates.
             Grey color items may not have been included in the context due to certain prompt format settings.
         </span>
-        <div id="showRawPrompt" class="fa-solid fa-square-poll-horizontal menu_button"></div>
         <hr>
         <div class="justifyLeft">
             <div class="flex-container">
@@ -3203,6 +3349,10 @@ function promptItemize(itemizedPrompts, requestedMesId) {
                             <div  class=" flex1 tokenItemizingSubclass">-- Examples:</div>
                             <div  class="tokenItemizingSubclass"> ${examplesStringTokens}</div>
                         </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- User Persona:</div>
+                            <div  class="tokenItemizingSubclass"> ${userPersonaStringTokens}</div>
+                        </div>
                     </div>
                     <div class="wide100p flex-container">
                         <div  class="flex1" style="color: gold;">World Info:</div>
@@ -3224,6 +3374,10 @@ function promptItemize(itemizedPrompts, requestedMesId) {
                         <div class="flex-container ">
                             <div  class=" flex1 tokenItemizingSubclass">-- Author's Note:</div>
                             <div  class="tokenItemizingSubclass"> ${authorsNoteStringTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Smart Context:</div>
+                            <div  class="tokenItemizingSubclass"> ${smartContextStringTokens}</div>
                         </div>
                     </div>
                     <div class="wide100p flex-container">
@@ -3250,14 +3404,16 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         //console.log('-- calling popup for non-OAI tokens');
         callPopup(
             `
-        <h3>Prompt Itemization</h3>
+        <h3 class="flex-container justifyCenter alignitemscenter">
+            Prompt Itemization
+            <div id="showRawPrompt" class="fa-solid fa-square-poll-horizontal menu_button"></div>
+        </h3>
         Tokenizer: ${selectedTokenizer}<br>
         API Used: ${this_main_api}<br>
         <span class="tokenItemizingSubclass">
             Only the white numbers really matter. All numbers are estimates.
             Grey color items may not have been included in the context due to certain prompt format settings.
         </span>
-        <div id="showRawPrompt" class="fa-solid fa-square-poll-horizontal menu_button"></div>
         <hr>
         <div class="justifyLeft">
             <div class="flex-container">
@@ -3290,6 +3446,14 @@ function promptItemize(itemizedPrompts, requestedMesId) {
                             <div  class=" flex1 tokenItemizingSubclass">-- Examples:</div>
                             <div  class="tokenItemizingSubclass"> ${examplesStringTokens}</div>
                         </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- User Persona:</div>
+                            <div  class="tokenItemizingSubclass"> ${userPersonaStringTokens}</div>
+                        </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- System Prompt (Instruct):</div>
+                            <div class="tokenItemizingSubclass"> ${instructionTokens}</div>
+                        </div>
                     </div>
                     <div class="wide100p flex-container">
                         <div  class="flex1" style="color: gold;">World Info:</div>
@@ -3312,6 +3476,10 @@ function promptItemize(itemizedPrompts, requestedMesId) {
                             <div  class=" flex1 tokenItemizingSubclass">-- Author's Note:</div>
                             <div  class="tokenItemizingSubclass"> ${authorsNoteStringTokens}</div>
                         </div>
+                        <div class="flex-container ">
+                            <div  class=" flex1 tokenItemizingSubclass">-- Smart Context:</div>
+                            <div  class="tokenItemizingSubclass"> ${smartContextStringTokens}</div>
+                        </div>
                     </div>
                     <div class="wide100p flex-container">
                         <div  class="flex1" style="color: mediumpurple;">{{}} Bias:</div><div  class="">${promptBiasTokens}</div>
@@ -3326,7 +3494,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
                 </div>
                     <!-- <div  class="flex1">finalPromt:</div><div  class=""> ${finalPromptTokens}</div> -->
                 <div class="flex-container wide100p">
-                    <div  class="flex1">Max Context:</div><div  class="">${thisPrompt_max_context}</div>
+                    <div  class="flex1">Max Context (Context Size - Response Length):</div><div  class="">${thisPrompt_max_context}</div>
                 </div>
                 <div class="flex-container wide100p">
                     <div  class="flex1">- Padding:</div><div  class=""> ${thisPrompt_padding}</div>
@@ -3393,12 +3561,7 @@ function extractNameFromMessage(getMessage, force_name2, isImpersonate) {
     } else {
         this_mes_is_name = false;
     }
-    // Like OAI, Poe is very unlikely to send you an incomplete message.
-    // But it doesn't send "name:" either, so we assume that we always have a name
-    // prepend to have clearer logs when building up a prompt context.
-    // Instruct mode needs to have it on to make sure you won't have names lost
-    // if disable in a middle of a solo chat.
-    if (force_name2 || main_api == 'poe' || power_user.instruct.enabled)
+    if (force_name2 || power_user.instruct.enabled)
         this_mes_is_name = true;
 
     if (isImpersonate) {
@@ -3438,18 +3601,25 @@ function extractMessageFromData(data) {
         case 'novel':
             return data.output;
         case 'openai':
-        case 'poe':
             return data;
         default:
             return ''
     }
 }
 
-function cleanUpMessage(getMessage, isImpersonate, displayIncompleteSentences = false) {
-    // Append the user bias first before trimming anything else
-    if (power_user.user_prompt_bias && power_user.user_prompt_bias.length !== 0) {
+function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncompleteSentences = false) {
+    // Add the prompt bias before anything else
+    if (
+        power_user.user_prompt_bias &&
+        !isImpersonate &&
+        !isContinue &&
+        power_user.user_prompt_bias.length !== 0
+    ) {
         getMessage = substituteParams(power_user.user_prompt_bias) + getMessage;
     }
+
+    // Regex uses vars, so add before formatting
+    getMessage = getRegexedString(getMessage, isImpersonate ? regex_placement.USER_INPUT : regex_placement.AI_OUTPUT);
 
     if (!displayIncompleteSentences && power_user.trim_sentences) {
         getMessage = end_trim_to_sentence(getMessage, power_user.include_newline);
@@ -3531,17 +3701,21 @@ function cleanUpMessage(getMessage, isImpersonate, displayIncompleteSentences = 
     return getMessage;
 }
 
+
+
+
 function saveReply(type, getMessage, this_mes_is_name, title) {
     if (type != 'append' && type != 'continue' && type != 'appendFinal' && chat.length && (chat[chat.length - 1]['swipe_id'] === undefined ||
         chat[chat.length - 1]['is_user'])) {
         type = 'normal';
     }
 
+    let oldMessage = ''
     const generationFinished = new Date();
     const img = extractImageFromMessage(getMessage);
     getMessage = img.getMessage;
-
     if (type === 'swipe') {
+        oldMessage = chat[chat.length - 1]['mes'];
         chat[chat.length - 1]['swipes'].length++;
         if (chat[chat.length - 1]['swipe_id'] === chat[chat.length - 1]['swipes'].length - 1) {
             chat[chat.length - 1]['title'] = title;
@@ -3549,25 +3723,33 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
             chat[chat.length - 1]['gen_started'] = generation_started;
             chat[chat.length - 1]['gen_finished'] = generationFinished;
             chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
+            chat[chat.length - 1]['extra']['api'] = main_api;
+            chat[chat.length - 1]['extra']['model'] = getGeneratingModel();
             addOneMessage(chat[chat.length - 1], { type: 'swipe' });
         } else {
             chat[chat.length - 1]['mes'] = getMessage;
         }
     } else if (type === 'append' || type === 'continue') {
         console.debug("Trying to append.")
+        oldMessage = chat[chat.length - 1]['mes'];
         chat[chat.length - 1]['title'] = title;
         chat[chat.length - 1]['mes'] += getMessage;
         chat[chat.length - 1]['gen_started'] = generation_started;
         chat[chat.length - 1]['gen_finished'] = generationFinished;
         chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
+        chat[chat.length - 1]["extra"]["api"] = main_api;
+        chat[chat.length - 1]["extra"]["model"] = getGeneratingModel();
         addOneMessage(chat[chat.length - 1], { type: 'swipe' });
     } else if (type === 'appendFinal') {
+        oldMessage = chat[chat.length - 1]['mes'];
         console.debug("Trying to appendFinal.")
         chat[chat.length - 1]['title'] = title;
         chat[chat.length - 1]['mes'] = getMessage;
         chat[chat.length - 1]['gen_started'] = generation_started;
         chat[chat.length - 1]['gen_finished'] = generationFinished;
         chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
+        chat[chat.length - 1]["extra"]["api"] = main_api;
+        chat[chat.length - 1]["extra"]["model"] = getGeneratingModel();
         addOneMessage(chat[chat.length - 1], { type: 'swipe' });
 
     } else {
@@ -3578,6 +3760,8 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         chat[chat.length - 1]['is_user'] = false;
         chat[chat.length - 1]['is_name'] = this_mes_is_name;
         chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
+        chat[chat.length - 1]["extra"]["api"] = main_api;
+        chat[chat.length - 1]["extra"]["model"] = getGeneratingModel();
         if (power_user.trim_spaces) {
             getMessage = getMessage.trim();
         }
@@ -3601,19 +3785,31 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         saveImageToMessage(img, chat[chat.length - 1]);
         addOneMessage(chat[chat.length - 1]);
     }
+
     const item = chat[chat.length - 1];
-    if (item['swipe_info'] === undefined) {
-        item['swipe_info'] = [];
+    if (item["swipe_info"] === undefined) {
+        item["swipe_info"] = [];
     }
-    if (item['swipe_id'] !== undefined) {
-        item['swipes'][item['swipes'].length - 1] = item['mes'];
-        item['swipe_info'][item['swipes'].length - 1] = { 'send_date': item['send_date'], 'gen_started': item['gen_started'], 'gen_finished': item['gen_finished'] };
+    if (item["swipe_id"] !== undefined) {
+        item["swipes"][item["swipes"].length - 1] = item["mes"];
+        item["swipe_info"][item["swipes"].length - 1] = {
+            send_date: item["send_date"],
+            gen_started: item["gen_started"],
+            gen_finished: item["gen_finished"],
+            extra: JSON.parse(JSON.stringify(item["extra"])),
+        };
     } else {
-        item['swipe_id'] = 0;
-        item['swipes'] = [];
-        item['swipes'][0] = chat[chat.length - 1]['mes'];
-        item['swipe_info'][0] = { 'send_date': chat[chat.length - 1]['send_date'], 'gen_started': chat[chat.length - 1]['gen_started'], 'gen_finished': chat[chat.length - 1]['gen_finished'] };
+        item["swipe_id"] = 0;
+        item["swipes"] = [];
+        item["swipes"][0] = chat[chat.length - 1]["mes"];
+        item["swipe_info"][0] = {
+            send_date: chat[chat.length - 1]["send_date"],
+            gen_started: chat[chat.length - 1]["gen_started"],
+            gen_finished: chat[chat.length - 1]["gen_finished"],
+            extra: JSON.parse(JSON.stringify(chat[chat.length - 1]["extra"])),
+        };
     }
+    statMesProcess(chat[chat.length - 1], type, characters, this_chid, oldMessage);
     return { type, getMessage };
 }
 
@@ -3625,6 +3821,28 @@ function saveImageToMessage(img, mes) {
         mes.extra.image = img.image;
         mes.extra.title = img.title;
     }
+}
+
+function getGeneratingModel(mes) {
+    let model = '';
+    switch (main_api) {
+        case 'kobold':
+            model = online_status;
+            break;
+        case 'novel':
+            model = nai_settings.model_novel;
+            break;
+        case 'openai':
+            model = getChatCompletionModel();
+            break;
+        case 'textgenerationwebui':
+            model = online_status;
+            break;
+        case 'koboldhorde':
+            model = kobold_horde_model;
+            break;
+    }
+    return model
 }
 
 function extractImageFromMessage(getMessage) {
@@ -3816,7 +4034,7 @@ async function renamePastChats(newAvatar, newValue) {
     }
 }
 
-async function saveChat(chat_name, withMetadata) {
+async function saveChat(chat_name, withMetadata, mesId) {
     const metadata = { ...chat_metadata, ...(withMetadata || {}) };
     let file_name = chat_name ?? characters[this_chid].chat;
     characters[this_chid]['date_last_chat'] = Date.now();
@@ -3837,6 +4055,11 @@ async function saveChat(chat_name, withMetadata) {
         }
         */
     });
+
+    const trimmed_chat = (mesId !== undefined && mesId >= 0 && mesId < chat.length)
+        ? chat.slice(0, parseInt(mesId) + 1)
+        : chat;
+
     var save_chat = [
         {
             user_name: name1,
@@ -3844,7 +4067,7 @@ async function saveChat(chat_name, withMetadata) {
             create_date: chat_create_date,
             chat_metadata: metadata,
         },
-        ...chat,
+        ...trimmed_chat,
     ];
     return jQuery.ajax({
         type: "POST",
@@ -3958,12 +4181,15 @@ async function getChat() {
             chat.push(...response);
             chat_create_date = chat[0]['create_date'];
             chat_metadata = chat[0]['chat_metadata'] ?? {};
+
             chat.shift();
         } else {
             chat_create_date = humanizedDateTime();
         }
         await getChatResult();
         await saveChat();
+
+
         setTimeout(function () {
             $('#send_textarea').click();
             $('#send_textarea').focus();
@@ -3985,19 +4211,17 @@ async function getChatResult() {
             is_user: false,
             is_name: true,
             send_date: getMessageTimeStamp(),
-            mes: firstMes,
+            mes: getRegexedString(firstMes, regex_placement.AI_OUTPUT),
         };
 
         if (Array.isArray(alternateGreetings) && alternateGreetings.length > 0) {
             chat[0]['swipe_id'] = 0;
-            chat[0]['swipes'] = [];
+            chat[0]['swipes'] = [chat[0]['mes']].concat(
+                alternateGreetings.map(
+                    (greeting) => substituteParams(getRegexedString(greeting, regex_placement.AI_OUTPUT))
+                )
+            );
             chat[0]['swipe_info'] = [];
-            chat[0]['swipes'][0] = chat[0]['mes'];
-
-            for (let i = 0; i < alternateGreetings.length; i++) {
-                const alternateGreeting = alternateGreetings[i];
-                chat[0]['swipes'].push(substituteParams(alternateGreeting));
-            }
         }
     }
     printMessages();
@@ -4065,14 +4289,6 @@ function changeMainAPI() {
             apiRanges: $("#range_block_openai"),
             maxContextElem: $("#max_context_block"),
             amountGenElem: $("#amount_gen_block"),
-        },
-        "poe": {
-            apiSettings: $("#poe_settings"),
-            apiConnector: $("#poe_api"),
-            apiPresets: $("#poe_api-presets"),
-            apiRanges: $("#range_block_poe"),
-            maxContextElem: $("#max_context_block"),
-            amountGenElem: $("#amount_gen_block"),
         }
     };
     //console.log('--- apiElements--- ');
@@ -4117,12 +4333,6 @@ function changeMainAPI() {
         $("#common-gen-settings-block").css("display", "none");
     } else {
         $("#common-gen-settings-block").css("display", "block");
-    }
-    // Hide amount gen for poe
-    if (selectedVal == "poe") {
-        $("#amount_gen_block").css("display", "none");
-    } else {
-        $("#amount_gen_block").css("display", "flex");
     }
 
     main_api = selectedVal;
@@ -4621,7 +4831,6 @@ async function getSettings(type) {
     }
 
     const data = await response.json();
-
     if (data.result != "file not find" && data.settings) {
         settings = JSON.parse(data.settings);
         if (settings.username !== undefined) {
@@ -4713,9 +4922,6 @@ async function getSettings(type) {
         // Horde
         loadHordeSettings(settings);
 
-        // Poe
-        loadPoeSettings(settings);
-
         // Load power user settings
         loadPowerUserSettings(settings, data);
 
@@ -4735,6 +4941,10 @@ async function getSettings(type) {
         //Load which API we are using
         if (settings.main_api == undefined) {
             settings.main_api = 'kobold';
+        }
+
+        if (settings.main_api == 'poe') {
+            settings.main_api = 'openai';
         }
 
         main_api = settings.main_api;
@@ -4768,10 +4978,13 @@ async function getSettings(type) {
 
         if (data.enable_extensions) {
             await loadExtensionSettings(settings);
+            eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED);
         }
     }
 
     if (!is_checked_colab) isColab();
+
+    eventSource.emit(event_types.SETTINGS_LOADED);
 }
 
 function selectKoboldGuiPreset() {
@@ -4806,7 +5019,6 @@ async function saveSettings(type) {
             swipes: swipes,
             horde_settings: horde_settings,
             power_user: power_user,
-            poe_settings: poe_settings,
             extension_settings: extension_settings,
             context_settings: context_settings,
             tags: tags,
@@ -4844,6 +5056,8 @@ async function saveSettings(type) {
     });
 }
 
+
+
 function setCharacterBlockHeight() {
     const $children = $("#rm_print_characters_block").children();
     const originalHeight = $children.length * $children.find(':visible').first().outerHeight();
@@ -4860,13 +5074,30 @@ function setCharacterBlockHeight() {
 function updateMessage(div) {
     const mesBlock = div.closest(".mes_block");
     let text = mesBlock.find(".edit_textarea").val();
+    const mes = chat[this_edit_mes_id];
+
+    let regexPlacement;
+    if (mes.is_name && mes.is_user) {
+        regexPlacement = regex_placement.USER_INPUT;
+    } else if (mes.is_name && mes.name === name2) {
+        regexPlacement = regex_placement.AI_OUTPUT;
+    } else if (mes.is_name && mes.name !== name2 || mes.extra?.type === "narrator") {
+        regexPlacement = regex_placement.SLASH_COMMAND;
+    }
+
+    // Ignore character override if sent as system
+    text = getRegexedString(
+        text,
+        regexPlacement,
+        { characterOverride: mes.extra?.type === "narrator" ? undefined : mes.name }
+    );
+
 
     if (power_user.trim_spaces) {
         text = text.trim();
     }
 
     const bias = extractMessageBias(text);
-    const mes = chat[this_edit_mes_id];
     mes["mes"] = text;
     if (mes["swipe_id"] !== undefined) {
         mes["swipes"][mes["swipe_id"]] = text;
@@ -4923,7 +5154,10 @@ function messageEditAuto(div) {
 }
 
 async function messageEditDone(div) {
-    const { mesBlock, text, mes, bias } = updateMessage(div);
+    let { mesBlock, text, mes, bias } = updateMessage(div);
+    if (this_edit_mes_id == 0) {
+        text = substituteParams(text);
+    }
 
     mesBlock.find(".mes_text").empty();
     mesBlock.find(".mes_edit_buttons").css("display", "none");
@@ -5044,7 +5278,7 @@ async function getStatusNovel() {
             },
         });
     } else {
-        if (is_get_status != true && is_get_status_openai != true && is_get_status_poe != true) {
+        if (is_get_status != true && is_get_status_openai != true) {
             online_status = "no_connection";
         }
     }
@@ -5189,6 +5423,7 @@ export function select_selected_character(chid) {
     $("#description_textarea").val(characters[chid].description);
     $("#character_world").val(characters[chid].data?.extensions?.world || '');
     $("#creator_notes_textarea").val(characters[chid].data?.creator_notes || characters[chid].creatorcomment);
+    $("#creator_notes_spoiler").text(characters[chid].data?.creator_notes || characters[chid].creatorcomment);
     $("#character_version_textarea").val(characters[chid].data?.character_version || '');
     $("#system_prompt_textarea").val(characters[chid].data?.system_prompt || '');
     $("#post_history_instructions_textarea").val(characters[chid].data?.post_history_instructions || '');
@@ -5257,6 +5492,7 @@ function select_rm_create() {
     $("#description_textarea").val(create_save.description);
     $('#character_world').val(create_save.world);
     $("#creator_notes_textarea").val(create_save.creator_notes);
+    $("#creator_notes_spoiler").text(create_save.creator_notes);
     $("#post_history_instructions_textarea").val(create_save.post_history_instructions);
     $("#system_prompt_textarea").val(create_save.system_prompt);
     $("#tags_textarea").val(create_save.tags);
@@ -5331,7 +5567,7 @@ function onScenarioOverrideRemoveClick() {
     $(this).closest('.scenario_override').find('.chat_scenario').val('').trigger('input');
 }
 
-function callPopup(text, type, inputValue = '') {
+function callPopup(text, type, inputValue = '', { okButton, rows } = {}) {
     if (type) {
         popup_type = type;
     }
@@ -5339,30 +5575,34 @@ function callPopup(text, type, inputValue = '') {
     $("#dialogue_popup_cancel").css("display", "inline-block");
     switch (popup_type) {
         case "avatarToCrop":
-            $("#dialogue_popup_ok").text("Accept");
+            $("#dialogue_popup_ok").text(okButton ?? "Accept");
             break;
         case "text":
         case "alternate_greeting":
         case "char_not_selected":
-            $("#dialogue_popup_ok").text("Ok");
+            $("#dialogue_popup_ok").text(okButton ?? "Ok");
             $("#dialogue_popup_cancel").css("display", "none");
+            break;
+        case "delete_extension":
+            $("#dialogue_popup_ok").text(okButton ?? "Ok");
             break;
         case "new_chat":
         case "confirm":
-            $("#dialogue_popup_ok").text("Yes");
+            $("#dialogue_popup_ok").text(okButton ?? "Yes");
             break;
         case "del_group":
         case "rename_chat":
         case "del_chat":
         default:
-            $("#dialogue_popup_ok").text("Delete");
+            $("#dialogue_popup_ok").text(okButton ?? "Delete");
     }
 
     $("#dialogue_popup_input").val(inputValue);
+    $("#dialogue_popup_input").attr("rows", rows ?? 1);
 
     if (popup_type == 'input') {
         $("#dialogue_popup_input").css("display", "block");
-        $("#dialogue_popup_ok").text("Save");
+        $("#dialogue_popup_ok").text(okButton ?? "Save");
     }
     else {
         $("#dialogue_popup_input").css("display", "none");
@@ -5428,11 +5668,7 @@ function read_bg_load(input) {
                         "background-image",
                         `url("${e.target.result}")`
                     );
-                    $("#form_bg_download").after(
-                        `<div class="bg_example" bgfile="${html}" style="background-image: url('${getThumbnailUrl('bg', html)}');">
-                            <div class="bg_example_cross fa-solid fa-circle-xmark"></div>
-                        </div>`
-                    );
+                    $("#form_bg_download").after(getBackgroundFromTemplate(html));
                 },
                 error: function (jqXHR, exception) {
                     console.log(exception);
@@ -5960,9 +6196,11 @@ async function createOrEditCharacter(e) {
             success: async function (html) {
                 if (chat.length === 1 && !selected_group) {
                     var this_ch_mes = default_ch_mes;
+
                     if ($("#firstmessage_textarea").val() != "") {
                         this_ch_mes = $("#firstmessage_textarea").val();
                     }
+
                     if (
                         this_ch_mes !=
                         $.trim(
@@ -5973,6 +6211,10 @@ async function createOrEditCharacter(e) {
                                 .text()
                         )
                     ) {
+                        // MARK - kingbri: Regex on character greeting message
+                        // May need to be placed somewhere else
+                        this_ch_mes = getRegexedString(this_ch_mes, regex_placement.AI_OUTPUT);
+
                         clearChat();
                         chat.length = 0;
                         chat[0] = {};
@@ -5992,7 +6234,7 @@ async function createOrEditCharacter(e) {
                             chat[0]['swipes'][0] = chat[0]['mes'];
 
                             for (let i = 0; i < alternateGreetings.length; i++) {
-                                const alternateGreeting = alternateGreetings[i];
+                                const alternateGreeting = getRegexedString(alternateGreetings[i], regex_placement.AI_OUTPUT);
                                 chat[0]['swipes'].push(substituteParams(alternateGreeting));
                             }
                         }
@@ -6083,6 +6325,7 @@ function swipe_left() {      // when we swipe left..but no generation.
         const this_mes_block_height = this_mes_block[0].scrollHeight;
         chat[chat.length - 1]['mes'] = chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipe_id']];
         chat[chat.length - 1]['send_date'] = chat[chat.length - 1].swipe_info[chat[chat.length - 1]['swipe_id']]?.send_date || chat[chat.length - 1].send_date; //load the last mes box with the latest generation
+        chat[chat.length - 1]['extra'] = JSON.parse(JSON.stringify(chat[chat.length - 1].swipe_info[chat[chat.length - 1]['swipe_id']]?.extra || chat[chat.length - 1].extra));
 
         if (chat[chat.length - 1].extra) {
             // if message has memory attached - remove it to allow regen
@@ -6198,7 +6441,8 @@ const swipe_right = () => {
         chat[chat.length - 1]['swipes'] = [];                         // empty the array
         chat[chat.length - 1]['swipe_info'] = [];
         chat[chat.length - 1]['swipes'][0] = chat[chat.length - 1]['mes'];  //assign swipe array with last message from chat
-        chat[chat.length - 1]['swipe_info'][0] = { 'send_date': chat[chat.length - 1]['send_date'], 'gen_started': chat[chat.length - 1]['gen_started'], 'gen_finished': chat[chat.length - 1]['gen_finished'] }; //assign swipe info array with last message from chat
+        chat[chat.length - 1]['swipe_info'][0] = { 'send_date': chat[chat.length - 1]['send_date'], 'gen_started': chat[chat.length - 1]['gen_started'], 'gen_finished': chat[chat.length - 1]['gen_finished'], 'extra': JSON.parse(JSON.stringify(chat[chat.length - 1]['extra'])) };
+        //assign swipe info array with last message from chat
     }
     chat[chat.length - 1]['swipe_id']++;                                      //make new slot in array
     if (chat[chat.length - 1].extra) {
@@ -6222,6 +6466,7 @@ const swipe_right = () => {
     } else if (parseInt(chat[chat.length - 1]['swipe_id']) < chat[chat.length - 1]['swipes'].length) { //otherwise, if the id is less than the number of swipes
         chat[chat.length - 1]['mes'] = chat[chat.length - 1]['swipes'][chat[chat.length - 1]['swipe_id']]; //load the last mes box with the latest generation
         chat[chat.length - 1]['send_date'] = chat[chat.length - 1]?.swipe_info[chat[chat.length - 1]['swipe_id']]?.send_date || chat[chat.length - 1]['send_date']; //update send date
+        chat[chat.length - 1]['extra'] = JSON.parse(JSON.stringify(chat[chat.length - 1].swipe_info[chat[chat.length - 1]['swipe_id']]?.extra || chat[chat.length - 1].extra || []));
         run_swipe_right = true; //then prepare to do normal right swipe to show next message
     }
 
@@ -6348,6 +6593,22 @@ const swipe_right = () => {
     }
 }
 
+export function updateCharacterCount(characterSelector) {
+    const visibleCharacters = $(characterSelector)
+        .not(".hiddenBySearch")
+        .not(".hiddenByTag")
+        .not(".hiddenByGroup")
+        .not(".hiddenByGroupMember")
+        .not(".hiddenByFav");
+    const visibleCharacterCount = visibleCharacters.length;
+    const totalCharacterCount = $(characterSelector).length;
+
+    $("#rm_character_count").text(
+        `(${visibleCharacterCount} / ${totalCharacterCount}) Characters`
+    );
+    console.log("visibleCharacters.length: " + visibleCharacters.length);
+}
+
 function updateVisibleDivs(containerSelector, resizecontainer) {
     var $container = $(containerSelector);
     var $children = $container.children();
@@ -6418,9 +6679,6 @@ function connectAPISlash(_, text) {
             selected: 'openai',
             source: 'windowai',
             button: '#api_button_openai',
-        },
-        'poe': {
-            button: '#poe_connect',
         },
     };
 
@@ -6508,8 +6766,55 @@ function importCharacter(file) {
     });
 }
 
+async function importFromURL(items, files) {
+    for (const item of items) {
+        if (item.type === 'text/uri-list') {
+            const uriList = await new Promise((resolve) => {
+                item.getAsString((uriList) => { resolve(uriList); });
+            });
+            const uris = uriList.split('\n').filter(uri => uri.trim() !== '');
+            try {
+                for (const uri of uris) {
+                    const request = await fetch(uri);
+                    const data = await request.blob();
+                    const fileName = request.headers.get('Content-Disposition')?.split('filename=')[1]?.replace(/"/g, '') || uri.split('/').pop() || 'file.png';
+                    const file = new File([data], fileName, { type: data.type });
+                    files.push(file);
+                }
+            } catch (error) {
+                console.error('Failed to import from URL', error);
+            }
+        }
+    }
+}
+
+async function doImpersonate() {
+    $('#send_textarea').val('');
+    $("#option_impersonate").trigger('click', { fromSlashCommand: true })
+}
+
+async function doDeleteChat() {
+    $("#option_select_chat").trigger('click', { fromSlashCommand: true })
+    await delay(100)
+    let currentChatDeleteButton = $(".select_chat_block[highlight='true']").parent().find('.PastChat_cross')
+    $(currentChatDeleteButton).trigger('click', { fromSlashCommand: true })
+    await delay(1)
+    $("#dialogue_popup_ok").trigger('click')
+    //200 delay needed let the past chat view reshow first
+    await delay(200)
+    $("#select_chat_cross").trigger('click')
+}
+
 const isPwaMode = window.navigator.standalone;
 if (isPwaMode) { $("body").addClass('PWA') }
+
+function doCharListDisplaySwitch() {
+    console.debug('toggling body charListGrid state')
+    $("body").toggleClass('charListGrid')
+    power_user.charListGrid = $("body").hasClass("charListGrid") ? true : false;
+    saveSettingsDebounced()
+    updateVisibleDivs('#rm_print_characters_block', true);
+}
 
 $(document).ready(function () {
 
@@ -6521,7 +6826,10 @@ $(document).ready(function () {
     }
 
     registerSlashCommand('dupe', DupeChar, [], "– duplicates the currently selected character", true, true);
-    registerSlashCommand('api', connectAPISlash, [], "(kobold, horde, novel, ooba, oai, claude, poe, windowai) – connect to an API", true, true);
+    registerSlashCommand('api', connectAPISlash, [], "(kobold, horde, novel, ooba, oai, claude, windowai) – connect to an API", true, true);
+    registerSlashCommand('impersonate', doImpersonate, ['imp'], "- calls an impersonation response", true, true);
+    registerSlashCommand('delchat', doDeleteChat, [], "- deletes the current chat", true, true);
+
 
     setTimeout(function () {
         $("#groupControlsToggle").trigger('click');
@@ -6602,6 +6910,8 @@ $(document).ready(function () {
             });
             updateVisibleDivs('#rm_print_characters_block', true);
         }
+        updateCharacterCount(selector);
+
 
     });
 
@@ -6752,6 +7062,41 @@ $(document).ready(function () {
         });
 
     });
+
+    $(document).on('click', '.bg_example_edit', async function (e) {
+        e.stopPropagation();
+        const old_bg = $(this).attr('bgfile');
+
+        if (!old_bg) {
+            console.debug('no bgfile');
+            return;
+        }
+
+        const fileExtension = old_bg.split('.').pop();
+        const old_bg_extensionless = old_bg.replace(`.${fileExtension}`, '');
+        const new_bg_extensionless = await callPopup('<h3>Enter new background name:</h3>', 'input', old_bg_extensionless);
+        const new_bg = `${new_bg_extensionless}.${fileExtension}`;
+
+        if (old_bg_extensionless === new_bg_extensionless) {
+            console.debug('new_bg === old_bg');
+            return;
+        }
+
+        const data = { old_bg, new_bg };
+        const response = await fetch('/renamebackground', {
+            method: 'POST',
+            headers:getRequestHeaders(),
+            body: JSON.stringify(data),
+            cache: 'no-cache',
+        });
+
+        if (response.ok) {
+            await getBackgrounds();
+        } else {
+            toastr.warning('Failed to rename background');
+        }
+    });
+
     $(document).on("click", ".bg_example_cross", function (e) {
         e.stopPropagation();
         bg_file_for_del = $(this);
@@ -6763,7 +7108,7 @@ $(document).ready(function () {
 
     $(document).on("click", ".PastChat_cross", function () {
         chat_file_for_del = $(this).attr('file_name');
-        console.log('detected cross click for' + chat_file_for_del);
+        console.debug('detected cross click for' + chat_file_for_del);
         popup_type = "del_chat";
         callPopup("<h3>Delete the Chat File?</h3>");
     });
@@ -6842,9 +7187,11 @@ $(document).ready(function () {
                 " -- Name: " +
                 characters[this_chid].name
             );
+            const delete_chats = !!$("#del_char_checkbox").prop("checked");
             const avatar = characters[this_chid].avatar;
             const name = characters[this_chid].name;
-            var msg = jQuery("#form_create").serialize(); // ID form
+            const msg = new FormData($("#form_create").get(0)); // ID form
+            msg.append("delete_chats", delete_chats);
             jQuery.ajax({
                 method: "POST",
                 url: "/deletecharacter",
@@ -6852,6 +7199,8 @@ $(document).ready(function () {
                 },
                 data: msg,
                 cache: false,
+                contentType: false,
+                processData: false,
                 success: async function (html) {
                     //RossAscends: New handling of character deletion that avoids page refreshes and should have
                     // fixed char corruption due to cache problems.
@@ -6910,7 +7259,6 @@ $(document).ready(function () {
                 chat_metadata = {};
                 characters[this_chid].chat = name2 + " - " + humanizedDateTime();
                 $("#selected_chat_pole").val(characters[this_chid].chat);
-                saveCharacterDebounced();
                 getChat();
             }
         }
@@ -6969,8 +7317,10 @@ $(document).ready(function () {
         callPopup(`
                 <h3>Delete the character?</h3>
                 <b>THIS IS PERMANENT!<br><br>
-                THIS WILL ALSO DELETE ALL<br>
-                OF THE CHARACTER'S CHAT FILES.<br><br></b>`
+                <label for="del_char_checkbox" class="checkbox_label justifyCenter">
+                    <input type="checkbox" id="del_char_checkbox" checked />
+                    <span>Also delete the chat files</span>
+                </label><br></b>`
         );
     });
 
@@ -7217,15 +7567,20 @@ $(document).ready(function () {
         var id = $(this).attr("id");
 
         if (id == "option_select_chat") {
-            if ((selected_group && !is_group_generating) || (this_chid !== undefined && !is_send_press)) {
+            if ((selected_group && !is_group_generating) || (this_chid !== undefined && !is_send_press) || fromSlashCommand) {
                 displayPastChats();
-                $("#shadow_select_chat_popup").css("display", "block");
-                $("#shadow_select_chat_popup").css("opacity", 0.0);
-                $("#shadow_select_chat_popup").transition({
-                    opacity: 1.0,
-                    duration: animation_duration,
-                    easing: animation_easing,
-                });
+                //this is just to avoid the shadow for past chat view when using /delchat
+                //however, the dialog popup still gets one..
+                if (!fromSlashCommand) {
+                    console.log('displaying shadow')
+                    $("#shadow_select_chat_popup").css("display", "block");
+                    $("#shadow_select_chat_popup").css("opacity", 0.0);
+                    $("#shadow_select_chat_popup").transition({
+                        opacity: 1.0,
+                        duration: animation_duration,
+                        easing: animation_easing,
+                    });
+                }
             }
         }
 
@@ -7251,7 +7606,7 @@ $(document).ready(function () {
         }
 
         else if (id == "option_impersonate") {
-            if (is_send_press == false) {
+            if (is_send_press == false || fromSlashCommand) {
                 is_send_press = true;
                 Generate("impersonate");
             }
@@ -7375,7 +7730,6 @@ $(document).ready(function () {
         is_get_status = false;
         is_get_status_novel = false;
         setOpenAIOnlineStatus(false);
-        setPoeOnlineStatus(false);
         online_status = "no_connection";
         checkOnlineStatus();
         changeMainAPI();
@@ -7672,10 +8026,13 @@ $(document).ready(function () {
     });
 
 
-    $(document).on("click", ".mes_edit_delete", async function () {
-        const confirmation = await callPopup("Are you sure you want to delete this message?", 'confirm');
-        if (!confirmation) {
-            return;
+    $(document).on("click", ".mes_edit_delete", async function (event, customData) {
+        const fromSlashCommand = customData?.fromSlashCommand || false;
+        if (power_user.confirm_message_delete && fromSlashCommand !== true) {
+            const confirmation = await callPopup("Are you sure you want to delete this message?", 'confirm');
+            if (!confirmation) {
+                return;
+            }
         }
 
         const mes = $(this).closest(".mes");
@@ -7885,6 +8242,13 @@ $(document).ready(function () {
         $("#load_select_chat_div").css("display", "block");
     });
 
+    $(document).on("click", ".mes_create_bookmark", async function () {
+        var selected_mes_id = $(this).closest(".mes").attr("mesid");
+        if (selected_mes_id !== undefined) {
+            createNewBookmark(selected_mes_id);
+        }
+    });
+
     $(document).on("click", ".mes_stop", function () {
         if (streamingProcessor) {
             streamingProcessor.abortController.abort();
@@ -8001,7 +8365,7 @@ $(document).ready(function () {
         var icon = $(this).find('.inline-drawer-icon');
         icon.toggleClass('down up');
         icon.toggleClass('fa-circle-chevron-down fa-circle-chevron-up');
-        $(this).closest('.inline-drawer').find('.inline-drawer-content').slideToggle();
+        $(this).closest('.inline-drawer').find('.inline-drawer-content').stop().slideToggle();
     });
 
     $(document).on('click', '.mes .avatar', function () {
@@ -8181,6 +8545,10 @@ $(document).ready(function () {
         restoreCaretPosition($(this).get(0), caretPosition);
     });
 
+    $(".user_stats_button").on('click', function () {
+        userStatsHandler();
+    });
+
     $('#external_import_button').on('click', async () => {
         const html = `<h3>Enter the URL of the content to import</h3>
         Supported sources:<br>
@@ -8230,6 +8598,52 @@ $(document).ready(function () {
         }
     });
 
+    /**
+     * Handles the click event for the third-party extension import button.
+     * Prompts the user to enter the Git URL of the extension to import.
+     * After obtaining the Git URL, makes a POST request to '/get_extension' to import the extension.
+     * If the extension is imported successfully, a success message is displayed.
+     * If the extension import fails, an error message is displayed and the error is logged to the console.
+     * After successfully importing the extension, the extension settings are reloaded and a 'EXTENSION_SETTINGS_LOADED' event is emitted.
+     *
+     * @listens #third_party_extension_button#click - The click event of the '#third_party_extension_button' element.
+     */
+    $('#third_party_extension_button').on('click', async () => {
+        const html = `<h3>Enter the Git URL of the extension to import</h3>
+    <br>
+    <p><b>Disclaimer:</b> Please be aware that using external extensions can have unintended side effects and may pose security risks. Always make sure you trust the source before importing an extension. We are not responsible for any damage caused by third-party extensions.</p>
+    <br>
+    <p>Example: <tt> https://github.com/author/extension-name </tt></p>`
+        const input = await callPopup(html, 'input');
+
+        if (!input) {
+            console.debug('Extension import cancelled');
+            return;
+        }
+
+        const url = input.trim();
+        console.debug('Extension import started', url);
+
+        const request = await fetch('/get_extension', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ url }),
+        });
+
+        if (!request.ok) {
+            toastr.info(request.statusText, 'Extension import failed');
+            console.error('Extension import failed', request.status, request.statusText);
+            return;
+        }
+
+        const response = await request.json();
+        toastr.success(`Extension "${response.display_name}" by ${response.author} (version ${response.version}) has been imported successfully!`, 'Extension import successful');
+        console.debug(`Extension "${response.display_name}" has been imported successfully at ${response.extensionPath}`);
+        await loadExtensionSettings(settings);
+        eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED);
+    });
+
+
     const $dropzone = $(document.body);
 
     $dropzone.on('dragover', (event) => {
@@ -8244,12 +8658,13 @@ $(document).ready(function () {
         $dropzone.removeClass('dragover');
     });
 
-    $dropzone.on('drop', (event) => {
+    $dropzone.on('drop', async (event) => {
         event.preventDefault();
         event.stopPropagation();
         $dropzone.removeClass('dragover');
 
-        const files = event.originalEvent.dataTransfer.files;
+        const files = Array.from(event.originalEvent.dataTransfer.files);
+        await importFromURL(event.originalEvent.dataTransfer.items, files);
         processDroppedFiles(files);
     });
 
@@ -8268,4 +8683,8 @@ $(document).ready(function () {
             }
         }
     }
-})
+
+    $("#charListGridToggle").on('click', async () => {
+        doCharListDisplaySwitch();
+    });
+});

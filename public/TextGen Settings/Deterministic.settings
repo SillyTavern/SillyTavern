@@ -15,5 +15,8 @@
     "min_length": 0,
     "encoder_rep_pen": 1,
     "do_sample": false,
-    "early_stopping": false
+    "early_stopping": false,
+    "mirostat_mode": 0,
+    "mirostat_tau": 5,
+    "mirostat_eta": 0.1
 }
