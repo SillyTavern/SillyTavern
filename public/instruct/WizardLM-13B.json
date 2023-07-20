@@ -1,0 +1,10 @@
+{
+    "name": "WizardLM-13B",
+    "system_prompt": "A chat between a curious user and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the user's questions.\n\nWrite {{char}}'s next detailed reply in a fictional roleplay chat between {{user}} and {{char}}.",
+    "system_sequence": "",
+    "stop_sequence": "",
+    "input_sequence": "USER: ",
+    "output_sequence": "ASSISTANT: ",
+    "separator_sequence": "",
+    "wrap": true
+}

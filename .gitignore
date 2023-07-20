@@ -1,0 +1,26 @@
+node_modules/
+public/chats/
+public/characters/
+public/User Avatars/
+public/backgrounds/
+public/groups/
+public/group chats/
+public/worlds/
+public/css/bg_load.css
+public/themes/
+public/OpenAI Settings/
+public/scripts/extensions/third-party/
+public/stats.json
+/uploads/
+*.jsonl
+/config.conf
+/docker/config.conf
+.DS_Store
+public/settings.json
+/thumbnails
+whitelist.txt
+.vscode
+secrets.json
+/dist
+/backups/
+public/movingUI/

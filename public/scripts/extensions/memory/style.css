@@ -1,0 +1,34 @@
+#memory_settings {
+    display: flex;
+    flex-direction: column;
+}
+
+#memory_settings textarea {
+    font-size: calc(var(--mainFontSize) * 0.9);
+    line-height: 1.2;
+}
+
+#memory_settings input[type="range"] {
+    margin-bottom: 20px;
+}
+
+#memory_settings label {
+    margin-bottom: 10px;
+}
+
+label[for="memory_frozen"] {
+    display: flex;
+    align-items: center;
+    margin: 0 !important;
+}
+
+label[for="memory_frozen"] input {
+    margin-right: 10px;
+}
+
+.memory_contents_controls {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}

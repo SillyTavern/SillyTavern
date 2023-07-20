@@ -1,0 +1,22 @@
+{
+	"max_length": 2048,
+	"genamt": 180,
+	"temp": 0.43,
+	"top_p": 0.96,
+	"top_k": 0,
+	"top_a": 0.0,
+	"tfs": 0.68,
+	"typical": 1.0,
+	"rep_pen": 1.17,
+	"rep_pen_slope": 0.2,
+	"rep_pen_range": 1024,
+	"sampler_order": [
+		6,
+		0,
+		1,
+		2,
+		3,
+		4,
+		5
+	]
+}

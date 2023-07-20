@@ -1,0 +1,10 @@
+{
+    "name": "Metharme",
+    "system_prompt": "Enter roleplay mode. You must act as {{char}}, whose persona follows:",
+    "system_sequence": "<|system|>",
+    "stop_sequence": "</s>",
+    "input_sequence": "<|user|>",
+    "output_sequence": "<|model|>",
+    "separator_sequence": "",
+    "wrap": false
+}

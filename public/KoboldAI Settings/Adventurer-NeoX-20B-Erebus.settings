@@ -1,0 +1,23 @@
+{
+   "max_length": 2048,
+   "genamt": 90,
+   "temp": 0.8,
+   "top_k": 28,
+   "top_p": 0.94,
+   "top_a": 0.00,
+   "tfs": 0.96,
+   "typical": 0.98,
+   "rep_pen": 1.03,
+   "rep_pen_slope": 0.8,
+   "rep_pen_range": 120.0,
+   "ikgen": 200,
+   "sampler_order": [
+      6,
+      4,
+      3,
+      2,
+      0,
+      1,
+      5
+   ]
+}

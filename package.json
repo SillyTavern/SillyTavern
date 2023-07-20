@@ -1,0 +1,85 @@
+{
+    "dependencies": {
+        "@dqbd/tiktoken": "^1.0.2",
+        "@mlc-ai/web-tokenizers": "^0.1.0",
+        "axios": "^1.4.0",
+        "command-exists": "^1.2.9",
+        "compression": "^1",
+        "cookie-parser": "^1.4.6",
+        "cors": "^2.8.5",
+        "csrf-csrf": "^2.2.3",
+        "device-detector-js": "^3.0.3",
+        "exifreader": "^4.12.0",
+        "express": "^4.18.2",
+        "google-translate-api-browser": "^3.0.1",
+        "gpt3-tokenizer": "^1.1.5",
+        "ip-matching": "^2.1.2",
+        "ipaddr.js": "^2.0.1",
+        "jimp": "^0.22.7",
+        "jquery": "^3.6.4",
+        "json5": "^2.2.3",
+        "lodash": "^4.17.21",
+        "mime-types": "^2.1.35",
+        "multer": "^1.4.5-lts.1",
+        "node-fetch": "^2.6.11",
+        "node-rest-client": "^3.1.1",
+        "open": "^8.4.0",
+        "piexifjs": "^1.0.6",
+        "png-chunk-text": "^1.0.0",
+        "png-chunks-encode": "^1.0.0",
+        "png-chunks-extract": "^1.0.0",
+        "response-time": "^2.3.2",
+        "sanitize-filename": "^1.6.3",
+        "sentencepiece-js": "^1.1.0",
+        "simple-git": "^3.19.1",
+        "uniqolor": "^1.1.0",
+        "user-agents": "^1.0.1444",
+        "webp-converter": "2.3.2",
+        "ws": "^8.13.0",
+        "yargs": "^17.7.1",
+        "yauzl": "^2.10.0"
+    },
+    "overrides": {
+        "parse-bmfont-xml": {
+            "xml2js": "^0.5.0"
+        }
+    },
+    "name": "sillytavern",
+    "license": "AGPL-3.0",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/SillyTavern/SillyTavern.git"
+    },
+    "version": "1.9.0",
+    "scripts": {
+        "start": "node server.js",
+        "pkg": "pkg --compress Gzip --no-bytecode --public ."
+    },
+    "bin": {
+        "sillytavern": "./server.js"
+    },
+    "rules": {
+        "no-path-concat": "off",
+        "no-var": "off"
+    },
+    "main": "server.js",
+    "pkg": {
+        "targets": [
+            "node18-linux-x64",
+            "node18-macos-x64",
+            "node18-windows-x64"
+        ],
+        "assets": [
+            "node_modules/**/*"
+        ],
+        "outputPath": "dist",
+        "scripts": [
+            "server.js"
+        ]
+    },
+    "devDependencies": {
+        "pkg": "^5.8.1",
+        "pkg-fetch": "^3.5.2",
+        "toastr": "^2.1.4"
+    }
+}

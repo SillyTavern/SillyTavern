@@ -1,0 +1,29 @@
+.sd_settings label:not(.checkbox_label) {
+    display: block;
+}
+
+#sd_gen {
+    /*order: 100;
+    width: 40px;
+    height: 40px;
+    margin: 0;
+    padding: 1px; */
+    outline: none;
+    border: none;
+    cursor: pointer;
+    transition: 0.3s;
+    opacity: 0.7;
+    display: flex;
+    align-items: center;
+    /* justify-content: center; */
+}
+
+#sd_gen:hover {
+    opacity: 1;
+    filter: brightness(1.2);
+}
+
+#sd_dropdown {
+    z-index: 3000;
+    backdrop-filter: blur(--SmartThemeBlurStrength);
+}
