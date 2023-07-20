@@ -904,7 +904,7 @@ PromptManagerModule.prototype.loadMessagesIntoInspectForm = function (messages) 
 
     const createInlineDrawer = (title, content) => {
         let drawerHTML = `
-    <div class="inline-drawer completion_prompt_manager_prompt">
+    <div class="inline-drawer ${this.configuration.prefix}prompt_manager_prompt">
         <div class="inline-drawer-toggle inline-drawer-header">
             <span>${title}</span>
             <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
@@ -1386,11 +1386,11 @@ PromptManagerModule.prototype.getFormattedDate = function() {
  * @returns {void}
  */
 PromptManagerModule.prototype.makeDraggable = function () {
-    $('#completion_prompt_manager_list').sortable({
+    $(`#${this.configuration.prefix}prompt_manager_list`).sortable({
         items: `.${this.configuration.prefix}prompt_manager_prompt_draggable`,
         update: ( event, ui ) => {
             const promptList = this.getPromptListForCharacter(this.activeCharacter);
-            const promptOrder = $('#completion_prompt_manager_list').sortable('toArray', {attribute: 'data-pm-identifier'});
+            const promptOrder = $(`#${this.configuration.prefix}prompt_manager_list`).sortable('toArray', {attribute: 'data-pm-identifier'});
             const idToObjectMap = new Map(promptList.map(prompt => [prompt.identifier, prompt]));
             const newPromptList = promptOrder.map(identifier => idToObjectMap.get(identifier));
 
