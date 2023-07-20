@@ -616,41 +616,23 @@ function populateChatCompletion (prompts, chatCompletion, {bias, quietPrompt, ty
 }
 
 /**
- * Take a configuration object and prepares messages for a chat with OpenAI's chat completion API.
- * Handles prompts, prepares chat history, manages token budget, and processes various user settings.
+ * Combines system prompts with prompt manager prompts
  *
- * @param {Object} content - System prompts provided by SillyTavern
- * @param {string} content.name2 - The second name to be used in the messages.
- * @param {string} content.charDescription - Description of the character.
- * @param {string} content.charPersonality - Description of the character's personality.
- * @param {string} content.Scenario - The scenario or context of the dialogue.
- * @param {string} content.worldInfoBefore - The world info to be added before the main conversation.
- * @param {string} content.worldInfoAfter - The world info to be added after the main conversation.
- * @param {string} content.bias - The bias to be added in the conversation.
- * @param {string} content.type - The type of the chat, can be 'impersonate'.
- * @param {string} content.quietPrompt - The quiet prompt to be used in the conversation.
- * @param {Array} content.extensionPrompts - An array of additional prompts.
- * @param dryRun - Whether this is a live call or not.
- * @returns {(*[]|boolean)[]} An array where the first element is the prepared chat and the second element is a boolean flag.
+ * @param {string} Scenario - The scenario or context of the dialogue.
+ * @param {string} charPersonality - Description of the character's personality.
+ * @param {string} name2 - The second name to be used in the messages.
+ * @param {string} worldInfoBefore - The world info to be added before the main conversation.
+ * @param {string} worldInfoAfter - The world info to be added after the main conversation.
+ * @param {string} charDescription - Description of the character.
+ * @param {string} quietPrompt - The quiet prompt to be used in the conversation.
+ * @param {string} bias - The bias to be added in the conversation.
+ * @param {Object} extensionPrompts - An object containing additional prompts.
+ *
+ * @returns {Object} prompts - The prepared and merged system and user-defined prompts.
  */
-function prepareOpenAIMessages({
-                                         name2,
-                                         charDescription,
-                                         charPersonality,
-                                         Scenario,
-                                         worldInfoBefore,
-                                         worldInfoAfter,
-                                         bias,
-                                         type,
-                                         quietPrompt,
-                                         extensionPrompts,
-                                         cyclePrompt
-                                     } = {}, dryRun) {
-    // Without a character selected, there is no way to accurately calculate tokens
-    if (!promptManager.activeCharacter && dryRun) return [null, false];
-
+function preparePromptsForChatCompletion(Scenario, charPersonality, name2, worldInfoBefore, worldInfoAfter, charDescription, quietPrompt, bias, extensionPrompts) {
     const scenarioText = Scenario ? `Circumstances and context of the dialogue: ${Scenario}` : '';
-    const charPersonalityText = charPersonality ?  `${name2}'s personality: ${charPersonality}` : '';
+    const charPersonalityText = charPersonality ? `${name2}'s personality: ${charPersonality}` : '';
 
     // Create entries for system prompts
     const systemPrompts = [
@@ -669,11 +651,19 @@ function prepareOpenAIMessages({
 
     // Tavern Extras - Summary
     const summary = extensionPrompts['1_memory'];
-    if (summary && summary.content) systemPrompts.push({role: 'system', content: summary.content, identifier: 'summary'});
+    if (summary && summary.content) systemPrompts.push({
+        role: 'system',
+        content: summary.content,
+        identifier: 'summary'
+    });
 
     // Authors Note
     const authorsNote = extensionPrompts['2_floating_prompt'];
-    if (authorsNote && authorsNote.value) systemPrompts.push({role: 'system', content: authorsNote.value, identifier: 'authorsNote'});
+    if (authorsNote && authorsNote.value) systemPrompts.push({
+        role: 'system',
+        content: authorsNote.value,
+        identifier: 'authorsNote'
+    });
 
     // Persona Description
     if (power_user.persona_description) {
@@ -709,6 +699,43 @@ function prepareOpenAIMessages({
     // Allow subscribers to manipulate the prompts object
     eventSource.emit(event_types.OAI_BEFORE_CHATCOMPLETION, prompts);
 
+    return prompts;
+}
+
+/**
+ * Take a configuration object and prepares messages for a chat with OpenAI's chat completion API.
+ * Handles prompts, prepares chat history, manages token budget, and processes various user settings.
+ *
+ * @param {Object} content - System prompts provided by SillyTavern
+ * @param {string} content.name2 - The second name to be used in the messages.
+ * @param {string} content.charDescription - Description of the character.
+ * @param {string} content.charPersonality - Description of the character's personality.
+ * @param {string} content.Scenario - The scenario or context of the dialogue.
+ * @param {string} content.worldInfoBefore - The world info to be added before the main conversation.
+ * @param {string} content.worldInfoAfter - The world info to be added after the main conversation.
+ * @param {string} content.bias - The bias to be added in the conversation.
+ * @param {string} content.type - The type of the chat, can be 'impersonate'.
+ * @param {string} content.quietPrompt - The quiet prompt to be used in the conversation.
+ * @param {Array} content.extensionPrompts - An array of additional prompts.
+ * @param dryRun - Whether this is a live call or not.
+ * @returns {(*[]|boolean)[]} An array where the first element is the prepared chat and the second element is a boolean flag.
+ */
+function prepareOpenAIMessages({
+                                         name2,
+                                         charDescription,
+                                         charPersonality,
+                                         Scenario,
+                                         worldInfoBefore,
+                                         worldInfoAfter,
+                                         bias,
+                                         type,
+                                         quietPrompt,
+                                         extensionPrompts,
+                                         cyclePrompt
+                                     } = {}, dryRun) {
+    // Without a character selected, there is no way to accurately calculate tokens
+    if (!promptManager.activeCharacter && dryRun) return [null, false];
+
     const chatCompletion = new ChatCompletion();
     if (power_user.console_log_prompts) chatCompletion.enableLogging();
 
@@ -716,6 +743,9 @@ function prepareOpenAIMessages({
     chatCompletion.setTokenBudget(userSettings.openai_max_context, userSettings.openai_max_tokens);
 
     try {
+        // Merge ordered user prompts and markers with system prompts
+        const prompts = preparePromptsForChatCompletion(Scenario, charPersonality, name2, worldInfoBefore, worldInfoAfter, charDescription, quietPrompt, bias, extensionPrompts);
+
         // Fill the chat completion with as much context as the budget allows
         populateChatCompletion(prompts, chatCompletion, {bias, quietPrompt, type, cyclePrompt});
     } catch (error) {
