@@ -472,23 +472,6 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         this.saveServiceSettings().then(() => this.render());
     });
 
-    // Apply character specific overrides for prompts
-    eventSource.on(event_types.OAI_BEFORE_CHATCOMPLETION, (prompts) => {
-        const systemPromptOverride = this.activeCharacter.data?.system_prompt ?? null;
-        const systemPrompt = prompts.get('main') ?? null;
-        if (systemPromptOverride) {
-            systemPrompt.content = systemPromptOverride;
-            prompts.set(systemPrompt, prompts.index('main'));
-        }
-
-        const jailbreakPromptOverride = this.activeCharacter.data?.post_history_instructions ?? null;
-        const jailbreakPrompt = prompts.get('jailbreak') ?? null;
-        if (jailbreakPromptOverride && jailbreakPrompt) {
-            jailbreakPrompt.content = jailbreakPromptOverride;
-            prompts.set(jailbreakPrompt, prompts.index('jailbreak'));
-        }
-    });
-
     // Trigger re-render when token settings are changed
     document.getElementById('openai_max_context').addEventListener('change', (event) => {
         this.serviceSettings.openai_max_context = event.target.value;
