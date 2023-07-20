@@ -1,5 +1,29 @@
 #!/usr/bin/env node
 
+createDefaultFiles();
+
+function createDefaultFiles() {
+    const fs = require('fs');
+    const path = require('path');
+    const files = {
+        settings: 'public/settings.json',
+        bg_load: 'public/css/bg_load.css',
+        config: 'config.conf',
+    };
+
+    for (const file of Object.values(files)) {
+        try {
+            if (!fs.existsSync(file)) {
+                const defaultFilePath = path.join('default', path.parse(file).base);
+                fs.copyFileSync(defaultFilePath, file);
+                console.log(`Created default file: ${file}`);
+            }
+        } catch (error) {
+            console.error(`FATAL: Could not write default file: ${file}`, error);
+        }
+    }
+}
+
 const process = require('process')
 const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers');
