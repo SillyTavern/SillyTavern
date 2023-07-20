@@ -1963,9 +1963,9 @@ grammarly-extension {
 }
 
 .user_stats_button {
-    position: absolute;
+    /*     position: absolute;
     right: 0;
-    bottom: 0;
+    bottom: 0; */
 }
 
 .large_dialogue_popup {
