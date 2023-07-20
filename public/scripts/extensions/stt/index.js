@@ -26,6 +26,9 @@ let sttProviderName = "Browser"
 
 let pushToTalkKeyDown = false
 
+// WebRTC
+let audioStream = null
+
 async function moduleWorker() {
     const enabled = extension_settings.stt.enabled
     const record_mode = extension_settings.stt.recordMode
@@ -537,4 +540,37 @@ $(document).ready(function () {
     setInterval(wrapper.update.bind(wrapper), UPDATE_INTERVAL); // Init depends on all the things
     moduleWorker();
 
+    /*/ DEBUG webRTC
+    //--------------------
+    // TODO
+    // - retrieve audio recording
+    // - send to extras server
+    
+    $("#microphone_button").off('click').on("click", function () {
+        if(audioStream === null) {
+            navigator.mediaDevices.getUserMedia({audio: true, video: false})
+            .then(stream => {
+                audioStream = stream
+                const audioTracks = audioStream.getAudioTracks();
+                console.log(`Using audio device: ${audioTracks[0].label}`);
+                audioStream.onremovetrack = () => {
+                console.log("Stream ended");
+                };
+            }).catch(error => {
+                if (error.name === "NotAllowedError") {
+                console.error(
+                    "You need to grant this page permission to access your microphone.",
+                );
+                } else {
+                console.error(`getUserMedia error: ${error.name}`, error);
+                }
+            });
+        } else {
+            console.log("Stream ended by button");
+            audioStream.getAudioTracks()[0].stop();
+            audioStream = null
+        }
+    });
+
+    //--------------------*/
 })

@@ -52,10 +52,10 @@ class WhisperSttProvider {
     //###########//
 
     async getUserMessage() {
-        console.debug("<STT-Whisper-module> Recording user message")
+        //console.debug("<STT-Whisper-module> Recording user message")
         // Return if module is not loaded
         if (!modules.includes('whisper-stt')) {
-            console.debug("<STT-whisper-module> Module Whisper-stt must be activated in Sillytavern Extra for streaming user voice.")
+            //console.debug("<STT-whisper-module> Module Whisper-stt must be activated in Sillytavern Extra for streaming user voice.")
             return "";
         }
     
