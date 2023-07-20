@@ -442,7 +442,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
                 if (false === userChoice) return;
 
                 this.removePromptListForCharacter(this.activeCharacter);
-                this.addPromptListForCharacter(this.activeCharacter, openAiDefaultPromptList);
+                this.addPromptListForCharacter(this.activeCharacter, promptManagerDefaultPromptList);
 
                 this.saveServiceSettings().then(() => this.render());
             });
@@ -631,11 +631,11 @@ PromptManagerModule.prototype.sanitizeServiceSettings = function () {
 
     // Check whether the referenced prompts are present.
     this.serviceSettings.prompts.length === 0
-        ? this.setPrompts(openAiDefaultPrompts.prompts)
+        ? this.setPrompts(chatCompletionDefaultPrompts.prompts)
         : this.checkForMissingPrompts(this.serviceSettings.prompts);
 
     // Add prompt manager settings if not present
-    this.serviceSettings.prompt_manager_settings = this.serviceSettings.prompt_manager_settings ?? {...defaultPromptManagerSettings};
+    this.serviceSettings.prompt_manager_settings = this.serviceSettings.prompt_manager_settings ?? {...promptManagerDefaultSettings};
 
     // Add identifiers if there are none assigned to a prompt
     this.serviceSettings.prompts.forEach(prompt => prompt && (prompt.identifier = prompt.identifier ?? this.getUuidv4()));
@@ -653,14 +653,14 @@ PromptManagerModule.prototype.sanitizeServiceSettings = function () {
 };
 
 PromptManagerModule.prototype.checkForMissingPrompts = function(prompts) {
-    const defaultPromptIdentifiers = openAiDefaultPrompts.prompts.reduce((list, prompt) => { list.push(prompt.identifier); return list;}, []);
+    const defaultPromptIdentifiers = chatCompletionDefaultPrompts.prompts.reduce((list, prompt) => { list.push(prompt.identifier); return list;}, []);
 
     const missingIdentifiers = defaultPromptIdentifiers.filter(identifier =>
         !prompts.some(prompt =>prompt.identifier === identifier)
     );
 
     missingIdentifiers.forEach(identifier => {
-        const defaultPrompt = openAiDefaultPrompts.prompts.find(prompt => prompt?.identifier === identifier);
+        const defaultPrompt = chatCompletionDefaultPrompts.prompts.find(prompt => prompt?.identifier === identifier);
         if (defaultPrompt) {
             prompts.push(defaultPrompt);
             this.log(`Missing system prompt: ${defaultPrompt.identifier}. Added default.`);
@@ -727,7 +727,7 @@ PromptManagerModule.prototype.handleCharacterSelected = function (event) {
 
     // ToDo: These should be passed as parameter or attached to the manager as a set of default options.
     // Set default prompts and order for character.
-    if (0 === promptList.length) this.addPromptListForCharacter(this.activeCharacter, openAiDefaultPromptList);
+    if (0 === promptList.length) this.addPromptListForCharacter(this.activeCharacter, promptManagerDefaultPromptList);
 }
 
 PromptManagerModule.prototype.handleCharacterUpdated = function (event) {
@@ -739,7 +739,7 @@ PromptManagerModule.prototype.handleGroupSelected = function (event) {
     this.activeCharacter = characterDummy;
     const promptList = this.getPromptListForCharacter(characterDummy);
 
-    if (0 === promptList.length) this.addPromptListForCharacter(characterDummy, openAiDefaultPromptList)
+    if (0 === promptList.length) this.addPromptListForCharacter(characterDummy, promptManagerDefaultPromptList)
 }
 
 PromptManagerModule.prototype.getActiveGroupCharacters = function() {
@@ -1469,7 +1469,7 @@ PromptManagerModule.prototype.profileEnd = function (identifier) {
 }
 
 
-const openAiDefaultPrompts = {
+const chatCompletionDefaultPrompts = {
     "prompts": [
         {
             "name": "Main Prompt",
@@ -1545,11 +1545,11 @@ const openAiDefaultPrompts = {
     ]
 };
 
-const openAiDefaultPromptLists = {
+const promptManagerDefaultPromptLists = {
     "prompt_lists": []
 };
 
-const openAiDefaultPromptList = [
+const promptManagerDefaultPromptList = [
     {
         "identifier": "main",
         "enabled": true
@@ -1596,7 +1596,7 @@ const openAiDefaultPromptList = [
     }
 ];
 
-const defaultPromptManagerSettings = {
+const promptManagerDefaultSettings = {
     prompt_manager_settings: {
         showAdvancedSettings: false
     }
@@ -1605,8 +1605,8 @@ const defaultPromptManagerSettings = {
 export {
     PromptManagerModule,
     registerPromptManagerMigration,
-    openAiDefaultPrompts,
-    openAiDefaultPromptLists,
-    defaultPromptManagerSettings,
+    chatCompletionDefaultPrompts,
+    promptManagerDefaultPromptLists,
+    promptManagerDefaultSettings,
     Prompt
 };
