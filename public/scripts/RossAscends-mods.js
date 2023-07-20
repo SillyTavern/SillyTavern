@@ -110,9 +110,9 @@ function waitForElement(querySelector, timeout) {
 
 /**
  * Converts generation time from milliseconds to a human-readable format.
- * 
- * The function takes total generation time as an input, then converts it to a format 
- * of "_ Days, _ Hours, _ Minutes, _ Seconds". If the generation time does not exceed a 
+ *
+ * The function takes total generation time as an input, then converts it to a format
+ * of "_ Days, _ Hours, _ Minutes, _ Seconds". If the generation time does not exceed a
  * particular measure (like days or hours), that measure will not be included in the output.
  *
  * @param {number} total_gen_time - The total generation time in milliseconds.
@@ -455,11 +455,6 @@ function RA_autoconnect(PrevApi) {
                     || (secret_state[SECRET_KEYS.OPENROUTER] && oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER)
                 ) {
                     $("#api_button_openai").click();
-                }
-                break;
-            case 'poe':
-                if (secret_state[SECRET_KEYS.POE]) {
-                    $("#poe_connect").click();
                 }
                 break;
         }

@@ -4,5 +4,4 @@ node_modules/
 /thumbnails
 secrets.json
 /dist
-poe_device.json
 /backups/

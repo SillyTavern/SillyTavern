@@ -13,7 +13,8 @@ public/scripts/extensions/third-party/
 public/stats.json
 /uploads/
 *.jsonl
-config.conf
+/config.conf
+/docker/config.conf
 .DS_Store
 public/settings.json
 /thumbnails
@@ -21,8 +22,5 @@ whitelist.txt
 .vscode
 secrets.json
 /dist
-poe_device.json
 /backups/
 public/movingUI/
-poe-error.log
-poe-success.log
