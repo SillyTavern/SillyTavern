@@ -1399,8 +1399,7 @@ select option:not(:checked) {
 
 #api_button:hover,
 #api_button_novel:hover,
-#api_button_textgenerationwebui:hover,
-#poe_connect:hover {
+#api_button_textgenerationwebui:hover {
     background-color: green;
 }
 
@@ -4469,7 +4468,6 @@ toolcool-color-picker {
 }
 
 .openai_restorable,
-.poe_restorable,
 .title_restorable {
     display: flex;
     flex-direction: row;

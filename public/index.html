@@ -87,7 +87,6 @@
     <script type="module" src="scripts/textgen-settings.js"></script>
     <script type="module" src="scripts/bookmarks.js"></script>
     <script type="module" src="scripts/horde.js"></script>
-    <script type="module" src="scripts/poe.js"></script>
     <script type="module" src="scripts/RossAscends-mods.js"></script>
     <script type="module" src="scripts/slash-commands.js"></script>
     <script type="module" src="scripts/tags.js"></script>
@@ -173,10 +172,6 @@
                                 </h3>
                                 <select id="settings_preset_textgenerationwebui">
                                 </select>
-                            </div>
-                            <div id="poe_api-presets">
-                                <h3><span data-i18n="poe.com api settings">Poe.com API Settings</span></h3>
-                                <!-- just a placeholder title for the Poe.com settings panel-->
                             </div>
                             <hr>
                         </div>
@@ -641,74 +636,6 @@
                                                 select
                                             </div>
                                         </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div id="range_block_poe">
-                                <div>
-                                    <span data-i18n="Use 'Unlocked Context' to enable chunked generation.">Use "Unlocked Context" to enable chunked generation.</span>
-                                    <span data-i18n="It extends the context window in exchange for reply generation speed.">It extends the context window in exchange for reply generation speed.</span>"
-                                </div>
-                                <h4 data-i18n="Safe Context Size values for Poe bots:">Safe Context Size values for Poe bots:</h4>
-                                <ul class="margin0auto">
-                                    <li data-i18n="ChatGPT / Sage / GPT-4 = 2500 tokens">ChatGPT / Sage / GPT-4 = 2500 tokens</li>
-                                    <li data-i18n="Claude-instant = 5500 tokens">Claude-instant = 5500 tokens</li>
-                                    <li data-i18n="16k/32k/100k = model-defined maximum">16k/32k/100k = model-defined maximum</li>
-                                </ul>
-                                <div class="flex-container spaceEvenly">
-                                    <div id="poe_send_jailbreak" class="menu_button widthFitContent" data-i18n="[title]Attempts to automatically jailbreak the bot" title="Attempts to automatically jailbreak the bot">
-                                        <span data-i18n="Send Jailbreak">Send Jailbreak</span>
-                                    </div>
-                                    <div id="poe_purge_chat" class="menu_button widthFitContent" data-i18n="[title]Purges the chat history on Poe site" title="Purges the chat history on Poe site" data-i18n="Purge Poe Chat">
-                                        Purge Poe Chat
-                                    </div>
-                                </div>
-                                <div class="range-block">
-                                    <label for="poe_streaming" class="checkbox_label widthFreeExpand">
-                                        <input id="poe_streaming" type="checkbox" />
-                                        <span data-i18n="Streaming">Streaming</span>
-                                    </label>
-                                    <div class="toggle-description justifyLeft" data-i18n="Display bot response text chunks as they are generated">
-                                        Display bot response text chunks as they are generated.
-                                    </div>
-                                </div>
-                                <div class="range-block">
-                                    <label for="poe_auto_purge" class="checkbox_label widthFreeExpand">
-                                        <input id="poe_auto_purge" type="checkbox"><span data-i18n="Auto-purge API context (save JB)">
-                                            Auto-purge API context (save JB)</span>
-                                    </label>
-                                    <div class="toggle-description justifyLeft" data-i18n="Delete non-JB messages from Poe context before sending a new prompt. Prevents auto-jailbreak message from being pushed out of context">
-                                        Delete non-JB messages from Poe context before sending a new prompt. Prevents
-                                        auto-jailbreak message from being pushed out of context.
-                                    </div>
-                                </div>
-                                <div class="range-block">
-                                    <label for="poe_auto_jailbreak" class="checkbox_label widthFreeExpand">
-                                        <input id="poe_auto_jailbreak" type="checkbox"><span data-i18n="Auto-jailbreak">
-                                            Auto-jailbreak</span>
-                                    </label>
-                                    <div class="toggle-description justifyLeft" data-i18n="Send the jailbreak message before first generation after page refresh.">
-                                        Send the jailbreak message before first generation after page refresh.
-                                    </div>
-                                </div>
-                                <div class="range-block">
-                                    <label for="poe_character_nudge" class="checkbox_label widthFreeExpand">
-                                        <input id="poe_character_nudge" type="checkbox" /><span data-i18n="Send character note">
-                                            Send character note</span>
-                                    </label>
-                                    <div class="toggle-description justifyLeft" data-i18n="Sent with every prompt to modify bot responses.">
-                                        Sent with every prompt to modify bot responses.
-                                    </div>
-                                </div>
-                                <div class="range-block">
-                                    <label for="poe_suggest" class="checkbox_label widthFreeExpand">
-                                        <input id="poe_suggest" type="checkbox" />
-                                        <span data-i18n="Suggest replies">
-                                            Suggest replies
-                                        </span>
-                                    </label>
-                                    <div class="toggle-description justifyLeft" data-i18n="Show suggested replies. Not all bots support this.">
-                                        Show suggested replies. Not all bots support this.
                                     </div>
                                 </div>
                             </div>
@@ -1313,66 +1240,6 @@
                                     </div>
                                 </div>
                             </div>
-                            <div id="poe_settings">
-                                <div class="range-block">
-                                    <div class="range-block-title justifyLeft poe_restorable">
-                                        <span data-i18n="Jailbreak activation message">Jailbreak activation
-                                            message</span>
-                                        <div id="poe_activation_message_restore" title="Restore default jailbreak" data-i18n="[title]Restore default jailbreak" class="right_menu_button">
-                                            <div class="fa-solid fa-clock-rotate-left"></div>
-                                        </div>
-                                    </div>
-                                    <div class="toggle-description justifyLeft" data-i18n="Message to send when auto-jailbreak is on.">
-                                        Message to send when auto-jailbreak is on.
-                                    </div>
-                                    <div class="wide100p">
-                                        <textarea id="poe_activation_message" class="text_pole textarea_compact" rows="6"></textarea>
-                                    </div>
-                                </div>
-                                <div class="range-block">
-                                    <div class="range-block-title justifyLeft poe_restorable">
-                                        <span data-i18n="Jailbreak confirmation reply">Jailbreak confirmation
-                                            reply</span>
-                                        <div id="poe_activation_response_restore" title="Restore default reply" data-i18n="[title]Restore default reply" class="right_menu_button">
-                                            <div class="fa-solid fa-clock-rotate-left"></div>
-                                        </div>
-                                    </div>
-                                    <div class="toggle-description justifyLeft" data-i18n="Bot must send this back to confirm jailbreak">
-                                        Bot must send this back to confirm jailbreak
-                                    </div>
-                                    <div class="wide100p">
-                                        <input id="poe_activation_response" class="text_pole textarea_compact" type="text" />
-                                    </div>
-                                </div>
-                                <div class="range-block">
-                                    <div class="range-block-title justifyLeft poe_restorable">
-                                        <span data-i18n="Character Note">Character Note</span>
-                                        <div id="poe_nudge_text_restore" title="Restore default note" data-i18n="[title]Restore defaul note" class="right_menu_button">
-                                            <div class="fa-solid fa-clock-rotate-left"></div>
-                                        </div>
-                                    </div>
-                                    <div class="toggle-description justifyLeft" data-i18n="Influences bot behavior in its responses">
-                                        Influences bot behavior in its responses.
-                                    </div>
-                                    <div class="wide100p">
-                                        <textarea id="poe_nudge_text" class="text_pole textarea_compact" rows="6" maxlength="2500"></textarea>
-                                    </div>
-                                </div>
-                                <div class="range-block">
-                                    <div class="range-block-title justifyLeft poe_restorable">
-                                        <span data-i18n="Impersonation prompt">Impersonation prompt</span>
-                                        <div id="poe_impersonation_prompt_restore" title="Restore default prompt" data-i18n="[title]Restore default prompt" class="right_menu_button">
-                                            <div class="fa-solid fa-clock-rotate-left"></div>
-                                        </div>
-                                    </div>
-                                    <div class="toggle-description justifyLeft" data-i18n="Prompt that is used for Impersonation function">
-                                        Prompt that is used for Impersonation function
-                                    </div>
-                                    <div class="wide100p">
-                                        <textarea id="poe_impersonation_prompt" class="text_pole textarea_compact" rows="6" maxlength="2500"></textarea>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -1393,7 +1260,6 @@
                             <option value="textgenerationwebui"><span data-i18n="Text Gen WebUI (ooba)">Text Gen WebUI (ooba)</span></option>
                             <option value="novel"><span data-i18n="NovelAI">NovelAI</span></option>
                             <option value="openai"><span data-i18n="Chat Completion (OpenAI, Claude, Window/OpenRouter, Scale)">Chat Completion (OpenAI, Claude, Window, OpenRouter, Scale)</span></option>
-                            <option value="poe"><span data-i18n="Poe">Poe</span></option>
                         </select>
                     </div>
                     <div id="kobold_horde" style="position: relative;"> <!-- shows the kobold settings -->
@@ -1717,49 +1583,6 @@
                             <div class="online_status_text4">No connection...</div>
                         </div>
                         <br>
-                    </div>
-                    <div id="poe_api">
-                        <h4 data-i18n="Poe.com Unofficial API">
-                            Poe.com Unofficial "API"
-                        </h4>
-                        <span>
-                            <ol>
-                                <li>
-                                    <span data-i18n="Follow_poe">Follow</span>
-                                    <a href="https://docs.sillytavern.app/usage/api-connections/poe/" class="notes-link" target="_blank" data-i18n="these directions">these directions</a>
-                                    <span data-i18n="to get your 'p-b cookie'">to get your 'p-b cookie'</span>
-                                </li>
-                                <li data-i18n="Enter it in the box below:">Enter it in the box below:</li>
-                            </ol>
-                        </span>
-                        <div class="widthFreeExpand">
-                            <div class="flex-container">
-                                <input id="poe_token" class="text_pole flex1" type="text" maxlength="100" autocomplete="off" />
-                                <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_poe">
-                                </div>
-                            </div>
-                            <div data-for="poe_token" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
-                                For privacy reasons, your API key will be hidden after you reload the page.
-                            </div>
-                        </div>
-
-                        <input id="poe_connect" class="menu_button" type="button" value="Connect" />
-                        <div id="api_loading_poe" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
-
-                        <div class="range-block">
-                            <div class="range-block-title">
-                                <h4 data-i18n="Bot">Bot</h4>
-                            </div>
-                            <div class="widthFreeExpand">
-                                <select id="poe_bots">
-                                    <option data-i18n="Connect to the API">-- Connect to the API --</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="online_status4">
-                            <div class="online_status_indicator4"></div>
-                            <div class="online_status_text4">No connection...</div>
-                        </div>
                     </div>
                 </div>
                 <div class="flex-container alignitemscenter spaceBetween wide100p">
@@ -2988,8 +2811,8 @@
 
         <div class="inline-drawer">
             <div class="inline-drawer-toggle inline-drawer-header">
-                <h4 data-i18n="Prompt Overrides (For OpenAI/Claude/Scale APIs, Window/OpenRouter, Poe, and Instruct mode)">
-                    Prompt Overrides <small>(For OpenAI/Claude/Scale APIs, Window/OpenRouter, Poe, and Instruct mode)</small>
+                <h4 data-i18n="Prompt Overrides (For OpenAI/Claude/Scale APIs, Window/OpenRouter, and Instruct mode)">
+                    Prompt Overrides <small>(For OpenAI/Claude/Scale APIs, Window/OpenRouter, and Instruct mode)</small>
                 </h4>
 
 
@@ -3003,7 +2826,7 @@
                 </div>
                 <div>
                     <h4 data-i18n="Jailbreak">Jailbreak</h4>
-                    <textarea id="post_history_instructions_textarea" name="post_history_instructions" data-i18n="[placeholder]Any contents here will replace the default Jailbreak Prompt (Character Note for Poe) used for this character. (v2 spec: post_history_instructions)" placeholder="Any contents here will replace the default Jailbreak Prompt (Character Note for Poe) used for this character.&#10;(v2 spec: post_history_instructions)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="20000"></textarea>
+                    <textarea id="post_history_instructions_textarea" name="post_history_instructions" data-i18n="[placeholder]Any contents here will replace the default Jailbreak Prompt used for this character. (v2 spec: post_history_instructions)" placeholder="Any contents here will replace the default Jailbreak Prompt used for this character.&#10;(v2 spec: post_history_instructions)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="20000"></textarea>
                 </div>
             </div>
         </div>

@@ -70,8 +70,7 @@
             "node18-windows-x64"
         ],
         "assets": [
-            "node_modules/**/*",
-            "src/poe_graphql/**/*"
+            "node_modules/**/*"
         ],
         "outputPath": "dist",
         "scripts": [

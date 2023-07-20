@@ -21,10 +21,5 @@ whitelist.txt
 .vscode
 secrets.json
 /dist
-poe_device.json
 /backups/
 public/movingUI/
-poe-error.log
-poe-error-raw.log
-poe-success.log
-poe-success-raw.log
