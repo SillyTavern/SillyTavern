@@ -789,19 +789,20 @@ async function setExpression(character, expression, force) {
                     setDefault();
                 }
             });
-        } else {
-            if (extension_settings.expressions.showDefault) {
-                setDefault();
-            }
+        }
+
+    } else {
+        if (extension_settings.expressions.showDefault) {
+            setDefault();
         }
     }
 
     function setDefault() {
         console.debug('setting default');
         const defImgUrl = `/img/default-expressions/${expression}.png`;
-        //console.log(defImgUrl);
-        expressionClone.attr('src', defImgUrl);
-        expressionClone.addClass('default');
+        console.log(defImgUrl);
+        img.attr('src', defImgUrl);
+        img.addClass('default');
     }
     document.getElementById("expression-holder").style.display = '';
 }
