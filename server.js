@@ -1777,7 +1777,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     response.send({ error: true });
                 }
 
-                let = jsonData = json5.parse(data);
+                let jsonData = json5.parse(data);
 
                 if (jsonData.spec !== undefined) {
                     console.log('importing from v2 json');
