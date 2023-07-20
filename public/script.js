@@ -962,7 +962,7 @@ async function getBackgrounds() {
         const getData = await response.json();
         //background = getData;
         //console.log(getData.length);
-        $("#bg_menu_content").empty();
+        $("#bg_menu_content").children('div').remove();
         for (const bg of getData) {
             const template = getBackgroundFromTemplate(bg);
             $("#bg_menu_content").append(template);
