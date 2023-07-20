@@ -120,6 +120,15 @@ import {
 } from "./scripts/horde.js";
 
 import {
+    poe_settings,
+    loadPoeSettings,
+    generatePoe,
+    is_get_status_poe,
+    setPoeOnlineStatus,
+    appendPoeAnchors,
+} from "./scripts/poe.js";
+
+import {
     debounce,
     delay,
     restoreCaretPosition,
@@ -771,6 +780,7 @@ function checkOnlineStatus() {
         is_get_status = false;
         is_get_status_novel = false;
         setOpenAIOnlineStatus(false);
+        setPoeOnlineStatus(false);
     } else {
         $("#online_status_indicator2").css("background-color", "green"); //kobold
         $("#online_status_text2").html(online_status);
@@ -851,7 +861,7 @@ async function getStatus() {
             },
         });
     } else {
-        if (is_get_status_novel != true && is_get_status_openai != true) {
+        if (is_get_status_novel != true && is_get_status_openai != true && main_api != "poe") {
             online_status = "no_connection";
         }
     }
@@ -1861,6 +1871,7 @@ function isStreamingEnabled() {
     return ((main_api == 'openai' && oai_settings.stream_openai && oai_settings.chat_completion_source !== chat_completion_sources.SCALE)
         || (main_api == 'kobold' && kai_settings.streaming_kobold && kai_settings.can_use_streaming)
         || (main_api == 'novel' && nai_settings.streaming_novel)
+        || (main_api == 'poe' && poe_settings.streaming)
         || (main_api == 'textgenerationwebui' && textgenerationwebui_settings.streaming))
         && !isMultigenEnabled(); // Multigen has a quasi-streaming mode which breaks the real streaming
 }
@@ -2345,6 +2356,12 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             setOpenAIMessageExamples(mesExamplesArray);
         }
 
+        // Moved here to not overflow the Poe context with added prompt bits
+        if (main_api == 'poe') {
+            allAnchors = appendPoeAnchors(type, allAnchors, jailbreakPrompt);
+            zeroDepthAnchor = appendPoeAnchors(type, zeroDepthAnchor, jailbreakPrompt);
+        }
+
         // hack for regeneration of the first message
         if (chat2.length == 0) {
             chat2.push('');
@@ -2421,7 +2438,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
         if (isContinue) {
             // Coping mechanism for OAI spacing
-            if ((main_api === 'openai') && !cyclePrompt.endsWith(' ')) {
+            if ((main_api === 'openai' || main_api === 'poe') && !cyclePrompt.endsWith(' ')) {
                 cyclePrompt += ' ';
                 continue_mag += ' ';
             }
@@ -2679,6 +2696,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
 
                 setInContextMessages(openai_messages_count, type);
+            } else if (main_api == 'poe') {
+                generate_data = { prompt: finalPromt };
             }
 
             if (power_user.console_log_prompts) {
@@ -2736,6 +2755,14 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
             else if (main_api == 'koboldhorde') {
                 generateHorde(finalPromt, generate_data, abortController.signal).then(onSuccess).catch(onError);
+            }
+            else if (main_api == 'poe') {
+                if (isStreamingEnabled() && type !== 'quiet') {
+                    streamingProcessor.generator = await generatePoe(type, finalPromt, streamingProcessor.abortController.signal);
+                }
+                else {
+                    generatePoe(type, finalPromt, abortController.signal).then(onSuccess).catch(onError);
+                }
             }
             else if (main_api == 'textgenerationwebui' && isStreamingEnabled() && type !== 'quiet') {
                 streamingProcessor.generator = await generateTextGenWithStreaming(generate_data, streamingProcessor.abortController.signal);
@@ -3052,6 +3079,9 @@ function getMaxContextSize() {
     }
     if (main_api == 'openai') {
         this_max_context = oai_settings.openai_max_context;
+    }
+    if (main_api == 'poe') {
+        this_max_context = Number(max_context);
     }
     return this_max_context;
 }
@@ -3561,7 +3591,12 @@ function extractNameFromMessage(getMessage, force_name2, isImpersonate) {
     } else {
         this_mes_is_name = false;
     }
-    if (force_name2 || power_user.instruct.enabled)
+    // Like OAI, Poe is very unlikely to send you an incomplete message.
+    // But it doesn't send "name:" either, so we assume that we always have a name
+    // prepend to have clearer logs when building up a prompt context.
+    // Instruct mode needs to have it on to make sure you won't have names lost
+    // if disable in a middle of a solo chat.
+    if (force_name2 || main_api == 'poe' || power_user.instruct.enabled)
         this_mes_is_name = true;
 
     if (isImpersonate) {
@@ -3601,6 +3636,7 @@ function extractMessageFromData(data) {
         case 'novel':
             return data.output;
         case 'openai':
+        case 'poe':
             return data;
         default:
             return ''
@@ -3840,6 +3876,9 @@ function getGeneratingModel(mes) {
             break;
         case 'koboldhorde':
             model = kobold_horde_model;
+            break;
+        case 'poe':
+            model = poe_settings.bot;
             break;
     }
     return model
@@ -4289,6 +4328,14 @@ function changeMainAPI() {
             apiRanges: $("#range_block_openai"),
             maxContextElem: $("#max_context_block"),
             amountGenElem: $("#amount_gen_block"),
+        },
+        "poe": {
+            apiSettings: $("#poe_settings"),
+            apiConnector: $("#poe_api"),
+            apiPresets: $("#poe_api-presets"),
+            apiRanges: $("#range_block_poe"),
+            maxContextElem: $("#max_context_block"),
+            amountGenElem: $("#amount_gen_block"),
         }
     };
     //console.log('--- apiElements--- ');
@@ -4333,6 +4380,12 @@ function changeMainAPI() {
         $("#common-gen-settings-block").css("display", "none");
     } else {
         $("#common-gen-settings-block").css("display", "block");
+    }
+    // Hide amount gen for poe
+    if (selectedVal == "poe") {
+        $("#amount_gen_block").css("display", "none");
+    } else {
+        $("#amount_gen_block").css("display", "flex");
     }
 
     main_api = selectedVal;
@@ -4922,6 +4975,9 @@ async function getSettings(type) {
         // Horde
         loadHordeSettings(settings);
 
+        // Poe
+        loadPoeSettings(settings);
+
         // Load power user settings
         loadPowerUserSettings(settings, data);
 
@@ -4941,10 +4997,6 @@ async function getSettings(type) {
         //Load which API we are using
         if (settings.main_api == undefined) {
             settings.main_api = 'kobold';
-        }
-
-        if (settings.main_api == 'poe') {
-            settings.main_api = 'openai';
         }
 
         main_api = settings.main_api;
@@ -5019,10 +5071,11 @@ async function saveSettings(type) {
             swipes: swipes,
             horde_settings: horde_settings,
             power_user: power_user,
+            poe_settings: poe_settings,
             extension_settings: extension_settings,
             context_settings: context_settings,
             tags: tags,
-            tag_map: tag_map,
+            tag_map: tag_map,           
             ...nai_settings,
             ...kai_settings,
             ...oai_settings,
@@ -5278,7 +5331,7 @@ async function getStatusNovel() {
             },
         });
     } else {
-        if (is_get_status != true && is_get_status_openai != true) {
+        if (is_get_status != true && is_get_status_openai != true && is_get_status_poe != true) {
             online_status = "no_connection";
         }
     }
@@ -6680,6 +6733,9 @@ function connectAPISlash(_, text) {
             source: 'windowai',
             button: '#api_button_openai',
         },
+        'poe': {
+            button: '#poe_connect',
+        },
     };
 
     const apiConfig = apiMap[text];
@@ -6826,7 +6882,7 @@ $(document).ready(function () {
     }
 
     registerSlashCommand('dupe', DupeChar, [], "– duplicates the currently selected character", true, true);
-    registerSlashCommand('api', connectAPISlash, [], "(kobold, horde, novel, ooba, oai, claude, windowai) – connect to an API", true, true);
+    registerSlashCommand('api', connectAPISlash, [], "(kobold, horde, novel, ooba, oai, claude, poe, windowai) – connect to an API", true, true);
     registerSlashCommand('impersonate', doImpersonate, ['imp'], "- calls an impersonation response", true, true);
     registerSlashCommand('delchat', doDeleteChat, [], "- deletes the current chat", true, true);
 
@@ -7730,6 +7786,7 @@ $(document).ready(function () {
         is_get_status = false;
         is_get_status_novel = false;
         setOpenAIOnlineStatus(false);
+        setPoeOnlineStatus(false);
         online_status = "no_connection";
         checkOnlineStatus();
         changeMainAPI();

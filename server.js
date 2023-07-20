@@ -108,6 +108,8 @@ client.on('error', (err) => {
     console.error('An error occurred:', err);
 });
 
+const poe = require('./src/poe-client');
+
 let api_server = "http://0.0.0.0:5000";
 let api_novelai = "https://api.novelai.net";
 let api_openai = "https://api.openai.com/v1";
@@ -2612,6 +2614,247 @@ app.post('/deletegroup', jsonParser, async (request, response) => {
     return response.send({ ok: true });
 });
 
+const POE_DEFAULT_BOT = 'a2';
+
+const poeClientCache = {};
+
+async function getPoeClient(token, useCache = false) {
+    let client;
+
+    if (useCache && poeClientCache[token]) {
+        client = poeClientCache[token];
+    }
+    else {
+        client = new poe.Client(true, useCache);
+        await client.init(token);
+    }
+
+    poeClientCache[token] = client;
+    return client;
+}
+
+app.post('/status_poe', jsonParser, async (request, response) => {
+    const token = readSecret(SECRET_KEYS.POE);
+
+    if (!token) {
+        return response.sendStatus(401);
+    }
+
+    try {
+        const client = await getPoeClient(token, false);
+        const botNames = client.get_bot_names();
+        //client.disconnect_ws();
+
+        return response.send({ 'bot_names': botNames });
+    }
+    catch (err) {
+        console.error(err);
+        return response.sendStatus(401);
+    }
+});
+
+app.post('/purge_poe', jsonParser, async (request, response) => {
+    const token = readSecret(SECRET_KEYS.POE);
+
+    if (!token) {
+        return response.sendStatus(401);
+    }
+
+    const bot = request.body.bot ?? POE_DEFAULT_BOT;
+    const count = request.body.count ?? -1;
+
+    try {
+        const client = await getPoeClient(token, true);
+        if (count > 0) {
+            await client.purge_conversation(bot, count);
+        }
+        else {
+            await client.send_chat_break(bot);
+        }
+        //client.disconnect_ws();
+
+        return response.send({ "ok": true });
+    }
+    catch (err) {
+        console.error(err);
+        return response.sendStatus(500);
+    }
+});
+
+app.post('/generate_poe', jsonParser, async (request, response) => {
+    if (!request.body.prompt) {
+        return response.sendStatus(400);
+    }
+
+    const token = readSecret(SECRET_KEYS.POE);
+
+    if (!token) {
+        return response.sendStatus(401);
+    }
+
+    let isGenerationStopped = false;
+    const abortController = new AbortController();
+    request.socket.removeAllListeners('close');
+    request.socket.on('close', function () {
+        isGenerationStopped = true;
+
+        if (client) {
+            abortController.abort();
+        }
+    });
+    const prompt = request.body.prompt;
+    const bot = request.body.bot ?? POE_DEFAULT_BOT;
+    const streaming = request.body.streaming ?? false;
+
+    let client;
+
+    try {
+        client = await getPoeClient(token, true);
+    }
+    catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+
+    if (streaming) {
+        try {
+            let reply = '';
+            for await (const mes of client.send_message(bot, prompt, false, 60, abortController.signal)) {
+                if (response.headersSent === false) {
+                    response.writeHead(200, {
+                        'Content-Type': 'text/plain;charset=utf-8',
+                        'Transfer-Encoding': 'chunked',
+                        'Cache-Control': 'no-transform',
+                        'X-Message-Id': String(mes.messageId),
+                    });
+                }
+
+                if (isGenerationStopped) {
+                    console.error('Streaming stopped by user. Closing websocket...');
+                    break;
+                }
+
+                let newText = mes.text.substring(reply.length);
+                reply = mes.text;
+                response.write(newText);
+            }
+            console.log(reply);
+        }
+        catch (err) {
+            console.error(err);
+        }
+        finally {
+            //client.disconnect_ws();
+            response.end();
+        }
+    }
+    else {
+        try {
+            let reply;
+            let messageId;
+            for await (const mes of client.send_message(bot, prompt, false, 60, abortController.signal)) {
+                reply = mes.text;
+                messageId = mes.messageId;
+            }
+            console.log(reply);
+            //client.disconnect_ws();
+            response.set('X-Message-Id', String(messageId));
+            return response.send({ 'reply': reply });
+        }
+        catch {
+            //client.disconnect_ws();
+            return response.sendStatus(500);
+        }
+    }
+});
+
+app.post('/poe_suggest', jsonParser, async function (request, response) {
+    const token = readSecret(SECRET_KEYS.POE);
+    const messageId = request.body.messageId;
+
+    if (!messageId) {
+        return response.sendStatus(400);
+    }
+
+    if (!token) {
+        return response.sendStatus(401);
+    }
+
+    try {
+        const bot = request.body.bot ?? POE_DEFAULT_BOT;
+        const client = await getPoeClient(token, true);
+
+        response.writeHead(200, {
+            'Content-Type': 'text/plain;charset=utf-8',
+            'Transfer-Encoding': 'chunked',
+            'Cache-Control': 'no-transform',
+        });
+
+        const botObject = client.bots[bot];
+        const canSuggestReplies = botObject?.defaultBotObject?.hasSuggestedReplies ?? false;
+
+        if (!canSuggestReplies) {
+            return response.end();
+        }
+
+        // Store replies that have already been sent to the user
+        const repliesSent = new Set();
+        // Store the time when the request started
+        const beginAt = Date.now();
+        while (true) {
+            // If more than 5 seconds have passed, stop suggesting replies
+            if (Date.now() - beginAt > 5000) {
+                break;
+            }
+
+            // Get replies array from the Poe client
+            const suggestedReplies = client.suggested_replies[messageId];
+
+            // If the suggested replies array is not an array, wait 100ms and try again
+            if (!Array.isArray(suggestedReplies)) {
+                await delay(100);
+                continue;
+            }
+
+            // If there are no replies, wait 100ms and try again
+            if (suggestedReplies.length === 0) {
+                await delay(100);
+                continue;
+            }
+
+            // Send each reply to the user
+            for (const reply of suggestedReplies) {
+                // If the reply has already been sent, skip it
+                if (repliesSent.has(reply)) {
+                    continue;
+                }
+
+                // Add the reply to the list of replies that have been sent
+                repliesSent.add(reply);
+                // Write SSE event to the response stream
+                response.write(reply + '\n\n');
+            }
+
+            // Wait 100ms before checking for new replies
+            await delay(100);
+        }
+
+        //client.disconnect_ws();
+        return response.end();
+    }
+    catch (err) {
+        console.error(err);
+
+        if (response.headersSent === false) {
+            return response.sendStatus(401);
+        } else {
+            return response.end();
+        }
+    }
+
+
+});
+
 /**
  * Discover the extension folders
  * If the folder is called third-party, search for subfolders instead
@@ -3570,6 +3813,7 @@ const SETTINGS_FILE = './public/settings.json';
 const SECRET_KEYS = {
     HORDE: 'api_key_horde',
     OPENAI: 'api_key_openai',
+    POE: 'api_key_poe',
     NOVEL: 'api_key_novel',
     CLAUDE: 'api_key_claude',
     DEEPL: 'deepl',
@@ -3589,6 +3833,7 @@ function migrateSecrets() {
         const settings = JSON.parse(fileContents);
         const oaiKey = settings?.api_key_openai;
         const hordeKey = settings?.horde_settings?.api_key;
+        const poeKey = settings?.poe_settings?.token;
         const novelKey = settings?.api_key_novel;
 
         if (typeof oaiKey === 'string') {
@@ -3602,6 +3847,13 @@ function migrateSecrets() {
             console.log('Migrating Horde key...');
             writeSecret(SECRET_KEYS.HORDE, hordeKey);
             delete settings.horde_settings.api_key;
+            modified = true;
+        }
+
+        if (typeof poeKey === 'string') {
+            console.log('Migrating Poe key...');
+            writeSecret(SECRET_KEYS.POE, poeKey);
+            delete settings.poe_settings.token;
             modified = true;
         }
 

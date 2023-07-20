@@ -1,0 +1,90 @@
+query BotSwitcherModalQuery {
+  viewer {
+    ...BotSwitcherModalInner_viewer
+    id
+  }
+}
+
+fragment BotHeader_bot on Bot {
+  displayName
+  isLimitedAccess
+  ...BotImage_bot
+  ...BotLink_bot
+  ...IdAnnotation_node
+  ...botHelpers_useViewerCanAccessPrivateBot
+  ...botHelpers_useDeletion_bot
+}
+
+fragment BotHeader_viewer on Viewer {
+  hasActiveSubscription
+}
+
+fragment BotImage_bot on Bot {
+  displayName
+  ...botHelpers_useDeletion_bot
+  ...BotImage_useProfileImage_bot
+}
+
+fragment BotImage_useProfileImage_bot on Bot {
+  image {
+    __typename
+    ... on LocalBotImage {
+      localName
+    }
+    ... on UrlBotImage {
+      url
+    }
+  }
+  ...botHelpers_useDeletion_bot
+}
+
+fragment BotLink_bot on Bot {
+  handle
+}
+
+fragment BotNavItem_bot on Bot {
+  botId
+  handle
+  id
+  ...BotHeader_bot
+}
+
+fragment BotNavItem_viewer on Viewer {
+  ...BotHeader_viewer
+}
+
+fragment BotSwitcherModalInner_viewer on Viewer {
+  ...BotNavItem_viewer
+  availableBotsConnection(first: 99) {
+    edges {
+      node {
+        id
+        handle
+        ...BotNavItem_bot
+        __typename
+      }
+      cursor
+      id
+    }
+    pageInfo {
+      endCursor
+      hasNextPage
+    }
+    id
+  }
+}
+
+fragment IdAnnotation_node on Node {
+  __isNode: __typename
+  id
+}
+
+fragment botHelpers_useDeletion_bot on Bot {
+  deletionState
+}
+
+fragment botHelpers_useViewerCanAccessPrivateBot on Bot {
+  isPrivateBot
+  viewerIsCreator
+  isSystemBot
+}

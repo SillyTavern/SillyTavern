@@ -1,0 +1,115 @@
+subscription subscriptions_messageAdded_Subscription(
+  $chatId: BigInt!
+) {
+  messageAdded(chatId: $chatId) {
+    id
+    messageId
+    creationTime
+    clientNonce
+    state
+    ...ChatMessage_message
+    ...chatHelpers_isBotMessage
+  }
+}
+
+fragment ChatMessageDownvotedButton_message on Message {
+  ...MessageFeedbackReasonModal_message
+  ...MessageFeedbackOtherModal_message
+}
+
+fragment ChatMessageDropdownMenu_message on Message {
+  id
+  messageId
+  vote
+  text
+  author
+  ...chatHelpers_isBotMessage
+}
+
+fragment ChatMessageFeedbackButtons_message on Message {
+  id
+  messageId
+  vote
+  voteReason
+  ...ChatMessageDownvotedButton_message
+}
+
+fragment ChatMessageOverflowButton_message on Message {
+  text
+  ...ChatMessageDropdownMenu_message
+  ...chatHelpers_isBotMessage
+}
+
+fragment ChatMessageSuggestedReplies_SuggestedReplyButton_message on Message {
+  messageId
+}
+
+fragment ChatMessageSuggestedReplies_message on Message {
+  suggestedReplies
+  author
+  ...ChatMessageSuggestedReplies_SuggestedReplyButton_message
+}
+
+fragment ChatMessage_message on Message {
+  id
+  messageId
+  text
+  author
+  linkifiedText
+  state
+  contentType
+  ...ChatMessageSuggestedReplies_message
+  ...ChatMessageFeedbackButtons_message
+  ...ChatMessageOverflowButton_message
+  ...chatHelpers_isHumanMessage
+  ...chatHelpers_isBotMessage
+  ...chatHelpers_isChatBreak
+  ...chatHelpers_useTimeoutLevel
+  ...MarkdownLinkInner_message
+  ...IdAnnotation_node
+}
+
+fragment IdAnnotation_node on Node {
+  __isNode: __typename
+  id
+}
+
+fragment MarkdownLinkInner_message on Message {
+  messageId
+}
+
+fragment MessageFeedbackOtherModal_message on Message {
+  id
+  messageId
+}
+
+fragment MessageFeedbackReasonModal_message on Message {
+  id
+  messageId
+}
+
+fragment chatHelpers_isBotMessage on Message {
+  ...chatHelpers_isHumanMessage
+  ...chatHelpers_isChatBreak
+}
+
+fragment chatHelpers_isChatBreak on Message {
+  author
+}
+
+fragment chatHelpers_isHumanMessage on Message {
+  author
+}
+
+fragment chatHelpers_useTimeoutLevel on Message {
+  id
+  state
+  text
+  messageId
+  author
+  chat {
+    chatId
+    defaultBotNickname
+    id
+  }
+}
