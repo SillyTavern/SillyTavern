@@ -104,6 +104,10 @@ body {
     scrollbar-gutter: stable;
 }
 
+.scrollY {
+    overflow-y: auto;
+}
+
 ::-webkit-scrollbar-thumb {
     background-color: var(--grey7070a);
     box-shadow: inset 0 0 0 1px var(--black50a);
