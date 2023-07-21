@@ -506,7 +506,7 @@ function populateDialogueExamples(prompts, chatCompletion) {
  * @param {string} options.type - The type of the chat, can be 'impersonate'.
  */
 function populateChatCompletion (prompts, chatCompletion, {bias, quietPrompt, type, cyclePrompt} = {}) {
-    // Helper function for the recurring task of preparing a prompt for the chat completion
+    // Helper function for preparing a prompt, that already exists within the prompt collection, for completion
     const addToChatCompletion = (source, target = null) => {
         // We need the prompts array to determine a position for the source.
         if (false === prompts.has(source)) return;
@@ -563,7 +563,7 @@ function populateChatCompletion (prompts, chatCompletion, {bias, quietPrompt, ty
     if (prompts.has('authorsNote')) {
         const authorsNote = Message.fromPrompt(prompts.get('authorsNote'));
 
-        // ToDo: This should not be retrieved from the ui during runtime
+        // ToDo: Ideally this should not be retrieved here but already be referenced in some configuration object
         const afterScenario = document.querySelector('input[name="extension_floating_position"]').checked;
 
         // Add authors notes
