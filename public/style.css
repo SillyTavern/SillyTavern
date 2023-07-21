@@ -1618,7 +1618,8 @@ body.big-avatars .ch_description {
 }
 
 .bg_example {
-    width: 23%;
+    width: 30%;
+    max-width: 200px;
     background-repeat: no-repeat;
     background-size: cover;
     background-position: center;
