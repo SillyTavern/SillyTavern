@@ -695,12 +695,10 @@ function saveModelList(data) {
         $('#model_openrouter_select').empty();
         $('#model_openrouter_select').append($('<option>', { value: openrouter_website_model, text: 'Use OpenRouter website setting' }));
         model_list.forEach((model) => {
-            const selected = model.id == oai_settings.openrouter_model;
             $('#model_openrouter_select').append(
                 $('<option>', {
                     value: model.id,
                     text: model.id,
-                    selected: selected,
                 }));
         });
         $('#model_openrouter_select').val(oai_settings.openrouter_model).trigger('change');
@@ -709,12 +707,10 @@ function saveModelList(data) {
     if (oai_settings.chat_completion_source == chat_completion_sources.OPENAI) {
         $('#openai_external_category').empty();
         model_list.forEach((model) => {
-            const selected = model.id == oai_settings.openai_model && oai_settings.show_external_models;
             $('#openai_external_category').append(
                 $('<option>', {
                     value: model.id,
                     text: model.id,
-                    selected: selected,
                 }));
         });
         // If the selected model is not in the list, revert to default
