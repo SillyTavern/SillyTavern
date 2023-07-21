@@ -43,7 +43,7 @@ export {
     send_on_enter_options,
 };
 
-const MAX_CONTEXT_DEFAULT = 2048;
+const MAX_CONTEXT_DEFAULT = 4096;
 const MAX_CONTEXT_UNLOCKED = 65536;
 
 const avatar_styles = {
