@@ -144,8 +144,8 @@ An easy-to-follow guide with pretty pictures:
   5. Open a Command Prompt inside that folder by clicking in the 'Address Bar' at the top, typing `cmd`, and pressing Enter.
   6. Once the black box (Command Prompt) pops up, type ONE of the following into it and press Enter:
 
-* for Main Branch: `git clone https://github.com/SillyTavern/SillyTavern -b main`
-* for Dev Branch: `git clone https://github.com/SillyTavern/SillyTavern -b dev`
+* for Release Branch: `git clone https://github.com/SillyTavern/SillyTavern -b release`
+* for Staging Branch: `git clone https://github.com/SillyTavern/SillyTavern -b staging`
 
   7. Once everything is cloned, double-click `Start.bat` to make NodeJS install its requirements.
   8. The server will then start, and SillyTavern will pop up in your browser.
