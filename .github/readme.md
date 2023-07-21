@@ -304,4 +304,5 @@ GNU Affero General Public License for more details.**
 * Linux startup script by AlpinDale
 * Thanks paniphons for providing a FAQ document
 * 10K Discord Users Celebratory Background by @kallmeflocc
+* Default content (characters and lore books) provided by @OtisAlejandro, @RossAscends and @kallmeflocc
 * Korean translation by @doloroushyeonse

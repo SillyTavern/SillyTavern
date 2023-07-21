@@ -1,0 +1,22 @@
+[
+    {
+        "filename": "default_Seraphina.png",
+        "type": "character"
+    },
+    {
+        "filename": "default_CodingSensei.png",
+        "type": "character"
+    },
+    {
+        "filename": "default_FluxTheCat.png",
+        "type": "character"
+    },
+    {
+        "filename": "Seraphina",
+        "type": "sprites"
+    },
+    {
+        "filename": "Eldoria.json",
+        "type": "world"
+    }
+]

@@ -71,6 +71,7 @@ const multer = require("multer");
 const http = require("http");
 const https = require('https');
 const basicAuthMiddleware = require('./src/middleware/basicAuthMiddleware');
+const contentManager = require('./src/content-manager');
 const extract = require('png-chunks-extract');
 const encode = require('png-chunks-encode');
 const PNGtext = require('png-chunk-text');
@@ -3446,6 +3447,7 @@ const setupTasks = async function () {
     migrateSecrets();
     ensurePublicDirectoriesExist();
     await ensureThumbnailCache();
+    contentManager.checkForNewContent();
 
     // Colab users could run the embedded tool
     if (!is_colab) await convertWebp();

@@ -281,10 +281,19 @@
         {
             "id": "1345561466591",
             "name": "ST Default",
-            "color": "rgba(5, 75, 150, 1)"
+            "color": "rgba(108, 32, 32, 1)"
         }
     ],
     "tag_map": {
+        "default_FluxTheCat.png": [
+            "1345561466591"
+        ],
+        "default_Seraphina.png": [
+            "1345561466591"
+        ],
+        "default_CodingSensei.png": [
+            "1345561466591"
+        ]
     },
     "temp_novel": 1.11,
     "rep_pen_novel": 1.11,
@@ -319,7 +328,7 @@
     "pres_pen_openai": 0.7,
     "top_p_openai": 1,
     "top_k_openai": 0,
-    "stream_openai": false,
+    "stream_openai": true,
     "openai_max_context": 4095,
     "openai_max_tokens": 300,
     "nsfw_toggle": true,
