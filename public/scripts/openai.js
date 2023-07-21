@@ -1354,26 +1354,6 @@ async function saveOpenAIPreset(name, settings) {
     }
 }
 
-async function showApiKeyUsage() {
-    try {
-        const response = await fetch('/openai_usage', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            const text = `<h3>Total usage this month: $${Number(data.total_usage / 100).toFixed(2)}</h3>
-                          <a href="https://platform.openai.com/account/usage" target="_blank">Learn more (OpenAI platform website)</a>`;
-            callPopup(text, 'text');
-        }
-    }
-    catch (err) {
-        console.error(err);
-        toastr.error('Invalid API key');
-    }
-}
-
 function onLogitBiasPresetChange() {
     const value = $('#openai_logit_bias_preset').find(':selected').val();
     const preset = oai_settings.bias_presets[value];
@@ -2231,7 +2211,6 @@ $(document).ready(function () {
     $("#settings_perset_openai").on("change", onSettingsPresetChange);
     $("#new_oai_preset").on("click", onNewPresetClick);
     $("#delete_oai_preset").on("click", onDeletePresetClick);
-    $("#openai_api_usage").on("click", showApiKeyUsage);
     $("#openai_logit_bias_preset").on("change", onLogitBiasPresetChange);
     $("#openai_logit_bias_new_preset").on("click", createNewLogitBiasPreset);
     $("#openai_logit_bias_new_entry").on("click", createNewLogitBiasEntry);

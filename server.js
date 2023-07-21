@@ -2927,7 +2927,8 @@ app.post("/openai_bias", jsonParser, async function (request, response) {
     return response.send(result);
 });
 
-// Shamelessly stolen from Agnai
+// TODO: Dead code, consider deleting. Users will get redirected to OpenAI site instead.
+// 'Your request to GET /v1/dashboard/billing/usage must be made with a session key (that is, it can only be made from the browser). You made it with the following key type: secret.'
 app.post("/openai_usage", jsonParser, async function (request, response) {
     if (!request.body) return response.sendStatus(400);
     const key = readSecret(SECRET_KEYS.OPENAI);
@@ -2958,7 +2959,8 @@ app.post("/openai_usage", jsonParser, async function (request, response) {
         );
         return response.send(res);
     }
-    catch {
+    catch (error) {
+        console.log(error);
         return response.sendStatus(400);
     }
 });
