@@ -1,3 +1,5 @@
+**dev branch is deprecated and won't be updated. Please migrate to the staging branch using the instructions: https://docs.sillytavern.app/usage/branches/**
+
 ![image](https://github.com/SillyTavern/SillyTavern/assets/18619528/8c41a061-7f72-4d2b-9d54-e6d058209e7b)
 
 Mobile-friendly, Multi-API (KoboldAI/CPP, Horde, NovelAI, Ooba, OpenAI+proxies, WindowAI(Claude!)), VN-like Waifu Mode, Horde SD, System TTS, WorldInfo (lorebooks), customizable UI, auto-translate, and more prompt options than you'd ever want or need. Optional Extras server for more SD/TTS options + ChromaDB/Summarize.
@@ -144,8 +146,8 @@ An easy-to-follow guide with pretty pictures:
   5. Open a Command Prompt inside that folder by clicking in the 'Address Bar' at the top, typing `cmd`, and pressing Enter.
   6. Once the black box (Command Prompt) pops up, type ONE of the following into it and press Enter:
 
-* for Main Branch: `git clone https://github.com/SillyTavern/SillyTavern -b main`
-* for Dev Branch: `git clone https://github.com/SillyTavern/SillyTavern -b dev`
+* for Release Branch: `git clone https://github.com/SillyTavern/SillyTavern -b release`
+* for Staging Branch: `git clone https://github.com/SillyTavern/SillyTavern -b staging`
 
   7. Once everything is cloned, double-click `Start.bat` to make NodeJS install its requirements.
   8. The server will then start, and SillyTavern will pop up in your browser.
