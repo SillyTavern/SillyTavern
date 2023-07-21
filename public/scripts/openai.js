@@ -141,6 +141,7 @@ const default_settings = {
     chat_completion_source: chat_completion_sources.OPENAI,
     max_context_unlocked: false,
     api_url_scale: '',
+    show_external_models: false,
 };
 
 const oai_settings = {
@@ -176,6 +177,7 @@ const oai_settings = {
     chat_completion_source: chat_completion_sources.OPENAI,
     max_context_unlocked: false,
     api_url_scale: '',
+    show_external_models: false,
 };
 
 let openai_setting_names;
@@ -687,6 +689,7 @@ function getChatCompletionModel() {
 
 function saveModelList(data) {
     model_list = data.map((model) => ({ id: model.id, context_length: model.context_length }));
+    model_list.sort((a, b) => a?.id && b?.id && a.id.localeCompare(b.id));
 
     if (oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER) {
         $('#model_openrouter_select').empty();
@@ -703,7 +706,24 @@ function saveModelList(data) {
         $('#model_openrouter_select').val(oai_settings.openrouter_model).trigger('change');
     }
 
-    // TODO Add ability to select OpenAI model from endpoint-provided list
+    if (oai_settings.chat_completion_source == chat_completion_sources.OPENAI) {
+        $('#openai_external_category').empty();
+        model_list.forEach((model) => {
+            const selected = model.id == oai_settings.openai_model && oai_settings.show_external_models;
+            $('#openai_external_category').append(
+                $('<option>', {
+                    value: model.id,
+                    text: model.id,
+                    selected: selected,
+                }));
+        });
+        // If the selected model is not in the list, revert to default
+        if (oai_settings.show_external_models && model_list.find((model) => model.id == oai_settings.openai_model)) {
+            $('#model_openai_select').val(oai_settings.openai_model).trigger('change');
+        } else {
+            $('#model_openai_select').val(default_settings.openai_model).trigger('change');
+        }
+    }
 }
 
 async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
@@ -1088,6 +1108,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.openrouter_model = settings.openrouter_model ?? default_settings.openrouter_model;
     oai_settings.chat_completion_source = settings.chat_completion_source ?? default_settings.chat_completion_source;
     oai_settings.api_url_scale = settings.api_url_scale ?? default_settings.api_url_scale;
+    oai_settings.show_external_models = settings.show_external_models ?? default_settings.show_external_models;
 
     if (settings.nsfw_toggle !== undefined) oai_settings.nsfw_toggle = !!settings.nsfw_toggle;
     if (settings.keep_example_dialogue !== undefined) oai_settings.keep_example_dialogue = !!settings.keep_example_dialogue;
@@ -1119,6 +1140,8 @@ function loadOpenAISettings(data, settings) {
     $('#nsfw_first').prop('checked', oai_settings.nsfw_first);
     $('#jailbreak_system').prop('checked', oai_settings.jailbreak_system);
     $('#legacy_streaming').prop('checked', oai_settings.legacy_streaming);
+    $('#openai_show_external_models').prop('checked', oai_settings.show_external_models);
+    $('#openai_external_category').toggle(oai_settings.show_external_models);
 
     if (settings.main_prompt !== undefined) oai_settings.main_prompt = settings.main_prompt;
     if (settings.nsfw_prompt !== undefined) oai_settings.nsfw_prompt = settings.nsfw_prompt;
@@ -1298,6 +1321,7 @@ async function saveOpenAIPreset(name, settings) {
         wi_format: settings.wi_format,
         stream_openai: settings.stream_openai,
         api_url_scale: settings.api_url_scale,
+        show_external_models: settings.show_external_models,
     };
 
     const savePresetSettings = await fetch(`/savepreset_openai?name=${name}`, {
@@ -1649,6 +1673,7 @@ function onSettingsPresetChange() {
         wi_format: ['#wi_format_textarea', 'wi_format', false],
         stream_openai: ['#stream_toggle', 'stream_openai', true],
         api_url_scale: ['#api_url_scale', 'api_url_scale', false],
+        show_external_models: ['#openai_show_external_models', 'show_external_models', true],
     };
 
     for (const [key, [selector, setting, isCheckbox]] of Object.entries(settingsToUpdate)) {
@@ -1943,7 +1968,12 @@ function toggleChatCompletionForms() {
         $('#model_claude_select').trigger('change');
     }
     else if (oai_settings.chat_completion_source == chat_completion_sources.OPENAI) {
-        $('#model_openai_select').trigger('change');
+        if (oai_settings.show_external_models && (!Array.isArray(model_list) || model_list.length == 0)) {
+            // Wait until the models list is loaded so that we could show a proper saved model
+        }
+        else {
+            $('#model_openai_select').trigger('change');
+        }
     }
     else if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
         $('#model_windowai_select').trigger('change');
@@ -2182,6 +2212,12 @@ $(document).ready(function () {
 
     $('#api_url_scale').on('input', function () {
         oai_settings.api_url_scale = $(this).val();
+        saveSettingsDebounced();
+    });
+
+    $('#openai_show_external_models').on('input', function () {
+        oai_settings.show_external_models = !!$(this).prop('checked');
+        $('#openai_external_category').toggle(oai_settings.show_external_models);
         saveSettingsDebounced();
     });
 
