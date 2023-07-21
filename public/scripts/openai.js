@@ -506,7 +506,7 @@ function populateDialogueExamples(prompts, chatCompletion) {
  * @param {string} options.type - The type of the chat, can be 'impersonate'.
  */
 function populateChatCompletion (prompts, chatCompletion, {bias, quietPrompt, type, cyclePrompt} = {}) {
-    //Helper function for the recurring task of preparing a prompt for the chat completion
+    // Helper function for the recurring task of preparing a prompt for the chat completion
     const addToChatCompletion = (source, target = null) => {
         // We need the prompts array to determine a position for the source.
         if (false === prompts.has(source)) return;
@@ -773,9 +773,8 @@ function prepareOpenAIMessages({
             chatCompletion.log(error);
         }
     } finally {
-        const messages = chatCompletion.getMessages();
-        if (null === promptManager.error) promptManager.populateTokenHandler(messages);
-        promptManager.setMessages(messages);
+        // Pass chat completion to prompt manager for inspection
+        promptManager.setChatCompletion(chatCompletion);
 
         // All information are up-to-date, render.
         if (false === dryRun) promptManager.render(false);

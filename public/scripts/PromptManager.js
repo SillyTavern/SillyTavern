@@ -976,28 +976,52 @@ PromptManagerModule.prototype.getPromptCollection = function () {
 /**
  * Setter for messages property
  *
- * @param messages
+ * @param {MessageCollection} messages
  */
 PromptManagerModule.prototype.setMessages = function (messages) {
     this.messages = messages;
 };
 
 /**
+ * Set and process a finished chat completion object
+ *
+ * @param {ChatCompletion} chatCompletion
+ */
+PromptManagerModule.prototype.setChatCompletion = function(chatCompletion) {
+    const messages = chatCompletion.getMessages();
+
+    this.setMessages(messages);
+    this.populateTokenCounts(messages);
+    this.populateLegacyTokenCounts(messages);
+}
+
+/**
  * Populates the token handler
  *
- * @param messageCollection
+ * @param {MessageCollection} messages
  */
-PromptManagerModule.prototype.populateTokenHandler = function(messageCollection) {
+PromptManagerModule.prototype.populateTokenCounts = function(messages) {
     this.tokenHandler.resetCounts();
     const counts = this.tokenHandler.getCounts();
-    messageCollection.getCollection().forEach(message => {
+    messages.getCollection().forEach(message => {
         counts[message.identifier] = message.getTokens();
     });
 
     this.tokenUsage = this.tokenHandler.getTotal();
 
+    this.log('Updated token usage with ' + this.tokenUsage);
+}
+
+/**
+ * Populates legacy token counts
+ *
+ * @deprecated This might serve no purpose and should be evaluated for removal
+ *
+ * @param {MessageCollection} messages
+ */
+PromptManagerModule.prototype.populateLegacyTokenCounts = function(messages) {
     // Update general token counts
-    const chatHistory = messageCollection.getItemByIdentifier('chatHistory');
+    const chatHistory = messages.getItemByIdentifier('chatHistory');
     const startChat = chatHistory?.getCollection()[0].getTokens() || 0;
     const continueNudge = chatHistory?.getCollection().find(message => message.identifier === 'continueNudge')?.getTokens() || 0;
 
@@ -1014,8 +1038,6 @@ PromptManagerModule.prototype.populateTokenHandler = function(messageCollection)
             'conversation': this.tokenHandler.counts.chatHistory ?? 0,
         }
     };
-
-    this.log('Updated token cache with ' + this.tokenUsage);
 }
 
 /**
