@@ -718,10 +718,9 @@ function saveModelList(data) {
                 }));
         });
         // If the selected model is not in the list, revert to default
-        if (oai_settings.show_external_models && model_list.find((model) => model.id == oai_settings.openai_model)) {
-            $('#model_openai_select').val(oai_settings.openai_model).trigger('change');
-        } else {
-            $('#model_openai_select').val(default_settings.openai_model).trigger('change');
+        if (oai_settings.show_external_models) {
+            const model = model_list.findIndex((model) => model.id == oai_settings.openai_model) !== -1 ? oai_settings.openai_model : default_settings.openai_model;
+            $('#model_openai_select').val(model).trigger('change');
         }
     }
 }
