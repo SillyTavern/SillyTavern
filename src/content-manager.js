@@ -65,6 +65,10 @@ function getTargetByType(type) {
             return 'public/worlds';
         case 'sound':
             return 'public/sounds';
+        case 'avatar':
+            return 'public/User Avatars';
+        case 'theme':
+            return 'public/themes';
         default:
             return null;
     }

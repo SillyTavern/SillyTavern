@@ -24,3 +24,4 @@ secrets.json
 /dist
 /backups/
 public/movingUI/
+content.log

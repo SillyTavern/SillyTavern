@@ -18,5 +18,9 @@
     {
         "filename": "Eldoria.json",
         "type": "world"
+    },
+    {
+        "filename": "user-default.png",
+        "type": "avatar"
     }
 ]

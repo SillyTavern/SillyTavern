@@ -270,7 +270,7 @@ let itemizedPrompts = [];
 
 /* let bg_menu_toggle = false; */
 export const systemUserName = "SillyTavern System";
-let default_user_name = "You";
+let default_user_name = "User";
 let name1 = default_user_name;
 let name2 = "SillyTavern System";
 let chat = [];
@@ -284,6 +284,7 @@ let safetychat = [
     },
 ];
 let chat_create_date = 0;
+let firstRun = false;
 
 const default_ch_mes = "Hello";
 let count_view_mes = 0;
@@ -4816,6 +4817,21 @@ eventSource.on(event_types.CHAT_CHANGED, () => {
     updateUserLockIcon();
 });
 
+async function doOnboarding(avatarId) {
+    const template = $('#onboarding_template .onboarding');
+    const userName = await callPopup(template, 'input', name1);
+
+    if (userName) {
+        setUserName(userName);
+        console.log(`Binding persona ${avatarId} to name ${userName}`);
+        power_user.personas[avatarId] = userName;
+        power_user.persona_descriptions[avatarId] = {
+            description: '',
+            position: persona_description_positions.BEFORE_CHAR,
+        };
+    }
+}
+
 //***************SETTINGS****************//
 ///////////////////////////////////////////
 async function getSettings(type) {
@@ -4834,11 +4850,9 @@ async function getSettings(type) {
     const data = await response.json();
     if (data.result != "file not find" && data.settings) {
         settings = JSON.parse(data.settings);
-        if (settings.username !== undefined) {
-            if (settings.username !== "") {
-                name1 = settings.username;
-                $("#your_name").val(name1);
-            }
+        if (settings.username !== undefined && settings.username !== "") {
+            name1 = settings.username;
+            $("#your_name").val(name1);
         }
 
         //Load KoboldAI settings
@@ -4959,6 +4973,13 @@ async function getSettings(type) {
         //Load User's Name and Avatar
 
         user_avatar = settings.user_avatar;
+        firstRun = !!settings.firstRun;
+
+        if (firstRun) {
+            await doOnboarding(user_avatar);
+            firstRun = false;
+        }
+
         reloadUserAvatar();
         highlightSelectedAvatar();
         setPersonaDescription();
@@ -5001,6 +5022,7 @@ async function saveSettings(type) {
         type: "POST",
         url: "/savesettings",
         data: JSON.stringify({
+            firstRun: firstRun,
             username: name1,
             api_server: api_server,
             api_server_textgenerationwebui: api_server_textgenerationwebui,
