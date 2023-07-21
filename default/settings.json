@@ -6,7 +6,7 @@
     "user_avatar": "legat.png",
     "amount_gen": 250,
     "max_context": 2048,
-    "main_api": "openai",
+    "main_api": "koboldhorde",
     "world_info": {
         "globalSelect": []
     },
@@ -368,7 +368,7 @@
     "claude_model": "claude-instant-v1",
     "windowai_model": "",
     "openrouter_model": "OR_Website",
-    "jailbreak_system": false,
+    "jailbreak_system": true,
     "reverse_proxy": "",
     "legacy_streaming": false,
     "chat_completion_source": "openai",
