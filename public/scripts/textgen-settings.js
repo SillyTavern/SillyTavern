@@ -21,6 +21,7 @@ let textgenerationwebui_settings = {
     eta_cutoff: 0,
     typical_p: 1,
     rep_pen: 1.2,
+    rep_pen_range: 0,
     no_repeat_ngram_size: 0,
     penalty_alpha: 0,
     num_beams: 1,
@@ -49,6 +50,7 @@ let textgenerationwebui_preset_names = [];
 const setting_names = [
     "temp",
     "rep_pen",
+    "rep_pen_range",
     "no_repeat_ngram_size",
     "top_k",
     "top_p",
@@ -212,6 +214,7 @@ export function getTextGenGenerationData(finalPromt, this_amount_gen, isImperson
         'top_p': textgenerationwebui_settings.top_p,
         'typical_p': textgenerationwebui_settings.typical_p,
         'repetition_penalty': textgenerationwebui_settings.rep_pen,
+        'repetition_penalty_range': textgenerationwebui_settings.rep_pen_range,
         'encoder_repetition_penalty': textgenerationwebui_settings.encoder_rep_pen,
         'top_k': textgenerationwebui_settings.top_k,
         'min_length': textgenerationwebui_settings.min_length,
