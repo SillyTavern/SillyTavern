@@ -137,7 +137,7 @@
                                         <span class="note-link-span">?</span>
                                     </a>
                                 </h3>
-                                <select id="settings_perset">
+                                <select id="settings_perset" data-preset-manager-for="kobold,koboldhorde">
                                     <option value="gui" data-i18n="guikoboldaisettings">GUI KoboldAI Settings</option>
                                 </select>
                             </div>
@@ -148,7 +148,7 @@
                                         <span class="note-link-span">?</span>
                                     </a>
                                 </h3>
-                                <select id="settings_perset_novel">
+                                <select id="settings_perset_novel" data-preset-manager-for="novel">
                                     <option value="gui" data-i18n="default">Default</option>
                                 </select>
                             </div>
@@ -171,7 +171,7 @@
                             <div id="textgenerationwebui_api-presets">
                                 <h3><span data-i18n="text gen webio(ooba)preset">Text Gen WebUI (ooba) presets</span>
                                 </h3>
-                                <select id="settings_preset_textgenerationwebui">
+                                <select id="settings_preset_textgenerationwebui" data-preset-manager-for="textgenerationwebui">
                                 </select>
                             </div>
                             <hr>
@@ -777,6 +777,81 @@
                                 </div>
                             </div>
                             <div id="novel_api-settings">
+                                <div class="range-block">
+                                    <div class="range-block-title" data-i18n="Top P">
+                                        Top P
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="top_p_novel" name="volume" min="0" max="1" step="0.01">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="top_p_novel" id="top_p_counter_novel">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title" data-i18n="Top A">
+                                        Top A
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="top_a_novel" name="volume" min="0" max="1" step="0.01">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="top_a_novel" id="top_a_counter_novel">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title" data-i18n="Top K">
+                                        Top K
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="top_k_novel" name="volume" min="0" max="300" step="1">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="top_k_novel" id="top_k_counter_novel">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title" data-i18n="Typical P">
+                                        Typical P
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="typical_p_novel" name="volume" min="0" max="1" step="0.01">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="typical_p_novel" id="typical_p_counter_novel">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title" data-i18n="Min Length">
+                                        Min Length
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="min_length_novel" name="volume" min="0" max="1024" step="1">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="min_length_novel" id="min_length_counter_novel">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             <div id="textgenerationwebui_api-settings">
                                 <div class="range-block">

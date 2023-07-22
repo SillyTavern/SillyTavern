@@ -6,6 +6,7 @@
   "top_k": 79,
   "top_p": 0.95,
   "top_a": 0.075,
+  "typical_p": 1,
   "tail_free_sampling": 0.989,
   "repetition_penalty": 1.5,
   "repetition_penalty_range": 8192,

@@ -11,7 +11,7 @@ export {
     generateTextGenWithStreaming,
 }
 
-let textgenerationwebui_settings = {
+const textgenerationwebui_settings = {
     temp: 0.7,
     top_p: 0.5,
     top_k: 40,

@@ -4918,11 +4918,6 @@ async function getSettings(type) {
         novelai_setting_names = {};
         novelai_setting_names = arr_holder;
 
-        nai_settings.preset_settings_novel = settings.preset_settings_novel;
-        $(
-            `#settings_perset_novel option[value=${novelai_setting_names[nai_settings.preset_settings_novel]}]`
-        ).attr("selected", "true");
-
         //Load AI model config settings
 
         amount_gen = settings.amount_gen;
@@ -4935,10 +4930,11 @@ async function getSettings(type) {
         showSwipeButtons();
 
         // Kobold
-        loadKoboldSettings(settings);
+        loadKoboldSettings(settings.kai_settings ?? settings);
 
         // Novel
-        loadNovelSettings(settings);
+        loadNovelSettings(settings.nai_settings ?? settings);
+        $(`#settings_perset_novel option[value=${novelai_setting_names[nai_settings.preset_settings_novel]}]`).attr("selected", "true");
 
         // TextGen
         loadTextGenSettings(data, settings);
@@ -5058,8 +5054,8 @@ async function saveSettings(type) {
             context_settings: context_settings,
             tags: tags,
             tag_map: tag_map,
-            ...nai_settings,
-            ...kai_settings,
+            nai_settings: nai_settings,
+            kai_settings: kai_settings,
             ...oai_settings,
         }, null, 4),
         beforeSend: function () {
