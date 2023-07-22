@@ -377,7 +377,7 @@ function waitForMutation(element) {
 }
 
 async function sendMessage(prompt, withStreaming, withSuggestions, signal) {
-    console.log(prompt);
+    //console.log(prompt);
     const poe_send_box = document.getElementById('poeSendBox');
     poe_send_box.innerText = prompt;
 
