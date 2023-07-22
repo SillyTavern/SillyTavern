@@ -1,6 +1,6 @@
 {
     "name": "Llama 2",
-    "system_prompt": "Write {{user}}'s next reply in this fictional roleplay with {{char}}.\n<</SYS>>\n",
+    "system_prompt": "Write {{char}}'s next reply in this fictional roleplay with {{user}}.\n<</SYS>>\n",
     "system_sequence": "[INST] <<SYS>>\n",
     "stop_sequence": "",
     "input_sequence": "[INST]",
