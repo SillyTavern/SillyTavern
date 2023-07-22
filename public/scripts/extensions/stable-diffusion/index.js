@@ -241,6 +241,7 @@ function onChatChanged() {
 function onCharacterPromptInput() {
     const key = getCharaFilename(this_chid);
     extension_settings.sd.character_prompts[key] = $('#sd_character_prompt').val();
+    resetScrollHeight($(this));
     saveSettingsDebounced();
 }
 
@@ -958,6 +959,7 @@ jQuery(async () => {
     $('.sd_settings .inline-drawer-toggle').on('click', function () {
         initScrollHeight($("#sd_prompt_prefix"));
         initScrollHeight($("#sd_negative_prompt"));
+        initScrollHeight($("#sd_character_prompt"));
     })
 
     eventSource.on(event_types.EXTRAS_CONNECTED, async () => {
