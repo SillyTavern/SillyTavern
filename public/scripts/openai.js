@@ -759,7 +759,7 @@ function prepareOpenAIMessages({
     chatCompletion.setTokenBudget(userSettings.openai_max_context, userSettings.openai_max_tokens);
 
     try {
-        // Merge ordered user prompts and markers with system prompts
+        // Populate markers, merge markers and ordered user prompts with system prompts
         const prompts = preparePromptsForChatCompletion(Scenario, charPersonality, name2, worldInfoBefore, worldInfoAfter, charDescription, quietPrompt, bias, extensionPrompts);
 
         // Fill the chat completion with as much context as the budget allows
@@ -791,32 +791,6 @@ function prepareOpenAIMessages({
 
     return [chat, promptManager.tokenHandler.counts];
 }
-
-function getGroupMembers(activeGroup) {
-    const groupMembers = activeGroup.find(x => x.id === selected_group)?.members;
-    let names = '';
-    if (Array.isArray(groupMembers)) {
-        names = groupMembers.map(member => characters.find(c => c.avatar === member)).filter(x => x).map(x => x.name);
-        names = names.join(', ')
-    }
-
-        // recount tokens for new start message
-        total_count -= start_chat_count
-        handler_instance.uncount(start_chat_count, 'start_chat');
-        start_chat_count = handler_instance.count([new_chat_msg], true);
-        await delay(1);
-        total_count += start_chat_count;
-    }
-
-    const jailbreak = power_user.prefer_character_jailbreak && jailbreakPrompt ? jailbreakPrompt : oai_settings.jailbreak_prompt;
-    if (oai_settings.jailbreak_system && jailbreak) {
-        const jbContent = substituteParams(jailbreak, name1, name2, oai_settings.jailbreak_prompt).replace(/\r/gm, '').trim();
-        const jailbreakMessage = { "role": "system", "content": jbContent };
-        openai_msgs.push(jailbreakMessage);
-
-        total_count += handler_instance.count([impersonateMessage], true, 'impersonate');
-        await delay(1);
-    }
 
 function tryParseStreamingError(response, decoded) {
     try {
