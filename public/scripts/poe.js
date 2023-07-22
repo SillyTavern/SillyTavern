@@ -383,7 +383,7 @@ async function sendMessage(prompt, withStreaming, withSuggestions, signal) {
 
     const poe_receive_box = document.getElementById('poeReceiveBox');
     await waitForMutation(poe_receive_box);
-    return poe_receive_box.innerText;
+    return poe_receive_box.innerText.replace(/<br>/g, '\n\n');
     //var extensionID = 'ifbeoecldhghalcieaffnedaikcnpebl';
     //window.postMessage({ type: "REQUEST_INJECTION" }, "*");
     //window.postMessage({ type: "FROM_PAGE", text: prompt }, "*");
