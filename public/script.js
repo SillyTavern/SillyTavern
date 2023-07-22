@@ -3151,6 +3151,13 @@ async function DupeChar() {
         return;
     }
 
+    const confirm = await callPopup('Are you sure you want to duplicate this character?', 'confirm');
+
+    if (!confirm) {
+        console.log('User cancelled duplication');
+        return;
+    }
+
     const body = { avatar_url: characters[this_chid].avatar };
     const response = await fetch('/dupecharacter', {
         method: 'POST',
@@ -8240,17 +8247,7 @@ $(document).ready(function () {
     });
 
     $("#dupe_button").click(async function () {
-
-        const body = { avatar_url: characters[this_chid].avatar };
-        const response = await fetch('/dupecharacter', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            body: JSON.stringify(body),
-        });
-        if (response.ok) {
-            toastr.success("Character Duplicated");
-            getCharacters();
-        }
+        await DupeChar();
     });
 
     $(document).on("click", ".select_chat_block, .bookmark_link, .mes_bookmark", async function () {
