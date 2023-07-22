@@ -8,7 +8,8 @@ import {
     getRequestHeaders,
     event_types,
     eventSource,
-    appendImageToMessage
+    appendImageToMessage,
+    generateQuietPrompt
 } from "../../../script.js";
 import { getApiUrl, getContext, extension_settings, doExtrasFetch, modules } from "../../extensions.js";
 import { stringFormat, initScrollHeight, resetScrollHeight, timestampToMoment } from "../../utils.js";
@@ -39,6 +40,15 @@ const generationMode = {
     FREE: 6,
 }
 
+const modeLabels = {
+    [generationMode.CHARACTER]: 'Character ("Yourself")',
+    [generationMode.FACE]: 'Portrait ("Your Face")',
+    [generationMode.USER]: 'User ("Me")',
+    [generationMode.SCENARIO]: 'Scenario ("The Whole Story")',
+    [generationMode.NOW]: 'Last Message',
+    [generationMode.RAW_LAST]: 'Raw Last Message',
+}
+
 const triggerWords = {
     [generationMode.CHARACTER]: ['you'],
     [generationMode.USER]: ['me'],
@@ -48,7 +58,7 @@ const triggerWords = {
     [generationMode.FACE]: ['face'],
 }
 
-const quietPrompts = {
+const promptTemplates = {
     /*OLD:     [generationMode.CHARACTER]: "Pause your roleplay and provide comma-delimited list of phrases and keywords which describe {{char}}'s physical appearance and clothing. Ignore {{char}}'s personality traits, and chat history when crafting this description. End your response once the comma-delimited list is complete. Do not roleplay when writing this description, and do not attempt to continue the story.", */
     [generationMode.CHARACTER]: "[In the next response I want you to provide only a detailed comma-delimited list of keywords and phrases which describe {{char}}. The list must include all of the following items in this order: name, species and race, gender, age, clothing, occupation, physical features and appearances. Do not include descriptions of non-visual qualities such as personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase 'full body portrait,']",
     //face-specific prompt
@@ -134,11 +144,17 @@ const defaultSettings = {
 
     // Refine mode
     refine_mode: false,
+
+    prompts: promptTemplates,
 }
 
 async function loadSettings() {
     if (Object.keys(extension_settings.sd).length === 0) {
         Object.assign(extension_settings.sd, defaultSettings);
+    }
+
+    if (extension_settings.sd.prompts === undefined) {
+        extension_settings.sd.prompts = promptTemplates;
     }
 
     $('#sd_scale').val(extension_settings.sd.scale).trigger('input');
@@ -154,7 +170,41 @@ async function loadSettings() {
     $('#sd_enable_hr').prop('checked', extension_settings.sd.enable_hr);
     $('#sd_refine_mode').prop('checked', extension_settings.sd.refine_mode);
 
+    addPromptTemplates();
+
     await Promise.all([loadSamplers(), loadModels()]);
+}
+
+function addPromptTemplates() {
+    $('#sd_prompt_templates').empty();
+
+    for (const [name, prompt] of Object.entries(extension_settings.sd.prompts)) {
+        const label = $('<label></label>')
+            .text(modeLabels[name])
+            .attr('for', `sd_prompt_${name}`);
+        const textarea = $('<textarea></textarea>')
+            .addClass('textarea_compact')
+            .attr('id', `sd_prompt_${name}`)
+            .attr('rows', 6)
+            .val(prompt).on('input', () => {
+                extension_settings.sd.prompts[name] = textarea.val();
+                saveSettingsDebounced();
+            });
+        const button = $('<button></button>')
+            .addClass('menu_button fa-solid fa-undo')
+            .attr('title', 'Restore default')
+            .on('click', () => {
+                textarea.val(promptTemplates[name]);
+                extension_settings.sd.prompts[name] = promptTemplates[name];
+                saveSettingsDebounced();
+            });
+        const container = $('<div></div>')
+            .addClass('title_restorable')
+            .append(label)
+            .append(button)
+        $('#sd_prompt_templates').append(container);
+        $('#sd_prompt_templates').append(textarea);
+    }
 }
 
 async function refinePrompt(prompt) {
@@ -397,7 +447,7 @@ function getQuietPrompt(mode, trigger) {
         return trigger;
     }
 
-    return substituteParams(stringFormat(quietPrompts[mode], trigger));
+    return substituteParams(stringFormat(extension_settings.sd.prompts[mode], trigger));
 }
 
 function processReply(str) {
@@ -497,17 +547,8 @@ async function getPrompt(generationType, message, trigger, quiet_prompt) {
 }
 
 async function generatePrompt(quiet_prompt) {
-    let reply = processReply(await new Promise(
-        async function promptPromise(resolve, reject) {
-            try {
-                await getContext().generate('quiet', { resolve, reject, quiet_prompt, force_name2: true, });
-            }
-            catch {
-                reject();
-            }
-        }));
-
-    return reply;
+    const reply = await generateQuietPrompt(quiet_prompt);
+    return processReply(reply);
 }
 
 async function sendGenerationRequest(prompt, callback) {
@@ -827,6 +868,14 @@ jQuery(async () => {
             <textarea id="sd_prompt_prefix" class="text_pole textarea_compact" rows="2"></textarea>
             <label for="sd_negative_prompt">Negative prompt</label>
             <textarea id="sd_negative_prompt" class="text_pole textarea_compact" rows="2"></textarea>
+        </div>
+        <div class="inline-drawer">
+            <div class="inline-drawer-toggle inline-drawer-header">
+                <b>SD Prompt Templates</b>
+                <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+            </div>
+            <div id="sd_prompt_templates" class="inline-drawer-content">
+            </div>
         </div>
     </div>`;
 

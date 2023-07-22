@@ -60,7 +60,9 @@ const extension_settings = {
     dice: {},
     regex: [],
     tts: {},
-    sd: {},
+    sd: {
+        prompts: {},
+    },
     chromadb: {},
     translate: {},
     objective: {},
