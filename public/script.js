@@ -2110,7 +2110,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     // OpenAI doesn't need instruct mode. Use OAI main prompt instead.
     const isInstruct = power_user.instruct.enabled && main_api !== 'openai';
     const isImpersonate = type == "impersonate";
-    const isContinue = type == 'continue';
 
     message_already_generated = isImpersonate ? `${name1}: ` : `${name2}: `;
     // Name for the multigen prefix
@@ -2199,6 +2198,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             type = 'continue';
         }
 
+        const isContinue = type == 'continue';
         deactivateSendButtons();
 
         let { messageBias, promptBias, isUserPromptBias } = getBiasStrings(textareaText, type);
