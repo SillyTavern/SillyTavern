@@ -70,6 +70,8 @@ let is_poe_button_press = false;
 let abortControllerSuggest = null;
 
 const rateLimiter = new RateLimiter((60 / 10 * 1000)); // 10 requests per minute
+const misc_send_box = document.getElementById('poeMiscSendBox');
+const misc_receive_box = document.getElementById('poeMiscReceiveBox');
 
 function loadPoeSettings(settings) {
     if (settings.poe_settings) {
@@ -257,13 +259,13 @@ async function generatePoe(type, finalPrompt, signal) {
             count_to_delete = -1;
         }
 
-        await purgeConversation(count_to_delete);
+        //await purgeConversation(count_to_delete);
     }
 
     if (!auto_jailbroken) {
         if (poe_settings.auto_jailbreak) {
             console.debug('Attempting auto-jailbreak');
-            await autoJailbreak();
+            //await autoJailbreak();
         } else {
             console.debug('Auto jailbreak is disabled');
         }
@@ -329,21 +331,71 @@ async function purgeConversation(count = -1) {
         return true;
     }
 
-    const body = JSON.stringify({
-        bot: poe_settings.bot,
-        count,
-    });
+    misc_send_box.innerText = "PURGE";
+    await waitForMutation(misc_receive_box);
+    return misc_receive_box;
 
-    const response = await fetch('/purge_poe', {
-        headers: getRequestHeaders(),
-        body: body,
-        method: 'POST',
-    });
 
-    return response.ok;
+
+    //const body = JSON.stringify({
+    //    bot: poe_settings.bot,
+    //    count,
+    //});
+//
+    //const response = await fetch('/purge_poe', {
+    //    headers: getRequestHeaders(),
+    //    body: body,
+    //    method: 'POST',
+    //});
+
+    //return response.ok;
+}
+
+function waitForMutation(element) {
+    return new Promise((resolve) => {
+        const observer = new MutationObserver((mutationsList, observer) => {
+            for(let mutation of mutationsList) {
+                if (mutation.type === 'childList' || mutation.type === 'characterData') {
+                    observer.disconnect(); // stop observing
+                    resolve(); // resolve the promise
+                }
+            }
+        });
+
+        observer.observe(element, { childList: true, characterData: true, subtree: true });
+    });
 }
 
 async function sendMessage(prompt, withStreaming, withSuggestions, signal) {
+    console.log(prompt);
+    const poe_send_box = document.getElementById('poeSendBox');
+    poe_send_box.innerText = prompt;
+
+    const poe_receive_box = document.getElementById('poeReceiveBox');
+    await waitForMutation(poe_receive_box);
+    return poe_receive_box.innerText;
+    //var extensionID = 'ifbeoecldhghalcieaffnedaikcnpebl';
+    //window.postMessage({ type: "REQUEST_INJECTION" }, "*");
+    //window.postMessage({ type: "FROM_PAGE", text: prompt }, "*");
+    // Check if we're running in a Chrome environment with extension APIs available
+    //if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+        // Send the message to the extension
+        //chrome.runtime.sendMessage(extensionID, { action: 'sendMessageToPoe', message: prompt }, function (response) {
+        //    if (chrome.runtime.lastError) {
+        //        console.error(chrome.runtime.lastError);
+        //        // Handle the error if needed
+        //    } else {
+        //        return response;
+        //        // Handle the response if needed
+        //        // For example, you can display the AI's response on the frontend
+        //    }
+        //});
+    //} else {
+        // Fallback behavior if not in a Chrome environment or if the extension isn't installed
+        // This could be your original sendMessage logic or another approach
+    //    console.error('Not running extension');
+    //}
+    /*
     if (!signal) {
         signal = new AbortController().signal;
     }
@@ -406,6 +458,7 @@ async function sendMessage(prompt, withStreaming, withSuggestions, signal) {
     catch {
         return '';
     }
+    */
 }
 
 async function onConnectClick() {
@@ -444,6 +497,8 @@ function setButtonState(value) {
 }
 
 async function checkStatusPoe() {
+    setOnlineStatus('Connected!');
+    return;
     const body = JSON.stringify();
     const response = await fetch('/status_poe', {
         headers: getRequestHeaders(),
