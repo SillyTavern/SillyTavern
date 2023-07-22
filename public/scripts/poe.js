@@ -256,6 +256,7 @@ async function autoJailbreak() {
 }
 
 async function generatePoe(type, finalPrompt, signal) {
+
     if (poe_settings.auto_purge) {
         console.debug('Auto purge is enabled');
         let count_to_delete = 0;
@@ -269,13 +270,13 @@ async function generatePoe(type, finalPrompt, signal) {
             count_to_delete = -1;
         }
 
-        //await purgeConversation(count_to_delete);
+        await purgeConversation();
     }
 
     if (!auto_jailbroken) {
         if (poe_settings.auto_jailbreak) {
             console.debug('Attempting auto-jailbreak');
-            //await autoJailbreak();
+            await autoJailbreak();
         } else {
             console.debug('Auto jailbreak is disabled');
         }
@@ -285,6 +286,8 @@ async function generatePoe(type, finalPrompt, signal) {
         console.log('Could not jailbreak the bot');
     }
 
+
+
     const isQuiet = type === 'quiet';
     const isImpersonate = type === 'impersonate';
     const isContinue = type === 'continue';
@@ -292,7 +295,7 @@ async function generatePoe(type, finalPrompt, signal) {
     let reply = '';
     messages_to_purge = 2; // prompt and the reply
 
-    
+
     console.debug('Sending prompt in one message');
     reply = await sendMessage(finalPrompt, !isQuiet, suggestReplies, signal);
     
@@ -390,6 +393,7 @@ async function sendMessage(prompt, withStreaming, withSuggestions, signal) {
     if (poe_receive_box.textContent == '.'){
         return;
     }
+    console.log(poe_receive_box.textContent.replace(/<br>/g, '\n\n'));
     return poe_receive_box.textContent.replace(/<br>/g, '\n\n');
     //var extensionID = 'ifbeoecldhghalcieaffnedaikcnpebl';
     //window.postMessage({ type: "REQUEST_INJECTION" }, "*");
