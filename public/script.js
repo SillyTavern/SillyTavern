@@ -3151,7 +3151,11 @@ async function DupeChar() {
         return;
     }
 
-    const confirm = await callPopup('Are you sure you want to duplicate this character?', 'confirm');
+    const confirm = await callPopup(`
+        <h3>Are you sure you want to duplicate this character?</h3>
+        <span>If you just want to start a new chat with the same character, use "Start new chat" option in the bottom-left options menu.</span><br><br>`,
+        'confirm',
+    );
 
     if (!confirm) {
         console.log('User cancelled duplication');
@@ -5598,9 +5602,17 @@ function onScenarioOverrideRemoveClick() {
     $(this).closest('.scenario_override').find('.chat_scenario').val('').trigger('input');
 }
 
-function callPopup(text, type, inputValue = '', { okButton, rows } = {}) {
+function callPopup(text, type, inputValue = '', { okButton, rows, wide, large } = {}) {
     if (type) {
         popup_type = type;
+    }
+
+    if (wide) {
+        $("#dialogue_popup").addClass("wide_dialogue_popup");
+    }
+
+    if (large) {
+        $("#dialogue_popup").addClass("large_dialogue_popup");
     }
 
     $("#dialogue_popup_cancel").css("display", "inline-block");
