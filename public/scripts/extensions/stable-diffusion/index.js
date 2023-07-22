@@ -157,6 +157,20 @@ async function loadSettings() {
     await Promise.all([loadSamplers(), loadModels()]);
 }
 
+async function refinePrompt(prompt) {
+    if (extension_settings.sd.refine_mode) {
+        const refinedPrompt = await callPopup('<h3>Review and edit the prompt:</h3>Press "Cancel" to abort the image generation.', 'input', prompt, { rows: 5, okButton: 'Generate' });
+
+        if (refinedPrompt) {
+            return refinedPrompt;
+        } else {
+            throw new Error('Generation aborted by user.');
+        }
+    }
+
+    return prompt;
+}
+
 function onRefineModeInput() {
     extension_settings.sd.refine_mode = !!$('#sd_refine_mode').prop('checked');
     saveSettingsDebounced();
@@ -475,6 +489,10 @@ async function getPrompt(generationType, message, trigger, quiet_prompt) {
             break;
     }
 
+    if (generationType !== generationMode.FREE) {
+        prompt = await refinePrompt(prompt);
+    }
+
     return prompt;
 }
 
@@ -488,16 +506,6 @@ async function generatePrompt(quiet_prompt) {
                 reject();
             }
         }));
-
-    if (extension_settings.sd.refine_mode) {
-        const refinedPrompt = await callPopup('<h3>Review and edit the generated prompt:</h3>Press "Cancel" to abort the image generation.', 'input', reply, { rows: 5, okButton: 'Generate' });
-
-        if (refinedPrompt) {
-            reply = refinedPrompt;
-        } else {
-            throw new Error('Generation aborted by user.');
-        }
-    }
 
     return reply;
 }
@@ -690,7 +698,9 @@ async function sdMessageButton(e) {
     try {
         setBusyIcon(true);
         if (hasSavedImage) {
-            const prompt = message?.extra?.title;
+            const prompt = await refinePrompt(message.extra.title);
+            message.extra.title = prompt;
+
             console.log('Regenerating an image, using existing prompt:', prompt);
             await sendGenerationRequest(prompt, saveGeneratedImage);
         }
