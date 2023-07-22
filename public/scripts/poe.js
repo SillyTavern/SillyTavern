@@ -326,7 +326,7 @@ async function sendChunkedMessage(finalPrompt, withStreaming, withSuggestions, s
             const chunkReply = await sendMessage(promptChunk, false, false, signal);
             console.debug('Got chunk reply: ' + chunkReply);
             // Delete the reply for the chunk
-            await purgeConversation(1);
+            //await purgeConversation(1);
         }
     }
 
@@ -379,11 +379,13 @@ function waitForMutation(element) {
 async function sendMessage(prompt, withStreaming, withSuggestions, signal) {
     //console.log(prompt);
     const poe_send_box = document.getElementById('poeSendBox');
-    poe_send_box.innerText = prompt;
-
+    poe_send_box.textContent = prompt;
     const poe_receive_box = document.getElementById('poeReceiveBox');
     await waitForMutation(poe_receive_box);
-    return poe_receive_box.innerText.replace(/<br>/g, '\n\n');
+    if (poe_receive_box.textContent == '.'){
+        return;
+    }
+    return poe_receive_box.textContent.replace(/<br>/g, '\n\n');
     //var extensionID = 'ifbeoecldhghalcieaffnedaikcnpebl';
     //window.postMessage({ type: "REQUEST_INJECTION" }, "*");
     //window.postMessage({ type: "FROM_PAGE", text: prompt }, "*");
