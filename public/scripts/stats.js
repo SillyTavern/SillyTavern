@@ -256,6 +256,19 @@ async function statMesProcess(line, type, characters, this_chid, oldMesssage) {
 
     let stat = charStats[characters[this_chid].avatar];
 
+    if (!stat) {
+        stat = {
+            total_gen_time: 0,
+            user_word_count: 0,
+            non_user_msg_count: 0,
+            user_msg_count: 0,
+            non_user_msg_count: 0,
+            total_swipe_count: 0,
+            date_first_chat: Date.now(),
+            date_last_chat: Date.now(),
+        };
+    }
+
     stat.total_gen_time += calculateGenTime(
         line.gen_started,
         line.gen_finished
