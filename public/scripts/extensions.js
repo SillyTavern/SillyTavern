@@ -62,6 +62,7 @@ const extension_settings = {
     tts: {},
     sd: {
         prompts: {},
+        character_prompts: {},
     },
     chromadb: {},
     translate: {},

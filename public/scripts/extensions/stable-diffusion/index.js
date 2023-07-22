@@ -9,10 +9,12 @@ import {
     event_types,
     eventSource,
     appendImageToMessage,
-    generateQuietPrompt
+    generateQuietPrompt,
+    this_chid,
 } from "../../../script.js";
 import { getApiUrl, getContext, extension_settings, doExtrasFetch, modules } from "../../extensions.js";
-import { stringFormat, initScrollHeight, resetScrollHeight, timestampToMoment } from "../../utils.js";
+import { selected_group } from "../../group-chats.js";
+import { stringFormat, initScrollHeight, resetScrollHeight, timestampToMoment, getCharaFilename } from "../../utils.js";
 export { MODULE_NAME };
 
 // Wraps a string into monospace font-face span
@@ -157,6 +159,10 @@ async function loadSettings() {
         extension_settings.sd.prompts = promptTemplates;
     }
 
+    if (extension_settings.sd.character_prompts === undefined) {
+        extension_settings.sd.character_prompts = {};
+    }
+
     $('#sd_scale').val(extension_settings.sd.scale).trigger('input');
     $('#sd_steps').val(extension_settings.sd.steps).trigger('input');
     $('#sd_prompt_prefix').val(extension_settings.sd.prompt_prefix).trigger('input');
@@ -183,7 +189,7 @@ function addPromptTemplates() {
             .text(modeLabels[name])
             .attr('for', `sd_prompt_${name}`);
         const textarea = $('<textarea></textarea>')
-            .addClass('textarea_compact')
+            .addClass('textarea_compact text_pole')
             .attr('id', `sd_prompt_${name}`)
             .attr('rows', 6)
             .val(prompt).on('input', () => {
@@ -219,6 +225,52 @@ async function refinePrompt(prompt) {
     }
 
     return prompt;
+}
+
+function onChatChanged() {
+    if (this_chid === undefined || selected_group) {
+        $('#sd_character_prompt_block').hide();
+        return;
+    }
+
+    $('#sd_character_prompt_block').show();
+    const key = getCharaFilename(this_chid);
+    $('#sd_character_prompt').val(key ? (extension_settings.sd.character_prompts[key] || '') : '');
+}
+
+function onCharacterPromptInput() {
+    const key = getCharaFilename(this_chid);
+    extension_settings.sd.character_prompts[key] = $('#sd_character_prompt').val();
+    saveSettingsDebounced();
+}
+
+function getCharacterPrefix() {
+    if (selected_group) {
+        return '';
+    }
+
+    const key = getCharaFilename(this_chid);
+
+    if (key) {
+        return extension_settings.sd.character_prompts[key] || '';
+    }
+
+    return '';
+}
+
+function combinePrefixes(str1, str2) {
+    if (!str2) {
+        return str1;
+    }
+
+    // Remove leading/trailing white spaces and commas from the strings
+    str1 = str1.trim().replace(/^,|,$/g, '');
+    str2 = str2.trim().replace(/^,|,$/g, '');
+
+    // Combine the strings with a comma between them
+    var result = `${str1}, ${str2},`;
+
+    return result;
 }
 
 function onRefineModeInput() {
@@ -573,7 +625,7 @@ async function generateExtrasImage(prompt, callback) {
             scale: extension_settings.sd.scale,
             width: extension_settings.sd.width,
             height: extension_settings.sd.height,
-            prompt_prefix: extension_settings.sd.prompt_prefix,
+            prompt_prefix: combinePrefixes(extension_settings.sd.prompt_prefix, getCharacterPrefix()),
             negative_prompt: extension_settings.sd.negative_prompt,
             restore_faces: !!extension_settings.sd.restore_faces,
             enable_hr: !!extension_settings.sd.enable_hr,
@@ -601,7 +653,7 @@ async function generateHordeImage(prompt, callback) {
             scale: extension_settings.sd.scale,
             width: extension_settings.sd.width,
             height: extension_settings.sd.height,
-            prompt_prefix: extension_settings.sd.prompt_prefix,
+            prompt_prefix: combinePrefixes(extension_settings.sd.prompt_prefix, getCharacterPrefix()),
             negative_prompt: extension_settings.sd.negative_prompt,
             model: extension_settings.sd.model,
             nsfw: extension_settings.sd.horde_nsfw,
@@ -814,60 +866,66 @@ jQuery(async () => {
     <div class="sd_settings">
         <div class="inline-drawer">
             <div class="inline-drawer-toggle inline-drawer-header">
-            <b>Stable Diffusion</b>
-            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
-        </div>
-        <div class="inline-drawer-content">
-            <small><i>Use slash commands or the bottom Paintbrush button to generate images. Type <span class="monospace">/help</span> in chat for more details</i></small>
-            <br>
-            <small><i>Hint: Save an API key in Horde KoboldAI API settings to use it here.</i></small>
-            <label for="sd_refine_mode" class="checkbox_label" title="Allow to edit prompts manually before sending them to generation API">
-                <input id="sd_refine_mode" type="checkbox" />
-                Edit prompts before generation
-            </label>
-            <div class="flex-container flexGap5 marginTop10 margin-bot-10px">
-                <label class="checkbox_label">
-                    <input id="sd_horde" type="checkbox" />
-                    Use Stable Horde
-                </label>
-                <label style="margin-left:1em;" class="checkbox_label">
-                    <input id="sd_horde_nsfw" type="checkbox" />
-                    Allow NSFW images from Horde
-                </label>
+                <b>Stable Diffusion</b>
+                <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
             </div>
-            <label for="sd_scale">CFG Scale (<span id="sd_scale_value"></span>)</label>
-            <input id="sd_scale" type="range" min="${defaultSettings.scale_min}" max="${defaultSettings.scale_max}" step="${defaultSettings.scale_step}" value="${defaultSettings.scale}" />
-            <label for="sd_steps">Sampling steps (<span id="sd_steps_value"></span>)</label>
-            <input id="sd_steps" type="range" min="${defaultSettings.steps_min}" max="${defaultSettings.steps_max}" step="${defaultSettings.steps_step}" value="${defaultSettings.steps}" />
-            <label for="sd_width">Width (<span id="sd_width_value"></span>)</label>
-            <input id="sd_width" type="range" max="${defaultSettings.dimension_max}" min="${defaultSettings.dimension_min}" step="${defaultSettings.dimension_step}" value="${defaultSettings.width}" />
-            <label for="sd_height">Height (<span id="sd_height_value"></span>)</label>
-            <input id="sd_height" type="range" max="${defaultSettings.dimension_max}" min="${defaultSettings.dimension_min}" step="${defaultSettings.dimension_step}" value="${defaultSettings.height}" />
-            <div><small>Only for Horde or remote Stable Diffusion Web UI:</small></div>
-            <div class="flex-container marginTop10 margin-bot-10px">
-                <label class="flex1 checkbox_label">
-                    <input id="sd_restore_faces" type="checkbox" />
-                    Restore Faces
+            <div class="inline-drawer-content">
+                <small><i>Use slash commands or the bottom Paintbrush button to generate images. Type <span class="monospace">/help</span> in chat for more details</i></small>
+                <br>
+                <small><i>Hint: Save an API key in Horde KoboldAI API settings to use it here.</i></small>
+                <label for="sd_refine_mode" class="checkbox_label" title="Allow to edit prompts manually before sending them to generation API">
+                    <input id="sd_refine_mode" type="checkbox" />
+                    Edit prompts before generation
                 </label>
-                <label class="flex1 checkbox_label">
-                    <input id="sd_enable_hr" type="checkbox" />
-                    Hires. Fix
-                </label>
+                <div class="flex-container flexGap5 marginTop10 margin-bot-10px">
+                    <label class="checkbox_label">
+                        <input id="sd_horde" type="checkbox" />
+                        Use Stable Horde
+                    </label>
+                    <label style="margin-left:1em;" class="checkbox_label">
+                        <input id="sd_horde_nsfw" type="checkbox" />
+                        Allow NSFW images from Horde
+                    </label>
+                </div>
+                <label for="sd_scale">CFG Scale (<span id="sd_scale_value"></span>)</label>
+                <input id="sd_scale" type="range" min="${defaultSettings.scale_min}" max="${defaultSettings.scale_max}" step="${defaultSettings.scale_step}" value="${defaultSettings.scale}" />
+                <label for="sd_steps">Sampling steps (<span id="sd_steps_value"></span>)</label>
+                <input id="sd_steps" type="range" min="${defaultSettings.steps_min}" max="${defaultSettings.steps_max}" step="${defaultSettings.steps_step}" value="${defaultSettings.steps}" />
+                <label for="sd_width">Width (<span id="sd_width_value"></span>)</label>
+                <input id="sd_width" type="range" max="${defaultSettings.dimension_max}" min="${defaultSettings.dimension_min}" step="${defaultSettings.dimension_step}" value="${defaultSettings.width}" />
+                <label for="sd_height">Height (<span id="sd_height_value"></span>)</label>
+                <input id="sd_height" type="range" max="${defaultSettings.dimension_max}" min="${defaultSettings.dimension_min}" step="${defaultSettings.dimension_step}" value="${defaultSettings.height}" />
+                <div><small>Only for Horde or remote Stable Diffusion Web UI:</small></div>
+                <div class="flex-container marginTop10 margin-bot-10px">
+                    <label class="flex1 checkbox_label">
+                        <input id="sd_restore_faces" type="checkbox" />
+                        Restore Faces
+                    </label>
+                    <label class="flex1 checkbox_label">
+                        <input id="sd_enable_hr" type="checkbox" />
+                        Hires. Fix
+                    </label>
+                </div>
+                <label for="sd_model">Stable Diffusion model</label>
+                <select id="sd_model"></select>
+                <label for="sd_sampler">Sampling method</label>
+                <select id="sd_sampler"></select>
+                <div class="flex-container flexGap5 margin-bot-10px">
+                    <label class="checkbox_label">
+                        <input id="sd_horde_karras" type="checkbox" />
+                        Karras (only for Horde, not all samplers supported)
+                    </label>
+                </div>
+                <label for="sd_prompt_prefix">Common prompt prefix</label>
+                <textarea id="sd_prompt_prefix" class="text_pole textarea_compact" rows="3"></textarea>
+                <div id="sd_character_prompt_block">
+                    <label for="sd_character_prompt">Character-specific prompt prefix</label>
+                    <small>Won't be used in groups.</small>
+                    <textarea id="sd_character_prompt" class="text_pole textarea_compact" rows="3" placeholder="Any characteristics that describe the currently selected character. Will be added after a common prefix.&#10;Example: female, green eyes, brown hair, pink shirt"></textarea>
+                </div>
+                <label for="sd_negative_prompt">Negative prompt</label>
+                <textarea id="sd_negative_prompt" class="text_pole textarea_compact" rows="3"></textarea>
             </div>
-            <label for="sd_model">Stable Diffusion model</label>
-            <select id="sd_model"></select>
-            <label for="sd_sampler">Sampling method</label>
-            <select id="sd_sampler"></select>
-            <div class="flex-container flexGap5 margin-bot-10px">
-                <label class="checkbox_label">
-                    <input id="sd_horde_karras" type="checkbox" />
-                    Karras (only for Horde, not all samplers supported)
-                </label>
-            </div>
-            <label for="sd_prompt_prefix">Generated prompt prefix</label>
-            <textarea id="sd_prompt_prefix" class="text_pole textarea_compact" rows="2"></textarea>
-            <label for="sd_negative_prompt">Negative prompt</label>
-            <textarea id="sd_negative_prompt" class="text_pole textarea_compact" rows="2"></textarea>
         </div>
         <div class="inline-drawer">
             <div class="inline-drawer-toggle inline-drawer-header">
@@ -894,6 +952,8 @@ jQuery(async () => {
     $('#sd_restore_faces').on('input', onRestoreFacesInput);
     $('#sd_enable_hr').on('input', onHighResFixInput);
     $('#sd_refine_mode').on('input', onRefineModeInput);
+    $('#sd_character_prompt').on('input', onCharacterPromptInput);
+    $('#sd_character_prompt_block').hide();
 
     $('.sd_settings .inline-drawer-toggle').on('click', function () {
         initScrollHeight($("#sd_prompt_prefix"));
@@ -903,6 +963,8 @@ jQuery(async () => {
     eventSource.on(event_types.EXTRAS_CONNECTED, async () => {
         await Promise.all([loadSamplers(), loadModels()]);
     });
+
+    eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
 
     await loadSettings();
     $('body').addClass('sd');
