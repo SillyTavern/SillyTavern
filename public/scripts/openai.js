@@ -400,7 +400,8 @@ async function prepareOpenAIMessages({ systemPrompt, name2, storyString, worldIn
 
     const jailbreak = power_user.prefer_character_jailbreak && jailbreakPrompt ? jailbreakPrompt : oai_settings.jailbreak_prompt;
     if (oai_settings.jailbreak_system && jailbreak) {
-        const jailbreakMessage = { "role": "system", "content": substituteParams(jailbreak, name1, name2, oai_settings.jailbreak_prompt) };
+        const jbContent = substituteParams(jailbreak, name1, name2, oai_settings.jailbreak_prompt).replace(/\r/gm, '').trim();
+        const jailbreakMessage = { "role": "system", "content": jbContent };
         openai_msgs.push(jailbreakMessage);
 
         total_count += handler_instance.count([jailbreakMessage], true, 'jailbreak');
