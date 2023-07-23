@@ -341,6 +341,14 @@ async function sendChunkedMessage(finalPrompt, withStreaming, withSuggestions, s
     return { reply: reply, chunks: promptChunks.length };
 }
 
+async function waitForMutationWithTimeout(element, timeout = 1000) {
+    const mutationPromise = waitForMutation(element);
+    const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve('timeout'), timeout));
+
+    const result = await Promise.race([mutationPromise, timeoutPromise]);
+    return result;
+}
+
 // If count is -1, purge all messages
 // If count is 0, do nothing
 // If count is > 0, purge that many messages
@@ -350,7 +358,8 @@ async function purgeConversation(count = -1) {
     }
 
     misc_send_box.innerText = "PURGE";
-    await waitForMutation(misc_receive_box);
+    await waitForMutationWithTimeout(misc_receive_box, 1000);
+    //await waitForMutation(misc_receive_box);
     return misc_receive_box;
 
 
