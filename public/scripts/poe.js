@@ -235,24 +235,29 @@ async function autoJailbreak() {
     for (let retryNumber = 0; retryNumber < MAX_RETRIES_FOR_ACTIVATION; retryNumber++) {
         misc_send_box.innerText = poe_settings.jailbreak_message;
         await waitForMutation(misc_receive_box);
-        if (misc_receive_box.innerText.toLowerCase().includes(poe_settings.jailbreak_response.toLowerCase())){
-            auto_jailbroken = true;
-        }
-        else{
-            auto_jailbroken = false;
-        }
-        return
-
-        const reply = await sendMessage(substituteParams(poe_settings.jailbreak_message), false, false);
-
-        if (reply.toLowerCase().includes(poe_settings.jailbreak_response.toLowerCase())) {
+        if (misc_receive_box.innerText.toLowerCase().includes(poe_settings.jailbreak_response.toLowerCase())) {
             auto_jailbroken = true;
             break;
         }
-
-        // Purge the conversation if we're not jailbroken
-        await purgeConversation(-1);
+        else {
+            auto_jailbroken = false;
+        }
+        await sleep(1000);
     }
+    await sleep(1000);
+    return
+
+    // const reply = await sendMessage(substituteParams(poe_settings.jailbreak_message), false, false);
+
+    // if (reply.toLowerCase().includes(poe_settings.jailbreak_response.toLowerCase())) {
+    //     auto_jailbroken = true;
+    //     break;
+    // }
+
+    // Purge the conversation if we're not jailbroken
+    //   await purgeConversation(-1);
+    //}
+
 }
 
 async function generatePoe(type, finalPrompt, signal) {
@@ -299,7 +304,7 @@ async function generatePoe(type, finalPrompt, signal) {
 
     console.debug('Sending prompt in one message');
     reply = await sendMessage(finalPrompt, !isQuiet, suggestReplies, signal);
-    
+
     //const unchunkedBots = ['vizcacha', 'agouti', 'a2_100k', 'a2_2'];
     //if (max_context > POE_TOKEN_LENGTH && !unchunkedBots.includes(poe_settings.bot)) {
     //    console.debug('Prompt is too long, sending in chunks');
@@ -373,7 +378,7 @@ async function purgeConversation(count = -1) {
     //    bot: poe_settings.bot,
     //    count,
     //});
-//
+    //
     //const response = await fetch('/purge_poe', {
     //    headers: getRequestHeaders(),
     //    body: body,
@@ -386,7 +391,7 @@ async function purgeConversation(count = -1) {
 function waitForMutation(element) {
     return new Promise((resolve) => {
         const observer = new MutationObserver((mutationsList, observer) => {
-            for(let mutation of mutationsList) {
+            for (let mutation of mutationsList) {
                 if (mutation.type === 'childList' || mutation.type === 'characterData') {
                     observer.disconnect(); // stop observing
                     resolve(); // resolve the promise
@@ -404,7 +409,7 @@ async function sendMessage(prompt, withStreaming, withSuggestions, signal) {
     poe_send_box.textContent = prompt;
     const poe_receive_box = document.getElementById('poeReceiveBox');
     await waitForMutation(poe_receive_box);
-    if (poe_receive_box.textContent == '.'){
+    if (poe_receive_box.textContent == '.') {
         return;
     }
     console.log(poe_receive_box.textContent.replace(/<br>/g, '\n\n'));
@@ -414,20 +419,20 @@ async function sendMessage(prompt, withStreaming, withSuggestions, signal) {
     //window.postMessage({ type: "FROM_PAGE", text: prompt }, "*");
     // Check if we're running in a Chrome environment with extension APIs available
     //if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-        // Send the message to the extension
-        //chrome.runtime.sendMessage(extensionID, { action: 'sendMessageToPoe', message: prompt }, function (response) {
-        //    if (chrome.runtime.lastError) {
-        //        console.error(chrome.runtime.lastError);
-        //        // Handle the error if needed
-        //    } else {
-        //        return response;
-        //        // Handle the response if needed
-        //        // For example, you can display the AI's response on the frontend
-        //    }
-        //});
+    // Send the message to the extension
+    //chrome.runtime.sendMessage(extensionID, { action: 'sendMessageToPoe', message: prompt }, function (response) {
+    //    if (chrome.runtime.lastError) {
+    //        console.error(chrome.runtime.lastError);
+    //        // Handle the error if needed
+    //    } else {
+    //        return response;
+    //        // Handle the response if needed
+    //        // For example, you can display the AI's response on the frontend
+    //    }
+    //});
     //} else {
-        // Fallback behavior if not in a Chrome environment or if the extension isn't installed
-        // This could be your original sendMessage logic or another approach
+    // Fallback behavior if not in a Chrome environment or if the extension isn't installed
+    // This could be your original sendMessage logic or another approach
     //    console.error('Not running extension');
     //}
     /*
