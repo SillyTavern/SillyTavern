@@ -233,9 +233,9 @@ async function onSendJailbreakClick() {
 
 async function autoJailbreak() {
     for (let retryNumber = 0; retryNumber < MAX_RETRIES_FOR_ACTIVATION; retryNumber++) {
-        misc_send_box.innerText = poe_settings.jailbreak_message;
+        misc_send_box.textContent = poe_settings.jailbreak_message;
         await waitForMutation(misc_receive_box);
-        if (misc_receive_box.innerText.toLowerCase().includes(poe_settings.jailbreak_response.toLowerCase())) {
+        if (misc_receive_box.textContent.toLowerCase().includes(poe_settings.jailbreak_response.toLowerCase())) {
             auto_jailbroken = true;
             break;
         }
