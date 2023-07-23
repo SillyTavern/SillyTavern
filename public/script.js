@@ -76,6 +76,7 @@ import {
     persona_description_positions,
     loadMovingUIState,
     getCustomStoppingStrings,
+    MAX_CONTEXT_DEFAULT,
 } from "./scripts/power-user.js";
 
 import {
@@ -701,11 +702,11 @@ var is_use_scroll_holder = false;
 
 //settings
 var settings;
-var koboldai_settings;
-var koboldai_setting_names;
+export let koboldai_settings;
+export let koboldai_setting_names;
 var preset_settings = "gui";
 var user_avatar = "you.png";
-var amount_gen = 80; //default max length of AI generated responses
+export var amount_gen = 80; //default max length of AI generated responses
 var max_context = 2048;
 
 var is_pygmalion = false;
@@ -719,8 +720,8 @@ let extension_prompts = {};
 var main_api;// = "kobold";
 //novel settings
 let novel_tier;
-let novelai_settings;
-let novelai_setting_names;
+export let novelai_settings;
+export let novelai_setting_names;
 let abortController;
 
 //css
@@ -5087,7 +5088,23 @@ async function saveSettings(type) {
     });
 }
 
+export function setGenerationParamsFromPreset(preset) {
+    if (preset.genamt !== undefined) {
+        amount_gen = preset.genamt;
+        $("#amount_gen").val(amount_gen);
+        $("#amount_gen_counter").text(`${amount_gen}`);
+    }
 
+    if (preset.max_length !== undefined) {
+        max_context = preset.max_length;
+
+        const needsUnlock = max_context > MAX_CONTEXT_DEFAULT;
+        $('#max_context_unlocked').prop('checked', needsUnlock).trigger('change');
+
+        $("#max_context").val(max_context);
+        $("#max_context_counter").text(`${max_context}`);
+    }
+}
 
 function setCharacterBlockHeight() {
     const $children = $("#rm_print_characters_block").children();
@@ -7724,13 +7741,7 @@ $(document).ready(function () {
             const preset = koboldai_settings[koboldai_setting_names[preset_settings]];
             loadKoboldSettings(preset);
 
-            amount_gen = preset.genamt;
-            $("#amount_gen").val(amount_gen);
-            $("#amount_gen_counter").text(`${amount_gen}`);
-
-            max_context = preset.max_length;
-            $("#max_context").val(max_context);
-            $("#max_context_counter").text(`${max_context}`);
+            setGenerationParamsFromPreset(preset);
 
             $("#range_block").find('input').prop("disabled", false);
             $("#kobold-advanced-config").find('input').prop("disabled", false);
