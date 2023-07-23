@@ -277,6 +277,7 @@ async function generatePoe(type, finalPrompt, signal) {
         if (poe_settings.auto_jailbreak) {
             console.debug('Attempting auto-jailbreak');
             await autoJailbreak();
+            await sleep(1000);
         } else {
             console.debug('Auto jailbreak is disabled');
         }
@@ -313,6 +314,10 @@ async function generatePoe(type, finalPrompt, signal) {
     //}
 
     return reply;
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 async function sendChunkedMessage(finalPrompt, withStreaming, withSuggestions, signal) {
