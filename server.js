@@ -1108,7 +1108,7 @@ app.post("/editcharacterattribute", jsonParser, async function (request, respons
     }
 });
 
-app.post("/deletecharacter", urlencodedParser, async function (request, response) {
+app.post("/deletecharacter", jsonParser, async function (request, response) {
     if (!request.body || !request.body.avatar_url) {
         return response.sendStatus(400);
     }

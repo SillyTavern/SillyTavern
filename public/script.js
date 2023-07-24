@@ -6855,6 +6855,73 @@ function doCharListDisplaySwitch() {
     updateVisibleDivs('#rm_print_characters_block', true);
 }
 
+/**
+ * Function to handle the deletion of a character, given a specific popup type and character ID.
+ * If popup type equals "del_ch", it will proceed with deletion otherwise it will exit the function.
+ * It fetches the delete character route, sending necessary parameters, and in case of success, 
+ * it proceeds to delete character from UI and saves settings.
+ * In case of error during the fetch request, it logs the error details.
+ * 
+ * @param {string} popup_type - The type of popup currently active.
+ * @param {string} this_chid - The character ID to be deleted.
+ */
+export async function handleDeleteCharacter(popup_type, this_chid) {
+    if (popup_type !== "del_ch") {
+        return;
+    }
+
+    const delete_chats = !!$("#del_char_checkbox").prop("checked");
+    const avatar = characters[this_chid].avatar;
+    const name = characters[this_chid].name;
+
+    const msg = { avatar_url: avatar, delete_chats: delete_chats };
+
+    const response = await fetch('/deletecharacter', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify(msg),
+        cache: 'no-cache',
+    });
+
+    if (response.ok) {
+        await deleteCharacter(name, avatar);
+    } else {
+        console.error('Failed to delete character: ', response.status, response.statusText);
+    }
+}
+
+
+/**
+ * Function to delete a character from UI after character deletion API success.
+ * It manages necessary UI changes such as closing advanced editing popup, unsetting 
+ * character ID, resetting characters array and chat metadata, deselecting character's tab 
+ * panel, removing character name from navigation tabs, clearing chat, removing character's 
+ * avatar from tag_map, fetching updated list of characters and updating the 'deleted 
+ * character' message.
+ * It also ensures to save the settings after all the operations.
+ * 
+ * @param {string} name - The name of the character to be deleted.
+ * @param {string} avatar - The avatar URL of the character to be deleted.
+ */
+export async function deleteCharacter(name, avatar) {
+    $("#character_cross").click();
+    this_chid = "invalid-safety-id";
+    characters.length = 0;
+    name2 = systemUserName;
+    chat = [...safetychat];
+    chat_metadata = {};
+    setRightTabSelectedClass();
+    $(document.getElementById("rm_button_selected_ch")).children("h2").text("");
+    clearChat();
+    this_chid = undefined;
+    delete tag_map[avatar];
+    await getCharacters();
+    select_rm_info("char_delete", name);
+    printMessages();
+    saveSettingsDebounced();
+}
+
+
 $(document).ready(function () {
 
     if (isMobile() === true) {
@@ -7226,55 +7293,7 @@ $(document).ready(function () {
             }, 200);
         }
         if (popup_type == "del_ch") {
-            console.log(
-                "Deleting character -- ChID: " +
-                this_chid +
-                " -- Name: " +
-                characters[this_chid].name
-            );
-            const delete_chats = !!$("#del_char_checkbox").prop("checked");
-            const avatar = characters[this_chid].avatar;
-            const name = characters[this_chid].name;
-            const msg = new FormData($("#form_create").get(0)); // ID form
-            msg.append("delete_chats", delete_chats);
-            jQuery.ajax({
-                method: "POST",
-                url: "/deletecharacter",
-                beforeSend: function () {
-                },
-                data: msg,
-                cache: false,
-                contentType: false,
-                processData: false,
-                success: async function (html) {
-                    //RossAscends: New handling of character deletion that avoids page refreshes and should have
-                    // fixed char corruption due to cache problems.
-                    //due to how it is handled with 'popup_type', i couldn't find a way to make my method completely
-                    // modular, so keeping it in TAI-main.js as a new default.
-                    //this allows for dynamic refresh of character list after deleting a character.
-                    // closes advanced editing popup
-                    $("#character_cross").click();
-                    // unsets expected chid before reloading (related to getCharacters/printCharacters from using old arrays)
-                    this_chid = "invalid-safety-id";
-                    // resets the characters array, forcing getcharacters to reset
-                    characters.length = 0;
-                    name2 = systemUserName; // replaces deleted charcter name with system user since she will be displayed next.
-                    chat = [...safetychat]; // sets up system user to tell user about having deleted a character
-                    chat_metadata = {}; // resets chat metadata
-                    setRightTabSelectedClass() // 'deselects' character's tab panel
-                    $(document.getElementById("rm_button_selected_ch"))
-                        .children("h2")
-                        .text(""); // removes character name from nav tabs
-                    clearChat(); // removes deleted char's chat
-                    this_chid = undefined; // prevents getCharacters from trying to load an invalid char.
-                    delete tag_map[avatar]; // removes deleted char's avatar from tag_map
-                    await getCharacters(); // gets the new list of characters (that doesn't include the deleted one)
-                    select_rm_info("char_delete", name); // also updates the 'deleted character' message
-                    printMessages(); // prints out system user's 'deleted character' message
-                    //console.log("#dialogue_popup_ok(del-char) >>>> saving");
-                    saveSettingsDebounced(); // saving settings to keep changes to variables
-                },
-            });
+            handleDeleteCharacter(popup_type, this_chid, characters);
         }
         if (popup_type == "alternate_greeting" && menu_type !== "create") {
             createOrEditCharacter();
