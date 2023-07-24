@@ -1250,7 +1250,7 @@ export function checkEmbeddedWorld(chid) {
         const worldName = characters[chid]?.data?.extensions?.world;
         if (!localStorage.getItem(checkKey) && (!worldName || !world_names.includes(worldName))) {
             toastr.info(
-                'To import and use it, select "Import Embedded World Info" in the Options dropdown menu on the character panel.',
+                'To import and use it, select "Import Card Lore" in the "More..." dropdown menu on the character panel.',
                 `${characters[chid].name} has an embedded World/Lorebook`,
                 { timeOut: 10000, extendedTimeOut: 20000, positionClass: 'toast-top-center' },
             );
