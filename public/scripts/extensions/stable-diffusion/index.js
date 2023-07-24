@@ -8,10 +8,13 @@ import {
     getRequestHeaders,
     event_types,
     eventSource,
-    appendImageToMessage
+    appendImageToMessage,
+    generateQuietPrompt,
+    this_chid,
 } from "../../../script.js";
 import { getApiUrl, getContext, extension_settings, doExtrasFetch, modules } from "../../extensions.js";
-import { stringFormat, initScrollHeight, resetScrollHeight, timestampToMoment } from "../../utils.js";
+import { selected_group } from "../../group-chats.js";
+import { stringFormat, initScrollHeight, resetScrollHeight, timestampToMoment, getCharaFilename } from "../../utils.js";
 export { MODULE_NAME };
 
 // Wraps a string into monospace font-face span
@@ -39,6 +42,15 @@ const generationMode = {
     FREE: 6,
 }
 
+const modeLabels = {
+    [generationMode.CHARACTER]: 'Character ("Yourself")',
+    [generationMode.FACE]: 'Portrait ("Your Face")',
+    [generationMode.USER]: 'User ("Me")',
+    [generationMode.SCENARIO]: 'Scenario ("The Whole Story")',
+    [generationMode.NOW]: 'Last Message',
+    [generationMode.RAW_LAST]: 'Raw Last Message',
+}
+
 const triggerWords = {
     [generationMode.CHARACTER]: ['you'],
     [generationMode.USER]: ['me'],
@@ -48,7 +60,7 @@ const triggerWords = {
     [generationMode.FACE]: ['face'],
 }
 
-const quietPrompts = {
+const promptTemplates = {
     /*OLD:     [generationMode.CHARACTER]: "Pause your roleplay and provide comma-delimited list of phrases and keywords which describe {{char}}'s physical appearance and clothing. Ignore {{char}}'s personality traits, and chat history when crafting this description. End your response once the comma-delimited list is complete. Do not roleplay when writing this description, and do not attempt to continue the story.", */
     [generationMode.CHARACTER]: "[In the next response I want you to provide only a detailed comma-delimited list of keywords and phrases which describe {{char}}. The list must include all of the following items in this order: name, species and race, gender, age, clothing, occupation, physical features and appearances. Do not include descriptions of non-visual qualities such as personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase 'full body portrait,']",
     //face-specific prompt
@@ -134,11 +146,21 @@ const defaultSettings = {
 
     // Refine mode
     refine_mode: false,
+
+    prompts: promptTemplates,
 }
 
 async function loadSettings() {
     if (Object.keys(extension_settings.sd).length === 0) {
         Object.assign(extension_settings.sd, defaultSettings);
+    }
+
+    if (extension_settings.sd.prompts === undefined) {
+        extension_settings.sd.prompts = promptTemplates;
+    }
+
+    if (extension_settings.sd.character_prompts === undefined) {
+        extension_settings.sd.character_prompts = {};
     }
 
     $('#sd_scale').val(extension_settings.sd.scale).trigger('input');
@@ -154,7 +176,102 @@ async function loadSettings() {
     $('#sd_enable_hr').prop('checked', extension_settings.sd.enable_hr);
     $('#sd_refine_mode').prop('checked', extension_settings.sd.refine_mode);
 
+    addPromptTemplates();
+
     await Promise.all([loadSamplers(), loadModels()]);
+}
+
+function addPromptTemplates() {
+    $('#sd_prompt_templates').empty();
+
+    for (const [name, prompt] of Object.entries(extension_settings.sd.prompts)) {
+        const label = $('<label></label>')
+            .text(modeLabels[name])
+            .attr('for', `sd_prompt_${name}`);
+        const textarea = $('<textarea></textarea>')
+            .addClass('textarea_compact text_pole')
+            .attr('id', `sd_prompt_${name}`)
+            .attr('rows', 6)
+            .val(prompt).on('input', () => {
+                extension_settings.sd.prompts[name] = textarea.val();
+                saveSettingsDebounced();
+            });
+        const button = $('<button></button>')
+            .addClass('menu_button fa-solid fa-undo')
+            .attr('title', 'Restore default')
+            .on('click', () => {
+                textarea.val(promptTemplates[name]);
+                extension_settings.sd.prompts[name] = promptTemplates[name];
+                saveSettingsDebounced();
+            });
+        const container = $('<div></div>')
+            .addClass('title_restorable')
+            .append(label)
+            .append(button)
+        $('#sd_prompt_templates').append(container);
+        $('#sd_prompt_templates').append(textarea);
+    }
+}
+
+async function refinePrompt(prompt) {
+    if (extension_settings.sd.refine_mode) {
+        const refinedPrompt = await callPopup('<h3>Review and edit the prompt:</h3>Press "Cancel" to abort the image generation.', 'input', prompt, { rows: 5, okButton: 'Generate' });
+
+        if (refinedPrompt) {
+            return refinedPrompt;
+        } else {
+            throw new Error('Generation aborted by user.');
+        }
+    }
+
+    return prompt;
+}
+
+function onChatChanged() {
+    if (this_chid === undefined || selected_group) {
+        $('#sd_character_prompt_block').hide();
+        return;
+    }
+
+    $('#sd_character_prompt_block').show();
+    const key = getCharaFilename(this_chid);
+    $('#sd_character_prompt').val(key ? (extension_settings.sd.character_prompts[key] || '') : '');
+}
+
+function onCharacterPromptInput() {
+    const key = getCharaFilename(this_chid);
+    extension_settings.sd.character_prompts[key] = $('#sd_character_prompt').val();
+    resetScrollHeight($(this));
+    saveSettingsDebounced();
+}
+
+function getCharacterPrefix() {
+    if (selected_group) {
+        return '';
+    }
+
+    const key = getCharaFilename(this_chid);
+
+    if (key) {
+        return extension_settings.sd.character_prompts[key] || '';
+    }
+
+    return '';
+}
+
+function combinePrefixes(str1, str2) {
+    if (!str2) {
+        return str1;
+    }
+
+    // Remove leading/trailing white spaces and commas from the strings
+    str1 = str1.trim().replace(/^,|,$/g, '');
+    str2 = str2.trim().replace(/^,|,$/g, '');
+
+    // Combine the strings with a comma between them
+    var result = `${str1}, ${str2},`;
+
+    return result;
 }
 
 function onRefineModeInput() {
@@ -383,7 +500,7 @@ function getQuietPrompt(mode, trigger) {
         return trigger;
     }
 
-    return substituteParams(stringFormat(quietPrompts[mode], trigger));
+    return substituteParams(stringFormat(extension_settings.sd.prompts[mode], trigger));
 }
 
 function processReply(str) {
@@ -475,31 +592,16 @@ async function getPrompt(generationType, message, trigger, quiet_prompt) {
             break;
     }
 
+    if (generationType !== generationMode.FREE) {
+        prompt = await refinePrompt(prompt);
+    }
+
     return prompt;
 }
 
 async function generatePrompt(quiet_prompt) {
-    let reply = processReply(await new Promise(
-        async function promptPromise(resolve, reject) {
-            try {
-                await getContext().generate('quiet', { resolve, reject, quiet_prompt, force_name2: true, });
-            }
-            catch {
-                reject();
-            }
-        }));
-
-    if (extension_settings.sd.refine_mode) {
-        const refinedPrompt = await callPopup('<h3>Review and edit the generated prompt:</h3>Press "Cancel" to abort the image generation.', 'input', reply, { rows: 5, okButton: 'Generate' });
-
-        if (refinedPrompt) {
-            reply = refinedPrompt;
-        } else {
-            throw new Error('Generation aborted by user.');
-        }
-    }
-
-    return reply;
+    const reply = await generateQuietPrompt(quiet_prompt);
+    return processReply(reply);
 }
 
 async function sendGenerationRequest(prompt, callback) {
@@ -524,7 +626,7 @@ async function generateExtrasImage(prompt, callback) {
             scale: extension_settings.sd.scale,
             width: extension_settings.sd.width,
             height: extension_settings.sd.height,
-            prompt_prefix: extension_settings.sd.prompt_prefix,
+            prompt_prefix: combinePrefixes(extension_settings.sd.prompt_prefix, getCharacterPrefix()),
             negative_prompt: extension_settings.sd.negative_prompt,
             restore_faces: !!extension_settings.sd.restore_faces,
             enable_hr: !!extension_settings.sd.enable_hr,
@@ -552,7 +654,7 @@ async function generateHordeImage(prompt, callback) {
             scale: extension_settings.sd.scale,
             width: extension_settings.sd.width,
             height: extension_settings.sd.height,
-            prompt_prefix: extension_settings.sd.prompt_prefix,
+            prompt_prefix: combinePrefixes(extension_settings.sd.prompt_prefix, getCharacterPrefix()),
             negative_prompt: extension_settings.sd.negative_prompt,
             model: extension_settings.sd.model,
             nsfw: extension_settings.sd.horde_nsfw,
@@ -690,7 +792,9 @@ async function sdMessageButton(e) {
     try {
         setBusyIcon(true);
         if (hasSavedImage) {
-            const prompt = message?.extra?.title;
+            const prompt = await refinePrompt(message.extra.title);
+            message.extra.title = prompt;
+
             console.log('Regenerating an image, using existing prompt:', prompt);
             await sendGenerationRequest(prompt, saveGeneratedImage);
         }
@@ -763,60 +867,74 @@ jQuery(async () => {
     <div class="sd_settings">
         <div class="inline-drawer">
             <div class="inline-drawer-toggle inline-drawer-header">
-            <b>Stable Diffusion</b>
-            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                <b>Stable Diffusion</b>
+                <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+            </div>
+            <div class="inline-drawer-content">
+                <small><i>Use slash commands or the bottom Paintbrush button to generate images. Type <span class="monospace">/help</span> in chat for more details</i></small>
+                <br>
+                <small><i>Hint: Save an API key in Horde KoboldAI API settings to use it here.</i></small>
+                <label for="sd_refine_mode" class="checkbox_label" title="Allow to edit prompts manually before sending them to generation API">
+                    <input id="sd_refine_mode" type="checkbox" />
+                    Edit prompts before generation
+                </label>
+                <div class="flex-container flexGap5 marginTop10 margin-bot-10px">
+                    <label class="checkbox_label">
+                        <input id="sd_horde" type="checkbox" />
+                        Use Stable Horde
+                    </label>
+                    <label style="margin-left:1em;" class="checkbox_label">
+                        <input id="sd_horde_nsfw" type="checkbox" />
+                        Allow NSFW images from Horde
+                    </label>
+                </div>
+                <label for="sd_scale">CFG Scale (<span id="sd_scale_value"></span>)</label>
+                <input id="sd_scale" type="range" min="${defaultSettings.scale_min}" max="${defaultSettings.scale_max}" step="${defaultSettings.scale_step}" value="${defaultSettings.scale}" />
+                <label for="sd_steps">Sampling steps (<span id="sd_steps_value"></span>)</label>
+                <input id="sd_steps" type="range" min="${defaultSettings.steps_min}" max="${defaultSettings.steps_max}" step="${defaultSettings.steps_step}" value="${defaultSettings.steps}" />
+                <label for="sd_width">Width (<span id="sd_width_value"></span>)</label>
+                <input id="sd_width" type="range" max="${defaultSettings.dimension_max}" min="${defaultSettings.dimension_min}" step="${defaultSettings.dimension_step}" value="${defaultSettings.width}" />
+                <label for="sd_height">Height (<span id="sd_height_value"></span>)</label>
+                <input id="sd_height" type="range" max="${defaultSettings.dimension_max}" min="${defaultSettings.dimension_min}" step="${defaultSettings.dimension_step}" value="${defaultSettings.height}" />
+                <div><small>Only for Horde or remote Stable Diffusion Web UI:</small></div>
+                <div class="flex-container marginTop10 margin-bot-10px">
+                    <label class="flex1 checkbox_label">
+                        <input id="sd_restore_faces" type="checkbox" />
+                        Restore Faces
+                    </label>
+                    <label class="flex1 checkbox_label">
+                        <input id="sd_enable_hr" type="checkbox" />
+                        Hires. Fix
+                    </label>
+                </div>
+                <label for="sd_model">Stable Diffusion model</label>
+                <select id="sd_model"></select>
+                <label for="sd_sampler">Sampling method</label>
+                <select id="sd_sampler"></select>
+                <div class="flex-container flexGap5 margin-bot-10px">
+                    <label class="checkbox_label">
+                        <input id="sd_horde_karras" type="checkbox" />
+                        Karras (only for Horde, not all samplers supported)
+                    </label>
+                </div>
+                <label for="sd_prompt_prefix">Common prompt prefix</label>
+                <textarea id="sd_prompt_prefix" class="text_pole textarea_compact" rows="3"></textarea>
+                <div id="sd_character_prompt_block">
+                    <label for="sd_character_prompt">Character-specific prompt prefix</label>
+                    <small>Won't be used in groups.</small>
+                    <textarea id="sd_character_prompt" class="text_pole textarea_compact" rows="3" placeholder="Any characteristics that describe the currently selected character. Will be added after a common prefix.&#10;Example: female, green eyes, brown hair, pink shirt"></textarea>
+                </div>
+                <label for="sd_negative_prompt">Negative prompt</label>
+                <textarea id="sd_negative_prompt" class="text_pole textarea_compact" rows="3"></textarea>
+            </div>
         </div>
-        <div class="inline-drawer-content">
-            <small><i>Use slash commands or the bottom Paintbrush button to generate images. Type <span class="monospace">/help</span> in chat for more details</i></small>
-            <br>
-            <small><i>Hint: Save an API key in Horde KoboldAI API settings to use it here.</i></small>
-            <label for="sd_refine_mode" class="checkbox_label" title="Allow to edit prompts manually before sending them to generation API">
-                <input id="sd_refine_mode" type="checkbox" />
-                Edit prompts before generation
-            </label>
-            <div class="flex-container flexGap5 marginTop10 margin-bot-10px">
-                <label class="checkbox_label">
-                    <input id="sd_horde" type="checkbox" />
-                    Use Stable Horde
-                </label>
-                <label style="margin-left:1em;" class="checkbox_label">
-                    <input id="sd_horde_nsfw" type="checkbox" />
-                    Allow NSFW images from Horde
-                </label>
+        <div class="inline-drawer">
+            <div class="inline-drawer-toggle inline-drawer-header">
+                <b>SD Prompt Templates</b>
+                <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
             </div>
-            <label for="sd_scale">CFG Scale (<span id="sd_scale_value"></span>)</label>
-            <input id="sd_scale" type="range" min="${defaultSettings.scale_min}" max="${defaultSettings.scale_max}" step="${defaultSettings.scale_step}" value="${defaultSettings.scale}" />
-            <label for="sd_steps">Sampling steps (<span id="sd_steps_value"></span>)</label>
-            <input id="sd_steps" type="range" min="${defaultSettings.steps_min}" max="${defaultSettings.steps_max}" step="${defaultSettings.steps_step}" value="${defaultSettings.steps}" />
-            <label for="sd_width">Width (<span id="sd_width_value"></span>)</label>
-            <input id="sd_width" type="range" max="${defaultSettings.dimension_max}" min="${defaultSettings.dimension_min}" step="${defaultSettings.dimension_step}" value="${defaultSettings.width}" />
-            <label for="sd_height">Height (<span id="sd_height_value"></span>)</label>
-            <input id="sd_height" type="range" max="${defaultSettings.dimension_max}" min="${defaultSettings.dimension_min}" step="${defaultSettings.dimension_step}" value="${defaultSettings.height}" />
-            <div><small>Only for Horde or remote Stable Diffusion Web UI:</small></div>
-            <div class="flex-container marginTop10 margin-bot-10px">
-                <label class="flex1 checkbox_label">
-                    <input id="sd_restore_faces" type="checkbox" />
-                    Restore Faces
-                </label>
-                <label class="flex1 checkbox_label">
-                    <input id="sd_enable_hr" type="checkbox" />
-                    Hires. Fix
-                </label>
+            <div id="sd_prompt_templates" class="inline-drawer-content">
             </div>
-            <label for="sd_model">Stable Diffusion model</label>
-            <select id="sd_model"></select>
-            <label for="sd_sampler">Sampling method</label>
-            <select id="sd_sampler"></select>
-            <div class="flex-container flexGap5 margin-bot-10px">
-                <label class="checkbox_label">
-                    <input id="sd_horde_karras" type="checkbox" />
-                    Karras (only for Horde, not all samplers supported)
-                </label>
-            </div>
-            <label for="sd_prompt_prefix">Generated prompt prefix</label>
-            <textarea id="sd_prompt_prefix" class="text_pole textarea_compact" rows="2"></textarea>
-            <label for="sd_negative_prompt">Negative prompt</label>
-            <textarea id="sd_negative_prompt" class="text_pole textarea_compact" rows="2"></textarea>
         </div>
     </div>`;
 
@@ -835,15 +953,20 @@ jQuery(async () => {
     $('#sd_restore_faces').on('input', onRestoreFacesInput);
     $('#sd_enable_hr').on('input', onHighResFixInput);
     $('#sd_refine_mode').on('input', onRefineModeInput);
+    $('#sd_character_prompt').on('input', onCharacterPromptInput);
+    $('#sd_character_prompt_block').hide();
 
     $('.sd_settings .inline-drawer-toggle').on('click', function () {
         initScrollHeight($("#sd_prompt_prefix"));
         initScrollHeight($("#sd_negative_prompt"));
+        initScrollHeight($("#sd_character_prompt"));
     })
 
     eventSource.on(event_types.EXTRAS_CONNECTED, async () => {
         await Promise.all([loadSamplers(), loadModels()]);
     });
+
+    eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
 
     await loadSettings();
     $('body').addClass('sd');

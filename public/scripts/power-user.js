@@ -43,7 +43,7 @@ export {
     send_on_enter_options,
 };
 
-const MAX_CONTEXT_DEFAULT = 4096;
+export const MAX_CONTEXT_DEFAULT = 4096;
 const MAX_CONTEXT_UNLOCKED = 65536;
 
 const avatar_styles = {
@@ -534,6 +534,11 @@ async function applyTheme(name) {
         {
             key: 'chat_width',
             action: async () => {
+                // If chat width is not set, set it to 50
+                if (!power_user.chat_width) {
+                    power_user.chat_width = 50;
+                }
+
                 localStorage.setItem(storage_keys.chat_width, power_user.chat_width);
                 applyChatWidth();
             }
@@ -658,6 +663,10 @@ function loadPowerUserSettings(settings, data) {
 
     if (power_user.waifuMode === '') {
         power_user.waifuMode = false;
+    }
+
+    if (power_user.chat_width === '') {
+        power_user.chat_width = 50;
     }
 
     $('#trim_spaces').prop("checked", power_user.trim_spaces);
@@ -1151,10 +1160,10 @@ async function resetMovablePanels(type) {
         //if happening as part of preset application, do it quietly.
         if (type === 'quiet') {
             return
-            //if happening due to resize, tell user.    
+            //if happening due to resize, tell user.
         } else if (type === 'resize') {
             toastr.warning('Panel positions reset due to zoom/resize');
-            //if happening due to manual button press    
+            //if happening due to manual button press
         } else {
             toastr.success('Panel positions reset');
         }
@@ -1173,7 +1182,7 @@ function doNewChat() {
 
 function doRandomChat() {
     resetSelectedGroup();
-    setCharacterId(Math.floor(Math.random() * characters.length));
+    setCharacterId(Math.floor(Math.random() * characters.length).toString());
     setTimeout(() => {
         reloadCurrentChat();
     }, 1);

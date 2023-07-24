@@ -95,6 +95,7 @@
     <script type="module" src="scripts/context-template.js"></script>
     <script type="module" src="scripts/extensions.js"></script>
     <script type="module" src="scripts/authors-note.js"></script>
+    <script type="module" src="scripts/preset-manager.js"></script>
     <script type="text/javascript" src="scripts/toolcool-color-picker.js"></script>
 
     <title>SillyTavern</title>
@@ -131,15 +132,24 @@
                 <div class="scrollableInner">
                     <div class="flex-container" id="ai_response_configuration">
                         <div id="respective-presets-block" class="width100p">
+                            <input type="file" hidden data-preset-manager-file="" accept=".json, .settings">
                             <div id="kobold_api-presets">
                                 <h3><span data-i18n="kobldpresets">Kobold Presets</span>
                                     <a href="https://docs.sillytavern.app/usage/api-connections/koboldai/" class="notes-link" target="_blank">
                                         <span class="note-link-span">?</span>
                                     </a>
                                 </h3>
-                                <select id="settings_perset">
-                                    <option value="gui" data-i18n="guikoboldaisettings">GUI KoboldAI Settings</option>
-                                </select>
+
+                                <div class="preset_buttons">
+                                    <select id="settings_perset" data-preset-manager-for="kobold">
+                                        <option value="gui" data-i18n="guikoboldaisettings">GUI KoboldAI Settings</option>
+                                    </select>
+                                    <i data-preset-manager-update="kobold" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
+                                    <i data-preset-manager-new="kobold" class="menu_button fa-solid fa-plus" title="Create new preset" data-i18n="[title]Create new preset"></i>
+                                    <i data-preset-manager-import="kobold" class="menu_button fa-solid fa-upload" title="Import preset" data-i18n="[title]Import preset"></i>
+                                    <i data-preset-manager-export="kobold" class="menu_button fa-solid fa-download"title="Export preset"  data-i18n="[title]Export preset"></i>
+                                    <i data-preset-manager-delete="kobold" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
+                                </div>
                             </div>
                             <div id="novel_api-presets">
                                 <h3>
@@ -148,7 +158,7 @@
                                         <span class="note-link-span">?</span>
                                     </a>
                                 </h3>
-                                <select id="settings_perset_novel">
+                                <select id="settings_perset_novel" data-preset-manager-for="novel">
                                     <option value="gui" data-i18n="default">Default</option>
                                 </select>
                             </div>
@@ -171,8 +181,15 @@
                             <div id="textgenerationwebui_api-presets">
                                 <h3><span data-i18n="text gen webio(ooba)preset">Text Gen WebUI (ooba) presets</span>
                                 </h3>
-                                <select id="settings_preset_textgenerationwebui">
-                                </select>
+                                <div class="preset_buttons">
+                                    <select id="settings_preset_textgenerationwebui" data-preset-manager-for="textgenerationwebui">
+                                    </select>
+                                    <i data-preset-manager-update="textgenerationwebui" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
+                                    <i data-preset-manager-new="textgenerationwebui" class="menu_button fa-solid fa-plus" title="Create new preset" data-i18n="[title]Create new preset"></i>
+                                    <i data-preset-manager-import="textgenerationwebui" class="menu_button fa-solid fa-upload" title="Import preset" data-i18n="[title]Import preset"></i>
+                                    <i data-preset-manager-export="textgenerationwebui" class="menu_button fa-solid fa-download"title="Export preset"  data-i18n="[title]Export preset"></i>
+                                    <i data-preset-manager-delete="textgenerationwebui" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
+                                </div>
                             </div>
                             <hr>
                         </div>
@@ -777,6 +794,81 @@
                                 </div>
                             </div>
                             <div id="novel_api-settings">
+                                <div class="range-block">
+                                    <div class="range-block-title" data-i18n="Top P">
+                                        Top P
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="top_p_novel" name="volume" min="0" max="1" step="0.01">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="top_p_novel" id="top_p_counter_novel">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title" data-i18n="Top A">
+                                        Top A
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="top_a_novel" name="volume" min="0" max="1" step="0.01">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="top_a_novel" id="top_a_counter_novel">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title" data-i18n="Top K">
+                                        Top K
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="top_k_novel" name="volume" min="0" max="300" step="1">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="top_k_novel" id="top_k_counter_novel">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title" data-i18n="Typical P">
+                                        Typical P
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="typical_p_novel" name="volume" min="0" max="1" step="0.01">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="typical_p_novel" id="typical_p_counter_novel">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title" data-i18n="Min Length">
+                                        Min Length
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="min_length_novel" name="volume" min="0" max="1024" step="1">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="min_length_novel" id="min_length_counter_novel">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             <div id="textgenerationwebui_api-settings">
                                 <div class="range-block">
@@ -2340,7 +2432,7 @@
                                 <span data-i18n="Confirm message deletion">Confirm message deletion</span>
                             </label>
                             <label for="spoiler_free_mode"><input id="spoiler_free_mode" type="checkbox" />
-                                <span data-i18n="Spoiler Free Mode">Spolier Free Mode</span>
+                                <span data-i18n="Spoiler Free Mode">Spoiler Free Mode</span>
                             </label>
 
                             <div class="inline-drawer wide100p flexFlowColumn">

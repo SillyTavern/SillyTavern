@@ -192,7 +192,7 @@ function goToCharacterCallback(_, name) {
     const characterIndex = findCharacterIndex(name);
 
     if (characterIndex !== -1) {
-        openChat(characterIndex);
+        openChat(new String(characterIndex));
     } else {
         console.warn(`No matches found for name "${name}"`);
     }

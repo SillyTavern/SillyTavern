@@ -4500,14 +4500,14 @@ toolcool-color-picker {
     flex-direction: column;
 }
 
-.openai_preset_buttons {
+.openai_preset_buttons, .preset_buttons {
     display: flex;
     flex-direction: row;
     align-items: baseline;
     gap: 5px;
 }
 
-.openai_preset_buttons select {
+.openai_preset_buttons select, .preset_buttons select {
     flex-grow: 1;
 }
 

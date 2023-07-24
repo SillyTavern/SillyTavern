@@ -5,6 +5,7 @@
   "min_length": 1,
   "top_k": 25,
   "top_a": 0.3,
+  "top_p": 1,
   "typical_p": 0.96,
   "tail_free_sampling": 0.895,
   "repetition_penalty": 1.0125,

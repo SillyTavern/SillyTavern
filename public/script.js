@@ -76,6 +76,7 @@ import {
     persona_description_positions,
     loadMovingUIState,
     getCustomStoppingStrings,
+    MAX_CONTEXT_DEFAULT,
 } from "./scripts/power-user.js";
 
 import {
@@ -701,11 +702,11 @@ var is_use_scroll_holder = false;
 
 //settings
 var settings;
-var koboldai_settings;
-var koboldai_setting_names;
+export let koboldai_settings;
+export let koboldai_setting_names;
 var preset_settings = "gui";
 var user_avatar = "you.png";
-var amount_gen = 80; //default max length of AI generated responses
+export var amount_gen = 80; //default max length of AI generated responses
 var max_context = 2048;
 
 var is_pygmalion = false;
@@ -719,8 +720,8 @@ let extension_prompts = {};
 var main_api;// = "kobold";
 //novel settings
 let novel_tier;
-let novelai_settings;
-let novelai_setting_names;
+export let novelai_settings;
+export let novelai_setting_names;
 let abortController;
 
 //css
@@ -2110,7 +2111,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     // OpenAI doesn't need instruct mode. Use OAI main prompt instead.
     const isInstruct = power_user.instruct.enabled && main_api !== 'openai';
     const isImpersonate = type == "impersonate";
-    const isContinue = type == 'continue';
 
     message_already_generated = isImpersonate ? `${name1}: ` : `${name2}: `;
     // Name for the multigen prefix
@@ -2199,6 +2199,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             type = 'continue';
         }
 
+        const isContinue = type == 'continue';
         deactivateSendButtons();
 
         let { messageBias, promptBias, isUserPromptBias } = getBiasStrings(textareaText, type);
@@ -3148,6 +3149,17 @@ function getMultigenAmount() {
 async function DupeChar() {
     if (!this_chid) {
         toastr.warning('You must first select a character to duplicate!')
+        return;
+    }
+
+    const confirm = await callPopup(`
+        <h3>Are you sure you want to duplicate this character?</h3>
+        <span>If you just want to start a new chat with the same character, use "Start new chat" option in the bottom-left options menu.</span><br><br>`,
+        'confirm',
+    );
+
+    if (!confirm) {
+        console.log('User cancelled duplication');
         return;
     }
 
@@ -4907,11 +4919,6 @@ async function getSettings(type) {
         novelai_setting_names = {};
         novelai_setting_names = arr_holder;
 
-        nai_settings.preset_settings_novel = settings.preset_settings_novel;
-        $(
-            `#settings_perset_novel option[value=${novelai_setting_names[nai_settings.preset_settings_novel]}]`
-        ).attr("selected", "true");
-
         //Load AI model config settings
 
         amount_gen = settings.amount_gen;
@@ -4924,10 +4931,11 @@ async function getSettings(type) {
         showSwipeButtons();
 
         // Kobold
-        loadKoboldSettings(settings);
+        loadKoboldSettings(settings.kai_settings ?? settings);
 
         // Novel
-        loadNovelSettings(settings);
+        loadNovelSettings(settings.nai_settings ?? settings);
+        $(`#settings_perset_novel option[value=${novelai_setting_names[nai_settings.preset_settings_novel]}]`).attr("selected", "true");
 
         // TextGen
         loadTextGenSettings(data, settings);
@@ -5047,8 +5055,8 @@ async function saveSettings(type) {
             context_settings: context_settings,
             tags: tags,
             tag_map: tag_map,
-            ...nai_settings,
-            ...kai_settings,
+            nai_settings: nai_settings,
+            kai_settings: kai_settings,
             ...oai_settings,
         }, null, 4),
         beforeSend: function () {
@@ -5080,7 +5088,23 @@ async function saveSettings(type) {
     });
 }
 
+export function setGenerationParamsFromPreset(preset) {
+    if (preset.genamt !== undefined) {
+        amount_gen = preset.genamt;
+        $("#amount_gen").val(amount_gen);
+        $("#amount_gen_counter").text(`${amount_gen}`);
+    }
 
+    if (preset.max_length !== undefined) {
+        max_context = preset.max_length;
+
+        const needsUnlock = max_context > MAX_CONTEXT_DEFAULT;
+        $('#max_context_unlocked').prop('checked', needsUnlock).trigger('change');
+
+        $("#max_context").val(max_context);
+        $("#max_context_counter").text(`${max_context}`);
+    }
+}
 
 function setCharacterBlockHeight() {
     const $children = $("#rm_print_characters_block").children();
@@ -5591,9 +5615,17 @@ function onScenarioOverrideRemoveClick() {
     $(this).closest('.scenario_override').find('.chat_scenario').val('').trigger('input');
 }
 
-function callPopup(text, type, inputValue = '', { okButton, rows } = {}) {
+function callPopup(text, type, inputValue = '', { okButton, rows, wide, large } = {}) {
     if (type) {
         popup_type = type;
+    }
+
+    if (wide) {
+        $("#dialogue_popup").addClass("wide_dialogue_popup");
+    }
+
+    if (large) {
+        $("#dialogue_popup").addClass("large_dialogue_popup");
     }
 
     $("#dialogue_popup_cancel").css("display", "inline-block");
@@ -6840,6 +6872,73 @@ function doCharListDisplaySwitch() {
     updateVisibleDivs('#rm_print_characters_block', true);
 }
 
+/**
+ * Function to handle the deletion of a character, given a specific popup type and character ID.
+ * If popup type equals "del_ch", it will proceed with deletion otherwise it will exit the function.
+ * It fetches the delete character route, sending necessary parameters, and in case of success, 
+ * it proceeds to delete character from UI and saves settings.
+ * In case of error during the fetch request, it logs the error details.
+ * 
+ * @param {string} popup_type - The type of popup currently active.
+ * @param {string} this_chid - The character ID to be deleted.
+ */
+export async function handleDeleteCharacter(popup_type, this_chid) {
+    if (popup_type !== "del_ch") {
+        return;
+    }
+
+    const delete_chats = !!$("#del_char_checkbox").prop("checked");
+    const avatar = characters[this_chid].avatar;
+    const name = characters[this_chid].name;
+
+    const msg = { avatar_url: avatar, delete_chats: delete_chats };
+
+    const response = await fetch('/deletecharacter', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify(msg),
+        cache: 'no-cache',
+    });
+
+    if (response.ok) {
+        await deleteCharacter(name, avatar);
+    } else {
+        console.error('Failed to delete character: ', response.status, response.statusText);
+    }
+}
+
+
+/**
+ * Function to delete a character from UI after character deletion API success.
+ * It manages necessary UI changes such as closing advanced editing popup, unsetting 
+ * character ID, resetting characters array and chat metadata, deselecting character's tab 
+ * panel, removing character name from navigation tabs, clearing chat, removing character's 
+ * avatar from tag_map, fetching updated list of characters and updating the 'deleted 
+ * character' message.
+ * It also ensures to save the settings after all the operations.
+ * 
+ * @param {string} name - The name of the character to be deleted.
+ * @param {string} avatar - The avatar URL of the character to be deleted.
+ */
+export async function deleteCharacter(name, avatar) {
+    $("#character_cross").click();
+    this_chid = "invalid-safety-id";
+    characters.length = 0;
+    name2 = systemUserName;
+    chat = [...safetychat];
+    chat_metadata = {};
+    setRightTabSelectedClass();
+    $(document.getElementById("rm_button_selected_ch")).children("h2").text("");
+    clearChat();
+    this_chid = undefined;
+    delete tag_map[avatar];
+    await getCharacters();
+    select_rm_info("char_delete", name);
+    printMessages();
+    saveSettingsDebounced();
+}
+
+
 $(document).ready(function () {
 
     if (isMobile() === true) {
@@ -7211,55 +7310,7 @@ $(document).ready(function () {
             }, 200);
         }
         if (popup_type == "del_ch") {
-            console.log(
-                "Deleting character -- ChID: " +
-                this_chid +
-                " -- Name: " +
-                characters[this_chid].name
-            );
-            const delete_chats = !!$("#del_char_checkbox").prop("checked");
-            const avatar = characters[this_chid].avatar;
-            const name = characters[this_chid].name;
-            const msg = new FormData($("#form_create").get(0)); // ID form
-            msg.append("delete_chats", delete_chats);
-            jQuery.ajax({
-                method: "POST",
-                url: "/deletecharacter",
-                beforeSend: function () {
-                },
-                data: msg,
-                cache: false,
-                contentType: false,
-                processData: false,
-                success: async function (html) {
-                    //RossAscends: New handling of character deletion that avoids page refreshes and should have
-                    // fixed char corruption due to cache problems.
-                    //due to how it is handled with 'popup_type', i couldn't find a way to make my method completely
-                    // modular, so keeping it in TAI-main.js as a new default.
-                    //this allows for dynamic refresh of character list after deleting a character.
-                    // closes advanced editing popup
-                    $("#character_cross").click();
-                    // unsets expected chid before reloading (related to getCharacters/printCharacters from using old arrays)
-                    this_chid = "invalid-safety-id";
-                    // resets the characters array, forcing getcharacters to reset
-                    characters.length = 0;
-                    name2 = systemUserName; // replaces deleted charcter name with system user since she will be displayed next.
-                    chat = [...safetychat]; // sets up system user to tell user about having deleted a character
-                    chat_metadata = {}; // resets chat metadata
-                    setRightTabSelectedClass() // 'deselects' character's tab panel
-                    $(document.getElementById("rm_button_selected_ch"))
-                        .children("h2")
-                        .text(""); // removes character name from nav tabs
-                    clearChat(); // removes deleted char's chat
-                    this_chid = undefined; // prevents getCharacters from trying to load an invalid char.
-                    delete tag_map[avatar]; // removes deleted char's avatar from tag_map
-                    await getCharacters(); // gets the new list of characters (that doesn't include the deleted one)
-                    select_rm_info("char_delete", name); // also updates the 'deleted character' message
-                    printMessages(); // prints out system user's 'deleted character' message
-                    //console.log("#dialogue_popup_ok(del-char) >>>> saving");
-                    saveSettingsDebounced(); // saving settings to keep changes to variables
-                },
-            });
+            handleDeleteCharacter(popup_type, this_chid, characters);
         }
         if (popup_type == "alternate_greeting" && menu_type !== "create") {
             createOrEditCharacter();
@@ -7709,13 +7760,7 @@ $(document).ready(function () {
             const preset = koboldai_settings[koboldai_setting_names[preset_settings]];
             loadKoboldSettings(preset);
 
-            amount_gen = preset.genamt;
-            $("#amount_gen").val(amount_gen);
-            $("#amount_gen_counter").text(`${amount_gen}`);
-
-            max_context = preset.max_length;
-            $("#max_context").val(max_context);
-            $("#max_context_counter").text(`${max_context}`);
+            setGenerationParamsFromPreset(preset);
 
             $("#range_block").find('input').prop("disabled", false);
             $("#kobold-advanced-config").find('input').prop("disabled", false);
@@ -8240,17 +8285,7 @@ $(document).ready(function () {
     });
 
     $("#dupe_button").click(async function () {
-
-        const body = { avatar_url: characters[this_chid].avatar };
-        const response = await fetch('/dupecharacter', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            body: JSON.stringify(body),
-        });
-        if (response.ok) {
-            toastr.success("Character Duplicated");
-            getCharacters();
-        }
+        await DupeChar();
     });
 
     $(document).on("click", ".select_chat_block, .bookmark_link, .mes_bookmark", async function () {
