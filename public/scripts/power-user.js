@@ -1182,7 +1182,7 @@ function doNewChat() {
 
 function doRandomChat() {
     resetSelectedGroup();
-    setCharacterId(Math.floor(Math.random() * characters.length));
+    setCharacterId(Math.floor(Math.random() * characters.length).toString());
     setTimeout(() => {
         reloadCurrentChat();
     }, 1);
