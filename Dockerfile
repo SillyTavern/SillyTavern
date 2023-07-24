@@ -4,7 +4,7 @@ FROM node:19.1.0-alpine3.16
 ARG APP_HOME=/home/node/app
 
 # Install system dependencies
-RUN apk add gcompat tini
+RUN apk add gcompat tini git
 
 # Ensure proper handling of kernel signals
 ENTRYPOINT [ "tini", "--" ]
