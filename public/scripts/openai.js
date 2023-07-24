@@ -61,9 +61,7 @@ export {
     loadOpenAISettings,
     setOpenAIMessages,
     setOpenAIMessageExamples,
-    setupOpenAIPromptManager,
-    setupClaudePromptManager,
-    setupWindowAiPromptManager,
+    setupChatCompletionPromptManager,
     generateOpenAIPromptCache,
     prepareOpenAIMessages,
     sendOpenAIRequest,
@@ -294,9 +292,15 @@ function setOpenAIMessageExamples(mesExamplesArray) {
     }
 }
 
-function setupOpenAIPromptManager(openAiSettings) {
+/**
+ * One-time setup for prompt manager module.
+ *
+ * @param openAiSettings
+ * @returns {PromptManagerModule|null}
+ */
+function setupChatCompletionPromptManager(openAiSettings) {
     // Do not set up prompt manager more than once
-    if (promptManager) return true;
+    if (promptManager) return promptManager;
 
     promptManager = new PromptManager();
 
@@ -326,14 +330,8 @@ function setupOpenAIPromptManager(openAiSettings) {
 
     promptManager.init(configuration, openAiSettings);
     promptManager.render();
-}
 
-function setupClaudePromptManager(claudeSettings) {
-    setupOpenAIPromptManager(claudeSettings);
-}
-
-function setupWindowAiPromptManager(windowAiSettings) {
-    setupOpenAIPromptManager(windowAiSettings);
+    return promptManager;
 }
 
 function generateOpenAIPromptCache() {
