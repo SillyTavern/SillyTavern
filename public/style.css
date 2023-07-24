@@ -1657,6 +1657,11 @@ body.big-avatars .ch_description {
     margin: 0;
     filter: drop-shadow(0px 0px 3px white);
     transition: opacity 0.2s ease-in-out;
+    display: none;
+}
+
+.bg_example:hover .bg_button {
+    display: block;
 }
 
 .bg_button:hover {
@@ -4850,7 +4855,9 @@ body.waifuMode .zoomed_avatar {
 
 @media screen and (max-width: 1000px) {
 
-
+    .bg_button {
+        font-size: 15px;
+    }
 
     #extensions_settings,
     #extensions_settings2 {

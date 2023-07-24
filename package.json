@@ -45,6 +45,7 @@
         }
     },
     "name": "sillytavern",
+    "type": "commonjs",
     "license": "AGPL-3.0",
     "repository": {
         "type": "git",

@@ -3437,11 +3437,19 @@ const autorunUrl = new URL(
     (':' + server_port)
 );
 
+async function checkDeprecatedBranch(branch) {
+    if (branch === 'main' || branch === 'dev') {
+        console.log('\x1b[1m\x1b[31m%s\x1b[0m', `${branch} is a deprecated branch. It will not receive updates and will be deleted from the repository soon.\nPlease switch to the new "release" or "staging" branch. Learn how here: https://docs.sillytavern.app/usage/branches/`);
+        await delay(5000); // wait 5 seconds so the user can read the message
+    }
+}
+
 const setupTasks = async function () {
     const version = getVersion();
 
     console.log(`SillyTavern ${version.pkgVersion}` + (version.gitBranch ? ` '${version.gitBranch}' (${version.gitRevision})` : ''));
 
+    await checkDeprecatedBranch(version.gitBranch);
     backupSettings();
     migrateSecrets();
     ensurePublicDirectoriesExist();
