@@ -1,3 +1,5 @@
+**dev branch is deprecated and won't be updated. Please migrate to the staging branch using the instructions: https://docs.sillytavern.app/usage/branches/**
+
 ![image](https://github.com/SillyTavern/SillyTavern/assets/18619528/8c41a061-7f72-4d2b-9d54-e6d058209e7b)
 
 Mobile-friendly, Multi-API (KoboldAI/CPP, Horde, NovelAI, Ooba, OpenAI+proxies, WindowAI(Claude!)), VN-like Waifu Mode, Horde SD, System TTS, WorldInfo (lorebooks), customizable UI, auto-translate, and more prompt options than you'd ever want or need. Optional Extras server for more SD/TTS options + ChromaDB/Summarize.
@@ -18,10 +20,10 @@ SillyTavern is a fork of TavernAI 1.2.8 which is under more active development a
 
 SillyTavern is being developed using a two-branch system to ensure a smooth experience for all users.
 
-* main -🌟 **Recommended for most users.** This is the most stable and recommended branch, updated only when major releases are pushed. It's suitable for the majority of users.
-* dev - ⚠️ **Not recommended for casual use.** This branch has the latest features, but be cautious as it may break at any time. Only for power users and enthusiasts.
+* release -🌟 **Recommended for most users.** This is the most stable and recommended branch, updated only when major releases are pushed. It's suitable for the majority of users.
+* staging - ⚠️ **Not recommended for casual use.** This branch has the latest features, but be cautious as it may break at any time. Only for power users and enthusiasts.
 
-If you're not familiar with using the git CLI or don't understand what a branch is, don't worry! The main branch is always the preferable option for you.
+If you're not familiar with using the git CLI or don't understand what a branch is, don't worry! The release branch is always the preferable option for you.
 
 ### What do I need other than Tavern?
 
@@ -144,8 +146,8 @@ An easy-to-follow guide with pretty pictures:
   5. Open a Command Prompt inside that folder by clicking in the 'Address Bar' at the top, typing `cmd`, and pressing Enter.
   6. Once the black box (Command Prompt) pops up, type ONE of the following into it and press Enter:
 
-* for Main Branch: `git clone https://github.com/SillyTavern/SillyTavern -b main`
-* for Dev Branch: `git clone https://github.com/SillyTavern/SillyTavern -b dev`
+* for Release Branch: `git clone https://github.com/SillyTavern/SillyTavern -b release`
+* for Staging Branch: `git clone https://github.com/SillyTavern/SillyTavern -b staging`
 
   7. Once everything is cloned, double-click `Start.bat` to make NodeJS install its requirements.
   8. The server will then start, and SillyTavern will pop up in your browser.

@@ -962,7 +962,7 @@ async function getBackgrounds() {
         const getData = await response.json();
         //background = getData;
         //console.log(getData.length);
-        $("#bg_menu_content").empty();
+        $("#bg_menu_content").children('div').remove();
         for (const bg of getData) {
             const template = getBackgroundFromTemplate(bg);
             $("#bg_menu_content").append(template);
@@ -1524,6 +1524,8 @@ function scrollChatToBottom() {
 function substituteParams(content, _name1, _name2, _original) {
     _name1 = _name1 ?? name1;
     _name2 = _name2 ?? name2;
+    _original = _original || '';
+
     if (!content) {
         return '';
     }
@@ -1531,10 +1533,7 @@ function substituteParams(content, _name1, _name2, _original) {
     // Replace {{original}} with the original message
     // Note: only replace the first instance of {{original}}
     // This will hopefully prevent the abuse
-    if (_original) {
-        content = content.replace(/{{original}}/i, _original);
-    }
-
+    content = content.replace(/{{original}}/i, _original);
     content = content.replace(/{{input}}/gi, $('#send_textarea').val());
     content = content.replace(/{{user}}/gi, _name1);
     content = content.replace(/{{char}}/gi, _name2);
@@ -7075,6 +7074,12 @@ $(document).ready(function () {
         const fileExtension = old_bg.split('.').pop();
         const old_bg_extensionless = old_bg.replace(`.${fileExtension}`, '');
         const new_bg_extensionless = await callPopup('<h3>Enter new background name:</h3>', 'input', old_bg_extensionless);
+
+        if (!new_bg_extensionless) {
+            console.debug('no new_bg_extensionless');
+            return;
+        }
+
         const new_bg = `${new_bg_extensionless}.${fileExtension}`;
 
         if (old_bg_extensionless === new_bg_extensionless) {
