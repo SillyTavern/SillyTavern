@@ -2954,7 +2954,7 @@ function getNextMessageId(type) {
 }
 
 export function getBiasStrings(textareaText, type) {
-    if (type == 'impersonate') {
+    if (type == 'impersonate' || type == 'continue') {
         return { messageBias: '', promptBias: '', isUserPromptBias: false };
     }
 
