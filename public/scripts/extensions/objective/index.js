@@ -1,4 +1,4 @@
-import { chat_metadata } from "../../../script.js";
+import { chat_metadata, callPopup, saveSettingsDebounced } from "../../../script.js";
 import { getContext, extension_settings, saveMetadataDebounced } from "../../extensions.js";
 import {
     substituteParams,
@@ -18,30 +18,30 @@ let currentTask = null
 let checkCounter = 0
 
 
-const objectivePrompts = {
+const defaultPrompts = {
     "createTask": `Pause your roleplay and generate a list of tasks to complete an objective. Your next response must be formatted as a numbered list of plain text entries. Do not include anything but the numbered list. The list must be prioritized in the order that tasks must be completed.
 
-    The objective that you must make a numbered task list for is: [{{objective}}].
-    The tasks created should take into account the character traits of {{char}}. These tasks may or may not involve {{user}} directly. Be sure to include the objective as the final task.
+The objective that you must make a numbered task list for is: [{{objective}}].
+The tasks created should take into account the character traits of {{char}}. These tasks may or may not involve {{user}} directly. Be sure to include the objective as the final task.
 
-    Given an example objective of 'Make me a four course dinner', here is an example output:
-    1. Determine what the courses will be
-    2. Find recipes for each course
-    3. Go shopping for supplies with {{user}}
-    4. Cook the food
-    5. Get {{user}} to set the table
-    6. Serve the food
-    7. Enjoy eating the meal with {{user}}
+Given an example objective of 'Make me a four course dinner', here is an example output:
+1. Determine what the courses will be
+2. Find recipes for each course
+3. Go shopping for supplies with {{user}}
+4. Cook the food
+5. Get {{user}} to set the table
+6. Serve the food
+7. Enjoy eating the meal with {{user}}
     `,
     "checkTaskCompleted": `Pause your roleplay. Determine if this task is completed: [{{task}}].
-    To do this, examine the most recent messages. Your response must only contain either true or false, nothing other words.
-    Example output:
-    true
-    `
+To do this, examine the most recent messages. Your response must only contain either true or false, nothing other words.
+Example output:
+true
+    `,
+    'currentTask':`Your current task is [{{task}}]. Balance existing roleplay with completing this task.`
 }
 
-const extensionPrompt = "Your current task is [{{task}}]. Balance existing roleplay with completing this task."
-
+let objectivePrompts = defaultPrompts
 
 //###############################//
 //#       Task Management       #//
@@ -80,7 +80,7 @@ function deleteTask(taskId){
 
 // Call Quiet Generate to create task list using character context, then convert to tasks. Should not be called much.
 async function generateTasks() {
-    const prompt = substituteParams(objectivePrompts["createTask"].replace(/{{objective}}/gi, globalObjective));
+    const prompt = substituteParams(objectivePrompts.createTask.replace(/{{objective}}/gi, globalObjective));
     console.log(`Generating tasks for objective with prompt`)
     toastr.info('Generating tasks for objective', 'Please wait...');
     const taskResponse = await generateQuietPrompt(prompt)
@@ -108,7 +108,7 @@ async function checkTaskCompleted() {
     }
     checkCounter = $('#objective-check-frequency').val()
 
-    const prompt = substituteParams(objectivePrompts["checkTaskCompleted"].replace(/{{task}}/gi, currentTask.description));
+    const prompt = substituteParams(objectivePrompts.checkTaskCompleted.replace(/{{task}}/gi, currentTask.description));
     const taskResponse = (await generateQuietPrompt(prompt)).toLowerCase()
 
     // Check response if task complete
@@ -142,7 +142,9 @@ function setCurrentTask(taskId = null) {
     // Now update the extension prompt
 
     if (description) {
-        const extensionPromptText = extensionPrompt.replace(/{{task}}/gi, description);
+        const extensionPromptText = objectivePrompts.currentTask.replace(/{{task}}/gi, description);
+        $('.objective-task').css({'border-color':'','border-width':''}) // Clear highlights
+        currentTask.descriptionSpan.css({'border-color':'yellow','border-width':'2px'}); // Highlight current task
         context.setExtensionPrompt(MODULE_NAME, extensionPromptText, 1, $('#objective-chat-depth').val());
         console.info(`Current task in context.extensionPrompts.Objective is ${JSON.stringify(context.extensionPrompts.Objective)}`);
     } else {
@@ -206,7 +208,7 @@ class ObjectiveTask {
         const template = `
         <div id="objective-task-label-${this.id}" class="flex1 checkbox_label">
             <input id="objective-task-complete-${this.id}" type="checkbox">
-            <span class="text_pole" style="display: block" id="objective-task-description-${this.id}" contenteditable>${this.description}</span>
+            <span class="text_pole objective-task" style="display: block" id="objective-task-description-${this.id}" contenteditable>${this.description}</span>
             <div id="objective-task-delete-${this.id}" class="objective-task-button fa-solid fa-xmark fa-2x" title="Delete Task"></div>
             <div id="objective-task-add-${this.id}" class="objective-task-button fa-solid fa-plus fa-2x" title="Add Task"></div>
         </div><br>
@@ -272,7 +274,8 @@ const defaultSettings = {
     tasks: [],
     chatDepth: 2,
     checkFrequency: 3,
-    hideTasks: false
+    hideTasks: false,
+    prompts: defaultPrompts,
 }
 
 // Convenient single call. Not much at the moment.
@@ -297,6 +300,7 @@ function saveState() {
         checkFrequency: $('#objective-check-frequency').val(),
         chatDepth: $('#objective-chat-depth').val(),
         hideTasks: $('#objective-hide-tasks').prop('checked'),
+        prompts: objectivePrompts,
     }
 
     saveMetadataDebounced();
@@ -305,12 +309,12 @@ function saveState() {
 // Dump core state
 function debugObjectiveExtension() {
     console.log(JSON.stringify({
-        "currentTask": currentTask.toSaveState(),
-        "currentChatId": currentChatId,
-        "checkCounter": checkCounter,
+        "currentTask": currentTask.description,
         "globalObjective": globalObjective,
         "globalTasks": globalTasks.map(v => {return v.toSaveState()}),
-        "extension_settings": chat_metadata['objective'],
+        "chat_metadata": chat_metadata['objective'],
+        "extension_settings": extension_settings['objective'],
+        "prompts": objectivePrompts
     }, null, 2))
 }
 
@@ -364,9 +368,118 @@ function onHideTasksInput() {
     saveState()
 }
 
+function onEditPromptClick() {
+    let popupText = ''
+    popupText += `
+    <div class="objective_prompt_modal">
+        <div class="alignitemsflexstart flex-container">
+        </div>
+        <div>
+            <label for="objective-prompt-generate">Generation Prompt</label>
+            <textarea id="objective-prompt-generate" type="text" class="text_pole textarea_compact" rows="8"></textarea>
+            <label for="objective-prompt-check">Completion Check Prompt</label>
+            <textarea id="objective-prompt-check" type="text" class="text_pole textarea_compact" rows="8"></textarea>
+            <label for="objective-prompt-extension-prompt">Injected Prompt</label>
+            <textarea id="objective-prompt-extension-prompt" type="text" class="text_pole textarea_compact" rows="8"></textarea>
+        </div>
+        <div class="alignitemsflexstart flex-container">
+            <input id="objective-custom-prompt-name" type="text" class="flex1 heightFitContent text_pole widthNatural" maxlength="250" placeholder="Custom Prompt Name">
+            <input id="objective-custom-prompt-save" class="menu_button" type="submit" value="Save Custom Prompt" />
+            <label for="objective-prompt-load"> Load Prompt </label>
+            <select id="objective-prompt-load"><select>
+            <input id="objective-custom-prompt-delete" class="menu_button" type="submit" value="Delete Custom Prompt" />
+        </div>
+    </div>`
+    callPopup(popupText, 'text')
+    populateCustomPrompts()
+
+    // Set current values
+    $('#objective-prompt-generate').val(objectivePrompts.createTask)
+    $('#objective-prompt-check').val(objectivePrompts.checkTaskCompleted)
+    $('#objective-prompt-extension-prompt').val(objectivePrompts.currentTask)
+    
+    // Handle value updates
+    $('#objective-prompt-generate').on('input', () => {
+        objectivePrompts.createTask =  $('#objective-prompt-generate').val()
+    })
+    $('#objective-prompt-check').on('input', () => {
+        objectivePrompts.checkTaskCompleted = $('#objective-prompt-check').val()
+    })
+    $('#objective-prompt-extension-prompt').on('input', () => {
+        objectivePrompts.currentTask = $('#objective-prompt-extension-prompt').val()
+    })
+
+    // Handle save
+    $('#objective-custom-prompt-save').on('click', () => {
+        addCustomPrompt($('#objective-custom-prompt-name').val(), objectivePrompts)
+    })
+
+    // Handle delete
+    $('#objective-custom-prompt-delete').on('click', () => {
+        const optionSelected = $("#objective-prompt-load").find(':selected').val()
+        deleteCustomPrompt(optionSelected)
+    })
+
+    // Handle load
+    $('#objective-prompt-load').on('change', loadCustomPrompt)
+}
+
+function addCustomPrompt(customPromptName, customPrompts) {
+    if (customPromptName == "") {
+        toastr.warning("Please set custom prompt name to save.")
+        return
+    }
+    if (customPromptName == "default"){
+        toastr.error("Cannot save over default prompt")
+        return
+    }
+    extension_settings.objective.customPrompts[customPromptName] = {}
+    Object.assign(extension_settings.objective.customPrompts[customPromptName], customPrompts)
+    saveSettingsDebounced()
+    populateCustomPrompts()
+}
+
+function deleteCustomPrompt(customPromptName){
+    if (customPromptName == "default"){
+        toastr.error("Cannot delete default prompt")
+        return
+    }
+    delete extension_settings.objective.customPrompts[customPromptName]
+    saveSettingsDebounced()
+    populateCustomPrompts()
+    loadCustomPrompt()
+}
+
+function loadCustomPrompt(){
+    const optionSelected = $("#objective-prompt-load").find(':selected').val()
+    console.log(optionSelected)
+    objectivePrompts = extension_settings.objective.customPrompts[optionSelected]
+
+    $('#objective-prompt-generate').val(objectivePrompts.createTask)
+    $('#objective-prompt-check').val(objectivePrompts.checkTaskCompleted)
+    $('#objective-prompt-extension-prompt').val(objectivePrompts.currentTask)
+}
+
+function populateCustomPrompts(){
+    // Populate saved prompts
+    $('#objective-prompt-load').empty()
+    for (const customPromptName in extension_settings.objective.customPrompts){
+        const option = document.createElement('option');
+        option.innerText = customPromptName;
+        option.value = customPromptName;
+        option.selected = customPromptName
+        $('#objective-prompt-load').append(option)
+    }
+}
+
 function loadSettings() {
     // Load/Init settings for chatId
     currentChatId = getContext().chatId
+    
+    // Init extension settings
+    if (Object.keys(extension_settings.objective).length === 0) {
+        Object.assign(extension_settings.objective, { 'customPrompts': {'default':defaultPrompts}})
+    }
 
     // Bail on home screen
     if (currentChatId == undefined) {
@@ -402,7 +515,7 @@ function loadSettings() {
     $('#objective-chat-depth').val(chat_metadata['objective'].chatDepth)
     $('#objective-check-frequency').val(chat_metadata['objective'].checkFrequency)
     $('#objective-hide-tasks').prop('checked', chat_metadata['objective'].hideTasks)
-    onHideTasksInput()
+    $('#objective-tasks').prop('hidden', $('#objective-hide-tasks').prop('checked'))
     setCurrentTask()
 }
 
@@ -446,6 +559,9 @@ jQuery(() => {
                 </div>
             </div>
             <span> Messages until next AI task completion check <span id="objective-counter">0</span></span>
+            <div class="objective_block flex-container">
+                <input id="objective_prompt_edit" class="menu_button" type="submit" value="Edit Prompts" />
+            </div>
             <hr class="sysHR">
         </div>
     </div>`;
@@ -456,6 +572,7 @@ jQuery(() => {
     $('#objective-chat-depth').on('input', onChatDepthInput)
     $("#objective-check-frequency").on('input', onCheckFrequencyInput)
     $('#objective-hide-tasks').on('click', onHideTasksInput)
+    $('#objective_prompt_edit').on('click', onEditPromptClick)
     loadSettings()
 
     eventSource.on(event_types.CHAT_CHANGED, () => {
