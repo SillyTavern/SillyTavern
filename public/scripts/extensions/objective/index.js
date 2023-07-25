@@ -429,6 +429,11 @@ function addCustomPrompt(customPromptName, customPrompts) {
         toastr.warning("Please set custom prompt name to save.")
         return
     }
+    if (customPromptName == "default"){
+        toastr.error("Cannot save over default prompt")
+        return
+    }
+    extension_settings.objective.customPrompts[customPromptName] = {}
     Object.assign(extension_settings.objective.customPrompts[customPromptName], customPrompts)
     saveSettingsDebounced()
     populateCustomPrompts()
@@ -502,7 +507,6 @@ function loadSettings() {
         })
     });
     checkCounter = chat_metadata['objective'].checkFrequency
-    objectivePrompts = chat_metadata['objective'].prompts
 
     // Update UI elements
     $('#objective-counter').text(checkCounter)
