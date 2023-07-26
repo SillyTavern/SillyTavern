@@ -1227,7 +1227,7 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
      } */
 
     mes = DOMPurify.sanitize(mes);
-    
+
     return mes;
 }
 
@@ -1634,6 +1634,10 @@ function getStoppingStrings(isImpersonate, addSpace) {
     const result = isImpersonate ? [charString] : [youString];
 
     result.push(userString);
+
+    if (!is_pygmalion && result.includes(youString)) {
+        result.splice(result.indexOf(youString), 1);
+    }
 
     // Add other group members as the stopping strings
     if (selected_group) {
@@ -6878,10 +6882,10 @@ function doCharListDisplaySwitch() {
 /**
  * Function to handle the deletion of a character, given a specific popup type and character ID.
  * If popup type equals "del_ch", it will proceed with deletion otherwise it will exit the function.
- * It fetches the delete character route, sending necessary parameters, and in case of success, 
+ * It fetches the delete character route, sending necessary parameters, and in case of success,
  * it proceeds to delete character from UI and saves settings.
  * In case of error during the fetch request, it logs the error details.
- * 
+ *
  * @param {string} popup_type - The type of popup currently active.
  * @param {string} this_chid - The character ID to be deleted.
  */
@@ -6913,13 +6917,13 @@ export async function handleDeleteCharacter(popup_type, this_chid) {
 
 /**
  * Function to delete a character from UI after character deletion API success.
- * It manages necessary UI changes such as closing advanced editing popup, unsetting 
- * character ID, resetting characters array and chat metadata, deselecting character's tab 
- * panel, removing character name from navigation tabs, clearing chat, removing character's 
- * avatar from tag_map, fetching updated list of characters and updating the 'deleted 
+ * It manages necessary UI changes such as closing advanced editing popup, unsetting
+ * character ID, resetting characters array and chat metadata, deselecting character's tab
+ * panel, removing character name from navigation tabs, clearing chat, removing character's
+ * avatar from tag_map, fetching updated list of characters and updating the 'deleted
  * character' message.
  * It also ensures to save the settings after all the operations.
- * 
+ *
  * @param {string} name - The name of the character to be deleted.
  * @param {string} avatar - The avatar URL of the character to be deleted.
  */
