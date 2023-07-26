@@ -1,5 +1,6 @@
-import { doExtrasFetch, getApiUrl, modules } from "../../extensions.js"
-
+/*
+ Kinda useless for now but will populate provider settings if introduced later
+ */
 export { WhisperSttProvider }
 
 class WhisperSttProvider {
@@ -42,41 +43,4 @@ class WhisperSttProvider {
         console.debug("<STT-whisper-module> Whisper STT settings loaded")
     }
 
-    /*
-    async onApplyClick() {
-        return
-    }*/
-
-    //###########//
-    // API CALLS //
-    //###########//
-
-    async getUserMessage() {
-        //console.debug("<STT-Whisper-module> Recording user message")
-        // Return if module is not loaded
-        if (!modules.includes('whisper-stt')) {
-            //console.debug("<STT-whisper-module> Module Whisper-stt must be activated in Sillytavern Extra for streaming user voice.")
-            return "";
-        }
-    
-        const url = new URL(getApiUrl());
-        url.pathname = '/api/stt/whisper/record';
-    
-        const apiResult = await doExtrasFetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Bypass-Tunnel-Reminder': 'bypass',
-            },
-            body: JSON.stringify({ text: "" }),
-        });
-
-        if (!apiResult.ok) {
-            toastr.error(apiResult.statusText, 'STT Generation Failed  (Whisper)', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
-            throw new Error(`HTTP ${apiResult.status}: ${await apiResult.text()}`);
-        }
-        
-        const data = await apiResult.json();
-        return data.transcript;
-    }
 }

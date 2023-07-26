@@ -75,8 +75,7 @@ class BrowserSttProvider {
                 if (!speechRecognition) {
                     console.warn('Speech recognition is not supported in this browser.');
                     $("#microphone_button").hide();
-                    if ($('#stt_debug').is(':checked'))
-                        toastr.error("Speech recognition is not supported in this browser, use another browser or another STT provider of SillyTavern-extras STT extension.", "STT activation Failed (Browser)", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+                    toastr.error("Speech recognition is not supported in this browser, use another browser or another STT provider of SillyTavern-extras STT extension.", "STT activation Failed (Browser)", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
                     return;
                 }
 
@@ -140,8 +139,8 @@ class BrowserSttProvider {
 
                 recognition.onerror = function (event) {
                     console.error('Error occurred in recognition:', event.error);
-                    if ($('#stt_debug').is(':checked'))
-                        toastr.error('Error occurred in recognition:'+ event.error, 'STT Generation error (Browser)', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+                    //if ($('#stt_debug').is(':checked'))
+                    //    toastr.error('Error occurred in recognition:'+ event.error, 'STT Generation error (Browser)', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
                 };
 
                 recognition.onend = function () {
@@ -172,21 +171,5 @@ class BrowserSttProvider {
         });
         
         console.debug("<STT-Browser-module> Browser STT settings loaded")
-    }
-
-    /*
-    async onApplyClick() {
-        return
-    }*/
-
-    //###########//
-    // API CALLS //
-    //###########//
-
-    async getUserMessage() {
-
-        console.error("<STT-Browser-module> Does not use getUserMessage() function")
-
-        return ""
     }
 }

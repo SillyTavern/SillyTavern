@@ -1,5 +1,6 @@
-import { doExtrasFetch, getApiUrl, modules } from "../../extensions.js"
-
+/*
+ Kinda useless for now but will populate provider settings if introduced later
+ */
 export { VoskSttProvider }
 
 class VoskSttProvider {
@@ -10,7 +11,6 @@ class VoskSttProvider {
     settings
 
     defaultSettings = {
-        //model_path: "",
     }
 
     get settingsHtml() {
@@ -40,43 +40,5 @@ class VoskSttProvider {
         }
 
         console.debug("<STT-Vosk-module> Vosk STT settings loaded")
-    }
-
-    /*
-    async onApplyClick() {
-        return
-    }*/
-
-    //###########//
-    // API CALLS //
-    //###########//
-
-    async getUserMessage() {
-        console.debug("<STT-Vosk-module> Recording user message")
-        // Return if module is not loaded
-        if (!modules.includes('vosk-stt')) {
-            console.debug("<STT-Vosk-module> Module vosk-stt must be activated in SillytaverExtra for streaming user voice.")
-            return "";
-        }
-    
-        const url = new URL(getApiUrl());
-        url.pathname = '/api/stt/vosk/record';
-    
-        const apiResult = await doExtrasFetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Bypass-Tunnel-Reminder': 'bypass',
-            },
-            body: JSON.stringify({ text: "" }),
-        });
-
-        if (!apiResult.ok) {
-            toastr.error(apiResult.statusText, 'STT Generation Failed (Vosk)', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
-            throw new Error(`HTTP ${apiResult.status}: ${await apiResult.text()}`);
-        }
-        
-        const data = await apiResult.json();
-        return data.transcript;
     }
 }
