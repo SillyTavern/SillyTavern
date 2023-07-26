@@ -4243,6 +4243,10 @@ toolcool-color-picker {
     padding: 5px;
 }
 
+.flex {
+    display: flex;
+}
+
 .flex-container {
     display: flex;
     gap: 5px;
@@ -4847,6 +4851,10 @@ body.waifuMode .zoomed_avatar {
 
 .flexGap5 {
     gap: 5px;
+}
+
+.flexGap10 {
+    gap: 10px;
 }
 
 .timestamp {
