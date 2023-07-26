@@ -6743,6 +6743,11 @@ function connectAPISlash(_, text) {
             source: 'windowai',
             button: '#api_button_openai',
         },
+        'openrouter': {
+            selected: 'openai',
+            source: 'openrouter',
+            button: '#api_button_openai',
+        },
     };
 
     const apiConfig = apiMap[text];
@@ -6751,11 +6756,11 @@ function connectAPISlash(_, text) {
         return;
     }
 
-    $("#main_api option[value='" + (apiConfig.selected || text) + "']").prop("selected", true);
+    $(`#main_api option[value='${apiConfig.selected || text}']`).prop("selected", true);
     $("#main_api").trigger('change');
 
     if (apiConfig.source) {
-        $("#chat_completion_source option[value='" + apiConfig.source + "']").prop("selected", true);
+        $(`#chat_completion_source option[value='${apiConfig.source}']`).prop("selected", true);
         $("#chat_completion_source").trigger('change');
     }
 
