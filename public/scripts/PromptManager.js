@@ -674,7 +674,7 @@ PromptManagerModule.prototype.checkForMissingPrompts = function(prompts) {
  * @returns {boolean} True if the prompt is a marker, false otherwise.
  */
 PromptManagerModule.prototype.isPromptInspectionAllowed = function (prompt) {
-    return  true === prompt.marker;
+    return true === prompt.marker;
 }
 
 /**
@@ -1219,6 +1219,8 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
             detachSpanHtml = `
                 <span title="detach" class="prompt-manager-detach-action caution fa-solid fa-chain-broken"></span>
             `;
+        } else {
+            detachSpanHtml = `<span class="fa-solid">&nbsp;</span>`;
         }
 
         let editSpanHtml = '';
@@ -1226,13 +1228,8 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
             editSpanHtml = `
                 <span title="edit" class="prompt-manager-edit-action fa-solid fa-pencil"></span>
             `;
-        }
-
-        let inspectSpanHtml = '';
-        if (this.isPromptInspectionAllowed(prompt)) {
-            inspectSpanHtml = `
-                <span title="inspect" class="prompt-manager-inspect-action fa-solid fa-magnifying-glass"></span>
-            `;
+        } else {
+            editSpanHtml = `<span class="fa-solid">&nbsp;</span>`;
         }
 
         let toggleSpanHtml = '';
@@ -1241,7 +1238,7 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
                 <span class="prompt-manager-toggle-action ${listEntry.enabled ? 'fa-solid fa-toggle-on' : 'fa-solid fa-toggle-off'}"></span>
             `;
         } else {
-            toggleSpanHtml = `<span class="fa-solid'"></span>`;
+            toggleSpanHtml = `<span class="fa-solid">&nbsp;</span>`;
         }
 
         listItemHtml += `
@@ -1250,13 +1247,12 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
                     ${prompt.marker ? '<span class="fa-solid fa-thumb-tack" title="Prompt Marker"></span>' : ''}
                     ${!prompt.marker && prompt.system_prompt ? '<span class="fa-solid fa-globe" title="Global Prompt"></span>' : ''}
                     ${!prompt.marker && !prompt.system_prompt ? '<span class="fa-solid fa-user" title="User Prompt"></span>' : ''}
-                    ${prompt.name}
+                    ${this.isPromptInspectionAllowed(prompt) ? `<a class="prompt-manager-inspect-action">${prompt.name}</a>` : prompt.name }
                 </span>
                 <span>
                         <span class="prompt_manager_prompt_controls">
-                            ${detachSpanHtml}
                             ${editSpanHtml}
-                            ${inspectSpanHtml}
+                            ${detachSpanHtml}
                             ${toggleSpanHtml}
                         </span>
                 </span>

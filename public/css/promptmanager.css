@@ -24,11 +24,6 @@
     width: 100%
 }
 
-#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_marker span span {
-    /** TODO: Introduce classes to avoid this */
-    display: inline !important;
-}
-
 #completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt .completion_prompt_manager_prompt_name .fa-solid {
     padding: 0 0.5em;
     color: var(--white50a);
@@ -64,7 +59,13 @@
 
 #completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt .prompt_manager_prompt_controls {
     display: flex;
-    justify-content: end;
+    justify-content: space-between;
+}
+
+#completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt .prompt_manager_prompt_controls span {
+    display: flex;
+    height: 18px;
+    width: 18px;
 }
 
 #completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt span span span {
@@ -160,12 +161,21 @@
     overflow: hidden;
 }
 
-#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt.completion_prompt_manager_prompt_disabled {
-    border: 1px solid var(--white20a);
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt_name .prompt-manager-inspect-action {
+    color: var(--SmartThemeBodyColor);
+    cursor: pointer;
 }
 
-#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt_disabled .completion_prompt_manager_prompt_name {
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt_name .prompt-manager-inspect-action:hover {
+    text-decoration: underline;
+}
+
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt_disabled .completion_prompt_manager_prompt_name .prompt-manager-inspect-action {
     color: var(--white30a);
+}
+
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt.completion_prompt_manager_prompt_disabled {
+    border: 1px solid var(--white20a);
 }
 
 #completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt .mes_edit {
