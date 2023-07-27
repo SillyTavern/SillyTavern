@@ -440,7 +440,7 @@ async function sendMessage(prompt, withStreaming, withSuggestions, signal, isChu
         poe_misc_send_box.textContent = 'DELETE';
         const poe_misc_receive_box = document.getElementById('poeMiscReceiveBox');
         await waitForMutation(poe_misc_receive_box);
-        poe_misc_receive_box = "";
+        poe_misc_receive_box.textContent = "";
         return;
     }
     console.log(poe_receive_box.textContent.replace(/<br>/g, '\n\n'));
