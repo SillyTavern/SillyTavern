@@ -29,7 +29,7 @@ import {groups, selected_group} from "./group-chats.js";
 
 import {
     promptManagerDefaultSettings,
-    promptManagerDefaultPromptLists,
+    promptManagerDefaultPromptOrders,
     chatCompletionDefaultPrompts, Prompt,
     PromptManagerModule as PromptManager
 } from "./PromptManager.js";
@@ -143,7 +143,7 @@ const default_settings = {
     wrap_in_quotes: false,
     names_in_completion: false,
     ...chatCompletionDefaultPrompts,
-    ...promptManagerDefaultPromptLists,
+    ...promptManagerDefaultPromptOrders,
     ...promptManagerDefaultSettings,
     send_if_empty: '',
     impersonation_prompt: default_impersonation_prompt,
@@ -182,7 +182,7 @@ const oai_settings = {
     wrap_in_quotes: false,
     names_in_completion: false,
     ...chatCompletionDefaultPrompts,
-    ...promptManagerDefaultPromptLists,
+    ...promptManagerDefaultPromptOrders,
     ...promptManagerDefaultSettings,
     send_if_empty: '',
     impersonation_prompt: default_impersonation_prompt,
@@ -1824,7 +1824,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.assistant_prefill = settings.assistant_prefill ?? default_settings.assistant_prefill;
 
     oai_settings.prompts = settings.prompts ?? default_settings.prompts;
-    oai_settings.prompt_lists = settings.prompt_lists ?? default_settings.prompt_lists;
+    oai_settings.prompt_order = settings.prompt_order ?? default_settings.prompt_order;
     oai_settings.prompt_manager_settings = settings.prompt_manager_settings ?? default_settings.prompt_manager_settings;
 
     oai_settings.new_chat_prompt = settings.new_chat_prompt ?? default_settings.new_chat_prompt;
@@ -2045,7 +2045,7 @@ async function saveOpenAIPreset(name, settings) {
         wi_format: settings.wi_format,
         stream_openai: settings.stream_openai,
         prompts: settings.prompts,
-        prompt_lists: settings.prompt_lists,
+        prompt_order: settings.prompt_order,
         prompt_manager_settings: settings.prompt_manager_settings,
         api_url_scale: settings.api_url_scale,
         show_external_models: settings.show_external_models,
@@ -2379,7 +2379,7 @@ function onSettingsPresetChange() {
         wi_format: ['#wi_format_textarea', 'wi_format', false],
         stream_openai: ['#stream_toggle', 'stream_openai', true],
         prompts: ['', 'prompts', false],
-        prompt_lists: ['', 'prompt_lists', false],
+        prompt_order: ['', 'prompt_order', false],
         prompt_manager_settings: ['', 'prompt_manager_settings', false],
         use_openrouter: ['#use_openrouter', 'use_openrouter', true],
         api_url_scale: ['#api_url_scale', 'api_url_scale', false],

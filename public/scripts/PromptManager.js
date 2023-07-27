@@ -234,11 +234,11 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     // Enable and disable prompts
     this.handleToggle = (event) => {
         const promptID = event.target.closest('.' + this.configuration.prefix + 'prompt_manager_prompt').dataset.pmIdentifier;
-        const promptListEntry = this.getPromptListEntry(this.activeCharacter, promptID);
+        const promptOrderEntry = this.getPromptOrderEntry(this.activeCharacter, promptID);
         const counts = this.tokenHandler.getCounts();
 
         counts[promptID] = null;
-        promptListEntry.enabled = !promptListEntry.enabled;
+        promptOrderEntry.enabled = !promptOrderEntry.enabled;
         this.saveServiceSettings().then(() => this.render());
     };
 
@@ -389,11 +389,11 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
             return userPrompts;
         }, []);
 
-        const characterList = this.getPromptListForCharacter(this.activeCharacter);
+        const characterList = this.getPromptOrderForCharacter(this.activeCharacter);
 
         const exportPrompts = {
             prompts: characterPrompts,
-            promptList: characterList
+            prompt_order: characterList
         }
 
         const name = this.activeCharacter.name + '-prompts';
@@ -441,8 +441,8 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
             .then(userChoice => {
                 if (false === userChoice) return;
 
-                this.removePromptListForCharacter(this.activeCharacter);
-                this.addPromptListForCharacter(this.activeCharacter, promptManagerDefaultPromptList);
+                this.removePromptOrderForCharacter(this.activeCharacter);
+                this.addPromptOrderForCharacter(this.activeCharacter, promptManagerDefaultPromptOrder);
 
                 this.saveServiceSettings().then(() => this.render());
             });
@@ -580,10 +580,10 @@ PromptManagerModule.prototype.getTokenHandler = function() {
  * @returns {void}
  */
 PromptManagerModule.prototype.appendPrompt = function (prompt, character) {
-    const promptList = this.getPromptListForCharacter(character);
-    const index = promptList.findIndex(entry => entry.identifier === prompt.identifier);
+    const promptOrder = this.getPromptOrderForCharacter(character);
+    const index = promptOrder.findIndex(entry => entry.identifier === prompt.identifier);
 
-    if (-1 === index) promptList.push({identifier: prompt.identifier, enabled: false});
+    if (-1 === index) promptOrder.push({identifier: prompt.identifier, enabled: false});
 }
 
 /**
@@ -594,10 +594,10 @@ PromptManagerModule.prototype.appendPrompt = function (prompt, character) {
  */
 // Remove a prompt from the current characters prompt list
 PromptManagerModule.prototype.detachPrompt = function (prompt, character) {
-    const promptList = this.getPromptListForCharacter(character);
-    const index = promptList.findIndex(entry => entry.identifier === prompt.identifier);
+    const promptOrder = this.getPromptOrderForCharacter(character);
+    const index = promptOrder.findIndex(entry => entry.identifier === prompt.identifier);
     if (-1 === index) return;
-    promptList.splice(index, 1)
+    promptOrder.splice(index, 1)
 }
 
 /**
@@ -627,7 +627,7 @@ PromptManagerModule.prototype.addPrompt = function (prompt, identifier) {
  */
 PromptManagerModule.prototype.sanitizeServiceSettings = function () {
     this.serviceSettings.prompts = this.serviceSettings.prompts ?? [];
-    this.serviceSettings.prompt_lists = this.serviceSettings.prompt_lists ?? [];
+    this.serviceSettings.prompt_order = this.serviceSettings.prompt_order ?? [];
 
     // Check whether the referenced prompts are present.
     this.serviceSettings.prompts.length === 0
@@ -641,7 +641,7 @@ PromptManagerModule.prototype.sanitizeServiceSettings = function () {
     this.serviceSettings.prompts.forEach(prompt => prompt && (prompt.identifier = prompt.identifier ?? this.getUuidv4()));
 
     if (this.activeCharacter) {
-        const promptReferences = this.getPromptListForCharacter(this.activeCharacter);
+        const promptReferences = this.getPromptOrderForCharacter(this.activeCharacter);
         for(let i = promptReferences.length - 1; i >= 0; i--) {
             const reference =  promptReferences[i];
             if(-1 === this.serviceSettings.prompts.findIndex(prompt => prompt.identifier === reference.identifier)) {
@@ -712,7 +712,7 @@ PromptManagerModule.prototype.isPromptToggleAllowed = function (prompt) {
  * @returns boolean
  */
 PromptManagerModule.prototype.handleCharacterDeleted = function (event) {
-    this.removePromptListForCharacter(this.activeCharacter);
+    this.removePromptOrderForCharacter(this.activeCharacter);
     if (this.activeCharacter.id === event.detail.id) this.activeCharacter = null;
 }
 
@@ -723,11 +723,11 @@ PromptManagerModule.prototype.handleCharacterDeleted = function (event) {
  */
 PromptManagerModule.prototype.handleCharacterSelected = function (event) {
     this.activeCharacter = {id: event.detail.id, ...event.detail.character};
-    const promptList = this.getPromptListForCharacter(this.activeCharacter);
+    const promptOrder = this.getPromptOrderForCharacter(this.activeCharacter);
 
     // ToDo: These should be passed as parameter or attached to the manager as a set of default options.
     // Set default prompts and order for character.
-    if (0 === promptList.length) this.addPromptListForCharacter(this.activeCharacter, promptManagerDefaultPromptList);
+    if (0 === promptOrder.length) this.addPromptOrderForCharacter(this.activeCharacter, promptManagerDefaultPromptOrder);
 }
 
 PromptManagerModule.prototype.handleCharacterUpdated = function (event) {
@@ -737,9 +737,9 @@ PromptManagerModule.prototype.handleCharacterUpdated = function (event) {
 PromptManagerModule.prototype.handleGroupSelected = function (event) {
     const characterDummy = {id: event.detail.id, group: event.detail.group};
     this.activeCharacter = characterDummy;
-    const promptList = this.getPromptListForCharacter(characterDummy);
+    const promptOrder = this.getPromptOrderForCharacter(characterDummy);
 
-    if (0 === promptList.length) this.addPromptListForCharacter(characterDummy, promptManagerDefaultPromptList)
+    if (0 === promptOrder.length) this.addPromptOrderForCharacter(characterDummy, promptManagerDefaultPromptOrder)
 }
 
 PromptManagerModule.prototype.getActiveGroupCharacters = function() {
@@ -754,7 +754,7 @@ PromptManagerModule.prototype.getActiveGroupCharacters = function() {
  * @param onlyEnabled
  */
 PromptManagerModule.prototype.getPromptsForCharacter = function (character, onlyEnabled = false) {
-    return this.getPromptListForCharacter(character)
+    return this.getPromptOrderForCharacter(character)
         .map(item => true === onlyEnabled ? (true === item.enabled ? this.getPromptById(item.identifier) : null) : this.getPromptById(item.identifier))
         .filter(prompt => null !== prompt);
 }
@@ -764,8 +764,8 @@ PromptManagerModule.prototype.getPromptsForCharacter = function (character, only
  * @param {object|null} character - The character to get the prompt list for.
  * @returns {object[]} The prompt list for the character, or an empty array.
  */
-PromptManagerModule.prototype.getPromptListForCharacter = function (character) {
-    return !character ? [] : (this.serviceSettings.prompt_lists.find(list => String(list.character_id) === String(character.id))?.list ?? []);
+PromptManagerModule.prototype.getPromptOrderForCharacter = function (character) {
+    return !character ? [] : (this.serviceSettings.prompt_order.find(list => String(list.character_id) === String(character.id))?.order ?? []);
 }
 
 /**
@@ -782,20 +782,20 @@ PromptManagerModule.prototype.setPrompts = function (prompts) {
  * @param {object} character - The character whose prompt list will be removed.
  * @returns {void}
  */
-PromptManagerModule.prototype.removePromptListForCharacter = function (character) {
-    const index = this.serviceSettings.prompt_lists.findIndex(list => String(list.character_id) === String(character.id));
-    if (-1 !== index) this.serviceSettings.prompt_lists.splice(index, 1);
+PromptManagerModule.prototype.removePromptOrderForCharacter = function (character) {
+    const index = this.serviceSettings.prompt_order.findIndex(list => String(list.character_id) === String(character.id));
+    if (-1 !== index) this.serviceSettings.prompt_order.splice(index, 1);
 }
 
 /**
  * Adds a new prompt list for a specific character.
  * @param {Object} character - Object with at least an `id` property
- * @param {Array<Object>} promptList - Array of prompt objects
+ * @param {Array<Object>} promptOrder - Array of prompt objects
  */
-PromptManagerModule.prototype.addPromptListForCharacter = function (character, promptList) {
-    this.serviceSettings.prompt_lists.push({
+PromptManagerModule.prototype.addPromptOrderForCharacter = function (character, promptOrder) {
+    this.serviceSettings.prompt_order.push({
         character_id: character.id,
-        list: JSON.parse(JSON.stringify(promptList))
+        order: JSON.parse(JSON.stringify(promptOrder))
     });
 }
 
@@ -805,8 +805,8 @@ PromptManagerModule.prototype.addPromptListForCharacter = function (character, p
  * @param {string} identifier - Identifier of the prompt list entry
  * @returns {Object|null} The prompt list entry object, or null if not found
  */
-PromptManagerModule.prototype.getPromptListEntry = function (character, identifier) {
-    return this.getPromptListForCharacter(character).find(entry => entry.identifier === identifier) ?? null;
+PromptManagerModule.prototype.getPromptOrderEntry = function (character, identifier) {
+    return this.getPromptOrderForCharacter(character).find(entry => entry.identifier === identifier) ?? null;
 }
 
 /**
@@ -825,10 +825,6 @@ PromptManagerModule.prototype.getPromptById = function (identifier) {
  */
 PromptManagerModule.prototype.getPromptIndexById = function (identifier) {
     return this.serviceSettings.prompts.findIndex(item => item.identifier === identifier) ?? null;
-}
-
-PromptManagerModule.prototype.getSettings = function(settings) {
-    return this.serviceSettings.prompt_manager_settings[settings] ?? null;
 }
 
 /**
@@ -960,10 +956,10 @@ PromptManagerModule.prototype.clearInspectForm = function() {
  * @returns {PromptCollection} A PromptCollection object
  */
 PromptManagerModule.prototype.getPromptCollection = function () {
-    const promptList = this.getPromptListForCharacter(this.activeCharacter);
+    const promptOrder = this.getPromptOrderForCharacter(this.activeCharacter);
 
     const promptCollection = new PromptCollection();
-    promptList.forEach(entry => {
+    promptOrder.forEach(entry => {
         if (true === entry.enabled) {
             const prompt = this.getPromptById(entry.identifier);
             if (prompt) promptCollection.add(this.preparePrompt(prompt));
@@ -1191,7 +1187,7 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
             prompt.identifier !== 'characterInfo' &&
             !advancedEnabled) visibleClass = `${prefix}prompt_manager_prompt_invisible`;
 
-        const listEntry = this.getPromptListEntry(this.activeCharacter, prompt.identifier);
+        const listEntry = this.getPromptOrderEntry(this.activeCharacter, prompt.identifier);
         const enabledClass = listEntry.enabled ? '' : `${prefix}prompt_manager_prompt_disabled`;
         const draggableClass = `${prefix}prompt_manager_prompt_draggable`;
         const markerClass = prompt.marker ? `${prefix}prompt_manager_marker` : '';
@@ -1347,7 +1343,7 @@ PromptManagerModule.prototype.import = function (importData) {
         type: '',
         data: {
             prompts: [],
-            promptList: null
+            prompt_order: null
         }
     }
 
@@ -1362,8 +1358,8 @@ PromptManagerModule.prototype.import = function (importData) {
     this.log('Prompt import succeeded');
 
     if ('character' === importData.type) {
-        const promptList = this.getPromptListForCharacter(this.activeCharacter);
-        Object.assign(promptList, importData.data.promptList);
+        const promptOrder = this.getPromptOrderForCharacter(this.activeCharacter);
+        Object.assign(promptOrder, importData.data.prompt_order);
         this.log(`Prompt order import for character ${this.activeCharacter.name} completed`);
     }
 
@@ -1411,15 +1407,15 @@ PromptManagerModule.prototype.makeDraggable = function () {
     $(`#${this.configuration.prefix}prompt_manager_list`).sortable({
         items: `.${this.configuration.prefix}prompt_manager_prompt_draggable`,
         update: ( event, ui ) => {
-            const promptList = this.getPromptListForCharacter(this.activeCharacter);
-            const promptOrder = $(`#${this.configuration.prefix}prompt_manager_list`).sortable('toArray', {attribute: 'data-pm-identifier'});
-            const idToObjectMap = new Map(promptList.map(prompt => [prompt.identifier, prompt]));
-            const newPromptList = promptOrder.map(identifier => idToObjectMap.get(identifier));
+            const promptOrder = this.getPromptOrderForCharacter(this.activeCharacter);
+            const promptListElement = $(`#${this.configuration.prefix}prompt_manager_list`).sortable('toArray', {attribute: 'data-pm-identifier'});
+            const idToObjectMap = new Map(promptOrder.map(prompt => [prompt.identifier, prompt]));
+            const updatedPromptOrder = promptListElement.map(identifier => idToObjectMap.get(identifier));
 
-            this.removePromptListForCharacter(this.activeCharacter);
-            this.addPromptListForCharacter(this.activeCharacter, newPromptList);
+            this.removePromptOrderForCharacter(this.activeCharacter);
+            this.addPromptOrderForCharacter(this.activeCharacter, updatedPromptOrder);
 
-            this.log('Prompt order updated.')
+            this.log(`Prompt order updated for ${this.activeCharacter.name}.`);
 
             this.saveServiceSettings();
         }});
@@ -1567,11 +1563,11 @@ const chatCompletionDefaultPrompts = {
     ]
 };
 
-const promptManagerDefaultPromptLists = {
-    "prompt_lists": []
+const promptManagerDefaultPromptOrders = {
+    "prompt_order": []
 };
 
-const promptManagerDefaultPromptList = [
+const promptManagerDefaultPromptOrder = [
     {
         "identifier": "main",
         "enabled": true
@@ -1628,7 +1624,7 @@ export {
     PromptManagerModule,
     registerPromptManagerMigration,
     chatCompletionDefaultPrompts,
-    promptManagerDefaultPromptLists,
+    promptManagerDefaultPromptOrders,
     promptManagerDefaultSettings,
     Prompt
 };
