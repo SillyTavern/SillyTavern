@@ -186,6 +186,7 @@ let power_user = {
     persona_description_position: persona_description_positions.BEFORE_CHAR,
 
     custom_stopping_strings: '',
+    fuzzy_search: false,
 };
 
 let themes = [];
@@ -676,6 +677,7 @@ function loadPowerUserSettings(settings, data) {
     $('#auto_swipe_blacklist').val(power_user.auto_swipe_blacklist.join(", "));
     $('#auto_swipe_blacklist_threshold').val(power_user.auto_swipe_blacklist_threshold);
     $('#custom_stopping_strings').val(power_user.custom_stopping_strings);
+    $('#fuzzy_search_checkbox').prop("checked", power_user.fuzzy_search);
 
     $("#console_log_prompts").prop("checked", power_user.console_log_prompts);
     $('#auto_fix_generated_markdown').prop("checked", power_user.auto_fix_generated_markdown);
@@ -894,6 +896,31 @@ function loadInstructMode() {
             }
         });
     });
+}
+
+export function fuzzySearchCharacters(searchValue) {
+    const fuse = new Fuse(characters, {
+        keys: [
+            { name: 'data.name', weight: 5 },
+            { name: 'data.description', weight: 3 },
+            { name: 'data.mes_example', weight: 3 },
+            { name: 'data.scenario', weight: 2 },
+            { name: 'data.personality', weight: 2 },
+            { name: 'data.first_mes', weight: 2 },
+            { name: 'data.creator_notes', weight: 2 },
+            { name: 'data.creator', weight: 1 },
+            { name: 'data.tags', weight: 1 },
+            { name: 'data.alternate_greetings', weight: 1 }
+        ],
+        includeScore: true,
+        ignoreLocation: true,
+        threshold: 0.2,
+    });
+
+    const results = fuse.search(searchValue);
+    console.debug('Fuzzy search results for ' + searchValue, results)
+    const indices = results.map(x => x.refIndex);
+    return indices;
 }
 
 export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvatar, name1, name2) {
@@ -1969,6 +1996,11 @@ $(document).ready(() => {
 
     $('#custom_stopping_strings').on('input', function () {
         power_user.custom_stopping_strings = $(this).val();
+        saveSettingsDebounced();
+    });
+
+    $('#fuzzy_search_checkbox').on('input', function () {
+        power_user.fuzzy_search = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 

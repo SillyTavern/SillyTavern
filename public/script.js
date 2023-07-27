@@ -76,6 +76,7 @@ import {
     persona_description_positions,
     loadMovingUIState,
     getCustomStoppingStrings,
+    fuzzySearchCharacters,
     MAX_CONTEXT_DEFAULT,
 } from "./scripts/power-user.js";
 
@@ -7037,18 +7038,26 @@ $(document).ready(function () {
     $("#character_search_bar").on("input", function () {
         const selector = ['#rm_print_characters_block .character_select', '#rm_print_characters_block .group_select'].join(',');
         const searchValue = $(this).val().trim().toLowerCase();
+        const fuzzySearchResults = power_user.fuzzy_search ? fuzzySearchCharacters(searchValue) : [];
+
+        function getIsValidSearch(_this) {
+            const name = $(_this).find(".ch_name").text().toLowerCase();
+            const chid = $(_this).attr("chid");
+
+            if (power_user.fuzzy_search) {
+                return fuzzySearchResults.includes(parseInt(chid));
+            }
+            else {
+                return name.includes(searchValue);
+            }
+        }
 
         if (!searchValue) {
             $(selector).removeClass('hiddenBySearch');
             updateVisibleDivs('#rm_print_characters_block', true);
         } else {
             $(selector).each(function () {
-                const isValidSearch = $(this)
-                    .find(".ch_name")
-                    .text()
-                    .toLowerCase()
-                    .includes(searchValue);
-
+                const isValidSearch = getIsValidSearch(this);
                 $(this).toggleClass('hiddenBySearch', !isValidSearch);
             });
             updateVisibleDivs('#rm_print_characters_block', true);
@@ -7234,7 +7243,7 @@ $(document).ready(function () {
         const data = { old_bg, new_bg };
         const response = await fetch('/renamebackground', {
             method: 'POST',
-            headers:getRequestHeaders(),
+            headers: getRequestHeaders(),
             body: JSON.stringify(data),
             cache: 'no-cache',
         });
@@ -7973,7 +7982,7 @@ $(document).ready(function () {
                 .append(
                     `<textarea id='curEditTextarea' class='edit_textarea' style='max-width:auto;'></textarea>`
                 );
-                $('#curEditTextarea').val(text);
+            $('#curEditTextarea').val(text);
             let edit_textarea = $(this)
                 .closest(".mes_block")
                 .find(".edit_textarea");
