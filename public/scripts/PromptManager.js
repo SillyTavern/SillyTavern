@@ -703,7 +703,7 @@ PromptManagerModule.prototype.isPromptEditAllowed = function (prompt) {
  * @returns {boolean} True if the prompt can be deleted, false otherwise.
  */
 PromptManagerModule.prototype.isPromptToggleAllowed = function (prompt) {
-    return !this.configuration.toggleDisabled.includes(prompt.identifier);
+    return prompt.marker ? false : !this.configuration.toggleDisabled.includes(prompt.identifier);
 }
 
 /**
@@ -1249,23 +1249,18 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
                 <span class="${prefix}prompt_manager_prompt_name" data-pm-name="${prompt.name}">
                     ${prompt.marker ? '<span class="fa-solid fa-thumb-tack" title="Prompt Marker"></span>' : ''}
                     ${!prompt.marker && prompt.system_prompt ? '<span class="fa-solid fa-globe" title="Global Prompt"></span>' : ''}
+                    ${!prompt.marker && !prompt.system_prompt ? '<span class="fa-solid fa-user" title="User Prompt"></span>' : ''}
                     ${prompt.name}
                 </span>
-                ${prompt.marker
-                ? `<span>
-                      <span class="prompt_manager_prompt_controls">
-                        <span></span>
-                        ${inspectSpanHtml}
-                      </span>
-                   </span>`
-                : `<span>
+                <span>
                         <span class="prompt_manager_prompt_controls">
                             ${detachSpanHtml}
                             ${editSpanHtml}
+                            ${inspectSpanHtml}
                             ${toggleSpanHtml}
                         </span>
-                    </span>
-                `}
+                </span>
+
                 <span class="prompt_manager_prompt_tokens" data-pm-tokens="${calculatedTokens}"><span class="${warningClass}" title="${warningTitle}"> </span>${calculatedTokens}</span>
             </li>
         `;

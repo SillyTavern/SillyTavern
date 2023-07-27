@@ -29,12 +29,8 @@
     display: inline !important;
 }
 
-#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_marker .fa-thumb-tack {
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt .completion_prompt_manager_prompt_name .fa-solid {
     padding: 0 0.5em;
-    color: var(--white50a);
-}
-#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt_name .fa-globe {
-    padding: 0 0.4em;
     color: var(--white50a);
 }
 
