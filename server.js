@@ -1224,6 +1224,11 @@ const calculateChatSize = (charDir) => {
     return { chatSize, dateLastChat };
 }
 
+// Calculate the total string length of the data object
+const calculateDataSize = (data) => {
+    return typeof data === 'object' ? Object.values(data).reduce((acc, val) => acc + new String(val).length, 0) : 0;
+}
+
 /**
  * processCharacter - Process a given character, read its data and calculate its statistics.
  *
@@ -1245,6 +1250,7 @@ const processCharacter = async (item, i) => {
         const { chatSize, dateLastChat } = calculateChatSize(char_dir);
         characters[i]['chat_size'] = chatSize;
         characters[i]['date_last_chat'] = dateLastChat;
+        characters[i]['data_size'] = calculateDataSize(jsonObject?.data);
     }
     catch (err) {
         characters[i] = {
