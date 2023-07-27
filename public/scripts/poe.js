@@ -388,11 +388,33 @@ async function purgeConversation(count = -1) {
     //return response.ok;
 }
 
-function waitForMutation(element) {
-    return new Promise((resolve) => {
+//function waitForMutation(element) {
+//    return new Promise((resolve) => {
+//        const observer = new MutationObserver((mutationsList, observer) => {
+//            for (let mutation of mutationsList) {
+//                if (mutation.type === 'childList' || mutation.type === 'characterData') {
+//                    observer.disconnect(); // stop observing
+//                    resolve(); // resolve the promise
+//                }
+//            }
+//        });
+//
+//        observer.observe(element, { childList: true, characterData: true, subtree: true });
+//    });
+//}
+
+function waitForMutation(element, timeout = 2000) {
+    return new Promise((resolve, reject) => {
+        // Set up a timer to reject the promise after the timeout period
+        const timer = setTimeout(() => {
+            observer.disconnect(); // stop observing
+            reject(new Error('Mutation observer timed out'));
+        }, timeout);
+
         const observer = new MutationObserver((mutationsList, observer) => {
             for (let mutation of mutationsList) {
                 if (mutation.type === 'childList' || mutation.type === 'characterData') {
+                    clearTimeout(timer); // clear the timeout if mutation is observed
                     observer.disconnect(); // stop observing
                     resolve(); // resolve the promise
                 }
@@ -408,7 +430,11 @@ async function sendMessage(prompt, withStreaming, withSuggestions, signal, isChu
     const poe_send_box = document.getElementById('poeSendBox');
     poe_send_box.textContent = prompt;
     const poe_receive_box = document.getElementById('poeReceiveBox');
-    await waitForMutation(poe_receive_box);
+    try {
+        await waitForMutation(poe_receive_box);
+    } catch (error) {
+        console.log(error.message);
+    }
     if (isChunked) {
         const poe_misc_send_box = document.getElementById('poeMiscSendBox');
         poe_misc_send_box.textContent('DELETE');
