@@ -235,7 +235,7 @@ function PromptManagerModule() {
     /** Delete prompt button click */
     this.handleDeletePrompt = () => { };
 
-    /** Append promptbutton click */
+    /** Append prompt button click */
     this.handleAppendPrompt = () => { };
 
     /** Import button click */
