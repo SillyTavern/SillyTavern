@@ -372,8 +372,6 @@ function onEditPromptClick() {
     let popupText = ''
     popupText += `
     <div class="objective_prompt_modal">
-        <div class="alignitemsflexstart flex-container">
-        </div>
         <div>
             <label for="objective-prompt-generate">Generation Prompt</label>
             <textarea id="objective-prompt-generate" type="text" class="text_pole textarea_compact" rows="8"></textarea>
@@ -382,12 +380,14 @@ function onEditPromptClick() {
             <label for="objective-prompt-extension-prompt">Injected Prompt</label>
             <textarea id="objective-prompt-extension-prompt" type="text" class="text_pole textarea_compact" rows="8"></textarea>
         </div>
-        <div class="alignitemsflexstart flex-container">
-            <input id="objective-custom-prompt-name" type="text" class="flex1 heightFitContent text_pole widthNatural" maxlength="250" placeholder="Custom Prompt Name">
-            <input id="objective-custom-prompt-save" class="menu_button" type="submit" value="Save Custom Prompt" />
-            <label for="objective-prompt-load"> Load Prompt </label>
+        <div class="objective_prompt_block">
+            <input id="objective-custom-prompt-name" style="flex-grow:2" type="text" class="flex1 heightFitContent text_pole widthNatural" maxlength="250" placeholder="Custom Prompt Name">
+            <input id="objective-custom-prompt-save" style="flex-grow:1" class="menu_button" type="submit" value="Save Prompt" />
+        </div>
+        <div class="objective_prompt_block">
+            <label for="objective-prompt-load">Load Prompt</label>
             <select id="objective-prompt-load"><select>
-            <input id="objective-custom-prompt-delete" class="menu_button" type="submit" value="Delete Custom Prompt" />
+            <input id="objective-custom-prompt-delete" class="menu_button" type="submit" value="Delete Prompt" />
         </div>
     </div>`
     callPopup(popupText, 'text')
