@@ -896,6 +896,14 @@ async function printCharacters() {
             template.find('.ch_description').hide();
         }
 
+        const version = item.data?.character_version || '';
+        if (version) {
+            template.find('.character_version').text(version);
+        }
+        else {
+            template.find('.character_version').hide();
+        }
+
         // Display inline tags
         const tags = getTagsList(item.avatar);
         const tagsElement = template.find('.tags');

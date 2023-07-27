@@ -1512,8 +1512,20 @@ input[type=search]:focus::-webkit-search-cancel-button {
     font-weight: bolder;
 }
 
+.character_name_block {
+    display: flex;
+    align-items: baseline;
+    flex-direction: row;
+    gap: 5px;
+}
+
 .ch_avatar_url {
-    float: right;
+    font-style: italic;
+}
+
+body.charListGrid #rm_print_characters_block .character_version,
+body.charListGrid #rm_print_characters_block .ch_avatar_url {
+    display: none;
 }
 
 .character_select .avatar {
@@ -1547,7 +1559,7 @@ body.big-avatars .ch_description {
 
 /*applies to both groups and solos chars in the char list*/
 #rm_print_characters_block .ch_name {
-    width: 100%;
+    flex: 1;
     white-space: nowrap;
     /* max-width: calc(100% - 29px); */
     overflow: hidden;
@@ -4504,14 +4516,16 @@ toolcool-color-picker {
     flex-direction: column;
 }
 
-.openai_preset_buttons, .preset_buttons {
+.openai_preset_buttons,
+.preset_buttons {
     display: flex;
     flex-direction: row;
     align-items: baseline;
     gap: 5px;
 }
 
-.openai_preset_buttons select, .preset_buttons select {
+.openai_preset_buttons select,
+.preset_buttons select {
     flex-grow: 1;
 }
 
