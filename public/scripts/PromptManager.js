@@ -692,9 +692,7 @@ PromptManagerModule.prototype.isPromptDeletionAllowed = function (prompt) {
  * @returns {boolean} True if the prompt can be edited, false otherwise.
  */
 PromptManagerModule.prototype.isPromptEditAllowed = function (prompt) {
-    if (prompt.identifier === 'chatHistory') return true;
-    else if (prompt.identifier === 'dialogueExamples') return true;
-    else return !prompt.marker;
+    return !prompt.marker;
 }
 
 /**
@@ -1220,7 +1218,7 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
                 <span title="detach" class="prompt-manager-detach-action caution fa-solid fa-chain-broken"></span>
             `;
         } else {
-            detachSpanHtml = `<span class="fa-solid">&nbsp;</span>`;
+            detachSpanHtml = `<span class="fa-solid"></span>`;
         }
 
         let editSpanHtml = '';
@@ -1229,7 +1227,7 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
                 <span title="edit" class="prompt-manager-edit-action fa-solid fa-pencil"></span>
             `;
         } else {
-            editSpanHtml = `<span class="fa-solid">&nbsp;</span>`;
+            editSpanHtml = `<span class="fa-solid"></span>`;
         }
 
         let toggleSpanHtml = '';
@@ -1238,7 +1236,7 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
                 <span class="prompt-manager-toggle-action ${listEntry.enabled ? 'fa-solid fa-toggle-on' : 'fa-solid fa-toggle-off'}"></span>
             `;
         } else {
-            toggleSpanHtml = `<span class="fa-solid">&nbsp;</span>`;
+            toggleSpanHtml = `<span class="fa-solid"></span>`;
         }
 
         listItemHtml += `
