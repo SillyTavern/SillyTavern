@@ -181,31 +181,76 @@ function PromptManagerModule() {
         },
     };
 
+    // Chatcompletion configuration object
     this.serviceSettings = null;
+
+    // DOM element containing the prompt manager
     this.containerElement = null;
+
+    // DOM element containing the prompt list
     this.listElement = null;
+
+    // Currently selected character
     this.activeCharacter = null;
+
+    // Message collection of the most recent chatcompletion
     this.messages = null;
+
+    // The current token handler instance
     this.tokenHandler = null;
+
+    // Token usage of last dry run
     this.tokenUsage = 0;
+
+    // Error state, contains error message.
     this.error = null;
 
+    /** Dry-run for generate, must return a promise  */
     this.tryGenerate = () => { };
+
+    /** Called to persist the configuration, must return a promise */
     this.saveServiceSettings = () => { };
 
+    /** Toggle prompt button click */
     this.handleToggle = () => { };
+
+    /** Prompt name click */
     this.handleInspect = () => { };
+
+    /** Edit prompt button click */
     this.handleEdit = () => { };
+
+    /** Detach prompt button click */
     this.handleDetach = () => { };
+
+    /** Save prompt button click */
     this.handleSavePrompt = () => { };
+
+    /** Reset prompt button click */
     this.handleResetPrompt = () => { };
+
+    /** New prompt button click */
     this.handleNewPrompt = () => { };
+
+    /** Delete prompt button click */
     this.handleDeletePrompt = () => { };
+
+    /** Append promptbutton click */
     this.handleAppendPrompt = () => { };
+
+    /** Import button click */
     this.handleImport = () => { };
+
+    /** Full export click */
     this.handleFullExport = () => { };
+
+    /** Character export click */
     this.handleCharacterExport = () => { };
+
+    /** Character reset button click*/
     this.handleCharacterReset = () => {};
+
+    /** Advanced settings button click */
     this.handleAdvancedSettingsToggle = () => { };
 }
 
@@ -436,6 +481,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         });
     }
 
+    // Restore default state of a characters prompt order
     this.handleCharacterReset = () => {
         callPopup('This will reset the prompt order for this character. You will not loose any prompts.', 'confirm',)
             .then(userChoice => {
@@ -652,6 +698,12 @@ PromptManagerModule.prototype.sanitizeServiceSettings = function () {
     }
 };
 
+/**
+ * Checks whether entries of a characters prompt order are orphaned
+ * and if all mandatory system prompts for a character are present.
+ *
+ * @param prompts
+ */
 PromptManagerModule.prototype.checkForMissingPrompts = function(prompts) {
     const defaultPromptIdentifiers = chatCompletionDefaultPrompts.prompts.reduce((list, prompt) => { list.push(prompt.identifier); return list;}, []);
 
@@ -728,10 +780,20 @@ PromptManagerModule.prototype.handleCharacterSelected = function (event) {
     if (0 === promptOrder.length) this.addPromptOrderForCharacter(this.activeCharacter, promptManagerDefaultPromptOrder);
 }
 
+/**
+ * Set the most recently selected character
+ *
+ * @param event
+ */
 PromptManagerModule.prototype.handleCharacterUpdated = function (event) {
     this.activeCharacter = {id: event.detail.id, ...event.detail.character};
 }
 
+/**
+ * Set the most recently selected character group
+ *
+ * @param event
+ */
 PromptManagerModule.prototype.handleGroupSelected = function (event) {
     const characterDummy = {id: event.detail.id, group: event.detail.group};
     this.activeCharacter = characterDummy;
@@ -740,6 +802,11 @@ PromptManagerModule.prototype.handleGroupSelected = function (event) {
     if (0 === promptOrder.length) this.addPromptOrderForCharacter(characterDummy, promptManagerDefaultPromptOrder)
 }
 
+/**
+ * Get a list of group characters, regardless of whether they are active or not.
+ *
+ * @returns {string[]}
+ */
 PromptManagerModule.prototype.getActiveGroupCharacters = function() {
     // ToDo: Ideally, this should return the actual characters.
     return (this.activeCharacter?.group?.members || []).map(member => member.substring(0, member.lastIndexOf('.')));
@@ -1356,6 +1423,13 @@ PromptManagerModule.prototype.import = function (importData) {
     this.saveServiceSettings().then(() => this.render());
 };
 
+/**
+ * Helper function to check whether the structure of object matches controlObj
+ *
+ * @param controlObj
+ * @param object
+ * @returns {boolean}
+ */
 PromptManagerModule.prototype.validateObject = function(controlObj, object) {
     for (let key in controlObj) {
         if (!object.hasOwnProperty(key)) {
@@ -1374,6 +1448,11 @@ PromptManagerModule.prototype.validateObject = function(controlObj, object) {
     return true;
 }
 
+/**
+ * Get current date as mm/dd/YYYY
+ *
+ * @returns {`${string}_${string}_${string}`}
+ */
 PromptManagerModule.prototype.getFormattedDate = function() {
     const date = new Date();
     let month = String(date.getMonth() + 1);
@@ -1474,7 +1553,6 @@ PromptManagerModule.prototype.profileEnd = function (identifier) {
         console.timeEnd(identifier);
     }
 }
-
 
 const chatCompletionDefaultPrompts = {
     "prompts": [
