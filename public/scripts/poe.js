@@ -302,21 +302,21 @@ async function generatePoe(type, finalPrompt, signal) {
     messages_to_purge = 2; // prompt and the reply
 
 
-    console.debug('Sending prompt in one message');
-    reply = await sendMessage(finalPrompt, !isQuiet, suggestReplies, signal);
+    //console.debug('Sending prompt in one message');
+    //reply = await sendMessage(finalPrompt, !isQuiet, suggestReplies, signal);
 
-    //const unchunkedBots = ['vizcacha', 'agouti', 'a2_100k', 'a2_2'];
-    //if (max_context > POE_TOKEN_LENGTH && !unchunkedBots.includes(poe_settings.bot)) {
-    //    console.debug('Prompt is too long, sending in chunks');
-    //    const result = await sendChunkedMessage(finalPrompt, !isQuiet, suggestReplies, signal)
-    //    reply = result.reply;
-    //    messages_to_purge = result.chunks + 1; // +1 for the reply
-    //}
-    //else {
-    //    console.debug('Sending prompt in one message');
-    //    reply = await sendMessage(finalPrompt, !isQuiet, suggestReplies, signal);
-    //    messages_to_purge = 2; // prompt and the reply
-    //}
+    const unchunkedBots = ['vizcacha', 'agouti', 'a2_100k', 'a2_2'];
+    if (max_context > POE_TOKEN_LENGTH && !unchunkedBots.includes(poe_settings.bot)) {
+        console.debug('Prompt is too long, sending in chunks');
+        const result = await sendChunkedMessage(finalPrompt, !isQuiet, suggestReplies, signal)
+        reply = result.reply;
+        messages_to_purge = result.chunks + 1; // +1 for the reply
+    }
+    else {
+        console.debug('Sending prompt in one message');
+        reply = await sendMessage(finalPrompt, !isQuiet, suggestReplies, signal);
+        messages_to_purge = 2; // prompt and the reply
+    }
 
     return reply;
 }
@@ -341,7 +341,7 @@ async function sendChunkedMessage(finalPrompt, withStreaming, withSuggestions, s
             // Add fast reply prompt to the chunk
             promptChunk += fastReplyPrompt;
             // Send chunk without streaming
-            const chunkReply = await sendMessage(promptChunk, false, false, signal);
+            const chunkReply = await sendMessage(promptChunk, false, false, signal, true);
             console.debug('Got chunk reply: ' + chunkReply);
             // Delete the reply for the chunk
             //await purgeConversation(1);
@@ -403,13 +403,18 @@ function waitForMutation(element) {
     });
 }
 
-async function sendMessage(prompt, withStreaming, withSuggestions, signal) {
+async function sendMessage(prompt, withStreaming, withSuggestions, signal, isChunked = false) {
     //console.log(prompt);
     const poe_send_box = document.getElementById('poeSendBox');
     poe_send_box.textContent = prompt;
     const poe_receive_box = document.getElementById('poeReceiveBox');
     await waitForMutation(poe_receive_box);
-    if (poe_receive_box.textContent == '.') {
+    if (isChunked) {
+        const poe_misc_send_box = document.getElementById('poeMiscSendBox');
+        poe_misc_send_box.textContent('DELETE');
+        const poe_misc_receive_box = document.getElementById('poeMiscReceiveBox');
+        await waitForMutation(poe_misc_receive_box);
+        poe_misc_receive_box = "";
         return;
     }
     console.log(poe_receive_box.textContent.replace(/<br>/g, '\n\n'));
