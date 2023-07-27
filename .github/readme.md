@@ -306,3 +306,4 @@ GNU Affero General Public License for more details.**
 * 10K Discord Users Celebratory Background by @kallmeflocc
 * Default content (characters and lore books) provided by @OtisAlejandro, @RossAscends and @kallmeflocc
 * Korean translation by @doloroushyeonse
+* k_euler_a support for Horde by <https://github.com/Teashrock>
