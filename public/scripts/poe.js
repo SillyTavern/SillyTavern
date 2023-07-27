@@ -437,7 +437,7 @@ async function sendMessage(prompt, withStreaming, withSuggestions, signal, isChu
     }
     if (isChunked) {
         const poe_misc_send_box = document.getElementById('poeMiscSendBox');
-        poe_misc_send_box.textContent('DELETE');
+        poe_misc_send_box.textContent = 'DELETE';
         const poe_misc_receive_box = document.getElementById('poeMiscReceiveBox');
         await waitForMutation(poe_misc_receive_box);
         poe_misc_receive_box = "";
