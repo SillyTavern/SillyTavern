@@ -105,6 +105,10 @@ class CoquiTtsProvider {
         const ttsVoicesInput = document.getElementById('tts_voices');
         const ttsPreviewInput = document.getElementById('tts_preview');
 
+        ttsProviderSelect.addEventListener('click', () => {
+            this.getModels();
+         });
+
         // Add an event listener to the 'change' event of the tts_provider select element
         ttsProviderSelect.addEventListener('change', () => {
             // Check if the selected value is 'Coqui'
