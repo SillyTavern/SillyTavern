@@ -1786,7 +1786,7 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
 
     console.log(request.body);
     const bw = require('./src/bad-words');
-    const bad_words_ids = request.body.model.includes('clio') ? bw.clioBadWordsId : bw.badWordIds;
+    const bad_words_ids = (request.body.model.includes('clio') || request.body.model.includes('kayra')) ? bw.clioBadWordsId : bw.badWordIds;
     const data = {
         "input": request.body.input,
         "model": request.body.model,
@@ -1805,6 +1805,9 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
             "top_p": request.body.top_p,
             "top_k": request.body.top_k,
             "typical_p": request.body.typical_p,
+            "cfg_scale": request.body.cfg_scale,
+            "cfg_uc": request.body.cfg_uc,
+            "phrase_rep_pen": request.body.phrase_rep_pen,
             //"stop_sequences": {{187}},
             "bad_words_ids": bad_words_ids,
             //generate_until_sentence = true;
