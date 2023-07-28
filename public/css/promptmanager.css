@@ -29,6 +29,11 @@
     color: var(--white50a);
 }
 
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt .completion_prompt_manager_prompt_name .fa-solid.fa-globe {
+    /* For a special kind of people */
+    padding-left: 0.4em;
+}
+
 #completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt_invisible {
     display: none;
 }

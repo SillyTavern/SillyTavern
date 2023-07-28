@@ -629,8 +629,8 @@ function populateChatCompletion (prompts, chatCompletion, {bias, quietPrompt, ty
  * @returns {Object} prompts - The prepared and merged system and user-defined prompts.
  */
 function preparePromptsForChatCompletion(Scenario, charPersonality, name2, worldInfoBefore, worldInfoAfter, charDescription, quietPrompt, bias, extensionPrompts) {
-    const scenarioText = Scenario ? `Circumstances and context of the dialogue: ${Scenario}` : '';
-    const charPersonalityText = charPersonality ? `${name2}'s personality: ${charPersonality}` : '';
+    const scenarioText = Scenario ? `[Circumstances and context of the dialogue: ${Scenario}]` : '';
+    const charPersonalityText = charPersonality ? `[${name2}'s personality: ${charPersonality}]` : '';
 
     // Create entries for system prompts
     const systemPrompts = [
@@ -757,7 +757,7 @@ function prepareOpenAIMessages({
     chatCompletion.setTokenBudget(userSettings.openai_max_context, userSettings.openai_max_tokens);
 
     try {
-        // Populate markers, merge markers and ordered user prompts with system prompts
+        // Merge markers and ordered user prompts with system prompts
         const prompts = preparePromptsForChatCompletion(Scenario, charPersonality, name2, worldInfoBefore, worldInfoAfter, charDescription, quietPrompt, bias, extensionPrompts);
 
         // Fill the chat completion with as much context as the budget allows
@@ -770,9 +770,9 @@ function prepareOpenAIMessages({
         } else if (error instanceof  InvalidCharacterNameError) {
             toastr.warning('An error occurred while counting tokens: Invalid character name')
             chatCompletion.log('Invalid character name');
-            promptManager.error = 'The name of at least one character contained whitespaces or special characters. Please check your user and character name';
+            promptManager.error = 'The name of at least one character contained whitespaces or special characters. Please check your user and character name.';
         } else {
-            toastr.error('An unknown error occurred while counting tokens. Further information available in console.')
+            toastr.error('An unknown error occurred while counting tokens. Further information may be available in console.')
             chatCompletion.log('Unexpected error:');
             chatCompletion.log(error);
         }
@@ -780,7 +780,7 @@ function prepareOpenAIMessages({
         // Pass chat completion to prompt manager for inspection
         promptManager.setChatCompletion(chatCompletion);
 
-        // All information are up-to-date, render.
+        // All information is up-to-date, render.
         if (false === dryRun) promptManager.render(false);
     }
 

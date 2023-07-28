@@ -3,9 +3,7 @@ import {TokenHandler} from "./openai.js";
 import {power_user} from "./power-user.js";
 
 /**
- * Register migrations for the prompt manager when settings are loaded or an open ai preset is loaded.
- *
- * @function registerPromptManagerMigration
+ * Register migrations for the prompt manager when settings are loaded or an Open AI preset is loaded.
  */
 const registerPromptManagerMigration = () => {
     const migrate = (settings) => {
@@ -893,7 +891,8 @@ PromptManagerModule.prototype.getPromptIndexById = function (identifier) {
 }
 
 /**
- * Prepares a prompt by creating a new object with its role and content.
+ * Enriches a generic object, creating a new prompt object in the process
+ *
  * @param {Object} prompt - Prompt object
  * @param original
  * @returns {Object} An object with "role" and "content" properties
@@ -967,6 +966,7 @@ PromptManagerModule.prototype.loadMessagesIntoInspectForm = function (messages) 
         let drawerHTML = `
     <div class="inline-drawer ${this.configuration.prefix}prompt_manager_prompt">
         <div class="inline-drawer-toggle inline-drawer-header">
+            <span>${title}</span>
             <span>${title}</span>
             <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
         </div>
@@ -1122,9 +1122,6 @@ PromptManagerModule.prototype.renderPromptManager = function () {
     promptManagerDiv.insertAdjacentHTML('beforeend', `
         <div class="range-block-title" data-i18n="Prompts">
             Prompts
-            <a href="/notes#openaipromptmanager" target="_blank" class="notes-link">
-                <span class="note-link-span">?</span>
-            </a>
         </div>
         <div class="range-block">
             ${this.error ? errorDiv : ''}
