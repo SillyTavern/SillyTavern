@@ -970,7 +970,7 @@ async function checkWorldInfo(chat, maxContext) {
                                 if (selectiveLogic === 0) {
                                     console.debug('saw AND logic, checking..')
                                     if (secondarySubstituted && matchKeys(textToScan, secondarySubstituted.trim())) {
-                                        console.log(`activating entry ${entry.uid} with AND found`)
+                                        console.debug(`activating entry ${entry.uid} with AND found`)
                                         activatedNow.add(entry);
                                         break secondary;
                                     }
