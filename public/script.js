@@ -3064,9 +3064,9 @@ function getMaxContextSize() {
             // Should be used with nerdstash tokenizer for best results
             this_max_context = Math.min(max_context, 2048);
         }
-        if (nai_settings.model_novel == 'clio-v1') {
-            // Clio has a max context of 8192
-            // Should be used with nerdstash_v2 tokenizer for best results
+        if (nai_settings.model_novel == 'clio-v1' || nai_settings.model_novel == 'kayra-v1') {
+            // Clio and Kayra has a max context of 8192
+            // Should be used with nerdstash / nerdstash_v2 tokenizer for best results
             this_max_context = Math.min(max_context, 8192);
         }
     }
