@@ -2855,7 +2855,7 @@ app.post("/getstatus_openai", jsonParser, function (request, response_getstatus_
 
     if (request.body.use_openrouter == false) {
         api_url = new URL(request.body.reverse_proxy || api_openai).toString();
-        api_key_openai = readSecret(SECRET_KEYS.OPENAI);
+        api_key_openai = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.OPENAI);
         headers = {};
     } else {
         api_url = 'https://openrouter.ai/api/v1';
@@ -2864,7 +2864,7 @@ app.post("/getstatus_openai", jsonParser, function (request, response_getstatus_
         headers = { 'HTTP-Referer': request.headers.referer };
     }
 
-    if (!api_key_openai) {
+    if (!api_key_openai && !request.body.reverse_proxy) {
         return response_getstatus_openai.status(401).send({ error: true });
     }
 
@@ -2931,44 +2931,6 @@ app.post("/openai_bias", jsonParser, async function (request, response) {
     // not needed for cached tokenizers
     //tokenizer.free();
     return response.send(result);
-});
-
-// TODO: Dead code, consider deleting. Users will get redirected to OpenAI site instead.
-// 'Your request to GET /v1/dashboard/billing/usage must be made with a session key (that is, it can only be made from the browser). You made it with the following key type: secret.'
-app.post("/openai_usage", jsonParser, async function (request, response) {
-    if (!request.body) return response.sendStatus(400);
-    const key = readSecret(SECRET_KEYS.OPENAI);
-
-    if (!key) {
-        console.warn('Get key usage failed: Missing OpenAI API key.');
-        return response.sendStatus(401);
-    }
-
-    const api_url = new URL(request.body.reverse_proxy || api_openai).toString();
-
-    const headers = {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${key}`,
-    };
-
-    const date = new Date();
-    date.setDate(1);
-    const start_date = date.toISOString().slice(0, 10);
-
-    date.setMonth(date.getMonth() + 1);
-    const end_date = date.toISOString().slice(0, 10);
-
-    try {
-        const res = await getAsync(
-            `${api_url}/dashboard/billing/usage?start_date=${start_date}&end_date=${end_date}`,
-            { headers },
-        );
-        return response.send(res);
-    }
-    catch (error) {
-        console.log(error);
-        return response.sendStatus(400);
-    }
 });
 
 app.post("/deletepreset_openai", jsonParser, function (request, response) {
@@ -3099,7 +3061,7 @@ async function sendClaudeRequest(request, response) {
     const fetch = require('node-fetch').default;
 
     const api_url = new URL(request.body.reverse_proxy || api_claude).toString();
-    const api_key_claude = readSecret(SECRET_KEYS.CLAUDE);
+    const api_key_claude = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.CLAUDE);
 
     if (!api_key_claude) {
         return response.status(401).send({ error: true });
@@ -3188,7 +3150,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
 
     if (!request.body.use_openrouter) {
         api_url = new URL(request.body.reverse_proxy || api_openai).toString();
-        api_key_openai = readSecret(SECRET_KEYS.OPENAI);
+        api_key_openai = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.OPENAI);
         headers = {};
     } else {
         api_url = 'https://openrouter.ai/api/v1';
@@ -3197,7 +3159,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
         headers = { 'HTTP-Referer': request.headers.referer };
     }
 
-    if (!api_key_openai) {
+    if (!api_key_openai && !request.body.reverse_proxy) {
         return response_generate_openai.status(401).send({ error: true });
     }
 
@@ -3453,17 +3415,6 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
 
 
 // ** REST CLIENT ASYNC WRAPPERS **
-
-function putAsync(url, args) {
-    return new Promise((resolve, reject) => {
-        client.put(url, args, (data, response) => {
-            if (response.statusCode >= 400) {
-                reject(data);
-            }
-            resolve(data);
-        }).on('error', e => reject(e));
-    })
-}
 
 async function postAsync(url, args) {
     const fetch = require('node-fetch').default;
