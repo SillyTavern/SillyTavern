@@ -239,7 +239,6 @@ $("#rm_ch_create_block").on("input", function () { countTokensDebounced(); });
 $("#character_popup").on("input", function () { countTokensDebounced(); });
 //function:
 export function RA_CountCharTokens() {
-    $("#result_info").html("");
     //console.log('RA_TC -- starting with this_chid = ' + this_chid);
     if (menu_type === "create") {            //if new char
         function saveFormVariables() {
