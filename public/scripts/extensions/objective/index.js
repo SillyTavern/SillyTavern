@@ -1,4 +1,4 @@
-import { chat_metadata, callPopup, saveSettingsDebounced } from "../../../script.js";
+import { chat_metadata, callPopup, saveSettingsDebounced, getCurrentChatId } from "../../../script.js";
 import { getContext, extension_settings, saveMetadataDebounced } from "../../extensions.js";
 import {
     substituteParams,
@@ -11,9 +11,10 @@ import { registerSlashCommand } from "../../slash-commands.js";
 const MODULE_NAME = "Objective"
 
 
-let globalObjective = ""
+let taskTree = null
 let globalTasks = []
 let currentChatId = ""
+let currentObjective = null
 let currentTask = null
 let checkCounter = 0
 
@@ -47,56 +48,48 @@ let objectivePrompts = defaultPrompts
 //#       Task Management       #//
 //###############################//
 
-// Accepts optional index. Defaults to adding to end of list.
-function addTask(description, index = null) {
-    index = index != null ? index: index = globalTasks.length
-    globalTasks.splice(index, 0, new ObjectiveTask(
-        {description: description}
-    ))
-    saveState()
-}
-
 // Return the task and index or throw an error
 function getTaskById(taskId){
     if (taskId == null) {
         throw `Null task id`
     }
-    const index = globalTasks.findIndex((task) => task.id === taskId);
-    if (index !== -1) {
-        return { task: globalTasks[index], index: index };
-    } else {
-        throw `Cannot find task with ${taskId}`
-
-    }
+    return getTaskByIdRecurse(taskId, taskTree)
 }
 
-function deleteTask(taskId){
-    const { task, index } = getTaskById(taskId)
-
-    globalTasks.splice(index, 1)
-    setCurrentTask()
-    updateUiTaskList()
+function getTaskByIdRecurse(taskId, task) {
+    if (task.id == taskId){
+        return task
+    }
+    for (const childTask of task.children) {
+        const foundTask = getTaskByIdRecurse(taskId, childTask);
+        if (foundTask != null) {
+            return foundTask;
+        }
+    }
+    return null;
 }
 
 // Call Quiet Generate to create task list using character context, then convert to tasks. Should not be called much.
 async function generateTasks() {
-    const prompt = substituteParams(objectivePrompts.createTask.replace(/{{objective}}/gi, globalObjective));
+
+    const prompt = substituteParams(objectivePrompts.createTask.replace(/{{objective}}/gi, currentObjective.description));
     console.log(`Generating tasks for objective with prompt`)
     toastr.info('Generating tasks for objective', 'Please wait...');
     const taskResponse = await generateQuietPrompt(prompt)
 
-    // Clear all existing global tasks when generating
-    globalTasks = []
+    // Clear all existing objective tasks when generating
+    currentObjective.children = []
     const numberedListPattern = /^\d+\./
 
     // Create tasks from generated task list
     for (const task of taskResponse.split('\n').map(x => x.trim())) {
         if (task.match(numberedListPattern) != null) {
-            addTask(task.replace(numberedListPattern,"").trim())
+            currentObjective.addTask(task.replace(numberedListPattern,"").trim())
         }
     }
-    updateUiTaskList()
-    console.info(`Response for Objective: '${globalObjective}' was \n'${taskResponse}', \nwhich created tasks \n${JSON.stringify(globalTasks.map(v => {return v.toSaveState()}), null, 2)} `)
+    updateUiTaskList();
+    setCurrentTask();
+    console.info(`Response for Objective: '${taskTree.description}' was \n'${taskResponse}', \nwhich created tasks \n${JSON.stringify(globalTasks.map(v => {return v.toSaveState()}), null, 2)} `)
     toastr.success(`Generated ${globalTasks.length} tasks`, 'Done!');
 }
 
@@ -113,7 +106,7 @@ async function checkTaskCompleted() {
 
     // Check response if task complete
     if (taskResponse.includes("true")) {
-        console.info(`Character determined task '${JSON.stringify(currentTask.toSaveState())} is completed.`)
+        console.info(`Character determined task '${currentTask.description} is completed.`)
         currentTask.completeTask()
     } else if (!(taskResponse.includes("false"))) {
         console.warn(`checkTaskCompleted response did not contain true or false. taskResponse: ${taskResponse}`)
@@ -122,29 +115,56 @@ async function checkTaskCompleted() {
     }
 }
 
+function getNextIncompleteTaskRecurse(task){
+    // Skip tasks with children, as they will have subtasks to determine completeness
+    if (task.completed === false && task.children.length === 0){
+        return task
+    }
+    for (const childTask of task.children) {
+        if (childTask.completed === true){ // Don't recurse into completed tasks
+            continue
+        }
+        const foundTask = getNextIncompleteTaskRecurse(childTask);
+        if (foundTask != null) {
+            return foundTask;
+        }
+    }
+    return null;
+}
 
 // Set a task in extensionPrompt context. Defaults to first incomplete
 function setCurrentTask(taskId = null) {
     const context = getContext();
+
+    // TODO: Should probably null this rather than set empty object
     currentTask = {};
 
-    // Set current task to either the next incomplete task, or the index
+    // Find the task, either next incomplete, or by provided taskId
     if (taskId === null) {
-        currentTask = globalTasks.find(task => !task.completed) || {};
+        currentTask = getNextIncompleteTaskRecurse(taskTree) || {};
     } else {
-        const { _, index } = getTaskById(taskId)
-        currentTask = globalTasks[index];
+        currentTask = getTaskById(taskId);
     }
 
-    // Get the task description and add to extension prompt
+    // Don't just check for a current task, check if it has data
     const description = currentTask.description || null;
-
-    // Now update the extension prompt
-
     if (description) {
         const extensionPromptText = objectivePrompts.currentTask.replace(/{{task}}/gi, description);
-        $('.objective-task').css({'border-color':'','border-width':''}) // Clear highlights
-        currentTask.descriptionSpan.css({'border-color':'yellow','border-width':'2px'}); // Highlight current task
+        
+        // Remove highlights
+        $('.objective-task').css({'border-color':'','border-width':''})
+        // Highlight current task
+        let highlightTask = currentTask
+        while (highlightTask.parentId !== ""){
+            if (highlightTask.descriptionSpan){
+                highlightTask.descriptionSpan.css({'border-color':'yellow','border-width':'2px'}); 
+            }
+            const parent = getTaskById(highlightTask.parentId)
+            highlightTask = parent
+        }
+
+
+        // Update the extension prompt
         context.setExtensionPrompt(MODULE_NAME, extensionPromptText, 1, $('#objective-chat-depth').val());
         console.info(`Current task in context.extensionPrompts.Objective is ${JSON.stringify(context.extensionPrompts.Objective)}`);
     } else {
@@ -155,22 +175,26 @@ function setCurrentTask(taskId = null) {
     saveState();
 }
 
-let taskIdCounter = 0
-function getNextTaskId(){
-    // Make sure id does not exist
-    while (globalTasks.find(task => task.id == taskIdCounter) != undefined) {
-        taskIdCounter += 1
+function getHighestTaskIdRecurse(task) {
+    let nextId = task.id;
+
+    for (const childTask of task.children) {
+        const childId = getHighestTaskIdRecurse(childTask);
+        if (childId > nextId) {
+            nextId = childId;
+        }
     }
-    const nextId = taskIdCounter
-    console.log(`TaskID assigned: ${nextId}`)
-    taskIdCounter += 1
-    return nextId
+    return nextId;
 }
+
+//###############################//
+//#         Task Class          #//
+//###############################//
 class ObjectiveTask {
     id
     description
     completed
-    parent
+    parentId
     children
 
     // UI Elements
@@ -180,25 +204,67 @@ class ObjectiveTask {
     deleteTaskButton
     addTaskButton
 
-    constructor ({id=undefined, description, completed=false, parent=null}) {
+    constructor ({id=undefined, description, completed=false, parentId=""}) {
         this.description = description
-        this.parent = parent
+        this.parentId = parentId
         this.children = []
         this.completed = completed
 
         // Generate a new ID if none specified
         if (id==undefined){
-            this.id = getNextTaskId()
+            this.id = getHighestTaskIdRecurse(taskTree) + 1
         } else {
             this.id=id
         }
     }
 
+    // Accepts optional index. Defaults to adding to end of list.
+    addTask(description, index = null) {
+        index = index != null ? index: index = this.children.length
+        this.children.splice(index, 0, new ObjectiveTask(
+            {description: description, parentId: this.id}
+        ))
+        saveState()
+    }
+    
+    getIndex(){
+        if (this.parentId !== null) {
+            const parent = getTaskById(this.parentId)
+            const index = parent.children.findIndex(task => task.id === this.id)
+            if (index === -1){
+                throw `getIndex failed: Task '${this.description}' not found in parent task '${parent.description}'`
+            }
+            return index
+        } else {
+            throw `getIndex failed: Task '${this.description}' has no parent`
+        }
+    }
+
+    // Used to set parent to complete when all child tasks are completed
+    checkParentComplete() {
+        let all_completed = true;
+        if (this.parentId !== ""){
+            const parent = getTaskById(this.parentId);
+            for (const child of parent.children){
+                if (!child.completed){
+                    all_completed = false;
+                    break;
+                }
+            }
+            if (all_completed){
+                parent.completed = true;
+                console.info(`Parent task '${parent.description}' completed after all child tasks complated.`)
+            } else {
+                parent.completed = false;
+            }
+        }
+    }
 
     // Complete the current task, setting next task to next incomplete task
     completeTask() {
         this.completed = true
         console.info(`Task successfully completed: ${JSON.stringify(this.description)}`)
+        this.checkParentComplete()
         setCurrentTask()
         updateUiTaskList()
     }
@@ -211,6 +277,7 @@ class ObjectiveTask {
             <span class="text_pole objective-task" style="display: block" id="objective-task-description-${this.id}" contenteditable>${this.description}</span>
             <div id="objective-task-delete-${this.id}" class="objective-task-button fa-solid fa-xmark fa-2x" title="Delete Task"></div>
             <div id="objective-task-add-${this.id}" class="objective-task-button fa-solid fa-plus fa-2x" title="Add Task"></div>
+            <div id="objective-task-add-branch-${this.id}" class="objective-task-button fa-solid fa-code-fork fa-2x" title="Branch Task"></div>
         </div><br>
         `;
 
@@ -221,6 +288,15 @@ class ObjectiveTask {
         this.descriptionSpan = $(`#objective-task-description-${this.id}`);
         this.addButton = $(`#objective-task-add-${this.id}`);
         this.deleteButton = $(`#objective-task-delete-${this.id}`);
+        this.taskHtml = $(`#objective-task-label-${this.id}`);
+        this.branchButton = $(`#objective-task-add-branch-${this.id}`)
+        
+        // Handle sub-task forking style
+        if (this.children.length > 0){
+            this.branchButton.css({'color':'#33cc33'})
+        } else {
+            this.branchButton.css({'color':''})
+        }
 
         // Add event listeners and set properties
         $(`#objective-task-complete-${this.id}`).prop('checked', this.completed);
@@ -229,144 +305,65 @@ class ObjectiveTask {
         $(`#objective-task-description-${this.id}`).on('focusout', () => (this.onDescriptionFocusout()));
         $(`#objective-task-delete-${this.id}`).on('click', () => (this.onDeleteClick()));
         $(`#objective-task-add-${this.id}`).on('click', () => (this.onAddClick()));
+        this.branchButton.on('click', () => (this.onBranchClick()))
+    }
+
+    onBranchClick() {
+        currentObjective = this
+        updateUiTaskList();
+        setCurrentTask();
     }
 
     onCompleteClick(){
         this.completed = this.completedCheckbox.prop('checked')
+        this.checkParentComplete()
         setCurrentTask();
     }
 
     onDescriptionUpdate(){
         this.description = this.descriptionSpan.text();
     }
+
     onDescriptionFocusout(){
         setCurrentTask();
     }
 
     onDeleteClick(){
-        deleteTask(this.id);
+        const index = this.getIndex()
+        const parent = getTaskById(this.parentId)
+        parent.children.splice(index, 1)
+        updateUiTaskList()
+        setCurrentTask()
     }
 
     onAddClick(){
-        const {_, index} = getTaskById(this.id)
-        addTask("", index + 1);
-        setCurrentTask();
+        const index = this.getIndex()
+        const parent = getTaskById(this.parentId)
+        parent.addTask("", index + 1);
         updateUiTaskList();
+        setCurrentTask();
     }
 
-    toSaveState() {
+    toSaveStateRecurse() {
+        let children = []
+        if (this.children.length > 0){
+            for (const child of this.children){
+                children.push(child.toSaveStateRecurse())
+            }
+        }
         return {
             "id":this.id,
             "description":this.description,
             "completed":this.completed,
-            "parent": this.parent,
+            "parentId": this.parentId,
+            "children": children,
         }
     }
 }
 
 //###############################//
-//#       UI AND Settings       #//
+//#       Custom Prompts        #//
 //###############################//
-
-
-const defaultSettings = {
-    objective: "",
-    tasks: [],
-    chatDepth: 2,
-    checkFrequency: 3,
-    hideTasks: false,
-    prompts: defaultPrompts,
-}
-
-// Convenient single call. Not much at the moment.
-function resetState() {
-    loadSettings();
-}
-
-//
-function saveState() {
-    const context = getContext();
-
-    if (currentChatId == "") {
-        currentChatId = context.chatId
-    }
-
-    // Convert globalTasks for saving
-    const tasks = globalTasks.map(task => {return task.toSaveState()})
-
-    chat_metadata['objective'] = {
-        objective: globalObjective,
-        tasks: tasks,
-        checkFrequency: $('#objective-check-frequency').val(),
-        chatDepth: $('#objective-chat-depth').val(),
-        hideTasks: $('#objective-hide-tasks').prop('checked'),
-        prompts: objectivePrompts,
-    }
-
-    saveMetadataDebounced();
-}
-
-// Dump core state
-function debugObjectiveExtension() {
-    console.log(JSON.stringify({
-        "currentTask": currentTask.description,
-        "globalObjective": globalObjective,
-        "globalTasks": globalTasks.map(v => {return v.toSaveState()}),
-        "chat_metadata": chat_metadata['objective'],
-        "extension_settings": extension_settings['objective'],
-        "prompts": objectivePrompts
-    }, null, 2))
-}
-
-window.debugObjectiveExtension = debugObjectiveExtension
-
-
-// Populate UI task list
-function updateUiTaskList() {
-    $('#objective-tasks').empty()
-    // Show tasks if there are any
-    if (globalTasks.length > 0){
-        for (const task of globalTasks) {
-            task.addUiElement()
-        }
-    } else {
-        // Show button to add tasks if there are none
-        $('#objective-tasks').append(`
-        <input id="objective-task-add-first" type="button" class="menu_button" value="Add Task">
-        `)
-        $("#objective-task-add-first").on('click', () => {
-            addTask("")
-            setCurrentTask()
-            updateUiTaskList()
-        })
-    }
-}
-
-
-// Trigger creation of new tasks with given objective.
-async function onGenerateObjectiveClick() {
-    globalObjective = $('#objective-text').val()
-    await generateTasks()
-    saveState()
-}
-
-// Update extension prompts
-function onChatDepthInput() {
-    saveState()
-    setCurrentTask() // Ensure extension prompt is updated
-}
-
-// Update how often we check for task completion
-function onCheckFrequencyInput() {
-    checkCounter = $("#objective-check-frequency").val()
-    $('#objective-counter').text(checkCounter)
-    saveState()
-}
-
-function onHideTasksInput() {
-    $('#objective-tasks').prop('hidden', $('#objective-hide-tasks').prop('checked'))
-    saveState()
-}
 
 function onEditPromptClick() {
     let popupText = ''
@@ -411,7 +408,7 @@ function onEditPromptClick() {
 
     // Handle save
     $('#objective-custom-prompt-save').on('click', () => {
-        addCustomPrompt($('#objective-custom-prompt-name').val(), objectivePrompts)
+        saveCustomPrompt($('#objective-custom-prompt-name').val(), objectivePrompts)
     })
 
     // Handle delete
@@ -424,7 +421,7 @@ function onEditPromptClick() {
     $('#objective-prompt-load').on('change', loadCustomPrompt)
 }
 
-function addCustomPrompt(customPromptName, customPrompts) {
+function saveCustomPrompt(customPromptName, customPrompts) {
     if (customPromptName == "") {
         toastr.warning("Please set custom prompt name to save.")
         return
@@ -453,7 +450,7 @@ function deleteCustomPrompt(customPromptName){
 function loadCustomPrompt(){
     const optionSelected = $("#objective-prompt-load").find(':selected').val()
     console.log(optionSelected)
-    objectivePrompts = extension_settings.objective.customPrompts[optionSelected]
+    Object.assign(objectivePrompts, extension_settings.objective.customPrompts[optionSelected])
 
     $('#objective-prompt-generate').val(objectivePrompts.createTask)
     $('#objective-prompt-check').val(objectivePrompts.checkTaskCompleted)
@@ -472,9 +469,148 @@ function populateCustomPrompts(){
     }
 }
 
+//###############################//
+//#       UI AND Settings       #//
+//###############################//
+
+
+const defaultSettings = {
+    currentObjectiveId: null,
+    taskTree: null,
+    chatDepth: 2,
+    checkFrequency: 3,
+    hideTasks: false,
+    prompts: defaultPrompts,
+}
+
+// Convenient single call. Not much at the moment.
+function resetState() {
+    loadSettings();
+}
+
+//
+function saveState() {
+    const context = getContext();
+
+    if (currentChatId == "") {
+        currentChatId = context.chatId
+    }
+
+    chat_metadata['objective'] = {
+        currentObjectiveId: currentObjective.id,
+        taskTree: taskTree.toSaveStateRecurse(),
+        checkFrequency: $('#objective-check-frequency').val(),
+        chatDepth: $('#objective-chat-depth').val(),
+        hideTasks: $('#objective-hide-tasks').prop('checked'),
+        prompts: objectivePrompts,
+    }
+
+    saveMetadataDebounced();
+}
+
+// Dump core state
+function debugObjectiveExtension() {
+    console.log(JSON.stringify({
+        "currentTask": currentTask,
+        "currentObjective": currentObjective,
+        "taskTree": taskTree.toSaveStateRecurse(),
+        "chat_metadata": chat_metadata['objective'],
+        "extension_settings": extension_settings['objective'],
+        "prompts": objectivePrompts
+    }, null, 2))
+}
+
+window.debugObjectiveExtension = debugObjectiveExtension
+
+
+// Populate UI task list
+function updateUiTaskList() {
+    $('#objective-tasks').empty()
+
+    // Show button to navigate back to parent objective if parent exists
+    if (currentObjective){
+        if (currentObjective.parentId !== "") {
+            $('#objective-parent').show()
+        } else {
+            $('#objective-parent').hide()
+        }
+    }
+
+    $('#objective-text').val(currentObjective.description)
+    if (currentObjective.children.length > 0){
+        // Show tasks if there are any to show
+        for (const task of currentObjective.children) {
+            task.addUiElement()
+        }
+    } else {
+        // Show button to add tasks if there are none
+        $('#objective-tasks').append(`
+        <input id="objective-task-add-first" type="button" class="menu_button" value="Add Task">
+        `)
+        $("#objective-task-add-first").on('click', () => {
+            currentObjective.addTask("")
+            setCurrentTask()
+            updateUiTaskList()
+        })
+    }
+}
+
+function onParentClick() {
+    currentObjective = getTaskById(currentObjective.parentId)
+    updateUiTaskList()
+    setCurrentTask()
+}
+
+// Trigger creation of new tasks with given objective.
+async function onGenerateObjectiveClick() {
+    await generateTasks()
+    saveState()
+}
+
+// Update extension prompts
+function onChatDepthInput() {
+    saveState()
+    setCurrentTask() // Ensure extension prompt is updated
+}
+
+function onObjectiveTextFocusOut(){
+    currentObjective.description = $('#objective-text').val()
+    saveState()
+}
+
+// Update how often we check for task completion
+function onCheckFrequencyInput() {
+    checkCounter = $("#objective-check-frequency").val()
+    $('#objective-counter').text(checkCounter)
+    saveState()
+}
+
+function onHideTasksInput() {
+    $('#objective-tasks').prop('hidden', $('#objective-hide-tasks').prop('checked'))
+    saveState()
+}
+
+function loadTaskChildrenRecurse(savedTask) {
+    let tempTaskTree = new ObjectiveTask({
+        id: savedTask.id,
+        description: savedTask.description,
+        completed: savedTask.completed,
+        parentId: savedTask.parentId,
+    })
+    for (const task of savedTask.children){
+        const childTask = loadTaskChildrenRecurse(task)
+        tempTaskTree.children.push(childTask)
+    }
+    return tempTaskTree
+}
+
 function loadSettings() {
     // Load/Init settings for chatId
     currentChatId = getContext().chatId
+
+    // Reset Objectives and Tasks in memory
+    taskTree = null;
+    currentObjective = null;
     
     // Init extension settings
     if (Object.keys(extension_settings.objective).length === 0) {
@@ -488,6 +624,7 @@ function loadSettings() {
 
     // Migrate existing settings
     if (currentChatId in extension_settings.objective) {
+        // TODO: Remove this soon
         chat_metadata['objective'] = extension_settings.objective[currentChatId];
         delete extension_settings.objective[currentChatId];
     }
@@ -496,21 +633,47 @@ function loadSettings() {
         Object.assign(chat_metadata, { objective: defaultSettings });
     }
 
-    // Update globals
-    globalObjective = chat_metadata['objective'].objective
-    globalTasks = chat_metadata['objective'].tasks.map(task => {
-        return new ObjectiveTask({
-            id: task.id,
-            description: task.description,
-            completed: task.completed,
-            parent: task.parent,
-        })
-    });
+    // Migrate legacy flat objective to new objectiveTree and currentObjective
+    if ('objective' in chat_metadata.objective) {
+
+        // Create root objective from legacy objective
+        taskTree = new ObjectiveTask({id:0, description: chat_metadata.objective.objective});
+        currentObjective = taskTree;
+
+        // Populate root objective tree from legacy tasks
+        if ('tasks' in chat_metadata.objective) {
+            let idIncrement = 0;
+            taskTree.children = chat_metadata.objective.tasks.map(task => {
+                idIncrement += 1;
+                return new ObjectiveTask({
+                    id: idIncrement,
+                    description: task.description,
+                    completed: task.completed,
+                    parentId: taskTree.id,
+                })
+            });
+        }
+        saveState();
+        delete chat_metadata.objective.objective;
+        delete chat_metadata.objective.tasks;
+    } else {
+        // Load Objectives and Tasks (Normal path)
+        if (chat_metadata.objective.taskTree){
+            taskTree = loadTaskChildrenRecurse(chat_metadata.objective.taskTree)
+        }
+    }
+
+    // Make sure there's a root task
+    if (!taskTree) {
+        taskTree = new ObjectiveTask({id:0,description:$('#objective-text').val()})
+    }
+
+    currentObjective = taskTree
     checkCounter = chat_metadata['objective'].checkFrequency
 
     // Update UI elements
     $('#objective-counter').text(checkCounter)
-    $("#objective-text").text(globalObjective)
+    $("#objective-text").text(taskTree.description)
     updateUiTaskList()
     $('#objective-chat-depth').val(chat_metadata['objective'].chatDepth)
     $('#objective-check-frequency').val(chat_metadata['objective'].checkFrequency)
@@ -533,38 +696,44 @@ jQuery(() => {
     <div class="objective-settings">
         <div class="inline-drawer">
             <div class="inline-drawer-toggle inline-drawer-header">
-            <b>Objective</b>
-            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
-        </div>
-        <div class="inline-drawer-content">
-            <label for="objective-text"><small>Enter an objective and generate tasks. The AI will attempt to complete tasks autonomously</small></label>
-            <textarea id="objective-text" type="text" class="text_pole textarea_compact" rows="4"></textarea>
-            <div class="objective_block flex-container">
-                <input id="objective-generate" class="menu_button" type="submit" value="Auto-Generate Tasks" />
-                <label class="checkbox_label"><input id="objective-hide-tasks" type="checkbox"> Hide Tasks</label>
+                <b>Objective</b>
+                <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
             </div>
-
-            <div id="objective-tasks"> </div>
-            <div class="objective_block margin-bot-10px">
-                <div class="objective_block objective_block_control flex1 flexFlowColumn">
-                    <label for="objective-chat-depth">Position in Chat</label>
-                    <input id="objective-chat-depth" class="text_pole widthUnset" type="number" min="0" max="99" />
+            <div class="inline-drawer-content">
+                <label for="objective-text"><small>Enter an objective and generate tasks. The AI will attempt to complete tasks autonomously</small></label>
+                <textarea id="objective-text" type="text" class="text_pole textarea_compact" rows="4"></textarea>
+                <div class="objective_block flex-container">
+                    <input id="objective-generate" class="menu_button" type="submit" value="Auto-Generate Tasks" />
+                    <label class="checkbox_label"><input id="objective-hide-tasks" type="checkbox"> Hide Tasks</label>
                 </div>
-                <br>
-                <div class="objective_block objective_block_control flex1">
-
-                    <label for="objective-check-frequency">Task Check Frequency</label>
-                    <input id="objective-check-frequency" class="text_pole widthUnset" type="number" min="0" max="99" />
-                    <small>(0 = disabled)</small>
+                <div id="objective-parent" class="objective_block flex-container">
+                    <i class="objective-task-button fa-solid fa-circle-left fa-2x" title="Go to Parent"></i>
+                    <small>Go to parent task</small>
                 </div>
+
+                <div id="objective-tasks"> </div>
+                <div class="objective_block margin-bot-10px">
+                    <div class="objective_block objective_block_control flex1 flexFlowColumn">
+                        <label for="objective-chat-depth">Position in Chat</label>
+                        <input id="objective-chat-depth" class="text_pole widthUnset" type="number" min="0" max="99" />
+                    </div>
+                    <br>
+                    <div class="objective_block objective_block_control flex1">
+
+                        <label for="objective-check-frequency">Task Check Frequency</label>
+                        <input id="objective-check-frequency" class="text_pole widthUnset" type="number" min="0" max="99" />
+                        <small>(0 = disabled)</small>
+                    </div>
+                </div>
+                <span> Messages until next AI task completion check <span id="objective-counter">0</span></span>
+                <div class="objective_block flex-container">
+                    <input id="objective_prompt_edit" class="menu_button" type="submit" value="Edit Prompts" />
+                </div>
+                <hr class="sysHR">
             </div>
-            <span> Messages until next AI task completion check <span id="objective-counter">0</span></span>
-            <div class="objective_block flex-container">
-                <input id="objective_prompt_edit" class="menu_button" type="submit" value="Edit Prompts" />
-            </div>
-            <hr class="sysHR">
         </div>
-    </div>`;
+    </div>
+    `;
 
     addManualTaskCheckUi()
     $('#extensions_settings').append(settingsHtml);
@@ -573,6 +742,9 @@ jQuery(() => {
     $("#objective-check-frequency").on('input', onCheckFrequencyInput)
     $('#objective-hide-tasks').on('click', onHideTasksInput)
     $('#objective_prompt_edit').on('click', onEditPromptClick)
+    $('#objective-parent').hide()
+    $('#objective-parent').on('click',onParentClick)
+    $('#objective-text').on('focusout',onObjectiveTextFocusOut)
     loadSettings()
 
     eventSource.on(event_types.CHAT_CHANGED, () => {
