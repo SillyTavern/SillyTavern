@@ -62,6 +62,8 @@ function loadNovelPreset(preset) {
     nai_settings.top_a = preset.top_a;
     nai_settings.typical_p = preset.typical_p;
     nai_settings.min_length = preset.min_length;
+    nai_settings.cfg_scale = preset.cfg_scale;
+    nai_settings.phrase_rep_pen = preset.phrase_rep_pen;
     loadNovelSettingsUi(nai_settings);
 }
 
@@ -84,6 +86,8 @@ function loadNovelSettings(settings) {
     nai_settings.top_a = settings.top_a;
     nai_settings.typical_p = settings.typical_p;
     nai_settings.min_length = settings.min_length;
+    nai_settings.phrase_rep_pen = settings.phrase_rep_pen;
+    nai_settings.cfg_scale = settings.cfg_scale;
     nai_settings.streaming_novel = !!settings.streaming_novel;
     loadNovelSettingsUi(nai_settings);
 
@@ -92,6 +96,39 @@ function loadNovelSettings(settings) {
         if (typeof nai_settings[key] === 'number' && Number.isNaN(nai_settings[key])) {
             $("#settings_perset_novel").trigger("change");
         }
+    }
+}
+
+const phraseRepPenStrings = [
+    null,
+    "very_light",
+    "light",
+    "medium",
+    "aggressive",
+    "very_aggressive"
+]
+
+function getPhraseRepPenString(phraseRepPenCounter) {
+    if (phraseRepPenCounter < 1 || phraseRepPenCounter > F5) {
+        return null;
+    } else {
+        return phraseRepPenStrings[phraseRepPenCounter];
+    }
+}
+
+function getPhraseRepPenCounter(phraseRepPenString) {
+    if (phraseRepPenString === phraseRepPenStrings[1]) {
+        return 1;
+    } else if (phraseRepPenString === phraseRepPenStrings[2]) {
+        return 2;
+    } else if (phraseRepPenString === phraseRepPenStrings[3]) {
+        return 3;
+    } else if (phraseRepPenString === phraseRepPenStrings[4]) {
+        return 4;
+    } else if (phraseRepPenString === phraseRepPenStrings[5]) {
+        return 5;
+    } else {
+        return 0;
     }
 }
 
@@ -118,6 +155,10 @@ function loadNovelSettingsUi(ui_settings) {
     $("#top_a_counter_novel").text(Number(ui_settings.top_a).toFixed(2));
     $("#typical_p_novel").val(ui_settings.typical_p);
     $("#typical_p_counter_novel").text(Number(ui_settings.typical_p).toFixed(2));
+    $("#cfg_scale_novel").val(ui_settings.cfg_scale);
+    $("#cfg_scale_counter_novel").text(Number(ui_settings.cfg_scale).toFixed(2));
+    $("#phrase_rep_pen_novel").val(getPhraseRepPenCounter(ui_settings.phrase_rep_pen));
+    $("#phrase_rep_pen_counter_novel").text(getPhraseRepPenCounter(ui_settings.phrase_rep_pen));
     $("#min_length_novel").val(ui_settings.min_length);
     $("#min_length_counter_novel").text(Number(ui_settings.min_length).toFixed(0));
 
@@ -192,6 +233,18 @@ const sliders = [
         setValue: (val) => { nai_settings.typical_p = Number(val).toFixed(2); },
     },
     {
+        sliderId: "#cfg_scale_novel",
+        counterId: "#cfg_scale_counter_novel",
+        format: (val) => `${val}`,
+        setValue: (val) => { nai_settings.cfg_scale = Number(val).toFixed(2); },
+    },
+    {
+        sliderId: "#phrase_rep_pen_novel",
+        counterId: "#phrase_rep_pen_counter_novel",
+        format: (val) => `${val}`,
+        setValue: (val) => { nai_settings.phrase_rep_pen = getPhraseRepPenString(Number(val).toFixed(0)); },
+    },
+    {
         sliderId: "#min_length_novel",
         counterId: "#min_length_counter_novel",
         format: (val) => `${val}`,
@@ -200,6 +253,7 @@ const sliders = [
 ];
 
 export function getNovelGenerationData(finalPromt, this_settings, this_amount_gen) {
+    const isNewModel = (nai_settings.model_novel.includes('clio') || nai_settings.model_novel.includes('kayra'));
     return {
         "input": finalPromt,
         "model": nai_settings.model_novel,
@@ -217,13 +271,16 @@ export function getNovelGenerationData(finalPromt, this_settings, this_amount_ge
         "top_p": parseFloat(nai_settings.top_p),
         "top_k": parseInt(nai_settings.top_k),
         "typical_p": parseFloat(nai_settings.typical_p),
+        "cfg_scale": parseFloat(nai_settings.cfg_scale),
+        "cfg_uc": "",
+        "phrase_rep_pen": nai_settings.phrase_rep_pen,
         //"stop_sequences": {{187}},
         //bad_words_ids = {{50256}, {0}, {1}};
         "generate_until_sentence": true,
         "use_cache": false,
         "use_string": true,
         "return_full_text": false,
-        "prefix": "vanilla",
+        "prefix": isNewModel ? "special_instruct" : "vanilla",
         "order": this_settings.order,
         "streaming": nai_settings.streaming_novel,
     };
