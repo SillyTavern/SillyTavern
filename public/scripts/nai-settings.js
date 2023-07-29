@@ -102,7 +102,7 @@ const phraseRepPenStrings = [
 ]
 
 function getPhraseRepPenString(phraseRepPenCounter) {
-    if (phraseRepPenCounter < 1 || phraseRepPenCounter > F5) {
+    if (phraseRepPenCounter < 1 || phraseRepPenCounter > 5) {
         return null;
     } else {
         return phraseRepPenStrings[phraseRepPenCounter];
