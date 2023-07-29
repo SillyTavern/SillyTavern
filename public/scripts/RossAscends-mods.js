@@ -239,7 +239,6 @@ $("#rm_ch_create_block").on("input", function () { countTokensDebounced(); });
 $("#character_popup").on("input", function () { countTokensDebounced(); });
 //function:
 export function RA_CountCharTokens() {
-    $("#result_info").html("");
     //console.log('RA_TC -- starting with this_chid = ' + this_chid);
     if (menu_type === "create") {            //if new char
         function saveFormVariables() {
@@ -448,8 +447,8 @@ function RA_autoconnect(PrevApi) {
                 }
                 break;
             case 'openai':
-                if ((secret_state[SECRET_KEYS.OPENAI] && oai_settings.chat_completion_source == chat_completion_sources.OPENAI)
-                    || (secret_state[SECRET_KEYS.CLAUDE] && oai_settings.chat_completion_source == chat_completion_sources.CLAUDE)
+                if (((secret_state[SECRET_KEYS.OPENAI] || oai_settings.reverse_proxy) && oai_settings.chat_completion_source == chat_completion_sources.OPENAI)
+                    || ((secret_state[SECRET_KEYS.CLAUDE] || oai_settings.reverse_proxy) && oai_settings.chat_completion_source == chat_completion_sources.CLAUDE)
                     || (secret_state[SECRET_KEYS.SCALE] && oai_settings.chat_completion_source == chat_completion_sources.SCALE)
                     || (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI)
                     || (secret_state[SECRET_KEYS.OPENROUTER] && oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER)

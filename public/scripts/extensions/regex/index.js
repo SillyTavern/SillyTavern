@@ -5,13 +5,14 @@ import { regex_placement } from "./engine.js";
 
 async function saveRegexScript(regexScript, existingScriptIndex) {
     // If not editing
-    if (existingScriptIndex === -1) {
-        // Is the script name undefined?
-        if (!regexScript.scriptName) {
-            toastr.error(`Could not save regex script: The script name was undefined or empty!`);
-            return;
-        }
 
+    // Is the script name undefined or empty?
+    if (!regexScript.scriptName) {
+        toastr.error(`Could not save regex script: The script name was undefined or empty!`);
+        return;
+    }
+
+    if (existingScriptIndex === -1) {
         // Does the script name already exist?
         if (extension_settings.regex.find((e) => e.scriptName === regexScript.scriptName)) {
             toastr.error(`Could not save regex script: A script with name ${regexScript.scriptName} already exists.`);
@@ -29,14 +30,12 @@ async function saveRegexScript(regexScript, existingScriptIndex) {
 
     // Is a find regex present?
     if (regexScript.findRegex.length === 0) {
-        toastr.error(`Could not save regex script: A find regex is required!`);
-        return;
+        toastr.warning(`This regex script will not work, but was saved anyway: A find regex isn't present.`);
     }
 
     // Is there someplace to place results?
     if (regexScript.placement.length === 0) {
-        toastr.error(`Could not save regex script: One placement checkbox must be selected!`);
-        return;
+        toastr.warning(`This regex script will not work, but was saved anyway: One "Affects" checkbox must be selected!`);
     }
 
     if (existingScriptIndex !== -1) {
@@ -140,7 +139,7 @@ async function onRegexEditorOpenClick(existingId) {
             .prop("checked", true);
 
         editorHtml
-            .find(`input[name="replace_position"][value="0"]`)
+            .find(`input[name="replace_position"][value="1"]`)
             .prop("checked", true);
     }
 

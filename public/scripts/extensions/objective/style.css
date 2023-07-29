@@ -10,6 +10,13 @@
     flex-wrap: wrap;
 }
 
+.objective_prompt_block {
+    display: flex;
+    align-items: baseline;
+    column-gap: 5px;
+    flex-wrap: wrap;
+}
+
 .objective_block_control {
     align-items: baseline;
 }

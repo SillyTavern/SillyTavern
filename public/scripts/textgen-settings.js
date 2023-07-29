@@ -3,6 +3,7 @@ import {
     getStoppingStrings,
     max_context,
     saveSettingsDebounced,
+    setGenerationParamsFromPreset,
 } from "../script.js";
 
 export {
@@ -11,7 +12,7 @@ export {
     generateTextGenWithStreaming,
 }
 
-let textgenerationwebui_settings = {
+const textgenerationwebui_settings = {
     temp: 0.7,
     top_p: 0.5,
     top_k: 40,
@@ -44,8 +45,8 @@ let textgenerationwebui_settings = {
     mirostat_eta: 0.1,
 };
 
-let textgenerationwebui_presets = [];
-let textgenerationwebui_preset_names = [];
+export let textgenerationwebui_presets = [];
+export let textgenerationwebui_preset_names = [];
 
 const setting_names = [
     "temp",
@@ -89,6 +90,7 @@ function selectPreset(name) {
         const value = preset[name];
         setSettingByName(name, value, true);
     }
+    setGenerationParamsFromPreset(preset);
     saveSettingsDebounced();
 }
 

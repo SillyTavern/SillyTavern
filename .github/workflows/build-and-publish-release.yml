@@ -1,9 +1,9 @@
-name: Build and Publish Release (Dev)
+name: Build and Publish Release (Release)
 
 on:
   push:
     branches:
-      - dev
+      - release
 
 jobs:
   build_and_publish:
@@ -30,8 +30,8 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: dist/*
-        tag_name: ci-dev
-        name: Continuous Release (Dev)
+        tag_name: ci-release
+        name: Continuous Release (Release)
         prerelease: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

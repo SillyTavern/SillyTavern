@@ -4,6 +4,8 @@
   "max_length": 40,
   "min_length": 1,
   "top_a": 0.022,
+  "top_k": 0,
+  "top_p": 1,
   "typical_p": 0.9,
   "tail_free_sampling": 0.956,
   "repetition_penalty": 1.25,

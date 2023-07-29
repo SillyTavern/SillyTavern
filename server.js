@@ -1108,7 +1108,7 @@ app.post("/editcharacterattribute", jsonParser, async function (request, respons
     }
 });
 
-app.post("/deletecharacter", urlencodedParser, async function (request, response) {
+app.post("/deletecharacter", jsonParser, async function (request, response) {
     if (!request.body || !request.body.avatar_url) {
         return response.sendStatus(400);
     }
@@ -1224,6 +1224,11 @@ const calculateChatSize = (charDir) => {
     return { chatSize, dateLastChat };
 }
 
+// Calculate the total string length of the data object
+const calculateDataSize = (data) => {
+    return typeof data === 'object' ? Object.values(data).reduce((acc, val) => acc + new String(val).length, 0) : 0;
+}
+
 /**
  * processCharacter - Process a given character, read its data and calculate its statistics.
  *
@@ -1245,6 +1250,7 @@ const processCharacter = async (item, i) => {
         const { chatSize, dateLastChat } = calculateChatSize(char_dir);
         characters[i]['chat_size'] = chatSize;
         characters[i]['date_last_chat'] = dateLastChat;
+        characters[i]['data_size'] = calculateDataSize(jsonObject?.data);
     }
     catch (err) {
         characters[i] = {
@@ -1780,7 +1786,7 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
 
     console.log(request.body);
     const bw = require('./src/bad-words');
-    const bad_words_ids = request.body.model.includes('clio') ? bw.clioBadWordsId : bw.badWordIds;
+    const isNewModel = (request.body.model.includes('clio') || request.body.model.includes('kayra'));
     const data = {
         "input": request.body.input,
         "model": request.body.model,
@@ -1799,13 +1805,16 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
             "top_p": request.body.top_p,
             "top_k": request.body.top_k,
             "typical_p": request.body.typical_p,
+            "cfg_scale": request.body.cfg_scale,
+            "cfg_uc": request.body.cfg_uc,
+            "phrase_rep_pen": request.body.phrase_rep_pen,
             //"stop_sequences": {{187}},
-            "bad_words_ids": bad_words_ids,
+            "bad_words_ids": isNewModel ? bw.clioBadWordsId : bw.badWordIds,
             //generate_until_sentence = true;
             "use_cache": request.body.use_cache,
             "use_string": true,
             "return_full_text": request.body.return_full_text,
-            "prefix": request.body.prefix,
+            "prefix": isNewModel ? "special_instruct" : request.body.prefix,
             "order": request.body.order
         }
     };
@@ -2849,7 +2858,7 @@ app.post("/getstatus_openai", jsonParser, function (request, response_getstatus_
 
     if (request.body.use_openrouter == false) {
         api_url = new URL(request.body.reverse_proxy || api_openai).toString();
-        api_key_openai = readSecret(SECRET_KEYS.OPENAI);
+        api_key_openai = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.OPENAI);
         headers = {};
     } else {
         api_url = 'https://openrouter.ai/api/v1';
@@ -2858,7 +2867,7 @@ app.post("/getstatus_openai", jsonParser, function (request, response_getstatus_
         headers = { 'HTTP-Referer': request.headers.referer };
     }
 
-    if (!api_key_openai) {
+    if (!api_key_openai && !request.body.reverse_proxy) {
         return response_getstatus_openai.status(401).send({ error: true });
     }
 
@@ -2925,44 +2934,6 @@ app.post("/openai_bias", jsonParser, async function (request, response) {
     // not needed for cached tokenizers
     //tokenizer.free();
     return response.send(result);
-});
-
-// TODO: Dead code, consider deleting. Users will get redirected to OpenAI site instead.
-// 'Your request to GET /v1/dashboard/billing/usage must be made with a session key (that is, it can only be made from the browser). You made it with the following key type: secret.'
-app.post("/openai_usage", jsonParser, async function (request, response) {
-    if (!request.body) return response.sendStatus(400);
-    const key = readSecret(SECRET_KEYS.OPENAI);
-
-    if (!key) {
-        console.warn('Get key usage failed: Missing OpenAI API key.');
-        return response.sendStatus(401);
-    }
-
-    const api_url = new URL(request.body.reverse_proxy || api_openai).toString();
-
-    const headers = {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${key}`,
-    };
-
-    const date = new Date();
-    date.setDate(1);
-    const start_date = date.toISOString().slice(0, 10);
-
-    date.setMonth(date.getMonth() + 1);
-    const end_date = date.toISOString().slice(0, 10);
-
-    try {
-        const res = await getAsync(
-            `${api_url}/dashboard/billing/usage?start_date=${start_date}&end_date=${end_date}`,
-            { headers },
-        );
-        return response.send(res);
-    }
-    catch (error) {
-        console.log(error);
-        return response.sendStatus(400);
-    }
 });
 
 app.post("/deletepreset_openai", jsonParser, function (request, response) {
@@ -3093,7 +3064,7 @@ async function sendClaudeRequest(request, response) {
     const fetch = require('node-fetch').default;
 
     const api_url = new URL(request.body.reverse_proxy || api_claude).toString();
-    const api_key_claude = readSecret(SECRET_KEYS.CLAUDE);
+    const api_key_claude = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.CLAUDE);
 
     if (!api_key_claude) {
         return response.status(401).send({ error: true });
@@ -3182,7 +3153,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
 
     if (!request.body.use_openrouter) {
         api_url = new URL(request.body.reverse_proxy || api_openai).toString();
-        api_key_openai = readSecret(SECRET_KEYS.OPENAI);
+        api_key_openai = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.OPENAI);
         headers = {};
     } else {
         api_url = 'https://openrouter.ai/api/v1';
@@ -3191,7 +3162,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
         headers = { 'HTTP-Referer': request.headers.referer };
     }
 
-    if (!api_key_openai) {
+    if (!api_key_openai && !request.body.reverse_proxy) {
         return response_generate_openai.status(401).send({ error: true });
     }
 
@@ -3289,6 +3260,10 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
                 message = 'API key disabled or exhausted';
                 console.log(message);
                 break;
+            case 451:
+                message = error?.response?.data?.error?.message || 'Unavailable for legal reasons';
+                console.log(message);
+                break;
         }
 
         const quota_error = error?.response?.status === 429 && error?.response?.data?.error?.type === 'insufficient_quota';
@@ -3341,6 +3316,47 @@ app.post("/tokenize_openai", jsonParser, function (request, response_tokenize_op
     response_tokenize_openai.send({ "token_count": num_tokens });
 });
 
+app.post("/save_preset", jsonParser, function (request, response) {
+    const name = sanitize(request.body.name);
+    if (!request.body.preset || !name) {
+        return response.sendStatus(400);
+    }
+
+    const filename = `${name}.settings`;
+    const directory = getPresetFolderByApiId(request.body.apiId);
+
+    if (!directory) {
+        return response.sendStatus(400);
+    }
+
+    const fullpath = path.join(directory, filename);
+    fs.writeFileSync(fullpath, JSON.stringify(request.body.preset, null, 4), 'utf-8');
+    return response.send({ name });
+});
+
+app.post("/delete_preset", jsonParser, function (request, response) {
+    const name = sanitize(request.body.name);
+    if (!name) {
+        return response.sendStatus(400);
+    }
+
+    const filename = `${name}.settings`;
+    const directory = getPresetFolderByApiId(request.body.apiId);
+
+    if (!directory) {
+        return response.sendStatus(400);
+    }
+
+    const fullpath = path.join(directory, filename);
+
+    if (fs.existsSync) {
+        fs.unlinkSync(fullpath);
+        return response.sendStatus(200);
+    } else {
+        return response.sendStatus(404);
+    }
+});
+
 app.post("/savepreset_openai", jsonParser, function (request, response) {
     const name = sanitize(request.query.name);
     if (!request.body || !name) {
@@ -3352,6 +3368,20 @@ app.post("/savepreset_openai", jsonParser, function (request, response) {
     fs.writeFileSync(fullpath, JSON.stringify(request.body, null, 4), 'utf-8');
     return response.send({ name });
 });
+
+function getPresetFolderByApiId(apiId) {
+    switch (apiId) {
+        case 'kobold':
+        case 'koboldhorde':
+            return directories.koboldAI_Settings;
+        case 'novel':
+            return directories.novelAI_Settings;
+        case 'textgenerationwebui':
+            return directories.textGen_Settings;
+        default:
+            return null;
+    }
+}
 
 function createTokenizationHandler(getTokenizerFn) {
     return async function (request, response) {
@@ -3392,17 +3422,6 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
 
 
 // ** REST CLIENT ASYNC WRAPPERS **
-
-function putAsync(url, args) {
-    return new Promise((resolve, reject) => {
-        client.put(url, args, (data, response) => {
-            if (response.statusCode >= 400) {
-                reject(data);
-            }
-            resolve(data);
-        }).on('error', e => reject(e));
-    })
-}
 
 async function postAsync(url, args) {
     const fetch = require('node-fetch').default;

@@ -43,7 +43,7 @@ export {
     send_on_enter_options,
 };
 
-const MAX_CONTEXT_DEFAULT = 4096;
+export const MAX_CONTEXT_DEFAULT = 4096;
 const MAX_CONTEXT_UNLOCKED = 65536;
 
 const avatar_styles = {
@@ -186,6 +186,7 @@ let power_user = {
     persona_description_position: persona_description_positions.BEFORE_CHAR,
 
     custom_stopping_strings: '',
+    fuzzy_search: false,
 };
 
 let themes = [];
@@ -255,7 +256,7 @@ function fixMarkdown(text) {
     // i.e. "^example * text* * harder problem *\n" -> "^example *text* *harder problem*\n"
 
     // Find pairs of formatting characters and capture the text in between them
-    const format = /(\*|_|~){1,2}([\s\S]*?)\1{1,2}/gm;
+    const format = /([\*_]{1,2})([\s\S]*?)\1/gm;
     let matches = [];
     let match;
     while ((match = format.exec(text)) !== null) {
@@ -266,7 +267,7 @@ function fixMarkdown(text) {
     let newText = text;
     for (let i = matches.length - 1; i >= 0; i--) {
         let matchText = matches[i][0];
-        let replacementText = matchText.replace(/(\*|_|~)(\s+)|(\s+)(\*|_|~)/g, '$1$4');
+        let replacementText = matchText.replace(/(\*|_)([\t \u00a0\u1680\u2000-\u200a\u202f\u205f\u3000\ufeff]+)|([\t \u00a0\u1680\u2000-\u200a\u202f\u205f\u3000\ufeff]+)(\*|_)/g, '$1$4');
         newText = newText.slice(0, matches[i].index) + replacementText + newText.slice(matches[i].index + matchText.length);
     }
 
@@ -534,6 +535,11 @@ async function applyTheme(name) {
         {
             key: 'chat_width',
             action: async () => {
+                // If chat width is not set, set it to 50
+                if (!power_user.chat_width) {
+                    power_user.chat_width = 50;
+                }
+
                 localStorage.setItem(storage_keys.chat_width, power_user.chat_width);
                 applyChatWidth();
             }
@@ -660,6 +666,10 @@ function loadPowerUserSettings(settings, data) {
         power_user.waifuMode = false;
     }
 
+    if (power_user.chat_width === '') {
+        power_user.chat_width = 50;
+    }
+
     $('#trim_spaces').prop("checked", power_user.trim_spaces);
     $('#continue_on_send').prop("checked", power_user.continue_on_send);
     $('#auto_swipe').prop("checked", power_user.auto_swipe);
@@ -667,6 +677,7 @@ function loadPowerUserSettings(settings, data) {
     $('#auto_swipe_blacklist').val(power_user.auto_swipe_blacklist.join(", "));
     $('#auto_swipe_blacklist_threshold').val(power_user.auto_swipe_blacklist_threshold);
     $('#custom_stopping_strings').val(power_user.custom_stopping_strings);
+    $('#fuzzy_search_checkbox').prop("checked", power_user.fuzzy_search);
 
     $("#console_log_prompts").prop("checked", power_user.console_log_prompts);
     $('#auto_fix_generated_markdown').prop("checked", power_user.auto_fix_generated_markdown);
@@ -885,6 +896,31 @@ function loadInstructMode() {
             }
         });
     });
+}
+
+export function fuzzySearchCharacters(searchValue) {
+    const fuse = new Fuse(characters, {
+        keys: [
+            { name: 'data.name', weight: 5 },
+            { name: 'data.description', weight: 3 },
+            { name: 'data.mes_example', weight: 3 },
+            { name: 'data.scenario', weight: 2 },
+            { name: 'data.personality', weight: 2 },
+            { name: 'data.first_mes', weight: 2 },
+            { name: 'data.creator_notes', weight: 2 },
+            { name: 'data.creator', weight: 1 },
+            { name: 'data.tags', weight: 1 },
+            { name: 'data.alternate_greetings', weight: 1 }
+        ],
+        includeScore: true,
+        ignoreLocation: true,
+        threshold: 0.2,
+    });
+
+    const results = fuse.search(searchValue);
+    console.debug('Fuzzy search results for ' + searchValue, results)
+    const indices = results.map(x => x.refIndex);
+    return indices;
 }
 
 export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvatar, name1, name2) {
@@ -1151,10 +1187,10 @@ async function resetMovablePanels(type) {
         //if happening as part of preset application, do it quietly.
         if (type === 'quiet') {
             return
-            //if happening due to resize, tell user.    
+            //if happening due to resize, tell user.
         } else if (type === 'resize') {
             toastr.warning('Panel positions reset due to zoom/resize');
-            //if happening due to manual button press    
+            //if happening due to manual button press
         } else {
             toastr.success('Panel positions reset');
         }
@@ -1173,7 +1209,7 @@ function doNewChat() {
 
 function doRandomChat() {
     resetSelectedGroup();
-    setCharacterId(Math.floor(Math.random() * characters.length));
+    setCharacterId(Math.floor(Math.random() * characters.length).toString());
     setTimeout(() => {
         reloadCurrentChat();
     }, 1);
@@ -1960,6 +1996,11 @@ $(document).ready(() => {
 
     $('#custom_stopping_strings').on('input', function () {
         power_user.custom_stopping_strings = $(this).val();
+        saveSettingsDebounced();
+    });
+
+    $('#fuzzy_search_checkbox').on('input', function () {
+        power_user.fuzzy_search = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 
