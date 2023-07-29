@@ -737,6 +737,9 @@ let token;
 
 var PromptArrayItemForRawPromptDisplay;
 
+export let  active_character = ""
+export let active_group = ""
+
 export function getRequestHeaders() {
     return {
         "Content-Type": "application/json",
@@ -785,6 +788,14 @@ function checkOnlineStatus() {
         $(".online_status_text4").html(online_status);
     }
 }
+
+export function setActiveCharacter(character) {
+    active_character = character;
+}
+
+export function setActiveGroup(group) {
+    active_group = group;
+}   
 
 async function getStatus() {
     if (is_get_status) {
@@ -5009,6 +5020,10 @@ async function getSettings(type) {
         highlightSelectedAvatar();
         setPersonaDescription();
 
+        //Load the active character and group
+        active_character = settings.active_character;
+        active_group = settings.active_group;
+
         //Load the API server URL from settings
         api_server = settings.api_server;
         $("#api_url_text").val(api_server);
@@ -5049,6 +5064,8 @@ async function saveSettings(type) {
         data: JSON.stringify({
             firstRun: firstRun,
             username: name1,
+            active_character: active_character,
+            active_group: active_group,
             api_server: api_server,
             api_server_textgenerationwebui: api_server_textgenerationwebui,
             preset_settings: preset_settings,
