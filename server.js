@@ -3275,6 +3275,10 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
                 message = 'API key disabled or exhausted';
                 console.log(message);
                 break;
+            case 451:
+                message = error?.response?.data?.error?.message || 'Unavailable for legal reasons';
+                console.log(message);
+                break;
         }
 
         const quota_error = error?.response?.status === 429 && error?.response?.data?.error?.type === 'insufficient_quota';
