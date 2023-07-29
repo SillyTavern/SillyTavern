@@ -90,13 +90,6 @@ function loadNovelSettings(settings) {
     nai_settings.cfg_scale = settings.cfg_scale;
     nai_settings.streaming_novel = !!settings.streaming_novel;
     loadNovelSettingsUi(nai_settings);
-
-    // reload the preset to migrate any new settings
-    for (const key of Object.keys(nai_settings)) {
-        if (typeof nai_settings[key] === 'number' && Number.isNaN(nai_settings[key])) {
-            $("#settings_perset_novel").trigger("change");
-        }
-    }
 }
 
 const phraseRepPenStrings = [
