@@ -3092,7 +3092,12 @@ async function sendClaudeRequest(request, response) {
             controller.abort();
         });
 
-        const requestPrompt = convertClaudePrompt(request.body.messages, true, true);
+        let requestPrompt = convertClaudePrompt(request.body.messages, true, true);
+
+        if (request.body.assistant_prefill) {
+            requestPrompt += request.body.assistant_prefill;
+        }
+
         console.log('Claude request:', requestPrompt);
 
         const generateResponse = await fetch(api_url + '/complete', {
