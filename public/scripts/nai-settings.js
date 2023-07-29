@@ -253,6 +253,7 @@ const sliders = [
 ];
 
 export function getNovelGenerationData(finalPromt, this_settings, this_amount_gen) {
+    const isNewModel = (nai_settings.model_novel.includes('clio') || nai_settings.model_novel.includes('kayra'));
     return {
         "input": finalPromt,
         "model": nai_settings.model_novel,
@@ -279,7 +280,7 @@ export function getNovelGenerationData(finalPromt, this_settings, this_amount_ge
         "use_cache": false,
         "use_string": true,
         "return_full_text": false,
-        "prefix": "vanilla",
+        "prefix": isNewModel ? "special_instruct" : "vanilla",
         "order": this_settings.order,
         "streaming": nai_settings.streaming_novel,
     };
