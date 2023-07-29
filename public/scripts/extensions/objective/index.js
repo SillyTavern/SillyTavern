@@ -607,6 +607,10 @@ function loadTaskChildrenRecurse(savedTask) {
 function loadSettings() {
     // Load/Init settings for chatId
     currentChatId = getContext().chatId
+
+    // Reset Objectives and Tasks in memory
+    taskTree = null;
+    currentObjective = null;
     
     // Init extension settings
     if (Object.keys(extension_settings.objective).length === 0) {
@@ -630,34 +634,35 @@ function loadSettings() {
     }
 
     // Migrate legacy flat objective to new objectiveTree and currentObjective
-    // if ('objective' in chat_metadata.objective) {
+    if ('objective' in chat_metadata.objective) {
 
-    //     // Create root objective from legacy objective
-    //     globalTaskTree = new ObjectiveTask({description: chat_metadata.objective})
-    //     currentObjective = globalTaskTree
+        // Create root objective from legacy objective
+        taskTree = new ObjectiveTask({id:0, description: chat_metadata.objective.objective});
+        currentObjective = taskTree;
 
-    //     // Populate root objective tree from legacy objective tasks
-    //     if ('tasks' in chat_metadata.objective) {
-    //         globalTaskTree.children = chat_metadata.objective.tasks.map(task => {
-    //             return new ObjectiveTask({
-    //                 description: task.description,
-    //                 completed: task.completed,
-    //                 parent: globalTaskTree,
-    //             })
-    //         });
-    //     }
-    //     chat_metadata.objective['objectiveTree'] = tempObjective.toSaveStateRecurse()
-    // }
-
-    // Reset Objectives and Tasks
-    taskTree = null;
-    currentObjective = null;
-
-    // Load Objectives and Tasks
-    if (chat_metadata.objective.taskTree){
-        taskTree = loadTaskChildrenRecurse(chat_metadata.objective.taskTree)
+        // Populate root objective tree from legacy tasks
+        if ('tasks' in chat_metadata.objective) {
+            let idIncrement = 0;
+            taskTree.children = chat_metadata.objective.tasks.map(task => {
+                idIncrement += 1;
+                return new ObjectiveTask({
+                    id: idIncrement,
+                    description: task.description,
+                    completed: task.completed,
+                    parentId: taskTree.id,
+                })
+            });
+        }
+        saveState();
+        delete chat_metadata.objective.objective;
+        delete chat_metadata.objective.tasks;
+    } else {
+        // Load Objectives and Tasks (Normal path)
+        if (chat_metadata.objective.taskTree){
+            taskTree = loadTaskChildrenRecurse(chat_metadata.objective.taskTree)
+        }
     }
-    
+
     // Make sure there's a root task
     if (!taskTree) {
         taskTree = new ObjectiveTask({id:0,description:$('#objective-text').val()})
