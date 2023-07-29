@@ -256,7 +256,7 @@ function fixMarkdown(text) {
     // i.e. "^example * text* * harder problem *\n" -> "^example *text* *harder problem*\n"
 
     // Find pairs of formatting characters and capture the text in between them
-    const format = /(\*|_|~){1,2}([\s\S]*?)\1{1,2}/gm;
+    const format = /([\*_]{1,2})([\s\S]*?)\1/gm;
     let matches = [];
     let match;
     while ((match = format.exec(text)) !== null) {
@@ -267,7 +267,7 @@ function fixMarkdown(text) {
     let newText = text;
     for (let i = matches.length - 1; i >= 0; i--) {
         let matchText = matches[i][0];
-        let replacementText = matchText.replace(/(\*|_|~)(\s+)|(\s+)(\*|_|~)/g, '$1$4');
+        let replacementText = matchText.replace(/(\*|_)([\t \u00a0\u1680\u2000-\u200a\u202f\u205f\u3000\ufeff]+)|([\t \u00a0\u1680\u2000-\u200a\u202f\u205f\u3000\ufeff]+)(\*|_)/g, '$1$4');
         newText = newText.slice(0, matches[i].index) + replacementText + newText.slice(matches[i].index + matchText.length);
     }
 
