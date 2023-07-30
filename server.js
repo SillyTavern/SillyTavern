@@ -1799,7 +1799,7 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
         controller.abort();
     });
     
-    const bw = require('./src/novelai');
+    const novelai = require('./src/novelai');
     const isNewModel = (request.body.model.includes('clio') || request.body.model.includes('kayra'));
     const isKrake = request.body.model.includes('krake');
     const data = {
@@ -1816,6 +1816,7 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
             "repetition_penalty_slope": request.body.repetition_penalty_slope,
             "repetition_penalty_frequency": request.body.repetition_penalty_frequency,
             "repetition_penalty_presence": request.body.repetition_penalty_presence,
+            "repetition_penalty_whitelist": isNewModel ? novelai.repPenaltyAllowList : null,
             "top_a": request.body.top_a,
             "top_p": request.body.top_p,
             "top_k": request.body.top_k,
@@ -1824,9 +1825,8 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
             "cfg_uc": request.body.cfg_uc,
             "phrase_rep_pen": request.body.phrase_rep_pen,
             //"stop_sequences": {{187}},
-            "bad_words_ids": isNewModel ? bw.badWordsList : (isKrake ? bw.krakeBadWordsList : bw.euterpeBadWordsList),
-            "logit_bias_exp": isNewModel ? bw.logitBiasExp : null,
-            "reputation_penalty_whitelist": isNewModel ? bw.repPenaltyAllowList : null,
+            "bad_words_ids": isNewModel ? novelai.badWordsList : (isKrake ? novelai.krakeBadWordsList : novelai.euterpeBadWordsList),
+            "logit_bias_exp": isNewModel ? novelai.logitBiasExp : null,
             //generate_until_sentence = true;
             "use_cache": request.body.use_cache,
             "use_string": true,
