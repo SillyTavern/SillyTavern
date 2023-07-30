@@ -7763,12 +7763,11 @@ $(document).ready(function () {
 
                 divchat.style.borderRadius = "";
                 divchat.style.backgroundColor = "";
-                divchat.style.padding = "";
+
             } else {
                 
                 divchat.style.borderRadius = "10px"; // Adjust the value to control the roundness of the corners
                 divchat.style.backgroundColor = "#f0f0f0"; // Set the background color to your preference
-                divchat.style.padding = "10px"; // Add some padding to give it some space inside
 
                 topBar.style.display = "none";
                 topSettingsHolder.style.display = "none";
