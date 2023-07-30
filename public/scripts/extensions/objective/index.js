@@ -779,7 +779,7 @@ jQuery(() => {
     });
 
     eventSource.on(event_types.MESSAGE_RECEIVED, () => {
-        if (currentChatId == undefined) {
+        if (currentChatId == undefined || currentTask == undefined) {
             return
         }
         if ($("#objective-check-frequency").val() > 0) {
