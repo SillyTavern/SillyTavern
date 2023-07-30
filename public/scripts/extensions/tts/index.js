@@ -1,4 +1,4 @@
-import { callPopup, cancelTtsPlay, eventSource, event_types, isMultigenEnabled, is_send_press, saveSettingsDebounced } from '../../../script.js'
+import { callPopup, cancelTtsPlay, eventSource, event_types, isMultigenEnabled, is_send_press, saveSettingsDebounced, chat } from '../../../script.js'
 import { ModuleWorkerWrapper, extension_settings, getContext } from '../../extensions.js'
 import { escapeRegex, getStringHash } from '../../utils.js'
 import { EdgeTtsProvider } from './edge.js'
@@ -12,6 +12,7 @@ import { power_user } from '../../power-user.js'
 
 const UPDATE_INTERVAL = 1000
 
+let voiceMapEntries = []
 let voiceMap = {} // {charName:voiceid, charName2:voiceid2}
 let audioControl
 
@@ -510,7 +511,7 @@ async function voicemapIsValid(parsedVoiceMap) {
     return valid
 }
 
-async function updateVoiceMap() {
+async function updateVoiceMapOld() {
     let isValidResult = false
 
     const value = $('#tts_voice_map').val()
@@ -531,7 +532,7 @@ async function updateVoiceMap() {
 function onApplyClick() {
     Promise.all([
         ttsProvider.onApplyClick(),
-        updateVoiceMap()
+        // updateVoiceMap()
     ]).then(() => {
         extension_settings.tts[ttsProviderName] = ttsProvider.settings
         saveSettingsDebounced()
@@ -596,20 +597,9 @@ function loadTtsProvider(provider) {
         console.warn(`Provider ${ttsProviderName} not in Extension Settings, initiatilizing provider in settings`)
         extension_settings.tts[ttsProviderName] = {}
     }
-
-    // Load voicemap settings
-    let voiceMapFromSettings
-    if ("voiceMap" in extension_settings.tts[ttsProviderName]) {
-        voiceMapFromSettings = extension_settings.tts[ttsProviderName].voiceMap
-        voiceMap = parseVoiceMap(voiceMapFromSettings)
-    } else {
-        voiceMapFromSettings = ""
-        voiceMap = {}
-    }
-    $('#tts_voice_map').val(voiceMapFromSettings)
-    $('#tts_provider').val(ttsProviderName)
-
     ttsProvider.loadSettings(extension_settings.tts[ttsProviderName])
+
+    initVoiceMap()
 }
 
 function onTtsProviderChange() {
@@ -617,17 +607,153 @@ function onTtsProviderChange() {
     loadTtsProvider(ttsProviderSelection)
 }
 
+// Ensure that TTS provider settings are saved to extension settings.
 function onTtsProviderSettingsInput() {
     ttsProvider.onSettingsChange()
-
-    // Persist changes to SillyTavern tts extension settings
-
     extension_settings.tts[ttsProviderName] = ttsProvider.setttings
     saveSettingsDebounced()
     console.info(`Saved settings ${ttsProviderName} ${JSON.stringify(ttsProvider.settings)}`)
 }
 
 
+//###################//
+// voiceMap Handling //
+//###################//
+
+async function onChatChanged() {
+    await initVoiceMap()
+}
+
+function getCharacters(){
+    const context = getContext()
+    let characters = []
+    if (context.groupId === null){
+        // Single char chat
+        characters.push(context.name1)
+        characters.push(context.name2)
+    } else {
+        // Group chat
+        characters.push(context.name1)
+        const group = context.groups.find(group => context.groupId == group.id)
+        for (let member of group.members) {
+            // Remove suffix
+            if (member.endsWith('.png')){
+                member = member.slice(0, -4)
+            }
+            characters.push(member)
+        }
+    }
+    return characters
+}
+
+class VoiceMapEntry {
+    name
+    voiceId
+    selectElement
+    constructor (name, voiceId='disabled') {
+        this.name = name
+        this.voiceId = voiceId
+        this.selectElement = null
+    }
+
+    addUI(voiceIds){
+        let template = `
+            <div class='tts_voicemap_block_char flex-container flexGap5'>
+                <span id='tts_voicemap_char_${this.name}'>${this.name}</span>
+                <select id='tts_voicemap_char_${this.name}_voice'>
+                    <option>disabled</option>
+                </select>
+            </div>
+        `
+        $('#tts_voicemap_block').append(template)
+
+        // Populate voice ID select list
+        for (const voiceId of voiceIds){
+            const option = document.createElement('option');
+            option.innerText = voiceId.name;
+            option.value = voiceId.name;
+            $(`#tts_voicemap_char_${this.name}_voice`).append(option)
+        }
+
+        this.selectElement = $(`#tts_voicemap_char_${this.name}_voice`)
+        this.selectElement.on('change', args => this.onSelectChange(args))
+        this.selectElement.val(this.voiceId)
+    }
+
+    onSelectChange(args) {
+        this.voiceId = this.selectElement.find(':selected').val()
+        updateVoiceMap()
+    }
+}
+
+function updateVoiceMap() {
+    const tempVoiceMap = {}
+    for (const voice of voiceMapEntries){
+        if (voice.voiceId === null){
+            continue
+        }
+        tempVoiceMap[voice.name] = voice.voiceId
+    }
+    if (Object.keys(tempVoiceMap).length !== 0){
+        voiceMap = tempVoiceMap
+        console.log(`Voicemap updated to ${JSON.stringify(voiceMap)}`)
+    }
+    extension_settings.tts[ttsProviderName].voiceMap = voiceMap
+    saveSettingsDebounced()
+}
+
+/**
+ * Build a voiceMap using the characters in current chat. Populate voiceIds if they exist 
+ * in provider settings. Create VoiceMapEntry objects and build UI using them.  then save
+ * provider settings. 
+ * 
+ * Note: voiceMap is a provider specific setting, but it is not managed by the provider itself. 
+ */
+async function initVoiceMap(){
+    // Clear existing voiceMap state
+    $('#tts_voicemap_block').empty()
+    voiceMapEntries = []
+    voiceMap = {}
+
+    // Get characters in current chat
+    const characters = getCharacters()
+    
+    // Get saved voicemap from provider settings, handling new and old representations
+    let voiceMapFromSettings = {}
+    if ("voiceMap" in extension_settings.tts[ttsProviderName]) {
+        // Handle previous representation
+        if (typeof extension_settings.tts[ttsProviderName].voiceMap === "string"){
+            voiceMapFromSettings = parseVoiceMap(extension_settings.tts[ttsProviderName].voiceMap)
+        // Handle new representation
+        } else if (typeof extension_settings.tts[ttsProviderName].voiceMap === "object"){
+            voiceMapFromSettings = extension_settings.tts[ttsProviderName].voiceMap
+        }
+    }
+
+    // Get voiceIds from provider
+    let voiceIdsFromProvider
+    try {
+        voiceIdsFromProvider = await ttsProvider.fetchTtsVoiceIds()
+    }
+    catch {
+        toastr.error("TTS Provider failed to retrn voice ids.")
+    }
+
+    // Init voicemap and build UI using VoiceMapEntry objects
+    for (const character of characters){
+        // Check provider settings for voiceIds
+        let voiceId
+        if (character in voiceMapFromSettings){
+            voiceId = voiceMapFromSettings[character]
+        } else {
+            voiceId = 'disabled'
+        }
+        const voiceMapEntry = new VoiceMapEntry(character, voiceId)
+        voiceMapEntry.addUI(voiceIdsFromProvider)
+        voiceMapEntries.push(voiceMapEntry)
+    }
+    $('#tts_provider').val(ttsProviderName)
+}
 
 $(document).ready(function () {
     function addExtensionControls() {
@@ -669,7 +795,8 @@ $(document).ready(function () {
                     <label>Voice Map</label>
                     <textarea id="tts_voice_map" type="text" class="text_pole textarea_compact" rows="4"
                         placeholder="Enter comma separated map of charName:ttsName. Example: \nAqua:Bella,\nYou:Josh,"></textarea>
-
+                    <div id="tts_voicemap_block">
+                    </div>
                     <div id="tts_status">
                     </div>
                     <form id="tts_provider_settings" class="inline-drawer-content">
@@ -705,4 +832,6 @@ $(document).ready(function () {
     const wrapper = new ModuleWorkerWrapper(moduleWorker);
     setInterval(wrapper.update.bind(wrapper), UPDATE_INTERVAL) // Init depends on all the things
     eventSource.on(event_types.MESSAGE_SWIPED, resetTtsPlayback);
+    eventSource.on(event_types.CHAT_CHANGED, onChatChanged)
+    eventSource.on(event_types.GROUP_UPDATED, onChatChanged)
 })
