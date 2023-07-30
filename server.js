@@ -290,6 +290,7 @@ const directories = {
     instruct: 'public/instruct',
     context: 'public/context',
     backups: 'backups/',
+    quickreplies: 'public/QuickReplies'
 };
 
 // CSRF Protection //
@@ -1600,6 +1601,8 @@ app.post('/getsettings', jsonParser, (request, response) => {
 
     const themes = readAndParseFromDirectory(directories.themes);
     const movingUIPresets = readAndParseFromDirectory(directories.movingUI);
+    const quickReplyPresets = readAndParseFromDirectory(directories.quickreplies);
+
     const instruct = readAndParseFromDirectory(directories.instruct);
     const context = readAndParseFromDirectory(directories.context);
 
@@ -1616,6 +1619,7 @@ app.post('/getsettings', jsonParser, (request, response) => {
         textgenerationwebui_preset_names,
         themes,
         movingUIPresets,
+        quickReplyPresets,
         instruct,
         context,
         enable_extensions: enableExtensions,
@@ -1667,6 +1671,17 @@ app.post('/savemovingui', jsonParser, (request, response) => {
     }
 
     const filename = path.join(directories.movingUI, sanitize(request.body.name) + '.json');
+    fs.writeFileSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
+
+    return response.sendStatus(200);
+});
+
+app.post('/savequickreply', jsonParser, (request, response) => {
+    if (!request.body || !request.body.name) {
+        return response.sendStatus(400);
+    }
+
+    const filename = path.join(directories.quickreplies, sanitize(request.body.name) + '.json');
     fs.writeFileSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
 
     return response.sendStatus(200);
@@ -3077,7 +3092,12 @@ async function sendClaudeRequest(request, response) {
             controller.abort();
         });
 
-        const requestPrompt = convertClaudePrompt(request.body.messages, true, true);
+        let requestPrompt = convertClaudePrompt(request.body.messages, true, true);
+
+        if (request.body.assistant_prefill) {
+            requestPrompt += request.body.assistant_prefill;
+        }
+
         console.log('Claude request:', requestPrompt);
 
         const generateResponse = await fetch(api_url + '/complete', {
@@ -3258,6 +3278,10 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
                 break;
             case 403:
                 message = 'API key disabled or exhausted';
+                console.log(message);
+                break;
+            case 451:
+                message = error?.response?.data?.error?.message || 'Unavailable for legal reasons';
                 console.log(message);
                 break;
         }
