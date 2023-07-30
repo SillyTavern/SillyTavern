@@ -5,6 +5,7 @@ import {
     delay,
     isDataURL,
     createThumbnail,
+    extractAllWords,
 } from './utils.js';
 import { RA_CountCharTokens, humanizedDateTime, dragElement } from "./RossAscends-mods.js";
 import { sortCharactersList, sortGroupMembers, loadMovingUIState } from './power-user.js';
@@ -782,19 +783,6 @@ function activateNaturalOrder(members, input, lastMessage, allowSelfResponses, i
     return memberIds;
 }
 
-function extractAllWords(value) {
-    const words = [];
-
-    if (!value) {
-        return words;
-    }
-
-    const matches = value.matchAll(/\b\w+\b/gim);
-    for (let match of matches) {
-        words.push(match[0].toLowerCase());
-    }
-    return words;
-}
 
 
 async function deleteGroup(id) {

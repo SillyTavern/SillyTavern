@@ -470,6 +470,20 @@ export function getCharaFilename(chid) {
     }
 }
 
+export function extractAllWords(value) {
+    const words = [];
+
+    if (!value) {
+        return words;
+    }
+
+    const matches = value.matchAll(/\b\w+\b/gim);
+    for (let match of matches) {
+        words.push(match[0].toLowerCase());
+    }
+    return words;
+}
+
 export function escapeRegex(string) {
     return string.replace(/[/\-\\^$*+?.()|[\]{}]/g, '\\$&');
 }
