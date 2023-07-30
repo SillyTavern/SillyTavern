@@ -375,7 +375,7 @@ function onEditPromptClick() {
     let popupText = ''
     popupText += `
     <div class="objective_prompt_modal">
-        <small>Edit prompts used by Objective for this session. You can use {{objective}} or {{task}} plus any other standard template variables</small>
+        <small>Edit prompts used by Objective for this session. You can use {{objective}} or {{task}} plus any other standard template variables. Save template to persist changes.</small>
         <br>
         <div>
             <label for="objective-prompt-generate">Generation Prompt</label>
