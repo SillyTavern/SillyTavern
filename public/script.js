@@ -7715,6 +7715,22 @@ $(document).ready(function () {
         else if (id == "option_delete_mes") {
             setTimeout(openMessageDelete, animation_duration);
         }
+
+        else if (id == "option_settings") {
+            //var checkBox = document.getElementById("waifuMode");
+            var topBar = document.getElementById("top-bar");
+            var topSettingsHolder = document.getElementById("top-settings-holder");
+          
+            //if (checkBox.checked) {
+            if (topBar.style.display === "none") {
+              topBar.style.display = ""; // or "inline-block" if that's the original display value
+              topSettingsHolder.style.display = ""; // or "inline-block" if that's the original display value
+            } else {
+              topBar.style.display = "none";
+              topSettingsHolder.style.display = "none";
+            }
+          //}
+        }
         hideMenu();
     });
 
