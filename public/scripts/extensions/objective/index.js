@@ -69,10 +69,17 @@ function getTaskByIdRecurse(taskId, task) {
     return null;
 }
 
+function substituteParamsPrompts(content) {
+    content = content.replace(/{{objective}}/gi, currentObjective.description)
+    content = content.replace(/{{task}}/gi, currentTask.description)
+    content = substituteParams(content)
+    return content
+}
+
 // Call Quiet Generate to create task list using character context, then convert to tasks. Should not be called much.
 async function generateTasks() {
 
-    const prompt = substituteParams(objectivePrompts.createTask.replace(/{{objective}}/gi, currentObjective.description));
+    const prompt = substituteParamsPrompts(objectivePrompts.createTask);
     console.log(`Generating tasks for objective with prompt`)
     toastr.info('Generating tasks for objective', 'Please wait...');
     const taskResponse = await generateQuietPrompt(prompt)
@@ -101,7 +108,7 @@ async function checkTaskCompleted() {
     }
     checkCounter = $('#objective-check-frequency').val()
 
-    const prompt = substituteParams(objectivePrompts.checkTaskCompleted.replace(/{{task}}/gi, currentTask.description));
+    const prompt = substituteParamsPrompts(objectivePrompts.checkTaskCompleted);
     const taskResponse = (await generateQuietPrompt(prompt)).toLowerCase()
 
     // Check response if task complete
@@ -149,7 +156,7 @@ function setCurrentTask(taskId = null) {
     // Don't just check for a current task, check if it has data
     const description = currentTask.description || null;
     if (description) {
-        const extensionPromptText = objectivePrompts.currentTask.replace(/{{task}}/gi, description);
+        const extensionPromptText =  substituteParamsPrompts(objectivePrompts.currentTask);
         
         // Remove highlights
         $('.objective-task').css({'border-color':'','border-width':''})
@@ -162,7 +169,6 @@ function setCurrentTask(taskId = null) {
             const parent = getTaskById(highlightTask.parentId)
             highlightTask = parent
         }
-
 
         // Update the extension prompt
         context.setExtensionPrompt(MODULE_NAME, extensionPromptText, 1, $('#objective-chat-depth').val());
@@ -369,6 +375,8 @@ function onEditPromptClick() {
     let popupText = ''
     popupText += `
     <div class="objective_prompt_modal">
+        <small>Edit prompts used by Objective for this session. You can use {{objective}} or {{task}} plus any other standard template variables. Save template to persist changes.</small>
+        <br>
         <div>
             <label for="objective-prompt-generate">Generation Prompt</label>
             <textarea id="objective-prompt-generate" type="text" class="text_pole textarea_compact" rows="8"></textarea>
@@ -378,12 +386,12 @@ function onEditPromptClick() {
             <textarea id="objective-prompt-extension-prompt" type="text" class="text_pole textarea_compact" rows="8"></textarea>
         </div>
         <div class="objective_prompt_block">
-            <input id="objective-custom-prompt-name" style="flex-grow:2" type="text" class="flex1 heightFitContent text_pole widthNatural" maxlength="250" placeholder="Custom Prompt Name">
-            <input id="objective-custom-prompt-save" style="flex-grow:1" class="menu_button" type="submit" value="Save Prompt" />
+            <label for="objective-custom-prompt-select">Custom Prompt Select</label>
+            <select id="objective-custom-prompt-select"><select>
         </div>
         <div class="objective_prompt_block">
-            <label for="objective-prompt-load">Load Prompt</label>
-            <select id="objective-prompt-load"><select>
+            <input id="objective-custom-prompt-new" class="menu_button" type="submit" value="New Prompt" />
+            <input id="objective-custom-prompt-save" class="menu_button" type="submit" value="Save Prompt" />
             <input id="objective-custom-prompt-delete" class="menu_button" type="submit" value="Delete Prompt" />
         </div>
     </div>`
@@ -405,23 +413,28 @@ function onEditPromptClick() {
     $('#objective-prompt-extension-prompt').on('input', () => {
         objectivePrompts.currentTask = $('#objective-prompt-extension-prompt').val()
     })
+    
+    // Handle new
+    $('#objective-custom-prompt-new').on('click', () => {
+        newCustomPrompt()
+    })
 
     // Handle save
     $('#objective-custom-prompt-save').on('click', () => {
-        saveCustomPrompt($('#objective-custom-prompt-name').val(), objectivePrompts)
+        saveCustomPrompt()
     })
 
     // Handle delete
     $('#objective-custom-prompt-delete').on('click', () => {
-        const optionSelected = $("#objective-prompt-load").find(':selected').val()
-        deleteCustomPrompt(optionSelected)
+        deleteCustomPrompt()
     })
 
     // Handle load
-    $('#objective-prompt-load').on('change', loadCustomPrompt)
+    $('#objective-custom-prompt-select').on('change', loadCustomPrompt)
 }
-
-function saveCustomPrompt(customPromptName, customPrompts) {
+async function newCustomPrompt() {
+    const customPromptName = await callPopup('<h3>Custom Prompt name:</h3>', 'input');
+    
     if (customPromptName == "") {
         toastr.warning("Please set custom prompt name to save.")
         return
@@ -431,12 +444,25 @@ function saveCustomPrompt(customPromptName, customPrompts) {
         return
     }
     extension_settings.objective.customPrompts[customPromptName] = {}
-    Object.assign(extension_settings.objective.customPrompts[customPromptName], customPrompts)
+    Object.assign(extension_settings.objective.customPrompts[customPromptName], objectivePrompts)
     saveSettingsDebounced()
     populateCustomPrompts()
 }
 
-function deleteCustomPrompt(customPromptName){
+function saveCustomPrompt() {
+    const customPromptName = $("#objective-custom-prompt-select").find(':selected').val()
+    if (customPromptName == "default"){
+        toastr.error("Cannot save over default prompt")
+        return
+    }
+    Object.assign(extension_settings.objective.customPrompts[customPromptName], objectivePrompts)
+    saveSettingsDebounced()
+    populateCustomPrompts()
+}
+
+function deleteCustomPrompt(){
+    const customPromptName = $("#objective-custom-prompt-select").find(':selected').val()
+
     if (customPromptName == "default"){
         toastr.error("Cannot delete default prompt")
         return
@@ -448,8 +474,7 @@ function deleteCustomPrompt(customPromptName){
 }
 
 function loadCustomPrompt(){
-    const optionSelected = $("#objective-prompt-load").find(':selected').val()
-    console.log(optionSelected)
+    const optionSelected = $("#objective-custom-prompt-select").find(':selected').val()
     Object.assign(objectivePrompts, extension_settings.objective.customPrompts[optionSelected])
 
     $('#objective-prompt-generate').val(objectivePrompts.createTask)
@@ -459,13 +484,13 @@ function loadCustomPrompt(){
 
 function populateCustomPrompts(){
     // Populate saved prompts
-    $('#objective-prompt-load').empty()
+    $('#objective-custom-prompt-select').empty()
     for (const customPromptName in extension_settings.objective.customPrompts){
         const option = document.createElement('option');
         option.innerText = customPromptName;
         option.value = customPromptName;
         option.selected = customPromptName
-        $('#objective-prompt-load').append(option)
+        $('#objective-custom-prompt-select').append(option)
     }
 }
 
@@ -574,8 +599,10 @@ function onChatDepthInput() {
 }
 
 function onObjectiveTextFocusOut(){
-    currentObjective.description = $('#objective-text').val()
-    saveState()
+    if (currentObjective){
+        currentObjective.description = $('#objective-text').val()
+        saveState()
+    }
 }
 
 // Update how often we check for task completion
@@ -752,7 +779,7 @@ jQuery(() => {
     });
 
     eventSource.on(event_types.MESSAGE_RECEIVED, () => {
-        if (currentChatId == undefined) {
+        if (currentChatId == undefined || currentTask == undefined) {
             return
         }
         if ($("#objective-check-frequency").val() > 0) {
