@@ -1083,6 +1083,10 @@ $("document").ready(function () {
         }
 
         if (event.key == "Escape") { //closes various panels
+            if ($("#curEditTextarea").is(":visible")) {
+                return
+            }
+
             if ($("#dialogue_popup").is(":visible")) {
                 if ($("#dialogue_popup_cancel").is(":visible")) {
                     $("#dialogue_popup_cancel").trigger('click');
@@ -1130,8 +1134,6 @@ $("document").ready(function () {
                 $("#rightNavDrawerIcon").trigger('click');
                 return
             }
-
-
         }
     }
 });
