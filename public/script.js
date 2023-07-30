@@ -738,7 +738,7 @@ let token;
 
 var PromptArrayItemForRawPromptDisplay;
 
-export let  active_character = ""
+export let active_character = ""
 export let active_group = ""
 
 export function getRequestHeaders() {
@@ -796,7 +796,7 @@ export function setActiveCharacter(character) {
 
 export function setActiveGroup(group) {
     active_group = group;
-}   
+}
 
 async function getStatus() {
     if (is_get_status) {
@@ -7757,7 +7757,7 @@ $(document).ready(function () {
             var topBar = document.getElementById("top-bar");
             var topSettingsHolder = document.getElementById("top-settings-holder");
             var divchat = document.getElementById("chat");
-        
+
             //if (checkBox.checked) {
             if (topBar.style.display === "none") {
                 topBar.style.display = ""; // or "inline-block" if that's the original display value
@@ -7767,9 +7767,9 @@ $(document).ready(function () {
                 divchat.style.backgroundColor = "";
 
             } else {
-                
+
                 divchat.style.borderRadius = "10px"; // Adjust the value to control the roundness of the corners
-                divchat.style.backgroundColor = "#f0f0f0"; // Set the background color to your preference
+                divchat.style.backgroundColor = ""; // Set the background color to your preference
 
                 topBar.style.display = "none";
                 topSettingsHolder.style.display = "none";
