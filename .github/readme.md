@@ -293,7 +293,6 @@ GNU Affero General Public License for more details.**
 * RossAscends' additions: AGPL v3
 * Portions of CncAnon's TavernAITurbo mod: Unknown license
 * kingbri's various commits and suggestions (<https://github.com/bdashore3>)
-* BlipRanger's miscellaneous UI & extension modifications (<https://github.com/BlipRanger>)
 * Waifu mode inspired by the work of PepperTaco (<https://github.com/peppertaco/Tavern/>)
 * Thanks Pygmalion University for being awesome testers and suggesting cool features!
 * Thanks oobabooga for compiling presets for TextGen
