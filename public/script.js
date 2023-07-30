@@ -7752,6 +7752,26 @@ $(document).ready(function () {
             setTimeout(openMessageDelete, animation_duration);
         }
 
+        else if (id == "option_close_chat") {
+            if (is_send_press == false) {
+                clearChat();
+                chat.length = 0;
+                resetSelectedGroup();
+                setCharacterId(undefined);
+                setCharacterName('');
+                setActiveCharacter(null);
+                setActiveGroup(null);
+                this_edit_mes_id = undefined;
+                chat_metadata = {};
+                selected_button = "characters";
+                $("#rm_button_selected_ch").children("h2").text('');
+                select_rm_characters();
+                sendSystemMessage(system_message_types.WELCOME);
+            } else {
+                toastr.info("Please stop the message generation first.");
+            }
+        }
+
         else if (id === "option_settings") {
             //var checkBox = document.getElementById("waifuMode");
             var topBar = document.getElementById("top-bar");
