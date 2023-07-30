@@ -1048,11 +1048,10 @@ $("document").ready(function () {
         }
 
         if (event.ctrlKey && event.key == "ArrowUp") { //edits last USER message if chatbar is empty and focused
-            console.debug('got ctrl+uparrow input');
             if (
                 $("#send_textarea").val() === '' &&
                 chatbarInFocus === true &&
-                $(".swipe_right:last").css('display') === 'flex' &&
+                ($(".swipe_right:last").css('display') === 'flex' || $('.last_mes').attr('is_system') === 'true') &&
                 $("#character_popup").css("display") === "none" &&
                 $("#shadow_select_chat_popup").css("display") === "none"
             ) {
@@ -1060,7 +1059,7 @@ $("document").ready(function () {
                 const lastIsUserMes = isUserMesList[isUserMesList.length - 1];
                 const editMes = lastIsUserMes.querySelector('.mes_block .mes_edit');
                 if (editMes !== null) {
-                    $(editMes).click();
+                    $(editMes).trigger('click');
                 }
             }
         }
