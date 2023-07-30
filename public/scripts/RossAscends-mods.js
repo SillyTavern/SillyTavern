@@ -1081,5 +1081,57 @@ $("document").ready(function () {
                 }
             }
         }
+
+        if (event.key == "Escape") { //closes various panels
+            if ($("#dialogue_popup").is(":visible")) {
+                if ($("#dialogue_popup_cancel").is(":visible")) {
+                    $("#dialogue_popup_cancel").trigger('click');
+                    return
+                } else {
+                    $("#dialogue_popup_ok").trigger('click')
+                    return
+                }
+            }
+            if ($("#select_chat_popup").is(":visible")) {
+                $("#select_chat_cross").trigger('click');
+                return
+            }
+            if ($("#character_popup").is(":visible")) {
+                $("#character_cross").trigger('click');
+                return
+            }
+
+            if ($(".drawer-content")
+                .not('#WorldInfo')
+                .not('#left-nav-panel')
+                .not('#right-nav-panel')
+                .is(":visible")) {
+                let visibleDrawerContent = $(".drawer-content:visible")
+                    .not('#WorldInfo')
+                    .not('#left-nav-panel')
+                    .not('#right-nav-panel')
+                $(visibleDrawerContent).parent().find('.drawer-icon').trigger('click');
+                return
+            }
+
+            if ($("#floatingPrompt").is(":visible")) {
+                $("#ANClose").trigger('click');
+                return
+            }
+            if ($("#WorldInfo").is(":visible")) {
+                $("#WIDrawerIcon").trigger('click');
+                return
+            }
+            if ($("#left-nav-panel").is(":visible")) {
+                $("#leftNavDrawerIcon").trigger('click');
+                return
+            }
+            if ($("#right-nav-panel").is(":visible")) {
+                $("#rightNavDrawerIcon").trigger('click');
+                return
+            }
+
+
+        }
     }
 });
