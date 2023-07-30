@@ -1798,10 +1798,10 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
     request.socket.on('close', function () {
         controller.abort();
     });
-
-    console.log(request.body);
-    const bw = require('./src/bad-words');
+    
+    const bw = require('./src/novelai');
     const isNewModel = (request.body.model.includes('clio') || request.body.model.includes('kayra'));
+    const isKrake = request.body.model.includes('krake');
     const data = {
         "input": request.body.input,
         "model": request.body.model,
@@ -1824,15 +1824,19 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
             "cfg_uc": request.body.cfg_uc,
             "phrase_rep_pen": request.body.phrase_rep_pen,
             //"stop_sequences": {{187}},
-            "bad_words_ids": isNewModel ? bw.clioBadWordsId : bw.badWordIds,
+            "bad_words_ids": isNewModel ? bw.badWordsList : (isKrake ? bw.krakeBadWordsList : bw.euterpeBadWordsList),
+            "logit_bias_exp": isNewModel ? bw.logitBiasExp : null,
+            "reputation_penalty_whitelist": isNewModel ? bw.repPenaltyAllowList : null,
             //generate_until_sentence = true;
             "use_cache": request.body.use_cache,
             "use_string": true,
             "return_full_text": request.body.return_full_text,
-            "prefix": isNewModel ? "special_instruct" : request.body.prefix,
+            "prefix": request.body.prefix,
             "order": request.body.order
         }
     };
+    const util = require('util');
+    console.log(util.inspect(data, { depth: 4 }))
 
     const args = {
         body: JSON.stringify(data),

@@ -13,6 +13,7 @@
   "use_cache": false,
   "return_full_text": false,
   "prefix": "vanilla",
+  "cfg_scale": 1,
   "phrase_rep_pen": "aggressive",
   "max_context": 8192
 }
