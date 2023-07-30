@@ -546,6 +546,19 @@
                                     </div>
                                 </div>
                                 <div class="range-block" data-source="openai,claude">
+                                    <div class="range-block-title justifyLeft" data-i18n="Proxy Password">
+                                        Proxy Password
+                                    </div>
+                                    <div class="toggle-description justifyLeft">
+                                        <span data-i18n="Will be used as a password for the proxy instead of API key.">
+                                            Will be used as a password for the proxy instead of API key.<br>
+                                        </span>
+                                    </div>
+                                    <div class="wide100p">
+                                        <input id="openai_proxy_password" type="text" class="text_pole" placeholder="" maxlength="200" />
+                                    </div>
+                                </div>
+                                <div class="range-block" data-source="openai,claude">
                                     <div class="range-block-title justifyLeft">
                                         <label for="legacy_streaming" class="checkbox_label">
                                             <input id="legacy_streaming" type="checkbox" />
@@ -668,6 +681,14 @@
                                                 select
                                             </div>
                                         </div>
+                                    </div>
+                                </div>
+                                <div class="range-block" data-source="claude">
+                                    <div class="range-block-title" data-i18n="Assistant Prefill">
+                                        Assistant Prefill
+                                    </div>
+                                    <div class="wide100p">
+                                        <input type="text" id="claude_assistant_prefill" class="text_pole" placeholder="Start Claude's answer with...">
                                     </div>
                                 </div>
                             </div>
@@ -849,6 +870,36 @@
                                         </div>
                                         <div class="range-block-counter">
                                             <div contenteditable="true" data-for="typical_p_novel" id="typical_p_counter_novel">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title" data-i18n="CFG Scale">
+                                        CFG Scale
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="cfg_scale_novel" name="volume" min="1" max="3" step="0.05">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="cfg_scale_novel" id="cfg_scale_counter_novel">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title" data-i18n="Phrase Repetition Penalty">
+                                        Phrase Repetition Penalty
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="phrase_rep_pen_novel" name="volume" min="0" max="5" step="1">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="phrase_rep_pen_novel" id="phrase_rep_pen_counter_novel">
                                                 select
                                             </div>
                                         </div>
@@ -1479,6 +1530,7 @@
                                 <option value="euterpe-v2">Euterpe</option>
                                 <option value="krake-v2">Krake</option>
                                 <option value="clio-v1">Clio</option>
+                                <option value="kayra-v1">Kayra</option>
                             </select>
                         </form>
                         <div id="online_status3">
@@ -1549,6 +1601,11 @@
                             <div class="flex-container">
                                 <input id="api_key_openai" name="api_key_openai" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
                                 <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_openai"></div>
+                            </div>
+                            <div id="ReverseProxyWarningMessage2" class="reverse_proxy_warning">
+                                <b data-i18n="Use Proxy password field instead. This input will be ignored.">
+                                    Use "Proxy password" field instead. This input will be ignored.
+                                </b>
                             </div>
                             <div data-for="api_key_openai" class="neutral_warning">
                                 For privacy reasons, your API key will be hidden after you reload the page.
@@ -1867,8 +1924,8 @@
                                 <option value="1">GPT-3 (OpenAI)</option>
                                 <option value="2">GPT-3 (Alternative / Classic)</option>
                                 <option value="3">Sentencepiece (LLaMA)</option>
-                                <option value="4">NerdStash (NovelAI Krake)</option>
-                                <option value="5">NerdStash v2 (NovelAI Clio)</option>
+                                <option value="4">NerdStash (NovelAI Clio)</option>
+                                <option value="5">NerdStash v2 (NovelAI Kayra)</option>
                                 <option value="6">API (WebUI)</option>
                             </select>
                         </div>
@@ -2372,6 +2429,10 @@
                                 <input id="swipes-checkbox" type="checkbox" />
                                 <span data-i18n="Swipes">Swipes</span>
                             </label>
+                            <label for="fuzzy_search_checkbox">
+                                <input id="fuzzy_search_checkbox" type="checkbox" />
+                                <span data-i18n="Advanced Character Search">Advanced Character Search</span>
+                            </label>
                             <label for="prefer_character_prompt" title="If checked and the character card contains a prompt override (System Prompt), use that instead." data-i18n="[title]If checked and the character card contains a prompt override (System Prompt), use that instead." class="checkbox_label">
                                 <input id="prefer_character_prompt" type="checkbox" />
                                 <span data-i18n="Prefer Character Card Prompt">Prefer Char. Prompt</span>
@@ -2872,6 +2933,8 @@
                                 <option data-field="date_last_chat" data-order="desc" data-i18n="Recent">Recent</option>
                                 <option data-field="chat_size" data-order="desc" data-i18n="Most chats">Most chats</option>
                                 <option data-field="chat_size" data-order="asc" data-i18n="Least chats">Least chats</option>
+                                <option data-field="data_size" data-order="desc" data-i18n="Most tokens">Most tokens</option>
+                                <option data-field="data_size" data-order="asc" data-i18n="Least tokens">Least tokens</option>
                                 <option data-field="name" data-order="random" data-i18n="Random">Random</option>
                             </select>
                         </form>
@@ -3392,7 +3455,8 @@
             <div class="flex-container wide100pLess70px character_select_container">
                 <div class="wide100p character_name_block">
                     <span class="ch_name"></span>
-                    <i class="ch_avatar_url"></i>
+                    <small class="character_version"></small>
+                    <small class="ch_avatar_url"></small>
                 </div>
                 <i class="ch_fav_icon fa-solid fa-star"></i>
                 <input class="ch_fav" value="" hidden />

@@ -1,0 +1,23 @@
+{
+    "name": "Default",
+    "quickReplyEnabled": true,
+    "quickReplySlots": [
+        {
+            "mes": "/?",
+            "label": "HELP",
+            "enabled": true
+        },
+        {
+            "mes": "/newchat",
+            "label": "New Chat",
+            "enabled": true
+        },
+        {
+            "mes": "/bgcol",
+            "label": "Match UI to Background",
+            "enabled": true
+        }
+    ],
+    "numberOfSlots": 3,
+    "selectedPreset": "Default"
+}

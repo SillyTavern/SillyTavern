@@ -1,19 +1,48 @@
-import { saveSettingsDebounced } from "../../../script.js";
+import { saveSettingsDebounced, callPopup, getRequestHeaders } from "../../../script.js";
 import { getContext, extension_settings } from "../../extensions.js";
 import { initScrollHeight, resetScrollHeight } from "../../utils.js";
+
 
 export { MODULE_NAME };
 
 const MODULE_NAME = 'quick-reply';
 const UPDATE_INTERVAL = 1000;
+let presets = [];
+let selected_preset = '';
 
 const defaultSettings = {
-    quickReplyEnabled: false,
+    quickReplyEnabled: true,
     numberOfSlots: 5,
     quickReplySlots: [],
 }
 
-async function loadSettings() {
+//method from worldinfo
+async function updateQuickReplyPresetList() {
+    var result = await fetch("/getsettings", {
+        method: "POST",
+        headers: getRequestHeaders(),
+        body: JSON.stringify({}),
+    });
+
+    if (result.ok) {
+        var data = await result.json();
+        presets = data.quickReplyPresets?.length ? data.quickReplyPresets : [];
+        console.log(presets)
+        $("#quickReplyPresets").find('option[value!=""]').remove();
+
+
+        if (presets !== undefined) {
+            presets.forEach((item, i) => {
+                $("#quickReplyPresets").append(`<option value='${item.name}'${selected_preset.includes(item.name) ? ' selected' : ''}>${item.name}</option>`);
+            });
+        }
+    }
+}
+
+async function loadSettings(type) {
+    if (type === 'init') {
+        await updateQuickReplyPresetList()
+    }
     if (Object.keys(extension_settings.quickReply).length === 0) {
         Object.assign(extension_settings.quickReply, defaultSettings);
     }
@@ -111,6 +140,51 @@ async function moduleWorker() {
     if (extension_settings.quickReply.quickReplyEnabled === true) {
         $('#quickReplyBar').toggle(getContext().onlineStatus !== 'no_connection');
     }
+    if (extension_settings.quickReply.selectedPreset) {
+        selected_preset = extension_settings.quickReply.selectedPreset;
+    }
+}
+
+async function saveQuickReplyPreset() {
+    const name = await callPopup('Enter a name for the Quick Reply Preset:', 'input');
+
+    if (!name) {
+        return;
+    }
+
+    const quickReplyPreset = {
+        name: name,
+        quickReplyEnabled: extension_settings.quickReply.quickReplyEnabled,
+        quickReplySlots: extension_settings.quickReply.quickReplySlots,
+        numberOfSlots: extension_settings.quickReply.numberOfSlots,
+        selectedPreset: name
+    }
+
+    const response = await fetch('/savequickreply', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify(quickReplyPreset)
+    });
+
+    if (response.ok) {
+        const quickReplyPresetIndex = presets.findIndex(x => x.name == name);
+
+        if (quickReplyPresetIndex == -1) {
+            presets.push(quickReplyPreset);
+            const option = document.createElement('option');
+            option.selected = true;
+            option.value = name;
+            option.innerText = name;
+            $('#quickReplyPresets').append(option);
+        }
+        else {
+            presets[quickReplyPresetIndex] = quickReplyPreset;
+            $(`#quickReplyPresets option[value="${name}"]`).attr('selected', true);
+        }
+        saveSettingsDebounced();
+    } else {
+        toastr.warning('Failed to save Quick Reply Preset.')
+    }
 }
 
 async function onQuickReplyNumberOfSlotsInput() {
@@ -178,6 +252,27 @@ function generateQuickReplyElements() {
     });
 }
 
+async function applyQuickReplyPreset(name) {
+    const quickReplyPreset = presets.find(x => x.name == name);
+
+    if (!quickReplyPreset) {
+        console.log(`error, QR preset '${name}' not found`)
+        return;
+    }
+
+    extension_settings.quickReply = quickReplyPreset;
+    extension_settings.quickReply.selectedPreset = name;
+    saveSettingsDebounced()
+    loadSettings('init')
+    addQuickReplyBar();
+    moduleWorker();
+
+    $(`#quickReplyPresets option[value="${name}"]`).attr('selected', true);
+
+    console.debug('QR Preset applied: ' + name);
+    //loadMovingUIState()
+}
+
 jQuery(async () => {
 
     moduleWorker();
@@ -190,11 +285,18 @@ jQuery(async () => {
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
-            <label class="checkbox_label marginBot10">
-                <input id="quickReplyEnabled" type="checkbox" />
-                    Enable Quick Replies
-            </label>
-            <label for="quickReplyNumberOfSlots">Number of slots:</label>
+            <div class="flex-container ">
+                <label class="checkbox_label marginBot10 wide100p flexnowrap">
+                    <input id="quickReplyEnabled" type="checkbox" />
+                        Enable Quick Replies
+                </label>
+                <div class="flex-container flexnowrap wide100p">
+                    <select id="quickReplyPresets" name="quickreply-preset">
+                    </select>
+                    <i id="quickReplyPresetSaveButton" class="fa-solid fa-save"></i>
+                </div>
+                <label for="quickReplyNumberOfSlots">Number of slots:</label>
+            </div>
             <div class="flex-container flexGap5 flexnowrap">
                 <input id="quickReplyNumberOfSlots" class="text_pole" type="number" min="1" max="100" value="" />
                 <div class="menu_button menu_button_icon" id="quickReplyNumberOfSlotsApply">
@@ -212,8 +314,17 @@ jQuery(async () => {
 
     $('#quickReplyEnabled').on('input', onQuickReplyEnabledInput);
     $('#quickReplyNumberOfSlotsApply').on('click', onQuickReplyNumberOfSlotsInput);
+    $("#quickReplyPresetSaveButton").on('click', saveQuickReplyPreset);
 
-    await loadSettings();
+    $("#quickReplyPresets").on('change', async function () {
+        const quickReplyPresetSelected = $(this).find(':selected').val();
+        extension_settings.quickReplyPreset = quickReplyPresetSelected;
+        applyQuickReplyPreset(quickReplyPresetSelected);
+        saveSettingsDebounced();
+
+    });
+
+    await loadSettings('init');
     addQuickReplyBar();
 });
 

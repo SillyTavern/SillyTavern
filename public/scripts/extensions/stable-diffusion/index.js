@@ -555,7 +555,8 @@ async function generatePicture(_, trigger, message, callback) {
 
     const prevSDHeight = extension_settings.sd.height;
     if (generationType == generationMode.FACE) {
-        extension_settings.sd.height = extension_settings.sd.width * 1.5;
+        // Round to nearest multiple of 64
+        extension_settings.sd.height = Math.round(extension_settings.sd.height * 1.5 / 64) * 64; 
     }
 
     try {

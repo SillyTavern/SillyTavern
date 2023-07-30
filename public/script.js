@@ -76,6 +76,7 @@ import {
     persona_description_positions,
     loadMovingUIState,
     getCustomStoppingStrings,
+    fuzzySearchCharacters,
     MAX_CONTEXT_DEFAULT,
 } from "./scripts/power-user.js";
 
@@ -736,6 +737,9 @@ let token;
 
 var PromptArrayItemForRawPromptDisplay;
 
+export let  active_character = ""
+export let active_group = ""
+
 export function getRequestHeaders() {
     return {
         "Content-Type": "application/json",
@@ -784,6 +788,14 @@ function checkOnlineStatus() {
         $(".online_status_text4").html(online_status);
     }
 }
+
+export function setActiveCharacter(character) {
+    active_character = character;
+}
+
+export function setActiveGroup(group) {
+    active_group = group;
+}   
 
 async function getStatus() {
     if (is_get_status) {
@@ -894,6 +906,14 @@ async function printCharacters() {
         }
         else {
             template.find('.ch_description').hide();
+        }
+
+        const version = item.data?.character_version || '';
+        if (version) {
+            template.find('.character_version').text(version);
+        }
+        else {
+            template.find('.character_version').hide();
         }
 
         // Display inline tags
@@ -3055,9 +3075,9 @@ function getMaxContextSize() {
             // Should be used with nerdstash tokenizer for best results
             this_max_context = Math.min(max_context, 2048);
         }
-        if (nai_settings.model_novel == 'clio-v1') {
-            // Clio has a max context of 8192
-            // Should be used with nerdstash_v2 tokenizer for best results
+        if (nai_settings.model_novel == 'clio-v1' || nai_settings.model_novel == 'kayra-v1') {
+            // Clio and Kayra has a max context of 8192
+            // Should be used with nerdstash / nerdstash_v2 tokenizer for best results
             this_max_context = Math.min(max_context, 8192);
         }
     }
@@ -5000,6 +5020,10 @@ async function getSettings(type) {
         highlightSelectedAvatar();
         setPersonaDescription();
 
+        //Load the active character and group
+        active_character = settings.active_character;
+        active_group = settings.active_group;
+
         //Load the API server URL from settings
         api_server = settings.api_server;
         $("#api_url_text").val(api_server);
@@ -5040,6 +5064,8 @@ async function saveSettings(type) {
         data: JSON.stringify({
             firstRun: firstRun,
             username: name1,
+            active_character: active_character,
+            active_group: active_group,
             api_server: api_server,
             api_server_textgenerationwebui: api_server_textgenerationwebui,
             preset_settings: preset_settings,
@@ -7029,18 +7055,26 @@ $(document).ready(function () {
     $("#character_search_bar").on("input", function () {
         const selector = ['#rm_print_characters_block .character_select', '#rm_print_characters_block .group_select'].join(',');
         const searchValue = $(this).val().trim().toLowerCase();
+        const fuzzySearchResults = power_user.fuzzy_search ? fuzzySearchCharacters(searchValue) : [];
+
+        function getIsValidSearch(_this) {
+            const name = $(_this).find(".ch_name").text().toLowerCase();
+            const chid = $(_this).attr("chid");
+
+            if (power_user.fuzzy_search) {
+                return fuzzySearchResults.includes(parseInt(chid));
+            }
+            else {
+                return name.includes(searchValue);
+            }
+        }
 
         if (!searchValue) {
             $(selector).removeClass('hiddenBySearch');
             updateVisibleDivs('#rm_print_characters_block', true);
         } else {
             $(selector).each(function () {
-                const isValidSearch = $(this)
-                    .find(".ch_name")
-                    .text()
-                    .toLowerCase()
-                    .includes(searchValue);
-
+                const isValidSearch = getIsValidSearch(this);
                 $(this).toggleClass('hiddenBySearch', !isValidSearch);
             });
             updateVisibleDivs('#rm_print_characters_block', true);
@@ -7226,7 +7260,7 @@ $(document).ready(function () {
         const data = { old_bg, new_bg };
         const response = await fetch('/renamebackground', {
             method: 'POST',
-            headers:getRequestHeaders(),
+            headers: getRequestHeaders(),
             body: JSON.stringify(data),
             cache: 'no-cache',
         });
@@ -7981,7 +8015,7 @@ $(document).ready(function () {
                 .append(
                     `<textarea id='curEditTextarea' class='edit_textarea' style='max-width:auto;'></textarea>`
                 );
-                $('#curEditTextarea').val(text);
+            $('#curEditTextarea').val(text);
             let edit_textarea = $(this)
                 .closest(".mes_block")
                 .find(".edit_textarea");
