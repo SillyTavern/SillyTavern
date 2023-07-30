@@ -10,6 +10,7 @@ export {
     world_info_budget,
     world_info_depth,
     world_info_recursive,
+    world_info_overflow_alert,
     world_info_case_sensitive,
     world_info_match_whole_words,
     world_info_character_strategy,
@@ -32,6 +33,7 @@ let world_names;
 let world_info_depth = 2;
 let world_info_budget = 25;
 let world_info_recursive = false;
+let world_info_overflow_alert = false;
 let world_info_case_sensitive = false;
 let world_info_match_whole_words = false;
 let world_info_character_strategy = world_info_insertion_strategy.character_first;
@@ -70,6 +72,8 @@ function setWorldInfoSettings(settings, data) {
         world_info_budget = Number(settings.world_info_budget);
     if (settings.world_info_recursive !== undefined)
         world_info_recursive = Boolean(settings.world_info_recursive);
+    if (settings.world_info_overflow_alert !== undefined)
+        world_info_overflow_alert = Boolean(settings.world_info_overflow_alert);
     if (settings.world_info_case_sensitive !== undefined)
         world_info_case_sensitive = Boolean(settings.world_info_case_sensitive);
     if (settings.world_info_match_whole_words !== undefined)
@@ -102,6 +106,7 @@ function setWorldInfoSettings(settings, data) {
     $("#world_info_budget").val(world_info_budget);
 
     $("#world_info_recursive").prop('checked', world_info_recursive);
+    $("#world_info_overflow_alert").prop('checked', world_info_overflow_alert);
     $("#world_info_case_sensitive").prop('checked', world_info_case_sensitive);
     $("#world_info_match_whole_words").prop('checked', world_info_match_whole_words);
 
@@ -1020,6 +1025,10 @@ async function checkWorldInfo(chat, maxContext) {
 
             if (textToScanTokens + getTokenCount(newContent) >= budget) {
                 console.debug(`WI budget reached, stopping`);
+                if (world_info_overflow_alert) {
+                    console.log("Alerting");
+                    toastr.warning(`World info budget reached after ${count} entries.`, 'World Info');
+                }
                 needsToScan = false;
                 break;
             }
@@ -1498,6 +1507,11 @@ jQuery(() => {
 
     $('#world_info_character_strategy').on('change', function () {
         world_info_character_strategy = $(this).val();
+        saveSettingsDebounced();
+    });
+
+    $('#world_info_overflow_alert').on('change', function () {
+        world_info_overflow_alert = $(this).val();
         saveSettingsDebounced();
     });
 
