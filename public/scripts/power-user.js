@@ -1224,12 +1224,6 @@ async function doMesCut(_, text) {
         return
     }
 
-    //reject attempts to delete firstmes
-    if (text === '0') {
-        toastr.error('Cannot delete the First Message')
-        return
-    }
-
     let mesIDToCut = Number(text).toFixed(0)
     let mesToCut = $("#chat").find(`.mes[mesid=${mesIDToCut}]`)
 
