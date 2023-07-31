@@ -426,8 +426,8 @@ function handleImageChange(isChecked) {
             const expressionImageElement = expressionListItemElement.querySelector('.expression_list_image');
             const newSrc = expressionImageElement.src;
             
-            fetch(newSrc, {
-                method: 'HEAD' 
+            doExtrasFetch(newSrc, {
+                method: 'HEAD',
             })
             .then(response => {
                 if (response.ok) {
