@@ -484,11 +484,8 @@ async function moduleWorker() {
         let imgElement = document.getElementById('expression-image');
         imgElement.src = "";
 
-        //change live character
-        let inputElement = document.querySelector('input[name="avatar_url"]'); // get char name
-        let value_name = inputElement.value;
-        loadLiveChar(value_name);
-        
+        //Load new char
+        loadLiveChar(context.name2 + ".png");
     }
 
     const vnMode = isVisualNovelMode();
