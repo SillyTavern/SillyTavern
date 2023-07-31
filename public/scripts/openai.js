@@ -1862,9 +1862,7 @@ function loadOpenAISettings(data, settings) {
     $('#openai_external_category').toggle(oai_settings.show_external_models);
 
     if (settings.impersonation_prompt !== undefined) oai_settings.impersonation_prompt = settings.impersonation_prompt;
-    $('#main_prompt_textarea').val(oai_settings.main_prompt);
-    $('#nsfw_prompt_textarea').val(oai_settings.nsfw_prompt);
-    $('#jailbreak_prompt_textarea').val(oai_settings.jailbreak_prompt);
+
     $('#impersonation_prompt_textarea').val(oai_settings.impersonation_prompt);
     $('#nsfw_avoidance_prompt_textarea').val(oai_settings.nsfw_avoidance_prompt);
 

@@ -300,6 +300,38 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         this.saveServiceSettings().then(() => this.render());
     };
 
+    // Factory function for creating quick edit elements
+    const saveSettings = this.saveServiceSettings;
+    const createQuickEdit = function() {
+        return {
+            element: null,
+            prompt: null,
+
+            from(element, prompt) {
+                this.element = element;
+                element.value = prompt.content ?? '';
+                element.addEventListener('input', () => {
+                    prompt.content = element.value;
+                    saveSettings();
+                });
+
+                return this;
+            },
+
+            update(value) {
+                this.element.value = value;
+            }
+        }
+    }
+
+    const mainPrompt = this.getPromptById('main');
+    const mainPromptTextarea = document.getElementById('main_prompt_quick_edit_textarea');
+    const mainQuickEdit = createQuickEdit().from(mainPromptTextarea, mainPrompt);
+
+    const jailbreakPrompt = this.getPromptById('jailbreak');
+    const jailbreakPromptTextarea = document.getElementById('jailbreak_prompt_quick_edit_textarea');
+    const jailbreakQuickEdit = createQuickEdit().from(jailbreakPromptTextarea, jailbreakPrompt);
+
     // Save prompt edit form to settings and close form.
     this.handleSavePrompt = (event) => {
         const promptId = event.target.dataset.pmPrompt;
@@ -312,6 +344,9 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         } else {
             this.updatePromptWithPromptEditForm(prompt);
         }
+
+        if ('main' === promptId) mainQuickEdit.update(prompt.content)
+        if ('jailbreak' === promptId) jailbreakQuickEdit.update(prompt.content)
 
         this.log('Saved prompt: ' + promptId);
 
