@@ -397,19 +397,12 @@ function onExpressionsShowDefaultInput() {
 }
 
 function loadLiveChar(value_name) {
-    const extensionsUrlInput = document.getElementById("extensions_url");
-
-    // Extract the value of the input element
-    const baseUrl = extensionsUrlInput.value;
-
-    // Construct the full URL with the loadchar parameter
-    let url = `${baseUrl}/api/live2d/load?loadchar=http://localhost:8000/characters/${value_name}`;
-    console.log(url);
-
-    fetch(url, {
+    let url = `${getApiUrl()}/api/live2d/load?loadchar=${location.origin}/characters/${value_name}`;
+    doExtrasFetch(url, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
+            'Bypass-Tunnel-Reminder': 'bypass',
         },
     })
     .then(response => response.text())
@@ -428,12 +421,7 @@ function handleImageChange(isChecked) {
 
     if (isChecked) {
         // Method get IP of endpoint
-        const extensionsUrlInput = document.getElementById("extensions_url");
-        const value = extensionsUrlInput.value;
-        //const newValue = value.replace(/:\d+$/, ":5555");
-        console.log(value);
-
-        if (imgElement.src !== value + '/api/live2d/result_feed') {
+        if (imgElement.src !== getApiUrl() + '/api/live2d/result_feed') {
             const expressionListItemElement = document.querySelector('#live2d');
             const expressionImageElement = expressionListItemElement.querySelector('.expression_list_image');
             const newSrc = expressionImageElement.src;
@@ -443,7 +431,7 @@ function handleImageChange(isChecked) {
             })
             .then(response => {
                 if (response.ok) {
-                    imgElement.src = value + '/api/live2d/result_feed';
+                    imgElement.src = getApiUrl() + '/api/live2d/result_feed';
                 }
             })
             .catch(error => {
