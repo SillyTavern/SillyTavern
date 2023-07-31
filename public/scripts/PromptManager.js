@@ -1109,7 +1109,7 @@ PromptManagerModule.prototype.renderPromptManager = function () {
                 <select id="${this.configuration.prefix}prompt_manager_footer_append_prompt" class="text_pole" name="append-prompt">
                     ${prompts}
                 </select>
-                <a class="menu_button fa-chain fa-solid" title="Attach prompt" data-i18n="Add"></a>
+                <a class="menu_button fa-chain fa-solid" title="Insert prompt" data-i18n="Insert"></a>
                 <a class="caution menu_button fa-x fa-solid" title="Delete prompt" data-i18n="Delete"></a>
                 <a class="menu_button fa-file-arrow-down fa-solid" id="prompt-manager-export" title="Export this prompt list" data-i18n="Export"></a>
                 <a class="menu_button fa-file-arrow-up fa-solid" id="prompt-manager-import" title="Import a prompt list" data-i18n="Import"></a>
@@ -1133,11 +1133,11 @@ PromptManagerModule.prototype.renderPromptManager = function () {
                     <div class="prompt-manager-export-format-popup-flex">
                         <div class="row">
                             <a class="export-promptmanager-prompts-full list-group-item" data-i18n="Export all">Export all</a>
-                            <span class="tooltip fa-solid fa-info-circle" title="Export all user prompts to a file"></span>
+                            <span class="tooltip fa-solid fa-info-circle" title="Export all your prompts to a file"></span>
                         </div>
                         <div class="row">
                             <a class="export-promptmanager-prompts-character list-group-item" data-i18n="Export for character">Export for character</a>
-                            <span class="tooltip fa-solid fa-info-circle" title="Export prompts currently attached to this character, including their order, to a file"></span>
+                            <span class="tooltip fa-solid fa-info-circle" title="Export prompts for this character, including their order."></span>
                         </div>
                     </div>
                </div>
@@ -1223,7 +1223,7 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
         let detachSpanHtml = '';
         if (this.isPromptDeletionAllowed(prompt)) {
             detachSpanHtml = `
-                <span title="detach" class="prompt-manager-detach-action caution fa-solid fa-chain-broken"></span>
+                <span title="Remove" class="prompt-manager-detach-action caution fa-solid fa-chain-broken"></span>
             `;
         } else {
             detachSpanHtml = `<span class="fa-solid"></span>`;
