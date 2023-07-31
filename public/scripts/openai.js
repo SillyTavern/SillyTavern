@@ -28,7 +28,6 @@ import {
 import {groups, selected_group} from "./group-chats.js";
 
 import {
-    promptManagerDefaultSettings,
     promptManagerDefaultPromptOrders,
     chatCompletionDefaultPrompts, Prompt,
     PromptManagerModule as PromptManager
@@ -144,7 +143,6 @@ const default_settings = {
     names_in_completion: false,
     ...chatCompletionDefaultPrompts,
     ...promptManagerDefaultPromptOrders,
-    ...promptManagerDefaultSettings,
     send_if_empty: '',
     impersonation_prompt: default_impersonation_prompt,
     new_chat_prompt: default_new_chat_prompt,
@@ -183,7 +181,6 @@ const oai_settings = {
     names_in_completion: false,
     ...chatCompletionDefaultPrompts,
     ...promptManagerDefaultPromptOrders,
-    ...promptManagerDefaultSettings,
     send_if_empty: '',
     impersonation_prompt: default_impersonation_prompt,
     new_chat_prompt: default_new_chat_prompt,

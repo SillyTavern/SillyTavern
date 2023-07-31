@@ -230,9 +230,6 @@ function PromptManagerModule() {
 
     /** Character reset button click*/
     this.handleCharacterReset = () => {};
-
-    /** Advanced settings button click */
-    this.handleAdvancedSettingsToggle = () => { };
 }
 
 /**
@@ -251,11 +248,6 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     this.containerElement = document.getElementById(this.configuration.containerIdentifier);
 
     this.sanitizeServiceSettings();
-
-    this.handleAdvancedSettingsToggle = () => {
-        this.serviceSettings.prompt_manager_settings.showAdvancedSettings = !this.serviceSettings.prompt_manager_settings.showAdvancedSettings
-        this.saveServiceSettings().then(() => this.render());
-    }
 
     // Enable and disable prompts
     this.handleToggle = (event) => {
@@ -661,9 +653,6 @@ PromptManagerModule.prototype.sanitizeServiceSettings = function () {
         ? this.setPrompts(chatCompletionDefaultPrompts.prompts)
         : this.checkForMissingPrompts(this.serviceSettings.prompts);
 
-    // Add prompt manager settings if not present
-    this.serviceSettings.prompt_manager_settings = this.serviceSettings.prompt_manager_settings ?? {...promptManagerDefaultSettings};
-
     // Add identifiers if there are none assigned to a prompt
     this.serviceSettings.prompts.forEach(prompt => prompt && (prompt.identifier = prompt.identifier ?? this.getUuidv4()));
 
@@ -921,11 +910,6 @@ PromptManagerModule.prototype.loadPromptIntoEditForm = function (prompt) {
     roleField.value = prompt.role ?? '';
     promptField.value = prompt.content ?? '';
 
-    if (true === prompt.system_prompt &&
-        false === this.serviceSettings.prompt_manager_settings.showAdvancedSettings) {
-        roleField.disabled = true;
-    }
-
     const resetPromptButton = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_reset');
     if (true === prompt.system_prompt) {
         resetPromptButton.style.display = 'block';
@@ -1091,36 +1075,26 @@ PromptManagerModule.prototype.renderPromptManager = function () {
     const promptManagerDiv = this.containerElement;
     promptManagerDiv.innerHTML = '';
 
-    const showAdvancedSettings = this.serviceSettings.prompt_manager_settings.showAdvancedSettings;
-    const checkSpanClass = showAdvancedSettings ? 'fa-solid fa-toggle-on' : 'fa-solid fa-toggle-off';
-
     const errorDiv = `
             <div class="${this.configuration.prefix}prompt_manager_error">
                 <span class="fa-solid tooltip fa-triangle-exclamation text_danger"></span> ${this.error}
             </div>
     `;
-    const activeTokenInfo = `<span class="tooltip fa-solid fa-info-circle" title="Including tokens from hidden prompts"></span>`;
+
     const totalActiveTokens = this.tokenUsage;
 
     promptManagerDiv.insertAdjacentHTML('beforeend', `
-        <div class="range-block-title" data-i18n="Prompts">
-            Prompts
-        </div>
         <div class="range-block">
             ${this.error ? errorDiv : ''}
             <div class="${this.configuration.prefix}prompt_manager_header">
                 <div class="${this.configuration.prefix}prompt_manager_header_advanced">
-                    <span class="${checkSpanClass}"></span>
-                    <span class="checkbox_label" data-i18n="Show advanced options">Show advanced options</span>
+                    <span data-i18n="Prompts">Prompts</span>
                 </div>
-                <div>Total Tokens: ${totalActiveTokens} ${ showAdvancedSettings ? '' : activeTokenInfo} </div>
+                <div>Total Tokens: ${totalActiveTokens} </div>
             </div>
             <ul id="${this.configuration.prefix}prompt_manager_list" class="text_pole"></ul>
         </div>
     `);
-
-    const checkSpan = promptManagerDiv.querySelector(`.${this.configuration.prefix}prompt_manager_header_advanced span`);
-    checkSpan.addEventListener('click', this.handleAdvancedSettingsToggle);
 
     this.listElement = promptManagerDiv.querySelector(`#${this.configuration.prefix}prompt_manager_list`);
 
@@ -1137,9 +1111,8 @@ PromptManagerModule.prototype.renderPromptManager = function () {
                 </select>
                 <a class="menu_button fa-chain fa-solid" title="Attach prompt" data-i18n="Add"></a>
                 <a class="caution menu_button fa-x fa-solid" title="Delete prompt" data-i18n="Delete"></a>
-                ${ this.serviceSettings.prompt_manager_settings.showAdvancedSettings
-                 ? `<a class="menu_button fa-file-arrow-down fa-solid" id="prompt-manager-export" title="Export this prompt list" data-i18n="Export"></a>
-                    <a class="menu_button fa-file-arrow-up fa-solid" id="prompt-manager-import" title="Import a prompt list" data-i18n="Import"></a>` : '' }
+                <a class="menu_button fa-file-arrow-down fa-solid" id="prompt-manager-export" title="Export this prompt list" data-i18n="Export"></a>
+                <a class="menu_button fa-file-arrow-up fa-solid" id="prompt-manager-import" title="Import a prompt list" data-i18n="Import"></a>
                 <a class="menu_button fa-undo fa-solid" id="prompt-manager-reset-character" title="Reset current character" data-i18n="Reset current character"></a>
                 <a class="menu_button fa-plus-square fa-solid" title="New prompt" data-i18n="New"></a>
             </div>
@@ -1155,8 +1128,7 @@ PromptManagerModule.prototype.renderPromptManager = function () {
         footerDiv.querySelector('.menu_button:last-child').addEventListener('click', this.handleNewPrompt);
 
         // Add prompt export dialogue and options
-        if (true === this.serviceSettings.prompt_manager_settings.showAdvancedSettings) {
-            const exportPopup = `
+        const exportPopup = `
                 <div id="prompt-manager-export-format-popup" class="list-group">
                     <div class="prompt-manager-export-format-popup-flex">
                         <div class="row">
@@ -1171,29 +1143,28 @@ PromptManagerModule.prototype.renderPromptManager = function () {
                </div>
             `;
 
-            rangeBlockDiv.insertAdjacentHTML('beforeend', exportPopup);
+        rangeBlockDiv.insertAdjacentHTML('beforeend', exportPopup);
 
-            let exportPopper = Popper.createPopper(
-                document.getElementById('prompt-manager-export'),
-                document.getElementById('prompt-manager-export-format-popup'),
-                {placement: 'bottom'}
-            );
+        let exportPopper = Popper.createPopper(
+            document.getElementById('prompt-manager-export'),
+            document.getElementById('prompt-manager-export-format-popup'),
+            {placement: 'bottom'}
+        );
 
-            const showExportSelection = () => {
-                const popup = document.getElementById('prompt-manager-export-format-popup');
-                const show = popup.hasAttribute('data-show');
+        const showExportSelection = () => {
+            const popup = document.getElementById('prompt-manager-export-format-popup');
+            const show = popup.hasAttribute('data-show');
 
-                if (show) popup.removeAttribute('data-show');
-                else popup.setAttribute('data-show', '');
+            if (show) popup.removeAttribute('data-show');
+            else popup.setAttribute('data-show', '');
 
-                exportPopper.update();
-            }
-
-            footerDiv.querySelector('#prompt-manager-import').addEventListener('click', this.handleImport);
-            footerDiv.querySelector('#prompt-manager-export').addEventListener('click', showExportSelection);
-            rangeBlockDiv.querySelector('.export-promptmanager-prompts-full').addEventListener('click', this.handleFullExport);
-            rangeBlockDiv.querySelector('.export-promptmanager-prompts-character').addEventListener('click', this.handleCharacterExport);
+            exportPopper.update();
         }
+
+        footerDiv.querySelector('#prompt-manager-import').addEventListener('click', this.handleImport);
+        footerDiv.querySelector('#prompt-manager-export').addEventListener('click', showExportSelection);
+        rangeBlockDiv.querySelector('.export-promptmanager-prompts-full').addEventListener('click', this.handleFullExport);
+        rangeBlockDiv.querySelector('.export-promptmanager-prompts-character').addEventListener('click', this.handleCharacterExport);
     }
 };
 
@@ -1221,16 +1192,6 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
 
     this.getPromptsForCharacter(this.activeCharacter).forEach(prompt => {
         if (!prompt) return;
-
-        const advancedEnabled = this.serviceSettings.prompt_manager_settings.showAdvancedSettings;
-
-
-        let visibleClass = `${prefix}prompt_manager_prompt_visible`;
-        if (prompt.marker &&
-            prompt.identifier !== 'newMainChat' &&
-            prompt.identifier !== 'chatHistory' &&
-            prompt.identifier !== 'characterInfo' &&
-            !advancedEnabled) visibleClass = `${prefix}prompt_manager_prompt_invisible`;
 
         const listEntry = this.getPromptOrderEntry(this.activeCharacter, prompt.identifier);
         const enabledClass = listEntry.enabled ? '' : `${prefix}prompt_manager_prompt_disabled`;
@@ -1287,7 +1248,7 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
         }
 
         listItemHtml += `
-            <li class="${prefix}prompt_manager_prompt ${visibleClass} ${draggableClass} ${enabledClass} ${markerClass}" data-pm-identifier="${prompt.identifier}">
+            <li class="${prefix}prompt_manager_prompt ${draggableClass} ${enabledClass} ${markerClass}" data-pm-identifier="${prompt.identifier}">
                 <span class="${prefix}prompt_manager_prompt_name" data-pm-name="${prompt.name}">
                     ${prompt.marker ? '<span class="fa-solid fa-thumb-tack" title="Prompt Marker"></span>' : ''}
                     ${!prompt.marker && prompt.system_prompt ? '<span class="fa-solid fa-globe" title="Global Prompt"></span>' : ''}
@@ -1661,17 +1622,10 @@ const promptManagerDefaultPromptOrder = [
     }
 ];
 
-const promptManagerDefaultSettings = {
-    prompt_manager_settings: {
-        showAdvancedSettings: false
-    }
-};
-
 export {
     PromptManagerModule,
     registerPromptManagerMigration,
     chatCompletionDefaultPrompts,
     promptManagerDefaultPromptOrders,
-    promptManagerDefaultSettings,
     Prompt
 };
