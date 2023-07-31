@@ -89,10 +89,6 @@
     opacity: 1;
 }
 
-#completion_prompt_manager_popup {
-    overflow-y: auto;
-}
-
 #completion_prompt_manager_popup #completion_prompt_manager_popup_edit,
 #completion_prompt_manager_popup #completion_prompt_manager_popup_chathistory_edit,
 #completion_prompt_manager_popup #completion_prompt_manager_popup_dialogueexamples_edit,
@@ -260,6 +256,7 @@
 
 #completion_prompt_manager_popup {
     max-width: var(--sheldWidth);
+    overflow-y: auto;
     height: calc(100% - 40px);
     position: absolute;
     margin-left: auto;
@@ -273,7 +270,7 @@
     flex-direction: column;
     z-index: 3010;
     border-radius: 0 0 20px 20px;
-    background-color: #000;
+    background-color:  var(--SmartThemeBlurTintColor);
 }
 
 #prompt-manager-export-format-popup {
