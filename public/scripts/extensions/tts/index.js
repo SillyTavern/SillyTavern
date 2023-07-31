@@ -14,7 +14,7 @@ const UPDATE_INTERVAL = 1000
 
 let voiceMap = {} // {charName:voiceid, charName2:voiceid2}
 let audioControl
-
+let storedvalue = false;
 let lastCharacterId = null
 let lastGroupId = null
 let lastChatId = null
@@ -164,6 +164,20 @@ async function moduleWorker() {
     ttsJobQueue.push(message)
 }
 
+function talkingAnimation(switchValue) {
+  const apiKeyValue = document.getElementById("extensions_url").value;
+  const animationType = switchValue ? "start" : "stop";
+  
+  if (switchValue !== storedvalue) {
+    try {
+      console.log(animationType + " Talking Animation");
+      fetch(`${apiKeyValue}/api/live2d/${animationType}_talking`);
+      storedvalue = switchValue; // Update the storedvalue to the current switchValue
+    } catch (error) {
+      // Handle the error here or simply ignore it to prevent logging
+    } 
+  }
+}
 
 function resetTtsPlayback() {
     // Stop system TTS utterance
@@ -291,8 +305,10 @@ function updateUiAudioPlayState() {
         // Give user feedback that TTS is active by setting the stop icon if processing or playing
         if (!audioElement.paused || isTtsProcessing()) {
             img = 'fa-solid fa-stop-circle extensionsMenuExtensionButton'
+            talkingAnimation(true)
         } else {
             img = 'fa-solid fa-circle-play extensionsMenuExtensionButton'
+            talkingAnimation(false)
         }
         $('#tts_media_control').attr('class', img);
     } else {
@@ -354,6 +370,7 @@ async function processAudioJobQueue() {
         audioQueueProcessorReady = false
         currentAudioJob = audioJobQueue.pop()
         playAudioData(currentAudioJob)
+        talkingAnimation(true)
     } catch (error) {
         console.error(error)
         audioQueueProcessorReady = true
