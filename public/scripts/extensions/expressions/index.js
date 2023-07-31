@@ -405,9 +405,9 @@ function loadLiveChar(value_name) {
             'Bypass-Tunnel-Reminder': 'bypass',
         },
     })
-    .then(response => response.text())
-    .then(data => console.log(data))
-    .catch((error) => console.error('Error:', error));
+        .then(response => response.text())
+        .then(data => console.log(data))
+        .catch((error) => console.error('Error:', error));
 }
 
 
@@ -425,18 +425,18 @@ function handleImageChange(isChecked) {
             const expressionListItemElement = document.querySelector('#live2d');
             const expressionImageElement = expressionListItemElement.querySelector('.expression_list_image');
             const newSrc = expressionImageElement.src;
-            
+
             doExtrasFetch(newSrc, {
                 method: 'HEAD',
             })
-            .then(response => {
-                if (response.ok) {
-                    imgElement.src = getApiUrl() + '/api/live2d/result_feed';
-                }
-            })
-            .catch(error => {
-                console.error(error); // Log the error if necessary
-            });
+                .then(response => {
+                    if (response.ok) {
+                        imgElement.src = getApiUrl() + '/api/live2d/result_feed';
+                    }
+                })
+                .catch(error => {
+                    console.error(error); // Log the error if necessary
+                });
         } else if (previousSrc) {
             imgElement.src = previousSrc; // Revert the src to its previous value
         }
@@ -459,12 +459,12 @@ async function moduleWorker() {
     if (context.groupId !== lastCharacter && context.characterId !== lastCharacter) {
         removeExpression();
         spriteCache = {};
-        
+
         previousSrc = null;
 
         //uncheck live image
         let checkbox = document.getElementById('image_type_toggle');
-        if (checkbox.checked) { 
+        if (checkbox.checked) {
             checkbox.click();
         }
 
@@ -765,126 +765,127 @@ async function getExpressionsList() {
 }
 
 async function setExpression(character, expression, force) {
-    if (live2d_var == false) {     
+    if (live2d_var == false) {
 
-    console.debug('entered setExpressions');
-    await validateImages(character);
-    const img = $('img.expression');
-    const prevExpressionSrc = img.attr('src');
-    const expressionClone = img.clone()
+        console.debug('entered setExpressions');
+        await validateImages(character);
+        const img = $('img.expression');
+        const prevExpressionSrc = img.attr('src');
+        const expressionClone = img.clone()
 
-    const sprite = (spriteCache[character] && spriteCache[character].find(x => x.label === expression));
-    console.debug('checking for expression images to show..');
-    if (sprite) {
-        console.debug('setting expression from character images folder');
+        const sprite = (spriteCache[character] && spriteCache[character].find(x => x.label === expression));
+        console.debug('checking for expression images to show..');
+        if (sprite) {
+            console.debug('setting expression from character images folder');
 
-        if (force && isVisualNovelMode()) {
-            const context = getContext();
-            const group = context.groups.find(x => x.id === context.groupId);
+            if (force && isVisualNovelMode()) {
+                const context = getContext();
+                const group = context.groups.find(x => x.id === context.groupId);
 
-            for (const member of group.members) {
-                const groupMember = context.characters.find(x => x.avatar === member);
+                for (const member of group.members) {
+                    const groupMember = context.characters.find(x => x.avatar === member);
 
-                if (!groupMember) {
-                    continue;
-                }
+                    if (!groupMember) {
+                        continue;
+                    }
 
-                if (groupMember.name == character) {
-                    await setImage($(`.expression-holder[data-avatar="${member}"] img`), sprite.path);
-                    return;
+                    if (groupMember.name == character) {
+                        await setImage($(`.expression-holder[data-avatar="${member}"] img`), sprite.path);
+                        return;
+                    }
                 }
             }
-        }
-         //only swap expressions when necessary
-         if (prevExpressionSrc !== sprite.path
-            && !img.hasClass('expression-animating')) {
-            //clone expression
-            expressionClone.addClass('expression-clone')
-            //make invisible and remove id to prevent double ids
-            //must be made invisible to start because they share the same Z-index
-            expressionClone.attr('id', '').css({ opacity: 0 });
-            //add new sprite path to clone src
-            expressionClone.attr('src', sprite.path);
-            //add invisible clone to html
-            expressionClone.appendTo($("#expression-holder"))
+            //only swap expressions when necessary
+            if (prevExpressionSrc !== sprite.path
+                && !img.hasClass('expression-animating')) {
+                //clone expression
+                expressionClone.addClass('expression-clone')
+                //make invisible and remove id to prevent double ids
+                //must be made invisible to start because they share the same Z-index
+                expressionClone.attr('id', '').css({ opacity: 0 });
+                //add new sprite path to clone src
+                expressionClone.attr('src', sprite.path);
+                //add invisible clone to html
+                expressionClone.appendTo($("#expression-holder"))
 
-            const duration = 200;
+                const duration = 200;
 
-            //add animation flags to both images
-            //to prevent multiple expression changes happening simultaneously
-            img.addClass('expression-animating');
+                //add animation flags to both images
+                //to prevent multiple expression changes happening simultaneously
+                img.addClass('expression-animating');
 
-            // Set the parent container's min width and height before running the transition
-            const imgWidth = img.width();
-            const imgHeight = img.height();
-            const expressionHolder = img.parent();
-            expressionHolder.css('min-width', imgWidth > 100 ? imgWidth : 100);
-            expressionHolder.css('min-height', imgHeight > 100 ? imgHeight : 100);
+                // Set the parent container's min width and height before running the transition
+                const imgWidth = img.width();
+                const imgHeight = img.height();
+                const expressionHolder = img.parent();
+                expressionHolder.css('min-width', imgWidth > 100 ? imgWidth : 100);
+                expressionHolder.css('min-height', imgHeight > 100 ? imgHeight : 100);
 
-            //position absolute prevent the original from jumping around during transition
-            img.css('position', 'absolute');
-            expressionClone.addClass('expression-animating');
-            //fade the clone in
-            expressionClone.css({
-                opacity: 0
-            }).animate({
-                opacity: 1
-            }, duration)
-                //when finshed fading in clone, fade out the original
-                .promise().done(function () {
-                    img.animate({
-                        opacity: 0
-                    }, duration);
-                    //remove old expression
-                    img.remove();
-                    //replace ID so it becomes the new 'original' expression for next change
-                    expressionClone.attr('id', 'expression-image');
-                    expressionClone.removeClass('expression-animating');
+                //position absolute prevent the original from jumping around during transition
+                img.css('position', 'absolute');
+                expressionClone.addClass('expression-animating');
+                //fade the clone in
+                expressionClone.css({
+                    opacity: 0
+                }).animate({
+                    opacity: 1
+                }, duration)
+                    //when finshed fading in clone, fade out the original
+                    .promise().done(function () {
+                        img.animate({
+                            opacity: 0
+                        }, duration);
+                        //remove old expression
+                        img.remove();
+                        //replace ID so it becomes the new 'original' expression for next change
+                        expressionClone.attr('id', 'expression-image');
+                        expressionClone.removeClass('expression-animating');
 
-                    // Reset the expression holder min height and width
-                    expressionHolder.css('min-width', 100);
-                    expressionHolder.css('min-height', 100);
+                        // Reset the expression holder min height and width
+                        expressionHolder.css('min-width', 100);
+                        expressionHolder.css('min-height', 100);
+                    });
+
+
+                expressionClone.removeClass('expression-clone');
+
+                expressionClone.removeClass('default');
+                expressionClone.off('error');
+                expressionClone.on('error', function () {
+                    console.debug('Expression image error', sprite.path);
+                    $(this).attr('src', '');
+                    $(this).off('error');
+                    if (force && extension_settings.expressions.showDefault) {
+                        setDefault();
+                    }
                 });
-
-
-            expressionClone.removeClass('expression-clone');
-
-            expressionClone.removeClass('default');
-            expressionClone.off('error');
-            expressionClone.on('error', function () {
-                console.debug('Expression image error', sprite.path);
-                $(this).attr('src', '');
-                $(this).off('error');
-                if (force && extension_settings.expressions.showDefault) {
+            } else {
+                if (extension_settings.expressions.showDefault) {
                     setDefault();
                 }
-            });
-        } else {
-            if (extension_settings.expressions.showDefault) {
-                setDefault();
+            }
+        }
+
+        function setDefault() {
+            console.debug('setting default');
+            const defImgUrl = `/img/default-expressions/${expression}.png`;
+            //console.log(defImgUrl);
+            img.attr('src', defImgUrl);
+            img.addClass('default');
+        }
+        document.getElementById("expression-holder").style.display = '';
+
+        if (live2d_var == true) {
+            // Find the <img> element with id="expression-image" and class="expression"
+            const imgElement = document.querySelector('img#expression-image.expression');
+            //console.log("searching");
+            if (imgElement) {
+                console.log("setting value");
+                imgElement.src = getApiUrl() + '/api/live2d/result_feed';
             }
         }
     }
-
-    function setDefault() {
-        console.debug('setting default');
-        const defImgUrl = `/img/default-expressions/${expression}.png`;
-        //console.log(defImgUrl);
-        img.attr('src', defImgUrl);
-        img.addClass('default');
-    }
-    document.getElementById("expression-holder").style.display = '';
-
-	if (live2d_var == true) {
-        // Find the <img> element with id="expression-image" and class="expression"
-        const imgElement = document.querySelector('img#expression-image.expression');
-        //console.log("searching");
-        if (imgElement) {
-            console.log("setting value");
-            imgElement.src = getApiUrl() + '/api/live2d/result_feed';
-        }}
-        }
-    }
+}
 
 function onClickExpressionImage() {
     // online mode doesn't need force set
@@ -1194,7 +1195,7 @@ function setExpressionOverrideHtml(forceClear = false) {
         $('.expression_settings').hide();
 
 
-        $('#image_type_toggle').on('change', function() {
+        $('#image_type_toggle').on('change', function () {
             const isChecked = this.checked;
             const inputElement = document.querySelector('input[name="avatar_url"]');
             const value_name = inputElement ? inputElement.value : '';
@@ -1204,7 +1205,6 @@ function setExpressionOverrideHtml(forceClear = false) {
             handleImageChange(isChecked);
         });
     }
-    
 
     addExpressionImage();
     addVisualNovelMode();

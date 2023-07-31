@@ -1,5 +1,5 @@
 import { callPopup, cancelTtsPlay, eventSource, event_types, isMultigenEnabled, is_send_press, saveSettingsDebounced } from '../../../script.js'
-import { ModuleWorkerWrapper, extension_settings, getContext } from '../../extensions.js'
+import { ModuleWorkerWrapper, doExtrasFetch, extension_settings, getApiUrl, getContext } from '../../extensions.js'
 import { escapeRegex, getStringHash } from '../../utils.js'
 import { EdgeTtsProvider } from './edge.js'
 import { ElevenLabsTtsProvider } from './elevenlabs.js'
@@ -7,7 +7,6 @@ import { SileroTtsProvider } from './silerotts.js'
 import { CoquiTtsProvider } from './coquitts.js'
 import { SystemTtsProvider } from './system.js'
 import { NovelTtsProvider } from './novel.js'
-import { isMobile } from '../../RossAscends-mods.js'
 import { power_user } from '../../power-user.js'
 
 const UPDATE_INTERVAL = 1000
@@ -165,18 +164,18 @@ async function moduleWorker() {
 }
 
 function talkingAnimation(switchValue) {
-  const apiKeyValue = document.getElementById("extensions_url").value;
-  const animationType = switchValue ? "start" : "stop";
-  
-  if (switchValue !== storedvalue) {
-    try {
-      console.log(animationType + " Talking Animation");
-      fetch(`${apiKeyValue}/api/live2d/${animationType}_talking`);
-      storedvalue = switchValue; // Update the storedvalue to the current switchValue
-    } catch (error) {
-      // Handle the error here or simply ignore it to prevent logging
-    } 
-  }
+    const apiUrl = getApiUrl();
+    const animationType = switchValue ? "start" : "stop";
+
+    if (switchValue !== storedvalue) {
+        try {
+            console.log(animationType + " Talking Animation");
+            doExtrasFetch(`${apiUrl}/api/live2d/${animationType}_talking`);
+            storedvalue = switchValue; // Update the storedvalue to the current switchValue
+        } catch (error) {
+            // Handle the error here or simply ignore it to prevent logging
+        }
+    }
 }
 
 function resetTtsPlayback() {
