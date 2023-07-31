@@ -51,7 +51,7 @@
         "type": "git",
         "url": "https://github.com/SillyTavern/SillyTavern.git"
     },
-    "version": "1.9.3",
+    "version": "1.9.4",
     "scripts": {
         "start": "node server.js",
         "pkg": "pkg --compress Gzip --no-bytecode --public ."
