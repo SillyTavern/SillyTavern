@@ -83,7 +83,7 @@ async function generateTasks() {
     console.log(`Generating tasks for objective with prompt`)
     toastr.info('Generating tasks for objective', 'Please wait...');
     const taskResponse = await generateQuietPrompt(prompt)
-
+    
     // Clear all existing objective tasks when generating
     currentObjective.children = []
     const numberedListPattern = /^\d+\./
@@ -107,6 +107,7 @@ async function checkTaskCompleted() {
         return
     }
     checkCounter = $('#objective-check-frequency').val()
+    toastr.info("Checking for task completion.")
 
     const prompt = substituteParamsPrompts(objectivePrompts.checkTaskCompleted);
     const taskResponse = (await generateQuietPrompt(prompt)).toLowerCase()
@@ -123,8 +124,10 @@ async function checkTaskCompleted() {
 }
 
 function getNextIncompleteTaskRecurse(task){
-    // Skip tasks with children, as they will have subtasks to determine completeness
-    if (task.completed === false && task.children.length === 0){
+    if (task.completed === false // Return task if incomplete
+        && task.children.length === 0 // Ensure task has no children, it's subtasks will determine completeness
+        && task.parentId  // Must have parent id. Only root task will be missing this and we dont want that
+    ){
         return task
     }
     for (const childTask of task.children) {
