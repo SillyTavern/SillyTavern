@@ -5,48 +5,31 @@ import {power_user} from "./power-user.js";
 /**
  * Register migrations for the prompt manager when settings are loaded or an Open AI preset is loaded.
  */
-const registerPromptManagerMigration = () => {
+const registerPromptManagerMigration = (saveSettingsCallback) => {
     const migrate = (settings) => {
         // If any of the specified settings exist, run the migration
         if (settings.main_prompt || settings.nsfw_prompt || settings.jailbreak_prompt) {
             console.log('Running one-time configuration migration for prompt manager.')
-            if (settings.prompts === undefined) settings.prompts = [];
+            if (settings.prompts === undefined || settings.prompts.length === 0) settings.prompts = chatCompletionDefaultPrompts.prompts;
+
+            const findPrompt = (identifier) => settings.prompts.find(prompt => identifier === prompt.identifier);
 
             if (settings.main_prompt) {
-                settings.prompts.push({
-                    identifier: null, // Will be assigned by prompt manager during sanitization
-                    name: 'My Main Prompt',
-                    role: 'system',
-                    content: settings.main_prompt,
-                    system_prompt: false,
-                    enabled: false,
-                });
+                findPrompt('main').content = settings.main_prompt
                 delete settings.main_prompt;
             }
 
             if (settings.nsfw_prompt) {
-                settings.prompts.push({
-                    identifier: null,
-                    name: 'My NSFW Prompt',
-                    role: 'system',
-                    content: settings.nsfw_prompt,
-                    system_prompt: false,
-                    enabled: false,
-                });
+                findPrompt('nsfw').content = settings.nsfw_prompt
                 delete settings.nsfw_prompt;
             }
 
             if (settings.jailbreak_prompt) {
-                settings.prompts.push({
-                    identifier: null,
-                    name: 'My Jailbreak',
-                    role: 'system',
-                    content: settings.jailbreak_prompt,
-                    system_prompt: false,
-                    enabled: false,
-                });
+                findPrompt('jailbreak').content = settings.jailbreak_prompt
                 delete settings.jailbreak_prompt;
             }
+
+            saveSettingsCallback();
         }
     };
 
