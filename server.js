@@ -2988,7 +2988,7 @@ function convertChatMLPrompt(messages) {
 }
 
 // Prompt Conversion script taken from RisuAI by @kwaroran (GPLv3).
-function convertClaudePrompt(messages, addHumanPrefix, addAssistantPostfix) {
+function convertClaudePrompt(messages, addHumanPrefix, assistantPrefill) {
     // Claude doesn't support message names, so we'll just add them to the message content.
     for (const message of messages) {
         if (message.name && message.role !== "system") {
@@ -3024,8 +3024,8 @@ function convertClaudePrompt(messages, addHumanPrefix, addAssistantPostfix) {
         requestPrompt = "\n\nHuman: " + requestPrompt;
     }
 
-    if (addAssistantPostfix) {
-        requestPrompt = requestPrompt + '\n\nAssistant: ';
+    if (assistantPrefill) {
+        requestPrompt += '\n\nAssistant: ' + assistantPrefill;
     }
 
     return requestPrompt;
@@ -3096,11 +3096,7 @@ async function sendClaudeRequest(request, response) {
             controller.abort();
         });
 
-        let requestPrompt = convertClaudePrompt(request.body.messages, true, true);
-
-        if (request.body.assistant_prefill) {
-            requestPrompt += request.body.assistant_prefill;
-        }
+        let requestPrompt = convertClaudePrompt(request.body.messages, true, request.body.assistant_prefill);
 
         console.log('Claude request:', requestPrompt);
 
