@@ -302,9 +302,6 @@
     #completion_prompt_manager_popup {
         max-width: 100%;
     }
-    #completion_prompt_manager #completion_prompt_manager_list {
-        font-size: 1.25em !important;
-    }
     #completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt span span span {
         margin-left: 0.5em;
     }
