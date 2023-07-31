@@ -881,7 +881,7 @@ async function setExpression(character, expression, force) {
         //console.log("searching");
         if (imgElement) {
             console.log("setting value");
-            imgElement.src = 'http://127.0.0.1:5555/result_feed';
+            imgElement.src = getApiUrl() + '/api/live2d/result_feed';
         }}
         }
     }
@@ -1215,7 +1215,7 @@ function setExpressionOverrideHtml(forceClear = false) {
     moduleWorker();
     dragElement($("#expression-holder"))
     eventSource.on(event_types.CHAT_CHANGED, () => {
-        console.log("checked: " + live2d_var);
+        //console.log("checked: " + live2d_var);
         setExpressionOverrideHtml();
 
         if (isVisualNovelMode()) {
