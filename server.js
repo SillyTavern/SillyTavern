@@ -3182,16 +3182,19 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
     let api_url;
     let api_key_openai;
     let headers;
+    let bodyParams;
 
     if (!request.body.use_openrouter) {
         api_url = new URL(request.body.reverse_proxy || api_openai).toString();
         api_key_openai = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.OPENAI);
         headers = {};
+        bodyParams = {};
     } else {
         api_url = 'https://openrouter.ai/api/v1';
         api_key_openai = readSecret(SECRET_KEYS.OPENROUTER);
         // OpenRouter needs to pass the referer: https://openrouter.ai/docs
         headers = { 'HTTP-Referer': request.headers.referer };
+        bodyParams = { 'transforms': ["middle-out"] };
     }
 
     if (!api_key_openai && !request.body.reverse_proxy) {
@@ -3228,7 +3231,8 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
             "top_p": request.body.top_p,
             "top_k": request.body.top_k,
             "stop": request.body.stop,
-            "logit_bias": request.body.logit_bias
+            "logit_bias": request.body.logit_bias,
+            ...bodyParams,
         },
         signal: controller.signal,
     };
