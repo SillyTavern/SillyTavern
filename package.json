@@ -33,7 +33,6 @@
         "sentencepiece-js": "^1.1.0",
         "simple-git": "^3.19.1",
         "uniqolor": "^1.1.0",
-        "user-agents": "^1.0.1444",
         "webp-converter": "2.3.2",
         "ws": "^8.13.0",
         "yargs": "^17.7.1",
