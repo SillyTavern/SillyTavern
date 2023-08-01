@@ -26,6 +26,7 @@ import {
     getWorldInfoPrompt,
     setWorldInfoSettings,
     world_info_recursive,
+    world_info_overflow_alert,
     world_info_case_sensitive,
     world_info_match_whole_words,
     world_names,
@@ -737,6 +738,9 @@ let token;
 
 var PromptArrayItemForRawPromptDisplay;
 
+export let active_character = ""
+export let active_group = ""
+
 export function getRequestHeaders() {
     return {
         "Content-Type": "application/json",
@@ -784,6 +788,14 @@ function checkOnlineStatus() {
         $(".online_status_indicator4").css("background-color", "green"); //OAI / ooba
         $(".online_status_text4").html(online_status);
     }
+}
+
+export function setActiveCharacter(character) {
+    active_character = character;
+}
+
+export function setActiveGroup(group) {
+    active_group = group;
 }
 
 async function getStatus() {
@@ -5009,6 +5021,10 @@ async function getSettings(type) {
         highlightSelectedAvatar();
         setPersonaDescription();
 
+        //Load the active character and group
+        active_character = settings.active_character;
+        active_group = settings.active_group;
+
         //Load the API server URL from settings
         api_server = settings.api_server;
         $("#api_url_text").val(api_server);
@@ -5049,6 +5065,8 @@ async function saveSettings(type) {
         data: JSON.stringify({
             firstRun: firstRun,
             username: name1,
+            active_character: active_character,
+            active_group: active_group,
             api_server: api_server,
             api_server_textgenerationwebui: api_server_textgenerationwebui,
             preset_settings: preset_settings,
@@ -5060,6 +5078,7 @@ async function saveSettings(type) {
             world_info_depth: world_info_depth,
             world_info_budget: world_info_budget,
             world_info_recursive: world_info_recursive,
+            world_info_overflow_alert: world_info_overflow_alert,
             world_info_case_sensitive: world_info_case_sensitive,
             world_info_match_whole_words: world_info_match_whole_words,
             world_info_character_strategy: world_info_character_strategy,
@@ -7731,6 +7750,51 @@ $(document).ready(function () {
 
         else if (id == "option_delete_mes") {
             setTimeout(openMessageDelete, animation_duration);
+        }
+
+        else if (id == "option_close_chat") {
+            if (is_send_press == false) {
+                clearChat();
+                chat.length = 0;
+                resetSelectedGroup();
+                setCharacterId(undefined);
+                setCharacterName('');
+                setActiveCharacter(null);
+                setActiveGroup(null);
+                this_edit_mes_id = undefined;
+                chat_metadata = {};
+                selected_button = "characters";
+                $("#rm_button_selected_ch").children("h2").text('');
+                select_rm_characters();
+                sendSystemMessage(system_message_types.WELCOME);
+            } else {
+                toastr.info("Please stop the message generation first.");
+            }
+        }
+
+        else if (id === "option_settings") {
+            //var checkBox = document.getElementById("waifuMode");
+            var topBar = document.getElementById("top-bar");
+            var topSettingsHolder = document.getElementById("top-settings-holder");
+            var divchat = document.getElementById("chat");
+
+            //if (checkBox.checked) {
+            if (topBar.style.display === "none") {
+                topBar.style.display = ""; // or "inline-block" if that's the original display value
+                topSettingsHolder.style.display = ""; // or "inline-block" if that's the original display value
+
+                divchat.style.borderRadius = "";
+                divchat.style.backgroundColor = "";
+
+            } else {
+
+                divchat.style.borderRadius = "10px"; // Adjust the value to control the roundness of the corners
+                divchat.style.backgroundColor = ""; // Set the background color to your preference
+
+                topBar.style.display = "none";
+                topSettingsHolder.style.display = "none";
+            }
+            //}
         }
         hideMenu();
     });

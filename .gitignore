@@ -26,4 +26,5 @@ secrets.json
 /dist
 /backups/
 public/movingUI/
+public/QuickReplies/
 content.log

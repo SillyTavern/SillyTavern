@@ -143,6 +143,7 @@ const default_settings = {
     api_url_scale: '',
     show_external_models: false,
     proxy_password: '',
+    assistant_prefill: '',
 };
 
 const oai_settings = {
@@ -180,6 +181,7 @@ const oai_settings = {
     api_url_scale: '',
     show_external_models: false,
     proxy_password: '',
+    assistant_prefill: '',
 };
 
 let openai_setting_names;
@@ -775,6 +777,7 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
     if (isClaude) {
         generate_data['use_claude'] = true;
         generate_data['top_k'] = parseFloat(oai_settings.top_k_openai);
+        generate_data['assistant_prefill'] = substituteParams(oai_settings.assistant_prefill);
     }
 
     if (isOpenRouter) {
@@ -1109,6 +1112,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.api_url_scale = settings.api_url_scale ?? default_settings.api_url_scale;
     oai_settings.show_external_models = settings.show_external_models ?? default_settings.show_external_models;
     oai_settings.proxy_password = settings.proxy_password ?? default_settings.proxy_password;
+    oai_settings.assistant_prefill = settings.assistant_prefill ?? default_settings.assistant_prefill;
 
     if (settings.nsfw_toggle !== undefined) oai_settings.nsfw_toggle = !!settings.nsfw_toggle;
     if (settings.keep_example_dialogue !== undefined) oai_settings.keep_example_dialogue = !!settings.keep_example_dialogue;
@@ -1121,6 +1125,7 @@ function loadOpenAISettings(data, settings) {
     $('#stream_toggle').prop('checked', oai_settings.stream_openai);
     $('#api_url_scale').val(oai_settings.api_url_scale);
     $('#openai_proxy_password').val(oai_settings.proxy_password);
+    $('#claude_assistant_prefill').val(oai_settings.assistant_prefill);
 
     $('#model_openai_select').val(oai_settings.openai_model);
     $(`#model_openai_select option[value="${oai_settings.openai_model}"`).attr('selected', true);
@@ -1323,6 +1328,7 @@ async function saveOpenAIPreset(name, settings) {
         stream_openai: settings.stream_openai,
         api_url_scale: settings.api_url_scale,
         show_external_models: settings.show_external_models,
+        assistant_prefill: settings.assistant_prefill,
     };
 
     const savePresetSettings = await fetch(`/savepreset_openai?name=${name}`, {
@@ -1656,6 +1662,7 @@ function onSettingsPresetChange() {
         api_url_scale: ['#api_url_scale', 'api_url_scale', false],
         show_external_models: ['#openai_show_external_models', 'show_external_models', true],
         proxy_password: ['#openai_proxy_password', 'proxy_password', false],
+        assistant_prefill: ['#claude_assistant_prefill', 'assistant_prefill', false],
     };
 
     for (const [key, [selector, setting, isCheckbox]] of Object.entries(settingsToUpdate)) {
@@ -2203,6 +2210,11 @@ $(document).ready(function () {
 
     $('#openai_proxy_password').on('input', function () {
         oai_settings.proxy_password = $(this).val();
+        saveSettingsDebounced();
+    });
+
+    $('#claude_assistant_prefill').on('input', function () {
+        oai_settings.assistant_prefill = $(this).val();
         saveSettingsDebounced();
     });
 

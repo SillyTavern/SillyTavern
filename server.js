@@ -290,6 +290,7 @@ const directories = {
     instruct: 'public/instruct',
     context: 'public/context',
     backups: 'backups/',
+    quickreplies: 'public/QuickReplies'
 };
 
 // CSRF Protection //
@@ -1600,6 +1601,8 @@ app.post('/getsettings', jsonParser, (request, response) => {
 
     const themes = readAndParseFromDirectory(directories.themes);
     const movingUIPresets = readAndParseFromDirectory(directories.movingUI);
+    const quickReplyPresets = readAndParseFromDirectory(directories.quickreplies);
+
     const instruct = readAndParseFromDirectory(directories.instruct);
     const context = readAndParseFromDirectory(directories.context);
 
@@ -1616,6 +1619,7 @@ app.post('/getsettings', jsonParser, (request, response) => {
         textgenerationwebui_preset_names,
         themes,
         movingUIPresets,
+        quickReplyPresets,
         instruct,
         context,
         enable_extensions: enableExtensions,
@@ -1667,6 +1671,17 @@ app.post('/savemovingui', jsonParser, (request, response) => {
     }
 
     const filename = path.join(directories.movingUI, sanitize(request.body.name) + '.json');
+    fs.writeFileSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
+
+    return response.sendStatus(200);
+});
+
+app.post('/savequickreply', jsonParser, (request, response) => {
+    if (!request.body || !request.body.name) {
+        return response.sendStatus(400);
+    }
+
+    const filename = path.join(directories.quickreplies, sanitize(request.body.name) + '.json');
     fs.writeFileSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
 
     return response.sendStatus(200);
@@ -1783,10 +1798,10 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
     request.socket.on('close', function () {
         controller.abort();
     });
-
-    console.log(request.body);
-    const bw = require('./src/bad-words');
+    
+    const novelai = require('./src/novelai');
     const isNewModel = (request.body.model.includes('clio') || request.body.model.includes('kayra'));
+    const isKrake = request.body.model.includes('krake');
     const data = {
         "input": request.body.input,
         "model": request.body.model,
@@ -1801,6 +1816,7 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
             "repetition_penalty_slope": request.body.repetition_penalty_slope,
             "repetition_penalty_frequency": request.body.repetition_penalty_frequency,
             "repetition_penalty_presence": request.body.repetition_penalty_presence,
+            "repetition_penalty_whitelist": isNewModel ? novelai.repPenaltyAllowList : null,
             "top_a": request.body.top_a,
             "top_p": request.body.top_p,
             "top_k": request.body.top_k,
@@ -1809,15 +1825,18 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
             "cfg_uc": request.body.cfg_uc,
             "phrase_rep_pen": request.body.phrase_rep_pen,
             //"stop_sequences": {{187}},
-            "bad_words_ids": isNewModel ? bw.clioBadWordsId : bw.badWordIds,
+            "bad_words_ids": isNewModel ? novelai.badWordsList : (isKrake ? novelai.krakeBadWordsList : novelai.euterpeBadWordsList),
+            "logit_bias_exp": isNewModel ? novelai.logitBiasExp : null,
             //generate_until_sentence = true;
             "use_cache": request.body.use_cache,
             "use_string": true,
             "return_full_text": request.body.return_full_text,
-            "prefix": isNewModel ? "special_instruct" : request.body.prefix,
+            "prefix": request.body.prefix,
             "order": request.body.order
         }
     };
+    const util = require('util');
+    console.log(util.inspect(data, { depth: 4 }))
 
     const args = {
         body: JSON.stringify(data),
@@ -3077,7 +3096,12 @@ async function sendClaudeRequest(request, response) {
             controller.abort();
         });
 
-        const requestPrompt = convertClaudePrompt(request.body.messages, true, true);
+        let requestPrompt = convertClaudePrompt(request.body.messages, true, true);
+
+        if (request.body.assistant_prefill) {
+            requestPrompt += request.body.assistant_prefill;
+        }
+
         console.log('Claude request:', requestPrompt);
 
         const generateResponse = await fetch(api_url + '/complete', {
@@ -3258,6 +3282,10 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
                 break;
             case 403:
                 message = 'API key disabled or exhausted';
+                console.log(message);
+                break;
+            case 451:
+                message = error?.response?.data?.error?.message || 'Unavailable for legal reasons';
                 console.log(message);
                 break;
         }

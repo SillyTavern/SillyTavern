@@ -1,5 +1,5 @@
 {
-  "order": [6, 0, 1, 2, 3],
+  "order": [0, 1, 2, 3],
   "temperature": 1,
   "max_length": 300,
   "min_length": 1,
@@ -14,6 +14,7 @@
   "use_cache": false,
   "return_full_text": false,
   "prefix": "vanilla",
+  "cfg_scale": 1,
   "phrase_rep_pen": "off",
   "max_context": 8192
 }
