@@ -396,28 +396,56 @@ function onExpressionsShowDefaultInput() {
     }
 }
 
-function loadLiveChar(value_name) {
-    if (!live2d_var) {
-        console.debug('live2d is disabled');
-        return;
-    }
-
+async function loadLiveChar() {
     if (!modules.includes('live2d')) {
         console.debug('live2d module is disabled');
         return;
     }
 
-    let url = `${getApiUrl()}/api/live2d/load?loadchar=${location.origin}/characters/${value_name}`;
-    doExtrasFetch(url, {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Bypass-Tunnel-Reminder': 'bypass',
-        },
-    })
-        .then(response => response.text())
-        .then(data => console.log(data))
-        .catch((error) => console.error('Error:', error));
+    const context = getContext();
+    let spriteFolderName = context.name2;
+    const message = getLastCharacterMessage();
+    const avatarFileName = getSpriteFolderName(message);
+    const expressionOverride = extension_settings.expressionOverrides.find((e) =>
+        e.name == avatarFileName
+    );
+
+    if (expressionOverride && expressionOverride.path) {
+        spriteFolderName = expressionOverride.path;
+    }
+
+    const live2dPath = `/characters/${encodeURIComponent(spriteFolderName)}/live2d.png`;
+
+    try {
+        const spriteResponse = await fetch(live2dPath);
+
+        if (!spriteResponse.ok) {
+            throw new Error(spriteResponse.statusText);
+        }
+
+        const spriteBlob = await spriteResponse.blob();
+        const spriteFile = new File([spriteBlob], 'live2d.png', { type: 'image/png' });
+        const formData = new FormData();
+        formData.append('file', spriteFile);
+
+        const url = new URL(getApiUrl());
+        url.pathname = '/api/live2d/load';
+
+        const loadResponse = await doExtrasFetch(url, {
+            method: 'POST',
+            body: formData,
+        });
+
+        if (!loadResponse.ok) {
+            throw new Error(loadResponse.statusText);
+        }
+
+        const loadResponseText = await loadResponse.text();
+        console.log(`Load live2d response: ${loadResponseText}`);
+
+    } catch (error) {
+        console.error(`Error loading live2d image: ${live2dPath} - ${error}`);
+    }
 }
 
 
@@ -484,7 +512,7 @@ async function moduleWorker() {
 
         //Load new char
         if (live2d_var) {
-            loadLiveChar(context.name2 + ".png");
+            loadLiveChar();
         }
     }
 
@@ -1209,10 +1237,8 @@ function setExpressionOverrideHtml(forceClear = false) {
 
         $('#image_type_toggle').on('change', function () {
             const isChecked = this.checked;
-            const inputElement = document.querySelector('input[name="avatar_url"]');
-            const value_name = inputElement ? inputElement.value : '';
             if (isChecked) {
-                loadLiveChar(value_name);
+                loadLiveChar();
             }
             handleImageChange(isChecked);
         });
