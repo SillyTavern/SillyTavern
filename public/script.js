@@ -161,7 +161,7 @@ import { context_settings, loadContextTemplatesFromSettings } from "./scripts/co
 import { markdownExclusionExt } from "./scripts/showdown-exclusion.js";
 import { NOTE_MODULE_NAME, metadata_keys, setFloatingPrompt, shouldWIAddPrompt } from "./scripts/authors-note.js";
 import { deviceInfo } from "./scripts/RossAscends-mods.js";
-import {registerPromptManagerMigration} from "./scripts/PromptManager.js";
+import { registerPromptManagerMigration } from "./scripts/PromptManager.js";
 import { getRegexedString, regex_placement } from "./scripts/extensions/regex/engine.js";
 
 //exporting functions and vars for mods

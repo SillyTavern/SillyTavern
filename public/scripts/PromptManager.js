@@ -553,6 +553,12 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     // Re-render prompt manager on openai preset change
     eventSource.on(event_types.OAI_PRESET_CHANGED, settings => this.render());
 
+    // Close popup on preset change
+    eventSource.on(event_types.OAI_PRESET_CHANGED, () => {
+        this.hidePopup();
+        this.clearEditForm();
+    });
+
     // Re-render prompt manager on world settings update
     eventSource.on(event_types.WORLDINFO_SETTINGS_UPDATED, () => this.render());
 
