@@ -72,6 +72,9 @@ function getTaskByIdRecurse(taskId, task) {
 function substituteParamsPrompts(content) {
     content = content.replace(/{{objective}}/gi, currentObjective.description)
     content = content.replace(/{{task}}/gi, currentTask.description)
+    if (currentTask.parent){
+        content = content.replace(/{{parent}}/gi, currentTask.parent.description)
+    }
     content = substituteParams(content)
     return content
 }
@@ -97,7 +100,7 @@ async function generateTasks() {
     updateUiTaskList();
     setCurrentTask();
     console.info(`Response for Objective: '${taskTree.description}' was \n'${taskResponse}', \nwhich created tasks \n${JSON.stringify(globalTasks.map(v => {return v.toSaveState()}), null, 2)} `)
-    toastr.success(`Generated ${globalTasks.length} tasks`, 'Done!');
+    toastr.success(`Generated ${taskTree.length} tasks`, 'Done!');
 }
 
 // Call Quiet Generate to check if a task is completed
@@ -126,7 +129,7 @@ async function checkTaskCompleted() {
 function getNextIncompleteTaskRecurse(task){
     if (task.completed === false // Return task if incomplete
         && task.children.length === 0 // Ensure task has no children, it's subtasks will determine completeness
-        && task.parentId  // Must have parent id. Only root task will be missing this and we dont want that
+        && task.parentId !== ""  // Must have parent id. Only root task will be missing this and we dont want that
     ){
         return task
     }

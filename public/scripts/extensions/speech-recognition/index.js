@@ -8,16 +8,21 @@ import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper
 import { VoskSttProvider } from './vosk.js'
 import { WhisperSttProvider } from './whisper.js'
 import { BrowserSttProvider } from './browser.js'
+import { StreamingSttProvider } from './streaming.js'
 export { MODULE_NAME };
 
 const MODULE_NAME = 'Speech Recognition';
 const DEBUG_PREFIX = "<Speech Recognition module> "
+const UPDATE_INTERVAL = 100;
+
+let inApiCall = false;
 
 let sttProviders = {
     None: null,
     Browser: BrowserSttProvider,
     Whisper: WhisperSttProvider,
     Vosk: VoskSttProvider,
+    Streaming: StreamingSttProvider,
 }
 
 let sttProvider = null
@@ -26,6 +31,82 @@ let sttProviderName = "None"
 let audioRecording = false
 const constraints = { audio: { sampleSize: 16, channelCount: 1, sampleRate: 16000 } };
 let audioChunks = [];
+
+async function moduleWorker() {
+    if (sttProviderName != "Streaming") {
+        return;
+    }
+
+    // API is busy
+    if (inApiCall) {
+        return;
+    }
+
+    try {
+        inApiCall = true;
+        const userMessageOriginal =  await sttProvider.getUserMessage();
+        let userMessageFormatted = userMessageOriginal.trim();
+
+        if (userMessageFormatted.length > 0)
+        {
+            console.debug(DEBUG_PREFIX+"recorded transcript: \""+userMessageFormatted+"\"");
+
+            let userMessageLower = userMessageFormatted.toLowerCase();
+            // remove punctuation
+            let userMessageRaw = userMessageLower.replace(/[^\w\s\']|_/g, "").replace(/\s+/g, " ");
+
+            console.debug(DEBUG_PREFIX+"raw transcript:",userMessageRaw);
+
+            // Detect trigger words
+            let messageStart = -1;
+
+            if (extension_settings.speech_recognition.Streaming.triggerWordsEnabled) {
+            
+                for (const triggerWord of extension_settings.speech_recognition.Streaming.triggerWords) {
+                    const triggerPos = userMessageRaw.indexOf(triggerWord.toLowerCase());
+                    
+                    // Trigger word not found or not starting message and just a substring
+                    if (triggerPos == -1){ // | (triggerPos > 0 & userMessageFormatted[triggerPos-1] != " ")) {
+                        console.debug(DEBUG_PREFIX+"trigger word not found: ", triggerWord);
+                    }
+                    else {
+                        console.debug(DEBUG_PREFIX+"Found trigger word: ", triggerWord, " at index ", triggerPos);
+                        if (triggerPos < messageStart | messageStart == -1) { // & (triggerPos + triggerWord.length) < userMessageFormatted.length)) {
+                            messageStart = triggerPos; // + triggerWord.length + 1;
+                        }
+                    }
+                }
+            } else {
+                messageStart = 0;
+            }
+
+            if (messageStart == -1) {
+                console.debug(DEBUG_PREFIX+"message ignored, no trigger word preceding a message. Voice transcript: \""+ userMessageOriginal +"\"");
+                if (extension_settings.speech_recognition.Streaming.debug) {
+                    toastr.info(
+                        "No trigger word preceding a message. Voice transcript: \""+ userMessageOriginal +"\"",
+                        DEBUG_PREFIX+"message ignored.",
+                        { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true },
+                    );
+                }
+            }
+            else{
+                userMessageFormatted = userMessageFormatted.substring(messageStart);
+                processTranscript(userMessageFormatted);
+            }
+        }
+        else
+        {
+            console.debug(DEBUG_PREFIX+"Received empty transcript, ignored");
+        }
+    }
+    catch (error) {
+        console.debug(error);
+    }
+    finally {
+        inApiCall = false;
+    }
+}
 
 async function processTranscript(transcript) {
     try {
@@ -198,13 +279,21 @@ function loadSttProvider(provider) {
     if (sttProviderName == "Browser") {
         sttProvider.processTranscriptFunction = processTranscript;
         sttProvider.loadSettings(extension_settings.speech_recognition[sttProviderName]);
-    }
-    else {
-        sttProvider.loadSettings(extension_settings.speech_recognition[sttProviderName]);
-        loadNavigatorAudioRecording();
-
         $("#microphone_button").show();
     }
+
+    if (sttProviderName == "Vosk" | sttProviderName == "Whisper") {
+        sttProvider.loadSettings(extension_settings.speech_recognition[sttProviderName]);
+        loadNavigatorAudioRecording();
+        $("#microphone_button").show();
+    }
+    
+    if (sttProviderName == "Streaming") {
+        sttProvider.loadSettings(extension_settings.speech_recognition[sttProviderName]);
+        $("#microphone_button").off('click');
+        $("#microphone_button").hide();
+    }
+    
 }
 
 function onSttProviderChange() {
@@ -231,7 +320,7 @@ const defaultSettings = {
     messageMode: "append",
     messageMappingText: "",
     messageMapping: [],
-    messageMappingEnabled: false
+    messageMappingEnabled: false,
 }
 
 function loadSettings() {
@@ -344,8 +433,7 @@ $(document).ready(function () {
     addExtensionControls(); // No init dependencies
     loadSettings(); // Depends on Extension Controls and loadTtsProvider
     loadSttProvider(extension_settings.speech_recognition.currentProvider); // No dependencies
-
-    //const wrapper = new ModuleWorkerWrapper(moduleWorker);
-    //setInterval(wrapper.update.bind(wrapper), UPDATE_INTERVAL); // Init depends on all the things
-    //moduleWorker();
+    const wrapper = new ModuleWorkerWrapper(moduleWorker);
+    setInterval(wrapper.update.bind(wrapper), UPDATE_INTERVAL); // Init depends on all the things
+    moduleWorker();
 })
