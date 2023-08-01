@@ -334,7 +334,7 @@ async function summarizeChat(context) {
 async function summarizeChatMain(context, force) {
     try {
         // Wait for the send button to be released
-        waitUntilCondition(() => is_send_press === false, 10000, 100);
+        waitUntilCondition(() => is_send_press === false, 30000, 100);
     } catch {
         console.debug('Timeout waiting for is_send_press');
         return;
