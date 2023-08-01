@@ -544,6 +544,30 @@ async function onSelectInjectFile(e) {
     }
 }
 
+// Gets the length of character description in the current context
+function getCharacterDataLength() {
+    const context = getContext();
+    const character = context.characters[context.characterId];
+
+    if (typeof character?.data !== 'object') {
+        return 0;
+    }
+
+    let characterDataLength = 0;
+
+    for (const [key, value] of Object.entries(character.data)) {
+        if (typeof value !== 'string') {
+            continue;
+        }
+
+        if (['description', 'personality', 'scenario'].includes(key)) {
+            characterDataLength += character.data[key].length;
+        }
+    }
+
+    return characterDataLength;
+}
+
 /*
 * Automatically adjusts the extension settings for the optimal number of messages to keep and query based
 * on the chat history and a specified maximum context length.
@@ -557,6 +581,10 @@ function doAutoAdjust(chat, maxContext) {
         console.debug('CHROMADB: Mean message length is zero or NaN, aborting auto-adjust');
         return;
     }
+
+    // Adjust max context for character defs length
+    maxContext = Math.floor(maxContext - (getCharacterDataLength() / CHARACTERS_PER_TOKEN_RATIO));
+    console.debug('CHROMADB: Max context adjusted for character defs: %o', maxContext);
 
     console.debug('CHROMADB: Mean message length (characters): %o', meanMessageLength);
     // Convert to number of "tokens"
