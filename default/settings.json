@@ -14,6 +14,7 @@
     "world_info_depth": 2,
     "world_info_budget": 25,
     "world_info_recursive": true,
+    "world_info_overflow_alert": false,
     "world_info_case_sensitive": false,
     "world_info_match_whole_words": false,
     "world_info_character_strategy": 1,
@@ -27,6 +28,7 @@
         "eta_cutoff": 0,
         "typical_p": 1,
         "rep_pen": 1.1,
+        "rep_pen_range": 0,
         "no_repeat_ngram_size": 0,
         "penalty_alpha": 0,
         "num_beams": 1,
@@ -91,7 +93,7 @@
         "sort_order": "asc",
         "sort_rule": null,
         "font_scale": 1,
-        "blur_strength": 5,
+        "blur_strength": 10,
         "shadow_width": 2,
         "main_text_color": "rgba(220, 220, 210, 1)",
         "italics_text_color": "rgba(145, 145, 145, 1)",
@@ -144,7 +146,8 @@
         "persona_descriptions": {},
         "persona_description": "",
         "persona_description_position": 0,
-        "custom_stopping_strings": ""
+        "custom_stopping_strings": "",
+        "fuzzy_search": false
     },
     "extension_settings": {
         "apiUrl": "http://localhost:5100",
@@ -183,7 +186,14 @@
             "promptInterval": 10,
             "promptMinInterval": 1,
             "promptMaxInterval": 100,
-            "promptIntervalStep": 1
+            "promptIntervalStep": 1,
+            "template": "[Summary: {{summary}}]",
+            "position": 0,
+            "depth": 2,
+            "promptForceWords": 0,
+            "promptForceWordsStep": 100,
+            "promptMinForceWords": 0,
+            "promptMaxForceWords": 10000
         },
         "note": {
             "default": "",
@@ -203,7 +213,8 @@
             "ttsEnabled": false,
             "currentProvider": "System",
             "auto_generation": true,
-            "ElevenLabs": {}
+            "ElevenLabs": {},
+            "System": {}
         },
         "sd": {
             "scale_min": 1,
@@ -228,7 +239,16 @@
             "horde": true,
             "horde_nsfw": false,
             "horde_karras": true,
-            "refine_mode": false
+            "refine_mode": false,
+            "prompts": {
+                "0": "[In the next response I want you to provide only a detailed comma-delimited list of keywords and phrases which describe {{char}}. The list must include all of the following items in this order: name, species and race, gender, age, clothing, occupation, physical features and appearances. Do not include descriptions of non-visual qualities such as personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase 'full body portrait,']",
+                "1": "[Pause your roleplay and provide a detailed description of {{user}}'s physical appearance from the perspective of {{char}} in the form of a comma-delimited list of keywords and phrases. The list must include all of the following items in this order: name, species and race, gender, age, clothing, occupation, physical features and appearances. Do not include descriptions of non-visual qualities such as personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase 'full body portrait,'. Ignore the rest of the story when crafting this description. Do not roleplay as {{char}} when writing this description, and do not attempt to continue the story.]",
+                "2": "[Pause your roleplay and provide a detailed description for all of the following: a brief recap of recent events in the story, {{char}}'s appearance, and {{char}}'s surroundings. Do not roleplay while writing this description.]",
+                "3": "[Pause your roleplay and provide ONLY the last chat message string back to me verbatim. Do not write anything after the string. Do not roleplay at all in your response. Do not continue the roleplay story.]",
+                "4": "[Pause your roleplay. Your next response must be formatted as a single comma-delimited list of concise keywords.  The list will describe of the visual details included in the last chat message.\n\n    Only mention characters by using pronouns ('he','his','she','her','it','its') or neutral nouns ('male', 'the man', 'female', 'the woman').\n\n    Ignore non-visible things such as feelings, personality traits, thoughts, and spoken dialog.\n\n    Add keywords in this precise order:\n    a keyword to describe the location of the scene,\n    a keyword to mention how many characters of each gender or type are present in the scene (minimum of two characters:\n    {{user}} and {{char}}, example: '2 men ' or '1 man 1 woman ', '1 man 3 robots'),\n\n    keywords to describe the relative physical positioning of the characters to each other (if a commonly known term for the positioning is known use it instead of describing the positioning in detail) + 'POV',\n\n    a single keyword or phrase to describe the primary act taking place in the last chat message,\n\n    keywords to describe {{char}}'s physical appearance and facial expression,\n    keywords to describe {{char}}'s actions,\n    keywords to describe {{user}}'s physical appearance and actions.\n\n    If character actions involve direct physical interaction with another character, mention specifically which body parts interacting and how.\n\n    A correctly formatted example response would be:\n    '(location),(character list by gender),(primary action), (relative character position) POV, (character 1's description and actions), (character 2's description and actions)']",
+                "5": "[In the next response I want you to provide only a detailed comma-delimited list of keywords and phrases which describe {{char}}. The list must include all of the following items in this order: name, species and race, gender, age, facial features and expressions, occupation, hair and hair accessories (if any), what they are wearing on their upper body (if anything). Do not describe anything below their neck. Do not include descriptions of non-visual qualities such as personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase 'close up facial portrait,']"
+            },
+            "character_prompts": {}
         },
         "chromadb": {},
         "translate": {
@@ -237,7 +257,15 @@
             "provider": "google",
             "auto_mode": "none"
         },
-        "objective": {},
+        "objective": {
+            "customPrompts": {
+                "default": {
+                    "createTask": "Pause your roleplay and generate a list of tasks to complete an objective. Your next response must be formatted as a numbered list of plain text entries. Do not include anything but the numbered list. The list must be prioritized in the order that tasks must be completed.\n\nThe objective that you must make a numbered task list for is: [{{objective}}].\nThe tasks created should take into account the character traits of {{char}}. These tasks may or may not involve {{user}} directly. Be sure to include the objective as the final task.\n\nGiven an example objective of 'Make me a four course dinner', here is an example output:\n1. Determine what the courses will be\n2. Find recipes for each course\n3. Go shopping for supplies with {{user}}\n4. Cook the food\n5. Get {{user}} to set the table\n6. Serve the food\n7. Enjoy eating the meal with {{user}}\n    ",
+                    "checkTaskCompleted": "Pause your roleplay. Determine if this task is completed: [{{task}}].\nTo do this, examine the most recent messages. Your response must only contain either true or false, nothing other words.\nExample output:\ntrue\n    ",
+                    "currentTask": "Your current task is [{{task}}]. Balance existing roleplay with completing this task."
+                }
+            }
+        },
         "quickReply": {
             "quickReplyEnabled": false,
             "numberOfSlots": 5,
@@ -273,6 +301,14 @@
             "controls": [],
             "fluctuation": 0.1,
             "enabled": false
+        },
+        "speech_recognition": {
+            "currentProvider": "None",
+            "messageMode": "append",
+            "messageMappingText": "",
+            "messageMapping": [],
+            "messageMappingEnabled": false,
+            "None": {}
         }
     },
     "context_settings": {
@@ -296,33 +332,46 @@
             "1345561466591"
         ]
     },
-    "temp_novel": 1.11,
-    "rep_pen_novel": 1.11,
-    "rep_pen_size_novel": 320,
-    "model_novel": "euterpe-v2",
-    "preset_settings_novel": "Classic-Euterpe",
-    "streaming_novel": false,
-    "temp": 1,
-    "rep_pen": 1.1,
-    "rep_pen_range": 600,
-    "top_p": 0.95,
-    "top_a": 0,
-    "top_k": 0,
-    "typical": 1,
-    "tfs": 1,
-    "rep_pen_slope": 0,
-    "single_line": false,
-    "use_stop_sequence": false,
-    "streaming_kobold": false,
-    "sampler_order": [
-        6,
-        0,
-        1,
-        2,
-        3,
-        4,
-        5
-    ],
+    "nai_settings": {
+        "temperature": 0.63,
+        "repetition_penalty": 1.148125,
+        "repetition_penalty_range": 2048,
+        "repetition_penalty_slope": 0.09,
+        "repetition_penalty_frequency": 0,
+        "repetition_penalty_presence": 0,
+        "tail_free_sampling": 0.975,
+        "top_k": 0,
+        "top_p": 0.975,
+        "top_a": 1,
+        "typical_p": 1,
+        "min_length": 1,
+        "model_novel": "euterpe-v2",
+        "preset_settings_novel": "Classic-Euterpe",
+        "streaming_novel": false
+    },
+    "kai_settings": {
+        "temp": 1,
+        "rep_pen": 1.1,
+        "rep_pen_range": 600,
+        "top_p": 0.95,
+        "top_a": 0,
+        "top_k": 0,
+        "typical": 1,
+        "tfs": 1,
+        "rep_pen_slope": 0,
+        "single_line": false,
+        "use_stop_sequence": false,
+        "streaming_kobold": false,
+        "sampler_order": [
+            6,
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+        ]
+    },
     "preset_settings_openai": "Default",
     "temp_openai": "0.9",
     "freq_pen_openai": 0.7,
@@ -374,5 +423,8 @@
     "legacy_streaming": false,
     "chat_completion_source": "openai",
     "max_context_unlocked": false,
-    "api_url_scale": ""
+    "api_url_scale": "",
+    "show_external_models": false,
+    "proxy_password": "",
+    "assistant_prefill": ""
 }
