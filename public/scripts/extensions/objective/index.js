@@ -517,6 +517,7 @@ const defaultSettings = {
 
 // Convenient single call. Not much at the moment.
 function resetState() {
+    lastMessageWasSwipe = false
     loadSettings();
 }
 
