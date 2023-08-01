@@ -397,6 +397,16 @@ function onExpressionsShowDefaultInput() {
 }
 
 function loadLiveChar(value_name) {
+    if (!live2d_var) {
+        console.debug('live2d is disabled');
+        return;
+    }
+
+    if (!modules.includes('live2d')) {
+        console.debug('live2d module is disabled');
+        return;
+    }
+
     let url = `${getApiUrl()}/api/live2d/load?loadchar=${location.origin}/characters/${value_name}`;
     doExtrasFetch(url, {
         method: 'GET',
@@ -473,7 +483,9 @@ async function moduleWorker() {
         imgElement.src = "";
 
         //Load new char
-        loadLiveChar(context.name2 + ".png");
+        if (live2d_var) {
+            loadLiveChar(context.name2 + ".png");
+        }
     }
 
     const vnMode = isVisualNovelMode();
