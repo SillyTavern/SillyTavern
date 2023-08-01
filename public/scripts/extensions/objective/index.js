@@ -19,6 +19,7 @@ let currentChatId = ""
 let currentObjective = null
 let currentTask = null
 let checkCounter = 0
+let lastMessageWasSwipe = false
 
 
 const defaultPrompts = {
@@ -531,6 +532,7 @@ const defaultSettings = {
 
 // Convenient single call. Not much at the moment.
 function resetState() {
+    lastMessageWasSwipe = false
     loadSettings();
 }
 
@@ -798,9 +800,12 @@ jQuery(() => {
     eventSource.on(event_types.CHAT_CHANGED, () => {
         resetState()
     });
-
+    eventSource.on(event_types.MESSAGE_SWIPED, () => {
+        lastMessageWasSwipe = true
+    })
     eventSource.on(event_types.MESSAGE_RECEIVED, () => {
-        if (currentChatId == undefined || currentTask == undefined) {
+        if (currentChatId == undefined || jQuery.isEmptyObject(currentTask) || lastMessageWasSwipe) {
+            lastMessageWasSwipe = false
             return
         }
         if ($("#objective-check-frequency").val() > 0) {
