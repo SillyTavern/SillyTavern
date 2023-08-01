@@ -506,8 +506,16 @@ app.post("/generate", jsonParser, async function (request, response_generate = r
                 return response.body.pipe(response_generate);
             } else {
                 if (!response.ok) {
-                    console.log(`Kobold returned error: ${response.status} ${response.statusText} ${await response.text()}`);
-                    return response.status(response.status).send({ error: true });
+                    const errorText = await response.text();
+                    console.log(`Kobold returned error: ${response.status} ${response.statusText} ${errorText}`);
+
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        const message = errorJson?.detail?.msg || errorText;
+                        return response_generate.status(400).send({ error: { message } });
+                    } catch {
+                        return response_generate.status(400).send({ error: { message: errorText } });
+                    }
                 }
 
                 const data = await response.json();
@@ -1798,7 +1806,7 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
     request.socket.on('close', function () {
         controller.abort();
     });
-    
+
     const novelai = require('./src/novelai');
     const isNewModel = (request.body.model.includes('clio') || request.body.model.includes('kayra'));
     const isKrake = request.body.model.includes('krake');

@@ -2789,7 +2789,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     });
 
                     if (!response.ok) {
-                        throw new Error(response.status);
+                        const error = await response.json();
+                        throw error;
                     }
 
                     const data = await response.json();
@@ -2959,6 +2960,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             };
 
             function onError(exception) {
+                if (typeof exception?.error?.message === 'string') {
+                    toastr.error(exception.error.message, 'Error', { timeOut: 10000, extendedTimeOut: 20000 });
+                }
+
                 reject(exception);
                 $("#send_textarea").removeAttr('disabled');
                 is_send_press = false;
