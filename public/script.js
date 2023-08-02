@@ -603,6 +603,36 @@ function countTokensRemote(endpoint, str, padding) {
     return tokenCount + padding;
 }
 
+function getTextTokensRemote(endpoint, str) {
+    let ids = [];
+    jQuery.ajax({
+        async: false,
+        type: 'POST',
+        url: endpoint,
+        data: JSON.stringify({ text: str }),
+        dataType: "json",
+        contentType: "application/json",
+        success: function (data) {
+            ids = data.ids;
+        }
+    });
+    return ids;
+}
+
+export function getTextTokens(tokenizerType, str) {
+    switch (tokenizerType) {
+        case tokenizers.LLAMA:
+            return getTextTokensRemote('/tokenize_llama', str);
+        case tokenizers.NERD:
+            return getTextTokensRemote('/tokenize_nerdstash', str);
+        case tokenizers.NERD2:
+            return getTextTokensRemote('/tokenize_nerdstash_v2', str);
+        default:
+            console.warn("Calling getTextTokens with unsupported tokenizer type", tokenizerType);
+            return [];
+    }
+}
+
 function reloadMarkdownProcessor(render_formulas = false) {
     if (render_formulas) {
         converter = new showdown.Converter({
@@ -2689,7 +2719,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
             else if (main_api == 'novel') {
                 const this_settings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
-                generate_data = getNovelGenerationData(finalPromt, this_settings, this_amount_gen);
+                generate_data = getNovelGenerationData(finalPromt, this_settings, this_amount_gen, isImpersonate);
             }
             else if (main_api == 'openai') {
                 let [prompt, counts] = await prepareOpenAIMessages({
