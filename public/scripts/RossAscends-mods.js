@@ -750,7 +750,6 @@ export function dragElement(elmnt) {
         observer.disconnect()
         console.debug(`Saving ${elmntName} UI position`)
         saveSettingsDebounced();
-
     }
 }
 
@@ -925,16 +924,6 @@ $("document").ready(function () {
     $(document).on("click", ".character_select", function () {
         setActiveCharacter($(this).find('.avatar').attr('title'));
         setActiveGroup(null);
-
-        const chid = $(this).attr('chid');
-        eventSource.emit(
-            'characterSelected',
-            {detail: {id: chid, character: characters[chid]}})
-            .then(r => {
-                SaveLocal('ActiveChar', chid);
-                SaveLocal('ActiveGroup', null);
-            });
-
         saveSettingsDebounced();
     });
 
