@@ -60,7 +60,10 @@ const extension_settings = {
     dice: {},
     regex: [],
     tts: {},
-    sd: {},
+    sd: {
+        prompts: {},
+        character_prompts: {},
+    },
     chromadb: {},
     translate: {},
     objective: {},
@@ -70,6 +73,7 @@ const extension_settings = {
         fluctuation: 0.1,
         enabled: false,
     },
+    speech_recognition: {},
 };
 
 let modules = [];

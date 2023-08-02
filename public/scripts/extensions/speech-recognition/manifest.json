@@ -2,10 +2,13 @@
     "display_name": "Speech Recognition",
     "loading_order": 13,
     "requires": [],
-    "optional": [],
+    "optional": [
+        "vosk-speech-recognition",
+        "whisper-speech-recognition"
+    ],
     "js": "index.js",
     "css": "style.css",
-    "author": "Cohee#1207",
-    "version": "1.0.0",
+    "author": "Cohee#1207 and Keij#6799",
+    "version": "1.1.0",
     "homePage": "https://github.com/SillyTavern/SillyTavern"
 }

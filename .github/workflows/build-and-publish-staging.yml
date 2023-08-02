@@ -1,9 +1,9 @@
-name: Build and Publish Release (Main)
+name: Build and Publish Release (Staging)
 
 on:
   push:
     branches:
-      - main
+      - staging
 
 jobs:
   build_and_publish:
@@ -30,8 +30,8 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: dist/*
-        tag_name: ci-main
-        name: Continuous Release (Main)
+        tag_name: ci-staging
+        name: Continuous Release (Staging)
         prerelease: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

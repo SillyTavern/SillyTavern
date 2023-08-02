@@ -142,6 +142,8 @@ const default_settings = {
     max_context_unlocked: false,
     api_url_scale: '',
     show_external_models: false,
+    proxy_password: '',
+    assistant_prefill: '',
 };
 
 const oai_settings = {
@@ -178,6 +180,8 @@ const oai_settings = {
     max_context_unlocked: false,
     api_url_scale: '',
     show_external_models: false,
+    proxy_password: '',
+    assistant_prefill: '',
 };
 
 let openai_setting_names;
@@ -400,7 +404,8 @@ async function prepareOpenAIMessages({ systemPrompt, name2, storyString, worldIn
 
     const jailbreak = power_user.prefer_character_jailbreak && jailbreakPrompt ? jailbreakPrompt : oai_settings.jailbreak_prompt;
     if (oai_settings.jailbreak_system && jailbreak) {
-        const jailbreakMessage = { "role": "system", "content": substituteParams(jailbreak, name1, name2, oai_settings.jailbreak_prompt) };
+        const jbContent = substituteParams(jailbreak, name1, name2, oai_settings.jailbreak_prompt).replace(/\r/gm, '').trim();
+        const jailbreakMessage = { "role": "system", "content": jbContent };
         openai_msgs.push(jailbreakMessage);
 
         total_count += handler_instance.count([jailbreakMessage], true, 'jailbreak');
@@ -766,11 +771,13 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
     if (oai_settings.reverse_proxy && [chat_completion_sources.CLAUDE, chat_completion_sources.OPENAI].includes(oai_settings.chat_completion_source)) {
         validateReverseProxy();
         generate_data['reverse_proxy'] = oai_settings.reverse_proxy;
+        generate_data['proxy_password'] = oai_settings.proxy_password;
     }
 
     if (isClaude) {
         generate_data['use_claude'] = true;
         generate_data['top_k'] = parseFloat(oai_settings.top_k_openai);
+        generate_data['assistant_prefill'] = substituteParams(oai_settings.assistant_prefill);
     }
 
     if (isOpenRouter) {
@@ -1104,6 +1111,8 @@ function loadOpenAISettings(data, settings) {
     oai_settings.chat_completion_source = settings.chat_completion_source ?? default_settings.chat_completion_source;
     oai_settings.api_url_scale = settings.api_url_scale ?? default_settings.api_url_scale;
     oai_settings.show_external_models = settings.show_external_models ?? default_settings.show_external_models;
+    oai_settings.proxy_password = settings.proxy_password ?? default_settings.proxy_password;
+    oai_settings.assistant_prefill = settings.assistant_prefill ?? default_settings.assistant_prefill;
 
     if (settings.nsfw_toggle !== undefined) oai_settings.nsfw_toggle = !!settings.nsfw_toggle;
     if (settings.keep_example_dialogue !== undefined) oai_settings.keep_example_dialogue = !!settings.keep_example_dialogue;
@@ -1115,6 +1124,8 @@ function loadOpenAISettings(data, settings) {
 
     $('#stream_toggle').prop('checked', oai_settings.stream_openai);
     $('#api_url_scale').val(oai_settings.api_url_scale);
+    $('#openai_proxy_password').val(oai_settings.proxy_password);
+    $('#claude_assistant_prefill').val(oai_settings.assistant_prefill);
 
     $('#model_openai_select').val(oai_settings.openai_model);
     $(`#model_openai_select option[value="${oai_settings.openai_model}"`).attr('selected', true);
@@ -1168,9 +1179,7 @@ function loadOpenAISettings(data, settings) {
     if (settings.reverse_proxy !== undefined) oai_settings.reverse_proxy = settings.reverse_proxy;
     $('#openai_reverse_proxy').val(oai_settings.reverse_proxy);
 
-    if (oai_settings.reverse_proxy !== '') {
-        $("#ReverseProxyWarningMessage").css('display', 'block');
-    }
+    $(".reverse_proxy_warning").toggle(oai_settings.reverse_proxy !== '');
 
     $('#openai_logit_bias_preset').empty();
     for (const preset of Object.keys(oai_settings.bias_presets)) {
@@ -1211,6 +1220,7 @@ async function getStatusOpen() {
 
         let data = {
             reverse_proxy: oai_settings.reverse_proxy,
+            proxy_password: oai_settings.proxy_password,
             use_openrouter: oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER,
         };
 
@@ -1310,6 +1320,7 @@ async function saveOpenAIPreset(name, settings) {
         impersonation_prompt: settings.impersonation_prompt,
         bias_preset_selected: settings.bias_preset_selected,
         reverse_proxy: settings.reverse_proxy,
+        proxy_password: settings.proxy_password,
         legacy_streaming: settings.legacy_streaming,
         max_context_unlocked: settings.max_context_unlocked,
         nsfw_avoidance_prompt: settings.nsfw_avoidance_prompt,
@@ -1317,6 +1328,7 @@ async function saveOpenAIPreset(name, settings) {
         stream_openai: settings.stream_openai,
         api_url_scale: settings.api_url_scale,
         show_external_models: settings.show_external_models,
+        assistant_prefill: settings.assistant_prefill,
     };
 
     const savePresetSettings = await fetch(`/savepreset_openai?name=${name}`, {
@@ -1649,6 +1661,8 @@ function onSettingsPresetChange() {
         stream_openai: ['#stream_toggle', 'stream_openai', true],
         api_url_scale: ['#api_url_scale', 'api_url_scale', false],
         show_external_models: ['#openai_show_external_models', 'show_external_models', true],
+        proxy_password: ['#openai_proxy_password', 'proxy_password', false],
+        assistant_prefill: ['#claude_assistant_prefill', 'assistant_prefill', false],
     };
 
     for (const [key, [selector, setting, isCheckbox]] of Object.entries(settingsToUpdate)) {
@@ -1857,9 +1871,7 @@ async function onNewPresetClick() {
 
 function onReverseProxyInput() {
     oai_settings.reverse_proxy = $(this).val();
-    if (oai_settings.reverse_proxy == '') {
-        $("#ReverseProxyWarningMessage").css('display', 'none');
-    } else { $("#ReverseProxyWarningMessage").css('display', 'block'); }
+    $(".reverse_proxy_warning").toggle(oai_settings.reverse_proxy != '');
     saveSettingsDebounced();
 }
 
@@ -1911,7 +1923,7 @@ async function onConnectButtonClick(e) {
             await writeSecret(SECRET_KEYS.CLAUDE, api_key_claude);
         }
 
-        if (!secret_state[SECRET_KEYS.CLAUDE]) {
+        if (!secret_state[SECRET_KEYS.CLAUDE] && !oai_settings.reverse_proxy) {
             console.log('No secret key saved for Claude');
             return;
         }
@@ -1924,7 +1936,7 @@ async function onConnectButtonClick(e) {
             await writeSecret(SECRET_KEYS.OPENAI, api_key_openai);
         }
 
-        if (!secret_state[SECRET_KEYS.OPENAI]) {
+        if (!secret_state[SECRET_KEYS.OPENAI] && !oai_settings.reverse_proxy) {
             console.log('No secret key saved for OpenAI');
             return;
         }
@@ -2193,6 +2205,16 @@ $(document).ready(function () {
     $('#openai_show_external_models').on('input', function () {
         oai_settings.show_external_models = !!$(this).prop('checked');
         $('#openai_external_category').toggle(oai_settings.show_external_models);
+        saveSettingsDebounced();
+    });
+
+    $('#openai_proxy_password').on('input', function () {
+        oai_settings.proxy_password = $(this).val();
+        saveSettingsDebounced();
+    });
+
+    $('#claude_assistant_prefill').on('input', function () {
+        oai_settings.assistant_prefill = $(this).val();
         saveSettingsDebounced();
     });
 

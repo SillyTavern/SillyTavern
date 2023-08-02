@@ -8,14 +8,6 @@
     line-height: 1.2;
 }
 
-#memory_settings input[type="range"] {
-    margin-bottom: 20px;
-}
-
-#memory_settings label {
-    margin-bottom: 10px;
-}
-
 label[for="memory_frozen"] {
     display: flex;
     align-items: center;

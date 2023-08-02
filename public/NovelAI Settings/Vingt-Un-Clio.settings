@@ -5,6 +5,7 @@
   "min_length": 1,
   "top_k": 0,
   "top_p": 0.912,
+  "top_a": 1,
   "typical_p": 0.912,
   "tail_free_sampling": 0.921,
   "repetition_penalty": 1.21,
@@ -15,5 +16,7 @@
   "use_cache": false,
   "return_full_text": false,
   "prefix": "vanilla",
+  "cfg_scale": 1,
+  "phrase_rep_pen": "very_light",
   "max_context": 8192
 }

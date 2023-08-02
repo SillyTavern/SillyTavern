@@ -9,12 +9,14 @@ public/worlds/
 public/css/bg_load.css
 public/themes/
 public/OpenAI Settings/
+public/KoboldAI Settings/
+public/TextGen Settings/
 public/scripts/extensions/third-party/
 public/stats.json
 /uploads/
 *.jsonl
 /config.conf
-/docker/config.conf
+/docker/config
 .DS_Store
 public/settings.json
 /thumbnails
@@ -24,4 +26,5 @@ secrets.json
 /dist
 /backups/
 public/movingUI/
+public/QuickReplies/
 content.log

@@ -95,6 +95,7 @@
     <script type="module" src="scripts/context-template.js"></script>
     <script type="module" src="scripts/extensions.js"></script>
     <script type="module" src="scripts/authors-note.js"></script>
+    <script type="module" src="scripts/preset-manager.js"></script>
     <script type="text/javascript" src="scripts/toolcool-color-picker.js"></script>
 
     <title>SillyTavern</title>
@@ -131,15 +132,24 @@
                 <div class="scrollableInner">
                     <div class="flex-container" id="ai_response_configuration">
                         <div id="respective-presets-block" class="width100p">
+                            <input type="file" hidden data-preset-manager-file="" accept=".json, .settings">
                             <div id="kobold_api-presets">
                                 <h3><span data-i18n="kobldpresets">Kobold Presets</span>
                                     <a href="https://docs.sillytavern.app/usage/api-connections/koboldai/" class="notes-link" target="_blank">
                                         <span class="note-link-span">?</span>
                                     </a>
                                 </h3>
-                                <select id="settings_perset">
-                                    <option value="gui" data-i18n="guikoboldaisettings">GUI KoboldAI Settings</option>
-                                </select>
+
+                                <div class="preset_buttons">
+                                    <select id="settings_perset" data-preset-manager-for="kobold">
+                                        <option value="gui" data-i18n="guikoboldaisettings">GUI KoboldAI Settings</option>
+                                    </select>
+                                    <i data-preset-manager-update="kobold" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
+                                    <i data-preset-manager-new="kobold" class="menu_button fa-solid fa-plus" title="Create new preset" data-i18n="[title]Create new preset"></i>
+                                    <i data-preset-manager-import="kobold" class="menu_button fa-solid fa-upload" title="Import preset" data-i18n="[title]Import preset"></i>
+                                    <i data-preset-manager-export="kobold" class="menu_button fa-solid fa-download"title="Export preset"  data-i18n="[title]Export preset"></i>
+                                    <i data-preset-manager-delete="kobold" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
+                                </div>
                             </div>
                             <div id="novel_api-presets">
                                 <h3>
@@ -148,7 +158,7 @@
                                         <span class="note-link-span">?</span>
                                     </a>
                                 </h3>
-                                <select id="settings_perset_novel">
+                                <select id="settings_perset_novel" data-preset-manager-for="novel">
                                     <option value="gui" data-i18n="default">Default</option>
                                 </select>
                             </div>
@@ -171,8 +181,15 @@
                             <div id="textgenerationwebui_api-presets">
                                 <h3><span data-i18n="text gen webio(ooba)preset">Text Gen WebUI (ooba) presets</span>
                                 </h3>
-                                <select id="settings_preset_textgenerationwebui">
-                                </select>
+                                <div class="preset_buttons">
+                                    <select id="settings_preset_textgenerationwebui" data-preset-manager-for="textgenerationwebui">
+                                    </select>
+                                    <i data-preset-manager-update="textgenerationwebui" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
+                                    <i data-preset-manager-new="textgenerationwebui" class="menu_button fa-solid fa-plus" title="Create new preset" data-i18n="[title]Create new preset"></i>
+                                    <i data-preset-manager-import="textgenerationwebui" class="menu_button fa-solid fa-upload" title="Import preset" data-i18n="[title]Import preset"></i>
+                                    <i data-preset-manager-export="textgenerationwebui" class="menu_button fa-solid fa-download"title="Export preset"  data-i18n="[title]Export preset"></i>
+                                    <i data-preset-manager-delete="textgenerationwebui" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
+                                </div>
                             </div>
                             <hr>
                         </div>
@@ -236,7 +253,7 @@
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
-                                            <input type="range" id="temp" name="volume" min="0.1" max="2.0" step="0.01">
+                                            <input type="range" id="temp" name="volume" min="0.0" max="2.0" step="0.01">
                                         </div>
                                         <div class="range-block-counter">
                                             <div contenteditable="true" data-for="temp" id="temp_counter">
@@ -529,6 +546,19 @@
                                     </div>
                                 </div>
                                 <div class="range-block" data-source="openai,claude">
+                                    <div class="range-block-title justifyLeft" data-i18n="Proxy Password">
+                                        Proxy Password
+                                    </div>
+                                    <div class="toggle-description justifyLeft">
+                                        <span data-i18n="Will be used as a password for the proxy instead of API key.">
+                                            Will be used as a password for the proxy instead of API key.<br>
+                                        </span>
+                                    </div>
+                                    <div class="wide100p">
+                                        <input id="openai_proxy_password" type="text" class="text_pole" placeholder="" maxlength="200" />
+                                    </div>
+                                </div>
+                                <div class="range-block" data-source="openai,claude">
                                     <div class="range-block-title justifyLeft">
                                         <label for="legacy_streaming" class="checkbox_label">
                                             <input id="legacy_streaming" type="checkbox" />
@@ -777,6 +807,111 @@
                                 </div>
                             </div>
                             <div id="novel_api-settings">
+                                <div class="range-block">
+                                    <div class="range-block-title" data-i18n="Top P">
+                                        Top P
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="top_p_novel" name="volume" min="0" max="1" step="0.01">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="top_p_novel" id="top_p_counter_novel">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title" data-i18n="Top A">
+                                        Top A
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="top_a_novel" name="volume" min="0" max="1" step="0.01">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="top_a_novel" id="top_a_counter_novel">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title" data-i18n="Top K">
+                                        Top K
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="top_k_novel" name="volume" min="0" max="300" step="1">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="top_k_novel" id="top_k_counter_novel">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title" data-i18n="Typical P">
+                                        Typical P
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="typical_p_novel" name="volume" min="0" max="1" step="0.01">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="typical_p_novel" id="typical_p_counter_novel">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title" data-i18n="CFG Scale">
+                                        CFG Scale
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="cfg_scale_novel" name="volume" min="1" max="3" step="0.05">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="cfg_scale_novel" id="cfg_scale_counter_novel">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title" data-i18n="Phrase Repetition Penalty">
+                                        Phrase Repetition Penalty
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="phrase_rep_pen_novel" name="volume" min="0" max="5" step="1">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="phrase_rep_pen_novel" id="phrase_rep_pen_counter_novel">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title" data-i18n="Min Length">
+                                        Min Length
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="min_length_novel" name="volume" min="0" max="1024" step="1">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="min_length_novel" id="min_length_counter_novel">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             <div id="textgenerationwebui_api-settings">
                                 <div class="range-block">
@@ -1184,6 +1319,14 @@
                                         <textarea id="jailbreak_prompt_textarea" class="text_pole textarea_compact" name="jailbreak_prompt" rows="6" placeholder=""></textarea>
                                     </div>
                                 </div>
+                                <div class="range-block" data-source="claude">
+                                    <div class="range-block-title" data-i18n="Assistant Prefill">
+                                        Assistant Prefill
+                                    </div>
+                                    <div class="wide100p">
+                                        <input type="text" id="claude_assistant_prefill" class="text_pole" placeholder="Start Claude's answer with...">
+                                    </div>
+                                </div>
 
                                 <div class="inline-drawer wide100p">
                                     <div class="inline-drawer-toggle inline-drawer-header margin-bot-10px">
@@ -1387,6 +1530,7 @@
                                 <option value="euterpe-v2">Euterpe</option>
                                 <option value="krake-v2">Krake</option>
                                 <option value="clio-v1">Clio</option>
+                                <option value="kayra-v1">Kayra</option>
                             </select>
                         </form>
                         <div id="online_status3">
@@ -1457,6 +1601,11 @@
                             <div class="flex-container">
                                 <input id="api_key_openai" name="api_key_openai" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
                                 <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_openai"></div>
+                            </div>
+                            <div id="ReverseProxyWarningMessage2" class="reverse_proxy_warning">
+                                <b data-i18n="Use Proxy password field instead. This input will be ignored.">
+                                    Use "Proxy password" field instead. This input will be ignored.
+                                </b>
                             </div>
                             <div data-for="api_key_openai" class="neutral_warning">
                                 For privacy reasons, your API key will be hidden after you reload the page.
@@ -1722,7 +1871,7 @@
                                         <span data-i18n="Input Sequence">Input Sequence</span>
                                     </label>
                                     <div>
-                                        <input id="instruct_input_sequence" class="text_pole textarea_compact" type="text" maxlength="100" />
+                                        <input id="instruct_input_sequence" class="text_pole textarea_compact" type="text" maxlength="500" />
                                     </div>
                                 </div>
                                 <div class="flex1">
@@ -1730,7 +1879,7 @@
                                         <span data-i18n="Output Sequence">Output Sequence</span>
                                     </label>
                                     <div>
-                                        <input id="instruct_output_sequence" class="text_pole wide100p textarea_compact" type="text" maxlength="100" />
+                                        <input id="instruct_output_sequence" class="text_pole wide100p textarea_compact" type="text" maxlength="500" />
                                     </div>
                                 </div>
                             </div>
@@ -1740,7 +1889,7 @@
                                         <small data-i18n="System Sequence">System Sequence</small>
                                     </label>
                                     <div>
-                                        <input id="instruct_system_sequence" class="text_pole textarea_compact" type="text" maxlength="100" />
+                                        <input id="instruct_system_sequence" class="text_pole textarea_compact" type="text" maxlength="500" />
                                     </div>
                                 </div>
                                 <div class="flex1">
@@ -1748,7 +1897,7 @@
                                         <small data-i18n="Stop Sequence">Stop Sequence</small>
                                     </label>
                                     <div>
-                                        <input id="instruct_stop_sequence" class="text_pole wide100p textarea_compact" type="text" maxlength="100" />
+                                        <input id="instruct_stop_sequence" class="text_pole wide100p textarea_compact" type="text" maxlength="500" />
                                     </div>
                                 </div>
                                 <div class="flex1">
@@ -1756,7 +1905,7 @@
                                         <small data-i18n="Separator">Separator</small>
                                     </label>
                                     <div>
-                                        <input id="instruct_separator_sequence" class="text_pole wide100p textarea_compact" type="text" maxlength="100" />
+                                        <input id="instruct_separator_sequence" class="text_pole wide100p textarea_compact" type="text" maxlength="500" />
                                     </div>
                                 </div>
                             </div>
@@ -1775,8 +1924,8 @@
                                 <option value="1">GPT-3 (OpenAI)</option>
                                 <option value="2">GPT-3 (Alternative / Classic)</option>
                                 <option value="3">Sentencepiece (LLaMA)</option>
-                                <option value="4">NerdStash (NovelAI Krake)</option>
-                                <option value="5">NerdStash v2 (NovelAI Clio)</option>
+                                <option value="4">NerdStash (NovelAI Clio)</option>
+                                <option value="5">NerdStash v2 (NovelAI Kayra)</option>
                                 <option value="6">API (WebUI)</option>
                             </select>
                         </div>
@@ -1996,6 +2145,14 @@
                                     Match whole words
                                 </small>
                             </label>
+                            <label title="Alert if your world info is greater than the allocated budget."
+                            data-i18n="[title]Alert if your world info is greater than the allocated budget."
+                            class="checkbox_label">
+                            <input id="world_info_overflow_alert" type="checkbox" />
+                            <small data-i18n="Alert On Overflow">
+                                Alert On Overflow
+                            </small>
+                        </label>
                         </div>
                     </div>
 
@@ -2280,6 +2437,10 @@
                                 <input id="swipes-checkbox" type="checkbox" />
                                 <span data-i18n="Swipes">Swipes</span>
                             </label>
+                            <label for="fuzzy_search_checkbox">
+                                <input id="fuzzy_search_checkbox" type="checkbox" />
+                                <span data-i18n="Advanced Character Search">Advanced Character Search</span>
+                            </label>
                             <label for="prefer_character_prompt" title="If checked and the character card contains a prompt override (System Prompt), use that instead." data-i18n="[title]If checked and the character card contains a prompt override (System Prompt), use that instead." class="checkbox_label">
                                 <input id="prefer_character_prompt" type="checkbox" />
                                 <span data-i18n="Prefer Character Card Prompt">Prefer Char. Prompt</span>
@@ -2340,7 +2501,7 @@
                                 <span data-i18n="Confirm message deletion">Confirm message deletion</span>
                             </label>
                             <label for="spoiler_free_mode"><input id="spoiler_free_mode" type="checkbox" />
-                                <span data-i18n="Spoiler Free Mode">Spolier Free Mode</span>
+                                <span data-i18n="Spoiler Free Mode">Spoiler Free Mode</span>
                             </label>
 
                             <div class="inline-drawer wide100p flexFlowColumn">
@@ -2780,6 +2941,8 @@
                                 <option data-field="date_last_chat" data-order="desc" data-i18n="Recent">Recent</option>
                                 <option data-field="chat_size" data-order="desc" data-i18n="Most chats">Most chats</option>
                                 <option data-field="chat_size" data-order="asc" data-i18n="Least chats">Least chats</option>
+                                <option data-field="data_size" data-order="desc" data-i18n="Most tokens">Most tokens</option>
+                                <option data-field="data_size" data-order="asc" data-i18n="Least tokens">Least tokens</option>
                                 <option data-field="name" data-order="random" data-i18n="Random">Random</option>
                             </select>
                         </form>
@@ -3300,7 +3463,8 @@
             <div class="flex-container wide100pLess70px character_select_container">
                 <div class="wide100p character_name_block">
                     <span class="ch_name"></span>
-                    <i class="ch_avatar_url"></i>
+                    <small class="character_version"></small>
+                    <small class="ch_avatar_url"></small>
                 </div>
                 <i class="ch_fav_icon fa-solid fa-star"></i>
                 <input class="ch_fav" value="" hidden />
@@ -3618,6 +3782,14 @@
     <!-- popups live outside sheld to avoid blur conflicts -->
     <div id="options" class="font-family-reset" style="display: none;">
         <div class="options-content">
+            <a id="option_close_chat">
+                <i class="fa-lg fa-solid fa-times"></i>
+                <span data-i18n="Close chat">Close chat</span>
+            </a>
+            <a id="option_settings">
+                <i class="fa-lg fa-solid fa-cog"></i>
+                <span data-i18n="Toggle Panels">Toggle Panels</span>
+            </a>
             <a id="option_toggle_AN">
                 <i class="fa-lg fa-solid fa-note-sticky"></i>
                 <span data-i18n="Author's Note">Author's Note</span>
