@@ -1,7 +1,10 @@
 import {
     getRequestHeaders,
     saveSettingsDebounced,
+    getStoppingStrings,
+    getTextTokens
 } from "../script.js";
+import { tokenizers } from "./power-user.js";
 
 export {
     nai_settings,
@@ -245,8 +248,17 @@ const sliders = [
     },
 ];
 
-export function getNovelGenerationData(finalPromt, this_settings, this_amount_gen) {
-    const isNewModel = (nai_settings.model_novel.includes('clio') || nai_settings.model_novel.includes('kayra'));
+export function getNovelGenerationData(finalPromt, this_settings, this_amount_gen, isImpersonate) {
+    const clio = nai_settings.model_novel.includes('clio');
+    const kayra = nai_settings.model_novel.includes('kayra');
+    const isNewModel = clio || kayra;
+
+    const tokenizerType = kayra ? tokenizers.NERD2 : (clio ? tokenizers.NERD : tokenizers.NONE);
+    const stopSequences = (tokenizerType !== tokenizers.NONE)
+        ? getStoppingStrings(isImpersonate, false)
+            .map(t => getTextTokens(tokenizerType, t))
+        : undefined;
+
     return {
         "input": finalPromt,
         "model": nai_settings.model_novel,
@@ -268,6 +280,7 @@ export function getNovelGenerationData(finalPromt, this_settings, this_amount_ge
         "cfg_uc": "",
         "phrase_rep_pen": nai_settings.phrase_rep_pen,
         //"stop_sequences": {{187}},
+        "stop_sequences": stopSequences,
         //bad_words_ids = {{50256}, {0}, {1}};
         "generate_until_sentence": true,
         "use_cache": false,
