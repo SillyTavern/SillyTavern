@@ -2489,7 +2489,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     }
 
                     if (i === arrMes.length - 1 && !item.trim().startsWith(name1 + ":")) {
-                        if (textareaText == "") {
+                        //if (textareaText == "") {
                             // Cohee: I think this was added to allow the model to continue
                             // where it left off by removing the trailing newline at the end
                             // that was added by chat2 generator. This causes problems with
@@ -2497,7 +2497,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                             // removing a newline ONLY at the end of the string if it exists.
                             item = item.replace(/\n?$/, '');
                             //item = item.substr(0, item.length - 1);
-                        }
+                        //}
                     }
                     if (is_pygmalion && !isInstruct) {
                         if (item.trim().startsWith(name1)) {
