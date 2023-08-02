@@ -3296,11 +3296,11 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
 
         switch (error?.response?.status) {
             case 402:
-                message = 'Credit limit reached';
+                message = error?.response?.data?.error?.message || 'Credit limit reached';
                 console.log(message);
                 break;
             case 403:
-                message = 'API key disabled or exhausted';
+                message = error?.response?.data?.error?.message || 'API key disabled or exhausted';
                 console.log(message);
                 break;
             case 451:
