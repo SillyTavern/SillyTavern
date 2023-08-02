@@ -178,13 +178,19 @@ async function loadSentencepieceTokenizer(modelPath) {
 async function countSentencepieceTokens(spp, text) {
     // Fallback to strlen estimation
     if (!spp) {
-        return Math.ceil(text.length / CHARS_PER_TOKEN);
+        return {
+            ids: [],
+            count: Math.ceil(text.length / CHARS_PER_TOKEN)
+        };
     }
 
-    let cleaned = cleanText(text);
+    let cleaned = text; // cleanText(text); <-- cleaning text can result in an incorrect tokenization
 
     let ids = spp.encodeIds(cleaned);
-    return ids.length;
+    return {
+        ids,
+        count: ids.length
+    };
 }
 
 async function loadClaudeTokenizer(modelPath) {
@@ -1832,6 +1838,7 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
             "cfg_scale": request.body.cfg_scale,
             "cfg_uc": request.body.cfg_uc,
             "phrase_rep_pen": request.body.phrase_rep_pen,
+            "stop_sequences": request.body.stop_sequences,
             //"stop_sequences": {{187}},
             "bad_words_ids": isNewModel ? novelai.badWordsList : (isKrake ? novelai.krakeBadWordsList : novelai.euterpeBadWordsList),
             "logit_bias_exp": isNewModel ? novelai.logitBiasExp : null,
@@ -3427,8 +3434,8 @@ function createTokenizationHandler(getTokenizerFn) {
 
         const text = request.body.text || '';
         const tokenizer = getTokenizerFn();
-        const count = await countSentencepieceTokens(tokenizer, text);
-        return response.send({ count });
+        const { ids, count } = await countSentencepieceTokens(tokenizer, text);
+        return response.send({ ids, count });
     };
 }
 

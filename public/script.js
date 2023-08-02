@@ -603,6 +603,36 @@ function countTokensRemote(endpoint, str, padding) {
     return tokenCount + padding;
 }
 
+function getTextTokensRemote(endpoint, str) {
+    let ids = [];
+    jQuery.ajax({
+        async: false,
+        type: 'POST',
+        url: endpoint,
+        data: JSON.stringify({ text: str }),
+        dataType: "json",
+        contentType: "application/json",
+        success: function (data) {
+            ids = data.ids;
+        }
+    });
+    return ids;
+}
+
+export function getTextTokens(tokenizerType, str) {
+    switch (tokenizerType) {
+        case tokenizers.LLAMA:
+            return getTextTokensRemote('/tokenize_llama', str);
+        case tokenizers.NERD:
+            return getTextTokensRemote('/tokenize_nerdstash', str);
+        case tokenizers.NERD2:
+            return getTextTokensRemote('/tokenize_nerdstash_v2', str);
+        default:
+            console.warn("Calling getTextTokens with unsupported tokenizer type", tokenizerType);
+            return [];
+    }
+}
+
 function reloadMarkdownProcessor(render_formulas = false) {
     if (render_formulas) {
         converter = new showdown.Converter({
@@ -2489,7 +2519,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     }
 
                     if (i === arrMes.length - 1 && !item.trim().startsWith(name1 + ":")) {
-                        if (textareaText == "") {
+                        //if (textareaText == "") {
                             // Cohee: I think this was added to allow the model to continue
                             // where it left off by removing the trailing newline at the end
                             // that was added by chat2 generator. This causes problems with
@@ -2497,7 +2527,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                             // removing a newline ONLY at the end of the string if it exists.
                             item = item.replace(/\n?$/, '');
                             //item = item.substr(0, item.length - 1);
-                        }
+                        //}
                     }
                     if (is_pygmalion && !isInstruct) {
                         if (item.trim().startsWith(name1)) {
@@ -2689,7 +2719,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
             else if (main_api == 'novel') {
                 const this_settings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
-                generate_data = getNovelGenerationData(finalPromt, this_settings, this_amount_gen);
+                generate_data = getNovelGenerationData(finalPromt, this_settings, this_amount_gen, isImpersonate);
             }
             else if (main_api == 'openai') {
                 let [prompt, counts] = await prepareOpenAIMessages({
