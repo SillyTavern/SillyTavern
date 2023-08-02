@@ -1501,30 +1501,55 @@
                         </div>
                     </div>
                     <div id="textgenerationwebui_api" style="display: none;position: relative;">
-                        <div class="flex-container">
-                            <a href="https://github.com/oobabooga/text-generation-webui" target="_blank">
-                                oobabooga/text-generation-webui
-                            </a>
-                            <span data-i18n="Make sure you run it with">
-                                Make sure you run it with <tt>--api</tt> flag
-                            </span>
-                        </div>
-                        <div>
-                            <div class="flex-container flexFlowColumn">
-                                <div class="flex1">
-                                    <h4 data-i18n="Blocking API url">Blocking API url</h4>
-                                    <small>Example: http://127.0.0.1:5000/</small>
-                                    <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url" class="text_pole wide100p" maxlength="500" value="" autocomplete="off">
-                                </div>
-                                <div class="flex1">
-                                    <h4 data-i18n="Streaming API url">Streaming API url</h4>
-                                    <small>Example: ws://127.0.0.1:5005/api/v1/stream</small>
-                                    <input id="streaming_url_textgenerationwebui" type="text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off">
+                        <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                            If you are using: 
+                            <div class="flex-container" style="margin-left:20px;">
+                                <a href="https://github.com/oobabooga/text-generation-webui" target="_blank">
+                                    oobabooga/text-generation-webui
+                                </a>, 
+                                <span data-i18n="Make sure you run it with">
+                                    Make sure you run it with <tt>--api</tt> flag
+                                </span>
+                            </div>
+                            <div class="flex-container" style="margin-left:20px;">
+                                <a href="https://mancer.tech/" target="_blank">
+                                    Mancer AI
+                                </a>, 
+                                <label class="checkbox_label" for="use-mancer-api-checkbox">
+                                    <span data-i18n="Use API key (Only required for Mancer)">
+                                        Click this box (and add your API key!):
+                                    </span>
+                                    <input id="use-mancer-api-checkbox" type="checkbox" />
+                                </label>
+                            </div>
+                            <div id="mancer-api-ui" style="display:none;">
+                                <h4 data-i18n="Mancer API key">Mancer API key</h4>
+                                <div class="flex-container">
+                                    <input id="api_key_mancer" name="api_key_mancer" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
+                                    <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_mancer">
+                                    </div>
                                 </div>
                             </div>
-                            <input id="api_button_textgenerationwebui" class="menu_button" type="submit" value="Connect">
-                            <div id="api_loading_textgenerationwebui" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
-                        </div>
+                            <div>
+                                <div class="flex-container flexFlowColumn">
+                                    <div data-for="api_key_mancer" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
+                                        For privacy reasons, your API key will be hidden after you reload the page.
+                                    </div>
+                                    <div class="flex1">
+                                        <h4 data-i18n="Blocking API url">Blocking API url</h4>
+                                        <small>Example: http://127.0.0.1:5000/</small>
+                                        <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url" class="text_pole wide100p" maxlength="500" value="" autocomplete="off">
+                                    </div>
+                                    <div class="flex1">
+                                        <h4 data-i18n="Streaming API url">Streaming API url</h4>
+                                        <small>Example: ws://127.0.0.1:5005/api/v1/stream</small>
+                                        <input id="streaming_url_textgenerationwebui" type="text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off">
+                                    </div>
+                                </div>
+                                <input id="api_button_textgenerationwebui" class="menu_button" type="submit" value="Connect">
+                                <div id="api_loading_textgenerationwebui" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
+                            </div>
+                        </form>
                         <div class="online_status4">
                             <div class="online_status_indicator4"></div>
                             <div class="online_status_text4" data-i18n="Not connected">Not connected</div>
