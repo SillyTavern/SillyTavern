@@ -4,7 +4,6 @@
     "temp": 0,
     "rep_pen": 1.1,
     "rep_pen_range": 4096,
-    "can_use_streaming": true,
     "streaming_kobold": true,
     "top_p": 0,
     "top_a": 0,
