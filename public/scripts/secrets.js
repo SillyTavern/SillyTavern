@@ -2,6 +2,7 @@ import { callPopup, getRequestHeaders } from "../script.js";
 
 export const SECRET_KEYS = {
     HORDE: 'api_key_horde',
+    MANCER: 'api_key_mancer',
     OPENAI: 'api_key_openai',
     NOVEL: 'api_key_novel',
     CLAUDE: 'api_key_claude',
@@ -11,6 +12,7 @@ export const SECRET_KEYS = {
 
 const INPUT_MAP = {
     [SECRET_KEYS.HORDE]: '#horde_api_key',
+    [SECRET_KEYS.MANCER]: '#api_key_mancer',
     [SECRET_KEYS.OPENAI]: '#api_key_openai',
     [SECRET_KEYS.NOVEL]: '#api_key_novel',
     [SECRET_KEYS.CLAUDE]: '#api_key_claude',
