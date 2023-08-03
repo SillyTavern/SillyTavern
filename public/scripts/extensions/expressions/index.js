@@ -449,7 +449,7 @@ async function loadLiveChar() {
 
 function handleImageChange() {
     const imgElement = document.querySelector('img#expression-image.expression');
-    
+
     if (!imgElement) {
         console.log("Cannot find addExpressionImage()");
         return;
@@ -459,6 +459,7 @@ function handleImageChange() {
         previousSrc = imgElement.src;
         // Method get IP of endpoint
         const live2dResultFeedSrc = `${getApiUrl()}/api/live2d/result_feed`;
+        $('#expression-holder').css({ display: '' });
         if (imgElement.src !== live2dResultFeedSrc) {
             const expressionImageElement = document.querySelector('.expression_list_image');
 
@@ -922,7 +923,7 @@ async function setExpression(character, expression, force) {
             if (imgElement) {
                 console.log("setting value");
                 imgElement.src = getApiUrl() + '/api/live2d/result_feed';
-            }     
+            }
     }
 }
 
