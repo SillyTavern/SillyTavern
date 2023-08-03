@@ -657,8 +657,13 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
             console.log(data);
             return response_generate.send(data);
         } catch (error) {
+            retval = { error: true, status: error.status, response: error.statusText };
             console.log(error);
-            return response_generate.send({ error: true });
+            try {
+                retval.response = await error.json();
+                retval.response = retval.response.result;
+            } catch {}
+            return response_generate.send(retval);
         }
     }
 });
@@ -747,18 +752,18 @@ app.post("/getstatus", jsonParser, async function (request, response_getstatus =
             };
         }
     }
-    client.get(url, args, function (data, response) {
+    client.get(url, args, async function (data, response) {
         if (typeof data !== 'object') {
             data = {};
         }
         if (response.statusCode == 200) {
             data.version = version;
             data.koboldVersion = koboldVersion;
-            if (data.result != "ReadOnly") {
-            } else {
+            if (data.result == "ReadOnly") {
                 data.result = "no_connection";
             }
         } else {
+            data.response = data.result;
             data.result = "no_connection";
         }
         response_getstatus.send(data);

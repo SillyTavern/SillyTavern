@@ -885,6 +885,11 @@ async function getStatus() {
                     kai_settings.can_use_streaming = canUseKoboldStreaming(data.koboldVersion);
                 }
 
+                // We didn't get a 200 status code, but the endpoint has an explanation. Which means it DID connect, but I digress.
+                if (online_status == "no_connection" && data.response) {
+                    toastr.error(data.response, "API Error", {timeOut: 5000, preventDuplicates:true})
+                }
+
                 //console.log(online_status);
                 resultCheckStatus();
                 if (online_status !== "no_connection") {
@@ -2984,9 +2989,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
                     if (main_api == 'textgenerationwebui' && api_use_mancer_webui) {
                         const errorText = `<h3>Inferencer endpoint is unhappy!</h3>
-                        Check you have credits available on your
-                        <a href="https://mancer.tech/dashboard.html" target="_blank">Mancer account</a>.<br>
-                        If you have sufficient credits, please try again later.`;
+                        Returned status <tt>${data.status}</tt> with the reason:<br/>
+                        ${data.response}`;
                         callPopup(errorText, 'text');
                     }
                 }
