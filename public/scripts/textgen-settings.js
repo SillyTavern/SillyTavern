@@ -10,6 +10,7 @@ export {
     textgenerationwebui_settings,
     loadTextGenSettings,
     generateTextGenWithStreaming,
+    formatTextGenURL,
 }
 
 const textgenerationwebui_settings = {
@@ -92,6 +93,16 @@ function selectPreset(name) {
     }
     setGenerationParamsFromPreset(preset);
     saveSettingsDebounced();
+}
+
+function formatTextGenURL(value) {
+    try {
+        const url = new URL(value);
+        if (url.pathname.endsWith('/api')) {
+            return url.toString();
+        }
+    } catch { } // Try and Catch both fall through to the same return.
+    return null;
 }
 
 function convertPresets(presets) {

@@ -146,6 +146,14 @@ let response_getstatus;
 let first_run = true;
 
 
+
+function get_mancer_headers() {
+    const api_key_mancer = readSecret(SECRET_KEYS.MANCER);
+    return api_key_mancer ? { "X-API-KEY": api_key_mancer} : {};
+}
+
+
+
 //RossAscends: Added function to format dates used in files and chat timestamps to a humanized format.
 //Mostly I wanted this to be for file names, but couldn't figure out exactly where the filename save code was as everything seemed to be connected.
 //During testing, this performs the same as previous date.now() structure.
@@ -640,13 +648,22 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
             signal: controller.signal,
         };
 
+        if (request.body.use_mancer) {
+            args.headers = Object.assign(args.headers, get_mancer_headers());
+        }
+
         try {
             const data = await postAsync(api_server + "/v1/generate", args);
             console.log(data);
             return response_generate.send(data);
         } catch (error) {
+            retval = { error: true, status: error.status, response: error.statusText };
             console.log(error);
-            return response_generate.send({ error: true });
+            try {
+                retval.response = await error.json();
+                retval.response = retval.response.result;
+            } catch {}
+            return response_generate.send(retval);
         }
     }
 });
@@ -710,6 +727,11 @@ app.post("/getstatus", jsonParser, async function (request, response_getstatus =
     var args = {
         headers: { "Content-Type": "application/json" }
     };
+
+    if (main_api == 'textgenerationwebui' && request.body.use_mancer) {
+        args.headers = Object.assign(args.headers, get_mancer_headers());
+    }
+
     var url = api_server + "/v1/model";
     let version = '';
     let koboldVersion = {};
@@ -730,18 +752,18 @@ app.post("/getstatus", jsonParser, async function (request, response_getstatus =
             };
         }
     }
-    client.get(url, args, function (data, response) {
+    client.get(url, args, async function (data, response) {
         if (typeof data !== 'object') {
             data = {};
         }
         if (response.statusCode == 200) {
             data.version = version;
             data.koboldVersion = koboldVersion;
-            if (data.result != "ReadOnly") {
-            } else {
+            if (data.result == "ReadOnly") {
                 data.result = "no_connection";
             }
         } else {
+            data.response = data.result;
             data.result = "no_connection";
         }
         response_getstatus.send(data);
@@ -3453,6 +3475,10 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
             body: JSON.stringify({ "prompt": text }),
             headers: { "Content-Type": "application/json" }
         };
+        
+        if (main_api == 'textgenerationwebui' && request.body.use_mancer) {
+            args.headers = Object.assign(args.headers, get_mancer_headers());
+        }
 
         const data = await postAsync(api_server + "/v1/token-count", args);
         console.log(data);
@@ -3659,6 +3685,7 @@ const SECRETS_FILE = './secrets.json';
 const SETTINGS_FILE = './public/settings.json';
 const SECRET_KEYS = {
     HORDE: 'api_key_horde',
+    MANCER: 'api_key_mancer',
     OPENAI: 'api_key_openai',
     NOVEL: 'api_key_novel',
     CLAUDE: 'api_key_claude',

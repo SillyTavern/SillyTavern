@@ -17,6 +17,7 @@ import {
     loadTextGenSettings,
     generateTextGenWithStreaming,
     getTextGenGenerationData,
+    formatTextGenURL,
 } from "./scripts/textgen-settings.js";
 
 import {
@@ -721,6 +722,7 @@ let is_get_status = false;
 let is_get_status_novel = false;
 let is_api_button_press = false;
 let is_api_button_press_novel = false;
+let api_use_mancer_webui = false;
 
 let is_send_press = false; //Send generation
 let add_mes_without_animation = false;
@@ -854,9 +856,9 @@ async function getStatus() {
             type: "POST", //
             url: "/getstatus", //
             data: JSON.stringify({
-                api_server:
-                    main_api == "kobold" ? api_server : api_server_textgenerationwebui,
+                api_server: main_api == "kobold" ? api_server : api_server_textgenerationwebui,
                 main_api: main_api,
+                use_mancer: main_api == "textgenerationwebui" ? api_use_mancer_webui : false,
             }),
             beforeSend: function () { },
             cache: false,
@@ -881,6 +883,11 @@ async function getStatus() {
                 if (main_api === "kobold" || main_api === "koboldhorde") {
                     kai_settings.use_stop_sequence = canUseKoboldStopSequence(data.version);
                     kai_settings.can_use_streaming = canUseKoboldStreaming(data.koboldVersion);
+                }
+
+                // We didn't get a 200 status code, but the endpoint has an explanation. Which means it DID connect, but I digress.
+                if (online_status == "no_connection" && data.response) {
+                    toastr.error(data.response, "API Error", {timeOut: 5000, preventDuplicates:true})
                 }
 
                 //console.log(online_status);
@@ -2716,6 +2723,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
             else if (main_api == 'textgenerationwebui') {
                 generate_data = getTextGenGenerationData(finalPromt, this_amount_gen, isImpersonate);
+                generate_data.use_mancer = api_use_mancer_webui;
             }
             else if (main_api == 'novel') {
                 const this_settings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
@@ -2978,6 +2986,13 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     activateSendButtons();
                     //console.log('runGenerate calling showSwipeBtns');
                     showSwipeButtons();
+
+                    if (main_api == 'textgenerationwebui' && api_use_mancer_webui) {
+                        const errorText = `<h3>Inferencer endpoint is unhappy!</h3>
+                        Returned status <tt>${data.status}</tt> with the reason:<br/>
+                        ${data.response}`;
+                        callPopup(errorText, 'text');
+                    }
                 }
                 console.debug('/savechat called by /Generate');
 
@@ -5088,11 +5103,13 @@ async function getSettings(type) {
 
         setWorldInfoSettings(settings, data);
 
-        api_server_textgenerationwebui =
-            settings.api_server_textgenerationwebui;
+        api_server_textgenerationwebui = settings.api_server_textgenerationwebui;
         $("#textgenerationwebui_api_url_text").val(
             api_server_textgenerationwebui
         );
+        api_use_mancer_webui = settings.api_use_mancer_webui
+        $('#use-mancer-api-checkbox').prop("checked", api_use_mancer_webui);
+        $('#use-mancer-api-checkbox').trigger("change");
 
         selected_button = settings.selected_button;
 
@@ -5126,6 +5143,7 @@ async function saveSettings(type) {
             active_group: active_group,
             api_server: api_server,
             api_server_textgenerationwebui: api_server_textgenerationwebui,
+            api_use_mancer_webui: api_use_mancer_webui,
             preset_settings: preset_settings,
             user_avatar: user_avatar,
             amount_gen: amount_gen,
@@ -7703,14 +7721,26 @@ $(document).ready(function () {
         }
     });
 
-    $("#api_button_textgenerationwebui").click(function (e) {
+    $("#use-mancer-api-checkbox").on("change", function (e) {
+        const enabled = $("#use-mancer-api-checkbox").prop("checked");
+        $("#mancer-api-ui").toggle(enabled);
+        api_use_mancer_webui = enabled;
+        saveSettingsDebounced(); 
+        getStatus();
+    });
+
+    $("#api_button_textgenerationwebui").click(async function (e) {
         e.stopPropagation();
         if ($("#textgenerationwebui_api_url_text").val() != "") {
-            let value = formatKoboldUrl($("#textgenerationwebui_api_url_text").val().trim());
-
+            let value = formatTextGenURL($("#textgenerationwebui_api_url_text").val().trim())
             if (!value) {
-                callPopup('Please enter a valid URL.', 'text');
+                callPopup('Please enter a valid URL.<br/>WebUI URLs should end with <tt>/api</tt>', 'text');
                 return;
+            }
+
+            const mancer_key = $("#api_key_mancer").val().trim();
+            if (mancer_key.length) {
+                await writeSecret(SECRET_KEYS.MANCER, mancer_key);
             }
 
             $("#textgenerationwebui_api_url_text").val(value);

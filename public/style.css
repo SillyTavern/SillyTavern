@@ -4422,6 +4422,10 @@ toolcool-color-picker {
     width: 50px;
 }
 
+.indent20p {
+    margin-left: 20px;
+}
+
 .wi-enter-footer-text {
     font-size: calc(var(--mainFontSize) * 0.8);
     color: var(--SmartThemeBodyColor);
