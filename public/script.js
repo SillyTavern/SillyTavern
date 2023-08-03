@@ -688,6 +688,7 @@ let is_get_status = false;
 let is_get_status_novel = false;
 let is_api_button_press = false;
 let is_api_button_press_novel = false;
+let api_use_mancer_webui = false;
 
 let is_send_press = false; //Send generation
 let add_mes_without_animation = false;
@@ -810,9 +811,9 @@ async function getStatus() {
             type: "POST", //
             url: "/getstatus", //
             data: JSON.stringify({
-                api_server:
-                    main_api == "kobold" ? api_server : api_server_textgenerationwebui,
+                api_server: main_api == "kobold" ? api_server : api_server_textgenerationwebui,
                 main_api: main_api,
+                use_mancer: main_api == "textgenerationwebui" ? api_use_mancer_webui : false,
             }),
             beforeSend: function () { },
             cache: false,
@@ -2672,6 +2673,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
             else if (main_api == 'textgenerationwebui') {
                 generate_data = getTextGenGenerationData(finalPromt, this_amount_gen, isImpersonate);
+                generate_data.use_mancer = api_use_mancer_webui;
             }
             else if (main_api == 'novel') {
                 const this_settings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
@@ -2933,6 +2935,14 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     activateSendButtons();
                     //console.log('runGenerate calling showSwipeBtns');
                     showSwipeButtons();
+
+                    if (main_api == 'textgenerationwebui' && api_use_mancer_webui) {
+                        const errorText = `<h3>Inferencer endpoint is unhappy!</h3>
+                        Check you have credits available on your
+                        <a href="https://mancer.tech/dashboard.html" target="_blank">Mancer account</a>.<br>
+                        If you have sufficient credits, please try again later.`;
+                        callPopup(errorText, 'text');
+                    }
                 }
                 console.debug('/savechat called by /Generate');
 
@@ -5015,11 +5025,13 @@ async function getSettings(type) {
 
         setWorldInfoSettings(settings, data);
 
-        api_server_textgenerationwebui =
-            settings.api_server_textgenerationwebui;
+        api_server_textgenerationwebui = settings.api_server_textgenerationwebui;
         $("#textgenerationwebui_api_url_text").val(
             api_server_textgenerationwebui
         );
+        api_use_mancer_webui = settings.api_use_mancer_webui
+        $('#use-mancer-api-checkbox').prop("checked", api_use_mancer_webui);
+        $('#use-mancer-api-checkbox').trigger("change");
 
         selected_button = settings.selected_button;
 
@@ -5051,6 +5063,7 @@ async function saveSettings(type) {
             username: name1,
             api_server: api_server,
             api_server_textgenerationwebui: api_server_textgenerationwebui,
+            api_use_mancer_webui: api_use_mancer_webui,
             preset_settings: preset_settings,
             user_avatar: user_avatar,
             amount_gen: amount_gen,
@@ -7611,14 +7624,26 @@ $(document).ready(function () {
         }
     });
 
+    $("#use-mancer-api-checkbox").on("change", function (e) {
+        const enabled = $("#use-mancer-api-checkbox").prop("checked");
+        $("#mancer-api-ui").css("display", enabled?"block":"none");
+        api_use_mancer_webui = enabled;
+        saveSettingsDebounced(); 
+        getStatus();
+    });
+
     $("#api_button_textgenerationwebui").click(function (e) {
         e.stopPropagation();
         if ($("#textgenerationwebui_api_url_text").val() != "") {
-            let value = formatKoboldUrl($("#textgenerationwebui_api_url_text").val().trim());
-
-            if (!value) {
-                callPopup('Please enter a valid URL.', 'text');
+            let value = $("#textgenerationwebui_api_url_text").val().trim();
+            if (!value || !value.endsWith('/api')) {
+                callPopup('Please enter a valid URL.<br/>WebUI URLs should end with <tt>/api</tt>', 'text');
                 return;
+            }
+
+            const mancer_key = $("#api_key_mancer").val().trim();
+            if (mancer_key.length) {
+                writeSecret(SECRET_KEYS.MANCER, mancer_key);
             }
 
             $("#textgenerationwebui_api_url_text").val(value);
