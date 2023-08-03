@@ -264,6 +264,13 @@ export function getNovelGenerationData(finalPromt, this_settings, this_amount_ge
             .map(t => getTextTokens(tokenizerType, t))
         : undefined;
 
+    let useInstruct = false;
+    if (isNewModel) {
+        // NovelAI claims they scan backwards 1000 characters (not tokens!) to look for instruct brackets. That's really short.
+        const tail = finalPromt.slice(-1500);
+        useInstruct = tail.includes("}");
+    }
+
     return {
         "input": finalPromt,
         "model": nai_settings.model_novel,
@@ -291,7 +298,7 @@ export function getNovelGenerationData(finalPromt, this_settings, this_amount_ge
         "use_cache": false,
         "use_string": true,
         "return_full_text": false,
-        "prefix": isNewModel ? "special_instruct" : "vanilla",
+        "prefix": useInstruct ? "special_instruct" : (isNewModel ? "special_proseaugmenter" : "vanilla"),
         "order": this_settings.order,
         "streaming": nai_settings.streaming_novel,
     };
