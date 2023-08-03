@@ -26,6 +26,7 @@ import {
     getWorldInfoPrompt,
     setWorldInfoSettings,
     world_info_recursive,
+    world_info_overflow_alert,
     world_info_case_sensitive,
     world_info_match_whole_words,
     world_names,
@@ -602,11 +603,42 @@ function countTokensRemote(endpoint, str, padding) {
     return tokenCount + padding;
 }
 
+function getTextTokensRemote(endpoint, str) {
+    let ids = [];
+    jQuery.ajax({
+        async: false,
+        type: 'POST',
+        url: endpoint,
+        data: JSON.stringify({ text: str }),
+        dataType: "json",
+        contentType: "application/json",
+        success: function (data) {
+            ids = data.ids;
+        }
+    });
+    return ids;
+}
+
+export function getTextTokens(tokenizerType, str) {
+    switch (tokenizerType) {
+        case tokenizers.LLAMA:
+            return getTextTokensRemote('/tokenize_llama', str);
+        case tokenizers.NERD:
+            return getTextTokensRemote('/tokenize_nerdstash', str);
+        case tokenizers.NERD2:
+            return getTextTokensRemote('/tokenize_nerdstash_v2', str);
+        default:
+            console.warn("Calling getTextTokens with unsupported tokenizer type", tokenizerType);
+            return [];
+    }
+}
+
 function reloadMarkdownProcessor(render_formulas = false) {
     if (render_formulas) {
         converter = new showdown.Converter({
             emoji: "true",
             underline: "true",
+            parseImgDimensions: "true",
             extensions: [
                 showdownKatex(
                     {
@@ -622,6 +654,7 @@ function reloadMarkdownProcessor(render_formulas = false) {
         converter = new showdown.Converter({
             emoji: "true",
             literalMidWordUnderscores: "true",
+            parseImgDimensions: "true",
         });
     }
 
@@ -738,6 +771,9 @@ let token;
 
 var PromptArrayItemForRawPromptDisplay;
 
+export let active_character = ""
+export let active_group = ""
+
 export function getRequestHeaders() {
     return {
         "Content-Type": "application/json",
@@ -785,6 +821,14 @@ function checkOnlineStatus() {
         $(".online_status_indicator4").css("background-color", "green"); //OAI / ooba
         $(".online_status_text4").html(online_status);
     }
+}
+
+export function setActiveCharacter(character) {
+    active_character = character;
+}
+
+export function setActiveGroup(group) {
+    active_group = group;
 }
 
 async function getStatus() {
@@ -1813,7 +1857,7 @@ function getPersonaDescription(storyString) {
         case persona_description_positions.BEFORE_CHAR:
             return `${substituteParams(power_user.persona_description)}\n${storyString}`;
         case persona_description_positions.AFTER_CHAR:
-            return `${storyString}\n${substituteParams(power_user.persona_description)}`;
+            return `${storyString}${substituteParams(power_user.persona_description)}\n`;
         default:
             if (shouldWIAddPrompt) {
                 const originalAN = extension_prompts[NOTE_MODULE_NAME].value
@@ -2476,7 +2520,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     }
 
                     if (i === arrMes.length - 1 && !item.trim().startsWith(name1 + ":")) {
-                        if (textareaText == "") {
+                        //if (textareaText == "") {
                             // Cohee: I think this was added to allow the model to continue
                             // where it left off by removing the trailing newline at the end
                             // that was added by chat2 generator. This causes problems with
@@ -2484,7 +2528,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                             // removing a newline ONLY at the end of the string if it exists.
                             item = item.replace(/\n?$/, '');
                             //item = item.substr(0, item.length - 1);
-                        }
+                        //}
                     }
                     if (is_pygmalion && !isInstruct) {
                         if (item.trim().startsWith(name1)) {
@@ -2677,7 +2721,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
             else if (main_api == 'novel') {
                 const this_settings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
-                generate_data = getNovelGenerationData(finalPromt, this_settings, this_amount_gen);
+                generate_data = getNovelGenerationData(finalPromt, this_settings, this_amount_gen, isImpersonate);
             }
             else if (main_api == 'openai') {
                 let [prompt, counts] = await prepareOpenAIMessages({
@@ -2779,7 +2823,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     });
 
                     if (!response.ok) {
-                        throw new Error(response.status);
+                        const error = await response.json();
+                        throw error;
                     }
 
                     const data = await response.json();
@@ -2957,6 +3002,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             };
 
             function onError(exception) {
+                if (typeof exception?.error?.message === 'string') {
+                    toastr.error(exception.error.message, 'Error', { timeOut: 10000, extendedTimeOut: 20000 });
+                }
+
                 reject(exception);
                 $("#send_textarea").removeAttr('disabled');
                 is_send_press = false;
@@ -5019,6 +5068,10 @@ async function getSettings(type) {
         highlightSelectedAvatar();
         setPersonaDescription();
 
+        //Load the active character and group
+        active_character = settings.active_character;
+        active_group = settings.active_group;
+
         //Load the API server URL from settings
         api_server = settings.api_server;
         $("#api_url_text").val(api_server);
@@ -5061,6 +5114,8 @@ async function saveSettings(type) {
         data: JSON.stringify({
             firstRun: firstRun,
             username: name1,
+            active_character: active_character,
+            active_group: active_group,
             api_server: api_server,
             api_server_textgenerationwebui: api_server_textgenerationwebui,
             api_use_mancer_webui: api_use_mancer_webui,
@@ -5073,6 +5128,7 @@ async function saveSettings(type) {
             world_info_depth: world_info_depth,
             world_info_budget: world_info_budget,
             world_info_recursive: world_info_recursive,
+            world_info_overflow_alert: world_info_overflow_alert,
             world_info_case_sensitive: world_info_case_sensitive,
             world_info_match_whole_words: world_info_match_whole_words,
             world_info_character_strategy: world_info_character_strategy,
@@ -6825,6 +6881,11 @@ function importCharacter(file) {
         contentType: false,
         processData: false,
         success: async function (data) {
+            if (data.error) {
+                toastr.error('The file is likely invalid or corrupted.', 'Could not import character');
+                return;
+            }
+
             if (data.file_name !== undefined) {
                 $('#character_search_bar').val('').trigger('input');
                 $("#rm_info_block").transition({ opacity: 0, duration: 0 });
@@ -7756,6 +7817,51 @@ $(document).ready(function () {
 
         else if (id == "option_delete_mes") {
             setTimeout(openMessageDelete, animation_duration);
+        }
+
+        else if (id == "option_close_chat") {
+            if (is_send_press == false) {
+                clearChat();
+                chat.length = 0;
+                resetSelectedGroup();
+                setCharacterId(undefined);
+                setCharacterName('');
+                setActiveCharacter(null);
+                setActiveGroup(null);
+                this_edit_mes_id = undefined;
+                chat_metadata = {};
+                selected_button = "characters";
+                $("#rm_button_selected_ch").children("h2").text('');
+                select_rm_characters();
+                sendSystemMessage(system_message_types.WELCOME);
+            } else {
+                toastr.info("Please stop the message generation first.");
+            }
+        }
+
+        else if (id === "option_settings") {
+            //var checkBox = document.getElementById("waifuMode");
+            var topBar = document.getElementById("top-bar");
+            var topSettingsHolder = document.getElementById("top-settings-holder");
+            var divchat = document.getElementById("chat");
+
+            //if (checkBox.checked) {
+            if (topBar.style.display === "none") {
+                topBar.style.display = ""; // or "inline-block" if that's the original display value
+                topSettingsHolder.style.display = ""; // or "inline-block" if that's the original display value
+
+                divchat.style.borderRadius = "";
+                divchat.style.backgroundColor = "";
+
+            } else {
+
+                divchat.style.borderRadius = "10px"; // Adjust the value to control the roundness of the corners
+                divchat.style.backgroundColor = ""; // Set the background color to your preference
+
+                topBar.style.display = "none";
+                topSettingsHolder.style.display = "none";
+            }
+            //}
         }
         hideMenu();
     });

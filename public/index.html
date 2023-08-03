@@ -253,7 +253,7 @@
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
-                                            <input type="range" id="temp" name="volume" min="0.1" max="2.0" step="0.01">
+                                            <input type="range" id="temp" name="volume" min="0.0" max="2.0" step="0.01">
                                         </div>
                                         <div class="range-block-counter">
                                             <div contenteditable="true" data-for="temp" id="temp_counter">
@@ -868,6 +868,36 @@
                                     </div>
                                 </div>
                                 <div class="range-block">
+                                    <div class="range-block-title" data-i18n="CFG Scale">
+                                        CFG Scale
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="cfg_scale_novel" name="volume" min="1" max="3" step="0.05">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="cfg_scale_novel" id="cfg_scale_counter_novel">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title" data-i18n="Phrase Repetition Penalty">
+                                        Phrase Repetition Penalty
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="phrase_rep_pen_novel" name="volume" min="0" max="5" step="1">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="phrase_rep_pen_novel" id="phrase_rep_pen_counter_novel">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block">
                                     <div class="range-block-title" data-i18n="Min Length">
                                         Min Length
                                     </div>
@@ -1287,6 +1317,14 @@
                                     </div>
                                     <div class="wide100p">
                                         <textarea id="jailbreak_prompt_textarea" class="text_pole textarea_compact" name="jailbreak_prompt" rows="6" placeholder=""></textarea>
+                                    </div>
+                                </div>
+                                <div class="range-block" data-source="claude">
+                                    <div class="range-block-title" data-i18n="Assistant Prefill">
+                                        Assistant Prefill
+                                    </div>
+                                    <div class="wide100p">
+                                        <input type="text" id="claude_assistant_prefill" class="text_pole" placeholder="Start Claude's answer with...">
                                     </div>
                                 </div>
 
@@ -1805,7 +1843,7 @@
                                 Custom Chat Separator
                             </h4>
                             <div>
-                                <input id="custom_chat_separator" class="text_pole textarea_compact" type="text" placeholder="&lt;START&gt;" maxlength="100" />
+                                <textarea id="custom_chat_separator" class="text_pole textarea_compact" type="text" placeholder="&lt;START&gt;" maxlength="500" rows="1"></textarea>
                             </div>
                         </div>
                         <div>
@@ -1858,7 +1896,7 @@
                                         <span data-i18n="Input Sequence">Input Sequence</span>
                                     </label>
                                     <div>
-                                        <input id="instruct_input_sequence" class="text_pole textarea_compact" type="text" maxlength="100" />
+                                        <textarea id="instruct_input_sequence" class="text_pole textarea_compact" type="text" maxlength="500" rows="1"></textarea>
                                     </div>
                                 </div>
                                 <div class="flex1">
@@ -1866,7 +1904,7 @@
                                         <span data-i18n="Output Sequence">Output Sequence</span>
                                     </label>
                                     <div>
-                                        <input id="instruct_output_sequence" class="text_pole wide100p textarea_compact" type="text" maxlength="100" />
+                                        <textarea id="instruct_output_sequence" class="text_pole wide100p textarea_compact" type="text" maxlength="500" rows="1"></textarea>
                                     </div>
                                 </div>
                             </div>
@@ -1876,7 +1914,7 @@
                                         <small data-i18n="System Sequence">System Sequence</small>
                                     </label>
                                     <div>
-                                        <input id="instruct_system_sequence" class="text_pole textarea_compact" type="text" maxlength="100" />
+                                        <textarea id="instruct_system_sequence" class="text_pole textarea_compact" type="text" maxlength="500" rows="1"></textarea>
                                     </div>
                                 </div>
                                 <div class="flex1">
@@ -1884,7 +1922,7 @@
                                         <small data-i18n="Stop Sequence">Stop Sequence</small>
                                     </label>
                                     <div>
-                                        <input id="instruct_stop_sequence" class="text_pole wide100p textarea_compact" type="text" maxlength="100" />
+                                        <textarea id="instruct_stop_sequence" class="text_pole wide100p textarea_compact" type="text" maxlength="500" rows="1"></textarea>
                                     </div>
                                 </div>
                                 <div class="flex1">
@@ -1892,7 +1930,7 @@
                                         <small data-i18n="Separator">Separator</small>
                                     </label>
                                     <div>
-                                        <input id="instruct_separator_sequence" class="text_pole wide100p textarea_compact" type="text" maxlength="100" />
+                                        <textarea id="instruct_separator_sequence" class="text_pole wide100p textarea_compact" type="text" maxlength="500" rows="1"></textarea>
                                     </div>
                                 </div>
                             </div>
@@ -2132,6 +2170,14 @@
                                     Match whole words
                                 </small>
                             </label>
+                            <label title="Alert if your world info is greater than the allocated budget."
+                            data-i18n="[title]Alert if your world info is greater than the allocated budget."
+                            class="checkbox_label">
+                            <input id="world_info_overflow_alert" type="checkbox" />
+                            <small data-i18n="Alert On Overflow">
+                                Alert On Overflow
+                            </small>
+                        </label>
                         </div>
                     </div>
 
@@ -2606,14 +2652,14 @@
                             </div>
                         </div>
                         <div class="flex1">
-                            <h4 data-i18n="Your Avatar" class="title_restorable">
-                                <span>Your Persona</span>
+                            <h4 class="title_restorable">
+                                <span data-i18n="Your Persona">Your Persona</span>
                                 <button class="menu_button menu_button_icon user_stats_button" title="Click for stats!">
-                                    <i class="fa-solid fa-circle-info"></i>Usage Stats
+                                    <i class="fa-solid fa-circle-info"></i><span data-i18n="Usage Stats">Usage Stats</span>
                                 </button>
                                 <div id="create_dummy_persona" class="menu_button menu_button_icon" title="Create a dummy persona" data-i18n="[title]Create a dummy persona">
                                     <i class="fa-solid fa-person-circle-question fa-fw"></i>
-                                    <span>Blank</span>
+                                    <span data-i18n="Blank">Blank</span>
                                 </div>
                             </h4>
                             <div id="user_avatar_block">
@@ -3761,6 +3807,14 @@
     <!-- popups live outside sheld to avoid blur conflicts -->
     <div id="options" class="font-family-reset" style="display: none;">
         <div class="options-content">
+            <a id="option_close_chat">
+                <i class="fa-lg fa-solid fa-times"></i>
+                <span data-i18n="Close chat">Close chat</span>
+            </a>
+            <a id="option_settings">
+                <i class="fa-lg fa-solid fa-cog"></i>
+                <span data-i18n="Toggle Panels">Toggle Panels</span>
+            </a>
             <a id="option_toggle_AN">
                 <i class="fa-lg fa-solid fa-note-sticky"></i>
                 <span data-i18n="Author's Note">Author's Note</span>

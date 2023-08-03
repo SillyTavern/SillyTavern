@@ -609,7 +609,7 @@ hr {
     display: flex;
     column-gap: 10px;
     cursor: pointer;
-
+    align-items: baseline;
 }
 
 #extensionsMenu>div,
@@ -1293,7 +1293,7 @@ body.charListGrid #rm_print_characters_block .tags_inline {
 
 }
 
-.floating_prompt_radio_group {
+.floating_prompt_radio_group, .radio_group {
     display: flex;
     flex-direction: column;
 }

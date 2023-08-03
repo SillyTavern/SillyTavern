@@ -499,7 +499,7 @@ function onViewTagsListClick() {
     $(list).append('<h3>Tags</h3><i>Click on the tag name to edit it.</i><br>');
     $(list).append('<i>Click on color box to assign new color.</i><br><br>');
 
-    for (const tag of tags) {
+    for (const tag of tags.slice().sort((a, b) => a?.name?.localeCompare(b?.name))) {
         const count = everything.filter(x => x == tag.id).length;
         const template = $('#tag_view_template .tag_view_item').clone();
         template.attr('id', tag.id);

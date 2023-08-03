@@ -1,0 +1,19 @@
+{
+  "order": [5, 0, 1, 3],
+  "temperature": 1.23,
+  "max_length": 300,
+  "min_length": 1,
+  "top_k": 200,
+  "typical_p": 0.966,
+  "tail_free_sampling": 0.982,
+  "repetition_penalty": 1.74,
+  "repetition_penalty_range": 4000,
+  "repetition_penalty_frequency": 0,
+  "repetition_penalty_presence": 0.02,
+  "use_cache": false,
+  "return_full_text": false,
+  "prefix": "vanilla",
+  "cfg_scale": 1,
+  "phrase_rep_pen": "aggressive",
+  "max_context": 7800
+}

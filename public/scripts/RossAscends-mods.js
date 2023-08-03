@@ -13,6 +13,10 @@ import {
     menu_type,
     max_context,
     saveSettingsDebounced,
+    active_group,
+    active_character,
+    setActiveGroup,
+    setActiveCharacter,
 } from "../script.js";
 
 import {
@@ -239,7 +243,6 @@ $("#rm_ch_create_block").on("input", function () { countTokensDebounced(); });
 $("#character_popup").on("input", function () { countTokensDebounced(); });
 //function:
 export function RA_CountCharTokens() {
-    $("#result_info").html("");
     //console.log('RA_TC -- starting with this_chid = ' + this_chid);
     if (menu_type === "create") {            //if new char
         function saveFormVariables() {
@@ -331,11 +334,21 @@ export function RA_CountCharTokens() {
         characterStatsHandler(characters, this_chid);
     });
 }
-//Auto Load Last Charcter -- (fires when active_character is defined and auto_load_chat is true)
+/**
+ * Auto load chat with the last active character or group.
+ * Fires when active_character is defined and auto_load_chat is true.
+ * The function first tries to find a character with a specific ID from the global settings.
+ * If it doesn't exist, it tries to find a group with a specific grid from the global settings.
+ * If the character list hadn't been loaded yet, it calls itself again after 100ms delay.
+ * The character or group is selected (clicked) if it is found.
+ */
 async function RA_autoloadchat() {
     if (document.getElementById('CharID0') !== null) {
-        var charToAutoLoad = document.getElementById('CharID' + LoadLocal('ActiveChar'));
-        let groupToAutoLoad = document.querySelector(`.group_select[grid="${LoadLocal('ActiveGroup')}"]`);
+        // active character is the name, we should look it up in the character list and get the id
+        let active_character_id = Object.keys(characters).find(key => characters[key].avatar === active_character);
+
+        var charToAutoLoad = document.getElementById('CharID' + active_character_id);
+        let groupToAutoLoad = document.querySelector(`.group_select[grid="${active_group}"]`);
         if (charToAutoLoad != null) {
             $(charToAutoLoad).click();
         }
@@ -343,7 +356,7 @@ async function RA_autoloadchat() {
             $(groupToAutoLoad).click();
         }
 
-        // if the charcter list hadn't been loaded yet, try again.
+        // if the character list hadn't been loaded yet, try again.
     } else { setTimeout(RA_autoloadchat, 100); }
 }
 
@@ -904,15 +917,21 @@ $("document").ready(function () {
     $("#rm_button_characters").click(function () { SaveLocal('SelectedNavTab', 'rm_button_characters'); });
 
     // when a char is selected from the list, save them as the auto-load character for next page load
+
+    // when a char is selected from the list, save their name as the auto-load character for next page load
     $(document).on("click", ".character_select", function () {
-        SaveLocal('ActiveChar', $(this).attr('chid'));
-        SaveLocal('ActiveGroup', null);
+        setActiveCharacter($(this).find('.avatar').attr('title'));
+        setActiveGroup(null);
+        saveSettingsDebounced();
     });
 
     $(document).on("click", ".group_select", function () {
-        SaveLocal('ActiveChar', null);
-        SaveLocal('ActiveGroup', $(this).data('id'));
+        setActiveCharacter(null);
+        setActiveGroup($(this).data('id'));
+        saveSettingsDebounced();
     });
+
+
 
     //this makes the chat input text area resize vertically to match the text size (limited by CSS at 50% window height)
     $('#send_textarea').on('input', function () {
@@ -1029,11 +1048,10 @@ $("document").ready(function () {
         }
 
         if (event.ctrlKey && event.key == "ArrowUp") { //edits last USER message if chatbar is empty and focused
-            console.debug('got ctrl+uparrow input');
             if (
                 $("#send_textarea").val() === '' &&
                 chatbarInFocus === true &&
-                $(".swipe_right:last").css('display') === 'flex' &&
+                ($(".swipe_right:last").css('display') === 'flex' || $('.last_mes').attr('is_system') === 'true') &&
                 $("#character_popup").css("display") === "none" &&
                 $("#shadow_select_chat_popup").css("display") === "none"
             ) {
@@ -1041,7 +1059,7 @@ $("document").ready(function () {
                 const lastIsUserMes = isUserMesList[isUserMesList.length - 1];
                 const editMes = lastIsUserMes.querySelector('.mes_block .mes_edit');
                 if (editMes !== null) {
-                    $(editMes).click();
+                    $(editMes).trigger('click');
                 }
             }
         }
@@ -1060,6 +1078,60 @@ $("document").ready(function () {
                 if (editMes !== null) {
                     $(editMes).click();
                 }
+            }
+        }
+
+        if (event.key == "Escape") { //closes various panels
+            if ($("#curEditTextarea").is(":visible")) {
+                return
+            }
+
+            if ($("#dialogue_popup").is(":visible")) {
+                if ($("#dialogue_popup_cancel").is(":visible")) {
+                    $("#dialogue_popup_cancel").trigger('click');
+                    return
+                } else {
+                    $("#dialogue_popup_ok").trigger('click')
+                    return
+                }
+            }
+            if ($("#select_chat_popup").is(":visible")) {
+                $("#select_chat_cross").trigger('click');
+                return
+            }
+            if ($("#character_popup").is(":visible")) {
+                $("#character_cross").trigger('click');
+                return
+            }
+
+            if ($(".drawer-content")
+                .not('#WorldInfo')
+                .not('#left-nav-panel')
+                .not('#right-nav-panel')
+                .is(":visible")) {
+                let visibleDrawerContent = $(".drawer-content:visible")
+                    .not('#WorldInfo')
+                    .not('#left-nav-panel')
+                    .not('#right-nav-panel')
+                $(visibleDrawerContent).parent().find('.drawer-icon').trigger('click');
+                return
+            }
+
+            if ($("#floatingPrompt").is(":visible")) {
+                $("#ANClose").trigger('click');
+                return
+            }
+            if ($("#WorldInfo").is(":visible")) {
+                $("#WIDrawerIcon").trigger('click');
+                return
+            }
+            if ($("#left-nav-panel").is(":visible")) {
+                $("#leftNavDrawerIcon").trigger('click');
+                return
+            }
+            if ($("#right-nav-panel").is(":visible")) {
+                $("#rightNavDrawerIcon").trigger('click');
+                return
             }
         }
     }
