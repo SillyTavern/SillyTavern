@@ -88,9 +88,6 @@ class CoquiTtsProvider {
             }
         }
 
-        const textexample = document.getElementById('tts_voice_map');
-        textexample.placeholder = 'Enter comma separated map of charName:ttsName[speakerID][langID]. Example: \nAqua:tts_models--en--ljspeech--glow-tts\model_file.pth,\nDarkness:tts_models--multilingual--multi-dataset--your_tts\model_file.pth[2][3]';
-
         //Load models function
         eventSource.on(event_types.EXTRAS_CONNECTED, () => {
             this.getModels();
@@ -267,13 +264,16 @@ class CoquiTtsProvider {
     }
 
     async getVoice(voiceName) {
+        // Voices are stored in this extension without the trailing [speaker_id][lang_id] used to call the 
+        // generate method, so those need to be removed for matching in this method.
+
         //tts_models--multilingual--multi-dataset--your_tts\model_file.pth[2][1]
         //tts_models--en--ljspeech--glow-tts\model_file.pth
 
         let _voiceNameOrg = voiceName; // Store the original voiceName in a variable _voiceNameOrg
         voiceName = voiceName.replace(/(\[\d+\])+$/, ''); // For example, converts 'model[2][1]' to 'model'
 
-        this.voices = []; //reset for follow up runs
+        this.voices = []; //reset for follow up runs 
 
         if (this.voices.length === 0) { this.voices = await this.fetchCheckMap(); }
 
@@ -382,13 +382,10 @@ class CoquiTtsProvider {
     }
 
     async fetchTtsGeneration(inputText, voiceId) {
+        // voiceId contains the [speaker_id][lang_id] selectors where necessary in this call.
         throwIfModuleMissing();
         console.info(`Generating new TTS for voice_id ${voiceId}`);
         const response = await doExtrasFetch(`${getApiUrl()}/api/coqui-tts/tts?text=${encodeURIComponent(inputText)}&speaker_id=${voiceId}`);
-        if (!response.ok) {
-            toastr.error(response.statusText, 'TTS Generation Failed');
-            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
-        }
         if (!response.ok) {
             toastr.error(response.statusText, 'TTS Generation Failed');
             throw new Error(`HTTP ${response.status}: ${await response.text()}`);
