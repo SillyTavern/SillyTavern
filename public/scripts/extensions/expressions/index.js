@@ -395,6 +395,26 @@ function onExpressionsShowDefaultInput() {
     }
 }
 
+async function unloadLiveChar() {
+    try {
+        const url = new URL(getApiUrl());
+        url.pathname = '/api/live2d/unload';
+
+        const loadResponse = await fetch(url);
+
+        if (!loadResponse.ok) {
+            throw new Error(loadResponse.statusText);
+        }
+
+        const loadResponseText = await loadResponse.text();
+        console.log(`Response: ${loadResponseText}`);
+
+    } catch (error) {
+        console.error(`Error unloading - ${error}`);
+    }
+}
+
+
 async function loadLiveChar() {
     if (!modules.includes('live2d')) {
         console.debug('live2d module is disabled');
@@ -615,7 +635,12 @@ function setLive2dState(switch_var){
     extension_settings.expressions.live2d = switch_var; // Store setting
     saveSettingsDebounced();
 
-    if (extension_settings.expressions.live2d) { loadLiveChar(); } // load char as needed
+    if (extension_settings.expressions.live2d) { 
+        loadLiveChar(); 
+    } else {
+        unloadLiveChar(); 
+    }
+
     handleImageChange(switch_var); // Change image as needed
 }
 
