@@ -1134,5 +1134,11 @@ $("document").ready(function () {
                 return
             }
         }
+
+        if (event.ctrlKey && /^[1-9]$/.test(event.key)) {
+            // Your code here
+            event.preventDefault();
+            console.log("Ctrl +" + event.key + " pressed!");
+        }
     }
 });
