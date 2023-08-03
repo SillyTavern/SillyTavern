@@ -45,7 +45,6 @@ let lastCharacter = undefined;
 let lastMessage = null;
 let spriteCache = {};
 let inApiCall = false;
-let live2d_var = false;
 let previousSrc = null;
 
 
@@ -448,8 +447,7 @@ async function loadLiveChar() {
     }
 }
 
-
-function handleImageChange(isChecked) {
+function handleImageChange() {
     const imgElement = document.querySelector('img#expression-image.expression');
 
     if (!imgElement) {
@@ -457,31 +455,32 @@ function handleImageChange(isChecked) {
         return;
     }
 
-    if (isChecked) {
+    if (extension_settings.expressions.live2d) {
+        previousSrc = imgElement.src;
         // Method get IP of endpoint
-        if (imgElement.src !== getApiUrl() + '/api/live2d/result_feed') {
-            const expressionListItemElement = document.querySelector('#live2d');
-            const expressionImageElement = expressionListItemElement.querySelector('.expression_list_image');
-            const newSrc = expressionImageElement.src;
+        const live2dResultFeedSrc = `${getApiUrl()}/api/live2d/result_feed`;
+        $('#expression-holder').css({ display: '' });
+        if (imgElement.src !== live2dResultFeedSrc) {
+            const expressionImageElement = document.querySelector('.expression_list_image');
 
-            doExtrasFetch(newSrc, {
-                method: 'HEAD',
-            })
-                .then(response => {
-                    if (response.ok) {
-                        imgElement.src = getApiUrl() + '/api/live2d/result_feed';
-                    }
+            if (expressionImageElement) {
+                doExtrasFetch(expressionImageElement.src, {
+                    method: 'HEAD',
                 })
-                .catch(error => {
-                    console.error(error); // Log the error if necessary
-                });
-        } else if (previousSrc) {
-            imgElement.src = previousSrc; // Revert the src to its previous value
+                    .then(response => {
+                        if (response.ok) {
+                            imgElement.src = live2dResultFeedSrc;
+                        }
+                    })
+                    .catch(error => {
+                        console.error(error); // Log the error if necessary
+                    });
+            }
         }
-    } else if (previousSrc !== null) {
-        imgElement.src = previousSrc; // Revert the src to its previous value
+    } else {
+        imgElement.src = ""; //remove incase char doesnt have expressions
+        setExpression(getContext().name2, FALLBACK_EXPRESSION, true);
     }
-    live2d_var = isChecked;
 }
 
 async function moduleWorker() {
@@ -497,22 +496,16 @@ async function moduleWorker() {
     if (context.groupId !== lastCharacter && context.characterId !== lastCharacter) {
         removeExpression();
         spriteCache = {};
-
         previousSrc = null;
-
-        //uncheck live image
-        let checkbox = document.getElementById('image_type_toggle');
-        if (checkbox.checked) {
-            checkbox.click();
-        }
 
         //clear expression
         let imgElement = document.getElementById('expression-image');
         imgElement.src = "";
 
-        //Load new char
-        if (live2d_var) {
-            loadLiveChar();
+        //set checkbox to global var
+        $('#image_type_toggle').prop('checked', extension_settings.expressions.live2d);
+        if(extension_settings.expressions.live2d == true){
+            setLive2dState(extension_settings.expressions.live2d);
         }
     }
 
@@ -616,6 +609,14 @@ async function moduleWorker() {
         lastCharacter = context.groupId || context.characterId;
         lastMessage = currentLastMessage.mes;
     }
+}
+
+function setLive2dState(switch_var){
+    extension_settings.expressions.live2d = switch_var; // Store setting
+    saveSettingsDebounced();
+
+    if (extension_settings.expressions.live2d) { loadLiveChar(); } // load char as needed
+    handleImageChange(switch_var); // Change image as needed
 }
 
 function getSpriteFolderName(message) {
@@ -805,7 +806,7 @@ async function getExpressionsList() {
 }
 
 async function setExpression(character, expression, force) {
-    if (live2d_var == false) {
+    if (extension_settings.expressions.live2d == false) {
 
         console.debug('entered setExpressions');
         await validateImages(character);
@@ -915,7 +916,7 @@ async function setExpression(character, expression, force) {
         }
         document.getElementById("expression-holder").style.display = '';
 
-        if (live2d_var == true) {
+    } else {
             // Find the <img> element with id="expression-image" and class="expression"
             const imgElement = document.querySelector('img#expression-image.expression');
             //console.log("searching");
@@ -923,7 +924,6 @@ async function setExpression(character, expression, force) {
                 console.log("setting value");
                 imgElement.src = getApiUrl() + '/api/live2d/result_feed';
             }
-        }
     }
 }
 
@@ -1234,13 +1234,8 @@ function setExpressionOverrideHtml(forceClear = false) {
         $(window).on("resize", updateVisualNovelModeDebounced);
         $('.expression_settings').hide();
 
-
-        $('#image_type_toggle').on('change', function () {
-            const isChecked = this.checked;
-            if (isChecked) {
-                loadLiveChar();
-            }
-            handleImageChange(isChecked);
+        $('#image_type_toggle').on('click', function () {
+            setLive2dState(this.checked);
         });
     }
 
@@ -1253,7 +1248,6 @@ function setExpressionOverrideHtml(forceClear = false) {
     moduleWorker();
     dragElement($("#expression-holder"))
     eventSource.on(event_types.CHAT_CHANGED, () => {
-        //console.log("checked: " + live2d_var);
         setExpressionOverrideHtml();
 
         if (isVisualNovelMode()) {

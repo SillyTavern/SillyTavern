@@ -4554,7 +4554,9 @@ export function setUserName(value) {
         name1 = default_user_name;
     console.log(`User name changed to ${name1}`);
     $("#your_name").val(name1);
-    toastr.success(`Your messages will now be sent as ${name1}`, 'Current persona updated');
+    if (power_user.persona_show_notifications) {
+        toastr.success(`Your messages will now be sent as ${name1}`, 'Current persona updated');
+    }
     saveSettings("change_name");
 }
 
@@ -4653,7 +4655,7 @@ function setUserAvatar() {
     const personaName = power_user.personas[user_avatar];
     if (personaName && name1 !== personaName) {
         const lockedPersona = chat_metadata['persona'];
-        if (lockedPersona && lockedPersona !== user_avatar) {
+        if (lockedPersona && lockedPersona !== user_avatar && power_user.persona_show_notifications) {
             toastr.info(
                 `To permanently set "${personaName}" as the selected persona, unlock and relock it using the "Lock" button. Otherwise, the selection resets upon reloading the chat.`,
                 `This chat is locked to a different persona (${power_user.personas[lockedPersona]}).`,
@@ -4760,7 +4762,9 @@ async function setDefaultPersona() {
         }
 
         console.log(`Removing default persona ${avatarId}`);
-        toastr.info('This persona will no longer be used by default when you open a new chat.', `Default persona removed`);
+        if (power_user.persona_show_notifications) {
+            toastr.info('This persona will no longer be used by default when you open a new chat.', `Default persona removed`);
+        }
         delete power_user.default_persona;
     } else {
         const confirm = await callPopup(`<h3>Are you sure you want to set "${personaName}" as the default persona?</h3>
@@ -4772,7 +4776,9 @@ async function setDefaultPersona() {
         }
 
         power_user.default_persona = avatarId;
-        toastr.success('This persona will be used by default when you open a new chat.', `Default persona set to ${personaName}`);
+        if (power_user.persona_show_notifications) {
+            toastr.success('This persona will be used by default when you open a new chat.', `Default persona set to ${personaName}`);
+        }
     }
 
     saveSettingsDebounced();
@@ -4835,18 +4841,22 @@ function lockUserNameToChat() {
         console.log(`Unlocking persona for this chat ${chat_metadata['persona']}`);
         delete chat_metadata['persona'];
         saveMetadata();
-        toastr.info('User persona is now unlocked for this chat. Click the "Lock" again to revert.', 'Persona unlocked');
+        if (power_user.persona_show_notifications) {
+            toastr.info('User persona is now unlocked for this chat. Click the "Lock" again to revert.', 'Persona unlocked');
+        }
         updateUserLockIcon();
         return;
     }
 
     if (!(user_avatar in power_user.personas)) {
         console.log(`Creating a new persona ${user_avatar}`);
-        toastr.info(
-            'Creating a new persona for currently selected user name and avatar...',
-            'Persona not set for this avatar',
-            { timeOut: 10000, extendedTimeOut: 20000, },
-        );
+        if (power_user.persona_show_notifications) {
+            toastr.info(
+                'Creating a new persona for currently selected user name and avatar...',
+                'Persona not set for this avatar',
+                { timeOut: 10000, extendedTimeOut: 20000, },
+            );
+        }
         power_user.personas[user_avatar] = name1;
         power_user.persona_descriptions[user_avatar] = { description: '', position: persona_description_positions.BEFORE_CHAR };
     }
@@ -4855,7 +4865,9 @@ function lockUserNameToChat() {
     saveMetadata();
     saveSettingsDebounced();
     console.log(`Locking persona for this chat ${user_avatar}`);
-    toastr.success(`User persona is locked to ${name1} in this chat`);
+    if (power_user.persona_show_notifications) {
+        toastr.success(`User persona is locked to ${name1} in this chat`);
+    }
     updateUserLockIcon();
 }
 
