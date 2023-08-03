@@ -17,6 +17,7 @@ import {
     loadTextGenSettings,
     generateTextGenWithStreaming,
     getTextGenGenerationData,
+    formatTextGenURL,
 } from "./scripts/textgen-settings.js";
 
 import {
@@ -7687,24 +7688,24 @@ $(document).ready(function () {
 
     $("#use-mancer-api-checkbox").on("change", function (e) {
         const enabled = $("#use-mancer-api-checkbox").prop("checked");
-        $("#mancer-api-ui").css("display", enabled?"block":"none");
+        $("#mancer-api-ui").toggle(enabled);
         api_use_mancer_webui = enabled;
         saveSettingsDebounced(); 
         getStatus();
     });
 
-    $("#api_button_textgenerationwebui").click(function (e) {
+    $("#api_button_textgenerationwebui").click(async function (e) {
         e.stopPropagation();
         if ($("#textgenerationwebui_api_url_text").val() != "") {
-            let value = $("#textgenerationwebui_api_url_text").val().trim();
-            if (!value || !value.endsWith('/api')) {
+            let value = formatTextGenURL($("#textgenerationwebui_api_url_text").val().trim())
+            if (!value) {
                 callPopup('Please enter a valid URL.<br/>WebUI URLs should end with <tt>/api</tt>', 'text');
                 return;
             }
 
             const mancer_key = $("#api_key_mancer").val().trim();
             if (mancer_key.length) {
-                writeSecret(SECRET_KEYS.MANCER, mancer_key);
+                await writeSecret(SECRET_KEYS.MANCER, mancer_key);
             }
 
             $("#textgenerationwebui_api_url_text").val(value);
