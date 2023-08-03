@@ -477,7 +477,8 @@ function handleImageChange() {
             }
         }
     } else {
-        setExpression(getContext().name2, "neutral", true);
+        imgElement.src = ""; //remove incase char doesnt have expressions
+        setExpression(getContext().name2, FALLBACK_EXPRESSION, true);
     }
 }
 
