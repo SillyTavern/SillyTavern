@@ -35,12 +35,11 @@ const MIN_STREAMING_KCPPVERSION = '1.30';
 function formatKoboldUrl(value) {
     try {
         const url = new URL(value);
-        url.pathname = '/api';
-        return url.toString();
-    }
-    catch {
-        return null;
-    }
+        if (url.pathname.endsWith('/api')) {
+            return url.toString();
+        }
+    } catch { } // Try and Catch both fall through to the same return.
+    return null;
 }
 
 function loadKoboldSettings(preset) {
