@@ -104,5 +104,5 @@ function disableBulkSelect() {
  */
 jQuery(async () => {
     addButtons();
-    loadSettings();
+    // loadSettings();
 });
