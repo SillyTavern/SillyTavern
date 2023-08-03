@@ -24,6 +24,7 @@ import {
     main_api,
     eventSource,
     event_types,
+    substituteParams,
 } from "../script.js";
 import {groups, selected_group} from "./group-chats.js";
 
