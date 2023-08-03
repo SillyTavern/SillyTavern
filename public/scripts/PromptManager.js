@@ -938,6 +938,10 @@ PromptManagerModule.prototype.isValidName = function(name) {
     return regex.test(name);
 }
 
+PromptManagerModule.prototype.sanitizeName = function(name) {
+    return name.replace(/[^a-zA-Z0-9_]/g, '_').substring(0, 64);
+}
+
 /**
  * Loads a given prompt into the edit form fields.
  * @param {Object} prompt - Prompt object with properties 'name', 'role', 'content', and 'system_prompt'

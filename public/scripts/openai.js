@@ -251,10 +251,11 @@ function setOpenAIMessages(chat) {
         }
 
         // for groups or sendas command - prepend a character's name
-        if (selected_group || (chat[j].force_avatar && chat[j].name !== name1 && chat[j].extra?.type !== system_message_types.NARRATOR)) {
-            content = `${chat[j].name}: ${content}`;
+        if (!oai_settings.names_in_completion) {
+            if (selected_group || (chat[j].force_avatar && chat[j].name !== name1 && chat[j].extra?.type !== system_message_types.NARRATOR)) {
+                content = `${chat[j].name}: ${content}`;
+            }
         }
-
         content = replaceBiasMarkup(content);
 
         // remove caret return (waste of tokens)
@@ -448,9 +449,9 @@ function populateChatHistory(prompts, chatCompletion, type = null, cyclePrompt =
         prompt.identifier = `chatHistory-${openai_msgs.length - index}`;
         const chatMessage = Message.fromPrompt(promptManager.preparePrompt(prompt));
 
-        if (true === promptManager.serviceSettings.names_in_completion && prompt.name)
-            if (promptManager.isValidName(prompt.name)) chatMessage.name = prompt.name;
-            else throw new InvalidCharacterNameError();
+        if (true === promptManager.serviceSettings.names_in_completion && prompt.name) {
+            chatMessage.name = promptManager.isValidName(prompt.name) ? prompt.name : promptManager.sanitizeName(prompt.name);
+        }
 
         if (chatCompletion.canAfford(chatMessage)) chatCompletion.insertAtStart(chatMessage, 'chatHistory');
         else return false;
