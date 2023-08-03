@@ -449,7 +449,7 @@ async function loadLiveChar() {
 
 function handleImageChange() {
     const imgElement = document.querySelector('img#expression-image.expression');
-
+    
     if (!imgElement) {
         console.log("Cannot find addExpressionImage()");
         return;
@@ -504,7 +504,7 @@ async function moduleWorker() {
         //set checkbox to global var
         $('#image_type_toggle').prop('checked', extension_settings.expressions.live2d);
         if(extension_settings.expressions.live2d == true){
-            live2d(extension_settings.expressions.live2d);
+            setLive2dState(extension_settings.expressions.live2d);
         }
     }
 
@@ -610,7 +610,7 @@ async function moduleWorker() {
     }
 }
 
-function live2d(switch_var){
+function setLive2dState(switch_var){
     extension_settings.expressions.live2d = switch_var; // Store setting
     saveSettingsDebounced();
 
@@ -916,16 +916,13 @@ async function setExpression(character, expression, force) {
         document.getElementById("expression-holder").style.display = '';
 
     } else {
-
-        if (extension_settings.expressions.live2d == true) {
             // Find the <img> element with id="expression-image" and class="expression"
             const imgElement = document.querySelector('img#expression-image.expression');
             //console.log("searching");
             if (imgElement) {
                 console.log("setting value");
                 imgElement.src = getApiUrl() + '/api/live2d/result_feed';
-            }
-        }
+            }     
     }
 }
 
@@ -1237,7 +1234,7 @@ function setExpressionOverrideHtml(forceClear = false) {
         $('.expression_settings').hide();
 
         $('#image_type_toggle').on('click', function () {
-            live2d(this.checked);
+            setLive2dState(this.checked);
         });
     }
 
