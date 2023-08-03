@@ -3142,7 +3142,15 @@ function parseTokenCounts(counts, thisPromptBits) {
 }
 
 function adjustChatsSeparator(mesSendString) {
-    if (power_user.custom_chat_separator && power_user.custom_chat_separator.length) {
+    if (main_api === 'novel') {
+        let preamble = "\n***\n" + nai_settings.nai_preamble;
+        if (!preamble.endsWith('\n')) {
+            preamble += '\n';
+        }
+        mesSendString = preamble + mesSendString;
+    }
+
+    else if (power_user.custom_chat_separator && power_user.custom_chat_separator.length) {
         mesSendString = power_user.custom_chat_separator + '\n' + mesSendString;
     }
 
