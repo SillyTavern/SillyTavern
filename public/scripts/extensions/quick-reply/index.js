@@ -1,6 +1,7 @@
 import { saveSettingsDebounced, callPopup, getRequestHeaders } from "../../../script.js";
 import { getContext, extension_settings } from "../../extensions.js";
 import { initScrollHeight, resetScrollHeight } from "../../utils.js";
+import { executeSlashCommands, getSlashCommandsHelp, registerSlashCommand } from "../../slash-commands.js";
 
 
 export { MODULE_NAME };
@@ -256,7 +257,7 @@ async function applyQuickReplyPreset(name) {
     const quickReplyPreset = presets.find(x => x.name == name);
 
     if (!quickReplyPreset) {
-        console.log(`error, QR preset '${name}' not found`)
+        toastr.warning(`error, QR preset '${name}' not found. Confirm you are using proper case sensitivity!`)
         return;
     }
 
@@ -268,9 +269,27 @@ async function applyQuickReplyPreset(name) {
     moduleWorker();
 
     $(`#quickReplyPresets option[value="${name}"]`).attr('selected', true);
-
     console.debug('QR Preset applied: ' + name);
-    //loadMovingUIState()
+}
+
+async function doQRPresetSwitch(_, text) {
+    text = String(text)
+    applyQuickReplyPreset(text)
+}
+
+async function doQR(_, text) {
+    if (!text) {
+        toastr.warning('must specify which QR # to use')
+        return
+    }
+
+    text = Number(text)
+    //use scale starting with 0 
+    //ex: user inputs "/qr 2" >> qr with data-index 1 (but 2nd item displayed) gets triggered
+    let QRnum = Number(text - 1)
+    if (QRnum <= 0) { QRnum = 0 }
+    const whichQR = $("#quickReplies").find(`[data-index='${QRnum}']`);
+    whichQR.trigger('click')
 }
 
 jQuery(async () => {
@@ -326,5 +345,11 @@ jQuery(async () => {
 
     await loadSettings('init');
     addQuickReplyBar();
+
 });
 
+$(document).ready(() => {
+    registerSlashCommand('qr', doQR, [], "- requires number argument, activates the specified QuickReply", true, true);
+    registerSlashCommand('qrset', doQRPresetSwitch, [], "- arg: QuickReply Preset Name, swaps to that QR preset", true, true);
+
+})

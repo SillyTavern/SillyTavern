@@ -2520,13 +2520,13 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
                     if (i === arrMes.length - 1 && !item.trim().startsWith(name1 + ":")) {
                         //if (textareaText == "") {
-                            // Cohee: I think this was added to allow the model to continue
-                            // where it left off by removing the trailing newline at the end
-                            // that was added by chat2 generator. This causes problems with
-                            // instruct mode that could not have a trailing newline. So we're
-                            // removing a newline ONLY at the end of the string if it exists.
-                            item = item.replace(/\n?$/, '');
-                            //item = item.substr(0, item.length - 1);
+                        // Cohee: I think this was added to allow the model to continue
+                        // where it left off by removing the trailing newline at the end
+                        // that was added by chat2 generator. This causes problems with
+                        // instruct mode that could not have a trailing newline. So we're
+                        // removing a newline ONLY at the end of the string if it exists.
+                        item = item.replace(/\n?$/, '');
+                        //item = item.substr(0, item.length - 1);
                         //}
                     }
                     if (is_pygmalion && !isInstruct) {
@@ -3142,7 +3142,15 @@ function parseTokenCounts(counts, thisPromptBits) {
 }
 
 function adjustChatsSeparator(mesSendString) {
-    if (power_user.custom_chat_separator && power_user.custom_chat_separator.length) {
+    if (main_api === 'novel') {
+        let preamble = "\n***\n" + nai_settings.nai_preamble;
+        if (!preamble.endsWith('\n')) {
+            preamble += '\n';
+        }
+        mesSendString = preamble + mesSendString;
+    }
+
+    else if (power_user.custom_chat_separator && power_user.custom_chat_separator.length) {
         mesSendString = power_user.custom_chat_separator + '\n' + mesSendString;
     }
 
@@ -6954,6 +6962,10 @@ function doCharListDisplaySwitch() {
     updateVisibleDivs('#rm_print_characters_block', true);
 }
 
+function doCloseChat() {
+    $("#option_close_chat").trigger('click')
+}
+
 /**
  * Function to handle the deletion of a character, given a specific popup type and character ID.
  * If popup type equals "del_ch", it will proceed with deletion otherwise it will exit the function.
@@ -7020,6 +7032,10 @@ export async function deleteCharacter(name, avatar) {
     saveSettingsDebounced();
 }
 
+function doTogglePanels() {
+    $("#option_settings").trigger('click')
+}
+
 
 $(document).ready(function () {
 
@@ -7034,6 +7050,9 @@ $(document).ready(function () {
     registerSlashCommand('api', connectAPISlash, [], "(kobold, horde, novel, ooba, oai, claude, windowai) – connect to an API", true, true);
     registerSlashCommand('impersonate', doImpersonate, ['imp'], "- calls an impersonation response", true, true);
     registerSlashCommand('delchat', doDeleteChat, [], "- deletes the current chat", true, true);
+    registerSlashCommand('closechat', doCloseChat, [], "- closes the current chat", true, true);
+    registerSlashCommand('panels', doTogglePanels, ['togglepanels'], "- toggle UI panels on/off", true, true);
+
 
 
     setTimeout(function () {
