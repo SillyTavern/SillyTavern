@@ -527,24 +527,6 @@ async function voicemapIsValid(parsedVoiceMap) {
     return valid
 }
 
-async function updateVoiceMapOld() {
-    let isValidResult = false
-
-    const value = $('#tts_voice_map').val()
-    const parsedVoiceMap = parseVoiceMap(value)
-
-    isValidResult = await voicemapIsValid(parsedVoiceMap)
-    if (isValidResult) {
-        ttsProvider.settings.voiceMap = String(value)
-        // console.debug(`ttsProvider.voiceMap: ${ttsProvider.settings.voiceMap}`)
-        voiceMap = parsedVoiceMap
-        console.debug(`Saved new voiceMap: ${value}`)
-        saveSettingsDebounced()
-    } else {
-        throw 'Voice map is invalid, check console for errors'
-    }
-}
-
 function onApplyClick() {
     Promise.all([
         ttsProvider.onApplyClick(),
@@ -726,6 +708,10 @@ function updateVoiceMap() {
  * Note: voiceMap is a provider specific setting, but it is not managed by the provider itself. 
  */
 async function initVoiceMap(){
+    const enabled = $('#tts_enabled').is(':checked')
+    if (!enabled){
+        return
+    }
     // Clear existing voiceMap state
     $('#tts_voicemap_block').empty()
     voiceMapEntries = []
@@ -808,9 +794,6 @@ $(document).ready(function () {
                             <small>Narrate only the translated text</small>
                         </label>
                     </div>
-                    <label>Voice Map</label>
-                    <textarea id="tts_voice_map" type="text" class="text_pole textarea_compact" rows="4"
-                        placeholder="Enter comma separated map of charName:ttsName. Example: \nAqua:Bella,\nYou:Josh,"></textarea>
                     <div id="tts_voicemap_block">
                     </div>
                     <div id="tts_status">
