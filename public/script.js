@@ -7520,7 +7520,7 @@ $(document).ready(function () {
                 <h3>Delete the character?</h3>
                 <b>THIS IS PERMANENT!<br><br>
                 <label for="del_char_checkbox" class="checkbox_label justifyCenter">
-                    <input type="checkbox" id="del_char_checkbox" checked />
+                    <input type="checkbox" id="del_char_checkbox" />
                     <span>Also delete the chat files</span>
                 </label><br></b>`
         );
