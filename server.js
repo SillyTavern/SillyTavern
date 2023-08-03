@@ -629,7 +629,7 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
     else {
         const args = {
             body: JSON.stringify(request.body),
-            headers: { "Content-Type": "application/json"},
+            headers: { "Content-Type": "application/json" },
             signal: controller.signal,
         };
 
@@ -642,8 +642,8 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
             console.log(data);
             return response_generate.send(data);
         } catch (error) {
-            console.log("Error: %o", error);
-            return response_generate.send({ error: true});
+            console.log(error);
+            return response_generate.send({ error: true });
         }
     }
 });
@@ -696,7 +696,6 @@ app.post("/getchat", jsonParser, function (request, response) {
         return response.send({});
     }
 });
-
 
 app.post("/getstatus", jsonParser, async function (request, response_getstatus = response) {
     if (!request.body) return response_getstatus.sendStatus(400);
