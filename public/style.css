@@ -3040,9 +3040,22 @@ h5 {
     opacity: 0.4;
 }
 
+
 .PastChat_cross:hover {
     color: red;
     filter: drop-shadow(0 0 2px red);
+    -webkit-animation: infinite-spinning 1s ease-out 0s infinite normal;
+    animation: infinite-spinning 1s ease-out 0s infinite normal;
+}
+
+/* HEINOUS */
+@keyframes infinite-spinning {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 #export_character_div {
@@ -4407,6 +4420,10 @@ toolcool-color-picker {
 
 .wide50px {
     width: 50px;
+}
+
+.indent20p {
+    margin-left: 20px;
 }
 
 .wi-enter-footer-text {

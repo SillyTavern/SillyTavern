@@ -27,7 +27,7 @@ import {
 
 import { registerSlashCommand } from "./slash-commands.js";
 
-import { delay, debounce } from "./utils.js";
+import { delay } from "./utils.js";
 
 export {
     loadPowerUserSettings,
@@ -184,6 +184,7 @@ let power_user = {
 
     persona_description: '',
     persona_description_position: persona_description_positions.BEFORE_CHAR,
+    persona_show_notifications: true,
 
     custom_stopping_strings: '',
     fuzzy_search: false,
@@ -678,6 +679,7 @@ function loadPowerUserSettings(settings, data) {
     $('#auto_swipe_blacklist_threshold').val(power_user.auto_swipe_blacklist_threshold);
     $('#custom_stopping_strings').val(power_user.custom_stopping_strings);
     $('#fuzzy_search_checkbox').prop("checked", power_user.fuzzy_search);
+    $('#persona_show_notifications').prop("checked", power_user.persona_show_notifications);
 
     $("#console_log_prompts").prop("checked", power_user.console_log_prompts);
     $('#auto_fix_generated_markdown').prop("checked", power_user.auto_fix_generated_markdown);
@@ -1995,6 +1997,11 @@ $(document).ready(() => {
 
     $('#fuzzy_search_checkbox').on('input', function () {
         power_user.fuzzy_search = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#persona_show_notifications').on('input', function () {
+        power_user.persona_show_notifications = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 

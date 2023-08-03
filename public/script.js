@@ -17,6 +17,7 @@ import {
     loadTextGenSettings,
     generateTextGenWithStreaming,
     getTextGenGenerationData,
+    formatTextGenURL,
 } from "./scripts/textgen-settings.js";
 
 import {
@@ -721,6 +722,7 @@ let is_get_status = false;
 let is_get_status_novel = false;
 let is_api_button_press = false;
 let is_api_button_press_novel = false;
+let api_use_mancer_webui = false;
 
 let is_send_press = false; //Send generation
 let add_mes_without_animation = false;
@@ -854,9 +856,9 @@ async function getStatus() {
             type: "POST", //
             url: "/getstatus", //
             data: JSON.stringify({
-                api_server:
-                    main_api == "kobold" ? api_server : api_server_textgenerationwebui,
+                api_server: main_api == "kobold" ? api_server : api_server_textgenerationwebui,
                 main_api: main_api,
+                use_mancer: main_api == "textgenerationwebui" ? api_use_mancer_webui : false,
             }),
             beforeSend: function () { },
             cache: false,
@@ -881,6 +883,11 @@ async function getStatus() {
                 if (main_api === "kobold" || main_api === "koboldhorde") {
                     kai_settings.use_stop_sequence = canUseKoboldStopSequence(data.version);
                     kai_settings.can_use_streaming = canUseKoboldStreaming(data.koboldVersion);
+                }
+
+                // We didn't get a 200 status code, but the endpoint has an explanation. Which means it DID connect, but I digress.
+                if (online_status == "no_connection" && data.response) {
+                    toastr.error(data.response, "API Error", {timeOut: 5000, preventDuplicates:true})
                 }
 
                 //console.log(online_status);
@@ -2716,6 +2723,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
             else if (main_api == 'textgenerationwebui') {
                 generate_data = getTextGenGenerationData(finalPromt, this_amount_gen, isImpersonate);
+                generate_data.use_mancer = api_use_mancer_webui;
             }
             else if (main_api == 'novel') {
                 const this_settings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
@@ -2978,6 +2986,13 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     activateSendButtons();
                     //console.log('runGenerate calling showSwipeBtns');
                     showSwipeButtons();
+
+                    if (main_api == 'textgenerationwebui' && api_use_mancer_webui) {
+                        const errorText = `<h3>Inferencer endpoint is unhappy!</h3>
+                        Returned status <tt>${data.status}</tt> with the reason:<br/>
+                        ${data.response}`;
+                        callPopup(errorText, 'text');
+                    }
                 }
                 console.debug('/savechat called by /Generate');
 
@@ -4554,7 +4569,9 @@ export function setUserName(value) {
         name1 = default_user_name;
     console.log(`User name changed to ${name1}`);
     $("#your_name").val(name1);
-    toastr.success(`Your messages will now be sent as ${name1}`, 'Current persona updated');
+    if (power_user.persona_show_notifications) {
+        toastr.success(`Your messages will now be sent as ${name1}`, 'Current persona updated');
+    }
     saveSettings("change_name");
 }
 
@@ -4653,7 +4670,7 @@ function setUserAvatar() {
     const personaName = power_user.personas[user_avatar];
     if (personaName && name1 !== personaName) {
         const lockedPersona = chat_metadata['persona'];
-        if (lockedPersona && lockedPersona !== user_avatar) {
+        if (lockedPersona && lockedPersona !== user_avatar && power_user.persona_show_notifications) {
             toastr.info(
                 `To permanently set "${personaName}" as the selected persona, unlock and relock it using the "Lock" button. Otherwise, the selection resets upon reloading the chat.`,
                 `This chat is locked to a different persona (${power_user.personas[lockedPersona]}).`,
@@ -4760,7 +4777,9 @@ async function setDefaultPersona() {
         }
 
         console.log(`Removing default persona ${avatarId}`);
-        toastr.info('This persona will no longer be used by default when you open a new chat.', `Default persona removed`);
+        if (power_user.persona_show_notifications) {
+            toastr.info('This persona will no longer be used by default when you open a new chat.', `Default persona removed`);
+        }
         delete power_user.default_persona;
     } else {
         const confirm = await callPopup(`<h3>Are you sure you want to set "${personaName}" as the default persona?</h3>
@@ -4772,7 +4791,9 @@ async function setDefaultPersona() {
         }
 
         power_user.default_persona = avatarId;
-        toastr.success('This persona will be used by default when you open a new chat.', `Default persona set to ${personaName}`);
+        if (power_user.persona_show_notifications) {
+            toastr.success('This persona will be used by default when you open a new chat.', `Default persona set to ${personaName}`);
+        }
     }
 
     saveSettingsDebounced();
@@ -4835,18 +4856,22 @@ function lockUserNameToChat() {
         console.log(`Unlocking persona for this chat ${chat_metadata['persona']}`);
         delete chat_metadata['persona'];
         saveMetadata();
-        toastr.info('User persona is now unlocked for this chat. Click the "Lock" again to revert.', 'Persona unlocked');
+        if (power_user.persona_show_notifications) {
+            toastr.info('User persona is now unlocked for this chat. Click the "Lock" again to revert.', 'Persona unlocked');
+        }
         updateUserLockIcon();
         return;
     }
 
     if (!(user_avatar in power_user.personas)) {
         console.log(`Creating a new persona ${user_avatar}`);
-        toastr.info(
-            'Creating a new persona for currently selected user name and avatar...',
-            'Persona not set for this avatar',
-            { timeOut: 10000, extendedTimeOut: 20000, },
-        );
+        if (power_user.persona_show_notifications) {
+            toastr.info(
+                'Creating a new persona for currently selected user name and avatar...',
+                'Persona not set for this avatar',
+                { timeOut: 10000, extendedTimeOut: 20000, },
+            );
+        }
         power_user.personas[user_avatar] = name1;
         power_user.persona_descriptions[user_avatar] = { description: '', position: persona_description_positions.BEFORE_CHAR };
     }
@@ -4855,7 +4880,9 @@ function lockUserNameToChat() {
     saveMetadata();
     saveSettingsDebounced();
     console.log(`Locking persona for this chat ${user_avatar}`);
-    toastr.success(`User persona is locked to ${name1} in this chat`);
+    if (power_user.persona_show_notifications) {
+        toastr.success(`User persona is locked to ${name1} in this chat`);
+    }
     updateUserLockIcon();
 }
 
@@ -5076,11 +5103,13 @@ async function getSettings(type) {
 
         setWorldInfoSettings(settings, data);
 
-        api_server_textgenerationwebui =
-            settings.api_server_textgenerationwebui;
+        api_server_textgenerationwebui = settings.api_server_textgenerationwebui;
         $("#textgenerationwebui_api_url_text").val(
             api_server_textgenerationwebui
         );
+        api_use_mancer_webui = settings.api_use_mancer_webui
+        $('#use-mancer-api-checkbox').prop("checked", api_use_mancer_webui);
+        $('#use-mancer-api-checkbox').trigger("change");
 
         selected_button = settings.selected_button;
 
@@ -5114,6 +5143,7 @@ async function saveSettings(type) {
             active_group: active_group,
             api_server: api_server,
             api_server_textgenerationwebui: api_server_textgenerationwebui,
+            api_use_mancer_webui: api_use_mancer_webui,
             preset_settings: preset_settings,
             user_avatar: user_avatar,
             amount_gen: amount_gen,
@@ -7508,7 +7538,7 @@ $(document).ready(function () {
                 <h3>Delete the character?</h3>
                 <b>THIS IS PERMANENT!<br><br>
                 <label for="del_char_checkbox" class="checkbox_label justifyCenter">
-                    <input type="checkbox" id="del_char_checkbox" checked />
+                    <input type="checkbox" id="del_char_checkbox" />
                     <span>Also delete the chat files</span>
                 </label><br></b>`
         );
@@ -7691,14 +7721,26 @@ $(document).ready(function () {
         }
     });
 
-    $("#api_button_textgenerationwebui").click(function (e) {
+    $("#use-mancer-api-checkbox").on("change", function (e) {
+        const enabled = $("#use-mancer-api-checkbox").prop("checked");
+        $("#mancer-api-ui").toggle(enabled);
+        api_use_mancer_webui = enabled;
+        saveSettingsDebounced(); 
+        getStatus();
+    });
+
+    $("#api_button_textgenerationwebui").click(async function (e) {
         e.stopPropagation();
         if ($("#textgenerationwebui_api_url_text").val() != "") {
-            let value = formatKoboldUrl($("#textgenerationwebui_api_url_text").val().trim());
-
+            let value = formatTextGenURL($("#textgenerationwebui_api_url_text").val().trim())
             if (!value) {
-                callPopup('Please enter a valid URL.', 'text');
+                callPopup('Please enter a valid URL.<br/>WebUI URLs should end with <tt>/api</tt>', 'text');
                 return;
+            }
+
+            const mancer_key = $("#api_key_mancer").val().trim();
+            if (mancer_key.length) {
+                await writeSecret(SECRET_KEYS.MANCER, mancer_key);
             }
 
             $("#textgenerationwebui_api_url_text").val(value);
