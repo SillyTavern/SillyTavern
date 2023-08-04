@@ -188,6 +188,7 @@ let power_user = {
     persona_show_notifications: true,
 
     custom_stopping_strings: '',
+    custom_stopping_strings_macro: true,
     fuzzy_search: false,
 };
 
@@ -679,6 +680,7 @@ function loadPowerUserSettings(settings, data) {
     $('#auto_swipe_blacklist').val(power_user.auto_swipe_blacklist.join(", "));
     $('#auto_swipe_blacklist_threshold').val(power_user.auto_swipe_blacklist_threshold);
     $('#custom_stopping_strings').val(power_user.custom_stopping_strings);
+    $("#custom_stopping_strings_macro").prop("checked", power_user.custom_stopping_strings_macro);
     $('#fuzzy_search_checkbox').prop("checked", power_user.fuzzy_search);
     $('#persona_show_notifications').prop("checked", power_user.persona_show_notifications);
 
@@ -1993,6 +1995,11 @@ $(document).ready(() => {
 
     $('#custom_stopping_strings').on('input', function () {
         power_user.custom_stopping_strings = $(this).val();
+        saveSettingsDebounced();
+    });
+
+    $("#custom_stopping_strings_macro").change(function () {
+        power_user.custom_stopping_strings_macro = $(this).prop("checked");
         saveSettingsDebounced();
     });
 
