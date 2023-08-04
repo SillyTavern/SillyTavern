@@ -1999,7 +1999,7 @@ $(document).ready(() => {
     });
 
     $("#custom_stopping_strings_macro").change(function () {
-        power_user.custom_stopping_strings_macro = $(this).prop("checked");
+        power_user.custom_stopping_strings_macro = !!$(this).prop("checked");
         saveSettingsDebounced();
     });
 
