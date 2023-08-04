@@ -59,7 +59,7 @@
         "trusted_workers_only": false
     },
     "power_user": {
-        "tokenizer": 3,
+        "tokenizer": 99,
         "token_padding": 64,
         "collapse_newlines": false,
         "pygmalion_formatting": 0,

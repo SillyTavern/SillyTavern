@@ -71,6 +71,7 @@ const tokenizers = {
     NERD: 4,
     NERD2: 5,
     API: 6,
+    BEST_MATCH: 99,
 }
 
 const send_on_enter_options = {
@@ -87,7 +88,7 @@ export const persona_description_positions = {
 }
 
 let power_user = {
-    tokenizer: tokenizers.CLASSIC,
+    tokenizer: tokenizers.BEST_MATCH,
     token_padding: 64,
     collapse_newlines: false,
     pygmalion_formatting: pygmalion_options.AUTO,

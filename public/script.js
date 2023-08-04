@@ -546,6 +546,25 @@ async function getClientVersion() {
     }
 }
 
+function getTokenizerBestMatch() {
+    if (main_api === 'novel') {
+        if (nai_settings.model_novel.includes('krake') || nai_settings.model_novel.includes('euterpe')) {
+            return tokenizers.CLASSIC;
+        }
+        if (nai_settings.model_novel.includes('clio')) {
+            return tokenizers.NERD;
+        }
+        if (nai_settings.model_novel.includes('kayra')) {
+            return tokenizers.NERD2;
+        }
+    }
+    if (main_api === 'kobold' || main_api === 'textgenerationwebui' || main_api === 'koboldhorde') {
+        return tokenizers.LLAMA;
+    }
+
+    return power_user.NONE;
+}
+
 function getTokenCount(str, padding = undefined) {
     if (typeof str !== 'string') {
         return 0;
@@ -561,6 +580,10 @@ function getTokenCount(str, padding = undefined) {
             // For extensions and WI
             return getTokenCountOpenAI(str);
         }
+    }
+
+    if (tokenizerType === tokenizers.BEST_MATCH) {
+        tokenizerType = getTokenizerBestMatch();
     }
 
     if (padding === undefined) {
@@ -7729,7 +7752,7 @@ $(document).ready(function () {
         const enabled = $("#use-mancer-api-checkbox").prop("checked");
         $("#mancer-api-ui").toggle(enabled);
         api_use_mancer_webui = enabled;
-        saveSettingsDebounced(); 
+        saveSettingsDebounced();
         getStatus();
     });
 
