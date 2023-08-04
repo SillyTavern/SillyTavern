@@ -399,8 +399,8 @@ async function unloadLiveChar() {
     try {
         const url = new URL(getApiUrl());
         url.pathname = '/api/live2d/unload';
-
-        const loadResponse = await fetch(url);
+        
+        const loadResponse = await doExtrasFetch(url);
 
         if (!loadResponse.ok) {
             throw new Error(loadResponse.statusText);
