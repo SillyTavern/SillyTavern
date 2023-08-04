@@ -39,7 +39,7 @@ const MIN_STREAMING_KCPPVERSION = '1.30';
 function formatKoboldUrl(value) {
     try {
         const url = new URL(value);
-        if (power_user.settings.relaxed_api_urls) {
+        if (power_user.relaxed_api_urls) {
             if (url.pathname.endsWith('/api')) {
                 return url.toString();
             }
