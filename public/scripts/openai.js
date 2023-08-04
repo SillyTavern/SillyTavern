@@ -575,7 +575,6 @@ function populateChatCompletion (prompts, chatCompletion, {bias, quietPrompt, ty
 
         // Add authors notes
         if (true === afterScenario) chatCompletion.insert(authorsNote, 'scenario');
-        else chatCompletion.insert(authorsNote, 'main');
     }
 
     // Persona Description
