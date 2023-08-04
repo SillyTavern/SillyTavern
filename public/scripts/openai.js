@@ -517,7 +517,7 @@ function populateChatCompletion (prompts, chatCompletion, {bias, quietPrompt, ty
         const prompt = prompts.get(source);
         const index = target ? prompts.index(target) : prompts.index(source);
         const collection = new MessageCollection(source);
-        collection.addItem(Message.fromPrompt(prompt));
+        collection.add(Message.fromPrompt(prompt));
         chatCompletion.add(collection, index);
     };
 
@@ -534,7 +534,7 @@ function populateChatCompletion (prompts, chatCompletion, {bias, quietPrompt, ty
     // Add quiet prompt to control prompts
     // This should always be last, even in control prompts. Add all further control prompts BEFORE this prompt
     const quietPromptMessage = Message.fromPrompt(prompts.get('quietPrompt')) ?? null;
-    if (quietPromptMessage) controlPrompts.addItem(quietPromptMessage);
+    if (quietPromptMessage) controlPrompts.add(quietPromptMessage);
 
     chatCompletion.reserveBudget(controlPrompts);
 
@@ -1428,7 +1428,7 @@ class MessageCollection  {
      * Add a new item to the collection.
      * @param {Object} item - The Message or MessageCollection instance to be added.
      */
-    addItem(item) {
+    add(item) {
         this.collection.push(item);
     }
 
