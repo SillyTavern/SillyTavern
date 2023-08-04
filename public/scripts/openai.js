@@ -505,7 +505,7 @@ function populateDialogueExamples(prompts, chatCompletion) {
  * @param {ChatCompletion} chatCompletion - An instance of ChatCompletion class that will be populated with the prompts.
  * @param {Object} options - An object with optional settings.
  * @param {string} options.bias - A bias to be added in the conversation.
- * @param {string} options.quietPrompt - A quiet prompt to be used in the conversation.
+ * @param {string} options.quietPrompt - Instruction prompt for extras
  * @param {string} options.type - The type of the chat, can be 'impersonate'.
  */
 function populateChatCompletion (prompts, chatCompletion, {bias, quietPrompt, type, cyclePrompt} = {}) {
@@ -528,6 +528,16 @@ function populateChatCompletion (prompts, chatCompletion, {bias, quietPrompt, ty
     addToChatCompletion('charPersonality');
     addToChatCompletion('scenario');
 
+    // Collection of control prompts that will always be positioned last
+    const controlPrompts = new MessageCollection('controlPrompts');
+
+    // Add quiet prompt to control prompts
+    // This should always be last, even in control prompts. Add all further control prompts BEFORE this prompt
+    const quietPromptMessage = Message.fromPrompt(prompts.get('quietPrompt')) ?? null;
+    if (quietPromptMessage) controlPrompts.addItem(quietPromptMessage);
+
+    chatCompletion.reserveBudget(controlPrompts);
+
     // Add main prompt
     if (type === "impersonate") addToChatCompletion('impersonate', 'main');
     else addToChatCompletion('main');
@@ -549,12 +559,6 @@ function populateChatCompletion (prompts, chatCompletion, {bias, quietPrompt, ty
     // Insert nsfw avoidance prompt into main, if no nsfw prompt is present
     if (false === chatCompletion.has('nsfw') && oai_settings.nsfw_avoidance_prompt)
         if (prompts.has('nsfwAvoidance')) chatCompletion.insert(Message.fromPrompt(prompts.get('nsfwAvoidance')), 'main');
-
-    // Insert quiet prompt into main
-    if (quietPrompt) {
-        const quietPromptMessage = Message.fromPrompt(prompts.get('quietPrompt'));
-        chatCompletion.insert(quietPromptMessage, 'main');
-    }
 
     // Bias
     if (bias && bias.trim().length) addToChatCompletion('bias');
@@ -610,6 +614,9 @@ function populateChatCompletion (prompts, chatCompletion, {bias, quietPrompt, ty
         populateChatHistory(prompts, chatCompletion, type, cyclePrompt);
         populateDialogueExamples(prompts, chatCompletion);
     }
+
+    chatCompletion.freeBudget(controlPrompts);
+    if (controlPrompts.collection.length) chatCompletion.add(controlPrompts);
 }
 
 /**
@@ -1676,14 +1683,14 @@ class ChatCompletion {
     /**
      * Reserves the tokens required by the given message from the token budget.
      *
-     * @param {Message} message - The message whose tokens to reserve.
+     * @param {Message|MessageCollection} message - The message whose tokens to reserve.
      */
     reserveBudget(message) { this.decreaseTokenBudgetBy(message.getTokens()) };
 
     /**
      * Frees up the tokens used by the given message from the token budget.
      *
-     * @param {Message} message - The message whose tokens to free.
+     * @param {Message|MessageCollection} message - The message whose tokens to free.
      */
     freeBudget(message) { this.increaseTokenBudgetBy(message.getTokens()) };
 
