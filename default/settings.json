@@ -147,6 +147,7 @@
         "persona_description": "",
         "persona_description_position": 0,
         "custom_stopping_strings": "",
+        "custom_stopping_strings_macro": true,
         "fuzzy_search": false
     },
     "extension_settings": {
