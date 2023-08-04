@@ -1750,7 +1750,7 @@ function getStoppingStrings(isImpersonate, addSpace) {
 
     if (power_user.custom_stopping_strings) {
         const customStoppingStrings = getCustomStoppingStrings();
-        result.push(...customStoppingStrings);
+        result.push(...customStoppingStrings.map(x => substituteParams(x, name1, name2)));
     }
 
     return addSpace ? result.map(x => `${x} `) : result;
