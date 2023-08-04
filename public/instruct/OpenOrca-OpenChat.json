@@ -1,5 +1,4 @@
 {
-    "enabled": true,
     "input_sequence": "User: ",
     "macro": true,
     "name": "OpenOrca/OpenChat",
