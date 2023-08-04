@@ -79,7 +79,7 @@ function loadNovelSettings(settings) {
     $(`#model_novel_select option[value=${nai_settings.model_novel}]`).attr("selected", true);
     $('#model_novel_select').val(nai_settings.model_novel);
 
-    if (settings.nai_preamble !== undefined) nai_settings.nai_preamble = settings.nai_preamble;
+    if (settings.nai_preamble !== undefined) nai_settings.preamble = settings.nai_preamble;
     nai_settings.preset_settings_novel = settings.preset_settings_novel;
     nai_settings.temperature = settings.temperature;
     nai_settings.repetition_penalty = settings.repetition_penalty;
@@ -347,13 +347,13 @@ export async function generateNovelWithStreaming(generate_data, signal) {
 }
 
 $("#nai_preamble_textarea").on('input', function () {
-    nai_settings.nai_preamble = $('#nai_preamble_textarea').val();
+    nai_settings.preamble = $('#nai_preamble_textarea').val();
     saveSettingsDebounced();
 });
 
 $("#nai_preamble_restore").on('click', function () {
-    nai_settings.nai_preamble = default_preamble;
-    $('#nai_preamble_textarea').val(nai_settings.nai_preamble);
+    nai_settings.preamble = default_preamble;
+    $('#nai_preamble_textarea').val(nai_settings.preamble);
     saveSettingsDebounced();
 });
 

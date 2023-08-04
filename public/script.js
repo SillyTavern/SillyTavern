@@ -546,6 +546,25 @@ async function getClientVersion() {
     }
 }
 
+function getTokenizerBestMatch() {
+    if (main_api === 'novel') {
+        if (nai_settings.model_novel.includes('krake') || nai_settings.model_novel.includes('euterpe')) {
+            return tokenizers.CLASSIC;
+        }
+        if (nai_settings.model_novel.includes('clio')) {
+            return tokenizers.NERD;
+        }
+        if (nai_settings.model_novel.includes('kayra')) {
+            return tokenizers.NERD2;
+        }
+    }
+    if (main_api === 'kobold' || main_api === 'textgenerationwebui' || main_api === 'koboldhorde') {
+        return tokenizers.LLAMA;
+    }
+
+    return power_user.NONE;
+}
+
 function getTokenCount(str, padding = undefined) {
     if (typeof str !== 'string') {
         return 0;
@@ -561,6 +580,10 @@ function getTokenCount(str, padding = undefined) {
             // For extensions and WI
             return getTokenCountOpenAI(str);
         }
+    }
+
+    if (tokenizerType === tokenizers.BEST_MATCH) {
+        tokenizerType = getTokenizerBestMatch();
     }
 
     if (padding === undefined) {
@@ -1727,7 +1750,11 @@ function getStoppingStrings(isImpersonate, addSpace) {
 
     if (power_user.custom_stopping_strings) {
         const customStoppingStrings = getCustomStoppingStrings();
-        result.push(...customStoppingStrings);
+        if (power_user.custom_stopping_strings_macro) {
+            result.push(...customStoppingStrings.map(x => substituteParams(x, name1, name2)));
+        } else {
+            result.push(...customStoppingStrings);
+        }
     }
 
     return addSpace ? result.map(x => `${x} `) : result;
@@ -2669,8 +2696,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 setPromtString();
             }
 
+            // add chat preamble
+            mesSendString = addChatsPreamble(mesSendString);
+
             // add a custom dingus (if defined)
-            mesSendString = adjustChatsSeparator(mesSendString);
+            mesSendString = addChatsSeparator(mesSendString);
 
             let finalPromt =
                 storyString +
@@ -3156,22 +3186,23 @@ function parseTokenCounts(counts, thisPromptBits) {
     });
 }
 
-function adjustChatsSeparator(mesSendString) {
-    if (main_api === 'novel') {
-        let preamble = "\n***\n" + nai_settings.nai_preamble;
-        if (!preamble.endsWith('\n')) {
-            preamble += '\n';
-        }
-        mesSendString = preamble + mesSendString;
-    }
+function addChatsPreamble(mesSendString) {
+    const preamble = main_api === 'novel' ? nai_settings.preamble : "";
+    return preamble + '\n' + mesSendString;
+}
 
-    else if (power_user.custom_chat_separator && power_user.custom_chat_separator.length) {
+function addChatsSeparator(mesSendString) {
+    if (power_user.custom_chat_separator && power_user.custom_chat_separator.length) {
         mesSendString = power_user.custom_chat_separator + '\n' + mesSendString;
     }
 
     // if chat start formatting is disabled
     else if (power_user.disable_start_formatting) {
         mesSendString = mesSendString;
+    }
+
+    else if (main_api === 'novel') {
+        mesSendString = '\n***\n' + mesSendString;
     }
 
     // add non-pygma dingus
@@ -7005,13 +7036,13 @@ function doCloseChat() {
  *
  * @param {string} popup_type - The type of popup currently active.
  * @param {string} this_chid - The character ID to be deleted.
+ * @param {boolean} delete_chats - Whether to delete chats or not.
  */
-export async function handleDeleteCharacter(popup_type, this_chid) {
+export async function handleDeleteCharacter(popup_type, this_chid, delete_chats) {
     if (popup_type !== "del_ch") {
         return;
     }
 
-    const delete_chats = !!$("#del_char_checkbox").prop("checked");
     const avatar = characters[this_chid].avatar;
     const name = characters[this_chid].name;
 
@@ -7449,7 +7480,8 @@ $(document).ready(function () {
             }, 200);
         }
         if (popup_type == "del_ch") {
-            handleDeleteCharacter(popup_type, this_chid, characters);
+            const deleteChats = !!$("#del_char_checkbox").prop("checked");
+            await handleDeleteCharacter(popup_type, this_chid, deleteChats);
         }
         if (popup_type == "alternate_greeting" && menu_type !== "create") {
             createOrEditCharacter();
@@ -7725,7 +7757,7 @@ $(document).ready(function () {
         const enabled = $("#use-mancer-api-checkbox").prop("checked");
         $("#mancer-api-ui").toggle(enabled);
         api_use_mancer_webui = enabled;
-        saveSettingsDebounced(); 
+        saveSettingsDebounced();
         getStatus();
     });
 

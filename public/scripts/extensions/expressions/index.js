@@ -45,8 +45,6 @@ let lastCharacter = undefined;
 let lastMessage = null;
 let spriteCache = {};
 let inApiCall = false;
-let previousSrc = null;
-
 
 function isVisualNovelMode() {
     return Boolean(!isMobile() && power_user.waifuMode && getContext().groupId);
@@ -395,6 +393,21 @@ function onExpressionsShowDefaultInput() {
     }
 }
 
+async function unloadLiveChar() {
+    try {
+        const url = new URL(getApiUrl());
+        url.pathname = '/api/live2d/unload';
+        const loadResponse = await doExtrasFetch(url);
+        if (!loadResponse.ok) {
+            throw new Error(loadResponse.statusText);
+        }
+        const loadResponseText = await loadResponse.text();
+        //console.log(`Response: ${loadResponseText}`);
+    } catch (error) {
+        //console.error(`Error unloading - ${error}`);
+    }
+}
+
 async function loadLiveChar() {
     if (!modules.includes('live2d')) {
         console.debug('live2d module is disabled');
@@ -456,7 +469,6 @@ function handleImageChange() {
     }
 
     if (extension_settings.expressions.live2d) {
-        previousSrc = imgElement.src;
         // Method get IP of endpoint
         const live2dResultFeedSrc = `${getApiUrl()}/api/live2d/result_feed`;
         $('#expression-holder').css({ display: '' });
@@ -496,7 +508,6 @@ async function moduleWorker() {
     if (context.groupId !== lastCharacter && context.characterId !== lastCharacter) {
         removeExpression();
         spriteCache = {};
-        previousSrc = null;
 
         //clear expression
         let imgElement = document.getElementById('expression-image');
@@ -611,12 +622,62 @@ async function moduleWorker() {
     }
 }
 
+async function live2dcheck() {
+    const context = getContext();
+    let spriteFolderName = context.name2;
+    const message = getLastCharacterMessage();
+    const avatarFileName = getSpriteFolderName(message);
+    const expressionOverride = extension_settings.expressionOverrides.find((e) =>
+        e.name == avatarFileName
+    );
+
+    if (expressionOverride && expressionOverride.path) {
+        spriteFolderName = expressionOverride.path;
+    }
+
+    try {
+        await validateImages(spriteFolderName);
+
+        let live2dObj = spriteCache[spriteFolderName].find(obj => obj.label === 'live2d');
+        let live2dPath_f = live2dObj ? live2dObj.path : null;
+
+        if(live2dPath_f != null){
+            //console.log("live2dPath_f " + live2dPath_f);
+            return true;
+        } else { 
+            //console.log("live2dPath_f is null"); 
+            unloadLiveChar();
+            return false;
+        }
+    } catch (err) {
+        return err;
+    }
+}
+
 function setLive2dState(switch_var){
     extension_settings.expressions.live2d = switch_var; // Store setting
     saveSettingsDebounced();
 
-    if (extension_settings.expressions.live2d) { loadLiveChar(); } // load char as needed
-    handleImageChange(switch_var); // Change image as needed
+    live2dcheck().then(result => {
+        if (result) {
+            //console.log("Live2d exists!");
+
+                if (extension_settings.expressions.live2d) { 
+                    loadLiveChar(); 
+                } else {
+                    unloadLiveChar(); 
+                }
+                handleImageChange(switch_var); // Change image as needed
+
+
+        } else {
+            //console.log("Live2d does not exist.");
+        }
+    });
+    
+
+
+
 }
 
 function getSpriteFolderName(message) {
@@ -917,13 +978,25 @@ async function setExpression(character, expression, force) {
         document.getElementById("expression-holder").style.display = '';
 
     } else {
-            // Find the <img> element with id="expression-image" and class="expression"
-            const imgElement = document.querySelector('img#expression-image.expression');
-            //console.log("searching");
-            if (imgElement) {
-                console.log("setting value");
-                imgElement.src = getApiUrl() + '/api/live2d/result_feed';
+
+
+        live2dcheck().then(result => {
+            if (result) {
+                    // Find the <img> element with id="expression-image" and class="expression"
+                    const imgElement = document.querySelector('img#expression-image.expression');
+                    //console.log("searching");
+                    if (imgElement) {
+                        //console.log("setting value");
+                        imgElement.src = getApiUrl() + '/api/live2d/result_feed';
+                    }
+    
+            } else {
+                //console.log("The fetch failed!");
             }
+        });
+
+
+
     }
 }
 
