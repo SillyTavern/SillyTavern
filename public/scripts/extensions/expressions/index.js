@@ -659,10 +659,6 @@ function setLive2dState(switch_var){
     saveSettingsDebounced();
 
     live2dcheck().then(result => {
-        //console.log(result);
-    });
-
-    live2dcheck().then(result => {
         if (result) {
             //console.log("Live2d exists!");
 
