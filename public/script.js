@@ -2669,8 +2669,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 setPromtString();
             }
 
+            // add chat preamble
+            mesSendString = addChatsPreamble(mesSendString);
+
             // add a custom dingus (if defined)
-            mesSendString = adjustChatsSeparator(mesSendString);
+            mesSendString = addChatsSeparator(mesSendString);
 
             let finalPromt =
                 storyString +
@@ -3156,22 +3159,23 @@ function parseTokenCounts(counts, thisPromptBits) {
     });
 }
 
-function adjustChatsSeparator(mesSendString) {
-    if (main_api === 'novel') {
-        let preamble = "\n***\n" + nai_settings.nai_preamble;
-        if (!preamble.endsWith('\n')) {
-            preamble += '\n';
-        }
-        mesSendString = preamble + mesSendString;
-    }
+function addChatsPreamble(mesSendString) {
+    const preamble = main_api === 'novel' ? nai_settings.preamble : "";
+    return preamble + '\n' + mesSendString;
+}
 
-    else if (power_user.custom_chat_separator && power_user.custom_chat_separator.length) {
+function addChatsSeparator(mesSendString) {
+    if (power_user.custom_chat_separator && power_user.custom_chat_separator.length) {
         mesSendString = power_user.custom_chat_separator + '\n' + mesSendString;
     }
 
     // if chat start formatting is disabled
     else if (power_user.disable_start_formatting) {
         mesSendString = mesSendString;
+    }
+
+    else if (main_api === 'novel') {
+        mesSendString = '\n***\n' + mesSendString;
     }
 
     // add non-pygma dingus
