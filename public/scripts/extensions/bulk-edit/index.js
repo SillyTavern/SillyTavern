@@ -1,4 +1,4 @@
-import { characters, getCharacters, saveSettingsDebounced, handleDeleteCharacter } from "../../../script.js";
+import { characters, getCharacters, handleDeleteCharacter, callPopup } from "../../../script.js";
 
 let is_bulk_edit = false;
 
@@ -27,7 +27,7 @@ function onEditButtonClick() {
  * @param {string} this_chid - The chid of the character to delete.
  */
 async function deleteCharacter(this_chid) {
-    await handleDeleteCharacter("del_ch", this_chid);
+    await handleDeleteCharacter("del_ch", this_chid, false);
 }
 
 /**
@@ -44,6 +44,13 @@ async function onDeleteButtonClick() {
         // Add the avatar to the list of avatars to delete
         toDelete.push(avatar);
     });
+
+    const confirm = await callPopup('<h3>Are you sure you want to delete these characters?</h3>You would need to delete the chat files manually.<br>', 'confirm');
+
+    if (!confirm) {
+        console.log('User cancelled delete');
+        return;
+    }
 
     // Delete the characters
     for (const avatar of toDelete) {
@@ -78,7 +85,7 @@ function addButtons() {
  * Enables bulk selection by adding a checkbox next to each character.
  */
 function enableBulkSelect() {
-    $(".character_select").each((i, el) => {
+    $("#rm_print_characters_block .character_select").each((i, el) => {
         const character = $(el).text();
         const checkbox = $("<input type='checkbox' class='bulk_select_checkbox'>");
         checkbox.on("change", () => {
@@ -86,6 +93,7 @@ function enableBulkSelect() {
         });
         $(el).prepend(checkbox);
     });
+    $("#rm_print_characters_block").addClass("bulk_select");
     // We also need to disable the default click event for the character_select divs
     $(document).on("click", ".bulk_select_checkbox", function (event) {
         event.stopImmediatePropagation();
@@ -97,6 +105,7 @@ function enableBulkSelect() {
  */
 function disableBulkSelect() {
     $(".bulk_select_checkbox").remove();
+    $("#rm_print_characters_block").removeClass("bulk_select");
 }
 
 /**

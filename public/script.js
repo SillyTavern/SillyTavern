@@ -7032,13 +7032,13 @@ function doCloseChat() {
  *
  * @param {string} popup_type - The type of popup currently active.
  * @param {string} this_chid - The character ID to be deleted.
+ * @param {boolean} delete_chats - Whether to delete chats or not.
  */
-export async function handleDeleteCharacter(popup_type, this_chid) {
+export async function handleDeleteCharacter(popup_type, this_chid, delete_chats) {
     if (popup_type !== "del_ch") {
         return;
     }
 
-    const delete_chats = !!$("#del_char_checkbox").prop("checked");
     const avatar = characters[this_chid].avatar;
     const name = characters[this_chid].name;
 
@@ -7476,7 +7476,8 @@ $(document).ready(function () {
             }, 200);
         }
         if (popup_type == "del_ch") {
-            handleDeleteCharacter(popup_type, this_chid, characters);
+            const deleteChats = !!$("#del_char_checkbox").prop("checked");
+            await handleDeleteCharacter(popup_type, this_chid, deleteChats);
         }
         if (popup_type == "alternate_greeting" && menu_type !== "create") {
             createOrEditCharacter();
