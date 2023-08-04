@@ -45,8 +45,6 @@ let lastCharacter = undefined;
 let lastMessage = null;
 let spriteCache = {};
 let inApiCall = false;
-let previousSrc = null;
-
 
 function isVisualNovelMode() {
     return Boolean(!isMobile() && power_user.waifuMode && getContext().groupId);
@@ -477,7 +475,6 @@ function handleImageChange() {
     }
 
     if (extension_settings.expressions.live2d) {
-        previousSrc = imgElement.src;
         // Method get IP of endpoint
         const live2dResultFeedSrc = `${getApiUrl()}/api/live2d/result_feed`;
         $('#expression-holder').css({ display: '' });
@@ -517,7 +514,6 @@ async function moduleWorker() {
     if (context.groupId !== lastCharacter && context.characterId !== lastCharacter) {
         removeExpression();
         spriteCache = {};
-        previousSrc = null;
 
         //clear expression
         let imgElement = document.getElementById('expression-image');
