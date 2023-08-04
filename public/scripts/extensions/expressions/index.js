@@ -1180,7 +1180,7 @@ function setExpressionOverrideHtml(forceClear = false) {
     function addExpressionImage() {
         const html = `
         <div id="expression-wrapper">
-            <div id="expression-holder" class="expression-holder" style="">
+            <div id="expression-holder" class="expression-holder" style="display:none;">
                 <div id="expression-holderheader" class="fa-solid fa-grip drag-grabber"></div>
                 <img id="expression-image" class="expression">
             </div>
