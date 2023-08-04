@@ -400,7 +400,7 @@ async function unloadLiveChar() {
         const url = new URL(getApiUrl());
         url.pathname = '/api/live2d/unload';
 
-        const loadResponse = await fetch(url);
+        const loadResponse = await doExtrasFetch(url);
 
         if (!loadResponse.ok) {
             throw new Error(loadResponse.statusText);
@@ -412,6 +412,7 @@ async function unloadLiveChar() {
     } catch (error) {
         console.error(`Error unloading - ${error}`);
     }
+
 }
 
 
@@ -1180,7 +1181,7 @@ function setExpressionOverrideHtml(forceClear = false) {
     function addExpressionImage() {
         const html = `
         <div id="expression-wrapper">
-            <div id="expression-holder" class="expression-holder" style="">
+            <div id="expression-holder" class="expression-holder" style="display:none;">
                 <div id="expression-holderheader" class="fa-solid fa-grip drag-grabber"></div>
                 <img id="expression-image" class="expression">
             </div>
