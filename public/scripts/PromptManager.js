@@ -1672,7 +1672,7 @@ const promptManagerDefaultPromptOrder = [
     },
     {
         "identifier": "jailbreak",
-        "enabled": false
+        "enabled": true
     }
 ];
 
