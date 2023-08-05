@@ -8051,7 +8051,7 @@ $(document).ready(function () {
         is_delete_mode = false;
     });
 
-    //confirms message delation with the "ok" button
+    //confirms message deletion with the "ok" button
     $("#dialogue_del_mes_ok").click(function () {
         $("#dialogue_del_mes").css("display", "none");
         $("#send_form").css("display", css_send_form_display);
@@ -8450,6 +8450,8 @@ $(document).ready(function () {
 
         updateViewMessageIds();
         saveChatConditional();
+
+        eventSource.emit(event_types.MESSAGE_DELETED, count_view_mes);
 
         hideSwipeButtons();
         showSwipeButtons();
