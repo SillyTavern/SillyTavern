@@ -1311,8 +1311,8 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
                 </span>
                 <span>
                         <span class="prompt_manager_prompt_controls">
-                            ${editSpanHtml}
                             ${detachSpanHtml}
+                            ${editSpanHtml}
                             ${toggleSpanHtml}
                         </span>
                 </span>
