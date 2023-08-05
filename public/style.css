@@ -221,6 +221,9 @@ table.responsiveTable {
 .mes_text blockquote {
     color: var(--SmartThemeQuoteColor);
     font-weight: 500;
+}
+
+.mes_text blockquote {
     border-left: 3px solid var(--SmartThemeQuoteColor);
     padding-left: 10px;
     background-color: var(--black30a);
