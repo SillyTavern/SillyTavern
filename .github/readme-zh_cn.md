@@ -306,3 +306,4 @@ SillyTavern 会将 API 密钥保存在目录中的 `secrets.json` 文件内。
 * 10K Discord Users Celebratory Background by @kallmeflocc
 * Default content (characters and lore books) provided by @OtisAlejandro, @RossAscends and @kallmeflocc
 * Korean translation by @doloroushyeonse
+* 中文翻译由 [@XXpE3](https://github.com/XXpE3) 完成，中文 ISSUES 可以联系 @XXpE3

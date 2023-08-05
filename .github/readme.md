@@ -309,3 +309,4 @@ GNU Affero General Public License for more details.**
 * Default content (characters and lore books) provided by @OtisAlejandro, @RossAscends and @kallmeflocc
 * Korean translation by @doloroushyeonse
 * k_euler_a support for Horde by <https://github.com/Teashrock>
+* Chinese translation by [@XXpE3](https://github.com/XXpE3), 中文 ISSUES 可以联系 @XXpE3
