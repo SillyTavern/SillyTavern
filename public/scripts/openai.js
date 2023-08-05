@@ -1283,14 +1283,15 @@ function countTokens(messages, full = false) {
     let token_count = -1;
 
     for (const message of messages) {
+        const model = getTokenizerModel();
         const hash = getStringHash(message.content);
-        const cachedCount = tokenCache[chatId][hash];
+        const cacheKey = `${model}-${hash}`;
+        const cachedCount = tokenCache[chatId][cacheKey];
 
-        if (cachedCount) {
+        if (typeof cachedCount === 'number') {
             token_count += cachedCount;
         }
         else {
-            let model = getTokenizerModel();
 
             jQuery.ajax({
                 async: false,
@@ -1300,8 +1301,8 @@ function countTokens(messages, full = false) {
                 dataType: "json",
                 contentType: "application/json",
                 success: function (data) {
-                    token_count += data.token_count;
-                    tokenCache[chatId][hash] = data.token_count;
+                    token_count += Number(data.token_count);
+                    tokenCache[chatId][cacheKey] = Number(data.token_count);
                 }
             });
         }
