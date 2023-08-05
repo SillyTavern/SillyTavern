@@ -491,7 +491,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
 
     // Restore default state of a characters prompt order
     this.handleCharacterReset = () => {
-        callPopup('This will reset the prompt order for this character. You will not loose any prompts.', 'confirm',)
+        callPopup('This will reset the prompt order for this character. You will not lose any prompts.', 'confirm',)
             .then(userChoice => {
                 if (false === userChoice) return;
 
