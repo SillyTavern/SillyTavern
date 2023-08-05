@@ -221,6 +221,9 @@ table.responsiveTable {
 .mes_text blockquote {
     color: var(--SmartThemeQuoteColor);
     font-weight: 500;
+    border-left: 3px solid var(--SmartThemeQuoteColor);
+    padding-left: 10px;
+    background-color: var(--black30a);
 }
 
 .mes_text strong em,
@@ -1293,7 +1296,8 @@ body.charListGrid #rm_print_characters_block .tags_inline {
 
 }
 
-.floating_prompt_radio_group, .radio_group {
+.floating_prompt_radio_group,
+.radio_group {
     display: flex;
     flex-direction: column;
 }
@@ -3050,12 +3054,13 @@ h5 {
 
 /* HEINOUS */
 @keyframes infinite-spinning {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 #export_character_div {
