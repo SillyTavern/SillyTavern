@@ -523,6 +523,7 @@ function populateChatCompletion (prompts, chatCompletion, {bias, quietPrompt, ty
 
     // Character and world information
     addToChatCompletion('worldInfoBefore');
+    addToChatCompletion('main');
     addToChatCompletion('worldInfoAfter');
     addToChatCompletion('charDescription');
     addToChatCompletion('charPersonality');
@@ -531,16 +532,15 @@ function populateChatCompletion (prompts, chatCompletion, {bias, quietPrompt, ty
     // Collection of control prompts that will always be positioned last
     const controlPrompts = new MessageCollection('controlPrompts');
 
+    const impersonateMessage = Message.fromPrompt(prompts.get('impersonate')) ?? null;
+    if (type === 'impersonate') controlPrompts.add(impersonateMessage)
+
     // Add quiet prompt to control prompts
     // This should always be last, even in control prompts. Add all further control prompts BEFORE this prompt
     const quietPromptMessage = Message.fromPrompt(prompts.get('quietPrompt')) ?? null;
     if (quietPromptMessage) controlPrompts.add(quietPromptMessage);
 
     chatCompletion.reserveBudget(controlPrompts);
-
-    // Add main prompt
-    if (type === "impersonate") addToChatCompletion('impersonate', 'main');
-    else addToChatCompletion('main');
 
     // Add ordered system and user prompts
     const systemPrompts = ['nsfw', 'jailbreak'];
