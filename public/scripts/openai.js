@@ -2585,6 +2585,7 @@ async function onModelChange() {
     }
 
     saveSettingsDebounced();
+    eventSource.emit(event_types.CHATCOMPLETION_MODEL_CHANGED, value);
 }
 
 async function onNewPresetClick() {
@@ -2918,6 +2919,8 @@ $(document).ready(function () {
         if (main_api == 'openai') {
             reconnectOpenAi();
         }
+
+        eventSource.emit(event_types.CHATCOMPLETION_SOURCE_CHANGED, oai_settings.chat_completion_source);
     });
 
     $('#oai_max_context_unlocked').on('input', function () {
