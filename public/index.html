@@ -328,7 +328,7 @@
                                 </div>
                                 <div class="range-block-range-and-counter">
                                     <div class="range-block-range">
-                                        <input type="range" id="temp_novel" name="volume" min="0.1" max="2.0" step="0.01">
+                                        <input type="range" id="temp_novel" name="volume" min="0.1" max="2.50" step="0.01">
                                     </div>
                                     <div class="range-block-counter">
                                         <div contenteditable="true" data-for="temp_novel" id="temp_counter_novel">
@@ -342,7 +342,7 @@
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
-                                            <input type="range" id="rep_pen_novel" name="volume" min="1" max="1.5" step="0.01">
+                                            <input type="range" id="rep_pen_novel" name="volume" min="1" max="8" step="0.05">
                                         </div>
                                         <div class="range-block-counter">
                                             <div contenteditable="true" data-for="rep_pen_novel" id="rep_pen_counter_novel">
@@ -387,7 +387,7 @@
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
-                                            <input type="range" id="rep_pen_freq_novel" name="volume" min="0" max="1" step="0.00001">
+                                            <input type="range" id="rep_pen_freq_novel" name="volume" min="0" max="1" step="0.01">
                                         </div>
                                         <div class="range-block-counter">
                                             <div contenteditable="true" data-for="rep_pen_freq_novel" id="rep_pen_freq_counter_novel">
@@ -402,7 +402,7 @@
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
-                                            <input type="range" id="rep_pen_presence_novel" name="volume" min="0" max="1" step="0.001">
+                                            <input type="range" id="rep_pen_presence_novel" name="volume" min="0" max="1" step="0.01">
                                         </div>
                                         <div class="range-block-counter">
                                             <div contenteditable="true" data-for="rep_pen_presence_novel" id="rep_pen_presence_counter_novel">
@@ -815,8 +815,8 @@
                                             <div class="fa-solid fa-clock-rotate-left "></div>
                                         </div>
                                     </div>
-                                    <div class="toggle-description justifyLeft" data-i18n="Use style tags to improve the quality of the output">
-                                        Use style tags to improve the quality of the output
+                                    <div class="toggle-description justifyLeft" data-i18n="Use style tags to modify the writing style of the output">
+                                        Use style tags to modify the writing style of the output
                                     </div>
                                     <div class="wide100p">
                                         <textarea id="nai_preamble_textarea" class="text_pole textarea_compact" name="nai_preamble" rows="2"
@@ -1336,12 +1336,8 @@
                                     </div>
                                 </div>
                                 <div class="range-block" data-source="claude">
-                                    <div class="range-block-title" data-i18n="Assistant Prefill">
-                                        Assistant Prefill
-                                    </div>
-                                    <div class="wide100p">
-                                        <input type="text" id="claude_assistant_prefill" class="text_pole" placeholder="Start Claude's answer with...">
-                                    </div>
+                                    <span data-i18n="Assistant Prefill">Assistant Prefill</span>
+                                    <textarea id="claude_assistant_prefill" class="text_pole textarea_compact" name="assistant_prefill" rows="3" maxlength="5000" placeholder="Start Claude's answer with..."></textarea>
                                 </div>
 
                                 <div class="inline-drawer wide100p">
@@ -1556,11 +1552,11 @@
                     </div>
                     <div id="textgenerationwebui_api" style="display: none;position: relative;">
                         <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                            If you are using: 
+                            If you are using:
                             <div class="flex-container indent20p">
                                 <a href="https://github.com/oobabooga/text-generation-webui" target="_blank">
                                     oobabooga/text-generation-webui
-                                </a>, 
+                                </a>
                                 <span data-i18n="Make sure you run it with">
                                     Make sure you run it with <tt>--api</tt> flag
                                 </span>
@@ -1568,7 +1564,7 @@
                             <div class="flex-container indent20p">
                                 <a href="https://mancer.tech/" target="_blank">
                                     Mancer AI
-                                </a>, 
+                                </a>
                                 <label class="checkbox_label" for="use-mancer-api-checkbox">
                                     <span data-i18n="Use API key (Only required for Mancer)">
                                         Click this box (and add your API key!):
@@ -1961,6 +1957,7 @@
                                 </a>
                             </h4>
                             <select id="tokenizer">
+                                <option value="99">Best match (recommended)</option>
                                 <option value="0">None / Estimated</option>
                                 <option value="1">GPT-3 (OpenAI)</option>
                                 <option value="2">GPT-3 (Alternative / Classic)</option>
@@ -2037,6 +2034,12 @@
                             <div>
                                 <textarea id="custom_stopping_strings" rows="2" class="text_pole textarea_compact" placeholder="[&quot;Ford&quot;, &quot;BMW&quot;, &quot;Fiat&quot;]"></textarea>
                             </div>
+                            <label class="checkbox_label" for="custom_stopping_strings_macro">
+                                <input id="custom_stopping_strings_macro" type="checkbox" checked>
+                                <span data-i18n="Replace Macro in Custom Stopping Strings">
+                                    Replace Macro in Custom Stopping Strings
+                                </span>
+                            </label>
                             <h4>
                                 <span data-i18n="Pygmalion Formatting">
                                     Pygmalion Formatting

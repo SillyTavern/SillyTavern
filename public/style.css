@@ -223,6 +223,12 @@ table.responsiveTable {
     font-weight: 500;
 }
 
+.mes_text blockquote {
+    border-left: 3px solid var(--SmartThemeQuoteColor);
+    padding-left: 10px;
+    background-color: var(--black30a);
+}
+
 .mes_text strong em,
 .mes_text strong,
 .mes_text h2,
@@ -1293,7 +1299,8 @@ body.charListGrid #rm_print_characters_block .tags_inline {
 
 }
 
-.floating_prompt_radio_group, .radio_group {
+.floating_prompt_radio_group,
+.radio_group {
     display: flex;
     flex-direction: column;
 }
@@ -3050,12 +3057,13 @@ h5 {
 
 /* HEINOUS */
 @keyframes infinite-spinning {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 #export_character_div {

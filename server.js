@@ -1169,7 +1169,7 @@ app.post("/deletecharacter", jsonParser, async function (request, response) {
         return response.sendStatus(403);
     }
 
-    if (request.body.delete_chats == 'true') {
+    if (request.body.delete_chats == true) {
         try {
             await fs.promises.rm(path.join(chatsPath, sanitize(dir_name)), { recursive: true, force: true })
         } catch (err) {
@@ -3475,7 +3475,7 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
             body: JSON.stringify({ "prompt": text }),
             headers: { "Content-Type": "application/json" }
         };
-        
+
         if (main_api == 'textgenerationwebui' && request.body.use_mancer) {
             args.headers = Object.assign(args.headers, get_mancer_headers());
         }

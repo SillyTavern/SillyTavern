@@ -1,5 +1,4 @@
 {
-    "enabled": true,
     "input_sequence": "### Instruction:",
     "macro": true,
     "name": "Roleplay",

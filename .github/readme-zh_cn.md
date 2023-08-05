@@ -1,6 +1,8 @@
+[English](readme.md) | 中文
+
 ![image](https://github.com/SillyTavern/SillyTavern/assets/18619528/8c41a061-7f72-4d2b-9d54-e6d058209e7b)
 
-移动设备界面友好，多种人工智能服务或模型支持（KoboldAI/CPP, Horde, NovelAI, Ooba, OpenAI+proxies, WindowAI(Claude!)），类似 Galgame 的 老 婆 模 式，Horde SD，文本系统语音生成，世界信息（Lorebooks），可定制的界面，自动翻译，和比你所需要的更多的 Prompt。附带扩展服务，支持文本绘画生成与语音生成和基于向量数据库 ChromaDB 的聊天信息总结。
+移动设备界面友好，多种人工智能服务或模型支持（KoboldAI/CPP, Horde, NovelAI, Ooba, OpenAI, OpenRouter, Claude, Scale），类似 Galgame 的 老 婆 模 式，Horde SD，文本系统语音生成，世界信息（Lorebooks），可定制的界面，自动翻译，和比你所需要的更多的 Prompt。附带扩展服务，支持文本绘画生成与语音生成和基于向量数据库 ChromaDB 的聊天信息总结。
 
 基于 TavernAI 1.2.8 的分叉版本
 
@@ -282,25 +284,26 @@ SillyTavern 会将 API 密钥保存在目录中的 `secrets.json` 文件内。
 
 ## 许可证和贡献
 
-** 发布本程序是希望它能有所帮助，但不做任何保证；甚至没有明示的性能、稳定性和其他任何特定用途的可用性保证。更多详情，请参阅 GNU Affero 通用公共许可证。 **
+**发布本程序是希望它能有所帮助，但不做任何保证；甚至没有明示的性能、稳定性和其他任何特定用途的可用性保证。更多详情，请参阅 GNU Affero 通用公共许可证。**
 
-** This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details. **
+**This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more details.**
 
 * TAI Base by Humi: Unknown license
 * Cohee's modifications and derived code: AGPL v3
 * RossAscends' additions: AGPL v3
 * Portions of CncAnon's TavernAITurbo mod: Unknown license
-* kingbri's various commits and suggestions (https://github.com/bdashore3)
-* StefanDanielSchwarz's various commits and bug reports (https://github.com/StefanDanielSchwarz)
-* Waifu mode inspired by the work of PepperTaco (https://github.com/peppertaco/Tavern/)
+* kingbri's various commits and suggestions (<https://github.com/bdashore3>)
+* StefanDanielSchwarz's various commits and bug reports (<https://github.com/StefanDanielSchwarz>)
+* Waifu mode inspired by the work of PepperTaco (<https://github.com/peppertaco/Tavern/>)
 * Thanks Pygmalion University for being awesome testers and suggesting cool features!
 * Thanks oobabooga for compiling presets for TextGen
-* KoboldAI Presets from KAI Lite: https://lite.koboldai.net/
+* KoboldAI Presets from KAI Lite: <https://lite.koboldai.net/>
 * Noto Sans font by Google (OFL license)
-* Icon theme by Font Awesome https://fontawesome.com (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License)
-* AI Horde client library by ZeldaFan0225: https://github.com/ZeldaFan0225/ai_horde
+* Icon theme by Font Awesome <https://fontawesome.com> (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License)
+* AI Horde client library by ZeldaFan0225: <https://github.com/ZeldaFan0225/ai_horde>
 * Linux startup script by AlpinDale
 * Thanks paniphons for providing a FAQ document
 * 10K Discord Users Celebratory Background by @kallmeflocc
 * Default content (characters and lore books) provided by @OtisAlejandro, @RossAscends and @kallmeflocc
 * Korean translation by @doloroushyeonse
+* 中文翻译由 [@XXpE3](https://github.com/XXpE3) 完成，中文 ISSUES 可以联系 @XXpE3
