@@ -67,7 +67,7 @@ Get in touch with the developers directly:
 * Chat bookmarks / branching (duplicates the dialogue in its current state)
 * Advanced KoboldAI / TextGen generation settings with a lot of community-made presets
 * World Info support: create rich lore or save tokens on your character card
-* Window AI browser extension support (run models like Claude, GPT 4): <https://windowai.io/>
+* [OpenRouter](https://openrouter.ai) support for accessing various commercial APIs (Claude, GPT-4/3.5 and more)
 * [Oobabooga's TextGen WebUI](https://github.com/oobabooga/text-generation-webui) API connection
 * [AI Horde](https://horde.koboldai.net/) connection
 * Prompt generation formatting tweaking
