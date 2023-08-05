@@ -1791,13 +1791,12 @@ app.post("/getstatus_novelai", jsonParser, function (request, response_getstatus
     const api_key_novel = readSecret(SECRET_KEYS.NOVEL);
 
     if (!api_key_novel) {
-        return response_generate_novel.sendStatus(401);
+        return response_getstatus_novel.sendStatus(401);
     }
 
     var data = {};
     var args = {
         data: data,
-
         headers: { "Content-Type": "application/json", "Authorization": "Bearer " + api_key_novel }
     };
     client.get(api_novelai + "/user/subscription", args, function (data, response) {
@@ -1805,17 +1804,15 @@ app.post("/getstatus_novelai", jsonParser, function (request, response_getstatus
             //console.log(data);
             response_getstatus_novel.send(data);//data);
         }
-        if (response.statusCode == 401) {
-            console.log('Access Token is incorrect.');
-            response_getstatus_novel.send({ error: true });
-        }
-        if (response.statusCode == 500 || response.statusCode == 501 || response.statusCode == 501 || response.statusCode == 503 || response.statusCode == 507) {
+        else {
+            if (response.statusCode == 401) {
+                console.log('Access Token is incorrect.');
+            }
+
             console.log(data);
             response_getstatus_novel.send({ error: true });
         }
     }).on('error', function () {
-        //console.log('');
-        //console.log('something went wrong on the request', err.request.options);
         response_getstatus_novel.send({ error: true });
     });
 });
@@ -1901,8 +1898,19 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
             });
         } else {
             if (!response.ok) {
-                console.log(`Novel API returned error: ${response.status} ${response.statusText} ${await response.text()}`);
-                return response.status(response.status).send({ error: true });
+                const text = await response.text();
+                let message = text;
+                console.log(`Novel API returned error: ${response.status} ${response.statusText} ${text}`);
+
+                try {
+                    const data = JSON.parse(text);
+                    message = data.message;
+                }
+                catch {
+                    // ignore
+                }
+
+                return response_generate_novel.status(response.status).send({ error: { message } });
             }
 
             const data = await response.json();
