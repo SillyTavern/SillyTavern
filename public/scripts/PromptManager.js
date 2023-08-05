@@ -505,7 +505,11 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     // Re-render when chat history changes.
     eventSource.on(event_types.MESSAGE_DELETED, () => this.render());
     eventSource.on(event_types.MESSAGE_EDITED, () => this.render());
-    eventSource.on(event_types.MESSAGE_RECEIVED, () => this.render())
+    eventSource.on(event_types.MESSAGE_RECEIVED, () => this.render());
+
+    // Re-render when chatcompletion settings change
+    eventSource.on(event_types.CHATCOMPLETION_SOURCE_CHANGED, () => this.render());
+    eventSource.on(event_types.CHATCOMPLETION_MODEL_CHANGED, () => this.render());
 
     // Re-render when the character changes.
     eventSource.on('chatLoaded', (event) => {
