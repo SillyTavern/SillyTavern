@@ -1,6 +1,4 @@
 {
-    "genamt": 300,
-    "max_length": 4096,
     "temp": 0.72,
     "rep_pen": 1.1,
     "rep_pen_range": 4096,
