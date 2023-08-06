@@ -3813,7 +3813,7 @@ function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete
     }
 
     if (!power_user.allow_name2_display) {
-        mes = mes.replace(new RegExp(`(^|\n)${name2}:`, 'g'), "$1");
+        getMessage = getMessage.replace(new RegExp(`(^|\n)${name2}:`, 'g'), "$1");
     }
 
     if (isImpersonate) {
