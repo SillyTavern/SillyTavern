@@ -524,7 +524,11 @@ const system_messages = {
 
 $(document).ajaxError(function myErrorHandler(_, xhr) {
     if (xhr.status == 403) {
-        toastr.warning("doubleCsrf errors in console are NORMAL in this case. Just reload the page or close this tab.", "Looks like you've opened SillyTavern in another browser tab", { timeOut: 0, extendedTimeOut: 0, preventDuplicates: true });
+        toastr.warning(
+            "doubleCsrf errors in console are NORMAL in this case. If you want to run ST in multiple tabs, start the server with --disableCsrf option.",
+            "Looks like you've opened SillyTavern in another browser tab",
+            { timeOut: 0, extendedTimeOut: 0, preventDuplicates: true },
+        );
     }
 });
 

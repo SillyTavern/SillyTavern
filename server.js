@@ -34,7 +34,11 @@ if (net.setDefaultAutoSelectFamily) {
 }
 
 const cliArguments = yargs(hideBin(process.argv))
-    .option('ssl', {
+    .option('disableCsrf', {
+        type: 'boolean',
+        default: false,
+        describe: 'Disables CSRF protection'
+    }).option('ssl', {
         type: 'boolean',
         default: false,
         describe: 'Enables SSL'
@@ -149,7 +153,7 @@ let first_run = true;
 
 function get_mancer_headers() {
     const api_key_mancer = readSecret(SECRET_KEYS.MANCER);
-    return api_key_mancer ? { "X-API-KEY": api_key_mancer} : {};
+    return api_key_mancer ? { "X-API-KEY": api_key_mancer } : {};
 }
 
 
@@ -308,31 +312,40 @@ const directories = {
 };
 
 // CSRF Protection //
-const doubleCsrf = require('csrf-csrf').doubleCsrf;
+if (cliArguments.disableCsrf === false) {
+    const doubleCsrf = require('csrf-csrf').doubleCsrf;
 
-const CSRF_SECRET = crypto.randomBytes(8).toString('hex');
-const COOKIES_SECRET = crypto.randomBytes(8).toString('hex');
+    const CSRF_SECRET = crypto.randomBytes(8).toString('hex');
+    const COOKIES_SECRET = crypto.randomBytes(8).toString('hex');
 
-const { generateToken, doubleCsrfProtection } = doubleCsrf({
-    getSecret: () => CSRF_SECRET,
-    cookieName: "X-CSRF-Token",
-    cookieOptions: {
-        httpOnly: true,
-        sameSite: "strict",
-        secure: false
-    },
-    size: 64,
-    getTokenFromRequest: (req) => req.headers["x-csrf-token"]
-});
-
-app.get("/csrf-token", (req, res) => {
-    res.json({
-        "token": generateToken(res)
+    const { generateToken, doubleCsrfProtection } = doubleCsrf({
+        getSecret: () => CSRF_SECRET,
+        cookieName: "X-CSRF-Token",
+        cookieOptions: {
+            httpOnly: true,
+            sameSite: "strict",
+            secure: false
+        },
+        size: 64,
+        getTokenFromRequest: (req) => req.headers["x-csrf-token"]
     });
-});
 
-app.use(cookieParser(COOKIES_SECRET));
-app.use(doubleCsrfProtection);
+    app.get("/csrf-token", (req, res) => {
+        res.json({
+            "token": generateToken(res)
+        });
+    });
+
+    app.use(cookieParser(COOKIES_SECRET));
+    app.use(doubleCsrfProtection);
+} else {
+    console.warn("\nCSRF protection is disabled. This will make your server vulnerable to CSRF attacks.\n");
+    app.get("/csrf-token", (req, res) => {
+        res.json({
+            "token": 'disabled'
+        });
+    });
+}
 
 // CORS Settings //
 const cors = require('cors');
@@ -662,7 +675,7 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
             try {
                 retval.response = await error.json();
                 retval.response = retval.response.result;
-            } catch {}
+            } catch { }
             return response_generate.send(retval);
         }
     }

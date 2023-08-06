@@ -53,6 +53,7 @@
     "version": "1.9.4",
     "scripts": {
         "start": "node server.js",
+        "start-multi": "node server.js --disableCsrf",
         "pkg": "pkg --compress Gzip --no-bytecode --public ."
     },
     "bin": {
