@@ -566,7 +566,7 @@ function getTokenizerBestMatch() {
 }
 
 function getTokenCount(str, padding = undefined) {
-    if (typeof str !== 'string') {
+    if (typeof str !== 'string' || !str?.length) {
         return 0;
     }
 
@@ -3318,21 +3318,20 @@ function promptItemize(itemizedPrompts, requestedMesId) {
     }
 
     //these happen regardless of API
-    var charPersonalityTokens = getTokenCount(itemizedPrompts[thisPromptSet].charPersonality);
     var charDescriptionTokens = getTokenCount(itemizedPrompts[thisPromptSet].charDescription);
+    var charPersonalityTokens = getTokenCount(itemizedPrompts[thisPromptSet].charPersonality);
     var scenarioTextTokens = getTokenCount(itemizedPrompts[thisPromptSet].scenarioText);
+    var userPersonaStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].userPersona);
+    var worldInfoStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].worldInfoString);
     var allAnchorsTokens = getTokenCount(itemizedPrompts[thisPromptSet].allAnchors);
     var summarizeStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].summarizeString);
     var authorsNoteStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].authorsNoteString);
     var smartContextStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].smartContextString);
     var afterScenarioAnchorTokens = getTokenCount(itemizedPrompts[thisPromptSet].afterScenarioAnchor);
     var zeroDepthAnchorTokens = getTokenCount(itemizedPrompts[thisPromptSet].zeroDepthAnchor);
-    var worldInfoStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].worldInfoString);
     var thisPrompt_max_context = itemizedPrompts[thisPromptSet].this_max_context;
     var thisPrompt_padding = itemizedPrompts[thisPromptSet].padding;
-    var promptBiasTokens = getTokenCount(itemizedPrompts[thisPromptSet].promptBias);
     var this_main_api = itemizedPrompts[thisPromptSet].main_api;
-    var userPersonaStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].userPersona);
 
     if (this_main_api == 'openai') {
         //for OAI API
@@ -3374,6 +3373,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         var mesSendStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].mesSendString)
         var ActualChatHistoryTokens = mesSendStringTokens - (allAnchorsTokens - afterScenarioAnchorTokens) + power_user.token_padding;
         var instructionTokens = getTokenCount(itemizedPrompts[thisPromptSet].instruction);
+        var promptBiasTokens = getTokenCount(itemizedPrompts[thisPromptSet].promptBias);
 
         var totalTokensInPrompt =
             storyStringTokens +     //chardefs total
