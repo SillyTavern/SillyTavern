@@ -1299,7 +1299,7 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
     */
 
     if (!power_user.allow_name2_display && ch_name && !isUser && !isSystem) {
-        mes = mes.replaceAll(`${ch_name}:`, "");
+        mes = mes.replace(new RegExp(`(^|\n)${ch_name}:`, 'g'), "$1");
     }
 
     //function to hide any <tags> from AI response output
@@ -1397,9 +1397,6 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     var messageText = mes["mes"];
     const momentDate = timestampToMoment(mes.send_date);
     const timestamp = momentDate.isValid() ? momentDate.format('LL LT') : '';
-
-
-
 
     if (mes?.extra?.display_text) {
         messageText = mes.extra.display_text;
@@ -3815,13 +3812,15 @@ function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete
         getMessage = cleanGroupMessage(getMessage);
     }
 
+    if (!power_user.allow_name2_display) {
+        mes = mes.replace(new RegExp(`(^|\n)${name2}:`, 'g'), "$1");
+    }
+
     if (isImpersonate) {
         getMessage = getMessage.trim();
     }
 
     const stoppingStrings = getStoppingStrings(isImpersonate, false);
-    //console.log('stopping on these strings: ');
-    //console.log(stoppingStrings);
 
     for (const stoppingString of stoppingStrings) {
         if (stoppingString.length) {
