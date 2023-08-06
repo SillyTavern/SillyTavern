@@ -1304,8 +1304,8 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
         listItemHtml += `
             <li class="${prefix}prompt_manager_prompt ${draggableClass} ${enabledClass} ${markerClass}" data-pm-identifier="${prompt.identifier}">
                 <span class="${prefix}prompt_manager_prompt_name" data-pm-name="${prompt.name}">
-                    ${prompt.marker ? '<span class="fa-solid fa-thumb-tack" title="Prompt Marker"></span>' : ''}
-                    ${!prompt.marker && prompt.system_prompt ? '<span class="fa-solid fa-globe" title="Global Prompt"></span>' : ''}
+                    ${prompt.marker ? '<span class="fa-solid fa-thumb-tack" title="Marker"></span>' : ''}
+                    ${!prompt.marker && prompt.system_prompt ? '<span class="fa-solid fa-square-poll-horizontal" title="Global Prompt"></span>' : ''}
                     ${!prompt.marker && !prompt.system_prompt ? '<span class="fa-solid fa-user" title="User Prompt"></span>' : ''}
                     ${this.isPromptInspectionAllowed(prompt) ? `<a class="prompt-manager-inspect-action">${prompt.name}</a>` : prompt.name }
                 </span>
