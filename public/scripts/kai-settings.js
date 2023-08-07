@@ -43,7 +43,7 @@ function formatKoboldUrl(value) {
             url.pathname = '/api';
         }
         return url.toString();
-    } catch { } // Try and Catch both fall through to the same return.
+    } catch { } // Just using URL as a validation check
     return null;
 }
 
