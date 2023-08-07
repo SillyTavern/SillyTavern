@@ -423,7 +423,11 @@ function helpCommandCallback(_, type) {
     }
 }
 
-window['displayHelp'] = (page) => helpCommandCallback(null, page);
+$(document).on('click', '[data-displayHelp]', function (e) {
+    e.preventDefault();
+    const page = String($(this).data('displayhelp'));
+    helpCommandCallback(null, page);
+});
 
 function setBackgroundCallback(_, bg) {
     if (!bg) {
