@@ -2032,6 +2032,43 @@
                                 </div>
                             </h4>
                             <div>
+                                <h4>
+                                    <span data-i18n="CFG Guidance">
+                                        Global CFG Guidance
+                                    </span>
+                                </h4>
+                                <label for="global_cfg_negative_prompt">
+                                    <span data-i18n="Guidance Scale">Guidance Scale</span>
+                                </label>
+                                <div class="range-block-range-and-counter">
+                                    <div class="range-block-range">
+                                        <input type="range" id="global_cfg_guidance_scale" name="volume" min="0.10" max="4.00" step="0.05">
+                                    </div>
+                                    <div class="range-block-counter">
+                                        <div contenteditable="true" data-for="global_cfg_guidance_scale" id="global_cfg_guidance_scale_counter">
+                                            select
+                                        </div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="global_cfg_negative_prompt">
+                                        <span data-i18n="Negative Prompt">Negative Prompt</span>
+                                    </label>
+                                    <textarea id="global_cfg_negative_prompt" rows="2" class="text_pole textarea_compact" data-i18n="[placeholder]write short replies, write replies using past tense" placeholder="write short replies, write replies using past tense"></textarea>
+                                </div>
+                            </div>
+                            <h4>
+                                <span data-i18n="Custom Stopping Strings">
+                                    Custom Stopping Strings (KoboldAI/TextGen/NovelAI)
+                                </span>
+                                <div>
+                                    <small>
+                                        <span data-i18n="JSON serialized array of strings">JSON serialized array of strings, for example:</span><br>
+                                        <span class="monospace">["\n", "\nUser:", "\nChar:"]</span>
+                                    </small>
+                                </div>
+                            </h4>
+                            <div>
                                 <textarea id="custom_stopping_strings" rows="2" class="text_pole textarea_compact" placeholder="[&quot;Ford&quot;, &quot;BMW&quot;, &quot;Fiat&quot;]"></textarea>
                             </div>
                             <label class="checkbox_label" for="custom_stopping_strings_macro">

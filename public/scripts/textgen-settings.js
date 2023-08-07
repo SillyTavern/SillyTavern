@@ -5,6 +5,7 @@ import {
     saveSettingsDebounced,
     setGenerationParamsFromPreset,
 } from "../script.js";
+import { getCfg } from "./power-user.js";
 
 export {
     textgenerationwebui_settings,
@@ -219,6 +220,8 @@ async function generateTextGenWithStreaming(generate_data, signal) {
 }
 
 export function getTextGenGenerationData(finalPromt, this_amount_gen, isImpersonate) {
+    const { guidanceScale, negativePrompt } = getCfg();
+
     return {
         'prompt': finalPromt,
         'max_new_tokens': this_amount_gen,
@@ -236,6 +239,8 @@ export function getTextGenGenerationData(finalPromt, this_amount_gen, isImperson
         'penalty_alpha': textgenerationwebui_settings.penalty_alpha,
         'length_penalty': textgenerationwebui_settings.length_penalty,
         'early_stopping': textgenerationwebui_settings.early_stopping,
+        'guidance_scale': guidanceScale,
+        'negative_prompt': negativePrompt,
         'seed': textgenerationwebui_settings.seed,
         'add_bos_token': textgenerationwebui_settings.add_bos_token,
         'stopping_strings': getStoppingStrings(isImpersonate, false),

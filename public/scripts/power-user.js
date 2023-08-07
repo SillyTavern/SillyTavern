@@ -187,6 +187,10 @@ let power_user = {
     persona_description_position: persona_description_positions.BEFORE_CHAR,
     persona_show_notifications: true,
 
+    // For global CFG scale
+    guidance_scale: 1,
+    negative_prompt: '',
+
     custom_stopping_strings: '',
     custom_stopping_strings_macro: true,
     fuzzy_search: false,
@@ -679,6 +683,9 @@ function loadPowerUserSettings(settings, data) {
     $('#auto_swipe_minimum_length').val(power_user.auto_swipe_minimum_length);
     $('#auto_swipe_blacklist').val(power_user.auto_swipe_blacklist.join(", "));
     $('#auto_swipe_blacklist_threshold').val(power_user.auto_swipe_blacklist_threshold);
+    $('#global_cfg_guidance_scale').val(power_user.guidance_scale);
+    $('#global_cfg_guidance_scale_counter').text(power_user.guidance_scale.toFixed(2));
+    $('#global_cfg_negative_prompt').val(power_user.negative_prompt);
     $('#custom_stopping_strings').val(power_user.custom_stopping_strings);
     $("#custom_stopping_strings_macro").prop("checked", power_user.custom_stopping_strings_macro);
     $('#fuzzy_search_checkbox').prop("checked", power_user.fuzzy_search);
@@ -1533,6 +1540,14 @@ export function getCustomStoppingStrings() {
     }
 }
 
+// TODO: Expand to handle character and chat CFG
+export function getCfg() {
+    return { 
+        guidanceScale: power_user.guidance_scale,
+        negativePrompt: power_user.negative_prompt
+    }
+}
+
 $(document).ready(() => {
 
     $(window).on('resize', async () => {
@@ -1991,6 +2006,17 @@ $(document).ready(() => {
     $('#spoiler_free_desc_button').on('click', function () {
         peekSpoilerMode();
         $(this).toggleClass('fa-eye fa-eye-slash');
+    });
+
+    $('#global_cfg_guidance_scale').on('input', function() {
+        power_user.guidance_scale = Number($(this).val());
+        $('#global_cfg_guidance_scale_counter').text(power_user.guidance_scale.toFixed(2));
+        saveSettingsDebounced();
+    });
+
+    $('#global_cfg_negative_prompt').on('input', function() {
+        power_user.negative_prompt = $(this).val();
+        saveSettingsDebounced();
     });
 
     $('#custom_stopping_strings').on('input', function () {
