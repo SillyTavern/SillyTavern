@@ -6,6 +6,10 @@ import {
     setGenerationParamsFromPreset,
 } from "../script.js";
 
+import {
+    power_user,
+} from "./power-user.js";
+
 export {
     textgenerationwebui_settings,
     loadTextGenSettings,
@@ -98,10 +102,11 @@ function selectPreset(name) {
 function formatTextGenURL(value) {
     try {
         const url = new URL(value);
-        if (url.pathname.endsWith('/api')) {
-            return url.toString();
+        if (!power_user.relaxed_api_urls) {
+            url.pathname = '/api';
         }
-    } catch { } // Try and Catch both fall through to the same return.
+        return url.toString();
+    } catch { } // Just using URL as a validation check
     return null;
 }
 

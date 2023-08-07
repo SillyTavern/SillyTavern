@@ -164,6 +164,7 @@ let power_user = {
     prefer_character_jailbreak: true,
     continue_on_send: false,
     trim_spaces: true,
+    relaxed_api_urls: false,
 
     instruct: {
         enabled: false,
@@ -673,6 +674,7 @@ function loadPowerUserSettings(settings, data) {
         power_user.chat_width = 50;
     }
 
+    $('#relaxed_api_urls').prop("checked", power_user.relaxed_api_urls);
     $('#trim_spaces').prop("checked", power_user.trim_spaces);
     $('#continue_on_send').prop("checked", power_user.continue_on_send);
     $('#auto_swipe').prop("checked", power_user.auto_swipe);
@@ -1979,6 +1981,12 @@ $(document).ready(() => {
     $("#trim_spaces").on("input", function () {
         const value = !!$(this).prop('checked');
         power_user.trim_spaces = value;
+        saveSettingsDebounced();
+    });
+
+    $("#relaxed_api_urls").on("input", function () {
+        const value = !!$(this).prop('checked');
+        power_user.relaxed_api_urls = value;
         saveSettingsDebounced();
     });
 
