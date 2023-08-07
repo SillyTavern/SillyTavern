@@ -227,6 +227,7 @@ table.responsiveTable {
     border-left: 3px solid var(--SmartThemeQuoteColor);
     padding-left: 10px;
     background-color: var(--black30a);
+    margin: 0;
 }
 
 .mes_text strong em,
