@@ -123,10 +123,15 @@ const allowKeysExposure = config.allowKeysExposure;
 const axios = require('axios');
 const tiktoken = require('@dqbd/tiktoken');
 const WebSocket = require('ws');
-const AIHorde = require("./src/horde");
-const ai_horde = new AIHorde({
-    client_agent: getVersion()?.agent || 'SillyTavern:UNKNOWN:Cohee#1207',
-});
+
+function getHordeClient() {
+    const AIHorde = require("./src/horde");
+    const ai_horde = new AIHorde({
+        client_agent: getVersion()?.agent || 'SillyTavern:UNKNOWN:Cohee#1207',
+    });
+    return ai_horde;
+}
+
 const ipMatching = require('ip-matching');
 const yauzl = require('yauzl');
 
@@ -3838,6 +3843,7 @@ app.post('/viewsecrets', jsonParser, async (_, response) => {
 
 app.post('/horde_samplers', jsonParser, async (_, response) => {
     try {
+        const ai_horde = getHordeClient();
         const samplers = Object.values(ai_horde.ModelGenerationInputStableSamplers);
         response.send(samplers);
     } catch (error) {
@@ -3848,6 +3854,7 @@ app.post('/horde_samplers', jsonParser, async (_, response) => {
 
 app.post('/horde_models', jsonParser, async (_, response) => {
     try {
+        const ai_horde = getHordeClient();
         const models = await ai_horde.getModels();
         response.send(models);
     } catch (error) {
@@ -3864,6 +3871,7 @@ app.post('/horde_userinfo', jsonParser, async (_, response) => {
     }
 
     try {
+        const ai_horde = getHordeClient();
         const user = await ai_horde.findUser({ token: api_key_horde });
         return response.send(user);
     } catch (error) {
@@ -3879,6 +3887,7 @@ app.post('/horde_generateimage', jsonParser, async (request, response) => {
     console.log('Stable Horde request:', request.body);
 
     try {
+        const ai_horde = getHordeClient();
         const generation = await ai_horde.postAsyncImageGenerate(
             {
                 prompt: `${request.body.prompt_prefix} ${request.body.prompt} ### ${request.body.negative_prompt}`,
