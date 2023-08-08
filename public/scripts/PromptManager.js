@@ -8,8 +8,6 @@ import {power_user} from "./power-user.js";
 const registerPromptManagerMigration = (saveSettingsCallback) => {
     const migrate = (settings, preset) => {
         // If any of the specified settings exist, run the migration
-        if (preset.main_prompt || preset.nsfw_prompt || preset.jailbreak_prompt) {
-            console.log('Running one-time configuration migration for prompt manager.')
             if (settings.prompts === undefined || settings.prompts.length === 0) settings.prompts = chatCompletionDefaultPrompts.prompts;
 
             const findPrompt = (identifier) => settings.prompts.find(prompt => identifier === prompt.identifier);
@@ -27,15 +25,21 @@ const registerPromptManagerMigration = (saveSettingsCallback) => {
                 findPrompt('jailbreak').content = preset.jailbreak_prompt
                 delete settings.jailbreak_prompt;
             }
-
-            saveSettingsCallback();
-        }
     };
 
-    const migrateSettings = (settings) => migrate(settings, settings);
+    const migrateSettings = (settings) => {
+        if (settings.main_prompt || settings.nsfw_prompt || settings.jailbreak_prompt) {
+            console.log(`Migrating configuration`);
+            migrate(settings, settings);
+        }
+    }
+
     const migratePreset = (event) => {
-        migrate(event.settings, event.preset);
-        event.callback(event.presetName, event.settings, false);
+        if (event.preset.main_prompt || event.preset.nsfw_prompt || event.preset.jailbreak_prompt) {
+            console.log(`Migrating preset ${event.presetName}`);
+            migrate(event.settings, event.preset);
+            event.callback(event.presetName, event.settings, false);
+        }
     }
 
     eventSource.on(event_types.SETTINGS_LOADED_BEFORE, settings => migrateSettings(settings));
