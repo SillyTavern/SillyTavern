@@ -490,7 +490,6 @@ function populateDialogueExamples(prompts, chatCompletion) {
 
             [...openai_msgs_example].forEach((dialogue, dialogueIndex) => {
                 dialogue.forEach((prompt, promptIndex) => {
-                    console.log(prompt);
                     const role = prompt.name === 'example_assistant' ? 'assistant' : 'user';
                     const content = prompt.content || '';
                     const identifier = `dialogueExamples ${dialogueIndex}-${promptIndex}`;
