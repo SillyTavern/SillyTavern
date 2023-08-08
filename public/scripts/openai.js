@@ -477,7 +477,7 @@ function populateChatHistory(prompts, chatCompletion, type = null, cyclePrompt =
  * @param {ChatCompletion} chatCompletion - An instance of ChatCompletion class that will be populated with the prompts.
  */
 function populateDialogueExamples(prompts, chatCompletion) {
-    chatCompletion.add( new MessageCollection('dialogueExamples'), prompts.index('dialogueExamples'));
+    chatCompletion.add(new MessageCollection('dialogueExamples'), prompts.index('dialogueExamples'));
     if (openai_msgs_example.length) {
         // Insert chat message examples if there's enough budget if there is enough budget left for at least one example.
         const dialogueExampleChat = new Message('system', oai_settings.new_example_chat_prompt, 'newChat');
@@ -488,11 +488,18 @@ function populateDialogueExamples(prompts, chatCompletion) {
             chatCompletion.canAfford(dialogueExample)) {
             chatCompletion.insert(dialogueExampleChat, 'dialogueExamples');
 
-            [...openai_msgs_example].forEach((prompt, index) => {
-                const chatMessage = new Message(prompt[0]?.role || 'system', prompt[0]?.content || '', 'dialogueExamples-' + index);
-                if (chatCompletion.canAfford(chatMessage)) {
-                    chatCompletion.insert(chatMessage, 'dialogueExamples');
-                }
+            [...openai_msgs_example].forEach((dialogue, dialogueIndex) => {
+                dialogue.forEach((prompt, promptIndex) => {
+                    console.log(prompt);
+                    const role = prompt.name === 'example_assistant' ? 'assistant' : 'user';
+                    const content = prompt.content || '';
+                    const identifier = `dialogueExamples ${dialogueIndex}-${promptIndex}`;
+
+                    const chatMessage = new Message(role, content, identifier);
+                    if (chatCompletion.canAfford(chatMessage)) {
+                        chatCompletion.insert(chatMessage, 'dialogueExamples');
+                    }
+                });
             });
         }
     }
