@@ -859,6 +859,10 @@ function loadInstructMode() {
         { id: "instruct_names_force_groups", property: "names_force_groups", isCheckbox: true },
     ];
 
+    if (power_user.instruct.names_force_groups === undefined) {
+        power_user.instruct.names_force_groups = true;
+    }
+
     controls.forEach(control => {
         const $element = $(`#${control.id}`);
 
@@ -869,7 +873,7 @@ function loadInstructMode() {
         }
 
         $element.on('input', function () {
-            power_user.instruct[control.property] = control.isCheckbox ? $(this).prop('checked') : $(this).val();
+            power_user.instruct[control.property] = control.isCheckbox ? !!$(this).prop('checked') : $(this).val();
             saveSettingsDebounced();
         });
     });
@@ -966,7 +970,7 @@ export function formatInstructStoryString(story, systemPrompt) {
 }
 
 export function formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2) {
-    const includeNames = power_user.instruct.names || !!selected_group;
+    const includeNames = power_user.instruct.names || (!!selected_group && power_user.instruct.names_force_groups);
     let sequence = isImpersonate ? power_user.instruct.input_sequence : power_user.instruct.output_sequence;
 
     if (power_user.instruct.macro) {
