@@ -364,10 +364,10 @@ const system_messages = {
         mes:
             `Hello there! Please select the help topic you would like to learn more about:
             <ul>
-            <li><a href="javascript:displayHelp('1')">Slash Commands</a> (or <tt>/help slash</tt>)</li>
-            <li><a href="javascript:displayHelp('2')">Formatting</a> (or <tt>/help format</tt>)</li>
-            <li><a href="javascript:displayHelp('3')">Hotkeys</a> (or <tt>/help hotkeys</tt>)</li>
-            <li><a href="javascript:displayHelp('4')">{{Macros}}</a> (or <tt>/help macros</tt>)</li>
+            <li><a href="#" data-displayHelp="1">Slash Commands</a> (or <tt>/help slash</tt>)</li>
+            <li><a href="#" data-displayHelp="2">Formatting</a> (or <tt>/help format</tt>)</li>
+            <li><a href="#" data-displayHelp="3">Hotkeys</a> (or <tt>/help hotkeys</tt>)</li>
+            <li><a href="#" data-displayHelp="4">{{Macros}}</a> (or <tt>/help macros</tt>)</li>
             </ul>
             <br><b>Still got questions left? The <a target="_blank" href="https://docs.sillytavern.app/">Official SillyTavern Documentation Website</a> has much more information!</b>`
     },
@@ -409,12 +409,25 @@ const system_messages = {
         mes:
             `Text formatting commands:
             <ul>
-            <li><tt>{​{text}​}</tt> - sets a one-time behavioral bias for the AI. Resets when you send the next message.</li>
             <li><tt>*text*</tt> - displays as <i>italics</i></li>
             <li><tt>**text**</tt> - displays as <b>bold</b></li>
             <li><tt>***text***</tt> - displays as <b><i>bold italics</i></b></li>
-            <li><tt>` + "```" + `text` + "```" + `</tt> - displays as a code block</li>
-            <li><tt>` + "`" + `text` + "`" + `</tt> - displays as inline code</li>
+            <li><tt>` + "```" + `text` + "```" + `</tt> - displays as a code block (new lines allowed between the backticks)</li>
+            <pre>
+<code>
+like
+this
+</code>
+            </pre>
+            <li><tt>` + "`" + `text` + "`" + `</tt> - displays as <code>inline code</code></li>
+            <li><tt>` + "> " + `text` + `</tt> - displays as a blockquote (note the space after >)</li>
+            <blockquote>like this</blockquote>
+            <li><tt>` + "# " + `text` + `</tt> - displays as a large header (note the space)</li>
+            <h1>like this</h1>
+            <li><tt>` + "## " + `text` + `</tt> - displays as a medium header (note the space)</li>
+            <h2>like this</h2>
+            <li><tt>` + "### " + `text` + `</tt> - displays as a small header (note the space)</li>
+            <h3>like this</h3>
             <li><tt>$$ text $$</tt> - renders a LaTeX formula (if enabled)</li>
             <li><tt>$ text $</tt> - renders an AsciiMath formula (if enabled)</li>
             </ul>`
@@ -4290,7 +4303,7 @@ async function read_avatar_load(input) {
 }
 
 export function getCropPopup(src) {
-    return `<h3>Set the crop position of the avatar image and click Ok to confirm.</h3>
+    return `<h3>Set the crop position of the avatar image and click Accept to confirm.</h3>
             <div id='avatarCropWrap'>
                 <img id='avatarToCrop' src='${src}'>
             </div>`;

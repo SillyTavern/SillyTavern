@@ -217,8 +217,7 @@ table.responsiveTable {
     font-weight: 500;
 }
 
-.mes_text q,
-.mes_text blockquote {
+.mes_text q {
     color: var(--SmartThemeQuoteColor);
     font-weight: 500;
 }

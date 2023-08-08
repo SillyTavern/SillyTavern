@@ -1511,7 +1511,7 @@ jQuery(() => {
     });
 
     $('#world_info_overflow_alert').on('change', function () {
-        world_info_overflow_alert = $(this).val();
+        world_info_overflow_alert = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 

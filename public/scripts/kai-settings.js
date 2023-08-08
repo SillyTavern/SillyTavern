@@ -4,6 +4,10 @@ import {
     getStoppingStrings,
 } from "../script.js";
 
+import {
+    power_user,
+} from "./power-user.js";
+
 export {
     kai_settings,
     loadKoboldSettings,
@@ -35,12 +39,12 @@ const MIN_STREAMING_KCPPVERSION = '1.30';
 function formatKoboldUrl(value) {
     try {
         const url = new URL(value);
-        url.pathname = '/api';
+        if (!power_user.relaxed_api_urls) {
+            url.pathname = '/api';
+        }
         return url.toString();
-    }
-    catch {
-        return null;
-    }
+    } catch { } // Just using URL as a validation check
+    return null;
 }
 
 function loadKoboldSettings(preset) {
