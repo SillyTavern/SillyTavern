@@ -99,11 +99,17 @@ function selectPreset(name) {
     saveSettingsDebounced();
 }
 
-function formatTextGenURL(value) {
+function formatTextGenURL(value, use_mancer) {
     try {
         const url = new URL(value);
         if (!power_user.relaxed_api_urls) {
-            url.pathname = '/api';
+            if (use_mancer) { // If Mancer is in use, only require the URL to *end* with `/api`.
+                if (!url.pathname.endsWith('/api')) {
+                    return null;
+                }
+            } else {
+                url.pathname = '/api';
+            }
         }
         return url.toString();
     } catch { } // Just using URL as a validation check
