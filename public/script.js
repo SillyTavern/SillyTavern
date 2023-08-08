@@ -136,6 +136,7 @@ import {
     download,
     isDataURL,
     getCharaFilename,
+    isDigitsOnly,
 } from "./scripts/utils.js";
 
 import { extension_settings, getContext, loadExtensionSettings, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
@@ -1686,7 +1687,7 @@ function getTimeSinceLastMessage() {
 }
 
 function randomReplace(input, emptyListPlaceholder = '') {
-    const randomPattern = /{{random:([^}]+)}}/gi;
+    const randomPattern = /{{random[ : ]([^}]+)}}/gi;
 
     return input.replace(randomPattern, (match, listString) => {
         const list = listString.split(',').map(item => item.trim()).filter(item => item.length > 0);
@@ -1704,10 +1705,15 @@ function randomReplace(input, emptyListPlaceholder = '') {
 }
 
 function diceRollReplace(input, invalidRollPlaceholder = '') {
-    const randomPattern = /{{roll:([^}]+)}}/gi;
+    const randomPattern = /{{roll[ : ]([^}]+)}}/gi;
 
     return input.replace(randomPattern, (match, matchValue) => {
-        const formula = matchValue.trim();
+        let formula = matchValue.trim();
+
+        if (isDigitsOnly(formula)) {
+            formula = `1d${formula}`;
+        }
+
         const isValid = droll.validate(formula);
 
         if (!isValid) {
@@ -1844,7 +1850,7 @@ export function extractMessageBias(message) {
         const match = curMatch[1].trim();
 
         // Ignore random/roll pattern matches
-        if (/^random:.+/i.test(match) || /^roll:.+/i.test(match)) {
+        if (/^random[ : ].+/i.test(match) || /^roll[ : ].+/i.test(match)) {
             continue;
         }
 
