@@ -412,8 +412,14 @@ const system_messages = {
             <li><tt>*text*</tt> - displays as <i>italics</i></li>
             <li><tt>**text**</tt> - displays as <b>bold</b></li>
             <li><tt>***text***</tt> - displays as <b><i>bold italics</i></b></li>
-            <li><tt>` + "```" + `text` + "```" + `</tt> - displays as a code block</li>
-            <li><tt>` + "`" + `text` + "`" + `</tt> - displays as inline code</li>
+            <li><tt>` + "```" + `text` + "```" + `</tt> - displays as a code block (new lines allowed between the backticks)</li>
+            <pre>
+<code>
+like
+this
+</code>
+            </pre>
+            <li><tt>` + "`" + `text` + "`" + `</tt> - displays as <code>inline code</code></li>
             <li><tt>` + "> " + `text` + `</tt> - displays as a blockquote (note the space after >)</li>
             <blockquote>like this</blockquote>
             <li><tt>` + "# " + `text` + `</tt> - displays as a large header (note the space)</li>
