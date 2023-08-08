@@ -304,7 +304,6 @@ export const comment_avatar = "img/quill.png";
 export let CLIENT_VERSION = 'SillyTavern:UNKNOWN:Cohee#1207'; // For Horde header
 let is_colab = false;
 let is_checked_colab = false;
-let is_mes_reload_avatar = false;
 let optionsPopper = Popper.createPopper(document.getElementById('options_button'), document.getElementById('options'), {
     placement: 'top-start'
 });
@@ -1440,9 +1439,6 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         } else {
             if (characters[this_chid].avatar != "none") {
                 avatarImg = getThumbnailUrl('avatar', characters[this_chid].avatar);
-                if (is_mes_reload_avatar !== false) {
-                    avatarImg += "&" + is_mes_reload_avatar;
-                }
             } else {
                 avatarImg = default_avatar;
             }
@@ -4268,9 +4264,18 @@ async function read_avatar_load(input) {
             return;
         }
 
-        $("#create_button").trigger('click');
+        await createOrEditCharacter();
+        await delay(durationSaveEdit);
 
         const formData = new FormData($("#form_create").get(0));
+        await fetch(getThumbnailUrl('avatar', formData.get('avatar_url')), {
+            method: 'GET',
+            cache: 'no-cache',
+            headers: {
+                'pragma': 'no-cache',
+                'cache-control': 'no-cache',
+            }
+        });
 
         $(".mes").each(async function () {
             if ($(this).attr("is_system") == 'true') {
@@ -4288,17 +4293,7 @@ async function read_avatar_load(input) {
             }
         });
 
-        await delay(durationSaveEdit);
-        await fetch(getThumbnailUrl('avatar', formData.get('avatar_url')), {
-            method: 'GET',
-            cache: 'no-cache',
-            headers: {
-                'pragma': 'no-cache',
-                'cache-control': 'no-cache',
-            }
-        });
         console.log('Avatar refreshed');
-
     }
 }
 
@@ -7574,7 +7569,6 @@ $(document).ready(function () {
     });
 
     $("#add_avatar_button").change(function () {
-        is_mes_reload_avatar = Date.now();
         read_avatar_load(this);
     });
 
