@@ -380,6 +380,7 @@ export async function favsToHotswap() {
             thisHotSwapSlot.attr('grid', isGroup ? grid : '');
             thisHotSwapSlot.attr('chid', isCharacter ? chid : '');
             thisHotSwapSlot.data('id', isGroup ? grid : chid);
+            thisHotSwapSlot.attr('title', '');
 
             if (isGroup) {
                 const group = groups.find(x => x.id === grid);
