@@ -746,7 +746,7 @@ PromptManagerModule.prototype.checkForMissingPrompts = function(prompts) {
  * @returns {boolean} True if the prompt is a marker, false otherwise.
  */
 PromptManagerModule.prototype.isPromptInspectionAllowed = function (prompt) {
-    return true === prompt.marker;
+    return true;
 }
 
 /**
