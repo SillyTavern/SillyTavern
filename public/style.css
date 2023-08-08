@@ -1726,6 +1726,10 @@ body.big-avatars .ch_description {
     overflow-y: auto;
 }
 
+#form_create textarea {
+    flex-grow: 1;
+}
+
 .avatar_div {
     display: flex;
     width: 100%;
