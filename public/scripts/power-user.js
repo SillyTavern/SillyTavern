@@ -177,6 +177,7 @@ let power_user = {
         preset: 'Alpaca',
         separator_sequence: '',
         macro: false,
+        names_force_groups: true,
     },
 
     personas: {},
@@ -853,6 +854,7 @@ function loadInstructMode() {
         { id: "instruct_stop_sequence", property: "stop_sequence", isCheckbox: false },
         { id: "instruct_names", property: "names", isCheckbox: true },
         { id: "instruct_macro", property: "macro", isCheckbox: true },
+        { id: "instruct_names_force_groups", property: "names_force_groups", isCheckbox: true },
     ];
 
     controls.forEach(control => {
@@ -929,7 +931,12 @@ export function fuzzySearchCharacters(searchValue) {
 }
 
 export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvatar, name1, name2) {
-    const includeNames = isNarrator ? false : (power_user.instruct.names || !!selected_group || !!forceAvatar);
+    let includeNames = isNarrator ? false : power_user.instruct.names;
+
+    if (!isNarrator && power_user.instruct.names_force_groups && (selected_group || forceAvatar)) {
+        includeNames = true;
+    }
+
     let sequence = (isUser || isNarrator) ? power_user.instruct.input_sequence : power_user.instruct.output_sequence;
 
     if (power_user.instruct.macro) {
