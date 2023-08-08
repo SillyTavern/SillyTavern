@@ -7780,9 +7780,9 @@ $(document).ready(function () {
     $("#api_button_textgenerationwebui").click(async function (e) {
         e.stopPropagation();
         if ($("#textgenerationwebui_api_url_text").val() != "") {
-            let value = formatTextGenURL($("#textgenerationwebui_api_url_text").val().trim())
+            let value = formatTextGenURL($("#textgenerationwebui_api_url_text").val().trim(), api_use_mancer_webui);
             if (!value) {
-                callPopup('Please enter a valid URL.<br/>WebUI URLs should end with <tt>/api</tt>', 'text');
+                callPopup("Please enter a valid URL.<br/>WebUI URLs should end with <tt>/api</tt><br/>Enable 'Relaxed API URLs' to allow other paths.", 'text');
                 return;
             }
 
