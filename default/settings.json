@@ -59,7 +59,7 @@
         "trusted_workers_only": false
     },
     "power_user": {
-        "tokenizer": 3,
+        "tokenizer": 99,
         "token_padding": 64,
         "collapse_newlines": false,
         "pygmalion_formatting": 0,
@@ -147,6 +147,7 @@
         "persona_description": "",
         "persona_description_position": 0,
         "custom_stopping_strings": "",
+        "custom_stopping_strings_macro": true,
         "fuzzy_search": false
     },
     "extension_settings": {

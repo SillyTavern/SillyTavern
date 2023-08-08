@@ -1,7 +1,10 @@
 import {
     getRequestHeaders,
     saveSettingsDebounced,
+    getStoppingStrings,
+    getTextTokens
 } from "../script.js";
+import { tokenizers } from "./power-user.js";
 
 export {
     nai_settings,
@@ -9,6 +12,8 @@ export {
     loadNovelSettings,
     getNovelTier,
 };
+
+const default_preamble = "[ Style: chat, complex, sensory, visceral ]";
 
 const nai_settings = {
     temperature: 0.5,
@@ -26,6 +31,7 @@ const nai_settings = {
     model_novel: "euterpe-v2",
     preset_settings_novel: "Classic-Euterpe",
     streaming_novel: false,
+    nai_preamble: default_preamble,
 };
 
 const nai_tiers = {
@@ -73,6 +79,7 @@ function loadNovelSettings(settings) {
     $(`#model_novel_select option[value=${nai_settings.model_novel}]`).attr("selected", true);
     $('#model_novel_select').val(nai_settings.model_novel);
 
+    if (settings.nai_preamble !== undefined) nai_settings.preamble = settings.nai_preamble;
     nai_settings.preset_settings_novel = settings.preset_settings_novel;
     nai_settings.temperature = settings.temperature;
     nai_settings.repetition_penalty = settings.repetition_penalty;
@@ -154,6 +161,7 @@ function loadNovelSettingsUi(ui_settings) {
     $("#phrase_rep_pen_counter_novel").text(getPhraseRepPenCounter(ui_settings.phrase_rep_pen));
     $("#min_length_novel").val(ui_settings.min_length);
     $("#min_length_counter_novel").text(Number(ui_settings.min_length).toFixed(0));
+    $('#nai_preamble_textarea').val(ui_settings.nai_preamble);
 
     $("#streaming_novel").prop('checked', ui_settings.streaming_novel);
 }
@@ -245,8 +253,24 @@ const sliders = [
     },
 ];
 
-export function getNovelGenerationData(finalPromt, this_settings, this_amount_gen) {
-    const isNewModel = (nai_settings.model_novel.includes('clio') || nai_settings.model_novel.includes('kayra'));
+export function getNovelGenerationData(finalPromt, this_settings, this_amount_gen, isImpersonate) {
+    const clio = nai_settings.model_novel.includes('clio');
+    const kayra = nai_settings.model_novel.includes('kayra');
+    const isNewModel = clio || kayra;
+
+    const tokenizerType = kayra ? tokenizers.NERD2 : (clio ? tokenizers.NERD : tokenizers.NONE);
+    const stopSequences = (tokenizerType !== tokenizers.NONE)
+        ? getStoppingStrings(isImpersonate, false)
+            .map(t => getTextTokens(tokenizerType, t))
+        : undefined;
+
+    let useInstruct = false;
+    if (isNewModel) {
+        // NovelAI claims they scan backwards 1000 characters (not tokens!) to look for instruct brackets. That's really short.
+        const tail = finalPromt.slice(-1500);
+        useInstruct = tail.includes("}");
+    }
+
     return {
         "input": finalPromt,
         "model": nai_settings.model_novel,
@@ -268,12 +292,13 @@ export function getNovelGenerationData(finalPromt, this_settings, this_amount_ge
         "cfg_uc": "",
         "phrase_rep_pen": nai_settings.phrase_rep_pen,
         //"stop_sequences": {{187}},
+        "stop_sequences": stopSequences,
         //bad_words_ids = {{50256}, {0}, {1}};
         "generate_until_sentence": true,
         "use_cache": false,
         "use_string": true,
         "return_full_text": false,
-        "prefix": isNewModel ? "special_instruct" : "vanilla",
+        "prefix": useInstruct ? "special_instruct" : (isNewModel ? "special_proseaugmenter" : "vanilla"),
         "order": this_settings.order,
         "streaming": nai_settings.streaming_novel,
     };
@@ -320,6 +345,17 @@ export async function generateNovelWithStreaming(generate_data, signal) {
         }
     }
 }
+
+$("#nai_preamble_textarea").on('input', function () {
+    nai_settings.preamble = $('#nai_preamble_textarea').val();
+    saveSettingsDebounced();
+});
+
+$("#nai_preamble_restore").on('click', function () {
+    nai_settings.preamble = default_preamble;
+    $('#nai_preamble_textarea').val(nai_settings.preamble);
+    saveSettingsDebounced();
+});
 
 $(document).ready(function () {
     sliders.forEach(slider => {

@@ -61,6 +61,11 @@ const parse = async (cardUrl, format) => {
                 return PNGtext.decode(chunk.data);
             });
 
+            if (textChunks.length === 0) {
+                console.error('PNG metadata does not contain any character data.');
+                throw new Error('No PNG metadata.');
+            }
+
             return Buffer.from(textChunks[0].text, 'base64').toString('utf8');
         default:
             break;

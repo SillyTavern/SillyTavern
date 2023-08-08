@@ -1,6 +1,8 @@
+English | [中文](readme-zh_cn.md)
+
 ![image](https://github.com/SillyTavern/SillyTavern/assets/18619528/8c41a061-7f72-4d2b-9d54-e6d058209e7b)
 
-Mobile-friendly, Multi-API (KoboldAI/CPP, Horde, NovelAI, Ooba, OpenAI+proxies, WindowAI(Claude!)), VN-like Waifu Mode, Horde SD, System TTS, WorldInfo (lorebooks), customizable UI, auto-translate, and more prompt options than you'd ever want or need. Optional Extras server for more SD/TTS options + ChromaDB/Summarize.
+Mobile-friendly, Multi-API (KoboldAI/CPP, Horde, NovelAI, Ooba, OpenAI, OpenRouter, Claude, Scale), VN-like Waifu Mode, Horde SD, System TTS, WorldInfo (lorebooks), customizable UI, auto-translate, and more prompt options than you'd ever want or need. Optional Extras server for more SD/TTS options + ChromaDB/Summarize.
 
 Based on a fork of TavernAI 1.2.8
 
@@ -65,7 +67,7 @@ Get in touch with the developers directly:
 * Chat bookmarks / branching (duplicates the dialogue in its current state)
 * Advanced KoboldAI / TextGen generation settings with a lot of community-made presets
 * World Info support: create rich lore or save tokens on your character card
-* Window AI browser extension support (run models like Claude, GPT 4): <https://windowai.io/>
+* [OpenRouter](https://openrouter.ai) connection for various APIs (Claude, GPT-4/3.5 and more)
 * [Oobabooga's TextGen WebUI](https://github.com/oobabooga/text-generation-webui) API connection
 * [AI Horde](https://horde.koboldai.net/) connection
 * Prompt generation formatting tweaking
@@ -293,6 +295,7 @@ GNU Affero General Public License for more details.**
 * RossAscends' additions: AGPL v3
 * Portions of CncAnon's TavernAITurbo mod: Unknown license
 * kingbri's various commits and suggestions (<https://github.com/bdashore3>)
+* StefanDanielSchwarz's various commits and bug reports (<https://github.com/StefanDanielSchwarz>)
 * Waifu mode inspired by the work of PepperTaco (<https://github.com/peppertaco/Tavern/>)
 * Thanks Pygmalion University for being awesome testers and suggesting cool features!
 * Thanks oobabooga for compiling presets for TextGen
@@ -306,3 +309,4 @@ GNU Affero General Public License for more details.**
 * Default content (characters and lore books) provided by @OtisAlejandro, @RossAscends and @kallmeflocc
 * Korean translation by @doloroushyeonse
 * k_euler_a support for Horde by <https://github.com/Teashrock>
+* Chinese translation by [@XXpE3](https://github.com/XXpE3), 中文 ISSUES 可以联系 @XXpE3
