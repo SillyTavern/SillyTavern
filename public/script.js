@@ -409,12 +409,19 @@ const system_messages = {
         mes:
             `Text formatting commands:
             <ul>
-            <li><tt>{​{text}​}</tt> - sets a one-time behavioral bias for the AI. Resets when you send the next message.</li>
             <li><tt>*text*</tt> - displays as <i>italics</i></li>
             <li><tt>**text**</tt> - displays as <b>bold</b></li>
             <li><tt>***text***</tt> - displays as <b><i>bold italics</i></b></li>
             <li><tt>` + "```" + `text` + "```" + `</tt> - displays as a code block</li>
             <li><tt>` + "`" + `text` + "`" + `</tt> - displays as inline code</li>
+            <li><tt>` + "> " + `text` + `</tt> - displays as a blockquote (note the space after >)</li>
+            <blockquote>like this</blockquote>
+            <li><tt>` + "# " + `text` + `</tt> - displays as a large header (note the space)</li>
+            <h1>like this</h1>
+            <li><tt>` + "## " + `text` + `</tt> - displays as a medium header (note the space)</li>
+            <h2>like this</h2>
+            <li><tt>` + "### " + `text` + `</tt> - displays as a small header (note the space)</li>
+            <h3>like this</h3>
             <li><tt>$$ text $$</tt> - renders a LaTeX formula (if enabled)</li>
             <li><tt>$ text $</tt> - renders an AsciiMath formula (if enabled)</li>
             </ul>`
