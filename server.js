@@ -1986,14 +1986,16 @@ app.post("/getallchatsofcharacter", jsonParser, function (request, response) {
                     ii--;
                     if (lastLine) {
 
-                        let jsonData = json5.parse(lastLine);
-                        if (jsonData.name !== undefined || jsonData.character_name !== undefined) {
+                        let jsonData = tryParse(lastLine);
+                        if (jsonData && (jsonData.name !== undefined || jsonData.character_name !== undefined)) {
                             chatData[i] = {};
                             chatData[i]['file_name'] = file;
                             chatData[i]['file_size'] = fileSizeInKB;
                             chatData[i]['chat_items'] = itemCounter - 1;
                             chatData[i]['mes'] = jsonData['mes'] || '[The chat is empty]';
                             chatData[i]['last_mes'] = jsonData['send_date'] || Date.now();
+                        } else {
+                            console.log('Found an invalid or corrupted chat file: ' + fullPathAndFile);
                         }
                     }
                     if (ii === 0) {
