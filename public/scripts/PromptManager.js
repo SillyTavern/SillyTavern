@@ -983,12 +983,11 @@ PromptManagerModule.prototype.loadPromptIntoEditForm = function (prompt) {
 PromptManagerModule.prototype.loadMessagesIntoInspectForm = function (messages) {
     if (!messages) return;
 
-    const createInlineDrawer = (title, content) => {
+    const createInlineDrawer = (title, content, role) => {
         let drawerHTML = `
     <div class="inline-drawer ${this.configuration.prefix}prompt_manager_prompt">
         <div class="inline-drawer-toggle inline-drawer-header">
-            <span>${title}</span>
-            <span>${title}</span>
+            <span>${title} by <i>${role}</i></span>
             <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
         </div>
         <div class="inline-drawer-content">
@@ -1008,7 +1007,7 @@ PromptManagerModule.prototype.loadMessagesIntoInspectForm = function (messages) 
 
     messages.getCollection().forEach(message => {
         const truncatedTitle = message.content.length > 32 ? message.content.slice(0, 32) + '...' : message.content;
-        messageList.append(createInlineDrawer(message.identifier || truncatedTitle, message.content || 'No Content'));
+        messageList.append(createInlineDrawer(message.identifier || truncatedTitle, message.content || 'No Content', message.role));
     });
 }
 
