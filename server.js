@@ -3327,7 +3327,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
                     makeRequest(config, response_generate_openai, request, retries - 1);
                 }, timeout);
             } else {
-                let errorData = error.response.data;
+                let errorData = error?.response?.data;
 
                 if (request.body.stream) {
                     try {
@@ -3355,7 +3355,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
     }
 
     function handleError(error, response_generate_openai, errorData) {
-        console.error('Error:', error.message);
+        console.error('Error:', error?.message);
 
         let message = error?.response?.statusText;
 
