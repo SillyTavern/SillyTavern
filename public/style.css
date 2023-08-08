@@ -954,10 +954,6 @@ select {
     white-space: nowrap;
 }
 
-#rm_ch_create_block textarea {
-    min-height: 190px;
-}
-
 .margin-bot-10px,
 .marginBot10 {
     margin-bottom: 10px;
@@ -1724,11 +1720,10 @@ body.big-avatars .ch_description {
 
 
 #form_create {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     height: 100%;
     overflow-y: auto;
-    grid-template-rows:
-        [avatar] min-content [hr] min-content [descriptionHeader] min-content [description] auto [firstmessageHeader] min-content [firstMessage] auto [hidden] min-content;
 }
 
 .avatar_div {
@@ -1759,7 +1754,6 @@ body.big-avatars #avatar_div_div.avatar img {
 #avatar-and-name-block {
     justify-content: space-between;
     display: flex;
-    flex: 0 0 100%;
     flex-wrap: wrap;
     /* margin-bottom: 4px; */
 }
@@ -5108,11 +5102,6 @@ body.waifuMode .zoomed_avatar {
         margin: 5px auto;
     }
 
-    #form_create {
-        grid-template-rows:
-            [avatar] min-content [hr] min-content [descriptionHeader] min-content [description] auto [firstmessageHeader] min-content [firstMessage] auto;
-    }
-
     #result_info {
         font-size: calc(var(--mainFontSize) - .1rem);
     }
@@ -5126,10 +5115,6 @@ body.waifuMode .zoomed_avatar {
         border-radius: 0 0 20px 20px;
         margin-top: 0px;
         height: calc(100% - 40px);
-    }
-
-    #rm_ch_create_block textarea {
-        max-height: 190px;
     }
 
     .drawer25pWidth {
