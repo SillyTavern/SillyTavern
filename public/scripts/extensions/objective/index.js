@@ -102,8 +102,8 @@ async function generateTasks() {
     }
     updateUiTaskList();
     setCurrentTask();
-    console.info(`Response for Objective: '${taskTree.description}' was \n'${taskResponse}', \nwhich created tasks \n${JSON.stringify(globalTasks.map(v => {return v.toSaveState()}), null, 2)} `)
-    toastr.success(`Generated ${taskTree.length} tasks`, 'Done!');
+    console.info(`Response for Objective: '${currentObjective.description}' was \n'${taskResponse}', \nwhich created tasks \n${JSON.stringify(currentObjective.children.map(v => {return v.toSaveState()}), null, 2)} `)
+    toastr.success(`Generated ${currentObjective.children.length} tasks`, 'Done!');
 }
 
 // Call Quiet Generate to check if a task is completed
