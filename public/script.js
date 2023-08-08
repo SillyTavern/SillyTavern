@@ -1705,9 +1705,9 @@ function randomReplace(input, emptyListPlaceholder = '') {
 }
 
 function diceRollReplace(input, invalidRollPlaceholder = '') {
-    const randomPattern = /{{roll[ : ]([^}]+)}}/gi;
+    const rollPattern = /{{roll[ : ]([^}]+)}}/gi;
 
-    return input.replace(randomPattern, (match, matchValue) => {
+    return input.replace(rollPattern, (match, matchValue) => {
         let formula = matchValue.trim();
 
         if (isDigitsOnly(formula)) {
