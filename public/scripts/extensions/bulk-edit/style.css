@@ -2,6 +2,6 @@
     align-self: center;
 }
 
-#rm_print_characters_block .wide100pLess70px {
+#rm_print_characters_block.bulk_select .wide100pLess70px {
     width: calc(100% - 85px);
 }
