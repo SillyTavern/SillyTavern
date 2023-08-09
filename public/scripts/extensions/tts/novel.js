@@ -1,5 +1,5 @@
-import { getRequestHeaders } from "../../../script.js"
-import { getPreviewString } from "./index.js"
+import { getRequestHeaders, callPopup } from "../../../script.js"
+import { getPreviewString, initVoiceMap } from "./index.js"
 
 export { NovelTtsProvider }
 
@@ -14,17 +14,58 @@ class NovelTtsProvider {
     audioElement = document.createElement('audio')
 
     defaultSettings = {
-        voiceMap: {}
+        voiceMap: {},
+        customVoices: []
     }
 
     get settingsHtml() {
-        let html = `Use NovelAI's TTS engine.<br>
-        The Voice IDs in the preview list are only examples, as it can be any string of text. Feel free to try different options!<br>
-        <small><i>Hint: Save an API key in the NovelAI API settings to use it here.</i></small>`;
+        let html = `
+        <br>
+        <small>
+        Use NovelAI's TTS engine.<br>
+        The default Voice IDs are only examples. Add custom voices and Novel will create a new random voice for it. Feel free to try different options!<br>
+        </small>
+        <small><i>Hint: Save an API key in the NovelAI API settings to use it here.</i></small>
+        <div class="flex1">
+            <select id="tts-novel-custom-voices-select"><select>
+            <label for="tts-novel-custom-voices-add">Custom Voices</label>
+            <i id="tts-novel-custom-voices-add" class="tts-button fa-solid fa-plus" title="Add"></i>
+            <i id="tts-novel-custom-voices-delete" class="tts-button fa-solid fa-xmark" title="Delete"></i>
+        </div>
+        `;
         return html;
     }
 
     onSettingsChange() {
+
+    }
+
+    // Add a new Novel custom voice to provider
+    async addCustomVoice(){
+        const voiceName = await callPopup('<h3>Custom Voice name:</h3>', 'input')
+        this.settings.customVoices.push(voiceName)
+        this.populateCustomVoices()
+    }
+
+    // Delete selected custom voice from provider
+    deleteCustomVoice() {
+        const selected = $("#tts-novel-custom-voices-select").find(':selected').val();
+        const voiceIndex = this.settings.customVoices.indexOf(selected);
+        
+        if (voiceIndex !== -1) {
+            this.settings.customVoices.splice(voiceIndex, 1);
+        }
+        this.populateCustomVoices()
+    }
+
+    // Create the UI dropdown list of voices in provider
+    populateCustomVoices(){
+        let voiceSelect = $("#tts-novel-custom-voices-select")
+        voiceSelect.empty()
+        this.settings.customVoices.forEach(voice => {
+            voiceSelect.append(`<option>${voice}</option>`)
+        })
+        initVoiceMap()
     }
 
     loadSettings(settings) {
@@ -32,6 +73,8 @@ class NovelTtsProvider {
         if (Object.keys(settings).length == 0) {
             console.info("Using default TTS Provider settings")
         }
+        $("#tts-novel-custom-voices-add").on('click', () => (this.addCustomVoice()))
+        $("#tts-novel-custom-voices-delete").on('click',() => (this.deleteCustomVoice()))
 
         // Only accept keys defined in defaultSettings
         this.settings = this.defaultSettings
@@ -44,6 +87,7 @@ class NovelTtsProvider {
             }
         }
 
+        this.populateCustomVoices()
         console.info("Settings loaded")
     }
 
@@ -73,7 +117,7 @@ class NovelTtsProvider {
     // API CALLS //
     //###########//
     async fetchTtsVoiceIds() {
-        const voices = [
+        let voices = [
             { name: 'Ligeia', voice_id: 'Ligeia', lang: 'en-US', preview_url: false },
             { name: 'Aini', voice_id: 'Aini', lang: 'en-US', preview_url: false },
             { name: 'Orea', voice_id: 'Orea', lang: 'en-US', preview_url: false },
@@ -88,6 +132,12 @@ class NovelTtsProvider {
             { name: 'Pega', voice_id: 'Pega', lang: 'en-US', preview_url: false },
             { name: 'Lam', voice_id: 'Lam', lang: 'en-US', preview_url: false },
         ];
+
+        // Add in custom voices to the map
+        let addVoices = this.settings.customVoices.map(voice => 
+            ({ name: voice, voice_id: voice, lang: 'en-US', preview_url: false })
+        )
+        voices = voices.concat(addVoices)
 
         return voices;
     }

@@ -608,7 +608,7 @@ function onTtsProviderChange() {
 // Ensure that TTS provider settings are saved to extension settings.
 function onTtsProviderSettingsInput() {
     ttsProvider.onSettingsChange()
-    extension_settings.tts[ttsProviderName] = ttsProvider.setttings
+    extension_settings.tts[ttsProviderName] = ttsProvider.settings
     saveSettingsDebounced()
     console.info(`Saved settings ${ttsProviderName} ${JSON.stringify(ttsProvider.settings)}`)
 }
@@ -707,7 +707,7 @@ function updateVoiceMap() {
  * 
  * Note: voiceMap is a provider specific setting, but it is not managed by the provider itself. 
  */
-async function initVoiceMap(){
+export async function initVoiceMap(){
     const enabled = $('#tts_enabled').is(':checked')
     if (!enabled){
         return
