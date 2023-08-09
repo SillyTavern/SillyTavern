@@ -1,4 +1,3 @@
-import { check } from "yargs"
 import { getRequestHeaders, callPopup } from "../../../script.js"
 import { getPreviewString, initVoiceMap } from "./index.js"
 
