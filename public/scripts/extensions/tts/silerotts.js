@@ -8,6 +8,7 @@ class SileroTtsProvider {
     //########//
 
     settings
+    ready = false
     voices = []
     separator = ' .. '
 
@@ -60,9 +61,22 @@ class SileroTtsProvider {
         }, 2000);
 
         $('#silero_tts_endpoint').val(this.settings.provider_endpoint)
+
+        this.checkReady()
+
         console.info("Settings loaded")
     }
 
+    // Perform a simple readiness check by trying to fetch voiceIds
+    async checkReady(){
+        try {
+            await this.fetchTtsVoiceIds()
+            this.ready = true
+
+        } catch {
+            this.ready = false
+        }
+    }
 
     async onApplyClick() {
         return

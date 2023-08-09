@@ -16,6 +16,7 @@ class CoquiTtsProvider {
     //########//
 
     settings
+    ready = false
     voices = []
     separator = ' .. '
 
@@ -93,7 +94,19 @@ class CoquiTtsProvider {
             this.getModels();
         });
         this.onttsCoquiHideButtons();
+        this.checkReady()
         console.info("Settings loaded")
+    }
+
+    // Perform a simple readiness check by trying to fetch voiceIds
+    async checkReady(){
+        try {
+            await this.fetchTtsVoiceIds()
+            this.ready = true
+
+        } catch {
+            this.ready = false
+        }
     }
 
     async onttsCoquiHideButtons() {

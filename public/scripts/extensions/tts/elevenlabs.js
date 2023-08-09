@@ -6,6 +6,7 @@ class ElevenLabsTtsProvider {
     //########//
 
     settings
+    ready = false
     voices = []
     separator = ' ... ... ... '
 
@@ -66,7 +67,20 @@ class ElevenLabsTtsProvider {
         $('#elevenlabs_tts_similarity_boost').val(this.settings.similarity_boost)
         $('#elevenlabs_tts_api_key').val(this.settings.apiKey)
         $('#tts_auto_generation').prop('checked', this.settings.multilingual)
+        
+        this.checkReady()
         console.info("Settings loaded")
+    }
+
+    // Perform a simple readiness check by trying to fetch voiceIds
+    async checkReady(){
+        try {
+            await this.fetchTtsVoiceIds()
+            this.ready = true
+
+        } catch {
+            this.ready = false
+        }
     }
 
     async onApplyClick() {

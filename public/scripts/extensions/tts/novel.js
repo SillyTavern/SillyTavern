@@ -1,3 +1,4 @@
+import { check } from "yargs"
 import { getRequestHeaders, callPopup } from "../../../script.js"
 import { getPreviewString, initVoiceMap } from "./index.js"
 
@@ -9,6 +10,7 @@ class NovelTtsProvider {
     //########//
 
     settings
+    ready = false
     voices = []
     separator = ' . '
     audioElement = document.createElement('audio')
@@ -25,12 +27,12 @@ class NovelTtsProvider {
         Use NovelAI's TTS engine.<br>
         The default Voice IDs are only examples. Add custom voices and Novel will create a new random voice for it. Feel free to try different options!<br>
         </small>
-        <small><i>Hint: Save an API key in the NovelAI API settings to use it here.</i></small>
-        <div class="flex1">
+        <small><i>Hint: Save an API key in the NovelAI API settings to use it here.</i></small> <br>
+        <label for="tts-novel-custom-voices-add">Custom Voices</label>
+        <div style="display:flex; align-items: baseline">
             <select id="tts-novel-custom-voices-select"><select>
-            <label for="tts-novel-custom-voices-add">Custom Voices</label>
-            <i id="tts-novel-custom-voices-add" class="tts-button fa-solid fa-plus" title="Add"></i>
-            <i id="tts-novel-custom-voices-delete" class="tts-button fa-solid fa-xmark" title="Delete"></i>
+            <i id="tts-novel-custom-voices-add" class="tts-button fa-solid fa-plus fa-2x" title="Add" style="color:green"></i>
+            <i id="tts-novel-custom-voices-delete" class="tts-button fa-solid fa-xmark fa-2x" title="Delete" style="color:red"></i>
         </div>
         `;
         return html;
@@ -88,9 +90,21 @@ class NovelTtsProvider {
         }
 
         this.populateCustomVoices()
+        this.checkReady()
         console.info("Settings loaded")
     }
 
+    // Perform a simple readiness check by trying to fetch voiceIds
+    // Doesnt really do much for Novel, not seeing a good way to test this at the moment.
+    async checkReady(){
+        try {
+            await this.fetchTtsVoiceIds()
+            this.ready = true
+
+        } catch {
+            this.ready = false
+        }
+    }
 
     async onApplyClick() {
         return

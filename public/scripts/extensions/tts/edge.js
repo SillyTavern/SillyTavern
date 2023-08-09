@@ -11,6 +11,7 @@ class EdgeTtsProvider {
     //########//
 
     settings
+    ready = false
     voices = []
     separator = ' . '
     audioElement = document.createElement('audio')
@@ -52,9 +53,22 @@ class EdgeTtsProvider {
         $('#edge_tts_rate').val(this.settings.rate || 0);
         $('#edge_tts_rate_output').text(this.settings.rate || 0);
 
+        this.checkReady()
+
         console.info("Settings loaded")
     }
 
+
+    // Perform a simple readiness check by trying to fetch voiceIds
+    async checkReady(){
+        try {
+            await this.fetchTtsVoiceIds()
+            this.ready = true
+
+        } catch {
+            this.ready = false
+        }
+    }
 
     async onApplyClick() {
         return

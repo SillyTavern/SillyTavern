@@ -709,7 +709,7 @@ function updateVoiceMap() {
  */
 export async function initVoiceMap(){
     const enabled = $('#tts_enabled').is(':checked')
-    if (!enabled){
+    if (!enabled ){
         return
     }
     // Clear existing voiceMap state
@@ -738,7 +738,7 @@ export async function initVoiceMap(){
         voiceIdsFromProvider = await ttsProvider.fetchTtsVoiceIds()
     }
     catch {
-        toastr.error("TTS Provider failed to retrn voice ids.")
+        toastr.error("TTS Provider failed to return voice ids.")
     }
 
     // Init voicemap and build UI using VoiceMapEntry objects
