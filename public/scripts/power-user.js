@@ -27,7 +27,7 @@ import {
 
 import { registerSlashCommand } from "./slash-commands.js";
 
-import { delay, debounce } from "./utils.js";
+import { delay } from "./utils.js";
 
 export {
     loadPowerUserSettings,
@@ -71,6 +71,7 @@ const tokenizers = {
     NERD: 4,
     NERD2: 5,
     API: 6,
+    BEST_MATCH: 99,
 }
 
 const send_on_enter_options = {
@@ -87,7 +88,7 @@ export const persona_description_positions = {
 }
 
 let power_user = {
-    tokenizer: tokenizers.CLASSIC,
+    tokenizer: tokenizers.BEST_MATCH,
     token_padding: 64,
     collapse_newlines: false,
     pygmalion_formatting: pygmalion_options.AUTO,
@@ -163,6 +164,7 @@ let power_user = {
     prefer_character_jailbreak: true,
     continue_on_send: false,
     trim_spaces: true,
+    relaxed_api_urls: false,
 
     instruct: {
         enabled: false,
@@ -176,6 +178,7 @@ let power_user = {
         preset: 'Alpaca',
         separator_sequence: '',
         macro: false,
+        names_force_groups: true,
     },
 
     personas: {},
@@ -184,8 +187,10 @@ let power_user = {
 
     persona_description: '',
     persona_description_position: persona_description_positions.BEFORE_CHAR,
+    persona_show_notifications: true,
 
     custom_stopping_strings: '',
+    custom_stopping_strings_macro: true,
     fuzzy_search: false,
 };
 
@@ -670,6 +675,7 @@ function loadPowerUserSettings(settings, data) {
         power_user.chat_width = 50;
     }
 
+    $('#relaxed_api_urls').prop("checked", power_user.relaxed_api_urls);
     $('#trim_spaces').prop("checked", power_user.trim_spaces);
     $('#continue_on_send').prop("checked", power_user.continue_on_send);
     $('#auto_swipe').prop("checked", power_user.auto_swipe);
@@ -677,7 +683,9 @@ function loadPowerUserSettings(settings, data) {
     $('#auto_swipe_blacklist').val(power_user.auto_swipe_blacklist.join(", "));
     $('#auto_swipe_blacklist_threshold').val(power_user.auto_swipe_blacklist_threshold);
     $('#custom_stopping_strings').val(power_user.custom_stopping_strings);
+    $("#custom_stopping_strings_macro").prop("checked", power_user.custom_stopping_strings_macro);
     $('#fuzzy_search_checkbox').prop("checked", power_user.fuzzy_search);
+    $('#persona_show_notifications').prop("checked", power_user.persona_show_notifications);
 
     $("#console_log_prompts").prop("checked", power_user.console_log_prompts);
     $('#auto_fix_generated_markdown').prop("checked", power_user.auto_fix_generated_markdown);
@@ -848,7 +856,12 @@ function loadInstructMode() {
         { id: "instruct_stop_sequence", property: "stop_sequence", isCheckbox: false },
         { id: "instruct_names", property: "names", isCheckbox: true },
         { id: "instruct_macro", property: "macro", isCheckbox: true },
+        { id: "instruct_names_force_groups", property: "names_force_groups", isCheckbox: true },
     ];
+
+    if (power_user.instruct.names_force_groups === undefined) {
+        power_user.instruct.names_force_groups = true;
+    }
 
     controls.forEach(control => {
         const $element = $(`#${control.id}`);
@@ -860,7 +873,7 @@ function loadInstructMode() {
         }
 
         $element.on('input', function () {
-            power_user.instruct[control.property] = control.isCheckbox ? $(this).prop('checked') : $(this).val();
+            power_user.instruct[control.property] = control.isCheckbox ? !!$(this).prop('checked') : $(this).val();
             saveSettingsDebounced();
         });
     });
@@ -924,7 +937,12 @@ export function fuzzySearchCharacters(searchValue) {
 }
 
 export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvatar, name1, name2) {
-    const includeNames = isNarrator ? false : (power_user.instruct.names || !!selected_group || !!forceAvatar);
+    let includeNames = isNarrator ? false : power_user.instruct.names;
+
+    if (!isNarrator && power_user.instruct.names_force_groups && (selected_group || forceAvatar)) {
+        includeNames = true;
+    }
+
     let sequence = (isUser || isNarrator) ? power_user.instruct.input_sequence : power_user.instruct.output_sequence;
 
     if (power_user.instruct.macro) {
@@ -952,7 +970,7 @@ export function formatInstructStoryString(story, systemPrompt) {
 }
 
 export function formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2) {
-    const includeNames = power_user.instruct.names || !!selected_group;
+    const includeNames = power_user.instruct.names || (!!selected_group && power_user.instruct.names_force_groups);
     let sequence = isImpersonate ? power_user.instruct.input_sequence : power_user.instruct.output_sequence;
 
     if (power_user.instruct.macro) {
@@ -1977,6 +1995,12 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
+    $("#relaxed_api_urls").on("input", function () {
+        const value = !!$(this).prop('checked');
+        power_user.relaxed_api_urls = value;
+        saveSettingsDebounced();
+    });
+
     $('#spoiler_free_mode').on('input', function () {
         power_user.spoiler_free_mode = !!$(this).prop('checked');
         switchSpoilerMode();
@@ -1993,8 +2017,18 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
+    $("#custom_stopping_strings_macro").change(function () {
+        power_user.custom_stopping_strings_macro = !!$(this).prop("checked");
+        saveSettingsDebounced();
+    });
+
     $('#fuzzy_search_checkbox').on('input', function () {
         power_user.fuzzy_search = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#persona_show_notifications').on('input', function () {
+        power_user.persona_show_notifications = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 

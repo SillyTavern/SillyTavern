@@ -17,6 +17,7 @@ import {
     loadTextGenSettings,
     generateTextGenWithStreaming,
     getTextGenGenerationData,
+    formatTextGenURL,
 } from "./scripts/textgen-settings.js";
 
 import {
@@ -135,6 +136,7 @@ import {
     download,
     isDataURL,
     getCharaFilename,
+    isDigitsOnly,
 } from "./scripts/utils.js";
 
 import { extension_settings, getContext, loadExtensionSettings, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
@@ -303,7 +305,6 @@ export const comment_avatar = "img/quill.png";
 export let CLIENT_VERSION = 'SillyTavern:UNKNOWN:Cohee#1207'; // For Horde header
 let is_colab = false;
 let is_checked_colab = false;
-let is_mes_reload_avatar = false;
 let optionsPopper = Popper.createPopper(document.getElementById('options_button'), document.getElementById('options'), {
     placement: 'top-start'
 });
@@ -363,10 +364,10 @@ const system_messages = {
         mes:
             `Hello there! Please select the help topic you would like to learn more about:
             <ul>
-            <li><a href="javascript:displayHelp('1')">Slash Commands</a> (or <tt>/help slash</tt>)</li>
-            <li><a href="javascript:displayHelp('2')">Formatting</a> (or <tt>/help format</tt>)</li>
-            <li><a href="javascript:displayHelp('3')">Hotkeys</a> (or <tt>/help hotkeys</tt>)</li>
-            <li><a href="javascript:displayHelp('4')">{{Macros}}</a> (or <tt>/help macros</tt>)</li>
+            <li><a href="#" data-displayHelp="1">Slash Commands</a> (or <tt>/help slash</tt>)</li>
+            <li><a href="#" data-displayHelp="2">Formatting</a> (or <tt>/help format</tt>)</li>
+            <li><a href="#" data-displayHelp="3">Hotkeys</a> (or <tt>/help hotkeys</tt>)</li>
+            <li><a href="#" data-displayHelp="4">{{Macros}}</a> (or <tt>/help macros</tt>)</li>
             </ul>
             <br><b>Still got questions left? The <a target="_blank" href="https://docs.sillytavern.app/">Official SillyTavern Documentation Website</a> has much more information!</b>`
     },
@@ -408,12 +409,25 @@ const system_messages = {
         mes:
             `Text formatting commands:
             <ul>
-            <li><tt>{​{text}​}</tt> - sets a one-time behavioral bias for the AI. Resets when you send the next message.</li>
             <li><tt>*text*</tt> - displays as <i>italics</i></li>
             <li><tt>**text**</tt> - displays as <b>bold</b></li>
             <li><tt>***text***</tt> - displays as <b><i>bold italics</i></b></li>
-            <li><tt>` + "```" + `text` + "```" + `</tt> - displays as a code block</li>
-            <li><tt>` + "`" + `text` + "`" + `</tt> - displays as inline code</li>
+            <li><tt>` + "```" + `text` + "```" + `</tt> - displays as a code block (new lines allowed between the backticks)</li>
+            <pre>
+<code>
+like
+this
+</code>
+            </pre>
+            <li><tt>` + "`" + `text` + "`" + `</tt> - displays as <code>inline code</code></li>
+            <li><tt>` + "> " + `text` + `</tt> - displays as a blockquote (note the space after >)</li>
+            <blockquote>like this</blockquote>
+            <li><tt>` + "# " + `text` + `</tt> - displays as a large header (note the space)</li>
+            <h1>like this</h1>
+            <li><tt>` + "## " + `text` + `</tt> - displays as a medium header (note the space)</li>
+            <h2>like this</h2>
+            <li><tt>` + "### " + `text` + `</tt> - displays as a small header (note the space)</li>
+            <h3>like this</h3>
             <li><tt>$$ text $$</tt> - renders a LaTeX formula (if enabled)</li>
             <li><tt>$ text $</tt> - renders an AsciiMath formula (if enabled)</li>
             </ul>`
@@ -523,7 +537,11 @@ const system_messages = {
 
 $(document).ajaxError(function myErrorHandler(_, xhr) {
     if (xhr.status == 403) {
-        toastr.warning("doubleCsrf errors in console are NORMAL in this case. Just reload the page or close this tab.", "Looks like you've opened SillyTavern in another browser tab", { timeOut: 0, extendedTimeOut: 0, preventDuplicates: true });
+        toastr.warning(
+            "doubleCsrf errors in console are NORMAL in this case. If you want to run ST in multiple tabs, start the server with --disableCsrf option.",
+            "Looks like you've opened SillyTavern in another browser tab",
+            { timeOut: 0, extendedTimeOut: 0, preventDuplicates: true },
+        );
     }
 });
 
@@ -545,8 +563,27 @@ async function getClientVersion() {
     }
 }
 
+function getTokenizerBestMatch() {
+    if (main_api === 'novel') {
+        if (nai_settings.model_novel.includes('krake') || nai_settings.model_novel.includes('euterpe')) {
+            return tokenizers.CLASSIC;
+        }
+        if (nai_settings.model_novel.includes('clio')) {
+            return tokenizers.NERD;
+        }
+        if (nai_settings.model_novel.includes('kayra')) {
+            return tokenizers.NERD2;
+        }
+    }
+    if (main_api === 'kobold' || main_api === 'textgenerationwebui' || main_api === 'koboldhorde') {
+        return tokenizers.LLAMA;
+    }
+
+    return power_user.NONE;
+}
+
 function getTokenCount(str, padding = undefined) {
-    if (typeof str !== 'string') {
+    if (typeof str !== 'string' || !str?.length) {
         return 0;
     }
 
@@ -560,6 +597,10 @@ function getTokenCount(str, padding = undefined) {
             // For extensions and WI
             return getTokenCountOpenAI(str);
         }
+    }
+
+    if (tokenizerType === tokenizers.BEST_MATCH) {
+        tokenizerType = getTokenizerBestMatch();
     }
 
     if (padding === undefined) {
@@ -603,11 +644,42 @@ function countTokensRemote(endpoint, str, padding) {
     return tokenCount + padding;
 }
 
+function getTextTokensRemote(endpoint, str) {
+    let ids = [];
+    jQuery.ajax({
+        async: false,
+        type: 'POST',
+        url: endpoint,
+        data: JSON.stringify({ text: str }),
+        dataType: "json",
+        contentType: "application/json",
+        success: function (data) {
+            ids = data.ids;
+        }
+    });
+    return ids;
+}
+
+export function getTextTokens(tokenizerType, str) {
+    switch (tokenizerType) {
+        case tokenizers.LLAMA:
+            return getTextTokensRemote('/tokenize_llama', str);
+        case tokenizers.NERD:
+            return getTextTokensRemote('/tokenize_nerdstash', str);
+        case tokenizers.NERD2:
+            return getTextTokensRemote('/tokenize_nerdstash_v2', str);
+        default:
+            console.warn("Calling getTextTokens with unsupported tokenizer type", tokenizerType);
+            return [];
+    }
+}
+
 function reloadMarkdownProcessor(render_formulas = false) {
     if (render_formulas) {
         converter = new showdown.Converter({
             emoji: "true",
             underline: "true",
+            parseImgDimensions: "true",
             extensions: [
                 showdownKatex(
                     {
@@ -623,6 +695,7 @@ function reloadMarkdownProcessor(render_formulas = false) {
         converter = new showdown.Converter({
             emoji: "true",
             literalMidWordUnderscores: "true",
+            parseImgDimensions: "true",
         });
     }
 
@@ -689,6 +762,7 @@ let is_get_status = false;
 let is_get_status_novel = false;
 let is_api_button_press = false;
 let is_api_button_press_novel = false;
+let api_use_mancer_webui = false;
 
 let is_send_press = false; //Send generation
 let add_mes_without_animation = false;
@@ -822,9 +896,9 @@ async function getStatus() {
             type: "POST", //
             url: "/getstatus", //
             data: JSON.stringify({
-                api_server:
-                    main_api == "kobold" ? api_server : api_server_textgenerationwebui,
+                api_server: main_api == "kobold" ? api_server : api_server_textgenerationwebui,
                 main_api: main_api,
+                use_mancer: main_api == "textgenerationwebui" ? api_use_mancer_webui : false,
             }),
             beforeSend: function () { },
             cache: false,
@@ -849,6 +923,11 @@ async function getStatus() {
                 if (main_api === "kobold" || main_api === "koboldhorde") {
                     kai_settings.use_stop_sequence = canUseKoboldStopSequence(data.version);
                     kai_settings.can_use_streaming = canUseKoboldStreaming(data.koboldVersion);
+                }
+
+                // We didn't get a 200 status code, but the endpoint has an explanation. Which means it DID connect, but I digress.
+                if (online_status == "no_connection" && data.response) {
+                    toastr.error(data.response, "API Error", { timeOut: 5000, preventDuplicates: true })
                 }
 
                 //console.log(online_status);
@@ -1190,8 +1269,8 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
         mes = fixMarkdown(mes);
     }
 
-    if (this_chid != undefined && !isSystem)
-        mes = mes.replaceAll("<", "&lt;").replaceAll(">", "&gt;"); //for welcome message
+    //if (this_chid != undefined && !isSystem)
+    //    mes = mes.replaceAll("<", "&lt;").replaceAll(">", "&gt;"); //for welcome message
     if ((this_chid === undefined || this_chid === "invalid-safety-id") && !selected_group) {
         mes = mes
             .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
@@ -1233,7 +1312,7 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
     */
 
     if (!power_user.allow_name2_display && ch_name && !isUser && !isSystem) {
-        mes = mes.replaceAll(`${ch_name}:`, "");
+        mes = mes.replace(new RegExp(`(^|\n)${ch_name}:`, 'g'), "$1");
     }
 
     //function to hide any <tags> from AI response output
@@ -1332,9 +1411,6 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     const momentDate = timestampToMoment(mes.send_date);
     const timestamp = momentDate.isValid() ? momentDate.format('LL LT') : '';
 
-
-
-
     if (mes?.extra?.display_text) {
         messageText = mes.extra.display_text;
     }
@@ -1364,9 +1440,6 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         } else {
             if (characters[this_chid].avatar != "none") {
                 avatarImg = getThumbnailUrl('avatar', characters[this_chid].avatar);
-                if (is_mes_reload_avatar !== false) {
-                    avatarImg += "&" + is_mes_reload_avatar;
-                }
             } else {
                 avatarImg = default_avatar;
             }
@@ -1614,7 +1687,7 @@ function getTimeSinceLastMessage() {
 }
 
 function randomReplace(input, emptyListPlaceholder = '') {
-    const randomPattern = /{{random:([^}]+)}}/gi;
+    const randomPattern = /{{random[ : ]([^}]+)}}/gi;
 
     return input.replace(randomPattern, (match, listString) => {
         const list = listString.split(',').map(item => item.trim()).filter(item => item.length > 0);
@@ -1632,10 +1705,15 @@ function randomReplace(input, emptyListPlaceholder = '') {
 }
 
 function diceRollReplace(input, invalidRollPlaceholder = '') {
-    const randomPattern = /{{roll:([^}]+)}}/gi;
+    const rollPattern = /{{roll[ : ]([^}]+)}}/gi;
 
-    return input.replace(randomPattern, (match, matchValue) => {
-        const formula = matchValue.trim();
+    return input.replace(rollPattern, (match, matchValue) => {
+        let formula = matchValue.trim();
+
+        if (isDigitsOnly(formula)) {
+            formula = `1d${formula}`;
+        }
+
         const isValid = droll.validate(formula);
 
         if (!isValid) {
@@ -1688,7 +1766,11 @@ function getStoppingStrings(isImpersonate, addSpace) {
 
     if (power_user.custom_stopping_strings) {
         const customStoppingStrings = getCustomStoppingStrings();
-        result.push(...customStoppingStrings);
+        if (power_user.custom_stopping_strings_macro) {
+            result.push(...customStoppingStrings.map(x => substituteParams(x, name1, name2)));
+        } else {
+            result.push(...customStoppingStrings);
+        }
     }
 
     return addSpace ? result.map(x => `${x} `) : result;
@@ -1768,7 +1850,7 @@ export function extractMessageBias(message) {
         const match = curMatch[1].trim();
 
         // Ignore random/roll pattern matches
-        if (/^random:.+/i.test(match) || /^roll:.+/i.test(match)) {
+        if (/^random[ : ].+/i.test(match) || /^roll[ : ].+/i.test(match)) {
             continue;
         }
 
@@ -1824,7 +1906,7 @@ function getPersonaDescription(storyString) {
         case persona_description_positions.BEFORE_CHAR:
             return `${substituteParams(power_user.persona_description)}\n${storyString}`;
         case persona_description_positions.AFTER_CHAR:
-            return `${storyString}\n${substituteParams(power_user.persona_description)}`;
+            return `${storyString}${substituteParams(power_user.persona_description)}\n`;
         default:
             if (shouldWIAddPrompt) {
                 const originalAN = extension_prompts[NOTE_MODULE_NAME].value
@@ -2487,15 +2569,15 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     }
 
                     if (i === arrMes.length - 1 && !item.trim().startsWith(name1 + ":")) {
-                        if (textareaText == "") {
-                            // Cohee: I think this was added to allow the model to continue
-                            // where it left off by removing the trailing newline at the end
-                            // that was added by chat2 generator. This causes problems with
-                            // instruct mode that could not have a trailing newline. So we're
-                            // removing a newline ONLY at the end of the string if it exists.
-                            item = item.replace(/\n?$/, '');
-                            //item = item.substr(0, item.length - 1);
-                        }
+                        //if (textareaText == "") {
+                        // Cohee: I think this was added to allow the model to continue
+                        // where it left off by removing the trailing newline at the end
+                        // that was added by chat2 generator. This causes problems with
+                        // instruct mode that could not have a trailing newline. So we're
+                        // removing a newline ONLY at the end of the string if it exists.
+                        item = item.replace(/\n?$/, '');
+                        //item = item.substr(0, item.length - 1);
+                        //}
                     }
                     if (is_pygmalion && !isInstruct) {
                         if (item.trim().startsWith(name1)) {
@@ -2630,8 +2712,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 setPromtString();
             }
 
+            // add chat preamble
+            mesSendString = addChatsPreamble(mesSendString);
+
             // add a custom dingus (if defined)
-            mesSendString = adjustChatsSeparator(mesSendString);
+            mesSendString = addChatsSeparator(mesSendString);
 
             let finalPromt =
                 storyString +
@@ -2684,10 +2769,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
             else if (main_api == 'textgenerationwebui') {
                 generate_data = getTextGenGenerationData(finalPromt, this_amount_gen, isImpersonate);
+                generate_data.use_mancer = api_use_mancer_webui;
             }
             else if (main_api == 'novel') {
                 const this_settings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
-                generate_data = getNovelGenerationData(finalPromt, this_settings, this_amount_gen);
+                generate_data = getNovelGenerationData(finalPromt, this_settings, this_amount_gen, isImpersonate);
             }
             else if (main_api == 'openai') {
                 let [prompt, counts] = await prepareOpenAIMessages({
@@ -2789,7 +2875,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     });
 
                     if (!response.ok) {
-                        throw new Error(response.status);
+                        const error = await response.json();
+                        throw error;
                     }
 
                     const data = await response.json();
@@ -2945,6 +3032,13 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     activateSendButtons();
                     //console.log('runGenerate calling showSwipeBtns');
                     showSwipeButtons();
+
+                    if (main_api == 'textgenerationwebui' && api_use_mancer_webui) {
+                        const errorText = `<h3>Inferencer endpoint is unhappy!</h3>
+                        Returned status <tt>${data.status}</tt> with the reason:<br/>
+                        ${data.response}`;
+                        callPopup(errorText, 'text');
+                    }
                 }
                 console.debug('/savechat called by /Generate');
 
@@ -2959,6 +3053,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             };
 
             function onError(exception) {
+                if (typeof exception?.error?.message === 'string') {
+                    toastr.error(exception.error.message, 'Error', { timeOut: 10000, extendedTimeOut: 20000 });
+                }
+
                 reject(exception);
                 $("#send_textarea").removeAttr('disabled');
                 is_send_press = false;
@@ -3104,7 +3202,12 @@ function parseTokenCounts(counts, thisPromptBits) {
     });
 }
 
-function adjustChatsSeparator(mesSendString) {
+function addChatsPreamble(mesSendString) {
+    const preamble = main_api === 'novel' ? nai_settings.preamble : "";
+    return preamble + '\n' + mesSendString;
+}
+
+function addChatsSeparator(mesSendString) {
     if (power_user.custom_chat_separator && power_user.custom_chat_separator.length) {
         mesSendString = power_user.custom_chat_separator + '\n' + mesSendString;
     }
@@ -3112,6 +3215,10 @@ function adjustChatsSeparator(mesSendString) {
     // if chat start formatting is disabled
     else if (power_user.disable_start_formatting) {
         mesSendString = mesSendString;
+    }
+
+    else if (main_api === 'novel') {
+        mesSendString = '\n***\n' + mesSendString;
     }
 
     // add non-pygma dingus
@@ -3227,21 +3334,20 @@ function promptItemize(itemizedPrompts, requestedMesId) {
     }
 
     //these happen regardless of API
-    var charPersonalityTokens = getTokenCount(itemizedPrompts[thisPromptSet].charPersonality);
     var charDescriptionTokens = getTokenCount(itemizedPrompts[thisPromptSet].charDescription);
+    var charPersonalityTokens = getTokenCount(itemizedPrompts[thisPromptSet].charPersonality);
     var scenarioTextTokens = getTokenCount(itemizedPrompts[thisPromptSet].scenarioText);
+    var userPersonaStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].userPersona);
+    var worldInfoStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].worldInfoString);
     var allAnchorsTokens = getTokenCount(itemizedPrompts[thisPromptSet].allAnchors);
     var summarizeStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].summarizeString);
     var authorsNoteStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].authorsNoteString);
     var smartContextStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].smartContextString);
     var afterScenarioAnchorTokens = getTokenCount(itemizedPrompts[thisPromptSet].afterScenarioAnchor);
     var zeroDepthAnchorTokens = getTokenCount(itemizedPrompts[thisPromptSet].zeroDepthAnchor);
-    var worldInfoStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].worldInfoString);
     var thisPrompt_max_context = itemizedPrompts[thisPromptSet].this_max_context;
     var thisPrompt_padding = itemizedPrompts[thisPromptSet].padding;
-    var promptBiasTokens = getTokenCount(itemizedPrompts[thisPromptSet].promptBias);
     var this_main_api = itemizedPrompts[thisPromptSet].main_api;
-    var userPersonaStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].userPersona);
 
     if (this_main_api == 'openai') {
         //for OAI API
@@ -3283,6 +3389,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         var mesSendStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].mesSendString)
         var ActualChatHistoryTokens = mesSendStringTokens - (allAnchorsTokens - afterScenarioAnchorTokens) + power_user.token_padding;
         var instructionTokens = getTokenCount(itemizedPrompts[thisPromptSet].instruction);
+        var promptBiasTokens = getTokenCount(itemizedPrompts[thisPromptSet].promptBias);
 
         var totalTokensInPrompt =
             storyStringTokens +     //chardefs total
@@ -3720,13 +3827,15 @@ function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete
         getMessage = cleanGroupMessage(getMessage);
     }
 
+    if (!power_user.allow_name2_display) {
+        getMessage = getMessage.replace(new RegExp(`(^|\n)${name2}:`, 'g'), "$1");
+    }
+
     if (isImpersonate) {
         getMessage = getMessage.trim();
     }
 
     const stoppingStrings = getStoppingStrings(isImpersonate, false);
-    //console.log('stopping on these strings: ');
-    //console.log(stoppingStrings);
 
     for (const stoppingString of stoppingStrings) {
         if (stoppingString.length) {
@@ -4161,9 +4270,18 @@ async function read_avatar_load(input) {
             return;
         }
 
-        $("#create_button").trigger('click');
+        await createOrEditCharacter();
+        await delay(durationSaveEdit);
 
         const formData = new FormData($("#form_create").get(0));
+        await fetch(getThumbnailUrl('avatar', formData.get('avatar_url')), {
+            method: 'GET',
+            cache: 'no-cache',
+            headers: {
+                'pragma': 'no-cache',
+                'cache-control': 'no-cache',
+            }
+        });
 
         $(".mes").each(async function () {
             if ($(this).attr("is_system") == 'true') {
@@ -4181,22 +4299,12 @@ async function read_avatar_load(input) {
             }
         });
 
-        await delay(durationSaveEdit);
-        await fetch(getThumbnailUrl('avatar', formData.get('avatar_url')), {
-            method: 'GET',
-            cache: 'no-cache',
-            headers: {
-                'pragma': 'no-cache',
-                'cache-control': 'no-cache',
-            }
-        });
         console.log('Avatar refreshed');
-
     }
 }
 
 export function getCropPopup(src) {
-    return `<h3>Set the crop position of the avatar image and click Ok to confirm.</h3>
+    return `<h3>Set the crop position of the avatar image and click Accept to confirm.</h3>
             <div id='avatarCropWrap'>
                 <img id='avatarToCrop' src='${src}'>
             </div>`;
@@ -4509,7 +4617,9 @@ export function setUserName(value) {
         name1 = default_user_name;
     console.log(`User name changed to ${name1}`);
     $("#your_name").val(name1);
-    toastr.success(`Your messages will now be sent as ${name1}`, 'Current persona updated');
+    if (power_user.persona_show_notifications) {
+        toastr.success(`Your messages will now be sent as ${name1}`, 'Current persona updated');
+    }
     saveSettings("change_name");
 }
 
@@ -4608,7 +4718,7 @@ function setUserAvatar() {
     const personaName = power_user.personas[user_avatar];
     if (personaName && name1 !== personaName) {
         const lockedPersona = chat_metadata['persona'];
-        if (lockedPersona && lockedPersona !== user_avatar) {
+        if (lockedPersona && lockedPersona !== user_avatar && power_user.persona_show_notifications) {
             toastr.info(
                 `To permanently set "${personaName}" as the selected persona, unlock and relock it using the "Lock" button. Otherwise, the selection resets upon reloading the chat.`,
                 `This chat is locked to a different persona (${power_user.personas[lockedPersona]}).`,
@@ -4715,7 +4825,9 @@ async function setDefaultPersona() {
         }
 
         console.log(`Removing default persona ${avatarId}`);
-        toastr.info('This persona will no longer be used by default when you open a new chat.', `Default persona removed`);
+        if (power_user.persona_show_notifications) {
+            toastr.info('This persona will no longer be used by default when you open a new chat.', `Default persona removed`);
+        }
         delete power_user.default_persona;
     } else {
         const confirm = await callPopup(`<h3>Are you sure you want to set "${personaName}" as the default persona?</h3>
@@ -4727,7 +4839,9 @@ async function setDefaultPersona() {
         }
 
         power_user.default_persona = avatarId;
-        toastr.success('This persona will be used by default when you open a new chat.', `Default persona set to ${personaName}`);
+        if (power_user.persona_show_notifications) {
+            toastr.success('This persona will be used by default when you open a new chat.', `Default persona set to ${personaName}`);
+        }
     }
 
     saveSettingsDebounced();
@@ -4790,18 +4904,22 @@ function lockUserNameToChat() {
         console.log(`Unlocking persona for this chat ${chat_metadata['persona']}`);
         delete chat_metadata['persona'];
         saveMetadata();
-        toastr.info('User persona is now unlocked for this chat. Click the "Lock" again to revert.', 'Persona unlocked');
+        if (power_user.persona_show_notifications) {
+            toastr.info('User persona is now unlocked for this chat. Click the "Lock" again to revert.', 'Persona unlocked');
+        }
         updateUserLockIcon();
         return;
     }
 
     if (!(user_avatar in power_user.personas)) {
         console.log(`Creating a new persona ${user_avatar}`);
-        toastr.info(
-            'Creating a new persona for currently selected user name and avatar...',
-            'Persona not set for this avatar',
-            { timeOut: 10000, extendedTimeOut: 20000, },
-        );
+        if (power_user.persona_show_notifications) {
+            toastr.info(
+                'Creating a new persona for currently selected user name and avatar...',
+                'Persona not set for this avatar',
+                { timeOut: 10000, extendedTimeOut: 20000, },
+            );
+        }
         power_user.personas[user_avatar] = name1;
         power_user.persona_descriptions[user_avatar] = { description: '', position: persona_description_positions.BEFORE_CHAR };
     }
@@ -4810,7 +4928,9 @@ function lockUserNameToChat() {
     saveMetadata();
     saveSettingsDebounced();
     console.log(`Locking persona for this chat ${user_avatar}`);
-    toastr.success(`User persona is locked to ${name1} in this chat`);
+    if (power_user.persona_show_notifications) {
+        toastr.success(`User persona is locked to ${name1} in this chat`);
+    }
     updateUserLockIcon();
 }
 
@@ -5031,11 +5151,13 @@ async function getSettings(type) {
 
         setWorldInfoSettings(settings, data);
 
-        api_server_textgenerationwebui =
-            settings.api_server_textgenerationwebui;
+        api_server_textgenerationwebui = settings.api_server_textgenerationwebui;
         $("#textgenerationwebui_api_url_text").val(
             api_server_textgenerationwebui
         );
+        api_use_mancer_webui = settings.api_use_mancer_webui
+        $('#use-mancer-api-checkbox').prop("checked", api_use_mancer_webui);
+        $('#use-mancer-api-checkbox').trigger("change");
 
         selected_button = settings.selected_button;
 
@@ -5069,6 +5191,7 @@ async function saveSettings(type) {
             active_group: active_group,
             api_server: api_server,
             api_server_textgenerationwebui: api_server_textgenerationwebui,
+            api_use_mancer_webui: api_use_mancer_webui,
             preset_settings: preset_settings,
             user_avatar: user_avatar,
             amount_gen: amount_gen,
@@ -6831,6 +6954,11 @@ function importCharacter(file) {
         contentType: false,
         processData: false,
         success: async function (data) {
+            if (data.error) {
+                toastr.error('The file is likely invalid or corrupted.', 'Could not import character');
+                return;
+            }
+
             if (data.file_name !== undefined) {
                 $('#character_search_bar').val('').trigger('input');
                 $("#rm_info_block").transition({ opacity: 0, duration: 0 });
@@ -6912,6 +7040,10 @@ function doCharListDisplaySwitch() {
     updateVisibleDivs('#rm_print_characters_block', true);
 }
 
+function doCloseChat() {
+    $("#option_close_chat").trigger('click')
+}
+
 /**
  * Function to handle the deletion of a character, given a specific popup type and character ID.
  * If popup type equals "del_ch", it will proceed with deletion otherwise it will exit the function.
@@ -6921,13 +7053,13 @@ function doCharListDisplaySwitch() {
  *
  * @param {string} popup_type - The type of popup currently active.
  * @param {string} this_chid - The character ID to be deleted.
+ * @param {boolean} delete_chats - Whether to delete chats or not.
  */
-export async function handleDeleteCharacter(popup_type, this_chid) {
+export async function handleDeleteCharacter(popup_type, this_chid, delete_chats) {
     if (popup_type !== "del_ch") {
         return;
     }
 
-    const delete_chats = !!$("#del_char_checkbox").prop("checked");
     const avatar = characters[this_chid].avatar;
     const name = characters[this_chid].name;
 
@@ -6978,6 +7110,10 @@ export async function deleteCharacter(name, avatar) {
     saveSettingsDebounced();
 }
 
+function doTogglePanels() {
+    $("#option_settings").trigger('click')
+}
+
 
 $(document).ready(function () {
 
@@ -6992,6 +7128,9 @@ $(document).ready(function () {
     registerSlashCommand('api', connectAPISlash, [], "(kobold, horde, novel, ooba, oai, claude, windowai) – connect to an API", true, true);
     registerSlashCommand('impersonate', doImpersonate, ['imp'], "- calls an impersonation response", true, true);
     registerSlashCommand('delchat', doDeleteChat, [], "- deletes the current chat", true, true);
+    registerSlashCommand('closechat', doCloseChat, [], "- closes the current chat", true, true);
+    registerSlashCommand('panels', doTogglePanels, ['togglepanels'], "- toggle UI panels on/off", true, true);
+
 
 
     setTimeout(function () {
@@ -7358,7 +7497,8 @@ $(document).ready(function () {
             }, 200);
         }
         if (popup_type == "del_ch") {
-            handleDeleteCharacter(popup_type, this_chid, characters);
+            const deleteChats = !!$("#del_char_checkbox").prop("checked");
+            await handleDeleteCharacter(popup_type, this_chid, deleteChats);
         }
         if (popup_type == "alternate_greeting" && menu_type !== "create") {
             createOrEditCharacter();
@@ -7435,7 +7575,6 @@ $(document).ready(function () {
     });
 
     $("#add_avatar_button").change(function () {
-        is_mes_reload_avatar = Date.now();
         read_avatar_load(this);
     });
 
@@ -7447,7 +7586,7 @@ $(document).ready(function () {
                 <h3>Delete the character?</h3>
                 <b>THIS IS PERMANENT!<br><br>
                 <label for="del_char_checkbox" class="checkbox_label justifyCenter">
-                    <input type="checkbox" id="del_char_checkbox" checked />
+                    <input type="checkbox" id="del_char_checkbox" />
                     <span>Also delete the chat files</span>
                 </label><br></b>`
         );
@@ -7630,14 +7769,26 @@ $(document).ready(function () {
         }
     });
 
-    $("#api_button_textgenerationwebui").click(function (e) {
+    $("#use-mancer-api-checkbox").on("change", function (e) {
+        const enabled = $("#use-mancer-api-checkbox").prop("checked");
+        $("#mancer-api-ui").toggle(enabled);
+        api_use_mancer_webui = enabled;
+        saveSettingsDebounced();
+        getStatus();
+    });
+
+    $("#api_button_textgenerationwebui").click(async function (e) {
         e.stopPropagation();
         if ($("#textgenerationwebui_api_url_text").val() != "") {
-            let value = formatKoboldUrl($("#textgenerationwebui_api_url_text").val().trim());
-
+            let value = formatTextGenURL($("#textgenerationwebui_api_url_text").val().trim(), api_use_mancer_webui);
             if (!value) {
-                callPopup('Please enter a valid URL.', 'text');
+                callPopup("Please enter a valid URL.<br/>WebUI URLs should end with <tt>/api</tt><br/>Enable 'Relaxed API URLs' to allow other paths.", 'text');
                 return;
+            }
+
+            const mancer_key = $("#api_key_mancer").val().trim();
+            if (mancer_key.length) {
+                await writeSecret(SECRET_KEYS.MANCER, mancer_key);
             }
 
             $("#textgenerationwebui_api_url_text").val(value);

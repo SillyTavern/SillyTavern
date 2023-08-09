@@ -1,4 +1,4 @@
-import { chat_metadata, callPopup, saveSettingsDebounced, getCurrentChatId } from "../../../script.js";
+import { chat_metadata, callPopup, saveSettingsDebounced, is_send_press } from "../../../script.js";
 import { getContext, extension_settings, saveMetadataDebounced } from "../../extensions.js";
 import {
     substituteParams,
@@ -7,6 +7,8 @@ import {
     generateQuietPrompt,
 } from "../../../script.js";
 import { registerSlashCommand } from "../../slash-commands.js";
+import { waitUntilCondition } from "../../utils.js";
+import { is_group_generating, selected_group } from "../../group-chats.js";
 
 const MODULE_NAME = "Objective"
 
@@ -17,6 +19,7 @@ let currentChatId = ""
 let currentObjective = null
 let currentTask = null
 let checkCounter = 0
+let lastMessageWasSwipe = false
 
 
 const defaultPrompts = {
@@ -86,7 +89,7 @@ async function generateTasks() {
     console.log(`Generating tasks for objective with prompt`)
     toastr.info('Generating tasks for objective', 'Please wait...');
     const taskResponse = await generateQuietPrompt(prompt)
-    
+
     // Clear all existing objective tasks when generating
     currentObjective.children = []
     const numberedListPattern = /^\d+\./
@@ -99,8 +102,8 @@ async function generateTasks() {
     }
     updateUiTaskList();
     setCurrentTask();
-    console.info(`Response for Objective: '${taskTree.description}' was \n'${taskResponse}', \nwhich created tasks \n${JSON.stringify(globalTasks.map(v => {return v.toSaveState()}), null, 2)} `)
-    toastr.success(`Generated ${taskTree.length} tasks`, 'Done!');
+    console.info(`Response for Objective: '${currentObjective.description}' was \n'${taskResponse}', \nwhich created tasks \n${JSON.stringify(currentObjective.children.map(v => {return v.toSaveState()}), null, 2)} `)
+    toastr.success(`Generated ${currentObjective.children.length} tasks`, 'Done!');
 }
 
 // Call Quiet Generate to check if a task is completed
@@ -109,6 +112,19 @@ async function checkTaskCompleted() {
     if (jQuery.isEmptyObject(currentTask)) {
         return
     }
+
+    try {
+        // Wait for group to finish generating
+        if (selected_group) {
+            await waitUntilCondition(() => is_group_generating === false, 1000, 10);
+        }
+        // Another extension might be doing something with the chat, so wait for it to finish
+        await waitUntilCondition(() => is_send_press === false, 30000, 10);
+    } catch {
+        console.debug("Failed to wait for group to finish generating")
+        return;
+    }
+
     checkCounter = $('#objective-check-frequency').val()
     toastr.info("Checking for task completion.")
 
@@ -163,14 +179,14 @@ function setCurrentTask(taskId = null) {
     const description = currentTask.description || null;
     if (description) {
         const extensionPromptText =  substituteParamsPrompts(objectivePrompts.currentTask);
-        
+
         // Remove highlights
         $('.objective-task').css({'border-color':'','border-width':''})
         // Highlight current task
         let highlightTask = currentTask
         while (highlightTask.parentId !== ""){
             if (highlightTask.descriptionSpan){
-                highlightTask.descriptionSpan.css({'border-color':'yellow','border-width':'2px'}); 
+                highlightTask.descriptionSpan.css({'border-color':'yellow','border-width':'2px'});
             }
             const parent = getTaskById(highlightTask.parentId)
             highlightTask = parent
@@ -238,7 +254,7 @@ class ObjectiveTask {
         ))
         saveState()
     }
-    
+
     getIndex(){
         if (this.parentId !== null) {
             const parent = getTaskById(this.parentId)
@@ -302,7 +318,7 @@ class ObjectiveTask {
         this.deleteButton = $(`#objective-task-delete-${this.id}`);
         this.taskHtml = $(`#objective-task-label-${this.id}`);
         this.branchButton = $(`#objective-task-add-branch-${this.id}`)
-        
+
         // Handle sub-task forking style
         if (this.children.length > 0){
             this.branchButton.css({'color':'#33cc33'})
@@ -408,7 +424,7 @@ function onEditPromptClick() {
     $('#objective-prompt-generate').val(objectivePrompts.createTask)
     $('#objective-prompt-check').val(objectivePrompts.checkTaskCompleted)
     $('#objective-prompt-extension-prompt').val(objectivePrompts.currentTask)
-    
+
     // Handle value updates
     $('#objective-prompt-generate').on('input', () => {
         objectivePrompts.createTask =  $('#objective-prompt-generate').val()
@@ -419,7 +435,7 @@ function onEditPromptClick() {
     $('#objective-prompt-extension-prompt').on('input', () => {
         objectivePrompts.currentTask = $('#objective-prompt-extension-prompt').val()
     })
-    
+
     // Handle new
     $('#objective-custom-prompt-new').on('click', () => {
         newCustomPrompt()
@@ -440,7 +456,7 @@ function onEditPromptClick() {
 }
 async function newCustomPrompt() {
     const customPromptName = await callPopup('<h3>Custom Prompt name:</h3>', 'input');
-    
+
     if (customPromptName == "") {
         toastr.warning("Please set custom prompt name to save.")
         return
@@ -516,6 +532,7 @@ const defaultSettings = {
 
 // Convenient single call. Not much at the moment.
 function resetState() {
+    lastMessageWasSwipe = false
     loadSettings();
 }
 
@@ -644,7 +661,7 @@ function loadSettings() {
     // Reset Objectives and Tasks in memory
     taskTree = null;
     currentObjective = null;
-    
+
     // Init extension settings
     if (Object.keys(extension_settings.objective).length === 0) {
         Object.assign(extension_settings.objective, { 'customPrompts': {'default':defaultPrompts}})
@@ -783,9 +800,12 @@ jQuery(() => {
     eventSource.on(event_types.CHAT_CHANGED, () => {
         resetState()
     });
-
+    eventSource.on(event_types.MESSAGE_SWIPED, () => {
+        lastMessageWasSwipe = true
+    })
     eventSource.on(event_types.MESSAGE_RECEIVED, () => {
-        if (currentChatId == undefined || currentTask == undefined) {
+        if (currentChatId == undefined || jQuery.isEmptyObject(currentTask) || lastMessageWasSwipe) {
+            lastMessageWasSwipe = false
             return
         }
         if ($("#objective-check-frequency").val() > 0) {

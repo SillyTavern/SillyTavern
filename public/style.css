@@ -217,10 +217,16 @@ table.responsiveTable {
     font-weight: 500;
 }
 
-.mes_text q,
-.mes_text blockquote {
+.mes_text q {
     color: var(--SmartThemeQuoteColor);
     font-weight: 500;
+}
+
+.mes_text blockquote {
+    border-left: 3px solid var(--SmartThemeQuoteColor);
+    padding-left: 10px;
+    background-color: var(--black30a);
+    margin: 0;
 }
 
 .mes_text strong em,
@@ -948,10 +954,6 @@ select {
     white-space: nowrap;
 }
 
-#rm_ch_create_block textarea {
-    min-height: 190px;
-}
-
 .margin-bot-10px,
 .marginBot10 {
     margin-bottom: 10px;
@@ -1293,7 +1295,8 @@ body.charListGrid #rm_print_characters_block .tags_inline {
 
 }
 
-.floating_prompt_radio_group, .radio_group {
+.floating_prompt_radio_group,
+.radio_group {
     display: flex;
     flex-direction: column;
 }
@@ -1717,11 +1720,14 @@ body.big-avatars .ch_description {
 
 
 #form_create {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     height: 100%;
     overflow-y: auto;
-    grid-template-rows:
-        [avatar] min-content [hr] min-content [descriptionHeader] min-content [description] auto [firstmessageHeader] min-content [firstMessage] auto [hidden] min-content;
+}
+
+#form_create textarea {
+    flex-grow: 1;
 }
 
 .avatar_div {
@@ -1752,7 +1758,6 @@ body.big-avatars #avatar_div_div.avatar img {
 #avatar-and-name-block {
     justify-content: space-between;
     display: flex;
-    flex: 0 0 100%;
     flex-wrap: wrap;
     /* margin-bottom: 4px; */
 }
@@ -3040,9 +3045,23 @@ h5 {
     opacity: 0.4;
 }
 
+
 .PastChat_cross:hover {
     color: red;
     filter: drop-shadow(0 0 2px red);
+    -webkit-animation: infinite-spinning 1s ease-out 0s infinite normal;
+    animation: infinite-spinning 1s ease-out 0s infinite normal;
+}
+
+/* HEINOUS */
+@keyframes infinite-spinning {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 #export_character_div {
@@ -4409,6 +4428,10 @@ toolcool-color-picker {
     width: 50px;
 }
 
+.indent20p {
+    margin-left: 20px;
+}
+
 .wi-enter-footer-text {
     font-size: calc(var(--mainFontSize) * 0.8);
     color: var(--SmartThemeBodyColor);
@@ -5083,11 +5106,6 @@ body.waifuMode .zoomed_avatar {
         margin: 5px auto;
     }
 
-    #form_create {
-        grid-template-rows:
-            [avatar] min-content [hr] min-content [descriptionHeader] min-content [description] auto [firstmessageHeader] min-content [firstMessage] auto;
-    }
-
     #result_info {
         font-size: calc(var(--mainFontSize) - .1rem);
     }
@@ -5101,10 +5119,6 @@ body.waifuMode .zoomed_avatar {
         border-radius: 0 0 20px 20px;
         margin-top: 0px;
         height: calc(100% - 40px);
-    }
-
-    #rm_ch_create_block textarea {
-        max-height: 190px;
     }
 
     .drawer25pWidth {

@@ -1,6 +1,7 @@
 import { getStringHash, debounce, waitUntilCondition, extractAllWords } from "../../utils.js";
 import { getContext, getApiUrl, extension_settings, doExtrasFetch, modules } from "../../extensions.js";
 import { eventSource, event_types, extension_prompt_types, generateQuietPrompt, is_send_press, saveSettingsDebounced, substituteParams } from "../../../script.js";
+import { is_group_generating, selected_group } from "../../group-chats.js";
 export { MODULE_NAME };
 
 const MODULE_NAME = '1_memory';
@@ -333,8 +334,12 @@ async function summarizeChat(context) {
 
 async function summarizeChatMain(context, force) {
     try {
+        // Wait for group to finish generating
+        if (selected_group) {
+            await waitUntilCondition(() => is_group_generating === false, 1000, 10);
+        }
         // Wait for the send button to be released
-        waitUntilCondition(() => is_send_press === false, 10000, 100);
+        waitUntilCondition(() => is_send_press === false, 30000, 100);
     } catch {
         console.debug('Timeout waiting for is_send_press');
         return;

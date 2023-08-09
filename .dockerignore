@@ -5,3 +5,4 @@ readme*
 Start.bat
 /dist
 /backups/
+cloudflared.exe

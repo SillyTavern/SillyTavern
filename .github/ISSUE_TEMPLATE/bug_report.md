@@ -7,7 +7,7 @@ assignees: ''
 
 ---
 
-> **Warning**. Complete **all** the fields below. Otherwise your bug report will be **ignored**!
+> **Warning**. Complete **all** the fields below. Otherwise, your bug report will be **ignored**!
 
 **Have you searched for similar [bugs](https://github.com/SillyTavern/SillyTavern/issues?q=)?**
 Yes/No
@@ -38,7 +38,7 @@ Providing the logs from the browser DevTools console (opened by pressing the F12
  - Node.js version (if applicable): [run `node --version` in cmd]
  - Browser [e.g. chrome, safari]
  - Generation API [e.g. KoboldAI, OpenAI]
- - Branch [main, dev]
+ - Branch [staging, release]
  - Model [e.g. Pygmalion 6b, LLaMa 13b]
 
 **Additional context**

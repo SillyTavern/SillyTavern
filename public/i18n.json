@@ -1523,7 +1523,7 @@
         "Continue": "이어서 계속",
         "Editing:": "편집:",
         "AI reply prefix": "AI 답변 접두사",
-        "Custom Stopping Strings": "문장출력 중단 문자열 (KoboldAI/TextGen)",
+        "Custom Stopping Strings": "문장출력 중단 문자열 (KoboldAI/TextGen/NovelAI)",
         "JSON serialized array of strings": "JSON 연속 문자배열",
         "words you dont want generated separated by comma ','": "답변에 포함을 막으려는 단어 (쉼표','로 구분)",
         "Extensions URL": "확장기능 URL",

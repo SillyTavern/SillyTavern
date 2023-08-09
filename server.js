@@ -34,7 +34,11 @@ if (net.setDefaultAutoSelectFamily) {
 }
 
 const cliArguments = yargs(hideBin(process.argv))
-    .option('ssl', {
+    .option('disableCsrf', {
+        type: 'boolean',
+        default: false,
+        describe: 'Disables CSRF protection'
+    }).option('ssl', {
         type: 'boolean',
         default: false,
         describe: 'Enables SSL'
@@ -119,10 +123,15 @@ const allowKeysExposure = config.allowKeysExposure;
 const axios = require('axios');
 const tiktoken = require('@dqbd/tiktoken');
 const WebSocket = require('ws');
-const AIHorde = require("./src/horde");
-const ai_horde = new AIHorde({
-    client_agent: getVersion()?.agent || 'SillyTavern:UNKNOWN:Cohee#1207',
-});
+
+function getHordeClient() {
+    const AIHorde = require("./src/horde");
+    const ai_horde = new AIHorde({
+        client_agent: getVersion()?.agent || 'SillyTavern:UNKNOWN:Cohee#1207',
+    });
+    return ai_horde;
+}
+
 const ipMatching = require('ip-matching');
 const yauzl = require('yauzl');
 
@@ -144,6 +153,14 @@ let characters = {};
 let response_dw_bg;
 let response_getstatus;
 let first_run = true;
+
+
+
+function get_mancer_headers() {
+    const api_key_mancer = readSecret(SECRET_KEYS.MANCER);
+    return api_key_mancer ? { "X-API-KEY": api_key_mancer } : {};
+}
+
 
 
 //RossAscends: Added function to format dates used in files and chat timestamps to a humanized format.
@@ -178,13 +195,19 @@ async function loadSentencepieceTokenizer(modelPath) {
 async function countSentencepieceTokens(spp, text) {
     // Fallback to strlen estimation
     if (!spp) {
-        return Math.ceil(text.length / CHARS_PER_TOKEN);
+        return {
+            ids: [],
+            count: Math.ceil(text.length / CHARS_PER_TOKEN)
+        };
     }
 
-    let cleaned = cleanText(text);
+    let cleaned = text; // cleanText(text); <-- cleaning text can result in an incorrect tokenization
 
     let ids = spp.encodeIds(cleaned);
-    return ids.length;
+    return {
+        ids,
+        count: ids.length
+    };
 }
 
 async function loadClaudeTokenizer(modelPath) {
@@ -294,31 +317,40 @@ const directories = {
 };
 
 // CSRF Protection //
-const doubleCsrf = require('csrf-csrf').doubleCsrf;
+if (cliArguments.disableCsrf === false) {
+    const doubleCsrf = require('csrf-csrf').doubleCsrf;
 
-const CSRF_SECRET = crypto.randomBytes(8).toString('hex');
-const COOKIES_SECRET = crypto.randomBytes(8).toString('hex');
+    const CSRF_SECRET = crypto.randomBytes(8).toString('hex');
+    const COOKIES_SECRET = crypto.randomBytes(8).toString('hex');
 
-const { generateToken, doubleCsrfProtection } = doubleCsrf({
-    getSecret: () => CSRF_SECRET,
-    cookieName: "X-CSRF-Token",
-    cookieOptions: {
-        httpOnly: true,
-        sameSite: "strict",
-        secure: false
-    },
-    size: 64,
-    getTokenFromRequest: (req) => req.headers["x-csrf-token"]
-});
-
-app.get("/csrf-token", (req, res) => {
-    res.json({
-        "token": generateToken(res)
+    const { generateToken, doubleCsrfProtection } = doubleCsrf({
+        getSecret: () => CSRF_SECRET,
+        cookieName: "X-CSRF-Token",
+        cookieOptions: {
+            httpOnly: true,
+            sameSite: "strict",
+            secure: false
+        },
+        size: 64,
+        getTokenFromRequest: (req) => req.headers["x-csrf-token"]
     });
-});
 
-app.use(cookieParser(COOKIES_SECRET));
-app.use(doubleCsrfProtection);
+    app.get("/csrf-token", (req, res) => {
+        res.json({
+            "token": generateToken(res)
+        });
+    });
+
+    app.use(cookieParser(COOKIES_SECRET));
+    app.use(doubleCsrfProtection);
+} else {
+    console.warn("\nCSRF protection is disabled. This will make your server vulnerable to CSRF attacks.\n");
+    app.get("/csrf-token", (req, res) => {
+        res.json({
+            "token": 'disabled'
+        });
+    });
+}
 
 // CORS Settings //
 const cors = require('cors');
@@ -506,8 +538,16 @@ app.post("/generate", jsonParser, async function (request, response_generate = r
                 return response.body.pipe(response_generate);
             } else {
                 if (!response.ok) {
-                    console.log(`Kobold returned error: ${response.status} ${response.statusText} ${await response.text()}`);
-                    return response.status(response.status).send({ error: true });
+                    const errorText = await response.text();
+                    console.log(`Kobold returned error: ${response.status} ${response.statusText} ${errorText}`);
+
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        const message = errorJson?.detail?.msg || errorText;
+                        return response_generate.status(400).send({ error: { message } });
+                    } catch {
+                        return response_generate.status(400).send({ error: { message: errorText } });
+                    }
                 }
 
                 const data = await response.json();
@@ -626,13 +666,22 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
             signal: controller.signal,
         };
 
+        if (request.body.use_mancer) {
+            args.headers = Object.assign(args.headers, get_mancer_headers());
+        }
+
         try {
             const data = await postAsync(api_server + "/v1/generate", args);
             console.log(data);
             return response_generate.send(data);
         } catch (error) {
+            retval = { error: true, status: error.status, response: error.statusText };
             console.log(error);
-            return response_generate.send({ error: true });
+            try {
+                retval.response = await error.json();
+                retval.response = retval.response.result;
+            } catch { }
+            return response_generate.send(retval);
         }
     }
 });
@@ -696,6 +745,11 @@ app.post("/getstatus", jsonParser, async function (request, response_getstatus =
     var args = {
         headers: { "Content-Type": "application/json" }
     };
+
+    if (main_api == 'textgenerationwebui' && request.body.use_mancer) {
+        args.headers = Object.assign(args.headers, get_mancer_headers());
+    }
+
     var url = api_server + "/v1/model";
     let version = '';
     let koboldVersion = {};
@@ -716,18 +770,18 @@ app.post("/getstatus", jsonParser, async function (request, response_getstatus =
             };
         }
     }
-    client.get(url, args, function (data, response) {
+    client.get(url, args, async function (data, response) {
         if (typeof data !== 'object') {
             data = {};
         }
         if (response.statusCode == 200) {
             data.version = version;
             data.koboldVersion = koboldVersion;
-            if (data.result != "ReadOnly") {
-            } else {
+            if (data.result == "ReadOnly") {
                 data.result = "no_connection";
             }
         } else {
+            data.response = data.result;
             data.result = "no_connection";
         }
         response_getstatus.send(data);
@@ -1133,7 +1187,7 @@ app.post("/deletecharacter", jsonParser, async function (request, response) {
         return response.sendStatus(403);
     }
 
-    if (request.body.delete_chats == 'true') {
+    if (request.body.delete_chats == true) {
         try {
             await fs.promises.rm(path.join(chatsPath, sanitize(dir_name)), { recursive: true, force: true })
         } catch (err) {
@@ -1755,13 +1809,12 @@ app.post("/getstatus_novelai", jsonParser, function (request, response_getstatus
     const api_key_novel = readSecret(SECRET_KEYS.NOVEL);
 
     if (!api_key_novel) {
-        return response_generate_novel.sendStatus(401);
+        return response_getstatus_novel.sendStatus(401);
     }
 
     var data = {};
     var args = {
         data: data,
-
         headers: { "Content-Type": "application/json", "Authorization": "Bearer " + api_key_novel }
     };
     client.get(api_novelai + "/user/subscription", args, function (data, response) {
@@ -1769,17 +1822,15 @@ app.post("/getstatus_novelai", jsonParser, function (request, response_getstatus
             //console.log(data);
             response_getstatus_novel.send(data);//data);
         }
-        if (response.statusCode == 401) {
-            console.log('Access Token is incorrect.');
-            response_getstatus_novel.send({ error: true });
-        }
-        if (response.statusCode == 500 || response.statusCode == 501 || response.statusCode == 501 || response.statusCode == 503 || response.statusCode == 507) {
+        else {
+            if (response.statusCode == 401) {
+                console.log('Access Token is incorrect.');
+            }
+
             console.log(data);
             response_getstatus_novel.send({ error: true });
         }
     }).on('error', function () {
-        //console.log('');
-        //console.log('something went wrong on the request', err.request.options);
         response_getstatus_novel.send({ error: true });
     });
 });
@@ -1798,7 +1849,7 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
     request.socket.on('close', function () {
         controller.abort();
     });
-    
+
     const novelai = require('./src/novelai');
     const isNewModel = (request.body.model.includes('clio') || request.body.model.includes('kayra'));
     const isKrake = request.body.model.includes('krake');
@@ -1824,6 +1875,7 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
             "cfg_scale": request.body.cfg_scale,
             "cfg_uc": request.body.cfg_uc,
             "phrase_rep_pen": request.body.phrase_rep_pen,
+            "stop_sequences": request.body.stop_sequences,
             //"stop_sequences": {{187}},
             "bad_words_ids": isNewModel ? novelai.badWordsList : (isKrake ? novelai.krakeBadWordsList : novelai.euterpeBadWordsList),
             "logit_bias_exp": isNewModel ? novelai.logitBiasExp : null,
@@ -1864,8 +1916,19 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
             });
         } else {
             if (!response.ok) {
-                console.log(`Novel API returned error: ${response.status} ${response.statusText} ${await response.text()}`);
-                return response.status(response.status).send({ error: true });
+                const text = await response.text();
+                let message = text;
+                console.log(`Novel API returned error: ${response.status} ${response.statusText} ${text}`);
+
+                try {
+                    const data = JSON.parse(text);
+                    message = data.message;
+                }
+                catch {
+                    // ignore
+                }
+
+                return response_generate_novel.status(response.status).send({ error: { message } });
             }
 
             const data = await response.json();
@@ -1923,14 +1986,16 @@ app.post("/getallchatsofcharacter", jsonParser, function (request, response) {
                     ii--;
                     if (lastLine) {
 
-                        let jsonData = json5.parse(lastLine);
-                        if (jsonData.name !== undefined || jsonData.character_name !== undefined) {
+                        let jsonData = tryParse(lastLine);
+                        if (jsonData && (jsonData.name !== undefined || jsonData.character_name !== undefined)) {
                             chatData[i] = {};
                             chatData[i]['file_name'] = file;
                             chatData[i]['file_size'] = fileSizeInKB;
                             chatData[i]['chat_items'] = itemCounter - 1;
                             chatData[i]['mes'] = jsonData['mes'] || '[The chat is empty]';
                             chatData[i]['last_mes'] = jsonData['send_date'] || Date.now();
+                        } else {
+                            console.log('Found an invalid or corrupted chat file: ' + fullPathAndFile);
                         }
                     }
                     if (ii === 0) {
@@ -3174,16 +3239,19 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
     let api_url;
     let api_key_openai;
     let headers;
+    let bodyParams;
 
     if (!request.body.use_openrouter) {
         api_url = new URL(request.body.reverse_proxy || api_openai).toString();
         api_key_openai = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.OPENAI);
         headers = {};
+        bodyParams = {};
     } else {
         api_url = 'https://openrouter.ai/api/v1';
         api_key_openai = readSecret(SECRET_KEYS.OPENROUTER);
         // OpenRouter needs to pass the referer: https://openrouter.ai/docs
         headers = { 'HTTP-Referer': request.headers.referer };
+        bodyParams = { 'transforms': ["middle-out"] };
     }
 
     if (!api_key_openai && !request.body.reverse_proxy) {
@@ -3220,7 +3288,8 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
             "top_p": request.body.top_p,
             "top_k": request.body.top_k,
             "stop": request.body.stop,
-            "logit_bias": request.body.logit_bias
+            "logit_bias": request.body.logit_bias,
+            ...bodyParams,
         },
         signal: controller.signal,
     };
@@ -3258,7 +3327,22 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
                     makeRequest(config, response_generate_openai, request, retries - 1);
                 }, timeout);
             } else {
-                handleError(error, response_generate_openai, request);
+                let errorData = error?.response?.data;
+
+                if (request.body.stream) {
+                    try {
+                        const chunks = await readAllChunks(errorData);
+                        const blob = new Blob(chunks, { type: 'application/json' });
+                        const text = await blob.text();
+                        errorData = JSON.parse(text);
+                    } catch {
+                        console.warn('Error parsing streaming response');
+                    }
+                } else {
+                    errorData = typeof errorData === 'string' ? tryParse(errorData) : errorData;
+                }
+
+                handleError(error, response_generate_openai, errorData);
             }
         }
     }
@@ -3270,27 +3354,28 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
         }
     }
 
-    function handleError(error, response_generate_openai, request) {
-        console.error('Error:', error.message);
+    function handleError(error, response_generate_openai, errorData) {
+        console.error('Error:', error?.message);
 
         let message = error?.response?.statusText;
 
-        switch (error?.response?.status) {
-            case 402:
-                message = 'Credit limit reached';
-                console.log(message);
-                break;
-            case 403:
-                message = 'API key disabled or exhausted';
-                console.log(message);
-                break;
-            case 451:
-                message = error?.response?.data?.error?.message || 'Unavailable for legal reasons';
-                console.log(message);
-                break;
+        const statusMessages = {
+            400: 'Bad request',
+            401: 'Unauthorized',
+            402: 'Credit limit reached',
+            403: 'Forbidden',
+            404: 'Not found',
+            429: 'Too many requests',
+            451: 'Unavailable for legal reasons',
+        };
+
+        const status = error?.response?.status;
+        if (statusMessages.hasOwnProperty(status)) {
+            message = errorData?.error?.message || statusMessages[status];
+            console.log(message);
         }
 
-        const quota_error = error?.response?.status === 429 && error?.response?.data?.error?.type === 'insufficient_quota';
+        const quota_error = error?.response?.status === 429 && errorData?.error?.type === 'insufficient_quota';
         const response = { error: { message }, quota_error: quota_error }
         if (!response_generate_openai.headersSent) {
             response_generate_openai.send(response);
@@ -3415,8 +3500,8 @@ function createTokenizationHandler(getTokenizerFn) {
 
         const text = request.body.text || '';
         const tokenizer = getTokenizerFn();
-        const count = await countSentencepieceTokens(tokenizer, text);
-        return response.send({ count });
+        const { ids, count } = await countSentencepieceTokens(tokenizer, text);
+        return response.send({ ids, count });
     };
 }
 
@@ -3434,6 +3519,10 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
             body: JSON.stringify({ "prompt": text }),
             headers: { "Content-Type": "application/json" }
         };
+
+        if (main_api == 'textgenerationwebui' && request.body.use_mancer) {
+            args.headers = Object.assign(args.headers, get_mancer_headers());
+        }
 
         const data = await postAsync(api_server + "/v1/token-count", args);
         console.log(data);
@@ -3640,6 +3729,7 @@ const SECRETS_FILE = './secrets.json';
 const SETTINGS_FILE = './public/settings.json';
 const SECRET_KEYS = {
     HORDE: 'api_key_horde',
+    MANCER: 'api_key_mancer',
     OPENAI: 'api_key_openai',
     NOVEL: 'api_key_novel',
     CLAUDE: 'api_key_claude',
@@ -3771,6 +3861,7 @@ app.post('/viewsecrets', jsonParser, async (_, response) => {
 
 app.post('/horde_samplers', jsonParser, async (_, response) => {
     try {
+        const ai_horde = getHordeClient();
         const samplers = Object.values(ai_horde.ModelGenerationInputStableSamplers);
         response.send(samplers);
     } catch (error) {
@@ -3781,6 +3872,7 @@ app.post('/horde_samplers', jsonParser, async (_, response) => {
 
 app.post('/horde_models', jsonParser, async (_, response) => {
     try {
+        const ai_horde = getHordeClient();
         const models = await ai_horde.getModels();
         response.send(models);
     } catch (error) {
@@ -3797,6 +3889,7 @@ app.post('/horde_userinfo', jsonParser, async (_, response) => {
     }
 
     try {
+        const ai_horde = getHordeClient();
         const user = await ai_horde.findUser({ token: api_key_horde });
         return response.send(user);
     } catch (error) {
@@ -3812,6 +3905,7 @@ app.post('/horde_generateimage', jsonParser, async (request, response) => {
     console.log('Stable Horde request:', request.body);
 
     try {
+        const ai_horde = getHordeClient();
         const generation = await ai_horde.postAsyncImageGenerate(
             {
                 prompt: `${request.body.prompt_prefix} ${request.body.prompt} ### ${request.body.negative_prompt}`,
