@@ -4,6 +4,10 @@ export function onlyUnique(value, index, array) {
     return array.indexOf(value) === index;
 }
 
+export function isDigitsOnly(str) {
+    return /^\d+$/.test(str);
+}
+
 export function shuffle(array) {
     let currentIndex = array.length,
         randomIndex;

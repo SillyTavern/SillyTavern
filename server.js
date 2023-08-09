@@ -3327,7 +3327,22 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
                     makeRequest(config, response_generate_openai, request, retries - 1);
                 }, timeout);
             } else {
-                handleError(error, response_generate_openai, request);
+                let errorData = error?.response?.data;
+
+                if (request.body.stream) {
+                    try {
+                        const chunks = await readAllChunks(errorData);
+                        const blob = new Blob(chunks, { type: 'application/json' });
+                        const text = await blob.text();
+                        errorData = JSON.parse(text);
+                    } catch {
+                        console.warn('Error parsing streaming response');
+                    }
+                } else {
+                    errorData = typeof errorData === 'string' ? tryParse(errorData) : errorData;
+                }
+
+                handleError(error, response_generate_openai, errorData);
             }
         }
     }
@@ -3339,27 +3354,28 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
         }
     }
 
-    function handleError(error, response_generate_openai, request) {
-        console.error('Error:', error.message);
+    function handleError(error, response_generate_openai, errorData) {
+        console.error('Error:', error?.message);
 
         let message = error?.response?.statusText;
 
-        switch (error?.response?.status) {
-            case 402:
-                message = error?.response?.data?.error?.message || 'Credit limit reached';
-                console.log(message);
-                break;
-            case 403:
-                message = error?.response?.data?.error?.message || 'API key disabled or exhausted';
-                console.log(message);
-                break;
-            case 451:
-                message = error?.response?.data?.error?.message || 'Unavailable for legal reasons';
-                console.log(message);
-                break;
+        const statusMessages = {
+            400: 'Bad request',
+            401: 'Unauthorized',
+            402: 'Credit limit reached',
+            403: 'Forbidden',
+            404: 'Not found',
+            429: 'Too many requests',
+            451: 'Unavailable for legal reasons',
+        };
+
+        const status = error?.response?.status;
+        if (statusMessages.hasOwnProperty(status)) {
+            message = errorData?.error?.message || statusMessages[status];
+            console.log(message);
         }
 
-        const quota_error = error?.response?.status === 429 && error?.response?.data?.error?.type === 'insufficient_quota';
+        const quota_error = error?.response?.status === 429 && errorData?.error?.type === 'insufficient_quota';
         const response = { error: { message }, quota_error: quota_error }
         if (!response_generate_openai.headersSent) {
             response_generate_openai.send(response);
