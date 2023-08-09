@@ -2958,7 +2958,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     }
 
                     //Formating
-                    getMessage = cleanUpMessage(getMessage, isImpersonate, isContinue);
+                    const displayIncomplete = type == 'quiet';
+                    getMessage = cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete);
 
                     let this_mes_is_name;
                     ({ this_mes_is_name, getMessage } = extractNameFromMessage(getMessage, force_name2, isImpersonate));
