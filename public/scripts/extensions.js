@@ -74,6 +74,7 @@ const extension_settings = {
         enabled: false,
     },
     speech_recognition: {},
+    rvc: {},
 };
 
 let modules = [];
