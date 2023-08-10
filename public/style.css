@@ -188,6 +188,18 @@ table.responsiveTable {
     text-align: center;
 }
 
+.mes_text table {
+    border-spacing: 0;
+    border-collapse: collapse;
+}
+
+.mes_text td,
+.mes_text th {
+    border: 1px solid;
+    border-collapse: collapse;
+    padding: 0.25em;
+}
+
 .mes_text p {
     margin-top: 0;
     margin-bottom: 10px;
@@ -220,6 +232,10 @@ table.responsiveTable {
 .mes_text q {
     color: var(--SmartThemeQuoteColor);
     font-weight: 500;
+}
+
+.mes_text rp {
+    display: block;
 }
 
 .mes_text blockquote {
@@ -2160,6 +2176,9 @@ grammarly-extension {
     transition: background-color 200ms ease-in-out;
     position: relative;
     user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 #kobold_order>div:hover {
@@ -2238,6 +2257,11 @@ grammarly-extension {
     flex-direction: row;
     align-items: baseline;
     gap: 5px;
+}
+
+.budget_cap_note {
+    flex-basis: 100%;
+    line-height: 0.1;
 }
 
 #world_popup {
@@ -2772,7 +2796,6 @@ input[type="range"]::-webkit-slider-thumb {
 #power-user-option-checkboxes {
     display: flex;
     flex-direction: column;
-    row-gap: 5px;
     flex-grow: 1;
 }
 

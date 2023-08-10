@@ -165,7 +165,7 @@ async function loadStatsFile(chatsPath, charactersPath) {
  */
 async function saveStatsToFile() {
     if (charStats.timestamp > lastSaveTimestamp) {
-        console.debug("Saving stats to file...");
+        //console.debug("Saving stats to file...");
         await writeFile(statsFilePath, JSON.stringify(charStats));
         lastSaveTimestamp = Date.now();
     } else {

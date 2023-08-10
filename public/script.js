@@ -21,17 +21,11 @@ import {
 } from "./scripts/textgen-settings.js";
 
 import {
-    world_info_budget,
-    world_info_depth,
     world_info,
     getWorldInfoPrompt,
+    getWorldInfoSettings,
     setWorldInfoSettings,
-    world_info_recursive,
-    world_info_overflow_alert,
-    world_info_case_sensitive,
-    world_info_match_whole_words,
     world_names,
-    world_info_character_strategy,
     importEmbeddedWorldInfo,
     checkEmbeddedWorld,
     setWorldInfoButtonClass,
@@ -102,10 +96,12 @@ import {
 import {
     generateNovelWithStreaming,
     getNovelGenerationData,
+    getNovelMaxContextTokens,
     getNovelTier,
     loadNovelPreset,
     loadNovelSettings,
     nai_settings,
+    setNovelData,
 } from "./scripts/nai-settings.js";
 
 import {
@@ -679,6 +675,7 @@ function reloadMarkdownProcessor(render_formulas = false) {
         converter = new showdown.Converter({
             emoji: "true",
             underline: "true",
+            tables: "true",
             parseImgDimensions: "true",
             extensions: [
                 showdownKatex(
@@ -696,6 +693,7 @@ function reloadMarkdownProcessor(render_formulas = false) {
             emoji: "true",
             literalMidWordUnderscores: "true",
             parseImgDimensions: "true",
+            tables: "true",
         });
     }
 
@@ -795,7 +793,6 @@ let extension_prompts = {};
 
 var main_api;// = "kobold";
 //novel settings
-let novel_tier;
 export let novelai_settings;
 export let novelai_setting_names;
 let abortController;
@@ -1269,8 +1266,10 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
         mes = fixMarkdown(mes);
     }
 
-    //if (this_chid != undefined && !isSystem)
-    //    mes = mes.replaceAll("<", "&lt;").replaceAll(">", "&gt;"); //for welcome message
+    if (!isSystem && power_user.encode_tags) {
+        mes = mes.replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+    }
+
     if ((this_chid === undefined || this_chid === "invalid-safety-id") && !selected_group) {
         mes = mes
             .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
@@ -2958,7 +2957,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     }
 
                     //Formating
-                    getMessage = cleanUpMessage(getMessage, isImpersonate, isContinue);
+                    const displayIncomplete = type == 'quiet';
+                    getMessage = cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete);
 
                     let this_mes_is_name;
                     ({ this_mes_is_name, getMessage } = extractNameFromMessage(getMessage, force_name2, isImpersonate));
@@ -3171,14 +3171,22 @@ function getMaxContextSize() {
         this_max_context = Number(max_context);
         if (nai_settings.model_novel == 'krake-v2' || nai_settings.model_novel == 'euterpe-v2') {
             // Krake and Euterpe have a max context of 2048
-            // Should be used with nerdstash tokenizer for best results
+            // Should be used with classic gpt tokenizer for best results
             this_max_context = Math.min(max_context, 2048);
         }
         if (nai_settings.model_novel == 'clio-v1' || nai_settings.model_novel == 'kayra-v1') {
-            // Clio and Kayra has a max context of 8192
+            // Clio and Kayra have a max context of 8192
             // Should be used with nerdstash / nerdstash_v2 tokenizer for best results
             this_max_context = Math.min(max_context, 8192);
         }
+
+        const subscriptionLimit = getNovelMaxContextTokens();
+        if (typeof subscriptionLimit === "number" && this_max_context > subscriptionLimit) {
+            this_max_context = subscriptionLimit;
+            console.log(`NovelAI subscription limit reached. Max context size is now ${this_max_context}`);
+        }
+
+        this_max_context = this_max_context - amount_gen;
     }
     if (main_api == 'openai') {
         this_max_context = oai_settings.openai_max_context;
@@ -5149,7 +5157,7 @@ async function getSettings(type) {
         api_server = settings.api_server;
         $("#api_url_text").val(api_server);
 
-        setWorldInfoSettings(settings, data);
+        setWorldInfoSettings(settings.world_info_settings ?? settings, data);
 
         api_server_textgenerationwebui = settings.api_server_textgenerationwebui;
         $("#textgenerationwebui_api_url_text").val(
@@ -5197,14 +5205,7 @@ async function saveSettings(type) {
             amount_gen: amount_gen,
             max_context: max_context,
             main_api: main_api,
-            world_info: world_info,
-            world_info_depth: world_info_depth,
-            world_info_budget: world_info_budget,
-            world_info_recursive: world_info_recursive,
-            world_info_overflow_alert: world_info_overflow_alert,
-            world_info_case_sensitive: world_info_case_sensitive,
-            world_info_match_whole_words: world_info_match_whole_words,
-            world_info_character_strategy: world_info_character_strategy,
+            world_info_settings: getWorldInfoSettings(),
             textgenerationwebui_settings: textgenerationwebui_settings,
             swipes: swipes,
             horde_settings: horde_settings,
@@ -5471,8 +5472,8 @@ async function getStatusNovel() {
             contentType: "application/json",
             success: function (data) {
                 if (data.error != true) {
-                    novel_tier = data.tier;
-                    online_status = getNovelTier(novel_tier);
+                    setNovelData(data);
+                    online_status = `${getNovelTier(data.tier)} (${getNovelMaxContextTokens()} context tokens)`;
                 }
                 resultCheckStatusNovel();
             },
