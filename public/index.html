@@ -608,6 +608,10 @@
                                         <input type="number" id="openai_max_tokens" name="openai_max_tokens" class="text_pole" min="50" max="1000">
                                     </div>
                                 </div>
+                                <div data-source="openrouter">
+                                    Max prompt cost: <span id="openrouter_max_prompt_cost">Unknown</span>
+                                </div>
+                                <hr>
                                 <div class="range-block" data-source="openai,claude,windowai,openrouter">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
@@ -1774,9 +1778,6 @@
                                 <select id="model_openrouter_select">
                                     <option data-i18n="Connect to the API">-- Connect to the API --</option>
                                 </select>
-                                <small>
-                                    Max prompt cost: <span id="openrouter_max_prompt_cost">Unknown</span>
-                                </small>
                             </div>
                             <h4 data-i18n="OpenRouter API Key">OpenRouter API Key</h4>
                             <div>
