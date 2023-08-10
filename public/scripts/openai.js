@@ -1504,12 +1504,12 @@ class ChatCompletion {
      * @param {number} response - Number of tokens in the response.
      */
     setTokenBudget(context, response) {
-        console.log(`Prompt tokens: ${context}`);
-        console.log(`Completion tokens: ${response}`);
+        this.log(`Prompt tokens: ${context}`);
+        this.log(`Completion tokens: ${response}`);
 
         this.tokenBudget = context - response;
 
-        console.log(`Token budget: ${this.tokenBudget}`);
+        this.log(`Token budget: ${this.tokenBudget}`);
     }
 
     /**
