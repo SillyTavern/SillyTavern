@@ -21,19 +21,81 @@ const defaultSettings = {
     },
     "chara": []
 };
+const settingType = {
+    "guidance_scale": 0,
+    "negative_prompt": 1
+}
 
+// Used for character and chat CFG values
 function updateSettings() {
     saveSettingsDebounced();
     loadSettings();
-    //setFloatingPrompt();
 }
 
-function setCharCfgNegative() {
-    
+function setCharCfg(tempValue, setting) {
+    const avatarName = getCharaFilename();
+
+    // Assign temp object
+    let tempCharaCfg;
+    switch(setting) {
+        case settingType.guidance_scale:
+            tempCharaCfg = {
+                "name": avatarName,
+                "guidance_scale": Number(tempValue)
+            }
+            break;
+        case settingType.negative_prompt:
+            tempCharaCfg = {
+                "name": avatarName,
+                "negative_prompt": tempValue
+            }
+            break;
+        default:
+            return;
+    }
+
+    let existingCharaCfgIndex;
+    let existingCharaCfg;
+
+    if (extension_settings.cfg.chara) {
+        existingCharaCfgIndex = extension_settings.cfg.chara.findIndex((e) => e.name === avatarName);
+        existingCharaCfg = extension_settings.cfg.chara[existingCharaCfgIndex];
+    }
+
+    if (extension_settings.cfg.chara && existingCharaCfg) {
+        const tempAssign = Object.assign(existingCharaCfg, tempCharaCfg);
+
+        // if both values are default, remove the entry
+        if ((tempAssign.guidance_scale ?? 1.00) === 1.00 && (tempAssign.negative_prompt?.length ?? 0) === 0) {
+            extension_settings.cfg.chara.splice(existingCharaCfgIndex, 1);
+        }
+    } else if (avatarName && tempValue.length > 0) {
+        if (!extension_settings.cfg.chara) {
+            extension_settings.cfg.chara = []
+        }
+
+        Object.assign(tempCharaCfg, { useChara: false })
+
+        extension_settings.cfg.chara.push(tempCharaCfg);
+    } else {
+        console.log("Character CFG error: No avatar name key could be found.");
+        toastr.error("Something went wrong. Could not save character's CFG.");
+
+        // Don't save settings if something went wrong
+        return;
+    }
+
+    updateSettings();
 }
 
-function setCharCfgScale() {
+function setCharCfgCheckbox() {
+    const value = !!$(this).prop('checked');
+    const charaCfg = extension_settings.cfg.chara.find((e) => e.name === getCharaFilename());
+    if (charaCfg) {
+        charaCfg.useChara = value;
 
+        updateSettings();
+    }
 }
 
 function setChatCfgNegative() {
@@ -46,7 +108,7 @@ function setChatCfgScale() {
 
 // TODO: Only change CFG when character is selected
 function onCfgMenuItemClick() {
-    //if (selected_group || this_chid) {
+    if (selected_group || this_chid) {
         //show CFG config if it's hidden
         if ($("#cfgConfig").css("display") !== 'flex') {
             $("#cfgConfig").addClass('resizing')
@@ -86,20 +148,29 @@ function onCfgMenuItemClick() {
         //duplicate options menu close handler from script.js
         //because this listener takes priority
         $("#options").stop().fadeOut(250);
-        /*
     } else {
         toastr.warning(`Select a character before trying to configure CFG`, '', { timeOut: 2000 });
     }
-        */
 }
 
 // TODO: Load character-specific settings here and set the relevant HTML
 function onChatChanged() {
-    console.log("Chat changed");
+    loadSettings();
 }
- 
-// Loads the extension settings if they exist, otherwise initializes them to the defaults.
-async function loadSettings() {
+
+// Reloads chat-specific settings
+function loadSettings() {
+
+    // Set character CFG if it exists
+    const charaCfg = extension_settings.cfg.chara.find((e) => e.name === getCharaFilename());
+    $('#chara_cfg_guidance_scale').val(charaCfg?.guidance_scale ?? 1.00);
+    $('#chara_cfg_guidance_scale_counter').text(charaCfg?.guidance_scale?.toFixed(2) ?? 1.00);
+    $('#chara_cfg_negative_prompt').val(charaCfg?.negative_prompt ?? '');
+    $('#use_chara_cfg').prop('checked', charaCfg?.useChara ?? false);
+}
+
+// Load initial extension settings
+async function initialLoadSettings() {
     // Create the settings if they don't exist
     extension_settings[extensionName] = extension_settings[extensionName] || {};
     if (Object.keys(extension_settings[extensionName]).length === 0) {
@@ -150,6 +221,16 @@ jQuery(async () => {
         setTimeout(function () { $('#cfgConfig').hide() }, 200);
     })
 
+    windowHtml.find('#chara_cfg_guidance_scale').on('input', function() {
+        setCharCfg($(this).val(), settingType.guidance_scale);
+    });
+
+    windowHtml.find('#chara_cfg_negative_prompt').on('input', function() {
+        setCharCfg($(this).val(), settingType.negative_prompt);
+    });
+
+    windowHtml.find('#use_chara_cfg').on('input', setCharCfgCheckbox);
+
     windowHtml.find('#global_cfg_guidance_scale').on('input', function() {
         extension_settings.cfg.global.guidance_scale = Number($(this).val());
         $('#global_cfg_guidance_scale_counter').text(extension_settings.cfg.global.guidance_scale.toFixed(2));
@@ -164,8 +245,7 @@ jQuery(async () => {
 
     $("#movingDivs").append(windowHtml);
 
-    // Load settings when starting things up (if you have any)
-    loadSettings();
+    initialLoadSettings();
 
     if (extension_settings.cfg) {
         migrateSettings();
