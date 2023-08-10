@@ -2966,21 +2966,15 @@ app.post("/getstatus_openai", jsonParser, function (request, response_getstatus_
             response_getstatus_openai.send(data);
             if (request.body.use_openrouter) {
                 let models = [];
-                data.data.forEach(model =>
-                    {
-                        context_length = model.context_length;
-                        prompt_max_price = parseFloat(model.pricing.prompt) * context_length;
-                        price_rounded = (Math.round(prompt_max_price * 1000)/1000).toFixed(3);
-                        // completion_price = parseFloat(model.pricing.completion) * 1000;
-                        models[model.id] = {
-                            // prompt_max_price: { text: price_rounded,
-                            //                    val: prompt_max_price },
-                            // completion_price: { text: (Math.round(completion_price * 1000)/1000).toFixed(3),
-                            //                    val: completion_price },
-                            prompt_max_price: price_rounded,
-                            context_length: model.context_length,
-                      };
-                    });
+                data.data.forEach(model => {
+                    const context_length = model.context_length;
+                    const prompt_max_price = parseFloat(model.pricing.prompt) * context_length;
+                    const price_rounded = (Math.round(prompt_max_price * 1000) / 1000).toFixed(3);
+                    models[model.id] = {
+                        prompt_max_price: price_rounded,
+                        context_length: context_length,
+                    };
+                });
                 console.log('Available OpenRouter models:', models);
             } else {
                 const modelIds = data?.data?.map(x => x.id)?.sort();
