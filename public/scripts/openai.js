@@ -722,10 +722,13 @@ function saveModelList(data) {
         $('#model_openrouter_select').empty();
         $('#model_openrouter_select').append($('<option>', { value: openrouter_website_model, text: 'Use OpenRouter website setting' }));
         model_list.forEach((model) => {
+            let prompt_max_price = parseFloat(model.pricing.prompt) * model.context_length;
+            let price_rounded = (Math.round(prompt_max_price * 1000) / 1000).toFixed(3);
+            let model_description = `${model.id} \$${price_rounded} (${model.context_length})`;
             $('#model_openrouter_select').append(
                 $('<option>', {
                     value: model.id,
-                    text: model.id,
+                    text: model_description,
                 }));
         });
         $('#model_openrouter_select').val(oai_settings.openrouter_model).trigger('change');
