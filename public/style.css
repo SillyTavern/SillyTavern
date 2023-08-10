@@ -188,6 +188,18 @@ table.responsiveTable {
     text-align: center;
 }
 
+.mes_text table {
+    border-spacing: 0;
+    border-collapse: collapse;
+}
+
+.mes_text td,
+.mes_text th {
+    border: 1px solid;
+    border-collapse: collapse;
+    padding: 0.25em;
+}
+
 .mes_text p {
     margin-top: 0;
     margin-bottom: 10px;

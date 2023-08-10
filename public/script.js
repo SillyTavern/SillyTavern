@@ -679,6 +679,7 @@ function reloadMarkdownProcessor(render_formulas = false) {
         converter = new showdown.Converter({
             emoji: "true",
             underline: "true",
+            tables: "true",
             parseImgDimensions: "true",
             extensions: [
                 showdownKatex(
@@ -696,6 +697,7 @@ function reloadMarkdownProcessor(render_formulas = false) {
             emoji: "true",
             literalMidWordUnderscores: "true",
             parseImgDimensions: "true",
+            tables: "true",
         });
     }
 
