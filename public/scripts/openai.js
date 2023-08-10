@@ -707,7 +707,7 @@ function calculateOpenRouterCost() {
         const promptTokens = (oai_settings.openai_max_context - completionTokens);
         const totalCost = (completionCost * completionTokens) + (promptCost * promptTokens);
         if (!isNaN(totalCost)) {
-            cost = totalCost.toFixed(2);
+            cost = '$' + totalCost.toFixed(3);
         }
     }
 

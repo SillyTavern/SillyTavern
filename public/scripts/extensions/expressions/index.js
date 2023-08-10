@@ -515,7 +515,7 @@ async function moduleWorker() {
 
         //set checkbox to global var
         $('#image_type_toggle').prop('checked', extension_settings.expressions.live2d);
-        if(extension_settings.expressions.live2d == true){
+        if (extension_settings.expressions.live2d) {
             setLive2dState(extension_settings.expressions.live2d);
         }
     }
@@ -641,11 +641,11 @@ async function live2dcheck() {
         let live2dObj = spriteCache[spriteFolderName].find(obj => obj.label === 'live2d');
         let live2dPath_f = live2dObj ? live2dObj.path : null;
 
-        if(live2dPath_f != null){
+        if (live2dPath_f != null) {
             //console.log("live2dPath_f " + live2dPath_f);
             return true;
-        } else { 
-            //console.log("live2dPath_f is null"); 
+        } else {
+            //console.log("live2dPath_f is null");
             unloadLiveChar();
             return false;
         }
@@ -654,7 +654,7 @@ async function live2dcheck() {
     }
 }
 
-function setLive2dState(switch_var){
+function setLive2dState(switch_var) {
     extension_settings.expressions.live2d = switch_var; // Store setting
     saveSettingsDebounced();
 
@@ -662,22 +662,18 @@ function setLive2dState(switch_var){
         if (result) {
             //console.log("Live2d exists!");
 
-                if (extension_settings.expressions.live2d) { 
-                    loadLiveChar(); 
-                } else {
-                    unloadLiveChar(); 
-                }
-                handleImageChange(switch_var); // Change image as needed
+            if (extension_settings.expressions.live2d) {
+                loadLiveChar();
+            } else {
+                unloadLiveChar();
+            }
+            handleImageChange(switch_var); // Change image as needed
 
 
         } else {
             //console.log("Live2d does not exist.");
         }
     });
-    
-
-
-
 }
 
 function getSpriteFolderName(message) {
@@ -867,8 +863,7 @@ async function getExpressionsList() {
 }
 
 async function setExpression(character, expression, force) {
-    if (extension_settings.expressions.live2d == false) {
-
+    if (!extension_settings.expressions.live2d) {
         console.debug('entered setExpressions');
         await validateImages(character);
         const img = $('img.expression');
@@ -961,10 +956,11 @@ async function setExpression(character, expression, force) {
                         setDefault();
                     }
                 });
-            } else {
-                if (extension_settings.expressions.showDefault) {
-                    setDefault();
-                }
+            }
+        }
+        else {
+            if (extension_settings.expressions.showDefault) {
+                setDefault();
             }
         }
 
@@ -982,14 +978,14 @@ async function setExpression(character, expression, force) {
 
         live2dcheck().then(result => {
             if (result) {
-                    // Find the <img> element with id="expression-image" and class="expression"
-                    const imgElement = document.querySelector('img#expression-image.expression');
-                    //console.log("searching");
-                    if (imgElement) {
-                        //console.log("setting value");
-                        imgElement.src = getApiUrl() + '/api/live2d/result_feed';
-                    }
-    
+                // Find the <img> element with id="expression-image" and class="expression"
+                const imgElement = document.querySelector('img#expression-image.expression');
+                //console.log("searching");
+                if (imgElement) {
+                    //console.log("setting value");
+                    imgElement.src = getApiUrl() + '/api/live2d/result_feed';
+                }
+
             } else {
                 //console.log("The fetch failed!");
             }
@@ -1254,14 +1250,15 @@ function setExpressionOverrideHtml(forceClear = false) {
                 </div>
 
                 <div class="inline-drawer-content">
-					<!-- Toggle button for aituber/static images -->
+                    <!-- Toggle button for aituber/static images -->
                     <div class="toggle_button">
-						<label class="switch">
+                        <label class="switch">
                             <input id="image_type_toggle" type="checkbox">
                             <span class="slider round"></span>
-                        <label for="image_type_toggle">Image Type - Live2d (extras)</label>
-                  </div>
-                                      <div class="offline_mode">
+                            <label for="image_type_toggle">Image Type - Live2d (extras)</label>
+                        </label>
+                    </div>
+                    <div class="offline_mode">
                         <small>You are in offline mode. Click on the image below to set the expression.</small>
                     </div>
                     <div class="flex-container flexnowrap">

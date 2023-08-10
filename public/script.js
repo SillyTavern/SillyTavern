@@ -679,6 +679,7 @@ function reloadMarkdownProcessor(render_formulas = false) {
         converter = new showdown.Converter({
             emoji: "true",
             underline: "true",
+            tables: "true",
             parseImgDimensions: "true",
             extensions: [
                 showdownKatex(
@@ -696,6 +697,7 @@ function reloadMarkdownProcessor(render_formulas = false) {
             emoji: "true",
             literalMidWordUnderscores: "true",
             parseImgDimensions: "true",
+            tables: "true",
         });
     }
 
@@ -1269,8 +1271,10 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
         mes = fixMarkdown(mes);
     }
 
-    //if (this_chid != undefined && !isSystem)
-    //    mes = mes.replaceAll("<", "&lt;").replaceAll(">", "&gt;"); //for welcome message
+    if (!isSystem && power_user.encode_tags) {
+        mes = mes.replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+    }
+
     if ((this_chid === undefined || this_chid === "invalid-safety-id") && !selected_group) {
         mes = mes
             .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
