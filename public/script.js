@@ -542,7 +542,7 @@ this
 };
 
 // Register configuration migrations
-registerPromptManagerMigration(saveSettings);
+registerPromptManagerMigration();
 
 $(document).ajaxError(function myErrorHandler(_, xhr) {
     if (xhr.status == 403) {
@@ -5089,7 +5089,7 @@ async function getSettings(type) {
             $("#your_name").val(name1);
         }
 
-        // Allow subscribers to mutate settings before applying any modifiers
+        // Allow subscribers to mutate settings
         eventSource.emit(event_types.SETTINGS_LOADED_BEFORE, settings);
 
         //Load KoboldAI settings

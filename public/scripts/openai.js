@@ -2358,6 +2358,10 @@ function onSettingsPresetChange() {
     oai_settings.preset_settings_openai = presetName;
     const preset = openai_settings[openai_setting_names[oai_settings.preset_settings_openai]];
 
+    eventSource.emit(event_types.OAI_PRESET_CHANGED, {preset: preset, settings: oai_settings})
+        .then(() =>  saveOpenAIPreset(presetName, preset, false)
+        .then(() => openai_settings[openai_setting_names[oai_settings.preset_settings_openai]] = preset));
+
     const updateInput = (selector, value) => $(selector).val(value).trigger('input');
     const updateCheckbox = (selector, value) => $(selector).prop('checked', value).trigger('input');
 
@@ -2412,8 +2416,6 @@ function onSettingsPresetChange() {
 
     $(`#chat_completion_source`).trigger('change');
     $(`#openai_logit_bias_preset`).trigger('change');
-
-    eventSource.emit(event_types.OAI_PRESET_CHANGED, {preset: preset, settings: oai_settings, presetName: presetName, callback: saveOpenAIPreset});
 
     saveSettingsDebounced();
 }

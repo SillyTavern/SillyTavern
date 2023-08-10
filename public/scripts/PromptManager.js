@@ -5,45 +5,32 @@ import {power_user} from "./power-user.js";
 /**
  * Register migrations for the prompt manager when settings are loaded or an Open AI preset is loaded.
  */
-const registerPromptManagerMigration = (saveSettingsCallback) => {
-    const migrate = (settings, preset) => {
-        // If any of the specified settings exist, run the migration
+const registerPromptManagerMigration = () => {
+    const migrate = (settings) => {
+        if (settings.main_prompt || settings.nsfw_prompt || settings.jailbreak_prompt) {
+            console.log('Running prompt manager configuration migration');
             if (settings.prompts === undefined || settings.prompts.length === 0) settings.prompts = chatCompletionDefaultPrompts.prompts;
 
             const findPrompt = (identifier) => settings.prompts.find(prompt => identifier === prompt.identifier);
-            if (preset.main_prompt) {
-                findPrompt('main').content = preset.main_prompt
+            if (settings.main_prompt) {
+                findPrompt('main').content = settings.main_prompt
                 delete settings.main_prompt;
             }
 
-            if (preset.nsfw_prompt) {
-                findPrompt('nsfw').content = preset.nsfw_prompt
+            if (settings.nsfw_prompt) {
+                findPrompt('nsfw').content = settings.nsfw_prompt
                 delete settings.nsfw_prompt;
             }
 
-            if (preset.jailbreak_prompt) {
-                findPrompt('jailbreak').content = preset.jailbreak_prompt
+            if (settings.jailbreak_prompt) {
+                findPrompt('jailbreak').content = settings.jailbreak_prompt
                 delete settings.jailbreak_prompt;
             }
+        }
     };
 
-    const migrateSettings = (settings) => {
-        if (settings.main_prompt || settings.nsfw_prompt || settings.jailbreak_prompt) {
-            console.log(`Migrating configuration`);
-            migrate(settings, settings);
-        }
-    }
-
-    const migratePreset = (event) => {
-        if (event.preset.main_prompt || event.preset.nsfw_prompt || event.preset.jailbreak_prompt) {
-            console.log(`Migrating preset ${event.presetName}`);
-            migrate(event.settings, event.preset);
-            event.callback(event.presetName, event.settings, false);
-        }
-    }
-
-    eventSource.on(event_types.SETTINGS_LOADED_BEFORE, settings => migrateSettings(settings));
-    eventSource.on(event_types.OAI_PRESET_CHANGED, settings => migratePreset(settings));
+    eventSource.on(event_types.SETTINGS_LOADED_BEFORE, settings => migrate(settings));
+    eventSource.on(event_types.OAI_PRESET_CHANGED, event => migrate(event.preset));
 }
 
 /**
