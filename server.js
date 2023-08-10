@@ -2968,10 +2968,10 @@ app.post("/getstatus_openai", jsonParser, function (request, response_getstatus_
                 let models = [];
                 data.data.forEach(model => {
                     const context_length = model.context_length;
-                    const prompt_max_price = parseFloat(model.pricing.prompt) * context_length;
-                    const price_rounded = (Math.round(prompt_max_price * 1000) / 1000).toFixed(3);
+                    const tokens_dollar = parseFloat(1 / (1000 * model.pricing.prompt));
+                    const tokens_rounded = (Math.round(tokens_dollar * 1000) / 1000).toFixed(0);
                     models[model.id] = {
-                        prompt_max_price: price_rounded,
+                        tokens_per_dollar: tokens_rounded + 'k',
                         context_length: context_length,
                     };
                 });
