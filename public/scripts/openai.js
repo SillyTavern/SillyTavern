@@ -2359,8 +2359,7 @@ function onSettingsPresetChange() {
     const preset = openai_settings[openai_setting_names[oai_settings.preset_settings_openai]];
 
     eventSource.emit(event_types.OAI_PRESET_CHANGED, {preset: preset, settings: oai_settings})
-        .then(() =>  saveOpenAIPreset(presetName, preset, false)
-        .then(() => openai_settings[openai_setting_names[oai_settings.preset_settings_openai]] = preset));
+        .then(() =>  saveOpenAIPreset(presetName, preset, false));
 
     const updateInput = (selector, value) => $(selector).val(value).trigger('input');
     const updateCheckbox = (selector, value) => $(selector).prop('checked', value).trigger('input');
