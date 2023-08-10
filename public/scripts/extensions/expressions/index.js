@@ -956,10 +956,11 @@ async function setExpression(character, expression, force) {
                         setDefault();
                     }
                 });
-            } else {
-                if (extension_settings.expressions.showDefault) {
-                    setDefault();
-                }
+            }
+        }
+        else {
+            if (extension_settings.expressions.showDefault) {
+                setDefault();
             }
         }
 
