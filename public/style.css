@@ -2259,6 +2259,11 @@ grammarly-extension {
     gap: 5px;
 }
 
+.budget_cap_note {
+    flex-basis: 100%;
+    line-height: 0.1;
+}
+
 #world_popup {
     min-height: 100px;
     min-width: 100px;

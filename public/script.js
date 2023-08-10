@@ -21,17 +21,11 @@ import {
 } from "./scripts/textgen-settings.js";
 
 import {
-    world_info_budget,
-    world_info_depth,
     world_info,
     getWorldInfoPrompt,
+    getWorldInfoSettings,
     setWorldInfoSettings,
-    world_info_recursive,
-    world_info_overflow_alert,
-    world_info_case_sensitive,
-    world_info_match_whole_words,
     world_names,
-    world_info_character_strategy,
     importEmbeddedWorldInfo,
     checkEmbeddedWorld,
     setWorldInfoButtonClass,
@@ -5163,7 +5157,7 @@ async function getSettings(type) {
         api_server = settings.api_server;
         $("#api_url_text").val(api_server);
 
-        setWorldInfoSettings(settings, data);
+        setWorldInfoSettings(settings.world_info_settings ?? settings, data);
 
         api_server_textgenerationwebui = settings.api_server_textgenerationwebui;
         $("#textgenerationwebui_api_url_text").val(
@@ -5211,14 +5205,7 @@ async function saveSettings(type) {
             amount_gen: amount_gen,
             max_context: max_context,
             main_api: main_api,
-            world_info: world_info,
-            world_info_depth: world_info_depth,
-            world_info_budget: world_info_budget,
-            world_info_recursive: world_info_recursive,
-            world_info_overflow_alert: world_info_overflow_alert,
-            world_info_case_sensitive: world_info_case_sensitive,
-            world_info_match_whole_words: world_info_match_whole_words,
-            world_info_character_strategy: world_info_character_strategy,
+            world_info_settings: getWorldInfoSettings(),
             textgenerationwebui_settings: textgenerationwebui_settings,
             swipes: swipes,
             horde_settings: horde_settings,
