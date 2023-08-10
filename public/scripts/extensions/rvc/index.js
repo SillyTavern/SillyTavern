@@ -1,41 +1,15 @@
 /*
 TODO:
- - try pseudo streaming audio by just sending chunk every X seconds and asking VOSK if it is full text.
+ - Allow to upload RVC model to extras server ?
+ - Settings per characters ?
 */
 
 import { saveSettingsDebounced } from "../../../script.js";
-import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch } from "../../extensions.js";
+import { getContext, getApiUrl, extension_settings, doExtrasFetch } from "../../extensions.js";
 export { MODULE_NAME,  rvcVoiceConversion};
 
 const MODULE_NAME = 'RVC';
 const DEBUG_PREFIX = "<RVC module> "
-
-//let currentModel = null
-
-/*/ Load character model if needed
-async function rvcLoadModel(model) {
-    const url = new URL(getApiUrl());
-    url.pathname = '/api/voice-conversion/rvc/load-model';
-
-    const apiResult = await doExtrasFetch(url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Bypass-Tunnel-Reminder': 'bypass',
-        },
-        body: JSON.stringify({ "model_name": model }),
-    });
-
-    if (!apiResult.ok) {
-        toastr.error("May be a wrong model name in RVC voice map, please check console for details", 'RVC Voice model load Failed', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
-        throw new Error(`HTTP ${apiResult.status}: ${await apiResult.text()}`);
-    }
-
-    const result = await apiResult.json();
-    console.log("Loaded RVC model:", result.model_loaded);
-    currentModel = model
-}
-*/
 
 // Send an audio file to RVC to convert voice
 async function rvcVoiceConversion(response, character) {
@@ -258,7 +232,4 @@ $(document).ready(function () {
     }
     addExtensionControls(); // No init dependencies
     loadSettings(); // Depends on Extension Controls
-
-    console.log(getContext());
-    console.log(getContext().name2);
 })
