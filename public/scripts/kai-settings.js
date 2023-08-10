@@ -35,6 +35,7 @@ const kai_settings = {
 
 const MIN_STOP_SEQUENCE_VERSION = '1.2.2';
 const MIN_STREAMING_KCPPVERSION = '1.30';
+const KOBOLDCPP_ORDER = [6, 0, 1, 3, 4, 2, 5];
 
 function formatKoboldUrl(value) {
     try {
@@ -143,7 +144,7 @@ export async function generateKoboldWithStreaming(generate_data, signal) {
 
             if (done) {
                 return;
-           }
+            }
         }
     }
 }
@@ -275,5 +276,11 @@ $(document).ready(function () {
             console.log('Samplers reordered:', kai_settings.sampler_order);
             saveSettingsDebounced();
         },
+    });
+
+    $('#samplers_order_recommended').on('click', function () {
+        kai_settings.sampler_order = KOBOLDCPP_ORDER;
+        sortItemsByOrder(kai_settings.sampler_order);
+        saveSettingsDebounced();
     });
 });

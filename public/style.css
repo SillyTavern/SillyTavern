@@ -2164,6 +2164,9 @@ grammarly-extension {
     transition: background-color 200ms ease-in-out;
     position: relative;
     user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 #kobold_order>div:hover {
