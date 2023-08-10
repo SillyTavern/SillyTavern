@@ -2482,11 +2482,11 @@
                     <div id="power-user-options-block" class="flex-container drawer33pWidth">
                         <div id="power-user-option-checkboxes">
                             <h4 data-i18n="Power User Options">Power User Options</h4>
-                            <label for="swipes-checkbox">
+                            <label class="checkbox_label" for="swipes-checkbox">
                                 <input id="swipes-checkbox" type="checkbox" />
                                 <span data-i18n="Swipes">Swipes</span>
                             </label>
-                            <label for="fuzzy_search_checkbox">
+                            <label class="checkbox_label" for="fuzzy_search_checkbox">
                                 <input id="fuzzy_search_checkbox" type="checkbox" />
                                 <span data-i18n="Advanced Character Search">Advanced Character Search</span>
                             </label>
@@ -2504,13 +2504,15 @@
                                     Press "Send" to continue
                                 </span>
                             </label>
-                            <label for="auto-load-chat-checkbox"><input id="auto-load-chat-checkbox" type="checkbox" />
+                            <label class="checkbox_label" for="auto-load-chat-checkbox">
+                                <input id="auto-load-chat-checkbox" type="checkbox" />
                                 <span data-i18n="Auto-load Last Chat">Auto-load Last Chat</span>
                             </label>
-                            <label for="auto_save_msg_edits"><input id="auto_save_msg_edits" type="checkbox" />
+                            <label class="checkbox_label" for="auto_save_msg_edits">
+                                <input id="auto_save_msg_edits" type="checkbox" />
                                 <span data-i18n="Auto-save Message Edits">Auto-save Message Edits</span>
                             </label>
-                            <label for="auto_fix_generated_markdown">
+                            <label class="checkbox_label" for="auto_fix_generated_markdown">
                                 <input id="auto_fix_generated_markdown" type="checkbox" />
                                 <span data-i18n="Auto-fix Markdown">Auto-fix Markdown</span>
                             </label>
@@ -2522,37 +2524,43 @@
                                 <input id="allow_name1_display" type="checkbox" />
                                 <span data-i18n="Allow {{user}}: in bot messages">Show {{user}}: in responses</span>
                             </label>
-                            <!-- <label class="checkbox_label" for="removeXML">
-                                <input id="removeXML" type="checkbox" />
-                                <span data-i18n="Remove XML/HTML tags from responses">Remove &lt;tags&gt; from responses</span>
-                            </label> -->
-                            <label for="console_log_prompts">
+                            <label class="checkbox_label" for="encode_tags">
+                                <input id="encode_tags" type="checkbox" />
+                                <span data-i18n="Show tags in responses">Show &lt;tags&gt; in responses</span>
+                            </label>
+                            <label class="checkbox_label" for="console_log_prompts">
                                 <input id="console_log_prompts" type="checkbox" />
                                 <span data-i18n="Log prompts to console">Log prompts to console</span>
                             </label>
-                            <label for="render_formulas">
+                            <label class="checkbox_label" for="render_formulas">
                                 <input id="render_formulas" type="checkbox" />
                                 <span data-i18n="Render Formulas">Render Formulas</span>
                                 <a href="https://docs.sillytavern.app/usage/core-concepts/uicustomization/#formulas-rendering" class="notes-link" target="_blank">
                                     <span class="note-link-span">?</span>
                                 </a>
                             </label>
-                            <label for="never_resize_avatars"><input id="never_resize_avatars" type="checkbox" />
+                            <label class="checkbox_label" for="never_resize_avatars">
+                                <input id="never_resize_avatars" type="checkbox" />
                                 <span data-i18n="Never resize avatars">Never resize avatars</span>
                             </label>
-                            <label for="show_card_avatar_urls"><input id="show_card_avatar_urls" type="checkbox" />
+                            <label class="checkbox_label" for="show_card_avatar_urls">
+                                <input id="show_card_avatar_urls" type="checkbox" />
                                 <span data-i18n="Show avatar filenames">Show avatar filenames</span>
                             </label>
-                            <label for="import_card_tags"><input id="import_card_tags" type="checkbox" />
+                            <label class="checkbox_label" for="import_card_tags">
+                                <input id="import_card_tags" type="checkbox" />
                                 <span data-i18n="Import Card Tags">Import Card Tags</span>
                             </label>
-                            <label for="confirm_message_delete"><input id="confirm_message_delete" type="checkbox" />
+                            <label class="checkbox_label" for="confirm_message_delete">
+                                <input id="confirm_message_delete" type="checkbox" />
                                 <span data-i18n="Confirm message deletion">Confirm message deletion</span>
                             </label>
-                            <label for="spoiler_free_mode"><input id="spoiler_free_mode" type="checkbox" />
+                            <label class="checkbox_label" for="spoiler_free_mode">
+                                <input id="spoiler_free_mode" type="checkbox" />
                                 <span data-i18n="Spoiler Free Mode">Spoiler Free Mode</span>
                             </label>
-                            <label for="relaxed_api_urls" title="Reduce the formatting requirements on API URLS"><input id="relaxed_api_urls" type="checkbox" />
+                            <label class="checkbox_label" for="relaxed_api_urls" title="Reduce the formatting requirements on API URLS">
+                                <input id="relaxed_api_urls" type="checkbox" />
                                 <span data-i18n="Relaxed API URLS">Relaxed API URLS</span>
                             </label>
 

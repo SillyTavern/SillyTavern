@@ -1269,8 +1269,10 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
         mes = fixMarkdown(mes);
     }
 
-    //if (this_chid != undefined && !isSystem)
-    //    mes = mes.replaceAll("<", "&lt;").replaceAll(">", "&gt;"); //for welcome message
+    if (!isSystem && power_user.encode_tags) {
+        mes = mes.replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+    }
+
     if ((this_chid === undefined || this_chid === "invalid-safety-id") && !selected_group) {
         mes = mes
             .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")

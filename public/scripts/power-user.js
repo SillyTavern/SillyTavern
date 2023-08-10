@@ -192,6 +192,7 @@ let power_user = {
     custom_stopping_strings: '',
     custom_stopping_strings_macro: true,
     fuzzy_search: false,
+    encode_tags: false,
 };
 
 let themes = [];
@@ -686,6 +687,7 @@ function loadPowerUserSettings(settings, data) {
     $("#custom_stopping_strings_macro").prop("checked", power_user.custom_stopping_strings_macro);
     $('#fuzzy_search_checkbox').prop("checked", power_user.fuzzy_search);
     $('#persona_show_notifications').prop("checked", power_user.persona_show_notifications);
+    $('#encode_tags').prop("checked", power_user.encode_tags);
 
     $("#console_log_prompts").prop("checked", power_user.console_log_prompts);
     $('#auto_fix_generated_markdown').prop("checked", power_user.auto_fix_generated_markdown);
@@ -2029,6 +2031,12 @@ $(document).ready(() => {
 
     $('#persona_show_notifications').on('input', function () {
         power_user.persona_show_notifications = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#encode_tags').on('input', async function () {
+        power_user.encode_tags = !!$(this).prop('checked');
+        await reloadCurrentChat();
         saveSettingsDebounced();
     });
 

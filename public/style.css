@@ -2776,7 +2776,6 @@ input[type="range"]::-webkit-slider-thumb {
 #power-user-option-checkboxes {
     display: flex;
     flex-direction: column;
-    row-gap: 5px;
     flex-grow: 1;
 }
 
