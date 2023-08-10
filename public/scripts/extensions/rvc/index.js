@@ -55,10 +55,12 @@ async function rvcVoiceConversion(response, character) {
     if (!audioData.type in ['audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/wave', 'audio/webm']) {
         throw `TTS received HTTP response with invalid data format. Expecting audio/mpeg, got ${audioData.type}`
     }
+    console.log("Audio type received:",audioData.type)
+
     console.log("Sending tts audio data to RVC on extras server")
 
     var requestData = new FormData();
-    requestData.append('AudioFile', audioData, 'record.wav');
+    requestData.append('AudioFile', audioData, 'record');
     requestData.append("json", JSON.stringify({
         "modelName": extension_settings.rvc.voiceMap[character],
         "pitchOffset": extension_settings.rvc.pitchOffset,
