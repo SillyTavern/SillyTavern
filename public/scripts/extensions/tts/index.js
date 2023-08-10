@@ -170,7 +170,7 @@ function talkingAnimation(switchValue) {
     if (switchValue !== storedvalue) {
         try {
             console.log(animationType + " Talking Animation");
-            doExtrasFetch(`${apiUrl}/api/live2d/${animationType}_talking`);
+            doExtrasFetch(`${apiUrl}/api/talkinghead/${animationType}_talking`);
             storedvalue = switchValue; // Update the storedvalue to the current switchValue
         } catch (error) {
             // Handle the error here or simply ignore it to prevent logging
