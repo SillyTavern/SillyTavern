@@ -222,6 +222,10 @@ table.responsiveTable {
     font-weight: 500;
 }
 
+.mes_text rp {
+    display: block;
+}
+
 .mes_text blockquote {
     border-left: 3px solid var(--SmartThemeQuoteColor);
     padding-left: 10px;
@@ -2160,6 +2164,9 @@ grammarly-extension {
     transition: background-color 200ms ease-in-out;
     position: relative;
     user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
 #kobold_order>div:hover {
@@ -2772,7 +2779,6 @@ input[type="range"]::-webkit-slider-thumb {
 #power-user-option-checkboxes {
     display: flex;
     flex-direction: column;
-    row-gap: 5px;
     flex-grow: 1;
 }
 
