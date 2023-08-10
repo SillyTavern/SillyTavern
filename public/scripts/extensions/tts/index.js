@@ -8,6 +8,7 @@ import { CoquiTtsProvider } from './coquitts.js'
 import { SystemTtsProvider } from './system.js'
 import { NovelTtsProvider } from './novel.js'
 import { power_user } from '../../power-user.js'
+import { rvcVoiceConversion } from "../rvc/index.js"
 
 const UPDATE_INTERVAL = 1000
 
@@ -399,8 +400,13 @@ function saveLastValues() {
     )
 }
 
-async function tts(text, voiceId) {
-    const response = await ttsProvider.generateTts(text, voiceId)
+async function tts(text, voiceId, char) {
+    let response = await ttsProvider.generateTts(text, voiceId)
+
+    // RVC injection
+    if (extension_settings.rvc.enabled)
+        response = await rvcVoiceConversion(response, char)
+
     addAudioJob(response)
     completeTtsJob()
 }
@@ -450,7 +456,7 @@ async function processTtsQueue() {
             toastr.error(`Specified voice for ${char} was not found. Check the TTS extension settings.`)
             throw `Unable to attain voiceId for ${char}`
         }
-        tts(text, voiceId)
+        tts(text, voiceId, char)
     } catch (error) {
         console.error(error)
         currentTtsJob = null
@@ -566,6 +572,7 @@ function onEnableClick() {
     updateUiAudioPlayState()
     saveSettingsDebounced()
 }
+
 
 function onAutoGenerationClick() {
     extension_settings.tts.auto_generation = $('#tts_auto_generation').prop('checked');
