@@ -41,6 +41,16 @@ const nai_tiers = {
     3: 'Opus',
 };
 
+let novel_data = null;
+
+export function setNovelData(data) {
+    novel_data = data;
+}
+
+export function getNovelMaxContextTokens() {
+    return novel_data?.perks?.contextTokens;
+}
+
 function getNovelTier(tier) {
     return nai_tiers[tier] ?? 'no_connection';
 }

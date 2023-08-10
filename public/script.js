@@ -102,10 +102,12 @@ import {
 import {
     generateNovelWithStreaming,
     getNovelGenerationData,
+    getNovelMaxContextTokens,
     getNovelTier,
     loadNovelPreset,
     loadNovelSettings,
     nai_settings,
+    setNovelData,
 } from "./scripts/nai-settings.js";
 
 import {
@@ -797,7 +799,6 @@ let extension_prompts = {};
 
 var main_api;// = "kobold";
 //novel settings
-let novel_tier;
 export let novelai_settings;
 export let novelai_setting_names;
 let abortController;
@@ -3176,14 +3177,22 @@ function getMaxContextSize() {
         this_max_context = Number(max_context);
         if (nai_settings.model_novel == 'krake-v2' || nai_settings.model_novel == 'euterpe-v2') {
             // Krake and Euterpe have a max context of 2048
-            // Should be used with nerdstash tokenizer for best results
+            // Should be used with classic gpt tokenizer for best results
             this_max_context = Math.min(max_context, 2048);
         }
         if (nai_settings.model_novel == 'clio-v1' || nai_settings.model_novel == 'kayra-v1') {
-            // Clio and Kayra has a max context of 8192
+            // Clio and Kayra have a max context of 8192
             // Should be used with nerdstash / nerdstash_v2 tokenizer for best results
             this_max_context = Math.min(max_context, 8192);
         }
+
+        const subscriptionLimit = getNovelMaxContextTokens();
+        if (typeof subscriptionLimit === "number" && this_max_context > subscriptionLimit) {
+            this_max_context = subscriptionLimit;
+            console.log(`NovelAI subscription limit reached. Max context size is now ${this_max_context}`);
+        }
+
+        this_max_context = this_max_context - amount_gen;
     }
     if (main_api == 'openai') {
         this_max_context = oai_settings.openai_max_context;
@@ -5476,8 +5485,8 @@ async function getStatusNovel() {
             contentType: "application/json",
             success: function (data) {
                 if (data.error != true) {
-                    novel_tier = data.tier;
-                    online_status = getNovelTier(novel_tier);
+                    setNovelData(data);
+                    online_status = `${getNovelTier(data.tier)} (${getNovelMaxContextTokens()} context tokens)`;
                 }
                 resultCheckStatusNovel();
             },
