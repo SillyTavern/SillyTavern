@@ -3826,7 +3826,7 @@
                         <small>Will be automatically added as the author's note for this character. Will be used in groups, but
                             can't be modified when a group chat is open.</small>
 
-                        <textarea id="extension_floating_chara" class="text_pole" rows="8" maxlength="10000" placeholder="Example:\n[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
+                        <textarea id="extension_floating_chara" class="text_pole" rows="8" maxlength="10000" placeholder="Example:&#10;[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
                         <div class="extension_token_counter">
                             Tokens: <span id="extension_floating_chara_token_counter">0</span>
                         </div>
@@ -3860,10 +3860,21 @@
                     <div class="inline-drawer-content">
                         <small>Will be automatically added as the Author's Note for all new chats.</small>
 
-                        <textarea id="extension_floating_default" class="text_pole" rows="8" maxlength="10000" placeholder="Example:\n[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
-                        <div class="extension_token_counter">
+                        <textarea id="extension_floating_default" class="text_pole" rows="8" maxlength="10000" placeholder="Example:&#10;[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>                        <div class="extension_token_counter">
                             Tokens: <span id="extension_floating_default_token_counter">0</span>
                         </div>
+                        <div class="floating_prompt_radio_group">
+                            <label>
+                                <input type="radio" name="extension_default_position" value="0" />
+                                After scenario
+                            </label>
+                            <label>
+                                <input type="radio" name="extension_default_position" value="1" />
+                                In-chat @ Depth <input id="extension_default_depth" class="text_pole widthUnset" type="number" min="0" max="99" />
+                            </label>
+                        </div>
+                        <label for="extension_default_interval">Insertion Frequency</label>
+                        <input id="extension_default_interval" class="text_pole widthUnset" type="number" min="0" max="999" /><small> (0 = Disable, 1 = Always)</small>
                     </div>
                 </div>
             </div>
