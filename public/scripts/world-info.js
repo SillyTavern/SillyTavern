@@ -14,6 +14,7 @@ export {
     world_info_case_sensitive,
     world_info_match_whole_words,
     world_info_character_strategy,
+    world_info_budget_cap,
     world_names,
     checkWorldInfo,
     deleteWorldInfo,
@@ -37,12 +38,27 @@ let world_info_overflow_alert = false;
 let world_info_case_sensitive = false;
 let world_info_match_whole_words = false;
 let world_info_character_strategy = world_info_insertion_strategy.character_first;
+let world_info_budget_cap = 0;
 const saveWorldDebounced = debounce(async (name, data) => await _save(name, data), 1000);
 const saveSettingsDebounced = debounce(() => {
     Object.assign(world_info, { globalSelect: selected_world_info })
     saveSettings()
 }, 1000);
 const sortFn = (a, b) => b.order - a.order;
+
+export function getWorldInfoSettings() {
+    return {
+        world_info,
+        world_info_depth,
+        world_info_budget,
+        world_info_recursive,
+        world_info_overflow_alert,
+        world_info_case_sensitive,
+        world_info_match_whole_words,
+        world_info_character_strategy,
+        world_info_budget_cap,
+    }
+}
 
 const world_info_position = {
     before: 0,
@@ -80,6 +96,8 @@ function setWorldInfoSettings(settings, data) {
         world_info_match_whole_words = Boolean(settings.world_info_match_whole_words);
     if (settings.world_info_character_strategy !== undefined)
         world_info_character_strategy = Number(settings.world_info_character_strategy);
+    if (settings.world_info_budget_cap !== undefined)
+        world_info_budget_cap = Number(settings.world_info_budget_cap);
 
     // Migrate old settings
     if (world_info_budget > 100) {
@@ -112,6 +130,9 @@ function setWorldInfoSettings(settings, data) {
 
     $(`#world_info_character_strategy option[value='${world_info_character_strategy}']`).prop('selected', true);
     $("#world_info_character_strategy").val(world_info_character_strategy);
+
+    $("#world_info_budget_cap").val(world_info_budget_cap);
+    $("#world_info_budget_cap_counter").text(world_info_budget_cap);
 
     world_names = data.world_names?.length ? data.world_names : [];
 
@@ -922,8 +943,14 @@ async function checkWorldInfo(chat, maxContext) {
     let failedProbabilityChecks = new Set();
     let allActivatedText = '';
 
-    const budget = Math.round(world_info_budget * maxContext / 100) || 1;
-    console.debug(`Context size: ${maxContext}; WI budget: ${budget} (${world_info_budget}%)`);
+    let budget = Math.round(world_info_budget * maxContext / 100) || 1;
+
+    if (world_info_budget_cap > 0 && budget > world_info_budget_cap) {
+        console.debug(`Budget ${budget} exceeds cap ${world_info_budget_cap}, using cap`);
+        budget = world_info_budget_cap;
+    }
+
+    console.debug(`Context size: ${maxContext}; WI budget: ${budget} (max% = ${world_info_budget}%, cap = ${world_info_budget_cap})`);
     const sortedEntries = await getSortedEntries();
 
     if (sortedEntries.length === 0) {
@@ -1512,6 +1539,12 @@ jQuery(() => {
 
     $('#world_info_overflow_alert').on('change', function () {
         world_info_overflow_alert = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#world_info_budget_cap').on('input', function () {
+        world_info_budget_cap = Number($(this).val());
+        $("#world_info_budget_cap_counter").text(world_info_budget_cap);
         saveSettingsDebounced();
     });
 

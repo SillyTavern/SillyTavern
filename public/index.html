@@ -608,6 +608,10 @@
                                         <input type="number" id="openai_max_tokens" name="openai_max_tokens" class="text_pole" min="50" max="1000">
                                     </div>
                                 </div>
+                                <div data-source="openrouter">
+                                    Max prompt cost: <span id="openrouter_max_prompt_cost">Unknown</span>
+                                </div>
+                                <hr>
                                 <div class="range-block" data-source="openai,claude,windowai,openrouter">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
@@ -1774,9 +1778,6 @@
                                 <select id="model_openrouter_select">
                                     <option data-i18n="Connect to the API">-- Connect to the API --</option>
                                 </select>
-                                <small>
-                                    Max prompt cost: <span id="openrouter_max_prompt_cost">Unknown</span>
-                                </small>
                             </div>
                             <h4 data-i18n="OpenRouter API Key">OpenRouter API Key</h4>
                             <div>
@@ -2140,7 +2141,7 @@
                     <div class="justifyContentSpaceAround wi-settings flex-container gap10px alignitemscenter">
                         <div id="WIMultiSelector" class="flex2 flex alignSelfStart range-block">
                             <div class="range-block-title justifyLeft">
-                                <span data-i18n="Active World(s)"><small>Active World(s)</small></span>
+                                <span data-i18n="Active World(s) for all chats"><small>Active World(s) for all chats</small></span>
                             </div>
                             <div class="range-block-range">
                                 <select id="world_info" multiple>
@@ -2185,7 +2186,7 @@
 
                                 <div class="flex1 gap5px range-block">
                                     <div class="wide10pMinFit">
-                                        <small data-i18n="Token Budget">Context %</small>
+                                        <small data-i18n="Context %">Context %</small>
                                     </div>
                                     <div class="range-block-range-and-counter ">
                                         <div class="range-block-range paddingLeftRight5">
@@ -2196,6 +2197,25 @@
                                                 budget
                                             </div>
                                         </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex1 gap5px range-block">
+                                    <div class="wide10pMinFit">
+                                        <small data-i18n="Budget Cap">Budget Cap</small>
+                                    </div>
+                                    <div class="range-block-range-and-counter ">
+                                        <div class="range-block-range paddingLeftRight5">
+                                            <input type="range" id="world_info_budget_cap" name="volume" min="0" max="8192" step="256">
+                                        </div>
+                                        <div class="range-block-counter margin0">
+                                            <div contenteditable="true" data-for="world_info_budget_cap" id="world_info_budget_cap_counter">
+                                                0
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="budget_cap_note">
+                                        <small data-i18n="(0 = disabled)">(0 = disabled)</small>
                                     </div>
                                 </div>
                             </div>

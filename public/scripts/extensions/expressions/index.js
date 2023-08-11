@@ -9,7 +9,7 @@ const MODULE_NAME = 'expressions';
 const UPDATE_INTERVAL = 2000;
 const FALLBACK_EXPRESSION = 'joy';
 const DEFAULT_EXPRESSIONS = [
-    "live2d",
+    "talkinghead",
     "admiration",
     "amusement",
     "anger",
@@ -396,7 +396,7 @@ function onExpressionsShowDefaultInput() {
 async function unloadLiveChar() {
     try {
         const url = new URL(getApiUrl());
-        url.pathname = '/api/live2d/unload';
+        url.pathname = '/api/talkinghead/unload';
         const loadResponse = await doExtrasFetch(url);
         if (!loadResponse.ok) {
             throw new Error(loadResponse.statusText);
@@ -409,8 +409,8 @@ async function unloadLiveChar() {
 }
 
 async function loadLiveChar() {
-    if (!modules.includes('live2d')) {
-        console.debug('live2d module is disabled');
+    if (!modules.includes('talkinghead')) {
+        console.debug('talkinghead module is disabled');
         return;
     }
 
@@ -426,22 +426,22 @@ async function loadLiveChar() {
         spriteFolderName = expressionOverride.path;
     }
 
-    const live2dPath = `/characters/${encodeURIComponent(spriteFolderName)}/live2d.png`;
+    const talkingheadPath = `/characters/${encodeURIComponent(spriteFolderName)}/talkinghead.png`;
 
     try {
-        const spriteResponse = await fetch(live2dPath);
+        const spriteResponse = await fetch(talkingheadPath);
 
         if (!spriteResponse.ok) {
             throw new Error(spriteResponse.statusText);
         }
 
         const spriteBlob = await spriteResponse.blob();
-        const spriteFile = new File([spriteBlob], 'live2d.png', { type: 'image/png' });
+        const spriteFile = new File([spriteBlob], 'talkinghead.png', { type: 'image/png' });
         const formData = new FormData();
         formData.append('file', spriteFile);
 
         const url = new URL(getApiUrl());
-        url.pathname = '/api/live2d/load';
+        url.pathname = '/api/talkinghead/load';
 
         const loadResponse = await doExtrasFetch(url, {
             method: 'POST',
@@ -453,10 +453,10 @@ async function loadLiveChar() {
         }
 
         const loadResponseText = await loadResponse.text();
-        console.log(`Load live2d response: ${loadResponseText}`);
+        console.log(`Load talkinghead response: ${loadResponseText}`);
 
     } catch (error) {
-        console.error(`Error loading live2d image: ${live2dPath} - ${error}`);
+        console.error(`Error loading talkinghead image: ${talkingheadPath} - ${error}`);
     }
 }
 
@@ -468,11 +468,11 @@ function handleImageChange() {
         return;
     }
 
-    if (extension_settings.expressions.live2d) {
+    if (extension_settings.expressions.talkinghead) {
         // Method get IP of endpoint
-        const live2dResultFeedSrc = `${getApiUrl()}/api/live2d/result_feed`;
+        const talkingheadResultFeedSrc = `${getApiUrl()}/api/talkinghead/result_feed`;
         $('#expression-holder').css({ display: '' });
-        if (imgElement.src !== live2dResultFeedSrc) {
+        if (imgElement.src !== talkingheadResultFeedSrc) {
             const expressionImageElement = document.querySelector('.expression_list_image');
 
             if (expressionImageElement) {
@@ -481,7 +481,7 @@ function handleImageChange() {
                 })
                     .then(response => {
                         if (response.ok) {
-                            imgElement.src = live2dResultFeedSrc;
+                            imgElement.src = talkingheadResultFeedSrc;
                         }
                     })
                     .catch(error => {
@@ -514,9 +514,9 @@ async function moduleWorker() {
         imgElement.src = "";
 
         //set checkbox to global var
-        $('#image_type_toggle').prop('checked', extension_settings.expressions.live2d);
-        if (extension_settings.expressions.live2d) {
-            setLive2dState(extension_settings.expressions.live2d);
+        $('#image_type_toggle').prop('checked', extension_settings.expressions.talkinghead);
+        if (extension_settings.expressions.talkinghead) {
+            settalkingheadState(extension_settings.expressions.talkinghead);
         }
     }
 
@@ -622,7 +622,7 @@ async function moduleWorker() {
     }
 }
 
-async function live2dcheck() {
+async function talkingheadcheck() {
     const context = getContext();
     let spriteFolderName = context.name2;
     const message = getLastCharacterMessage();
@@ -638,14 +638,14 @@ async function live2dcheck() {
     try {
         await validateImages(spriteFolderName);
 
-        let live2dObj = spriteCache[spriteFolderName].find(obj => obj.label === 'live2d');
-        let live2dPath_f = live2dObj ? live2dObj.path : null;
+        let talkingheadObj = spriteCache[spriteFolderName].find(obj => obj.label === 'talkinghead');
+        let talkingheadPath_f = talkingheadObj ? talkingheadObj.path : null;
 
-        if (live2dPath_f != null) {
-            //console.log("live2dPath_f " + live2dPath_f);
+        if (talkingheadPath_f != null) {
+            //console.log("talkingheadPath_f " + talkingheadPath_f);
             return true;
         } else {
-            //console.log("live2dPath_f is null");
+            //console.log("talkingheadPath_f is null");
             unloadLiveChar();
             return false;
         }
@@ -654,15 +654,15 @@ async function live2dcheck() {
     }
 }
 
-function setLive2dState(switch_var) {
-    extension_settings.expressions.live2d = switch_var; // Store setting
+function settalkingheadState(switch_var) {
+    extension_settings.expressions.talkinghead = switch_var; // Store setting
     saveSettingsDebounced();
 
-    live2dcheck().then(result => {
+    talkingheadcheck().then(result => {
         if (result) {
-            //console.log("Live2d exists!");
+            //console.log("talkinghead exists!");
 
-            if (extension_settings.expressions.live2d) {
+            if (extension_settings.expressions.talkinghead) {
                 loadLiveChar();
             } else {
                 unloadLiveChar();
@@ -671,7 +671,7 @@ function setLive2dState(switch_var) {
 
 
         } else {
-            //console.log("Live2d does not exist.");
+            //console.log("talkinghead does not exist.");
         }
     });
 }
@@ -863,7 +863,7 @@ async function getExpressionsList() {
 }
 
 async function setExpression(character, expression, force) {
-    if (!extension_settings.expressions.live2d) {
+    if (!extension_settings.expressions.talkinghead) {
         console.debug('entered setExpressions');
         await validateImages(character);
         const img = $('img.expression');
@@ -976,14 +976,14 @@ async function setExpression(character, expression, force) {
     } else {
 
 
-        live2dcheck().then(result => {
+        talkingheadcheck().then(result => {
             if (result) {
                 // Find the <img> element with id="expression-image" and class="expression"
                 const imgElement = document.querySelector('img#expression-image.expression');
                 //console.log("searching");
                 if (imgElement) {
                     //console.log("setting value");
-                    imgElement.src = getApiUrl() + '/api/live2d/result_feed';
+                    imgElement.src = getApiUrl() + '/api/talkinghead/result_feed';
                 }
 
             } else {
@@ -1255,7 +1255,7 @@ function setExpressionOverrideHtml(forceClear = false) {
                         <label class="switch">
                             <input id="image_type_toggle" type="checkbox">
                             <span class="slider round"></span>
-                            <label for="image_type_toggle">Image Type - Live2d (extras)</label>
+                            <label for="image_type_toggle">Image Type - talkinghead (extras)</label>
                         </label>
                     </div>
                     <div class="offline_mode">
@@ -1305,7 +1305,7 @@ function setExpressionOverrideHtml(forceClear = false) {
         $('.expression_settings').hide();
 
         $('#image_type_toggle').on('click', function () {
-            setLive2dState(this.checked);
+            settalkingheadState(this.checked);
         });
     }
 

@@ -9,6 +9,7 @@ import { SystemTtsProvider } from './system.js'
 import { NovelTtsProvider } from './novel.js'
 import { power_user } from '../../power-user.js'
 import { rvcVoiceConversion } from "../rvc/index.js"
+export { talkingAnimation };
 
 const UPDATE_INTERVAL = 1000
 
@@ -171,12 +172,13 @@ function talkingAnimation(switchValue) {
     if (switchValue !== storedvalue) {
         try {
             console.log(animationType + " Talking Animation");
-            doExtrasFetch(`${apiUrl}/api/live2d/${animationType}_talking`);
+            doExtrasFetch(`${apiUrl}/api/talkinghead/${animationType}_talking`);
             storedvalue = switchValue; // Update the storedvalue to the current switchValue
         } catch (error) {
             // Handle the error here or simply ignore it to prevent logging
         }
     }
+    updateUiAudioPlayState()
 }
 
 function resetTtsPlayback() {
@@ -305,10 +307,8 @@ function updateUiAudioPlayState() {
         // Give user feedback that TTS is active by setting the stop icon if processing or playing
         if (!audioElement.paused || isTtsProcessing()) {
             img = 'fa-solid fa-stop-circle extensionsMenuExtensionButton'
-            talkingAnimation(true)
         } else {
             img = 'fa-solid fa-circle-play extensionsMenuExtensionButton'
-            talkingAnimation(false)
         }
         $('#tts_media_control').attr('class', img);
     } else {
@@ -345,6 +345,7 @@ function completeCurrentAudioJob() {
     audioQueueProcessorReady = true
     currentAudioJob = null
     lastAudioPosition = 0
+    talkingAnimation(false) //stop lip animation
     // updateUiPlayState();
 }
 
