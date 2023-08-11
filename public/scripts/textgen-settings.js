@@ -232,7 +232,7 @@ async function generateTextGenWithStreaming(generate_data, signal) {
 }
 
 export function getTextGenGenerationData(finalPromt, this_amount_gen, isImpersonate) {
-    const { guidanceScale, negativePrompt } = getCfg();
+    const cfgValues = getCfg();
 
     return {
         'prompt': finalPromt,
@@ -251,8 +251,8 @@ export function getTextGenGenerationData(finalPromt, this_amount_gen, isImperson
         'penalty_alpha': textgenerationwebui_settings.penalty_alpha,
         'length_penalty': textgenerationwebui_settings.length_penalty,
         'early_stopping': textgenerationwebui_settings.early_stopping,
-        'guidance_scale': guidanceScale ?? 1,
-        'negative_prompt': negativePrompt ?? '',
+        'guidance_scale': cfgValues?.guidanceScale ?? 1,
+        'negative_prompt': cfgValues?.negativePrompt ?? '',
         'seed': textgenerationwebui_settings.seed,
         'add_bos_token': textgenerationwebui_settings.add_bos_token,
         'stopping_strings': getStoppingStrings(isImpersonate, false),

@@ -2,13 +2,12 @@ import {
     chat_metadata,
     eventSource,
     event_types,
-    getTokenCount,
     saveSettingsDebounced,
     this_chid,
 } from "../../../script.js";
 import { selected_group } from "../../group-chats.js";
-import { extension_settings, getContext, saveMetadataDebounced, loadExtensionSettings } from "../../extensions.js";
-import { getCharaFilename, debounce, waitUntilCondition, delay } from "../../utils.js";
+import { extension_settings, saveMetadataDebounced } from "../../extensions.js";
+import { getCharaFilename, delay } from "../../utils.js";
 import { power_user } from "../../power-user.js";
 
 // Keep track of where your extension is located, name should match repo name
@@ -51,7 +50,7 @@ function setCharCfg(tempValue, setting) {
             }
             break;
         default:
-            return;
+            return false;
     }
 
     let existingCharaCfgIndex;
@@ -66,7 +65,7 @@ function setCharCfg(tempValue, setting) {
         const tempAssign = Object.assign(existingCharaCfg, tempCharaCfg);
 
         // if both values are default, remove the entry
-        if ((tempAssign.guidance_scale ?? 1.00) === 1.00 && (tempAssign.negative_prompt?.length ?? 0) === 0) {
+        if (!existingCharaCfg.useChara && (tempAssign.guidance_scale ?? 1.00) === 1.00 && (tempAssign.negative_prompt?.length ?? 0) === 0) {
             extension_settings.cfg.chara.splice(existingCharaCfgIndex, 1);
         }
     } else if (avatarName && tempValue.length > 0) {
@@ -79,31 +78,46 @@ function setCharCfg(tempValue, setting) {
         extension_settings.cfg.chara.push(tempCharaCfg);
     } else {
         console.log("Character CFG error: No avatar name key could be found.");
-        toastr.error("Something went wrong. Could not save character's CFG.");
 
         // Don't save settings if something went wrong
-        return;
+        return false;
     }
 
     updateSettings();
+
+    return true;
 }
 
 function setCharCfgCheckbox() {
     const value = !!$(this).prop('checked');
-    const charaCfg = extension_settings.cfg.chara.find((e) => e.name === getCharaFilename());
+    const charaCfgIndex = extension_settings.cfg.chara.findIndex((e) => e.name === getCharaFilename());
+    const charaCfg = extension_settings.cfg.chara[charaCfgIndex];
     if (charaCfg) {
-        charaCfg.useChara = value;
+        if (!value && (charaCfg.guidance_scale ?? 1.00) === 1.00 && (charaCfg.negative_prompt?.length ?? 0) === 0) {
+            extension_settings.cfg.chara.splice(charaCfgIndex, 1);
+        } else {
+            charaCfg.useChara = value;
+        }
 
         updateSettings();
     }
 }
 
-function setChatCfgNegative() {
+function setChatCfg(tempValue, setting) {
+    switch(setting) {
+        case settingType.guidance_scale:
+            chat_metadata['guidance_scale'] = tempValue;
+            break;
+        case settingType.negative_prompt:
+            chat_metadata['negative_prompt'] = tempValue;
+            break;
+        default:
+            return false;
+    }
 
-}
+    saveMetadataDebounced();
 
-function setChatCfgScale() {
-
+    return true;
 }
 
 // TODO: Only change CFG when character is selected
@@ -160,6 +174,10 @@ function onChatChanged() {
 
 // Reloads chat-specific settings
 function loadSettings() {
+    // Set chat CFG if it exists
+    $('#chat_cfg_guidance_scale').val(chat_metadata['guidance_scale'] ?? 1.00);
+    $('#chat_cfg_guidance_scale_counter').text(chat_metadata['guidance_scale']?.toFixed(2) ?? 1.00);
+    $('#chat_cfg_negative_prompt').val(chat_metadata['negative_prompt'] ?? '');
 
     // Set character CFG if it exists
     const charaCfg = extension_settings.cfg.chara.find((e) => e.name === getCharaFilename());
@@ -221,8 +239,24 @@ jQuery(async () => {
         setTimeout(function () { $('#cfgConfig').hide() }, 200);
     })
 
+    windowHtml.find('#chat_cfg_guidance_scale').on('input', function() {
+        const numberValue = Number($(this).val());
+        const success = setChatCfg(numberValue, settingType.guidance_scale);
+        if (success) {
+            $('#chat_cfg_guidance_scale_counter').text(numberValue.toFixed(2));
+        }
+    });
+
+    windowHtml.find('#chat_cfg_negative_prompt').on('input', function() {
+        setChatCfg($(this).val(), settingType.negative_prompt);
+    });
+
     windowHtml.find('#chara_cfg_guidance_scale').on('input', function() {
-        setCharCfg($(this).val(), settingType.guidance_scale);
+        const value = $(this).val();
+        const success = setCharCfg(value, settingType.guidance_scale);
+        if (success) {
+            $('#chara_cfg_guidance_scale_counter').text(Number(value).toFixed(2));
+        }
     });
 
     windowHtml.find('#chara_cfg_negative_prompt').on('input', function() {
