@@ -17,7 +17,7 @@ async function rvcVoiceConversion(response, character) {
 
     // Check voice map
     if (extension_settings.rvc.voiceMap[character] === undefined) {
-        toastr.error("No model is assigned to character '"+character+"', check RVC voice map in the extension menu.", 'RVC Voice map error', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+        toastr.error("No model is assigned to character '"+character+"', check RVC voice map in the extension menu.", DEBUG_PREFIX+'RVC Voice map error', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
         console.error("No RVC model assign in voice map for current character "+character);
         return response;
     }
@@ -55,7 +55,7 @@ async function rvcVoiceConversion(response, character) {
     });
 
     if (!apiResult.ok) {
-        toastr.error(apiResult.statusText, 'RVC Voice Conversion Failed', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+        toastr.error(apiResult.statusText, DEBUG_PREFIX+' RVC Voice Conversion Failed', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
         throw new Error(`HTTP ${apiResult.status}: ${await apiResult.text()}`);
     }
 
@@ -112,15 +112,16 @@ async function onApplyClick() {
     array = array.filter((str) => str !== '');
     extension_settings.rvc.voiceMap = {};
     for (const text of array) {
-        if (text.includes("=")) {
-            const pair = text.split("=")
+        if (text.includes(":")) {
+            const pair = text.split(":")
             extension_settings.rvc.voiceMap[pair[0].trim()] = pair[1].trim()
             console.debug(DEBUG_PREFIX+"Added mapping", pair[0],"=>", extension_settings.rvc.voiceMap[pair[0]]);
         }
         else {
             $("#rvc_status").text("Voice map is invalid, check console for errors");
             $("#rvc_status").css("color", "red");
-            console.error(DEBUG_PREFIX+"Wrong syntax for message mapping, no '=' found in:", text);
+            console.error(DEBUG_PREFIX,"Wrong syntax for message mapping, no ':' found in:", text);
+            toastr.error("no ':' found in: '"+text+"'", DEBUG_PREFIX+' RVC Voice map error', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
             error = true;
         }
     }
@@ -129,6 +130,7 @@ async function onApplyClick() {
         $("#rvc_status").text("Successfully applied settings");
         $("#rvc_status").css("color", "green");
         console.debug(DEBUG_PREFIX+"Updated message mapping", extension_settings.rvc.voiceMap);
+        toastr.info("New map:\n"+JSON.stringify(extension_settings.rvc.voiceMap).substring(0,200)+"...", DEBUG_PREFIX+"Updated message mapping", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
         extension_settings.rvc.voiceMapText = $('#rvc_voice_map').val();
         saveSettingsDebounced();
     }
