@@ -555,7 +555,7 @@
                                         </span>
                                     </div>
                                     <div class="wide100p">
-                                        <input id="openai_proxy_password" type="text" class="text_pole" placeholder="" maxlength="200" />
+                                        <input id="openai_proxy_password" type="password" class="text_pole" placeholder="" maxlength="200" />
                                     </div>
                                 </div>
                                 <div class="range-block" data-source="openai,claude">
@@ -608,6 +608,10 @@
                                         <input type="number" id="openai_max_tokens" name="openai_max_tokens" class="text_pole" min="50" max="1000">
                                     </div>
                                 </div>
+                                <div data-source="openrouter">
+                                    Max prompt cost: <span id="openrouter_max_prompt_cost">Unknown</span>
+                                </div>
+                                <hr>
                                 <div class="range-block" data-source="openai,claude,windowai,openrouter">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
@@ -787,21 +791,45 @@
                                         </label>
                                     </div>
                                     <div class="range-block flexFlowColumn">
-                                        <div class="range-block-title" data-i18n="Samplers Order">
-                                            Samplers Order
+                                        <div class="range-block-title">
+                                            <span data-i18n="Samplers Order">Samplers Order</span>
                                         </div>
                                         <div class="toggle-description" data-i18n="Samplers will be applied in a top-down order. Use with caution.">
                                             Samplers will be applied in a top-down order.
                                             Use with caution.
                                         </div>
                                         <div id="kobold_order">
-                                            <div data-id="0" data-i18n="Top K">Top K</div>
-                                            <div data-id="1" data-i18n="Top A">Top A</div>
-                                            <div data-id="2" data-i18n="Top P">Top P</div>
-                                            <div data-id="3" data-i18n="Tail Free Sampling">Tail Free Sampling</div>
-                                            <div data-id="4" data-i18n="Typical Sampling">Typical Sampling</div>
-                                            <div data-id="5" data-i18n="Temperature">Temperature</div>
-                                            <div data-id="6" data-i18n="Repetition Penalty">Repetition Penalty</div>
+                                            <div data-id="0">
+                                                <span data-i18n="Top K">Top K</span>
+                                                <small>0</small>
+                                            </div>
+                                            <div data-id="1">
+                                                <span data-i18n="Top A">Top A</span>
+                                                <small>1</small>
+                                            </div>
+                                            <div data-id="2">
+                                                <span data-i18n="Top P">Top P</span>
+                                                <small>2</small>
+                                            </div>
+                                            <div data-id="3">
+                                                <span data-i18n="Tail Free Sampling">Tail Free Sampling</span>
+                                                <small>3</small>
+                                            </div>
+                                            <div data-id="4">
+                                                <span data-i18n="Typical Sampling">Typical Sampling</span>
+                                                <small>4</small>
+                                            </div>
+                                            <div data-id="5">
+                                                <span data-i18n="Temperature">Temperature</span>
+                                                <small>5</small>
+                                            </div>
+                                            <div data-id="6">
+                                                <span data-i18n="Repetition Penalty">Repetition Penalty</span>
+                                                <small>6</small>
+                                            </div>
+                                        </div>
+                                        <div id="samplers_order_recommended" class="menu_button menu_button_icon">
+                                            <span data-i18n="Load koboldcpp order">Load koboldcpp order</span>
                                         </div>
                                     </div>
                                 </div>
@@ -810,8 +838,7 @@
                                 <div class="range-block">
                                     <div class="range-block-title openai_restorable">
                                         <span data-i18n="Preamble">Preamble</span>
-                                        <div id="nai_preamble_restore" title="Restore default prompt" data-i18n="[title]Restore default prompt"
-                                            class="right_menu_button">
+                                        <div id="nai_preamble_restore" title="Restore default prompt" data-i18n="[title]Restore default prompt" class="right_menu_button">
                                             <div class="fa-solid fa-clock-rotate-left "></div>
                                         </div>
                                     </div>
@@ -819,8 +846,7 @@
                                         Use style tags to modify the writing style of the output
                                     </div>
                                     <div class="wide100p">
-                                        <textarea id="nai_preamble_textarea" class="text_pole textarea_compact" name="nai_preamble" rows="2"
-                                            placeholder=""></textarea>
+                                        <textarea id="nai_preamble_textarea" class="text_pole textarea_compact" name="nai_preamble" rows="2" placeholder=""></textarea>
                                     </div>
                                 </div>
                                 <div class="range-block">
@@ -863,6 +889,51 @@
                                         </div>
                                         <div class="range-block-counter">
                                             <div contenteditable="true" data-for="top_k_novel" id="top_k_counter_novel">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title" data-i18n="Top G">
+                                        Top G
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="top_g_novel" name="volume" min="0" max="20" step="1">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="top_g_novel" id="top_g_counter_novel">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title" data-i18n="Mirostat Tau">
+                                        Mirostat Tau
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="mirostat_tau_novel" name="volume" min="0" max="6" step="0.01">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="mirostat_tau_novel" id="mirostat_tau_counter_novel">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title" data-i18n="Mirostat LR">
+                                        Mirostat LR
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="mirostat_lr_novel" name="volume" min="0" max="1" step="0.01">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="mirostat_lr_novel" id="mirostat_lr_counter_novel">
                                                 select
                                             </div>
                                         </div>
@@ -2113,7 +2184,7 @@
                     <div class="justifyContentSpaceAround wi-settings flex-container gap10px alignitemscenter">
                         <div id="WIMultiSelector" class="flex2 flex alignSelfStart range-block">
                             <div class="range-block-title justifyLeft">
-                                <span data-i18n="Active World(s)"><small>Active World(s)</small></span>
+                                <span data-i18n="Active World(s) for all chats"><small>Active World(s) for all chats</small></span>
                             </div>
                             <div class="range-block-range">
                                 <select id="world_info" multiple>
@@ -2158,7 +2229,7 @@
 
                                 <div class="flex1 gap5px range-block">
                                     <div class="wide10pMinFit">
-                                        <small data-i18n="Token Budget">Context %</small>
+                                        <small data-i18n="Context %">Context %</small>
                                     </div>
                                     <div class="range-block-range-and-counter ">
                                         <div class="range-block-range paddingLeftRight5">
@@ -2169,6 +2240,25 @@
                                                 budget
                                             </div>
                                         </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex1 gap5px range-block">
+                                    <div class="wide10pMinFit">
+                                        <small data-i18n="Budget Cap">Budget Cap</small>
+                                    </div>
+                                    <div class="range-block-range-and-counter ">
+                                        <div class="range-block-range paddingLeftRight5">
+                                            <input type="range" id="world_info_budget_cap" name="volume" min="0" max="8192" step="256">
+                                        </div>
+                                        <div class="range-block-counter margin0">
+                                            <div contenteditable="true" data-for="world_info_budget_cap" id="world_info_budget_cap_counter">
+                                                0
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="budget_cap_note">
+                                        <small data-i18n="(0 = disabled)">(0 = disabled)</small>
                                     </div>
                                 </div>
                             </div>
@@ -2382,6 +2472,22 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="range-block">
+                                <div class="range-block-title">
+                                    <span data-i18n="Lazy Chat Loading">Lazy Chat Loading</span><br>
+                                    <small># of messages (0 = disabled)</small>
+                                </div>
+                                <div class="range-block-range-and-counter">
+                                    <div class="range-block-range">
+                                        <input id="lazy_load" class="wide100p" type="range" min="0" max="100" step="10" value="0">
+                                        <div class="slider_hint">
+                                            <span>0</span>
+                                            <span>50</span>
+                                            <span>100</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             <div>
                                 <span data-i18n="Avatar Style">Avatar Style:</span><br>
                                 <label>
@@ -2479,11 +2585,11 @@
                     <div id="power-user-options-block" class="flex-container drawer33pWidth">
                         <div id="power-user-option-checkboxes">
                             <h4 data-i18n="Power User Options">Power User Options</h4>
-                            <label for="swipes-checkbox">
+                            <label class="checkbox_label" for="swipes-checkbox">
                                 <input id="swipes-checkbox" type="checkbox" />
                                 <span data-i18n="Swipes">Swipes</span>
                             </label>
-                            <label for="fuzzy_search_checkbox">
+                            <label class="checkbox_label" for="fuzzy_search_checkbox">
                                 <input id="fuzzy_search_checkbox" type="checkbox" />
                                 <span data-i18n="Advanced Character Search">Advanced Character Search</span>
                             </label>
@@ -2501,13 +2607,15 @@
                                     Press "Send" to continue
                                 </span>
                             </label>
-                            <label for="auto-load-chat-checkbox"><input id="auto-load-chat-checkbox" type="checkbox" />
+                            <label class="checkbox_label" for="auto-load-chat-checkbox">
+                                <input id="auto-load-chat-checkbox" type="checkbox" />
                                 <span data-i18n="Auto-load Last Chat">Auto-load Last Chat</span>
                             </label>
-                            <label for="auto_save_msg_edits"><input id="auto_save_msg_edits" type="checkbox" />
+                            <label class="checkbox_label" for="auto_save_msg_edits">
+                                <input id="auto_save_msg_edits" type="checkbox" />
                                 <span data-i18n="Auto-save Message Edits">Auto-save Message Edits</span>
                             </label>
-                            <label for="auto_fix_generated_markdown">
+                            <label class="checkbox_label" for="auto_fix_generated_markdown">
                                 <input id="auto_fix_generated_markdown" type="checkbox" />
                                 <span data-i18n="Auto-fix Markdown">Auto-fix Markdown</span>
                             </label>
@@ -2519,37 +2627,43 @@
                                 <input id="allow_name1_display" type="checkbox" />
                                 <span data-i18n="Allow {{user}}: in bot messages">Show {{user}}: in responses</span>
                             </label>
-                            <!-- <label class="checkbox_label" for="removeXML">
-                                <input id="removeXML" type="checkbox" />
-                                <span data-i18n="Remove XML/HTML tags from responses">Remove &lt;tags&gt; from responses</span>
-                            </label> -->
-                            <label for="console_log_prompts">
+                            <label class="checkbox_label" for="encode_tags">
+                                <input id="encode_tags" type="checkbox" />
+                                <span data-i18n="Show tags in responses">Show &lt;tags&gt; in responses</span>
+                            </label>
+                            <label class="checkbox_label" for="console_log_prompts">
                                 <input id="console_log_prompts" type="checkbox" />
                                 <span data-i18n="Log prompts to console">Log prompts to console</span>
                             </label>
-                            <label for="render_formulas">
+                            <label class="checkbox_label" for="render_formulas">
                                 <input id="render_formulas" type="checkbox" />
                                 <span data-i18n="Render Formulas">Render Formulas</span>
                                 <a href="https://docs.sillytavern.app/usage/core-concepts/uicustomization/#formulas-rendering" class="notes-link" target="_blank">
                                     <span class="note-link-span">?</span>
                                 </a>
                             </label>
-                            <label for="never_resize_avatars"><input id="never_resize_avatars" type="checkbox" />
+                            <label class="checkbox_label" for="never_resize_avatars">
+                                <input id="never_resize_avatars" type="checkbox" />
                                 <span data-i18n="Never resize avatars">Never resize avatars</span>
                             </label>
-                            <label for="show_card_avatar_urls"><input id="show_card_avatar_urls" type="checkbox" />
+                            <label class="checkbox_label" for="show_card_avatar_urls">
+                                <input id="show_card_avatar_urls" type="checkbox" />
                                 <span data-i18n="Show avatar filenames">Show avatar filenames</span>
                             </label>
-                            <label for="import_card_tags"><input id="import_card_tags" type="checkbox" />
+                            <label class="checkbox_label" for="import_card_tags">
+                                <input id="import_card_tags" type="checkbox" />
                                 <span data-i18n="Import Card Tags">Import Card Tags</span>
                             </label>
-                            <label for="confirm_message_delete"><input id="confirm_message_delete" type="checkbox" />
+                            <label class="checkbox_label" for="confirm_message_delete">
+                                <input id="confirm_message_delete" type="checkbox" />
                                 <span data-i18n="Confirm message deletion">Confirm message deletion</span>
                             </label>
-                            <label for="spoiler_free_mode"><input id="spoiler_free_mode" type="checkbox" />
+                            <label class="checkbox_label" for="spoiler_free_mode">
+                                <input id="spoiler_free_mode" type="checkbox" />
                                 <span data-i18n="Spoiler Free Mode">Spoiler Free Mode</span>
                             </label>
-                            <label for="relaxed_api_urls" title="Reduce the formatting requirements on API URLS"><input id="relaxed_api_urls" type="checkbox" />
+                            <label class="checkbox_label" for="relaxed_api_urls" title="Reduce the formatting requirements on API URLS">
+                                <input id="relaxed_api_urls" type="checkbox" />
                                 <span data-i18n="Relaxed API URLS">Relaxed API URLS</span>
                             </label>
 
@@ -3771,7 +3885,7 @@
                         <small>Will be automatically added as the author's note for this character. Will be used in groups, but
                             can't be modified when a group chat is open.</small>
 
-                        <textarea id="extension_floating_chara" class="text_pole" rows="8" maxlength="10000" placeholder="Example:\n[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
+                        <textarea id="extension_floating_chara" class="text_pole" rows="8" maxlength="10000" placeholder="Example:&#10;[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
                         <div class="extension_token_counter">
                             Tokens: <span id="extension_floating_chara_token_counter">0</span>
                         </div>
@@ -3805,10 +3919,22 @@
                     <div class="inline-drawer-content">
                         <small>Will be automatically added as the Author's Note for all new chats.</small>
 
-                        <textarea id="extension_floating_default" class="text_pole" rows="8" maxlength="10000" placeholder="Example:\n[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
+                        <textarea id="extension_floating_default" class="text_pole" rows="8" maxlength="10000" placeholder="Example:&#10;[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
                         <div class="extension_token_counter">
                             Tokens: <span id="extension_floating_default_token_counter">0</span>
                         </div>
+                        <div class="floating_prompt_radio_group">
+                            <label>
+                                <input type="radio" name="extension_default_position" value="0" />
+                                After scenario
+                            </label>
+                            <label>
+                                <input type="radio" name="extension_default_position" value="1" />
+                                In-chat @ Depth <input id="extension_default_depth" class="text_pole widthUnset" type="number" min="0" max="99" />
+                            </label>
+                        </div>
+                        <label for="extension_default_interval">Insertion Frequency</label>
+                        <input id="extension_default_interval" class="text_pole widthUnset" type="number" min="0" max="999" /><small> (0 = Disable, 1 = Always)</small>
                     </div>
                 </div>
             </div>

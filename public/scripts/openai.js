@@ -692,18 +692,43 @@ function getChatCompletionModel() {
     }
 }
 
+function calculateOpenRouterCost() {
+    if (oai_settings.chat_completion_source !== chat_completion_sources.OPENROUTER) {
+        return;
+    }
+
+    let cost = 'Unknown';
+    const model = model_list.find(x => x.id === oai_settings.openrouter_model);
+
+    if (model?.pricing) {
+        const completionCost = Number(model.pricing.completion);
+        const promptCost = Number(model.pricing.prompt);
+        const completionTokens = oai_settings.openai_max_tokens;
+        const promptTokens = (oai_settings.openai_max_context - completionTokens);
+        const totalCost = (completionCost * completionTokens) + (promptCost * promptTokens);
+        if (!isNaN(totalCost)) {
+            cost = '$' + totalCost.toFixed(3);
+        }
+    }
+
+    $('#openrouter_max_prompt_cost').text(cost);
+}
+
 function saveModelList(data) {
-    model_list = data.map((model) => ({ id: model.id, context_length: model.context_length }));
+    model_list = data.map((model) => ({ id: model.id, context_length: model.context_length, pricing: model.pricing }));
     model_list.sort((a, b) => a?.id && b?.id && a.id.localeCompare(b.id));
 
     if (oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER) {
         $('#model_openrouter_select').empty();
         $('#model_openrouter_select').append($('<option>', { value: openrouter_website_model, text: 'Use OpenRouter website setting' }));
         model_list.forEach((model) => {
+            let tokens_dollar = parseFloat(1 / (1000 * model.pricing.prompt));
+            let tokens_rounded = (Math.round(tokens_dollar * 1000) / 1000).toFixed(0);
+            let model_description = `${model.id} | ${tokens_rounded}k t/$ | ${model.context_length} ctx`;
             $('#model_openrouter_select').append(
                 $('<option>', {
                     value: model.id,
-                    text: model.id,
+                    text: model_description,
                 }));
         });
         $('#model_openrouter_select').val(oai_settings.openrouter_model).trigger('change');
@@ -738,6 +763,7 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
     const isScale = oai_settings.chat_completion_source == chat_completion_sources.SCALE;
     const isTextCompletion = oai_settings.chat_completion_source == chat_completion_sources.OPENAI && (oai_settings.openai_model.startsWith('text-') || oai_settings.openai_model.startsWith('code-'));
     const stream = type !== 'quiet' && oai_settings.stream_openai && !isScale;
+    const isQuiet = type === 'quiet';
 
     // If we're using the window.ai extension, use that instead
     // Doesn't support logit bias yet
@@ -777,7 +803,11 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
     if (isClaude) {
         generate_data['use_claude'] = true;
         generate_data['top_k'] = parseFloat(oai_settings.top_k_openai);
-        generate_data['assistant_prefill'] = substituteParams(oai_settings.assistant_prefill);
+
+        // Don't add a prefill on quiet gens (summarization)
+        if (!isQuiet) {
+            generate_data['assistant_prefill'] = substituteParams(oai_settings.assistant_prefill);
+        }
     }
 
     if (isOpenRouter) {
@@ -1801,6 +1831,8 @@ async function onModelChange() {
             oai_settings.temp_openai = Math.min(oai_max_temp, oai_settings.temp_openai);
             $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
         }
+
+        calculateOpenRouterCost();
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
@@ -2038,11 +2070,13 @@ $(document).ready(function () {
     $(document).on('input', '#openai_max_context', function () {
         oai_settings.openai_max_context = parseInt($(this).val());
         $('#openai_max_context_counter').text(`${$(this).val()}`);
+        calculateOpenRouterCost();
         saveSettingsDebounced();
     });
 
     $(document).on('input', '#openai_max_tokens', function () {
         oai_settings.openai_max_tokens = parseInt($(this).val());
+        calculateOpenRouterCost();
         saveSettingsDebounced();
     });
 

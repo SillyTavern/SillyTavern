@@ -1872,6 +1872,9 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
             "top_p": request.body.top_p,
             "top_k": request.body.top_k,
             "typical_p": request.body.typical_p,
+            "top_g": request.body.top_g,
+            "mirostat_lr": request.body.mirostat_lr,
+            "mirostat_tau": request.body.mirostat_tau,
             "cfg_scale": request.body.cfg_scale,
             "cfg_uc": request.body.cfg_uc,
             "phrase_rep_pen": request.body.phrase_rep_pen,
@@ -2964,8 +2967,22 @@ app.post("/getstatus_openai", jsonParser, function (request, response_getstatus_
     client.get(api_url + "/models", args, function (data, response) {
         if (response.statusCode == 200) {
             response_getstatus_openai.send(data);
-            const modelIds = data?.data?.map(x => x.id)?.sort();
-            console.log('Available OpenAI models:', modelIds);
+            if (request.body.use_openrouter) {
+                let models = [];
+                data.data.forEach(model => {
+                    const context_length = model.context_length;
+                    const tokens_dollar = parseFloat(1 / (1000 * model.pricing.prompt));
+                    const tokens_rounded = (Math.round(tokens_dollar * 1000) / 1000).toFixed(0);
+                    models[model.id] = {
+                        tokens_per_dollar: tokens_rounded + 'k',
+                        context_length: context_length,
+                    };
+                });
+                console.log('Available OpenRouter models:', models);
+            } else {
+                const modelIds = data?.data?.map(x => x.id)?.sort();
+                console.log('Available OpenAI models:', modelIds);
+            }
         }
         if (response.statusCode == 401) {
             console.log('Access Token is incorrect.');
