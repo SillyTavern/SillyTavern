@@ -6,10 +6,10 @@ import {power_user} from "./power-user.js";
  * Register migrations for the prompt manager when settings are loaded or an Open AI preset is loaded.
  */
 const registerPromptManagerMigration = () => {
-    const migrate = (settings) => {
+    const migrate = (settings, savePreset = null, presetName = null) => {
         if (settings.main_prompt || settings.nsfw_prompt || settings.jailbreak_prompt) {
             console.log('Running prompt manager configuration migration');
-            if (settings.prompts === undefined || settings.prompts.length === 0) settings.prompts = chatCompletionDefaultPrompts.prompts;
+            if (settings.prompts === undefined || settings.prompts.length === 0) settings.prompts = structuredClone(chatCompletionDefaultPrompts.prompts);
 
             const findPrompt = (identifier) => settings.prompts.find(prompt => identifier === prompt.identifier);
             if (settings.main_prompt) {
@@ -26,11 +26,13 @@ const registerPromptManagerMigration = () => {
                 findPrompt('jailbreak').content = settings.jailbreak_prompt
                 delete settings.jailbreak_prompt;
             }
+
+            if (savePreset && presetName) savePreset(presetName, settings, false);
         }
     };
 
     eventSource.on(event_types.SETTINGS_LOADED_BEFORE, settings => migrate(settings));
-    eventSource.on(event_types.OAI_PRESET_CHANGED, event => migrate(event.preset));
+    eventSource.on(event_types.OAI_PRESET_CHANGED, event => migrate(event.preset, event.savePreset, event.presetName));
 }
 
 /**

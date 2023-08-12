@@ -2022,6 +2022,14 @@ function trySelectPresetByName(name) {
     }
 }
 
+/**
+ * Persist a settings preset with the given name
+ *
+ * @param name - Name of the preset
+ * @param settings The OpenAi settings object
+ * @param triggerUi Whether the change event of preset UI element should be emitted
+ * @returns {Promise<void>}
+ */
 async function saveOpenAIPreset(name, settings, triggerUi = true) {
     const presetBody = {
         chat_completion_source: settings.chat_completion_source,
@@ -2354,16 +2362,6 @@ async function onLogitBiasPresetDeleteClick() {
 
 // Load OpenAI preset settings
 function onSettingsPresetChange() {
-    const presetName = $('#settings_perset_openai').find(":selected").text();
-    oai_settings.preset_settings_openai = presetName;
-    const preset = openai_settings[openai_setting_names[oai_settings.preset_settings_openai]];
-
-    eventSource.emit(event_types.OAI_PRESET_CHANGED, {preset: preset, settings: oai_settings})
-        .then(() =>  saveOpenAIPreset(presetName, preset, false));
-
-    const updateInput = (selector, value) => $(selector).val(value).trigger('input');
-    const updateCheckbox = (selector, value) => $(selector).prop('checked', value).trigger('input');
-
     const settingsToUpdate = {
         chat_completion_source: ['#chat_completion_source', 'chat_completion_source', false],
         temperature: ['#temp_openai', 'temp_openai', false],
@@ -2402,21 +2400,37 @@ function onSettingsPresetChange() {
         assistant_prefill: ['#claude_assistant_prefill', 'assistant_prefill', false],
     };
 
-    for (const [key, [selector, setting, isCheckbox]] of Object.entries(settingsToUpdate)) {
-        if (preset[key] !== undefined) {
-            if (isCheckbox) {
-                updateCheckbox(selector, preset[key]);
-            } else {
-                updateInput(selector, preset[key]);
+    const presetName = $('#settings_perset_openai').find(":selected").text();
+    oai_settings.preset_settings_openai = presetName;
+    const preset = openai_settings[openai_setting_names[oai_settings.preset_settings_openai]];
+
+    const updateInput = (selector, value) => $(selector).val(value).trigger('input');
+    const updateCheckbox = (selector, value) => $(selector).prop('checked', value).trigger('input');
+
+    // Allow subscribers to alter the preset before applying deltas
+    eventSource.emit(event_types.OAI_PRESET_CHANGED, {
+        preset: preset,
+        presetName: presetName,
+        settingsToUpdate: settingsToUpdate,
+        settings: oai_settings,
+        savePreset: saveOpenAIPreset
+    }).finally(r =>{
+        for (const [key, [selector, setting, isCheckbox]] of Object.entries(settingsToUpdate)) {
+            if (preset[key] !== undefined) {
+                if (isCheckbox) {
+                    updateCheckbox(selector, preset[key]);
+                } else {
+                    updateInput(selector, preset[key]);
+                }
+                oai_settings[setting] = preset[key];
             }
-            oai_settings[setting] = preset[key];
         }
-    }
 
-    $(`#chat_completion_source`).trigger('change');
-    $(`#openai_logit_bias_preset`).trigger('change');
+        $(`#chat_completion_source`).trigger('change');
+        $(`#openai_logit_bias_preset`).trigger('change');
 
-    saveSettingsDebounced();
+        saveSettingsDebounced();
+    });
 }
 
 function getMaxContextOpenAI(value) {
