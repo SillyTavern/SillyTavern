@@ -47,8 +47,17 @@ export function setNovelData(data) {
     novel_data = data;
 }
 
-export function getNovelMaxContextTokens() {
-    return novel_data?.perks?.contextTokens;
+export function getKayraMaxContextTokens() {
+    switch (novel_data?.tier) {
+        case 1:
+            return 3072;
+        case 2:
+            return 6144;
+        case 3:
+            return 8192;
+    }
+
+    return null;
 }
 
 function getNovelTier(tier) {
