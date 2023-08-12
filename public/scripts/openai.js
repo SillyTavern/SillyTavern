@@ -479,28 +479,26 @@ function populateChatHistory(prompts, chatCompletion, type = null, cyclePrompt =
 function populateDialogueExamples(prompts, chatCompletion) {
     chatCompletion.add(new MessageCollection('dialogueExamples'), prompts.index('dialogueExamples'));
     if (openai_msgs_example.length) {
-        // Insert chat message examples if there's enough budget if there is enough budget left for at least one example.
-        const dialogueExampleChat = new Message('system', oai_settings.new_example_chat_prompt, 'newChat');
-        const prompt = openai_msgs_example[0];
-        const dialogueExample = new Message(prompt[0]?.role || 'system', prompt[0]?.content || '', 'dialogueExampleTest');
+        const newExampleChat = new Message('system', oai_settings.new_example_chat_prompt, 'newChat');
+        chatCompletion.reserveBudget(newExampleChat);
 
-        if (chatCompletion.canAfford(dialogueExampleChat) &&
-            chatCompletion.canAfford(dialogueExample)) {
-            chatCompletion.insert(dialogueExampleChat, 'dialogueExamples');
+        [...openai_msgs_example].forEach((dialogue, dialogueIndex) => {
+            dialogue.forEach((prompt, promptIndex) => {
+                const role = prompt.name === 'example_assistant' ? 'assistant' : 'user';
+                const content = prompt.content || '';
+                const identifier = `dialogueExamples ${dialogueIndex}-${promptIndex}`;
 
-            [...openai_msgs_example].forEach((dialogue, dialogueIndex) => {
-                dialogue.forEach((prompt, promptIndex) => {
-                    const role = prompt.name === 'example_assistant' ? 'assistant' : 'user';
-                    const content = prompt.content || '';
-                    const identifier = `dialogueExamples ${dialogueIndex}-${promptIndex}`;
-
-                    const chatMessage = new Message(role, content, identifier);
-                    if (chatCompletion.canAfford(chatMessage)) {
-                        chatCompletion.insert(chatMessage, 'dialogueExamples');
-                    }
-                });
+                const chatMessage = new Message(role, content, identifier);
+                if (chatCompletion.canAfford(chatMessage)) {
+                    chatCompletion.insert(chatMessage, 'dialogueExamples');
+                }
             });
-        }
+        });
+
+        chatCompletion.freeBudget(newExampleChat);
+
+        const chatExamples = chatCompletion.getMessages().getItemByIdentifier('dialogueExamples').getCollection();
+        if(chatExamples.length) chatCompletion.insertAtStart(newExampleChat,'dialogueExamples');
     }
 }
 
