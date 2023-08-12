@@ -763,6 +763,7 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
     const isScale = oai_settings.chat_completion_source == chat_completion_sources.SCALE;
     const isTextCompletion = oai_settings.chat_completion_source == chat_completion_sources.OPENAI && (oai_settings.openai_model.startsWith('text-') || oai_settings.openai_model.startsWith('code-'));
     const stream = type !== 'quiet' && oai_settings.stream_openai && !isScale;
+    const isQuiet = type === 'quiet';
 
     // If we're using the window.ai extension, use that instead
     // Doesn't support logit bias yet
@@ -802,7 +803,11 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
     if (isClaude) {
         generate_data['use_claude'] = true;
         generate_data['top_k'] = parseFloat(oai_settings.top_k_openai);
-        generate_data['assistant_prefill'] = substituteParams(oai_settings.assistant_prefill);
+
+        // Don't add a prefill on quiet gens (summarization)
+        if (!isQuiet) {
+            generate_data['assistant_prefill'] = substituteParams(oai_settings.assistant_prefill);
+        }
     }
 
     if (isOpenRouter) {
