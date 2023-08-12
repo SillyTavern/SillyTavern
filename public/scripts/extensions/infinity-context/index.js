@@ -125,7 +125,7 @@ async function loadSettings() {
 
     $('#chromadb_auto_adjust').prop('checked', extension_settings.chromadb.auto_adjust);
     $('#chromadb_freeze').prop('checked', extension_settings.chromadb.freeze);
-    $('#chromadb_query_last_only').val(extension_settings.chromadb.query_last_only).trigger('input');
+    $('#chromadb_query_last_only').prop('checked', extension_settings.chromadb.query_last_only);
     enableDisableSliders();
     onStrategyChange();
 }
@@ -573,6 +573,11 @@ function getCharacterDataLength() {
 * on the chat history and a specified maximum context length.
 */
 function doAutoAdjust(chat, maxContext) {
+    // Only valid for chat injections strategy
+    if (extension_settings.chromadb.recall_strategy !== 0) {
+        return;
+    }
+
     console.debug('CHROMADB: Auto-adjusting sliders (messages: %o, maxContext: %o)', chat.length, maxContext);
     // Get mean message length
     const meanMessageLength = chat.reduce((acc, cur) => acc + (cur?.mes?.length ?? 0), 0) / chat.length;

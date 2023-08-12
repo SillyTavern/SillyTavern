@@ -47,8 +47,17 @@ export function setNovelData(data) {
     novel_data = data;
 }
 
-export function getNovelMaxContextTokens() {
-    return novel_data?.perks?.contextTokens;
+export function getKayraMaxContextTokens() {
+    switch (novel_data?.tier) {
+        case 1:
+            return 3072;
+        case 2:
+            return 6144;
+        case 3:
+            return 8192;
+    }
+
+    return null;
 }
 
 function getNovelTier(tier) {
@@ -80,6 +89,9 @@ function loadNovelPreset(preset) {
     nai_settings.min_length = preset.min_length;
     nai_settings.cfg_scale = preset.cfg_scale;
     nai_settings.phrase_rep_pen = preset.phrase_rep_pen;
+    nai_settings.top_g = preset.top_g;
+    nai_settings.mirostat_lr = preset.mirostat_lr;
+    nai_settings.mirostat_tau = preset.mirostat_tau;
     loadNovelSettingsUi(nai_settings);
 }
 
@@ -105,6 +117,9 @@ function loadNovelSettings(settings) {
     nai_settings.min_length = settings.min_length;
     nai_settings.phrase_rep_pen = settings.phrase_rep_pen;
     nai_settings.cfg_scale = settings.cfg_scale;
+    nai_settings.top_g = settings.top_g;
+    nai_settings.mirostat_lr = settings.mirostat_lr;
+    nai_settings.mirostat_tau = settings.mirostat_tau;
     nai_settings.streaming_novel = !!settings.streaming_novel;
     loadNovelSettingsUi(nai_settings);
 }
@@ -169,6 +184,12 @@ function loadNovelSettingsUi(ui_settings) {
     $("#cfg_scale_counter_novel").text(Number(ui_settings.cfg_scale).toFixed(2));
     $("#phrase_rep_pen_novel").val(getPhraseRepPenCounter(ui_settings.phrase_rep_pen));
     $("#phrase_rep_pen_counter_novel").text(getPhraseRepPenCounter(ui_settings.phrase_rep_pen));
+    $("#top_g_novel").val(ui_settings.top_g);
+    $("#top_g_counter_novel").text(Number(ui_settings.top_g).toFixed(0));
+    $("#mirostat_lr_novel").val(ui_settings.mirostat_lr);
+    $("#mirostat_lr_counter_novel").text(Number(ui_settings.mirostat_lr).toFixed(2));
+    $("#mirostat_tau_novel").val(ui_settings.mirostat_tau);
+    $("#mirostat_tau_counter_novel").text(Number(ui_settings.mirostat_tau).toFixed(2));
     $("#min_length_novel").val(ui_settings.min_length);
     $("#min_length_counter_novel").text(Number(ui_settings.min_length).toFixed(0));
     $('#nai_preamble_textarea').val(ui_settings.nai_preamble);
@@ -244,6 +265,24 @@ const sliders = [
         setValue: (val) => { nai_settings.typical_p = Number(val).toFixed(2); },
     },
     {
+        sliderId: "#top_g_novel",
+        counterId: "#top_g_counter_novel",
+        format: (val) => Number(val).toFixed(0),
+        setValue: (val) => { nai_settings.top_g = Number(val).toFixed(0); },
+    },
+    {
+        sliderId: "#mirostat_tau_novel",
+        counterId: "#mirostat_tau_counter_novel",
+        format: (val) => Number(val).toFixed(2),
+        setValue: (val) => { nai_settings.mirostat_tau = Number(val).toFixed(2); },
+    },
+    {
+        sliderId: "#mirostat_lr_novel",
+        counterId: "#mirostat_lr_counter_novel",
+        format: (val) => Number(val).toFixed(2),
+        setValue: (val) => { nai_settings.mirostat_lr = Number(val).toFixed(2); },
+    },
+    {
         sliderId: "#cfg_scale_novel",
         counterId: "#cfg_scale_counter_novel",
         format: (val) => `${val}`,
@@ -298,6 +337,9 @@ export function getNovelGenerationData(finalPromt, this_settings, this_amount_ge
         "top_p": parseFloat(nai_settings.top_p),
         "top_k": parseInt(nai_settings.top_k),
         "typical_p": parseFloat(nai_settings.typical_p),
+        "top_g": parseFloat(nai_settings.top_g),
+        "mirostat_lr": parseFloat(nai_settings.mirostat_lr),
+        "mirostat_tau": parseFloat(nai_settings.mirostat_tau),
         "cfg_scale": parseFloat(nai_settings.cfg_scale),
         "cfg_uc": "",
         "phrase_rep_pen": nai_settings.phrase_rep_pen,

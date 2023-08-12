@@ -96,7 +96,7 @@ import {
 import {
     generateNovelWithStreaming,
     getNovelGenerationData,
-    getNovelMaxContextTokens,
+    getKayraMaxContextTokens,
     getNovelTier,
     loadNovelPreset,
     loadNovelSettings,
@@ -1193,6 +1193,16 @@ function printMessages() {
     chat.forEach(function (item, i, arr) {
         addOneMessage(item, { scroll: i === arr.length - 1 });
     });
+
+    if (power_user.lazy_load > 0) {
+        const height = $('#chat').height();
+        const scrollHeight = $('#chat').prop('scrollHeight');
+
+        // Only hide if oveflowing the scroll
+        if (scrollHeight > height) {
+            $('#chat').children('.mes').slice(0, -power_user.lazy_load).hide();
+        }
+    }
 }
 
 function clearChat() {
@@ -3170,20 +3180,19 @@ function getMaxContextSize() {
     if (main_api == 'novel') {
         this_max_context = Number(max_context);
         if (nai_settings.model_novel == 'krake-v2' || nai_settings.model_novel == 'euterpe-v2') {
-            // Krake and Euterpe have a max context of 2048
-            // Should be used with classic gpt tokenizer for best results
             this_max_context = Math.min(max_context, 2048);
         }
-        if (nai_settings.model_novel == 'clio-v1' || nai_settings.model_novel == 'kayra-v1') {
-            // Clio and Kayra have a max context of 8192
-            // Should be used with nerdstash / nerdstash_v2 tokenizer for best results
+        if (nai_settings.model_novel == 'clio-v1') {
             this_max_context = Math.min(max_context, 8192);
         }
+        if (nai_settings.model_novel == 'kayra-v1') {
+            this_max_context = Math.min(max_context, 8192);
 
-        const subscriptionLimit = getNovelMaxContextTokens();
-        if (typeof subscriptionLimit === "number" && this_max_context > subscriptionLimit) {
-            this_max_context = subscriptionLimit;
-            console.log(`NovelAI subscription limit reached. Max context size is now ${this_max_context}`);
+            const subscriptionLimit = getKayraMaxContextTokens();
+            if (typeof subscriptionLimit === "number" && this_max_context > subscriptionLimit) {
+                this_max_context = subscriptionLimit;
+                console.log(`NovelAI subscription limit reached. Max context size is now ${this_max_context}`);
+            }
         }
 
         this_max_context = this_max_context - amount_gen;
@@ -5473,7 +5482,7 @@ async function getStatusNovel() {
             success: function (data) {
                 if (data.error != true) {
                     setNovelData(data);
-                    online_status = `${getNovelTier(data.tier)} (${getNovelMaxContextTokens()} context tokens)`;
+                    online_status = `${getNovelTier(data.tier)}`;
                 }
                 resultCheckStatusNovel();
             },
@@ -7143,6 +7152,17 @@ $(document).ready(function () {
     $("#rm_print_characters_block").on('scroll', debounce(() => {
         updateVisibleDivs('#rm_print_characters_block', true);
     }, 5));
+
+    $('#chat').on('scroll', async () => {
+        // if on the start of the chat and has hidden messages
+        if ($('#chat').scrollTop() === 0 && $('#chat').children('.mes').not(':visible').length > 0) {
+            // show next hidden messages
+            const prevHeight = $('#chat').prop('scrollHeight');
+            $('#chat').children('.mes').not(':visible').slice(-power_user.lazy_load).show();
+            const newHeight = $('#chat').prop('scrollHeight');
+            $('#chat').scrollTop(newHeight - prevHeight);
+        }
+    });
 
     $("#chat").on('mousewheel touchstart', () => {
         scrollLock = true;
