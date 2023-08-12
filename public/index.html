@@ -836,6 +836,21 @@
                             </div>
                             <div id="novel_api-settings">
                                 <div class="range-block">
+                                    <div class="range-block-title justifyLeft">
+                                        AI Module
+                                    </div>
+                                    <div class="toggle-description justifyLeft" data-i18n="Change the style of the generated text. Set to Vanilla to use the default style.">
+                                        Change the style of the generated text. Set to Vanilla to use the default style.
+                                    </div>
+                                    <select id="nai_prefix">
+                                        <option value="" data-i18n="Auto-select">Auto-select</option>
+                                        <option value="vanilla" data-i18n="Vanilla">Vanilla</option>
+                                        <option value="special_instruct" data-i18n="Instruct">Instruct</option>
+                                        <option value="special_proseaugmenter" data-i18n="Prose Augmenter">Prose Augmenter</option>
+                                        <option value="theme_textadventure" data-i18n="Text Adventure">Text Adventure</option>
+                                    </select>
+                                </div>
+                                <div class="range-block">
                                     <div class="range-block-title openai_restorable">
                                         <span data-i18n="Preamble">Preamble</span>
                                         <div id="nai_preamble_restore" title="Restore default prompt" data-i18n="[title]Restore default prompt" class="right_menu_button">
