@@ -981,11 +981,17 @@ PromptManagerModule.prototype.loadPromptIntoEditForm = function (prompt) {
 PromptManagerModule.prototype.loadMessagesIntoInspectForm = function (messages) {
     if (!messages) return;
 
-    const createInlineDrawer = (title, content, role) => {
+    const createInlineDrawer = (message) => {
+        const truncatedTitle = message.content.length > 32 ? message.content.slice(0, 32) + '...' : message.content;
+        const title = message.identifier || truncatedTitle;
+        const role = message.role;
+        const content = message.content || 'No Content';
+        const tokens = message.getTokens();
+
         let drawerHTML = `
     <div class="inline-drawer ${this.configuration.prefix}prompt_manager_prompt">
         <div class="inline-drawer-toggle inline-drawer-header">
-            <span>${title} by <i>${role}</i></span>
+            <span>Name: ${title}, Role: ${role}, Tokens: ${tokens}</span>
             <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
         </div>
         <div class="inline-drawer-content">
@@ -1004,8 +1010,7 @@ PromptManagerModule.prototype.loadMessagesIntoInspectForm = function (messages) 
     if (0 === messages.getCollection().length) messageList.innerHTML = `<span>This marker does not contain any prompts.</span>`;
 
     messages.getCollection().forEach(message => {
-        const truncatedTitle = message.content.length > 32 ? message.content.slice(0, 32) + '...' : message.content;
-        messageList.append(createInlineDrawer(message.identifier || truncatedTitle, message.content || 'No Content', message.role));
+        messageList.append(createInlineDrawer(message));
     });
 }
 
