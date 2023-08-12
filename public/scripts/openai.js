@@ -1835,7 +1835,6 @@ function loadOpenAISettings(data, settings) {
 
     oai_settings.prompts = settings.prompts ?? default_settings.prompts;
     oai_settings.prompt_order = settings.prompt_order ?? default_settings.prompt_order;
-    oai_settings.prompt_manager_settings = settings.prompt_manager_settings ?? default_settings.prompt_manager_settings;
 
     oai_settings.new_chat_prompt = settings.new_chat_prompt ?? default_settings.new_chat_prompt;
     oai_settings.new_group_chat_prompt = settings.new_group_chat_prompt ?? default_settings.new_group_chat_prompt;
@@ -2062,7 +2061,6 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         stream_openai: settings.stream_openai,
         prompts: settings.prompts,
         prompt_order: settings.prompt_order,
-        prompt_manager_settings: settings.prompt_manager_settings,
         api_url_scale: settings.api_url_scale,
         show_external_models: settings.show_external_models,
         assistant_prefill: settings.assistant_prefill,
@@ -2390,7 +2388,6 @@ function onSettingsPresetChange() {
         stream_openai: ['#stream_toggle', 'stream_openai', true],
         prompts: ['', 'prompts', false],
         prompt_order: ['', 'prompt_order', false],
-        prompt_manager_settings: ['', 'prompt_manager_settings', false],
         use_openrouter: ['#use_openrouter', 'use_openrouter', true],
         api_url_scale: ['#api_url_scale', 'api_url_scale', false],
         show_external_models: ['#openai_show_external_models', 'show_external_models', true],
