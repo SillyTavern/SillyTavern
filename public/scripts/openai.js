@@ -2397,7 +2397,8 @@ function onSettingsPresetChange() {
 
     const presetName = $('#settings_perset_openai').find(":selected").text();
     oai_settings.preset_settings_openai = presetName;
-    const preset = openai_settings[openai_setting_names[oai_settings.preset_settings_openai]];
+
+    const preset = structuredClone(openai_settings[openai_setting_names[oai_settings.preset_settings_openai]]);
 
     const updateInput = (selector, value) => $(selector).val(value).trigger('input');
     const updateCheckbox = (selector, value) => $(selector).prop('checked', value).trigger('input');
