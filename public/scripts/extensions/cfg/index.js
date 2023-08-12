@@ -7,22 +7,23 @@ import {
 } from "../../../script.js";
 import { selected_group } from "../../group-chats.js";
 import { extension_settings, saveMetadataDebounced } from "../../extensions.js";
-import { getCharaFilename, delay } from "../../utils.js";
+import { getCharaFilename, delay, debounce } from "../../utils.js";
 import { power_user } from "../../power-user.js";
+import { metadataKeys } from "./util.js";
 
 // Keep track of where your extension is located, name should match repo name
 const extensionName = "cfg";
 const extensionFolderPath = `scripts/extensions/${extensionName}`;
 const defaultSettings = {
-    "global": {
+    global: {
         "guidance_scale": 1,
         "negative_prompt": ''
     },
-    "chara": []
+    chara: []
 };
 const settingType = {
-    "guidance_scale": 0,
-    "negative_prompt": 1
+    guidance_scale: 0,
+    negative_prompt: 1
 }
 
 // Used for character and chat CFG values
@@ -64,7 +65,7 @@ function setCharCfg(tempValue, setting) {
     if (extension_settings.cfg.chara && existingCharaCfg) {
         const tempAssign = Object.assign(existingCharaCfg, tempCharaCfg);
 
-        // if both values are default, remove the entry
+        // If both values are default, remove the entry
         if (!existingCharaCfg.useChara && (tempAssign.guidance_scale ?? 1.00) === 1.00 && (tempAssign.negative_prompt?.length ?? 0) === 0) {
             extension_settings.cfg.chara.splice(existingCharaCfgIndex, 1);
         }
@@ -72,8 +73,6 @@ function setCharCfg(tempValue, setting) {
         if (!extension_settings.cfg.chara) {
             extension_settings.cfg.chara = []
         }
-
-        Object.assign(tempCharaCfg, { useChara: false })
 
         extension_settings.cfg.chara.push(tempCharaCfg);
     } else {
@@ -88,28 +87,13 @@ function setCharCfg(tempValue, setting) {
     return true;
 }
 
-function setCharCfgCheckbox() {
-    const value = !!$(this).prop('checked');
-    const charaCfgIndex = extension_settings.cfg.chara.findIndex((e) => e.name === getCharaFilename());
-    const charaCfg = extension_settings.cfg.chara[charaCfgIndex];
-    if (charaCfg) {
-        if (!value && (charaCfg.guidance_scale ?? 1.00) === 1.00 && (charaCfg.negative_prompt?.length ?? 0) === 0) {
-            extension_settings.cfg.chara.splice(charaCfgIndex, 1);
-        } else {
-            charaCfg.useChara = value;
-        }
-
-        updateSettings();
-    }
-}
-
 function setChatCfg(tempValue, setting) {
     switch(setting) {
         case settingType.guidance_scale:
-            chat_metadata['guidance_scale'] = tempValue;
+            chat_metadata[metadataKeys.guidance_scale] = tempValue;
             break;
         case settingType.negative_prompt:
-            chat_metadata['negative_prompt'] = tempValue;
+            chat_metadata[metadataKeys.negative_prompt] = tempValue;
             break;
         default:
             return false;
@@ -173,18 +157,24 @@ function onChatChanged() {
 }
 
 // Reloads chat-specific settings
+// TODO: Fix race condition bug where deleted chara CFG still loads previous prompts
 function loadSettings() {
     // Set chat CFG if it exists
-    $('#chat_cfg_guidance_scale').val(chat_metadata['guidance_scale'] ?? 1.00);
-    $('#chat_cfg_guidance_scale_counter').text(chat_metadata['guidance_scale']?.toFixed(2) ?? 1.00);
-    $('#chat_cfg_negative_prompt').val(chat_metadata['negative_prompt'] ?? '');
+    $('#chat_cfg_guidance_scale').val(chat_metadata[metadataKeys.guidance_scale] ?? 1.0.toFixed(2));
+    $('#chat_cfg_guidance_scale_counter').text(chat_metadata[metadataKeys.guidance_scale]?.toFixed(2) ?? 1.0.toFixed(2));
+    $('#chat_cfg_negative_prompt').val(chat_metadata[metadataKeys.negative_prompt] ?? '');
+    if (chat_metadata[metadataKeys.negative_combine]?.length > 0) {
+        chat_metadata[metadataKeys.negative_combine].forEach((element) => {
+            $(`input[name="cfg_negative_combine"][value="${element}"]`)
+                .prop("checked", true);
+        });
+    }
 
     // Set character CFG if it exists
     const charaCfg = extension_settings.cfg.chara.find((e) => e.name === getCharaFilename());
     $('#chara_cfg_guidance_scale').val(charaCfg?.guidance_scale ?? 1.00);
-    $('#chara_cfg_guidance_scale_counter').text(charaCfg?.guidance_scale?.toFixed(2) ?? 1.00);
+    $('#chara_cfg_guidance_scale_counter').text(charaCfg?.guidance_scale?.toFixed(2) ?? 1.0.toFixed(2));
     $('#chara_cfg_negative_prompt').val(charaCfg?.negative_prompt ?? '');
-    $('#use_chara_cfg').prop('checked', charaCfg?.useChara ?? false);
 }
 
 // Load initial extension settings
@@ -251,6 +241,17 @@ jQuery(async () => {
         setChatCfg($(this).val(), settingType.negative_prompt);
     });
 
+    windowHtml.find(`input[name="cfg_negative_combine"]`).on('input', function() {
+        const values = windowHtml.find(`input[name="cfg_negative_combine"]`)
+            .filter(":checked")
+            .map(function() { return parseInt($(this).val()) })
+            .get()
+            .filter((e) => e !== NaN) || [];
+
+        chat_metadata[metadataKeys.negative_combine] = values;
+        saveMetadataDebounced();
+    });
+
     windowHtml.find('#chara_cfg_guidance_scale').on('input', function() {
         const value = $(this).val();
         const success = setCharCfg(value, settingType.guidance_scale);
@@ -263,12 +264,9 @@ jQuery(async () => {
         setCharCfg($(this).val(), settingType.negative_prompt);
     });
 
-    windowHtml.find('#use_chara_cfg').on('input', setCharCfgCheckbox);
-
     windowHtml.find('#global_cfg_guidance_scale').on('input', function() {
         extension_settings.cfg.global.guidance_scale = Number($(this).val());
         $('#global_cfg_guidance_scale_counter').text(extension_settings.cfg.global.guidance_scale.toFixed(2));
-        console.log(extension_settings.cfg.global.guidance_scale)
         saveSettingsDebounced();
     });
 

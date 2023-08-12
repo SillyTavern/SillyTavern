@@ -63,10 +63,6 @@
                     </label>
                     <textarea id="chara_cfg_negative_prompt" rows="2" class="text_pole textarea_compact" data-i18n="[placeholder]write short replies, write replies using past tense" placeholder="write short replies, write replies using past tense"></textarea>
                 </div>
-                <label class="checkbox_label" for="use_chara_cfg">
-                    <input id="use_chara_cfg" type="checkbox" />
-                    <span data-i18n="Use character CFG">Use character CFG</span>
-                </label>
             </div>
         </div>
         <hr class="sysHR">
@@ -97,6 +93,34 @@
                     </label>
                     <textarea id="global_cfg_negative_prompt" rows="2" class="text_pole textarea_compact" data-i18n="[placeholder]write short replies, write replies using past tense" placeholder="write short replies, write replies using past tense"></textarea>
                 </div>
+            </div>
+        </div>
+        <hr class="sysHR">
+        <div class="inline-drawer">
+            <div id="defaultANBlockToggle" class="inline-drawer-toggle inline-drawer-header">
+                <b>Negative Cascading</b>
+                <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+            </div>
+            <div class="inline-drawer-content">
+                <small>
+                    Combine negative prompts from other boxes. For example, ticking the chat, global, and character boxes combine all negative prompts into a comma-separated string.
+                </small>
+                <br />
+                <label for="cfg_negative_combine">
+                    <span data-i18n="Scale">Always Include</span>
+                </label>
+                <label class="checkbox_label">
+                    <input type="checkbox" name="cfg_negative_combine" value="0" />
+                    <span data-i18n="Only Format Display">Chat Negatives</span>
+                </label>
+                <label class="checkbox_label">
+                    <input type="checkbox" name="cfg_negative_combine" value="1" />
+                    <span data-i18n="Only Format Display">Character Negatives</span>
+                </label>
+                <label class="checkbox_label">
+                    <input type="checkbox" name="cfg_negative_combine" value="2" />
+                    <span data-i18n="Use character CFG">Global Negatives</span>
+                </label>
             </div>
         </div>
     </div>
