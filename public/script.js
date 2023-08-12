@@ -8994,7 +8994,9 @@ $(document).ready(function () {
         $dropzone.removeClass('dragover');
 
         const files = Array.from(event.originalEvent.dataTransfer.files);
-        await importFromURL(event.originalEvent.dataTransfer.items, files);
+        if (!files.length) {
+            await importFromURL(event.originalEvent.dataTransfer.items, files);
+        }
         processDroppedFiles(files);
     });
 
