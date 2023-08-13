@@ -1,6 +1,7 @@
 import {callPopup, event_types, eventSource, substituteParams} from "../script.js";
 import {TokenHandler} from "./openai.js";
 import {power_user} from "./power-user.js";
+import { debounce } from "./utils.js";
 
 /**
  * Register migrations for the prompt manager when settings are loaded or an Open AI preset is loaded.
@@ -228,6 +229,9 @@ function PromptManagerModule() {
 
     /** Character reset button click*/
     this.handleCharacterReset = () => {};
+
+    /** Debounced version of render */
+    this.renderDebounced = debounce(this.render.bind(this), 1000);
 }
 
 /**
@@ -501,9 +505,9 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     }
 
     // Re-render when chat history changes.
-    eventSource.on(event_types.MESSAGE_DELETED, () => this.render());
-    eventSource.on(event_types.MESSAGE_EDITED, () => this.render());
-    eventSource.on(event_types.MESSAGE_RECEIVED, () => this.render());
+    eventSource.on(event_types.MESSAGE_DELETED, () => this.renderDebounced());
+    eventSource.on(event_types.MESSAGE_EDITED, () => this.renderDebounced());
+    eventSource.on(event_types.MESSAGE_RECEIVED, () => this.renderDebounced());
 
     // Re-render when chatcompletion settings change
     eventSource.on(event_types.CHATCOMPLETION_SOURCE_CHANGED, () => this.render());
@@ -518,7 +522,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     // Re-render when the character gets edited.
     eventSource.on(event_types.CHARACTER_EDITED, (event) => {
         this.handleCharacterUpdated(event);
-        this.saveServiceSettings().then(() => this.render());
+        this.saveServiceSettings().then(() => this.renderDebounced());
     })
 
     // Re-render when the group changes.
@@ -536,11 +540,11 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     // Trigger re-render when token settings are changed
     document.getElementById('openai_max_context').addEventListener('change', (event) => {
         this.serviceSettings.openai_max_context = event.target.value;
-        if (this.activeCharacter) this.render();
+        if (this.activeCharacter) this.renderDebounced();
     });
 
     document.getElementById('openai_max_tokens').addEventListener('change', (event) => {
-        if (this.activeCharacter) this.render();
+        if (this.activeCharacter) this.renderDebounced();
     });
 
     // Prepare prompt edit form buttons
@@ -567,7 +571,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     });
 
     // Re-render prompt manager on world settings update
-    eventSource.on(event_types.WORLDINFO_SETTINGS_UPDATED, () => this.render());
+    eventSource.on(event_types.WORLDINFO_SETTINGS_UPDATED, () => this.renderDebounced());
 
     this.log('Initialized')
 };
