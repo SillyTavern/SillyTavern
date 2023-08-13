@@ -1658,7 +1658,7 @@ const promptManagerDefaultPromptOrder = [
     },
     {
         "identifier": "nsfw",
-        "enabled": false
+        "enabled": true
     },
     {
         "identifier": "worldInfoAfter",
