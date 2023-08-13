@@ -1552,7 +1552,7 @@ jQuery(() => {
     $('#world_info_budget_cap').on('input', function () {
         world_info_budget_cap = Number($(this).val());
         $("#world_info_budget_cap_counter").text(world_info_budget_cap);
-        saveSettingsDebounced();
+        saveSettings();
     });
 
     $('#world_button').on('click', async function () {
