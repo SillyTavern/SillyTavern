@@ -1199,6 +1199,7 @@ async function selectGroup() {
 
 function openCharacterDefinition(characterSelect) {
     if (is_group_generating) {
+        toastr.warning("Can't peek a character while group reply is being generated");
         console.warn("Can't peek a character def while group reply is being generated");
         return;
     }
