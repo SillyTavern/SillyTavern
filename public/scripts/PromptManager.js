@@ -510,13 +510,13 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     eventSource.on(event_types.MESSAGE_RECEIVED, () => this.renderDebounced());
 
     // Re-render when chatcompletion settings change
-    eventSource.on(event_types.CHATCOMPLETION_SOURCE_CHANGED, () => this.render());
-    eventSource.on(event_types.CHATCOMPLETION_MODEL_CHANGED, () => this.render());
+    eventSource.on(event_types.CHATCOMPLETION_SOURCE_CHANGED, () => this.renderDebounced());
+    eventSource.on(event_types.CHATCOMPLETION_MODEL_CHANGED, () => this.renderDebounced());
 
     // Re-render when the character changes.
     eventSource.on('chatLoaded', (event) => {
         this.handleCharacterSelected(event)
-        this.saveServiceSettings().then(() => this.render());
+        this.saveServiceSettings().then(() => this.renderDebounced());
     });
 
     // Re-render when the character gets edited.
@@ -528,13 +528,13 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     // Re-render when the group changes.
     eventSource.on('groupSelected', (event) => {
         this.handleGroupSelected(event)
-        this.saveServiceSettings().then(() => this.render());
+        this.saveServiceSettings().then(() => this.renderDebounced());
     });
 
     // Sanitize settings after character has been deleted.
     eventSource.on('characterDeleted', (event) => {
         this.handleCharacterDeleted(event)
-        this.saveServiceSettings().then(() => this.render());
+        this.saveServiceSettings().then(() => this.renderDebounced());
     });
 
     // Trigger re-render when token settings are changed
@@ -562,7 +562,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     document.getElementById(this.configuration.prefix + 'prompt_manager_popup_close_button').addEventListener('click', closeAndClearPopup);
 
     // Re-render prompt manager on openai preset change
-    eventSource.on(event_types.OAI_PRESET_CHANGED, settings => this.render());
+    eventSource.on(event_types.OAI_PRESET_CHANGED, settings => this.renderDebounced());
 
     // Close popup on preset change
     eventSource.on(event_types.OAI_PRESET_CHANGED, () => {
