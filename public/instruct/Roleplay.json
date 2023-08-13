@@ -2,7 +2,7 @@
     "input_sequence": "### Instruction:",
     "macro": true,
     "name": "Roleplay",
-    "names": false,
+    "names": true,
     "output_sequence": "### Response (2 paragraphs, engaging, natural, authentic, descriptive, creative):",
     "separator_sequence": "",
     "stop_sequence": "",
