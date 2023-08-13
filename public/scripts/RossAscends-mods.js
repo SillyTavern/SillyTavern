@@ -13,6 +13,7 @@ import {
     menu_type,
     max_context,
     saveSettingsDebounced,
+    eventSource,
     active_group,
     active_character,
     setActiveGroup,
@@ -749,7 +750,6 @@ export function dragElement(elmnt) {
         observer.disconnect()
         console.debug(`Saving ${elmntName} UI position`)
         saveSettingsDebounced();
-
     }
 }
 
