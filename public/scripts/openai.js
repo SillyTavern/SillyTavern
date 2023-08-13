@@ -45,6 +45,7 @@ import {
 } from "./secrets.js";
 
 import {
+    IndexedDBStore,
     delay,
     download,
     getFileText,
@@ -120,7 +121,39 @@ const openrouter_website_model = 'OR_Website';
 
 let biasCache = undefined;
 let model_list = [];
-const tokenCache = {};
+const objectStore = new IndexedDBStore('SillyTavern', 'chat_completions');
+const tokenCache = await loadTokenCache();
+
+async function loadTokenCache() {
+    try {
+        console.debug('Chat Completions: loading token cache from IndexedDB')
+        return await objectStore.get('tokenCache') || {};
+    } catch (e) {
+        console.log('Chat Completions: unable to load token cache from IndexedDB, using default value', e);
+        return {};
+    }
+}
+
+async function saveTokenCache() {
+    try {
+        console.debug('Chat Completions: saving token cache to IndexedDB')
+        await objectStore.put('tokenCache', tokenCache);
+    } catch (e) {
+        console.log('Chat Completions: unable to save token cache to IndexedDB', e);
+    }
+}
+
+async function resetTokenCache() {
+    try {
+        console.debug('Chat Completions: resetting token cache in IndexedDB');
+        Object.keys(tokenCache).forEach(key => delete tokenCache[key]);
+        await objectStore.delete('tokenCache');
+    } catch (e) {
+        console.log('Chat Completions: unable to reset token cache in IndexedDB', e);
+    }
+}
+
+window['resetTokenCache'] = resetTokenCache;
 
 export const chat_completion_sources = {
     OPENAI: 'openai',
@@ -795,6 +828,8 @@ function prepareOpenAIMessages({
 
     const chat = chatCompletion.getChat();
     openai_messages_count = chat.filter(x => x?.role === "user" || x?.role === "assistant")?.length || 0;
+    // Save token cache to IndexedDB storage (async, no need to await)
+    saveTokenCache();
 
     return [chat, promptManager.tokenHandler.counts];
 }
