@@ -375,15 +375,18 @@ export class IndexedDBStore {
         this.dbName = dbName;
         this.storeName = storeName;
         this.db = null;
+        this.version = Date.now();
     }
 
     async open() {
         return new Promise((resolve, reject) => {
-            const request = indexedDB.open(this.dbName);
+            const request = indexedDB.open(this.dbName, this.version);
 
             request.onupgradeneeded = (event) => {
                 const db = event.target.result;
-                db.createObjectStore(this.storeName, { keyPath: null, autoIncrement: false });
+                if (!db.objectStoreNames.contains(this.storeName)) {
+                    db.createObjectStore(this.storeName, { keyPath: null, autoIncrement: false });
+                }
             };
 
             request.onsuccess = (event) => {
