@@ -1331,7 +1331,6 @@ export async function importEmbeddedWorldInfo() {
 }
 
 function onWorldInfoChange(_, text) {
-    let selectedWorlds;
     if (_ !== '__notSlashCommand__') { // if it's a slash command
         if (text !== undefined) { // and args are provided
             const slashInputSplitText = text.trim().toLowerCase().split(",");
@@ -1339,12 +1338,14 @@ function onWorldInfoChange(_, text) {
             slashInputSplitText.forEach((worldName) => {
                 const wiElement = getWIElement(worldName);
                 if (wiElement.length > 0) {
+                    selected_world_info.push(wiElement.text());
                     wiElement.prop("selected", true);
                     toastr.success(`Activated world: ${wiElement.text()}`);
                 } else {
                     toastr.error(`No world found named: ${worldName}`);
                 }
-            })
+            });
+            $("#world_info").trigger("change");
         } else { // if no args, unset all worlds
             toastr.success('Deactivated all worlds');
             selected_world_info = [];
