@@ -1,4 +1,4 @@
-import {callPopup, event_types, eventSource, substituteParams} from "../script.js";
+import {callPopup, event_types, eventSource, main_api, substituteParams} from "../script.js";
 import {TokenHandler} from "./openai.js";
 import {power_user} from "./power-user.js";
 import { debounce } from "./utils.js";
@@ -582,6 +582,8 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
  * @param afterTryGenerate - Whether a dry run should be attempted before rendering
  */
 PromptManagerModule.prototype.render = function (afterTryGenerate = true) {
+    if (main_api !== 'openai') return;
+
     if (null === this.activeCharacter) return;
     this.error = null;
 
