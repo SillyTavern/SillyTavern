@@ -1090,7 +1090,11 @@ $("document").ready(function () {
         }
 
         if (event.key == "Escape") { //closes various panels
-            if ($("#curEditTextarea").is(":visible")) {
+            //dont override Escape hotkey functions from script.js
+            //"close edit box" and "cancel stream generation".
+
+            if ($("#curEditTextarea").is(":visible") || $("#mes_stop").is(":visible")) {
+                console.debug('escape key, but deferring to script.js routines')
                 return
             }
 
@@ -1103,10 +1107,12 @@ $("document").ready(function () {
                     return
                 }
             }
+
             if ($("#select_chat_popup").is(":visible")) {
                 $("#select_chat_cross").trigger('click');
                 return
             }
+
             if ($("#character_popup").is(":visible")) {
                 $("#character_cross").trigger('click');
                 return
@@ -1116,28 +1122,37 @@ $("document").ready(function () {
                 .not('#WorldInfo')
                 .not('#left-nav-panel')
                 .not('#right-nav-panel')
+                .not('#floatingPrompt')
                 .is(":visible")) {
                 let visibleDrawerContent = $(".drawer-content:visible")
                     .not('#WorldInfo')
                     .not('#left-nav-panel')
                     .not('#right-nav-panel')
+                    .not('#floatingPrompt')
+                console.log(visibleDrawerContent)
                 $(visibleDrawerContent).parent().find('.drawer-icon').trigger('click');
                 return
             }
 
             if ($("#floatingPrompt").is(":visible")) {
+                console.log('saw AN visible, trying to close')
                 $("#ANClose").trigger('click');
                 return
             }
+
             if ($("#WorldInfo").is(":visible")) {
                 $("#WIDrawerIcon").trigger('click');
                 return
             }
-            if ($("#left-nav-panel").is(":visible")) {
+
+            if ($("#left-nav-panel").is(":visible") &&
+                $(LPanelPin).prop('checked') === false) {
                 $("#leftNavDrawerIcon").trigger('click');
                 return
             }
-            if ($("#right-nav-panel").is(":visible")) {
+
+            if ($("#right-nav-panel").is(":visible") &&
+                $(RPanelPin).prop('checked') === false) {
                 $("#rightNavDrawerIcon").trigger('click');
                 return
             }
