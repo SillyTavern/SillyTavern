@@ -158,6 +158,7 @@ let power_user = {
     hotswap_enabled: true,
     timer_enabled: true,
     timestamps_enabled: true,
+    timestamp_model_icon: false,
     mesIDDisplay_enabled: false,
     max_context_unlocked: false,
     prefer_character_prompt: true,
@@ -224,6 +225,7 @@ const storage_keys = {
     hotswap_enabled: 'HotswapEnabled',
     timer_enabled: 'TimerEnabled',
     timestamps_enabled: 'TimestampsEnabled',
+    timestamp_model_icon: 'TimestampModelIcon',
     mesIDDisplay_enabled: 'mesIDDisplayEnabled',
 };
 
@@ -300,6 +302,13 @@ function switchTimestamps() {
     power_user.timestamps_enabled = value === null ? true : value == "true";
     $("body").toggleClass("no-timestamps", !power_user.timestamps_enabled);
     $("#messageTimestampsEnabled").prop("checked", power_user.timestamps_enabled);
+}
+
+function switchIcons() {
+    const value = localStorage.getItem(storage_keys.timestamp_model_icon);
+    power_user.timestamp_model_icon = value === null ? true : value == "true";
+    $("body").toggleClass("no-modelIcons", !power_user.timestamp_model_icon);
+    $("#messageModelIconEnabled").prop("checked", power_user.timestamp_model_icon);
 }
 
 function switchMesIDDisplay() {
@@ -566,6 +575,13 @@ async function applyTheme(name) {
             }
         },
         {
+            key: 'timestamp_model_icon',
+            action: async () => {
+                localStorage.setItem(storage_keys.timestamp_model_icon, power_user.timestamp_model_icon);
+                switchIcons();
+            }
+        },
+        {
             key: 'mesIDDisplay_enabled',
             action: async () => {
                 localStorage.setItem(storage_keys.mesIDDisplay_enabled, power_user.mesIDDisplay_enabled);
@@ -624,6 +640,7 @@ noShadows();
 switchHotswap();
 switchTimer();
 switchTimestamps();
+switchIcons();
 switchMesIDDisplay();
 
 function loadPowerUserSettings(settings, data) {
@@ -733,6 +750,7 @@ function loadPowerUserSettings(settings, data) {
     $("#hotswapEnabled").prop("checked", power_user.hotswap_enabled);
     $("#messageTimerEnabled").prop("checked", power_user.timer_enabled);
     $("#messageTimestampsEnabled").prop("checked", power_user.timestamps_enabled);
+    $("#messageModelIconEnabled").prop("checked", power_user.timestamp_model_icon);
     $("#mesIDDisplayEnabled").prop("checked", power_user.mesIDDisplay_enabled);
     $("#prefer_character_prompt").prop("checked", power_user.prefer_character_prompt);
     $("#prefer_character_jailbreak").prop("checked", power_user.prefer_character_jailbreak);
@@ -1082,6 +1100,7 @@ async function saveTheme() {
         chat_width: power_user.chat_width,
         timer_enabled: power_user.timer_enabled,
         timestamps_enabled: power_user.timestamps_enabled,
+        timestamp_model_icon: power_user.timestamp_model_icon,
         mesIDDisplay_enabled: power_user.mesIDDisplay_enabled,
         hotswap_enabled: power_user.hotswap_enabled,
 
@@ -1959,6 +1978,13 @@ $(document).ready(() => {
         power_user.timestamps_enabled = value;
         localStorage.setItem(storage_keys.timestamps_enabled, power_user.timestamps_enabled);
         switchTimestamps();
+    });
+
+    $("#messageModelIconEnabled").on("input", function () {
+        const value = !!$(this).prop('checked');
+        power_user.timestamp_model_icon = value;
+        localStorage.setItem(storage_keys.timestamp_model_icon, power_user.timestamp_model_icon);
+        switchIcons();
     });
 
     $("#mesIDDisplayEnabled").on("input", function () {

@@ -1340,6 +1340,40 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
     return mes;
 }
 
+/**
+ * Inserts an SVG icon adjacent to the provided message's timestamp.
+ *
+ * If the `extra.api` is "openai" and `extra.model` contains the substring "claude",
+ * the function fetches the "claude.svg". Otherwise, it fetches the SVG named after
+ * the value in `extra.api`.
+ *
+ * @param {jQuery} mes - The message element containing the timestamp where the icon should be inserted.
+ * @param {Object} extra - Contains the API and model details.
+ * @param {string} extra.api - The name of the API, used to determine which SVG to fetch.
+ * @param {string} extra.model - The model name, used to check for the substring "claude".
+ */
+function insertSVGIcon(mes, extra) {
+    // Determine the SVG filename
+    let modelName;
+    if (extra.api === "openai" && extra.model.toLowerCase().includes("claude")) {
+        modelName = "claude";
+    } else {
+        modelName = extra.api;
+    }
+
+    // Fetch the SVG based on the modelName
+    $.get(`/img/${modelName}.svg`, function (data) {
+        // Extract the SVG content from the XML data
+        let svg = $(data).find('svg');
+
+        // Add a class for styling if needed
+        svg.addClass('icon-svg');
+
+        // Insert the SVG adjacent to the timestamp
+        mes.find('.timestamp').after(svg);
+    });
+}
+
 function getMessageFromTemplate({
     mesId,
     characterName,
@@ -1372,6 +1406,10 @@ function getMessageFromTemplate({
     mes.find('.mesIDDisplay').text(`#${mesId}`);
     title && mes.attr('title', title);
     timerValue && mes.find('.mes_timer').attr('title', timerTitle).text(timerValue);
+
+    if (power_user.timestamp_model_icon && extra?.api) {
+        insertSVGIcon(mes, extra);
+    }
 
     return mes;
 }
