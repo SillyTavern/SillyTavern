@@ -1,5 +1,5 @@
 import { getRequestHeaders, callPopup } from "../../../script.js"
-import { getPreviewString, initVoiceMap } from "./index.js"
+import { getPreviewString } from "./index.js"
 
 export { NovelTtsProvider }
 
@@ -66,7 +66,6 @@ class NovelTtsProvider {
         this.settings.customVoices.forEach(voice => {
             voiceSelect.append(`<option>${voice}</option>`)
         })
-        initVoiceMap()
     }
 
     loadSettings(settings) {

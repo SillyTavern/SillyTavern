@@ -508,38 +508,13 @@ function setTtsStatus(status, success) {
     }
 }
 
-function parseVoiceMap(voiceMapString) {
-    let parsedVoiceMap = {}
-    for (const [charName, voiceId] of voiceMapString
-        .split(',')
-        .map(s => s.split(':'))) {
-        if (charName && voiceId) {
-            parsedVoiceMap[charName.trim()] = voiceId.trim()
-        }
-    }
-    return parsedVoiceMap
-}
-
-async function voicemapIsValid(parsedVoiceMap) {
-    let valid = true
-    for (const characterName in parsedVoiceMap) {
-        const parsedVoiceName = parsedVoiceMap[characterName]
-        try {
-            await ttsProvider.getVoice(parsedVoiceName)
-        } catch (error) {
-            console.error(error)
-            valid = false
-        }
-    }
-    return valid
-}
-
 function onApplyClick() {
     Promise.all([
         ttsProvider.onApplyClick(),
         // updateVoiceMap()
     ]).then(() => {
         extension_settings.tts[ttsProviderName] = ttsProvider.settings
+        initVoiceMap()
         saveSettingsDebounced()
         setTtsStatus('Successfully applied settings', true)
         console.info(`Saved settings ${ttsProviderName} ${JSON.stringify(ttsProvider.settings)}`)
@@ -585,7 +560,7 @@ function onNarrateTranslatedOnlyClick() {
 // TTS Provider //
 //##############//
 
-function loadTtsProvider(provider) {
+async function loadTtsProvider(provider) {
     //Clear the current config and add new config
     $("#tts_provider_settings").html("")
 
@@ -604,12 +579,12 @@ function loadTtsProvider(provider) {
         extension_settings.tts[ttsProviderName] = {}
     }
     ttsProvider.loadSettings(extension_settings.tts[ttsProviderName])
-
     initVoiceMap()
 }
 
 function onTtsProviderChange() {
     const ttsProviderSelection = $('#tts_provider').val()
+    extension_settings.tts.currentProvider = ttsProviderSelection
     loadTtsProvider(ttsProviderSelection)
 }
 
@@ -617,6 +592,7 @@ function onTtsProviderChange() {
 function onTtsProviderSettingsInput() {
     ttsProvider.onSettingsChange()
     extension_settings.tts[ttsProviderName] = ttsProvider.settings
+    initVoiceMap()
     saveSettingsDebounced()
     console.info(`Saved settings ${ttsProviderName} ${JSON.stringify(ttsProvider.settings)}`)
 }
@@ -627,6 +603,7 @@ function onTtsProviderSettingsInput() {
 //###################//
 
 async function onChatChanged() {
+    await resetTtsPlayback()
     await initVoiceMap()
 }
 
@@ -652,6 +629,31 @@ function getCharacters(){
     return characters
 }
 
+function parseVoiceMap(voiceMapString) {
+    let parsedVoiceMap = {}
+    for (const [charName, voiceId] of voiceMapString
+        .split(',')
+        .map(s => s.split(':'))) {
+        if (charName && voiceId) {
+            parsedVoiceMap[charName.trim()] = voiceId.trim()
+        }
+    }
+    return parsedVoiceMap
+}
+
+async function voicemapIsValid(parsedVoiceMap) {
+    let valid = true
+    for (const characterName in parsedVoiceMap) {
+        const parsedVoiceName = parsedVoiceMap[characterName]
+        try {
+            await ttsProvider.getVoice(parsedVoiceName)
+        } catch (error) {
+            console.error(error)
+            valid = false
+        }
+    }
+    return valid
+}
 class VoiceMapEntry {
     name
     voiceId
@@ -709,15 +711,19 @@ function updateVoiceMap() {
 }
 
 /**
- * Build a voiceMap using the characters in current chat. Populate voiceIds if they exist 
- * in provider settings. Create VoiceMapEntry objects and build UI using them.  then save
- * provider settings. 
+ * All in one call to update when voicemap is updated.
+ * 
+ * Build a voiceMap using the characters in current chat. 
+ * Populate voiceIds if they exist in provider settings. 
+ * Create VoiceMapEntry objects and build UI using them.  
+ * Then save provider settings. 
  * 
  * Note: voiceMap is a provider specific setting, but it is not managed by the provider itself. 
  */
-export async function initVoiceMap(){
+async function initVoiceMap(){
     const enabled = $('#tts_enabled').is(':checked')
-    if (!enabled ){
+    await ttsProvider.checkReady()
+    if (!enabled || !ttsProvider.ready){
         return
     }
     // Clear existing voiceMap state
