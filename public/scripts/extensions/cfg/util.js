@@ -1,5 +1,6 @@
-import { chat_metadata } from "../../../script.js";
-import { extension_settings } from "../../extensions.js"
+import { chat_metadata, this_chid } from "../../../script.js";
+import { extension_settings, getContext } from "../../extensions.js"
+import { selected_group } from "../../group-chats.js";
 import { getCharaFilename } from "../../utils.js";
 
 export const cfgType = {
@@ -10,18 +11,17 @@ export const cfgType = {
 export const metadataKeys = {
     guidance_scale: "cfg_guidance_scale",
     negative_prompt: "cfg_negative_prompt",
-    negative_combine: "cfg_negative_combine"
+    negative_combine: "cfg_negative_combine",
+    groupchat_individual_chars: "cfg_groupchat_individual_chars"
 }
-
-// TODO: Add groupchat support and fetch the CFG values for the current character
 
 // Gets the CFG value from hierarchy of chat -> character -> global
 // Returns undefined values which should be handled in the respective backend APIs
 export function getCfg() {
     let splitNegativePrompt = [];
-    const charaCfg = extension_settings.cfg.chara?.find((e) => e.name === getCharaFilename());
+    const charaCfg = extension_settings.cfg.chara?.find((e) => e.name === getCharaFilename(this_chid));
     const guidanceScale = getGuidanceScale(charaCfg);
-    const chatNegativeCombine = chat_metadata[metadataKeys.negative_combine];
+    const chatNegativeCombine = chat_metadata[metadataKeys.negative_combine] ?? [];
 
     // If there's a guidance scale, continue. Otherwise assume undefined
     if (guidanceScale?.value && guidanceScale?.value !== 1) {
@@ -37,9 +37,12 @@ export function getCfg() {
             splitNegativePrompt.push(extension_settings.cfg.global.negative_prompt?.trim());
         }
 
+        const combinedNegatives = splitNegativePrompt.filter((e) => e.length > 0).join(", ");
+        console.debug(`Setting CFG with guidance scale: ${guidanceScale.value}, negatives: ${combinedNegatives}`)
+
         return {
             guidanceScale: guidanceScale.value,
-            negativePrompt: splitNegativePrompt.filter((e) => e.length > 0).join(", ")
+            negativePrompt: combinedNegatives
         }
     }
 }
@@ -47,14 +50,15 @@ export function getCfg() {
 // If the guidance scale is 1, ignore the CFG negative prompt since it won't be used anyways
 function getGuidanceScale(charaCfg) {
     const chatGuidanceScale = chat_metadata[metadataKeys.guidance_scale];
-    if (chatGuidanceScale && chatGuidanceScale !== 1) {
+    const groupchatCharOverride = chat_metadata[metadataKeys.groupchat_individual_chars] ?? false;
+    if (chatGuidanceScale && chatGuidanceScale !== 1 && !groupchatCharOverride) {
         return {
             type: cfgType.chat,
             value: chatGuidanceScale
         };
     }
 
-    if (charaCfg && charaCfg.guidance_scale !== 1) {
+    if ((!selected_group && charaCfg || groupchatCharOverride) && charaCfg?.guidance_scale !== 1) {
         return {
             type: cfgType.chara,
             value: charaCfg.guidance_scale

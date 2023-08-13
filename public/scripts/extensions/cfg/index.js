@@ -7,7 +7,7 @@ import {
 } from "../../../script.js";
 import { selected_group } from "../../group-chats.js";
 import { extension_settings, saveMetadataDebounced } from "../../extensions.js";
-import { getCharaFilename, delay, debounce } from "../../utils.js";
+import { getCharaFilename, delay } from "../../utils.js";
 import { power_user } from "../../power-user.js";
 import { metadataKeys } from "./util.js";
 
@@ -76,7 +76,7 @@ function setCharCfg(tempValue, setting) {
 
         extension_settings.cfg.chara.push(tempCharaCfg);
     } else {
-        console.log("Character CFG error: No avatar name key could be found.");
+        console.debug("Character CFG error: No avatar name key could be found.");
 
         // Don't save settings if something went wrong
         return false;
@@ -151,18 +151,30 @@ function onCfgMenuItemClick() {
     }
 }
 
-// TODO: Load character-specific settings here and set the relevant HTML
-function onChatChanged() {
+async function onChatChanged() {
     loadSettings();
+    await modifyCharaHtml();
+}
+
+// Rearrange the panel if a group chat is present
+async function modifyCharaHtml() {
+    if (selected_group) {
+        $("#chara_cfg_container").hide();
+        $("#groupchat_cfg_use_chara_container").show();
+    } else {
+        $("#chara_cfg_container").show();
+        $("#groupchat_cfg_use_chara_container").hide();
+        // TODO: Remove chat checkbox here
+    }
 }
 
 // Reloads chat-specific settings
-// TODO: Fix race condition bug where deleted chara CFG still loads previous prompts
 function loadSettings() {
     // Set chat CFG if it exists
     $('#chat_cfg_guidance_scale').val(chat_metadata[metadataKeys.guidance_scale] ?? 1.0.toFixed(2));
     $('#chat_cfg_guidance_scale_counter').text(chat_metadata[metadataKeys.guidance_scale]?.toFixed(2) ?? 1.0.toFixed(2));
     $('#chat_cfg_negative_prompt').val(chat_metadata[metadataKeys.negative_prompt] ?? '');
+    $('#groupchat_cfg_use_chara').prop('checked', chat_metadata[metadataKeys.groupchat_individual_chars] ?? false);
     if (chat_metadata[metadataKeys.negative_combine]?.length > 0) {
         chat_metadata[metadataKeys.negative_combine].forEach((element) => {
             $(`input[name="cfg_negative_combine"][value="${element}"]`)
@@ -171,10 +183,12 @@ function loadSettings() {
     }
 
     // Set character CFG if it exists
-    const charaCfg = extension_settings.cfg.chara.find((e) => e.name === getCharaFilename());
-    $('#chara_cfg_guidance_scale').val(charaCfg?.guidance_scale ?? 1.00);
-    $('#chara_cfg_guidance_scale_counter').text(charaCfg?.guidance_scale?.toFixed(2) ?? 1.0.toFixed(2));
-    $('#chara_cfg_negative_prompt').val(charaCfg?.negative_prompt ?? '');
+    if (!selected_group) {
+        const charaCfg = extension_settings.cfg.chara.find((e) => e.name === getCharaFilename());
+        $('#chara_cfg_guidance_scale').val(charaCfg?.guidance_scale ?? 1.00);
+        $('#chara_cfg_guidance_scale_counter').text(charaCfg?.guidance_scale?.toFixed(2) ?? 1.0.toFixed(2));
+        $('#chara_cfg_negative_prompt').val(charaCfg?.negative_prompt ?? '');
+    }
 }
 
 // Load initial extension settings
@@ -227,7 +241,7 @@ jQuery(async () => {
             easing: 'ease-in-out',
         });
         setTimeout(function () { $('#cfgConfig').hide() }, 200);
-    })
+    });
 
     windowHtml.find('#chat_cfg_guidance_scale').on('input', function() {
         const numberValue = Number($(this).val());
@@ -239,17 +253,6 @@ jQuery(async () => {
 
     windowHtml.find('#chat_cfg_negative_prompt').on('input', function() {
         setChatCfg($(this).val(), settingType.negative_prompt);
-    });
-
-    windowHtml.find(`input[name="cfg_negative_combine"]`).on('input', function() {
-        const values = windowHtml.find(`input[name="cfg_negative_combine"]`)
-            .filter(":checked")
-            .map(function() { return parseInt($(this).val()) })
-            .get()
-            .filter((e) => e !== NaN) || [];
-
-        chat_metadata[metadataKeys.negative_combine] = values;
-        saveMetadataDebounced();
     });
 
     windowHtml.find('#chara_cfg_guidance_scale').on('input', function() {
@@ -275,6 +278,28 @@ jQuery(async () => {
         saveSettingsDebounced();
     });
 
+    windowHtml.find(`input[name="cfg_negative_combine"]`).on('input', function() {
+        const values = windowHtml.find(`input[name="cfg_negative_combine"]`)
+            .filter(":checked")
+            .map(function() { return parseInt($(this).val()) })
+            .get()
+            .filter((e) => e !== NaN) || [];
+
+        chat_metadata[metadataKeys.negative_combine] = values;
+        saveMetadataDebounced();
+    });
+
+    windowHtml.find('#groupchat_cfg_use_chara').on('input', function() {
+        const checked = !!$(this).prop('checked');
+        chat_metadata[metadataKeys.groupchat_individual_chars] = checked
+
+        if (checked) {
+            toastr.info("You can edit character CFG values in their respective character chats.");
+        }
+
+        saveMetadataDebounced();
+    });
+
     $("#movingDivs").append(windowHtml);
 
     initialLoadSettings();
@@ -288,5 +313,7 @@ jQuery(async () => {
     buttonHtml.insertAfter("#option_toggle_AN");
 
     // Hook events
-    eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
+    eventSource.on(event_types.CHAT_CHANGED, async () => {
+        await onChatChanged();
+    });
 });
