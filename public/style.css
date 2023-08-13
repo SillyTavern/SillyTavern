@@ -1348,7 +1348,7 @@ body.charListGrid #rm_print_characters_block .tags_inline {
     overflow-y: auto;
 }
 
-#floatingPrompt {
+#floatingPrompt, #cfgConfig {
     overflow-y: auto;
     max-width: 90svw;
     max-height: 90svh;
@@ -5168,7 +5168,8 @@ body.waifuMode .zoomed_avatar {
 
     #right-nav-panel,
     #left-nav-panel,
-    #floatingPrompt {
+    #floatingPrompt,
+    #cfgConfig {
         height: calc(100vh - 45px);
         height: calc(100svh - 45px);
         min-width: 100% !important;
@@ -5184,7 +5185,8 @@ body.waifuMode .zoomed_avatar {
         backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
     }
 
-    #floatingPrompt {
+    #floatingPrompt,
+    #cfgConfig {
         height: min-content;
     }
 
