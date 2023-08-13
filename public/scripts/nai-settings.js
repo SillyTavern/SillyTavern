@@ -4,6 +4,7 @@ import {
     getStoppingStrings,
     getTextTokens
 } from "../script.js";
+import { getCfg } from "./extensions/cfg/util.js";
 import { tokenizers } from "./power-user.js";
 
 export {
@@ -34,6 +35,7 @@ const nai_settings = {
     streaming_novel: false,
     nai_preamble: default_preamble,
     prefix: '',
+    cfg_uc: '',
 };
 
 const nai_tiers = {
@@ -95,6 +97,7 @@ function loadNovelPreset(preset) {
     nai_settings.mirostat_lr = preset.mirostat_lr;
     nai_settings.mirostat_tau = preset.mirostat_tau;
     nai_settings.prefix = preset.prefix;
+    nai_settings.cfg_uc = preset.cfg_uc || '';
     loadNovelSettingsUi(nai_settings);
 }
 
@@ -125,6 +128,7 @@ function loadNovelSettings(settings) {
     nai_settings.mirostat_tau = settings.mirostat_tau;
     nai_settings.streaming_novel = !!settings.streaming_novel;
     nai_settings.prefix = settings.prefix;
+    nai_settings.cfg_uc = settings.cfg_uc || '';
     loadNovelSettingsUi(nai_settings);
 }
 
@@ -198,6 +202,7 @@ function loadNovelSettingsUi(ui_settings) {
     $("#min_length_counter_novel").text(Number(ui_settings.min_length).toFixed(0));
     $('#nai_preamble_textarea').val(ui_settings.nai_preamble);
     $('#nai_prefix').val(ui_settings.prefix || "");
+    $('#nai_cfg_uc').val(ui_settings.cfg_uc || "");
 
     $("#streaming_novel").prop('checked', ui_settings.streaming_novel);
 }
@@ -305,6 +310,12 @@ const sliders = [
         format: (val) => `${val}`,
         setValue: (val) => { nai_settings.min_length = Number(val).toFixed(0); },
     },
+    {
+        sliderId: "#nai_cfg_uc",
+        counterId: "#nai_cfg_uc_counter",
+        format: (val) => val,
+        setValue: (val) => { nai_settings.cfg_uc = val; },
+    },
 ];
 
 export function getNovelGenerationData(finalPrompt, this_settings, this_amount_gen, isImpersonate) {
@@ -318,6 +329,7 @@ export function getNovelGenerationData(finalPrompt, this_settings, this_amount_g
         : undefined;
 
     const prefix = nai_settings.prefix || autoSelectPrefix(finalPrompt);
+    const cfgSettings = getCfg();
 
     return {
         "input": finalPrompt,
@@ -339,8 +351,8 @@ export function getNovelGenerationData(finalPrompt, this_settings, this_amount_g
         "top_g": parseFloat(nai_settings.top_g),
         "mirostat_lr": parseFloat(nai_settings.mirostat_lr),
         "mirostat_tau": parseFloat(nai_settings.mirostat_tau),
-        "cfg_scale": parseFloat(nai_settings.cfg_scale),
-        "cfg_uc": "",
+        "cfg_scale": cfgSettings?.guidanceScale ?? parseFloat(nai_settings.cfg_scale),
+        "cfg_uc": cfgSettings?.negativePrompt ?? nai_settings.cfg_uc ??  "",
         "phrase_rep_pen": nai_settings.phrase_rep_pen,
         //"stop_sequences": {{187}},
         "stop_sequences": stopSequences,

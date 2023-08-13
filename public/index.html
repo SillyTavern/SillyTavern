@@ -864,6 +864,34 @@
                                         <textarea id="nai_preamble_textarea" class="text_pole textarea_compact" name="nai_preamble" rows="2" placeholder=""></textarea>
                                     </div>
                                 </div>
+                                <hr>
+                                <div class="range-block">
+                                    <div class="range-block-title justifyLeft" data-i18n="CFG Scale">
+                                        CFG Scale
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="cfg_scale_novel" name="volume" min="1" max="3" step="0.05">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="cfg_scale_novel" id="cfg_scale_counter_novel">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title justifyLeft">
+                                        <span data-i18n="Negative Prompt">Negative Prompt</span>
+                                    </div>
+                                    <div class="wide100p">
+                                        <textarea id="nai_cfg_uc" class="text_pole textarea_compact" name="cfg_uc" rows="2"  data-i18n="[placeholder]Add text here that would make the AI generate things you don't want in your outputs." placeholder="Add text here that would make the AI generate things you don't want in your outputs."></textarea>
+                                    </div>
+                                </div>
+                                <small class="margin-bot-10px" data-i18n="Used if CFG Scale is unset globally, per chat or character">
+                                    Used if CFG Scale is unset globally, per chat or character
+                                </small>
+                                <hr>
                                 <div class="range-block">
                                     <div class="range-block-title" data-i18n="Top P">
                                         Top P
@@ -964,21 +992,6 @@
                                         </div>
                                         <div class="range-block-counter">
                                             <div contenteditable="true" data-for="typical_p_novel" id="typical_p_counter_novel">
-                                                select
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="range-block">
-                                    <div class="range-block-title" data-i18n="CFG Scale">
-                                        CFG Scale
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="cfg_scale_novel" name="volume" min="1" max="3" step="0.05">
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="cfg_scale_novel" id="cfg_scale_counter_novel">
                                                 select
                                             </div>
                                         </div>
