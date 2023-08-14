@@ -263,7 +263,7 @@
     padding: 1em;
     border: 1px solid #333333;
     flex-direction: column;
-    z-index: 3010;
+    z-index: 3010 !important;
     border-radius: 0 0 20px 20px;
     background-color:  var(--SmartThemeBlurTintColor);
 }
