@@ -1,4 +1,4 @@
-import {callPopup, event_types, eventSource, main_api, substituteParams} from "../script.js";
+import {callPopup, event_types, eventSource, main_api, saveSettingsDebounced, substituteParams} from "../script.js";
 import {TokenHandler} from "./openai.js";
 import {power_user} from "./power-user.js";
 import { debounce } from "./utils.js";
@@ -308,7 +308,6 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     };
 
     // Factory function for creating quick edit elements
-    const saveSettings = this.saveServiceSettings;
     const createQuickEdit = function() {
         return {
             element: null,
@@ -319,7 +318,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
                 element.value = prompt.content ?? '';
                 element.addEventListener('input', () => {
                     prompt.content = element.value;
-                    saveSettings();
+                    saveSettingsDebounced()
                 });
 
                 return this;
