@@ -457,7 +457,7 @@ $(document).ready(function () {
         saveSettingsDebounced();
     });
 
-    $("#phrase_rep_pen_novel", function () {
+    $("#phrase_rep_pen_novel").on('change', function () {
         const val = $("#phrase_rep_pen_novel").find(":selected").val();
         nai_settings.phrase_rep_pen = getPhraseRepPenString(Number(val).toFixed(0));
         saveSettingsDebounced();

@@ -122,15 +122,15 @@ const openrouter_website_model = 'OR_Website';
 let biasCache = undefined;
 let model_list = [];
 const objectStore = new IndexedDBStore('SillyTavern', 'chat_completions');
-const tokenCache = await loadTokenCache();
+let tokenCache = {};
 
 async function loadTokenCache() {
     try {
         console.debug('Chat Completions: loading token cache from IndexedDB')
-        return await objectStore.get('tokenCache') || {};
+        tokenCache = await objectStore.get('tokenCache') || {};
     } catch (e) {
         console.log('Chat Completions: unable to load token cache from IndexedDB, using default value', e);
-        return {};
+        tokenCache = {};
     }
 }
 
@@ -2800,6 +2800,8 @@ function onProxyPasswordShowClick() {
 }
 
 $(document).ready(function () {
+    loadTokenCache();
+
     $('#test_api_button').on('click', testApiConnection);
 
     $(document).on('input', '#temp_openai', function () {
