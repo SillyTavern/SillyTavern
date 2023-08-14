@@ -347,11 +347,6 @@ function setupChatCompletionPromptManager(openAiSettings) {
             nsfw: default_nsfw_prompt,
             jailbreak: default_jailbreak_prompt,
             enhanceDefinitions: default_enhance_definitions_prompt
-        },
-        quickEdit: {
-            main: 'main_prompt_quick_edit_textarea',
-            nsfw: 'nsfw_prompt_quick_edit_textarea',
-            jailbreak: 'jailbreak_prompt_quick_edit_textarea'
         }
     };
 
