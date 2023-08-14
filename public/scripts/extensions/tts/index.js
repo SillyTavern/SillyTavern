@@ -638,7 +638,7 @@ function onTtsProviderSettingsInput() {
 
     // Persist changes to SillyTavern tts extension settings
 
-    extension_settings.tts[ttsProviderName] = ttsProvider.setttings
+    extension_settings.tts[ttsProviderName] = ttsProvider.settings
     saveSettingsDebounced()
     console.info(`Saved settings ${ttsProviderName} ${JSON.stringify(ttsProvider.settings)}`)
 }
