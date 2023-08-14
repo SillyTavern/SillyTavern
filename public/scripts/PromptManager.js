@@ -159,6 +159,11 @@ function PromptManagerModule() {
             jailbreak: '',
             enhanceDefinitions: ''
         },
+        quickEdit: {
+            main: '',
+            nsfw: '',
+            jailbreak: ''
+        }
     };
 
     // Chatcompletion configuration object
@@ -327,15 +332,15 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     }
 
     const mainPrompt = this.getPromptById('main');
-    const mainPromptTextarea = document.getElementById('main_prompt_quick_edit_textarea');
+    const mainPromptTextarea = document.getElementById(this.configuration.quickEdit.main);
     const mainQuickEdit = createQuickEdit().from(mainPromptTextarea, mainPrompt);
 
     const nsfwPrompt = this.getPromptById('nsfw');
-    const nsfwPromptTextarea = document.getElementById('nsfw_prompt_quick_edit_textarea');
+    const nsfwPromptTextarea = document.getElementById(this.configuration.quickEdit.nsfw);
     const nsfwQuickEdit = createQuickEdit().from(nsfwPromptTextarea, nsfwPrompt);
 
     const jailbreakPrompt = this.getPromptById('jailbreak');
-    const jailbreakPromptTextarea = document.getElementById('jailbreak_prompt_quick_edit_textarea');
+    const jailbreakPromptTextarea = document.getElementById(this.configuration.quickEdit.jailbreak);
     const jailbreakQuickEdit = createQuickEdit().from(jailbreakPromptTextarea, jailbreakPrompt);
 
     // Save prompt edit form to settings and close form.
