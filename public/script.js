@@ -1354,13 +1354,13 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
 }
 
 /**
- * Inserts an SVG icon adjacent to the provided message's timestamp.
+ * Inserts or replaces an SVG icon adjacent to the provided message's timestamp.
  *
  * If the `extra.api` is "openai" and `extra.model` contains the substring "claude",
  * the function fetches the "claude.svg". Otherwise, it fetches the SVG named after
  * the value in `extra.api`.
  *
- * @param {jQuery} mes - The message element containing the timestamp where the icon should be inserted.
+ * @param {jQuery} mes - The message element containing the timestamp where the icon should be inserted or replaced.
  * @param {Object} extra - Contains the API and model details.
  * @param {string} extra.api - The name of the API, used to determine which SVG to fetch.
  * @param {string} extra.model - The model name, used to check for the substring "claude".
@@ -1379,13 +1379,22 @@ function insertSVGIcon(mes, extra) {
         // Extract the SVG content from the XML data
         let svg = $(data).find('svg');
 
-        // Add a class for styling if needed
-        svg.addClass('icon-svg');
+        // Add classes for styling and identification
+        svg.addClass('icon-svg timestamp-icon');
 
-        // Insert the SVG adjacent to the timestamp
-        mes.find('.timestamp').after(svg);
+        // Check if an SVG already exists adjacent to the timestamp
+        let existingSVG = mes.find('.timestamp').next('.timestamp-icon');
+
+        if (existingSVG.length) {
+            // Replace existing SVG
+            existingSVG.replaceWith(svg);
+        } else {
+            // Append the new SVG if none exists
+            mes.find('.timestamp').after(svg);
+        }
     });
 }
+
 
 function getMessageFromTemplate({
     mesId,
@@ -1615,6 +1624,9 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         appendImageToMessage(mes, $("#chat").find(`[mesid="${count_view_mes - 1}"]`));
         $("#chat").find(`[mesid="${count_view_mes - 1}"]`).attr('title', title);
         $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.timestamp').text(timestamp).attr('title', `${params.extra.api} - ${params.extra.model}`);
+        if (power_user.timestamp_model_icon && params.extra?.api) {
+            insertSVGIcon($("#chat").find(`[mesid="${count_view_mes - 1}"]`), params.extra);
+        }
 
         if (mes.swipe_id == mes.swipes.length - 1) {
             $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.mes_timer').text(params.timerValue);
