@@ -2792,6 +2792,13 @@ function reconnectOpenAi() {
     $('#api_button_openai').trigger('click');
 }
 
+function onProxyPasswordShowClick() {
+    const $input = $('#openai_proxy_password');
+    const type = $input.attr('type') === 'password' ? 'text' : 'password';
+    $input.attr('type', type);
+    $(this).toggleClass('fa-eye-slash fa-eye');
+}
+
 $(document).ready(function () {
     $('#test_api_button').on('click', testApiConnection);
 
@@ -3029,4 +3036,5 @@ $(document).ready(function () {
     $("#openai_logit_bias_export_preset").on("click", onLogitBiasPresetExportClick);
     $("#openai_logit_bias_delete_preset").on("click", onLogitBiasPresetDeleteClick);
     $("#import_oai_preset").on("click", onImportPresetClick);
+    $("#openai_proxy_password_show").on("click", onProxyPasswordShowClick);
 });
