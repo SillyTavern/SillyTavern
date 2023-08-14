@@ -916,7 +916,8 @@ body.no-timer .mes_timer {
 }
 
 body.no-timestamps .timestamp,
-body.no-mesIDDisplay .mesIDDisplay {
+body.no-mesIDDisplay .mesIDDisplay,
+body.no-modelIcons .icon-svg {
     display: none !important;
 }
 
@@ -5549,4 +5550,11 @@ body.waifuMode .zoomed_avatar {
     line-height: 14px;
 }
 
-
+.icon-svg {
+    fill: currentColor;
+    /* Takes on the color of the surrounding text */
+    width: 16px;
+    height: 16px;
+    vertical-align: middle;
+    /* To align with adjacent text */
+}
