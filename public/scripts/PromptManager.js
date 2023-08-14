@@ -23,6 +23,8 @@ function debouncePromise(func, delay) {
  */
 const registerPromptManagerMigration = () => {
     const migrate = (settings, savePreset = null, presetName = null) => {
+        if ('Default' === presetName) return;
+
         if (settings.main_prompt || settings.nsfw_prompt || settings.jailbreak_prompt) {
             console.log('Running prompt manager configuration migration');
             if (settings.prompts === undefined || settings.prompts.length === 0) settings.prompts = structuredClone(chatCompletionDefaultPrompts.prompts);
