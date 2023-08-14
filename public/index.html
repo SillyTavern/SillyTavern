@@ -179,7 +179,7 @@
                                 </div>
                             </div>
                             <div id="textgenerationwebui_api-presets">
-                                <h3><span data-i18n="text gen webio(ooba)preset">Text Gen WebUI (ooba) presets</span>
+                                <h3><span data-i18n="Text Gen WebUI (ooba/Mancer) presets">Text Gen WebUI (ooba/Mancer) presets</span>
                                 </h3>
                                 <div class="preset_buttons">
                                     <select id="settings_preset_textgenerationwebui" data-preset-manager-for="textgenerationwebui">
@@ -1174,6 +1174,33 @@
                                     </label>
                                 </div>
                                 <hr>
+                                <div class="range-block">
+                                    <h4 class="range-block-title justifyLeft" data-i18n="CFG Scale">
+                                        CFG Scale
+                                    </h4>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="guidance_scale_textgenerationwebui" name="volume" min="0.1" max="4" step="0.05">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="guidance_scale_textgenerationwebui" id="guidance_scale_counter_textgenerationwebui">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title justifyLeft">
+                                        <span data-i18n="Negative Prompt">Negative Prompt</span>
+                                    </div>
+                                    <div class="wide100p">
+                                        <textarea id="negative_prompt_textgenerationwebui" class="text_pole textarea_compact" name="negative_prompt" rows="2"  data-i18n="[placeholder]Add text here that would make the AI generate things you don't want in your outputs." placeholder="Add text here that would make the AI generate things you don't want in your outputs."></textarea>
+                                    </div>
+                                </div>
+                                <small class="margin-bot-10px" data-i18n="Used if CFG Scale is unset globally, per chat or character">
+                                    Used if CFG Scale is unset globally, per chat or character
+                                </small>
+                                <hr>
                                 <h4><span data-i18n="Beam search">Beam search</span></h4>
                                 <div class="range-block">
                                     <div class="range-block-title" data-i18n="Number of Beams">
@@ -1228,33 +1255,6 @@
                                         </div>
                                     </div>
                                 </div>
-                                <hr>
-                                <div class="range-block">
-                                    <h4 class="range-block-title justifyLeft" data-i18n="CFG Scale">
-                                        CFG Scale
-                                    </h4>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="guidance_scale_textgenerationwebui" name="volume" min="0.1" max="4" step="0.05">
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="guidance_scale_textgenerationwebui" id="guidance_scale_counter_textgenerationwebui">
-                                                select
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="range-block">
-                                    <div class="range-block-title justifyLeft">
-                                        <span data-i18n="Negative Prompt">Negative Prompt</span>
-                                    </div>
-                                    <div class="wide100p">
-                                        <textarea id="negative_prompt_textgenerationwebui" class="text_pole textarea_compact" name="negative_prompt" rows="2"  data-i18n="[placeholder]Add text here that would make the AI generate things you don't want in your outputs." placeholder="Add text here that would make the AI generate things you don't want in your outputs."></textarea>
-                                    </div>
-                                </div>
-                                <small class="margin-bot-10px" data-i18n="Used if CFG Scale is unset globally, per chat or character">
-                                    Used if CFG Scale is unset globally, per chat or character
-                                </small>
                                 <hr>
                                 <h4 data-i18n="Mirostat (mode=1 is only for llama.cpp)">Mirostat (mode=1 is only for llama.cpp)</h4>
                                 <div class="range-block">
