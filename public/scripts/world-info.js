@@ -1,4 +1,4 @@
-import { saveSettings, callPopup, substituteParams, getTokenCount, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type } from "../script.js";
+import { saveSettings, callPopup, substituteParams, getTokenCount, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types } from "../script.js";
 import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, delay, getCharaFilename, deepClone } from "./utils.js";
 import { getContext } from "./extensions.js";
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from "./authors-note.js";
@@ -1331,7 +1331,6 @@ export async function importEmbeddedWorldInfo() {
 }
 
 function onWorldInfoChange(_, text) {
-    let selectedWorlds;
     if (_ !== '__notSlashCommand__') { // if it's a slash command
         if (text !== undefined) { // and args are provided
             const slashInputSplitText = text.trim().toLowerCase().split(",");
@@ -1339,12 +1338,14 @@ function onWorldInfoChange(_, text) {
             slashInputSplitText.forEach((worldName) => {
                 const wiElement = getWIElement(worldName);
                 if (wiElement.length > 0) {
+                    selected_world_info.push(wiElement.text());
                     wiElement.prop("selected", true);
                     toastr.success(`Activated world: ${wiElement.text()}`);
                 } else {
                     toastr.error(`No world found named: ${worldName}`);
                 }
-            })
+            });
+            $("#world_info").trigger("change");
         } else { // if no args, unset all worlds
             toastr.success('Deactivated all worlds');
             selected_world_info = [];
@@ -1369,6 +1370,7 @@ function onWorldInfoChange(_, text) {
     }
 
     saveSettingsDebounced();
+    eventSource.emit(event_types.WORLDINFO_SETTINGS_UPDATED);
 }
 
 export async function importWorldInfo(file) {
@@ -1505,36 +1507,41 @@ jQuery(() => {
         }
     });
 
+    const saveSettings = () => {
+        saveSettingsDebounced()
+        eventSource.emit(event_types.WORLDINFO_SETTINGS_UPDATED);
+    }
+
     $(document).on("input", "#world_info_depth", function () {
         world_info_depth = Number($(this).val());
         $("#world_info_depth_counter").text($(this).val());
-        saveSettingsDebounced();
+        saveSettings();
     });
 
     $(document).on("input", "#world_info_budget", function () {
         world_info_budget = Number($(this).val());
         $("#world_info_budget_counter").text($(this).val());
-        saveSettingsDebounced();
+        saveSettings();
     });
 
     $(document).on("input", "#world_info_recursive", function () {
         world_info_recursive = !!$(this).prop('checked');
-        saveSettingsDebounced();
+        saveSettings();
     })
 
     $('#world_info_case_sensitive').on('input', function () {
         world_info_case_sensitive = !!$(this).prop('checked');
-        saveSettingsDebounced();
+        saveSettings();
     })
 
     $('#world_info_match_whole_words').on('input', function () {
         world_info_match_whole_words = !!$(this).prop('checked');
-        saveSettingsDebounced();
+        saveSettings();
     });
 
     $('#world_info_character_strategy').on('change', function () {
         world_info_character_strategy = $(this).val();
-        saveSettingsDebounced();
+        saveSettings();
     });
 
     $('#world_info_overflow_alert').on('change', function () {
@@ -1545,7 +1552,7 @@ jQuery(() => {
     $('#world_info_budget_cap').on('input', function () {
         world_info_budget_cap = Number($(this).val());
         $("#world_info_budget_cap_counter").text(world_info_budget_cap);
-        saveSettingsDebounced();
+        saveSettings();
     });
 
     $('#world_button').on('click', async function () {
