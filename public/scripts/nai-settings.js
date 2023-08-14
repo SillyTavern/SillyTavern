@@ -191,7 +191,6 @@ function loadNovelSettingsUi(ui_settings) {
     $("#cfg_scale_novel").val(ui_settings.cfg_scale);
     $("#cfg_scale_counter_novel").text(Number(ui_settings.cfg_scale).toFixed(2));
     $("#phrase_rep_pen_novel").val(getPhraseRepPenCounter(ui_settings.phrase_rep_pen));
-    $("#phrase_rep_pen_counter_novel").text(getPhraseRepPenCounter(ui_settings.phrase_rep_pen));
     $("#top_g_novel").val(ui_settings.top_g);
     $("#top_g_counter_novel").text(Number(ui_settings.top_g).toFixed(0));
     $("#mirostat_lr_novel").val(ui_settings.mirostat_lr);
@@ -297,12 +296,6 @@ const sliders = [
         counterId: "#cfg_scale_counter_novel",
         format: (val) => `${val}`,
         setValue: (val) => { nai_settings.cfg_scale = Number(val).toFixed(2); },
-    },
-    {
-        sliderId: "#phrase_rep_pen_novel",
-        counterId: "#phrase_rep_pen_counter_novel",
-        format: (val) => `${val}`,
-        setValue: (val) => { nai_settings.phrase_rep_pen = getPhraseRepPenString(Number(val).toFixed(0)); },
     },
     {
         sliderId: "#min_length_novel",
@@ -461,6 +454,12 @@ $(document).ready(function () {
 
     $("#nai_prefix").on('change', function () {
         nai_settings.prefix = $("#nai_prefix").find(":selected").val();
+        saveSettingsDebounced();
+    });
+
+    $("#phrase_rep_pen_novel", function () {
+        const val = $("#phrase_rep_pen_novel").find(":selected").val();
+        nai_settings.phrase_rep_pen = getPhraseRepPenString(Number(val).toFixed(0));
         saveSettingsDebounced();
     });
 });
