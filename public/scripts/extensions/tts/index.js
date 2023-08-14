@@ -4,7 +4,7 @@ import { escapeRegex, getStringHash } from '../../utils.js'
 import { EdgeTtsProvider } from './edge.js'
 import { ElevenLabsTtsProvider } from './elevenlabs.js'
 import { SileroTtsProvider } from './silerotts.js'
-import { CoquiTtsProvider } from './coquitts.js'
+import { CoquiTtsProvider } from './coqui.js'
 import { SystemTtsProvider } from './system.js'
 import { NovelTtsProvider } from './novel.js'
 import { power_user } from '../../power-user.js'
@@ -650,8 +650,7 @@ function onTtsProviderSettingsInput() {
     ttsProvider.onSettingsChange()
 
     // Persist changes to SillyTavern tts extension settings
-
-    extension_settings.tts[ttsProviderName] = ttsProvider.setttings
+    extension_settings.tts[ttsProviderName] = ttsProvider.settings
     saveSettingsDebounced()
     console.info(`Saved settings ${ttsProviderName} ${JSON.stringify(ttsProvider.settings)}`)
 }
