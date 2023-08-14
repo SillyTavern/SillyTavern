@@ -50,6 +50,8 @@ const textgenerationwebui_settings = {
     mirostat_mode: 0,
     mirostat_tau: 5,
     mirostat_eta: 0.1,
+    guidance_scale: 1,
+    negative_prompt: '',
 };
 
 export let textgenerationwebui_presets = [];
@@ -83,6 +85,8 @@ const setting_names = [
     "mirostat_mode",
     "mirostat_tau",
     "mirostat_eta",
+    "guidance_scale",
+    "negative_prompt",
 ];
 
 function selectPreset(name) {
@@ -154,7 +158,7 @@ $(document).ready(function () {
         $(`#${i}_textgenerationwebui`).attr("x-setting-id", i);
         $(document).on("input", `#${i}_textgenerationwebui`, function () {
             const isCheckbox = $(this).attr('type') == 'checkbox';
-            const isText = $(this).attr('type') == 'text';
+            const isText = $(this).attr('type') == 'text' || $(this).is('textarea');
             const id = $(this).attr("x-setting-id");
 
             if (isCheckbox) {
@@ -182,7 +186,7 @@ function setSettingByName(i, value, trigger) {
     }
 
     const isCheckbox = $(`#${i}_textgenerationwebui`).attr('type') == 'checkbox';
-    const isText = $(`#${i}_textgenerationwebui`).attr('type') == 'text';
+    const isText = $(`#${i}_textgenerationwebui`).attr('type') == 'text' || $(`#${i}_textgenerationwebui`).is('textarea');
     if (isCheckbox) {
         const val = Boolean(value);
         $(`#${i}_textgenerationwebui`).prop('checked', val);
@@ -251,8 +255,8 @@ export function getTextGenGenerationData(finalPromt, this_amount_gen, isImperson
         'penalty_alpha': textgenerationwebui_settings.penalty_alpha,
         'length_penalty': textgenerationwebui_settings.length_penalty,
         'early_stopping': textgenerationwebui_settings.early_stopping,
-        'guidance_scale': cfgValues?.guidanceScale ?? 1,
-        'negative_prompt': cfgValues?.negativePrompt ?? '',
+        'guidance_scale': cfgValues?.guidanceScale ?? textgenerationwebui_settings.guidance_scale ?? 1,
+        'negative_prompt': cfgValues?.negativePrompt ?? textgenerationwebui_settings.negative_prompt ?? '',
         'seed': textgenerationwebui_settings.seed,
         'add_bos_token': textgenerationwebui_settings.add_bos_token,
         'stopping_strings': getStoppingStrings(isImpersonate, false),
