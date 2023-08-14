@@ -330,6 +330,10 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     const mainPromptTextarea = document.getElementById('main_prompt_quick_edit_textarea');
     const mainQuickEdit = createQuickEdit().from(mainPromptTextarea, mainPrompt);
 
+    const nsfwPrompt = this.getPromptById('nsfw');
+    const nsfwPromptTextarea = document.getElementById('nsfw_prompt_quick_edit_textarea');
+    const nsfwQuickEdit = createQuickEdit().from(nsfwPromptTextarea, nsfwPrompt);
+
     const jailbreakPrompt = this.getPromptById('jailbreak');
     const jailbreakPromptTextarea = document.getElementById('jailbreak_prompt_quick_edit_textarea');
     const jailbreakQuickEdit = createQuickEdit().from(jailbreakPromptTextarea, jailbreakPrompt);
@@ -347,8 +351,9 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
             this.updatePromptWithPromptEditForm(prompt);
         }
 
-        if ('main' === promptId) mainQuickEdit.update(prompt.content)
-        if ('jailbreak' === promptId) jailbreakQuickEdit.update(prompt.content)
+        if ('main' === promptId) mainQuickEdit.update(prompt.content);
+        if ('nsfw' === promptId) nsfwQuickEdit.update(prompt.content);
+        if ('jailbreak' === promptId) jailbreakQuickEdit.update(prompt.content);
 
         this.log('Saved prompt: ' + promptId);
 
