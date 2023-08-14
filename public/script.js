@@ -2348,7 +2348,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     }
 
     // Hide swipes on either multigen or real streaming
-    if (isStreamingEnabled() || isMultigenEnabled()) {
+    if ((isStreamingEnabled() || isMultigenEnabled()) && !dryRun) {
         hideSwipeButtons();
     }
 
@@ -2411,7 +2411,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         }
 
         const isContinue = type == 'continue';
-        deactivateSendButtons();
+
+        if (!dryRun) {
+            deactivateSendButtons();
+        }
 
         let { messageBias, promptBias, isUserPromptBias } = getBiasStrings(textareaText, type);
 
@@ -2637,7 +2640,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
         let mesSend = [];
         console.debug('calling runGenerate');
-        streamingProcessor = isStreamingEnabled() ? new StreamingProcessor(type, force_name2) : false;
+
+        if (!dryRun) {
+            streamingProcessor = isStreamingEnabled() ? new StreamingProcessor(type, force_name2) : false;
+        }
 
         if (isContinue) {
             // Coping mechanism for OAI spacing
@@ -2657,7 +2663,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         runGenerate(cyclePrompt);
 
         async function runGenerate(cycleGenerationPromt = '') {
-            is_send_press = true;
+            if (!dryRun) {
+                is_send_press = true;
+            }
 
             generatedPromtCache += cycleGenerationPromt;
             if (generatedPromtCache.length == 0 || type === 'continue') {
@@ -3010,6 +3018,12 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
 
             async function onSuccess(data) {
+                if (data.error == 'dryRun') {
+                    generatedPromtCache = '';
+                    resolve();
+                    return;
+                }
+
                 hideStopButton();
                 is_send_press = false;
                 if (!data.error) {

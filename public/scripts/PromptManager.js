@@ -1,7 +1,7 @@
-import {callPopup, event_types, eventSource, main_api, saveSettingsDebounced, substituteParams} from "../script.js";
+import {callPopup, event_types, eventSource, is_send_press, main_api, saveSettingsDebounced, substituteParams} from "../script.js";
 import {TokenHandler} from "./openai.js";
 import {power_user} from "./power-user.js";
-import { debounce } from "./utils.js";
+import { debounce, waitUntilCondition } from "./utils.js";
 
 /**
  * Register migrations for the prompt manager when settings are loaded or an Open AI preset is loaded.
@@ -596,25 +596,29 @@ PromptManagerModule.prototype.render = function (afterTryGenerate = true) {
     if (null === this.activeCharacter) return;
     this.error = null;
 
-    if (true === afterTryGenerate) {
-        // Executed during dry-run for determining context composition
-        this.profileStart('filling context');
-        this.tryGenerate().then(() => {
-            this.profileEnd('filling context');
+    waitUntilCondition(() => is_send_press == false, 1024 * 1024, 100).then(() => {
+        if (true === afterTryGenerate) {
+            // Executed during dry-run for determining context composition
+            this.profileStart('filling context');
+            this.tryGenerate().then(() => {
+                this.profileEnd('filling context');
+                this.profileStart('render');
+                this.renderPromptManager();
+                this.renderPromptManagerListItems()
+                this.makeDraggable();
+                this.profileEnd('render');
+            });
+        } else {
+            // Executed during live communication
             this.profileStart('render');
             this.renderPromptManager();
             this.renderPromptManagerListItems()
             this.makeDraggable();
             this.profileEnd('render');
-        });
-    } else {
-        // Executed during live communication
-        this.profileStart('render');
-        this.renderPromptManager();
-        this.renderPromptManagerListItems()
-        this.makeDraggable();
-        this.profileEnd('render');
-    }
+        }
+    }).catch(() => {
+        console.log('Timeout while waiting for send press to be false');
+    });
 }
 
 /**
