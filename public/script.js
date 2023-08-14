@@ -2470,8 +2470,13 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         // Determine token limit
         let this_max_context = getMaxContextSize();
 
-        // Always run the extension interceptors.
-        await runGenerationInterceptors(coreChat, this_max_context);
+        if (!dryRun) {
+            console.debug('Running extension interceptors');
+            await runGenerationInterceptors(coreChat, this_max_context);
+        } else {
+            console.debug('Skipping extension interceptors for dry run');
+        }
+
         console.log(`Core/all messages: ${coreChat.length}/${chat.length}`);
 
         let storyString = "";
