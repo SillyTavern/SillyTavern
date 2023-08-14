@@ -1,4 +1,4 @@
-import {callPopup, event_types, eventSource, main_api, substituteParams} from "../script.js";
+import {callPopup, event_types, eventSource, main_api, saveSettingsDebounced, substituteParams} from "../script.js";
 import {TokenHandler} from "./openai.js";
 import {power_user} from "./power-user.js";
 import { debounce } from "./utils.js";
@@ -159,6 +159,11 @@ function PromptManagerModule() {
             jailbreak: '',
             enhanceDefinitions: ''
         },
+        quickEdit: {
+            main: '',
+            nsfw: '',
+            jailbreak: ''
+        }
     };
 
     // Chatcompletion configuration object
@@ -303,7 +308,6 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     };
 
     // Factory function for creating quick edit elements
-    const saveSettings = this.saveServiceSettings;
     const createQuickEdit = function() {
         return {
             element: null,
@@ -314,7 +318,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
                 element.value = prompt.content ?? '';
                 element.addEventListener('input', () => {
                     prompt.content = element.value;
-                    saveSettings();
+                    saveSettingsDebounced()
                 });
 
                 return this;
@@ -327,11 +331,15 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     }
 
     const mainPrompt = this.getPromptById('main');
-    const mainPromptTextarea = document.getElementById('main_prompt_quick_edit_textarea');
+    const mainPromptTextarea = document.getElementById(this.configuration.quickEdit.main);
     const mainQuickEdit = createQuickEdit().from(mainPromptTextarea, mainPrompt);
 
+    const nsfwPrompt = this.getPromptById('nsfw');
+    const nsfwPromptTextarea = document.getElementById(this.configuration.quickEdit.nsfw);
+    const nsfwQuickEdit = createQuickEdit().from(nsfwPromptTextarea, nsfwPrompt);
+
     const jailbreakPrompt = this.getPromptById('jailbreak');
-    const jailbreakPromptTextarea = document.getElementById('jailbreak_prompt_quick_edit_textarea');
+    const jailbreakPromptTextarea = document.getElementById(this.configuration.quickEdit.jailbreak);
     const jailbreakQuickEdit = createQuickEdit().from(jailbreakPromptTextarea, jailbreakPrompt);
 
     // Save prompt edit form to settings and close form.
@@ -347,8 +355,9 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
             this.updatePromptWithPromptEditForm(prompt);
         }
 
-        if ('main' === promptId) mainQuickEdit.update(prompt.content)
-        if ('jailbreak' === promptId) jailbreakQuickEdit.update(prompt.content)
+        if ('main' === promptId) mainQuickEdit.update(prompt.content);
+        if ('nsfw' === promptId) nsfwQuickEdit.update(prompt.content);
+        if ('jailbreak' === promptId) jailbreakQuickEdit.update(prompt.content);
 
         this.log('Saved prompt: ' + promptId);
 

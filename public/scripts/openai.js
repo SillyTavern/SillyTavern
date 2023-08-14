@@ -348,6 +348,11 @@ function setupChatCompletionPromptManager(openAiSettings) {
             jailbreak: default_jailbreak_prompt,
             enhanceDefinitions: default_enhance_definitions_prompt
         },
+        quickEdit: {
+            main: 'main_prompt_quick_edit_textarea',
+            nsfw: 'nsfw_prompt_quick_edit_textarea',
+            jailbreak: 'jailbreak_prompt_quick_edit_textarea'
+        }
     };
 
     promptManager.saveServiceSettings = () => {
@@ -726,32 +731,22 @@ function preparePromptsForChatCompletion(Scenario, charPersonality, name2, world
     // Apply character-specific main prompt
     const systemPromptOverride = promptManager.activeCharacter.data?.system_prompt ?? null;
     const systemPrompt = prompts.get('main') ?? null;
-    if (systemPromptOverride) {
+    if (systemPromptOverride && systemPrompt) {
+        const mainOriginalContent = systemPrompt.content;
         systemPrompt.content = systemPromptOverride;
-        prompts.set(systemPrompt, prompts.index('main'));
+        const mainReplacement = promptManager.preparePrompt(systemPrompt, mainOriginalContent);
+        prompts.set(mainReplacement, prompts.index('main'));
     }
 
     // Apply character-specific jailbreak
     const jailbreakPromptOverride = promptManager.activeCharacter.data?.post_history_instructions ?? null;
     const jailbreakPrompt = prompts.get('jailbreak') ?? null;
     if (jailbreakPromptOverride && jailbreakPrompt) {
+        const jbOriginalContent = jailbreakPrompt.content;
         jailbreakPrompt.content = jailbreakPromptOverride;
-        prompts.set(jailbreakPrompt, prompts.index('jailbreak'));
+        const jbReplacement = promptManager.preparePrompt(jailbreakPrompt, jbOriginalContent);
+        prompts.set(jbReplacement, prompts.index('jailbreak'));
     }
-
-    // Replace {{original}} placeholder for supported prompts
-    const originalReplacements = {
-        main: default_main_prompt,
-        nsfw: default_nsfw_prompt,
-        jailbreak: default_jailbreak_prompt
-    }
-
-    prompts.collection.forEach(prompt => {
-        if (originalReplacements.hasOwnProperty(prompt.identifier)) {
-            const original = originalReplacements[prompt.identifier];
-            prompt.content = promptManager.preparePrompt(prompt, original)?.content;
-        }
-    });
 
     // Allow subscribers to manipulate the prompts object
     eventSource.emit(event_types.OAI_BEFORE_CHATCOMPLETION, prompts);
