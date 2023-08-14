@@ -26,7 +26,7 @@ import {
     event_types,
     substituteParams,
 } from "../script.js";
-import {groups, selected_group} from "./group-chats.js";
+import { groups, selected_group } from "./group-chats.js";
 
 import {
     promptManagerDefaultPromptOrders,
@@ -45,7 +45,6 @@ import {
 } from "./secrets.js";
 
 import {
-    IndexedDBStore,
     delay,
     download,
     getFileText,
@@ -121,35 +120,36 @@ const openrouter_website_model = 'OR_Website';
 
 let biasCache = undefined;
 let model_list = [];
-const objectStore = new IndexedDBStore('SillyTavern', 'chat_completions');
+const objectStore = new localforage.createInstance({ name: "SillyTavern_ChatCompletions" });
+
 let tokenCache = {};
 
 async function loadTokenCache() {
     try {
-        console.debug('Chat Completions: loading token cache from IndexedDB')
-        tokenCache = await objectStore.get('tokenCache') || {};
+        console.debug('Chat Completions: loading token cache')
+        tokenCache = await objectStore.getItem('tokenCache') || {};
     } catch (e) {
-        console.log('Chat Completions: unable to load token cache from IndexedDB, using default value', e);
+        console.log('Chat Completions: unable to load token cache, using default value', e);
         tokenCache = {};
     }
 }
 
 async function saveTokenCache() {
     try {
-        console.debug('Chat Completions: saving token cache to IndexedDB')
-        await objectStore.put('tokenCache', tokenCache);
+        console.debug('Chat Completions: saving token cache')
+        await objectStore.setItem('tokenCache', tokenCache);
     } catch (e) {
-        console.log('Chat Completions: unable to save token cache to IndexedDB', e);
+        console.log('Chat Completions: unable to save token cache', e);
     }
 }
 
 async function resetTokenCache() {
     try {
-        console.debug('Chat Completions: resetting token cache in IndexedDB');
+        console.debug('Chat Completions: resetting token cache');
         Object.keys(tokenCache).forEach(key => delete tokenCache[key]);
-        await objectStore.delete('tokenCache');
+        await objectStore.removeItem('tokenCache');
     } catch (e) {
-        console.log('Chat Completions: unable to reset token cache in IndexedDB', e);
+        console.log('Chat Completions: unable to reset token cache', e);
     }
 }
 
@@ -298,7 +298,7 @@ function setOpenAIMessages(chat) {
         // Apply the "wrap in quotes" option
         if (role == 'user' && oai_settings.wrap_in_quotes) content = `"${content}"`;
         const name = chat[j]['name'];
-        openai_msgs[i] = { "role": role, "content": content, name: name};
+        openai_msgs[i] = { "role": role, "content": content, name: name };
         j++;
     }
 
@@ -532,7 +532,7 @@ function populateDialogueExamples(prompts, chatCompletion) {
         chatCompletion.freeBudget(newExampleChat);
 
         const chatExamples = chatCompletion.getMessages().getItemByIdentifier('dialogueExamples').getCollection();
-        if(chatExamples.length) chatCompletion.insertAtStart(newExampleChat,'dialogueExamples');
+        if (chatExamples.length) chatCompletion.insertAtStart(newExampleChat, 'dialogueExamples');
     }
 }
 
@@ -546,7 +546,7 @@ function populateDialogueExamples(prompts, chatCompletion) {
  * @param {string} options.quietPrompt - Instruction prompt for extras
  * @param {string} options.type - The type of the chat, can be 'impersonate'.
  */
-function populateChatCompletion (prompts, chatCompletion, {bias, quietPrompt, type, cyclePrompt} = {}) {
+function populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, type, cyclePrompt } = {}) {
     // Helper function for preparing a prompt, that already exists within the prompt collection, for completion
     const addToChatCompletion = (source, target = null) => {
         // We need the prompts array to determine a position for the source.
@@ -616,7 +616,7 @@ function populateChatCompletion (prompts, chatCompletion, {bias, quietPrompt, ty
     }
 
     // Persona Description
-    if(power_user.persona_description) {
+    if (power_user.persona_description) {
         const personaDescription = Message.fromPrompt(prompts.get('personaDescription'));
 
         try {
@@ -678,16 +678,16 @@ function preparePromptsForChatCompletion(Scenario, charPersonality, name2, world
     // Create entries for system prompts
     const systemPrompts = [
         // Ordered prompts for which a marker should exist
-        {role: 'system', content: formatWorldInfo(worldInfoBefore), identifier: 'worldInfoBefore'},
-        {role: 'system', content: formatWorldInfo(worldInfoAfter), identifier: 'worldInfoAfter'},
-        {role: 'system', content: charDescription, identifier: 'charDescription'},
-        {role: 'system', content: charPersonalityText, identifier: 'charPersonality'},
-        {role: 'system', content: scenarioText, identifier: 'scenario'},
+        { role: 'system', content: formatWorldInfo(worldInfoBefore), identifier: 'worldInfoBefore' },
+        { role: 'system', content: formatWorldInfo(worldInfoAfter), identifier: 'worldInfoAfter' },
+        { role: 'system', content: charDescription, identifier: 'charDescription' },
+        { role: 'system', content: charPersonalityText, identifier: 'charPersonality' },
+        { role: 'system', content: scenarioText, identifier: 'scenario' },
         // Unordered prompts without marker
-        {role: 'system', content: oai_settings.nsfw_avoidance_prompt, identifier: 'nsfwAvoidance'},
-        {role: 'system', content: oai_settings.impersonation_prompt, identifier: 'impersonate'},
-        {role: 'system', content: quietPrompt, identifier: 'quietPrompt'},
-        {role: 'system', content: bias, identifier: 'bias'}
+        { role: 'system', content: oai_settings.nsfw_avoidance_prompt, identifier: 'nsfwAvoidance' },
+        { role: 'system', content: oai_settings.impersonation_prompt, identifier: 'impersonate' },
+        { role: 'system', content: quietPrompt, identifier: 'quietPrompt' },
+        { role: 'system', content: bias, identifier: 'bias' }
     ];
 
     // Tavern Extras - Summary
@@ -708,7 +708,7 @@ function preparePromptsForChatCompletion(Scenario, charPersonality, name2, world
 
     // Persona Description
     if (power_user.persona_description) {
-        systemPrompts.push({role: 'system', content: power_user.persona_description, identifier: 'personaDescription'});
+        systemPrompts.push({ role: 'system', content: power_user.persona_description, identifier: 'personaDescription' });
     }
 
     // This is the prompt order defined by the user
@@ -778,18 +778,18 @@ function preparePromptsForChatCompletion(Scenario, charPersonality, name2, world
  * @returns {(*[]|boolean)[]} An array where the first element is the prepared chat and the second element is a boolean flag.
  */
 function prepareOpenAIMessages({
-                                         name2,
-                                         charDescription,
-                                         charPersonality,
-                                         Scenario,
-                                         worldInfoBefore,
-                                         worldInfoAfter,
-                                         bias,
-                                         type,
-                                         quietPrompt,
-                                         extensionPrompts,
-                                         cyclePrompt
-                                     } = {}, dryRun) {
+    name2,
+    charDescription,
+    charPersonality,
+    Scenario,
+    worldInfoBefore,
+    worldInfoAfter,
+    bias,
+    type,
+    quietPrompt,
+    extensionPrompts,
+    cyclePrompt
+} = {}, dryRun) {
     // Without a character selected, there is no way to accurately calculate tokens
     if (!promptManager.activeCharacter && dryRun) return [null, false];
 
@@ -804,13 +804,13 @@ function prepareOpenAIMessages({
         const prompts = preparePromptsForChatCompletion(Scenario, charPersonality, name2, worldInfoBefore, worldInfoAfter, charDescription, quietPrompt, bias, extensionPrompts);
 
         // Fill the chat completion with as much context as the budget allows
-        populateChatCompletion(prompts, chatCompletion, {bias, quietPrompt, type, cyclePrompt});
+        populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, type, cyclePrompt });
     } catch (error) {
         if (error instanceof TokenBudgetExceededError) {
             toastr.error('An error occurred while counting tokens: Token budget exceeded.')
             chatCompletion.log('Token budget exceeded.');
             promptManager.error = 'Not enough free tokens for mandatory prompts. Raise your token Limit or disable custom prompts.';
-        } else if (error instanceof  InvalidCharacterNameError) {
+        } else if (error instanceof InvalidCharacterNameError) {
             toastr.warning('An error occurred while counting tokens: Invalid character name')
             chatCompletion.log('Invalid character name');
             promptManager.error = 'The name of at least one character contained whitespaces or special characters. Please check your user and character name.';
@@ -1267,7 +1267,7 @@ class TokenHandler {
     }
 
     resetCounts() {
-        Object.keys(this.counts).forEach((key) => this.counts[key] = 0 );
+        Object.keys(this.counts).forEach((key) => this.counts[key] = 0);
     }
 
     setCounts(counts) {
@@ -1397,7 +1397,7 @@ class Message {
         this.content = content;
 
         if (this.content) {
-            this.tokens = tokenHandler.count({role: this.role, content: this.content})
+            this.tokens = tokenHandler.count({ role: this.role, content: this.content })
         } else {
             this.tokens = 0;
         }
@@ -1421,7 +1421,7 @@ class Message {
      * Returns the number of tokens in the message.
      * @returns {number} Number of tokens in the message.
      */
-    getTokens() {return this.tokens};
+    getTokens() { return this.tokens };
 }
 
 /**
@@ -1429,7 +1429,7 @@ class Message {
  *
  * @class MessageCollection
  */
-class MessageCollection  {
+class MessageCollection {
     collection = [];
     identifier;
 
@@ -1439,8 +1439,8 @@ class MessageCollection  {
      * @param {...Object} items - An array of Message or MessageCollection instances to be added to the collection.
      */
     constructor(identifier, ...items) {
-        for(let item of items) {
-            if(!(item instanceof Message || item instanceof MessageCollection)) {
+        for (let item of items) {
+            if (!(item instanceof Message || item instanceof MessageCollection)) {
                 throw new Error('Only Message and MessageCollection instances can be added to MessageCollection');
             }
         }
@@ -1456,7 +1456,7 @@ class MessageCollection  {
     getChat() {
         return this.collection.reduce((acc, message) => {
             const name = message.name;
-            if (message.content) acc.push({role: message.role, ...(name && { name }), content: message.content});
+            if (message.content) acc.push({ role: message.role, ...(name && { name }), content: message.content });
             return acc;
         }, []);
     }
@@ -2450,7 +2450,7 @@ function onSettingsPresetChange() {
         settingsToUpdate: settingsToUpdate,
         settings: oai_settings,
         savePreset: saveOpenAIPreset
-    }).finally(r =>{
+    }).finally(r => {
         for (const [key, [selector, setting, isCheckbox]] of Object.entries(settingsToUpdate)) {
             if (preset[key] !== undefined) {
                 if (isCheckbox) {
@@ -2799,8 +2799,8 @@ function onProxyPasswordShowClick() {
     $(this).toggleClass('fa-eye-slash fa-eye');
 }
 
-$(document).ready(function () {
-    loadTokenCache();
+$(document).ready(async function () {
+    await loadTokenCache();
 
     $('#test_api_button').on('click', testApiConnection);
 
