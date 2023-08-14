@@ -608,10 +608,6 @@ class CoquiTtsProvider {
 //#############################//
 
 async function moduleWorker() {
-    // Skip if module not loaded
-    if (!modules.includes('coqui-tts'))
-        return;
-
     updateCharactersList();
 }
 
