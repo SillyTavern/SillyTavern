@@ -517,11 +517,12 @@ function populateDialogueExamples(prompts, chatCompletion) {
 
         [...openai_msgs_example].forEach((dialogue, dialogueIndex) => {
             dialogue.forEach((prompt, promptIndex) => {
-                const role = prompt.name === 'example_assistant' ? 'assistant' : 'user';
+                const role = 'system';
                 const content = prompt.content || '';
                 const identifier = `dialogueExamples ${dialogueIndex}-${promptIndex}`;
 
                 const chatMessage = new Message(role, content, identifier);
+                chatMessage.setName(prompt.name);
                 if (chatCompletion.canAfford(chatMessage)) {
                     chatCompletion.insert(chatMessage, 'dialogueExamples');
                 }
@@ -1400,6 +1401,10 @@ class Message {
         } else {
             this.tokens = 0;
         }
+    }
+
+    setName(name) {
+        this.name = name;
     }
 
     /**
