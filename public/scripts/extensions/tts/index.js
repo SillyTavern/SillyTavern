@@ -1,5 +1,5 @@
 import { callPopup, cancelTtsPlay, eventSource, event_types, isMultigenEnabled, is_send_press, saveSettingsDebounced } from '../../../script.js'
-import { ModuleWorkerWrapper, doExtrasFetch, extension_settings, getApiUrl, getContext } from '../../extensions.js'
+import { ModuleWorkerWrapper, doExtrasFetch, extension_settings, getApiUrl, getContext, modules } from '../../extensions.js'
 import { escapeRegex, getStringHash } from '../../utils.js'
 import { EdgeTtsProvider } from './edge.js'
 import { ElevenLabsTtsProvider } from './elevenlabs.js'
@@ -166,6 +166,11 @@ async function moduleWorker() {
 }
 
 function talkingAnimation(switchValue) {
+    if (!modules.includes('talkinghead')) {
+        console.debug("Talking Animation module not loaded");
+        return;
+    }
+
     const apiUrl = getApiUrl();
     const animationType = switchValue ? "start" : "stop";
 

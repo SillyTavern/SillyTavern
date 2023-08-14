@@ -1166,6 +1166,8 @@ function select_group_chats(groupId, skipAnimation) {
         sortGroupMembers("#rm_group_add_members .group_member");
         await eventSource.emit(event_types.GROUP_UPDATED);
     });
+
+    eventSource.emit('groupSelected', {detail: {id: groupId, group: group}});
 }
 
 function updateFavButtonState(state) {
@@ -1197,6 +1199,7 @@ async function selectGroup() {
 
 function openCharacterDefinition(characterSelect) {
     if (is_group_generating) {
+        toastr.warning("Can't peek a character while group reply is being generated");
         console.warn("Can't peek a character def while group reply is being generated");
         return;
     }

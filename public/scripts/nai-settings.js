@@ -4,6 +4,7 @@ import {
     getStoppingStrings,
     getTextTokens
 } from "../script.js";
+import { getCfg } from "./extensions/cfg/util.js";
 import { tokenizers } from "./power-user.js";
 
 export {
@@ -26,12 +27,15 @@ const nai_settings = {
     top_k: 0,
     top_p: 1,
     top_a: 1,
+    top_g: 0,
     typical_p: 1,
     min_length: 0,
     model_novel: "euterpe-v2",
     preset_settings_novel: "Classic-Euterpe",
     streaming_novel: false,
     nai_preamble: default_preamble,
+    prefix: '',
+    cfg_uc: '',
 };
 
 const nai_tiers = {
@@ -92,6 +96,8 @@ function loadNovelPreset(preset) {
     nai_settings.top_g = preset.top_g;
     nai_settings.mirostat_lr = preset.mirostat_lr;
     nai_settings.mirostat_tau = preset.mirostat_tau;
+    nai_settings.prefix = preset.prefix;
+    nai_settings.cfg_uc = preset.cfg_uc || '';
     loadNovelSettingsUi(nai_settings);
 }
 
@@ -121,6 +127,8 @@ function loadNovelSettings(settings) {
     nai_settings.mirostat_lr = settings.mirostat_lr;
     nai_settings.mirostat_tau = settings.mirostat_tau;
     nai_settings.streaming_novel = !!settings.streaming_novel;
+    nai_settings.prefix = settings.prefix;
+    nai_settings.cfg_uc = settings.cfg_uc || '';
     loadNovelSettingsUi(nai_settings);
 }
 
@@ -193,6 +201,8 @@ function loadNovelSettingsUi(ui_settings) {
     $("#min_length_novel").val(ui_settings.min_length);
     $("#min_length_counter_novel").text(Number(ui_settings.min_length).toFixed(0));
     $('#nai_preamble_textarea').val(ui_settings.nai_preamble);
+    $('#nai_prefix').val(ui_settings.prefix || "");
+    $('#nai_cfg_uc').val(ui_settings.cfg_uc || "");
 
     $("#streaming_novel").prop('checked', ui_settings.streaming_novel);
 }
@@ -300,12 +310,17 @@ const sliders = [
         format: (val) => `${val}`,
         setValue: (val) => { nai_settings.min_length = Number(val).toFixed(0); },
     },
+    {
+        sliderId: "#nai_cfg_uc",
+        counterId: "#nai_cfg_uc_counter",
+        format: (val) => val,
+        setValue: (val) => { nai_settings.cfg_uc = val; },
+    },
 ];
 
-export function getNovelGenerationData(finalPromt, this_settings, this_amount_gen, isImpersonate) {
+export function getNovelGenerationData(finalPrompt, this_settings, this_amount_gen, isImpersonate) {
     const clio = nai_settings.model_novel.includes('clio');
     const kayra = nai_settings.model_novel.includes('kayra');
-    const isNewModel = clio || kayra;
 
     const tokenizerType = kayra ? tokenizers.NERD2 : (clio ? tokenizers.NERD : tokenizers.NONE);
     const stopSequences = (tokenizerType !== tokenizers.NONE)
@@ -313,15 +328,11 @@ export function getNovelGenerationData(finalPromt, this_settings, this_amount_ge
             .map(t => getTextTokens(tokenizerType, t))
         : undefined;
 
-    let useInstruct = false;
-    if (isNewModel) {
-        // NovelAI claims they scan backwards 1000 characters (not tokens!) to look for instruct brackets. That's really short.
-        const tail = finalPromt.slice(-1500);
-        useInstruct = tail.includes("}");
-    }
+    const prefix = nai_settings.prefix || autoSelectPrefix(finalPrompt);
+    const cfgSettings = getCfg();
 
     return {
-        "input": finalPromt,
+        "input": finalPrompt,
         "model": nai_settings.model_novel,
         "use_string": true,
         "temperature": parseFloat(nai_settings.temperature),
@@ -340,8 +351,8 @@ export function getNovelGenerationData(finalPromt, this_settings, this_amount_ge
         "top_g": parseFloat(nai_settings.top_g),
         "mirostat_lr": parseFloat(nai_settings.mirostat_lr),
         "mirostat_tau": parseFloat(nai_settings.mirostat_tau),
-        "cfg_scale": parseFloat(nai_settings.cfg_scale),
-        "cfg_uc": "",
+        "cfg_scale": cfgSettings?.guidanceScale ?? parseFloat(nai_settings.cfg_scale),
+        "cfg_uc": cfgSettings?.negativePrompt ?? nai_settings.cfg_uc ??  "",
         "phrase_rep_pen": nai_settings.phrase_rep_pen,
         //"stop_sequences": {{187}},
         "stop_sequences": stopSequences,
@@ -350,10 +361,26 @@ export function getNovelGenerationData(finalPromt, this_settings, this_amount_ge
         "use_cache": false,
         "use_string": true,
         "return_full_text": false,
-        "prefix": useInstruct ? "special_instruct" : (isNewModel ? "special_proseaugmenter" : "vanilla"),
+        "prefix": prefix,
         "order": this_settings.order,
         "streaming": nai_settings.streaming_novel,
     };
+}
+
+function autoSelectPrefix(finalPromt) {
+    let useInstruct = false;
+    const clio = nai_settings.model_novel.includes('clio');
+    const kayra = nai_settings.model_novel.includes('kayra');
+    const isNewModel = clio || kayra;
+
+    if (isNewModel) {
+        // NovelAI claims they scan backwards 1000 characters (not tokens!) to look for instruct brackets. That's really short.
+        const tail = finalPromt.slice(-1500);
+        useInstruct = tail.includes("}");
+    }
+
+    const prefix = useInstruct ? "special_instruct" : (isNewModel ? "special_proseaugmenter" : "vanilla");
+    return prefix;
 }
 
 export async function generateNovelWithStreaming(generate_data, signal) {
@@ -429,6 +456,11 @@ $(document).ready(function () {
 
     $("#model_novel_select").change(function () {
         nai_settings.model_novel = $("#model_novel_select").find(":selected").val();
+        saveSettingsDebounced();
+    });
+
+    $("#nai_prefix").on('change', function () {
+        nai_settings.prefix = $("#nai_prefix").find(":selected").val();
         saveSettingsDebounced();
     });
 });
