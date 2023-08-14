@@ -74,6 +74,7 @@ import {
     getCustomStoppingStrings,
     fuzzySearchCharacters,
     MAX_CONTEXT_DEFAULT,
+    fuzzySearchGroups,
 } from "./scripts/power-user.js";
 
 import {
@@ -7335,14 +7336,22 @@ $(document).ready(function () {
     $("#character_search_bar").on("input", function () {
         const selector = ['#rm_print_characters_block .character_select', '#rm_print_characters_block .group_select'].join(',');
         const searchValue = $(this).val().trim().toLowerCase();
-        const fuzzySearchResults = power_user.fuzzy_search ? fuzzySearchCharacters(searchValue) : [];
+        const fuzzySearchCharactersResults = power_user.fuzzy_search ? fuzzySearchCharacters(searchValue) : [];
+        const fuzzySearchGroupsResults = power_user.fuzzy_search ? fuzzySearchGroups(searchValue) : [];
 
         function getIsValidSearch(_this) {
             const name = $(_this).find(".ch_name").text().toLowerCase();
             const chid = $(_this).attr("chid");
+            const grid = $(_this).attr("grid");
 
             if (power_user.fuzzy_search) {
-                return fuzzySearchResults.includes(parseInt(chid));
+                if (chid !== undefined) {
+                    return fuzzySearchCharactersResults.includes(parseInt(chid));
+                } else if (grid !== undefined) {
+                    return fuzzySearchGroupsResults.includes(String(grid));
+                } else {
+                    return false;
+                }
             }
             else {
                 return name.includes(searchValue);

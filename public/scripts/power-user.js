@@ -953,9 +953,26 @@ export function fuzzySearchCharacters(searchValue) {
     });
 
     const results = fuse.search(searchValue);
-    console.debug('Fuzzy search results for ' + searchValue, results)
+    console.debug('Characters fuzzy search results for ' + searchValue, results);
     const indices = results.map(x => x.refIndex);
     return indices;
+}
+
+export function fuzzySearchGroups(searchValue) {
+    const fuse = new Fuse(groups, {
+        keys: [
+            { name: 'name', weight: 3 },
+            { name: 'members', weight: 1 },
+        ],
+        includeScore: true,
+        ignoreLocation: true,
+        threshold: 0.2,
+    });
+
+    const results = fuse.search(searchValue);
+    console.debug('Groups fuzzy search results for ' + searchValue, results);
+    const ids = results.map(x => String(x.item?.id)).filter(x => x);
+    return ids;
 }
 
 export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvatar, name1, name2) {
