@@ -347,7 +347,11 @@ function setupChatCompletionPromptManager(openAiSettings) {
             nsfw: default_nsfw_prompt,
             jailbreak: default_jailbreak_prompt,
             enhanceDefinitions: default_enhance_definitions_prompt
-        }
+        },
+        promptOrder: {
+            strategy: 'global',
+            dummyId: 100000
+        },
     };
 
     promptManager.saveServiceSettings = () => {
