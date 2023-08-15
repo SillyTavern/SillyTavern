@@ -29,6 +29,9 @@
             },
             "vits": {
                 "id": "tts_models/en/ljspeech/vits"
+            },
+            "speedy-speech": {
+                "id": "tts_models/en/ljspeech/speedy-speech"
             }
         },
         "vctk": {
