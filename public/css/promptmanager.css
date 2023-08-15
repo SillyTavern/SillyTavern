@@ -250,7 +250,6 @@
 }
 
 #completion_prompt_manager_popup {
-    max-width: var(--sheldWidth);
     overflow-y: auto;
     height: calc(100% - 40px);
     position: absolute;

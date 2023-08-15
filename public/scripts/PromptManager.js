@@ -1,13 +1,30 @@
-import {callPopup, event_types, eventSource, is_send_press, main_api, saveSettingsDebounced, substituteParams} from "../script.js";
+import {callPopup, event_types, eventSource, is_send_press, main_api, substituteParams} from "../script.js";
 import {TokenHandler} from "./openai.js";
 import {power_user} from "./power-user.js";
 import { debounce, waitUntilCondition } from "./utils.js";
+
+function debouncePromise(func, delay) {
+    let timeoutId;
+
+    return (...args) => {
+        clearTimeout(timeoutId);
+
+        return new Promise((resolve) => {
+            timeoutId = setTimeout(() => {
+                const result = func(...args);
+                resolve(result);
+            }, delay);
+        });
+    };
+}
 
 /**
  * Register migrations for the prompt manager when settings are loaded or an Open AI preset is loaded.
  */
 const registerPromptManagerMigration = () => {
     const migrate = (settings, savePreset = null, presetName = null) => {
+        if ('Default' === presetName) return;
+
         if (settings.main_prompt || settings.nsfw_prompt || settings.jailbreak_prompt) {
             console.log('Running prompt manager configuration migration');
             if (settings.prompts === undefined || settings.prompts.length === 0) settings.prompts = structuredClone(chatCompletionDefaultPrompts.prompts);
@@ -158,11 +175,6 @@ function PromptManagerModule() {
             nsfw: '',
             jailbreak: '',
             enhanceDefinitions: ''
-        },
-        quickEdit: {
-            main: '',
-            nsfw: '',
-            jailbreak: ''
         }
     };
 
@@ -307,41 +319,6 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         this.saveServiceSettings().then(() => this.render());
     };
 
-    // Factory function for creating quick edit elements
-    const createQuickEdit = function() {
-        return {
-            element: null,
-            prompt: null,
-
-            from(element, prompt) {
-                this.element = element;
-                element.value = prompt.content ?? '';
-                element.addEventListener('input', () => {
-                    prompt.content = element.value;
-                    saveSettingsDebounced()
-                });
-
-                return this;
-            },
-
-            update(value) {
-                this.element.value = value;
-            }
-        }
-    }
-
-    const mainPrompt = this.getPromptById('main');
-    const mainPromptTextarea = document.getElementById(this.configuration.quickEdit.main);
-    const mainQuickEdit = createQuickEdit().from(mainPromptTextarea, mainPrompt);
-
-    const nsfwPrompt = this.getPromptById('nsfw');
-    const nsfwPromptTextarea = document.getElementById(this.configuration.quickEdit.nsfw);
-    const nsfwQuickEdit = createQuickEdit().from(nsfwPromptTextarea, nsfwPrompt);
-
-    const jailbreakPrompt = this.getPromptById('jailbreak');
-    const jailbreakPromptTextarea = document.getElementById(this.configuration.quickEdit.jailbreak);
-    const jailbreakQuickEdit = createQuickEdit().from(jailbreakPromptTextarea, jailbreakPrompt);
-
     // Save prompt edit form to settings and close form.
     this.handleSavePrompt = (event) => {
         const promptId = event.target.dataset.pmPrompt;
@@ -355,9 +332,9 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
             this.updatePromptWithPromptEditForm(prompt);
         }
 
-        if ('main' === promptId) mainQuickEdit.update(prompt.content);
-        if ('nsfw' === promptId) nsfwQuickEdit.update(prompt.content);
-        if ('jailbreak' === promptId) jailbreakQuickEdit.update(prompt.content);
+        if ('main' === promptId) this.updateQuickEdit('main', prompt);
+        if ('nsfw' === promptId) this.updateQuickEdit('nsfw', prompt);
+        if ('jailbreak' === promptId) this.updateQuickEdit('jailbreak', prompt);
 
         this.log('Saved prompt: ' + promptId);
 
@@ -571,12 +548,13 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     document.getElementById(this.configuration.prefix + 'prompt_manager_popup_close_button').addEventListener('click', closeAndClearPopup);
 
     // Re-render prompt manager on openai preset change
-    eventSource.on(event_types.OAI_PRESET_CHANGED, settings => this.renderDebounced());
-
-    // Close popup on preset change
-    eventSource.on(event_types.OAI_PRESET_CHANGED, () => {
-        this.hidePopup();
-        this.clearEditForm();
+    eventSource.on(event_types.OAI_PRESET_CHANGED, settings => {
+        // Save configuration and wrap everything up.
+        this.saveServiceSettings().then(() => {
+            this.hidePopup();
+            this.clearEditForm();
+            this.renderDebounced()
+        });
     });
 
     // Re-render prompt manager on world settings update
@@ -952,6 +930,42 @@ PromptManagerModule.prototype.preparePrompt = function (prompt, original = null)
 }
 
 /**
+ * Factory function for creating a QuickEdit object associated with a prompt element.
+ *
+ * The QuickEdit object provides methods to synchronize an input element's value with a prompt's content
+ * and handle input events to update the prompt content.
+ *
+ */
+PromptManagerModule.prototype.createQuickEdit = function(identifier, title) {
+    const prompt = this.getPromptById(identifier);
+    const textareaIdentifier = `${identifier}_prompt_quick_edit_textarea`;
+    const html = `<div class="range-block m-t-1">
+                    <div class="justifyLeft" data-i18n="${title}">${title}</div>
+                    <div class="wide100p">
+                        <textarea id="${textareaIdentifier}" class="text_pole textarea_compact" rows="6" placeholder="">${prompt.content}</textarea>
+                    </div>
+                </div>`;
+
+    const quickEditContainer = document.getElementById('quick-edit-container');
+    quickEditContainer.insertAdjacentHTML('afterbegin', html);
+
+    const debouncedSaveServiceSettings = debouncePromise(() => this.saveServiceSettings(), 300);
+
+    const textarea = document.getElementById(textareaIdentifier);
+    textarea.addEventListener('blur', () => {
+        prompt.content = textarea.value;
+        this.updatePromptByIdentifier(identifier, prompt);
+        debouncedSaveServiceSettings().then(() => this.render());
+    });
+
+}
+
+PromptManagerModule.prototype.updateQuickEdit = function(identifier, prompt) {
+    const textarea = document.getElementById(`${identifier}_prompt_quick_edit_textarea`);
+    textarea.value = prompt.content;
+}
+
+/**
  * Checks if a given name is accepted by OpenAi API
  * @link https://platform.openai.com/docs/api-reference/chat/create
  *
@@ -1240,6 +1254,13 @@ PromptManagerModule.prototype.renderPromptManager = function () {
         footerDiv.querySelector('#prompt-manager-export').addEventListener('click', showExportSelection);
         rangeBlockDiv.querySelector('.export-promptmanager-prompts-full').addEventListener('click', this.handleFullExport);
         rangeBlockDiv.querySelector('.export-promptmanager-prompts-character').addEventListener('click', this.handleCharacterExport);
+
+        const quickEditContainer = document.getElementById('quick-edit-container');
+        quickEditContainer.innerHTML = '';
+
+        this.createQuickEdit('jailbreak', 'Jailbreak');
+        this.createQuickEdit('nsfw', 'NSFW');
+        this.createQuickEdit('main', 'Main');
     }
 };
 
