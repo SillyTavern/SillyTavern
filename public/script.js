@@ -1369,9 +1369,21 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
 function insertSVGIcon(mes, extra) {
     // Determine the SVG filename
     let modelName;
-    if (extra.api === "openai" && extra.model.toLowerCase().includes("claude")) {
+
+    // Claude on OpenRouter or Anthropic
+    if (extra.api === "openai" && extra.model?.toLowerCase().includes("claude")) {
         modelName = "claude";
-    } else {
+    }
+    // OpenAI on OpenRouter
+    else if (extra.api === "openai" && extra.model?.toLowerCase().includes("openai")) {
+        modelName = "openai";
+    }
+    // OpenRouter website model or other models
+    else if (extra.api === "openai" && (extra.model === null || extra.model?.toLowerCase().includes("/"))) {
+        modelName = "openrouter";
+    }
+    // Everything else
+    else {
         modelName = extra.api;
     }
 

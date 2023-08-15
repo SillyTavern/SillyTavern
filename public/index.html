@@ -49,7 +49,8 @@
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <script>
         function applyLocale() {
-            var language = navigator.language || navigator.userLanguage;
+            const overrideLanguage = localStorage.getItem("language");
+            var language = overrideLanguage || navigator.language || navigator.userLanguage;
             language = language.toLowerCase();
             console.log(language)
             //load the appropriate language file
@@ -2482,6 +2483,19 @@
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+                            <div id="UI-language-block" class="flex-container flexFlowColumn">
+                                <h4>
+                                    <span data-i18n="UI Language">UI Language</span>
+                                </h4>
+                                <div class="flex-container flexnowrap alignitemscenter">
+                                    <select id="ui_language_select" class="margin0 margin-r5">
+                                        <option value="" data-i18n="Browser default">
+                                            Browser default
+                                        </option>
+                                        <option value="en">en</option>
+                                    </select>
                                 </div>
                             </div>
                             <div id="UI-presets-block" class="flex-container flexFlowColumn">
