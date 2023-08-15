@@ -1853,6 +1853,17 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
     const novelai = require('./src/novelai');
     const isNewModel = (request.body.model.includes('clio') || request.body.model.includes('kayra'));
     const isKrake = request.body.model.includes('krake');
+    const badWordsList = isNewModel ? novelai.badWordsList : (isKrake ? novelai.krakeBadWordsList : novelai.euterpeBadWordsList);
+
+    // Add customized bad words for Clio and Kayra
+    if (isNewModel && Array.isArray(request.body.bad_words_ids)) {
+        for (const badWord of request.body.bad_words_ids) {
+            if (Array.isArray(badWord) && badWord.every(x => Number.isInteger(x))) {
+                badWordsList.push(badWord);
+            }
+        }
+    }
+
     const data = {
         "input": request.body.input,
         "model": request.body.model,
@@ -1880,7 +1891,7 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
             "phrase_rep_pen": request.body.phrase_rep_pen,
             "stop_sequences": request.body.stop_sequences,
             //"stop_sequences": {{187}},
-            "bad_words_ids": isNewModel ? novelai.badWordsList : (isKrake ? novelai.krakeBadWordsList : novelai.euterpeBadWordsList),
+            "bad_words_ids": badWordsList,
             "logit_bias_exp": isNewModel ? novelai.logitBiasExp : null,
             //generate_until_sentence = true;
             "use_cache": request.body.use_cache,
