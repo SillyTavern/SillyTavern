@@ -806,8 +806,10 @@ function prepareOpenAIMessages({
             promptManager.error = 'The name of at least one character contained whitespaces or special characters. Please check your user and character name.';
         } else {
             toastr.error('An unknown error occurred while counting tokens. Further information may be available in console.')
-            chatCompletion.log('Unexpected error:');
+            chatCompletion.log('----- Unexpected error while preparing prompts -----');
             chatCompletion.log(error);
+            chatCompletion.log(error.stack);
+            chatCompletion.log('----------------------------------------------------');
         }
     } finally {
         // Pass chat completion to prompt manager for inspection
