@@ -2911,7 +2911,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     parseTokenCounts(counts, thisPromptBits);
                 }
 
-                setInContextMessages(openai_messages_count, type);
+                if (!dryRun) {
+                    setInContextMessages(openai_messages_count, type);
+                }
             }
 
             if (true === dryRun) return onSuccess({error: 'dryRun'});
@@ -3336,7 +3338,7 @@ function parseTokenCounts(counts, thisPromptBits) {
 function addChatsPreamble(mesSendString) {
     return main_api === 'novel'
         ? nai_settings.preamble + '\n' + mesSendString
-        : mesSendString;   
+        : mesSendString;
 }
 
 function addChatsSeparator(mesSendString) {

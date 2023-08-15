@@ -1036,6 +1036,13 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
         signal = new AbortController().signal;
     }
 
+    // HACK: Filter out null and non-object messages
+    if (!Array.isArray(openai_msgs_tosend)) {
+        throw new Error('openai_msgs_tosend must be an array');
+    }
+
+    openai_msgs_tosend = openai_msgs_tosend.filter(msg => msg && typeof msg === 'object');
+
     let logit_bias = {};
     const isClaude = oai_settings.chat_completion_source == chat_completion_sources.CLAUDE;
     const isOpenRouter = oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER;
