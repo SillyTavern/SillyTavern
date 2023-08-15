@@ -327,6 +327,7 @@ function onAudioControlClicked() {
     // Not pausing, doing a full stop to anything TTS is doing. Better UX as pause is not as useful
     if (!audioElement.paused || isTtsProcessing()) {
         resetTtsPlayback()
+        talkingAnimation(false);
     } else {
         // Default play behavior if not processing or playing is to play the last message.
         ttsJobQueue.push(context.chat[context.chat.length - 1])
