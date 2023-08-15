@@ -1935,6 +1935,7 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
             }
 
             const data = await response.json();
+            console.log(data);
             return response_generate_novel.send(data);
         }
     } catch (error) {

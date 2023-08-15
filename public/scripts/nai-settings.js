@@ -15,6 +15,7 @@ export {
 };
 
 const default_preamble = "[ Style: chat, complex, sensory, visceral ]";
+const maximum_output_length = 150;
 
 const nai_settings = {
     temperature: 0.5,
@@ -127,42 +128,10 @@ function loadNovelSettings(settings) {
     nai_settings.mirostat_lr = settings.mirostat_lr;
     nai_settings.mirostat_tau = settings.mirostat_tau;
     nai_settings.streaming_novel = !!settings.streaming_novel;
+    nai_settings.preamble = settings.preamble || default_preamble;
     nai_settings.prefix = settings.prefix;
     nai_settings.cfg_uc = settings.cfg_uc || '';
     loadNovelSettingsUi(nai_settings);
-}
-
-const phraseRepPenStrings = [
-    null,
-    "very_light",
-    "light",
-    "medium",
-    "aggressive",
-    "very_aggressive"
-]
-
-function getPhraseRepPenString(phraseRepPenCounter) {
-    if (phraseRepPenCounter < 1 || phraseRepPenCounter > 5) {
-        return null;
-    } else {
-        return phraseRepPenStrings[phraseRepPenCounter];
-    }
-}
-
-function getPhraseRepPenCounter(phraseRepPenString) {
-    if (phraseRepPenString === phraseRepPenStrings[1]) {
-        return 1;
-    } else if (phraseRepPenString === phraseRepPenStrings[2]) {
-        return 2;
-    } else if (phraseRepPenString === phraseRepPenStrings[3]) {
-        return 3;
-    } else if (phraseRepPenString === phraseRepPenStrings[4]) {
-        return 4;
-    } else if (phraseRepPenString === phraseRepPenStrings[5]) {
-        return 5;
-    } else {
-        return 0;
-    }
 }
 
 function loadNovelSettingsUi(ui_settings) {
@@ -190,7 +159,7 @@ function loadNovelSettingsUi(ui_settings) {
     $("#typical_p_counter_novel").text(Number(ui_settings.typical_p).toFixed(2));
     $("#cfg_scale_novel").val(ui_settings.cfg_scale);
     $("#cfg_scale_counter_novel").text(Number(ui_settings.cfg_scale).toFixed(2));
-    $("#phrase_rep_pen_novel").val(getPhraseRepPenCounter(ui_settings.phrase_rep_pen));
+    $("#phrase_rep_pen_novel").val(ui_settings.phrase_rep_pen || "off");
     $("#top_g_novel").val(ui_settings.top_g);
     $("#top_g_counter_novel").text(Number(ui_settings.top_g).toFixed(0));
     $("#mirostat_lr_novel").val(ui_settings.mirostat_lr);
@@ -200,7 +169,7 @@ function loadNovelSettingsUi(ui_settings) {
     $("#min_length_novel").val(ui_settings.min_length);
     $("#min_length_counter_novel").text(Number(ui_settings.min_length).toFixed(0));
     $('#nai_preamble_textarea').val(ui_settings.nai_preamble);
-    $('#nai_prefix').val(ui_settings.prefix || "");
+    $('#nai_prefix').val(ui_settings.prefix || "vanilla");
     $('#nai_cfg_uc').val(ui_settings.cfg_uc || "");
 
     $("#streaming_novel").prop('checked', ui_settings.streaming_novel);
@@ -321,7 +290,7 @@ export function getNovelGenerationData(finalPrompt, this_settings, this_amount_g
             .map(t => getTextTokens(tokenizerType, t))
         : undefined;
 
-    const prefix = nai_settings.prefix || autoSelectPrefix(finalPrompt);
+    const prefix = selectPrefix(nai_settings.prefix, finalPrompt);
     const cfgSettings = getCfg();
 
     return {
@@ -329,7 +298,7 @@ export function getNovelGenerationData(finalPrompt, this_settings, this_amount_g
         "model": nai_settings.model_novel,
         "use_string": true,
         "temperature": parseFloat(nai_settings.temperature),
-        "max_length": this_amount_gen, // this_settings.max_length, // <= why?
+        "max_length": this_amount_gen < maximum_output_length ? this_amount_gen : maximum_output_length,
         "min_length": parseInt(nai_settings.min_length),
         "tail_free_sampling": parseFloat(nai_settings.tail_free_sampling),
         "repetition_penalty": parseFloat(nai_settings.repetition_penalty),
@@ -347,8 +316,8 @@ export function getNovelGenerationData(finalPrompt, this_settings, this_amount_g
         "cfg_scale": cfgSettings?.guidanceScale ?? parseFloat(nai_settings.cfg_scale),
         "cfg_uc": cfgSettings?.negativePrompt ?? nai_settings.cfg_uc ??  "",
         "phrase_rep_pen": nai_settings.phrase_rep_pen,
-        //"stop_sequences": {{187}},
         "stop_sequences": stopSequences,
+        // These get added by the server
         //bad_words_ids = {{50256}, {0}, {1}};
         "generate_until_sentence": true,
         "use_cache": false,
@@ -360,7 +329,8 @@ export function getNovelGenerationData(finalPrompt, this_settings, this_amount_g
     };
 }
 
-function autoSelectPrefix(finalPromt) {
+// Check if the prefix needs to be overriden to use instruct mode
+function selectPrefix(selected_prefix, finalPromt) {
     let useInstruct = false;
     const clio = nai_settings.model_novel.includes('clio');
     const kayra = nai_settings.model_novel.includes('kayra');
@@ -370,10 +340,10 @@ function autoSelectPrefix(finalPromt) {
         // NovelAI claims they scan backwards 1000 characters (not tokens!) to look for instruct brackets. That's really short.
         const tail = finalPromt.slice(-1500);
         useInstruct = tail.includes("}");
+        return useInstruct ? "special_instruct" : selected_prefix;
     }
 
-    const prefix = useInstruct ? "special_instruct" : (isNewModel ? "special_proseaugmenter" : "vanilla");
-    return prefix;
+    return "vanilla";
 }
 
 export async function generateNovelWithStreaming(generate_data, signal) {
@@ -458,8 +428,7 @@ $(document).ready(function () {
     });
 
     $("#phrase_rep_pen_novel").on('change', function () {
-        const val = $("#phrase_rep_pen_novel").find(":selected").val();
-        nai_settings.phrase_rep_pen = getPhraseRepPenString(Number(val).toFixed(0));
+        nai_settings.phrase_rep_pen = $("#phrase_rep_pen_novel").find(":selected").val();
         saveSettingsDebounced();
     });
 });
