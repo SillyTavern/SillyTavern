@@ -172,8 +172,8 @@ function get_mancer_headers() {
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
-const { SentencePieceProcessor, cleanText } = require("sentencepiece-js");
-const { Tokenizer } = require('@mlc-ai/web-tokenizers');
+const { SentencePieceProcessor } = require("@agnai/sentencepiece-js");
+const { Tokenizer } = require('@agnai/web-tokenizers');
 const CHARS_PER_TOKEN = 3.35;
 
 let spp_llama;
