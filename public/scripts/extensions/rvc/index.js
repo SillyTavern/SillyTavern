@@ -289,8 +289,8 @@ async function rvcVoiceConversion(response, character) {
 
     // Check voice map
     if (extension_settings.rvc.voiceMap[character] === undefined) {
-        toastr.error("No model is assigned to character '"+character+"', check RVC voice map in the extension menu.", DEBUG_PREFIX+'RVC Voice map error', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
-        console.error("No RVC model assign in voice map for current character "+character);
+        //toastr.error("No model is assigned to character '"+character+"', check RVC voice map in the extension menu.", DEBUG_PREFIX+'RVC Voice map error', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+        console.info(DEBUG_PREFIX,"No RVC model assign in voice map for current character "+character);
         return response;
     }
 
