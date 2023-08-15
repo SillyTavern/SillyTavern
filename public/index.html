@@ -195,6 +195,24 @@
                             <hr>
                         </div>
 
+                        <div id="ai_module_block_novel" class="width100p">
+                            <div class="range-block">
+                                <div class="range-block-title justifyLeft">
+                                    AI Module
+                                </div>
+                                <div class="toggle-description justifyLeft"
+                                    data-i18n="Changes the style of the generated text.">
+                                    Changes the style of the generated text.
+                                </div>
+                                <select id="nai_prefix">
+                                    <option value="vanilla" data-i18n="No Module">No Module</option>
+                                    <option value="special_instruct" data-i18n="Instruct">Instruct</option>
+                                    <option value="special_proseaugmenter" data-i18n="Prose Augmenter">Prose Augmenter</option>
+                                    <option value="theme_textadventure" data-i18n="Text Adventure">Text Adventure</option>
+                                </select>
+                            </div>
+                        </div>
+
                         <div id="common-gen-settings-block" class="width100p">
                             <div id="pro-settings-block">
                                 <div id="amount_gen_block" class="range-block">
@@ -432,12 +450,12 @@
                                         Phrase Repetition Penalty
                                     </div>
                                     <select id="phrase_rep_pen_novel">
-                                        <option value="0" data-i18n="Disabled">Disabled</option>
-                                        <option value="1" data-i18n="Very Light">Very Light</option>
-                                        <option value="2" data-i18n="Light">Light</option>
-                                        <option value="3" data-i18n="Medium">Medium</option>
-                                        <option value="4" data-i18n="Aggressive">Aggressive</option>
-                                        <option value="5" data-i18n="Very Aggressive">Very Aggressive</option>
+                                        <option value="off" data-i18n="Off">Disabled</option>
+                                        <option value="very_light" data-i18n="Very Light">Very Light</option>
+                                        <option value="light" data-i18n="Light">Light</option>
+                                        <option value="medium" data-i18n="Medium">Medium</option>
+                                        <option value="aggressive" data-i18n="Aggressive">Aggressive</option>
+                                        <option value="very_aggressive" data-i18n="Very Aggressive">Very Aggressive</option>
                                     </select>
                                 </div>
                             </div>
@@ -851,21 +869,6 @@
                             </div>
                             <div id="novel_api-settings">
                                 <div class="range-block">
-                                    <div class="range-block-title justifyLeft">
-                                        AI Module
-                                    </div>
-                                    <div class="toggle-description justifyLeft" data-i18n="Change the style of the generated text. Set to Vanilla to use the default style.">
-                                        Change the style of the generated text. Set to Vanilla to use the default style.
-                                    </div>
-                                    <select id="nai_prefix">
-                                        <option value="" data-i18n="Auto-select">Auto-select</option>
-                                        <option value="vanilla" data-i18n="Vanilla">Vanilla</option>
-                                        <option value="special_instruct" data-i18n="Instruct">Instruct</option>
-                                        <option value="special_proseaugmenter" data-i18n="Prose Augmenter">Prose Augmenter</option>
-                                        <option value="theme_textadventure" data-i18n="Text Adventure">Text Adventure</option>
-                                    </select>
-                                </div>
-                                <div class="range-block">
                                     <div class="range-block-title openai_restorable">
                                         <span data-i18n="Preamble">Preamble</span>
                                         <div id="nai_preamble_restore" title="Restore default prompt" data-i18n="[title]Restore default prompt" class="right_menu_button">
@@ -1018,7 +1021,7 @@
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
-                                            <input type="range" id="min_length_novel" name="volume" min="0" max="1024" step="1">
+                                            <input type="range" id="min_length_novel" name="volume" min="1" max="150" step="1">
                                         </div>
                                         <div class="range-block-counter">
                                             <div contenteditable="true" data-for="min_length_novel" id="min_length_counter_novel">

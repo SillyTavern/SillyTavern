@@ -3334,8 +3334,9 @@ function parseTokenCounts(counts, thisPromptBits) {
 }
 
 function addChatsPreamble(mesSendString) {
-    const preamble = main_api === 'novel' ? nai_settings.preamble : "";
-    return preamble + '\n' + mesSendString;
+    return main_api === 'novel'
+        ? nai_settings.preamble + '\n' + mesSendString
+        : mesSendString;   
 }
 
 function addChatsSeparator(mesSendString) {
@@ -3349,7 +3350,7 @@ function addChatsSeparator(mesSendString) {
     }
 
     else if (main_api === 'novel') {
-        mesSendString = '\n***\n' + mesSendString;
+        mesSendString = '***\n' + mesSendString;
     }
 
     // add non-pygma dingus
@@ -4607,6 +4608,12 @@ function changeMainAPI() {
         console.log("enabling amount_gen for ooba/novel");
         activeItem.amountGenElem.find('input').prop("disabled", false);
         activeItem.amountGenElem.css("opacity", 1.0);
+    }
+
+    if (selectedVal === "novel") {
+        $("#ai_module_block_novel").css("display", "block");
+    } else {
+        $("#ai_module_block_novel").css("display", "none");
     }
 
     // Hide common settings for OpenAI
