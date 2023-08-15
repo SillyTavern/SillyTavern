@@ -1,4 +1,5 @@
 import {callPopup, event_types, eventSource, is_send_press, main_api, substituteParams} from "../script.js";
+import { is_group_generating } from "./group-chats.js";
 import {TokenHandler} from "./openai.js";
 import {power_user} from "./power-user.js";
 import { debounce, waitUntilCondition } from "./utils.js";
@@ -574,7 +575,7 @@ PromptManagerModule.prototype.render = function (afterTryGenerate = true) {
     if (null === this.activeCharacter) return;
     this.error = null;
 
-    waitUntilCondition(() => is_send_press == false, 1024 * 1024, 100).then(() => {
+    waitUntilCondition(() => !is_send_press && !is_group_generating, 1024 * 1024, 100).then(() => {
         if (true === afterTryGenerate) {
             // Executed during dry-run for determining context composition
             this.profileStart('filling context');
