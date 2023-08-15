@@ -2113,17 +2113,12 @@ $(document).ready(() => {
 
         if (language) {
             localStorage.setItem(storage_keys.ui_language, language);
-            window["applyLocale"]();
         } else {
-            const result = confirm("Are you sure you want to reset the language to default? This will reload the page.")
-            if (result) {
-                localStorage.removeItem(storage_keys.ui_language);
-                location.reload();
-            } else {
-                $(this).val(localStorage.getItem(storage_keys.ui_language));
-            }
+            localStorage.removeItem(storage_keys.ui_language);
         }
-    })
+
+        location.reload();
+    });
 
     $(window).on('focus', function () {
         browser_has_focus = true;
