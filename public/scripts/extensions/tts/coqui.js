@@ -15,6 +15,7 @@ const UPDATE_INTERVAL = 1000
 let inApiCall = false
 let charactersList = [] // Updated with module worker
 let coquiApiModels = {} // Initialized only once
+let coquiLocalModels = [] // Initialized only once
 /*
 coquiApiModels format [language][dataset][name]:coqui-api-model-id, example:
 {
@@ -43,11 +44,6 @@ function throwIfModuleMissing() {
         toastr.error(`Add coqui-tts to enable-modules and restart the Extras API.`, "Coqui TTS module not loaded.", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
         throw new Error(DEBUG_PREFIX,`Coqui TTS module not loaded.`);
     }
-}
-
-function throwLocalOrigin() {
-    toastr.info("coming soon, ready when ready, etc", DEBUG_PREFIX+' Custom models not supported yet', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
-    throw new Error(DEBUG_PREFIX,`requesting feature not implemented yet.`);
 }
 
 function resetModelSettings() {
@@ -105,8 +101,8 @@ class CoquiTtsProvider {
                     <label for="coqui_model_origin">Models:</label>
                     <select id="coqui_model_origin">gpu_mode
                         <option value="none">Select Origin</option>
-                        <option value="coqui-api">Coqui TTS</option>
-                        <option value="local">My models</option>
+                        <option value="coqui-api">Coqui API</option>
+                        <option value="local">My Models</option>
                     </select>
 
                     <div id="coqui_api_model_div">
@@ -129,6 +125,14 @@ class CoquiTtsProvider {
                         <span id="coqui_api_model_install_status">Model installed on extras server</span>
                         <input id="coqui_api_model_install_button" class="menu_button" type="button" value="Install" />
                     </div>
+
+                    
+                    <div id="coqui_local_model_div">
+                        <select id="coqui_local_model_name">
+                            <!-- Populated by JS and request -->
+                        </select>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -151,6 +155,9 @@ class CoquiTtsProvider {
         this.updateVoiceMap(); // Overide any manual modification
 
         $("#coqui_api_model_div").hide();
+        $("#coqui_local_model_div").hide();
+        
+        $("#coqui_api_language").show();
         $("#coqui_api_model_name").hide();
         $("#coqui_api_model_settings").hide();
         $("#coqui_api_model_install_status").hide();
@@ -242,7 +249,16 @@ class CoquiTtsProvider {
         }
 
         if (model_origin == "local") {
-            throwLocalOrigin();
+            const model_id = $("#coqui_local_model_name").val();
+
+            if (model_name == "none") {
+                toastr.error(`Model not selected, please select one.`, DEBUG_PREFIX+" voice mapping model", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+                this.updateVoiceMap(); // Overide any manual modification
+                return;
+            }
+
+            this.settings.voiceMapDict[character] = {model_type: "local", model_id: "local/"+model_id};
+            console.debug(DEBUG_PREFIX,"Registered new voice map: ",character,":",this.settings.voiceMapDict[character]);
             this.updateVoiceMap(); // Overide any manual modification
             return;
         }
@@ -282,7 +298,7 @@ class CoquiTtsProvider {
 
         console.debug(DEBUG_PREFIX,"Current voice map: ",this.settings.voiceMap);
 
-        this.settings.voiceMapDict[character] = {model_id: model_id, model_language:model_setting_language, model_speaker:model_setting_speaker};
+        this.settings.voiceMapDict[character] = {model_type: "coqui-api", model_id: model_id, model_language:model_setting_language, model_speaker:model_setting_speaker};
 
         console.debug(DEBUG_PREFIX,"Registered new voice map: ",character,":",this.settings.voiceMapDict[character]);
 
@@ -311,16 +327,17 @@ class CoquiTtsProvider {
         const model_origin = $('#coqui_model_origin').val();
         console.debug(model_origin);
         
-        // TODO: show coqui model list
+        // show coqui model list
         if (model_origin == "coqui-api") {
+            $("#coqui_local_model_div").hide();
             $("#coqui_api_model_div").show();
         }
-        else
-            $("#coqui_api_model_div").hide();
+        
 
-        // TODO show local model list
+        // show local model list
         if (model_origin == "local") {
-            throwLocalOrigin();
+            $("#coqui_api_model_div").hide();
+            $("#coqui_local_model_div").show();
         }
     }
 
@@ -533,7 +550,33 @@ class CoquiTtsProvider {
         return apiResult
     }
 
-    // Get speakers
+    /*
+        Retrieve user custom models
+    */
+    static async getLocalModelList() {
+        throwIfModuleMissing()
+        const url = new URL(getApiUrl());
+        url.pathname = '/api/text-to-speech/coqui/local/get-models';
+
+        const apiResult = await doExtrasFetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Cache-Control': 'no-cache'
+            },
+            body: JSON.stringify({
+                "model_id": "model_id",
+                "action": "action"
+            })
+        })
+
+        if (!apiResult.ok) {
+            toastr.error(apiResult.statusText, DEBUG_PREFIX+' Get local model list request failed');
+            throw new Error(`HTTP ${apiResult.status}: ${await apiResult.text()}`);
+        }
+
+        return apiResult
+    }
 
 
     // Expect voiceId format to be like:
@@ -609,6 +652,28 @@ class CoquiTtsProvider {
 
 async function moduleWorker() {
     updateCharactersList();
+
+    if (!modules.includes('coqui-tts'))
+        return
+
+    // Initialized local model once
+    if (coquiLocalModels.length == 0){
+        let result = await CoquiTtsProvider.getLocalModelList();
+        result = await result.json();
+
+        coquiLocalModels = result["models_list"];
+
+        $("#coqui_local_model_name").show();
+        $('#coqui_local_model_name')
+            .find('option')
+            .remove()
+            .end()
+            .append('<option value="none">Select model</option>')
+            .val('none');
+
+        for(const model_dataset of coquiLocalModels)
+            $("#coqui_local_model_name").append(new Option(model_dataset,model_dataset));
+    }
 }
 
 $(document).ready(function () {
