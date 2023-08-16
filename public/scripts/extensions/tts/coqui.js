@@ -9,13 +9,14 @@ import { doExtrasFetch, extension_settings, getApiUrl, getContext, modules, Modu
 
 export { CoquiTtsProvider }
 
-const DEBUG_PREFIX = "<Coqui TTS module> "
-const UPDATE_INTERVAL = 1000
+const DEBUG_PREFIX = "<Coqui TTS module> ";
+const UPDATE_INTERVAL = 1000;
 
-let inApiCall = false
-let charactersList = [] // Updated with module worker
-let coquiApiModels = {} // Initialized only once
-let coquiLocalModels = [] // Initialized only once
+let inApiCall = false;
+let charactersList = []; // Updated with module worker
+let coquiApiModels = {}; // Initialized only once
+let coquiLocalModels = []; // Initialized only once
+let coquiLocalModelsReceived = false;
 /*
 coquiApiModels format [language][dataset][name]:coqui-api-model-id, example:
 {
@@ -98,6 +99,9 @@ class CoquiTtsProvider {
                     <select id="coqui_character_select">
                         <!-- Populated by JS -->
                     </select>
+                    
+                    <input id="coqui_remove_char_mapping" class="menu_button" type="button" value="Remove from Voice Map" />
+
                     <label for="coqui_model_origin">Models:</label>
                     <select id="coqui_model_origin">gpu_mode
                         <option value="none">Select Origin</option>
@@ -163,9 +167,12 @@ class CoquiTtsProvider {
         $("#coqui_api_model_install_status").hide();
         $("#coqui_api_model_install_button").hide();
 
-        $("#coqui_model_origin").on("change",this.onModelOriginChange);
-        $("#coqui_api_language").on("change",this.onModelLanguageChange);
-        $("#coqui_api_model_name").on("change",this.onModelNameChange);
+        let that = this
+        $("#coqui_model_origin").on("change",function(){that.onModelOriginChange()});
+        $("#coqui_api_language").on("change",function(){that.onModelLanguageChange()});
+        $("#coqui_api_model_name").on("change",function(){that.onModelNameChange()});
+
+        $("#coqui_remove_char_mapping").on("click", function(){that.onRemoveClick()});
 
         // Load characters list
         $('#coqui_character_select')
@@ -321,11 +328,23 @@ class CoquiTtsProvider {
         return output;
     }
 
+    async onRemoveClick() {
+        const character = $("#coqui_character_select").val();
+
+        if (character === "none") {
+            toastr.error(`Character not selected, please select one.`, DEBUG_PREFIX+" voice mapping character", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+            return;
+        }
+
+        // Todo erase from voicemap
+        delete(this.settings.voiceMapDict[character]);
+        this.updateVoiceMap(); // TODO
+    }
+
     async onModelOriginChange() {
         throwIfModuleMissing()
         resetModelSettings();
         const model_origin = $('#coqui_model_origin').val();
-        console.debug(model_origin);
 
         if (model_origin == "none") {
             $("#coqui_local_model_div").hide();
@@ -662,7 +681,7 @@ async function moduleWorker() {
         return
 
     // Initialized local model once
-    if (coquiLocalModels.length == 0){
+    if (!coquiLocalModelsReceived){
         let result = await CoquiTtsProvider.getLocalModelList();
         result = await result.json();
 
@@ -678,6 +697,8 @@ async function moduleWorker() {
 
         for(const model_dataset of coquiLocalModels)
             $("#coqui_local_model_name").append(new Option(model_dataset,model_dataset));
+
+        coquiLocalModelsReceived = true;
     }
 }
 

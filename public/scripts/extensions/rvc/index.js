@@ -14,6 +14,7 @@ const UPDATE_INTERVAL = 1000
 
 let charactersList = [] // Updated with module worker
 let rvcModelsList = [] // Initialized only once
+let rvcModelsReceived = false;
 
 function updateVoiceMapText(){
     let voiceMapText = ""
@@ -340,7 +341,7 @@ async function rvcVoiceConversion(response, character) {
 async function moduleWorker() {
     updateCharactersList();
 
-    if (modules.includes('rvc') && rvcModelsList.length == 0) {
+    if (modules.includes('rvc') && !rvcModelsReceived) {
         let result = await get_models_list();
         result = await result.json();
         rvcModelsList = result["models_list"]
@@ -356,6 +357,7 @@ async function moduleWorker() {
             $("#rvc_model_select").append(new Option(modelName,modelName));
         }
 
+        rvcModelsReceived = true
         console.debug(DEBUG_PREFIX,"Updated model list to:", rvcModelsList);
     }
 }
