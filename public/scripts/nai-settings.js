@@ -1,8 +1,9 @@
 import {
     getRequestHeaders,
-    saveSettingsDebounced,
     getStoppingStrings,
-    getTextTokens
+    getTextTokens,
+    novelai_setting_names,
+    saveSettingsDebounced
 } from "../script.js";
 import { getCfg } from "./extensions/cfg/util.js";
 import { tokenizers } from "./power-user.js";
@@ -17,23 +18,28 @@ export {
 
 const default_preamble = "[ Style: chat, complex, sensory, visceral ]";
 const maximum_output_length = 150;
+const default_presets = {
+    "euterpe-v2": "Classic-Euterpe",
+    "krake-v2": "Classic-Krake",
+    "clio-v1": "Talker-Chat-Clio",
+    "kayra-v1": "Carefree-Kayra"
+}
 
 const nai_settings = {
-    temperature: 0.5,
-    repetition_penalty: 1,
-    repetition_penalty_range: 100,
-    repetition_penalty_slope: 0,
+    temperature: 1.5,
+    repetition_penalty: 2.25,
+    repetition_penalty_range: 2048,
+    repetition_penalty_slope: 0.09,
     repetition_penalty_frequency: 0,
-    repetition_penalty_presence: 0,
-    tail_free_sampling: 0.68,
-    top_k: 0,
-    top_p: 1,
-    top_a: 1,
-    top_g: 0,
-    typical_p: 1,
-    min_length: 0,
-    model_novel: "euterpe-v2",
-    preset_settings_novel: "Classic-Euterpe",
+    repetition_penalty_presence: 0.005,
+    tail_free_sampling: 0.975,
+    top_k: 10,
+    top_p: 0.75,
+    top_a: 0.08,
+    typical_p: 0.975,
+    min_length: 1,
+    model_novel: "clio-v1",
+    preset_settings_novel: "Talker-Chat-Clio",
     streaming_novel: false,
     nai_preamble: default_preamble,
     prefix: '',
@@ -97,7 +103,6 @@ function loadNovelPreset(preset) {
     nai_settings.min_length = preset.min_length;
     nai_settings.cfg_scale = preset.cfg_scale;
     nai_settings.phrase_rep_pen = preset.phrase_rep_pen;
-    nai_settings.top_g = preset.top_g;
     nai_settings.mirostat_lr = preset.mirostat_lr;
     nai_settings.mirostat_tau = preset.mirostat_tau;
     nai_settings.prefix = preset.prefix;
@@ -128,7 +133,6 @@ function loadNovelSettings(settings) {
     nai_settings.min_length = settings.min_length;
     nai_settings.phrase_rep_pen = settings.phrase_rep_pen;
     nai_settings.cfg_scale = settings.cfg_scale;
-    nai_settings.top_g = settings.top_g;
     nai_settings.mirostat_lr = settings.mirostat_lr;
     nai_settings.mirostat_tau = settings.mirostat_tau;
     nai_settings.streaming_novel = !!settings.streaming_novel;
@@ -165,8 +169,6 @@ function loadNovelSettingsUi(ui_settings) {
     $("#cfg_scale_novel").val(ui_settings.cfg_scale);
     $("#cfg_scale_counter_novel").text(Number(ui_settings.cfg_scale).toFixed(2));
     $("#phrase_rep_pen_novel").val(ui_settings.phrase_rep_pen || "off");
-    $("#top_g_novel").val(ui_settings.top_g);
-    $("#top_g_counter_novel").text(Number(ui_settings.top_g).toFixed(0));
     $("#mirostat_lr_novel").val(ui_settings.mirostat_lr);
     $("#mirostat_lr_counter_novel").text(Number(ui_settings.mirostat_lr).toFixed(2));
     $("#mirostat_tau_novel").val(ui_settings.mirostat_tau);
@@ -247,12 +249,6 @@ const sliders = [
         counterId: "#typical_p_counter_novel",
         format: (val) => Number(val).toFixed(2),
         setValue: (val) => { nai_settings.typical_p = Number(val).toFixed(2); },
-    },
-    {
-        sliderId: "#top_g_novel",
-        counterId: "#top_g_counter_novel",
-        format: (val) => Number(val).toFixed(0),
-        setValue: (val) => { nai_settings.top_g = Number(val).toFixed(0); },
     },
     {
         sliderId: "#mirostat_tau_novel",
@@ -411,7 +407,6 @@ export function getNovelGenerationData(finalPrompt, this_settings, this_amount_g
         "top_p": parseFloat(nai_settings.top_p),
         "top_k": parseInt(nai_settings.top_k),
         "typical_p": parseFloat(nai_settings.typical_p),
-        "top_g": parseFloat(nai_settings.top_g),
         "mirostat_lr": parseFloat(nai_settings.mirostat_lr),
         "mirostat_tau": parseFloat(nai_settings.mirostat_tau),
         "cfg_scale": cfgSettings?.guidanceScale ?? parseFloat(nai_settings.cfg_scale),
@@ -520,6 +515,12 @@ $(document).ready(function () {
     $("#model_novel_select").change(function () {
         nai_settings.model_novel = $("#model_novel_select").find(":selected").val();
         saveSettingsDebounced();
+
+        // Update the selected preset to something appropriate
+        const default_preset = default_presets[nai_settings.model_novel];
+        $(`#settings_perset_novel`).val(novelai_setting_names[default_preset]);
+        $(`#settings_perset_novel option[value=${novelai_setting_names[default_preset]}]`).attr("selected", "true")
+        $(`#settings_perset_novel`).trigger("change");
     });
 
     $("#nai_prefix").on('change', function () {
