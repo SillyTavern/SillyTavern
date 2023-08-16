@@ -17,6 +17,7 @@ export {
 };
 
 const default_preamble = "[ Style: chat, complex, sensory, visceral ]";
+const default_order = [1, 5, 0, 2, 3, 4];
 const maximum_output_length = 150;
 const default_presets = {
     "euterpe-v2": "Classic-Euterpe",
@@ -45,6 +46,7 @@ const nai_settings = {
     prefix: '',
     cfg_uc: '',
     banned_tokens: '',
+    order: default_order,
 };
 
 const nai_tiers = {
@@ -108,6 +110,7 @@ function loadNovelPreset(preset) {
     nai_settings.prefix = preset.prefix;
     nai_settings.cfg_uc = preset.cfg_uc || '';
     nai_settings.banned_tokens = preset.banned_tokens || '';
+    nai_settings.order = preset.order || default_order;
     loadNovelSettingsUi(nai_settings);
 }
 
@@ -140,6 +143,7 @@ function loadNovelSettings(settings) {
     nai_settings.prefix = settings.prefix;
     nai_settings.cfg_uc = settings.cfg_uc || '';
     nai_settings.banned_tokens = settings.banned_tokens || '';
+    nai_settings.order = settings.order || default_order;
     loadNovelSettingsUi(nai_settings);
 }
 
@@ -181,6 +185,7 @@ function loadNovelSettingsUi(ui_settings) {
     $('#nai_banned_tokens').val(ui_settings.banned_tokens || "");
 
     $("#streaming_novel").prop('checked', ui_settings.streaming_novel);
+    sortItemsByOrder(ui_settings.order);
 }
 
 const sliders = [
@@ -419,7 +424,7 @@ export function getNovelGenerationData(finalPrompt, this_settings, this_amount_g
         "use_string": true,
         "return_full_text": false,
         "prefix": prefix,
-        "order": this_settings.order,
+        "order": nai_settings.order || this_settings.order || default_order,
         "streaming": nai_settings.streaming_novel,
     };
 }
@@ -439,6 +444,44 @@ function selectPrefix(selected_prefix, finalPromt) {
     }
 
     return "vanilla";
+}
+
+// Sort the samplers by the order array
+function sortItemsByOrder(orderArray) {
+    console.debug('Preset samplers order: ' + orderArray);
+    const $draggableItems = $("#novel_order");
+
+    // Sort the items by the order array
+    for (let i = 0; i < orderArray.length; i++) {
+        const index = orderArray[i];
+        const $item = $draggableItems.find(`[data-id="${index}"]`).detach();
+        $draggableItems.append($item);
+    }
+
+    // Update the disabled class for each sampler
+    $draggableItems.children().each(function () {
+        const isEnabled = orderArray.includes(parseInt($(this).data('id')));
+        $(this).toggleClass('disabled', !isEnabled);
+
+        // If the sampler is disabled, move it to the bottom of the list
+        if (!isEnabled) {
+            const item = $(this).detach();
+            $draggableItems.append(item);
+        }
+    });
+}
+
+function saveSamplingOrder() {
+    const order = [];
+    $('#novel_order').children().each(function () {
+        const isEnabled = !$(this).hasClass('disabled');
+        if (isEnabled) {
+            order.push($(this).data('id'));
+        }
+    });
+    nai_settings.order = order;
+    console.log('Samplers reordered:', nai_settings.order);
+    saveSettingsDebounced();
 }
 
 export async function generateNovelWithStreaming(generate_data, signal) {
@@ -531,5 +574,17 @@ $(document).ready(function () {
     $("#phrase_rep_pen_novel").on('change', function () {
         nai_settings.phrase_rep_pen = $("#phrase_rep_pen_novel").find(":selected").val();
         saveSettingsDebounced();
+    });
+
+    $('#novel_order').sortable({
+        stop: saveSamplingOrder,
+    });
+
+    $('#novel_order .toggle_button').on('click', function () {
+        const $item = $(this).closest('[data-id]');
+        const isEnabled = !$item.hasClass('disabled');
+        $item.toggleClass('disabled', isEnabled);
+        console.log('Sampler toggled:', $item.data('id'), !isEnabled);
+        saveSamplingOrder();
     });
 });

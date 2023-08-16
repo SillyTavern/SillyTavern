@@ -2216,7 +2216,7 @@ grammarly-extension {
     background-color: red;
 }
 
-#kobold_order {
+.prompt_order {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -2226,7 +2226,7 @@ grammarly-extension {
     padding: 5px;
 }
 
-#kobold_order>div {
+.prompt_order>div {
     padding: 5px;
     padding-left: 30px;
     width: 100%;
@@ -2241,16 +2241,38 @@ grammarly-extension {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    column-gap: 10px;
 }
 
-#kobold_order>div:hover {
+.prompt_order>div>span:first-child {
+    flex-grow: 1;
+}
+
+.prompt_order>div:hover {
     background-color: var(--grey30a);
 }
 
-#kobold_order>div::after {
+.prompt_order>div::after {
     content: "☰";
     left: 8px;
     position: absolute;
+}
+
+.prompt_order .disabled {
+    opacity: 0.5;
+    filter: grayscale(0.5);
+}
+
+.prompt_order .toggle_button {
+    padding-right: 0;
+}
+
+.prompt_order .toggle_button::after {
+    content: '☑';
+}
+
+.prompt_order .disabled .toggle_button::after {
+    content: '☐';
 }
 
 /* ------ online status indicators and texts. 2 = kobold AI, 3 = Novel AI  ----------*/

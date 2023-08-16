@@ -348,7 +348,8 @@
         "min_length": 1,
         "model_novel": "clio-v1",
         "preset_settings_novel": "Talker-Chat-Clio",
-        "streaming_novel": false
+        "streaming_novel": true,
+        "order":  [1, 5, 0, 2, 3, 4]
     },
     "kai_settings": {
         "temp": 1,
