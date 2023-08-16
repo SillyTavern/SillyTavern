@@ -1,7 +1,7 @@
 {
   "order": [6, 2, 3, 1, 0],
   "temperature": 1,
-  "max_length": 300,
+  "max_length": 150,
   "min_length": 1,
   "top_k": 0,
   "top_p": 0.96,
