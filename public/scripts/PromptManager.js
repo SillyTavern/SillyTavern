@@ -183,6 +183,9 @@ function PromptManagerModule() {
         }
     }
 
+    // Either 0 for done or 1 for rendering
+    this.renderState = 0;
+
     // Chatcompletion configuration object
     this.serviceSettings = null;
 
@@ -589,8 +592,10 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
  */
 PromptManagerModule.prototype.render = function (afterTryGenerate = true) {
     if (main_api !== 'openai' ||
-        null === this.activeCharacter) return;
+        null === this.activeCharacter ||
+    1 === this.renderState) return;
 
+    this.renderState = 1;
     this.error = null;
 
     const stopPropagation = (event) => {
@@ -627,6 +632,7 @@ PromptManagerModule.prototype.render = function (afterTryGenerate = true) {
         this.log(error.stack);
         this.log('-----------------------------------------------------------');
     } finally {
+        this.renderState = 0;
         configurationContainer.removeEventListener('click', stopPropagation, true);
     }
 }
