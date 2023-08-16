@@ -181,7 +181,7 @@ function PromptManagerModule() {
             jailbreak: '',
             enhanceDefinitions: ''
         }
-    };
+    }
 
     // Chatcompletion configuration object
     this.serviceSettings = null;
@@ -588,12 +588,20 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
  * @param afterTryGenerate - Whether a dry run should be attempted before rendering
  */
 PromptManagerModule.prototype.render = function (afterTryGenerate = true) {
-    if (main_api !== 'openai') return;
+    if (main_api !== 'openai' ||
+        null === this.activeCharacter) return;
 
-    if (null === this.activeCharacter) return;
     this.error = null;
 
-    waitUntilCondition(() => !is_send_press && !is_group_generating, 1024 * 1024, 100).then(() => {
+    const stopPropagation = (event) => {
+        event.stopPropagation();
+    }
+
+    const configurationContainer = document.getElementById('ai_response_configuration');
+    try {
+        // Lock configuration during render
+        configurationContainer.addEventListener('click', stopPropagation, true);
+
         if (true === afterTryGenerate) {
             // Executed during dry-run for determining context composition
             this.profileStart('filling context');
@@ -613,9 +621,14 @@ PromptManagerModule.prototype.render = function (afterTryGenerate = true) {
             this.makeDraggable();
             this.profileEnd('render');
         }
-    }).catch(() => {
-        console.log('Timeout while waiting for send press to be false');
-    });
+    } catch (error) {
+        this.log('----- Unexpected error while rendering prompt manager -----');
+        this.log(error);
+        this.log(error.stack);
+        this.log('-----------------------------------------------------------');
+    } finally {
+        configurationContainer.removeEventListener('click', stopPropagation, true);
+    }
 }
 
 /**

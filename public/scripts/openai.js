@@ -1400,7 +1400,7 @@ class Message {
         this.content = content;
 
         if (this.content) {
-            this.tokens = tokenHandler.count({ role: this.role, content: this.content })
+            this.tokens = tokenHandler.count({ role: this.role, content: this.content });
         } else {
             this.tokens = 0;
         }
