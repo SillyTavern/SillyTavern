@@ -5,7 +5,7 @@ TODO:
 */
 
 import { saveSettingsDebounced } from "../../../script.js";
-import { getContext, getApiUrl, extension_settings, doExtrasFetch, ModuleWorkerWrapper } from "../../extensions.js";
+import { getContext, getApiUrl, extension_settings, doExtrasFetch, ModuleWorkerWrapper, modules } from "../../extensions.js";
 export { MODULE_NAME,  rvcVoiceConversion};
 
 const MODULE_NAME = 'RVC';
@@ -68,7 +68,7 @@ function loadSettings() {
 
     $('#rvc_filter_radius').val(extension_settings.rvc.filterRadius);
     $("#rvc_filter_radius_value").text(extension_settings.rvc.filterRadius);
-    
+
     $('#rvc_pitch_offset').val(extension_settings.rvc.pitchOffset);
     $('#rvc_pitch_offset_value').text(extension_settings.rvc.pitchOffset);
 
@@ -225,7 +225,7 @@ $(document).ready(function () {
 
                         <label for="rvc_protect">Protect amount (<span id="rvc_protect_value"></span>)</label>
                         <input id="rvc_protect" type="range" min="0" max="1" step="0.01" value="0.33" />
-                        
+
                         <div id="rvc_status">
                         </div>
                         <div class="rvc_buttons">
@@ -248,7 +248,7 @@ $(document).ready(function () {
         $('#rvc_protect').on('input', onProtectChange);
         $("#rvc_apply").on("click", onApplyClick);
         $("#rvc_delete").on("click", onDeleteClick);
-        
+
     }
     addExtensionControls(); // No init dependencies
     loadSettings(); // Depends on Extension Controls
@@ -315,7 +315,7 @@ async function rvcVoiceConversion(response, character) {
         "rmsMixRate": voice_settings["rmsMixRate"],
         "protect": voice_settings["protect"]
     }));
-    
+
     const url = new URL(getApiUrl());
     url.pathname = '/api/voice-conversion/rvc/process-audio';
 
@@ -339,7 +339,7 @@ async function rvcVoiceConversion(response, character) {
 async function moduleWorker() {
     updateCharactersList();
 
-    if (rvcModelsList.length == 0) {
+    if (modules.includes('rvc') && rvcModelsList.length == 0) {
         let result = await get_models_list();
         result = await result.json();
         rvcModelsList = result["models_list"]
@@ -350,7 +350,7 @@ async function moduleWorker() {
             .end()
             .append('<option value="none">Select Voice</option>')
             .val('none')
-            
+
         for(const modelName of rvcModelsList) {
             $("#rvc_model_select").append(new Option(modelName,modelName));
         }
@@ -366,7 +366,7 @@ function updateCharactersList() {
     }
 
     currentcharacters = Array.from(currentcharacters)
-    
+
     if (JSON.stringify(charactersList) !== JSON.stringify(currentcharacters)) {
         charactersList = currentcharacters
 
@@ -376,7 +376,7 @@ function updateCharactersList() {
             .end()
             .append('<option value="none">Select Character</option>')
             .val('none')
-            
+
         for(const charName of charactersList) {
             $("#rvc_character_select").append(new Option(charName,charName));
         }
