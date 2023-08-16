@@ -27,11 +27,11 @@
             "glow-tts": {
                 "id": "tts_models/en/ljspeech/glow-tts"
             },
-            "vits": {
-                "id": "tts_models/en/ljspeech/vits"
-            },
             "speedy-speech": {
                 "id": "tts_models/en/ljspeech/speedy-speech"
+            },
+            "vits": {
+                "id": "tts_models/en/ljspeech/vits"
             }
         },
         "vctk": {
