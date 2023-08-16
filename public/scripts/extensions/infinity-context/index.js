@@ -597,8 +597,8 @@ function doAutoAdjust(chat, maxContext) {
     console.debug('CHROMADB: Mean message length (tokens): %o', meanMessageLengthTokens);
     // Get number of messages in context
     const contextMessages = Math.max(1, Math.ceil(maxContext / meanMessageLengthTokens));
-    // Round up to nearest 10
-    const contextMessagesRounded = Math.ceil(contextMessages / 10) * 10;
+    // Round up to nearest 5
+    const contextMessagesRounded = Math.ceil(contextMessages / 5) * 5;
     console.debug('CHROMADB: Estimated context messages (rounded): %o', contextMessagesRounded);
     // Messages to keep (proportional, rounded to nearest 5, minimum 5, maximum 500)
     const messagesToKeep = Math.min(defaultSettings.keep_context_max, Math.max(5, Math.floor(contextMessagesRounded * extension_settings.chromadb.keep_context_proportion / 5) * 5));
