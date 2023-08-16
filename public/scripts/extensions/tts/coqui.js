@@ -326,6 +326,11 @@ class CoquiTtsProvider {
         resetModelSettings();
         const model_origin = $('#coqui_model_origin').val();
         console.debug(model_origin);
+
+        if (model_origin == "none") {
+            $("#coqui_local_model_div").hide();
+            $("#coqui_api_model_div").hide();
+        }
         
         // show coqui model list
         if (model_origin == "coqui-api") {
