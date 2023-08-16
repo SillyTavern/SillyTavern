@@ -208,6 +208,7 @@ $(document).ready(function () {
                             <option value="harvest">harvest</option>
                             <option value="torchcrepe">torchcrepe</option>
                             <option value="rmvpe">rmvpe</option>
+                            <option value="">None</option>
                         </select>
                         <label for="rvc_index_rate">
                             Index rate for feature retrieval (<span id="rvc_index_rate_value"></span>)
