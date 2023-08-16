@@ -116,6 +116,12 @@ class PresetManager {
             <h3>Preset name:</h3>
             <h4>Hint: Use a character/group name to bind preset to a specific chat.</h4>`;
         const name = await callPopup(popupText, "input");
+
+        if (!name) {
+            console.log('Preset name not provided');
+            return;
+        }
+
         await this.savePreset(name);
         toastr.success('Preset saved');
     }
@@ -214,7 +220,17 @@ class PresetManager {
             }
         }
 
-        const filteredKeys = ['preset', 'streaming_url', 'stopping_strings', 'use_stop_sequence'];
+        const filteredKeys = [
+            'preset',
+            'streaming_url',
+            'stopping_strings',
+            'use_stop_sequence',
+            'preset_settings_novel',
+            'streaming_novel',
+            'nai_preamble',
+            'model_novel',
+            'preamble',
+        ];
         const settings = Object.assign({}, getSettingsByApiId(this.apiId));
 
         for (const key of filteredKeys) {

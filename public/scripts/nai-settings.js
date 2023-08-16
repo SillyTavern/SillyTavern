@@ -2,11 +2,13 @@ import {
     getRequestHeaders,
     getStoppingStrings,
     getTextTokens,
+    max_context,
     novelai_setting_names,
-    saveSettingsDebounced
+    saveSettingsDebounced,
+    setGenerationParamsFromPreset
 } from "../script.js";
 import { getCfg } from "./extensions/cfg/util.js";
-import { tokenizers } from "./power-user.js";
+import { MAX_CONTEXT_DEFAULT, tokenizers } from "./power-user.js";
 import { getStringHash } from "./utils.js";
 
 export {
@@ -81,16 +83,17 @@ function getNovelTier(tier) {
 }
 
 function loadNovelPreset(preset) {
-    $("#amount_gen").val(preset.max_length);
-    $("#amount_gen_counter").text(`${preset.max_length}`);
-    if (((preset.max_context > 2048) && (!$("#max_context_unlocked")[0].checked)) ||
-        ((preset.max_context <= 2048) && ($("#max_context_unlocked")[0].checked))) {
-        $("#max_context_unlocked").click();
+    if (preset.genamt === undefined) {
+        const needsUnlock = preset.max_context > MAX_CONTEXT_DEFAULT;
+        $("#amount_gen").val(preset.max_length).trigger('input');
+        $('#max_context_unlocked').prop('checked', needsUnlock).trigger('change');
+        $("#max_context").val(preset.max_context).trigger('input');
     }
-    $("#max_context").val(preset.max_context);
-    $("#max_context_counter").text(`${preset.max_context}`);
-    $("#rep_pen_size_novel").attr('max', preset.max_context);
+    else {
+        setGenerationParamsFromPreset(preset);
+    }
 
+    $("#rep_pen_size_novel").attr('max', max_context);
     nai_settings.temperature = preset.temperature;
     nai_settings.repetition_penalty = preset.repetition_penalty;
     nai_settings.repetition_penalty_range = preset.repetition_penalty_range;

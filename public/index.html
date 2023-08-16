@@ -160,9 +160,16 @@
                                         <span class="note-link-span">?</span>
                                     </a>
                                 </h3>
-                                <select id="settings_perset_novel" data-preset-manager-for="novel">
-                                    <option value="gui" data-i18n="default">Default</option>
-                                </select>
+                                <div class="preset_buttons">
+                                    <select id="settings_perset_novel" data-preset-manager-for="novel">
+                                        <option value="gui" data-i18n="default">Default</option>
+                                    </select>
+                                    <i data-preset-manager-update="novel" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
+                                    <i data-preset-manager-new="novel" class="menu_button fa-solid fa-plus" title="Create new preset" data-i18n="[title]Create new preset"></i>
+                                    <i data-preset-manager-import="novel" class="menu_button fa-solid fa-upload" title="Import preset" data-i18n="[title]Import preset"></i>
+                                    <i data-preset-manager-export="novel" class="menu_button fa-solid fa-download" title="Export preset" data-i18n="[title]Export preset"></i>
+                                    <i data-preset-manager-delete="novel" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
+                                </div>
                             </div>
                             <div id="openai_api-presets">
                                 <div>
