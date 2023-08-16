@@ -1883,7 +1883,6 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
             "top_p": request.body.top_p,
             "top_k": request.body.top_k,
             "typical_p": request.body.typical_p,
-            "top_g": request.body.top_g,
             "mirostat_lr": request.body.mirostat_lr,
             "mirostat_tau": request.body.mirostat_tau,
             "cfg_scale": request.body.cfg_scale,
