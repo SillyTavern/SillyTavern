@@ -95,7 +95,7 @@ export const group_activation_strategy = {
 };
 
 const groupAutoModeInterval = setInterval(groupChatAutoModeWorker, 5000);
-const saveGroupDebounced = debounce(async (group) => await _save(group), 500);
+const saveGroupDebounced = debounce(async (group) => await _save(group, false), 500);
 
 async function _save(group, reload = true) {
     await fetch("/editgroup", {
@@ -228,7 +228,7 @@ async function saveGroupChat(groupId, shouldSaveGroup) {
     if (shouldSaveGroup && response.ok) {
         await editGroup(groupId);
     }
-    sortCharactersList();
+    //sortCharactersList();
 }
 
 export async function renameGroupMember(oldAvatar, newAvatar, newName) {
@@ -1351,9 +1351,9 @@ export async function openGroupChat(groupId, chatId) {
     group['date_last_chat'] = Date.now();
     updateChatMetadata(group.chat_metadata, true);
 
-    await editGroup(groupId, true);
+    await editGroup(groupId, true, false);
     await getGroupChat(groupId);
-    sortCharactersList();
+    //sortCharactersList();
 }
 
 export async function renameGroupChat(groupId, oldChatId, newChatId) {
@@ -1445,7 +1445,7 @@ export async function saveGroupBookmarkChat(groupId, name, metadata, mesId) {
         ? chat.slice(0, parseInt(mesId) + 1)
         : chat;
 
-    await editGroup(groupId, true);
+    await editGroup(groupId, true, false);
 
     await fetch("/savegroupchat", {
         method: "POST",

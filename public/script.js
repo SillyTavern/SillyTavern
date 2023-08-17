@@ -4354,7 +4354,7 @@ async function saveChat(chat_name, withMetadata, mesId) {
     const metadata = { ...chat_metadata, ...(withMetadata || {}) };
     let file_name = chat_name ?? characters[this_chid].chat;
     characters[this_chid]['date_last_chat'] = Date.now();
-    sortCharactersList();
+    //sortCharactersList();
     chat.forEach(function (item, i) {
         if (item["is_group"]) {
             toastr.error('Trying to save group chat with regular saveChat function. Aborting to prevent corruption.');
@@ -4557,7 +4557,7 @@ async function openCharacterChat(file_name) {
     chat_metadata = {};
     await getChat();
     $("#selected_chat_pole").val(file_name);
-    $("#create_button").click();
+    //$("#create_button").click();
 }
 
 ////////// OPTIMZED MAIN API CHANGE FUNCTION ////////////

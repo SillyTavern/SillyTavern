@@ -30,3 +30,6 @@ public/movingUI/
 public/QuickReplies/
 content.log
 cloudflared.exe
+/.idea/jsLibraryMappings.xml
+/.idea/vcs.xml
+/.idea/workspace.xml
