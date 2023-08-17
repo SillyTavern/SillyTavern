@@ -85,7 +85,7 @@ function applyFavFilter(characterSelector) {
 
     });
     updateCharacterCount(characterSelector);
-    updateVisibleDivs('#rm_print_characters_block', true);
+    updateVisibleDivs();
 }
 
 function filterByGroups(characterSelector) {
@@ -98,7 +98,7 @@ function filterByGroups(characterSelector) {
         $(element).toggleClass('hiddenByGroup', displayGroupsOnly && !$(element).hasClass('group_select'));
     });
     updateCharacterCount(characterSelector);
-    updateVisibleDivs('#rm_print_characters_block', true);
+    updateVisibleDivs();
 }
 
 function loadTagsSettings(settings) {
@@ -361,7 +361,7 @@ function onTagFilterClick(listElement, characterSelector) {
     const excludedTagIds = [...($(listElement).find(".tag.excluded:not(.actionable)").map((_, el) => $(el).attr("id")))];
     $(characterSelector).each((_, element) => applyFilterToElement(tagIds, excludedTagIds, element));
     updateCharacterCount(characterSelector);
-    updateVisibleDivs('#rm_print_characters_block', true);
+    updateVisibleDivs();
 }
 
 function applyFilterToElement(tagIds, excludedTagIds, element) {

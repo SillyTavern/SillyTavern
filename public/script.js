@@ -76,7 +76,7 @@ import {
     fuzzySearchCharacters,
     MAX_CONTEXT_DEFAULT,
     fuzzySearchGroups,
-    showPaginate,
+    showPaginate, showPaginateGroup,
 } from "./scripts/power-user.js";
 
 import {
@@ -1032,7 +1032,7 @@ async function printCharacters() {
 
     favsToHotswap();
     await delay(300);
-    updateVisibleDivs('#rm_print_characters_block', true);
+    updateVisibleDivs();
     displayOverrideWarnings();
 
 }
@@ -5919,7 +5919,7 @@ function select_rm_characters() {
     menu_type = "characters";
     selectRightMenuWithAnimation('rm_characters_block');
     setRightTabSelectedClass('rm_button_characters');
-    updateVisibleDivs('#rm_print_characters_block', true);
+    showPaginate();
 }
 
 function setExtensionPrompt(key, value, position, depth) {
@@ -7015,8 +7015,9 @@ export function updateCharacterCount(characterSelector) {
     console.log("visibleCharacters.length: " + visibleCharacters.length);
 }
 
-function updateVisibleDivs(containerSelector, resizecontainer) {
-    showPaginate()
+function updateVisibleDivs() {
+    showPaginate();
+    showPaginateGroup();
 }
 
 function displayOverrideWarnings() {
@@ -7204,7 +7205,7 @@ function doCharListDisplaySwitch() {
     $("body").toggleClass('charListGrid')
     power_user.charListGrid = $("body").hasClass("charListGrid") ? true : false;
     saveSettingsDebounced()
-    updateVisibleDivs('#rm_print_characters_block', true);
+    showPaginate();
 }
 
 function doCloseChat() {
@@ -7305,11 +7306,6 @@ $(document).ready(function () {
         $("#groupCurrentMemberListToggle .inline-drawer-icon").trigger('click');
     }, 200);
 
-
-    $("#rm_print_characters_block").on('scroll', debounce(() => {
-        updateVisibleDivs('#rm_print_characters_block', true);
-    }, 5));
-
     $('#chat').on('scroll', async () => {
         // if on the start of the chat and has hidden messages
         if ($('#chat').scrollTop() === 0 && $('#chat').children('.mes').not(':visible').length > 0) {
@@ -7398,13 +7394,13 @@ $(document).ready(function () {
 
         if (!searchValue) {
             $(selector).removeClass('hiddenBySearch');
-            updateVisibleDivs('#rm_print_characters_block', true);
+            showPaginate();
         } else {
             $(selector).each(function () {
                 const isValidSearch = getIsValidSearch(this);
                 $(this).toggleClass('hiddenBySearch', !isValidSearch);
             });
-            updateVisibleDivs('#rm_print_characters_block', true);
+            showPaginate();
         }
         updateCharacterCount(selector);
 

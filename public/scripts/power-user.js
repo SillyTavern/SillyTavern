@@ -1058,29 +1058,37 @@ function sortCharactersList() {
         return;
     }
     entities.sort(sortFunc);
-    updateVisibleDivs('#rm_print_characters_block', true);
+    showPaginate();
 }
 
-let current_page = 0
-function showPaginate(paginate = 50, page = 0) {
-    if(power_user.paginate_char_list) {
-        $("#pagination").css('display', '')
-        $('#page-text').text(`Page ${page + 1}`);
-    } else {
-        $("#pagination").css('display', 'none')
-    }
+let current_page_main = 0;
+let current_page_group = 0;
 
-    const selector = '#rm_print_characters_block .character_select:not(.hiddenBySearch):not(.hiddenByGroup):not(.hiddenByFav):not(.hiddenByTag), #rm_print_characters_block .group_select:not(.hiddenBySearch):not(.hiddenByGroup):not(.hiddenByFav):not(.hiddenByTag)';
+function showPaginate(paginate = 50, page = 0) {
+    const selector = '#rm_print_characters_block .character_select:not(.hiddenBySearch):not(.hiddenByGroup), #rm_print_characters_block .group_select:not(.hiddenBySearch):not(.hiddenByGroup)';
+    applyPagination(selector, paginate, page);
+}
+
+export function showPaginateGroup(paginate = 50, page = 0) {
+    const selector = '#rm_group_add_members .group_member:not(.hiddenBySearch)';
+    applyPagination(selector, paginate, page);
+}
+
+function applyPagination(selector, paginate = 50, page = 0) {
     const elements = $(selector);
 
-    if(!power_user.paginate_char_list) {
+    if (!power_user.paginate_char_list) {
         elements.removeClass('hiddenByPagination');
+        $("#pagination, #pagination-group").css('display', 'none')
         return;
+    } else {
+        $("#pagination").css('display', '')
     }
-
+    $('#page-text, #page-text-group').text(`Page ${page + 1}`);
     const sortedElements = [...elements].sort(sortFunc);
+    const unhiddenElements = sortedElements.filter(el => !el.classList.contains('hiddenByFav') && !el.classList.contains('hiddenByTag'));
 
-    sortedElements.forEach((el, index) => {
+    unhiddenElements.forEach((el, index) => {
         if (index >= paginate * page && index < paginate * (page + 1)) {
             $(el).removeClass('hiddenByPagination');
         } else {
@@ -1088,21 +1096,39 @@ function showPaginate(paginate = 50, page = 0) {
         }
     });
 }
+
 $("#show-next").on('click', function () {
-    const selector = '#rm_print_characters_block .character_select:not(.hiddenBySearch):not(.hiddenByGroup):not(.hiddenByFav):not(.hiddenByPagination):not(.hiddenByTag), #rm_print_characters_block .group_select:not(.hiddenBySearch):not(.hiddenByGroup):not(.hiddenByFav):not(.hiddenByPagination):not(.hiddenByTag)';
+    const selector = '#rm_print_characters_block .character_select:not(.hiddenBySearch):not(.hiddenByGroup):not(.hiddenByPagination), #rm_print_characters_block .group_select:not(.hiddenBySearch):not(.hiddenByGroup):not(.hiddenByPagination)';
     const visibleElements = $(selector);
     if(visibleElements.length < 50) {
         return;
     }
-    current_page++
-    showPaginate(50, current_page);
+    current_page_main++
+    showPaginate(50, current_page_main);
 })
 
 $("#show-prev").on('click', function () {
-    if(current_page <= 0)
+    if(current_page_main <= 0)
         return;
-    current_page--
-    showPaginate(50, current_page);
+    current_page_main--
+    showPaginate(50, current_page_main);
+})
+
+$("#show-next-group").on('click', function () {
+    const selector = '#rm_group_add_members .group_member:not(.hiddenBySearch):not(.hiddenByPagination)';
+    const visibleElements = $(selector);
+    if(visibleElements.length < 50) {
+        return;
+    }
+    current_page_group++
+    showPaginateGroup(50, current_page_group);
+})
+
+$("#show-prev-group").on('click', function () {
+    if(current_page_group <= 0)
+        return;
+    current_page_group--
+    showPaginateGroup(50, current_page_group);
 })
 
 async function saveTheme() {
@@ -1742,7 +1768,7 @@ $(document).ready(() => {
 
     $("#paginate_char_list").on("input", function() {
         power_user.paginate_char_list = !!$(this).prop('checked');
-        showPaginate();
+        updateVisibleDivs();
         saveSettingsDebounced()
     })
 

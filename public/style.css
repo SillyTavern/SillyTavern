@@ -1542,6 +1542,7 @@ select option:not(:checked) {
     aspect-ratio: 1 / 1;
 }
 
+#pagination-group,
 #pagination {
     display: flex;
     flex-direction: row;
@@ -1552,6 +1553,7 @@ select option:not(:checked) {
     font-weight: bolder;
 }
 
+#pagination-group,
 #pagination .menu_button {
     margin: 0;
 }

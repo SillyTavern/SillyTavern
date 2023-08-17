@@ -8,7 +8,7 @@ import {
     extractAllWords,
 } from './utils.js';
 import { RA_CountCharTokens, humanizedDateTime, dragElement } from "./RossAscends-mods.js";
-import { sortCharactersList, loadMovingUIState } from './power-user.js';
+import {sortCharactersList, loadMovingUIState, showPaginateGroup} from './power-user.js';
 
 import {
     chat,
@@ -61,7 +61,7 @@ import {
     getCurrentChatId,
     setScenarioOverride,
     getCropPopup,
-    entities,
+    entities, updateVisibleDivs,
 } from "../script.js";
 import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect, tag_map } from './tags.js';
 
@@ -181,7 +181,7 @@ export async function getGroupChat(groupId) {
         updateChatMetadata(metadata, true);
     }
 
-    await saveGroupChat(groupId, true);
+    //await saveGroupChat(groupId, true); not sure if needed
     eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
 }
 
@@ -887,6 +887,7 @@ async function modifyGroupMember(chat_id, groupMember, isDelete) {
     $("#rm_group_submit").prop("disabled", !groupHasMembers);
 }
 
+// This is inherently slow, I'm not touching this because it looks bad and I might break something.
 async function reorderGroupMember(chat_id, groupMember, direction) {
     const id = groupMember.data("id");
     const group = groups.find((x) => x.id == chat_id);
@@ -1168,10 +1169,10 @@ function select_group_chats(groupId, skipAnimation) {
             }
         }
 
-        sortCharactersList();
+        //sortCharactersList();
         await eventSource.emit(event_types.GROUP_UPDATED);
     });
-
+    showPaginateGroup();
     eventSource.emit('groupSelected', {detail: {id: groupId, group: group}});
 }
 
@@ -1234,6 +1235,7 @@ function filterGroupMembers() {
             $(this).toggleClass('hiddenBySearch', !isValidSearch);
         });
     }
+    showPaginateGroup();
 }
 
 async function createGroup() {
