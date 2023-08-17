@@ -174,6 +174,30 @@ async function onDeleteClick() {
     saveSettingsDebounced();
 }
 
+async function onClickUpload() {
+    const url = new URL(getApiUrl());
+    const inputFiles = $("#rvc_model_upload_file").get(0).files;
+    let formData = new FormData();
+    
+    for(const file of inputFiles)
+        formData.append(file.name, file);
+
+    console.debug(DEBUG_PREFIX,"Sending files:",formData);
+    url.pathname = '/api/voice-conversion/rvc/upload-models';
+
+    const apiResult = await doExtrasFetch(url, {
+        method: 'POST',
+        body: formData
+    });
+
+    if (!apiResult.ok) {
+        toastr.error(apiResult.statusText, DEBUG_PREFIX+' Check extras console for errors log');
+        throw new Error(`HTTP ${apiResult.status}: ${await apiResult.text()}`);
+    }
+
+    alert('The file has been uploaded successfully.');
+}
+
 $(document).ready(function () {
     function addExtensionControls() {
         const settingsHtml = `
@@ -202,6 +226,15 @@ $(document).ready(function () {
                         <select id="rvc_model_select">
                             <!-- Populated by JS -->
                         </select>
+                        <div>
+                            <label for="rvc_model_upload_file">Select models to upload (zip files)</label>
+                            <input
+                                type="file"
+                                id="rvc_model_upload_file"
+                                accept=".zip,.rar,.7zip,.7z" multiple />
+                            <button id="rvc_model_upload_button"> Upload </button>
+                            <button id="rvc_model_refresh_button"> Refresh Voices </button>
+                        </div>
                         <span>Select Pitch Extraction</span> </br>
                         <select id="rvc_pitch_extraction">
                             <option value="dio">dio</option>
@@ -250,6 +283,10 @@ $(document).ready(function () {
         $('#rvc_protect').on('input', onProtectChange);
         $("#rvc_apply").on("click", onApplyClick);
         $("#rvc_delete").on("click", onDeleteClick);
+
+        $("#rvc_model_upload_file").show();
+        $("#rvc_model_upload_button").on("click", onClickUpload);
+        $("#rvc_model_refresh_button").on("click", refreshVoiceList);
 
     }
     addExtensionControls(); // No init dependencies
@@ -338,11 +375,8 @@ async function rvcVoiceConversion(response, character) {
 //  Module Worker              //
 //#############################//
 
-async function moduleWorker() {
-    updateCharactersList();
-
-    if (modules.includes('rvc') && !rvcModelsReceived) {
-        let result = await get_models_list();
+async function refreshVoiceList() {
+    let result = await get_models_list();
         result = await result.json();
         rvcModelsList = result["models_list"]
 
@@ -359,6 +393,13 @@ async function moduleWorker() {
 
         rvcModelsReceived = true
         console.debug(DEBUG_PREFIX,"Updated model list to:", rvcModelsList);
+}
+
+async function moduleWorker() {
+    updateCharactersList();
+
+    if (modules.includes('rvc') && !rvcModelsReceived) {
+        refreshVoiceList();
     }
 }
 
