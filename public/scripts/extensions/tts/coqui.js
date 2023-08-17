@@ -14,6 +14,7 @@ const UPDATE_INTERVAL = 1000;
 let inApiCall = false;
 let charactersList = []; // Updated with module worker
 let coquiApiModels = {}; // Initialized only once
+let coquiApiModelsFull = {}; // Initialized only once
 let coquiLocalModels = []; // Initialized only once
 let coquiLocalModelsReceived = false;
 /*
@@ -104,7 +105,8 @@ class CoquiTtsProvider {
                     <label for="coqui_model_origin">Models:</label>
                     <select id="coqui_model_origin">gpu_mode
                         <option value="none">Select Origin</option>
-                        <option value="coqui-api">Coqui API</option>
+                        <option value="coqui-api">Coqui API (Tested)</option>
+                        <option value="coqui-api-full">Coqui API (Experimental)</option>
                         <option value="local">My Models</option>
                     </select>
 
@@ -128,8 +130,7 @@ class CoquiTtsProvider {
                         <span id="coqui_api_model_install_status">Model installed on extras server</span>
                         <input id="coqui_api_model_install_button" class="menu_button" type="button" value="Install" />
                     </div>
-
-
+                    
                     <div id="coqui_local_model_div">
                         <select id="coqui_local_model_name">
                             <!-- Populated by JS and request -->
@@ -187,23 +188,43 @@ class CoquiTtsProvider {
 
         // Load coqui-api settings from json file
         fetch("/scripts/extensions/tts/coqui_api_models_settings.json")
-            .then(response => response.json())
-            .then(json => {
-                coquiApiModels = json;
-                console.debug(DEBUG_PREFIX, "initialized coqui-api model list to", coquiApiModels);
+        .then(response => response.json())
+        .then(json => {
+            coquiApiModels = json;
+            console.debug(DEBUG_PREFIX,"initialized coqui-api model list to", coquiApiModels);
+            /*
+            $('#coqui_api_language')
+                .find('option')
+                .remove()
+                .end()
+                .append('<option value="none">Select model language</option>')
+                .val('none');
 
-                $('#coqui_api_language')
-                    .find('option')
-                    .remove()
-                    .end()
-                    .append('<option value="none">Select model language</option>')
-                    .val('none');
+            for(let language in coquiApiModels) {
+                $("#coqui_api_language").append(new Option(languageLabels[language],language));
+                console.log(DEBUG_PREFIX,"added language",language);
+            }*/
+        });
 
-                for (let language in coquiApiModels) {
-                    $("#coqui_api_language").append(new Option(languageLabels[language], language));
-                    console.log(DEBUG_PREFIX, "added language", language);
-                }
-            });
+        // Load coqui-api FULL settings from json file
+        fetch("/scripts/extensions/tts/coqui_api_models_settings_full.json")
+        .then(response => response.json())
+        .then(json => {
+            coquiApiModelsFull = json;
+            console.debug(DEBUG_PREFIX,"initialized coqui-api full model list to", coquiApiModelsFull);
+            /*
+            $('#coqui_api_full_language')
+                .find('option')
+                .remove()
+                .end()
+                .append('<option value="none">Select model language</option>')
+                .val('none');
+
+            for(let language in coquiApiModelsFull) {
+                $("#coqui_api_full_language").append(new Option(languageLabels[language],language));
+                console.log(DEBUG_PREFIX,"added language",language);
+            }*/
+        });
     }
 
     updateVoiceMap() {
@@ -292,13 +313,17 @@ class CoquiTtsProvider {
         const model_label = tokens[1];
         const model_id = "tts_models/" + model_language + "/" + model_dataset + "/" + model_label
 
-        if (model_setting_language == null & "languages" in coquiApiModels[model_language][model_dataset][model_label]) {
-            toastr.error(`Model language not selected, please select one.`, DEBUG_PREFIX + " voice mapping model language", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+        let modelDict = coquiApiModels
+        if (model_origin == "coqui-api-full")
+            modelDict = coquiApiModelsFull
+
+        if (model_setting_language == null & "languages" in modelDict[model_language][model_dataset][model_label]) {
+            toastr.error(`Model language not selected, please select one.`, DEBUG_PREFIX+" voice mapping model language", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
             return;
         }
 
-        if (model_setting_speaker == null & "speakers" in coquiApiModels[model_language][model_dataset][model_label]) {
-            toastr.error(`Model speaker not selected, please select one.`, DEBUG_PREFIX + " voice mapping model speaker", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+        if (model_setting_speaker == null & "speakers" in modelDict[model_language][model_dataset][model_label]) {
+            toastr.error(`Model speaker not selected, please select one.`, DEBUG_PREFIX+" voice mapping model speaker", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
             return;
         }
 
@@ -349,10 +374,48 @@ class CoquiTtsProvider {
             $("#coqui_local_model_div").hide();
             $("#coqui_api_model_div").hide();
         }
-
-        // show coqui model list
+        
+        // show coqui model selected list (SAFE)
         if (model_origin == "coqui-api") {
             $("#coqui_local_model_div").hide();
+
+            $('#coqui_api_language')
+                .find('option')
+                .remove()
+                .end()
+                .append('<option value="none">Select model language</option>')
+                .val('none');
+
+            for(let language in coquiApiModels) {
+                let languageLabel = language
+                if (language in languageLabels)
+                    languageLabel = languageLabels[language]
+                $("#coqui_api_language").append(new Option(languageLabel,language));
+                console.log(DEBUG_PREFIX,"added language",languageLabel,"(",language,")");
+            }
+
+            $("#coqui_api_model_div").show();
+        }
+
+        // show coqui model full list (UNSAFE)
+        if (model_origin == "coqui-api-full") {
+            $("#coqui_local_model_div").hide();
+
+            $('#coqui_api_language')
+                .find('option')
+                .remove()
+                .end()
+                .append('<option value="none">Select model language</option>')
+                .val('none');
+
+            for(let language in coquiApiModelsFull) {
+                let languageLabel = language
+                if (language in languageLabels)
+                    languageLabel = languageLabels[language]
+                $("#coqui_api_language").append(new Option(languageLabel,language));
+                console.log(DEBUG_PREFIX,"added language",languageLabel,"(",language,")");
+            }
+
             $("#coqui_api_model_div").show();
         }
 
@@ -385,8 +448,12 @@ class CoquiTtsProvider {
             .append('<option value="none">Select model</option>')
             .val('none');
 
-        for (let model_dataset in coquiApiModels[model_language])
-            for (let model_name in coquiApiModels[model_language][model_dataset]) {
+        let modelDict = coquiApiModels
+        if (model_origin == "coqui-api-full")
+            modelDict = coquiApiModelsFull
+
+        for(let model_dataset in modelDict[model_language])
+            for(let model_name in modelDict[model_language][model_dataset]) {
                 const model_id = model_dataset + "/" + model_name
                 const model_label = model_name + " (" + model_dataset + " dataset)"
                 $("#coqui_api_model_name").append(new Option(model_label, model_id));
@@ -397,6 +464,7 @@ class CoquiTtsProvider {
         throwIfModuleMissing();
         resetModelSettings();
         $("#coqui_api_model_settings").hide();
+        const model_origin = $('#coqui_model_origin').val();
 
         // No model selected
         if ($('#coqui_api_model_name').val() == "none") {
@@ -411,7 +479,11 @@ class CoquiTtsProvider {
         const model_dataset = tokens[0];
         const model_name = tokens[1];
 
-        const model_settings = coquiApiModels[model_language][model_dataset][model_name]
+        let modelDict = coquiApiModels
+        if (model_origin == "coqui-api-full")
+            modelDict = coquiApiModelsFull
+
+        const model_settings = modelDict[model_language][model_dataset][model_name]
 
         if ("languages" in model_settings) {
             $("#coqui_api_model_settings").show();
@@ -455,8 +527,8 @@ class CoquiTtsProvider {
         $("#coqui_api_model_install_status").show();
 
         // Check if already installed and propose to do it otherwise
-        const model_id = coquiApiModels[model_language][model_dataset][model_name]["id"]
-        console.debug(DEBUG_PREFIX, "Check if model is already installed", model_id);
+        const model_id = modelDict[model_language][model_dataset][model_name]["id"]
+        console.debug(DEBUG_PREFIX,"Check if model is already installed",model_id);
         let result = await CoquiTtsProvider.checkmodel_state(model_id);
         result = await result.json();
         const model_state = result["model_state"];
