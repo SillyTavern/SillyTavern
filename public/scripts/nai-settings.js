@@ -1,4 +1,5 @@
 import {
+    callPopup,
     getRequestHeaders,
     getStoppingStrings,
     getTextTokens,
@@ -9,7 +10,11 @@ import {
 } from "../script.js";
 import { getCfg } from "./extensions/cfg/util.js";
 import { MAX_CONTEXT_DEFAULT, tokenizers } from "./power-user.js";
-import { getStringHash } from "./utils.js";
+import { 
+    download,
+    parseJsonFile,
+    getStringHash 
+} from "./utils.js";
 
 export {
     nai_settings,
@@ -27,6 +32,10 @@ const default_presets = {
     "clio-v1": "Talker-Chat-Clio",
     "kayra-v1": "Carefree-Kayra"
 }
+const default_bias = 'Default (none)';
+const default_bias_presets = {
+    [default_bias]: []
+};
 
 const nai_settings = {
     temperature: 1.5,
@@ -49,6 +58,8 @@ const nai_settings = {
     cfg_uc: '',
     banned_tokens: '',
     order: default_order,
+    bias_preset_selected: default_bias,
+    bias_presets: default_bias_presets,
 };
 
 const nai_tiers = {
@@ -60,6 +71,7 @@ const nai_tiers = {
 
 let novel_data = null;
 let badWordsCache = {};
+let biasCache = undefined;
 
 export function setNovelData(data) {
     novel_data = data;
@@ -147,6 +159,8 @@ function loadNovelSettings(settings) {
     nai_settings.cfg_uc = settings.cfg_uc || '';
     nai_settings.banned_tokens = settings.banned_tokens || '';
     nai_settings.order = settings.order || default_order;
+    nai_settings.bias_preset_selected = settings.bias_preset_selected ?? default_bias;
+    nai_settings.bias_presets = settings.bias_presets ?? default_bias_presets;
     loadNovelSettingsUi(nai_settings);
 }
 
@@ -189,6 +203,16 @@ function loadNovelSettingsUi(ui_settings) {
 
     $("#streaming_novel").prop('checked', ui_settings.streaming_novel);
     sortItemsByOrder(ui_settings.order);
+
+    $('#novelai_logit_bias_preset').empty();
+    for (const preset of Object.keys(ui_settings.bias_presets)) {
+        const option = document.createElement('option');
+        option.innerText = preset;
+        option.value = preset;
+        option.selected = preset === ui_settings.bias_preset_selected;
+        $('#novelai_logit_bias_preset').append(option);
+    }
+    $('#novelai_logit_bias_preset').trigger('change');
 }
 
 const sliders = [
@@ -381,7 +405,7 @@ function getBadWordPermutations(text) {
     return result;
 }
 
-export function getNovelGenerationData(finalPrompt, this_settings, this_amount_gen, isImpersonate) {
+export async function getNovelGenerationData(finalPrompt, this_settings, this_amount_gen, isImpersonate) {
     const clio = nai_settings.model_novel.includes('clio');
     const kayra = nai_settings.model_novel.includes('kayra');
 
@@ -397,6 +421,15 @@ export function getNovelGenerationData(finalPrompt, this_settings, this_amount_g
 
     const prefix = selectPrefix(nai_settings.prefix, finalPrompt);
     const cfgSettings = getCfg();
+
+    let logitBias = [];
+    if (tokenizerType !== tokenizers.NONE
+        && nai_settings.bias_preset_selected
+        && Array.isArray(nai_settings.bias_presets[nai_settings.bias_preset_selected])
+        && nai_settings.bias_presets[nai_settings.bias_preset_selected].length) {
+        logitBias = biasCache || await calculateLogitBias();
+        biasCache = logitBias;
+    }
 
     return {
         "input": finalPrompt,
@@ -422,6 +455,7 @@ export function getNovelGenerationData(finalPrompt, this_settings, this_amount_g
         "phrase_rep_pen": nai_settings.phrase_rep_pen,
         "stop_sequences": stopSequences,
         "bad_words_ids": badWordIds,
+        "logit_bias_exp": logitBias,
         "generate_until_sentence": true,
         "use_cache": false,
         "use_string": true,
@@ -485,6 +519,178 @@ function saveSamplingOrder() {
     nai_settings.order = order;
     console.log('Samplers reordered:', nai_settings.order);
     saveSettingsDebounced();
+}
+
+function onLogitBiasPresetChange() {
+    const value = $('#novelai_logit_bias_preset').find(':selected').val();
+    const preset = nai_settings.bias_presets[value];
+
+    if (!Array.isArray(preset)) {
+        console.error('Preset not found');
+        return;
+    }
+
+    nai_settings.bias_preset_selected = value;
+    $('.novelai_logit_bias_list').empty();
+
+    for (const entry of preset) {
+        if (entry) {
+            createLogitBiasListItem(entry);
+        }
+    }
+
+    biasCache = undefined;
+    saveSettingsDebounced();
+}
+
+function createNewLogitBiasEntry() {
+    const entry = { text: '', value: 0 };
+    nai_settings.bias_presets[nai_settings.bias_preset_selected].push(entry);
+    biasCache = undefined;
+    createLogitBiasListItem(entry);
+    saveSettingsDebounced();
+}
+
+function createLogitBiasListItem(entry) {
+    const id = nai_settings.bias_presets[nai_settings.bias_preset_selected].indexOf(entry);
+    const template = $('#novelai_logit_bias_template .novelai_logit_bias_form').clone();
+    template.data('id', id);
+    template.find('.novelai_logit_bias_text').val(entry.text).on('input', function () {
+        nai_settings.bias_presets[nai_settings.bias_preset_selected][id].text = $(this).val();
+        biasCache = undefined;
+        saveSettingsDebounced();
+    });
+    template.find('.novelai_logit_bias_value').val(entry.value).on('input', function () {
+        nai_settings.bias_presets[nai_settings.bias_preset_selected][id].value = Number($(this).val());
+        biasCache = undefined;
+        saveSettingsDebounced();
+    });
+    template.find('.novelai_logit_bias_remove').on('click', function () {
+        $(this).closest('.novelai_logit_bias_form').remove();
+        nai_settings.bias_presets[nai_settings.bias_preset_selected].splice(id, 1);
+        biasCache = undefined;
+        saveSettingsDebounced();
+    });
+    $('.novelai_logit_bias_list').prepend(template);
+}
+
+async function createNewLogitBiasPreset() {
+    const name = await callPopup('Preset name:', 'input');
+
+    if (!name) {
+        return;
+    }
+
+    if (name in nai_settings.bias_presets) {
+        toastr.error('Preset name should be unique.');
+        return;
+    }
+
+    nai_settings.bias_preset_selected = name;
+    nai_settings.bias_presets[name] = [];
+
+    addLogitBiasPresetOption(name);
+    saveSettingsDebounced();
+}
+
+function addLogitBiasPresetOption(name) {
+    const option = document.createElement('option');
+    option.innerText = name;
+    option.value = name;
+    option.selected = true;
+
+    $('#novelai_logit_bias_preset').append(option);
+    $('#novelai_logit_bias_preset').trigger('change');
+}
+
+async function onLogitBiasPresetDeleteClick() {
+    const value = await callPopup('Delete the preset?', 'confirm');
+
+    if (!value) {
+        return;
+    }
+
+    $(`#novelai_logit_bias_preset option[value="${nai_settings.bias_preset_selected}"]`).remove();
+    delete nai_settings.bias_presets[nai_settings.bias_preset_selected];
+    nai_settings.bias_preset_selected = null;
+
+    if (Object.keys(nai_settings.bias_presets).length) {
+        nai_settings.bias_preset_selected = Object.keys(nai_settings.bias_presets)[0];
+        $(`#novelai_logit_bias_preset option[value="${nai_settings.bias_preset_selected}"]`).attr('selected', true);
+        $('#novelai_logit_bias_preset').trigger('change');
+    }
+
+    biasCache = undefined;
+    saveSettingsDebounced();
+}
+
+async function onLogitBiasPresetImportFileChange(e) {
+    const file = e.target.files[0];
+
+    if (!file || file.type !== "application/json") {
+        return;
+    }
+
+    const name = file.name.replace(/\.[^/.]+$/, "");
+    const importedFile = await parseJsonFile(file);
+    e.target.value = '';
+
+    if (name in nai_settings.bias_presets) {
+        toastr.error('Preset name should be unique.');
+        return;
+    }
+
+    if (!Array.isArray(importedFile)) {
+        toastr.error('Invalid logit bias preset file.');
+        return;
+    }
+
+    for (const entry of importedFile) {
+        if (typeof entry == 'object') {
+            if (entry.hasOwnProperty('text') && entry.hasOwnProperty('value')) {
+                continue;
+            }
+        }
+
+        callPopup('Invalid logit bias preset file.', 'text');
+        return;
+    }
+
+    nai_settings.bias_presets[name] = importedFile;
+    nai_settings.bias_preset_selected = name;
+
+    addLogitBiasPresetOption(name);
+    saveSettingsDebounced();
+}
+
+function onLogitBiasPresetImportClick() {
+    $('#novelai_logit_bias_import_file').trigger('click');
+}
+
+function onLogitBiasPresetExportClick() {
+    if (!nai_settings.bias_preset_selected || Object.keys(nai_settings.bias_presets).length === 0) {
+        return;
+    }
+
+    const presetJsonString = JSON.stringify(nai_settings.bias_presets[nai_settings.bias_preset_selected], null, 4);
+    download(presetJsonString, nai_settings.bias_preset_selected, 'application/json');
+}
+
+async function calculateLogitBias() {
+    const bias_preset = nai_settings.bias_presets[nai_settings.bias_preset_selected];
+
+    const clio = nai_settings.model_novel.includes('clio');
+    const kayra = nai_settings.model_novel.includes('kayra');
+    const tokenizerType = kayra ? tokenizers.NERD2 : (clio ? tokenizers.NERD : tokenizers.NONE);
+
+    return bias_preset.map(bias => {
+        return {
+            bias: bias.value,
+            ensure_sequence_finish: false,
+            generate_once: false,
+            sequence: getTextTokens(tokenizerType, bias.text)
+        }
+    });
 }
 
 export async function generateNovelWithStreaming(generate_data, signal) {
@@ -590,4 +796,12 @@ $(document).ready(function () {
         console.log('Sampler toggled:', $item.data('id'), !isEnabled);
         saveSamplingOrder();
     });
+
+    $("#novelai_logit_bias_preset").on("change", onLogitBiasPresetChange);
+    $("#novelai_logit_bias_new_preset").on("click", createNewLogitBiasPreset);
+    $("#novelai_logit_bias_new_entry").on("click", createNewLogitBiasEntry);
+    $("#novelai_logit_bias_import_file").on("input", onLogitBiasPresetImportFileChange);
+    $("#novelai_logit_bias_import_preset").on("click", onLogitBiasPresetImportClick);
+    $("#novelai_logit_bias_export_preset").on("click", onLogitBiasPresetExportClick);
+    $("#novelai_logit_bias_delete_preset").on("click", onLogitBiasPresetDeleteClick);
 });

@@ -1864,6 +1864,11 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
         }
     }
 
+    // Add default biases for dinkus and asterism
+    const logit_bias_exp = isNewModel
+        ? request.body.logit_bias_exp.concat(novelai.logitBiasExp)
+        : null;
+
     const data = {
         "input": request.body.input,
         "model": request.body.model,
@@ -1889,9 +1894,8 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
             "cfg_uc": request.body.cfg_uc,
             "phrase_rep_pen": request.body.phrase_rep_pen,
             "stop_sequences": request.body.stop_sequences,
-            //"stop_sequences": {{187}},
             "bad_words_ids": badWordsList,
-            "logit_bias_exp": isNewModel ? novelai.logitBiasExp : null,
+            "logit_bias_exp": logit_bias_exp,
             //generate_until_sentence = true;
             "use_cache": request.body.use_cache,
             "use_string": true,

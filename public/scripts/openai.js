@@ -2179,7 +2179,7 @@ function createLogitBiasListItem(entry) {
     });
     template.find('.openai_logit_bias_remove').on('click', function () {
         $(this).closest('.openai_logit_bias_form').remove();
-        oai_settings.bias_presets[oai_settings.bias_preset_selected][id] = undefined;
+        oai_settings.bias_presets[oai_settings.bias_preset_selected].splice(id, 1);
         biasCache = undefined;
         saveSettingsDebounced();
     });
