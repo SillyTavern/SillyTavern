@@ -68,6 +68,8 @@ app.use(compression());
 app.use(responseTime());
 
 const fs = require('fs');
+const writeFileAtomicSync = require('write-file-atomic').sync;
+const writeFileAtomic = require('write-file-atomic');
 const readline = require('readline');
 const open = require('open');
 
@@ -692,7 +694,7 @@ app.post("/savechat", jsonParser, function (request, response) {
         var dir_name = String(request.body.avatar_url).replace('.png', '');
         let chat_data = request.body.chat;
         let jsonlData = chat_data.map(JSON.stringify).join('\n');
-        fs.writeFileSync(`${chatsPath + sanitize(dir_name)}/${sanitize(String(request.body.file_name))}.jsonl`, jsonlData, 'utf8');
+        writeFileAtomicSync(`${chatsPath + sanitize(dir_name)}/${sanitize(String(request.body.file_name))}.jsonl`, jsonlData, 'utf8');
         return response.send({ result: "ok" });
     } catch (error) {
         response.send(error);
@@ -1217,7 +1219,7 @@ async function charaWrite(img_url, data, target_img, response = undefined, mes =
         chunks.splice(-1, 0, PNGtext.encode('chara', base64EncodedData));
         //chunks.splice(-1, 0, text.encode('lorem', 'ipsum'));
 
-        fs.writeFileSync(charactersPath + target_img + '.png', new Buffer.from(encode(chunks)));
+        writeFileAtomicSync(charactersPath + target_img + '.png', new Buffer.from(encode(chunks)));
         if (response !== undefined) response.send(mes);
         return true;
     } catch (err) {
@@ -1429,7 +1431,7 @@ app.post('/deleteuseravatar', jsonParser, function (request, response) {
 
 app.post("/setbackground", jsonParser, function (request, response) {
     var bg = "#bg1 {background-image: url('../backgrounds/" + request.body.bg + "');}";
-    fs.writeFile('public/css/bg_load.css', bg, 'utf8', function (err) {
+    writeFileAtomic('public/css/bg_load.css', bg, 'utf8', function (err) {
         if (err) {
             response.send(err);
             return console.log(err);
@@ -1530,7 +1532,7 @@ app.post("/downloadbackground", urlencodedParser, function (request, response) {
 });
 
 app.post("/savesettings", jsonParser, function (request, response) {
-    fs.writeFile('public/settings.json', JSON.stringify(request.body, null, 4), 'utf8', function (err) {
+    writeFileAtomic('public/settings.json', JSON.stringify(request.body, null, 4), 'utf8', function (err) {
         if (err) {
             response.send(err);
             console.log(err);
@@ -1538,17 +1540,6 @@ app.post("/savesettings", jsonParser, function (request, response) {
             response.send({ result: "ok" });
         }
     });
-
-    /*fs.writeFile('public/settings.json', JSON.stringify(request.body), 'utf8', function (err) {
-        if (err) {
-            response.send(err);
-            return console.log(err);
-            //response.send(err);
-        } else {
-            //response.redirect("/");
-            response.send({ result: "ok" });
-        }
-    });*/
 });
 
 function getCharaCardV2(jsonObject) {
@@ -1714,7 +1705,7 @@ app.post('/savetheme', jsonParser, (request, response) => {
     }
 
     const filename = path.join(directories.themes, sanitize(request.body.name) + '.json');
-    fs.writeFileSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
+    writeFileAtomicSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
 
     return response.sendStatus(200);
 });
@@ -1725,7 +1716,7 @@ app.post('/savemovingui', jsonParser, (request, response) => {
     }
 
     const filename = path.join(directories.movingUI, sanitize(request.body.name) + '.json');
-    fs.writeFileSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
+    writeFileAtomicSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
 
     return response.sendStatus(200);
 });
@@ -1736,7 +1727,7 @@ app.post('/savequickreply', jsonParser, (request, response) => {
     }
 
     const filename = path.join(directories.quickreplies, sanitize(request.body.name) + '.json');
-    fs.writeFileSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
+    writeFileAtomicSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
 
     return response.sendStatus(200);
 });
@@ -2330,7 +2321,7 @@ app.post("/exportcharacter", jsonParser, async function (request, response) {
                     },
                 };
                 const exifString = exif.dump(metadata);
-                fs.writeFileSync(metadataPath, exifString, 'binary');
+                writeFileAtomicSync(metadataPath, exifString, 'binary');
 
                 await webp.cwebp(filename, inputWebpPath, '-q 95');
                 await webp.webpmux_add(inputWebpPath, outputWebpPath, metadataPath, 'exif');
@@ -2412,9 +2403,9 @@ app.post("/importchat", urlencodedParser, function (request, response) {
                     });
 
                     const errors = [];
-                    newChats.forEach(chat => fs.writeFile(
+                    newChats.forEach(chat => writeFileAtomic(
                         `${chatsPath + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()} imported.jsonl`,
-                        chat.map(JSON.stringify).join('\n'),
+                        chat.map(tryParse).filter(x => x).join('\n'),
                         'utf8',
                         (err) => err ?? errors.push(err)
                     )
@@ -2456,7 +2447,7 @@ app.post("/importchat", urlencodedParser, function (request, response) {
                         }
                     }
 
-                    fs.writeFileSync(`${chatsPath + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()} imported.jsonl`, chat.map(JSON.stringify).join('\n'), 'utf8');
+                    writeFileAtomicSync(`${chatsPath + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()} imported.jsonl`, chat.map(JSON.stringify).join('\n'), 'utf8');
 
                     response.send({ res: true });
                 } else {
@@ -2525,7 +2516,7 @@ app.post('/importworldinfo', urlencodedParser, (request, response) => {
         return response.status(400).send('World file must have a name');
     }
 
-    fs.writeFileSync(pathToNewFile, fileContents);
+    writeFileAtomicSync(pathToNewFile, fileContents);
     return response.send({ name: worldName });
 });
 
@@ -2549,7 +2540,7 @@ app.post('/editworldinfo', jsonParser, (request, response) => {
     const filename = `${sanitize(request.body.name)}.json`;
     const pathToFile = path.join(directories.worlds, filename);
 
-    fs.writeFileSync(pathToFile, JSON.stringify(request.body.data, null, 4));
+    writeFileAtomicSync(pathToFile, JSON.stringify(request.body.data, null, 4));
 
     return response.send({ ok: true });
 });
@@ -2570,7 +2561,7 @@ app.post('/uploaduseravatar', urlencodedParser, async (request, response) => {
 
         const filename = request.body.overwrite_name || `${Date.now()}.png`;
         const pathToNewFile = path.join(directories.avatars, filename);
-        fs.writeFileSync(pathToNewFile, image);
+        writeFileAtomicSync(pathToNewFile, image);
         fs.rmSync(pathToUpload);
         return response.send({ path: filename });
     } catch (err) {
@@ -2647,7 +2638,7 @@ app.post('/creategroup', jsonParser, (request, response) => {
         fs.mkdirSync(directories.groups);
     }
 
-    fs.writeFileSync(pathToFile, fileData);
+    writeFileAtomicSync(pathToFile, fileData);
     return response.send(groupMetadata);
 });
 
@@ -2659,7 +2650,7 @@ app.post('/editgroup', jsonParser, (request, response) => {
     const pathToFile = path.join(directories.groups, `${id}.json`);
     const fileData = JSON.stringify(request.body);
 
-    fs.writeFileSync(pathToFile, fileData);
+    writeFileAtomicSync(pathToFile, fileData);
     return response.send({ ok: true });
 });
 
@@ -2713,7 +2704,7 @@ app.post('/savegroupchat', jsonParser, (request, response) => {
 
     let chat_data = request.body.chat;
     let jsonlData = chat_data.map(JSON.stringify).join('\n');
-    fs.writeFileSync(pathToFile, jsonlData, 'utf8');
+    writeFileAtomicSync(pathToFile, jsonlData, 'utf8');
     return response.send({ ok: true });
 });
 
@@ -2912,7 +2903,7 @@ async function generateThumbnail(type, file) {
             buffer = fs.readFileSync(pathToOriginalFile);
         }
 
-        fs.writeFileSync(pathToCachedFile, buffer);
+        writeFileAtomicSync(pathToCachedFile, buffer);
     }
     catch (outer) {
         return null;
@@ -3473,7 +3464,7 @@ app.post("/save_preset", jsonParser, function (request, response) {
     }
 
     const fullpath = path.join(directory, filename);
-    fs.writeFileSync(fullpath, JSON.stringify(request.body.preset, null, 4), 'utf-8');
+    writeFileAtomicSync(fullpath, JSON.stringify(request.body.preset, null, 4), 'utf-8');
     return response.send({ name });
 });
 
@@ -3508,7 +3499,7 @@ app.post("/savepreset_openai", jsonParser, function (request, response) {
 
     const filename = `${name}.settings`;
     const fullpath = path.join(directories.openAI_Settings, filename);
-    fs.writeFileSync(fullpath, JSON.stringify(request.body, null, 4), 'utf-8');
+    writeFileAtomicSync(fullpath, JSON.stringify(request.body, null, 4), 'utf-8');
     return response.send({ name });
 });
 
@@ -3810,7 +3801,7 @@ function migrateSecrets() {
         if (modified) {
             console.log('Writing updated settings.json...');
             const settingsContent = JSON.stringify(settings);
-            fs.writeFileSync(SETTINGS_FILE, settingsContent, "utf-8");
+            writeFileAtomicSync(SETTINGS_FILE, settingsContent, "utf-8");
         }
     }
     catch (error) {
@@ -4181,7 +4172,7 @@ app.post('/upload_sprite_pack', urlencodedParser, async (request, response) => {
 
             // Write sprite buffer to disk
             const pathToSprite = path.join(spritesPath, filename);
-            fs.writeFileSync(pathToSprite, buffer);
+            writeFileAtomicSync(pathToSprite, buffer);
         }
 
         // Remove uploaded ZIP file
@@ -4406,7 +4397,7 @@ function importRisuSprites(data) {
 
             const filename = label + '.png';
             const pathToFile = path.join(spritesPath, filename);
-            fs.writeFileSync(pathToFile, fileBase64, { encoding: 'base64' });
+            writeFileAtomicSync(pathToFile, fileBase64, { encoding: 'base64' });
         }
 
         // Remove additionalAssets and emotions from data (they are now in the sprites folder)
@@ -4420,13 +4411,13 @@ function importRisuSprites(data) {
 function writeSecret(key, value) {
     if (!fs.existsSync(SECRETS_FILE)) {
         const emptyFile = JSON.stringify({});
-        fs.writeFileSync(SECRETS_FILE, emptyFile, "utf-8");
+        writeFileAtomicSync(SECRETS_FILE, emptyFile, "utf-8");
     }
 
     const fileContents = fs.readFileSync(SECRETS_FILE);
     const secrets = JSON.parse(fileContents);
     secrets[key] = value;
-    fs.writeFileSync(SECRETS_FILE, JSON.stringify(secrets), "utf-8");
+    writeFileAtomicSync(SECRETS_FILE, JSON.stringify(secrets), "utf-8");
 }
 
 function readSecret(key) {
