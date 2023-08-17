@@ -1844,17 +1844,26 @@ function getStoppingStrings(isImpersonate, addSpace) {
         }
     }
 
-    // Cohee: oobabooga's textgen always appends newline before the sequence as a stopping string
-    // But it's a problem for Metharme which doesn't use newlines to separate them.
-    const wrap = (s) => power_user.instruct.wrap ? '\n' + s : s;
+    function addInstructSequence(sequence) {
+        // Cohee: oobabooga's textgen always appends newline before the sequence as a stopping string
+        // But it's a problem for Metharme which doesn't use newlines to separate them.
+        const wrap = (s) => power_user.instruct.wrap ? '\n' + s : s;
+        // Sequence must be a non-empty string
+        if (typeof sequence === 'string' && sequence.length > 0) {
+            // If sequence is just a whitespace or newline - we don't want to make it a stopping string
+            // User can always add it as a custom stop string if really needed
+            if (sequence.trim().length > 0) {
+                const wrappedSequence = wrap(sequence);
+                // Need to respect "insert macro" setting
+                const stopString = power_user.instruct.macro ? substituteParams(wrappedSequence) : wrappedSequence;
+                result.push(stopString);
+            }
+        }
+    }
 
     if (power_user.instruct.enabled) {
-        if (power_user.instruct.input_sequence) {
-            result.push(substituteParams(wrap(power_user.instruct.input_sequence), name1, name2));
-        }
-        if (power_user.instruct.output_sequence) {
-            result.push(substituteParams(wrap(power_user.instruct.output_sequence), name1, name2));
-        }
+        addInstructSequence(power_user.instruct.input_sequence);
+        addInstructSequence(power_user.instruct.output_sequence);
     }
 
     if (power_user.custom_stopping_strings) {
