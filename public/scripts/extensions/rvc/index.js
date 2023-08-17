@@ -6,7 +6,7 @@ TODO:
 
 import { saveSettingsDebounced } from "../../../script.js";
 import { getContext, getApiUrl, extension_settings, doExtrasFetch, ModuleWorkerWrapper, modules } from "../../extensions.js";
-export { MODULE_NAME,  rvcVoiceConversion};
+export { MODULE_NAME, rvcVoiceConversion };
 
 const MODULE_NAME = 'RVC';
 const DEBUG_PREFIX = "<RVC module> "
@@ -16,25 +16,25 @@ let charactersList = [] // Updated with module worker
 let rvcModelsList = [] // Initialized only once
 let rvcModelsReceived = false;
 
-function updateVoiceMapText(){
+function updateVoiceMapText() {
     let voiceMapText = ""
-    for(let i in extension_settings.rvc.voiceMap) {
+    for (let i in extension_settings.rvc.voiceMap) {
         const voice_settings = extension_settings.rvc.voiceMap[i];
         voiceMapText += i + ":"
-        + voice_settings["modelName"] + "("
-        + voice_settings["pitchExtraction"] + ","
-        + voice_settings["pitchOffset"] + ","
-        + voice_settings["indexRate"] + ","
-        + voice_settings["filterRadius"] + ","
-        + voice_settings["rmsMixRate"] + ","
-        + voice_settings["protect"]
-        + "),\n"
+            + voice_settings["modelName"] + "("
+            + voice_settings["pitchExtraction"] + ","
+            + voice_settings["pitchOffset"] + ","
+            + voice_settings["indexRate"] + ","
+            + voice_settings["filterRadius"] + ","
+            + voice_settings["rmsMixRate"] + ","
+            + voice_settings["protect"]
+            + "),\n"
     }
 
     extension_settings.rvc.voiceMapText = voiceMapText;
     $('#rvc_voice_map').val(voiceMapText);
 
-    console.debug(DEBUG_PREFIX,"Updated voice map debug text to\n",voiceMapText)
+    console.debug(DEBUG_PREFIX, "Updated voice map debug text to\n", voiceMapText)
 }
 
 //#############################//
@@ -43,13 +43,13 @@ function updateVoiceMapText(){
 
 const defaultSettings = {
     enabled: false,
-    model:"",
-    pitchOffset:0,
-    pitchExtraction:"dio",
-    indexRate:0.88,
-    filterRadius:3,
-    rmsMixRate:1,
-    protect:0.33,
+    model: "",
+    pitchOffset: 0,
+    pitchExtraction: "dio",
+    indexRate: 0.88,
+    filterRadius: 3,
+    rmsMixRate: 1,
+    protect: 0.33,
     voicMapText: "",
     voiceMap: {}
 }
@@ -58,7 +58,7 @@ function loadSettings() {
     if (Object.keys(extension_settings.rvc).length === 0) {
         Object.assign(extension_settings.rvc, defaultSettings)
     }
-    $('#rvc_enabled').prop('checked',extension_settings.rvc.enabled);
+    $('#rvc_enabled').prop('checked', extension_settings.rvc.enabled);
     $('#rvc_model').val(extension_settings.rvc.model);
 
     $('#rvc_pitch_extraction').val(extension_settings.rvc.pitchExtraction);
@@ -135,12 +135,12 @@ async function onApplyClick() {
     const protect = $("#rvc_protect").val();
 
     if (character === "none") {
-        toastr.error("Character not selected.", DEBUG_PREFIX+" voice mapping apply", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+        toastr.error("Character not selected.", DEBUG_PREFIX + " voice mapping apply", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
         return;
     }
 
     if (model_name == "none") {
-        toastr.error("Model not selected.", DEBUG_PREFIX+" voice mapping apply", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+        toastr.error("Model not selected.", DEBUG_PREFIX + " voice mapping apply", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
         return;
     }
 
@@ -156,7 +156,7 @@ async function onApplyClick() {
 
     updateVoiceMapText();
 
-    console.debug(DEBUG_PREFIX,"Updated settings of ",character,":",extension_settings.rvc.voiceMap[character])
+    console.debug(DEBUG_PREFIX, "Updated settings of ", character, ":", extension_settings.rvc.voiceMap[character])
     saveSettingsDebounced();
 }
 
@@ -164,12 +164,12 @@ async function onDeleteClick() {
     const character = $("#rvc_character_select").val();
 
     if (character === "none") {
-        toastr.error("Character not selected.", DEBUG_PREFIX+" voice mapping delete", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+        toastr.error("Character not selected.", DEBUG_PREFIX + " voice mapping delete", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
         return;
     }
 
     delete extension_settings.rvc.voiceMap[character];
-    console.debug(DEBUG_PREFIX,"Deleted settings of ",character);
+    console.debug(DEBUG_PREFIX, "Deleted settings of ", character);
     updateVoiceMapText();
     saveSettingsDebounced();
 }
@@ -178,11 +178,11 @@ async function onClickUpload() {
     const url = new URL(getApiUrl());
     const inputFiles = $("#rvc_model_upload_file").get(0).files;
     let formData = new FormData();
-    
-    for(const file of inputFiles)
+
+    for (const file of inputFiles)
         formData.append(file.name, file);
 
-    console.debug(DEBUG_PREFIX,"Sending files:",formData);
+    console.debug(DEBUG_PREFIX, "Sending files:", formData);
     url.pathname = '/api/voice-conversion/rvc/upload-models';
 
     const apiResult = await doExtrasFetch(url, {
@@ -191,7 +191,7 @@ async function onClickUpload() {
     });
 
     if (!apiResult.ok) {
-        toastr.error(apiResult.statusText, DEBUG_PREFIX+' Check extras console for errors log');
+        toastr.error(apiResult.statusText, DEBUG_PREFIX + ' Check extras console for errors log');
         throw new Error(`HTTP ${apiResult.status}: ${await apiResult.text()}`);
     }
 
@@ -274,7 +274,7 @@ $(document).ready(function () {
         `;
         $('#extensions_settings').append(settingsHtml);
         $("#rvc_enabled").on("click", onEnabledClick);
-        $("#rvc_voice_map").attr("disabled","disabled");;
+        $("#rvc_voice_map").attr("disabled", "disabled");;
         $('#rvc_pitch_extraction').on('change', onPitchExtractionChange);
         $('#rvc_index_rate').on('input', onIndexRateChange);
         $('#rvc_filter_radius').on('input', onFilterRadiusChange);
@@ -313,7 +313,7 @@ async function get_models_list(model_id) {
     });
 
     if (!apiResult.ok) {
-        toastr.error(apiResult.statusText, DEBUG_PREFIX+' Check model state request failed');
+        toastr.error(apiResult.statusText, DEBUG_PREFIX + ' Check model state request failed');
         throw new Error(`HTTP ${apiResult.status}: ${await apiResult.text()}`);
     }
 
@@ -329,7 +329,7 @@ async function rvcVoiceConversion(response, character) {
     // Check voice map
     if (extension_settings.rvc.voiceMap[character] === undefined) {
         //toastr.error("No model is assigned to character '"+character+"', check RVC voice map in the extension menu.", DEBUG_PREFIX+'RVC Voice map error', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
-        console.info(DEBUG_PREFIX,"No RVC model assign in voice map for current character "+character);
+        console.info(DEBUG_PREFIX, "No RVC model assign in voice map for current character " + character);
         return response;
     }
 
@@ -337,7 +337,7 @@ async function rvcVoiceConversion(response, character) {
     if (!audioData.type in ['audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/wave', 'audio/webm']) {
         throw `TTS received HTTP response with invalid data format. Expecting audio/mpeg, got ${audioData.type}`
     }
-    console.log("Audio type received:",audioData.type)
+    console.log("Audio type received:", audioData.type)
 
     const voice_settings = extension_settings.rvc.voiceMap[character];
 
@@ -364,7 +364,7 @@ async function rvcVoiceConversion(response, character) {
     });
 
     if (!apiResult.ok) {
-        toastr.error(apiResult.statusText, DEBUG_PREFIX+' RVC Voice Conversion Failed', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+        toastr.error(apiResult.statusText, DEBUG_PREFIX + ' RVC Voice Conversion Failed', { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
         throw new Error(`HTTP ${apiResult.status}: ${await apiResult.text()}`);
     }
 
@@ -377,22 +377,22 @@ async function rvcVoiceConversion(response, character) {
 
 async function refreshVoiceList() {
     let result = await get_models_list();
-        result = await result.json();
-        rvcModelsList = result["models_list"]
+    result = await result.json();
+    rvcModelsList = result["models_list"]
 
-        $('#rvc_model_select')
-            .find('option')
-            .remove()
-            .end()
-            .append('<option value="none">Select Voice</option>')
-            .val('none')
+    $('#rvc_model_select')
+        .find('option')
+        .remove()
+        .end()
+        .append('<option value="none">Select Voice</option>')
+        .val('none')
 
-        for(const modelName of rvcModelsList) {
-            $("#rvc_model_select").append(new Option(modelName,modelName));
-        }
+    for (const modelName of rvcModelsList) {
+        $("#rvc_model_select").append(new Option(modelName, modelName));
+    }
 
-        rvcModelsReceived = true
-        console.debug(DEBUG_PREFIX,"Updated model list to:", rvcModelsList);
+    rvcModelsReceived = true
+    console.debug(DEBUG_PREFIX, "Updated model list to:", rvcModelsList);
 }
 
 async function moduleWorker() {
@@ -421,10 +421,10 @@ function updateCharactersList() {
             .append('<option value="none">Select Character</option>')
             .val('none')
 
-        for(const charName of charactersList) {
-            $("#rvc_character_select").append(new Option(charName,charName));
+        for (const charName of charactersList) {
+            $("#rvc_character_select").append(new Option(charName, charName));
         }
 
-        console.debug(DEBUG_PREFIX,"Updated character list to:", charactersList);
+        console.debug(DEBUG_PREFIX, "Updated character list to:", charactersList);
     }
 }
