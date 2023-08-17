@@ -9,7 +9,10 @@ import {
 } from "../script.js";
 import { getCfg } from "./extensions/cfg/util.js";
 import { MAX_CONTEXT_DEFAULT, tokenizers } from "./power-user.js";
-import { getStringHash } from "./utils.js";
+import {
+    getStringHash,
+    uuidv4
+} from "./utils.js";
 
 export {
     nai_settings,
@@ -49,6 +52,7 @@ const nai_settings = {
     cfg_uc: '',
     banned_tokens: '',
     order: default_order,
+    logit_bias: [],
 };
 
 const nai_tiers = {
@@ -60,6 +64,7 @@ const nai_tiers = {
 
 let novel_data = null;
 let badWordsCache = {};
+let biasCache = undefined;
 
 export function setNovelData(data) {
     novel_data = data;
@@ -114,6 +119,7 @@ function loadNovelPreset(preset) {
     nai_settings.cfg_uc = preset.cfg_uc || '';
     nai_settings.banned_tokens = preset.banned_tokens || '';
     nai_settings.order = preset.order || default_order;
+    nai_settings.logit_bias = preset.logit_bias || [];
     loadNovelSettingsUi(nai_settings);
 }
 
@@ -147,6 +153,7 @@ function loadNovelSettings(settings) {
     nai_settings.cfg_uc = settings.cfg_uc || '';
     nai_settings.banned_tokens = settings.banned_tokens || '';
     nai_settings.order = settings.order || default_order;
+    nai_settings.logit_bias = settings.logit_bias || [];
     loadNovelSettingsUi(nai_settings);
 }
 
@@ -189,6 +196,7 @@ function loadNovelSettingsUi(ui_settings) {
 
     $("#streaming_novel").prop('checked', ui_settings.streaming_novel);
     sortItemsByOrder(ui_settings.order);
+    displayLogitBias(ui_settings.logit_bias);
 }
 
 const sliders = [
@@ -398,6 +406,12 @@ export function getNovelGenerationData(finalPrompt, this_settings, this_amount_g
     const prefix = selectPrefix(nai_settings.prefix, finalPrompt);
     const cfgSettings = getCfg();
 
+    let logitBias = [];
+    if (tokenizerType !== tokenizers.NONE && Array.isArray(nai_settings.logit_bias) && nai_settings.logit_bias.length) {
+        logitBias = biasCache || calculateLogitBias();
+        biasCache = logitBias;
+    }
+
     return {
         "input": finalPrompt,
         "model": nai_settings.model_novel,
@@ -418,10 +432,11 @@ export function getNovelGenerationData(finalPrompt, this_settings, this_amount_g
         "mirostat_lr": parseFloat(nai_settings.mirostat_lr),
         "mirostat_tau": parseFloat(nai_settings.mirostat_tau),
         "cfg_scale": cfgSettings?.guidanceScale ?? parseFloat(nai_settings.cfg_scale),
-        "cfg_uc": cfgSettings?.negativePrompt ?? nai_settings.cfg_uc ??  "",
+        "cfg_uc": cfgSettings?.negativePrompt ?? nai_settings.cfg_uc ?? "",
         "phrase_rep_pen": nai_settings.phrase_rep_pen,
         "stop_sequences": stopSequences,
         "bad_words_ids": badWordIds,
+        "logit_bias_exp": logitBias,
         "generate_until_sentence": true,
         "use_cache": false,
         "use_string": true,
@@ -485,6 +500,76 @@ function saveSamplingOrder() {
     nai_settings.order = order;
     console.log('Samplers reordered:', nai_settings.order);
     saveSettingsDebounced();
+}
+
+function displayLogitBias(logit_bias) {
+    if (!Array.isArray(logit_bias)) {
+        console.log('Logit bias set not found');
+        return;
+    }
+
+    $('.novelai_logit_bias_list').empty();
+
+    for (const entry of logit_bias) {
+        if (entry) {
+            createLogitBiasListItem(entry);
+        }
+    }
+
+    biasCache = undefined;
+}
+
+function createNewLogitBiasEntry() {
+    const entry = { id: uuidv4(), text: '', value: 0 };
+    nai_settings.logit_bias.push(entry);
+    biasCache = undefined;
+    createLogitBiasListItem(entry);
+    saveSettingsDebounced();
+}
+
+function createLogitBiasListItem(entry) {
+    const id = entry.id;
+    const template = $('#novelai_logit_bias_template .novelai_logit_bias_form').clone();
+    template.data('id', id);
+    template.find('.novelai_logit_bias_text').val(entry.text).on('input', function () {
+        entry.text = $(this).val();
+        biasCache = undefined;
+        saveSettingsDebounced();
+    });
+    template.find('.novelai_logit_bias_value').val(entry.value).on('input', function () {
+        entry.value = Number($(this).val());
+        biasCache = undefined;
+        saveSettingsDebounced();
+    });
+    template.find('.novelai_logit_bias_remove').on('click', function () {
+        $(this).closest('.novelai_logit_bias_form').remove();
+        const index = nai_settings.logit_bias.indexOf(entry);
+        if (index > -1) {
+            nai_settings.logit_bias.splice(index, 1);
+        }
+        biasCache = undefined;
+        saveSettingsDebounced();
+    });
+    $('.novelai_logit_bias_list').prepend(template);
+}
+
+function calculateLogitBias() {
+    const bias_preset = nai_settings.logit_bias;
+
+    if (!Array.isArray(bias_preset) || bias_preset.length === 0) {
+        return [];
+    }
+
+    const clio = nai_settings.model_novel.includes('clio');
+    const kayra = nai_settings.model_novel.includes('kayra');
+    const tokenizerType = kayra ? tokenizers.NERD2 : (clio ? tokenizers.NERD : tokenizers.NONE);
+
+    return bias_preset.filter(b => b.text?.length > 0).map(bias => ({
+        bias: bias.value,
+        ensure_sequence_finish: false,
+        generate_once: false,
+        sequence: getTextTokens(tokenizerType, bias.text)
+    }));
 }
 
 export async function generateNovelWithStreaming(generate_data, signal) {
@@ -590,4 +675,6 @@ $(document).ready(function () {
         console.log('Sampler toggled:', $item.data('id'), !isEnabled);
         saveSamplingOrder();
     });
+
+    $("#novelai_logit_bias_new_entry").on("click", createNewLogitBiasEntry);
 });
