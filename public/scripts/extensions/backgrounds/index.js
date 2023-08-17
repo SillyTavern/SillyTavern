@@ -8,6 +8,11 @@ const MODULE_NAME = 'backgrounds';
 const METADATA_KEY = 'custom_background';
 const UPDATE_INTERVAL = 1000;
 
+function forceSetBackground(background) {
+    saveBackgroundMetadata(background);
+    setCustomBackground();
+}
+
 async function moduleWorker() {
     if (hasCustomBackground()) {
         $('#unlock_background').show();
@@ -167,4 +172,5 @@ $(document).ready(function () {
     registerSlashCommand('lockbg', onLockBackgroundClick, ['bglock'], " – locks a background for the currently selected chat", true, true);
     registerSlashCommand('unlockbg', onUnlockBackgroundClick, ['bgunlock'], ' – unlocks a background for the currently selected chat', true, true);
     registerSlashCommand('autobg', autoBackgroundCommand, ['bgauto'], ' – automatically changes the background based on the chat context using the AI request prompt', true, true);
+    window['forceSetBackground'] = forceSetBackground;
 });

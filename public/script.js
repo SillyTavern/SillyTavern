@@ -2441,9 +2441,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         if (mesExamples.replace(/<START>/gi, '').trim().length === 0) {
             mesExamples = '';
         }
-        const blockHeading =
-            main_api === 'openai' ? '<START>' : // OpenAI handler always expects it
-                power_user.context.example_separator;
+
+        // OpenAI handler always expects it
+        const blockHeading = main_api === 'openai' ? '<START>' : (power_user.context.example_separator || '');
         let mesExamplesArray = mesExamples.split(/<START>/gi).slice(1).map(block => `${blockHeading}\n${block.trim()}\n`);
 
         // First message in fresh 1-on-1 chat reacts to user/character settings changes

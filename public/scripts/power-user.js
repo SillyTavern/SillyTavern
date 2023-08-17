@@ -176,6 +176,7 @@ let power_user = {
         stop_sequence: '',
         input_sequence: '### Instruction:',
         output_sequence: '### Response:',
+        last_output_sequence: '',
         preset: 'Alpaca',
         separator_sequence: '',
         macro: false,
@@ -942,6 +943,7 @@ function loadInstructMode() {
         { id: "instruct_names", property: "names", isCheckbox: true },
         { id: "instruct_macro", property: "macro", isCheckbox: true },
         { id: "instruct_names_force_groups", property: "names_force_groups", isCheckbox: true },
+        { id: "instruct_last_output_sequence", property: "last_output_sequence", isCheckbox: false },
     ];
 
     if (power_user.instruct.names_force_groups === undefined) {
@@ -1087,7 +1089,8 @@ export function formatInstructStoryString(story, systemPrompt) {
 
 export function formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2) {
     const includeNames = power_user.instruct.names || (!!selected_group && power_user.instruct.names_force_groups);
-    let sequence = isImpersonate ? power_user.instruct.input_sequence : power_user.instruct.output_sequence;
+    const getOutputSequence = () => power_user.instruct.last_output_sequence || power_user.instruct.output_sequence;
+    let sequence = isImpersonate ? power_user.instruct.input_sequence : getOutputSequence();
 
     if (power_user.instruct.macro) {
         sequence = substituteParams(sequence, name1, name2);
