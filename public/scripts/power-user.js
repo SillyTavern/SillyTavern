@@ -16,7 +16,8 @@ import {
     name1,
     name2,
     setCharacterId,
-    setEditedMessageId
+    setEditedMessageId,
+    entities
 } from "../script.js";
 import { favsToHotswap, isMobile, initMovingUI } from "./RossAscends-mods.js";
 import {
@@ -34,7 +35,6 @@ export {
     loadMovingUIState,
     collapseNewlines,
     playMessageSound,
-    sortGroupMembers,
     sortCharactersList,
     fixMarkdown,
     power_user,
@@ -1051,43 +1051,11 @@ const compareFunc = (first, second) => {
 };
 
 function sortCharactersList() {
-    const arr1 = groups.map(x => ({
-        item: x,
-        id: x.id,
-        selector: '.group_select',
-        attribute: 'grid',
-    }))
-    const arr2 = characters.map((x, index) => ({
-        item: x,
-        id: index,
-        selector: '.character_select',
-        attribute: 'chid',
-    }));
-
-    const array = [...arr1, ...arr2];
-
-    if (power_user.sort_field == undefined || array.length === 0) {
+    if (power_user.sort_field == undefined || entities.length === 0) {
         return;
     }
-
-    let orderedList = array.slice().sort((a, b) => sortFunc(a.item, b.item));
-
-    for (const item of array) {
-        $(`${item.selector}[${item.attribute}="${item.id}"]`).css({ 'order': orderedList.indexOf(item) });
-    }
+    entities.sort(sortFunc);
     updateVisibleDivs('#rm_print_characters_block', true);
-}
-
-function sortGroupMembers(selector) {
-    if (power_user.sort_field == undefined || characters.length === 0) {
-        return;
-    }
-
-    let orderedList = characters.slice().sort(sortFunc);
-
-    for (let i = 0; i < characters.length; i++) {
-        $(`${selector}[chid="${i}"]`).css({ 'order': orderedList.indexOf(characters[i]) });
-    }
 }
 
 async function saveTheme() {
@@ -1877,7 +1845,7 @@ $(document).ready(() => {
         power_user.sort_field = $(this).find(":selected").data('field');
         power_user.sort_order = $(this).find(":selected").data('order');
         power_user.sort_rule = $(this).find(":selected").data('rule');
-        sortCharactersList();
+        printCharacters()
         favsToHotswap();
         saveSettingsDebounced();
     });

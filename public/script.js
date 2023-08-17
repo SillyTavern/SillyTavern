@@ -55,6 +55,7 @@ import {
     deleteGroupChat,
     renameGroupChat,
     importGroupChat,
+    updateGroupIndex,
 } from "./scripts/group-chats.js";
 
 import {
@@ -971,55 +972,63 @@ function resultCheckStatus() {
     $("#api_button_textgenerationwebui").css("display", "inline-block");
 }
 
+//held together with glue. but its superglue, so it'll probably be fine
+export let entities = []
 async function printCharacters() {
     $("#rm_print_characters_block").empty();
-    characters.forEach(function (item, i, arr) {
-        let this_avatar = default_avatar;
-        if (item.avatar != "none") {
-            this_avatar = getThumbnailUrl('avatar', item.avatar);
-        }
-        // Populate the template
-        const template = $('#character_template .character_select').clone();
-        template.attr({ 'chid': i, 'id': `CharID${i}` });
-        template.find('img').attr('src', this_avatar);
-        template.find('.avatar').attr('title', item.avatar);
-        template.find('.ch_name').text(item.name);
-        if (power_user.show_card_avatar_urls) {
-            template.find('.ch_avatar_url').text(item.avatar);
-        }
-        template.find('.ch_fav_icon').css("display", 'none');
-        template.toggleClass('is_fav', item.fav || item.fav == 'true');
-        template.find('.ch_fav').val(item.fav);
+    let chid = 0;
+    entities = [...groups.map(group => ({...group, type: 'group'})), ...characters.map(character => ({...character, type: 'char'}))];
+    sortCharactersList();
+    entities.forEach(function (item, i, arr) {
+        if(item.type === 'char') {
+            let this_avatar = default_avatar;
+            if (item.avatar != "none") {
+                this_avatar = getThumbnailUrl('avatar', item.avatar);
+            }
+            // Populate the template
+            const template = $('#character_template .character_select').clone();
+            template.attr({'chid': chid, 'id': `CharID${chid}`});
+            template.find('img').attr('src', this_avatar);
+            template.find('.avatar').attr('title', item.avatar);
+            template.find('.ch_name').text(item.name).css('color', item.fav ? 'gold' : 'white');
+            if (power_user.show_card_avatar_urls) {
+                template.find('.ch_avatar_url').text(item.avatar);
+            }
+            template.find('.ch_fav_icon').css("display", 'none');
+            template.toggleClass('is_fav', item.fav || item.fav == 'true');
+            template.find('.ch_fav').val(item.fav);
 
-        const description = item.data?.creator_notes?.split('\n', 1)[0] || '';
-        if (description) {
-            template.find('.ch_description').text(description);
-        }
-        else {
-            template.find('.ch_description').hide();
-        }
+            const description = item.data?.creator_notes?.split('\n', 1)[0] || '';
+            if (description) {
+                template.find('.ch_description').text(description);
+            } else {
+                template.find('.ch_description').hide();
+            }
 
-        const version = item.data?.character_version || '';
-        if (version) {
-            template.find('.character_version').text(version);
-        }
-        else {
-            template.find('.character_version').hide();
-        }
+            const version = item.data?.character_version || '';
+            if (version) {
+                template.find('.character_version').text(version);
+            } else {
+                template.find('.character_version').hide();
+            }
 
-        // Display inline tags
-        const tags = getTagsList(item.avatar);
-        const tagsElement = template.find('.tags');
-        tags.forEach(tag => appendTagToList(tagsElement, tag, {}));
+            // Display inline tags
+            const tags = getTagsList(item.avatar);
+            const tagsElement = template.find('.tags');
+            tags.forEach(tag => appendTagToList(tagsElement, tag, {}));
 
-        // Add to the list
-        $("#rm_print_characters_block").append(template);
+            // Add to the list
+            $("#rm_print_characters_block").append(template);
+            chid++;
+        } else if (item.type === 'group') {
+            printGroups(item)
+        }
     });
-
+    characters = entities.filter(item => item.type === 'char');
+    updateGroupIndex();
     printTagFilters(tag_filter_types.character);
     printTagFilters(tag_filter_types.group_member);
-    printGroups();
-    sortCharactersList();
+
     favsToHotswap();
     await delay(300);
     updateVisibleDivs('#rm_print_characters_block', true);
@@ -4502,7 +4511,7 @@ async function getChat() {
             chat_create_date = humanizedDateTime();
         }
         await getChatResult();
-        await saveChat();
+        //await saveChat(); Again unnecessary, saveChat() gets called a millisecond after this from somewhere else.
         eventSource.emit('chatLoaded', {detail: {id: this_chid, character: characters[this_chid]}});
 
 
@@ -5845,7 +5854,7 @@ export function select_selected_character(chid) {
     checkEmbeddedWorld(chid);
 
     $("#form_create").attr("actiontype", "editcharacter");
-    saveSettingsDebounced();
+    //saveSettingsDebounced(); Unnecessary? Prompt Manager seems to be saving settings on character select already.
 }
 
 function select_rm_create() {
@@ -7006,32 +7015,7 @@ export function updateCharacterCount(characterSelector) {
 }
 
 function updateVisibleDivs(containerSelector, resizecontainer) {
-    var $container = $(containerSelector);
-    var $children = $container.children();
-    var totalHeight = 0;
-    $children.each(function () {
-        totalHeight += $(this).outerHeight();
-    });
-    if (resizecontainer) {
-        $container.css({
-            height: totalHeight,
-        });
-    }
-    var containerTop = $container.offset() ? $container.offset().top : 0;
-    var firstVisibleIndex = null;
-    var lastVisibleIndex = null;
-    $children.each(function (index) {
-        var $child = $(this);
-        var childTop = $child.offset().top - containerTop;
-        var childBottom = childTop + $child.outerHeight();
-        if (childTop <= $container.height() && childBottom >= 0) {
-            if (firstVisibleIndex === null) {
-                firstVisibleIndex = index;
-            }
-            lastVisibleIndex = index;
-        }
-        $child.toggleClass('hiddenByScroll', childTop > $container.height() || childBottom < 0);
-    });
+
 }
 
 function displayOverrideWarnings() {

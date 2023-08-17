@@ -8,7 +8,7 @@ import {
     extractAllWords,
 } from './utils.js';
 import { RA_CountCharTokens, humanizedDateTime, dragElement } from "./RossAscends-mods.js";
-import { sortCharactersList, sortGroupMembers, loadMovingUIState } from './power-user.js';
+import { sortCharactersList, loadMovingUIState } from './power-user.js';
 
 import {
     chat,
@@ -61,6 +61,7 @@ import {
     getCurrentChatId,
     setScenarioOverride,
     getCropPopup,
+    entities,
 } from "../script.js";
 import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect, tag_map } from './tags.js';
 
@@ -79,6 +80,7 @@ export {
     regenerateGroup,
     resetSelectedGroup,
     select_group_chats,
+    updateGroupIndex
 }
 
 let is_group_generating = false; // Group generation flag
@@ -330,25 +332,28 @@ async function getGroups() {
     }
 }
 
-function printGroups() {
-    for (let group of groups) {
-        const template = $("#group_list_template .group_select").clone();
-        template.data("id", group.id);
-        template.attr("grid", group.id);
-        template.find(".ch_name").html(group.name);
-        template.find('.group_fav_icon').css("display", 'none');
-        template.addClass(group.fav ? 'is_fav' : '');
-        template.find(".ch_fav").val(group.fav);
+function printGroups(group) {
+    const template = $("#group_list_template .group_select").clone();
+    template.data("id", group.id);
+    template.attr("grid", group.id);
+    template.find(".ch_name").html(group.name).css('color', group.fav ? 'gold' : 'white');
+    template.find('.group_fav_icon').css("display", 'none');
+    template.addClass(group.fav ? 'is_fav' : '');
+    template.find(".ch_fav").val(group.fav);
 
-        // Display inline tags
-        const tags = getTagsList(group.id);
-        const tagsElement = template.find('.tags');
-        tags.forEach(tag => appendTagToList(tagsElement, tag, {}));
+    // Display inline tags
+    const tags = getTagsList(group.id);
+    const tagsElement = template.find('.tags');
+    tags.forEach(tag => appendTagToList(tagsElement, tag, {}));
 
-        $("#rm_print_characters_block").prepend(template);
-        updateGroupAvatar(group);
-    }
+    $("#rm_print_characters_block").append(template);
+    updateGroupAvatar(group);
 }
+
+function updateGroupIndex() {
+    groups = entities.filter(item => item.type === 'group');
+}
+
 function updateGroupAvatar(group) {
     $("#rm_print_characters_block .group_select").each(function () {
         if ($(this).data("id") == group.id) {
@@ -993,7 +998,7 @@ function select_group_chats(groupId, skipAnimation) {
         }
     }
 
-    sortGroupMembers("#rm_group_add_members .group_member");
+    sortCharactersList();
 
     const groupHasMembers = !!$("#rm_group_members").children().length;
     $("#rm_group_submit").prop("disabled", !groupHasMembers);
@@ -1163,7 +1168,7 @@ function select_group_chats(groupId, skipAnimation) {
             }
         }
 
-        sortGroupMembers("#rm_group_add_members .group_member");
+        sortCharactersList();
         await eventSource.emit(event_types.GROUP_UPDATED);
     });
 
