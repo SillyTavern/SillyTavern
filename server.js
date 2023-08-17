@@ -553,6 +553,7 @@ app.post("/generate", jsonParser, async function (request, response_generate = r
                 }
 
                 const data = await response.json();
+                console.log("Endpoint response:", data);
                 return response_generate.send(data);
             }
         } catch (error) {
@@ -602,18 +603,13 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
             const websocket = new WebSocket(streamingUrl);
 
             websocket.on('open', async function () {
-                console.log('websocket open');
+                console.log('WebSocket opened');
                 websocket.send(JSON.stringify(request.body));
-            });
-
-            websocket.on('error', (err) => {
-                console.error(err);
-                websocket.close();
             });
 
             websocket.on('close', (code, buffer) => {
                 const reason = new TextDecoder().decode(buffer)
-                console.log(reason);
+                console.log("WebSocket closed (reason: %o)", reason);
             });
 
             while (true) {
@@ -622,8 +618,27 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
                     websocket.close();
                     return;
                 }
+                
+                let rawMessage = null;
+                try {
+                    // This lunacy is because the websocket can fail to connect AFTER we're awaiting 'message'... so 'message' never triggers.
+                    // So instead we need to look for 'error' at the same time to reject the promise. And then remove the listener if we resolve.
+                    // This is awful.
+                    // Welcome to the shenanigan shack.
+                    rawMessage = await new Promise(function (resolve, reject) {
+                        websocket.once('error', reject);
+                        websocket.once('message', (data, isBinary) => {
+                            websocket.removeListener('error', reject);
+                            resolve(data, isBinary);
+                        });
+                    });
+                } catch(err) {
+                    console.error("Socket error:", err);
+                    websocket.close();
+                    yield "[SillyTavern] Streaming failed:\n" + err;
+                    return;
+                }
 
-                const rawMessage = await new Promise(resolve => websocket.once('message', resolve));
                 const message = json5.parse(rawMessage);
 
                 switch (message.event) {
@@ -674,11 +689,11 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
 
         try {
             const data = await postAsync(api_server + "/v1/generate", args);
-            console.log(data);
+            console.log("Endpoint response:", data);
             return response_generate.send(data);
         } catch (error) {
             retval = { error: true, status: error.status, response: error.statusText };
-            console.log(error);
+            console.log("Endpoint error:", error);
             try {
                 retval.response = await error.json();
                 retval.response = retval.response.result;
