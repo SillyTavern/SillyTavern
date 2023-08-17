@@ -4,7 +4,6 @@ TODO:
  - Delete useless call
 */
 
-import { saveSettingsDebounced } from "../../../script.js"
 import { doExtrasFetch, extension_settings, getApiUrl, getContext, modules, ModuleWorkerWrapper } from "../../extensions.js"
 
 export { CoquiTtsProvider }
@@ -35,16 +34,16 @@ coquiApiModels format [language][dataset][name]:coqui-api-model-id, example:
 */
 const languageLabels = {
     "multilingual": "Multilingual",
-    "en" : "English",
-    "fr" : "French",
-    "es" : "Spanish",
-    "ja" : "Japanese"
+    "en": "English",
+    "fr": "French",
+    "es": "Spanish",
+    "ja": "Japanese"
 }
 
 function throwIfModuleMissing() {
     if (!modules.includes('coqui-tts')) {
         toastr.error(`Add coqui-tts to enable-modules and restart the Extras API.`, "Coqui TTS module not loaded.", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
-        throw new Error(DEBUG_PREFIX,`Coqui TTS module not loaded.`);
+        throw new Error(DEBUG_PREFIX, `Coqui TTS module not loaded.`);
     }
 }
 
@@ -60,7 +59,7 @@ function updateCharactersList() {
     }
 
     currentcharacters = Array.from(currentcharacters)
-    
+
     if (JSON.stringify(charactersList) !== JSON.stringify(currentcharacters)) {
         charactersList = currentcharacters
 
@@ -70,12 +69,12 @@ function updateCharactersList() {
             .end()
             .append('<option value="none">Select Character</option>')
             .val('none')
-            
-        for(const charName of charactersList) {
-            $("#coqui_character_select").append(new Option(charName,charName));
+
+        for (const charName of charactersList) {
+            $("#coqui_character_select").append(new Option(charName, charName));
         }
 
-        console.debug(DEBUG_PREFIX,"Updated character list to:", charactersList);
+        console.debug(DEBUG_PREFIX, "Updated character list to:", charactersList);
     }
 }
 
@@ -88,7 +87,7 @@ class CoquiTtsProvider {
 
     defaultSettings = {
         voiceMap: "",
-        voiceMapDict : {}
+        voiceMapDict: {}
     }
 
     get settingsHtml() {
@@ -100,7 +99,7 @@ class CoquiTtsProvider {
                     <select id="coqui_character_select">
                         <!-- Populated by JS -->
                     </select>
-                    
+
                     <input id="coqui_remove_char_mapping" class="menu_button" type="button" value="Remove from Voice Map" />
 
                     <label for="coqui_model_origin">Models:</label>
@@ -149,11 +148,11 @@ class CoquiTtsProvider {
         // Only accept keys defined in defaultSettings
         this.settings = this.defaultSettings
 
-        for (const key in settings){
-            if (key in this.settings){
+        for (const key in settings) {
+            if (key in this.settings) {
                 this.settings[key] = settings[key]
             } else {
-                throw DEBUG_PREFIX+`Invalid setting passed to extension: ${key}`
+                throw DEBUG_PREFIX + `Invalid setting passed to extension: ${key}`
             }
         }
 
@@ -161,7 +160,7 @@ class CoquiTtsProvider {
 
         $("#coqui_api_model_div").hide();
         $("#coqui_local_model_div").hide();
-        
+
         $("#coqui_api_language").show();
         $("#coqui_api_model_name").hide();
         $("#coqui_api_model_settings").hide();
@@ -169,11 +168,11 @@ class CoquiTtsProvider {
         $("#coqui_api_model_install_button").hide();
 
         let that = this
-        $("#coqui_model_origin").on("change",function(){that.onModelOriginChange()});
-        $("#coqui_api_language").on("change",function(){that.onModelLanguageChange()});
-        $("#coqui_api_model_name").on("change",function(){that.onModelNameChange()});
+        $("#coqui_model_origin").on("change", function () { that.onModelOriginChange() });
+        $("#coqui_api_language").on("change", function () { that.onModelLanguageChange() });
+        $("#coqui_api_model_name").on("change", function () { that.onModelNameChange() });
 
-        $("#coqui_remove_char_mapping").on("click", function(){that.onRemoveClick()});
+        $("#coqui_remove_char_mapping").on("click", function () { that.onRemoveClick() });
 
         // Load characters list
         $('#coqui_character_select')
@@ -182,9 +181,9 @@ class CoquiTtsProvider {
             .end()
             .append('<option value="none">Select Character</option>')
             .val('none')
-            
-        for(const charName of charactersList) {
-            $("#coqui_character_select").append(new Option(charName,charName));
+
+        for (const charName of charactersList) {
+            $("#coqui_character_select").append(new Option(charName, charName));
         }
 
         // Load coqui-api settings from json file
@@ -228,9 +227,9 @@ class CoquiTtsProvider {
         });
     }
 
-    updateVoiceMap(){
+    updateVoiceMap() {
         this.settings.voiceMap = "";
-        for(let i in this.settings.voiceMapDict) {
+        for (let i in this.settings.voiceMapDict) {
             const voice_settings = this.settings.voiceMapDict[i];
             this.settings.voiceMap += i + ":" + voice_settings["model_id"];
 
@@ -245,9 +244,9 @@ class CoquiTtsProvider {
         $("#tts_voice_map").val(this.settings.voiceMap);
         extension_settings.tts.Coqui = this.settings;
     }
-    
+
     onSettingsChange() {
-        console.debug(DEBUG_PREFIX,"Settings changes",this.settings);
+        console.debug(DEBUG_PREFIX, "Settings changes", this.settings);
         extension_settings.tts.Coqui = this.settings;
     }
 
@@ -263,15 +262,15 @@ class CoquiTtsProvider {
         let model_setting_language = $("#coqui_api_model_settings_language").val();
         let model_setting_speaker = $("#coqui_api_model_settings_speaker").val();
 
-        
+
         if (character === "none") {
-            toastr.error(`Character not selected, please select one.`, DEBUG_PREFIX+" voice mapping character", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+            toastr.error(`Character not selected, please select one.`, DEBUG_PREFIX + " voice mapping character", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
             this.updateVoiceMap(); // Overide any manual modification
             return;
         }
 
         if (model_origin == "none") {
-            toastr.error(`Origin not selected, please select one.`, DEBUG_PREFIX+" voice mapping origin", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+            toastr.error(`Origin not selected, please select one.`, DEBUG_PREFIX + " voice mapping origin", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
             this.updateVoiceMap(); // Overide any manual modification
             return;
         }
@@ -280,35 +279,35 @@ class CoquiTtsProvider {
             const model_id = $("#coqui_local_model_name").val();
 
             if (model_name == "none") {
-                toastr.error(`Model not selected, please select one.`, DEBUG_PREFIX+" voice mapping model", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+                toastr.error(`Model not selected, please select one.`, DEBUG_PREFIX + " voice mapping model", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
                 this.updateVoiceMap(); // Overide any manual modification
                 return;
             }
 
-            this.settings.voiceMapDict[character] = {model_type: "local", model_id: "local/"+model_id};
-            console.debug(DEBUG_PREFIX,"Registered new voice map: ",character,":",this.settings.voiceMapDict[character]);
+            this.settings.voiceMapDict[character] = { model_type: "local", model_id: "local/" + model_id };
+            console.debug(DEBUG_PREFIX, "Registered new voice map: ", character, ":", this.settings.voiceMapDict[character]);
             this.updateVoiceMap(); // Overide any manual modification
             return;
         }
 
         if (model_language == "none") {
-            toastr.error(`Language not selected, please select one.`, DEBUG_PREFIX+" voice mapping language", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+            toastr.error(`Language not selected, please select one.`, DEBUG_PREFIX + " voice mapping language", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
             this.updateVoiceMap(); // Overide any manual modification
             return;
         }
 
         if (model_name == "none") {
-            toastr.error(`Model not selected, please select one.`, DEBUG_PREFIX+" voice mapping model", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+            toastr.error(`Model not selected, please select one.`, DEBUG_PREFIX + " voice mapping model", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
             this.updateVoiceMap(); // Overide any manual modification
             return;
         }
 
         if (model_setting_language == "none")
             model_setting_language = null;
-        
+
         if (model_setting_speaker == "none")
             model_setting_speaker = null;
-        
+
         const tokens = $('#coqui_api_model_name').val().split("/");
         const model_dataset = tokens[0];
         const model_label = tokens[1];
@@ -328,28 +327,28 @@ class CoquiTtsProvider {
             return;
         }
 
-        console.debug(DEBUG_PREFIX,"Current voice map: ",this.settings.voiceMap);
+        console.debug(DEBUG_PREFIX, "Current voice map: ", this.settings.voiceMap);
 
-        this.settings.voiceMapDict[character] = {model_type: "coqui-api", model_id: model_id, model_language:model_setting_language, model_speaker:model_setting_speaker};
+        this.settings.voiceMapDict[character] = { model_type: "coqui-api", model_id: model_id, model_language: model_setting_language, model_speaker: model_setting_speaker };
 
-        console.debug(DEBUG_PREFIX,"Registered new voice map: ",character,":",this.settings.voiceMapDict[character]);
+        console.debug(DEBUG_PREFIX, "Registered new voice map: ", character, ":", this.settings.voiceMapDict[character]);
 
         this.updateVoiceMap();
 
-        let successMsg = character+":"+model_id;
+        let successMsg = character + ":" + model_id;
         if (model_setting_language != null)
             successMsg += "[" + model_setting_language + "]";
         if (model_setting_speaker != null)
             successMsg += "[" + model_setting_speaker + "]";
-        toastr.info(successMsg, DEBUG_PREFIX+" voice map updated", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+        toastr.info(successMsg, DEBUG_PREFIX + " voice map updated", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
         return
     }
 
     // DBG: assume voiceName is correct
     // TODO: check voice is correct
     async getVoice(voiceName) {
-        console.log(DEBUG_PREFIX,"getVoice",voiceName);
-        const output = {voice_id: voiceName};
+        console.log(DEBUG_PREFIX, "getVoice", voiceName);
+        const output = { voice_id: voiceName };
         return output;
     }
 
@@ -357,12 +356,12 @@ class CoquiTtsProvider {
         const character = $("#coqui_character_select").val();
 
         if (character === "none") {
-            toastr.error(`Character not selected, please select one.`, DEBUG_PREFIX+" voice mapping character", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+            toastr.error(`Character not selected, please select one.`, DEBUG_PREFIX + " voice mapping character", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
             return;
         }
 
         // Todo erase from voicemap
-        delete(this.settings.voiceMapDict[character]);
+        delete (this.settings.voiceMapDict[character]);
         this.updateVoiceMap(); // TODO
     }
 
@@ -419,7 +418,7 @@ class CoquiTtsProvider {
 
             $("#coqui_api_model_div").show();
         }
-        
+
 
         // show local model list
         if (model_origin == "local") {
@@ -435,12 +434,12 @@ class CoquiTtsProvider {
         const model_origin = $('#coqui_model_origin').val();
         const model_language = $('#coqui_api_language').val();
         console.debug(model_language);
-        
+
         if (model_language == "none") {
             $("#coqui_api_model_name").hide();
             return;
         }
-        
+
         $("#coqui_api_model_name").show();
         $('#coqui_api_model_name')
             .find('option')
@@ -456,9 +455,9 @@ class CoquiTtsProvider {
         for(let model_dataset in modelDict[model_language])
             for(let model_name in modelDict[model_language][model_dataset]) {
                 const model_id = model_dataset + "/" + model_name
-                const model_label = model_name + " ("+model_dataset+" dataset)"
-                $("#coqui_api_model_name").append(new Option(model_label,model_id));
-        }
+                const model_label = model_name + " (" + model_dataset + " dataset)"
+                $("#coqui_api_model_name").append(new Option(model_label, model_id));
+            }
     }
 
     async onModelNameChange() {
@@ -490,15 +489,15 @@ class CoquiTtsProvider {
             $("#coqui_api_model_settings").show();
             $("#coqui_api_model_settings_language").show();
             $('#coqui_api_model_settings_language')
-            .find('option')
-            .remove()
-            .end()
-            .append('<option value="none">Select language</option>')
-            .val('none');
+                .find('option')
+                .remove()
+                .end()
+                .append('<option value="none">Select language</option>')
+                .val('none');
 
-            for(var i = 0; i < model_settings["languages"].length; i++) {
-                const language_label = JSON.stringify(model_settings["languages"][i]).replaceAll("\"","");
-                $("#coqui_api_model_settings_language").append(new Option(language_label,i));
+            for (var i = 0; i < model_settings["languages"].length; i++) {
+                const language_label = JSON.stringify(model_settings["languages"][i]).replaceAll("\"", "");
+                $("#coqui_api_model_settings_language").append(new Option(language_label, i));
             }
         }
         else {
@@ -509,15 +508,15 @@ class CoquiTtsProvider {
             $("#coqui_api_model_settings").show();
             $("#coqui_api_model_settings_speaker").show();
             $('#coqui_api_model_settings_speaker')
-            .find('option')
-            .remove()
-            .end()
-            .append('<option value="none">Select speaker</option>')
-            .val('none');
+                .find('option')
+                .remove()
+                .end()
+                .append('<option value="none">Select speaker</option>')
+                .val('none');
 
-            for(var i = 0; i < model_settings["speakers"].length;i++) {
-                const speaker_label = JSON.stringify(model_settings["speakers"][i]).replaceAll("\"","");
-                $("#coqui_api_model_settings_speaker").append(new Option(speaker_label,i));
+            for (var i = 0; i < model_settings["speakers"].length; i++) {
+                const speaker_label = JSON.stringify(model_settings["speakers"][i]).replaceAll("\"", "");
+                $("#coqui_api_model_settings_speaker").append(new Option(speaker_label, i));
             }
         }
         else {
@@ -534,7 +533,7 @@ class CoquiTtsProvider {
         result = await result.json();
         const model_state = result["model_state"];
 
-        console.debug(DEBUG_PREFIX," Model state:", model_state)
+        console.debug(DEBUG_PREFIX, " Model state:", model_state)
 
         if (model_state == "installed") {
             $("#coqui_api_model_install_status").text("Model already installed on extras server");
@@ -548,13 +547,13 @@ class CoquiTtsProvider {
                 $("#coqui_api_model_install_status").text("Model found but incomplete try install again (maybe still downloading)"); // (remove and download again)
             }
             else {
-                toastr.info("Click download button to install the model "+$("#coqui_api_model_name").find(":selected").text(), DEBUG_PREFIX+" model not installed", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+                toastr.info("Click download button to install the model " + $("#coqui_api_model_name").find(":selected").text(), DEBUG_PREFIX + " model not installed", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
                 $("#coqui_api_model_install_status").text("Model not found on extras server");
             }
 
             const onModelNameChange_pointer = this.onModelNameChange;
 
-            $("#coqui_api_model_install_button").off("click").on("click", async function (){
+            $("#coqui_api_model_install_button").off("click").on("click", async function () {
                 try {
                     $("#coqui_api_model_install_status").text("Downloading model...");
                     $("#coqui_api_model_install_button").hide();
@@ -562,33 +561,33 @@ class CoquiTtsProvider {
                     let apiResult = await CoquiTtsProvider.installModel(model_id, action);
                     apiResult = await apiResult.json();
 
-                    console.debug(DEBUG_PREFIX,"Response:",apiResult);
+                    console.debug(DEBUG_PREFIX, "Response:", apiResult);
 
                     if (apiResult["status"] == "done") {
                         $("#coqui_api_model_install_status").text("Model installed and ready to use!");
                         $("#coqui_api_model_install_button").hide();
                         onModelNameChange_pointer();
                     }
-                    
+
                     if (apiResult["status"] == "downloading") {
-                        toastr.error("Check extras console for progress", DEBUG_PREFIX+" already downloading", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+                        toastr.error("Check extras console for progress", DEBUG_PREFIX + " already downloading", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
                         $("#coqui_api_model_install_status").text("Already downloading a model, check extras console!");
                         $("#coqui_api_model_install_button").show();
                     }
                 } catch (error) {
                     console.error(error)
-                    toastr.error(error, DEBUG_PREFIX+" error with model download", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+                    toastr.error(error, DEBUG_PREFIX + " error with model download", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
                     onModelNameChange_pointer();
                 }
-                 // will refresh model status
+                // will refresh model status
             });
-            
+
             $("#coqui_api_model_install_button").show();
             return;
         }
-        
+
     }
-    
+
 
     //#############################//
     //  API Calls                  //
@@ -614,7 +613,7 @@ class CoquiTtsProvider {
         });
 
         if (!apiResult.ok) {
-            toastr.error(apiResult.statusText, DEBUG_PREFIX+' Check model state request failed');
+            toastr.error(apiResult.statusText, DEBUG_PREFIX + ' Check model state request failed');
             throw new Error(`HTTP ${apiResult.status}: ${await apiResult.text()}`);
         }
 
@@ -639,7 +638,7 @@ class CoquiTtsProvider {
         });
 
         if (!apiResult.ok) {
-            toastr.error(apiResult.statusText, DEBUG_PREFIX+' Install model '+model_id+' request failed');
+            toastr.error(apiResult.statusText, DEBUG_PREFIX + ' Install model ' + model_id + ' request failed');
             throw new Error(`HTTP ${apiResult.status}: ${await apiResult.text()}`);
         }
 
@@ -667,7 +666,7 @@ class CoquiTtsProvider {
         })
 
         if (!apiResult.ok) {
-            toastr.error(apiResult.statusText, DEBUG_PREFIX+' Get local model list request failed');
+            toastr.error(apiResult.statusText, DEBUG_PREFIX + ' Get local model list request failed');
             throw new Error(`HTTP ${apiResult.status}: ${await apiResult.text()}`);
         }
 
@@ -686,10 +685,10 @@ class CoquiTtsProvider {
 
         let language = "none"
         let speaker = "none"
-        const tokens = voiceId.replaceAll("]","").replaceAll("\"","").split("[");
+        const tokens = voiceId.replaceAll("]", "").replaceAll("\"", "").split("[");
         const model_id = tokens[0]
 
-        console.debug(DEBUG_PREFIX,"Preparing TTS request for",tokens)
+        console.debug(DEBUG_PREFIX, "Preparing TTS request for", tokens)
 
         // First option
         if (tokens.length > 1) {
@@ -729,12 +728,12 @@ class CoquiTtsProvider {
 
     // Dirty hack to say not implemented
     async fetchTtsVoiceIds() {
-        return [{name:"Voice samples not implemented for coqui TTS yet, search for the model samples online", voice_id:"",lang:"",}]
+        return [{ name: "Voice samples not implemented for coqui TTS yet, search for the model samples online", voice_id: "", lang: "", }]
     }
 
     // Do nothing
     previewTtsVoice(id) {
-        return 
+        return
     }
 
     async fetchTtsFromHistory(history_item_id) {
@@ -753,7 +752,7 @@ async function moduleWorker() {
         return
 
     // Initialized local model once
-    if (!coquiLocalModelsReceived){
+    if (!coquiLocalModelsReceived) {
         let result = await CoquiTtsProvider.getLocalModelList();
         result = await result.json();
 
@@ -767,8 +766,8 @@ async function moduleWorker() {
             .append('<option value="none">Select model</option>')
             .val('none');
 
-        for(const model_dataset of coquiLocalModels)
-            $("#coqui_local_model_name").append(new Option(model_dataset,model_dataset));
+        for (const model_dataset of coquiLocalModels)
+            $("#coqui_local_model_name").append(new Option(model_dataset, model_dataset));
 
         coquiLocalModelsReceived = true;
     }

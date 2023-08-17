@@ -857,7 +857,7 @@
                                                 <small>3</small>
                                             </div>
                                             <div data-id="4">
-                                                <span data-i18n="Typical Sampling">Typical Sampling</span>
+                                                <span data-i18n="Typical Sampling">Typical P Sampling</span>
                                                 <small>4</small>
                                             </div>
                                             <div data-id="5">
@@ -899,6 +899,21 @@
                                     </div>
                                     <div class="wide100p">
                                         <textarea id="nai_banned_tokens" class="text_pole textarea_compact" name="nai_banned_tokens" rows="2" placeholder=""></textarea>
+                                    </div>
+                                </div>
+                                <div class="range-block">
+                                    <div class="range-block-title title_restorable">
+                                        <span data-i18n="Logit Bias">Logit Bias</span>
+                                        <div id="novelai_logit_bias_new_entry" class="menu_button menu_button_icon">
+                                            <i class="fa-xs fa-solid fa-plus"></i>
+                                            <small data-i18n="Add">Add</small>
+                                        </div>
+                                    </div>
+                                    <div class="toggle-description justifyLeft" data-i18n="Helps to ban or reenforce the usage of certain words">
+                                        Helps to ban or reinforce the usage of certain tokens.
+                                    </div>
+                                    <div class="flex-container flexFlowColumn wide100p">
+                                        <div class="novelai_logit_bias_list"></div>
                                     </div>
                                 </div>
                                 <hr>
@@ -3783,6 +3798,15 @@
             </div>
         </div>
     </div>
+
+    <div id="novelai_logit_bias_template" class="template_element">
+        <div class="novelai_logit_bias_form">
+            <input class="novelai_logit_bias_text text_pole" data-i18n="[placeholder]Type here..." placeholder="type here..." />
+            <input class="novelai_logit_bias_value text_pole" type="number" min="-2" value="0" max="2" step="0.01" />
+            <i class="menu_button fa-solid fa-xmark novelai_logit_bias_remove"></i>
+        </div>
+    </div>
+
     <div id="completion_prompt_manager_popup" class="drawer-content" style="display:none;">
         <div id="completion_prompt_manager_popup_inspect">
             <h3>Inspect</h3>

@@ -10,6 +10,7 @@ import {
 } from "../script.js";
 
 import { selected_group } from "./group-chats.js";
+import { uuidv4 } from "./utils.js";
 
 export {
     tags,
@@ -24,7 +25,7 @@ export {
     importTags,
 };
 
-const random_id = () => Math.round(Date.now() * Math.random()).toString();
+const random_id = () => uuidv4();
 const TAG_LOGIC_AND = true; // switch to false to use OR logic for combining tags
 const CHARACTER_SELECTOR = '#rm_print_characters_block > div';
 const GROUP_MEMBER_SELECTOR = '#rm_group_add_members > div';
