@@ -323,7 +323,7 @@ async function get_models_list(model_id) {
 /*
     Send an audio file to RVC to convert voice
 */
-async function rvcVoiceConversion(response, character) {
+async function rvcVoiceConversion(response, character, text) {
     let apiResult
 
     // Check voice map
@@ -341,8 +341,6 @@ async function rvcVoiceConversion(response, character) {
 
     const voice_settings = extension_settings.rvc.voiceMap[character];
 
-    console.log("Sending tts audio data to RVC on extras server")
-
     var requestData = new FormData();
     requestData.append('AudioFile', audioData, 'record');
     requestData.append("json", JSON.stringify({
@@ -352,8 +350,11 @@ async function rvcVoiceConversion(response, character) {
         "indexRate": voice_settings["indexRate"],
         "filterRadius": voice_settings["filterRadius"],
         "rmsMixRate": voice_settings["rmsMixRate"],
-        "protect": voice_settings["protect"]
+        "protect": voice_settings["protect"],
+        "text": text
     }));
+
+    console.log("Sending tts audio data to RVC on extras server",requestData)
 
     const url = new URL(getApiUrl());
     url.pathname = '/api/voice-conversion/rvc/process-audio';
