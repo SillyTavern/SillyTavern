@@ -644,7 +644,6 @@ $(document).ready(function () {
             const formattedValue = slider.format(value);
             slider.setValue(value);
             $(slider.counterId).text(formattedValue);
-            console.log('saving');
             saveSettingsDebounced();
         });
     });

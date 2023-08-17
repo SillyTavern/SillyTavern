@@ -8,8 +8,12 @@ export const markdownExclusionExt = () => {
     }
 
     let combinedExcludeString = '';
-    if (power_user.custom_chat_separator) {
-        combinedExcludeString += `${power_user.custom_chat_separator},`;
+    if (power_user.context.chat_start) {
+        combinedExcludeString += `${power_user.context.chat_start},`;
+    }
+
+    if (power_user.context.example_separator) {
+        combinedExcludeString += `${power_user.context.example_separator},`;
     }
 
     if (power_user.markdown_escape_strings) {
