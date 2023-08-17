@@ -901,40 +901,21 @@
                                         <textarea id="nai_banned_tokens" class="text_pole textarea_compact" name="nai_banned_tokens" rows="2" placeholder=""></textarea>
                                     </div>
                                 </div>
-
-                                <div class="range-block-title openai_restorable" data-i18n="Logit Bias">
-                                    Logit Bias
-                                </div>
-                                <div class="toggle-description justifyLeft" data-i18n="Helps to ban or reenforce the usage of certain words">
-                                    Helps to ban or reinforce the usage of certain tokens.
-                                </div>
-                                <div class="openai_logit_bias_preset_form">
-                                    <select id="novelai_logit_bias_preset">
-                                    </select>
-                                    <i title="New preset" id="novelai_logit_bias_new_preset" class="menu_button fa-solid fa-plus"
-                                        data-i18n="[title]New preset"></i>
-                                    <i title="Import preset" id="novelai_logit_bias_import_preset" class="menu_button fa-solid fa-upload"
-                                        data-i18n="[title]Import preset"></i>
-                                    <i title="Export preset" id="novelai_logit_bias_export_preset" class="menu_button fa-solid fa-download"
-                                        data-i18n="[title]Export preset"></i>
-                                    <i title="Delete preset" id="novelai_logit_bias_delete_preset" class="menu_button fa-solid fa-trash-can"
-                                        data-i18n="[title]Delete preset"></i>
-                                    <input id="novelai_logit_bias_import_file" type="file" accept=".json" hidden />
-                                </div>
-                                <div class="inline-drawer wide100p">
-                                    <div class="inline-drawer-toggle inline-drawer-header">
-                                        <b data-i18n="View / Edit bias preset">View / Edit bias preset</b>
-                                        <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
-                                    </div>
-                                    <div class="inline-drawer-content">
-                                        <div id="novelai_logit_bias_new_entry" class="menu_button wide100p flex-container justifyCenter"
-                                            data-i18n="Add bias entry">
-                                            Add bias entry
+                                <div class="range-block">
+                                    <div class="range-block-title title_restorable">
+                                        <span data-i18n="Logit Bias">Logit Bias</span>
+                                        <div id="novelai_logit_bias_new_entry" class="menu_button menu_button_icon">
+                                            <i class="fa-xs fa-solid fa-plus"></i>
+                                            <small data-i18n="Add">Add</small>
                                         </div>
+                                    </div>
+                                    <div class="toggle-description justifyLeft" data-i18n="Helps to ban or reenforce the usage of certain words">
+                                        Helps to ban or reinforce the usage of certain tokens.
+                                    </div>
+                                    <div class="flex-container flexFlowColumn wide100p">
                                         <div class="novelai_logit_bias_list"></div>
                                     </div>
                                 </div>
-
                                 <hr>
                                 <div class="range-block">
                                     <div class="range-block-title justifyLeft" data-i18n="CFG Scale">
@@ -3827,7 +3808,7 @@
             </div>
         </div>
     </div>
-    
+
     <div id="completion_prompt_manager_popup" class="drawer-content" style="display:none;">
         <div id="completion_prompt_manager_popup_inspect">
             <h3>Inspect</h3>

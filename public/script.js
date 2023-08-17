@@ -2899,7 +2899,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
             else if (main_api == 'novel') {
                 const this_settings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
-                generate_data = await getNovelGenerationData(finalPromt, this_settings, this_amount_gen, isImpersonate);
+                generate_data = getNovelGenerationData(finalPromt, this_settings, this_amount_gen, isImpersonate);
             }
             else if (main_api == 'openai') {
                 let [prompt, counts] = prepareOpenAIMessages({

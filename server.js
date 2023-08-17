@@ -1853,7 +1853,7 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
     const novelai = require('./src/novelai');
     const isNewModel = (request.body.model.includes('clio') || request.body.model.includes('kayra'));
     const isKrake = request.body.model.includes('krake');
-    const badWordsList = isNewModel ? novelai.badWordsList : (isKrake ? novelai.krakeBadWordsList : novelai.euterpeBadWordsList);
+    const badWordsList = (isNewModel ? novelai.badWordsList : (isKrake ? novelai.krakeBadWordsList : novelai.euterpeBadWordsList)).slice();
 
     // Add customized bad words for Clio and Kayra
     if (isNewModel && Array.isArray(request.body.bad_words_ids)) {
@@ -1865,9 +1865,11 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
     }
 
     // Add default biases for dinkus and asterism
-    const logit_bias_exp = isNewModel
-        ? request.body.logit_bias_exp.concat(novelai.logitBiasExp)
-        : null;
+    const logit_bias_exp = isNewModel ? novelai.logitBiasExp.slice() : null;
+
+    if (Array.isArray(logit_bias_exp) && Array.isArray(request.body.logit_bias_exp)) {
+        logit_bias_exp.push(...request.body.logit_bias_exp);
+    }
 
     const data = {
         "input": request.body.input,

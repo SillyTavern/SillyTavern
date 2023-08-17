@@ -4622,7 +4622,7 @@ toolcool-color-picker {
     width: 100%;
     height: 100%;
     opacity: 0.8;
-    min-height: 3rem;
+    min-height: 2.5rem;
 }
 
 /*used to fix smallness of certain FontAwesome glyph which break button squareness*/

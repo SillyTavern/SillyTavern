@@ -1,5 +1,4 @@
 import {
-    callPopup,
     getRequestHeaders,
     getStoppingStrings,
     getTextTokens,
@@ -10,10 +9,9 @@ import {
 } from "../script.js";
 import { getCfg } from "./extensions/cfg/util.js";
 import { MAX_CONTEXT_DEFAULT, tokenizers } from "./power-user.js";
-import { 
-    download,
-    parseJsonFile,
-    getStringHash 
+import {
+    getStringHash,
+    uuidv4
 } from "./utils.js";
 
 export {
@@ -32,10 +30,6 @@ const default_presets = {
     "clio-v1": "Talker-Chat-Clio",
     "kayra-v1": "Carefree-Kayra"
 }
-const default_bias = 'Default (none)';
-const default_bias_presets = {
-    [default_bias]: []
-};
 
 const nai_settings = {
     temperature: 1.5,
@@ -58,8 +52,7 @@ const nai_settings = {
     cfg_uc: '',
     banned_tokens: '',
     order: default_order,
-    bias_preset_selected: default_bias,
-    bias_presets: default_bias_presets,
+    logit_bias: [],
 };
 
 const nai_tiers = {
@@ -126,6 +119,7 @@ function loadNovelPreset(preset) {
     nai_settings.cfg_uc = preset.cfg_uc || '';
     nai_settings.banned_tokens = preset.banned_tokens || '';
     nai_settings.order = preset.order || default_order;
+    nai_settings.logit_bias = preset.logit_bias || [];
     loadNovelSettingsUi(nai_settings);
 }
 
@@ -159,8 +153,7 @@ function loadNovelSettings(settings) {
     nai_settings.cfg_uc = settings.cfg_uc || '';
     nai_settings.banned_tokens = settings.banned_tokens || '';
     nai_settings.order = settings.order || default_order;
-    nai_settings.bias_preset_selected = settings.bias_preset_selected ?? default_bias;
-    nai_settings.bias_presets = settings.bias_presets ?? default_bias_presets;
+    nai_settings.logit_bias = settings.logit_bias || [];
     loadNovelSettingsUi(nai_settings);
 }
 
@@ -203,16 +196,7 @@ function loadNovelSettingsUi(ui_settings) {
 
     $("#streaming_novel").prop('checked', ui_settings.streaming_novel);
     sortItemsByOrder(ui_settings.order);
-
-    $('#novelai_logit_bias_preset').empty();
-    for (const preset of Object.keys(ui_settings.bias_presets)) {
-        const option = document.createElement('option');
-        option.innerText = preset;
-        option.value = preset;
-        option.selected = preset === ui_settings.bias_preset_selected;
-        $('#novelai_logit_bias_preset').append(option);
-    }
-    $('#novelai_logit_bias_preset').trigger('change');
+    displayLogitBias(ui_settings.logit_bias);
 }
 
 const sliders = [
@@ -405,7 +389,7 @@ function getBadWordPermutations(text) {
     return result;
 }
 
-export async function getNovelGenerationData(finalPrompt, this_settings, this_amount_gen, isImpersonate) {
+export function getNovelGenerationData(finalPrompt, this_settings, this_amount_gen, isImpersonate) {
     const clio = nai_settings.model_novel.includes('clio');
     const kayra = nai_settings.model_novel.includes('kayra');
 
@@ -423,11 +407,8 @@ export async function getNovelGenerationData(finalPrompt, this_settings, this_am
     const cfgSettings = getCfg();
 
     let logitBias = [];
-    if (tokenizerType !== tokenizers.NONE
-        && nai_settings.bias_preset_selected
-        && Array.isArray(nai_settings.bias_presets[nai_settings.bias_preset_selected])
-        && nai_settings.bias_presets[nai_settings.bias_preset_selected].length) {
-        logitBias = biasCache || await calculateLogitBias();
+    if (tokenizerType !== tokenizers.NONE && Array.isArray(nai_settings.logit_bias) && nai_settings.logit_bias.length) {
+        logitBias = biasCache || calculateLogitBias();
         biasCache = logitBias;
     }
 
@@ -451,7 +432,7 @@ export async function getNovelGenerationData(finalPrompt, this_settings, this_am
         "mirostat_lr": parseFloat(nai_settings.mirostat_lr),
         "mirostat_tau": parseFloat(nai_settings.mirostat_tau),
         "cfg_scale": cfgSettings?.guidanceScale ?? parseFloat(nai_settings.cfg_scale),
-        "cfg_uc": cfgSettings?.negativePrompt ?? nai_settings.cfg_uc ??  "",
+        "cfg_uc": cfgSettings?.negativePrompt ?? nai_settings.cfg_uc ?? "",
         "phrase_rep_pen": nai_settings.phrase_rep_pen,
         "stop_sequences": stopSequences,
         "bad_words_ids": badWordIds,
@@ -521,176 +502,74 @@ function saveSamplingOrder() {
     saveSettingsDebounced();
 }
 
-function onLogitBiasPresetChange() {
-    const value = $('#novelai_logit_bias_preset').find(':selected').val();
-    const preset = nai_settings.bias_presets[value];
-
-    if (!Array.isArray(preset)) {
-        console.error('Preset not found');
+function displayLogitBias(logit_bias) {
+    if (!Array.isArray(logit_bias)) {
+        console.log('Logit bias set not found');
         return;
     }
 
-    nai_settings.bias_preset_selected = value;
     $('.novelai_logit_bias_list').empty();
 
-    for (const entry of preset) {
+    for (const entry of logit_bias) {
         if (entry) {
             createLogitBiasListItem(entry);
         }
     }
 
     biasCache = undefined;
-    saveSettingsDebounced();
 }
 
 function createNewLogitBiasEntry() {
-    const entry = { text: '', value: 0 };
-    nai_settings.bias_presets[nai_settings.bias_preset_selected].push(entry);
+    const entry = { id: uuidv4(), text: '', value: 0 };
+    nai_settings.logit_bias.push(entry);
     biasCache = undefined;
     createLogitBiasListItem(entry);
     saveSettingsDebounced();
 }
 
 function createLogitBiasListItem(entry) {
-    const id = nai_settings.bias_presets[nai_settings.bias_preset_selected].indexOf(entry);
+    const id = entry.id;
     const template = $('#novelai_logit_bias_template .novelai_logit_bias_form').clone();
     template.data('id', id);
     template.find('.novelai_logit_bias_text').val(entry.text).on('input', function () {
-        nai_settings.bias_presets[nai_settings.bias_preset_selected][id].text = $(this).val();
+        entry.text = $(this).val();
         biasCache = undefined;
         saveSettingsDebounced();
     });
     template.find('.novelai_logit_bias_value').val(entry.value).on('input', function () {
-        nai_settings.bias_presets[nai_settings.bias_preset_selected][id].value = Number($(this).val());
+        entry.value = Number($(this).val());
         biasCache = undefined;
         saveSettingsDebounced();
     });
     template.find('.novelai_logit_bias_remove').on('click', function () {
         $(this).closest('.novelai_logit_bias_form').remove();
-        nai_settings.bias_presets[nai_settings.bias_preset_selected].splice(id, 1);
+        const index = nai_settings.logit_bias.indexOf(entry);
+        if (index > -1) {
+            nai_settings.logit_bias.splice(index, 1);
+        }
         biasCache = undefined;
         saveSettingsDebounced();
     });
     $('.novelai_logit_bias_list').prepend(template);
 }
 
-async function createNewLogitBiasPreset() {
-    const name = await callPopup('Preset name:', 'input');
+function calculateLogitBias() {
+    const bias_preset = nai_settings.logit_bias;
 
-    if (!name) {
-        return;
+    if (!Array.isArray(bias_preset) || bias_preset.length === 0) {
+        return [];
     }
-
-    if (name in nai_settings.bias_presets) {
-        toastr.error('Preset name should be unique.');
-        return;
-    }
-
-    nai_settings.bias_preset_selected = name;
-    nai_settings.bias_presets[name] = [];
-
-    addLogitBiasPresetOption(name);
-    saveSettingsDebounced();
-}
-
-function addLogitBiasPresetOption(name) {
-    const option = document.createElement('option');
-    option.innerText = name;
-    option.value = name;
-    option.selected = true;
-
-    $('#novelai_logit_bias_preset').append(option);
-    $('#novelai_logit_bias_preset').trigger('change');
-}
-
-async function onLogitBiasPresetDeleteClick() {
-    const value = await callPopup('Delete the preset?', 'confirm');
-
-    if (!value) {
-        return;
-    }
-
-    $(`#novelai_logit_bias_preset option[value="${nai_settings.bias_preset_selected}"]`).remove();
-    delete nai_settings.bias_presets[nai_settings.bias_preset_selected];
-    nai_settings.bias_preset_selected = null;
-
-    if (Object.keys(nai_settings.bias_presets).length) {
-        nai_settings.bias_preset_selected = Object.keys(nai_settings.bias_presets)[0];
-        $(`#novelai_logit_bias_preset option[value="${nai_settings.bias_preset_selected}"]`).attr('selected', true);
-        $('#novelai_logit_bias_preset').trigger('change');
-    }
-
-    biasCache = undefined;
-    saveSettingsDebounced();
-}
-
-async function onLogitBiasPresetImportFileChange(e) {
-    const file = e.target.files[0];
-
-    if (!file || file.type !== "application/json") {
-        return;
-    }
-
-    const name = file.name.replace(/\.[^/.]+$/, "");
-    const importedFile = await parseJsonFile(file);
-    e.target.value = '';
-
-    if (name in nai_settings.bias_presets) {
-        toastr.error('Preset name should be unique.');
-        return;
-    }
-
-    if (!Array.isArray(importedFile)) {
-        toastr.error('Invalid logit bias preset file.');
-        return;
-    }
-
-    for (const entry of importedFile) {
-        if (typeof entry == 'object') {
-            if (entry.hasOwnProperty('text') && entry.hasOwnProperty('value')) {
-                continue;
-            }
-        }
-
-        callPopup('Invalid logit bias preset file.', 'text');
-        return;
-    }
-
-    nai_settings.bias_presets[name] = importedFile;
-    nai_settings.bias_preset_selected = name;
-
-    addLogitBiasPresetOption(name);
-    saveSettingsDebounced();
-}
-
-function onLogitBiasPresetImportClick() {
-    $('#novelai_logit_bias_import_file').trigger('click');
-}
-
-function onLogitBiasPresetExportClick() {
-    if (!nai_settings.bias_preset_selected || Object.keys(nai_settings.bias_presets).length === 0) {
-        return;
-    }
-
-    const presetJsonString = JSON.stringify(nai_settings.bias_presets[nai_settings.bias_preset_selected], null, 4);
-    download(presetJsonString, nai_settings.bias_preset_selected, 'application/json');
-}
-
-async function calculateLogitBias() {
-    const bias_preset = nai_settings.bias_presets[nai_settings.bias_preset_selected];
 
     const clio = nai_settings.model_novel.includes('clio');
     const kayra = nai_settings.model_novel.includes('kayra');
     const tokenizerType = kayra ? tokenizers.NERD2 : (clio ? tokenizers.NERD : tokenizers.NONE);
 
-    return bias_preset.map(bias => {
-        return {
-            bias: bias.value,
-            ensure_sequence_finish: false,
-            generate_once: false,
-            sequence: getTextTokens(tokenizerType, bias.text)
-        }
-    });
+    return bias_preset.filter(b => b.text?.length > 0).map(bias => ({
+        bias: bias.value,
+        ensure_sequence_finish: false,
+        generate_once: false,
+        sequence: getTextTokens(tokenizerType, bias.text)
+    }));
 }
 
 export async function generateNovelWithStreaming(generate_data, signal) {
@@ -797,11 +676,5 @@ $(document).ready(function () {
         saveSamplingOrder();
     });
 
-    $("#novelai_logit_bias_preset").on("change", onLogitBiasPresetChange);
-    $("#novelai_logit_bias_new_preset").on("click", createNewLogitBiasPreset);
     $("#novelai_logit_bias_new_entry").on("click", createNewLogitBiasEntry);
-    $("#novelai_logit_bias_import_file").on("input", onLogitBiasPresetImportFileChange);
-    $("#novelai_logit_bias_import_preset").on("click", onLogitBiasPresetImportClick);
-    $("#novelai_logit_bias_export_preset").on("click", onLogitBiasPresetExportClick);
-    $("#novelai_logit_bias_delete_preset").on("click", onLogitBiasPresetDeleteClick);
 });
