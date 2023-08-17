@@ -604,7 +604,8 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
 
             websocket.on('open', async function () {
                 console.log('WebSocket opened');
-                websocket.send(JSON.stringify(request.body));
+                const combined_args = Object.assign(request.body.use_mancer ? get_mancer_headers() : {}, request.body);
+                websocket.send(JSON.stringify(combined_args));
             });
 
             websocket.on('close', (code, buffer) => {
