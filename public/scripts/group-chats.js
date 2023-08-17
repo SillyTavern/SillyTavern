@@ -8,7 +8,7 @@ import {
     extractAllWords,
 } from './utils.js';
 import { RA_CountCharTokens, humanizedDateTime, dragElement } from "./RossAscends-mods.js";
-import {sortCharactersList, loadMovingUIState, showPaginateGroup} from './power-user.js';
+import {loadMovingUIState, showPaginateGroup} from './power-user.js';
 
 import {
     chat,
@@ -885,6 +885,7 @@ async function modifyGroupMember(chat_id, groupMember, isDelete) {
     groupMember.remove();
     const groupHasMembers = !!$("#rm_group_members").children().length;
     $("#rm_group_submit").prop("disabled", !groupHasMembers);
+    //select_group_chats(selected_group) Fixes the bug with removed chat members appearing at the bottom of the list, but at a performance cost
 }
 
 // This is inherently slow, I'm not touching this because it looks bad and I might break something.
@@ -998,8 +999,6 @@ function select_group_chats(groupId, skipAnimation) {
             $("#rm_group_add_members").append(template);
         }
     }
-
-    sortCharactersList();
 
     const groupHasMembers = !!$("#rm_group_members").children().length;
     $("#rm_group_submit").prop("disabled", !groupHasMembers);
@@ -1168,8 +1167,6 @@ function select_group_chats(groupId, skipAnimation) {
                 Generate('normal', { force_chid: chid });
             }
         }
-
-        //sortCharactersList();
         await eventSource.emit(event_types.GROUP_UPDATED);
     });
     showPaginateGroup();

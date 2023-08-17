@@ -1085,8 +1085,7 @@ function applyPagination(selector, paginate = 50, page = 0) {
         $("#pagination").css('display', '')
     }
     $('#page-text, #page-text-group').text(`Page ${page + 1}`);
-    const sortedElements = [...elements].sort(sortFunc);
-    const unhiddenElements = sortedElements.filter(el => !el.classList.contains('hiddenByFav') && !el.classList.contains('hiddenByTag'));
+    const unhiddenElements = [...elements].filter(el => !el.classList.contains('hiddenByFav') && !el.classList.contains('hiddenByTag'));
 
     unhiddenElements.forEach((el, index) => {
         if (index >= paginate * page && index < paginate * (page + 1)) {
