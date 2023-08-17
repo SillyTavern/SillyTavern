@@ -2702,6 +2702,10 @@
                                     <span data-i18n="Movable UI Panels">Movable UI Panels</span>
                                 </label>
 
+                                <label for="paginate_char_list" class="checkbox_label">
+                                    <input id="paginate_char_list" type="checkbox" />
+                                    <span>Paginate Character List</span>
+                                </label>
                                 <div class="flex-container flexFlowColumn">
                                     <h4 data-i18n="Send on Enter">
                                         Send on Enter
@@ -3256,6 +3260,11 @@
                         </form>
                         <div class="rm_tag_controls">
                             <div class="tags rm_tag_filter"></div>
+                        </div>
+                        <div id="pagination">
+                            <div id="show-prev" class="menu_button fa-solid fa-circle-chevron-left" title="Previous Page"></div>
+                            <span id="page-text"></span>
+                            <div id="show-next" class="menu_button fa-solid fa-circle-chevron-right" title="Next Page"></div>
                         </div>
                         <!-- a div containing a dynamically updated count of characters currently displayed -->
                         <div class="flex-container alignitemscenter">

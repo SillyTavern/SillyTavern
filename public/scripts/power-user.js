@@ -37,6 +37,7 @@ export {
     playMessageSound,
     sortCharactersList,
     fixMarkdown,
+    showPaginate,
     power_user,
     pygmalion_options,
     tokenizers,
@@ -152,6 +153,7 @@ let power_user = {
     send_on_enter: send_on_enter_options.AUTO,
     console_log_prompts: false,
     render_formulas: false,
+    paginate_char_list: false,
     allow_name1_display: false,
     allow_name2_display: false,
     //removeXML: false,
@@ -731,6 +733,7 @@ function loadPowerUserSettings(settings, data) {
     $('#render_formulas').prop("checked", power_user.render_formulas);
     $("#custom_chat_separator").val(power_user.custom_chat_separator);
     $("#markdown_escape_strings").val(power_user.markdown_escape_strings);
+    $('#paginate_char_list').prop("checked", power_user.paginate_char_list);
     $("#fast_ui_mode").prop("checked", power_user.fast_ui_mode);
     $("#waifuMode").prop("checked", power_user.waifuMode);
     $("#movingUImode").prop("checked", power_user.movingUI);
@@ -1057,6 +1060,50 @@ function sortCharactersList() {
     entities.sort(sortFunc);
     updateVisibleDivs('#rm_print_characters_block', true);
 }
+
+let current_page = 0
+function showPaginate(paginate = 50, page = 0) {
+    if(power_user.paginate_char_list) {
+        $("#pagination").css('display', '')
+        $('#page-text').text(`Page ${page + 1}`);
+    } else {
+        $("#pagination").css('display', 'none')
+    }
+
+    const selector = '#rm_print_characters_block .character_select:not(.hiddenBySearch):not(.hiddenByGroup):not(.hiddenByFav):not(.hiddenByTag), #rm_print_characters_block .group_select:not(.hiddenBySearch):not(.hiddenByGroup):not(.hiddenByFav):not(.hiddenByTag)';
+    const elements = $(selector);
+
+    if(!power_user.paginate_char_list) {
+        elements.removeClass('hiddenByPagination');
+        return;
+    }
+
+    const sortedElements = [...elements].sort(sortFunc);
+
+    sortedElements.forEach((el, index) => {
+        if (index >= paginate * page && index < paginate * (page + 1)) {
+            $(el).removeClass('hiddenByPagination');
+        } else {
+            $(el).addClass('hiddenByPagination');
+        }
+    });
+}
+$("#show-next").on('click', function () {
+    const selector = '#rm_print_characters_block .character_select:not(.hiddenBySearch):not(.hiddenByGroup):not(.hiddenByFav):not(.hiddenByPagination):not(.hiddenByTag), #rm_print_characters_block .group_select:not(.hiddenBySearch):not(.hiddenByGroup):not(.hiddenByFav):not(.hiddenByPagination):not(.hiddenByTag)';
+    const visibleElements = $(selector);
+    if(visibleElements.length < 50) {
+        return;
+    }
+    current_page++
+    showPaginate(50, current_page);
+})
+
+$("#show-prev").on('click', function () {
+    if(current_page <= 0)
+        return;
+    current_page--
+    showPaginate(50, current_page);
+})
 
 async function saveTheme() {
     const name = await callPopup('Enter a theme preset name:', 'input');
@@ -1692,6 +1739,12 @@ $(document).ready(() => {
         localStorage.setItem(storage_keys.fast_ui_mode, power_user.fast_ui_mode);
         switchUiMode();
     });
+
+    $("#paginate_char_list").on("input", function() {
+        power_user.paginate_char_list = !!$(this).prop('checked');
+        showPaginate();
+        saveSettingsDebounced()
+    })
 
     $("#waifuMode").on('change', () => {
         power_user.waifuMode = $('#waifuMode').prop("checked");

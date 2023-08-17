@@ -76,6 +76,7 @@ import {
     fuzzySearchCharacters,
     MAX_CONTEXT_DEFAULT,
     fuzzySearchGroups,
+    showPaginate,
 } from "./scripts/power-user.js";
 
 import {
@@ -7015,7 +7016,7 @@ export function updateCharacterCount(characterSelector) {
 }
 
 function updateVisibleDivs(containerSelector, resizecontainer) {
-
+    showPaginate()
 }
 
 function displayOverrideWarnings() {

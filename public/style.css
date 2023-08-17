@@ -1542,6 +1542,20 @@ select option:not(:checked) {
     aspect-ratio: 1 / 1;
 }
 
+#pagination {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    margin: 10px;
+    column-gap: 5px;
+    font-weight: bolder;
+}
+
+#pagination .menu_button {
+    margin: 0;
+}
+
 #character_sort_order {
     margin: 0;
     flex: 1;
@@ -3988,6 +4002,7 @@ a {
     display: none;
 }
 
+.hiddenByPagination,
 .hiddenByTag,
 .hiddenByFav,
 .hiddenByGroup,
