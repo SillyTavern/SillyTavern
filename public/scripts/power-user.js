@@ -46,6 +46,12 @@ export {
 export const MAX_CONTEXT_DEFAULT = 4096;
 const MAX_CONTEXT_UNLOCKED = 65536;
 
+const defaultStoryString = `{{#if description}}{{{description}}}{{/if}}
+{{#if personality}}{{{personality}}}{{/if}}
+{{#if scenario}}Scenario: {{{scenario}}}{{/if}}`;
+const defaultExampleSeparator = '***';
+const defaultChatStart = '***';
+
 const avatar_styles = {
     ROUND: 0,
     RECTANGULAR: 1,
@@ -93,11 +99,6 @@ let power_user = {
     collapse_newlines: false,
     pygmalion_formatting: pygmalion_options.AUTO,
     pin_examples: false,
-    disable_description_formatting: false,
-    disable_scenario_formatting: false,
-    disable_personality_formatting: false,
-    disable_examples_formatting: false,
-    disable_start_formatting: false,
     trim_sentences: false,
     include_newline: false,
     always_force_name2: false,
@@ -106,7 +107,6 @@ let power_user = {
     multigen: false,
     multigen_first_chunk: 50,
     multigen_next_chunks: 30,
-    custom_chat_separator: '',
     markdown_escape_strings: '',
 
     fast_ui_mode: true,
@@ -182,6 +182,13 @@ let power_user = {
         names_force_groups: true,
     },
 
+    context: {
+        preset: 'Default',
+        story_string: defaultStoryString,
+        chat_start: defaultChatStart,
+        example_separator: defaultExampleSeparator,
+    },
+
     personas: {},
     default_persona: null,
     persona_descriptions: {},
@@ -200,6 +207,7 @@ let power_user = {
 let themes = [];
 let movingUIPresets = [];
 let instruct_presets = [];
+let context_presets = [];
 
 const storage_keys = {
     ui_language: "language",
@@ -662,6 +670,10 @@ function loadPowerUserSettings(settings, data) {
         instruct_presets = data.instruct;
     }
 
+    if (data.context !== undefined) {
+        context_presets = data.context;
+    }
+
     // These are still local storage
     const fastUi = localStorage.getItem(storage_keys.fast_ui_mode);
     const movingUI = localStorage.getItem(storage_keys.movingUI);
@@ -720,16 +732,10 @@ function loadPowerUserSettings(settings, data) {
     $("#spoiler_free_mode").prop("checked", power_user.spoiler_free_mode);
     $("#collapse-newlines-checkbox").prop("checked", power_user.collapse_newlines);
     $("#pin-examples-checkbox").prop("checked", power_user.pin_examples);
-    $("#disable-description-formatting-checkbox").prop("checked", power_user.disable_description_formatting);
-    $("#disable-scenario-formatting-checkbox").prop("checked", power_user.disable_scenario_formatting);
-    $("#disable-personality-formatting-checkbox").prop("checked", power_user.disable_personality_formatting);
     $("#always-force-name2-checkbox").prop("checked", power_user.always_force_name2);
-    $("#disable-examples-formatting-checkbox").prop("checked", power_user.disable_examples_formatting);
-    $('#disable-start-formatting-checkbox').prop("checked", power_user.disable_start_formatting);
     $("#trim_sentences_checkbox").prop("checked", power_user.trim_sentences);
     $("#include_newline_checkbox").prop("checked", power_user.include_newline);
     $('#render_formulas').prop("checked", power_user.render_formulas);
-    $("#custom_chat_separator").val(power_user.custom_chat_separator);
     $("#markdown_escape_strings").val(power_user.markdown_escape_strings);
     $("#fast_ui_mode").prop("checked", power_user.fast_ui_mode);
     $("#waifuMode").prop("checked", power_user.waifuMode);
@@ -799,6 +805,7 @@ function loadPowerUserSettings(settings, data) {
     sortCharactersList();
     reloadMarkdownProcessor(power_user.render_formulas);
     loadInstructMode();
+    loadContextSettings();
     loadMaxContextUnlocked();
     switchWaifuMode();
     switchSpoilerMode();
@@ -865,6 +872,61 @@ function switchMaxContextSize() {
     if (value >= maxValue) {
         element.val(maxValue).trigger('input');
     }
+}
+
+function loadContextSettings() {
+    const controls = [
+        { id: "context_story_string", property: "story_string", isCheckbox: false },
+        { id: "context_example_separator", property: "example_separator", isCheckbox: false },
+        { id: "context_chat_start", property: "chat_start", isCheckbox: false },
+    ];
+
+    controls.forEach(control => {
+        const $element = $(`#${control.id}`);
+
+        if (control.isCheckbox) {
+            $element.prop('checked', power_user.context[control.property]);
+        } else {
+            $element.val(power_user.context[control.property]);
+        }
+
+        $element.on('input', function () {
+            power_user.context[control.property] = control.isCheckbox ? !!$(this).prop('checked') : $(this).val();
+            saveSettingsDebounced();
+        });
+    });
+
+    context_presets.forEach((preset) => {
+        const name = preset.name;
+        const option = document.createElement('option');
+        option.value = name;
+        option.innerText = name;
+        option.selected = name === power_user.context.preset;
+        $('#context_presets').append(option);
+    });
+
+    $('#context_presets').on('change', function () {
+        const name = $(this).find(':selected').val();
+        const preset = context_presets.find(x => x.name === name);
+
+        if (!preset) {
+            return;
+        }
+
+        power_user.context.preset = name;
+        controls.forEach(control => {
+            if (preset[control.property] !== undefined) {
+                power_user.context[control.property] = preset[control.property];
+                const $element = $(`#${control.id}`);
+
+                if (control.isCheckbox) {
+                    $element.prop('checked', power_user.context[control.property]).trigger('input');
+                } else {
+                    $element.val(power_user.context[control.property]).trigger('input');
+                }
+            }
+        });
+    });
 }
 
 function loadInstructMode() {
@@ -974,6 +1036,20 @@ export function fuzzySearchGroups(searchValue) {
     console.debug('Groups fuzzy search results for ' + searchValue, results);
     const ids = results.map(x => String(x.item?.id)).filter(x => x);
     return ids;
+}
+
+export function renderStoryString(params) {
+    try {
+        const compiledTemplate = Handlebars.compile(power_user.context.story_string);
+        let output = compiledTemplate(params);
+        output = substituteParams(output, params.user, params.char);
+        output = `${output.trim()}\n`; // add a newline to the end
+        return output;
+    } catch (e) {
+        toastr.error('Check the story string template for validity', 'Error rendering story string');
+        console.error('Error rendering story string', e);
+        throw e;
+    }
 }
 
 export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvatar, name1, name2) {
@@ -1639,31 +1715,6 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $("#disable-description-formatting-checkbox").change(function () {
-        power_user.disable_description_formatting = !!$(this).prop('checked');
-        saveSettingsDebounced();
-    })
-
-    $("#disable-scenario-formatting-checkbox").change(function () {
-        power_user.disable_scenario_formatting = !!$(this).prop('checked');
-        saveSettingsDebounced();
-    });
-
-    $("#disable-personality-formatting-checkbox").change(function () {
-        power_user.disable_personality_formatting = !!$(this).prop('checked');
-        saveSettingsDebounced();
-    });
-
-    $("#disable-examples-formatting-checkbox").change(function () {
-        power_user.disable_examples_formatting = !!$(this).prop('checked');
-        saveSettingsDebounced();
-    })
-
-    $("#disable-start-formatting-checkbox").change(function () {
-        power_user.disable_start_formatting = !!$(this).prop('checked');
-        saveSettingsDebounced();
-    });
-
     // include newline is the child of trim sentences
     // if include newline is checked, trim sentences must be checked
     // if trim sentences is unchecked, include newline must be unchecked
@@ -1688,12 +1739,6 @@ $(document).ready(() => {
     $("#always-force-name2-checkbox").change(function () {
         power_user.always_force_name2 = !!$(this).prop("checked");
         saveSettingsDebounced();
-    });
-
-    $("#custom_chat_separator").on('input', function () {
-        power_user.custom_chat_separator = $(this).val();
-        saveSettingsDebounced();
-        reloadMarkdownProcessor(power_user.render_formulas);
     });
 
     $("#markdown_escape_strings").on('input', function () {

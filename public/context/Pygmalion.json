@@ -1,5 +1,6 @@
 {
     "name": "Pygmalion",
-    "storyString": "{{instructSystemPrompt}}\n{{wiBeforeCharacter}}\n{{char}}'s Persona: {{description}}\nPersonality: {{personality}}\nScenario: {{scenario}}\n{{wiAfterCharacter}}\n<START>\n{{mesExamples}}\n<START>\n",
-    "injections": []
+    "story_string": "{{#if description}}{{{char}}}'s Persona: {{{description}}}{{/if}}\n{{#if personality}}Personality: {{{personality}}}{{/if}}\n{{#if scenario}}Scenario: {{{scenario}}}{{/if}}",
+    "chat_start": "<START>",
+    "example_separator": "<START>"
 }
