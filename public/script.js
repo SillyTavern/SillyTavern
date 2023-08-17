@@ -104,6 +104,7 @@ import {
     loadNovelSettings,
     nai_settings,
     setNovelData,
+    adjustNovelInstructionPrompt,
 } from "./scripts/nai-settings.js";
 
 import {
@@ -2318,6 +2319,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     // Don't recreate abort controller if signal is passed
     if (!(abortController && signal)) {
         abortController = new AbortController();
+    }
+
+    if (main_api == 'novel' && quiet_prompt) {
+        quiet_prompt = adjustNovelInstructionPrompt(quiet_prompt);
     }
 
     // OpenAI doesn't need instruct mode. Use OAI main prompt instead.

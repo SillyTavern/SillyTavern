@@ -572,6 +572,18 @@ function calculateLogitBias() {
     }));
 }
 
+/**
+ * Transforms instruction into compatible format for Novel AI.
+ * 1. Instruction must begin and end with curly braces followed and preceded by a space.
+ * 2. Instruction must not contain square brackets as it serves different purpose in NAI.
+ * @param {string} prompt Original instruction prompt
+ * @returns Processed prompt
+ */
+export function adjustNovelInstructionPrompt(prompt) {
+    const stripedPrompt = prompt.replace(/[\[\]]/g, '').trim();
+    return `{ ${stripedPrompt} }`;
+}
+
 export async function generateNovelWithStreaming(generate_data, signal) {
     const response = await fetch('/generate_novelai', {
         headers: getRequestHeaders(),
