@@ -1,6 +1,6 @@
 {
     "name": "Pygmalion",
-    "story_string": "{{#if description}}{{{char}}}'s Persona: {{{description}}}{{/if}}\n{{#if personality}}Personality: {{{personality}}}{{/if}}\n{{#if scenario}}Scenario: {{{scenario}}}{{/if}}",
+    "story_string": "{{#if description}}{{{char}}}'s Persona: {{description}}{{/if}}\n{{#if personality}}Personality: {{personality}}{{/if}}\n{{#if scenario}}Scenario: {{scenario}}{{/if}}",
     "chat_start": "<START>",
     "example_separator": "<START>"
 }
