@@ -48,7 +48,7 @@
     z-index: 2;
     overflow: hidden;
     resize: both;
-
+    display: flex;
 }
 
 img.expression {
