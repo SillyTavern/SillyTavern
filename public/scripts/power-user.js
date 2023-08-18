@@ -8,7 +8,6 @@ import {
     reloadCurrentChat,
     getRequestHeaders,
     substituteParams,
-    updateVisibleDivs,
     eventSource,
     event_types,
     getCurrentChatId,
@@ -18,7 +17,7 @@ import {
     setCharacterId,
     setEditedMessageId
 } from "../script.js";
-import { favsToHotswap, isMobile, initMovingUI } from "./RossAscends-mods.js";
+import { isMobile, initMovingUI } from "./RossAscends-mods.js";
 import {
     groups,
     resetSelectedGroup,
@@ -35,7 +34,7 @@ export {
     collapseNewlines,
     playMessageSound,
     sortGroupMembers,
-    sortCharactersList,
+    sortEntitiesList,
     fixMarkdown,
     power_user,
     pygmalion_options,
@@ -803,7 +802,6 @@ function loadPowerUserSettings(settings, data) {
 
 
     $(`#character_sort_order option[data-order="${power_user.sort_order}"][data-field="${power_user.sort_field}"]`).prop("selected", true);
-    sortCharactersList();
     reloadMarkdownProcessor(power_user.render_formulas);
     loadInstructMode();
     loadContextSettings();
@@ -812,7 +810,6 @@ function loadPowerUserSettings(settings, data) {
     switchSpoilerMode();
     loadMovingUIState();
     loadCharListState();
-
 }
 
 async function loadCharListState() {
@@ -1129,32 +1126,12 @@ const compareFunc = (first, second) => {
     }
 };
 
-function sortCharactersList() {
-    const arr1 = groups.map(x => ({
-        item: x,
-        id: x.id,
-        selector: '.group_select',
-        attribute: 'grid',
-    }))
-    const arr2 = characters.map((x, index) => ({
-        item: x,
-        id: index,
-        selector: '.character_select',
-        attribute: 'chid',
-    }));
-
-    const array = [...arr1, ...arr2];
-
-    if (power_user.sort_field == undefined || array.length === 0) {
+function sortEntitiesList(entities) {
+    if (power_user.sort_field == undefined || entities.length === 0) {
         return;
     }
 
-    let orderedList = array.slice().sort((a, b) => sortFunc(a.item, b.item));
-
-    for (const item of array) {
-        $(`${item.selector}[${item.attribute}="${item.id}"]`).css({ 'order': orderedList.indexOf(item) });
-    }
-    updateVisibleDivs('#rm_print_characters_block', true);
+    entities.sort((a, b) => sortFunc(a.item, b.item));
 }
 
 function sortGroupMembers(selector) {
@@ -1900,6 +1877,7 @@ $(document).ready(() => {
         power_user.never_resize_avatars = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
+
     $("#show_card_avatar_urls").on('input', function () {
         power_user.show_card_avatar_urls = !!$(this).prop('checked');
         printCharacters();
@@ -1925,8 +1903,7 @@ $(document).ready(() => {
         power_user.sort_field = $(this).find(":selected").data('field');
         power_user.sort_order = $(this).find(":selected").data('order');
         power_user.sort_rule = $(this).find(":selected").data('rule');
-        sortCharactersList();
-        favsToHotswap();
+        printCharacters();
         saveSettingsDebounced();
     });
 
@@ -2037,12 +2014,6 @@ $(document).ready(() => {
         reloadCurrentChat();
         saveSettingsDebounced();
     });
-
-    /*     $("#removeXML").on("input", function () {
-            power_user.removeXML = !!$(this).prop('checked');
-            reloadCurrentChat();
-            saveSettingsDebounced();
-        }); */
 
     $("#token_padding").on("input", function () {
         power_user.token_padding = Number($(this).val());

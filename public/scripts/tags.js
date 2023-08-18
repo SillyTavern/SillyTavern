@@ -4,12 +4,12 @@ import {
     this_chid,
     callPopup,
     menu_type,
-    updateVisibleDivs,
     getCharacters,
-    updateCharacterCount,
+    entitiesFilter,
 } from "../script.js";
+import { FILTER_TYPES } from "./filters.js";
 
-import { selected_group } from "./group-chats.js";
+import { groupCandidatesFilter, selected_group } from "./group-chats.js";
 import { uuidv4 } from "./utils.js";
 
 export {
@@ -17,7 +17,6 @@ export {
     tag_map,
     loadTagsSettings,
     printTagFilters,
-    isElementTagged,
     getTagsList,
     appendTagToList,
     createTagMapFromList,
@@ -26,18 +25,11 @@ export {
 };
 
 const random_id = () => uuidv4();
-const TAG_LOGIC_AND = true; // switch to false to use OR logic for combining tags
-const CHARACTER_SELECTOR = '#rm_print_characters_block > div';
-const GROUP_MEMBER_SELECTOR = '#rm_group_add_members > div';
 const CHARACTER_FILTER_SELECTOR = '#rm_characters_block .rm_tag_filter';
 const GROUP_FILTER_SELECTOR = '#rm_group_chats_block .rm_tag_filter';
 
-function getCharacterSelector(listSelector) {
-    if ($(listSelector).is(GROUP_FILTER_SELECTOR)) {
-        return GROUP_MEMBER_SELECTOR;
-    }
-
-    return CHARACTER_SELECTOR;
+function getFilterHelper(listSelector) {
+    return $(listSelector).is(GROUP_FILTER_SELECTOR) ?  groupCandidatesFilter : entitiesFilter;
 }
 
 export const tag_filter_types = {
@@ -68,37 +60,20 @@ const DEFAULT_TAGS = [
 let tags = [];
 let tag_map = {};
 
-function applyFavFilter(characterSelector) {
+function applyFavFilter(filterHelper) {
     const isSelected = $(this).hasClass('selected');
     const displayFavoritesOnly = !isSelected;
-
     $(this).toggleClass('selected', displayFavoritesOnly);
-    $(characterSelector).removeClass('hiddenByFav');
 
-    $(characterSelector).each(function () {
-        if (displayFavoritesOnly) {
-            if ($(this).find(".ch_fav").length !== 0) {
-                const shouldBeDisplayed = $(this).find(".ch_fav").val().toLowerCase().includes(true);
-                $(this).toggleClass('hiddenByFav', !shouldBeDisplayed);
-            }
-        }
-
-    });
-    updateCharacterCount(characterSelector);
-    updateVisibleDivs('#rm_print_characters_block', true);
+    filterHelper.setFilterData(FILTER_TYPES.FAV, displayFavoritesOnly);
 }
 
-function filterByGroups(characterSelector) {
+function filterByGroups(filterHelper) {
     const isSelected = $(this).hasClass('selected');
     const displayGroupsOnly = !isSelected;
     $(this).toggleClass('selected', displayGroupsOnly);
-    $(characterSelector).removeClass('hiddenByGroup');
 
-    $(characterSelector).each((_, element) => {
-        $(element).toggleClass('hiddenByGroup', displayGroupsOnly && !$(element).hasClass('group_select'));
-    });
-    updateCharacterCount(characterSelector);
-    updateVisibleDivs('#rm_print_characters_block', true);
+    filterHelper.setFilterData(FILTER_TYPES.GROUP, displayGroupsOnly);
 }
 
 function loadTagsSettings(settings) {
@@ -291,7 +266,6 @@ function appendTagToList(listElement, tag, { removable, selectable, action, isGe
         return;
     }
 
-    const characterSelector = getCharacterSelector($(listElement));
 
     let tagElement = $('#tag_template .tag').clone();
     tagElement.attr('id', tag.id);
@@ -316,11 +290,12 @@ function appendTagToList(listElement, tag, { removable, selectable, action, isGe
     }
 
     if (selectable) {
-        tagElement.on('click', () => onTagFilterClick.bind(tagElement)(listElement, characterSelector));
+        tagElement.on('click', () => onTagFilterClick.bind(tagElement)(listElement));
     }
 
     if (action) {
-        tagElement.on('click', () => action.bind(tagElement)(characterSelector));
+        const filter = getFilterHelper($(listElement));
+        tagElement.on('click', () => action.bind(tagElement)(filter));
         tagElement.addClass('actionable');
     }
     if (action && tag.id === 2) {
@@ -330,7 +305,7 @@ function appendTagToList(listElement, tag, { removable, selectable, action, isGe
     $(listElement).append(tagElement);
 }
 
-function onTagFilterClick(listElement, characterSelector) {
+function onTagFilterClick(listElement) {
     let excludeTag;
     if ($(this).hasClass('selected')) {
         $(this).removeClass('selected');
@@ -356,44 +331,10 @@ function onTagFilterClick(listElement, characterSelector) {
         }
     }
 
-    // TODO: Overhaul this somehow to use settings tag IDs instead
     const tagIds = [...($(listElement).find(".tag.selected:not(.actionable)").map((_, el) => $(el).attr("id")))];
     const excludedTagIds = [...($(listElement).find(".tag.excluded:not(.actionable)").map((_, el) => $(el).attr("id")))];
-    $(characterSelector).each((_, element) => applyFilterToElement(tagIds, excludedTagIds, element));
-    updateCharacterCount(characterSelector);
-    updateVisibleDivs('#rm_print_characters_block', true);
-}
-
-function applyFilterToElement(tagIds, excludedTagIds, element) {
-    const tagFlags = tagIds.map(tagId => isElementTagged(element, tagId));
-    const trueFlags = tagFlags.filter(x => x);
-    const isTagged = TAG_LOGIC_AND ? tagFlags.length === trueFlags.length : trueFlags.length > 0;
-
-    const excludedTagFlags = excludedTagIds.map(tagId => isElementTagged(element, tagId));
-    const isExcluded = excludedTagFlags.includes(true);
-
-    if (isExcluded) {
-        $(element).addClass('hiddenByTag');
-    } else if (tagIds.length > 0 && !isTagged) {
-        $(element).addClass('hiddenByTag');
-    } else {
-        $(element).removeClass('hiddenByTag');
-    }
-}
-
-function isElementTagged(element, tagId) {
-    const isGroup = $(element).hasClass('group_select');
-    const isCharacter = $(element).hasClass('character_select') || $(element).hasClass('group_member');
-    const idAttr = isGroup ? 'grid' : 'chid';
-    const elementId = $(element).attr(idAttr);
-    const lookupValue = isCharacter ? characters[elementId].avatar : elementId;
-    const isTagged = Array.isArray(tag_map[lookupValue]) && tag_map[lookupValue].includes(tagId);
-    return isTagged;
-}
-
-function clearTagsFilter(characterSelector) {
-    $('.rm_tag_filter .tag').removeClass('selected');
-    $(characterSelector).removeClass('hiddenByTag');
+    const filterHelper = getFilterHelper($(listElement));
+    filterHelper.setFilterData(FILTER_TYPES.TAG, { excluded: excludedTagIds, selected: tagIds });
 }
 
 function printTagFilters(type = tag_filter_types.character) {

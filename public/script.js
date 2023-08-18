@@ -40,7 +40,6 @@ import {
     generateGroupWrapper,
     deleteGroup,
     is_group_generating,
-    printGroups,
     resetSelectedGroup,
     select_group_chats,
     regenerateGroup,
@@ -55,13 +54,13 @@ import {
     deleteGroupChat,
     renameGroupChat,
     importGroupChat,
+    getGroupBlock,
 } from "./scripts/group-chats.js";
 
 import {
     collapseNewlines,
     loadPowerUserSettings,
     playMessageSound,
-    sortCharactersList,
     fixMarkdown,
     power_user,
     pygmalion_options,
@@ -72,10 +71,9 @@ import {
     persona_description_positions,
     loadMovingUIState,
     getCustomStoppingStrings,
-    fuzzySearchCharacters,
     MAX_CONTEXT_DEFAULT,
-    fuzzySearchGroups,
     renderStoryString,
+    sortEntitiesList,
 } from "./scripts/power-user.js";
 
 import {
@@ -165,6 +163,7 @@ import { NOTE_MODULE_NAME, metadata_keys, setFloatingPrompt, shouldWIAddPrompt }
 import { deviceInfo } from "./scripts/RossAscends-mods.js";
 import { registerPromptManagerMigration } from "./scripts/PromptManager.js";
 import { getRegexedString, regex_placement } from "./scripts/extensions/regex/engine.js";
+import { FILTER_TYPES, FilterHelper } from "./scripts/filters.js";
 
 //exporting functions and vars for mods
 export {
@@ -233,7 +232,6 @@ export {
     talkativeness_default,
     default_ch_mes,
     extension_prompt_types,
-    updateVisibleDivs,
     mesForShowdownParse,
     printCharacters,
 }
@@ -817,8 +815,9 @@ let token;
 
 var PromptArrayItemForRawPromptDisplay;
 
-export let active_character = ""
-export let active_group = ""
+export let active_character = "";
+export let active_group = "";
+export const entitiesFilter = new FilterHelper(debounce(printCharacters, 100));
 
 export function getRequestHeaders() {
     return {
@@ -965,60 +964,129 @@ function resultCheckStatus() {
     $("#api_button_textgenerationwebui").css("display", "inline-block");
 }
 
-async function printCharacters() {
-    $("#rm_print_characters_block").empty();
-    characters.forEach(function (item, i, arr) {
-        let this_avatar = default_avatar;
-        if (item.avatar != "none") {
-            this_avatar = getThumbnailUrl('avatar', item.avatar);
-        }
-        // Populate the template
-        const template = $('#character_template .character_select').clone();
-        template.attr({ 'chid': i, 'id': `CharID${i}` });
-        template.find('img').attr('src', this_avatar);
-        template.find('.avatar').attr('title', item.avatar);
-        template.find('.ch_name').text(item.name);
-        if (power_user.show_card_avatar_urls) {
-            template.find('.ch_avatar_url').text(item.avatar);
-        }
-        template.find('.ch_fav_icon').css("display", 'none');
-        template.toggleClass('is_fav', item.fav || item.fav == 'true');
-        template.find('.ch_fav').val(item.fav);
+export function selectCharacterById(id) {
+    if (characters[id] == undefined) {
+        return;
+    }
 
-        const description = item.data?.creator_notes?.split('\n', 1)[0] || '';
-        if (description) {
-            template.find('.ch_description').text(description);
-        }
-        else {
-            template.find('.ch_description').hide();
-        }
+    if (selected_group && is_group_generating) {
+        return;
+    }
 
-        const version = item.data?.character_version || '';
-        if (version) {
-            template.find('.character_version').text(version);
+    if (selected_group || this_chid !== id) {
+        //if clicked on a different character from what was currently selected
+        if (!is_send_press) {
+            cancelTtsPlay();
+            resetSelectedGroup();
+            this_edit_mes_id = undefined;
+            selected_button = "character_edit";
+            this_chid = id;
+            clearChat();
+            chat.length = 0;
+            chat_metadata = {};
+            getChat();
         }
-        else {
-            template.find('.character_version').hide();
+    } else {
+        //if clicked on character that was already selected
+        selected_button = "character_edit";
+        select_selected_character(this_chid);
+    }
+}
+
+function getCharacterBlock(item, id) {
+    let this_avatar = default_avatar;
+    if (item.avatar != "none") {
+        this_avatar = getThumbnailUrl('avatar', item.avatar);
+    }
+    // Populate the template
+    const template = $('#character_template .character_select').clone();
+    template.attr({ 'chid': id, 'id': `CharID${id}` });
+    template.find('img').attr('src', this_avatar);
+    template.find('.avatar').attr('title', item.avatar);
+    template.find('.ch_name').text(item.name);
+    if (power_user.show_card_avatar_urls) {
+        template.find('.ch_avatar_url').text(item.avatar);
+    }
+    template.find('.ch_fav_icon').css("display", 'none');
+    template.toggleClass('is_fav', item.fav || item.fav == 'true');
+    template.find('.ch_fav').val(item.fav);
+
+    const description = item.data?.creator_notes?.split('\n', 1)[0] || '';
+    if (description) {
+        template.find('.ch_description').text(description);
+    }
+    else {
+        template.find('.ch_description').hide();
+    }
+
+    const version = item.data?.character_version || '';
+    if (version) {
+        template.find('.character_version').text(version);
+    }
+    else {
+        template.find('.character_version').hide();
+    }
+
+    // Display inline tags
+    const tags = getTagsList(item.avatar);
+    const tagsElement = template.find('.tags');
+    tags.forEach(tag => appendTagToList(tagsElement, tag, {}));
+
+    // Add to the list
+    return template;
+}
+
+async function printCharacters(fullRefresh = false) {
+    const storageKey = 'Characters_PerPage';
+    $("#rm_print_characters_pagination").pagination({
+        dataSource: getEntitiesList({ doFilter: true }),
+        pageSize: Number(localStorage.getItem(storageKey)) || 50,
+        sizeChangerOptions: [25, 50, 100, 250, 500, 1000],
+        pageRange: 1,
+        position: 'top',
+        showPageNumbers: false,
+        showSizeChanger: true,
+        prevText: '<',
+        nextText: '>',
+        showNavigator: true,
+        callback: function (data) {
+            $("#rm_print_characters_block").empty();
+            for (const i of data) {
+                if (i.type === 'character') {
+                    $("#rm_print_characters_block").append(getCharacterBlock(i.item, i.id));
+                }
+                if (i.type === 'group') {
+                    $("#rm_print_characters_block").append(getGroupBlock(i.item));
+                }
+            }
+        },
+        afterSizeSelectorChange: function (e) {
+            localStorage.setItem(storageKey, e.target.value);
         }
-
-        // Display inline tags
-        const tags = getTagsList(item.avatar);
-        const tagsElement = template.find('.tags');
-        tags.forEach(tag => appendTagToList(tagsElement, tag, {}));
-
-        // Add to the list
-        $("#rm_print_characters_block").append(template);
     });
 
-    printTagFilters(tag_filter_types.character);
-    printTagFilters(tag_filter_types.group_member);
-    printGroups();
-    sortCharactersList();
     favsToHotswap();
-    await delay(300);
-    updateVisibleDivs('#rm_print_characters_block', true);
-    displayOverrideWarnings();
 
+    if (fullRefresh) {
+        printTagFilters(tag_filter_types.character);
+        printTagFilters(tag_filter_types.group_member);
+
+        await delay(300);
+        displayOverrideWarnings();
+    }
+}
+
+export function getEntitiesList({ doFilter } = {}) {
+    let entities = [];
+    entities.push(...characters.map((item, index) => ({ item, id: index, type: 'character' })));
+    entities.push(...groups.map((item) => ({ item, id: item.id, type: 'group' })));
+
+    if (doFilter) {
+        entities = entitiesFilter.applyFilters(entities);
+    }
+
+    sortEntitiesList(entities);
+    return entities;
 }
 
 async function getCharacters() {
@@ -1050,10 +1118,7 @@ async function getCharacters() {
         }
 
         await getGroups();
-        await printCharacters();
-
-
-        updateCharacterCount('#rm_print_characters_block > div');
+        await printCharacters(true);
     }
 }
 
@@ -4209,7 +4274,7 @@ async function renameCharacter() {
                 if (newChId !== -1) {
                     // Select the character after the renaming
                     this_chid = -1;
-                    $(`.character_select[chid="${newChId}"]`).click();
+                    selectCharacterById(String(newChId));
 
                     // Async delay to update UI
                     await delay(1);
@@ -4303,7 +4368,6 @@ async function saveChat(chat_name, withMetadata, mesId) {
     const metadata = { ...chat_metadata, ...(withMetadata || {}) };
     let file_name = chat_name ?? characters[this_chid].chat;
     characters[this_chid]['date_last_chat'] = Date.now();
-    sortCharactersList();
     chat.forEach(function (item, i) {
         if (item["is_group"]) {
             toastr.error('Trying to save group chat with regular saveChat function. Aborting to prevent corruption.');
@@ -5852,7 +5916,6 @@ function select_rm_characters() {
     menu_type = "characters";
     selectRightMenuWithAnimation('rm_characters_block');
     setRightTabSelectedClass('rm_button_characters');
-    updateVisibleDivs('#rm_print_characters_block', true);
 }
 
 function setExtensionPrompt(key, value, position, depth) {
@@ -6199,7 +6262,6 @@ async function deleteMessageImage() {
     mesBlock.find('.mes_img_container').removeClass('img_extra');
     mesBlock.find('.mes_img').attr('src', '');
     saveChatConditional();
-    /*updateVisibleDivs('#chat', false);*/
 }
 
 function enlargeMessageImage() {
@@ -6932,51 +6994,6 @@ const swipe_right = () => {
     }
 }
 
-export function updateCharacterCount(characterSelector) {
-    const visibleCharacters = $(characterSelector)
-        .not(".hiddenBySearch")
-        .not(".hiddenByTag")
-        .not(".hiddenByGroup")
-        .not(".hiddenByGroupMember")
-        .not(".hiddenByFav");
-    const visibleCharacterCount = visibleCharacters.length;
-    const totalCharacterCount = $(characterSelector).length;
-
-    $("#rm_character_count").text(
-        `(${visibleCharacterCount} / ${totalCharacterCount}) Characters`
-    );
-    console.log("visibleCharacters.length: " + visibleCharacters.length);
-}
-
-function updateVisibleDivs(containerSelector, resizecontainer) {
-    var $container = $(containerSelector);
-    var $children = $container.children();
-    var totalHeight = 0;
-    $children.each(function () {
-        totalHeight += $(this).outerHeight();
-    });
-    if (resizecontainer) {
-        $container.css({
-            height: totalHeight,
-        });
-    }
-    var containerTop = $container.offset() ? $container.offset().top : 0;
-    var firstVisibleIndex = null;
-    var lastVisibleIndex = null;
-    $children.each(function (index) {
-        var $child = $(this);
-        var childTop = $child.offset().top - containerTop;
-        var childBottom = childTop + $child.outerHeight();
-        if (childTop <= $container.height() && childBottom >= 0) {
-            if (firstVisibleIndex === null) {
-                firstVisibleIndex = index;
-            }
-            lastVisibleIndex = index;
-        }
-        $child.toggleClass('hiddenByScroll', childTop > $container.height() || childBottom < 0);
-    });
-}
-
 function displayOverrideWarnings() {
     if (!this_chid || !selected_group) {
         $('.prompt_overridden').hide();
@@ -7161,8 +7178,7 @@ function doCharListDisplaySwitch() {
     console.debug('toggling body charListGrid state')
     $("body").toggleClass('charListGrid')
     power_user.charListGrid = $("body").hasClass("charListGrid") ? true : false;
-    saveSettingsDebounced()
-    updateVisibleDivs('#rm_print_characters_block', true);
+    saveSettingsDebounced();
 }
 
 function doCloseChat() {
@@ -7256,17 +7272,10 @@ $(document).ready(function () {
     registerSlashCommand('closechat', doCloseChat, [], "- closes the current chat", true, true);
     registerSlashCommand('panels', doTogglePanels, ['togglepanels'], "- toggle UI panels on/off", true, true);
 
-
-
     setTimeout(function () {
         $("#groupControlsToggle").trigger('click');
         $("#groupCurrentMemberListToggle .inline-drawer-icon").trigger('click');
     }, 200);
-
-
-    $("#rm_print_characters_block").on('scroll', debounce(() => {
-        updateVisibleDivs('#rm_print_characters_block', true);
-    }, 5));
 
     $('#chat').on('scroll', async () => {
         // if on the start of the chat and has hidden messages
@@ -7330,43 +7339,8 @@ $(document).ready(function () {
     $(document).on('click', '.swipe_left', swipe_left);
 
     $("#character_search_bar").on("input", function () {
-        const selector = ['#rm_print_characters_block .character_select', '#rm_print_characters_block .group_select'].join(',');
-        const searchValue = $(this).val().trim().toLowerCase();
-        const fuzzySearchCharactersResults = power_user.fuzzy_search ? fuzzySearchCharacters(searchValue) : [];
-        const fuzzySearchGroupsResults = power_user.fuzzy_search ? fuzzySearchGroups(searchValue) : [];
-
-        function getIsValidSearch(_this) {
-            const name = $(_this).find(".ch_name").text().toLowerCase();
-            const chid = $(_this).attr("chid");
-            const grid = $(_this).attr("grid");
-
-            if (power_user.fuzzy_search) {
-                if (chid !== undefined) {
-                    return fuzzySearchCharactersResults.includes(parseInt(chid));
-                } else if (grid !== undefined) {
-                    return fuzzySearchGroupsResults.includes(String(grid));
-                } else {
-                    return false;
-                }
-            }
-            else {
-                return name.includes(searchValue);
-            }
-        }
-
-        if (!searchValue) {
-            $(selector).removeClass('hiddenBySearch');
-            updateVisibleDivs('#rm_print_characters_block', true);
-        } else {
-            $(selector).each(function () {
-                const isValidSearch = getIsValidSearch(this);
-                $(this).toggleClass('hiddenBySearch', !isValidSearch);
-            });
-            updateVisibleDivs('#rm_print_characters_block', true);
-        }
-        updateCharacterCount(selector);
-
-
+        const searchValue = $(this).val().toLowerCase();
+        entitiesFilter.setFilterData(FILTER_TYPES.SEARCH, searchValue);
     });
 
     $("#send_but").click(function () {
@@ -7406,31 +7380,10 @@ $(document).ready(function () {
         $("#character_search_bar").val("").trigger("input");
     });
 
-    $(document).on("click", ".character_select", function () {
-        if (selected_group && is_group_generating) {
-            return;
-        }
-
-        if (selected_group || this_chid !== $(this).attr("chid")) {
-            //if clicked on a different character from what was currently selected
-            if (!is_send_press) {
-                cancelTtsPlay();
-                resetSelectedGroup();
-                this_edit_mes_id = undefined;
-                selected_button = "character_edit";
-                this_chid = $(this).attr("chid");
-                clearChat();
-                chat.length = 0;
-                chat_metadata = {};
-                getChat();
-            }
-        } else {
-            //if clicked on character that was already selected
-            selected_button = "character_edit";
-            select_selected_character(this_chid);
-        }
+    $(document).on("click", ".character_select", function() {
+        const id = $(this).attr("chid");
+        selectCharacterById(id);
     });
-
 
     $(document).on("input", ".edit_textarea", function () {
         scroll_holder = $("#chat").scrollTop();

@@ -42,6 +42,7 @@
     <script src="scripts/droll.js"></script>
     <script src="scripts/localforage.min.js"></script>
     <script src="scripts/handlebars.js"></script>
+    <script src="scripts/pagination.js"></script>
     <script type="module" src="scripts/eventemitter.js"></script>
     <script type="module" src="scripts/power-user.js"></script>
     <script type="module" src="scripts/swiped-events.js"></script>
@@ -98,6 +99,7 @@
     <script type="module" src="scripts/extensions.js"></script>
     <script type="module" src="scripts/authors-note.js"></script>
     <script type="module" src="scripts/preset-manager.js"></script>
+    <script type="module" src="scripts/filters.js"></script>
     <script type="text/javascript" src="scripts/toolcool-color-picker.js"></script>
 
     <title>SillyTavern</title>
@@ -2988,7 +2990,7 @@
                         <div id="rm_button_selected_ch">
                             <h2></h2>
                         </div>
-                        <i id="hideCharPanelAvatarButton" class="fa-solid fa-eye menu_button"></i>
+                        <i id="hideCharPanelAvatarButton" class="fa-solid fa-eye right_menu_button"></i>
                     </div>
                 </div>
                 <!-- end group peeking cope structure-->
@@ -3255,14 +3257,12 @@
                         <div class="rm_tag_controls">
                             <div class="tags rm_tag_filter"></div>
                         </div>
-                        <!-- a div containing a dynamically updated count of characters currently displayed -->
-                        <div class="flex-container alignitemscenter">
-                            <div id="rm_character_count"></div>
-                            <i id="charListGridToggle" class="fa-solid fa-table-cells-large menu_button" title="Toggle character grid view"></i>
-                        </div>
                         <hr>
                     </div>
 
+                    <div id="rm_print_characters_pagination">
+                        <i id="charListGridToggle" class="fa-solid fa-table-cells-large menu_button" title="Toggle character grid view"></i>
+                    </div>
                     <div id="rm_print_characters_block" class="flexFlowColumn"></div>
                 </div>
 

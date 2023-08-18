@@ -1270,18 +1270,18 @@ input[type="file"] {
     filter: brightness(150%);
 }
 
-#rm_character_count {
-    padding: 5px;
-    font-size: calc(var(--mainFontSize) * .8);
-    font-weight: bold;
+#rm_print_characters_pagination {
+    display: flex;
+    flex-direction: row;
+    gap: 5px;
+    justify-content: center;
 }
 
 #rm_print_characters_block {
-    /* padding: 5px 0; */
     overflow-y: auto;
     flex-grow: 1;
     display: flex;
-    /* row-gap: 5px; */
+    height: 100%;
 }
 
 body.charListGrid #rm_print_characters_block {
@@ -1501,6 +1501,7 @@ select option:not(:checked) {
     display: flex;
     overflow-y: auto;
     flex-direction: column;
+    height: 100%;
 }
 
 #rm_characters_block .right_menu_button {
@@ -5615,4 +5616,65 @@ body.waifuMode .zoomed_avatar {
     height: 16px;
     vertical-align: middle;
     /* To align with adjacent text */
+}
+
+.paginationjs {
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+}
+
+/* Pagination */
+.paginationsjs-pages {
+    margin: 0.5em 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.paginationjs-pages ul {
+    list-style-type: none;
+    margin: 0.25em;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+}
+
+.paginationjs-size-changer select {
+    width: unset;
+    margin: 0;
+}
+
+.paginationjs-pages ul li a {
+    padding: 0.05em 0.5em;
+    text-decoration: none;
+    color: var(--SmartThemeBodyColor);
+    border: 1px solid var(--white30a);
+    border-radius: 5px;
+    transition: opacity 0.2s;
+    opacity: 0.8;
+    cursor: pointer;
+}
+
+.paginationjs-pages ul li a:hover {
+    opacity: 1;
+}
+
+.paginationjs-pages ul li.active a {
+    color: var(--SmartThemeQuoteColor);
+    border-color: var(--SmartThemeQuoteColor);
+    opacity: 1;
+}
+
+.paginationjs-pages ul li.disabled a {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.paginationjs-nav {
+    padding: 5px;
+    font-size: calc(var(--mainFontSize) * .8);
+    font-weight: bold;
 }
