@@ -48,7 +48,7 @@ const nai_settings = {
     model_novel: "clio-v1",
     preset_settings_novel: "Talker-Chat-Clio",
     streaming_novel: false,
-    nai_preamble: default_preamble,
+    preamble: default_preamble,
     prefix: '',
     cfg_uc: '',
     banned_tokens: '',
@@ -121,6 +121,7 @@ function loadNovelPreset(preset) {
     nai_settings.banned_tokens = preset.banned_tokens || '';
     nai_settings.order = preset.order || default_order;
     nai_settings.logit_bias = preset.logit_bias || [];
+    nai_settings.preamble = preset.preamble || default_preamble;
     loadNovelSettingsUi(nai_settings);
 }
 
@@ -130,7 +131,10 @@ function loadNovelSettings(settings) {
     $(`#model_novel_select option[value=${nai_settings.model_novel}]`).attr("selected", true);
     $('#model_novel_select').val(nai_settings.model_novel);
 
-    if (settings.nai_preamble !== undefined) nai_settings.preamble = settings.nai_preamble;
+    if (settings.nai_preamble !== undefined) {
+        nai_settings.preamble = settings.nai_preamble;
+        delete settings.nai_preamble;
+    }
     nai_settings.preset_settings_novel = settings.preset_settings_novel;
     nai_settings.temperature = settings.temperature;
     nai_settings.repetition_penalty = settings.repetition_penalty;
@@ -164,6 +168,7 @@ function loadNovelSettingsUi(ui_settings) {
     $("#rep_pen_novel").val(ui_settings.repetition_penalty);
     $("#rep_pen_counter_novel").text(Number(ui_settings.repetition_penalty).toFixed(2));
     $("#rep_pen_size_novel").val(ui_settings.repetition_penalty_range);
+    $("#rep_pen_size_novel").attr('max', max_context);
     $("#rep_pen_size_counter_novel").text(Number(ui_settings.repetition_penalty_range).toFixed(0));
     $("#rep_pen_slope_novel").val(ui_settings.repetition_penalty_slope);
     $("#rep_pen_slope_counter_novel").text(Number(`${ui_settings.repetition_penalty_slope}`).toFixed(2));
@@ -190,7 +195,7 @@ function loadNovelSettingsUi(ui_settings) {
     $("#mirostat_tau_counter_novel").text(Number(ui_settings.mirostat_tau).toFixed(2));
     $("#min_length_novel").val(ui_settings.min_length);
     $("#min_length_counter_novel").text(Number(ui_settings.min_length).toFixed(0));
-    $('#nai_preamble_textarea').val(ui_settings.nai_preamble);
+    $('#nai_preamble_textarea').val(ui_settings.preamble);
     $('#nai_prefix').val(ui_settings.prefix || "vanilla");
     $('#nai_cfg_uc').val(ui_settings.cfg_uc || "");
     $('#nai_banned_tokens').val(ui_settings.banned_tokens || "");
