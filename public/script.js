@@ -6424,6 +6424,7 @@ function addAlternateGreeting(template, greeting, index, getArray) {
     template.find('.alternate_greetings_list').append(greetingBlock);
 }
 
+let hasEdited = false;
 async function createOrEditCharacter(e) {
     $("#rm_info_avatar").html("");
     let save_name = create_save.name;
@@ -6594,8 +6595,8 @@ async function createOrEditCharacter(e) {
                     }
                 }
                 $("#create_button").removeAttr("disabled");
-                await getCharacters();
-
+                //await getCharacters();
+                hasEdited = true;
                 $("#add_avatar_button").replaceWith(
                     $("#add_avatar_button").val("").clone(true)
                 );
@@ -7368,6 +7369,10 @@ $(document).ready(function () {
     $("#rm_button_characters").click(function () {
         selected_button = "characters";
         select_rm_characters();
+        if(hasEdited) {
+            getCharacters();
+            hasEdited = false;
+        }
     });
     $("#rm_button_back").click(function () {
         selected_button = "characters";
