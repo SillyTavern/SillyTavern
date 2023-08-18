@@ -1015,6 +1015,8 @@ async function printCharacters() {
 
             // Add to the list
             $("#rm_print_characters_block").append(template);
+            if(item.avatar == active_character)
+                setCharacterId(chid);
             chid++;
         } else if (item.type === 'group') {
             printGroups(item)
