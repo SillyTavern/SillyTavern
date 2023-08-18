@@ -5798,7 +5798,7 @@ export function select_selected_character(chid) {
     checkEmbeddedWorld(chid);
 
     $("#form_create").attr("actiontype", "editcharacter");
-    //saveSettingsDebounced(); Unnecessary? Prompt Manager seems to be saving settings on character select already.
+    saveSettingsDebounced();
 }
 
 function select_rm_create() {
