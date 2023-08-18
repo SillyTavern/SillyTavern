@@ -1834,6 +1834,7 @@ function getStoppingStrings(isImpersonate, addSpace) {
     if (power_user.instruct.enabled) {
         addInstructSequence(power_user.instruct.input_sequence);
         addInstructSequence(power_user.instruct.output_sequence);
+        addInstructSequence(power_user.instruct.last_output_sequence);
     }
 
     if (power_user.custom_stopping_strings) {
@@ -3925,6 +3926,9 @@ function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete
     }
     if (isInstruct && power_user.instruct.output_sequence && !isImpersonate) {
         getMessage = getMessage.replaceAll(power_user.instruct.output_sequence, '');
+    }
+    if (isInstruct && power_user.instruct.last_output_sequence && !isImpersonate) {
+        getMessage = getMessage.replaceAll(power_user.instruct.last_output_sequence, '');
     }
     // clean-up group message from excessive generations
     if (selected_group) {
