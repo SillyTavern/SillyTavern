@@ -2442,9 +2442,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             mesExamples = '';
         }
 
-        // OpenAI handler always expects it
-        const blockHeading = main_api === 'openai' ? '<START>' : (power_user.context.example_separator || '');
-        let mesExamplesArray = mesExamples.split(/<START>/gi).slice(1).map(block => `${blockHeading}\n${block.trim()}\n`);
+        const exampleSeparator = power_user.context.example_separator ? `${power_user.context.example_separator}\n` : '';
+        const blockHeading = main_api === 'openai' ? '<START>\n' : exampleSeparator;
+        let mesExamplesArray = mesExamples.split(/<START>/gi).slice(1).map(block => `${blockHeading}${block.trim()}\n`);
 
         // First message in fresh 1-on-1 chat reacts to user/character settings changes
         if (chat.length) {
@@ -2900,7 +2900,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
             }
 
-            if (true === dryRun) return onSuccess({error: 'dryRun'});
+            if (true === dryRun) return onSuccess({ error: 'dryRun' });
 
             if (power_user.console_log_prompts) {
 
@@ -4452,7 +4452,7 @@ async function getChat() {
         }
         await getChatResult();
         await saveChat();
-        eventSource.emit('chatLoaded', {detail: {id: this_chid, character: characters[this_chid]}});
+        eventSource.emit('chatLoaded', { detail: { id: this_chid, character: characters[this_chid] } });
 
 
         setTimeout(function () {
@@ -6591,7 +6591,7 @@ async function createOrEditCharacter(e) {
                 );
                 $("#create_button").attr("value", "Save");
                 crop_data = undefined;
-                eventSource.emit(event_types.CHARACTER_EDITED, {detail: {id: this_chid, character: characters[this_chid]}});
+                eventSource.emit(event_types.CHARACTER_EDITED, { detail: { id: this_chid, character: characters[this_chid] } });
             },
             error: function (jqXHR, exception) {
                 $("#create_button").removeAttr("disabled");
@@ -7643,7 +7643,7 @@ $(document).ready(function () {
         if (popup_type == "del_ch") {
             const deleteChats = !!$("#del_char_checkbox").prop("checked");
             await handleDeleteCharacter(popup_type, this_chid, deleteChats);
-            eventSource.emit('characterDeleted', {id: this_chid, character: characters[this_chid]});
+            eventSource.emit('characterDeleted', { id: this_chid, character: characters[this_chid] });
         }
         if (popup_type == "alternate_greeting" && menu_type !== "create") {
             createOrEditCharacter();
@@ -9144,4 +9144,9 @@ $(document).ready(function () {
     $("#charListGridToggle").on('click', async () => {
         doCharListDisplaySwitch();
     });
+
+    $("#hideCharPanelAvatarButton").on('click', () => {
+        $('#avatar-and-name-block').slideToggle()
+    })
+
 });

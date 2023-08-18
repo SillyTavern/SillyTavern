@@ -229,7 +229,6 @@ class PresetManager {
             'streaming_novel',
             'nai_preamble',
             'model_novel',
-            'preamble',
         ];
         const settings = Object.assign({}, getSettingsByApiId(this.apiId));
 

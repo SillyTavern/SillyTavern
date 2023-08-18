@@ -8,6 +8,11 @@ export function isDigitsOnly(str) {
     return /^\d+$/.test(str);
 }
 
+// Increase delay on touch screens
+export function getSortableDelay() {
+    return navigator.maxTouchPoints > 0 ? 750 : 100;
+}
+
 export function shuffle(array) {
     let currentIndex = array.length,
         randomIndex;
