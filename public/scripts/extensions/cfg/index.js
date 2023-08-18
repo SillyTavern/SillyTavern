@@ -273,6 +273,7 @@ jQuery(async () => {
         saveSettingsDebounced();
     });
 
+    // TODO: Add negative insertion depth
     windowHtml.find('#global_cfg_negative_prompt').on('input', function() {
         extension_settings.cfg.global.negative_prompt = $(this).val();
         saveSettingsDebounced();
