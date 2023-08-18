@@ -1,5 +1,5 @@
 import { saveSettings, callPopup, substituteParams, getTokenCount, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types } from "../script.js";
-import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, delay, getCharaFilename, deepClone } from "./utils.js";
+import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, deepClone, getSortableDelay } from "./utils.js";
 import { getContext } from "./extensions.js";
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from "./authors-note.js";
 import { registerSlashCommand } from "./slash-commands.js";
@@ -302,6 +302,7 @@ function displayWorldEntries(name, data) {
     }
 
     $("#world_popup_entries_list").sortable({
+        delay: getSortableDelay(),
         handle: ".drag-handle",
         stop: async function (event, ui) {
             $('#world_popup_entries_list .world_entry').each(function (index) {

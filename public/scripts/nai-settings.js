@@ -10,8 +10,9 @@ import {
 import { getCfg } from "./extensions/cfg/util.js";
 import { MAX_CONTEXT_DEFAULT, tokenizers } from "./power-user.js";
 import {
+    getSortableDelay,
     getStringHash,
-    uuidv4
+    uuidv4,
 } from "./utils.js";
 
 export {
@@ -638,7 +639,7 @@ $("#nai_preamble_restore").on('click', function () {
     saveSettingsDebounced();
 });
 
-$(document).ready(function () {
+jQuery(function () {
     sliders.forEach(slider => {
         $(document).on("input", slider.sliderId, function () {
             const value = $(this).val();
@@ -677,6 +678,7 @@ $(document).ready(function () {
     });
 
     $('#novel_order').sortable({
+        delay: getSortableDelay(),
         stop: saveSamplingOrder,
     });
 

@@ -2,7 +2,7 @@ import {callPopup, event_types, eventSource, is_send_press, main_api, substitute
 import { is_group_generating } from "./group-chats.js";
 import {TokenHandler} from "./openai.js";
 import {power_user} from "./power-user.js";
-import { debounce, waitUntilCondition } from "./utils.js";
+import { debounce, getSortableDelay, waitUntilCondition } from "./utils.js";
 
 function debouncePromise(func, delay) {
     let timeoutId;
@@ -1511,6 +1511,7 @@ PromptManagerModule.prototype.getFormattedDate = function() {
  */
 PromptManagerModule.prototype.makeDraggable = function () {
     $(`#${this.configuration.prefix}prompt_manager_list`).sortable({
+        delay: getSortableDelay(),
         items: `.${this.configuration.prefix}prompt_manager_prompt_draggable`,
         update: ( event, ui ) => {
             const promptOrder = this.getPromptOrderForCharacter(this.activeCharacter);
