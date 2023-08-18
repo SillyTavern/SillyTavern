@@ -924,13 +924,13 @@ $("document").ready(function () {
     $(document).on("click", ".character_select", function () {
         setActiveCharacter($(this).find('.avatar').attr('title'));
         setActiveGroup(null);
-        //saveSettingsDebounced(); prompt manager already saves settings on select
+        saveSettingsDebounced();
     });
 
     $(document).on("click", ".group_select", function () {
         setActiveCharacter(null);
         setActiveGroup($(this).data('id'));
-        //saveSettingsDebounced();
+        saveSettingsDebounced();
     });
 
 
