@@ -1,0 +1,6 @@
+{
+    "name": "Default",
+    "story_string": "{{#if description}}{{{description}}}{{/if}}\n{{#if personality}}{{{personality}}}{{/if}}\n{{#if scenario}}Scenario: {{{scenario}}}{{/if}}",
+    "chat_start": "***",
+    "example_separator": "***"
+}

@@ -75,6 +75,7 @@ import {
     fuzzySearchCharacters,
     MAX_CONTEXT_DEFAULT,
     fuzzySearchGroups,
+    renderStoryString,
 } from "./scripts/power-user.js";
 
 import {
@@ -159,7 +160,6 @@ import {
     writeSecret
 } from "./scripts/secrets.js";
 import { EventEmitter } from './scripts/eventemitter.js';
-import { context_settings, loadContextTemplatesFromSettings } from "./scripts/context-template.js";
 import { markdownExclusionExt } from "./scripts/showdown-exclusion.js";
 import { NOTE_MODULE_NAME, metadata_keys, setFloatingPrompt, shouldWIAddPrompt } from "./scripts/authors-note.js";
 import { deviceInfo } from "./scripts/RossAscends-mods.js";
@@ -301,7 +301,6 @@ let firstRun = false;
 
 const default_ch_mes = "Hello";
 let count_view_mes = 0;
-let mesStr = "";
 let generatedPromtCache = "";
 let generation_started = new Date();
 let characters = [];
@@ -311,8 +310,6 @@ const default_avatar = "img/ai4.png";
 export const system_avatar = "img/five.png";
 export const comment_avatar = "img/quill.png";
 export let CLIENT_VERSION = 'SillyTavern:UNKNOWN:Cohee#1207'; // For Horde header
-let is_colab = false;
-let is_checked_colab = false;
 let optionsPopper = Popper.createPopper(document.getElementById('options_button'), document.getElementById('options'), {
     placement: 'top-start'
 });
@@ -330,10 +327,6 @@ let crop_data = undefined;
 let is_delete_mode = false;
 let fav_ch_checked = false;
 let scrollLock = false;
-
-
-//initialize global var for future cropped blobs
-let currentCroppedAvatar = '';
 
 const durationSaveEdit = 1000;
 const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
@@ -1093,30 +1086,6 @@ function getBackgroundFromTemplate(bg) {
     template.css('background-image', `url('${thumbPath}')`);
     template.find('.BGSampleTitle').text(bg.slice(0, bg.lastIndexOf('.')));
     return template;
-}
-
-async function isColab() {
-    is_checked_colab = true;
-    const response = await fetch("/iscolab", {
-        method: "POST",
-        headers: getRequestHeaders(),
-        body: JSON.stringify({
-            "": "",
-        }),
-    });
-    if (response.ok === true) {
-        const getData = await response.json();
-        if (getData.colaburl != false) {
-            $("#colab_shadow_popup").css("display", "none");
-            is_colab = true;
-            let url = String(getData.colaburl).split("flare.com")[0] + "flare.com";
-            url = String(url).split("loca.lt")[0] + "loca.lt";
-            $("#api_url_text").val(url);
-            setTimeout(function () {
-                $("#api_button").click();
-            }, 2000);
-        }
-    }
 }
 
 async function setBackground(bg) {
@@ -2067,13 +2036,6 @@ function baseChatReplace(value, name1, name2) {
     return value;
 }
 
-function appendToStoryString(value, prefix) {
-    if (value !== undefined && value.length > 0) {
-        return prefix + value + '\n';
-    }
-    return '';
-}
-
 function isStreamingEnabled() {
     return ((main_api == 'openai' && oai_settings.stream_openai && oai_settings.chat_completion_source !== chat_completion_sources.SCALE)
         || (main_api == 'kobold' && kai_settings.streaming_kobold && kai_settings.can_use_streaming)
@@ -2479,11 +2441,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         if (mesExamples.replace(/<START>/gi, '').trim().length === 0) {
             mesExamples = '';
         }
-        const blockHeading =
-            main_api === 'openai' ? '<START>' : // OpenAI handler always expects it
-                power_user.custom_chat_separator ? power_user.custom_chat_separator :
-                    power_user.disable_examples_formatting ? '' :
-                        is_pygmalion ? '<START>' : `This is how ${name2} should talk`;
+
+        // OpenAI handler always expects it
+        const blockHeading = main_api === 'openai' ? '<START>' : (power_user.context.example_separator || '');
         let mesExamplesArray = mesExamples.split(/<START>/gi).slice(1).map(block => `${blockHeading}\n${block.trim()}\n`);
 
         // First message in fresh 1-on-1 chat reacts to user/character settings changes
@@ -2509,17 +2469,15 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
         console.log(`Core/all messages: ${coreChat.length}/${chat.length}`);
 
-        let storyString = "";
+        const storyStringParams = {
+            description: charDescription,
+            personality: charPersonality,
+            scenario: Scenario,
+            char: name2,
+            user: name1,
+        };
 
-        if (is_pygmalion) {
-            storyString += appendToStoryString(charDescription, power_user.disable_description_formatting ? '' : name2 + "'s Persona: ");
-            storyString += appendToStoryString(charPersonality, power_user.disable_personality_formatting ? '' : 'Personality: ');
-            storyString += appendToStoryString(Scenario, power_user.disable_scenario_formatting ? '' : 'Scenario: ');
-        } else {
-            storyString += appendToStoryString(charDescription, '');
-            storyString += appendToStoryString(charPersonality, power_user.disable_personality_formatting ? '' : name2 + "'s personality: ");
-            storyString += appendToStoryString(Scenario, power_user.disable_scenario_formatting ? '' : 'Circumstances and context of the dialogue: ');
-        }
+        let storyString = renderStoryString(storyStringParams);
 
         // kingbri MARK: - Make sure the prompt bias isn't the same as the user bias
         if ((promptBias && !isUserPromptBias) || power_user.always_force_name2 || is_pygmalion) {
@@ -3368,31 +3326,17 @@ function addChatsPreamble(mesSendString) {
 }
 
 function addChatsSeparator(mesSendString) {
-    if (power_user.custom_chat_separator && power_user.custom_chat_separator.length) {
-        mesSendString = power_user.custom_chat_separator + '\n' + mesSendString;
+    if (main_api === 'novel') {
+        return '***\n' + mesSendString;
     }
 
-    // if chat start formatting is disabled
-    else if (power_user.disable_start_formatting) {
-        mesSendString = mesSendString;
+    else if (power_user.context.chat_start) {
+        return power_user.context.chat_start + '\n' + mesSendString;
     }
 
-    else if (main_api === 'novel') {
-        mesSendString = '***\n' + mesSendString;
-    }
-
-    // add non-pygma dingus
-    else if (!is_pygmalion) {
-        mesSendString = '\nThen the roleplay chat between ' + name1 + ' and ' + name2 + ' begins.\n' + mesSendString;
-    }
-
-    // add pygma <START>
     else {
-        mesSendString = '<START>\n' + mesSendString;
-        //mesSendString = mesSendString; //This edit simply removes the first "<START>" that is prepended to all context prompts
+        return mesSendString;
     }
-
-    return mesSendString;
 }
 
 function appendZeroDepthAnchor(force_name2, zeroDepthAnchor, finalPromt) {
@@ -5290,9 +5234,6 @@ async function getSettings(type) {
         // Load character tags
         loadTagsSettings(settings);
 
-        // Load context templates
-        loadContextTemplatesFromSettings(data, settings);
-
         // Allow subscribers to mutate settings
         eventSource.emit(event_types.SETTINGS_LOADED_AFTER, settings);
 
@@ -5360,8 +5301,6 @@ async function getSettings(type) {
         }
     }
 
-    if (!is_checked_colab) isColab();
-
     eventSource.emit(event_types.SETTINGS_LOADED);
 }
 
@@ -5396,7 +5335,6 @@ async function saveSettings(type) {
             horde_settings: horde_settings,
             power_user: power_user,
             extension_settings: extension_settings,
-            context_settings: context_settings,
             tags: tags,
             tag_map: tag_map,
             nai_settings: nai_settings,
@@ -8285,7 +8223,6 @@ $(document).ready(function () {
             const formattedValue = slider.format(value);
             slider.setValue(value);
             $(slider.counterId).text(formattedValue);
-            console.log('saving');
             saveSettingsDebounced();
         });
     });

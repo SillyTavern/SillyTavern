@@ -41,6 +41,7 @@
     <script src="scripts/seedrandom.min.js"></script>
     <script src="scripts/droll.js"></script>
     <script src="scripts/localforage.min.js"></script>
+    <script src="scripts/handlebars.js"></script>
     <script type="module" src="scripts/eventemitter.js"></script>
     <script type="module" src="scripts/power-user.js"></script>
     <script type="module" src="scripts/swiped-events.js"></script>
@@ -94,7 +95,6 @@
     <script type="module" src="scripts/slash-commands.js"></script>
     <script type="module" src="scripts/tags.js"></script>
     <script type="module" src="scripts/secrets.js"></script>
-    <script type="module" src="scripts/context-template.js"></script>
     <script type="module" src="scripts/extensions.js"></script>
     <script type="module" src="scripts/authors-note.js"></script>
     <script type="module" src="scripts/preset-manager.js"></script>
@@ -2006,58 +2006,40 @@
                 </h3>
                 <div class="flex-container">
                     <div name="PygOverrides" class="flex1">
-                        <h4><span data-i18n="AutoFormat Overrides">AutoFormat Overrides</span></h4>
-                        <label class="checkbox_label" for="disable-description-formatting-checkbox">
-                            <input id="disable-description-formatting-checkbox" type="checkbox" />
-                            <span data-i18n="Disable description formatting">Disable description formatting</span>
-                        </label>
-                        <label class="checkbox_label" for="disable-scenario-formatting-checkbox">
-                            <input id="disable-scenario-formatting-checkbox" type="checkbox" />
-                            <span data-i18n="Disable scenario formatting"> Disable scenario formatting</span>
-                        </label>
-                        <label class="checkbox_label" for="disable-personality-formatting-checkbox">
-                            <input id="disable-personality-formatting-checkbox" type="checkbox" />
-                            <span data-i18n="Disable personality formatting"> Disable personality formatting</span>
-                        </label>
-                        <label class="checkbox_label" for="disable-examples-formatting-checkbox">
-                            <input id="disable-examples-formatting-checkbox" type="checkbox" />
-                            <span data-i18n="Disable example chats formatting">Disable example chats formatting</span>
-                        </label>
-                        <label class="checkbox_label" for="disable-start-formatting-checkbox">
-                            <input id="disable-start-formatting-checkbox" type="checkbox" />
-                            <span data-i18n="Disable chat start formatting">Disable chat start formatting</span>
-                        </label>
-                        <label class="checkbox_label" for="trim_spaces">
-                            <input id="trim_spaces" type="checkbox" />
-                            <span data-i18n="Trim spaces">Trim spaces</span>
-                        </label>
-                        <label class="checkbox_label" for="trim_sentences_checkbox">
-                            <input id="trim_sentences_checkbox" type="checkbox" />
-                            <span data-i18n="Trim Incomplete Sentences">Trim Incomplete Sentences</span>
-                        </label>
-                        <!-- Add margin since this is a child of above -->
-                        <label class="checkbox_label indent20p" for="include_newline_checkbox">
-                            <input id="include_newline_checkbox" type="checkbox" />
-                            <span data-i18n="Include Newline">Include Newline</span>
-                        </label>
                         <div>
-                            <h4 data-i18n="Custom Chat Separator">
-                                Custom Chat Separator
+                            <h4 data-i18n="Context Template">
+                                Context Template
                             </h4>
+                            <div class="flex-container flexGap5">
+                                <select id="context_presets" class="flex1 margin0">
+                                </select>
+                            </div>
                             <div>
-                                <textarea id="custom_chat_separator" class="text_pole textarea_compact" type="text" placeholder="&lt;START&gt;" maxlength="500" rows="1"></textarea>
+                                <label for="context_story_string" data-i18n="Story String">
+                                    Story String
+                                </label>
+                                <textarea id="context_story_string" class="text_pole textarea_compact" rows="3"></textarea>
+                                <div class="flex-container">
+                                    <div class="flex1">
+                                        <label for="context_example_separator">
+                                            <span data-i18n="Example Separator">Example Separator</span>
+                                        </label>
+                                        <div>
+                                            <textarea id="context_example_separator" class="text_pole textarea_compact" maxlength="500" rows="1"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="flex1">
+                                        <label for="context_chat_start">
+                                            <span data-i18n="Chat Start">Chat Start</span>
+                                        </label>
+                                        <div>
+                                            <textarea id="context_chat_start" class="text_pole textarea_compact" maxlength="500" rows="1"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div>
-                            <h4 data-i18n="Non-markdown strings">
-                                Non-markdown strings
-                            </h4>
-                            <div>
-                                <input id="markdown_escape_strings" class="text_pole textarea_compact" type="text" data-i18n="[placeholder]separate with commas w/o space between" placeholder="separate with commas w/o space between" maxlength="100" />
-                            </div>
-                        </div>
-                        <div>
-
                             <h4 data-i18n="Instruct mode">Instruct mode
                                 <a href="https://docs.sillytavern.app/usage/core-concepts/instructmode/" class="notes-link" target="_blank">
                                     <span class="note-link-span">?</span>
@@ -2099,18 +2081,26 @@
                             <div class="flex-container">
                                 <div class="flex1">
                                     <label for="instruct_input_sequence">
-                                        <span data-i18n="Input Sequence">Input Sequence</span>
+                                        <small data-i18n="Input Sequence">Input Sequence</small>
                                     </label>
                                     <div>
-                                        <textarea id="instruct_input_sequence" class="text_pole textarea_compact" type="text" maxlength="500" rows="1"></textarea>
+                                        <textarea id="instruct_input_sequence" class="text_pole textarea_compact" maxlength="500" rows="1"></textarea>
                                     </div>
                                 </div>
                                 <div class="flex1">
                                     <label for="instruct_output_sequence">
-                                        <span data-i18n="Output Sequence">Output Sequence</span>
+                                        <small data-i18n="Output Sequence">Output Sequence</small>
                                     </label>
                                     <div>
-                                        <textarea id="instruct_output_sequence" class="text_pole wide100p textarea_compact" type="text" maxlength="500" rows="1"></textarea>
+                                        <textarea id="instruct_output_sequence" class="text_pole wide100p textarea_compact" maxlength="500" rows="1"></textarea>
+                                    </div>
+                                </div>
+                                <div class="flex1">
+                                    <label for="instruct_last_output_sequence">
+                                        <small data-i18n="Last Sequence">Last Sequence</small>
+                                    </label>
+                                    <div>
+                                        <textarea id="instruct_last_output_sequence" class="text_pole wide100p textarea_compact" maxlength="500" rows="1"></textarea>
                                     </div>
                                 </div>
                             </div>
@@ -2120,7 +2110,7 @@
                                         <small data-i18n="System Sequence">System Sequence</small>
                                     </label>
                                     <div>
-                                        <textarea id="instruct_system_sequence" class="text_pole textarea_compact" type="text" maxlength="500" rows="1"></textarea>
+                                        <textarea id="instruct_system_sequence" class="text_pole textarea_compact" maxlength="500" rows="1"></textarea>
                                     </div>
                                 </div>
                                 <div class="flex1">
@@ -2128,7 +2118,7 @@
                                         <small data-i18n="Stop Sequence">Stop Sequence</small>
                                     </label>
                                     <div>
-                                        <textarea id="instruct_stop_sequence" class="text_pole wide100p textarea_compact" type="text" maxlength="500" rows="1"></textarea>
+                                        <textarea id="instruct_stop_sequence" class="text_pole wide100p textarea_compact" maxlength="500" rows="1"></textarea>
                                     </div>
                                 </div>
                                 <div class="flex1">
@@ -2136,14 +2126,22 @@
                                         <small data-i18n="Separator">Separator</small>
                                     </label>
                                     <div>
-                                        <textarea id="instruct_separator_sequence" class="text_pole wide100p textarea_compact" type="text" maxlength="500" rows="1"></textarea>
+                                        <textarea id="instruct_separator_sequence" class="text_pole wide100p textarea_compact" maxlength="500" rows="1"></textarea>
                                     </div>
                                 </div>
                             </div>
                         </div>
+
+                        <div>
+                            <h4 data-i18n="Non-markdown strings">
+                                Non-markdown strings
+                            </h4>
+                            <div>
+                                <input id="markdown_escape_strings" class="text_pole textarea_compact" type="text" data-i18n="[placeholder]separate with commas w/o space between" placeholder="separate with commas w/o space between" maxlength="100" />
+                            </div>
+                        </div>
                     </div>
                     <div name="ContextFormatting" class="flex1">
-                        <h4><span data-i18n="Context Formatting">Context Formatting</span></h4>
                         <div>
                             <h4><span data-i18n="Tokenizer">Tokenizer</span>
                                 <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/#tokenizer" class="notes-link" target="_blank">
@@ -2187,19 +2185,19 @@
                                 Remove Empty New Lines from Output
                             </span>
                         </label>
-                        <div id="context-templates-block" class="template_element">
-                            <h4>
-                                Context Templates
-                            </h4>
-                            <div class="flex-container flexGap5">
-                                <select id="context_template" class="flex1 margin0">
-                                </select>
-                                <div id="context_template_new" class="menu_button fa-solid fa-plus margin0" title="Create new" data-i18n="[title]Create New"></div>
-                                <div id="context_template_edit" class="menu_button fa-solid fa-file-pen margin0" title="Edit" data-i18n="[title]Edit"></div>
-                                <div id="context_template_rename" class="menu_button fa-solid fa-i-cursor margin0" title="Rename" data-i18n="[title]Rename"></div>
-                                <div id="context_template_delete" class="menu_button fa-solid fa-trash-can margin0" title="Delete" data-i18n="[title]Delete"></div>
-                            </div>
-                        </div>
+                        <label class="checkbox_label" for="trim_spaces">
+                            <input id="trim_spaces" type="checkbox" />
+                            <span data-i18n="Trim spaces">Trim spaces</span>
+                        </label>
+                        <label class="checkbox_label" for="trim_sentences_checkbox">
+                            <input id="trim_sentences_checkbox" type="checkbox" />
+                            <span data-i18n="Trim Incomplete Sentences">Trim Incomplete Sentences</span>
+                        </label>
+                        <!-- Add margin since this is a child of above -->
+                        <label class="checkbox_label indent20p" for="include_newline_checkbox">
+                            <input id="include_newline_checkbox" type="checkbox" />
+                            <span data-i18n="Include Newline">Include Newline</span>
+                        </label>
                         <div>
                             <h4>
                                 <span data-i18n="Start Reply With">
