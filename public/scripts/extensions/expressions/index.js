@@ -994,6 +994,44 @@ async function setExpression(character, expression, force) {
 
 
     }
+
+    // HACK: music update
+    console.error("<MUSIC module> CODE INJECTION START")
+    const music_file_path = "/characters/"+character+"/music/"+expression+"_0.mp3"
+    console.log("<MUSIC module> Checking audio file",music_file_path)
+    fetch(music_file_path)
+    .then(response => {
+        if (!response.ok) {
+            console.log("<MUSIC module> File not found!")
+        }
+        else {
+            console.log("<MUSIC module> Playing emotion",expression)
+            const audio = $("#music_background");
+
+            audio.animate({volume: 0.0}, 2000, function() {
+                audio.attr("src",music_file_path)
+                audio[0].play();
+                audio.volume = 1.0;
+                audio.animate({volume: 1.0}, 2000);
+            })
+
+            // Set the point in playback that fadeout begins. This is for a 2 second fade out.
+            var fadeAudio = setInterval(function () {
+
+                // Only fade if past the fade out point or not at zero already
+                if (audio.volume != 0.0) {
+                    audio.volume -= 0.1;
+                }
+                // When volume at zero stop all the intervalling
+                if (audio.volume === 0.0) {
+                    clearInterval(fadeAudio);
+                    
+                }
+            }, 200);
+
+        }
+    });
+    console.error("<MUSIC module> CODE INJECTION END")
 }
 
 function onClickExpressionImage() {
@@ -1285,6 +1323,8 @@ function setExpressionOverrideHtml(forceClear = false) {
                 <input type="file" id="expression_upload_pack" name="expression_upload_pack" accept="application/zip" hidden>
                 <input type="file" id="expression_upload" name="expression_upload" accept="image/*" hidden>
             </form>
+            <!-- HACK: Musique module -->
+            <audio id="music_background" controls src="">
         </div>
         `;
 
