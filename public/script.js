@@ -3926,13 +3926,28 @@ function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete
         }
     }
     if (isInstruct && power_user.instruct.input_sequence && isImpersonate) {
-        getMessage = getMessage.replaceAll(power_user.instruct.input_sequence, '');
+        //getMessage = getMessage.replaceAll(power_user.instruct.input_sequence, '');
+        power_user.instruct.input_sequence.split('\n')
+            .filter(line => line.trim() !== '')
+            .forEach(line => {
+                getMessage = getMessage.replaceAll(line, '');
+            });
     }
     if (isInstruct && power_user.instruct.output_sequence && !isImpersonate) {
-        getMessage = getMessage.replaceAll(power_user.instruct.output_sequence, '');
+        //getMessage = getMessage.replaceAll(power_user.instruct.output_sequence, '');
+        power_user.instruct.output_sequence.split('\n')
+            .filter(line => line.trim() !== '')
+            .forEach(line => {
+                getMessage = getMessage.replaceAll(line, '');
+            });
     }
     if (isInstruct && power_user.instruct.last_output_sequence && !isImpersonate) {
-        getMessage = getMessage.replaceAll(power_user.instruct.last_output_sequence, '');
+        //getMessage = getMessage.replaceAll(power_user.instruct.last_output_sequence, '');
+        power_user.instruct.last_output_sequence.split('\n')
+            .filter(line => line.trim() !== '')
+            .forEach(line => {
+                getMessage = getMessage.replaceAll(line, '');
+            });
     }
     // clean-up group message from excessive generations
     if (selected_group) {
