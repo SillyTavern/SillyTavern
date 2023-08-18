@@ -33,7 +33,6 @@ export {
     loadMovingUIState,
     collapseNewlines,
     playMessageSound,
-    sortGroupMembers,
     sortEntitiesList,
     fixMarkdown,
     power_user,
@@ -1133,19 +1132,6 @@ function sortEntitiesList(entities) {
 
     entities.sort((a, b) => sortFunc(a.item, b.item));
 }
-
-function sortGroupMembers(selector) {
-    if (power_user.sort_field == undefined || characters.length === 0) {
-        return;
-    }
-
-    let orderedList = characters.slice().sort(sortFunc);
-
-    for (let i = 0; i < characters.length; i++) {
-        $(`${selector}[chid="${i}"]`).css({ 'order': orderedList.indexOf(characters[i]) });
-    }
-}
-
 async function saveTheme() {
     const name = await callPopup('Enter a theme preset name:', 'input');
 

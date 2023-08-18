@@ -5916,6 +5916,7 @@ function select_rm_characters() {
     menu_type = "characters";
     selectRightMenuWithAnimation('rm_characters_block');
     setRightTabSelectedClass('rm_button_characters');
+    printCharacters(false); // Do a quick refresh of the characters list
 }
 
 function setExtensionPrompt(key, value, position, depth) {

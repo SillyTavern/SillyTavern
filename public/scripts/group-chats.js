@@ -7,8 +7,8 @@ import {
     createThumbnail,
     extractAllWords,
 } from './utils.js';
-import { RA_CountCharTokens, humanizedDateTime, dragElement } from "./RossAscends-mods.js";
-import { sortGroupMembers, loadMovingUIState } from './power-user.js';
+import { RA_CountCharTokens, humanizedDateTime, dragElement, favsToHotswap } from "./RossAscends-mods.js";
+import { loadMovingUIState, sortEntitiesList } from './power-user.js';
 
 import {
     chat,
@@ -87,7 +87,8 @@ let groups = [];
 let selected_group = null;
 let group_generation_id = null;
 let fav_grp_checked = false;
-let fav_filter_on = false;
+let openGroupId = null;
+let newGroupMembers = [];
 
 export const group_activation_strategy = {
     NATURAL: 0,
@@ -96,12 +97,7 @@ export const group_activation_strategy = {
 
 export const groupCandidatesFilter = new FilterHelper(debounce(printGroupCandidates, 100));
 const groupAutoModeInterval = setInterval(groupChatAutoModeWorker, 5000);
-const saveGroupDebounced = debounce(async (group) => await _save(group), 500);
-
-function printGroupCandidates(fullRefresh = false) {
-    toastr.info('Group candidates tags filter is temporarily unavailable.');
-    console.log('TODO: implement printGroupCandidates');
-}
+const saveGroupDebounced = debounce(async (group, reload) => await _save(group, reload), 500);
 
 async function _save(group, reload = true) {
     await fetch("/editgroup", {
@@ -232,7 +228,7 @@ async function saveGroupChat(groupId, shouldSaveGroup) {
     });
 
     if (shouldSaveGroup && response.ok) {
-        await editGroup(groupId);
+        await editGroup(groupId, false, false);
     }
 }
 
@@ -250,7 +246,7 @@ export async function renameGroupMember(oldAvatar, newAvatar, newName) {
 
             // Replace group member avatar id and save the changes
             group.members[memberIndex] = newAvatar;
-            await editGroup(group.id, true);
+            await editGroup(group.id, true, false);
             console.log(`Renamed character ${newName} in group: ${group.name}`)
 
             // Load all chats from this group
@@ -791,8 +787,6 @@ function activateNaturalOrder(members, input, lastMessage, allowSelfResponses, i
     return memberIds;
 }
 
-
-
 async function deleteGroup(id) {
     const response = await fetch("/deletegroup", {
         method: "POST",
@@ -831,7 +825,7 @@ export async function editGroup(id, immediately, reload = true) {
         return await _save(group, reload);
     }
 
-    saveGroupDebounced(group);
+    saveGroupDebounced(group, reload);
 }
 
 let groupAutoModeAbortController = null;
@@ -857,104 +851,222 @@ async function groupChatAutoModeWorker() {
 
 async function modifyGroupMember(chat_id, groupMember, isDelete) {
     const id = groupMember.data("id");
-
-    const template = groupMember.clone();
-    let _thisGroup = groups.find((x) => x.id == chat_id);
-    template.data("id", id);
+    const thisGroup = groups.find((x) => x.id == chat_id);
+    const membersArray = thisGroup?.members ?? newGroupMembers;
 
     if (isDelete) {
-        $("#rm_group_add_members").prepend(template);
-    } else {
-        $("#rm_group_members").prepend(template);
-    }
-
-    if (_thisGroup) {
-        if (isDelete) {
-            const index = _thisGroup.members.findIndex((x) => x === id);
-            if (index !== -1) {
-                _thisGroup.members.splice(index, 1);
-            }
-        } else {
-            _thisGroup.members.push(id);
-            template.css({ 'order': _thisGroup.members.length });
+        const index = membersArray.findIndex((x) => x === id);
+        if (index !== -1) {
+            membersArray.splice(membersArray.indexOf(id), 1);
         }
-        await editGroup(selected_group);
-        updateGroupAvatar(_thisGroup);
-    }
-    else {
-        template.css({ 'order': 'unset' });
+    } else {
+        membersArray.unshift(id);
     }
 
-    groupMember.remove();
-    const groupHasMembers = !!$("#rm_group_members").children().length;
+    if (openGroupId) {
+        await editGroup(openGroupId, false, false);
+        updateGroupAvatar(thisGroup);
+    }
+
+    printGroupCandidates();
+    printGroupMembers();
+
+    const groupHasMembers = getGroupCharacters({ doFilter: false, onlyMembers: true }).length > 0;
     $("#rm_group_submit").prop("disabled", !groupHasMembers);
 }
 
 async function reorderGroupMember(chat_id, groupMember, direction) {
     const id = groupMember.data("id");
     const group = groups.find((x) => x.id == chat_id);
+    const memberArray = group?.members ?? newGroupMembers;
+
+    const indexOf = memberArray.indexOf(id);
+    if (direction == 'down') {
+        const next = memberArray[indexOf + 1];
+        if (next) {
+            memberArray[indexOf + 1] = memberArray[indexOf];
+            memberArray[indexOf] = next;
+        }
+    }
+    if (direction == 'up') {
+        const prev = memberArray[indexOf - 1];
+        if (prev) {
+            memberArray[indexOf - 1] = memberArray[indexOf];
+            memberArray[indexOf] = prev;
+        }
+    }
+
+    printGroupMembers();
 
     // Existing groups need to modify members list
-    if (group && group.members.length > 1) {
-        const indexOf = group.members.indexOf(id);
-        if (direction == 'down') {
-            const next = group.members[indexOf + 1];
-            if (next) {
-                group.members[indexOf + 1] = group.members[indexOf];
-                group.members[indexOf] = next;
-            }
-        }
-        if (direction == 'up') {
-            const prev = group.members[indexOf - 1];
-            if (prev) {
-                group.members[indexOf - 1] = group.members[indexOf];
-                group.members[indexOf] = prev;
-            }
-        }
-
-        await editGroup(chat_id);
+    if (openGroupId) {
+        await editGroup(chat_id, false, false);
         updateGroupAvatar(group);
-        // stupid but lifts the manual reordering
-        select_group_chats(chat_id, true);
     }
-    // New groups just can't be DOM-ordered
-    else {
-        if (direction == 'down') {
-            groupMember.insertAfter(groupMember.next());
-        }
-        if (direction == 'up') {
-            groupMember.insertBefore(groupMember.prev());
-        }
+}
+
+async function onGroupActivationStrategyInput(e) {
+    if (openGroupId) {
+        let _thisGroup = groups.find((x) => x.id == openGroupId);
+        _thisGroup.activation_strategy = Number(e.target.value);
+        await editGroup(openGroupId, false, false);
+    }
+}
+
+async function onGroupNameInput() {
+    if (openGroupId) {
+        let _thisGroup = groups.find((x) => x.id == openGroupId);
+        _thisGroup.name = $(this).val();
+        $("#rm_button_selected_ch").children("h2").text(_thisGroup.name);
+        await editGroup(openGroupId);
+    }
+}
+
+function isGroupMember(group, avatarId) {
+    if (group && Array.isArray(group.members)) {
+        return group.members.includes(avatarId);
+    } else {
+        return newGroupMembers.includes(avatarId);
+    }
+}
+
+function getGroupCharacters({ doFilter, onlyMembers } = {}) {
+    function sortMembersFn(a, b) {
+        const membersArray = thisGroup?.members ?? newGroupMembers;
+        const aIndex = membersArray.indexOf(a.item.avatar);
+        const bIndex = membersArray.indexOf(b.item.avatar);
+        return aIndex - bIndex;
+    }
+
+    const thisGroup = openGroupId && groups.find((x) => x.id == openGroupId);
+    let candidates = characters.map((x, index) => ({ item: x, id: index, type: 'character' }));
+    candidates = candidates.filter((x) => isGroupMember(thisGroup, x.item.avatar) == onlyMembers);
+
+    if (onlyMembers) {
+        candidates.sort(sortMembersFn);
+    } else {
+        sortEntitiesList(candidates);
+    }
+
+    if (doFilter) {
+        candidates = groupCandidatesFilter.applyFilters(candidates);
+    }
+
+    return candidates;
+}
+
+function printGroupCandidates() {
+    $("#rm_group_add_members_pagination").pagination({
+        dataSource: getGroupCharacters({ doFilter: true, onlyMembers: false }),
+        pageSize: 5,
+        pageRange: 1,
+        position: 'top',
+        showPageNumbers: false,
+        showSizeChanger: false,
+        prevText: '<',
+        nextText: '>',
+        showNavigator: true,
+        callback: function (data) {
+            $("#rm_group_add_members").empty();
+            for (const i of data) {
+                $("#rm_group_add_members").append(getGroupCharacterBlock(i.item));
+            }
+        },
+    });
+}
+
+function printGroupMembers() {
+    $("#rm_group_members_pagination").pagination({
+        dataSource: getGroupCharacters({ doFilter: false, onlyMembers: true }),
+        pageSize: 5,
+        pageRange: 1,
+        position: 'top',
+        showPageNumbers: false,
+        showSizeChanger: false,
+        prevText: '<',
+        nextText: '>',
+        showNavigator: true,
+        callback: function (data) {
+            $("#rm_group_members").empty();
+            for (const i of data) {
+                $("#rm_group_members").append(getGroupCharacterBlock(i.item));
+            }
+        },
+    });
+}
+
+function getGroupCharacterBlock(character) {
+    const avatar = getThumbnailUrl('avatar', character.avatar);
+    const template = $("#group_member_template .group_member").clone();
+    const isFav = character.fav || character.fav == 'true';
+    template.data("id", character.avatar);
+    template.find(".avatar img").attr({ "src": avatar, "title": character.avatar });
+    template.find(".ch_name").text(character.name);
+    template.attr("chid", characters.indexOf(character));
+    template.find('.ch_fav').val(isFav);
+    template.toggleClass('is_fav', isFav);
+    template.toggleClass('disabled', isGroupMemberDisabled(character.avatar));
+
+    // Display inline tags
+    const tags = getTagsList(character.avatar);
+    const tagsElement = template.find('.tags');
+    tags.forEach(tag => appendTagToList(tagsElement, tag, {}));
+
+    if (!openGroupId) {
+        template.find('[data-action="speak"]').hide();
+        template.find('[data-action="enable"]').hide();
+        template.find('[data-action="disable"]').hide();
+    }
+
+    return template;
+}
+
+function isGroupMemberDisabled(avatarId) {
+    const thisGroup = openGroupId && groups.find((x) => x.id == openGroupId);
+    return Boolean(thisGroup && thisGroup.disabled_members.includes(avatarId));
+}
+
+function onDeleteGroupClick() {
+    if (is_group_generating) {
+        toastr.warning('Not so fast! Wait for the characters to stop typing before deleting the group.');
+        return;
+    }
+
+    $("#dialogue_popup").data("group_id", openGroupId);
+    callPopup('<h3>Delete the group?</h3><p>This will also delete all your chats with that group. If you want to delete a single conversation, select a "View past chats" option in the lower left menu.</p>', "del_group");
+}
+
+async function onFavoriteGroupClick() {
+    updateFavButtonState(!fav_grp_checked);
+    if (openGroupId) {
+        let _thisGroup = groups.find((x) => x.id == openGroupId);
+        _thisGroup.fav = fav_grp_checked;
+        await editGroup(openGroupId, false, false);
+        favsToHotswap();
+    }
+}
+
+async function onGroupSelfResponsesClick() {
+    if (openGroupId) {
+        let _thisGroup = groups.find((x) => x.id == openGroupId);
+        const value = $(this).prop("checked");
+        _thisGroup.allow_self_responses = value;
+        await editGroup(openGroupId, false, false);
     }
 }
 
 function select_group_chats(groupId, skipAnimation) {
-    const group = groupId && groups.find((x) => x.id == groupId);
+    openGroupId = groupId;
+    newGroupMembers = [];
+    const group = openGroupId && groups.find((x) => x.id == openGroupId);
     const groupName = group?.name ?? "";
+    const replyStrategy = Number(group?.activation_strategy ?? group_activation_strategy.NATURAL);
+
     setMenuType(!!group ? 'group_edit' : 'group_create');
     $("#group_avatar_preview").empty().append(getGroupAvatar(group));
     $("#rm_group_restore_avatar").toggle(!!group && isDataURL(group.avatar_url));
     $("#rm_group_chat_name").val(groupName);
-    $("#rm_group_chat_name").off();
-    $("#rm_group_chat_name").on("input", async function () {
-        if (groupId) {
-            let _thisGroup = groups.find((x) => x.id == groupId);
-            _thisGroup.name = $(this).val();
-            $("#rm_button_selected_ch").children("h2").text(_thisGroup.name);
-            await editGroup(groupId);
-        }
-    });
     $("#rm_group_filter").val("").trigger("input");
-
-    $('input[name="rm_group_activation_strategy"]').off();
-    $('input[name="rm_group_activation_strategy"]').on("input", async function (e) {
-        if (groupId) {
-            let _thisGroup = groups.find((x) => x.id == groupId);
-            _thisGroup.activation_strategy = Number(e.target.value);
-            await editGroup(groupId);
-        }
-    });
-    const replyStrategy = Number(group?.activation_strategy ?? group_activation_strategy.NATURAL);
     $(`input[name="rm_group_activation_strategy"][value="${replyStrategy}"]`).prop('checked', true);
 
     if (!skipAnimation) {
@@ -962,53 +1074,15 @@ function select_group_chats(groupId, skipAnimation) {
     }
 
     // render characters list
-    $("#rm_group_add_members").empty();
-    $("#rm_group_members").empty();
-    for (let character of characters) {
-        const avatar =
-            character.avatar != "none"
-                ? getThumbnailUrl('avatar', character.avatar)
-                : default_avatar;
-        const template = $("#group_member_template .group_member").clone();
-        const isFav = character.fav || character.fav == 'true';
-        template.data("id", character.avatar);
-        template.find(".avatar img").attr("src", avatar);
-        template.find(".avatar img").attr("title", character.avatar);
-        template.find(".ch_name").text(character.name);
-        template.attr("chid", characters.indexOf(character));
-        template.find('.ch_fav').val(isFav);
-        template.toggleClass('is_fav', isFav);
-
-        // Display inline tags
-        const tags = getTagsList(character.avatar);
-        const tagsElement = template.find('.tags');
-        tags.forEach(tag => appendTagToList(tagsElement, tag, {}));
-
-        if (!group) {
-            template.find('[data-action="speak"]').hide();
-        }
-
-        if (
-            group &&
-            Array.isArray(group.members) &&
-            group.members.includes(character.avatar)
-        ) {
-            template.css({ 'order': group.members.indexOf(character.avatar) });
-            template.toggleClass('disabled', group.disabled_members.includes(character.avatar));
-            $("#rm_group_members").append(template);
-        } else {
-            $("#rm_group_add_members").append(template);
-        }
-    }
-
-    sortGroupMembers("#rm_group_add_members .group_member");
+    printGroupCandidates();
+    printGroupMembers();
 
     const groupHasMembers = !!$("#rm_group_members").children().length;
     $("#rm_group_submit").prop("disabled", !groupHasMembers);
     $("#rm_group_allow_self_responses").prop("checked", group && group.allow_self_responses);
 
     // bottom buttons
-    if (groupId) {
+    if (openGroupId) {
         $("#rm_group_submit").hide();
         $("#rm_group_delete").show();
         $("#rm_group_scenario").show();
@@ -1021,38 +1095,7 @@ function select_group_chats(groupId, skipAnimation) {
         $("#rm_group_scenario").hide();
     }
 
-    $("#rm_group_delete").off();
-    $("#rm_group_delete").on("click", function () {
-        if (is_group_generating) {
-            toastr.warning('Not so fast! Wait for the characters to stop typing before deleting the group.');
-            return;
-        }
-
-        $("#dialogue_popup").data("group_id", groupId);
-        callPopup('<h3>Delete the group?</h3><p>This will also delete all your chats with that group. If you want to delete a single conversation, select a "View past chats" option in the lower left menu.</p>', "del_group");
-    });
-
     updateFavButtonState(group?.fav ?? false);
-
-    $("#group_favorite_button").off('click');
-    $("#group_favorite_button").on('click', async function () {
-        updateFavButtonState(!fav_grp_checked);
-        if (group) {
-            let _thisGroup = groups.find((x) => x.id == groupId);
-            _thisGroup.fav = fav_grp_checked;
-            await editGroup(groupId);
-        }
-    });
-
-    $("#rm_group_allow_self_responses").off();
-    $("#rm_group_allow_self_responses").on("input", async function () {
-        if (group) {
-            let _thisGroup = groups.find((x) => x.id == groupId);
-            const value = $(this).prop("checked");
-            _thisGroup.allow_self_responses = value;
-            await editGroup(groupId);
-        }
-    });
 
     // top bar
     if (group) {
@@ -1064,118 +1107,112 @@ function select_group_chats(groupId, skipAnimation) {
         $("#rm_group_automode_label").hide();
     }
 
-    $("#group_avatar_button").off('input').on("input", uploadGroupAvatar);
-    $("#rm_group_restore_avatar").off('click').on("click", restoreGroupAvatar);
+    eventSource.emit('groupSelected', {detail: {id: openGroupId, group: group}});
+}
 
+async function uploadGroupAvatar(event) {
+    const file = event.target.files[0];
 
-    async function uploadGroupAvatar(event) {
-        const file = event.target.files[0];
-
-        if (!file) {
-            return;
-        }
-
-        const e = await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = resolve;
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-        });
-
-        $('#dialogue_popup').addClass('large_dialogue_popup wide_dialogue_popup');
-
-        const croppedImage = await callPopup(getCropPopup(e.target.result), 'avatarToCrop');
-
-        if (!croppedImage) {
-            return;
-        }
-
-        const thumbnail = await createThumbnail(croppedImage, 96, 144);
-
-        if (!groupId) {
-            $('#group_avatar_preview img').attr('src', thumbnail);
-            $('#rm_group_restore_avatar').show();
-            return;
-        }
-
-        let _thisGroup = groups.find((x) => x.id == groupId);
-        _thisGroup.avatar_url = thumbnail;
-        $("#group_avatar_preview").empty().append(getGroupAvatar(_thisGroup));
-        $("#rm_group_restore_avatar").show();
-        await editGroup(groupId, true, true);
+    if (!file) {
+        return;
     }
 
-    async function restoreGroupAvatar() {
-        const confirm = await callPopup('<h3>Are you sure you want to restore the group avatar?</h3> Your custom image will be deleted, and a collage will be used instead.', 'confirm');
-
-        if (!confirm) {
-            return;
-        }
-
-        if (!groupId) {
-            $("#group_avatar_preview img").attr("src", default_avatar);
-            $("#rm_group_restore_avatar").hide();
-            return;
-        }
-
-        let _thisGroup = groups.find((x) => x.id == groupId);
-        _thisGroup.avatar_url = '';
-        $("#group_avatar_preview").empty().append(getGroupAvatar(_thisGroup));
-        $("#rm_group_restore_avatar").hide();
-        await editGroup(groupId, true, true);
-    }
-
-    $(document).off("click", ".group_member .right_menu_button");
-    $(document).on("click", ".group_member .right_menu_button", async function (event) {
-        event.stopPropagation();
-        const action = $(this).data('action');
-        const member = $(this).closest('.group_member');
-
-        if (action === 'remove') {
-            await modifyGroupMember(groupId, member, true);
-        }
-
-        if (action === 'add') {
-            await modifyGroupMember(groupId, member, false);
-        }
-
-        if (action === 'enable') {
-            member.removeClass('disabled');
-            const _thisGroup = groups.find(x => x.id === groupId);
-            const index = _thisGroup.disabled_members.indexOf(member.data('id'));
-            if (index !== -1) {
-                _thisGroup.disabled_members.splice(index, 1);
-            }
-            await editGroup(groupId);
-        }
-
-        if (action === 'disable') {
-            member.addClass('disabled');
-            const _thisGroup = groups.find(x => x.id === groupId);
-            _thisGroup.disabled_members.push(member.data('id'));
-            await editGroup(groupId);
-        }
-
-        if (action === 'up' || action === 'down') {
-            await reorderGroupMember(groupId, member, action);
-        }
-
-        if (action === 'view') {
-            openCharacterDefinition(member);
-        }
-
-        if (action === 'speak') {
-            const chid = Number(member.attr('chid'));
-            if (Number.isInteger(chid)) {
-                Generate('normal', { force_chid: chid });
-            }
-        }
-
-        sortGroupMembers("#rm_group_add_members .group_member");
-        await eventSource.emit(event_types.GROUP_UPDATED);
+    const e = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = resolve;
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
     });
 
-    eventSource.emit('groupSelected', {detail: {id: groupId, group: group}});
+    $('#dialogue_popup').addClass('large_dialogue_popup wide_dialogue_popup');
+
+    const croppedImage = await callPopup(getCropPopup(e.target.result), 'avatarToCrop');
+
+    if (!croppedImage) {
+        return;
+    }
+
+    const thumbnail = await createThumbnail(croppedImage, 96, 144);
+
+    if (!openGroupId) {
+        $('#group_avatar_preview img').attr('src', thumbnail);
+        $('#rm_group_restore_avatar').show();
+        return;
+    }
+
+    let _thisGroup = groups.find((x) => x.id == openGroupId);
+    _thisGroup.avatar_url = thumbnail;
+    $("#group_avatar_preview").empty().append(getGroupAvatar(_thisGroup));
+    $("#rm_group_restore_avatar").show();
+    await editGroup(openGroupId, true, true);
+}
+
+async function restoreGroupAvatar() {
+    const confirm = await callPopup('<h3>Are you sure you want to restore the group avatar?</h3> Your custom image will be deleted, and a collage will be used instead.', 'confirm');
+
+    if (!confirm) {
+        return;
+    }
+
+    if (!openGroupId) {
+        $("#group_avatar_preview img").attr("src", default_avatar);
+        $("#rm_group_restore_avatar").hide();
+        return;
+    }
+
+    let _thisGroup = groups.find((x) => x.id == openGroupId);
+    _thisGroup.avatar_url = '';
+    $("#group_avatar_preview").empty().append(getGroupAvatar(_thisGroup));
+    $("#rm_group_restore_avatar").hide();
+    await editGroup(openGroupId, true, true);
+}
+
+async function onGroupActionClick(event) {
+    event.stopPropagation();
+    const action = $(this).data('action');
+    const member = $(this).closest('.group_member');
+
+    if (action === 'remove') {
+        await modifyGroupMember(openGroupId, member, true);
+    }
+
+    if (action === 'add') {
+        await modifyGroupMember(openGroupId, member, false);
+    }
+
+    if (action === 'enable') {
+        member.removeClass('disabled');
+        const _thisGroup = groups.find(x => x.id === openGroupId);
+        const index = _thisGroup.disabled_members.indexOf(member.data('id'));
+        if (index !== -1) {
+            _thisGroup.disabled_members.splice(index, 1);
+        }
+        await editGroup(openGroupId, false, false);
+    }
+
+    if (action === 'disable') {
+        member.addClass('disabled');
+        const _thisGroup = groups.find(x => x.id === openGroupId);
+        _thisGroup.disabled_members.push(member.data('id'));
+        await editGroup(openGroupId, false, false);
+    }
+
+    if (action === 'up' || action === 'down') {
+        await reorderGroupMember(openGroupId, member, action);
+    }
+
+    if (action === 'view') {
+        openCharacterDefinition(member);
+    }
+
+    if (action === 'speak') {
+        const chid = Number(member.attr('chid'));
+        if (Number.isInteger(chid)) {
+            Generate('normal', { force_chid: chid });
+        }
+    }
+
+    await eventSource.emit(event_types.GROUP_UPDATED);
 }
 
 function updateFavButtonState(state) {
@@ -1243,10 +1280,7 @@ async function createGroup() {
     let name = $("#rm_group_chat_name").val();
     let allow_self_responses = !!$("#rm_group_allow_self_responses").prop("checked");
     let activation_strategy = $('input[name="rm_group_activation_strategy"]:checked').val() ?? group_activation_strategy.NATURAL;
-    const members = $("#rm_group_members .group_member")
-        .map((_, x) => $(x).data("id"))
-        .toArray();
-
+    const members = newGroupMembers;
     const memberNames = characters.filter(x => members.includes(x.avatar)).map(x => x.name).join(", ");
 
     if (!name) {
@@ -1276,6 +1310,7 @@ async function createGroup() {
     });
 
     if (createGroupResponse.ok) {
+        newGroupMembers = [];
         const data = await createGroupResponse.json();
         createTagMapFromList("#groupTagList", data.id);
         await getCharacters();
@@ -1359,7 +1394,7 @@ export async function openGroupChat(groupId, chatId) {
     group['date_last_chat'] = Date.now();
     updateChatMetadata(group.chat_metadata, true);
 
-    await editGroup(groupId, true);
+    await editGroup(groupId, true, false);
     await getGroupChat(groupId);
 }
 
@@ -1452,7 +1487,7 @@ export async function saveGroupBookmarkChat(groupId, name, metadata, mesId) {
         ? chat.slice(0, parseInt(mesId) + 1)
         : chat;
 
-    await editGroup(groupId, true);
+    await editGroup(groupId, true, false);
 
     await fetch("/savegroupchat", {
         method: "POST",
@@ -1520,4 +1555,12 @@ jQuery(() => {
     });
     $("#send_textarea").on("keyup", onSendTextareaInput);
     $("#groupCurrentMemberPopoutButton").on('click', doCurMemberListPopout);
+    $("#rm_group_chat_name").on("input", onGroupNameInput)
+    $("#rm_group_delete").off().on("click", onDeleteGroupClick);
+    $("#group_favorite_button").on('click', onFavoriteGroupClick);
+    $("#rm_group_allow_self_responses").on("input", onGroupSelfResponsesClick);
+    $('input[name="rm_group_activation_strategy"]').on("input", onGroupActivationStrategyInput);
+    $("#group_avatar_button").on("input", uploadGroupAvatar);
+    $("#rm_group_restore_avatar").on("click", restoreGroupAvatar);
+    $(document).on("click", ".group_member .right_menu_button", onGroupActionClick);
 });
