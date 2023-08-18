@@ -443,7 +443,6 @@ export function getNovelGenerationData(finalPrompt, this_settings, this_amount_g
         "return_full_text": false,
         "prefix": prefix,
         "order": nai_settings.order || this_settings.order || default_order,
-        "streaming": nai_settings.streaming_novel,
     };
 }
 
@@ -585,6 +584,8 @@ export function adjustNovelInstructionPrompt(prompt) {
 }
 
 export async function generateNovelWithStreaming(generate_data, signal) {
+    generate_data.streaming = nai_settings.streaming_novel;
+
     const response = await fetch('/generate_novelai', {
         headers: getRequestHeaders(),
         body: JSON.stringify(generate_data),
