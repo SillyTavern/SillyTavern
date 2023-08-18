@@ -1070,8 +1070,8 @@ export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvata
     const separator = power_user.instruct.wrap ? '\n' : '';
     const separatorSequence = power_user.instruct.separator_sequence && !isUser
         ? power_user.instruct.separator_sequence
-        : (power_user.instruct.wrap ? '\n' : '');
-    const textArray = includeNames ? [sequence, `${name}: ${mes}`, separatorSequence] : [sequence, mes, separatorSequence];
+        : separator;
+    const textArray = includeNames ? [sequence, `${name}: ${mes}` + separatorSequence] : [sequence, mes + separatorSequence];
     const text = textArray.filter(x => x).join(separator);
     return text;
 }
@@ -1097,7 +1097,7 @@ export function formatInstructModePrompt(name, isImpersonate, promptBias, name1,
     }
 
     const separator = power_user.instruct.wrap ? '\n' : '';
-    let text = includeNames ? (separator + sequence + separator + `${name}:`) : (separator + sequence);
+    let text = includeNames ? (separator + sequence + separator + `${name}: `) : (separator + sequence);
 
     if (!isImpersonate && promptBias) {
         text += (includeNames ? promptBias : (separator + promptBias));
