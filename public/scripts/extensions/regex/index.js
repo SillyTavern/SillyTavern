@@ -1,6 +1,6 @@
-import { callPopup, eventSource, event_types, getCurrentChatId, reloadCurrentChat, saveSettingsDebounced } from "../../../script.js";
+import { callPopup, getCurrentChatId, reloadCurrentChat, saveSettingsDebounced } from "../../../script.js";
 import { extension_settings } from "../../extensions.js";
-import { uuidv4, waitUntilCondition } from "../../utils.js";
+import { getSortableDelay, uuidv4 } from "../../utils.js";
 import { regex_placement } from "./engine.js";
 
 async function saveRegexScript(regexScript, existingScriptIndex) {
@@ -236,6 +236,7 @@ jQuery(async () => {
     });
 
     $('#saved_regex_scripts').sortable({
+        delay: getSortableDelay(),
         stop: function () {
             let newScripts = [];
             $('#saved_regex_scripts').children().each(function () {

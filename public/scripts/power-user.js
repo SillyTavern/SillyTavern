@@ -47,9 +47,9 @@ export {
 export const MAX_CONTEXT_DEFAULT = 4096;
 const MAX_CONTEXT_UNLOCKED = 65536;
 
-const defaultStoryString = `{{#if description}}{{{description}}}{{/if}}
-{{#if personality}}{{{personality}}}{{/if}}
-{{#if scenario}}Scenario: {{{scenario}}}{{/if}}`;
+const defaultStoryString = `{{#if description}}{{description}}{{/if}}
+{{#if personality}}{{personality}}{{/if}}
+{{#if scenario}}Scenario: {{scenario}}{{/if}}`;
 const defaultExampleSeparator = '***';
 const defaultChatStart = '***';
 
@@ -1045,7 +1045,7 @@ export function fuzzySearchGroups(searchValue) {
 
 export function renderStoryString(params) {
     try {
-        const compiledTemplate = Handlebars.compile(power_user.context.story_string);
+        const compiledTemplate = Handlebars.compile(power_user.context.story_string, { noEscape: true });
         let output = compiledTemplate(params);
         output = substituteParams(output, params.user, params.char);
         output = `${output.trim()}\n`; // add a newline to the end

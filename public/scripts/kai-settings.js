@@ -7,6 +7,7 @@ import {
 import {
     power_user,
 } from "./power-user.js";
+import { getSortableDelay } from "./utils.js";
 
 export {
     kai_settings,
@@ -243,7 +244,7 @@ function sortItemsByOrder(orderArray) {
     }
 }
 
-$(document).ready(function () {
+jQuery(function () {
     sliders.forEach(slider => {
         $(document).on("input", slider.sliderId, function () {
             const value = $(this).val();
@@ -267,6 +268,7 @@ $(document).ready(function () {
     });
 
     $('#kobold_order').sortable({
+        delay: getSortableDelay(),
         stop: function () {
             const order = [];
             $('#kobold_order').children().each(function () {
