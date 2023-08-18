@@ -3649,7 +3649,8 @@ const setupTasks = async function () {
     console.log('Launching...');
 
     if (autorun) open(autorunUrl.toString());
-    console.log('SillyTavern is listening on: ' + tavernUrl);
+    
+    console.log('\x1b[32mSillyTavern is listening on: ' + tavernUrl + '\x1b[0m');
 
     if (listen) {
         console.log('\n0.0.0.0 means SillyTavern is listening on all network interfaces (Wi-Fi, LAN, localhost). If you want to limit it only to internal localhost (127.0.0.1), change the setting in config.conf to “listen=false”\n');
