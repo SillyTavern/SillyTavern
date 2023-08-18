@@ -5,6 +5,7 @@
     "stop_sequence": "",
     "input_sequence": "",
     "output_sequence": "### Response:",
+    "last_output_sequence": "",
     "separator_sequence": "</s>",
     "wrap": true
 }
