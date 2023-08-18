@@ -181,7 +181,7 @@ export async function getGroupChat(groupId) {
         updateChatMetadata(metadata, true);
     }
 
-    //await saveGroupChat(groupId, true); not sure if needed
+    await saveGroupChat(groupId, false);
     eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
 }
 
@@ -1169,7 +1169,6 @@ function select_group_chats(groupId, skipAnimation) {
         }
         await eventSource.emit(event_types.GROUP_UPDATED);
     });
-    showPaginateGroup();
     eventSource.emit('groupSelected', {detail: {id: groupId, group: group}});
 }
 
@@ -1197,6 +1196,7 @@ async function selectGroup() {
         }
 
         select_group_chats(groupId);
+        showPaginateGroup();
     }
 }
 
@@ -1274,7 +1274,7 @@ async function createGroup() {
     if (createGroupResponse.ok) {
         const data = await createGroupResponse.json();
         createTagMapFromList("#groupTagList", data.id);
-        await getCharacters();
+        //await getCharacters();
         select_rm_info('group_create', data.id);
     }
 }
