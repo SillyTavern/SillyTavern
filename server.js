@@ -69,7 +69,6 @@ app.use(responseTime());
 
 const fs = require('fs');
 const writeFileAtomicSync = require('write-file-atomic').sync;
-const writeFileAtomic = require('write-file-atomic');
 const readline = require('readline');
 const open = require('open');
 
@@ -1430,18 +1429,16 @@ app.post('/deleteuseravatar', jsonParser, function (request, response) {
 });
 
 app.post("/setbackground", jsonParser, function (request, response) {
-    var bg = "#bg1 {background-image: url('../backgrounds/" + request.body.bg + "');}";
-    writeFileAtomic('public/css/bg_load.css', bg, 'utf8', function (err) {
-        if (err) {
-            response.send(err);
-            return console.log(err);
-        } else {
-            //response.redirect("/");
-            response.send({ result: 'ok' });
-        }
-    });
-
+    try {
+        const bg = `#bg1 {background-image: url('../backgrounds/${request.body.bg}');}`;
+        writeFileAtomicSync('public/css/bg_load.css', bg, 'utf8');
+        response.send({ result: 'ok' });
+    } catch (err) {
+        console.log(err);
+        response.send(err);
+    }
 });
+
 app.post("/delbackground", jsonParser, function (request, response) {
     if (!request.body) return response.sendStatus(400);
 
@@ -1532,14 +1529,13 @@ app.post("/downloadbackground", urlencodedParser, function (request, response) {
 });
 
 app.post("/savesettings", jsonParser, function (request, response) {
-    writeFileAtomic('public/settings.json', JSON.stringify(request.body, null, 4), 'utf8', function (err) {
-        if (err) {
-            response.send(err);
-            console.log(err);
-        } else {
-            response.send({ result: "ok" });
-        }
-    });
+    try {
+        writeFileAtomicSync('public/settings.json', JSON.stringify(request.body, null, 4), 'utf8');
+        response.send({ result: "ok" });
+    } catch (err) {
+        console.log(err);
+        response.send(err);
+    }
 });
 
 function getCharaCardV2(jsonObject) {
@@ -2403,13 +2399,17 @@ app.post("/importchat", urlencodedParser, function (request, response) {
                     });
 
                     const errors = [];
-                    newChats.forEach(chat => writeFileAtomic(
-                        `${chatsPath + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()} imported.jsonl`,
-                        chat.map(tryParse).filter(x => x).join('\n'),
-                        'utf8',
-                        (err) => err ?? errors.push(err)
-                    )
-                    );
+
+                    for (const chat of newChats) {
+                        const filePath = `${chatsPath + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()} imported.jsonl`;
+                        const fileContent = chat.map(tryParse).filter(x => x).join('\n');
+
+                        try {
+                            writeFileAtomicSync(filePath, fileContent, 'utf8');
+                        } catch (err) {
+                            errors.push(err);
+                        }
+                    }
 
                     if (0 < errors.length) {
                         response.send('Errors occurred while writing character files. Errors: ' + JSON.stringify(errors));
