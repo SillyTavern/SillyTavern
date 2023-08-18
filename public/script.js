@@ -1832,9 +1832,13 @@ function getStoppingStrings(isImpersonate, addSpace) {
     }
 
     if (power_user.instruct.enabled) {
-        addInstructSequence(power_user.instruct.input_sequence);
-        addInstructSequence(power_user.instruct.output_sequence);
-        addInstructSequence(power_user.instruct.last_output_sequence);
+        const input_sequence = power_user.instruct.input_sequence;
+        const output_sequence = power_user.instruct.output_sequence;
+        const last_output_sequence = power_user.instruct.last_output_sequence;
+
+        const combined_sequence = `${input_sequence}\n${output_sequence}\n${last_output_sequence}`;
+
+        combined_sequence.split('\n').filter((line, index, self) => self.indexOf(line) === index).forEach(addInstructSequence);
     }
 
     if (power_user.custom_stopping_strings) {
