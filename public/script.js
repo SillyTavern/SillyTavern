@@ -991,7 +991,7 @@ async function printCharacters() {
             template.attr({'chid': chid, 'id': `CharID${chid}`});
             template.find('img').attr('src', this_avatar);
             template.find('.avatar').attr('title', item.avatar);
-            template.find('.ch_name').text(item.name).css('color', item.fav ? 'gold' : 'white');
+            template.find('.ch_name').text(item.name)
             if (power_user.show_card_avatar_urls) {
                 template.find('.ch_avatar_url').text(item.avatar);
             }

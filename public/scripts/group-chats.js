@@ -336,7 +336,7 @@ function printGroups(group) {
     const template = $("#group_list_template .group_select").clone();
     template.data("id", group.id);
     template.attr("grid", group.id);
-    template.find(".ch_name").html(group.name).css('color', group.fav ? 'gold' : 'white');
+    template.find(".ch_name").html(group.name)
     template.find('.group_fav_icon').css("display", 'none');
     template.addClass(group.fav ? 'is_fav' : '');
     template.find(".ch_fav").val(group.fav);
