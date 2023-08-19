@@ -174,9 +174,9 @@ async function onDeleteClick() {
     saveSettingsDebounced();
 }
 
-async function onClickUpload() {
+async function onChangeUploadFiles() {
     const url = new URL(getApiUrl());
-    const inputFiles = $("#rvc_model_upload_file").get(0).files;
+    const inputFiles = $("#rvc_model_upload_files").get(0).files;
     let formData = new FormData();
 
     for (const file of inputFiles)
@@ -195,7 +195,7 @@ async function onClickUpload() {
         throw new Error(`HTTP ${apiResult.status}: ${await apiResult.text()}`);
     }
 
-    alert('The file has been uploaded successfully.');
+    alert('The files have been uploaded successfully.');
 }
 
 $(document).ready(function () {
@@ -208,6 +208,7 @@ $(document).ready(function () {
                     <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                 </div>
                 <div class="inline-drawer-content">
+                    <h4 class="center">Characters Voice Mapping</h4>
                     <div>
                         <label class="checkbox_label" for="rvc_enabled">
                             <input type="checkbox" id="rvc_enabled" name="rvc_enabled">
@@ -218,54 +219,103 @@ $(document).ready(function () {
                             placeholder="Voice map will appear here for debug purpose"></textarea>
                     </div>
                     <div>
-                        <label for="rvc_character_select">Character:</label>
-                        <select id="rvc_character_select">
-                            <!-- Populated by JS -->
-                        </select>
-                        <label for="rvc_model_select">Voice:</label>
-                        <select id="rvc_model_select">
-                            <!-- Populated by JS -->
-                        </select>
-                        <div>
-                            <label for="rvc_model_upload_file">Select models to upload (zip files)</label>
-                            <input
-                                type="file"
-                                id="rvc_model_upload_file"
-                                accept=".zip,.rar,.7zip,.7z" multiple />
-                            <button id="rvc_model_upload_button"> Upload </button>
-                            <button id="rvc_model_refresh_button"> Refresh Voices </button>
+                        <div class="background_controls">
+                            <label for="rvc_character_select">Character:</label>
+                            <select id="rvc_character_select">
+                                <!-- Populated by JS -->
+                            </select>
+                            <div id="rvc_delete" class="menu_button">
+                                <i class="fa-solid fa-times"></i>
+                                Remove
+                            </div>
                         </div>
-                        <span>Select Pitch Extraction</span> </br>
-                        <select id="rvc_pitch_extraction">
-                            <option value="dio">dio</option>
-                            <option value="pm">pm</option>
-                            <option value="harvest">harvest</option>
-                            <option value="torchcrepe">torchcrepe</option>
-                            <option value="rmvpe">rmvpe</option>
-                            <option value="">None</option>
-                        </select>
-                        <label for="rvc_index_rate">
-                            Index rate for feature retrieval (<span id="rvc_index_rate_value"></span>)
-                        </label>
-                        <input id="rvc_index_rate" type="range" min="0" max="1" step="0.01" value="0.5" />
-
-                        <label for="rvc_filter_radius">Filter radius (<span id="rvc_filter_radius_value"></span>)</label>
-                        <input id="rvc_filter_radius" type="range" min="0" max="7" step="1" value="3" />
-
-                        <label for="rvc_pitch_offset">Pitch offset (<span id="rvc_pitch_offset_value"></span>)</label>
-                        <input id="rvc_pitch_offset" type="range" min="-100" max="100" step="1" value="0" />
-
-                        <label for="rvc_rms_mix_rate">Mix rate (<span id="rvc_rms_mix_rate_value"></span>)</label>
-                        <input id="rvc_rms_mix_rate" type="range" min="0" max="1" step="0.01" value="1" />
-
-                        <label for="rvc_protect">Protect amount (<span id="rvc_protect_value"></span>)</label>
-                        <input id="rvc_protect" type="range" min="0" max="1" step="0.01" value="0.33" />
-
+                        <div class="background_controls">
+                            <label for="rvc_model_select">Voice:</label>
+                            <select id="rvc_model_select">
+                                <!-- Populated by JS -->
+                            </select>
+                            <div id="rvc_model_refresh_button" class="menu_button">
+                                <i class="fa-solid fa-refresh"></i>
+                                <!-- Refresh -->
+                            </div>
+                            <div id="rvc_model_upload_select_button" class="menu_button">
+                                    <i class="fa-solid fa-upload"></i>
+                                    Upload
+                                </div>
+                                <input
+                                    type="file"
+                                    id="rvc_model_upload_files"
+                                    accept=".zip,.rar,.7zip,.7z" multiple />
+                            </div>
+                        </div>
+                        <div>
+                            <small>
+                                Upload one archive per model. With .pth and .index (optional) inside.<br/>
+                                Supported format: .zip .rar .7zip .7z
+                            </small>
+                        </div>
+                        <div>
+                            <h4>Model Settings</h4>
+                        </div>
+                        <div>
+                            <label for="rvc_pitch_extraction">
+                                Pitch Extraction
+                            </label>
+                            <select id="rvc_pitch_extraction">
+                                <option value="dio">dio</option>
+                                <option value="pm">pm</option>
+                                <option value="harvest">harvest</option>
+                                <option value="torchcrepe">torchcrepe</option>
+                                <option value="rmvpe">rmvpe</option>
+                                <option value="">None</option>
+                            </select>
+                            <small>
+                                Tips: dio and pm faster, harvest slower but good.<br/>
+                                Torchcrepe and rmvpe are good but uses GPU.
+                            </small>
+                        </div>
+                        <div>
+                            <label for="rvc_index_rate">
+                                Search feature ratio (<span id="rvc_index_rate_value"></span>)
+                            </label>
+                            <input id="rvc_index_rate" type="range" min="0" max="1" step="0.01" value="0.5" />
+                            <small>
+                                Controls accent strength, too high may produce artifact.
+                            </small>
+                        </div>
+                        <div>
+                            <label for="rvc_filter_radius">Filter radius (<span id="rvc_filter_radius_value"></span>)</label>
+                            <input id="rvc_filter_radius" type="range" min="0" max="7" step="1" value="3" />
+                            <small>
+                                Higher can reduce breathiness but may increase run time.
+                            </small>
+                        </div>
+                        <div>
+                            <label for="rvc_pitch_offset">Pitch offset (<span id="rvc_pitch_offset_value"></span>)</label>
+                            <input id="rvc_pitch_offset" type="range" min="-20" max="20" step="1" value="0" />
+                            <small>
+                                Recommended +12 key for male to female conversion and -12 key for female to male conversion.
+                            </small>
+                        </div>
+                        <div>
+                            <label for="rvc_rms_mix_rate">Mix rate (<span id="rvc_rms_mix_rate_value"></span>)</label>
+                            <input id="rvc_rms_mix_rate" type="range" min="0" max="1" step="0.01" value="1" />
+                            <small>
+                            Closer to 0 is closer to TTS and 1 is closer to trained voice.
+                            Can help mask noise and sound more natural when set relatively low.
+                            </small>
+                        </div>
+                        <div>
+                            <label for="rvc_protect">Protect amount (<span id="rvc_protect_value"></span>)</label>
+                            <input id="rvc_protect" type="range" min="0" max="1" step="0.01" value="0.33" />
+                            <small>
+                                Avoid non voice sounds. Lower is more being ignored.
+                            </small>
+                        </div>
                         <div id="rvc_status">
                         </div>
                         <div class="rvc_buttons">
                             <input id="rvc_apply" class="menu_button" type="submit" value="Apply" />
-                            <input id="rvc_delete" class="menu_button" type="submit" value="Delete" />
                         </div>
                     </div>
                 </div>
@@ -284,8 +334,11 @@ $(document).ready(function () {
         $("#rvc_apply").on("click", onApplyClick);
         $("#rvc_delete").on("click", onDeleteClick);
 
-        $("#rvc_model_upload_file").show();
-        $("#rvc_model_upload_button").on("click", onClickUpload);
+        $("#rvc_model_upload_files").hide();
+        $("#rvc_model_upload_select_button").on("click", function() {$("#rvc_model_upload_files").click()});
+
+        $("#rvc_model_upload_files").on("change", onChangeUploadFiles);
+        //$("#rvc_model_upload_button").on("click", onClickUpload);
         $("#rvc_model_refresh_button").on("click", refreshVoiceList);
 
     }
