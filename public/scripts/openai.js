@@ -169,10 +169,10 @@ export const chat_completion_sources = {
 };
 
 const prefixMap = selected_group ? {
-        assistant: "",
-        user: "",
-        system: "OOC: "
-    }
+    assistant: "",
+    user: "",
+    system: "OOC: "
+}
     : {
         assistant: "{{char}}:",
         user: "{{user}}:",
@@ -1080,10 +1080,10 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
     const isScale = oai_settings.chat_completion_source == chat_completion_sources.SCALE;
     const isAI21 = oai_settings.chat_completion_source == chat_completion_sources.AI21;
     const isTextCompletion = oai_settings.chat_completion_source == chat_completion_sources.OPENAI && (oai_settings.openai_model.startsWith('text-') || oai_settings.openai_model.startsWith('code-'));
-    const stream = type !== 'quiet' && oai_settings.stream_openai && !isScale && !isAI21;
     const isQuiet = type === 'quiet';
+    const stream = oai_settings.stream_openai && !isQuiet && !isScale && !isAI21;
 
-    if(isAI21) {
+    if (isAI21) {
         const joinedMsgs = openai_msgs_tosend.reduce((acc, obj) => {
             const prefix = prefixMap[obj.role];
             return acc + (prefix ? (selected_group ? "\n" : prefix + " ") : "") + obj.content + "\n";
@@ -2836,8 +2836,8 @@ async function onConnectButtonClick(e) {
             await writeSecret(SECRET_KEYS.AI21, api_key_ai21);
         }
 
-        if (!secret_state[SECRET_KEYS.AI21] && !oai_settings.reverse_proxy) {
-            console.log('No secret key saved for Claude');
+        if (!secret_state[SECRET_KEYS.AI21]) {
+            console.log('No secret key saved for AI21');
             return;
         }
     }
@@ -2976,7 +2976,7 @@ $(document).ready(async function () {
 
     $('#use_ai21_tokenizer').on('change', function () {
         oai_settings.use_ai21_tokenizer = !!$('#use_ai21_tokenizer').prop('checked');
-        oai_settings.use_ai21_tokenizer ? ai21_max = 8191: ai21_max = 9200;
+        oai_settings.use_ai21_tokenizer ? ai21_max = 8191 : ai21_max = 9200;
         oai_settings.openai_max_context = Math.min(ai21_max, oai_settings.openai_max_context);
         $('#openai_max_context').attr('max', ai21_max).val(oai_settings.openai_max_context).trigger('input');
         saveSettingsDebounced();
