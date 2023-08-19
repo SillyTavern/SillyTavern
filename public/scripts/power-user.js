@@ -1097,7 +1097,7 @@ export function formatInstructModePrompt(name, isImpersonate, promptBias, name1,
         text += (includeNames ? promptBias : (separator + promptBias));
     }
 
-    return text.trimEnd();
+    return text.trimEnd() + (includeNames ? '' : separator);
 }
 
 const sortFunc = (a, b) => power_user.sort_order == 'asc' ? compareFunc(a, b) : compareFunc(b, a);
