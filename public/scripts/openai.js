@@ -519,7 +519,6 @@ function populateDialogueExamples(prompts, chatCompletion) {
     if (openai_msgs_example.length) {
         const newExampleChat = new Message('system', oai_settings.new_example_chat_prompt, 'newChat');
         [...openai_msgs_example].forEach((dialogue, dialogueIndex) => {
-            chatCompletion.reserveBudget(newExampleChat);
             chatCompletion.insert(newExampleChat, 'dialogueExamples');
             dialogue.forEach((prompt, promptIndex) => {
                 const role = 'system';
