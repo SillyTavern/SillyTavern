@@ -751,7 +751,7 @@ let create_save = {
 };
 
 //animation right menu
-let animation_duration = 250;
+let animation_duration = 125;
 let animation_easing = "ease-in-out";
 let popup_type = "";
 let bg_file_for_del = "";
@@ -1446,25 +1446,25 @@ function insertSVGIcon(mes, extra) {
         modelName = extra.api;
     }
 
-    // Fetch the SVG based on the modelName
-    $.get(`/img/${modelName}.svg`, function (data) {
-        // Extract the SVG content from the XML data
-        let svg = $(data).find('svg');
+    const image = new Image();
+    // Add classes for styling and identification
+    image.classList.add('icon-svg', 'timestamp-icon');
+    image.src = `/img/${modelName}.svg`;
 
-        // Add classes for styling and identification
-        svg.addClass('icon-svg timestamp-icon');
-
+    image.onload = async function () {
         // Check if an SVG already exists adjacent to the timestamp
         let existingSVG = mes.find('.timestamp').next('.timestamp-icon');
 
         if (existingSVG.length) {
             // Replace existing SVG
-            existingSVG.replaceWith(svg);
+            existingSVG.replaceWith(image);
         } else {
             // Append the new SVG if none exists
-            mes.find('.timestamp').after(svg);
+            mes.find('.timestamp').after(image);
         }
-    });
+
+        await SVGInject(this);
+    };
 }
 
 
@@ -1769,7 +1769,6 @@ function scrollChatToBottom() {
 function substituteParams(content, _name1, _name2, _original, _group) {
     _name1 = _name1 ?? name1;
     _name2 = _name2 ?? name2;
-    _original = _original || '';
     _group = _group ?? name2;
 
     if (!content) {
@@ -2126,12 +2125,14 @@ function baseChatReplace(value, name1, name2) {
         if (power_user.collapse_newlines) {
             value = collapseNewlines(value);
         }
+
+        value = value.replace(/\r/g, '');
     }
     return value;
 }
 
 function isStreamingEnabled() {
-    return ((main_api == 'openai' && oai_settings.stream_openai && oai_settings.chat_completion_source !== chat_completion_sources.SCALE)
+    return ((main_api == 'openai' && oai_settings.stream_openai && oai_settings.chat_completion_source !== chat_completion_sources.SCALE && oai_settings.chat_completion_source !== chat_completion_sources.AI21)
         || (main_api == 'kobold' && kai_settings.streaming_kobold && kai_settings.can_use_streaming)
         || (main_api == 'novel' && nai_settings.streaming_novel)
         || (main_api == 'textgenerationwebui' && textgenerationwebui_settings.streaming))
@@ -2528,8 +2529,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         let charPersonality = baseChatReplace(characters[this_chid].personality.trim(), name1, name2);
         let Scenario = baseChatReplace(scenarioText.trim(), name1, name2);
         let mesExamples = baseChatReplace(characters[this_chid].mes_example.trim(), name1, name2);
-        let systemPrompt = baseChatReplace(characters[this_chid].data?.system_prompt?.trim(), name1, name2);
-        let jailbreakPrompt = baseChatReplace(characters[this_chid].data?.post_history_instructions?.trim(), name1, name2);
+        let systemPrompt = power_user.prefer_character_prompt ? baseChatReplace(characters[this_chid].data?.system_prompt?.trim(), name1, name2) : '';
+        let jailbreakPrompt = power_user.prefer_character_jailbreak ? baseChatReplace(characters[this_chid].data?.post_history_instructions?.trim(), name1, name2) : '';
 
         // Parse example messages
         if (!mesExamples.startsWith('<START>')) {
@@ -2982,8 +2983,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     bias: promptBias,
                     type: type,
                     quietPrompt: quiet_prompt,
-                    jailbreakPrompt: jailbreakPrompt,
                     cyclePrompt: cyclePrompt,
+                    systemPromptOverride: systemPrompt,
+                    jailbreakPromptOverride: jailbreakPrompt,
                 }, dryRun);
                 generate_data = { prompt: prompt };
 
@@ -4738,6 +4740,7 @@ function changeMainAPI() {
         case chat_completion_sources.WINDOWAI:
         case chat_completion_sources.CLAUDE:
         case chat_completion_sources.OPENAI:
+        case chat_completion_sources.AI21:
         default:
             setupChatCompletionPromptManager(oai_settings);
             break;
@@ -7178,6 +7181,11 @@ function connectAPISlash(_, text) {
             source: 'openrouter',
             button: '#api_button_openai',
         },
+        'ai21': {
+            selected: 'openai',
+            source: 'ai21',
+            button: '#api_button_openai',
+        }
     };
 
     const apiConfig = apiMap[text];
@@ -7396,7 +7404,7 @@ $(document).ready(function () {
     }
 
     registerSlashCommand('dupe', DupeChar, [], "– duplicates the currently selected character", true, true);
-    registerSlashCommand('api', connectAPISlash, [], "(kobold, horde, novel, ooba, oai, claude, windowai) – connect to an API", true, true);
+    registerSlashCommand('api', connectAPISlash, [], "(kobold, horde, novel, ooba, oai, claude, windowai, ai21) – connect to an API", true, true);
     registerSlashCommand('impersonate', doImpersonate, ['imp'], "- calls an impersonation response", true, true);
     registerSlashCommand('delchat', doDeleteChat, [], "- deletes the current chat", true, true);
     registerSlashCommand('closechat', doCloseChat, [], "- closes the current chat", true, true);

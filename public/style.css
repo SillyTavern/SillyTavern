@@ -1351,7 +1351,8 @@ body.charListGrid #rm_print_characters_block .tags_inline {
     overflow-y: auto;
 }
 
-#floatingPrompt, #cfgConfig {
+#floatingPrompt,
+#cfgConfig {
     overflow-y: auto;
     max-width: 90svw;
     max-height: 90svh;
@@ -1469,6 +1470,14 @@ select option:not(:checked) {
 
 .world_set {
     color: #4b9c00 !important;
+}
+
+#instruct_set_default {
+    font-size: smaller;
+}
+
+#instruct_set_default.default {
+    color: #f44336 !important;
 }
 
 .displayBlock {
@@ -3278,6 +3287,7 @@ h5 {
     justify-content: flex-start;
     max-height: 66%;
     overflow: hidden;
+    flex-basis: 100%;
 }
 
 .tag_name {
@@ -3967,13 +3977,6 @@ a {
     display: none;
 }
 
-.hiddenByTag,
-.hiddenByFav,
-.hiddenByGroup,
-.hiddenBySearch {
-    display: none !important;
-}
-
 /* Message images */
 .mes .mes_img_container {
     max-width: 100%;
@@ -4342,7 +4345,7 @@ input.extension_missing[type="checkbox"] {
 }
 
 .fillLeft .scrollableInner {
-   padding: 0.5em 1em 0.5em 0.5em
+    padding: 0.5em 1em 0.5em 0.5em
 }
 
 .width100p {
@@ -4653,6 +4656,7 @@ toolcool-color-picker {
     color: var(--SmartThemeQuoteColor);
     font-weight: bold;
     font-style: italic;
+    font-size: 0.8em;
 }
 
 .openai_restorable .right_menu_button img {
@@ -5663,10 +5667,13 @@ body.waifuMode .zoomed_avatar {
     border: none;
     outline: none;
     color: white;
-    display: inline-block;  /* Change display to inline-block */
-    vertical-align: middle; /* Align to middle if there's a height discrepancy */
+    display: inline-block;
+    /* Change display to inline-block */
+    vertical-align: middle;
+    /* Align to middle if there's a height discrepancy */
     width: 200px;
     font-size: 16px;
     z-index: 10;
-    margin-left: 10px; /* Give some space between the button and search box */
+    margin-left: 10px;
+    /* Give some space between the button and search box */
 }

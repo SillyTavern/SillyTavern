@@ -285,8 +285,8 @@ function appendTagToList(listElement, tag, { removable, selectable, action, isGe
         tagElement.find('.tag_name').text('').attr('title', tag.name).addClass(tag.icon);
     }
 
-    if (tag.excluded) {
-        isGeneralList ? $(tagElement).addClass('excluded') : $(listElement).closest('.character_select, .group_select').addClass('hiddenByTag');
+    if (tag.excluded && isGeneralList) {
+        $(tagElement).addClass('excluded');
     }
 
     if (selectable) {

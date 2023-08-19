@@ -44,6 +44,7 @@
     <script src="lib/handlebars.js"></script>
     <script src="lib/pagination.js"></script>
     <script src="lib/toolcool-color-picker.js"></script>
+    <script src="lib/svg-inject.js"></script>
     <script type="module" src="lib/swiped-events.js"></script>
     <script type="module" src="lib/eventemitter.js"></script>
     <script type="module" src="scripts/power-user.js"></script>
@@ -654,7 +655,7 @@
                                     Max prompt cost: <span id="openrouter_max_prompt_cost">Unknown</span>
                                 </div>
                                 <hr>
-                                <div class="range-block" data-source="openai,claude,windowai,openrouter">
+                                <div class="range-block" data-source="openai,claude,windowai,openrouter,ai21">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
@@ -669,7 +670,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,openrouter">
+                                <div class="range-block" data-source="openai,openrouter,ai21">
                                     <div class="range-block-title" data-i18n="Frequency Penalty">
                                         Frequency Penalty
                                     </div>
@@ -684,7 +685,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,openrouter">
+                                <div class="range-block" data-source="openai,openrouter,ai21">
                                     <div class="range-block-title" data-i18n="Presence Penalty">
                                         Presence Penalty
                                     </div>
@@ -699,7 +700,22 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="claude,openrouter">
+                                <div class="range-block" data-source="ai21">
+                                    <div class="range-block-title" data-i18n="Count Penalty">
+                                        Count Penalty
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="count_pen" name="volume" min="0" max="1" step="0.01">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="count_pen" id="count_pen_counter">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block" data-source="claude,openrouter,ai21">
                                     <div class="range-block-title" data-i18n="Top K">
                                         Top K
                                     </div>
@@ -714,7 +730,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,openrouter">
+                                <div class="range-block" data-source="openai,claude,openrouter,ai21">
                                     <div class="range-block-title" data-i18n="Top-p">
                                         Top P
                                     </div>
@@ -1418,6 +1434,14 @@
                                             <span data-i18n="May help the model to understand context. Names must only contain letters or numbers.">Helps the model to associate messages in group chats. Names must only contain letters or numbers without whitespaces.</span>
                                         </div>
                                     </div>
+                                    <div class="range-block" data-source="ai21">
+                                        <label for="use_ai21_tokenizer" title="Use AI21 Tokenizer" class="checkbox_label widthFreeExpand">
+                                            <input id="use_ai21_tokenizer" type="checkbox" /><span data-i18n="Use AI21 Tokenizer">Use AI21 Tokenizer</span>
+                                        </label>
+                                        <div class="toggle-description justifyLeft">
+                                            <span data-i18n="Use the appropriate tokenizer for Jurassic models, which is more efficient than GPT's.">Use the appropriate tokenizer for Jurassic models, which is more efficient than GPT's.</span>
+                                        </div>
+                                    </div>
                                     <div class="inline-drawer m-t-1 wide100p">
                                         <div class="inline-drawer-toggle inline-drawer-header">
                                             <b data-i18n="Quick Edit">Quick Edit</b>
@@ -1618,7 +1642,7 @@
                             <option value="koboldhorde"><span data-i18n="KoboldAI Horde">KoboldAI Horde</span></option>
                             <option value="textgenerationwebui"><span data-i18n="Text Gen WebUI (ooba/Mancer)">Text Gen WebUI (ooba/Mancer)</span></option>
                             <option value="novel"><span data-i18n="NovelAI">NovelAI</span></option>
-                            <option value="openai"><span data-i18n="Chat Completion (OpenAI, Claude, Window/OpenRouter, Scale)">Chat Completion (OpenAI, Claude, Window, OpenRouter, Scale)</span></option>
+                            <option value="openai"><span data-i18n="Chat Completion (OpenAI, Claude, Window/OpenRouter, Scale, AI21)">Chat Completion (OpenAI, Claude, Window, OpenRouter, Scale, AI21)</span></option>
                         </select>
                     </div>
                     <div id="kobold_horde" style="position: relative;"> <!-- shows the kobold settings -->
@@ -1804,6 +1828,7 @@
                             <option value="openrouter">OpenRouter</option>
                             <option value="claude">Claude</option>
                             <option value="scale">Scale</option>
+                            <option value="ai21">AI21</option>
                         </select>
                         <form id="openai_form" data-source="openai" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <h4><span data-i18n="OpenAI API key">OpenAI API key</span></h4>
@@ -1972,6 +1997,27 @@
                             <select id="model_scale_select" class="displayNone"></select>
                         </form>
 
+                        <form id="ai21_form" data-source="ai21" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                            <h4>AI21 API Key</h4>
+                            <div class="flex-container">
+                                <input id="api_key_ai21" name="api_key_ai21" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_ai21"></div>
+                            </div>
+                            <div data-for="api_key_ai21" class="neutral_warning">
+                                For privacy reasons, your API key will be hidden after you reload the page.
+                            </div>
+                            <div>
+                                <h4 data-i18n="AI21 Model">AI21 Model</h4>
+                                <select id="model_ai21_select">
+                                    <optgroup label="Latest">
+                                        <option value="j2-ultra">j2-ultra</option>
+                                        <option value="j2-mid">j2-mid</option>
+                                        <option value="j2-light">j2-light</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                        </form>
+
                         <div class="flex-container flex">
                             <input id="api_button_openai" class="menu_button" type="submit" value="Connect">
                             <input data-source="openrouter" id="openrouter_authorize" class="menu_button" type="button" value="Authorize" title="Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai" data-i18n="[title]Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai">
@@ -2015,14 +2061,14 @@
                                 </select>
                             </div>
                             <div>
-                                <label for="context_story_string" data-i18n="Story String">
-                                    Story String
+                                <label for="context_story_string">
+                                    <small data-i18n="Story String">Story String</small>
                                 </label>
                                 <textarea id="context_story_string" class="text_pole textarea_compact" rows="3"></textarea>
                                 <div class="flex-container">
                                     <div class="flex1">
                                         <label for="context_example_separator">
-                                            <span data-i18n="Example Separator">Example Separator</span>
+                                            <small data-i18n="Example Separator">Example Separator</small>
                                         </label>
                                         <div>
                                             <textarea id="context_example_separator" class="text_pole textarea_compact" maxlength="500" rows="1"></textarea>
@@ -2030,7 +2076,7 @@
                                     </div>
                                     <div class="flex1">
                                         <label for="context_chat_start">
-                                            <span data-i18n="Chat Start">Chat Start</span>
+                                            <small data-i18n="Chat Start">Chat Start</small>
                                         </label>
                                         <div>
                                             <textarea id="context_chat_start" class="text_pole textarea_compact" maxlength="500" rows="1"></textarea>
@@ -2070,9 +2116,23 @@
                             <label for="instruct_presets">
                                 <span data-i18n="Presets">Presets</span>
                             </label>
-                            <select id="instruct_presets"></select>
+                            <div class="flex-container">
+                                <select id="instruct_presets" class="flex1 margin0"></select>
+                                <div id="instruct_set_default" class="menu_button menu_button_icon margin0">
+                                    <i class="fa-solid fa-xs fa-fw fa-heart"></i>
+                                    <span data-i18n="Default">Default</span>
+                                </div>
+                            </div>
                             <label>
-                                <span data-i18n="System Prompt">System Prompt</span>
+                                <small data-i18n="Activation Regex">
+                                    Activation Regex
+                                </small>
+                            </label>
+                            <div>
+                                <textarea id="instruct_activation_regex" class="text_pole textarea_compact" maxlength="5000" rows="1"></textarea>
+                            </div>
+                            <label>
+                                <small data-i18n="System Prompt">System Prompt</small>
                             </label>
                             <div class="prompt_overridden">
                                 Overridden by the Character Definitions.
@@ -2224,7 +2284,7 @@
                                 </div>
                             </h4>
                             <div>
-                                <textarea id="custom_stopping_strings" rows="2" class="text_pole textarea_compact" placeholder="[&quot;Ford&quot;, &quot;BMW&quot;, &quot;Fiat&quot;]"></textarea>
+                                <textarea id="custom_stopping_strings" rows="2" class="text_pole textarea_compact monospace" placeholder="[&quot;Ford&quot;, &quot;BMW&quot;, &quot;Fiat&quot;]"></textarea>
                             </div>
                             <label class="checkbox_label" for="custom_stopping_strings_macro">
                                 <input id="custom_stopping_strings_macro" type="checkbox" checked>
@@ -3214,7 +3274,7 @@
                         <div class="inline-drawer-content">
                             <div name="Unadded Char List" class="flex-container flexFlowColumn overflowYAuto flex1">
                                 <div id="rm_group_add_members_header">
-                                    <input id="rm_group_filter" class="text_pole margin0" type="search" data-i18n="[placeholder]Filter..." placeholder="Filter..." maxlength="100" />
+                                    <input id="rm_group_filter" class="text_pole margin0" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." maxlength="100" />
                                 </div>
                                 <div class="rm_tag_controls">
                                     <div class="tags rm_tag_filter"></div>

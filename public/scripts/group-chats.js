@@ -63,8 +63,8 @@ import {
     getCropPopup,
     system_avatar,
 } from "../script.js";
-import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect, tag_map } from './tags.js';
-import { FilterHelper } from './filters.js';
+import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect, tag_map, printTagFilters } from './tags.js';
+import { FILTER_TYPES, FilterHelper } from './filters.js';
 
 export {
     selected_group,
@@ -1276,16 +1276,8 @@ function openCharacterDefinition(characterSelect) {
 }
 
 function filterGroupMembers() {
-    const searchValue = $(this).val().trim().toLowerCase();
-
-    if (!searchValue) {
-        $("#rm_group_add_members .group_member").removeClass('hiddenBySearch');
-    } else {
-        $("#rm_group_add_members .group_member").each(function () {
-            const isValidSearch = $(this).find(".ch_name").text().toLowerCase().includes(searchValue);
-            $(this).toggleClass('hiddenBySearch', !isValidSearch);
-        });
-    }
+    const searchValue = $(this).val().toLowerCase();
+    groupCandidatesFilter.setFilterData(FILTER_TYPES.SEARCH, searchValue);
 }
 
 async function createGroup() {

@@ -478,6 +478,7 @@ function RA_autoconnect(PrevApi) {
                     || (secret_state[SECRET_KEYS.SCALE] && oai_settings.chat_completion_source == chat_completion_sources.SCALE)
                     || (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI)
                     || (secret_state[SECRET_KEYS.OPENROUTER] && oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER)
+                    || (secret_state[SECRET_KEYS.AI21] && oai_settings.chat_completion_source == chat_completion_sources.AI21)
                 ) {
                     $("#api_button_openai").click();
                 }
