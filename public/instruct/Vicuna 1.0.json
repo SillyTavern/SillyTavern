@@ -5,6 +5,7 @@
     "stop_sequence": "",
     "input_sequence": "### Human:",
     "output_sequence": "### Assistant:",
+    "last_output_sequence": "",
     "separator_sequence": "",
     "wrap": true
 }

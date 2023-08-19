@@ -8,7 +8,6 @@ import {
     reloadCurrentChat,
     getRequestHeaders,
     substituteParams,
-    updateVisibleDivs,
     eventSource,
     event_types,
     getCurrentChatId,
@@ -18,7 +17,7 @@ import {
     setCharacterId,
     setEditedMessageId
 } from "../script.js";
-import { favsToHotswap, isMobile, initMovingUI } from "./RossAscends-mods.js";
+import { isMobile, initMovingUI } from "./RossAscends-mods.js";
 import {
     groups,
     resetSelectedGroup,
@@ -34,8 +33,7 @@ export {
     loadMovingUIState,
     collapseNewlines,
     playMessageSound,
-    sortGroupMembers,
-    sortCharactersList,
+    sortEntitiesList,
     fixMarkdown,
     power_user,
     pygmalion_options,
@@ -45,6 +43,12 @@ export {
 
 export const MAX_CONTEXT_DEFAULT = 4096;
 const MAX_CONTEXT_UNLOCKED = 65536;
+
+const defaultStoryString = `{{#if description}}{{description}}{{/if}}
+{{#if personality}}{{personality}}{{/if}}
+{{#if scenario}}Scenario: {{scenario}}{{/if}}`;
+const defaultExampleSeparator = '***';
+const defaultChatStart = '***';
 
 const avatar_styles = {
     ROUND: 0,
@@ -93,11 +97,6 @@ let power_user = {
     collapse_newlines: false,
     pygmalion_formatting: pygmalion_options.AUTO,
     pin_examples: false,
-    disable_description_formatting: false,
-    disable_scenario_formatting: false,
-    disable_personality_formatting: false,
-    disable_examples_formatting: false,
-    disable_start_formatting: false,
     trim_sentences: false,
     include_newline: false,
     always_force_name2: false,
@@ -106,7 +105,6 @@ let power_user = {
     multigen: false,
     multigen_first_chunk: 50,
     multigen_next_chunks: 30,
-    custom_chat_separator: '',
     markdown_escape_strings: '',
 
     fast_ui_mode: true,
@@ -176,10 +174,18 @@ let power_user = {
         stop_sequence: '',
         input_sequence: '### Instruction:',
         output_sequence: '### Response:',
+        last_output_sequence: '',
         preset: 'Alpaca',
         separator_sequence: '',
         macro: false,
         names_force_groups: true,
+    },
+
+    context: {
+        preset: 'Default',
+        story_string: defaultStoryString,
+        chat_start: defaultChatStart,
+        example_separator: defaultExampleSeparator,
     },
 
     personas: {},
@@ -200,8 +206,10 @@ let power_user = {
 let themes = [];
 let movingUIPresets = [];
 let instruct_presets = [];
+let context_presets = [];
 
 const storage_keys = {
+    ui_language: "language",
     fast_ui_mode: "TavernAI_fast_ui_mode",
     avatar_style: "TavernAI_avatar_style",
     chat_display: "TavernAI_chat_display",
@@ -661,6 +669,10 @@ function loadPowerUserSettings(settings, data) {
         instruct_presets = data.instruct;
     }
 
+    if (data.context !== undefined) {
+        context_presets = data.context;
+    }
+
     // These are still local storage
     const fastUi = localStorage.getItem(storage_keys.fast_ui_mode);
     const movingUI = localStorage.getItem(storage_keys.movingUI);
@@ -719,16 +731,10 @@ function loadPowerUserSettings(settings, data) {
     $("#spoiler_free_mode").prop("checked", power_user.spoiler_free_mode);
     $("#collapse-newlines-checkbox").prop("checked", power_user.collapse_newlines);
     $("#pin-examples-checkbox").prop("checked", power_user.pin_examples);
-    $("#disable-description-formatting-checkbox").prop("checked", power_user.disable_description_formatting);
-    $("#disable-scenario-formatting-checkbox").prop("checked", power_user.disable_scenario_formatting);
-    $("#disable-personality-formatting-checkbox").prop("checked", power_user.disable_personality_formatting);
     $("#always-force-name2-checkbox").prop("checked", power_user.always_force_name2);
-    $("#disable-examples-formatting-checkbox").prop("checked", power_user.disable_examples_formatting);
-    $('#disable-start-formatting-checkbox').prop("checked", power_user.disable_start_formatting);
     $("#trim_sentences_checkbox").prop("checked", power_user.trim_sentences);
     $("#include_newline_checkbox").prop("checked", power_user.include_newline);
     $('#render_formulas').prop("checked", power_user.render_formulas);
-    $("#custom_chat_separator").val(power_user.custom_chat_separator);
     $("#markdown_escape_strings").val(power_user.markdown_escape_strings);
     $("#fast_ui_mode").prop("checked", power_user.fast_ui_mode);
     $("#waifuMode").prop("checked", power_user.waifuMode);
@@ -795,15 +801,14 @@ function loadPowerUserSettings(settings, data) {
 
 
     $(`#character_sort_order option[data-order="${power_user.sort_order}"][data-field="${power_user.sort_field}"]`).prop("selected", true);
-    sortCharactersList();
     reloadMarkdownProcessor(power_user.render_formulas);
     loadInstructMode();
+    loadContextSettings();
     loadMaxContextUnlocked();
     switchWaifuMode();
     switchSpoilerMode();
     loadMovingUIState();
     loadCharListState();
-
 }
 
 async function loadCharListState() {
@@ -866,6 +871,61 @@ function switchMaxContextSize() {
     }
 }
 
+function loadContextSettings() {
+    const controls = [
+        { id: "context_story_string", property: "story_string", isCheckbox: false },
+        { id: "context_example_separator", property: "example_separator", isCheckbox: false },
+        { id: "context_chat_start", property: "chat_start", isCheckbox: false },
+    ];
+
+    controls.forEach(control => {
+        const $element = $(`#${control.id}`);
+
+        if (control.isCheckbox) {
+            $element.prop('checked', power_user.context[control.property]);
+        } else {
+            $element.val(power_user.context[control.property]);
+        }
+
+        $element.on('input', function () {
+            power_user.context[control.property] = control.isCheckbox ? !!$(this).prop('checked') : $(this).val();
+            saveSettingsDebounced();
+        });
+    });
+
+    context_presets.forEach((preset) => {
+        const name = preset.name;
+        const option = document.createElement('option');
+        option.value = name;
+        option.innerText = name;
+        option.selected = name === power_user.context.preset;
+        $('#context_presets').append(option);
+    });
+
+    $('#context_presets').on('change', function () {
+        const name = $(this).find(':selected').val();
+        const preset = context_presets.find(x => x.name === name);
+
+        if (!preset) {
+            return;
+        }
+
+        power_user.context.preset = name;
+        controls.forEach(control => {
+            if (preset[control.property] !== undefined) {
+                power_user.context[control.property] = preset[control.property];
+                const $element = $(`#${control.id}`);
+
+                if (control.isCheckbox) {
+                    $element.prop('checked', power_user.context[control.property]).trigger('input');
+                } else {
+                    $element.val(power_user.context[control.property]).trigger('input');
+                }
+            }
+        });
+    });
+}
+
 function loadInstructMode() {
     const controls = [
         { id: "instruct_enabled", property: "enabled", isCheckbox: true },
@@ -879,6 +939,7 @@ function loadInstructMode() {
         { id: "instruct_names", property: "names", isCheckbox: true },
         { id: "instruct_macro", property: "macro", isCheckbox: true },
         { id: "instruct_names_force_groups", property: "names_force_groups", isCheckbox: true },
+        { id: "instruct_last_output_sequence", property: "last_output_sequence", isCheckbox: false },
     ];
 
     if (power_user.instruct.names_force_groups === undefined) {
@@ -975,6 +1036,20 @@ export function fuzzySearchGroups(searchValue) {
     return ids;
 }
 
+export function renderStoryString(params) {
+    try {
+        const compiledTemplate = Handlebars.compile(power_user.context.story_string, { noEscape: true });
+        let output = compiledTemplate(params);
+        output = substituteParams(output, params.user, params.char);
+        output = `${output.trim()}\n`; // add a newline to the end
+        return output;
+    } catch (e) {
+        toastr.error('Check the story string template for validity', 'Error rendering story string');
+        console.error('Error rendering story string', e);
+        throw e;
+    }
+}
+
 export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvatar, name1, name2) {
     let includeNames = isNarrator ? false : power_user.instruct.names;
 
@@ -991,8 +1066,8 @@ export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvata
     const separator = power_user.instruct.wrap ? '\n' : '';
     const separatorSequence = power_user.instruct.separator_sequence && !isUser
         ? power_user.instruct.separator_sequence
-        : (power_user.instruct.wrap ? '\n' : '');
-    const textArray = includeNames ? [sequence, `${name}: ${mes}`, separatorSequence] : [sequence, mes, separatorSequence];
+        : separator;
+    const textArray = includeNames ? [sequence, `${name}: ${mes}` + separatorSequence] : [sequence, mes + separatorSequence];
     const text = textArray.filter(x => x).join(separator);
     return text;
 }
@@ -1010,7 +1085,8 @@ export function formatInstructStoryString(story, systemPrompt) {
 
 export function formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2) {
     const includeNames = power_user.instruct.names || (!!selected_group && power_user.instruct.names_force_groups);
-    let sequence = isImpersonate ? power_user.instruct.input_sequence : power_user.instruct.output_sequence;
+    const getOutputSequence = () => power_user.instruct.last_output_sequence || power_user.instruct.output_sequence;
+    let sequence = isImpersonate ? power_user.instruct.input_sequence : getOutputSequence();
 
     if (power_user.instruct.macro) {
         sequence = substituteParams(sequence, name1, name2);
@@ -1049,46 +1125,13 @@ const compareFunc = (first, second) => {
     }
 };
 
-function sortCharactersList() {
-    const arr1 = groups.map(x => ({
-        item: x,
-        id: x.id,
-        selector: '.group_select',
-        attribute: 'grid',
-    }))
-    const arr2 = characters.map((x, index) => ({
-        item: x,
-        id: index,
-        selector: '.character_select',
-        attribute: 'chid',
-    }));
-
-    const array = [...arr1, ...arr2];
-
-    if (power_user.sort_field == undefined || array.length === 0) {
+function sortEntitiesList(entities) {
+    if (power_user.sort_field == undefined || entities.length === 0) {
         return;
     }
 
-    let orderedList = array.slice().sort((a, b) => sortFunc(a.item, b.item));
-
-    for (const item of array) {
-        $(`${item.selector}[${item.attribute}="${item.id}"]`).css({ 'order': orderedList.indexOf(item) });
-    }
-    updateVisibleDivs('#rm_print_characters_block', true);
+    entities.sort((a, b) => sortFunc(a.item, b.item));
 }
-
-function sortGroupMembers(selector) {
-    if (power_user.sort_field == undefined || characters.length === 0) {
-        return;
-    }
-
-    let orderedList = characters.slice().sort(sortFunc);
-
-    for (let i = 0; i < characters.length; i++) {
-        $(`${selector}[chid="${i}"]`).css({ 'order': orderedList.indexOf(characters[i]) });
-    }
-}
-
 async function saveTheme() {
     const name = await callPopup('Enter a theme preset name:', 'input');
 
@@ -1339,8 +1382,25 @@ function doResetPanels() {
     $("#movingUIreset").trigger('click');
 }
 
+function addLanguagesToDropdown() {
+    $.getJSON('i18n.json', function (data) {
+        if (!Array.isArray(data?.lang)) {
+            return;
+        }
 
+        for (const lang of data.lang) {
+            const option = document.createElement('option');
+            option.value = lang;
+            option.innerText = lang;
+            $('#ui_language_select').append(option);
+        }
 
+        const selectedLanguage = localStorage.getItem(storage_keys.ui_language);
+        if (selectedLanguage) {
+            $('#ui_language_select').val(selectedLanguage);
+        }
+    });
+}
 
 function setAvgBG() {
     const bgimg = new Image();
@@ -1621,31 +1681,6 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $("#disable-description-formatting-checkbox").change(function () {
-        power_user.disable_description_formatting = !!$(this).prop('checked');
-        saveSettingsDebounced();
-    })
-
-    $("#disable-scenario-formatting-checkbox").change(function () {
-        power_user.disable_scenario_formatting = !!$(this).prop('checked');
-        saveSettingsDebounced();
-    });
-
-    $("#disable-personality-formatting-checkbox").change(function () {
-        power_user.disable_personality_formatting = !!$(this).prop('checked');
-        saveSettingsDebounced();
-    });
-
-    $("#disable-examples-formatting-checkbox").change(function () {
-        power_user.disable_examples_formatting = !!$(this).prop('checked');
-        saveSettingsDebounced();
-    })
-
-    $("#disable-start-formatting-checkbox").change(function () {
-        power_user.disable_start_formatting = !!$(this).prop('checked');
-        saveSettingsDebounced();
-    });
-
     // include newline is the child of trim sentences
     // if include newline is checked, trim sentences must be checked
     // if trim sentences is unchecked, include newline must be unchecked
@@ -1670,12 +1705,6 @@ $(document).ready(() => {
     $("#always-force-name2-checkbox").change(function () {
         power_user.always_force_name2 = !!$(this).prop("checked");
         saveSettingsDebounced();
-    });
-
-    $("#custom_chat_separator").on('input', function () {
-        power_user.custom_chat_separator = $(this).val();
-        saveSettingsDebounced();
-        reloadMarkdownProcessor(power_user.render_formulas);
     });
 
     $("#markdown_escape_strings").on('input', function () {
@@ -1834,6 +1863,7 @@ $(document).ready(() => {
         power_user.never_resize_avatars = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
+
     $("#show_card_avatar_urls").on('input', function () {
         power_user.show_card_avatar_urls = !!$(this).prop('checked');
         printCharacters();
@@ -1859,8 +1889,7 @@ $(document).ready(() => {
         power_user.sort_field = $(this).find(":selected").data('field');
         power_user.sort_order = $(this).find(":selected").data('order');
         power_user.sort_rule = $(this).find(":selected").data('rule');
-        sortCharactersList();
-        favsToHotswap();
+        printCharacters();
         saveSettingsDebounced();
     });
 
@@ -1971,12 +2000,6 @@ $(document).ready(() => {
         reloadCurrentChat();
         saveSettingsDebounced();
     });
-
-    /*     $("#removeXML").on("input", function () {
-            power_user.removeXML = !!$(this).prop('checked');
-            reloadCurrentChat();
-            saveSettingsDebounced();
-        }); */
 
     $("#token_padding").on("input", function () {
         power_user.token_padding = Number($(this).val());
@@ -2090,6 +2113,18 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
+    $('#ui_language_select').on('change', async function () {
+        const language = $(this).val();
+
+        if (language) {
+            localStorage.setItem(storage_keys.ui_language, language);
+        } else {
+            localStorage.removeItem(storage_keys.ui_language);
+        }
+
+        location.reload();
+    });
+
     $(window).on('focus', function () {
         browser_has_focus = true;
     });
@@ -2105,4 +2140,5 @@ $(document).ready(() => {
     registerSlashCommand('cut', doMesCut, [], ' <span class="monospace">(requred number)</span> – cuts the specified message from the chat', true, true);
     registerSlashCommand('resetpanels', doResetPanels, ['resetui'], ' – resets UI panels to original state.', true, true);
     registerSlashCommand('bgcol', setAvgBG, [], ' – WIP test of auto-bg avg coloring', true, true);
+    addLanguagesToDropdown();
 });

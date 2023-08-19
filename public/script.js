@@ -40,7 +40,6 @@ import {
     generateGroupWrapper,
     deleteGroup,
     is_group_generating,
-    printGroups,
     resetSelectedGroup,
     select_group_chats,
     regenerateGroup,
@@ -55,13 +54,13 @@ import {
     deleteGroupChat,
     renameGroupChat,
     importGroupChat,
+    getGroupBlock,
 } from "./scripts/group-chats.js";
 
 import {
     collapseNewlines,
     loadPowerUserSettings,
     playMessageSound,
-    sortCharactersList,
     fixMarkdown,
     power_user,
     pygmalion_options,
@@ -72,9 +71,9 @@ import {
     persona_description_positions,
     loadMovingUIState,
     getCustomStoppingStrings,
-    fuzzySearchCharacters,
     MAX_CONTEXT_DEFAULT,
-    fuzzySearchGroups,
+    renderStoryString,
+    sortEntitiesList,
 } from "./scripts/power-user.js";
 
 import {
@@ -104,6 +103,7 @@ import {
     loadNovelSettings,
     nai_settings,
     setNovelData,
+    adjustNovelInstructionPrompt,
 } from "./scripts/nai-settings.js";
 
 import {
@@ -158,12 +158,12 @@ import {
     writeSecret
 } from "./scripts/secrets.js";
 import { EventEmitter } from './scripts/eventemitter.js';
-import { context_settings, loadContextTemplatesFromSettings } from "./scripts/context-template.js";
 import { markdownExclusionExt } from "./scripts/showdown-exclusion.js";
 import { NOTE_MODULE_NAME, metadata_keys, setFloatingPrompt, shouldWIAddPrompt } from "./scripts/authors-note.js";
 import { deviceInfo } from "./scripts/RossAscends-mods.js";
 import { registerPromptManagerMigration } from "./scripts/PromptManager.js";
 import { getRegexedString, regex_placement } from "./scripts/extensions/regex/engine.js";
+import { FILTER_TYPES, FilterHelper } from "./scripts/filters.js";
 
 //exporting functions and vars for mods
 export {
@@ -232,7 +232,6 @@ export {
     talkativeness_default,
     default_ch_mes,
     extension_prompt_types,
-    updateVisibleDivs,
     mesForShowdownParse,
     printCharacters,
 }
@@ -300,7 +299,6 @@ let firstRun = false;
 
 const default_ch_mes = "Hello";
 let count_view_mes = 0;
-let mesStr = "";
 let generatedPromtCache = "";
 let generation_started = new Date();
 let characters = [];
@@ -310,8 +308,6 @@ const default_avatar = "img/ai4.png";
 export const system_avatar = "img/five.png";
 export const comment_avatar = "img/quill.png";
 export let CLIENT_VERSION = 'SillyTavern:UNKNOWN:Cohee#1207'; // For Horde header
-let is_colab = false;
-let is_checked_colab = false;
 let optionsPopper = Popper.createPopper(document.getElementById('options_button'), document.getElementById('options'), {
     placement: 'top-start'
 });
@@ -329,10 +325,6 @@ let crop_data = undefined;
 let is_delete_mode = false;
 let fav_ch_checked = false;
 let scrollLock = false;
-
-
-//initialize global var for future cropped blobs
-let currentCroppedAvatar = '';
 
 const durationSaveEdit = 1000;
 const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
@@ -823,8 +815,9 @@ let token;
 
 var PromptArrayItemForRawPromptDisplay;
 
-export let active_character = ""
-export let active_group = ""
+export let active_character = "";
+export let active_group = "";
+export const entitiesFilter = new FilterHelper(debounce(printCharacters, 100));
 
 export function getRequestHeaders() {
     return {
@@ -971,60 +964,129 @@ function resultCheckStatus() {
     $("#api_button_textgenerationwebui").css("display", "inline-block");
 }
 
-async function printCharacters() {
-    $("#rm_print_characters_block").empty();
-    characters.forEach(function (item, i, arr) {
-        let this_avatar = default_avatar;
-        if (item.avatar != "none") {
-            this_avatar = getThumbnailUrl('avatar', item.avatar);
-        }
-        // Populate the template
-        const template = $('#character_template .character_select').clone();
-        template.attr({ 'chid': i, 'id': `CharID${i}` });
-        template.find('img').attr('src', this_avatar);
-        template.find('.avatar').attr('title', item.avatar);
-        template.find('.ch_name').text(item.name);
-        if (power_user.show_card_avatar_urls) {
-            template.find('.ch_avatar_url').text(item.avatar);
-        }
-        template.find('.ch_fav_icon').css("display", 'none');
-        template.toggleClass('is_fav', item.fav || item.fav == 'true');
-        template.find('.ch_fav').val(item.fav);
+export function selectCharacterById(id) {
+    if (characters[id] == undefined) {
+        return;
+    }
 
-        const description = item.data?.creator_notes?.split('\n', 1)[0] || '';
-        if (description) {
-            template.find('.ch_description').text(description);
-        }
-        else {
-            template.find('.ch_description').hide();
-        }
+    if (selected_group && is_group_generating) {
+        return;
+    }
 
-        const version = item.data?.character_version || '';
-        if (version) {
-            template.find('.character_version').text(version);
+    if (selected_group || this_chid !== id) {
+        //if clicked on a different character from what was currently selected
+        if (!is_send_press) {
+            cancelTtsPlay();
+            resetSelectedGroup();
+            this_edit_mes_id = undefined;
+            selected_button = "character_edit";
+            this_chid = id;
+            clearChat();
+            chat.length = 0;
+            chat_metadata = {};
+            getChat();
         }
-        else {
-            template.find('.character_version').hide();
+    } else {
+        //if clicked on character that was already selected
+        selected_button = "character_edit";
+        select_selected_character(this_chid);
+    }
+}
+
+function getCharacterBlock(item, id) {
+    let this_avatar = default_avatar;
+    if (item.avatar != "none") {
+        this_avatar = getThumbnailUrl('avatar', item.avatar);
+    }
+    // Populate the template
+    const template = $('#character_template .character_select').clone();
+    template.attr({ 'chid': id, 'id': `CharID${id}` });
+    template.find('img').attr('src', this_avatar);
+    template.find('.avatar').attr('title', item.avatar);
+    template.find('.ch_name').text(item.name);
+    if (power_user.show_card_avatar_urls) {
+        template.find('.ch_avatar_url').text(item.avatar);
+    }
+    template.find('.ch_fav_icon').css("display", 'none');
+    template.toggleClass('is_fav', item.fav || item.fav == 'true');
+    template.find('.ch_fav').val(item.fav);
+
+    const description = item.data?.creator_notes?.split('\n', 1)[0] || '';
+    if (description) {
+        template.find('.ch_description').text(description);
+    }
+    else {
+        template.find('.ch_description').hide();
+    }
+
+    const version = item.data?.character_version || '';
+    if (version) {
+        template.find('.character_version').text(version);
+    }
+    else {
+        template.find('.character_version').hide();
+    }
+
+    // Display inline tags
+    const tags = getTagsList(item.avatar);
+    const tagsElement = template.find('.tags');
+    tags.forEach(tag => appendTagToList(tagsElement, tag, {}));
+
+    // Add to the list
+    return template;
+}
+
+async function printCharacters(fullRefresh = false) {
+    const storageKey = 'Characters_PerPage';
+    $("#rm_print_characters_pagination").pagination({
+        dataSource: getEntitiesList({ doFilter: true }),
+        pageSize: Number(localStorage.getItem(storageKey)) || 50,
+        sizeChangerOptions: [25, 50, 100, 250, 500, 1000],
+        pageRange: 1,
+        position: 'top',
+        showPageNumbers: false,
+        showSizeChanger: true,
+        prevText: '<',
+        nextText: '>',
+        showNavigator: true,
+        callback: function (data) {
+            $("#rm_print_characters_block").empty();
+            for (const i of data) {
+                if (i.type === 'character') {
+                    $("#rm_print_characters_block").append(getCharacterBlock(i.item, i.id));
+                }
+                if (i.type === 'group') {
+                    $("#rm_print_characters_block").append(getGroupBlock(i.item));
+                }
+            }
+        },
+        afterSizeSelectorChange: function (e) {
+            localStorage.setItem(storageKey, e.target.value);
         }
-
-        // Display inline tags
-        const tags = getTagsList(item.avatar);
-        const tagsElement = template.find('.tags');
-        tags.forEach(tag => appendTagToList(tagsElement, tag, {}));
-
-        // Add to the list
-        $("#rm_print_characters_block").append(template);
     });
 
-    printTagFilters(tag_filter_types.character);
-    printTagFilters(tag_filter_types.group_member);
-    printGroups();
-    sortCharactersList();
     favsToHotswap();
-    await delay(300);
-    updateVisibleDivs('#rm_print_characters_block', true);
-    displayOverrideWarnings();
 
+    if (fullRefresh) {
+        printTagFilters(tag_filter_types.character);
+        printTagFilters(tag_filter_types.group_member);
+
+        await delay(300);
+        displayOverrideWarnings();
+    }
+}
+
+export function getEntitiesList({ doFilter } = {}) {
+    let entities = [];
+    entities.push(...characters.map((item, index) => ({ item, id: index, type: 'character' })));
+    entities.push(...groups.map((item) => ({ item, id: item.id, type: 'group' })));
+
+    if (doFilter) {
+        entities = entitiesFilter.applyFilters(entities);
+    }
+
+    sortEntitiesList(entities);
+    return entities;
 }
 
 async function getCharacters() {
@@ -1056,10 +1118,7 @@ async function getCharacters() {
         }
 
         await getGroups();
-        await printCharacters();
-
-
-        updateCharacterCount('#rm_print_characters_block > div');
+        await printCharacters(true);
     }
 }
 
@@ -1092,30 +1151,6 @@ function getBackgroundFromTemplate(bg) {
     template.css('background-image', `url('${thumbPath}')`);
     template.find('.BGSampleTitle').text(bg.slice(0, bg.lastIndexOf('.')));
     return template;
-}
-
-async function isColab() {
-    is_checked_colab = true;
-    const response = await fetch("/iscolab", {
-        method: "POST",
-        headers: getRequestHeaders(),
-        body: JSON.stringify({
-            "": "",
-        }),
-    });
-    if (response.ok === true) {
-        const getData = await response.json();
-        if (getData.colaburl != false) {
-            $("#colab_shadow_popup").css("display", "none");
-            is_colab = true;
-            let url = String(getData.colaburl).split("flare.com")[0] + "flare.com";
-            url = String(url).split("loca.lt")[0] + "loca.lt";
-            $("#api_url_text").val(url);
-            setTimeout(function () {
-                $("#api_button").click();
-            }, 2000);
-        }
-    }
 }
 
 async function setBackground(bg) {
@@ -1369,9 +1404,21 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
 function insertSVGIcon(mes, extra) {
     // Determine the SVG filename
     let modelName;
-    if (extra.api === "openai" && extra.model.toLowerCase().includes("claude")) {
+
+    // Claude on OpenRouter or Anthropic
+    if (extra.api === "openai" && extra.model?.toLowerCase().includes("claude")) {
         modelName = "claude";
-    } else {
+    }
+    // OpenAI on OpenRouter
+    else if (extra.api === "openai" && extra.model?.toLowerCase().includes("openai")) {
+        modelName = "openai";
+    }
+    // OpenRouter website model or other models
+    else if (extra.api === "openai" && (extra.model === null || extra.model?.toLowerCase().includes("/"))) {
+        modelName = "openrouter";
+    }
+    // Everything else
+    else {
         modelName = extra.api;
     }
 
@@ -1832,17 +1879,31 @@ function getStoppingStrings(isImpersonate, addSpace) {
         }
     }
 
-    // Cohee: oobabooga's textgen always appends newline before the sequence as a stopping string
-    // But it's a problem for Metharme which doesn't use newlines to separate them.
-    const wrap = (s) => power_user.instruct.wrap ? '\n' + s : s;
+    function addInstructSequence(sequence) {
+        // Cohee: oobabooga's textgen always appends newline before the sequence as a stopping string
+        // But it's a problem for Metharme which doesn't use newlines to separate them.
+        const wrap = (s) => power_user.instruct.wrap ? '\n' + s : s;
+        // Sequence must be a non-empty string
+        if (typeof sequence === 'string' && sequence.length > 0) {
+            // If sequence is just a whitespace or newline - we don't want to make it a stopping string
+            // User can always add it as a custom stop string if really needed
+            if (sequence.trim().length > 0) {
+                const wrappedSequence = wrap(sequence);
+                // Need to respect "insert macro" setting
+                const stopString = power_user.instruct.macro ? substituteParams(wrappedSequence) : wrappedSequence;
+                result.push(stopString);
+            }
+        }
+    }
 
     if (power_user.instruct.enabled) {
-        if (power_user.instruct.input_sequence) {
-            result.push(substituteParams(wrap(power_user.instruct.input_sequence), name1, name2));
-        }
-        if (power_user.instruct.output_sequence) {
-            result.push(substituteParams(wrap(power_user.instruct.output_sequence), name1, name2));
-        }
+        const input_sequence = power_user.instruct.input_sequence;
+        const output_sequence = power_user.instruct.output_sequence;
+        const last_output_sequence = power_user.instruct.last_output_sequence;
+
+        const combined_sequence = `${input_sequence}\n${output_sequence}\n${last_output_sequence}`;
+
+        combined_sequence.split('\n').filter((line, index, self) => self.indexOf(line) === index).forEach(addInstructSequence);
     }
 
     if (power_user.custom_stopping_strings) {
@@ -2043,13 +2104,6 @@ function baseChatReplace(value, name1, name2) {
         }
     }
     return value;
-}
-
-function appendToStoryString(value, prefix) {
-    if (value !== undefined && value.length > 0) {
-        return prefix + value + '\n';
-    }
-    return '';
 }
 
 function isStreamingEnabled() {
@@ -2299,6 +2353,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         abortController = new AbortController();
     }
 
+    if (main_api == 'novel' && quiet_prompt) {
+        quiet_prompt = adjustNovelInstructionPrompt(quiet_prompt);
+    }
+
     // OpenAI doesn't need instruct mode. Use OAI main prompt instead.
     const isInstruct = power_user.instruct.enabled && main_api !== 'openai';
     const isImpersonate = type == "impersonate";
@@ -2376,11 +2434,14 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
         const memberIds = enabledMembers
             .map((member) => characterIndexMap.get(member))
-            .filter((index) => index !== undefined);
+            .filter((index) => index !== undefined && index !== null);
 
         if (memberIds.length > 0) {
             setCharacterId(memberIds[0]);
             setCharacterName('');
+        } else {
+            console.log('No enabled members found');
+            return;
         }
     }
 
@@ -2453,12 +2514,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         if (mesExamples.replace(/<START>/gi, '').trim().length === 0) {
             mesExamples = '';
         }
-        const blockHeading =
-            main_api === 'openai' ? '<START>' : // OpenAI handler always expects it
-                power_user.custom_chat_separator ? power_user.custom_chat_separator :
-                    power_user.disable_examples_formatting ? '' :
-                        is_pygmalion ? '<START>' : `This is how ${name2} should talk`;
-        let mesExamplesArray = mesExamples.split(/<START>/gi).slice(1).map(block => `${blockHeading}\n${block.trim()}\n`);
+
+        const exampleSeparator = power_user.context.example_separator ? `${power_user.context.example_separator}\n` : '';
+        const blockHeading = main_api === 'openai' ? '<START>\n' : exampleSeparator;
+        let mesExamplesArray = mesExamples.split(/<START>/gi).slice(1).map(block => `${blockHeading}${block.trim()}\n`);
 
         // First message in fresh 1-on-1 chat reacts to user/character settings changes
         if (chat.length) {
@@ -2483,17 +2542,15 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
         console.log(`Core/all messages: ${coreChat.length}/${chat.length}`);
 
-        let storyString = "";
+        const storyStringParams = {
+            description: charDescription,
+            personality: charPersonality,
+            scenario: Scenario,
+            char: name2,
+            user: name1,
+        };
 
-        if (is_pygmalion) {
-            storyString += appendToStoryString(charDescription, power_user.disable_description_formatting ? '' : name2 + "'s Persona: ");
-            storyString += appendToStoryString(charPersonality, power_user.disable_personality_formatting ? '' : 'Personality: ');
-            storyString += appendToStoryString(Scenario, power_user.disable_scenario_formatting ? '' : 'Scenario: ');
-        } else {
-            storyString += appendToStoryString(charDescription, '');
-            storyString += appendToStoryString(charPersonality, power_user.disable_personality_formatting ? '' : name2 + "'s personality: ");
-            storyString += appendToStoryString(Scenario, power_user.disable_scenario_formatting ? '' : 'Circumstances and context of the dialogue: ');
-        }
+        let storyString = renderStoryString(storyStringParams);
 
         // kingbri MARK: - Make sure the prompt bias isn't the same as the user bias
         if ((promptBias && !isUserPromptBias) || power_user.always_force_name2 || is_pygmalion) {
@@ -2916,7 +2973,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
             }
 
-            if (true === dryRun) return onSuccess({error: 'dryRun'});
+            if (true === dryRun) return onSuccess({ error: 'dryRun' });
 
             if (power_user.console_log_prompts) {
 
@@ -3342,31 +3399,17 @@ function addChatsPreamble(mesSendString) {
 }
 
 function addChatsSeparator(mesSendString) {
-    if (power_user.custom_chat_separator && power_user.custom_chat_separator.length) {
-        mesSendString = power_user.custom_chat_separator + '\n' + mesSendString;
+    if (main_api === 'novel') {
+        return '***\n' + mesSendString;
     }
 
-    // if chat start formatting is disabled
-    else if (power_user.disable_start_formatting) {
-        mesSendString = mesSendString;
+    else if (power_user.context.chat_start) {
+        return power_user.context.chat_start + '\n' + mesSendString;
     }
 
-    else if (main_api === 'novel') {
-        mesSendString = '***\n' + mesSendString;
-    }
-
-    // add non-pygma dingus
-    else if (!is_pygmalion) {
-        mesSendString = '\nThen the roleplay chat between ' + name1 + ' and ' + name2 + ' begins.\n' + mesSendString;
-    }
-
-    // add pygma <START>
     else {
-        mesSendString = '<START>\n' + mesSendString;
-        //mesSendString = mesSendString; //This edit simply removes the first "<START>" that is prepended to all context prompts
+        return mesSendString;
     }
-
-    return mesSendString;
 }
 
 function appendZeroDepthAnchor(force_name2, zeroDepthAnchor, finalPromt) {
@@ -3951,10 +3994,28 @@ function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete
         }
     }
     if (isInstruct && power_user.instruct.input_sequence && isImpersonate) {
-        getMessage = getMessage.replaceAll(power_user.instruct.input_sequence, '');
+        //getMessage = getMessage.replaceAll(power_user.instruct.input_sequence, '');
+        power_user.instruct.input_sequence.split('\n')
+            .filter(line => line.trim() !== '')
+            .forEach(line => {
+                getMessage = getMessage.replaceAll(line, '');
+            });
     }
     if (isInstruct && power_user.instruct.output_sequence && !isImpersonate) {
-        getMessage = getMessage.replaceAll(power_user.instruct.output_sequence, '');
+        //getMessage = getMessage.replaceAll(power_user.instruct.output_sequence, '');
+        power_user.instruct.output_sequence.split('\n')
+            .filter(line => line.trim() !== '')
+            .forEach(line => {
+                getMessage = getMessage.replaceAll(line, '');
+            });
+    }
+    if (isInstruct && power_user.instruct.last_output_sequence && !isImpersonate) {
+        //getMessage = getMessage.replaceAll(power_user.instruct.last_output_sequence, '');
+        power_user.instruct.last_output_sequence.split('\n')
+            .filter(line => line.trim() !== '')
+            .forEach(line => {
+                getMessage = getMessage.replaceAll(line, '');
+            });
     }
     // clean-up group message from excessive generations
     if (selected_group) {
@@ -4009,7 +4070,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
             chat[chat.length - 1]['gen_started'] = generation_started;
             chat[chat.length - 1]['gen_finished'] = generationFinished;
             chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
-            chat[chat.length - 1]['extra']['api'] = main_api;
+            chat[chat.length - 1]['extra']['api'] = getGeneratingApi();
             chat[chat.length - 1]['extra']['model'] = getGeneratingModel();
             addOneMessage(chat[chat.length - 1], { type: 'swipe' });
         } else {
@@ -4023,7 +4084,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         chat[chat.length - 1]['gen_started'] = generation_started;
         chat[chat.length - 1]['gen_finished'] = generationFinished;
         chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
-        chat[chat.length - 1]["extra"]["api"] = main_api;
+        chat[chat.length - 1]["extra"]["api"] = getGeneratingApi();
         chat[chat.length - 1]["extra"]["model"] = getGeneratingModel();
         addOneMessage(chat[chat.length - 1], { type: 'swipe' });
     } else if (type === 'appendFinal') {
@@ -4034,7 +4095,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         chat[chat.length - 1]['gen_started'] = generation_started;
         chat[chat.length - 1]['gen_finished'] = generationFinished;
         chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
-        chat[chat.length - 1]["extra"]["api"] = main_api;
+        chat[chat.length - 1]["extra"]["api"] = getGeneratingApi();
         chat[chat.length - 1]["extra"]["model"] = getGeneratingModel();
         addOneMessage(chat[chat.length - 1], { type: 'swipe' });
 
@@ -4046,7 +4107,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         chat[chat.length - 1]['is_user'] = false;
         chat[chat.length - 1]['is_name'] = this_mes_is_name;
         chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
-        chat[chat.length - 1]["extra"]["api"] = main_api;
+        chat[chat.length - 1]["extra"]["api"] = getGeneratingApi();
         chat[chat.length - 1]["extra"]["model"] = getGeneratingModel();
         if (power_user.trim_spaces) {
             getMessage = getMessage.trim();
@@ -4106,6 +4167,15 @@ function saveImageToMessage(img, mes) {
         }
         mes.extra.image = img.image;
         mes.extra.title = img.title;
+    }
+}
+
+function getGeneratingApi() {
+    switch (main_api) {
+        case 'openai':
+            return oai_settings.chat_completion_source || 'openai';
+        default:
+            return main_api;
     }
 }
 
@@ -4230,7 +4300,7 @@ async function renameCharacter() {
                 if (newChId !== -1) {
                     // Select the character after the renaming
                     this_chid = -1;
-                    $(`.character_select[chid="${newChId}"]`).click();
+                    selectCharacterById(String(newChId));
 
                     // Async delay to update UI
                     await delay(1);
@@ -4324,7 +4394,6 @@ async function saveChat(chat_name, withMetadata, mesId) {
     const metadata = { ...chat_metadata, ...(withMetadata || {}) };
     let file_name = chat_name ?? characters[this_chid].chat;
     characters[this_chid]['date_last_chat'] = Date.now();
-    sortCharactersList();
     chat.forEach(function (item, i) {
         if (item["is_group"]) {
             toastr.error('Trying to save group chat with regular saveChat function. Aborting to prevent corruption.');
@@ -4473,7 +4542,7 @@ async function getChat() {
         }
         await getChatResult();
         await saveChat();
-        eventSource.emit('chatLoaded', {detail: {id: this_chid, character: characters[this_chid]}});
+        eventSource.emit('chatLoaded', { detail: { id: this_chid, character: characters[this_chid] } });
 
 
         setTimeout(function () {
@@ -5255,9 +5324,6 @@ async function getSettings(type) {
         // Load character tags
         loadTagsSettings(settings);
 
-        // Load context templates
-        loadContextTemplatesFromSettings(data, settings);
-
         // Allow subscribers to mutate settings
         eventSource.emit(event_types.SETTINGS_LOADED_AFTER, settings);
 
@@ -5325,8 +5391,6 @@ async function getSettings(type) {
         }
     }
 
-    if (!is_checked_colab) isColab();
-
     eventSource.emit(event_types.SETTINGS_LOADED);
 }
 
@@ -5361,7 +5425,6 @@ async function saveSettings(type) {
             horde_settings: horde_settings,
             power_user: power_user,
             extension_settings: extension_settings,
-            context_settings: context_settings,
             tags: tags,
             tag_map: tag_map,
             nai_settings: nai_settings,
@@ -5537,6 +5600,66 @@ async function messageEditDone(div) {
     await saveChatConditional();
 }
 
+/**
+ * Fetches the chat content for each chat file from the server and compiles them into a dictionary.
+ * The function iterates over a provided list of chat metadata and requests the actual chat content 
+ * for each chat, either as an individual chat or a group chat based on the context.
+ *
+ * @param {Array} data - An array containing metadata about each chat such as file_name.
+ * @param {boolean} isGroupChat - A flag indicating if the chat is a group chat.
+ * @returns {Object} chat_dict - A dictionary where each key is a file_name and the value is the 
+ * corresponding chat content fetched from the server.
+ */
+export async function getChatsFromFiles(data, isGroupChat) {
+    const context = getContext();
+    let chat_dict = {};
+    let chat_list = Object.values(data).sort((a, b) => a["file_name"].localeCompare(b["file_name"])).reverse();
+
+    for (const { file_name } of chat_list) {
+        try {
+            const endpoint = isGroupChat ? '/getgroupchat' : '/getchat';
+            const requestBody = isGroupChat
+                ? JSON.stringify({ id: file_name })
+                : JSON.stringify({
+                    ch_name: characters[context.characterId].name,
+                    file_name: file_name.replace('.jsonl', ''),
+                    avatar_url: characters[context.characterId].avatar
+                });
+
+            const chatResponse = await fetch(endpoint, {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: requestBody,
+                cache: 'no-cache',
+            });
+
+            if (!chatResponse.ok) {
+                continue;
+            }
+
+            const currentChat = await chatResponse.json();
+            if (!isGroupChat) {
+                // remove the first message, which is metadata, only for individual chats
+                currentChat.shift();
+            }
+            chat_dict[file_name] = currentChat;
+
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    return chat_dict;
+}
+
+/**
+ * Fetches the metadata of all past chats related to a specific character based on its avatar URL.
+ * The function sends a POST request to the server to retrieve all chats for the character. It then 
+ * processes the received data, sorts it by the file name, and returns the sorted data.
+ *
+ * @returns {Array} - An array containing metadata of all past chats of the character, sorted 
+ * in descending order by file name. Returns `undefined` if the fetch request is unsuccessful.
+ */
 async function getPastCharacterChats() {
     const response = await fetch("/getallchatsofcharacter", {
         method: 'POST',
@@ -5554,6 +5677,12 @@ async function getPastCharacterChats() {
     return data;
 }
 
+/**
+ * Displays the past chats for a character or a group based on the selected context.
+ * The function first fetches the chats, processes them, and then displays them in 
+ * the HTML. It also has a built-in search functionality that allows filtering the 
+ * displayed chats based on a search query.
+ */
 export async function displayPastChats() {
     $("#select_chat_div").empty();
 
@@ -5562,45 +5691,70 @@ export async function displayPastChats() {
     const currentChat = selected_group ? group?.chat_id : characters[this_chid]["chat"];
     const displayName = selected_group ? group?.name : characters[this_chid].name;
     const avatarImg = selected_group ? group?.avatar_url : getThumbnailUrl('avatar', characters[this_chid]['avatar']);
-
+    const rawChats = await getChatsFromFiles(data, selected_group);
     // Sort by last message date descending
     data.sort((a, b) => sortMoments(timestampToMoment(a.last_mes), timestampToMoment(b.last_mes)));
-
+    console.log(data);
     $("#load_select_chat_div").css("display", "none");
     $("#ChatHistoryCharName").text(displayName);
-    for (const key in data) {
-        let strlen = 300;
-        let mes = data[key]["mes"];
 
-        if (mes !== undefined) {
-            if (mes.length > strlen) {
-                mes = "..." + mes.substring(mes.length - strlen);
-            }
-            const chat_items = data[key]["chat_items"];
-            const file_size = data[key]["file_size"];
-            const fileName = data[key]['file_name'];
-            const timestamp = timestampToMoment(data[key]['last_mes']).format('LL LT');
-            const template = $('#past_chat_template .select_chat_block_wrapper').clone();
-            template.find('.select_chat_block').attr('file_name', fileName);
-            template.find('.avatar img').attr('src', avatarImg);
-            template.find('.select_chat_block_filename').text(fileName);
-            template.find('.chat_file_size').text(" (" + file_size + ")");
-            template.find('.chat_messages_num').text(" (" + chat_items + " messages)");
-            template.find('.select_chat_block_mes').text(mes);
-            template.find('.PastChat_cross').attr('file_name', fileName);
-            template.find('.chat_messages_date').text(timestamp);
+    const displayChats = (searchQuery) => {
+        $("#select_chat_div").empty();  // Clear the current chats before appending filtered chats
 
-            if (selected_group) {
-                template.find('.avatar img').replaceWith(getGroupAvatar(group));
-            }
+        const filteredData = data.filter(chat => {
+            const fileName = chat['file_name'];
+            const chatContent = rawChats[fileName];
 
-            $("#select_chat_div").append(template);
+            return chatContent && Object.values(chatContent).some(message => message.mes.toLowerCase().includes(searchQuery.toLowerCase()));
+        });
 
-            if (currentChat === fileName.toString().replace(".jsonl", "")) {
-                $("#select_chat_div").find(".select_chat_block:last").attr("highlight", true);
+        console.log(filteredData);
+        for (const key in filteredData) {
+            let strlen = 300;
+            let mes = filteredData[key]["mes"];
+
+            if (mes !== undefined) {
+                if (mes.length > strlen) {
+                    mes = "..." + mes.substring(mes.length - strlen);
+                }
+                const chat_items = data[key]["chat_items"];
+                const file_size = data[key]["file_size"];
+                const fileName = data[key]['file_name'];
+                const timestamp = timestampToMoment(data[key]['last_mes']).format('LL LT');
+                const template = $('#past_chat_template .select_chat_block_wrapper').clone();
+                template.find('.select_chat_block').attr('file_name', fileName);
+                template.find('.avatar img').attr('src', avatarImg);
+                template.find('.select_chat_block_filename').text(fileName);
+                template.find('.chat_file_size').text(" (" + file_size + ")");
+                template.find('.chat_messages_num').text(" (" + chat_items + " messages)");
+                template.find('.select_chat_block_mes').text(mes);
+                template.find('.PastChat_cross').attr('file_name', fileName);
+                template.find('.chat_messages_date').text(timestamp);
+
+                if (selected_group) {
+                    template.find('.avatar img').replaceWith(getGroupAvatar(group));
+                }
+
+                $("#select_chat_div").append(template);
+
+                if (currentChat === fileName.toString().replace(".jsonl", "")) {
+                    $("#select_chat_div").find(".select_chat_block:last").attr("highlight", true);
+                }
             }
         }
+    
     }
+    displayChats('');  // Display all by default
+
+    const debouncedDisplay = debounce((searchQuery) => {
+        displayChats(searchQuery);
+    }, 300);
+
+    // Define the search input listener
+    $("#select_chat_search").on("input", function () {
+        const searchQuery = $(this).val();
+        debouncedDisplay(searchQuery);
+    });
 }
 
 //************************************************************
@@ -5879,7 +6033,7 @@ function select_rm_characters() {
     menu_type = "characters";
     selectRightMenuWithAnimation('rm_characters_block');
     setRightTabSelectedClass('rm_button_characters');
-    updateVisibleDivs('#rm_print_characters_block', true);
+    printCharacters(false); // Do a quick refresh of the characters list
 }
 
 function setExtensionPrompt(key, value, position, depth) {
@@ -6226,7 +6380,6 @@ async function deleteMessageImage() {
     mesBlock.find('.mes_img_container').removeClass('img_extra');
     mesBlock.find('.mes_img').attr('src', '');
     saveChatConditional();
-    /*updateVisibleDivs('#chat', false);*/
 }
 
 function enlargeMessageImage() {
@@ -6618,7 +6771,7 @@ async function createOrEditCharacter(e) {
                 );
                 $("#create_button").attr("value", "Save");
                 crop_data = undefined;
-                eventSource.emit(event_types.CHARACTER_EDITED, {detail: {id: this_chid, character: characters[this_chid]}});
+                eventSource.emit(event_types.CHARACTER_EDITED, { detail: { id: this_chid, character: characters[this_chid] } });
             },
             error: function (jqXHR, exception) {
                 $("#create_button").removeAttr("disabled");
@@ -6959,51 +7112,6 @@ const swipe_right = () => {
     }
 }
 
-export function updateCharacterCount(characterSelector) {
-    const visibleCharacters = $(characterSelector)
-        .not(".hiddenBySearch")
-        .not(".hiddenByTag")
-        .not(".hiddenByGroup")
-        .not(".hiddenByGroupMember")
-        .not(".hiddenByFav");
-    const visibleCharacterCount = visibleCharacters.length;
-    const totalCharacterCount = $(characterSelector).length;
-
-    $("#rm_character_count").text(
-        `(${visibleCharacterCount} / ${totalCharacterCount}) Characters`
-    );
-    console.log("visibleCharacters.length: " + visibleCharacters.length);
-}
-
-function updateVisibleDivs(containerSelector, resizecontainer) {
-    var $container = $(containerSelector);
-    var $children = $container.children();
-    var totalHeight = 0;
-    $children.each(function () {
-        totalHeight += $(this).outerHeight();
-    });
-    if (resizecontainer) {
-        $container.css({
-            height: totalHeight,
-        });
-    }
-    var containerTop = $container.offset() ? $container.offset().top : 0;
-    var firstVisibleIndex = null;
-    var lastVisibleIndex = null;
-    $children.each(function (index) {
-        var $child = $(this);
-        var childTop = $child.offset().top - containerTop;
-        var childBottom = childTop + $child.outerHeight();
-        if (childTop <= $container.height() && childBottom >= 0) {
-            if (firstVisibleIndex === null) {
-                firstVisibleIndex = index;
-            }
-            lastVisibleIndex = index;
-        }
-        $child.toggleClass('hiddenByScroll', childTop > $container.height() || childBottom < 0);
-    });
-}
-
 function displayOverrideWarnings() {
     if (!this_chid || !selected_group) {
         $('.prompt_overridden').hide();
@@ -7188,8 +7296,7 @@ function doCharListDisplaySwitch() {
     console.debug('toggling body charListGrid state')
     $("body").toggleClass('charListGrid')
     power_user.charListGrid = $("body").hasClass("charListGrid") ? true : false;
-    saveSettingsDebounced()
-    updateVisibleDivs('#rm_print_characters_block', true);
+    saveSettingsDebounced();
 }
 
 function doCloseChat() {
@@ -7283,17 +7390,10 @@ $(document).ready(function () {
     registerSlashCommand('closechat', doCloseChat, [], "- closes the current chat", true, true);
     registerSlashCommand('panels', doTogglePanels, ['togglepanels'], "- toggle UI panels on/off", true, true);
 
-
-
     setTimeout(function () {
         $("#groupControlsToggle").trigger('click');
         $("#groupCurrentMemberListToggle .inline-drawer-icon").trigger('click');
     }, 200);
-
-
-    $("#rm_print_characters_block").on('scroll', debounce(() => {
-        updateVisibleDivs('#rm_print_characters_block', true);
-    }, 5));
 
     $('#chat').on('scroll', async () => {
         // if on the start of the chat and has hidden messages
@@ -7357,43 +7457,8 @@ $(document).ready(function () {
     $(document).on('click', '.swipe_left', swipe_left);
 
     $("#character_search_bar").on("input", function () {
-        const selector = ['#rm_print_characters_block .character_select', '#rm_print_characters_block .group_select'].join(',');
-        const searchValue = $(this).val().trim().toLowerCase();
-        const fuzzySearchCharactersResults = power_user.fuzzy_search ? fuzzySearchCharacters(searchValue) : [];
-        const fuzzySearchGroupsResults = power_user.fuzzy_search ? fuzzySearchGroups(searchValue) : [];
-
-        function getIsValidSearch(_this) {
-            const name = $(_this).find(".ch_name").text().toLowerCase();
-            const chid = $(_this).attr("chid");
-            const grid = $(_this).attr("grid");
-
-            if (power_user.fuzzy_search) {
-                if (chid !== undefined) {
-                    return fuzzySearchCharactersResults.includes(parseInt(chid));
-                } else if (grid !== undefined) {
-                    return fuzzySearchGroupsResults.includes(String(grid));
-                } else {
-                    return false;
-                }
-            }
-            else {
-                return name.includes(searchValue);
-            }
-        }
-
-        if (!searchValue) {
-            $(selector).removeClass('hiddenBySearch');
-            updateVisibleDivs('#rm_print_characters_block', true);
-        } else {
-            $(selector).each(function () {
-                const isValidSearch = getIsValidSearch(this);
-                $(this).toggleClass('hiddenBySearch', !isValidSearch);
-            });
-            updateVisibleDivs('#rm_print_characters_block', true);
-        }
-        updateCharacterCount(selector);
-
-
+        const searchValue = $(this).val().toLowerCase();
+        entitiesFilter.setFilterData(FILTER_TYPES.SEARCH, searchValue);
     });
 
     $("#send_but").click(function () {
@@ -7433,31 +7498,10 @@ $(document).ready(function () {
         $("#character_search_bar").val("").trigger("input");
     });
 
-    $(document).on("click", ".character_select", function () {
-        if (selected_group && is_group_generating) {
-            return;
-        }
-
-        if (selected_group || this_chid !== $(this).attr("chid")) {
-            //if clicked on a different character from what was currently selected
-            if (!is_send_press) {
-                cancelTtsPlay();
-                resetSelectedGroup();
-                this_edit_mes_id = undefined;
-                selected_button = "character_edit";
-                this_chid = $(this).attr("chid");
-                clearChat();
-                chat.length = 0;
-                chat_metadata = {};
-                getChat();
-            }
-        } else {
-            //if clicked on character that was already selected
-            selected_button = "character_edit";
-            select_selected_character(this_chid);
-        }
+    $(document).on("click", ".character_select", function() {
+        const id = $(this).attr("chid");
+        selectCharacterById(id);
     });
-
 
     $(document).on("input", ".edit_textarea", function () {
         scroll_holder = $("#chat").scrollTop();
@@ -7670,7 +7714,7 @@ $(document).ready(function () {
         if (popup_type == "del_ch") {
             const deleteChats = !!$("#del_char_checkbox").prop("checked");
             await handleDeleteCharacter(popup_type, this_chid, deleteChats);
-            eventSource.emit('characterDeleted', {id: this_chid, character: characters[this_chid]});
+            eventSource.emit('characterDeleted', { id: this_chid, character: characters[this_chid] });
         }
         if (popup_type == "alternate_greeting" && menu_type !== "create") {
             createOrEditCharacter();
@@ -8250,7 +8294,6 @@ $(document).ready(function () {
             const formattedValue = slider.format(value);
             slider.setValue(value);
             $(slider.counterId).text(formattedValue);
-            console.log('saving');
             saveSettingsDebounced();
         });
     });
@@ -9172,4 +9215,9 @@ $(document).ready(function () {
     $("#charListGridToggle").on('click', async () => {
         doCharListDisplaySwitch();
     });
+
+    $("#hideCharPanelAvatarButton").on('click', () => {
+        $('#avatar-and-name-block').slideToggle()
+    })
+
 });

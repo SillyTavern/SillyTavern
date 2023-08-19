@@ -1,0 +1,13 @@
+{
+    "input_sequence": "### Instruction:\n#### {{user}}:",
+    "last_output_sequence": "### Response (2 paragraphs, engaging, natural, authentic, descriptive, creative):\n#### {{char}}:",
+    "macro": true,
+    "name": "simple-proxy-for-tavern",
+    "names": false,
+    "output_sequence": "### Response:\n#### {{char}}:",
+    "separator_sequence": "",
+    "stop_sequence": "",
+    "system_prompt": "## {{char}}\n- You're \"{{char}}\" in this never-ending roleplay with \"{{user}}\".",
+    "system_sequence": "",
+    "wrap": true
+}

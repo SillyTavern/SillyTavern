@@ -1270,18 +1270,18 @@ input[type="file"] {
     filter: brightness(150%);
 }
 
-#rm_character_count {
-    padding: 5px;
-    font-size: calc(var(--mainFontSize) * .8);
-    font-weight: bold;
+#rm_print_characters_pagination {
+    display: flex;
+    flex-direction: row;
+    gap: 5px;
+    justify-content: center;
 }
 
 #rm_print_characters_block {
-    /* padding: 5px 0; */
     overflow-y: auto;
     flex-grow: 1;
     display: flex;
-    /* row-gap: 5px; */
+    height: 100%;
 }
 
 body.charListGrid #rm_print_characters_block {
@@ -1501,6 +1501,7 @@ select option:not(:checked) {
     display: flex;
     overflow-y: auto;
     flex-direction: column;
+    height: 100%;
 }
 
 #rm_characters_block .right_menu_button {
@@ -2216,7 +2217,7 @@ grammarly-extension {
     background-color: red;
 }
 
-#kobold_order {
+.prompt_order {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -2226,7 +2227,7 @@ grammarly-extension {
     padding: 5px;
 }
 
-#kobold_order>div {
+.prompt_order>div {
     padding: 5px;
     padding-left: 30px;
     width: 100%;
@@ -2241,16 +2242,38 @@ grammarly-extension {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    column-gap: 10px;
 }
 
-#kobold_order>div:hover {
+.prompt_order>div>span:first-child {
+    flex-grow: 1;
+}
+
+.prompt_order>div:hover {
     background-color: var(--grey30a);
 }
 
-#kobold_order>div::after {
+.prompt_order>div::after {
     content: "☰";
     left: 8px;
     position: absolute;
+}
+
+.prompt_order .disabled {
+    opacity: 0.5;
+    filter: grayscale(0.5);
+}
+
+.prompt_order .toggle_button {
+    padding-right: 0;
+}
+
+.prompt_order .toggle_button::after {
+    content: '☑';
+}
+
+.prompt_order .disabled .toggle_button::after {
+    content: '☐';
 }
 
 /* ------ online status indicators and texts. 2 = kobold AI, 3 = Novel AI  ----------*/
@@ -3209,6 +3232,12 @@ h5 {
 
 .rm_tag_filter .tag:not(.actionable) {
     display: none;
+}
+
+.group_pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 #rm_group_chats_block .tag.filterByGroups {
@@ -4568,6 +4597,41 @@ toolcool-color-picker {
     height: 100%;
 }
 
+.novelai_logit_bias_form {
+    display: flex;
+    flex-direction: row;
+    column-gap: 10px;
+    align-items: center;
+}
+
+.novelai_logit_bias_text,
+.novelai_logit_bias_value {
+    flex: 1;
+}
+
+.novelai_logit_bias_list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.novelai_logit_bias_list:empty {
+    width: 100%;
+    height: 100%;
+}
+
+.novelai_logit_bias_list:empty::before {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    content: "No items";
+    font-weight: bolder;
+    width: 100%;
+    height: 100%;
+    opacity: 0.8;
+    min-height: 2.5rem;
+}
+
 /*used to fix smallness of certain FontAwesome glyph which break button squareness*/
 /*currently used on: CharList Import*/
 
@@ -5558,4 +5622,78 @@ body.waifuMode .zoomed_avatar {
     height: 16px;
     vertical-align: middle;
     /* To align with adjacent text */
+}
+
+.paginationjs {
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+}
+
+/* Pagination */
+.paginationsjs-pages {
+    margin: 0.5em 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.paginationjs-pages ul {
+    list-style-type: none;
+    margin: 0.25em;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+}
+
+.paginationjs-size-changer select {
+    width: unset;
+    margin: 0;
+}
+
+.paginationjs-pages ul li a {
+    padding: 0.05em 0.5em;
+    text-decoration: none;
+    color: var(--SmartThemeBodyColor);
+    border: 1px solid var(--white30a);
+    border-radius: 5px;
+    transition: opacity 0.2s;
+    opacity: 0.8;
+    cursor: pointer;
+}
+
+.paginationjs-pages ul li a:hover {
+    opacity: 1;
+}
+
+.paginationjs-pages ul li.active a {
+    color: var(--SmartThemeQuoteColor);
+    border-color: var(--SmartThemeQuoteColor);
+    opacity: 1;
+}
+
+.paginationjs-pages ul li.disabled a {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.paginationjs-nav {
+    padding: 5px;
+    font-size: calc(var(--mainFontSize) * .8);
+    font-weight: bold;
+}
+
+#select_chat_search {
+    background-color: transparent;
+    border: none;
+    outline: none;
+    color: white;
+    display: inline-block;  /* Change display to inline-block */
+    vertical-align: middle; /* Align to middle if there's a height discrepancy */
+    width: 200px;
+    font-size: 16px;
+    z-index: 10;
+    margin-left: 10px; /* Give some space between the button and search box */
 }

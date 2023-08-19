@@ -172,7 +172,7 @@ function PromptManagerModule() {
             strategy: 'global',
             dummyId: 100000
         },
-        draggable: true,
+        sortableDelay: 30,
         warningTokenThreshold: 1500,
         dangerTokenThreshold: 500,
         defaultPrompts: {
@@ -181,10 +181,7 @@ function PromptManagerModule() {
             jailbreak: '',
             enhanceDefinitions: ''
         }
-    }
-
-    // Either 0 for done or 1 for rendering
-    this.renderState = 0;
+    };
 
     // Chatcompletion configuration object
     this.serviceSettings = null;
@@ -591,22 +588,12 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
  * @param afterTryGenerate - Whether a dry run should be attempted before rendering
  */
 PromptManagerModule.prototype.render = function (afterTryGenerate = true) {
-    if (main_api !== 'openai' ||
-        null === this.activeCharacter ||
-    1 === this.renderState) return;
+    if (main_api !== 'openai') return;
 
-    this.renderState = 1;
+    if (null === this.activeCharacter) return;
     this.error = null;
 
-    const stopPropagation = (event) => {
-        event.stopPropagation();
-    }
-
-    const configurationContainer = document.getElementById('ai_response_configuration');
-    try {
-        // Lock configuration during render
-        configurationContainer.addEventListener('click', stopPropagation, true);
-
+    waitUntilCondition(() => !is_send_press && !is_group_generating, 1024 * 1024, 100).then(() => {
         if (true === afterTryGenerate) {
             // Executed during dry-run for determining context composition
             this.profileStart('filling context');
@@ -626,15 +613,9 @@ PromptManagerModule.prototype.render = function (afterTryGenerate = true) {
             this.makeDraggable();
             this.profileEnd('render');
         }
-    } catch (error) {
-        this.log('----- Unexpected error while rendering prompt manager -----');
-        this.log(error);
-        this.log(error.stack);
-        this.log('-----------------------------------------------------------');
-    } finally {
-        this.renderState = 0;
-        configurationContainer.removeEventListener('click', stopPropagation, true);
-    }
+    }).catch(() => {
+        console.log('Timeout while waiting for send press to be false');
+    });
 }
 
 /**
@@ -889,7 +870,7 @@ PromptManagerModule.prototype.handleGroupSelected = function (event) {
  */
 PromptManagerModule.prototype.getActiveGroupCharacters = function() {
     // ToDo: Ideally, this should return the actual characters.
-    return (this.activeCharacter?.group?.members || []).map(member => member.substring(0, member.lastIndexOf('.')));
+    return (this.activeCharacter?.group?.members || []).map(member => member && member.substring(0, member.lastIndexOf('.')));
 }
 
 /**
@@ -1588,6 +1569,7 @@ PromptManagerModule.prototype.getFormattedDate = function() {
  */
 PromptManagerModule.prototype.makeDraggable = function () {
     $(`#${this.configuration.prefix}prompt_manager_list`).sortable({
+        delay: this.configuration.sortableDelay,
         items: `.${this.configuration.prefix}prompt_manager_prompt_draggable`,
         update: ( event, ui ) => {
             const promptOrder = this.getPromptOrderForCharacter(this.activeCharacter);

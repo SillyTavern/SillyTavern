@@ -64,11 +64,6 @@
         "collapse_newlines": false,
         "pygmalion_formatting": 0,
         "pin_examples": false,
-        "disable_description_formatting": false,
-        "disable_scenario_formatting": false,
-        "disable_personality_formatting": false,
-        "disable_examples_formatting": false,
-        "disable_start_formatting": false,
         "trim_sentences": false,
         "include_newline": false,
         "always_force_name2": true,
@@ -77,7 +72,6 @@
         "multigen": false,
         "multigen_first_chunk": 50,
         "multigen_next_chunks": 30,
-        "custom_chat_separator": "",
         "markdown_escape_strings": "",
         "fast_ui_mode": false,
         "avatar_style": 0,
@@ -312,9 +306,6 @@
             "None": {}
         }
     },
-    "context_settings": {
-        "selected_template": ""
-    },
     "tags": [
         {
             "id": "1345561466591",
@@ -334,21 +325,22 @@
         ]
     },
     "nai_settings": {
-        "temperature": 0.63,
-        "repetition_penalty": 1.148125,
+        "temperature": 1.5,
+        "repetition_penalty": 2.25,
         "repetition_penalty_range": 2048,
         "repetition_penalty_slope": 0.09,
         "repetition_penalty_frequency": 0,
-        "repetition_penalty_presence": 0,
+        "repetition_penalty_presence": 0.005,
         "tail_free_sampling": 0.975,
-        "top_k": 0,
-        "top_p": 0.975,
-        "top_a": 1,
-        "typical_p": 1,
+        "top_k": 10,
+        "top_p": 0.75,
+        "top_a": 0.08,
+        "typical_p": 0.975,
         "min_length": 1,
-        "model_novel": "euterpe-v2",
-        "preset_settings_novel": "Classic-Euterpe",
-        "streaming_novel": false
+        "model_novel": "clio-v1",
+        "preset_settings_novel": "Talker-Chat-Clio",
+        "streaming_novel": true,
+        "order":  [1, 5, 0, 2, 3, 4]
     },
     "kai_settings": {
         "temp": 1,
