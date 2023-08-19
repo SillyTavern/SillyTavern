@@ -699,7 +699,7 @@ function populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, ty
  *
  * @returns {Object} prompts - The prepared and merged system and user-defined prompts.
  */
-function preparePromptsForChatCompletion(Scenario, charPersonality, name2, worldInfoBefore, worldInfoAfter, charDescription, quietPrompt, bias, extensionPrompts) {
+function preparePromptsForChatCompletion(Scenario, charPersonality, name2, worldInfoBefore, worldInfoAfter, charDescription, quietPrompt, bias, extensionPrompts, systemPromptOverride, jailbreakPromptOverride) {
     const scenarioText = Scenario ? `[Circumstances and context of the dialogue: ${Scenario}]` : '';
     const charPersonalityText = charPersonality ? `[${name2}'s personality: ${charPersonality}]` : '';
 
@@ -752,7 +752,6 @@ function preparePromptsForChatCompletion(Scenario, charPersonality, name2, world
     });
 
     // Apply character-specific main prompt
-    const systemPromptOverride = promptManager.activeCharacter.data?.system_prompt ?? null;
     const systemPrompt = prompts.get('main') ?? null;
     if (systemPromptOverride && systemPrompt) {
         const mainOriginalContent = systemPrompt.content;
@@ -762,7 +761,6 @@ function preparePromptsForChatCompletion(Scenario, charPersonality, name2, world
     }
 
     // Apply character-specific jailbreak
-    const jailbreakPromptOverride = promptManager.activeCharacter.data?.post_history_instructions ?? null;
     const jailbreakPrompt = prompts.get('jailbreak') ?? null;
     if (jailbreakPromptOverride && jailbreakPrompt) {
         const jbOriginalContent = jailbreakPrompt.content;
@@ -806,7 +804,9 @@ function prepareOpenAIMessages({
     type,
     quietPrompt,
     extensionPrompts,
-    cyclePrompt
+    cyclePrompt,
+    systemPromptOverride,
+    jailbreakPromptOverride,
 } = {}, dryRun) {
     // Without a character selected, there is no way to accurately calculate tokens
     if (!promptManager.activeCharacter && dryRun) return [null, false];
@@ -819,7 +819,7 @@ function prepareOpenAIMessages({
 
     try {
         // Merge markers and ordered user prompts with system prompts
-        const prompts = preparePromptsForChatCompletion(Scenario, charPersonality, name2, worldInfoBefore, worldInfoAfter, charDescription, quietPrompt, bias, extensionPrompts);
+        const prompts = preparePromptsForChatCompletion(Scenario, charPersonality, name2, worldInfoBefore, worldInfoAfter, charDescription, quietPrompt, bias, extensionPrompts, systemPromptOverride, jailbreakPromptOverride);
 
         // Fill the chat completion with as much context as the budget allows
         populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, type, cyclePrompt });

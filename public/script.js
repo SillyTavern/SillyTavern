@@ -1769,7 +1769,6 @@ function scrollChatToBottom() {
 function substituteParams(content, _name1, _name2, _original, _group) {
     _name1 = _name1 ?? name1;
     _name2 = _name2 ?? name2;
-    _original = _original || '';
     _group = _group ?? name2;
 
     if (!content) {
@@ -2126,6 +2125,8 @@ function baseChatReplace(value, name1, name2) {
         if (power_user.collapse_newlines) {
             value = collapseNewlines(value);
         }
+
+        value = value.replace(/\r/g, '');
     }
     return value;
 }
@@ -2528,8 +2529,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         let charPersonality = baseChatReplace(characters[this_chid].personality.trim(), name1, name2);
         let Scenario = baseChatReplace(scenarioText.trim(), name1, name2);
         let mesExamples = baseChatReplace(characters[this_chid].mes_example.trim(), name1, name2);
-        let systemPrompt = baseChatReplace(characters[this_chid].data?.system_prompt?.trim(), name1, name2);
-        let jailbreakPrompt = baseChatReplace(characters[this_chid].data?.post_history_instructions?.trim(), name1, name2);
+        let systemPrompt = power_user.prefer_character_prompt ? baseChatReplace(characters[this_chid].data?.system_prompt?.trim(), name1, name2) : '';
+        let jailbreakPrompt = power_user.prefer_character_jailbreak ? baseChatReplace(characters[this_chid].data?.post_history_instructions?.trim(), name1, name2) : '';
 
         // Parse example messages
         if (!mesExamples.startsWith('<START>')) {
@@ -2982,8 +2983,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     bias: promptBias,
                     type: type,
                     quietPrompt: quiet_prompt,
-                    jailbreakPrompt: jailbreakPrompt,
                     cyclePrompt: cyclePrompt,
+                    systemPromptOverride: systemPrompt,
+                    jailbreakPromptOverride: jailbreakPrompt,
                 }, dryRun);
                 generate_data = { prompt: prompt };
 
