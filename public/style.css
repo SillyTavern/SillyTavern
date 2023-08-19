@@ -3977,13 +3977,6 @@ a {
     display: none;
 }
 
-.hiddenByTag,
-.hiddenByFav,
-.hiddenByGroup,
-.hiddenBySearch {
-    display: none !important;
-}
-
 /* Message images */
 .mes .mes_img_container {
     max-width: 100%;
