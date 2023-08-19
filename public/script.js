@@ -2429,11 +2429,14 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
         const memberIds = enabledMembers
             .map((member) => characterIndexMap.get(member))
-            .filter((index) => index !== undefined);
+            .filter((index) => index !== undefined && index !== null);
 
         if (memberIds.length > 0) {
             setCharacterId(memberIds[0]);
             setCharacterName('');
+        } else {
+            console.log('No enabled members found');
+            return;
         }
     }
 

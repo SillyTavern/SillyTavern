@@ -61,6 +61,7 @@ import {
     getCurrentChatId,
     setScenarioOverride,
     getCropPopup,
+    system_avatar,
 } from "../script.js";
 import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect, tag_map } from './tags.js';
 import { FilterHelper } from './filters.js';
@@ -354,12 +355,11 @@ export function getGroupBlock(group) {
 }
 
 function updateGroupAvatar(group) {
-    $("#rm_print_characters_block .group_select").each(function () {
+    $("#group_avatar_preview").empty().append(getGroupAvatar(group));
+
+    $(".group_select").each(function () {
         if ($(this).data("id") == group.id) {
-            const avatar = getGroupAvatar(group);
-            if (avatar) {
-                $(this).find(".avatar").replaceWith(avatar);
-            }
+                $(this).find(".avatar").replaceWith(getGroupAvatar(group));
         }
     });
 }
@@ -401,7 +401,7 @@ function getGroupAvatar(group) {
 
     // default avatar
     const groupAvatar = $("#group_avatars_template .collage_1").clone();
-    groupAvatar.find(".img_1").attr("src", group.avatar_url);
+    groupAvatar.find(".img_1").attr("src", group.avatar_url || system_avatar);
     return groupAvatar;
 }
 
@@ -877,8 +877,8 @@ async function modifyGroupMember(chat_id, groupMember, isDelete) {
 
 async function reorderGroupMember(chat_id, groupMember, direction) {
     const id = groupMember.data("id");
-    const group = groups.find((x) => x.id == chat_id);
-    const memberArray = group?.members ?? newGroupMembers;
+    const thisGroup = groups.find((x) => x.id == chat_id);
+    const memberArray = thisGroup?.members ?? newGroupMembers;
 
     const indexOf = memberArray.indexOf(id);
     if (direction == 'down') {
@@ -901,7 +901,7 @@ async function reorderGroupMember(chat_id, groupMember, direction) {
     // Existing groups need to modify members list
     if (openGroupId) {
         await editGroup(chat_id, false, false);
-        updateGroupAvatar(group);
+        updateGroupAvatar(thisGroup);
     }
 }
 
