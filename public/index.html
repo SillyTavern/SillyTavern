@@ -654,7 +654,7 @@
                                     Max prompt cost: <span id="openrouter_max_prompt_cost">Unknown</span>
                                 </div>
                                 <hr>
-                                <div class="range-block" data-source="openai,claude,windowai,openrouter">
+                                <div class="range-block" data-source="openai,claude,windowai,openrouter,ai21">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
@@ -669,7 +669,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,openrouter">
+                                <div class="range-block" data-source="openai,openrouter,ai21">
                                     <div class="range-block-title" data-i18n="Frequency Penalty">
                                         Frequency Penalty
                                     </div>
@@ -684,7 +684,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,openrouter">
+                                <div class="range-block" data-source="openai,openrouter,ai21">
                                     <div class="range-block-title" data-i18n="Presence Penalty">
                                         Presence Penalty
                                     </div>
@@ -699,7 +699,22 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="claude,openrouter">
+                                <div class="range-block" data-source="ai21">
+                                    <div class="range-block-title" data-i18n="Count Penalty">
+                                        Count Penalty
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="count_pen" name="volume" min="0" max="1" step="0.01">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="count_pen" id="count_pen_counter">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block" data-source="claude,openrouter,ai21">
                                     <div class="range-block-title" data-i18n="Top K">
                                         Top K
                                     </div>
@@ -714,7 +729,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,openrouter">
+                                <div class="range-block" data-source="openai,claude,openrouter,ai21">
                                     <div class="range-block-title" data-i18n="Top-p">
                                         Top P
                                     </div>
@@ -1418,6 +1433,14 @@
                                             <span data-i18n="May help the model to understand context. Names must only contain letters or numbers.">Helps the model to associate messages in group chats. Names must only contain letters or numbers without whitespaces.</span>
                                         </div>
                                     </div>
+                                    <div class="range-block" data-source="ai21">
+                                        <label for="use_ai21_tokenizer" title="Use AI21 Tokenizer" class="checkbox_label widthFreeExpand">
+                                            <input id="use_ai21_tokenizer" type="checkbox" /><span data-i18n="Use AI21 Tokenizer">Use AI21 Tokenizer</span>
+                                        </label>
+                                        <div class="toggle-description justifyLeft">
+                                            <span data-i18n="Use the appropriate tokenizer for Jurassic models, which is more efficient than GPT's.">Use the appropriate tokenizer for Jurassic models, which is more efficient than GPT's.</span>
+                                        </div>
+                                    </div>
                                     <div class="inline-drawer m-t-1 wide100p">
                                         <div class="inline-drawer-toggle inline-drawer-header">
                                             <b data-i18n="Quick Edit">Quick Edit</b>
@@ -1618,7 +1641,7 @@
                             <option value="koboldhorde"><span data-i18n="KoboldAI Horde">KoboldAI Horde</span></option>
                             <option value="textgenerationwebui"><span data-i18n="Text Gen WebUI (ooba/Mancer)">Text Gen WebUI (ooba/Mancer)</span></option>
                             <option value="novel"><span data-i18n="NovelAI">NovelAI</span></option>
-                            <option value="openai"><span data-i18n="Chat Completion (OpenAI, Claude, Window/OpenRouter, Scale)">Chat Completion (OpenAI, Claude, Window, OpenRouter, Scale)</span></option>
+                            <option value="openai"><span data-i18n="Chat Completion (OpenAI, Claude, Window/OpenRouter, Scale, AI21)">Chat Completion (OpenAI, Claude, Window, OpenRouter, Scale, AI21)</span></option>
                         </select>
                     </div>
                     <div id="kobold_horde" style="position: relative;"> <!-- shows the kobold settings -->
@@ -1804,6 +1827,7 @@
                             <option value="openrouter">OpenRouter</option>
                             <option value="claude">Claude</option>
                             <option value="scale">Scale</option>
+                            <option value="ai21">AI21</option>
                         </select>
                         <form id="openai_form" data-source="openai" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <h4><span data-i18n="OpenAI API key">OpenAI API key</span></h4>
@@ -1970,6 +1994,27 @@
                             <input id="api_url_scale" name="api_url_scale" class="text_pole" maxlength="500" value="" autocomplete="off" placeholder="https://dashboard.scale.com/spellbook/api/v2/deploy/xxxxxxx">
                             <!-- Its only purpose is to trigger max context size check -->
                             <select id="model_scale_select" class="displayNone"></select>
+                        </form>
+
+                        <form id="ai21_form" data-source="ai21" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                            <h4>AI21 API Key</h4>
+                            <div class="flex-container">
+                                <input id="api_key_ai21" name="api_key_ai21" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_ai21"></div>
+                            </div>
+                            <div data-for="api_key_ai21" class="neutral_warning">
+                                For privacy reasons, your API key will be hidden after you reload the page.
+                            </div>
+                            <div>
+                                <h4 data-i18n="AI21 Model">AI21 Model</h4>
+                                <select id="model_ai21_select">
+                                    <optgroup label="Latest">
+                                        <option value="j2-ultra">j2-ultra</option>
+                                        <option value="j2-mid">j2-mid</option>
+                                        <option value="j2-light">j2-light</option>
+                                    </optgroup>
+                                </select>
+                            </div>
                         </form>
 
                         <div class="flex-container flex">
