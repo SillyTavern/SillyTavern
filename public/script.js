@@ -5577,6 +5577,66 @@ async function messageEditDone(div) {
     await saveChatConditional();
 }
 
+/**
+ * Fetches the chat content for each chat file from the server and compiles them into a dictionary.
+ * The function iterates over a provided list of chat metadata and requests the actual chat content 
+ * for each chat, either as an individual chat or a group chat based on the context.
+ *
+ * @param {Array} data - An array containing metadata about each chat such as file_name.
+ * @param {boolean} isGroupChat - A flag indicating if the chat is a group chat.
+ * @returns {Object} chat_dict - A dictionary where each key is a file_name and the value is the 
+ * corresponding chat content fetched from the server.
+ */
+export async function getChatsFromFiles(data, isGroupChat) {
+    const context = getContext();
+    let chat_dict = {};
+    let chat_list = Object.values(data).sort((a, b) => a["file_name"].localeCompare(b["file_name"])).reverse();
+
+    for (const { file_name } of chat_list) {
+        try {
+            const endpoint = isGroupChat ? '/getgroupchat' : '/getchat';
+            const requestBody = isGroupChat
+                ? JSON.stringify({ id: file_name })
+                : JSON.stringify({
+                    ch_name: characters[context.characterId].name,
+                    file_name: file_name.replace('.jsonl', ''),
+                    avatar_url: characters[context.characterId].avatar
+                });
+
+            const chatResponse = await fetch(endpoint, {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: requestBody,
+                cache: 'no-cache',
+            });
+
+            if (!chatResponse.ok) {
+                continue;
+            }
+
+            const currentChat = await chatResponse.json();
+            if (!isGroupChat) {
+                // remove the first message, which is metadata, only for individual chats
+                currentChat.shift();
+            }
+            chat_dict[file_name] = currentChat;
+
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    return chat_dict;
+}
+
+/**
+ * Fetches the metadata of all past chats related to a specific character based on its avatar URL.
+ * The function sends a POST request to the server to retrieve all chats for the character. It then 
+ * processes the received data, sorts it by the file name, and returns the sorted data.
+ *
+ * @returns {Array} - An array containing metadata of all past chats of the character, sorted 
+ * in descending order by file name. Returns `undefined` if the fetch request is unsuccessful.
+ */
 async function getPastCharacterChats() {
     const response = await fetch("/getallchatsofcharacter", {
         method: 'POST',
@@ -5594,6 +5654,12 @@ async function getPastCharacterChats() {
     return data;
 }
 
+/**
+ * Displays the past chats for a character or a group based on the selected context.
+ * The function first fetches the chats, processes them, and then displays them in 
+ * the HTML. It also has a built-in search functionality that allows filtering the 
+ * displayed chats based on a search query.
+ */
 export async function displayPastChats() {
     $("#select_chat_div").empty();
 
@@ -5602,45 +5668,70 @@ export async function displayPastChats() {
     const currentChat = selected_group ? group?.chat_id : characters[this_chid]["chat"];
     const displayName = selected_group ? group?.name : characters[this_chid].name;
     const avatarImg = selected_group ? group?.avatar_url : getThumbnailUrl('avatar', characters[this_chid]['avatar']);
-
+    const rawChats = await getChatsFromFiles(data, selected_group);
     // Sort by last message date descending
     data.sort((a, b) => sortMoments(timestampToMoment(a.last_mes), timestampToMoment(b.last_mes)));
-
+    console.log(data);
     $("#load_select_chat_div").css("display", "none");
     $("#ChatHistoryCharName").text(displayName);
-    for (const key in data) {
-        let strlen = 300;
-        let mes = data[key]["mes"];
 
-        if (mes !== undefined) {
-            if (mes.length > strlen) {
-                mes = "..." + mes.substring(mes.length - strlen);
-            }
-            const chat_items = data[key]["chat_items"];
-            const file_size = data[key]["file_size"];
-            const fileName = data[key]['file_name'];
-            const timestamp = timestampToMoment(data[key]['last_mes']).format('LL LT');
-            const template = $('#past_chat_template .select_chat_block_wrapper').clone();
-            template.find('.select_chat_block').attr('file_name', fileName);
-            template.find('.avatar img').attr('src', avatarImg);
-            template.find('.select_chat_block_filename').text(fileName);
-            template.find('.chat_file_size').text(" (" + file_size + ")");
-            template.find('.chat_messages_num').text(" (" + chat_items + " messages)");
-            template.find('.select_chat_block_mes').text(mes);
-            template.find('.PastChat_cross').attr('file_name', fileName);
-            template.find('.chat_messages_date').text(timestamp);
+    const displayChats = (searchQuery) => {
+        $("#select_chat_div").empty();  // Clear the current chats before appending filtered chats
 
-            if (selected_group) {
-                template.find('.avatar img').replaceWith(getGroupAvatar(group));
-            }
+        const filteredData = data.filter(chat => {
+            const fileName = chat['file_name'];
+            const chatContent = rawChats[fileName];
 
-            $("#select_chat_div").append(template);
+            return chatContent && Object.values(chatContent).some(message => message.mes.toLowerCase().includes(searchQuery.toLowerCase()));
+        });
 
-            if (currentChat === fileName.toString().replace(".jsonl", "")) {
-                $("#select_chat_div").find(".select_chat_block:last").attr("highlight", true);
+        console.log(filteredData);
+        for (const key in filteredData) {
+            let strlen = 300;
+            let mes = filteredData[key]["mes"];
+
+            if (mes !== undefined) {
+                if (mes.length > strlen) {
+                    mes = "..." + mes.substring(mes.length - strlen);
+                }
+                const chat_items = data[key]["chat_items"];
+                const file_size = data[key]["file_size"];
+                const fileName = data[key]['file_name'];
+                const timestamp = timestampToMoment(data[key]['last_mes']).format('LL LT');
+                const template = $('#past_chat_template .select_chat_block_wrapper').clone();
+                template.find('.select_chat_block').attr('file_name', fileName);
+                template.find('.avatar img').attr('src', avatarImg);
+                template.find('.select_chat_block_filename').text(fileName);
+                template.find('.chat_file_size').text(" (" + file_size + ")");
+                template.find('.chat_messages_num').text(" (" + chat_items + " messages)");
+                template.find('.select_chat_block_mes').text(mes);
+                template.find('.PastChat_cross').attr('file_name', fileName);
+                template.find('.chat_messages_date').text(timestamp);
+
+                if (selected_group) {
+                    template.find('.avatar img').replaceWith(getGroupAvatar(group));
+                }
+
+                $("#select_chat_div").append(template);
+
+                if (currentChat === fileName.toString().replace(".jsonl", "")) {
+                    $("#select_chat_div").find(".select_chat_block:last").attr("highlight", true);
+                }
             }
         }
+    
     }
+    displayChats('');  // Display all by default
+
+    const debouncedDisplay = debounce((searchQuery) => {
+        displayChats(searchQuery);
+    }, 300);
+
+    // Define the search input listener
+    $("#select_chat_search").on("input", function () {
+        const searchQuery = $(this).val();
+        debouncedDisplay(searchQuery);
+    });
 }
 
 //************************************************************
