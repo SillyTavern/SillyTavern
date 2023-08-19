@@ -336,7 +336,7 @@ export function getGroupBlock(group) {
         const template = $("#group_list_template .group_select").clone();
         template.data("id", group.id);
         template.attr("grid", group.id);
-        template.find(".ch_name").html(group.name);
+        template.find(".ch_name").html(group.name).css('color', group.fav ? 'gold' : 'white');
         template.find('.group_fav_icon').css("display", 'none');
         template.addClass(group.fav ? 'is_fav' : '');
         template.find(".ch_fav").val(group.fav);
@@ -1013,7 +1013,7 @@ function getGroupCharacterBlock(character) {
     const isFav = character.fav || character.fav == 'true';
     template.data("id", character.avatar);
     template.find(".avatar img").attr({ "src": avatar, "title": character.avatar });
-    template.find(".ch_name").text(character.name);
+    template.find(".ch_name").text(character.name).css('color', character.fav ? 'gold' : 'white');
     template.attr("chid", characters.indexOf(character));
     template.find('.ch_fav').val(isFav);
     template.toggleClass('is_fav', isFav);

@@ -1003,7 +1003,7 @@ function getCharacterBlock(item, id) {
     template.attr({ 'chid': id, 'id': `CharID${id}` });
     template.find('img').attr('src', this_avatar);
     template.find('.avatar').attr('title', item.avatar);
-    template.find('.ch_name').text(item.name);
+    template.find('.ch_name').text(item.name).css('color', item.fav ? 'gold' : 'white');
     if (power_user.show_card_avatar_urls) {
         template.find('.ch_avatar_url').text(item.avatar);
     }
