@@ -164,6 +164,7 @@ let power_user = {
     trim_spaces: true,
     relaxed_api_urls: false,
 
+    default_instruct: '',
     instruct: {
         enabled: false,
         wrap: true,
@@ -178,6 +179,7 @@ let power_user = {
         separator_sequence: '',
         macro: false,
         names_force_groups: true,
+        activation_regex: '',
     },
 
     context: {
@@ -940,6 +942,7 @@ function loadInstructMode() {
         { id: "instruct_macro", property: "macro", isCheckbox: true },
         { id: "instruct_names_force_groups", property: "names_force_groups", isCheckbox: true },
         { id: "instruct_last_output_sequence", property: "last_output_sequence", isCheckbox: false },
+        { id: "instruct_activation_regex", property: "activation_regex", isCheckbox: false },
     ];
 
     if (power_user.instruct.names_force_groups === undefined) {
@@ -970,6 +973,19 @@ function loadInstructMode() {
         $('#instruct_presets').append(option);
     });
 
+    function highlightDefaultPreset() {
+        $('#instruct_set_default').toggleClass('default', power_user.default_instruct === power_user.instruct.preset);
+    }
+
+    $('#instruct_set_default').on('click', function () {
+        power_user.default_instruct = power_user.instruct.preset;
+        $(this).addClass('default');
+        toastr.success(`Default instruct preset set to ${power_user.default_instruct}`);
+        saveSettingsDebounced();
+    });
+
+    highlightDefaultPreset();
+
     $('#instruct_presets').on('change', function () {
         const name = $(this).find(':selected').val();
         const preset = instruct_presets.find(x => x.name === name);
@@ -991,6 +1007,8 @@ function loadInstructMode() {
                 }
             }
         });
+
+        highlightDefaultPreset();
     });
 }
 

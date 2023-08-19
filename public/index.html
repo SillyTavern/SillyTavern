@@ -44,6 +44,7 @@
     <script src="lib/handlebars.js"></script>
     <script src="lib/pagination.js"></script>
     <script src="lib/toolcool-color-picker.js"></script>
+    <script src="lib/svg-inject.js"></script>
     <script type="module" src="lib/swiped-events.js"></script>
     <script type="module" src="lib/eventemitter.js"></script>
     <script type="module" src="scripts/power-user.js"></script>
@@ -2068,14 +2069,14 @@
                                 </select>
                             </div>
                             <div>
-                                <label for="context_story_string" data-i18n="Story String">
-                                    Story String
+                                <label for="context_story_string">
+                                    <small data-i18n="Story String">Story String</small>
                                 </label>
                                 <textarea id="context_story_string" class="text_pole textarea_compact" rows="3"></textarea>
                                 <div class="flex-container">
                                     <div class="flex1">
                                         <label for="context_example_separator">
-                                            <span data-i18n="Example Separator">Example Separator</span>
+                                            <small data-i18n="Example Separator">Example Separator</small>
                                         </label>
                                         <div>
                                             <textarea id="context_example_separator" class="text_pole textarea_compact" maxlength="500" rows="1"></textarea>
@@ -2083,7 +2084,7 @@
                                     </div>
                                     <div class="flex1">
                                         <label for="context_chat_start">
-                                            <span data-i18n="Chat Start">Chat Start</span>
+                                            <small data-i18n="Chat Start">Chat Start</small>
                                         </label>
                                         <div>
                                             <textarea id="context_chat_start" class="text_pole textarea_compact" maxlength="500" rows="1"></textarea>
@@ -2123,9 +2124,23 @@
                             <label for="instruct_presets">
                                 <span data-i18n="Presets">Presets</span>
                             </label>
-                            <select id="instruct_presets"></select>
+                            <div class="flex-container">
+                                <select id="instruct_presets" class="flex1 margin0"></select>
+                                <div id="instruct_set_default" class="menu_button menu_button_icon margin0">
+                                    <i class="fa-solid fa-xs fa-fw fa-heart"></i>
+                                    <span data-i18n="Default">Default</span>
+                                </div>
+                            </div>
                             <label>
-                                <span data-i18n="System Prompt">System Prompt</span>
+                                <small data-i18n="Activation Regex">
+                                    Activation Regex
+                                </small>
+                            </label>
+                            <div>
+                                <textarea id="instruct_activation_regex" class="text_pole textarea_compact" maxlength="5000" rows="1"></textarea>
+                            </div>
+                            <label>
+                                <small data-i18n="System Prompt">System Prompt</small>
                             </label>
                             <div class="prompt_overridden">
                                 Overridden by the Character Definitions.
@@ -2281,7 +2296,7 @@
                                 </div>
                             </h4>
                             <div>
-                                <textarea id="custom_stopping_strings" rows="2" class="text_pole textarea_compact" placeholder="[&quot;Ford&quot;, &quot;BMW&quot;, &quot;Fiat&quot;]"></textarea>
+                                <textarea id="custom_stopping_strings" rows="2" class="text_pole textarea_compact monospace" placeholder="[&quot;Ford&quot;, &quot;BMW&quot;, &quot;Fiat&quot;]"></textarea>
                             </div>
                             <label class="checkbox_label" for="custom_stopping_strings_macro">
                                 <input id="custom_stopping_strings_macro" type="checkbox" checked>
