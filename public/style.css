@@ -5618,6 +5618,7 @@ body.waifuMode .zoomed_avatar {
     justify-content: center;
     align-items: center;
     gap: 5px;
+    user-select: none;
 }
 
 .paginationjs-size-changer select {

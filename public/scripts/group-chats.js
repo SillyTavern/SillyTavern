@@ -954,6 +954,7 @@ function getGroupCharacters({ doFilter, onlyMembers } = {}) {
 }
 
 function printGroupCandidates() {
+    const storageKey = 'GroupCandidates_PerPage';
     $("#rm_group_add_members_pagination").pagination({
         dataSource: getGroupCharacters({ doFilter: true, onlyMembers: false }),
         pageSize: 5,
@@ -964,6 +965,12 @@ function printGroupCandidates() {
         prevText: '<',
         nextText: '>',
         showNavigator: true,
+        showSizeChanger: true,
+        pageSize: Number(localStorage.getItem(storageKey)) || 5,
+        sizeChangerOptions: [5, 10, 25, 50, 100, 200],
+        afterSizeSelectorChange: function (e) {
+            localStorage.setItem(storageKey, e.target.value);
+        },
         callback: function (data) {
             $("#rm_group_add_members").empty();
             for (const i of data) {
@@ -974,6 +981,7 @@ function printGroupCandidates() {
 }
 
 function printGroupMembers() {
+    const storageKey = 'GroupMembers_PerPage';
     $("#rm_group_members_pagination").pagination({
         dataSource: getGroupCharacters({ doFilter: false, onlyMembers: true }),
         pageSize: 5,
@@ -984,6 +992,12 @@ function printGroupMembers() {
         prevText: '<',
         nextText: '>',
         showNavigator: true,
+        showSizeChanger: true,
+        pageSize: Number(localStorage.getItem(storageKey)) || 5,
+        sizeChangerOptions: [5, 10, 25, 50, 100, 200],
+        afterSizeSelectorChange: function (e) {
+            localStorage.setItem(storageKey, e.target.value);
+        },
         callback: function (data) {
             $("#rm_group_members").empty();
             for (const i of data) {

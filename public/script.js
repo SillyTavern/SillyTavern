@@ -1041,7 +1041,7 @@ async function printCharacters(fullRefresh = false) {
     $("#rm_print_characters_pagination").pagination({
         dataSource: getEntitiesList({ doFilter: true }),
         pageSize: Number(localStorage.getItem(storageKey)) || 50,
-        sizeChangerOptions: [25, 50, 100, 250, 500, 1000],
+        sizeChangerOptions: [10, 25, 50, 100, 250, 500, 1000],
         pageRange: 1,
         position: 'top',
         showPageNumbers: false,
