@@ -5037,6 +5037,10 @@ body.waifuMode .zoomed_avatar {
         font-size: 15px;
     }
 
+    .mes_text img {
+        width: 100%;
+    }
+
     #extensions_settings,
     #extensions_settings2 {
         width: 100% !important;
@@ -5188,10 +5192,8 @@ body.waifuMode .zoomed_avatar {
     }
 
     .mes_buttons {
-        font-size: calc(var(--mainFontSize)*1.2)
+        font-size: calc(var(--mainFontSize)*1.2);
     }
-
-    ;
 
     .drag-grabber,
     .pull-tab {
@@ -5202,10 +5204,6 @@ body.waifuMode .zoomed_avatar {
     #showRawPrompt,
     #groupCurrentMemberPopoutButton {
         display: none;
-    }
-
-    .mes-text {
-        padding-right: 25px;
     }
 
     #right-nav-panel,
