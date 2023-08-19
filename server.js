@@ -288,6 +288,7 @@ function humanizedISO8601DateTime() {
 var is_colab = process.env.colaburl !== undefined;
 var charactersPath = 'public/characters/';
 var chatsPath = 'public/chats/';
+const UPLOADS_PATH = './uploads';
 const AVATAR_WIDTH = 400;
 const AVATAR_HEIGHT = 600;
 const jsonParser = express.json({ limit: '100mb' });
@@ -427,7 +428,7 @@ app.use('/characters', (req, res) => {
         res.send(data);
     });
 });
-app.use(multer({ dest: "uploads", limits: { fieldSize: 10 * 1024 * 1024 } }).single("avatar"));
+app.use(multer({ dest: UPLOADS_PATH, limits: { fieldSize: 10 * 1024 * 1024 } }).single("avatar"));
 app.get("/", function (request, response) {
     response.sendFile(process.cwd() + "/public/index.html");
 });
@@ -1005,7 +1006,7 @@ function charaFormatData(data) {
     return char;
 }
 
-app.post("/createcharacter", urlencodedParser, function (request, response) {
+app.post("/createcharacter", urlencodedParser, async function (request, response) {
     if (!request.body) return response.sendStatus(400);
 
     request.body.ch_name = sanitize(request.body.ch_name);
@@ -1022,8 +1023,9 @@ app.post("/createcharacter", urlencodedParser, function (request, response) {
         charaWrite(defaultAvatar, char, internalName, response, avatarName);
     } else {
         const crop = tryParse(request.query.crop);
-        const uploadPath = path.join("./uploads/", request.file.filename);
-        charaWrite(uploadPath, char, internalName, response, avatarName, crop);
+        const uploadPath = path.join(UPLOADS_PATH, request.file.filename);
+        await charaWrite(uploadPath, char, internalName, response, avatarName, crop);
+        fs.unlinkSync(uploadPath);
     }
 });
 
@@ -1120,9 +1122,10 @@ app.post("/editcharacter", urlencodedParser, async function (request, response) 
             await charaWrite(avatarPath, char, target_img, response, 'Character saved');
         } else {
             const crop = tryParse(request.query.crop);
-            const newAvatarPath = path.join("./uploads/", request.file.filename);
+            const newAvatarPath = path.join(UPLOADS_PATH, request.file.filename);
             invalidateThumbnail('avatar', request.body.avatar_url);
             await charaWrite(newAvatarPath, char, target_img, response, 'Character saved', crop);
+            fs.unlinkSync(newAvatarPath);
         }
     }
     catch {
@@ -1544,13 +1547,14 @@ app.post("/downloadbackground", urlencodedParser, function (request, response) {
     response_dw_bg = response;
     if (!request.body || !request.file) return response.sendStatus(400);
 
-    const img_path = path.join("uploads/", request.file.filename);
+    const img_path = path.join(UPLOADS_PATH, request.file.filename);
     const filename = request.file.originalname;
 
     try {
         fs.copyFileSync(img_path, path.join('public/backgrounds/', filename));
         invalidateThumbnail('bg', filename);
         response_dw_bg.send(filename);
+        fs.unlinkSync(img_path);
     } catch (err) {
         console.error(err);
         response_dw_bg.sendStatus(500);
@@ -2065,7 +2069,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
 
     let png_name = '';
     let filedata = request.file;
-    let uploadPath = path.join('./uploads', filedata.filename);
+    let uploadPath = path.join(UPLOADS_PATH, filedata.filename);
     var format = request.body.file_type;
     const defaultAvatarPath = './public/img/ai4.png';
     //console.log(format);
@@ -2152,7 +2156,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
 
                 if (format == 'webp') {
                     try {
-                        let convertedPath = path.join('./uploads', path.basename(uploadPath, ".webp") + ".png")
+                        let convertedPath = path.join(UPLOADS_PATH, path.basename(uploadPath, ".webp") + ".png")
                         await webp.dwebp(uploadPath, convertedPath, "-o");
                         uploadPath = convertedPath;
                     }
@@ -2336,9 +2340,9 @@ app.post("/exportcharacter", jsonParser, async function (request, response) {
             try {
                 let json = await charaRead(filename);
                 let stringByteArray = utf8Encode.encode(json).toString();
-                let inputWebpPath = `./uploads/${Date.now()}_input.webp`;
-                let outputWebpPath = `./uploads/${Date.now()}_output.webp`;
-                let metadataPath = `./uploads/${Date.now()}_metadata.exif`;
+                let inputWebpPath = path.join(UPLOADS_PATH, `${Date.now()}_input.webp`);
+                let outputWebpPath = path.join(UPLOADS_PATH, `${Date.now()}_output.webp`);
+                let metadataPath = path.join(UPLOADS_PATH, `${Date.now()}_metadata.exif`);
                 let metadata =
                 {
                     "Exif": {
@@ -2373,7 +2377,10 @@ app.post("/importgroupchat", urlencodedParser, function (request, response) {
     try {
         const filedata = request.file;
         const chatname = humanizedISO8601DateTime();
-        fs.copyFileSync(`./uploads/${filedata.filename}`, (`${directories.groupChats}/${chatname}.jsonl`));
+        const pathToUpload = path.join(UPLOADS_PATH, filedata.filename);
+        const pathToNewFile = path.join(directories.groupChats, `${chatname}.jsonl`);
+        fs.copyFileSync(pathToUpload, pathToNewFile);
+        fs.unlinkSync(pathToUpload);
         return response.send({ res: chatname });
     } catch (error) {
         console.error(error);
@@ -2392,7 +2399,7 @@ app.post("/importchat", urlencodedParser, function (request, response) {
 
     if (filedata) {
         if (format === 'json') {
-            fs.readFile(`./uploads/${filedata.filename}`, 'utf8', (err, data) => {
+            fs.readFile(path.join(UPLOADS_PATH, filedata.filename), 'utf8', (err, data) => {
 
                 if (err) {
                     console.log(err);
@@ -2486,7 +2493,7 @@ app.post("/importchat", urlencodedParser, function (request, response) {
         }
         if (format === 'jsonl') {
             //console.log(humanizedISO8601DateTime()+':imported chat format is JSONL');
-            const fileStream = fs.createReadStream('./uploads/' + filedata.filename);
+            const fileStream = fs.createReadStream(path.join(UPLOADS_PATH, filedata.filename));
             const rl = readline.createInterface({
                 input: fileStream,
                 crlfDelay: Infinity
@@ -2496,7 +2503,7 @@ app.post("/importchat", urlencodedParser, function (request, response) {
                 let jsonData = json5.parse(line);
 
                 if (jsonData.user_name !== undefined || jsonData.name !== undefined) {
-                    fs.copyFile(`./uploads/${filedata.filename}`, (`${chatsPath + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()}.jsonl`), (err) => {
+                    fs.copyFile(path.join(UPLOADS_PATH, filedata.filename), (`${chatsPath + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()}.jsonl`), (err) => {
                         if (err) {
                             response.send({ error: true });
                             return console.log(err);
@@ -2525,8 +2532,9 @@ app.post('/importworldinfo', urlencodedParser, (request, response) => {
     if (request.body.convertedData) {
         fileContents = request.body.convertedData;
     } else {
-        const pathToUpload = path.join('./uploads/', request.file.filename);
+        const pathToUpload = path.join(UPLOADS_PATH, request.file.filename);
         fileContents = fs.readFileSync(pathToUpload, 'utf8');
+        fs.unlinkSync(pathToUpload);
     }
 
     try {
@@ -2578,7 +2586,7 @@ app.post('/uploaduseravatar', urlencodedParser, async (request, response) => {
     if (!request.file) return response.sendStatus(400);
 
     try {
-        const pathToUpload = path.join('./uploads/' + request.file.filename);
+        const pathToUpload = path.join(UPLOADS_PATH, request.file.filename);
         const crop = tryParse(request.query.crop);
         let rawImg = await jimp.read(pathToUpload);
 
@@ -2865,6 +2873,26 @@ function invalidateThumbnail(type, file) {
 
     if (fs.existsSync(pathToThumbnail)) {
         fs.rmSync(pathToThumbnail);
+    }
+}
+
+function cleanUploads() {
+    try {
+        if (fs.existsSync(UPLOADS_PATH)) {
+            const uploads = fs.readdirSync(UPLOADS_PATH);
+
+            if (!uploads.length) {
+                return;
+            }
+
+            console.debug(`Cleaning uploads folder (${uploads.length} files)`);
+            uploads.forEach(file => {
+                const pathToFile = path.join(UPLOADS_PATH, file);
+                fs.unlinkSync(pathToFile);
+            });
+        }
+    } catch (err) {
+        console.error(err);
     }
 }
 
@@ -3636,6 +3664,7 @@ const setupTasks = async function () {
     ensurePublicDirectoriesExist();
     await ensureThumbnailCache();
     contentManager.checkForNewContent();
+    cleanUploads();
 
     // Colab users could run the embedded tool
     if (!is_colab) await convertWebp();
@@ -4188,7 +4217,7 @@ app.post('/upload_sprite_pack', urlencodedParser, async (request, response) => {
             return response.sendStatus(404);
         }
 
-        const spritePackPath = path.join("./uploads/", file.filename);
+        const spritePackPath = path.join(UPLOADS_PATH, file.filename);
         const sprites = await getImageBuffers(spritePackPath);
         const files = fs.readdirSync(spritesPath);
 
@@ -4246,7 +4275,7 @@ app.post('/upload_sprite', urlencodedParser, async (request, response) => {
         }
 
         const filename = label + path.parse(file.originalname).ext;
-        const spritePath = path.join("./uploads/", file.filename);
+        const spritePath = path.join(UPLOADS_PATH, file.filename);
         const pathToFile = path.join(spritesPath, filename);
         // Copy uploaded file to sprites folder
         fs.cpSync(spritePath, pathToFile);
