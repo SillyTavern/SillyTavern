@@ -1234,9 +1234,7 @@ function updateFavButtonState(state) {
     $("#group_favorite_button").toggleClass('fav_off', !fav_grp_checked);
 }
 
-async function selectGroup() {
-    const groupId = $(this).data("id");
-
+export async function openGroupById(groupId) {
     if (!is_send_press && !is_group_generating) {
         if (selected_group !== groupId) {
             cancelTtsPlay();
@@ -1548,7 +1546,10 @@ function doCurMemberListPopout() {
 }
 
 jQuery(() => {
-    $(document).on("click", ".group_select", selectGroup);
+    $(document).on("click", ".group_select", function () {
+        const groupId = $(this).data("id");
+        openGroupById(groupId);
+    });
     $("#rm_group_filter").on("input", filterGroupMembers);
     $("#rm_group_submit").on("click", createGroup);
     $("#rm_group_scenario").on("click", setScenarioOverride);
