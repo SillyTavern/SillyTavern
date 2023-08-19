@@ -618,7 +618,7 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
                     websocket.close();
                     return;
                 }
-                
+
                 let rawMessage = null;
                 try {
                     // This lunacy is because the websocket can fail to connect AFTER we're awaiting 'message'... so 'message' never triggers.
@@ -1373,7 +1373,20 @@ app.post("/getcharacters", jsonParser, function (request, response) {
     });
 });
 
+app.post("/getonecharacter", jsonParser, async function (request, response) {
+    if (!request.body) return response.sendStatus(400);
+    const item = request.body.avatar_url;
+    const filePath = path.join(charactersPath, item);
 
+    if (!fs.existsSync(filePath)) {
+        return response.sendStatus(404);
+    }
+
+    characters = {};
+    await processCharacter(item, 0);
+
+    return response.send(characters[0]);
+});
 
 /**
  * Handle a POST request to get the stats object
@@ -3649,7 +3662,7 @@ const setupTasks = async function () {
     console.log('Launching...');
 
     if (autorun) open(autorunUrl.toString());
-    
+
     console.log('\x1b[32mSillyTavern is listening on: ' + tavernUrl + '\x1b[0m');
 
     if (listen) {

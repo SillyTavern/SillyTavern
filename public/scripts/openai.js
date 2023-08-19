@@ -351,7 +351,8 @@ function setupChatCompletionPromptManager(openAiSettings) {
     };
 
     promptManager.saveServiceSettings = () => {
-        return saveSettings();
+        saveSettingsDebounced();
+        return new Promise((resolve) => eventSource.once(event_types.SETTINGS_UPDATED, resolve));
     }
 
     promptManager.tryGenerate = () => {

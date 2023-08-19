@@ -1275,6 +1275,7 @@ input[type="file"] {
     flex-direction: row;
     gap: 5px;
     justify-content: center;
+    align-items: center;
 }
 
 #rm_print_characters_block {
@@ -1983,35 +1984,6 @@ grammarly-extension {
     display: flex;
     justify-content: center;
     align-items: center;
-}
-
-#rm_info_block {
-    display: none;
-    width: 100%;
-    height: 80%;
-    justify-content: center;
-    flex-direction: column;
-
-}
-
-#rm_info_panel {
-    font-size: calc(var(--mainFontSize) + .5rem);
-    display: block;
-    text-align: center;
-}
-
-#rm_info_button {
-    width: min-content;
-    margin: 0 auto;
-}
-
-#rm_info_avatar {
-    display: flex;
-    column-gap: 10px;
-    width: fit-content;
-    text-align: center;
-    margin-left: auto;
-    margin-right: auto;
 }
 
 #delete_button,

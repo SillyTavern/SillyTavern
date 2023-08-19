@@ -812,7 +812,7 @@ function loadPowerUserSettings(settings, data) {
 }
 
 async function loadCharListState() {
-    if (document.getElementById('CharID0') !== null) {
+    if (document.querySelector('.character_select') !== null) {
         console.debug('setting charlist state to...')
         if (power_user.charListGrid === true) {
             console.debug('..to grid')

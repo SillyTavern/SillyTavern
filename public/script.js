@@ -1089,6 +1089,30 @@ export function getEntitiesList({ doFilter } = {}) {
     return entities;
 }
 
+async function getOneCharacter(avatarUrl) {
+    const response = await fetch("/getonecharacter", {
+        method: "POST",
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+            avatar_url: avatarUrl,
+        }),
+    });
+
+    if (response.ok) {
+        const getData = await response.json();
+        getData['name'] = DOMPurify.sanitize(getData['name']);
+        getData['chat'] = String(getData['chat']);
+
+        const indexOf = characters.findIndex(x => x.avatar === avatarUrl);
+
+        if (indexOf !== -1) {
+            characters[indexOf] = getData;
+        } else {
+            toastr.error(`Character ${avatarUrl} not found in the list`, "Error", { timeOut: 5000, preventDuplicates: true });
+        }
+    }
+}
+
 async function getCharacters() {
     var response = await fetch("/getcharacters", {
         method: "POST",
@@ -4541,9 +4565,8 @@ async function getChat() {
             chat_create_date = humanizedDateTime();
         }
         await getChatResult();
-        await saveChat();
+        saveChatDebounced();
         eventSource.emit('chatLoaded', { detail: { id: this_chid, character: characters[this_chid] } });
-
 
         setTimeout(function () {
             $('#send_textarea').click();
@@ -4596,7 +4619,7 @@ async function openCharacterChat(file_name) {
     chat_metadata = {};
     await getChat();
     $("#selected_chat_pole").val(file_name);
-    $("#create_button").click();
+    await createOrEditCharacter();
 }
 
 ////////// OPTIMZED MAIN API CHANGE FUNCTION ////////////
@@ -5602,12 +5625,12 @@ async function messageEditDone(div) {
 
 /**
  * Fetches the chat content for each chat file from the server and compiles them into a dictionary.
- * The function iterates over a provided list of chat metadata and requests the actual chat content 
+ * The function iterates over a provided list of chat metadata and requests the actual chat content
  * for each chat, either as an individual chat or a group chat based on the context.
  *
  * @param {Array} data - An array containing metadata about each chat such as file_name.
  * @param {boolean} isGroupChat - A flag indicating if the chat is a group chat.
- * @returns {Object} chat_dict - A dictionary where each key is a file_name and the value is the 
+ * @returns {Object} chat_dict - A dictionary where each key is a file_name and the value is the
  * corresponding chat content fetched from the server.
  */
 export async function getChatsFromFiles(data, isGroupChat) {
@@ -5654,10 +5677,10 @@ export async function getChatsFromFiles(data, isGroupChat) {
 
 /**
  * Fetches the metadata of all past chats related to a specific character based on its avatar URL.
- * The function sends a POST request to the server to retrieve all chats for the character. It then 
+ * The function sends a POST request to the server to retrieve all chats for the character. It then
  * processes the received data, sorts it by the file name, and returns the sorted data.
  *
- * @returns {Array} - An array containing metadata of all past chats of the character, sorted 
+ * @returns {Array} - An array containing metadata of all past chats of the character, sorted
  * in descending order by file name. Returns `undefined` if the fetch request is unsuccessful.
  */
 async function getPastCharacterChats() {
@@ -5679,8 +5702,8 @@ async function getPastCharacterChats() {
 
 /**
  * Displays the past chats for a character or a group based on the selected context.
- * The function first fetches the chats, processes them, and then displays them in 
- * the HTML. It also has a built-in search functionality that allows filtering the 
+ * The function first fetches the chats, processes them, and then displays them in
+ * the HTML. It also has a built-in search functionality that allows filtering the
  * displayed chats based on a search query.
  */
 export async function displayPastChats() {
@@ -5742,7 +5765,7 @@ export async function displayPastChats() {
                 }
             }
         }
-    
+
     }
     displayChats('');  // Display all by default
 
@@ -5797,11 +5820,11 @@ async function getStatusNovel() {
 
 function selectRightMenuWithAnimation(selectedMenuId) {
     const displayModes = {
-        'rm_info_block': 'flex',
         'rm_group_chats_block': 'flex',
         'rm_api_block': 'grid',
         'rm_characters_block': 'flex',
     };
+    $('#hideCharPanelAvatarButton').toggle(selectedMenuId === 'rm_ch_create_block');
     document.querySelectorAll('#right-nav-panel .right_menu').forEach((menu) => {
         $(menu).css('display', 'none');
 
@@ -5855,7 +5878,6 @@ function select_rm_info(type, charId, previousCharId = null) {
         toastr.success(`Character Imported: ${displayName}`);
     }
 
-    getCharacters();
     selectRightMenuWithAnimation('rm_characters_block');
 
     setTimeout(function () {
@@ -6263,10 +6285,10 @@ function hideSwipeButtons() {
 
 async function saveMetadata() {
     if (selected_group) {
-        await editGroup(selected_group, true, false);
+        await editGroup(selected_group, false, false);
     }
     else {
-        await saveChat();
+        saveChatDebounced();
     }
 }
 
@@ -6670,12 +6692,8 @@ async function createOrEditCharacter(e) {
                     createTagMapFromList("#tagList", html);
                     await getCharacters();
 
-                    $("#rm_info_block").transition({ opacity: 0, duration: 0 });
-                    var $prev_img = $("#avatar_div_div").clone();
-                    $("#rm_info_avatar").append($prev_img);
                     select_rm_info(`char_create`, html, oldSelectedChar);
 
-                    $("#rm_info_block").transition({ opacity: 1.0, duration: 2000 });
                     crop_data = undefined;
                 },
                 error: function (jqXHR, exception) {
@@ -6764,7 +6782,8 @@ async function createOrEditCharacter(e) {
                     }
                 }
                 $("#create_button").removeAttr("disabled");
-                await getCharacters();
+
+                await getOneCharacter(formData.get('avatar_url'));
 
                 $("#add_avatar_button").replaceWith(
                     $("#add_avatar_button").val("").clone(true)
@@ -7221,12 +7240,6 @@ function importCharacter(file) {
 
             if (data.file_name !== undefined) {
                 $('#character_search_bar').val('').trigger('input');
-                $("#rm_info_block").transition({ opacity: 0, duration: 0 });
-                var $prev_img = $("#avatar_div_div").clone();
-                $prev_img
-                    .children("img")
-                    .attr("src", "characters/" + data.file_name + ".png");
-                $("#rm_info_avatar").append($prev_img);
 
                 let oldSelectedChar = null;
                 if (this_chid != undefined && this_chid != "invalid-safety-id") {
@@ -7241,7 +7254,6 @@ function importCharacter(file) {
                     let importedCharacter = currentContext.characters.find(character => character.avatar === avatarFileName);
                     await importTags(importedCharacter);
                 }
-                $("#rm_info_block").transition({ opacity: 1, duration: 1000 });
             }
         },
         error: function (jqXHR, exception) {
@@ -7709,7 +7721,7 @@ $(document).ready(function () {
             setTimeout(function () {
                 $("#option_select_chat").click();
                 $("#options").hide();
-            }, 200);
+            }, 2000);
         }
         if (popup_type == "del_ch") {
             const deleteChats = !!$("#del_char_checkbox").prop("checked");
@@ -7806,11 +7818,6 @@ $(document).ready(function () {
                     <span>Also delete the chat files</span>
                 </label><br></b>`
         );
-    });
-
-    $("#rm_info_button").on('click', function () {
-        $("#rm_info_avatar").html("");
-        select_rm_characters();
     });
 
     //////// OPTIMIZED ALL CHAR CREATION/EDITING TEXTAREA LISTENERS ///////////////
@@ -9216,8 +9223,7 @@ $(document).ready(function () {
         doCharListDisplaySwitch();
     });
 
-    $("#hideCharPanelAvatarButton").on('click', () => {
+    $("#hideCharPanelAvatarButton").hide().on('click', () => {
         $('#avatar-and-name-block').slideToggle()
-    })
-
+    });
 });

@@ -175,6 +175,7 @@ export async function getGroupChat(groupId) {
                 addOneMessage(mes);
             }
         }
+        await saveGroupChat(groupId, false);
     }
 
     if (group) {
@@ -182,7 +183,6 @@ export async function getGroupChat(groupId) {
         updateChatMetadata(metadata, true);
     }
 
-    await saveGroupChat(groupId, true);
     eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
 }
 
@@ -802,10 +802,7 @@ async function deleteGroup(id) {
         printMessages();
         await getCharacters();
 
-        $("#rm_info_avatar").html("");
-        $("#rm_info_block").transition({ opacity: 0, duration: 0 });
         select_rm_info("group_delete", id);
-        $("#rm_info_block").transition({ opacity: 1.0, duration: 2000 });
 
         $("#rm_button_selected_ch").children("h2").text('');
         setRightTabSelectedClass();
