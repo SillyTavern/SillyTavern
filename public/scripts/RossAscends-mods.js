@@ -346,7 +346,7 @@ export function RA_CountCharTokens() {
  * The character or group is selected (clicked) if it is found.
  */
 async function RA_autoloadchat() {
-    if (document.getElementById('CharID0') !== null) {
+    if (document.querySelector('#rm_print_characters_block .character_select') !== null) {
         // active character is the name, we should look it up in the character list and get the id
         let active_character_id = Object.keys(characters).find(key => characters[key].avatar === active_character);
 
