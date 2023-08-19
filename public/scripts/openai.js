@@ -2345,6 +2345,10 @@ async function onExportPresetClick() {
     }
 
     const preset = openai_settings[openai_setting_names[oai_settings.preset_settings_openai]];
+
+    delete preset.reverse_proxy;
+    delete preset.proxy_password;
+
     const presetJsonString = JSON.stringify(preset, null, 4);
     download(presetJsonString, oai_settings.preset_settings_openai, 'application/json');
 }
