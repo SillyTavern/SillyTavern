@@ -747,6 +747,12 @@ function preparePromptsForChatCompletion(Scenario, charPersonality, name2, world
         prompts.set(jbReplacement, prompts.index('jailbreak'));
     }
 
+    // TODO: Integrate Group nudge into the prompt manager properly
+    if(selected_group) {
+        let group_nudge = {"role": "system", "content": `[Write the next reply only as ${name2}]`};
+        openai_msgs.push(group_nudge);
+    }
+
     // Allow subscribers to manipulate the prompts object
     eventSource.emit(event_types.OAI_BEFORE_CHATCOMPLETION, prompts);
 
