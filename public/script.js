@@ -55,6 +55,7 @@ import {
     renameGroupChat,
     importGroupChat,
     getGroupBlock,
+    getGroupChatNames,
 } from "./scripts/group-chats.js";
 
 import {
@@ -1604,8 +1605,17 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         mes.is_user,
     );
     const bias = messageFormatting(mes.extra?.bias ?? "");
-    const bookmarkLink = mes?.extra?.bookmark_link ?? '';
+    let bookmarkLink = mes?.extra?.bookmark_link ?? '';
+    // Verify bookmarked chat still exists
+    if (bookmarkLink !== '' ) {
+        let chat_names = selected_group
+            ? getGroupChatNames(selected_group)
+            : Object.values(getPastCharacterChats()).map(({file_name}) => file_name);
 
+        if (!chat_names.includes(bookmarkLink)) {
+            bookmarkLink = ''
+        }
+    }
     let params = {
         mesId: count_view_mes,
         characterName: characterName,
