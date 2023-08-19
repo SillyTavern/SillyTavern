@@ -3287,6 +3287,7 @@ h5 {
     justify-content: flex-start;
     max-height: 66%;
     overflow: hidden;
+    flex-basis: 100%;
 }
 
 .tag_name {
