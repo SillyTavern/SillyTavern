@@ -1306,13 +1306,45 @@ PromptManagerModule.prototype.renderPromptManager = function () {
         rangeBlockDiv.querySelector('.export-promptmanager-prompts-character')?.addEventListener('click', this.handleCharacterExport);
 
         const quickEditContainer = document.getElementById('quick-edit-container');
+        const heights = this.saveTextAreaHeights(quickEditContainer);
         quickEditContainer.innerHTML = '';
 
         this.createQuickEdit('jailbreak', 'Jailbreak');
         this.createQuickEdit('nsfw', 'NSFW');
         this.createQuickEdit('main', 'Main');
+
+        this.restoreTextAreaHeights(quickEditContainer, heights);
     }
 };
+
+/**
+ * Restores the height of each textarea in the container
+ * @param container The container to search for textareas
+ * @param heights An object with textarea ids as keys and heights as values
+ */
+PromptManagerModule.prototype.restoreTextAreaHeights = function(container, heights) {
+    if (Object.keys(heights).length === 0) return;
+
+    $(container).find('textarea').each(function () {
+        const height = heights[this.id];
+        if (height > 0) $(this).height(height);
+    });
+}
+
+/**
+ * Saves the current height of each textarea in the container
+ * @param container The container to search for textareas
+ * @returns {{}} An object with textarea ids as keys and heights as values
+ */
+PromptManagerModule.prototype.saveTextAreaHeights = function(container) {
+    const heights = {};
+
+    $(container).find('textarea').each(function () {
+        heights[this.id] = $(this).height();
+    });
+
+    return heights;
+}
 
 /**
  * Empties, then re-assembles the prompt list
