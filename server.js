@@ -3524,7 +3524,6 @@ async function sendAI21Request(request, response) {
     request.socket.on('close', function () {
         controller.abort();
     });
-    //console.log(request.body)
     const options = {
         method: 'POST',
         headers: {
@@ -3589,7 +3588,6 @@ async function sendAI21Request(request, response) {
 
 app.post("/tokenize_ai21", jsonParser, function (request, response_tokenize_ai21 = response) {
     if (!request.body) return response_tokenize_ai21.sendStatus(400);
-    console.log(request.body[0].content)
     const options = {
         method: 'POST',
         headers: {
