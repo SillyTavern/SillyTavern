@@ -1152,7 +1152,7 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
         generate_data['use_ai21'] = true;
         generate_data['top_k'] = parseFloat(oai_settings.top_k_openai);
         generate_data['count_pen'] = parseFloat(oai_settings.count_pen);
-        generate_data['stop_tokens'] = [name1 + ':', 'prompt: [Start a new chat]'];
+        generate_data['stop_tokens'] = [name1 + ':', oai_settings.new_chat_prompt, oai_settings.new_group_chat_prompt];
     }
 
     const generate_url = '/generate_openai';
@@ -1935,7 +1935,7 @@ function loadOpenAISettings(data, settings) {
     if (settings.wrap_in_quotes !== undefined) oai_settings.wrap_in_quotes = !!settings.wrap_in_quotes;
     if (settings.names_in_completion !== undefined) oai_settings.names_in_completion = !!settings.names_in_completion;
     if (settings.openai_model !== undefined) oai_settings.openai_model = settings.openai_model;
-    if (settings.use_ai21_tokenizer !== undefined) oai_settings.use_ai21_tokenizer = !!settings.use_ai21_tokenizer;
+    if (settings.use_ai21_tokenizer !== undefined) { oai_settings.use_ai21_tokenizer = !!settings.use_ai21_tokenizer; oai_settings.use_ai21_tokenizer ? ai21_max = 8191 : ai21_max = 9200; }
     if (settings.exclude_assistant !== undefined) oai_settings.exclude_assistant = !!settings.exclude_assistant;
     $('#stream_toggle').prop('checked', oai_settings.stream_openai);
     $('#api_url_scale').val(oai_settings.api_url_scale);
