@@ -3290,6 +3290,10 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
         return sendScaleRequest(request, response_generate_openai);
     }
 
+    if (request.body.use_ai21) {
+        return sendAI21Request(request, response_generate_openai);
+    }
+
     let api_url;
     let api_key_openai;
     let headers;
@@ -3477,6 +3481,96 @@ app.post("/tokenize_openai", jsonParser, function (request, response_tokenize_op
     //tokenizer.free();
 
     response_tokenize_openai.send({ "token_count": num_tokens });
+});
+
+async function sendAI21Request(request, response) {
+    if (!request.body) return response.sendStatus(400);
+    const controller = new AbortController();
+    console.log(request.body.messages)
+    request.socket.removeAllListeners('close');
+    request.socket.on('close', function () {
+        controller.abort();
+    });
+    //console.log(request.body)
+    const options = {
+        method: 'POST',
+        headers: {
+            accept: 'application/json',
+            'content-type': 'application/json',
+            Authorization: `Bearer ${readSecret(SECRET_KEYS.AI21)}`
+        },
+        body: JSON.stringify({
+            numResults: 1,
+            maxTokens: request.body.max_tokens,
+            minTokens: 0,
+            temperature: request.body.temperature,
+            topP: request.body.top_p,
+            stopSequences: request.body.stop_tokens,
+            topKReturn: request.body.top_k,
+            frequencyPenalty: {
+                scale: request.body.frequency_penalty * 100,
+                applyToWhitespaces: false,
+                applyToPunctuations: false,
+                applyToNumbers: false,
+                applyToStopwords: false,
+                applyToEmojis: false
+            },
+            presencePenalty: {
+                scale: request.body.presence_penalty,
+                applyToWhitespaces: false,
+                applyToPunctuations: false,
+                applyToNumbers: false,
+                applyToStopwords: false,
+                applyToEmojis: false
+            },
+            countPenalty: {
+                scale: request.body.count_pen,
+                applyToWhitespaces: false,
+                applyToPunctuations: false,
+                applyToNumbers: false,
+                applyToStopwords: false,
+                applyToEmojis: false
+            },
+            prompt: request.body.messages
+        }),
+        signal: controller.signal,
+    };
+
+    fetch(`https://api.ai21.com/studio/v1/${request.body.model}/complete`, options)
+        .then(r => r.json())
+        .then(r => {
+            if (r.completions === undefined) {
+                console.log(r)
+            } else {
+                console.log(r.completions[0].data.text)
+            }
+            const reply = { choices: [{ "message": { "content": r.completions[0].data.text, } }] };
+            return response.send(reply)
+        })
+        .catch(err => {
+            console.error(err)
+            return response.send({error: true})
+        });
+
+}
+
+app.post("/tokenize_ai21", jsonParser, function (request, response_tokenize_ai21 = response) {
+    if (!request.body) return response_tokenize_ai21.sendStatus(400);
+    console.log(request.body[0].content)
+    const options = {
+        method: 'POST',
+        headers: {
+            accept: 'application/json',
+            'content-type': 'application/json',
+            Authorization: `Bearer ${readSecret(SECRET_KEYS.AI21)}`
+        },
+        body: JSON.stringify({text: request.body[0].content})
+    };
+
+    fetch('https://api.ai21.com/studio/v1/tokenize', options)
+        .then(response => response.json())
+        .then(response => response_tokenize_ai21.send({"token_count": response.tokens.length}))
+        .catch(err => console.error(err));
 });
 
 app.post("/save_preset", jsonParser, function (request, response) {
@@ -3791,6 +3885,7 @@ const SECRET_KEYS = {
     DEEPL: 'deepl',
     OPENROUTER: 'api_key_openrouter',
     SCALE: 'api_key_scale',
+    AI21: 'api_key_ai21'
 }
 
 function migrateSecrets() {

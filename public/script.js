@@ -2131,7 +2131,7 @@ function baseChatReplace(value, name1, name2) {
 }
 
 function isStreamingEnabled() {
-    return ((main_api == 'openai' && oai_settings.stream_openai && oai_settings.chat_completion_source !== chat_completion_sources.SCALE)
+    return ((main_api == 'openai' && oai_settings.stream_openai && oai_settings.chat_completion_source !== chat_completion_sources.SCALE && oai_settings.chat_completion_source !== chat_completion_sources.AI21)
         || (main_api == 'kobold' && kai_settings.streaming_kobold && kai_settings.can_use_streaming)
         || (main_api == 'novel' && nai_settings.streaming_novel)
         || (main_api == 'textgenerationwebui' && textgenerationwebui_settings.streaming))
@@ -4738,6 +4738,7 @@ function changeMainAPI() {
         case chat_completion_sources.WINDOWAI:
         case chat_completion_sources.CLAUDE:
         case chat_completion_sources.OPENAI:
+        case chat_completion_sources.AI21:
         default:
             setupChatCompletionPromptManager(oai_settings);
             break;
@@ -7178,6 +7179,11 @@ function connectAPISlash(_, text) {
             source: 'openrouter',
             button: '#api_button_openai',
         },
+        'ai21': {
+            selected: 'openai',
+            source: 'ai21',
+            button: '#api_button_openai',
+        }
     };
 
     const apiConfig = apiMap[text];
@@ -7396,7 +7402,7 @@ $(document).ready(function () {
     }
 
     registerSlashCommand('dupe', DupeChar, [], "– duplicates the currently selected character", true, true);
-    registerSlashCommand('api', connectAPISlash, [], "(kobold, horde, novel, ooba, oai, claude, windowai) – connect to an API", true, true);
+    registerSlashCommand('api', connectAPISlash, [], "(kobold, horde, novel, ooba, oai, claude, windowai, ai21) – connect to an API", true, true);
     registerSlashCommand('impersonate', doImpersonate, ['imp'], "- calls an impersonation response", true, true);
     registerSlashCommand('delchat', doDeleteChat, [], "- deletes the current chat", true, true);
     registerSlashCommand('closechat', doCloseChat, [], "- closes the current chat", true, true);
