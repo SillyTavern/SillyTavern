@@ -1441,6 +1441,14 @@
                                             <span data-i18n="Use the appropriate tokenizer for Jurassic models, which is more efficient than GPT's.">Use the appropriate tokenizer for Jurassic models, which is more efficient than GPT's.</span>
                                         </div>
                                     </div>
+                                    <div class="range-block" data-source="claude">
+                                        <label for="exclude_assistant" title="Exclude Assistant prefix" class="checkbox_label widthFreeExpand">
+                                            <input id="exclude_assistant" type="checkbox" /><span data-i18n="Exclude Assistant prefix">Exclude Assistant prefix</span>
+                                        </label>
+                                        <div class="toggle-description justifyLeft">
+                                            <span data-i18n="Exclude the assistant prefix from being added to the end of prompt.">Exclude the assistant prefix from being added to the end of prompt (Requires jailbreak with 'Assistant:' in it).</span>
+                                        </div>
+                                    </div>
                                     <div class="inline-drawer m-t-1 wide100p">
                                         <div class="inline-drawer-toggle inline-drawer-header">
                                             <b data-i18n="Quick Edit">Quick Edit</b>
@@ -1453,7 +1461,7 @@
                                                 </div>
                                             </div>
                                             <div class="range-block" data-source="claude">
-                                                <span data-i18n="Assistant Prefill">Assistant Prefill</span>
+                                                <span id="claude_assistant_prefill_text" data-i18n="Assistant Prefill">Assistant Prefill</span>
                                                 <textarea id="claude_assistant_prefill" class="text_pole textarea_compact" name="assistant_prefill" rows="3" maxlength="5000" placeholder="Start Claude's answer with..."></textarea>
                                             </div>
                                         </div>
