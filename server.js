@@ -2076,6 +2076,8 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
     if (filedata) {
         if (format == 'json') {
             fs.readFile(uploadPath, 'utf8', async (err, data) => {
+                fs.unlinkSync(uploadPath);
+
                 if (err) {
                     console.log(err);
                     response.send({ error: true });
@@ -2158,6 +2160,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     try {
                         let convertedPath = path.join(UPLOADS_PATH, path.basename(uploadPath, ".webp") + ".png")
                         await webp.dwebp(uploadPath, convertedPath, "-o");
+                        fs.unlinkSync(uploadPath);
                         uploadPath = convertedPath;
                     }
                     catch {
@@ -2172,7 +2175,8 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     unsetFavFlag(jsonData);
                     jsonData = readFromV2(jsonData);
                     let char = JSON.stringify(jsonData);
-                    charaWrite(uploadPath, char, png_name, response, { file_name: png_name });
+                    await charaWrite(uploadPath, char, png_name, response, { file_name: png_name });
+                    fs.unlinkSync(uploadPath);
                 } else if (jsonData.name !== undefined) {
                     console.log('Found a v1 character file.');
 
@@ -2198,6 +2202,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     char = convertToV2(char);
                     char = JSON.stringify(char);
                     await charaWrite(uploadPath, char, png_name, response, { file_name: png_name });
+                    fs.unlinkSync(uploadPath);
                 } else {
                     console.log('Unknown character card format');
                     response.send({ error: true });
