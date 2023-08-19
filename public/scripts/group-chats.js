@@ -939,8 +939,9 @@ function getGroupCharacters({ doFilter, onlyMembers } = {}) {
     }
 
     const thisGroup = openGroupId && groups.find((x) => x.id == openGroupId);
-    let candidates = characters.map((x, index) => ({ item: x, id: index, type: 'character' }));
-    candidates = candidates.filter((x) => isGroupMember(thisGroup, x.item.avatar) == onlyMembers);
+    let candidates = characters
+        .filter((x) => isGroupMember(thisGroup, x.avatar) == onlyMembers)
+        .map((x, index) => ({ item: x, id: index, type: 'character' }));
 
     if (onlyMembers) {
         candidates.sort(sortMembersFn);
