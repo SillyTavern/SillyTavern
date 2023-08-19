@@ -8575,8 +8575,10 @@ $(document).ready(function () {
 
     $(document).on("click", ".mes_edit_delete", async function (event, customData) {
         const fromSlashCommand = customData?.fromSlashCommand || false;
+        const swipeExists = (!chat[this_edit_mes_id].swipes || chat[this_edit_mes_id].swipes.length <= 1 || chat.is_user || parseInt(this_edit_mes_id) !== chat.length - 1);
         if (power_user.confirm_message_delete && fromSlashCommand !== true) {
-            const confirmation = await callPopup("Are you sure you want to delete this message?", 'confirm');
+            const confirmation = swipeExists ? await callPopup("Are you sure you want to delete this message?", 'confirm')
+                : await callPopup("<h3>Delete this...</h3> <select id='del_type'><option value='swipe'>Swipe</option><option value='message'>Message</option></select>", 'confirm')
             if (!confirmation) {
                 return;
             }
@@ -8588,10 +8590,21 @@ $(document).ready(function () {
             return;
         }
 
-        chat.splice(this_edit_mes_id, 1);
+        if($('#del_type').val() === 'swipe') {
+            const swipe_id = chat[this_edit_mes_id]['swipe_id'];
+            chat[this_edit_mes_id]['swipes'].splice(swipe_id, 1);
+            if (swipe_id > 0) {
+                $('.swipe_left:last').click();
+            } else {
+                $('.swipe_right:last').click()
+            }
+        } else {
+            chat.splice(this_edit_mes_id, 1);
+            mes.remove();
+            count_view_mes--;
+        }
+
         this_edit_mes_id = undefined;
-        mes.remove();
-        count_view_mes--;
 
         updateViewMessageIds();
         saveChatConditional();
