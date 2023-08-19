@@ -825,7 +825,7 @@ PromptManagerModule.prototype.handleGroupSelected = function (event) {
  */
 PromptManagerModule.prototype.getActiveGroupCharacters = function() {
     // ToDo: Ideally, this should return the actual characters.
-    return (this.activeCharacter?.group?.members || []).map(member => member.substring(0, member.lastIndexOf('.')));
+    return (this.activeCharacter?.group?.members || []).map(member => member && member.substring(0, member.lastIndexOf('.')));
 }
 
 /**
