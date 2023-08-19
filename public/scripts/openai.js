@@ -518,9 +518,9 @@ function populateDialogueExamples(prompts, chatCompletion) {
     chatCompletion.add(new MessageCollection('dialogueExamples'), prompts.index('dialogueExamples'));
     if (openai_msgs_example.length) {
         const newExampleChat = new Message('system', oai_settings.new_example_chat_prompt, 'newChat');
-        chatCompletion.reserveBudget(newExampleChat);
-
         [...openai_msgs_example].forEach((dialogue, dialogueIndex) => {
+            chatCompletion.reserveBudget(newExampleChat);
+            chatCompletion.insert(newExampleChat, 'dialogueExamples');
             dialogue.forEach((prompt, promptIndex) => {
                 const role = 'system';
                 const content = prompt.content || '';
@@ -533,11 +533,6 @@ function populateDialogueExamples(prompts, chatCompletion) {
                 }
             });
         });
-
-        chatCompletion.freeBudget(newExampleChat);
-
-        const chatExamples = chatCompletion.getMessages().getItemByIdentifier('dialogueExamples').getCollection();
-        if (chatExamples.length) chatCompletion.insertAtStart(newExampleChat, 'dialogueExamples');
     }
 }
 
