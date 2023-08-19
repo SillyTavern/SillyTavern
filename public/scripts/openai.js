@@ -1378,7 +1378,6 @@ function countTokens(messages, full = false) {
         }
 
         else {
-            console.log(JSON.stringify([message]));
             jQuery.ajax({
                 async: false,
                 type: 'POST', //
