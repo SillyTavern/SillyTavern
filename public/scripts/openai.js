@@ -47,7 +47,7 @@ import {
 import {
     delay,
     download,
-    getFileText,
+    getFileText, getSortableDelay,
     getStringHash,
     parseJsonFile,
     stringFormat,
@@ -341,7 +341,7 @@ function setupChatCompletionPromptManager(openAiSettings) {
         containerIdentifier: 'completion_prompt_manager',
         listIdentifier: 'completion_prompt_manager_list',
         toggleDisabled: ['main'],
-        draggable: true,
+        sortableDelay: getSortableDelay(),
         defaultPrompts: {
             main: default_main_prompt,
             nsfw: default_nsfw_prompt,
