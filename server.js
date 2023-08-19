@@ -633,7 +633,7 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
                             resolve(data, isBinary);
                         });
                     });
-                } catch(err) {
+                } catch (err) {
                     console.error("Socket error:", err);
                     websocket.close();
                     yield "[SillyTavern] Streaming failed:\n" + err;
@@ -3582,7 +3582,7 @@ async function sendAI21Request(request, response) {
         })
         .catch(err => {
             console.error(err)
-            return response.send({error: true})
+            return response.send({ error: true })
         });
 
 }
@@ -3597,12 +3597,12 @@ app.post("/tokenize_ai21", jsonParser, function (request, response_tokenize_ai21
             'content-type': 'application/json',
             Authorization: `Bearer ${readSecret(SECRET_KEYS.AI21)}`
         },
-        body: JSON.stringify({text: request.body[0].content})
+        body: JSON.stringify({ text: request.body[0].content })
     };
 
     fetch('https://api.ai21.com/studio/v1/tokenize', options)
         .then(response => response.json())
-        .then(response => response_tokenize_ai21.send({"token_count": response.tokens.length}))
+        .then(response => response_tokenize_ai21.send({ "token_count": response.tokens.length }))
         .catch(err => console.error(err));
 });
 
