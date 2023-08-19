@@ -47,7 +47,7 @@ import {
 import {
     delay,
     download,
-    getFileText,
+    getFileText, getSortableDelay,
     getStringHash,
     parseJsonFile,
     stringFormat,
@@ -341,13 +341,17 @@ function setupChatCompletionPromptManager(openAiSettings) {
         containerIdentifier: 'completion_prompt_manager',
         listIdentifier: 'completion_prompt_manager_list',
         toggleDisabled: ['main'],
-        draggable: true,
+        sortableDelay: getSortableDelay(),
         defaultPrompts: {
             main: default_main_prompt,
             nsfw: default_nsfw_prompt,
             jailbreak: default_jailbreak_prompt,
             enhanceDefinitions: default_enhance_definitions_prompt
-        }
+        },
+        promptOrder: {
+            strategy: 'global',
+            dummyId: 100000
+        },
     };
 
     promptManager.saveServiceSettings = () => {
@@ -807,8 +811,10 @@ function prepareOpenAIMessages({
             promptManager.error = 'The name of at least one character contained whitespaces or special characters. Please check your user and character name.';
         } else {
             toastr.error('An unknown error occurred while counting tokens. Further information may be available in console.')
-            chatCompletion.log('Unexpected error:');
+            chatCompletion.log('----- Unexpected error while preparing prompts -----');
             chatCompletion.log(error);
+            chatCompletion.log(error.stack);
+            chatCompletion.log('----------------------------------------------------');
         }
     } finally {
         // Pass chat completion to prompt manager for inspection

@@ -2,7 +2,7 @@ import {callPopup, event_types, eventSource, is_send_press, main_api, substitute
 import { is_group_generating } from "./group-chats.js";
 import {TokenHandler} from "./openai.js";
 import {power_user} from "./power-user.js";
-import { debounce, getSortableDelay, waitUntilCondition } from "./utils.js";
+import { debounce, waitUntilCondition } from "./utils.js";
 
 function debouncePromise(func, delay) {
     let timeoutId;
@@ -168,7 +168,11 @@ function PromptManagerModule() {
         listIdentifier: '',
         listItemTemplateIdentifier: '',
         toggleDisabled: [],
-        draggable: true,
+        promptOrder: {
+            strategy: 'global',
+            dummyId: 100000
+        },
+        sortableDelay: 30,
         warningTokenThreshold: 1500,
         dangerTokenThreshold: 500,
         defaultPrompts: {
@@ -416,12 +420,26 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
 
     // Export all user prompts
     this.handleFullExport = () => {
-        const exportPrompts = this.serviceSettings.prompts.reduce((userPrompts, prompt) => {
+        const prompts = this.serviceSettings.prompts.reduce((userPrompts, prompt) => {
             if (false === prompt.system_prompt && false === prompt.marker) userPrompts.push(prompt);
             return userPrompts;
         }, []);
 
-        this.export({prompts: exportPrompts}, 'full', 'st-prompts');
+        let promptOrder = [];
+        if ('global' === this.configuration.promptOrder.strategy) {
+            promptOrder = this.getPromptOrderForCharacter({id: this.configuration.promptOrder.dummyId});
+        } else if ('character' === this.configuration.promptOrder.strategy) {
+            promptOrder = [];
+        } else {
+            throw new Error('Prompt order strategy not supported.')
+        }
+
+        const exportPrompts = {
+            prompts: prompts,
+            prompt_order: promptOrder
+        }
+
+        this.export(exportPrompts, 'full', 'st-prompts');
     }
 
     // Export user prompts and order for this character
@@ -554,7 +572,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         this.saveServiceSettings().then(() => {
             this.hidePopup();
             this.clearEditForm();
-            this.renderDebounced()
+            this.renderDebounced();
         });
     });
 
@@ -694,6 +712,13 @@ PromptManagerModule.prototype.sanitizeServiceSettings = function () {
     this.serviceSettings.prompts = this.serviceSettings.prompts ?? [];
     this.serviceSettings.prompt_order = this.serviceSettings.prompt_order ?? [];
 
+    if ('global' === this.configuration.promptOrder.strategy) {
+        const dummyCharacter = {id: this.configuration.promptOrder.dummyId};
+        const promptOrder = this.getPromptOrderForCharacter(dummyCharacter);
+
+        if (0 === promptOrder.length) this.addPromptOrderForCharacter(dummyCharacter, promptManagerDefaultPromptOrder);
+    }
+
     // Check whether the referenced prompts are present.
     this.serviceSettings.prompts.length === 0
         ? this.setPrompts(chatCompletionDefaultPrompts.prompts)
@@ -775,9 +800,10 @@ PromptManagerModule.prototype.isPromptToggleAllowed = function (prompt) {
 /**
  * Handle the deletion of a character by removing their prompt list and nullifying the active character if it was the one deleted.
  * @param {object} event - The event object containing the character's ID.
- * @returns boolean
+ * @returns void
  */
 PromptManagerModule.prototype.handleCharacterDeleted = function (event) {
+    if ('global' === this.configuration.promptOrder.strategy) return;
     this.removePromptOrderForCharacter(this.activeCharacter);
     if (this.activeCharacter.id === event.detail.id) this.activeCharacter = null;
 }
@@ -788,12 +814,19 @@ PromptManagerModule.prototype.handleCharacterDeleted = function (event) {
  * @returns {void}
  */
 PromptManagerModule.prototype.handleCharacterSelected = function (event) {
-    this.activeCharacter = {id: event.detail.id, ...event.detail.character};
-    const promptOrder = this.getPromptOrderForCharacter(this.activeCharacter);
+    if ('global' === this.configuration.promptOrder.strategy) {
+        this.activeCharacter = {id: this.configuration.promptOrder.dummyId};
+    } else if  ('character' === this.configuration.promptOrder.strategy) {
+        console.log('FOO')
+        this.activeCharacter = {id: event.detail.id, ...event.detail.character};
+        const promptOrder = this.getPromptOrderForCharacter(this.activeCharacter);
 
-    // ToDo: These should be passed as parameter or attached to the manager as a set of default options.
-    // Set default prompts and order for character.
-    if (0 === promptOrder.length) this.addPromptOrderForCharacter(this.activeCharacter, promptManagerDefaultPromptOrder);
+        // ToDo: These should be passed as parameter or attached to the manager as a set of default options.
+        // Set default prompts and order for character.
+        if (0 === promptOrder.length) this.addPromptOrderForCharacter(this.activeCharacter, promptManagerDefaultPromptOrder);
+    } else {
+        throw new Error('Unsupported prompt order mode.');
+    }
 }
 
 /**
@@ -802,7 +835,13 @@ PromptManagerModule.prototype.handleCharacterSelected = function (event) {
  * @param event
  */
 PromptManagerModule.prototype.handleCharacterUpdated = function (event) {
-    this.activeCharacter = {id: event.detail.id, ...event.detail.character};
+    if ('global' === this.configuration.promptOrder.strategy) {
+        this.activeCharacter = {id: this.configuration.promptOrder.dummyId};
+    } else if ('character' === this.configuration.promptOrder.strategy) {
+        this.activeCharacter = {id: event.detail.id, ...event.detail.character};
+    } else {
+        throw new Error ('Prompt order strategy not supported.')
+    }
 }
 
 /**
@@ -811,11 +850,17 @@ PromptManagerModule.prototype.handleCharacterUpdated = function (event) {
  * @param event
  */
 PromptManagerModule.prototype.handleGroupSelected = function (event) {
-    const characterDummy = {id: event.detail.id, group: event.detail.group};
-    this.activeCharacter = characterDummy;
-    const promptOrder = this.getPromptOrderForCharacter(characterDummy);
+    if ('global' === this.configuration.promptOrder.strategy) {
+        this.activeCharacter = {id: this.configuration.promptOrder.dummyId};
+    } else if ('character' === this.configuration.promptOrder.strategy) {
+        const characterDummy = {id: event.detail.id, group: event.detail.group};
+        this.activeCharacter = characterDummy;
+        const promptOrder = this.getPromptOrderForCharacter(characterDummy);
 
-    if (0 === promptOrder.length) this.addPromptOrderForCharacter(characterDummy, promptManagerDefaultPromptOrder)
+        if (0 === promptOrder.length) this.addPromptOrderForCharacter(characterDummy, promptManagerDefaultPromptOrder)
+    } else {
+        throw new Error ('Prompt order strategy not supported.')
+    }
 }
 
 /**
@@ -1225,10 +1270,14 @@ PromptManagerModule.prototype.renderPromptManager = function () {
                             <a class="export-promptmanager-prompts-full list-group-item" data-i18n="Export all">Export all</a>
                             <span class="tooltip fa-solid fa-info-circle" title="Export all your prompts to a file"></span>
                         </div>
-                        <div class="row">
-                            <a class="export-promptmanager-prompts-character list-group-item" data-i18n="Export for character">Export for character</a>
-                            <span class="tooltip fa-solid fa-info-circle" title="Export prompts for this character, including their order."></span>
-                        </div>
+                        ${ 'global' === this.configuration.promptOrder.strategy
+                            ? ''
+                            : `<div class="row">
+                                <a class="export-promptmanager-prompts-character list-group-item" data-i18n="Export for character">Export
+                                    for character</a>
+                                <span class="tooltip fa-solid fa-info-circle"
+                                      title="Export prompts for this character, including their order."></span>
+                              </div>` }
                     </div>
                </div>
             `;
@@ -1254,7 +1303,7 @@ PromptManagerModule.prototype.renderPromptManager = function () {
         footerDiv.querySelector('#prompt-manager-import').addEventListener('click', this.handleImport);
         footerDiv.querySelector('#prompt-manager-export').addEventListener('click', showExportSelection);
         rangeBlockDiv.querySelector('.export-promptmanager-prompts-full').addEventListener('click', this.handleFullExport);
-        rangeBlockDiv.querySelector('.export-promptmanager-prompts-character').addEventListener('click', this.handleCharacterExport);
+        rangeBlockDiv.querySelector('.export-promptmanager-prompts-character')?.addEventListener('click', this.handleCharacterExport);
 
         const quickEditContainer = document.getElementById('quick-edit-container');
         quickEditContainer.innerHTML = '';
@@ -1451,10 +1500,19 @@ PromptManagerModule.prototype.import = function (importData) {
     this.setPrompts(prompts);
     this.log('Prompt import succeeded');
 
-    if ('character' === importData.type) {
-        const promptOrder = this.getPromptOrderForCharacter(this.activeCharacter);
+    let promptOrder = [];
+    if ('global' === this.configuration.promptOrder.strategy) {
+        const promptOrder = this.getPromptOrderForCharacter({id: this.configuration.promptOrder.dummyId});
         Object.assign(promptOrder, importData.data.prompt_order);
-        this.log(`Prompt order import for character ${this.activeCharacter.name} completed`);
+        this.log(`Prompt order import succeeded`);
+    } else if ('character' === this.configuration.promptOrder.strategy) {
+        if ('character' === importData.type) {
+            const promptOrder = this.getPromptOrderForCharacter(this.activeCharacter);
+            Object.assign(promptOrder, importData.data.prompt_order);
+            this.log(`Prompt order import for character ${this.activeCharacter.name} succeeded`);
+        }
+    } else {
+        throw new Error('Prompt order strategy not supported.')
     }
 
     toastr.success('Prompt import complete.');
@@ -1511,7 +1569,7 @@ PromptManagerModule.prototype.getFormattedDate = function() {
  */
 PromptManagerModule.prototype.makeDraggable = function () {
     $(`#${this.configuration.prefix}prompt_manager_list`).sortable({
-        delay: getSortableDelay(),
+        delay: this.configuration.sortableDelay,
         items: `.${this.configuration.prefix}prompt_manager_prompt_draggable`,
         update: ( event, ui ) => {
             const promptOrder = this.getPromptOrderForCharacter(this.activeCharacter);
