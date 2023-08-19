@@ -1446,25 +1446,25 @@ function insertSVGIcon(mes, extra) {
         modelName = extra.api;
     }
 
-    // Fetch the SVG based on the modelName
-    $.get(`/img/${modelName}.svg`, function (data) {
-        // Extract the SVG content from the XML data
-        let svg = $(data).find('svg');
+    const image = new Image();
+    // Add classes for styling and identification
+    image.classList.add('icon-svg', 'timestamp-icon');
+    image.src = `/img/${modelName}.svg`;
 
-        // Add classes for styling and identification
-        svg.addClass('icon-svg timestamp-icon');
-
+    image.onload = async function () {
         // Check if an SVG already exists adjacent to the timestamp
         let existingSVG = mes.find('.timestamp').next('.timestamp-icon');
 
         if (existingSVG.length) {
             // Replace existing SVG
-            existingSVG.replaceWith(svg);
+            existingSVG.replaceWith(image);
         } else {
             // Append the new SVG if none exists
-            mes.find('.timestamp').after(svg);
+            mes.find('.timestamp').after(image);
         }
-    });
+
+        await SVGInject(this);
+    };
 }
 
 
