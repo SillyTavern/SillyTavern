@@ -5684,3 +5684,16 @@ body.waifuMode .zoomed_avatar {
     font-size: calc(var(--mainFontSize) * .8);
     font-weight: bold;
 }
+
+#select_chat_search {
+    background-color: transparent;
+    border: none;
+    outline: none;
+    color: white;
+    display: inline-block;  /* Change display to inline-block */
+    vertical-align: middle; /* Align to middle if there's a height discrepancy */
+    width: 200px;
+    font-size: 16px;
+    z-index: 10;
+    margin-left: 10px; /* Give some space between the button and search box */
+}
