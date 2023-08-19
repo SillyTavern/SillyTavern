@@ -235,7 +235,12 @@ async function generateTextGenWithStreaming(generate_data, signal) {
     }
 }
 
-export function getTextGenGenerationData(finalPromt, this_amount_gen, isImpersonate, cfgValues) {
+export function getTextGenGenerationData(finalPromt, this_amount_gen, isImpersonate) {
+    let cfgValues = {};
+    if (!isImpersonate) {
+        cfgValues = getCfg(finalPromt);
+    }
+
     return {
         'prompt': finalPromt,
         'max_new_tokens': this_amount_gen,

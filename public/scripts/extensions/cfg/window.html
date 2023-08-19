@@ -117,27 +117,39 @@
                     <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                 </div>
                 <div class="inline-drawer-content">
-                    <small>
-                        <b>Combine negative prompts from other boxes.</b>
-                        <br />
-                        For example, ticking the chat, global, and character boxes combine all negative prompts into a comma-separated string.
-                    </small>
+                    <div class="flex-container flexFlowColumn">
+                        <small>
+                            <b>Combine negative prompts from other boxes.</b>
+                            <br />
+                            For example, ticking the chat, global, and character boxes combine all negative prompts into a comma-separated string.
+                        </small>
+                    </div>
                     <br />
-                    <label for="cfg_negative_combine">
-                        <span data-i18n="Scale">Always Include</span>
-                    </label>
-                    <label class="checkbox_label">
-                        <input type="checkbox" name="cfg_negative_combine" value="0" />
-                        <span data-i18n="Chat Negatives">Chat Negatives</span>
-                    </label>
-                    <label class="checkbox_label">
-                        <input type="checkbox" name="cfg_negative_combine" value="1" />
-                        <span data-i18n="Character Negatives">Character Negatives</span>
-                    </label>
-                    <label class="checkbox_label">
-                        <input type="checkbox" name="cfg_negative_combine" value="2" />
-                        <span data-i18n="Global Negatives">Global Negatives</span>
-                    </label>
+                    <div class="flex-container flexFlowColumn">
+                        <label for="cfg_negative_combine">
+                            <span data-i18n="Scale">Always Include</span>
+                        </label>
+                        <label class="checkbox_label">
+                            <input type="checkbox" name="cfg_negative_combine" value="0" />
+                            <span data-i18n="Chat Negatives">Chat Negatives</span>
+                        </label>
+                        <label class="checkbox_label">
+                            <input type="checkbox" name="cfg_negative_combine" value="1" />
+                            <span data-i18n="Character Negatives">Character Negatives</span>
+                        </label>
+                        <label class="checkbox_label">
+                            <input type="checkbox" name="cfg_negative_combine" value="2" />
+                            <span data-i18n="Global Negatives">Global Negatives</span>
+                        </label>
+                    </div>
+                    <div class="flex-container flexFlowColumn">
+                        <label>
+                            Custom Separator: <input id="cfg_negative_separator" class="text_pole textarea_compact widthUnset" placeholder="&quot;\n&quot;" type="text" />
+                        </label>
+                        <label>
+                            Insertion Depth: <input id="cfg_negative_insertion_depth" class="text_pole widthUnset" type="number" min="0" max="99" />
+                        </label>
+                    </div>
                 </div>
             </div>
         </div>

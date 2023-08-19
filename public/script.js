@@ -164,7 +164,6 @@ import { deviceInfo } from "./scripts/RossAscends-mods.js";
 import { registerPromptManagerMigration } from "./scripts/PromptManager.js";
 import { getRegexedString, regex_placement } from "./scripts/extensions/regex/engine.js";
 import { FILTER_TYPES, FilterHelper } from "./scripts/filters.js";
-import { getCfg, getNegativePrompt } from "./scripts/extensions/cfg/util.js";
 
 //exporting functions and vars for mods
 export {
@@ -2906,8 +2905,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             let this_amount_gen = parseInt(amount_gen); // how many tokens the AI will be requested to generate
             let this_settings = koboldai_settings[koboldai_setting_names[preset_settings]];
 
-            const cfgValues = getCfg(finalPromt);
-
             if (isMultigenEnabled() && type !== 'quiet') {
                 // if nothing has been generated yet..
                 this_amount_gen = getMultigenAmount();
@@ -2938,7 +2935,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
             }
             else if (main_api == 'textgenerationwebui') {
-                generate_data = getTextGenGenerationData(finalPromt, this_amount_gen, isImpersonate, cfgValues);
+                generate_data = getTextGenGenerationData(finalPromt, this_amount_gen, isImpersonate);
                 generate_data.use_mancer = api_use_mancer_webui;
             }
             else if (main_api == 'novel') {

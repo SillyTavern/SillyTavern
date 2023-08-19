@@ -182,6 +182,24 @@ function loadSettings() {
         });
     }
 
+    // Display the negative separator in quotes if not quoted already
+    let negativeSeparatorDisplay = [];
+    const negativeSeparator = chat_metadata[metadataKeys.negative_separator];
+    if (negativeSeparator) {
+        negativeSeparatorDisplay.push(negativeSeparator);
+        if (!negativeSeparator.startsWith(`"`)) {
+            negativeSeparatorDisplay.unshift(`"`);
+        }
+    
+        if (!negativeSeparator.endsWith(`"`)) {
+            negativeSeparatorDisplay.push(`"`);
+        }
+    }
+
+    $('#cfg_negative_separator').val(negativeSeparatorDisplay.length === 0 ? '' : negativeSeparatorDisplay.join(''));
+
+    $('#cfg_negative_insertion_depth').val(chat_metadata[metadataKeys.negative_insertion_depth] ?? 1);
+
     // Set character CFG if it exists
     if (!selected_group) {
         const charaCfg = extension_settings.cfg.chara.find((e) => e.name === getCharaFilename());
@@ -273,7 +291,6 @@ jQuery(async () => {
         saveSettingsDebounced();
     });
 
-    // TODO: Add negative insertion depth
     windowHtml.find('#global_cfg_negative_prompt').on('input', function() {
         extension_settings.cfg.global.negative_prompt = $(this).val();
         saveSettingsDebounced();
@@ -287,6 +304,16 @@ jQuery(async () => {
             .filter((e) => e !== NaN) || [];
 
         chat_metadata[metadataKeys.negative_combine] = values;
+        saveMetadataDebounced();
+    });
+
+    windowHtml.find(`#cfg_negative_insertion_depth`).on('input', function() {
+        chat_metadata[metadataKeys.negative_insertion_depth] = Number($(this).val());
+        saveMetadataDebounced();
+    });
+
+    windowHtml.find(`#cfg_negative_separator`).on('input', function() {
+        chat_metadata[metadataKeys.negative_separator] = $(this).val();
         saveMetadataDebounced();
     });
 

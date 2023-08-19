@@ -410,7 +410,7 @@ export function getNovelGenerationData(finalPrompt, this_settings, this_amount_g
         : undefined;
 
     const prefix = selectPrefix(nai_settings.prefix, finalPrompt);
-    const cfgSettings = getCfg();
+    const cfgSettings = getCfg(finalPrompt);
 
     let logitBias = [];
     if (tokenizerType !== tokenizers.NONE && Array.isArray(nai_settings.logit_bias) && nai_settings.logit_bias.length) {
