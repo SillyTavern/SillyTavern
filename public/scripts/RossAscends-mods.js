@@ -33,12 +33,12 @@ import {
 } from "./power-user.js";
 
 import { LoadLocal, SaveLocal, CheckLocal, LoadLocalBool } from "./f-localStorage.js";
-import { selected_group, is_group_generating, getGroupAvatar, groups } from "./group-chats.js";
+import { selected_group, is_group_generating, getGroupAvatar, groups, openGroupById } from "./group-chats.js";
 import {
     SECRET_KEYS,
     secret_state,
 } from "./secrets.js";
-import { sortByCssOrder, debounce, delay } from "./utils.js";
+import { debounce, delay } from "./utils.js";
 import { chat_completion_sources, oai_settings } from "./openai.js";
 
 var NavToggle = document.getElementById("nav-toggle");
@@ -354,10 +354,8 @@ async function RA_autoloadchat() {
             selectCharacterById(String(active_character_id));
         }
 
-        let groupToAutoLoad = document.querySelector(`.group_select[grid="${active_group}"]`);
-
-        if (groupToAutoLoad != null) {
-            $(groupToAutoLoad).click();
+        if (active_group != null) {
+            openGroupById(String(active_group));
         }
 
         // if the character list hadn't been loaded yet, try again.
@@ -395,17 +393,18 @@ export async function favsToHotswap() {
         slot.attr('grid', isGroup ? grid : '');
         slot.attr('chid', isCharacter ? chid : '');
         slot.data('id', isGroup ? grid : chid);
-        slot.attr('title', '');
 
         if (isGroup) {
             const group = groups.find(x => x.id === grid);
             const avatar = getGroupAvatar(group);
             $(slot).find('img').replaceWith(avatar);
+            $(slot).attr('title', group.name);
         }
 
         if (isCharacter) {
             const avatarUrl = getThumbnailUrl('avatar', entity.item.avatar);
             $(slot).find('img').attr('src', avatarUrl);
+            $(slot).attr('title', entity.item.avatar);
         }
 
         $(slot).css('cursor', 'pointer');
@@ -933,14 +932,16 @@ $("document").ready(function () {
 
     // when a char is selected from the list, save their name as the auto-load character for next page load
     $(document).on("click", ".character_select", function () {
-        setActiveCharacter($(this).find('.avatar').attr('title'));
+        const characterId = $(this).find('.avatar').attr('title') || $(this).attr('title');
+        setActiveCharacter(characterId);
         setActiveGroup(null);
         saveSettingsDebounced();
     });
 
     $(document).on("click", ".group_select", function () {
+        const groupId = $(this).data('id') || $(this).attr('grid');
         setActiveCharacter(null);
-        setActiveGroup($(this).data('id'));
+        setActiveGroup(groupId);
         saveSettingsDebounced();
     });
 

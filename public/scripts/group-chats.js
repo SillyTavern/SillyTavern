@@ -308,6 +308,9 @@ async function getGroups() {
 
         // Convert groups to new format
         for (const group of groups) {
+            if (typeof group.id === 'number') {
+                group.id = String(group.id);
+            }
             if (group.disabled_members == undefined) {
                 group.disabled_members = [];
             }

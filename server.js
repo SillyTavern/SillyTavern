@@ -2659,7 +2659,7 @@ app.post('/creategroup', jsonParser, (request, response) => {
         return response.sendStatus(400);
     }
 
-    const id = Date.now();
+    const id = String(Date.now());
     const groupMetadata = {
         id: id,
         name: request.body.name ?? 'New Group',
