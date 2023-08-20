@@ -318,6 +318,7 @@ const directories = {
     context: 'public/context',
     backups: 'backups/',
     quickreplies: 'public/QuickReplies'
+    // TODO: add ambient music here
 };
 
 // CSRF Protection //
@@ -4930,5 +4931,43 @@ app.post('/delete_extension', jsonParser, async (request, response) => {
     } catch (error) {
         console.log('Deleting custom content failed', error);
         return response.status(500).send(`Server Error: ${error.message}`);
+    }
+});
+/**
+ * HTTP POST handler function to retrieve a character background music list.
+ *
+ * @param {Object} request - HTTP Request object, expects a character name in the query.
+ * @param {Object} response - HTTP Response object will contain a list of audio file path.
+ *
+ * @returns {void}
+ */
+app.get('/get_character_background_musics', jsonParser, function (request, response) {
+    const AUDIO_FOLDER = "audio"
+    const BGM_FOLDER = "bgm"
+    const name = request.query.name;
+    const musicsPath = path.join(directories.characters, name, AUDIO_FOLDER,BGM_FOLDER);
+    let musics = [];
+
+    try {
+        if (fs.existsSync(musicsPath) && fs.statSync(musicsPath).isDirectory()) {
+            musics = fs.readdirSync(musicsPath)
+                .filter(file => {
+                    const mimeType = mime.lookup(file);
+                    return mimeType && mimeType.startsWith('audio/');
+                })
+                .map((file) => {
+                    const pathToMusic = path.join(musicsPath, file);
+                    return {
+                        label: path.parse(pathToMusic).name.toLowerCase(),
+                        path: `/characters/${name}/${AUDIO_FOLDER}/${BGM_FOLDER}/${file}`,
+                    };
+                });
+        }
+    }
+    catch (err) {
+        console.log(err);
+    }
+    finally {
+        return response.send(musics);
     }
 });
