@@ -1090,15 +1090,24 @@ export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvata
     return text;
 }
 
-export function formatInstructStoryString(story, systemPrompt) {
-    // If the character has a custom system prompt AND user has it preferred, use that instead of the default
-    systemPrompt = power_user.prefer_character_prompt && systemPrompt ? systemPrompt : power_user.instruct.system_prompt;
-    const sequence = power_user.instruct.system_sequence || '';
-    const prompt = substituteParams(systemPrompt, name1, name2, power_user.instruct.system_prompt) || '';
+export function formatInstructModeExamples(mesExamples, name1, name2) {
+    const includeNames = power_user.instruct.names || (!!selected_group && power_user.instruct.names_force_groups);
+
+    let inputSequence = power_user.instruct.input_sequence;
+    let outputSequence = power_user.instruct.output_sequence;
+
+    if (power_user.instruct.macro) {
+        inputSequence = substituteParams(inputSequence, name1, name2);
+        outputSequence = substituteParams(outputSequence, name1, name2);
+    }
+
     const separator = power_user.instruct.wrap ? '\n' : '';
-    const textArray = [sequence, prompt + '\n' + story];
-    const text = textArray.filter(x => x).join(separator);
-    return text;
+    const separatorSequence = power_user.instruct.separator_sequence ? power_user.instruct.separator_sequence : separator;
+
+    mesExamples = mesExamples.replace(new RegExp(`\n${name1}: `, "gm"), separatorSequence + inputSequence + separator + (includeNames ? `${name1}: ` : ''));
+    mesExamples = mesExamples.replace(new RegExp(`\n${name2}: `, "gm"), separator + outputSequence + separator + (includeNames ? `${name2}: ` : ''));
+
+    return mesExamples;
 }
 
 export function formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2) {
