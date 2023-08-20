@@ -1164,7 +1164,6 @@ PromptManagerModule.prototype.setChatCompletion = function (chatCompletion) {
 
     this.setMessages(messages);
     this.populateTokenCounts(messages);
-    this.populateLegacyTokenCounts(messages);
 }
 
 /**
@@ -1194,7 +1193,7 @@ PromptManagerModule.prototype.populateTokenCounts = function (messages) {
 PromptManagerModule.prototype.populateLegacyTokenCounts = function (messages) {
     // Update general token counts
     const chatHistory = messages.getItemByIdentifier('chatHistory');
-    const startChat = chatHistory?.getCollection()[0].getTokens() || 0;
+    const startChat = chatHistory?.getCollection()[0]?.getTokens() || 0;
     const continueNudge = chatHistory?.getCollection().find(message => message.identifier === 'continueNudge')?.getTokens() || 0;
 
     this.tokenHandler.counts = {
