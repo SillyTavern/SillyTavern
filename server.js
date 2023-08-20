@@ -3317,9 +3317,9 @@ async function sendClaudeRequest(request, response) {
             controller.abort();
         });
 
-        let requestPrompt = convertClaudePrompt(request.body.messages, true, true);
+        let requestPrompt = convertClaudePrompt(request.body.messages, true, !request.body.exclude_assistant);
 
-        if (request.body.assistant_prefill) {
+        if (request.body.assistant_prefill && !request.body.exclude_assistant) {
             requestPrompt += request.body.assistant_prefill;
         }
 

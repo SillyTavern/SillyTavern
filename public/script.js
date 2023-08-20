@@ -55,6 +55,7 @@ import {
     renameGroupChat,
     importGroupChat,
     getGroupBlock,
+    getGroupChatNames,
 } from "./scripts/group-chats.js";
 
 import {
@@ -1604,8 +1605,18 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         mes.is_user,
     );
     const bias = messageFormatting(mes.extra?.bias ?? "");
-    const bookmarkLink = mes?.extra?.bookmark_link ?? '';
+    let bookmarkLink = mes?.extra?.bookmark_link ?? '';
+    // Verify bookmarked chat still exists
+    // Cohee: Commented out for now. I'm worried of performance issues.
+    /*if (bookmarkLink !== '') {
+        let chat_names = selected_group
+            ? getGroupChatNames(selected_group)
+            : Object.values(getPastCharacterChats()).map(({ file_name }) => file_name);
 
+        if (!chat_names.includes(bookmarkLink)) {
+            bookmarkLink = ''
+        }
+    }*/
     let params = {
         mesId: count_view_mes,
         characterName: characterName,
@@ -2544,6 +2555,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         const exampleSeparator = power_user.context.example_separator ? `${power_user.context.example_separator}\n` : '';
         const blockHeading = main_api === 'openai' ? '<START>\n' : exampleSeparator;
         let mesExamplesArray = mesExamples.split(/<START>/gi).slice(1).map(block => `${blockHeading}${block.trim()}\n`);
+
+        if (power_user.strip_examples)
+            mesExamplesArray = []
 
         // First message in fresh 1-on-1 chat reacts to user/character settings changes
         if (chat.length) {
@@ -8003,7 +8017,7 @@ $(document).ready(function () {
         const enabled = $("#use-mancer-api-checkbox").prop("checked");
         $("#mancer_api_subpanel").toggle(enabled);
         $("#tgwebui_api_subpanel").toggle(!enabled);
-        
+
         api_use_mancer_webui = enabled;
         saveSettingsDebounced();
         getStatus();
@@ -8583,8 +8597,10 @@ $(document).ready(function () {
 
     $(document).on("click", ".mes_edit_delete", async function (event, customData) {
         const fromSlashCommand = customData?.fromSlashCommand || false;
+        const swipeExists = (!chat[this_edit_mes_id].swipes || chat[this_edit_mes_id].swipes.length <= 1 || chat.is_user || parseInt(this_edit_mes_id) !== chat.length - 1);
         if (power_user.confirm_message_delete && fromSlashCommand !== true) {
-            const confirmation = await callPopup("Are you sure you want to delete this message?", 'confirm');
+            const confirmation = swipeExists ? await callPopup("Are you sure you want to delete this message?", 'confirm')
+                : await callPopup("<h3>Delete this...</h3> <select id='del_type'><option value='swipe'>Swipe</option><option value='message'>Message</option></select>", 'confirm')
             if (!confirmation) {
                 return;
             }
@@ -8596,10 +8612,21 @@ $(document).ready(function () {
             return;
         }
 
-        chat.splice(this_edit_mes_id, 1);
+        if ($('#del_type').val() === 'swipe') {
+            const swipe_id = chat[this_edit_mes_id]['swipe_id'];
+            chat[this_edit_mes_id]['swipes'].splice(swipe_id, 1);
+            if (swipe_id > 0) {
+                $('.swipe_left:last').click();
+            } else {
+                $('.swipe_right:last').click()
+            }
+        } else {
+            chat.splice(this_edit_mes_id, 1);
+            mes.remove();
+            count_view_mes--;
+        }
+
         this_edit_mes_id = undefined;
-        mes.remove();
-        count_view_mes--;
 
         updateViewMessageIds();
         saveChatConditional();

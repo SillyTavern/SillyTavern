@@ -35,7 +35,10 @@
     --cobalt30a: rgba(100, 100, 255, 0.3);
     --greyCAIbg: rgb(36, 36, 37);
     --ivory: rgb(220, 220, 210);
-    --golden: rgba(212, 175, 55, 1);
+    --golden: rgb(248, 211, 0);
+    --warning: rgba(255, 0, 0, 0.9);
+    --active: rgb(88, 182, 0);
+    --preferred: rgb(244, 67, 54);
 
 
     /*Default Theme, will be changed by ToolCool Color Picker*/
@@ -228,7 +231,7 @@ table.responsiveTable {
     display: block;
     font-size: calc(var(--mainFontSize) - 0.1rem);
     font-weight: 500;
-    color: darkgoldenrod;
+    color: var(--SmartThemeQuoteColor);
 }
 
 .mes_text i,
@@ -1168,7 +1171,7 @@ input[type="file"] {
 
 #extension_floating_counter {
     font-weight: 600;
-    color: orange;
+    color: var(--SmartThemeQuoteColor);
 }
 
 .extension_token_counter {
@@ -1250,11 +1253,11 @@ select option:not(:checked) {
 }
 
 .fav_on {
-    color: #c5b457 !important;
+    color: var(--golden) !important;
 }
 
 .world_set {
-    color: #4b9c00 !important;
+    color: var(--active) !important;
 }
 
 #instruct_set_default {
@@ -1262,7 +1265,7 @@ select option:not(:checked) {
 }
 
 #instruct_set_default.default {
-    color: #f44336 !important;
+    color: var(--preferred) !important;
 }
 
 .displayBlock {
@@ -1280,7 +1283,7 @@ select option:not(:checked) {
 #api_button:hover,
 #api_button_novel:hover,
 #api_button_textgenerationwebui:hover {
-    background-color: green;
+    background-color: var(--active);
 }
 
 .api-load-icon {
@@ -1554,7 +1557,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 .ch_fav_icon {
     filter: drop-shadow(1px 1px 2px black);
-    color: #c5b457;
+    color: var(--golden);
     font-size: 14px;
     order: -1;
     margin-left: -75px;
@@ -1566,7 +1569,13 @@ input[type=search]:focus::-webkit-search-cancel-button {
 .character_select.is_fav .avatar,
 .group_select.is_fav .avatar,
 .group_member.is_fav .avatar {
-    outline: 2px solid #c5b457;
+    outline: 2px solid var(--golden);
+}
+
+.character_select.is_fav .ch_name,
+.group_select.is_fav .ch_name,
+.group_member.is_fav .ch_name {
+    color: var(--golden);
 }
 
 #fav_chara_wrap {
@@ -2754,7 +2763,7 @@ body .ui-widget-content li:hover {
 }
 
 span.warning {
-    color: rgba(255, 0, 0, 0.5);
+    color: var(--warning);
     font-weight: bolder;
 }
 
@@ -3315,8 +3324,8 @@ a {
 }
 
 .reverse_proxy_warning {
-    color: red;
-    background-color: black;
+    color: var(--warning);
+    background-color: var(--black70a);
     text-shadow: none !important;
     margin-top: 12px !important;
     border-radius: 5px;
@@ -3325,7 +3334,7 @@ a {
 }
 
 .neutral_warning {
-    color: rgba(225, 0, 0, 0.9);
+    color: var(--warning);
     font-weight: 800;
 }
 
@@ -3359,7 +3368,7 @@ a {
     width: calc((100vw - var(--sheldWidth)) /2);
     position: absolute;
     padding: 0;
-    filter: drop-shadow(2px 2px 2px #51515199);
+    filter: drop-shadow(2px 2px 2px var(--grey7070a));
     z-index: 29;
     overflow: hidden;
     display: none;
@@ -3485,7 +3494,7 @@ a {
     background-color: transparent;
     border: none;
     outline: none;
-    color: white;
+    color: var(--SmartThemeBodyColor);
     display: inline-block;
     /* Change display to inline-block */
     vertical-align: middle;

@@ -95,6 +95,7 @@ let power_user = {
     collapse_newlines: false,
     pygmalion_formatting: pygmalion_options.AUTO,
     pin_examples: false,
+    strip_examples: false,
     trim_sentences: false,
     include_newline: false,
     always_force_name2: false,
@@ -731,6 +732,7 @@ function loadPowerUserSettings(settings, data) {
     $("#spoiler_free_mode").prop("checked", power_user.spoiler_free_mode);
     $("#collapse-newlines-checkbox").prop("checked", power_user.collapse_newlines);
     $("#pin-examples-checkbox").prop("checked", power_user.pin_examples);
+    $("#remove-examples-checkbox").prop("checked", power_user.strip_examples);
     $("#always-force-name2-checkbox").prop("checked", power_user.always_force_name2);
     $("#trim_sentences_checkbox").prop("checked", power_user.trim_sentences);
     $("#include_newline_checkbox").prop("checked", power_user.include_newline);
@@ -1693,7 +1695,24 @@ $(document).ready(() => {
     });
 
     $("#pin-examples-checkbox").change(function () {
+        if ($(this).prop("checked")) {
+            $("#remove-examples-checkbox").prop("checked", false).prop("disabled", true);
+            power_user.strip_examples = false;
+        } else {
+            $("#remove-examples-checkbox").prop("disabled", false);
+        }
         power_user.pin_examples = !!$(this).prop("checked");
+        saveSettingsDebounced();
+    });
+
+    $("#remove-examples-checkbox").change(function () {
+        if ($(this).prop("checked")) {
+            $("#pin-examples-checkbox").prop("checked", false).prop("disabled", true);
+            power_user.pin_examples = false;
+        } else {
+            $("#pin-examples-checkbox").prop("disabled", false);
+        }
+        power_user.strip_examples = !!$(this).prop("checked");
         saveSettingsDebounced();
     });
 
