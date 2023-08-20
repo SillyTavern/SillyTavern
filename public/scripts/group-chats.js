@@ -1263,6 +1263,11 @@ function updateFavButtonState(state) {
 }
 
 export async function openGroupById(groupId) {
+    if (!groups.find(x => x.id === groupId)) {
+        console.log('Group not found', groupId);
+        return;
+    }
+
     if (!is_send_press && !is_group_generating) {
         if (selected_group !== groupId) {
             cancelTtsPlay();
