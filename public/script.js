@@ -5402,9 +5402,8 @@ async function getSettings(type) {
         setWorldInfoSettings(settings.world_info_settings ?? settings, data);
 
         api_server_textgenerationwebui = settings.api_server_textgenerationwebui;
-        $("#textgenerationwebui_api_url_text").val(
-            api_server_textgenerationwebui
-        );
+        $("#textgenerationwebui_api_url_text").val(api_server_textgenerationwebui);
+        $("#mancer_api_url_text").val(api_server_textgenerationwebui);
         api_use_mancer_webui = settings.api_use_mancer_webui
         $('#use-mancer-api-checkbox').prop("checked", api_use_mancer_webui);
         $('#use-mancer-api-checkbox').trigger("change");
@@ -8002,7 +8001,9 @@ $(document).ready(function () {
 
     $("#use-mancer-api-checkbox").on("change", function (e) {
         const enabled = $("#use-mancer-api-checkbox").prop("checked");
-        $("#mancer-api-ui").toggle(enabled);
+        $("#mancer_api_subpanel").toggle(enabled);
+        $("#tgwebui_api_subpanel").toggle(!enabled);
+        
         api_use_mancer_webui = enabled;
         saveSettingsDebounced();
         getStatus();
@@ -8010,8 +8011,9 @@ $(document).ready(function () {
 
     $("#api_button_textgenerationwebui").click(async function (e) {
         e.stopPropagation();
-        if ($("#textgenerationwebui_api_url_text").val() != "") {
-            let value = formatTextGenURL($("#textgenerationwebui_api_url_text").val().trim(), api_use_mancer_webui);
+        const url_source = api_use_mancer_webui ? "#mancer_api_url_text" : "#textgenerationwebui_api_url_text";
+        if ($(url_source).val() != "") {
+            let value = formatTextGenURL($(url_source).val().trim(), api_use_mancer_webui);
             if (!value) {
                 callPopup("Please enter a valid URL.<br/>WebUI URLs should end with <tt>/api</tt><br/>Enable 'Relaxed API URLs' to allow other paths.", 'text');
                 return;
@@ -8022,9 +8024,13 @@ $(document).ready(function () {
                 await writeSecret(SECRET_KEYS.MANCER, mancer_key);
             }
 
-            $("#textgenerationwebui_api_url_text").val(value);
+            $(url_source).val(value);
             $("#api_loading_textgenerationwebui").css("display", "inline-block");
             $("#api_button_textgenerationwebui").css("display", "none");
+
+            if (api_use_mancer_webui) {
+                textgenerationwebui_settings.streaming_url = value.replace("http", "ws") + "/v1/stream";
+            }
             api_server_textgenerationwebui = value;
             main_api = "textgenerationwebui";
             saveSettingsDebounced();
