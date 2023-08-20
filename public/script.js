@@ -66,6 +66,7 @@ import {
     pygmalion_options,
     tokenizers,
     formatInstructModeChat,
+    formatInstructModeExamples,
     formatInstructModePrompt,
     persona_description_positions,
     loadMovingUIState,
@@ -2541,6 +2542,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         }
         if (mesExamples.replace(/<START>/gi, '').trim().length === 0) {
             mesExamples = '';
+        }
+        if (mesExamples && isInstruct) {
+            mesExamples = formatInstructModeExamples(mesExamples, name1, name2)
         }
 
         const exampleSeparator = power_user.context.example_separator ? `${power_user.context.example_separator}\n` : '';

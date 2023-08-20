@@ -1088,6 +1088,26 @@ export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvata
     return text;
 }
 
+export function formatInstructModeExamples(mesExamples, name1, name2) {
+    const includeNames = power_user.instruct.names || (!!selected_group && power_user.instruct.names_force_groups);
+
+    let inputSequence = power_user.instruct.input_sequence;
+    let outputSequence = power_user.instruct.output_sequence;
+
+    if (power_user.instruct.macro) {
+        inputSequence = substituteParams(inputSequence, name1, name2);
+        outputSequence = substituteParams(outputSequence, name1, name2);
+    }
+
+    const separator = power_user.instruct.wrap ? '\n' : '';
+    const separatorSequence = power_user.instruct.separator_sequence ? power_user.instruct.separator_sequence : separator;
+
+    mesExamples = mesExamples.replace(new RegExp(`\n${name1}: `, "gm"), separatorSequence + inputSequence + separator + (includeNames ? `${name1}: ` : ''));
+    mesExamples = mesExamples.replace(new RegExp(`\n${name2}: `, "gm"), separator + outputSequence + separator + (includeNames ? `${name2}: ` : ''));
+
+    return mesExamples;
+}
+
 export function formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2) {
     const includeNames = power_user.instruct.names || (!!selected_group && power_user.instruct.names_force_groups);
     const getOutputSequence = () => power_user.instruct.last_output_sequence || power_user.instruct.output_sequence;
