@@ -78,11 +78,11 @@ function loadSettings() {
 async function onEnabledClick() {
     extension_settings.audio.enabled = $('#audio_enabled').is(':checked');
     if (extension_settings.audio.enabled) {
-        $("#audio_character_bgm").play();
-        $("#audio_ambient").play();
+        $("#audio_character_bgm")[0].play();
+        $("#audio_ambient")[0].play();
     } else {
-        $("#audio_character_bgm").pause();
-        $("#audio_ambient").pause();
+        $("#audio_character_bgm")[0].pause();
+        $("#audio_ambient")[0].pause();
     }
     saveSettingsDebounced();
 }
@@ -239,12 +239,12 @@ async function moduleWorker() {
         let newBackground = $("#bg1").css("background-image");
         newBackground = newBackground.substring(newBackground.lastIndexOf("/")+1).replace(/\.[^/.]+$/, "");
 
-        console.debug(DEBUG_PREFIX,"Current backgroung:",newBackground);
+        //console.debug(DEBUG_PREFIX,"Current backgroung:",newBackground);
 
         if (currentBackground !== newBackground & newBackground != "none") {
             currentBackground = newBackground;
 
-            console.debug(DEBUG_PREFIX,"Changing ambient audio");
+            //console.debug(DEBUG_PREFIX,"Changing ambient audio");
             updateAmbient();
         }
 
@@ -290,7 +290,7 @@ async function moduleWorker() {
         // HACK: use sprite file name as expression detection
         const spriteFile = $("#expression-image").attr("src");
         newExpression = spriteFile.substring(spriteFile.lastIndexOf("/")+1).replace(/\.[^/.]+$/, "");
-        console.debug(DEBUG_PREFIX,"Current expression",newExpression);
+        //console.debug(DEBUG_PREFIX,"Current expression",newExpression);
 
         if (!EXPRESSIONS_LIST.includes(newExpression)) {
             console.debug(DEBUG_PREFIX,"Not a valid expression, ignored");
@@ -312,14 +312,15 @@ async function moduleWorker() {
 async function updateBGM() {
     const audio_files = characterMusics[currentCharacter][currentExpression];
     const audio_file_path = audio_files[Math.floor(Math.random() * audio_files.length)]; // random pick
-    console.log("<MUSIC module> Checking audio file",audio_file_path)
+    console.log(DEBUG_PREFIX,"Updating BGM");
+    console.log(DEBUG_PREFIX,"Checking file",audio_file_path);
     fetch(audio_file_path)
     .then(response => {
         if (!response.ok) {
-            console.log("<MUSIC module> File not found!")
+            console.log(DEBUG_PREFIX,"File not found!")
         }
         else {
-            console.log("<MUSIC module> Playing emotion",currentExpression)
+            console.log(DEBUG_PREFIX,"Switching BGM to ",currentExpression)
             const audio = $("#audio_character_bgm");
 
             audio.animate({volume: 0.0}, 2000, function() {
@@ -334,14 +335,15 @@ async function updateBGM() {
 
 async function updateAmbient() {
     const audio_file_path = AMBIENT_FOLDER+currentBackground+".mp3";
-    console.log("<MUSIC module> Changing ambient audio for",audio_file_path)
+    console.log(DEBUG_PREFIX,"Updating ambient");
+    console.log(DEBUG_PREFIX,"Checking file",audio_file_path)
     fetch(audio_file_path)
     .then(response => {
         if (!response.ok) {
-            console.log("<MUSIC module> File not found!")
+            console.log(DEBUG_PREFIX,"File not found!")
         }
         else {
-            console.log("<MUSIC module> Changing ambient audio for",currentBackground)
+            console.log(DEBUG_PREFIX,"Switching ambient to ",currentBackground)
             const audio = $("#audio_ambient");
 
             audio.animate({volume: 0.0}, 2000, function() {
