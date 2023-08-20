@@ -663,6 +663,19 @@ async function sendGenerationRequest(generationType, prompt, characterName=null,
     }
 }
 
+/**
+ * Generates an "extras" image using a provided prompt and other settings, 
+ * then saves the generated image and either invokes a callback or sends a message with the image.
+ * 
+ * @param {string} prompt - The main instruction or question used to guide the image generation.
+ * @param {string} prefix - Additional context or prefix to guide the image generation.
+ * @param {string} characterName - The name used to determine the sub-directory for saving.
+ * @param {function} [callback] - Optional callback function invoked with the prompt and saved image.
+ *                                If not provided, `sendMessage` is called instead.
+ * 
+ * @returns {Promise<void>} - A promise that resolves when the image generation and processing are complete.
+ *                            The function doesn't explicitly return a value, but based on the results, either a callback is called, a message is sent, or a popup is shown.
+ */
 async function generateExtrasImage(prompt, prefix, characterName, callback) {
     console.debug(extension_settings.sd);
     const url = new URL(getApiUrl());
@@ -694,6 +707,19 @@ async function generateExtrasImage(prompt, prefix, characterName, callback) {
     }
 }
 
+/**
+ * Generates a "horde" image using the provided prompt and configuration settings, 
+ * then saves the generated image and either invokes a callback or sends a message with the image.
+ * 
+ * @param {string} prompt - The main instruction or question used to guide the image generation.
+ * @param {string} prefix - Additional context or prefix to guide the image generation.
+ * @param {string} characterName - The name used to determine the sub-directory for saving.
+ * @param {function} [callback] - Optional callback function invoked with the prompt and saved image.
+ *                                If not provided, `sendMessage` is called instead.
+ * 
+ * @returns {Promise<void>} - A promise that resolves when the image generation and processing are complete.
+ *                            The function doesn't explicitly return a value, but based on the results, either a callback is called, a message is sent, or a toastr error is shown.
+ */
 async function generateHordeImage(prompt, prefix, characterName, callback) {
     const result = await fetch('/horde_generateimage', {
         method: 'POST',
