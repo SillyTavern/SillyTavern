@@ -3460,7 +3460,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
         config.responseType = 'stream';
     }
 
-    async function makeRequest(config, response_generate_openai, request, retries = 5, timeout = 1000) {
+    async function makeRequest(config, response_generate_openai, request, retries = 5, timeout = 5000) {
         try {
             const response = await axios(config);
 
@@ -3482,7 +3482,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
             }
         } catch (error) {
             if (error.response && error.response.status === 429 && retries > 0) {
-                console.log('Out of quota, retrying...');
+                console.log(`Out of quota, retrying in ${Math.round(timeout / 1000)}s`);
                 setTimeout(() => {
                     makeRequest(config, response_generate_openai, request, retries - 1);
                 }, timeout);

@@ -513,7 +513,8 @@ function populateChatHistory(prompts, chatCompletion, type = null, cyclePrompt =
         const chatMessage = Message.fromPrompt(promptManager.preparePrompt(prompt));
 
         if (true === promptManager.serviceSettings.names_in_completion && prompt.name) {
-            chatMessage.name = promptManager.isValidName(prompt.name) ? prompt.name : promptManager.sanitizeName(prompt.name);
+            const messageName = promptManager.isValidName(prompt.name) ? prompt.name : promptManager.sanitizeName(prompt.name);
+            chatMessage.setName(messageName);
         }
 
         if (chatCompletion.canAfford(chatMessage)) chatCompletion.insertAtStart(chatMessage, 'chatHistory');
@@ -1371,7 +1372,7 @@ function countTokens(messages, full = false) {
 
     for (const message of messages) {
         const model = getTokenizerModel();
-        const hash = getStringHash(message.content);
+        const hash = getStringHash(JSON.stringify(message));
         const cacheKey = `${model}-${hash}`;
         const cachedCount = tokenCache[chatId][cacheKey];
 
@@ -1443,7 +1444,7 @@ class Message {
         this.role = role;
         this.content = content;
 
-        if (this.content) {
+        if (typeof this.content === 'string') {
             this.tokens = tokenHandler.count({ role: this.role, content: this.content });
         } else {
             this.tokens = 0;
@@ -1452,6 +1453,7 @@ class Message {
 
     setName(name) {
         this.name = name;
+        this.tokens = tokenHandler.count({ role: this.role, content: this.content, name: this.name });
     }
 
     /**
