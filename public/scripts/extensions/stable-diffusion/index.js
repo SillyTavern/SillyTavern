@@ -1,5 +1,4 @@
 import {
-    substituteParams,
     saveSettingsDebounced,
     systemUserName,
     hideSwipeButtons,
@@ -513,7 +512,7 @@ function getQuietPrompt(mode, trigger) {
         return trigger;
     }
 
-    return substituteParams(stringFormat(extension_settings.sd.prompts[mode], trigger));
+    return stringFormat(extension_settings.sd.prompts[mode], trigger);
 }
 
 function processReply(str) {
@@ -862,7 +861,7 @@ async function sdMessageButton(e) {
     const message_id = $mes.attr('mesid');
     const message = context.chat[message_id];
     const characterName = message?.name || context.name2;
-    const messageText = substituteParams(message?.mes);
+    const messageText = message?.mes;
     const hasSavedImage = message?.extra?.image && message?.extra?.title;
 
     if ($icon.hasClass(busyClass)) {
