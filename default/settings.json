@@ -133,7 +133,7 @@
             "output_sequence": "### Response:",
             "preset": "Alpaca",
             "separator_sequence": "",
-            "macro": false
+            "macro": true
         },
         "personas": {},
         "default_persona": null,

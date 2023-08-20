@@ -12,8 +12,6 @@ import {
     event_types,
     getCurrentChatId,
     printCharacters,
-    name1,
-    name2,
     setCharacterId,
     setEditedMessageId
 } from "../script.js";
@@ -21,8 +19,8 @@ import { isMobile, initMovingUI } from "./RossAscends-mods.js";
 import {
     groups,
     resetSelectedGroup,
-    selected_group,
 } from "./group-chats.js";
+import { loadInstructMode } from "./instruct-mode.js";
 
 import { registerSlashCommand } from "./slash-commands.js";
 
@@ -44,9 +42,7 @@ export {
 export const MAX_CONTEXT_DEFAULT = 4096;
 const MAX_CONTEXT_UNLOCKED = 65536;
 
-const defaultStoryString = `{{#if description}}{{description}}{{/if}}
-{{#if personality}}{{personality}}{{/if}}
-{{#if scenario}}Scenario: {{scenario}}{{/if}}`;
+const defaultStoryString =  "{{#if system}}{{system}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}'s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}";
 const defaultExampleSeparator = '***';
 const defaultChatStart = '***';
 
@@ -97,6 +93,7 @@ let power_user = {
     collapse_newlines: false,
     pygmalion_formatting: pygmalion_options.AUTO,
     pin_examples: false,
+    strip_examples: false,
     trim_sentences: false,
     include_newline: false,
     always_force_name2: false,
@@ -165,6 +162,7 @@ let power_user = {
     trim_spaces: true,
     relaxed_api_urls: false,
 
+    default_instruct: '',
     instruct: {
         enabled: false,
         wrap: true,
@@ -179,6 +177,7 @@ let power_user = {
         separator_sequence: '',
         macro: false,
         names_force_groups: true,
+        activation_regex: '',
     },
 
     context: {
@@ -205,7 +204,6 @@ let power_user = {
 
 let themes = [];
 let movingUIPresets = [];
-let instruct_presets = [];
 let context_presets = [];
 
 const storage_keys = {
@@ -665,9 +663,6 @@ function loadPowerUserSettings(settings, data) {
         movingUIPresets = data.movingUIPresets;
     }
 
-    if (data.instruct !== undefined) {
-        instruct_presets = data.instruct;
-    }
 
     if (data.context !== undefined) {
         context_presets = data.context;
@@ -731,6 +726,7 @@ function loadPowerUserSettings(settings, data) {
     $("#spoiler_free_mode").prop("checked", power_user.spoiler_free_mode);
     $("#collapse-newlines-checkbox").prop("checked", power_user.collapse_newlines);
     $("#pin-examples-checkbox").prop("checked", power_user.pin_examples);
+    $("#remove-examples-checkbox").prop("checked", power_user.strip_examples);
     $("#always-force-name2-checkbox").prop("checked", power_user.always_force_name2);
     $("#trim_sentences_checkbox").prop("checked", power_user.trim_sentences);
     $("#include_newline_checkbox").prop("checked", power_user.include_newline);
@@ -802,7 +798,7 @@ function loadPowerUserSettings(settings, data) {
 
     $(`#character_sort_order option[data-order="${power_user.sort_order}"][data-field="${power_user.sort_field}"]`).prop("selected", true);
     reloadMarkdownProcessor(power_user.render_formulas);
-    loadInstructMode();
+    loadInstructMode(data);
     loadContextSettings();
     loadMaxContextUnlocked();
     switchWaifuMode();
@@ -812,7 +808,7 @@ function loadPowerUserSettings(settings, data) {
 }
 
 async function loadCharListState() {
-    if (document.getElementById('CharID0') !== null) {
+    if (document.querySelector('.character_select') !== null) {
         console.debug('setting charlist state to...')
         if (power_user.charListGrid === true) {
             console.debug('..to grid')
@@ -926,74 +922,6 @@ function loadContextSettings() {
     });
 }
 
-function loadInstructMode() {
-    const controls = [
-        { id: "instruct_enabled", property: "enabled", isCheckbox: true },
-        { id: "instruct_wrap", property: "wrap", isCheckbox: true },
-        { id: "instruct_system_prompt", property: "system_prompt", isCheckbox: false },
-        { id: "instruct_system_sequence", property: "system_sequence", isCheckbox: false },
-        { id: "instruct_separator_sequence", property: "separator_sequence", isCheckbox: false },
-        { id: "instruct_input_sequence", property: "input_sequence", isCheckbox: false },
-        { id: "instruct_output_sequence", property: "output_sequence", isCheckbox: false },
-        { id: "instruct_stop_sequence", property: "stop_sequence", isCheckbox: false },
-        { id: "instruct_names", property: "names", isCheckbox: true },
-        { id: "instruct_macro", property: "macro", isCheckbox: true },
-        { id: "instruct_names_force_groups", property: "names_force_groups", isCheckbox: true },
-        { id: "instruct_last_output_sequence", property: "last_output_sequence", isCheckbox: false },
-    ];
-
-    if (power_user.instruct.names_force_groups === undefined) {
-        power_user.instruct.names_force_groups = true;
-    }
-
-    controls.forEach(control => {
-        const $element = $(`#${control.id}`);
-
-        if (control.isCheckbox) {
-            $element.prop('checked', power_user.instruct[control.property]);
-        } else {
-            $element.val(power_user.instruct[control.property]);
-        }
-
-        $element.on('input', function () {
-            power_user.instruct[control.property] = control.isCheckbox ? !!$(this).prop('checked') : $(this).val();
-            saveSettingsDebounced();
-        });
-    });
-
-    instruct_presets.forEach((preset) => {
-        const name = preset.name;
-        const option = document.createElement('option');
-        option.value = name;
-        option.innerText = name;
-        option.selected = name === power_user.instruct.preset;
-        $('#instruct_presets').append(option);
-    });
-
-    $('#instruct_presets').on('change', function () {
-        const name = $(this).find(':selected').val();
-        const preset = instruct_presets.find(x => x.name === name);
-
-        if (!preset) {
-            return;
-        }
-
-        power_user.instruct.preset = name;
-        controls.forEach(control => {
-            if (preset[control.property] !== undefined) {
-                power_user.instruct[control.property] = preset[control.property];
-                const $element = $(`#${control.id}`);
-
-                if (control.isCheckbox) {
-                    $element.prop('checked', power_user.instruct[control.property]).trigger('input');
-                } else {
-                    $element.val(power_user.instruct[control.property]).trigger('input');
-                }
-            }
-        });
-    });
-}
-
 export function fuzzySearchCharacters(searchValue) {
     const fuse = new Fuse(characters, {
         keys: [
@@ -1048,58 +976,6 @@ export function renderStoryString(params) {
         console.error('Error rendering story string', e);
         throw e;
     }
-}
-
-export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvatar, name1, name2) {
-    let includeNames = isNarrator ? false : power_user.instruct.names;
-
-    if (!isNarrator && power_user.instruct.names_force_groups && (selected_group || forceAvatar)) {
-        includeNames = true;
-    }
-
-    let sequence = (isUser || isNarrator) ? power_user.instruct.input_sequence : power_user.instruct.output_sequence;
-
-    if (power_user.instruct.macro) {
-        sequence = substituteParams(sequence, name1, name2);
-    }
-
-    const separator = power_user.instruct.wrap ? '\n' : '';
-    const separatorSequence = power_user.instruct.separator_sequence && !isUser
-        ? power_user.instruct.separator_sequence
-        : (power_user.instruct.wrap ? '\n' : '');
-    const textArray = includeNames ? [sequence, `${name}: ${mes}`, separatorSequence] : [sequence, mes, separatorSequence];
-    const text = textArray.filter(x => x).join(separator);
-    return text;
-}
-
-export function formatInstructStoryString(story, systemPrompt) {
-    // If the character has a custom system prompt AND user has it preferred, use that instead of the default
-    systemPrompt = power_user.prefer_character_prompt && systemPrompt ? systemPrompt : power_user.instruct.system_prompt;
-    const sequence = power_user.instruct.system_sequence || '';
-    const prompt = substituteParams(systemPrompt, name1, name2, power_user.instruct.system_prompt) || '';
-    const separator = power_user.instruct.wrap ? '\n' : '';
-    const textArray = [sequence, prompt + '\n' + story];
-    const text = textArray.filter(x => x).join(separator);
-    return text;
-}
-
-export function formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2) {
-    const includeNames = power_user.instruct.names || (!!selected_group && power_user.instruct.names_force_groups);
-    const getOutputSequence = () => power_user.instruct.last_output_sequence || power_user.instruct.output_sequence;
-    let sequence = isImpersonate ? power_user.instruct.input_sequence : getOutputSequence();
-
-    if (power_user.instruct.macro) {
-        sequence = substituteParams(sequence, name1, name2);
-    }
-
-    const separator = power_user.instruct.wrap ? '\n' : '';
-    let text = includeNames ? (separator + sequence + separator + `${name}:`) : (separator + sequence);
-
-    if (!isImpersonate && promptBias) {
-        text += (includeNames ? promptBias : (separator + promptBias));
-    }
-
-    return text.trimEnd();
 }
 
 const sortFunc = (a, b) => power_user.sort_order == 'asc' ? compareFunc(a, b) : compareFunc(b, a);
@@ -1677,7 +1553,24 @@ $(document).ready(() => {
     });
 
     $("#pin-examples-checkbox").change(function () {
+        if ($(this).prop("checked")) {
+            $("#remove-examples-checkbox").prop("checked", false).prop("disabled", true);
+            power_user.strip_examples = false;
+        } else {
+            $("#remove-examples-checkbox").prop("disabled", false);
+        }
         power_user.pin_examples = !!$(this).prop("checked");
+        saveSettingsDebounced();
+    });
+
+    $("#remove-examples-checkbox").change(function () {
+        if ($(this).prop("checked")) {
+            $("#pin-examples-checkbox").prop("checked", false).prop("disabled", true);
+            power_user.pin_examples = false;
+        } else {
+            $("#pin-examples-checkbox").prop("disabled", false);
+        }
+        power_user.strip_examples = !!$(this).prop("checked");
         saveSettingsDebounced();
     });
 

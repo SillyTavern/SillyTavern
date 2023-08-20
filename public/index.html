@@ -22,31 +22,45 @@
     <link rel="apple-touch-icon" sizes="114x114" href="img/apple-icon-114x114.png" />
     <link rel="apple-touch-icon" sizes="144x144" href="img/apple-icon-144x144.png" />
 
-    <script src="scripts/jquery-3.5.1.min.js"></script>
-    <script src="scripts/jquery-ui.min.js"></script>
-    <script src="scripts/jquery.transit.min.js"></script>
-    <script src="scripts/jquery-cookie-1.4.1.min.js"></script>
-    <script src="scripts/jquery.ui.touch-punch.min.js"></script>
-    <script src="scripts/showdown.min.js"></script>
-    <script src="scripts/showdown-katex.min.js"></script>
-    <script src="scripts/popper.js"></script>
-    <script src="scripts/purify.min.js"></script>
-    <script src="scripts/highlight.min.js"></script>
-    <script src="scripts/moment.min.js"></script>
-    <script src="scripts/cropper.min.js"></script>
-    <script src="scripts/jquery-cropper.min.js"></script>
-    <script src="scripts/toastr.min.js"></script>
-    <script src="scripts/fuse.js"></script>
-    <script src="scripts/select2.min.js"></script>
-    <script src="scripts/seedrandom.min.js"></script>
-    <script src="scripts/droll.js"></script>
-    <script src="scripts/localforage.min.js"></script>
-    <script src="scripts/handlebars.js"></script>
-    <script src="scripts/pagination.js"></script>
-    <script type="module" src="scripts/eventemitter.js"></script>
+    <script src="lib/jquery-3.5.1.min.js"></script>
+    <script src="lib/jquery-ui.min.js"></script>
+    <script src="lib/jquery.transit.min.js"></script>
+    <script src="lib/jquery-cookie-1.4.1.min.js"></script>
+    <script src="lib/jquery.ui.touch-punch.min.js"></script>
+    <script src="lib/showdown.min.js"></script>
+    <script src="lib/showdown-katex.min.js"></script>
+    <script src="lib/popper.js"></script>
+    <script src="lib/purify.min.js"></script>
+    <script src="lib/highlight.min.js"></script>
+    <script src="lib/moment.min.js"></script>
+    <script src="lib/cropper.min.js"></script>
+    <script src="lib/jquery-cropper.min.js"></script>
+    <script src="lib/toastr.min.js"></script>
+    <script src="lib/fuse.js"></script>
+    <script src="lib/select2.min.js"></script>
+    <script src="lib/seedrandom.min.js"></script>
+    <script src="lib/droll.js"></script>
+    <script src="lib/localforage.min.js"></script>
+    <script src="lib/handlebars.js"></script>
+    <script src="lib/pagination.js"></script>
+    <script src="lib/toolcool-color-picker.js"></script>
+    <script src="lib/svg-inject.js"></script>
+    <script type="module" src="lib/swiped-events.js"></script>
+    <script type="module" src="lib/eventemitter.js"></script>
     <script type="module" src="scripts/power-user.js"></script>
-    <script type="module" src="scripts/swiped-events.js"></script>
+
     <link rel="stylesheet" type="text/css" href="style.css">
+
+    <link rel="stylesheet" type="text/css" href="css/st-tailwind.css">
+    <link rel="stylesheet" type="text/css" href="css/tags.css">
+    <link rel="stylesheet" type="text/css" href="css/rm-groups.css">
+    <link rel="stylesheet" type="text/css" href="css/group-avatars.css">
+    <link rel="stylesheet" type="text/css" href="css/toggle-dependent.css">
+    <link rel="stylesheet" type="text/css" href="css/world-info.css">
+    <link rel="stylesheet" type="text/css" href="css/extensions-panel.css">
+    <link rel="stylesheet" type="text/css" href="css/select2-overrides.css">
+    <link rel="stylesheet" type="text/css" href="css/mobile-styles.css">
+
     <link rel="stylesheet" href="css/bg_load.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <script>
@@ -100,7 +114,6 @@
     <script type="module" src="scripts/authors-note.js"></script>
     <script type="module" src="scripts/preset-manager.js"></script>
     <script type="module" src="scripts/filters.js"></script>
-    <script type="text/javascript" src="scripts/toolcool-color-picker.js"></script>
 
     <title>SillyTavern</title>
 </head>
@@ -130,13 +143,12 @@
                         <div class="checked fa-solid fa-lock "></div>
                     </label>
                 </div>
-                <div data-i18n="clickslidertips" class="toggle-description flex-container justifyLeft wide100p editable-slider-notification">
+                <div data-i18n="clickslidertips" class="toggle-description wide100p editable-slider-notification">
                     Click slider numbers to input manually.
                 </div>
                 <div class="scrollableInner">
                     <div class="flex-container" id="ai_response_configuration">
                         <div id="respective-presets-block" class="width100p">
-                            <input type="file" hidden data-preset-manager-file="" accept=".json, .settings">
                             <div id="kobold_api-presets">
                                 <h3><span data-i18n="kobldpresets">Kobold Presets</span>
                                     <a href="https://docs.sillytavern.app/usage/api-connections/koboldai/" class="notes-link" target="_blank">
@@ -148,10 +160,11 @@
                                     <select id="settings_perset" data-preset-manager-for="kobold">
                                         <option value="gui" data-i18n="guikoboldaisettings">GUI KoboldAI Settings</option>
                                     </select>
+                                    <input type="file" hidden data-preset-manager-file="kobold" accept=".json, .settings">
                                     <i data-preset-manager-update="kobold" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
                                     <i data-preset-manager-new="kobold" class="menu_button fa-solid fa-plus" title="Create new preset" data-i18n="[title]Create new preset"></i>
-                                    <i data-preset-manager-import="kobold" class="menu_button fa-solid fa-upload" title="Import preset" data-i18n="[title]Import preset"></i>
-                                    <i data-preset-manager-export="kobold" class="menu_button fa-solid fa-download" title="Export preset" data-i18n="[title]Export preset"></i>
+                                    <i data-preset-manager-import="kobold" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
+                                    <i data-preset-manager-export="kobold" class="menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
                                     <i data-preset-manager-delete="kobold" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
                                 </div>
                             </div>
@@ -166,10 +179,11 @@
                                     <select id="settings_perset_novel" data-preset-manager-for="novel">
                                         <option value="gui" data-i18n="default">Default</option>
                                     </select>
+                                    <input type="file" hidden data-preset-manager-file="novel" accept=".json, .settings">
                                     <i data-preset-manager-update="novel" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
                                     <i data-preset-manager-new="novel" class="menu_button fa-solid fa-plus" title="Create new preset" data-i18n="[title]Create new preset"></i>
-                                    <i data-preset-manager-import="novel" class="menu_button fa-solid fa-upload" title="Import preset" data-i18n="[title]Import preset"></i>
-                                    <i data-preset-manager-export="novel" class="menu_button fa-solid fa-download" title="Export preset" data-i18n="[title]Export preset"></i>
+                                    <i data-preset-manager-import="novel" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
+                                    <i data-preset-manager-export="novel" class="menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
                                     <i data-preset-manager-delete="novel" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
                                 </div>
                             </div>
@@ -182,8 +196,8 @@
                                         </select>
                                         <i id="update_oai_preset" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
                                         <i id="new_oai_preset" class="menu_button fa-solid fa-plus" title="Create new preset" data-i18n="[title]Create new preset"></i>
-                                        <i title="Import preset" id="import_oai_preset" class="menu_button fa-solid fa-upload" data-i18n="[title]Import preset"></i>
-                                        <i title="Export preset" id="export_oai_preset" class="menu_button fa-solid fa-download" data-i18n="[title]Export preset"></i>
+                                        <i title="Import preset" id="import_oai_preset" class="menu_button fa-solid fa-file-import" data-i18n="[title]Import preset"></i>
+                                        <i title="Export preset" id="export_oai_preset" class="menu_button fa-solid fa-file-export" data-i18n="[title]Export preset"></i>
                                         <i id="delete_oai_preset" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
                                         <input id="openai_preset_import_file" type="file" accept=".json,.settings" hidden />
                                     </div>
@@ -195,10 +209,11 @@
                                 <div class="preset_buttons">
                                     <select id="settings_preset_textgenerationwebui" data-preset-manager-for="textgenerationwebui">
                                     </select>
+                                    <input type="file" hidden data-preset-manager-file="textgenerationwebui" accept=".json, .settings">
                                     <i data-preset-manager-update="textgenerationwebui" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
                                     <i data-preset-manager-new="textgenerationwebui" class="menu_button fa-solid fa-plus" title="Create new preset" data-i18n="[title]Create new preset"></i>
-                                    <i data-preset-manager-import="textgenerationwebui" class="menu_button fa-solid fa-upload" title="Import preset" data-i18n="[title]Import preset"></i>
-                                    <i data-preset-manager-export="textgenerationwebui" class="menu_button fa-solid fa-download" title="Export preset" data-i18n="[title]Export preset"></i>
+                                    <i data-preset-manager-import="textgenerationwebui" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
+                                    <i data-preset-manager-export="textgenerationwebui" class="menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
                                     <i data-preset-manager-delete="textgenerationwebui" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
                                 </div>
                             </div>
@@ -654,7 +669,7 @@
                                     Max prompt cost: <span id="openrouter_max_prompt_cost">Unknown</span>
                                 </div>
                                 <hr>
-                                <div class="range-block" data-source="openai,claude,windowai,openrouter">
+                                <div class="range-block" data-source="openai,claude,windowai,openrouter,ai21">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
@@ -669,7 +684,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,openrouter">
+                                <div class="range-block" data-source="openai,openrouter,ai21">
                                     <div class="range-block-title" data-i18n="Frequency Penalty">
                                         Frequency Penalty
                                     </div>
@@ -684,7 +699,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,openrouter">
+                                <div class="range-block" data-source="openai,openrouter,ai21">
                                     <div class="range-block-title" data-i18n="Presence Penalty">
                                         Presence Penalty
                                     </div>
@@ -699,7 +714,22 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="claude,openrouter">
+                                <div class="range-block" data-source="ai21">
+                                    <div class="range-block-title" data-i18n="Count Penalty">
+                                        Count Penalty
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="count_pen" name="volume" min="0" max="1" step="0.01">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="count_pen" id="count_pen_counter">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="range-block" data-source="claude,openrouter,ai21">
                                     <div class="range-block-title" data-i18n="Top K">
                                         Top K
                                     </div>
@@ -714,7 +744,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,openrouter">
+                                <div class="range-block" data-source="openai,claude,openrouter,ai21">
                                     <div class="range-block-title" data-i18n="Top-p">
                                         Top P
                                     </div>
@@ -1418,6 +1448,22 @@
                                             <span data-i18n="May help the model to understand context. Names must only contain letters or numbers.">Helps the model to associate messages in group chats. Names must only contain letters or numbers without whitespaces.</span>
                                         </div>
                                     </div>
+                                    <div class="range-block" data-source="ai21">
+                                        <label for="use_ai21_tokenizer" title="Use AI21 Tokenizer" class="checkbox_label widthFreeExpand">
+                                            <input id="use_ai21_tokenizer" type="checkbox" /><span data-i18n="Use AI21 Tokenizer">Use AI21 Tokenizer</span>
+                                        </label>
+                                        <div class="toggle-description justifyLeft">
+                                            <span data-i18n="Use the appropriate tokenizer for Jurassic models, which is more efficient than GPT's.">Use the appropriate tokenizer for Jurassic models, which is more efficient than GPT's.</span>
+                                        </div>
+                                    </div>
+                                    <div class="range-block" data-source="claude">
+                                        <label for="exclude_assistant" title="Exclude Assistant suffix" class="checkbox_label widthFreeExpand">
+                                            <input id="exclude_assistant" type="checkbox" /><span data-i18n="Exclude Assistant suffix">Exclude Assistant suffix</span>
+                                        </label>
+                                        <div class="toggle-description justifyLeft">
+                                            <span data-i18n="Exclude the assistant suffix from being added to the end of prompt.">Exclude the assistant suffix from being added to the end of prompt (Requires jailbreak with 'Assistant:' in it).</span>
+                                        </div>
+                                    </div>
                                     <div class="inline-drawer m-t-1 wide100p">
                                         <div class="inline-drawer-toggle inline-drawer-header">
                                             <b data-i18n="Quick Edit">Quick Edit</b>
@@ -1429,8 +1475,8 @@
                                                     <span data-i18n="Select a character to show quick edit options.">Select a character to show quick edit options.</span>
                                                 </div>
                                             </div>
-                                            <div class="range-block" data-source="claude">
-                                                <span data-i18n="Assistant Prefill">Assistant Prefill</span>
+                                            <div id="claude_assistant_prefill_block" data-source="claude" class="range-block">
+                                                <span id="claude_assistant_prefill_text" data-i18n="Assistant Prefill">Assistant Prefill</span>
                                                 <textarea id="claude_assistant_prefill" class="text_pole textarea_compact" name="assistant_prefill" rows="3" maxlength="5000" placeholder="Start Claude's answer with..."></textarea>
                                             </div>
                                         </div>
@@ -1577,8 +1623,8 @@
                                         <select id="openai_logit_bias_preset">
                                         </select>
                                         <i title="New preset" id="openai_logit_bias_new_preset" class="menu_button fa-solid fa-plus" data-i18n="[title]New preset"></i>
-                                        <i title="Import preset" id="openai_logit_bias_import_preset" class="menu_button fa-solid fa-upload" data-i18n="[title]Import preset"></i>
-                                        <i title="Export preset" id="openai_logit_bias_export_preset" class="menu_button fa-solid fa-download" data-i18n="[title]Export preset"></i>
+                                        <i title="Import preset" id="openai_logit_bias_import_preset" class="menu_button fa-solid fa-file-import" data-i18n="[title]Import preset"></i>
+                                        <i title="Export preset" id="openai_logit_bias_export_preset" class="menu_button fa-solid fa-file-export" data-i18n="[title]Export preset"></i>
                                         <i title="Delete preset" id="openai_logit_bias_delete_preset" class="menu_button fa-solid fa-trash-can" data-i18n="[title]Delete preset"></i>
                                         <input id="openai_logit_bias_import_file" type="file" accept=".json" hidden />
                                     </div>
@@ -1618,7 +1664,7 @@
                             <option value="koboldhorde"><span data-i18n="KoboldAI Horde">KoboldAI Horde</span></option>
                             <option value="textgenerationwebui"><span data-i18n="Text Gen WebUI (ooba/Mancer)">Text Gen WebUI (ooba/Mancer)</span></option>
                             <option value="novel"><span data-i18n="NovelAI">NovelAI</span></option>
-                            <option value="openai"><span data-i18n="Chat Completion (OpenAI, Claude, Window/OpenRouter, Scale)">Chat Completion (OpenAI, Claude, Window, OpenRouter, Scale)</span></option>
+                            <option value="openai"><span data-i18n="Chat Completion (OpenAI, Claude, Window/OpenRouter, Scale, AI21)">Chat Completion (OpenAI, Claude, Window, OpenRouter, Scale, AI21)</span></option>
                         </select>
                     </div>
                     <div id="kobold_horde" style="position: relative;"> <!-- shows the kobold settings -->
@@ -1761,22 +1807,27 @@
                                     <input id="use-mancer-api-checkbox" type="checkbox" />
                                 </label>
                             </div>
-                            <div id="mancer-api-ui" style="display:none;">
-                                <h4 data-i18n="Mancer API key">Mancer API key</h4>
-                                <div class="flex-container">
-                                    <input id="api_key_mancer" name="api_key_mancer" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
-                                    <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_mancer">
-                                    </div>
-                                </div>
-                            </div>
                             <div>
-                                <div class="flex-container flexFlowColumn">
+                                <div id="mancer_api_subpanel" class="flex-container flexFlowColumn" style="display:none;">
+                                    <h4 data-i18n="Mancer API key">Mancer API key</h4>
+                                    <div class="flex-container">
+                                        <input id="api_key_mancer" name="api_key_mancer" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
+                                        <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_mancer">
+                                        </div>
+                                    </div>
                                     <div data-for="api_key_mancer" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
                                         For privacy reasons, your API key will be hidden after you reload the page.
                                     </div>
                                     <div class="flex1">
+                                        <h4 data-i18n="Mancer API url">Mancer API url</h4>
+                                        <small>Example: https://neuro.mancer.tech/webui/MODEL/api</small>
+                                        <input id="mancer_api_url_text" name="mancer_api_url" class="text_pole wide100p" maxlength="500" value="" autocomplete="off">
+                                    </div>
+                                </div>
+                                <div id="tgwebui_api_subpanel" class="flex-container flexFlowColumn">
+                                    <div class="flex1">
                                         <h4 data-i18n="Blocking API url">Blocking API url</h4>
-                                        <small>Example: http://127.0.0.1:5000/</small>
+                                        <small>Example: http://127.0.0.1:5000/api</small>
                                         <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url" class="text_pole wide100p" maxlength="500" value="" autocomplete="off">
                                     </div>
                                     <div class="flex1">
@@ -1804,6 +1855,7 @@
                             <option value="openrouter">OpenRouter</option>
                             <option value="claude">Claude</option>
                             <option value="scale">Scale</option>
+                            <option value="ai21">AI21</option>
                         </select>
                         <form id="openai_form" data-source="openai" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <h4><span data-i18n="OpenAI API key">OpenAI API key</span></h4>
@@ -1972,6 +2024,27 @@
                             <select id="model_scale_select" class="displayNone"></select>
                         </form>
 
+                        <form id="ai21_form" data-source="ai21" action="javascript:void(null);" method="post" enctype="multipart/form-data">
+                            <h4>AI21 API Key</h4>
+                            <div class="flex-container">
+                                <input id="api_key_ai21" name="api_key_ai21" class="text_pole flex1" maxlength="500" value="" type="text" autocomplete="off">
+                                <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_ai21"></div>
+                            </div>
+                            <div data-for="api_key_ai21" class="neutral_warning">
+                                For privacy reasons, your API key will be hidden after you reload the page.
+                            </div>
+                            <div>
+                                <h4 data-i18n="AI21 Model">AI21 Model</h4>
+                                <select id="model_ai21_select">
+                                    <optgroup label="Latest">
+                                        <option value="j2-ultra">j2-ultra</option>
+                                        <option value="j2-mid">j2-mid</option>
+                                        <option value="j2-light">j2-light</option>
+                                    </optgroup>
+                                </select>
+                            </div>
+                        </form>
+
                         <div class="flex-container flex">
                             <input id="api_button_openai" class="menu_button" type="submit" value="Connect">
                             <input data-source="openrouter" id="openrouter_authorize" class="menu_button" type="button" value="Authorize" title="Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai" data-i18n="[title]Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai">
@@ -2015,14 +2088,14 @@
                                 </select>
                             </div>
                             <div>
-                                <label for="context_story_string" data-i18n="Story String">
-                                    Story String
+                                <label for="context_story_string">
+                                    <small data-i18n="Story String">Story String</small>
                                 </label>
                                 <textarea id="context_story_string" class="text_pole textarea_compact" rows="3"></textarea>
                                 <div class="flex-container">
                                     <div class="flex1">
                                         <label for="context_example_separator">
-                                            <span data-i18n="Example Separator">Example Separator</span>
+                                            <small data-i18n="Example Separator">Example Separator</small>
                                         </label>
                                         <div>
                                             <textarea id="context_example_separator" class="text_pole textarea_compact" maxlength="500" rows="1"></textarea>
@@ -2030,7 +2103,7 @@
                                     </div>
                                     <div class="flex1">
                                         <label for="context_chat_start">
-                                            <span data-i18n="Chat Start">Chat Start</span>
+                                            <small data-i18n="Chat Start">Chat Start</small>
                                         </label>
                                         <div>
                                             <textarea id="context_chat_start" class="text_pole textarea_compact" maxlength="500" rows="1"></textarea>
@@ -2070,9 +2143,26 @@
                             <label for="instruct_presets">
                                 <span data-i18n="Presets">Presets</span>
                             </label>
-                            <select id="instruct_presets"></select>
+                            <div class="preset_buttons">
+                                <select id="instruct_presets" data-preset-manager-for="instruct" class="flex1"></select>
+                                <input type="file" hidden data-preset-manager-file="instruct" accept=".json, .settings">
+                                <i id="instruct_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this preset on API connection."></i>
+                                <i data-preset-manager-update="instruct" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
+                                <i data-preset-manager-new="instruct" class="menu_button fa-solid fa-plus" title="Create new preset" data-i18n="[title]Create new preset"></i>
+                                <i data-preset-manager-import="instruct" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
+                                <i data-preset-manager-export="instruct" class="menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
+                                <i data-preset-manager-delete="instruct" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
+                            </div>
                             <label>
-                                <span data-i18n="System Prompt">System Prompt</span>
+                                <small data-i18n="Activation Regex">
+                                    Activation Regex
+                                </small>
+                            </label>
+                            <div>
+                                <textarea id="instruct_activation_regex" class="text_pole textarea_compact" maxlength="5000" rows="1"></textarea>
+                            </div>
+                            <label>
+                                <small data-i18n="System Prompt">System Prompt</small>
                             </label>
                             <div class="prompt_overridden">
                                 Overridden by the Character Definitions.
@@ -2084,7 +2174,7 @@
                                         <small data-i18n="Input Sequence">Input Sequence</small>
                                     </label>
                                     <div>
-                                        <textarea id="instruct_input_sequence" class="text_pole textarea_compact" maxlength="500" rows="1"></textarea>
+                                        <textarea id="instruct_input_sequence" class="text_pole textarea_compact" maxlength="500" rows="2"></textarea>
                                     </div>
                                 </div>
                                 <div class="flex1">
@@ -2092,7 +2182,7 @@
                                         <small data-i18n="Output Sequence">Output Sequence</small>
                                     </label>
                                     <div>
-                                        <textarea id="instruct_output_sequence" class="text_pole wide100p textarea_compact" maxlength="500" rows="1"></textarea>
+                                        <textarea id="instruct_output_sequence" class="text_pole wide100p textarea_compact" maxlength="500" rows="2"></textarea>
                                     </div>
                                 </div>
                                 <div class="flex1">
@@ -2100,7 +2190,7 @@
                                         <small data-i18n="Last Sequence">Last Sequence</small>
                                     </label>
                                     <div>
-                                        <textarea id="instruct_last_output_sequence" class="text_pole wide100p textarea_compact" maxlength="500" rows="1"></textarea>
+                                        <textarea id="instruct_last_output_sequence" class="text_pole wide100p textarea_compact" maxlength="500" rows="2"></textarea>
                                     </div>
                                 </div>
                             </div>
@@ -2110,7 +2200,7 @@
                                         <small data-i18n="System Sequence">System Sequence</small>
                                     </label>
                                     <div>
-                                        <textarea id="instruct_system_sequence" class="text_pole textarea_compact" maxlength="500" rows="1"></textarea>
+                                        <textarea id="instruct_system_sequence" class="text_pole textarea_compact" maxlength="500" rows="2"></textarea>
                                     </div>
                                 </div>
                                 <div class="flex1">
@@ -2118,7 +2208,7 @@
                                         <small data-i18n="Stop Sequence">Stop Sequence</small>
                                     </label>
                                     <div>
-                                        <textarea id="instruct_stop_sequence" class="text_pole wide100p textarea_compact" maxlength="500" rows="1"></textarea>
+                                        <textarea id="instruct_stop_sequence" class="text_pole wide100p textarea_compact" maxlength="500" rows="2"></textarea>
                                     </div>
                                 </div>
                                 <div class="flex1">
@@ -2126,7 +2216,7 @@
                                         <small data-i18n="Separator">Separator</small>
                                     </label>
                                     <div>
-                                        <textarea id="instruct_separator_sequence" class="text_pole wide100p textarea_compact" maxlength="500" rows="1"></textarea>
+                                        <textarea id="instruct_separator_sequence" class="text_pole wide100p textarea_compact" maxlength="500" rows="2"></textarea>
                                     </div>
                                 </div>
                             </div>
@@ -2180,6 +2270,10 @@
                                 Keep Example Messages in Prompt
                             </span>
                         </label>
+                        <label class="checkbox_label" for="remove-examples-checkbox">
+                            <input id="remove-examples-checkbox" type="checkbox" />
+                            Strip Example Messages from Prompt
+                        </label>
                         <label class="checkbox_label" for="collapse-newlines-checkbox"><input id="collapse-newlines-checkbox" type="checkbox" />
                             <span data-i18n="Remove Empty New Lines from Output">
                                 Remove Empty New Lines from Output
@@ -2224,7 +2318,7 @@
                                 </div>
                             </h4>
                             <div>
-                                <textarea id="custom_stopping_strings" rows="2" class="text_pole textarea_compact" placeholder="[&quot;Ford&quot;, &quot;BMW&quot;, &quot;Fiat&quot;]"></textarea>
+                                <textarea id="custom_stopping_strings" rows="2" class="text_pole textarea_compact monospace" placeholder="[&quot;Ford&quot;, &quot;BMW&quot;, &quot;Fiat&quot;]"></textarea>
                             </div>
                             <label class="checkbox_label" for="custom_stopping_strings_macro">
                                 <input id="custom_stopping_strings_macro" type="checkbox" checked>
@@ -2917,8 +3011,8 @@
                                 <textarea id="persona_description" name="persona_description" placeholder="Example:&#10;[{{user}} is a 28-year-old Romanian cat girl.]" class="text_pole textarea_compact" maxlength="5000" value="" autocomplete="off" rows="4"></textarea>
                                 <label for="persona_description_position" data-i18n="Position:">Position:</label>
                                 <select id="persona_description_position">
-                                    <option value="0" data-i18n="Before Character Card">Before Character Card</option>
-                                    <option value="1" data-i18n="After Character Card">After Character Card</option>
+                                    <option value="0" data-i18n="In Story String / Chat Completion: Before Character Card">In Story String / Chat Completion: Before Character Card</option>
+                                    <option value="1" data-i18n="In Story String / Chat Completion: After Character Card">In Story String / Chat Completion: After Character Card</option>
                                     <option value="2" data-i18n="Top of Author's Note">Top of Author's Note</option>
                                     <option value="3" data-i18n="Bottom of Author's Note">Bottom of Author's Note</option>
                                 </select>
@@ -3214,7 +3308,7 @@
                         <div class="inline-drawer-content">
                             <div name="Unadded Char List" class="flex-container flexFlowColumn overflowYAuto flex1">
                                 <div id="rm_group_add_members_header">
-                                    <input id="rm_group_filter" class="text_pole margin0" type="search" data-i18n="[placeholder]Filter..." placeholder="Filter..." maxlength="100" />
+                                    <input id="rm_group_filter" class="text_pole margin0" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." maxlength="100" />
                                 </div>
                                 <div class="rm_tag_controls">
                                     <div class="tags rm_tag_filter"></div>
@@ -3238,7 +3332,7 @@
                     <div id="charListFixedTop">
                         <form id="form_character_search_form" action="javascript:void(null);">
                             <div id="rm_button_create" title="Create New Character" data-i18n="[title]Create New Character" class="menu_button fa-solid fa-user-plus "></div>
-                            <div id="character_import_button" title="Import Character from File" data-i18n="[title]Import Character from File" class="menu_button fa-solid fa-file-arrow-up faSmallFontSquareFix"></div>
+                            <div id="character_import_button" title="Import Character from File" data-i18n="[title]Import Character from File" class="menu_button fa-solid fa-file-import faSmallFontSquareFix"></div>
                             <div id="external_import_button" title="Import content from external URL" data-i18n="[title]Import content from external URL" class="menu_button fa-solid fa-cloud-arrow-down faSmallFontSquareFix"></div>
                             <div id="rm_button_group_chats" title="Create New Chat Group" data-i18n="[title]Create New Chat Group" class="menu_button fa-solid fa-users-gear "></div>
                             <input id="character_search_bar" class="text_pole width100p" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." maxlength="50" />
@@ -3267,16 +3361,6 @@
                     </div>
                     <div id="rm_print_characters_block" class="flexFlowColumn"></div>
                 </div>
-
-                <!-- only displays after creating/deleting a character/group -->
-                <div id="rm_info_block" class="right_menu">
-                    <div id="rm_info_panel">
-                        <div id="rm_info_avatar"></div>
-                        <div id="rm_info_text"></div>
-                        <div id="rm_info_button" class="menu_button" data-i18n="Back">Back</div>
-                    </div>
-                </div>
-
             </nav>
         </div>
 
@@ -3403,8 +3487,9 @@
 
     <div id="shadow_select_chat_popup">
         <div id="select_chat_popup">
+            <input type="text" id="select_chat_search" placeholder="Search..." autocomplete="off">
             <div id="select_chat_import"> <!-- import chat popup header -->
-                <div id="chat_import_button" class="fa-solid fa-file-arrow-up  menu_button"></div>
+                <div id="chat_import_button" class="fa-solid fa-file-import  menu_button"></div>
                 <div id="selectChatPopupHeaderText" class="TxtLrgBoldCenter">
                     <span id="ChatHistoryCharName"></span>
                     <br>
@@ -3645,9 +3730,7 @@
                                         <small>
                                             <span data-i18n="Content">
                                                 Content
-                                                <span>(Tokens:&nbsp;
-                                                    <span class="world_entry_form_token_counter">0</span>
-                                                    )
+                                                <span>(Tokens:&nbsp; <span class="world_entry_form_token_counter" data-first-run="true">counting...</span>)
                                                 </span>
                                             </span>
                                         </small>
