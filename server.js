@@ -288,6 +288,7 @@ function humanizedISO8601DateTime() {
 var is_colab = process.env.colaburl !== undefined;
 var charactersPath = 'public/characters/';
 var chatsPath = 'public/chats/';
+const UPLOADS_PATH = './uploads';
 const AVATAR_WIDTH = 400;
 const AVATAR_HEIGHT = 600;
 const jsonParser = express.json({ limit: '100mb' });
@@ -427,7 +428,7 @@ app.use('/characters', (req, res) => {
         res.send(data);
     });
 });
-app.use(multer({ dest: "uploads", limits: { fieldSize: 10 * 1024 * 1024 } }).single("avatar"));
+app.use(multer({ dest: UPLOADS_PATH, limits: { fieldSize: 10 * 1024 * 1024 } }).single("avatar"));
 app.get("/", function (request, response) {
     response.sendFile(process.cwd() + "/public/index.html");
 });
@@ -618,7 +619,7 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
                     websocket.close();
                     return;
                 }
-                
+
                 let rawMessage = null;
                 try {
                     // This lunacy is because the websocket can fail to connect AFTER we're awaiting 'message'... so 'message' never triggers.
@@ -632,7 +633,7 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
                             resolve(data, isBinary);
                         });
                     });
-                } catch(err) {
+                } catch (err) {
                     console.error("Socket error:", err);
                     websocket.close();
                     yield "[SillyTavern] Streaming failed:\n" + err;
@@ -1005,7 +1006,7 @@ function charaFormatData(data) {
     return char;
 }
 
-app.post("/createcharacter", urlencodedParser, function (request, response) {
+app.post("/createcharacter", urlencodedParser, async function (request, response) {
     if (!request.body) return response.sendStatus(400);
 
     request.body.ch_name = sanitize(request.body.ch_name);
@@ -1022,8 +1023,9 @@ app.post("/createcharacter", urlencodedParser, function (request, response) {
         charaWrite(defaultAvatar, char, internalName, response, avatarName);
     } else {
         const crop = tryParse(request.query.crop);
-        const uploadPath = path.join("./uploads/", request.file.filename);
-        charaWrite(uploadPath, char, internalName, response, avatarName, crop);
+        const uploadPath = path.join(UPLOADS_PATH, request.file.filename);
+        await charaWrite(uploadPath, char, internalName, response, avatarName, crop);
+        fs.unlinkSync(uploadPath);
     }
 });
 
@@ -1120,9 +1122,10 @@ app.post("/editcharacter", urlencodedParser, async function (request, response) 
             await charaWrite(avatarPath, char, target_img, response, 'Character saved');
         } else {
             const crop = tryParse(request.query.crop);
-            const newAvatarPath = path.join("./uploads/", request.file.filename);
+            const newAvatarPath = path.join(UPLOADS_PATH, request.file.filename);
             invalidateThumbnail('avatar', request.body.avatar_url);
             await charaWrite(newAvatarPath, char, target_img, response, 'Character saved', crop);
+            fs.unlinkSync(newAvatarPath);
         }
     }
     catch {
@@ -1373,7 +1376,20 @@ app.post("/getcharacters", jsonParser, function (request, response) {
     });
 });
 
+app.post("/getonecharacter", jsonParser, async function (request, response) {
+    if (!request.body) return response.sendStatus(400);
+    const item = request.body.avatar_url;
+    const filePath = path.join(charactersPath, item);
 
+    if (!fs.existsSync(filePath)) {
+        return response.sendStatus(404);
+    }
+
+    characters = {};
+    await processCharacter(item, 0);
+
+    return response.send(characters[0]);
+});
 
 /**
  * Handle a POST request to get the stats object
@@ -1531,13 +1547,14 @@ app.post("/downloadbackground", urlencodedParser, function (request, response) {
     response_dw_bg = response;
     if (!request.body || !request.file) return response.sendStatus(400);
 
-    const img_path = path.join("uploads/", request.file.filename);
+    const img_path = path.join(UPLOADS_PATH, request.file.filename);
     const filename = request.file.originalname;
 
     try {
         fs.copyFileSync(img_path, path.join('public/backgrounds/', filename));
         invalidateThumbnail('bg', filename);
         response_dw_bg.send(filename);
+        fs.unlinkSync(img_path);
     } catch (err) {
         console.error(err);
         response_dw_bg.sendStatus(500);
@@ -2052,13 +2069,15 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
 
     let png_name = '';
     let filedata = request.file;
-    let uploadPath = path.join('./uploads', filedata.filename);
+    let uploadPath = path.join(UPLOADS_PATH, filedata.filename);
     var format = request.body.file_type;
     const defaultAvatarPath = './public/img/ai4.png';
     //console.log(format);
     if (filedata) {
         if (format == 'json') {
             fs.readFile(uploadPath, 'utf8', async (err, data) => {
+                fs.unlinkSync(uploadPath);
+
                 if (err) {
                     console.log(err);
                     response.send({ error: true });
@@ -2139,8 +2158,9 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
 
                 if (format == 'webp') {
                     try {
-                        let convertedPath = path.join('./uploads', path.basename(uploadPath, ".webp") + ".png")
+                        let convertedPath = path.join(UPLOADS_PATH, path.basename(uploadPath, ".webp") + ".png")
                         await webp.dwebp(uploadPath, convertedPath, "-o");
+                        fs.unlinkSync(uploadPath);
                         uploadPath = convertedPath;
                     }
                     catch {
@@ -2155,7 +2175,8 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     unsetFavFlag(jsonData);
                     jsonData = readFromV2(jsonData);
                     let char = JSON.stringify(jsonData);
-                    charaWrite(uploadPath, char, png_name, response, { file_name: png_name });
+                    await charaWrite(uploadPath, char, png_name, response, { file_name: png_name });
+                    fs.unlinkSync(uploadPath);
                 } else if (jsonData.name !== undefined) {
                     console.log('Found a v1 character file.');
 
@@ -2181,6 +2202,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     char = convertToV2(char);
                     char = JSON.stringify(char);
                     await charaWrite(uploadPath, char, png_name, response, { file_name: png_name });
+                    fs.unlinkSync(uploadPath);
                 } else {
                     console.log('Unknown character card format');
                     response.send({ error: true });
@@ -2323,9 +2345,9 @@ app.post("/exportcharacter", jsonParser, async function (request, response) {
             try {
                 let json = await charaRead(filename);
                 let stringByteArray = utf8Encode.encode(json).toString();
-                let inputWebpPath = `./uploads/${Date.now()}_input.webp`;
-                let outputWebpPath = `./uploads/${Date.now()}_output.webp`;
-                let metadataPath = `./uploads/${Date.now()}_metadata.exif`;
+                let inputWebpPath = path.join(UPLOADS_PATH, `${Date.now()}_input.webp`);
+                let outputWebpPath = path.join(UPLOADS_PATH, `${Date.now()}_output.webp`);
+                let metadataPath = path.join(UPLOADS_PATH, `${Date.now()}_metadata.exif`);
                 let metadata =
                 {
                     "Exif": {
@@ -2360,7 +2382,10 @@ app.post("/importgroupchat", urlencodedParser, function (request, response) {
     try {
         const filedata = request.file;
         const chatname = humanizedISO8601DateTime();
-        fs.copyFileSync(`./uploads/${filedata.filename}`, (`${directories.groupChats}/${chatname}.jsonl`));
+        const pathToUpload = path.join(UPLOADS_PATH, filedata.filename);
+        const pathToNewFile = path.join(directories.groupChats, `${chatname}.jsonl`);
+        fs.copyFileSync(pathToUpload, pathToNewFile);
+        fs.unlinkSync(pathToUpload);
         return response.send({ res: chatname });
     } catch (error) {
         console.error(error);
@@ -2379,7 +2404,7 @@ app.post("/importchat", urlencodedParser, function (request, response) {
 
     if (filedata) {
         if (format === 'json') {
-            fs.readFile(`./uploads/${filedata.filename}`, 'utf8', (err, data) => {
+            fs.readFile(path.join(UPLOADS_PATH, filedata.filename), 'utf8', (err, data) => {
 
                 if (err) {
                     console.log(err);
@@ -2473,7 +2498,7 @@ app.post("/importchat", urlencodedParser, function (request, response) {
         }
         if (format === 'jsonl') {
             //console.log(humanizedISO8601DateTime()+':imported chat format is JSONL');
-            const fileStream = fs.createReadStream('./uploads/' + filedata.filename);
+            const fileStream = fs.createReadStream(path.join(UPLOADS_PATH, filedata.filename));
             const rl = readline.createInterface({
                 input: fileStream,
                 crlfDelay: Infinity
@@ -2483,7 +2508,7 @@ app.post("/importchat", urlencodedParser, function (request, response) {
                 let jsonData = json5.parse(line);
 
                 if (jsonData.user_name !== undefined || jsonData.name !== undefined) {
-                    fs.copyFile(`./uploads/${filedata.filename}`, (`${chatsPath + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()}.jsonl`), (err) => {
+                    fs.copyFile(path.join(UPLOADS_PATH, filedata.filename), (`${chatsPath + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()}.jsonl`), (err) => {
                         if (err) {
                             response.send({ error: true });
                             return console.log(err);
@@ -2512,8 +2537,9 @@ app.post('/importworldinfo', urlencodedParser, (request, response) => {
     if (request.body.convertedData) {
         fileContents = request.body.convertedData;
     } else {
-        const pathToUpload = path.join('./uploads/', request.file.filename);
+        const pathToUpload = path.join(UPLOADS_PATH, request.file.filename);
         fileContents = fs.readFileSync(pathToUpload, 'utf8');
+        fs.unlinkSync(pathToUpload);
     }
 
     try {
@@ -2565,7 +2591,7 @@ app.post('/uploaduseravatar', urlencodedParser, async (request, response) => {
     if (!request.file) return response.sendStatus(400);
 
     try {
-        const pathToUpload = path.join('./uploads/' + request.file.filename);
+        const pathToUpload = path.join(UPLOADS_PATH, request.file.filename);
         const crop = tryParse(request.query.crop);
         let rawImg = await jimp.read(pathToUpload);
 
@@ -2633,7 +2659,7 @@ app.post('/creategroup', jsonParser, (request, response) => {
         return response.sendStatus(400);
     }
 
-    const id = Date.now();
+    const id = String(Date.now());
     const groupMetadata = {
         id: id,
         name: request.body.name ?? 'New Group',
@@ -2852,6 +2878,26 @@ function invalidateThumbnail(type, file) {
 
     if (fs.existsSync(pathToThumbnail)) {
         fs.rmSync(pathToThumbnail);
+    }
+}
+
+function cleanUploads() {
+    try {
+        if (fs.existsSync(UPLOADS_PATH)) {
+            const uploads = fs.readdirSync(UPLOADS_PATH);
+
+            if (!uploads.length) {
+                return;
+            }
+
+            console.debug(`Cleaning uploads folder (${uploads.length} files)`);
+            uploads.forEach(file => {
+                const pathToFile = path.join(UPLOADS_PATH, file);
+                fs.unlinkSync(pathToFile);
+            });
+        }
+    } catch (err) {
+        console.error(err);
     }
 }
 
@@ -3277,6 +3323,10 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
         return sendScaleRequest(request, response_generate_openai);
     }
 
+    if (request.body.use_ai21) {
+        return sendAI21Request(request, response_generate_openai);
+    }
+
     let api_url;
     let api_key_openai;
     let headers;
@@ -3466,6 +3516,94 @@ app.post("/tokenize_openai", jsonParser, function (request, response_tokenize_op
     response_tokenize_openai.send({ "token_count": num_tokens });
 });
 
+async function sendAI21Request(request, response) {
+    if (!request.body) return response.sendStatus(400);
+    const controller = new AbortController();
+    console.log(request.body.messages)
+    request.socket.removeAllListeners('close');
+    request.socket.on('close', function () {
+        controller.abort();
+    });
+    const options = {
+        method: 'POST',
+        headers: {
+            accept: 'application/json',
+            'content-type': 'application/json',
+            Authorization: `Bearer ${readSecret(SECRET_KEYS.AI21)}`
+        },
+        body: JSON.stringify({
+            numResults: 1,
+            maxTokens: request.body.max_tokens,
+            minTokens: 0,
+            temperature: request.body.temperature,
+            topP: request.body.top_p,
+            stopSequences: request.body.stop_tokens,
+            topKReturn: request.body.top_k,
+            frequencyPenalty: {
+                scale: request.body.frequency_penalty * 100,
+                applyToWhitespaces: false,
+                applyToPunctuations: false,
+                applyToNumbers: false,
+                applyToStopwords: false,
+                applyToEmojis: false
+            },
+            presencePenalty: {
+                scale: request.body.presence_penalty,
+                applyToWhitespaces: false,
+                applyToPunctuations: false,
+                applyToNumbers: false,
+                applyToStopwords: false,
+                applyToEmojis: false
+            },
+            countPenalty: {
+                scale: request.body.count_pen,
+                applyToWhitespaces: false,
+                applyToPunctuations: false,
+                applyToNumbers: false,
+                applyToStopwords: false,
+                applyToEmojis: false
+            },
+            prompt: request.body.messages
+        }),
+        signal: controller.signal,
+    };
+
+    fetch(`https://api.ai21.com/studio/v1/${request.body.model}/complete`, options)
+        .then(r => r.json())
+        .then(r => {
+            if (r.completions === undefined) {
+                console.log(r)
+            } else {
+                console.log(r.completions[0].data.text)
+            }
+            const reply = { choices: [{ "message": { "content": r.completions[0].data.text, } }] };
+            return response.send(reply)
+        })
+        .catch(err => {
+            console.error(err)
+            return response.send({ error: true })
+        });
+
+}
+
+app.post("/tokenize_ai21", jsonParser, function (request, response_tokenize_ai21 = response) {
+    if (!request.body) return response_tokenize_ai21.sendStatus(400);
+    const options = {
+        method: 'POST',
+        headers: {
+            accept: 'application/json',
+            'content-type': 'application/json',
+            Authorization: `Bearer ${readSecret(SECRET_KEYS.AI21)}`
+        },
+        body: JSON.stringify({ text: request.body[0].content })
+    };
+
+    fetch('https://api.ai21.com/studio/v1/tokenize', options)
+        .then(response => response.json())
+        .then(response => response_tokenize_ai21.send({ "token_count": response.tokens.length }))
+        .catch(err => console.error(err));
+});
+
 app.post("/save_preset", jsonParser, function (request, response) {
     const name = sanitize(request.body.name);
     if (!request.body.preset || !name) {
@@ -3623,6 +3761,7 @@ const setupTasks = async function () {
     ensurePublicDirectoriesExist();
     await ensureThumbnailCache();
     contentManager.checkForNewContent();
+    cleanUploads();
 
     // Colab users could run the embedded tool
     if (!is_colab) await convertWebp();
@@ -3649,7 +3788,7 @@ const setupTasks = async function () {
     console.log('Launching...');
 
     if (autorun) open(autorunUrl.toString());
-    
+
     console.log('\x1b[32mSillyTavern is listening on: ' + tavernUrl + '\x1b[0m');
 
     if (listen) {
@@ -3778,6 +3917,7 @@ const SECRET_KEYS = {
     DEEPL: 'deepl',
     OPENROUTER: 'api_key_openrouter',
     SCALE: 'api_key_scale',
+    AI21: 'api_key_ai21'
 }
 
 function migrateSecrets() {
@@ -4175,7 +4315,7 @@ app.post('/upload_sprite_pack', urlencodedParser, async (request, response) => {
             return response.sendStatus(404);
         }
 
-        const spritePackPath = path.join("./uploads/", file.filename);
+        const spritePackPath = path.join(UPLOADS_PATH, file.filename);
         const sprites = await getImageBuffers(spritePackPath);
         const files = fs.readdirSync(spritesPath);
 
@@ -4233,7 +4373,7 @@ app.post('/upload_sprite', urlencodedParser, async (request, response) => {
         }
 
         const filename = label + path.parse(file.originalname).ext;
-        const spritePath = path.join("./uploads/", file.filename);
+        const spritePath = path.join(UPLOADS_PATH, file.filename);
         const pathToFile = path.join(spritesPath, filename);
         // Copy uploaded file to sprites folder
         fs.cpSync(spritePath, pathToFile);

@@ -13,11 +13,13 @@ import {
     menu_type,
     max_context,
     saveSettingsDebounced,
-    eventSource,
     active_group,
     active_character,
     setActiveGroup,
     setActiveCharacter,
+    getEntitiesList,
+    getThumbnailUrl,
+    selectCharacterById,
 } from "../script.js";
 
 import {
@@ -31,12 +33,12 @@ import {
 } from "./power-user.js";
 
 import { LoadLocal, SaveLocal, CheckLocal, LoadLocalBool } from "./f-localStorage.js";
-import { selected_group, is_group_generating, getGroupAvatar, groups } from "./group-chats.js";
+import { selected_group, is_group_generating, getGroupAvatar, groups, openGroupById } from "./group-chats.js";
 import {
     SECRET_KEYS,
     secret_state,
 } from "./secrets.js";
-import { sortByCssOrder, debounce, delay } from "./utils.js";
+import { debounce, delay } from "./utils.js";
 import { chat_completion_sources, oai_settings } from "./openai.js";
 
 var NavToggle = document.getElementById("nav-toggle");
@@ -344,17 +346,16 @@ export function RA_CountCharTokens() {
  * The character or group is selected (clicked) if it is found.
  */
 async function RA_autoloadchat() {
-    if (document.getElementById('CharID0') !== null) {
+    if (document.querySelector('#rm_print_characters_block .character_select') !== null) {
         // active character is the name, we should look it up in the character list and get the id
         let active_character_id = Object.keys(characters).find(key => characters[key].avatar === active_character);
 
-        var charToAutoLoad = document.getElementById('CharID' + active_character_id);
-        let groupToAutoLoad = document.querySelector(`.group_select[grid="${active_group}"]`);
-        if (charToAutoLoad != null) {
-            $(charToAutoLoad).click();
+        if (active_character_id !== null) {
+            selectCharacterById(String(active_character_id));
         }
-        else if (groupToAutoLoad != null) {
-            $(groupToAutoLoad).click();
+
+        if (active_group != null) {
+            openGroupById(String(active_group));
         }
 
         // if the character list hadn't been loaded yet, try again.
@@ -362,53 +363,61 @@ async function RA_autoloadchat() {
 }
 
 export async function favsToHotswap() {
-    const selector = ['#rm_print_characters_block .character_select', '#rm_print_characters_block .group_select'].join(',');
+    const entities = getEntitiesList({ doFilter: false });
     const container = $('#right-nav-panel .hotswap');
     const template = $('#hotswap_template .hotswapAvatar');
     container.empty();
     const maxCount = 6;
     let count = 0;
 
-    $(selector).sort(sortByCssOrder).each(function () {
-        if ($(this).hasClass('is_fav') && count < maxCount) {
-            const isCharacter = $(this).hasClass('character_select');
-            const isGroup = $(this).hasClass('group_select');
-            const grid = Number($(this).attr('grid'));
-            const chid = Number($(this).attr('chid'));
-            let thisHotSwapSlot = template.clone();
-            thisHotSwapSlot.toggleClass('character_select', isCharacter);
-            thisHotSwapSlot.toggleClass('group_select', isGroup);
-            thisHotSwapSlot.attr('grid', isGroup ? grid : '');
-            thisHotSwapSlot.attr('chid', isCharacter ? chid : '');
-            thisHotSwapSlot.data('id', isGroup ? grid : chid);
-            thisHotSwapSlot.attr('title', '');
-
-            if (isGroup) {
-                const group = groups.find(x => x.id === grid);
-                const avatar = getGroupAvatar(group);
-                $(thisHotSwapSlot).find('img').replaceWith(avatar);
-            }
-
-            if (isCharacter) {
-                const avatarUrl = $(this).find('img').attr('src');
-                $(thisHotSwapSlot).find('img').attr('src', avatarUrl);
-            }
-
-            $(thisHotSwapSlot).css('cursor', 'pointer');
-            container.append(thisHotSwapSlot);
-            count++;
+    for (const entity of entities) {
+        if (count >= maxCount) {
+            break;
         }
-    });
 
-    //console.log('about to check for leftover selectors...')
+        const isFavorite = entity.item.fav || entity.item.fav == 'true';
+
+        if (!isFavorite) {
+            continue;
+        }
+
+        const isCharacter = entity.type === 'character';
+        const isGroup = entity.type === 'group';
+
+        const grid = isGroup ? entity.id : '';
+        const chid = isCharacter ? entity.id : '';
+
+        let slot = template.clone();
+        slot.toggleClass('character_select', isCharacter);
+        slot.toggleClass('group_select', isGroup);
+        slot.attr('grid', isGroup ? grid : '');
+        slot.attr('chid', isCharacter ? chid : '');
+        slot.data('id', isGroup ? grid : chid);
+
+        if (isGroup) {
+            const group = groups.find(x => x.id === grid);
+            const avatar = getGroupAvatar(group);
+            $(slot).find('img').replaceWith(avatar);
+            $(slot).attr('title', group.name);
+        }
+
+        if (isCharacter) {
+            const avatarUrl = getThumbnailUrl('avatar', entity.item.avatar);
+            $(slot).find('img').attr('src', avatarUrl);
+            $(slot).attr('title', entity.item.avatar);
+        }
+
+        $(slot).css('cursor', 'pointer');
+        container.append(slot);
+        count++;
+    }
+
     // there are 6 slots in total,
     if (count < maxCount) { //if any are left over
         let leftOverSlots = maxCount - count;
         for (let i = 1; i <= leftOverSlots; i++) {
             container.append(template.clone());
         }
-    } else {
-        //console.log(`count was ${count} so no need to knock off any selectors!`);
     }
 }
 
@@ -468,6 +477,7 @@ function RA_autoconnect(PrevApi) {
                     || (secret_state[SECRET_KEYS.SCALE] && oai_settings.chat_completion_source == chat_completion_sources.SCALE)
                     || (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI)
                     || (secret_state[SECRET_KEYS.OPENROUTER] && oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER)
+                    || (secret_state[SECRET_KEYS.AI21] && oai_settings.chat_completion_source == chat_completion_sources.AI21)
                 ) {
                     $("#api_button_openai").click();
                 }
@@ -922,14 +932,16 @@ $("document").ready(function () {
 
     // when a char is selected from the list, save their name as the auto-load character for next page load
     $(document).on("click", ".character_select", function () {
-        setActiveCharacter($(this).find('.avatar').attr('title'));
+        const characterId = $(this).find('.avatar').attr('title') || $(this).attr('title');
+        setActiveCharacter(characterId);
         setActiveGroup(null);
         saveSettingsDebounced();
     });
 
     $(document).on("click", ".group_select", function () {
+        const groupId = $(this).data('id') || $(this).attr('grid');
         setActiveCharacter(null);
-        setActiveGroup($(this).data('id'));
+        setActiveGroup(groupId);
         saveSettingsDebounced();
     });
 
