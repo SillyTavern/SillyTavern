@@ -485,6 +485,13 @@ function populateChatHistory(prompts, chatCompletion, type = null, cyclePrompt =
     const newChatMessage = new Message('system', substituteParams(newChat, null, null, null, names), 'newMainChat');
     chatCompletion.reserveBudget(newChatMessage);
 
+    // Reserve budget for group nudge
+    let groupNudgeMessage = null;
+    if(selected_group) {
+        const groupNudgeMessage = new Message.fromPrompt(prompts.get('groupNudge'));
+        chatCompletion.reserveBudget(groupNudgeMessage);
+    }
+
     // Reserve budget for continue nudge
     let continueMessage = null;
     if (type === 'continue' && cyclePrompt) {
@@ -525,6 +532,12 @@ function populateChatHistory(prompts, chatCompletion, type = null, cyclePrompt =
     chatCompletion.freeBudget(newChatMessage);
     chatCompletion.insertAtStart(newChatMessage, 'chatHistory');
 
+    // Reserve budget for group nudge
+    if(selected_group && groupNudgeMessage) {
+        chatCompletion.freeBudget(groupNudgeMessage);
+        chatCompletion.insertAtEnd(groupNudgeMessage, 'chatHistory');
+    }
+
     // Insert and free continue nudge
     if (type === 'continue' && continueMessage) {
         chatCompletion.freeBudget(continueMessage);
@@ -543,7 +556,8 @@ function populateDialogueExamples(prompts, chatCompletion) {
     if (openai_msgs_example.length) {
         const newExampleChat = new Message('system', oai_settings.new_example_chat_prompt, 'newChat');
         [...openai_msgs_example].forEach((dialogue, dialogueIndex) => {
-            chatCompletion.insert(newExampleChat, 'dialogueExamples');
+            if (chatCompletion.canAfford(newExampleChat)) chatCompletion.insert(newExampleChat, 'dialogueExamples');
+
             dialogue.forEach((prompt, promptIndex) => {
                 const role = 'system';
                 const content = prompt.content || '';
