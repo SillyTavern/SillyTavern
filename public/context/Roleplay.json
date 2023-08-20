@@ -1,0 +1,6 @@
+{
+    "name": "Roleplay",
+    "story_string": "### Input:\n{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}'s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}{{/if}}",
+    "chat_start": "### New Roleplay:",
+    "example_separator": "### New Roleplay:"
+}

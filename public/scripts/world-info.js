@@ -149,9 +149,6 @@ function setWorldInfoSettings(settings, data) {
     });
 
     $("#world_editor_select").trigger("change");
-
-    // Update settings
-    saveSettingsDebounced();
 }
 
 // World Info Editor

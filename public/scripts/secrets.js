@@ -8,6 +8,7 @@ export const SECRET_KEYS = {
     CLAUDE: 'api_key_claude',
     OPENROUTER: 'api_key_openrouter',
     SCALE: 'api_key_scale',
+    AI21: 'api_key_ai21',
 }
 
 const INPUT_MAP = {
@@ -18,6 +19,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.CLAUDE]: '#api_key_claude',
     [SECRET_KEYS.OPENROUTER]: '#api_key_openrouter',
     [SECRET_KEYS.SCALE]: '#api_key_scale',
+    [SECRET_KEYS.AI21]: '#api_key_ai21',
 }
 
 async function clearSecret() {

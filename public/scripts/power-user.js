@@ -8,7 +8,6 @@ import {
     reloadCurrentChat,
     getRequestHeaders,
     substituteParams,
-    updateVisibleDivs,
     eventSource,
     event_types,
     getCurrentChatId,
@@ -18,7 +17,7 @@ import {
     setCharacterId,
     setEditedMessageId
 } from "../script.js";
-import { favsToHotswap, isMobile, initMovingUI } from "./RossAscends-mods.js";
+import { isMobile, initMovingUI } from "./RossAscends-mods.js";
 import {
     groups,
     resetSelectedGroup,
@@ -34,8 +33,7 @@ export {
     loadMovingUIState,
     collapseNewlines,
     playMessageSound,
-    sortGroupMembers,
-    sortCharactersList,
+    sortEntitiesList,
     fixMarkdown,
     power_user,
     pygmalion_options,
@@ -46,9 +44,7 @@ export {
 export const MAX_CONTEXT_DEFAULT = 4096;
 const MAX_CONTEXT_UNLOCKED = 65536;
 
-const defaultStoryString = `{{#if description}}{{description}}{{/if}}
-{{#if personality}}{{personality}}{{/if}}
-{{#if scenario}}Scenario: {{scenario}}{{/if}}`;
+const defaultStoryString = "{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}'s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}{{/if}}";
 const defaultExampleSeparator = '***';
 const defaultChatStart = '***';
 
@@ -167,6 +163,7 @@ let power_user = {
     trim_spaces: true,
     relaxed_api_urls: false,
 
+    default_instruct: '',
     instruct: {
         enabled: false,
         wrap: true,
@@ -181,6 +178,7 @@ let power_user = {
         separator_sequence: '',
         macro: false,
         names_force_groups: true,
+        activation_regex: '',
     },
 
     context: {
@@ -803,7 +801,6 @@ function loadPowerUserSettings(settings, data) {
 
 
     $(`#character_sort_order option[data-order="${power_user.sort_order}"][data-field="${power_user.sort_field}"]`).prop("selected", true);
-    sortCharactersList();
     reloadMarkdownProcessor(power_user.render_formulas);
     loadInstructMode();
     loadContextSettings();
@@ -812,11 +809,10 @@ function loadPowerUserSettings(settings, data) {
     switchSpoilerMode();
     loadMovingUIState();
     loadCharListState();
-
 }
 
 async function loadCharListState() {
-    if (document.getElementById('CharID0') !== null) {
+    if (document.querySelector('.character_select') !== null) {
         console.debug('setting charlist state to...')
         if (power_user.charListGrid === true) {
             console.debug('..to grid')
@@ -944,6 +940,7 @@ function loadInstructMode() {
         { id: "instruct_macro", property: "macro", isCheckbox: true },
         { id: "instruct_names_force_groups", property: "names_force_groups", isCheckbox: true },
         { id: "instruct_last_output_sequence", property: "last_output_sequence", isCheckbox: false },
+        { id: "instruct_activation_regex", property: "activation_regex", isCheckbox: false },
     ];
 
     if (power_user.instruct.names_force_groups === undefined) {
@@ -974,6 +971,19 @@ function loadInstructMode() {
         $('#instruct_presets').append(option);
     });
 
+    function highlightDefaultPreset() {
+        $('#instruct_set_default').toggleClass('default', power_user.default_instruct === power_user.instruct.preset);
+    }
+
+    $('#instruct_set_default').on('click', function () {
+        power_user.default_instruct = power_user.instruct.preset;
+        $(this).addClass('default');
+        toastr.success(`Default instruct preset set to ${power_user.default_instruct}`);
+        saveSettingsDebounced();
+    });
+
+    highlightDefaultPreset();
+
     $('#instruct_presets').on('change', function () {
         const name = $(this).find(':selected').val();
         const preset = instruct_presets.find(x => x.name === name);
@@ -995,6 +1005,8 @@ function loadInstructMode() {
                 }
             }
         });
+
+        highlightDefaultPreset();
     });
 }
 
@@ -1070,8 +1082,8 @@ export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvata
     const separator = power_user.instruct.wrap ? '\n' : '';
     const separatorSequence = power_user.instruct.separator_sequence && !isUser
         ? power_user.instruct.separator_sequence
-        : (power_user.instruct.wrap ? '\n' : '');
-    const textArray = includeNames ? [sequence, `${name}: ${mes}`, separatorSequence] : [sequence, mes, separatorSequence];
+        : separator;
+    const textArray = includeNames ? [sequence, `${name}: ${mes}` + separatorSequence] : [sequence, mes + separatorSequence];
     const text = textArray.filter(x => x).join(separator);
     return text;
 }
@@ -1103,7 +1115,7 @@ export function formatInstructModePrompt(name, isImpersonate, promptBias, name1,
         text += (includeNames ? promptBias : (separator + promptBias));
     }
 
-    return text.trimEnd();
+    return text.trimEnd() + (includeNames ? '' : separator);
 }
 
 const sortFunc = (a, b) => power_user.sort_order == 'asc' ? compareFunc(a, b) : compareFunc(b, a);
@@ -1129,46 +1141,13 @@ const compareFunc = (first, second) => {
     }
 };
 
-function sortCharactersList() {
-    const arr1 = groups.map(x => ({
-        item: x,
-        id: x.id,
-        selector: '.group_select',
-        attribute: 'grid',
-    }))
-    const arr2 = characters.map((x, index) => ({
-        item: x,
-        id: index,
-        selector: '.character_select',
-        attribute: 'chid',
-    }));
-
-    const array = [...arr1, ...arr2];
-
-    if (power_user.sort_field == undefined || array.length === 0) {
+function sortEntitiesList(entities) {
+    if (power_user.sort_field == undefined || entities.length === 0) {
         return;
     }
 
-    let orderedList = array.slice().sort((a, b) => sortFunc(a.item, b.item));
-
-    for (const item of array) {
-        $(`${item.selector}[${item.attribute}="${item.id}"]`).css({ 'order': orderedList.indexOf(item) });
-    }
-    updateVisibleDivs('#rm_print_characters_block', true);
+    entities.sort((a, b) => sortFunc(a.item, b.item));
 }
-
-function sortGroupMembers(selector) {
-    if (power_user.sort_field == undefined || characters.length === 0) {
-        return;
-    }
-
-    let orderedList = characters.slice().sort(sortFunc);
-
-    for (let i = 0; i < characters.length; i++) {
-        $(`${selector}[chid="${i}"]`).css({ 'order': orderedList.indexOf(characters[i]) });
-    }
-}
-
 async function saveTheme() {
     const name = await callPopup('Enter a theme preset name:', 'input');
 
@@ -1900,6 +1879,7 @@ $(document).ready(() => {
         power_user.never_resize_avatars = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
+
     $("#show_card_avatar_urls").on('input', function () {
         power_user.show_card_avatar_urls = !!$(this).prop('checked');
         printCharacters();
@@ -1925,8 +1905,7 @@ $(document).ready(() => {
         power_user.sort_field = $(this).find(":selected").data('field');
         power_user.sort_order = $(this).find(":selected").data('order');
         power_user.sort_rule = $(this).find(":selected").data('rule');
-        sortCharactersList();
-        favsToHotswap();
+        printCharacters();
         saveSettingsDebounced();
     });
 
@@ -2037,12 +2016,6 @@ $(document).ready(() => {
         reloadCurrentChat();
         saveSettingsDebounced();
     });
-
-    /*     $("#removeXML").on("input", function () {
-            power_user.removeXML = !!$(this).prop('checked');
-            reloadCurrentChat();
-            saveSettingsDebounced();
-        }); */
 
     $("#token_padding").on("input", function () {
         power_user.token_padding = Number($(this).val());
