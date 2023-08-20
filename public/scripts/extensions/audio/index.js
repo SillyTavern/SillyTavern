@@ -48,6 +48,9 @@ const defaultSettings = {
 }
 
 function loadSettings() {
+    if (extension_settings.audio === undefined)
+        extension_settings.audio = {};
+
     if (Object.keys(extension_settings.audio).length === 0) {
         Object.assign(extension_settings.audio, defaultSettings)
     }

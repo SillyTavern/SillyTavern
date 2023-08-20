@@ -566,7 +566,7 @@ class CoquiTtsProvider {
                     if (apiResult["status"] == "done") {
                         $("#coqui_api_model_install_status").text("Model installed and ready to use!");
                         $("#coqui_api_model_install_button").hide();
-                        onModelNameChange_pointer();
+                        onModelNameChange_pointer(); // TODO: error ?
                     }
 
                     if (apiResult["status"] == "downloading") {
