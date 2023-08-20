@@ -68,32 +68,31 @@ function highlightDefaultPreset() {
 
 /**
  * Automatically select instruct preset based on model id.
- * 1. Enables instruct mode if preset is found.
- * 2. Otherwise, if default instruct preset is set, selects it.
+ * Otherwise, if default instruct preset is set, selects it.
  * @param {string} modelId Model name reported by the API.
  * @returns {boolean} True if instruct preset was activated by model id, false otherwise.
  */
 export function autoSelectInstructPreset(modelId) {
+    // If instruct mode is disabled, don't do anything
+    if (!power_user.instruct.enabled) {
+        return false;
+    }
+
     for (const preset of instruct_presets) {
         // If activation regex is set, check if it matches the model id
         if (preset.activation_regex) {
             try {
-                const modeState = power_user.instruct.enabled;
                 const regex = new RegExp(preset.activation_regex, 'i');
 
-                // If regex matches, select the preset and enable instruct mode
-                // Should not enable instruct mode if it's already enabled and the preset is the same
-                if (regex.test(modelId) && (power_user.instruct.preset !== preset.name || !modeState)) {
-                    $('#instruct_presets').val(preset.name).trigger('change');
-                    $('#instruct_enabled').prop('checked', true).trigger('input');
-                    console.log(`Instruct mode: preset "${preset.name}" auto-selected`);
+                // Stop on first match so it won't cycle back and forth between presets if multiple regexes match
+                if (regex.test(modelId)) {
+                    // If preset is not already selected, select it
+                    if (power_user.instruct.preset !== preset.name) {
+                        $('#instruct_presets').val(preset.name).trigger('change');
+                        toastr.info(`Instruct mode: preset "${preset.name}" auto-selected`);
 
-                    // If instruct mode was disabled, show a notification
-                    if (!modeState) {
-                        toastr.info(`Instruct mode enabled by preset "${preset.name}" for model "${modelId}"`);
+                        return true;
                     }
-
-                    return true;
                 }
             } catch {
                 // If regex is invalid, ignore it
@@ -102,7 +101,7 @@ export function autoSelectInstructPreset(modelId) {
         }
     }
 
-    if (power_user.instruct.enabled && power_user.default_instruct && power_user.instruct.preset !== power_user.default_instruct) {
+    if (power_user.default_instruct && power_user.instruct.preset !== power_user.default_instruct) {
         if (instruct_presets.some(p => p.name === power_user.default_instruct)) {
             console.log(`Instruct mode: default preset "${power_user.default_instruct}" selected`);
             $('#instruct_presets').val(power_user.default_instruct).trigger('change');
