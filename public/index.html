@@ -149,7 +149,6 @@
                 <div class="scrollableInner">
                     <div class="flex-container" id="ai_response_configuration">
                         <div id="respective-presets-block" class="width100p">
-                            <input type="file" hidden data-preset-manager-file="" accept=".json, .settings">
                             <div id="kobold_api-presets">
                                 <h3><span data-i18n="kobldpresets">Kobold Presets</span>
                                     <a href="https://docs.sillytavern.app/usage/api-connections/koboldai/" class="notes-link" target="_blank">
@@ -161,6 +160,7 @@
                                     <select id="settings_perset" data-preset-manager-for="kobold">
                                         <option value="gui" data-i18n="guikoboldaisettings">GUI KoboldAI Settings</option>
                                     </select>
+                                    <input type="file" hidden data-preset-manager-file="kobold" accept=".json, .settings">
                                     <i data-preset-manager-update="kobold" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
                                     <i data-preset-manager-new="kobold" class="menu_button fa-solid fa-plus" title="Create new preset" data-i18n="[title]Create new preset"></i>
                                     <i data-preset-manager-import="kobold" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
@@ -179,6 +179,7 @@
                                     <select id="settings_perset_novel" data-preset-manager-for="novel">
                                         <option value="gui" data-i18n="default">Default</option>
                                     </select>
+                                    <input type="file" hidden data-preset-manager-file="novel" accept=".json, .settings">
                                     <i data-preset-manager-update="novel" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
                                     <i data-preset-manager-new="novel" class="menu_button fa-solid fa-plus" title="Create new preset" data-i18n="[title]Create new preset"></i>
                                     <i data-preset-manager-import="novel" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
@@ -208,6 +209,7 @@
                                 <div class="preset_buttons">
                                     <select id="settings_preset_textgenerationwebui" data-preset-manager-for="textgenerationwebui">
                                     </select>
+                                    <input type="file" hidden data-preset-manager-file="textgenerationwebui" accept=".json, .settings">
                                     <i data-preset-manager-update="textgenerationwebui" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
                                     <i data-preset-manager-new="textgenerationwebui" class="menu_button fa-solid fa-plus" title="Create new preset" data-i18n="[title]Create new preset"></i>
                                     <i data-preset-manager-import="textgenerationwebui" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
@@ -1454,6 +1456,14 @@
                                             <span data-i18n="Use the appropriate tokenizer for Jurassic models, which is more efficient than GPT's.">Use the appropriate tokenizer for Jurassic models, which is more efficient than GPT's.</span>
                                         </div>
                                     </div>
+                                    <div class="range-block" data-source="claude">
+                                        <label for="exclude_assistant" title="Exclude Assistant suffix" class="checkbox_label widthFreeExpand">
+                                            <input id="exclude_assistant" type="checkbox" /><span data-i18n="Exclude Assistant suffix">Exclude Assistant suffix</span>
+                                        </label>
+                                        <div class="toggle-description justifyLeft">
+                                            <span data-i18n="Exclude the assistant suffix from being added to the end of prompt.">Exclude the assistant suffix from being added to the end of prompt (Requires jailbreak with 'Assistant:' in it).</span>
+                                        </div>
+                                    </div>
                                     <div class="inline-drawer m-t-1 wide100p">
                                         <div class="inline-drawer-toggle inline-drawer-header">
                                             <b data-i18n="Quick Edit">Quick Edit</b>
@@ -1465,8 +1475,8 @@
                                                     <span data-i18n="Select a character to show quick edit options.">Select a character to show quick edit options.</span>
                                                 </div>
                                             </div>
-                                            <div class="range-block" data-source="claude">
-                                                <span data-i18n="Assistant Prefill">Assistant Prefill</span>
+                                            <div id="claude_assistant_prefill_block" data-source="claude" class="range-block">
+                                                <span id="claude_assistant_prefill_text" data-i18n="Assistant Prefill">Assistant Prefill</span>
                                                 <textarea id="claude_assistant_prefill" class="text_pole textarea_compact" name="assistant_prefill" rows="3" maxlength="5000" placeholder="Start Claude's answer with..."></textarea>
                                             </div>
                                         </div>
@@ -1797,22 +1807,27 @@
                                     <input id="use-mancer-api-checkbox" type="checkbox" />
                                 </label>
                             </div>
-                            <div id="mancer-api-ui" style="display:none;">
-                                <h4 data-i18n="Mancer API key">Mancer API key</h4>
-                                <div class="flex-container">
-                                    <input id="api_key_mancer" name="api_key_mancer" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
-                                    <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_mancer">
-                                    </div>
-                                </div>
-                            </div>
                             <div>
-                                <div class="flex-container flexFlowColumn">
+                                <div id="mancer_api_subpanel" class="flex-container flexFlowColumn" style="display:none;">
+                                    <h4 data-i18n="Mancer API key">Mancer API key</h4>
+                                    <div class="flex-container">
+                                        <input id="api_key_mancer" name="api_key_mancer" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
+                                        <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_mancer">
+                                        </div>
+                                    </div>
                                     <div data-for="api_key_mancer" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
                                         For privacy reasons, your API key will be hidden after you reload the page.
                                     </div>
                                     <div class="flex1">
+                                        <h4 data-i18n="Mancer API url">Mancer API url</h4>
+                                        <small>Example: https://neuro.mancer.tech/webui/MODEL/api</small>
+                                        <input id="mancer_api_url_text" name="mancer_api_url" class="text_pole wide100p" maxlength="500" value="" autocomplete="off">
+                                    </div>
+                                </div>
+                                <div id="tgwebui_api_subpanel" class="flex-container flexFlowColumn">
+                                    <div class="flex1">
                                         <h4 data-i18n="Blocking API url">Blocking API url</h4>
-                                        <small>Example: http://127.0.0.1:5000/</small>
+                                        <small>Example: http://127.0.0.1:5000/api</small>
                                         <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url" class="text_pole wide100p" maxlength="500" value="" autocomplete="off">
                                     </div>
                                     <div class="flex1">
@@ -2128,12 +2143,15 @@
                             <label for="instruct_presets">
                                 <span data-i18n="Presets">Presets</span>
                             </label>
-                            <div class="flex-container">
-                                <select id="instruct_presets" class="flex1 margin0"></select>
-                                <div id="instruct_set_default" class="menu_button menu_button_icon margin0">
-                                    <i class="fa-solid fa-xs fa-fw fa-heart"></i>
-                                    <span data-i18n="Default">Default</span>
-                                </div>
+                            <div class="preset_buttons">
+                                <select id="instruct_presets" data-preset-manager-for="instruct" class="flex1"></select>
+                                <input type="file" hidden data-preset-manager-file="instruct" accept=".json, .settings">
+                                <i id="instruct_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this preset on API connection."></i>
+                                <i data-preset-manager-update="instruct" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
+                                <i data-preset-manager-new="instruct" class="menu_button fa-solid fa-plus" title="Create new preset" data-i18n="[title]Create new preset"></i>
+                                <i data-preset-manager-import="instruct" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
+                                <i data-preset-manager-export="instruct" class="menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
+                                <i data-preset-manager-delete="instruct" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
                             </div>
                             <label>
                                 <small data-i18n="Activation Regex">
@@ -2156,7 +2174,7 @@
                                         <small data-i18n="Input Sequence">Input Sequence</small>
                                     </label>
                                     <div>
-                                        <textarea id="instruct_input_sequence" class="text_pole textarea_compact" maxlength="500" rows="1"></textarea>
+                                        <textarea id="instruct_input_sequence" class="text_pole textarea_compact" maxlength="500" rows="2"></textarea>
                                     </div>
                                 </div>
                                 <div class="flex1">
@@ -2164,7 +2182,7 @@
                                         <small data-i18n="Output Sequence">Output Sequence</small>
                                     </label>
                                     <div>
-                                        <textarea id="instruct_output_sequence" class="text_pole wide100p textarea_compact" maxlength="500" rows="1"></textarea>
+                                        <textarea id="instruct_output_sequence" class="text_pole wide100p textarea_compact" maxlength="500" rows="2"></textarea>
                                     </div>
                                 </div>
                                 <div class="flex1">
@@ -2172,7 +2190,7 @@
                                         <small data-i18n="Last Sequence">Last Sequence</small>
                                     </label>
                                     <div>
-                                        <textarea id="instruct_last_output_sequence" class="text_pole wide100p textarea_compact" maxlength="500" rows="1"></textarea>
+                                        <textarea id="instruct_last_output_sequence" class="text_pole wide100p textarea_compact" maxlength="500" rows="2"></textarea>
                                     </div>
                                 </div>
                             </div>
@@ -2182,7 +2200,7 @@
                                         <small data-i18n="System Sequence">System Sequence</small>
                                     </label>
                                     <div>
-                                        <textarea id="instruct_system_sequence" class="text_pole textarea_compact" maxlength="500" rows="1"></textarea>
+                                        <textarea id="instruct_system_sequence" class="text_pole textarea_compact" maxlength="500" rows="2"></textarea>
                                     </div>
                                 </div>
                                 <div class="flex1">
@@ -2190,7 +2208,7 @@
                                         <small data-i18n="Stop Sequence">Stop Sequence</small>
                                     </label>
                                     <div>
-                                        <textarea id="instruct_stop_sequence" class="text_pole wide100p textarea_compact" maxlength="500" rows="1"></textarea>
+                                        <textarea id="instruct_stop_sequence" class="text_pole wide100p textarea_compact" maxlength="500" rows="2"></textarea>
                                     </div>
                                 </div>
                                 <div class="flex1">
@@ -2198,7 +2216,7 @@
                                         <small data-i18n="Separator">Separator</small>
                                     </label>
                                     <div>
-                                        <textarea id="instruct_separator_sequence" class="text_pole wide100p textarea_compact" maxlength="500" rows="1"></textarea>
+                                        <textarea id="instruct_separator_sequence" class="text_pole wide100p textarea_compact" maxlength="500" rows="2"></textarea>
                                     </div>
                                 </div>
                             </div>
@@ -2251,6 +2269,10 @@
                             <span data-i18n="Keep Example Messages in Prompt">
                                 Keep Example Messages in Prompt
                             </span>
+                        </label>
+                        <label class="checkbox_label" for="remove-examples-checkbox">
+                            <input id="remove-examples-checkbox" type="checkbox" />
+                            Strip Example Messages from Prompt
                         </label>
                         <label class="checkbox_label" for="collapse-newlines-checkbox"><input id="collapse-newlines-checkbox" type="checkbox" />
                             <span data-i18n="Remove Empty New Lines from Output">
@@ -2989,8 +3011,8 @@
                                 <textarea id="persona_description" name="persona_description" placeholder="Example:&#10;[{{user}} is a 28-year-old Romanian cat girl.]" class="text_pole textarea_compact" maxlength="5000" value="" autocomplete="off" rows="4"></textarea>
                                 <label for="persona_description_position" data-i18n="Position:">Position:</label>
                                 <select id="persona_description_position">
-                                    <option value="0" data-i18n="Before Character Card">Before Character Card</option>
-                                    <option value="1" data-i18n="After Character Card">After Character Card</option>
+                                    <option value="0" data-i18n="In Story String / Chat Completion: Before Character Card">In Story String / Chat Completion: Before Character Card</option>
+                                    <option value="1" data-i18n="In Story String / Chat Completion: After Character Card">In Story String / Chat Completion: After Character Card</option>
                                     <option value="2" data-i18n="Top of Author's Note">Top of Author's Note</option>
                                     <option value="3" data-i18n="Bottom of Author's Note">Bottom of Author's Note</option>
                                 </select>
@@ -3708,9 +3730,7 @@
                                         <small>
                                             <span data-i18n="Content">
                                                 Content
-                                                <span>(Tokens:&nbsp;
-                                                    <span class="world_entry_form_token_counter">0</span>
-                                                    )
+                                                <span>(Tokens:&nbsp; <span class="world_entry_form_token_counter" data-first-run="true">counting...</span>)
                                                 </span>
                                             </span>
                                         </small>

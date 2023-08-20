@@ -19,7 +19,6 @@ import {
     system_message_types,
     replaceBiasMarkup,
     is_send_press,
-    saveSettings,
     Generate,
     main_api,
     eventSource,
@@ -219,6 +218,7 @@ const default_settings = {
     proxy_password: '',
     assistant_prefill: '',
     use_ai21_tokenizer: false,
+    exclude_assistant: false,
 };
 
 const oai_settings = {
@@ -260,6 +260,7 @@ const oai_settings = {
     proxy_password: '',
     assistant_prefill: '',
     use_ai21_tokenizer: false,
+    exclude_assistant: false,
 };
 
 let openai_setting_names;
@@ -389,7 +390,7 @@ function setupChatCompletionPromptManager(openAiSettings) {
     promptManager.tokenHandler = tokenHandler;
 
     promptManager.init(configuration, openAiSettings);
-    promptManager.render();
+    promptManager.render(false);
 
     return promptManager;
 }
@@ -479,10 +480,18 @@ function populateChatHistory(prompts, chatCompletion, type = null, cyclePrompt =
     // Chat History
     chatCompletion.add(new MessageCollection('chatHistory'), prompts.index('chatHistory'));
 
+    let names = (selected_group && groups.find(x => x.id === selected_group)?.members.map(member => characters.find(c => c.avatar === member)?.name).filter(Boolean).join(', ')) || '';
     // Reserve budget for new chat message
     const newChat = selected_group ? oai_settings.new_group_chat_prompt : oai_settings.new_chat_prompt;
-    const newChatMessage = new Message('system', newChat, 'newMainChat');
+    const newChatMessage = new Message('system', substituteParams(newChat, null, null, null, names), 'newMainChat');
     chatCompletion.reserveBudget(newChatMessage);
+
+    // Reserve budget for group nudge
+    let groupNudgeMessage = null;
+    if (selected_group) {
+        const groupNudgeMessage = Message.fromPrompt(prompts.get('groupNudge'));
+        chatCompletion.reserveBudget(groupNudgeMessage);
+    }
 
     // Reserve budget for continue nudge
     let continueMessage = null;
@@ -512,7 +521,8 @@ function populateChatHistory(prompts, chatCompletion, type = null, cyclePrompt =
         const chatMessage = Message.fromPrompt(promptManager.preparePrompt(prompt));
 
         if (true === promptManager.serviceSettings.names_in_completion && prompt.name) {
-            chatMessage.name = promptManager.isValidName(prompt.name) ? prompt.name : promptManager.sanitizeName(prompt.name);
+            const messageName = promptManager.isValidName(prompt.name) ? prompt.name : promptManager.sanitizeName(prompt.name);
+            chatMessage.setName(messageName);
         }
 
         if (chatCompletion.canAfford(chatMessage)) chatCompletion.insertAtStart(chatMessage, 'chatHistory');
@@ -523,6 +533,12 @@ function populateChatHistory(prompts, chatCompletion, type = null, cyclePrompt =
     // Insert and free new chat
     chatCompletion.freeBudget(newChatMessage);
     chatCompletion.insertAtStart(newChatMessage, 'chatHistory');
+
+    // Reserve budget for group nudge
+    if (selected_group && groupNudgeMessage) {
+        chatCompletion.freeBudget(groupNudgeMessage);
+        chatCompletion.insertAtEnd(groupNudgeMessage, 'chatHistory');
+    }
 
     // Insert and free continue nudge
     if (type === 'continue' && continueMessage) {
@@ -541,9 +557,11 @@ function populateDialogueExamples(prompts, chatCompletion) {
     chatCompletion.add(new MessageCollection('dialogueExamples'), prompts.index('dialogueExamples'));
     if (openai_msgs_example.length) {
         const newExampleChat = new Message('system', oai_settings.new_example_chat_prompt, 'newChat');
-        chatCompletion.reserveBudget(newExampleChat);
-
         [...openai_msgs_example].forEach((dialogue, dialogueIndex) => {
+            let examplesAdded = 0;
+
+            if (chatCompletion.canAfford(newExampleChat)) chatCompletion.insert(newExampleChat, 'dialogueExamples');
+
             dialogue.forEach((prompt, promptIndex) => {
                 const role = 'system';
                 const content = prompt.content || '';
@@ -553,14 +571,14 @@ function populateDialogueExamples(prompts, chatCompletion) {
                 chatMessage.setName(prompt.name);
                 if (chatCompletion.canAfford(chatMessage)) {
                     chatCompletion.insert(chatMessage, 'dialogueExamples');
+                    examplesAdded++;
                 }
             });
+
+            if (0 === examplesAdded) {
+                chatCompletion.removeLastFrom('dialogueExamples');
+            }
         });
-
-        chatCompletion.freeBudget(newExampleChat);
-
-        const chatExamples = chatCompletion.getMessages().getItemByIdentifier('dialogueExamples').getCollection();
-        if (chatExamples.length) chatCompletion.insertAtStart(newExampleChat, 'dialogueExamples');
     }
 }
 
@@ -701,7 +719,8 @@ function populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, ty
  */
 function preparePromptsForChatCompletion(Scenario, charPersonality, name2, worldInfoBefore, worldInfoAfter, charDescription, quietPrompt, bias, extensionPrompts, systemPromptOverride, jailbreakPromptOverride) {
     const scenarioText = Scenario ? `[Circumstances and context of the dialogue: ${Scenario}]` : '';
-    const charPersonalityText = charPersonality ? `[${name2}'s personality: ${charPersonality}]` : '';
+    const charPersonalityText = charPersonality ? `[${name2}'s personality: ${charPersonality}]` : ''
+    const groupNudge = `[Write the next reply only as ${name2}]`;
 
     // Create entries for system prompts
     const systemPrompts = [
@@ -715,7 +734,8 @@ function preparePromptsForChatCompletion(Scenario, charPersonality, name2, world
         { role: 'system', content: oai_settings.nsfw_avoidance_prompt, identifier: 'nsfwAvoidance' },
         { role: 'system', content: oai_settings.impersonation_prompt, identifier: 'impersonate' },
         { role: 'system', content: quietPrompt, identifier: 'quietPrompt' },
-        { role: 'system', content: bias, identifier: 'bias' }
+        { role: 'system', content: bias, identifier: 'bias' },
+        { role: 'system', content: groupNudge, identifier: 'groupNudge' }
     ];
 
     // Tavern Extras - Summary
@@ -1130,9 +1150,9 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
     if (isClaude) {
         generate_data['use_claude'] = true;
         generate_data['top_k'] = parseFloat(oai_settings.top_k_openai);
-
+        generate_data['exclude_assistant'] = oai_settings.exclude_assistant;
         // Don't add a prefill on quiet gens (summarization)
-        if (!isQuiet) {
+        if (!isQuiet && !oai_settings.exclude_assistant) {
             generate_data['assistant_prefill'] = substituteParams(oai_settings.assistant_prefill);
         }
     }
@@ -1151,7 +1171,7 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
         generate_data['use_ai21'] = true;
         generate_data['top_k'] = parseFloat(oai_settings.top_k_openai);
         generate_data['count_pen'] = parseFloat(oai_settings.count_pen);
-        generate_data['stop_tokens'] = [name1 + ':', 'prompt: [Start a new chat]'];
+        generate_data['stop_tokens'] = [name1 + ':', oai_settings.new_chat_prompt, oai_settings.new_group_chat_prompt];
     }
 
     const generate_url = '/generate_openai';
@@ -1370,7 +1390,7 @@ function countTokens(messages, full = false) {
 
     for (const message of messages) {
         const model = getTokenizerModel();
-        const hash = getStringHash(message.content);
+        const hash = getStringHash(JSON.stringify(message));
         const cacheKey = `${model}-${hash}`;
         const cachedCount = tokenCache[chatId][cacheKey];
 
@@ -1442,8 +1462,8 @@ class Message {
         this.role = role;
         this.content = content;
 
-        if (this.content) {
-            this.tokens = tokenHandler.count({ role: this.role, content: this.content })
+        if (typeof this.content === 'string') {
+            this.tokens = tokenHandler.count({ role: this.role, content: this.content });
         } else {
             this.tokens = 0;
         }
@@ -1451,6 +1471,7 @@ class Message {
 
     setName(name) {
         this.name = name;
+        this.tokens = tokenHandler.count({ role: this.role, content: this.content, name: this.name });
     }
 
     /**
@@ -1660,6 +1681,21 @@ class ChatCompletion {
 
             this.log(`Inserted ${message.identifier} into ${identifier}. Remaining tokens: ${this.tokenBudget}`);
         }
+    }
+
+
+    /**
+     * Remove the last item of the collection
+     *
+     * @param identifier
+     */
+    removeLastFrom(identifier) {
+        const index = this.findMessageIndex(identifier);
+        const message = this.messages.collection[index].collection.pop();
+
+        this.increaseTokenBudgetBy(message.getTokens());
+
+        this.log(`Removed ${message.identifier} from ${identifier}. Remaining tokens: ${this.tokenBudget}`);
     }
 
     /**
@@ -1933,7 +1969,8 @@ function loadOpenAISettings(data, settings) {
     if (settings.wrap_in_quotes !== undefined) oai_settings.wrap_in_quotes = !!settings.wrap_in_quotes;
     if (settings.names_in_completion !== undefined) oai_settings.names_in_completion = !!settings.names_in_completion;
     if (settings.openai_model !== undefined) oai_settings.openai_model = settings.openai_model;
-    if (settings.use_ai21_tokenizer !== undefined) oai_settings.use_ai21_tokenizer = !!settings.use_ai21_tokenizer;
+    if (settings.use_ai21_tokenizer !== undefined) { oai_settings.use_ai21_tokenizer = !!settings.use_ai21_tokenizer; oai_settings.use_ai21_tokenizer ? ai21_max = 8191 : ai21_max = 9200; }
+    if (settings.exclude_assistant !== undefined) oai_settings.exclude_assistant = !!settings.exclude_assistant;
     $('#stream_toggle').prop('checked', oai_settings.stream_openai);
     $('#api_url_scale').val(oai_settings.api_url_scale);
     $('#openai_proxy_password').val(oai_settings.proxy_password);
@@ -1963,6 +2000,7 @@ function loadOpenAISettings(data, settings) {
     $('#openai_show_external_models').prop('checked', oai_settings.show_external_models);
     $('#openai_external_category').toggle(oai_settings.show_external_models);
     $('#use_ai21_tokenizer').prop('checked', oai_settings.use_ai21_tokenizer);
+    $('#exclude_assistant').prop('checked', oai_settings.exclude_assistant);
     if (settings.impersonation_prompt !== undefined) oai_settings.impersonation_prompt = settings.impersonation_prompt;
 
     $('#impersonation_prompt_textarea').val(oai_settings.impersonation_prompt);
@@ -2160,6 +2198,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         show_external_models: settings.show_external_models,
         assistant_prefill: settings.assistant_prefill,
         use_ai21_tokenizer: settings.use_ai21_tokenizer,
+        exclude_assistant: settings.exclude_assistant,
     };
 
     const savePresetSettings = await fetch(`/savepreset_openai?name=${name}`, {
@@ -2496,6 +2535,7 @@ function onSettingsPresetChange() {
         proxy_password: ['#openai_proxy_password', 'proxy_password', false],
         assistant_prefill: ['#claude_assistant_prefill', 'assistant_prefill', false],
         use_ai21_tokenizer: ['#use_ai21_tokenizer', 'use_ai21_tokenizer', false],
+        exclude_assistant: ['#exclude_assistant', 'exclude_assistant', false],
     };
 
     const presetName = $('#settings_perset_openai').find(":selected").text();
@@ -2882,6 +2922,10 @@ function toggleChatCompletionForms() {
         const validSources = $(this).data('source').split(',');
         $(this).toggle(validSources.includes(oai_settings.chat_completion_source));
     });
+
+    if (chat_completion_sources.CLAUDE == oai_settings.chat_completion_source) {
+        $('#claude_assistant_prefill_block').toggle(!oai_settings.exclude_assistant);
+    }
 }
 
 async function testApiConnection() {
@@ -2983,6 +3027,12 @@ $(document).ready(async function () {
         oai_settings.use_ai21_tokenizer ? ai21_max = 8191 : ai21_max = 9200;
         oai_settings.openai_max_context = Math.min(ai21_max, oai_settings.openai_max_context);
         $('#openai_max_context').attr('max', ai21_max).val(oai_settings.openai_max_context).trigger('input');
+        saveSettingsDebounced();
+    });
+
+    $('#exclude_assistant').on('change', function () {
+        oai_settings.exclude_assistant = !!$('#exclude_assistant').prop('checked');
+        $('#claude_assistant_prefill_block').toggle(!oai_settings.exclude_assistant);
         saveSettingsDebounced();
     });
 
