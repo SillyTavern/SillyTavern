@@ -55,6 +55,9 @@ const defaultSettings = {
 }
 
 function loadSettings() {
+    if (extension_settings.rvc === undefined)
+        extension_settings.rvc = {};
+
     if (Object.keys(extension_settings.rvc).length === 0) {
         Object.assign(extension_settings.rvc, defaultSettings)
     }
@@ -459,11 +462,13 @@ async function moduleWorker() {
 
 function updateCharactersList() {
     let currentcharacters = new Set();
-    for (const i of getContext().characters) {
+    const context = getContext();
+    for (const i of context.characters) {
         currentcharacters.add(i.name);
     }
 
-    currentcharacters = Array.from(currentcharacters)
+    currentcharacters = Array.from(currentcharacters);
+    currentcharacters.unshift(context.name1);
 
     if (JSON.stringify(charactersList) !== JSON.stringify(currentcharacters)) {
         charactersList = currentcharacters
