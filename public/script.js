@@ -164,6 +164,7 @@ import { deviceInfo } from "./scripts/RossAscends-mods.js";
 import { registerPromptManagerMigration } from "./scripts/PromptManager.js";
 import { getRegexedString, regex_placement } from "./scripts/extensions/regex/engine.js";
 import { FILTER_TYPES, FilterHelper } from "./scripts/filters.js";
+import { getCfgPrompt, getGuidanceScale } from "./scripts/extensions/cfg/util.js";
 
 //exporting functions and vars for mods
 export {
@@ -2762,6 +2763,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     }
 
                     const anchorDepth = Math.abs(i - arrMes.length + 1);
+                    // NOTE: Depth injected here!
                     const extensionAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, anchorDepth);
 
                     if (anchorDepth > 0 && extensionAnchor && extensionAnchor.length) {
@@ -2773,7 +2775,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
 
             let mesExmString = '';
-            let mesSendString = '';
 
             function setPromtString() {
                 if (main_api == 'openai') {
@@ -2782,65 +2783,57 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
                 console.debug('--setting Prompt string');
                 mesExmString = pinExmString ?? mesExamplesArray.slice(0, count_exm_add).join('');
-                mesSendString = '';
-                for (let j = 0; j < mesSend.length; j++) {
-                    const isBottom = j === mesSend.length - 1;
-                    mesSendString += mesSend[j];
-
-                    if (isBottom) {
-                        mesSendString = modifyLastPromptLine(mesSendString);
-                    }
-                }
+                mesSend[mesSend.length - 1] = modifyLastPromptLine(mesSend[mesSend.length - 1]);
             }
 
-            function modifyLastPromptLine(mesSendString) {
+            function modifyLastPromptLine(lastMesString) {
                 // Add quiet generation prompt at depth 0
                 if (quiet_prompt && quiet_prompt.length) {
                     const name = is_pygmalion ? 'You' : name1;
                     const quietAppend = isInstruct ? formatInstructModeChat(name, quiet_prompt, false, true, false, name1, name2) : `\n${name}: ${quiet_prompt}`;
-                    mesSendString += quietAppend;
+                    lastMesString += quietAppend;
                     // Bail out early
-                    return mesSendString;
+                    return lastMesString;
                 }
 
                 // Get instruct mode line
                 if (isInstruct && tokens_already_generated === 0) {
                     const name = isImpersonate ? (is_pygmalion ? 'You' : name1) : name2;
-                    mesSendString += formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2);
+                    lastMesString += formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2);
                 }
 
                 // Get non-instruct impersonation line
                 if (!isInstruct && isImpersonate && tokens_already_generated === 0) {
                     const name = is_pygmalion ? 'You' : name1;
-                    if (!mesSendString.endsWith('\n')) {
-                        mesSendString += '\n';
+                    if (!lastMesString.endsWith('\n')) {
+                        lastMesString += '\n';
                     }
-                    mesSendString += name + ':';
+                    lastMesString += name + ':';
                 }
 
                 // Add character's name
                 if (!isInstruct && force_name2 && tokens_already_generated === 0) {
-                    if (!mesSendString.endsWith('\n')) {
-                        mesSendString += '\n';
+                    if (!lastMesString.endsWith('\n')) {
+                        lastMesString += '\n';
                     }
 
                     // Add a leading space to the prompt bias if applicable
                     if (!promptBias || promptBias.length === 0) {
                         console.debug("No prompt bias was found.");
-                        mesSendString += `${name2}:`;
+                        lastMesString += `${name2}:`;
                     } else if (promptBias.startsWith(' ')) {
                         console.debug(`A prompt bias with a leading space was found: ${promptBias}`);
-                        mesSendString += `${name2}:${promptBias}`
+                        lastMesString += `${name2}:${promptBias}`
                     } else {
                         console.debug(`A prompt bias was found: ${promptBias}`);
-                        mesSendString += `${name2}: ${promptBias}`;
+                        lastMesString += `${name2}: ${promptBias}`;
                     }
                 } else if (power_user.user_prompt_bias && !isImpersonate && !isInstruct) {
                     console.debug(`A prompt bias was found without character's name appended: ${promptBias}`);
-                    mesSendString += substituteParams(power_user.user_prompt_bias);
+                    lastMesString += substituteParams(power_user.user_prompt_bias);
                 }
 
-                return mesSendString;
+                return lastMesString;
             }
 
             function checkPromtSize() {
@@ -2849,7 +2842,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 const prompt = [
                     storyString,
                     mesExmString,
-                    mesSendString,
+                    mesSend.join(''),
                     generatedPromtCache,
                     allAnchors,
                     quiet_prompt,
@@ -2878,30 +2871,60 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 setPromtString();
             }
 
+            const cfgGuidanceScale = getGuidanceScale();
+            function getCombinedPrompt(isNegative) {
+                if (isNegative && cfgGuidanceScale !== 1) {
+                    const negativePrompt = getCfgPrompt(cfgGuidanceScale);
+                    if (negativePrompt && negativePrompt?.value) {
+                        // TODO: kingbri: use the insertion depth method instead of splicing
+                        mesSend.splice(mesSend.length - negativePrompt.depth, 0, `${negativePrompt.value}\n`);
+                    }
+                }
+
+                let mesSendString = mesSend.join('');
+
+                // add chat preamble
+                mesSendString = addChatsPreamble(mesSendString);
+
+                // add a custom dingus (if defined)
+                mesSendString = addChatsSeparator(mesSendString);
+
+                if (zeroDepthAnchor && zeroDepthAnchor.length) {
+                    if (!isMultigenEnabled() || tokens_already_generated == 0) {
+                        combinedPrompt = appendZeroDepthAnchor(force_name2, zeroDepthAnchor, combinedPrompt);
+                    }
+                }
+
+                let combinedPrompt =
+                    storyString +
+                    afterScenarioAnchor +
+                    mesExmString +
+                    mesSendString +
+                    generatedPromtCache;
+
+                combinedPrompt = combinedPrompt.replace(/\r/gm, '');
+
+                if (power_user.collapse_newlines) {
+                    combinedPrompt = collapseNewlines(combinedPrompt);
+                }
+
+                return combinedPrompt;
+            }
+
+            let mesSendString = mesSend.join('');
             // add chat preamble
             mesSendString = addChatsPreamble(mesSendString);
 
             // add a custom dingus (if defined)
             mesSendString = addChatsSeparator(mesSendString);
 
-            let finalPromt =
-                storyString +
-                afterScenarioAnchor +
-                mesExmString +
-                mesSendString +
-                generatedPromtCache;
+            let finalPromt = getCombinedPrompt(false);
+            let negativePrompt = getCombinedPrompt(true);
+            const cfgValues = {
+                guidanceScale: cfgGuidanceScale?.value,
+                negativePrompt: negativePrompt
+            };
 
-            if (zeroDepthAnchor && zeroDepthAnchor.length) {
-                if (!isMultigenEnabled() || tokens_already_generated == 0) {
-                    finalPromt = appendZeroDepthAnchor(force_name2, zeroDepthAnchor, finalPromt);
-                }
-            }
-
-            finalPromt = finalPromt.replace(/\r/gm, '');
-
-            if (power_user.collapse_newlines) {
-                finalPromt = collapseNewlines(finalPromt);
-            }
             let this_amount_gen = parseInt(amount_gen); // how many tokens the AI will be requested to generate
             let this_settings = koboldai_settings[koboldai_setting_names[preset_settings]];
 
@@ -2935,12 +2958,12 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
             }
             else if (main_api == 'textgenerationwebui') {
-                generate_data = getTextGenGenerationData(finalPromt, this_amount_gen, isImpersonate);
+                generate_data = getTextGenGenerationData(finalPromt, this_amount_gen, isImpersonate, cfgValues);
                 generate_data.use_mancer = api_use_mancer_webui;
             }
             else if (main_api == 'novel') {
                 const this_settings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
-                generate_data = getNovelGenerationData(finalPromt, this_settings, this_amount_gen, isImpersonate);
+                generate_data = getNovelGenerationData(finalPromt, this_settings, this_amount_gen, isImpersonate, cfgValues);
             }
             else if (main_api == 'openai') {
                 let [prompt, counts] = prepareOpenAIMessages({
