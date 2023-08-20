@@ -599,7 +599,7 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
         });
 
         async function* readWebsocket() {
-            const streamingUrl = request.header('X-Streaming-URL');
+            const streamingUrl = request.header('X-Streaming-URL').replace("localhost", "127.0.0.1");
             const websocket = new WebSocket(streamingUrl);
 
             websocket.on('open', async function () {
