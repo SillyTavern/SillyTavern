@@ -608,6 +608,11 @@ PromptManagerModule.prototype.render = function (afterTryGenerate = true) {
                 this.renderPromptManagerListItems()
                 this.makeDraggable();
                 this.profileEnd('render');
+            }).catch(error => {
+                this.log('Error caught during render: ' + error);
+                this.renderPromptManager();
+                this.renderPromptManagerListItems()
+                this.makeDraggable();
             });
         } else {
             // Executed during live communication
