@@ -1164,7 +1164,6 @@ PromptManagerModule.prototype.setChatCompletion = function (chatCompletion) {
 
     this.setMessages(messages);
     this.populateTokenCounts(messages);
-    this.populateLegacyTokenCounts(messages);
 }
 
 /**
