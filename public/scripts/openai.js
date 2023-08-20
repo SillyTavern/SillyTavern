@@ -110,8 +110,8 @@ const max_4k = 4095;
 const max_8k = 8191;
 const max_16k = 16383;
 const max_32k = 32767;
-const scale_max = 7900; // Probably more. Save some for the system prompt defined on Scale site.
-const claude_max = 8000; // We have a proper tokenizer, so theoretically could be larger (up to 9k)
+const scale_max = 8191; // Probably more. Save some for the system prompt defined on Scale site.
+const claude_max = 9000; // We have a proper tokenizer, so theoretically could be larger (up to 9k)
 const palm2_max = 7500; // The real context window is 8192, spare some for padding due to using turbo tokenizer
 const claude_100k_max = 99000;
 let ai21_max = 9200; //can easily fit 9k gpt tokens because j2's tokenizer is efficient af
@@ -219,6 +219,7 @@ const default_settings = {
     proxy_password: '',
     assistant_prefill: '',
     use_ai21_tokenizer: false,
+    use_alt_scale: true,
 };
 
 const oai_settings = {
@@ -260,6 +261,7 @@ const oai_settings = {
     proxy_password: '',
     assistant_prefill: '',
     use_ai21_tokenizer: false,
+    use_alt_scale: true,
 };
 
 let openai_setting_names;
@@ -1062,6 +1064,35 @@ function saveModelList(data) {
     }
 }
 
+async function sendAltScaleRequest(openai_msgs_tosend, signal) {
+    const generate_url = '/generate_altscale';
+
+    let firstMsg = substituteParams(openai_msgs_tosend[0].content);
+    let subsequentMsgs = openai_msgs_tosend.slice(1);
+
+    const joinedMsgs = subsequentMsgs.reduce((acc, obj) => {
+        return acc + obj.role + ": " + obj.content + "\n";
+    }, "");
+    openai_msgs_tosend = substituteParams(joinedMsgs);
+    console.log(openai_msgs_tosend)
+
+    const generate_data = {
+        sysprompt: firstMsg,
+        prompt: openai_msgs_tosend,
+        temp: parseFloat(oai_settings.temp_openai),
+        max_tokens: parseFloat(oai_settings.openai_max_tokens),
+    }
+
+    const response = await fetch(generate_url, {
+        method: 'POST',
+        body: JSON.stringify(generate_data),
+        headers: getRequestHeaders(),
+        signal: signal
+    });
+    const data = await response.json();
+    return data.output;
+}
+
 async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
     // Provide default abort signal
     if (!signal) {
@@ -1090,6 +1121,10 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
             return acc + (prefix ? (selected_group ? "\n" : prefix + " ") : "") + obj.content + "\n";
         }, "");
         openai_msgs_tosend = substituteParams(joinedMsgs);
+    }
+
+    if (isScale && !!$('#scale-alt').prop('checked')) {
+        return sendAltScaleRequest(openai_msgs_tosend, signal)
     }
 
     // If we're using the window.ai extension, use that instead
@@ -1934,6 +1969,7 @@ function loadOpenAISettings(data, settings) {
     if (settings.names_in_completion !== undefined) oai_settings.names_in_completion = !!settings.names_in_completion;
     if (settings.openai_model !== undefined) oai_settings.openai_model = settings.openai_model;
     if (settings.use_ai21_tokenizer !== undefined) oai_settings.use_ai21_tokenizer = !!settings.use_ai21_tokenizer;
+    if (settings.use_alt_scale !== undefined) { oai_settings.use_alt_scale = !!settings.use_alt_scale; updateScaleForm(); }
     $('#stream_toggle').prop('checked', oai_settings.stream_openai);
     $('#api_url_scale').val(oai_settings.api_url_scale);
     $('#openai_proxy_password').val(oai_settings.proxy_password);
@@ -1963,6 +1999,7 @@ function loadOpenAISettings(data, settings) {
     $('#openai_show_external_models').prop('checked', oai_settings.show_external_models);
     $('#openai_external_category').toggle(oai_settings.show_external_models);
     $('#use_ai21_tokenizer').prop('checked', oai_settings.use_ai21_tokenizer);
+    $('#scale-alt').prop('checked', oai_settings.use_alt_scale);
     if (settings.impersonation_prompt !== undefined) oai_settings.impersonation_prompt = settings.impersonation_prompt;
 
     $('#impersonation_prompt_textarea').val(oai_settings.impersonation_prompt);
@@ -2160,6 +2197,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         show_external_models: settings.show_external_models,
         assistant_prefill: settings.assistant_prefill,
         use_ai21_tokenizer: settings.use_ai21_tokenizer,
+        use_alt_scale: settings.use_alt_scale,
     };
 
     const savePresetSettings = await fetch(`/savepreset_openai?name=${name}`, {
@@ -2496,6 +2534,7 @@ function onSettingsPresetChange() {
         proxy_password: ['#openai_proxy_password', 'proxy_password', false],
         assistant_prefill: ['#claude_assistant_prefill', 'assistant_prefill', false],
         use_ai21_tokenizer: ['#use_ai21_tokenizer', 'use_ai21_tokenizer', false],
+        use_alt_scale: ['#use_alt_scale', 'use_alt_scale', false],
     };
 
     const presetName = $('#settings_perset_openai').find(":selected").text();
@@ -2791,20 +2830,31 @@ async function onConnectButtonClick(e) {
 
     if (oai_settings.chat_completion_source == chat_completion_sources.SCALE) {
         const api_key_scale = $('#api_key_scale').val().trim();
+        const scale_cookie = $('#scale_cookie').val().trim();
 
         if (api_key_scale.length) {
             await writeSecret(SECRET_KEYS.SCALE, api_key_scale);
         }
 
-        if (!oai_settings.api_url_scale) {
+        if (scale_cookie.length) {
+            await writeSecret(SECRET_KEYS.SCALE_COOKIE, scale_cookie);
+        }
+
+        if (!oai_settings.api_url_scale && !oai_settings.use_alt_scale) {
             console.log('No API URL saved for Scale');
             return;
         }
 
-        if (!secret_state[SECRET_KEYS.SCALE]) {
+        if (!secret_state[SECRET_KEYS.SCALE] && !oai_settings.use_alt_scale) {
             console.log('No secret key saved for Scale');
             return;
         }
+
+        if (!secret_state[SECRET_KEYS.SCALE_COOKIE] && oai_settings.use_alt_scale) {
+            console.log("No cookie set for Scale");
+            return;
+        }
+
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
@@ -2914,10 +2964,26 @@ function onProxyPasswordShowClick() {
     $(this).toggleClass('fa-eye-slash fa-eye');
 }
 
+function updateScaleForm() {
+    if (oai_settings.use_alt_scale) {
+        $('#normal_scale_form').css('display', 'none');
+        $('#alt_scale_form').css('display', '');
+    } else {
+        $('#normal_scale_form').css('display', '');
+        $('#alt_scale_form').css('display', 'none');
+    }
+}
+
 $(document).ready(async function () {
     await loadTokenCache();
 
     $('#test_api_button').on('click', testApiConnection);
+
+    $('#scale-alt').on('change', function () {
+        oai_settings.use_alt_scale = !!$('#scale-alt').prop('checked');
+        saveSettingsDebounced();
+        updateScaleForm();
+    });
 
     $(document).on('input', '#temp_openai', function () {
         oai_settings.temp_openai = $(this).val();
