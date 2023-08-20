@@ -10,5 +10,6 @@
     "wrap": true,
     "macro": true,
     "names": false,
-    "names_force_groups": false
+    "names_force_groups": false,
+    "activation_regex": ""
 }

@@ -1,10 +1,26 @@
 "use strict";
 
-import { name1, name2, saveSettingsDebounced, substituteParams } from "../script.js";
+import { saveSettingsDebounced, substituteParams } from "../script.js";
 import { selected_group } from "./group-chats.js";
 import { power_user } from "./power-user.js";
 
 export let instruct_presets = [];
+
+const controls = [
+    { id: "instruct_enabled", property: "enabled", isCheckbox: true },
+    { id: "instruct_wrap", property: "wrap", isCheckbox: true },
+    { id: "instruct_system_prompt", property: "system_prompt", isCheckbox: false },
+    { id: "instruct_system_sequence", property: "system_sequence", isCheckbox: false },
+    { id: "instruct_separator_sequence", property: "separator_sequence", isCheckbox: false },
+    { id: "instruct_input_sequence", property: "input_sequence", isCheckbox: false },
+    { id: "instruct_output_sequence", property: "output_sequence", isCheckbox: false },
+    { id: "instruct_stop_sequence", property: "stop_sequence", isCheckbox: false },
+    { id: "instruct_names", property: "names", isCheckbox: true },
+    { id: "instruct_macro", property: "macro", isCheckbox: true },
+    { id: "instruct_names_force_groups", property: "names_force_groups", isCheckbox: true },
+    { id: "instruct_last_output_sequence", property: "last_output_sequence", isCheckbox: false },
+    { id: "instruct_activation_regex", property: "activation_regex", isCheckbox: false },
+];
 
 /**
  * Loads instruct mode settings from the given data object.
@@ -18,22 +34,6 @@ export function loadInstructMode(data) {
     if (power_user.instruct.names_force_groups === undefined) {
         power_user.instruct.names_force_groups = true;
     }
-
-    const controls = [
-        { id: "instruct_enabled", property: "enabled", isCheckbox: true },
-        { id: "instruct_wrap", property: "wrap", isCheckbox: true },
-        { id: "instruct_system_prompt", property: "system_prompt", isCheckbox: false },
-        { id: "instruct_system_sequence", property: "system_sequence", isCheckbox: false },
-        { id: "instruct_separator_sequence", property: "separator_sequence", isCheckbox: false },
-        { id: "instruct_input_sequence", property: "input_sequence", isCheckbox: false },
-        { id: "instruct_output_sequence", property: "output_sequence", isCheckbox: false },
-        { id: "instruct_stop_sequence", property: "stop_sequence", isCheckbox: false },
-        { id: "instruct_names", property: "names", isCheckbox: true },
-        { id: "instruct_macro", property: "macro", isCheckbox: true },
-        { id: "instruct_names_force_groups", property: "names_force_groups", isCheckbox: true },
-        { id: "instruct_last_output_sequence", property: "last_output_sequence", isCheckbox: false },
-        { id: "instruct_activation_regex", property: "activation_regex", isCheckbox: false },
-    ];
 
     controls.forEach(control => {
         const $element = $(`#${control.id}`);
@@ -59,43 +59,11 @@ export function loadInstructMode(data) {
         $('#instruct_presets').append(option);
     });
 
-    function highlightDefaultPreset() {
-        $('#instruct_set_default').toggleClass('default', power_user.default_instruct === power_user.instruct.preset);
-    }
-
-    $('#instruct_set_default').on('click', function () {
-        power_user.default_instruct = power_user.instruct.preset;
-        $(this).addClass('default');
-        toastr.success(`Default instruct preset set to ${power_user.default_instruct}`);
-        saveSettingsDebounced();
-    });
-
     highlightDefaultPreset();
+}
 
-    $('#instruct_presets').on('change', function () {
-        const name = $(this).find(':selected').val();
-        const preset = instruct_presets.find(x => x.name === name);
-
-        if (!preset) {
-            return;
-        }
-
-        power_user.instruct.preset = name;
-        controls.forEach(control => {
-            if (preset[control.property] !== undefined) {
-                power_user.instruct[control.property] = preset[control.property];
-                const $element = $(`#${control.id}`);
-
-                if (control.isCheckbox) {
-                    $element.prop('checked', power_user.instruct[control.property]).trigger('input');
-                } else {
-                    $element.val(power_user.instruct[control.property]).trigger('input');
-                }
-            }
-        });
-
-        highlightDefaultPreset();
-    });
+function highlightDefaultPreset() {
+    $('#instruct_set_default').toggleClass('default', power_user.default_instruct === power_user.instruct.preset);
 }
 
 /**
@@ -267,3 +235,44 @@ export function formatInstructModePrompt(name, isImpersonate, promptBias, name1,
 
     return text.trimEnd() + (includeNames ? '' : separator);
 }
+
+jQuery(() => {
+    $('#instruct_set_default').on('click', function () {
+        if (power_user.instruct.preset === power_user.default_instruct) {
+            power_user.default_instruct = null;
+            $(this).removeClass('default');
+            toastr.info('Default instruct preset cleared');
+        } else {
+            power_user.default_instruct = power_user.instruct.preset;
+            $(this).addClass('default');
+            toastr.info(`Default instruct preset set to ${power_user.default_instruct}`);
+        }
+
+        saveSettingsDebounced();
+    });
+
+    $('#instruct_presets').on('change', function () {
+        const name = $(this).find(':selected').val();
+        const preset = instruct_presets.find(x => x.name === name);
+
+        if (!preset) {
+            return;
+        }
+
+        power_user.instruct.preset = name;
+        controls.forEach(control => {
+            if (preset[control.property] !== undefined) {
+                power_user.instruct[control.property] = preset[control.property];
+                const $element = $(`#${control.id}`);
+
+                if (control.isCheckbox) {
+                    $element.prop('checked', power_user.instruct[control.property]).trigger('input');
+                } else {
+                    $element.val(power_user.instruct[control.property]).trigger('input');
+                }
+            }
+        });
+
+        highlightDefaultPreset();
+    });
+});

@@ -1260,10 +1260,6 @@ select option:not(:checked) {
     color: var(--active) !important;
 }
 
-#instruct_set_default {
-    font-size: smaller;
-}
-
 #instruct_set_default.default {
     color: var(--preferred) !important;
 }
