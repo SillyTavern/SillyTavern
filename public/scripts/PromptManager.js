@@ -273,6 +273,8 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     this.serviceSettings = serviceSettings;
     this.containerElement = document.getElementById(this.configuration.containerIdentifier);
 
+    if ('global' === this.configuration.promptOrder.strategy) this.activeCharacter = {id: this.configuration.promptOrder.dummyId};
+
     this.sanitizeServiceSettings();
 
     // Enable and disable prompts
@@ -592,7 +594,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
 PromptManagerModule.prototype.render = function (afterTryGenerate = true) {
     if (main_api !== 'openai') return;
 
-    if (null === this.activeCharacter) return;
+    if ('character' === this.configuration.promptOrder.strategy && null === this.activeCharacter) return;
     this.error = null;
 
     waitUntilCondition(() => !is_send_press && !is_group_generating, 1024 * 1024, 100).then(() => {

@@ -19,7 +19,6 @@ import {
     system_message_types,
     replaceBiasMarkup,
     is_send_press,
-    saveSettings,
     Generate,
     main_api,
     eventSource,
@@ -389,7 +388,7 @@ function setupChatCompletionPromptManager(openAiSettings) {
     promptManager.tokenHandler = tokenHandler;
 
     promptManager.init(configuration, openAiSettings);
-    promptManager.render();
+    promptManager.render(false);
 
     return promptManager;
 }
