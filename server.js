@@ -2655,7 +2655,11 @@ app.post('/uploadimage', jsonParser, async (request, response) => {
     const [, format, base64Data] = match;
 
     // Constructing filename and path
-    const filename = `${Date.now()}.${format}`;
+    let filename = `${Date.now()}.${format}`;
+    if(request.body.filename){
+        filename = `${request.body.filename}.${format}`;
+    }
+
     // if character is defined, save to a sub folder for that character
     let  pathToNewFile = path.join(directories.userImages, filename);
     if(request.body.ch_name){

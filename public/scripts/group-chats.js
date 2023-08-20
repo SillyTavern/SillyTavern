@@ -1169,15 +1169,18 @@ async function uploadGroupAvatar(event) {
     let thumbnail = await createThumbnail(croppedImage, 96, 144);
     //remove data:image/whatever;base64
     thumbnail = thumbnail.replace(/^data:image\/[a-z]+;base64,/, "");
-    let thumbnailUrl = await saveBase64AsFile(thumbnail, openGroupId.toString(), 'jpg');
+    let _thisGroup = groups.find((x) => x.id == openGroupId);
+    // filename should be group id + human readable timestamp
+    const filename = `${_thisGroup.id}_${humanizedDateTime()}`;
+    let thumbnailUrl = await saveBase64AsFile(thumbnail, openGroupId.toString(), filename, 'jpg');
     if (!openGroupId) {
         $('#group_avatar_preview img').attr('src', thumbnailUrl);
         $('#rm_group_restore_avatar').show();
         return;
     }
 
-    let _thisGroup = groups.find((x) => x.id == openGroupId);
-    console.log(thumbnailUrl);
+
+
     _thisGroup.avatar_url = thumbnailUrl;
     $("#group_avatar_preview").empty().append(getGroupAvatar(_thisGroup));
     $("#rm_group_restore_avatar").show();

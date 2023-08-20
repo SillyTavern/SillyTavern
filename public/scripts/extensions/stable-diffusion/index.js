@@ -15,6 +15,7 @@ import {
 import { getApiUrl, getContext, extension_settings, doExtrasFetch, modules } from "../../extensions.js";
 import { selected_group } from "../../group-chats.js";
 import { stringFormat, initScrollHeight, resetScrollHeight, timestampToMoment, getCharaFilename, saveBase64AsFile } from "../../utils.js";
+import { humanizedDateTime } from "../../RossAscends-mods.js";
 export { MODULE_NAME };
 
 // Wraps a string into monospace font-face span
@@ -699,7 +700,9 @@ async function generateExtrasImage(prompt, prefix, characterName, callback) {
 
     if (result.ok) {
         const data = await result.json();
-        const base64Image = await saveBase64AsFile(data.image, characterName, "jpg"); 
+        //filename should be character name + human readable timestamp + generation mode
+        const filename = `${characterName}_${humanizedDateTime()}`;
+        const base64Image = await saveBase64AsFile(data.image, characterName, filename, "jpg"); 
         callback ? callback(prompt, base64Image) : sendMessage(prompt, base64Image);
     } else {
         callPopup('Image generation has failed. Please try again.', 'text');
@@ -740,8 +743,8 @@ async function generateHordeImage(prompt, prefix, characterName, callback) {
 
     if (result.ok) {
         const data = await result.text();
-
-        const base64Image = await saveBase64AsFile(data, characterName, "webp"); 
+        const filename = `${characterName}_${humanizedDateTime()}`;
+        const base64Image = await saveBase64AsFile(data, characterName, filename, "webp"); 
         callback ? callback(prompt, base64Image) : sendMessage(prompt, base64Image);
     } else {
         toastr.error('Image generation has failed. Please try again.');
