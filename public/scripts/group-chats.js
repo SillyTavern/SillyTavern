@@ -1143,7 +1143,6 @@ function select_group_chats(groupId, skipAnimation) {
  * @param {Event} event - The event triggered by selecting a file input, containing the image file to upload.
  * 
  * @returns {Promise<void>} - A promise that resolves when the processing and upload is complete.
- *                            No return value, but internal state might be updated based on the processing result.
  */
 async function uploadGroupAvatar(event) {
     const file = event.target.files[0];
