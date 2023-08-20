@@ -165,8 +165,8 @@ import { FILTER_TYPES, FilterHelper } from "./scripts/filters.js";
 import {
     formatInstructModeChat,
     formatInstructModePrompt,
+    formatInstructModeExamples,
     getInstructStoppingSequences,
-    formatInstructStoryString,
     autoSelectInstructPreset,
 } from "./scripts/instruct-mode.js";
 
@@ -2055,9 +2055,8 @@ function getPersonaDescription(storyString) {
 
     switch (power_user.persona_description_position) {
         case persona_description_positions.BEFORE_CHAR:
-            return `${substituteParams(power_user.persona_description)}\n${storyString}`;
         case persona_description_positions.AFTER_CHAR:
-            return `${storyString}${substituteParams(power_user.persona_description)}\n`;
+            return storyString;
         default:
             if (shouldWIAddPrompt) {
                 const originalAN = extension_prompts[NOTE_MODULE_NAME].value
@@ -2514,10 +2513,15 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         const scenarioText = chat_metadata['scenario'] || characters[this_chid].scenario;
         let charDescription = baseChatReplace(characters[this_chid].description.trim(), name1, name2);
         let charPersonality = baseChatReplace(characters[this_chid].personality.trim(), name1, name2);
+        let personaDescription = baseChatReplace(power_user.persona_description.trim(), name1, name2);
         let Scenario = baseChatReplace(scenarioText.trim(), name1, name2);
         let mesExamples = baseChatReplace(characters[this_chid].mes_example.trim(), name1, name2);
         let systemPrompt = power_user.prefer_character_prompt ? baseChatReplace(characters[this_chid].data?.system_prompt?.trim(), name1, name2) : '';
         let jailbreakPrompt = power_user.prefer_character_jailbreak ? baseChatReplace(characters[this_chid].data?.post_history_instructions?.trim(), name1, name2) : '';
+
+        if (isInstruct) {
+            systemPrompt = power_user.prefer_character_prompt && systemPrompt ? systemPrompt : baseChatReplace(power_user.instruct.system_prompt, name1, name2);
+        }
 
         // Parse example messages
         if (!mesExamples.startsWith('<START>')) {
@@ -2525,6 +2529,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         }
         if (mesExamples.replace(/<START>/gi, '').trim().length === 0) {
             mesExamples = '';
+        }
+        if (mesExamples && isInstruct) {
+            mesExamples = formatInstructModeExamples(mesExamples, name1, name2)
         }
 
         const exampleSeparator = power_user.context.example_separator ? `${power_user.context.example_separator}\n` : '';
@@ -2560,7 +2567,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         const storyStringParams = {
             description: charDescription,
             personality: charPersonality,
+            persona: personaDescription,
             scenario: Scenario,
+            system: isInstruct ? systemPrompt : '',
             char: name2,
             user: name1,
         };
@@ -2627,11 +2636,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         // Pre-format the World Info into the story string
         if (main_api !== 'openai') {
             storyString = worldInfoBefore + storyString + worldInfoAfter;
-        }
-
-        // Format the instruction string
-        if (isInstruct) {
-            storyString = formatInstructStoryString(storyString, systemPrompt);
         }
 
         if (main_api === 'openai') {
