@@ -296,6 +296,8 @@ const baseRequestArgs = { headers: { "Content-Type": "application/json" } };
 const directories = {
     worlds: 'public/worlds/',
     avatars: 'public/User Avatars',
+    images: 'public/img/',
+    userImages: 'public/user/images/',
     groups: 'public/groups/',
     groupChats: 'public/group chats',
     chats: 'public/chats/',
@@ -2584,6 +2586,53 @@ app.post('/uploaduseravatar', urlencodedParser, async (request, response) => {
         return response.status(400).send('Is not a valid image');
     }
 });
+
+
+
+function ensureDirectoryExistence(filePath) {
+    const dirname = path.dirname(filePath);
+    if (fs.existsSync(dirname)) {
+        return true;
+    }
+    ensureDirectoryExistence(dirname);
+    fs.mkdirSync(dirname);
+}
+
+app.post('/uploadimage', jsonParser, async (request, response) => {
+    // Check for image data
+    if (!request.body || !request.body.image) {
+        return response.status(400).send({ error: "No image data provided" });
+    }
+
+    // Extracting the base64 data and the image format
+    const match = request.body.image.match(/^data:image\/(png|jpg|webp);base64,(.+)$/);
+    if (!match) {
+        return response.status(400).send({ error: "Invalid image format" });
+    }
+
+    const [, format, base64Data] = match;
+
+    // Constructing filename and path
+    const filename = `${Date.now()}.${format}`;
+    // if character is defined, save to a sub folder for that character
+    let  pathToNewFile = path.join(directories.userImages, filename);
+    if(request.body.ch_name){
+        pathToNewFile = path.join(directories.userImages, request.body.ch_name, filename);
+    }
+
+    try {
+        ensureDirectoryExistence(pathToNewFile);
+        const imageBuffer = Buffer.from(base64Data, 'base64');
+        await fs.promises.writeFile(pathToNewFile, imageBuffer);
+        // send the path to the image, relative to the client folder, which means removing the first folder from the path which is 'public'
+        pathToNewFile = pathToNewFile.split(path.sep).slice(1).join(path.sep);
+        response.send({ path:pathToNewFile });
+    } catch (error) {
+        console.log(error);
+        response.status(500).send({ error: "Failed to save the image" });
+    }
+});
+
 
 app.post('/getgroups', jsonParser, (_, response) => {
     const groups = [];

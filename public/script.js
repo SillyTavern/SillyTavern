@@ -5629,7 +5629,14 @@ export async function getChatsFromFiles(data, isGroupChat) {
     return chat_dict;
 }
 
-
+/**
+ * Fetches the metadata of all past chats related to a specific character based on its avatar URL.
+ * The function sends a POST request to the server to retrieve all chats for the character. It then 
+ * processes the received data, sorts it by the file name, and returns the sorted data.
+ *
+ * @returns {Array} - An array containing metadata of all past chats of the character, sorted 
+ * in descending order by file name. Returns `undefined` if the fetch request is unsuccessful.
+ */
 async function getPastCharacterChats() {
     const response = await fetch("/getallchatsofcharacter", {
         method: 'POST',

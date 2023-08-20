@@ -537,6 +537,38 @@ function processReply(str) {
     return str;
 }
 
+async function saveBase64AsFile(base64Data, characterName, ext) {
+    // Construct the full data URL
+    const format = ext; // Extract the file extension (jpg, png, webp)
+    const dataURL = `data:image/${format};base64,${base64Data}`;
+
+    // Prepare the request body
+    const requestBody = {
+        image: dataURL,
+        ch_name: characterName
+    };
+
+    // Send the data URL to your backend using fetch
+    const response = await fetch('/uploadimage', {
+        method: 'POST',
+        body: JSON.stringify(requestBody),
+        headers: {
+            ...getRequestHeaders(),
+            'Content-Type': 'application/json'
+        },
+    });
+
+    // If the response is successful, get the saved image path from the server's response
+    if (response.ok) {
+        const responseData = await response.json();
+        return responseData.path;
+    } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to upload the image to the server');
+    }
+}
+
+
 function getRawLastMessage() {
     const context = getContext();
     const lastMessage = context.chat.slice(-1)[0].mes,
@@ -565,6 +597,10 @@ async function generatePicture(_, trigger, message, callback) {
     const quiet_prompt = getQuietPrompt(generationType, trigger);
     const context = getContext();
 
+    // if context.characterId is not null, then we get context.characters[context.characterId].avatar, else we get groupId and context.groups[groupId].id
+    // sadly, groups is not an array, but is a dict with keys being index numbers, so we have to filter it
+    const characterName = context.characterId ? context.characters[context.characterId].name : context.groups[Object.keys(context.groups).filter(x => context.groups[x].id === context.groupId)[0]].id.toString();
+
     const prevSDHeight = extension_settings.sd.height;
     const prevSDWidth = extension_settings.sd.width;
     const aspectRatio = extension_settings.sd.width / extension_settings.sd.height;
@@ -580,8 +616,10 @@ async function generatePicture(_, trigger, message, callback) {
         // Round to nearest multiple of 64
         extension_settings.sd.width = Math.round(extension_settings.sd.height * 1.8 / 64) * 64;
         const callbackOriginal = callback;
-        callback = function (prompt, base64Image) {
+        callback = async function (prompt, base64Image) {
+            const imagePath = base64Image;
             const imgUrl = `url(${base64Image})`;
+
             if ('forceSetBackground' in window) {
                 forceSetBackground(imgUrl);
             } else {
@@ -590,9 +628,9 @@ async function generatePicture(_, trigger, message, callback) {
             }
 
             if (typeof callbackOriginal === 'function') {
-                callbackOriginal(prompt, base64Image);
+                callbackOriginal(prompt, imagePath);
             } else {
-                sendMessage(prompt, base64Image);
+                sendMessage(prompt, imagePath);
             }
         }
     }
@@ -604,7 +642,7 @@ async function generatePicture(_, trigger, message, callback) {
         context.deactivateSendButtons();
         hideSwipeButtons();
 
-        await sendGenerationRequest(generationType, prompt, callback);
+        await sendGenerationRequest(generationType, prompt, characterName, callback);
     } catch (err) {
         console.trace(err);
         throw new Error('SD prompt text generation failed.')
@@ -644,19 +682,19 @@ async function generatePrompt(quiet_prompt) {
     return processReply(reply);
 }
 
-async function sendGenerationRequest(generationType, prompt, callback) {
+async function sendGenerationRequest(generationType, prompt, characterName=null, callback) {
     const prefix = generationType !== generationMode.BACKGROUND
         ? combinePrefixes(extension_settings.sd.prompt_prefix, getCharacterPrefix())
         : extension_settings.sd.prompt_prefix;
 
     if (extension_settings.sd.horde) {
-        await generateHordeImage(prompt, prefix, callback);
+        await generateHordeImage(prompt, prefix, characterName, callback);
     } else {
-        await generateExtrasImage(prompt, prefix, callback);
+        await generateExtrasImage(prompt, prefix, characterName, callback);
     }
 }
 
-async function generateExtrasImage(prompt, prefix, callback) {
+async function generateExtrasImage(prompt, prefix, characterName, callback) {
     console.debug(extension_settings.sd);
     const url = new URL(getApiUrl());
     url.pathname = '/api/image';
@@ -680,14 +718,14 @@ async function generateExtrasImage(prompt, prefix, callback) {
 
     if (result.ok) {
         const data = await result.json();
-        const base64Image = `data:image/jpeg;base64,${data.image}`;
+        const base64Image = await saveBase64AsFile(data.image, characterName, "jpg"); 
         callback ? callback(prompt, base64Image) : sendMessage(prompt, base64Image);
     } else {
         callPopup('Image generation has failed. Please try again.', 'text');
     }
 }
 
-async function generateHordeImage(prompt, prefix, callback) {
+async function generateHordeImage(prompt, prefix, characterName, callback) {
     const result = await fetch('/horde_generateimage', {
         method: 'POST',
         headers: getRequestHeaders(),
@@ -709,7 +747,8 @@ async function generateHordeImage(prompt, prefix, callback) {
 
     if (result.ok) {
         const data = await result.text();
-        const base64Image = `data:image/webp;base64,${data}`;
+
+        const base64Image = await saveBase64AsFile(data, characterName, "webp"); 
         callback ? callback(prompt, base64Image) : sendMessage(prompt, base64Image);
     } else {
         toastr.error('Image generation has failed. Please try again.');
@@ -842,7 +881,7 @@ async function sdMessageButton(e) {
             message.extra.title = prompt;
 
             console.log('Regenerating an image, using existing prompt:', prompt);
-            await sendGenerationRequest(generationMode.FREE, prompt, saveGeneratedImage);
+            await sendGenerationRequest(generationMode.FREE, prompt, characterName, saveGeneratedImage);
         }
         else {
             console.log("doing /sd raw last");
