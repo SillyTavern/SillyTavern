@@ -464,7 +464,7 @@ function appendWorldEntry(name, data, entry) {
 
     const contentInput = template.find('textarea[name="content"]');
     contentInput.data("uid", entry.uid);
-    contentInput.on("input", function (_, { skipCount }) {
+    contentInput.on("input", function (_, { skipCount } = {}) {
         const uid = $(this).data("uid");
         const value = $(this).val();
         data.entries[uid].content = value;
