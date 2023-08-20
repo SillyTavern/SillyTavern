@@ -19,7 +19,6 @@ import {
     system_message_types,
     replaceBiasMarkup,
     is_send_press,
-    saveSettings,
     Generate,
     main_api,
     eventSource,
@@ -45,6 +44,7 @@ import {
 } from "./secrets.js";
 
 import {
+    deepClone,
     delay,
     download,
     getFileText, getSortableDelay,
@@ -390,7 +390,7 @@ function setupChatCompletionPromptManager(openAiSettings) {
     promptManager.tokenHandler = tokenHandler;
 
     promptManager.init(configuration, openAiSettings);
-    promptManager.render();
+    promptManager.render(false);
 
     return promptManager;
 }
@@ -480,10 +480,18 @@ function populateChatHistory(prompts, chatCompletion, type = null, cyclePrompt =
     // Chat History
     chatCompletion.add(new MessageCollection('chatHistory'), prompts.index('chatHistory'));
 
+    let names = (selected_group && groups.find(x => x.id === selected_group)?.members.map(member => characters.find(c => c.avatar === member)?.name).filter(Boolean).join(', ')) || '';
     // Reserve budget for new chat message
     const newChat = selected_group ? oai_settings.new_group_chat_prompt : oai_settings.new_chat_prompt;
-    const newChatMessage = new Message('system', newChat, 'newMainChat');
+    const newChatMessage = new Message('system', substituteParams(newChat, null, null, null, names), 'newMainChat');
     chatCompletion.reserveBudget(newChatMessage);
+
+    // Reserve budget for group nudge
+    let groupNudgeMessage = null;
+    if(selected_group) {
+        const groupNudgeMessage = new Message.fromPrompt(prompts.get('groupNudge'));
+        chatCompletion.reserveBudget(groupNudgeMessage);
+    }
 
     // Reserve budget for continue nudge
     let continueMessage = null;
@@ -513,7 +521,8 @@ function populateChatHistory(prompts, chatCompletion, type = null, cyclePrompt =
         const chatMessage = Message.fromPrompt(promptManager.preparePrompt(prompt));
 
         if (true === promptManager.serviceSettings.names_in_completion && prompt.name) {
-            chatMessage.name = promptManager.isValidName(prompt.name) ? prompt.name : promptManager.sanitizeName(prompt.name);
+            const messageName = promptManager.isValidName(prompt.name) ? prompt.name : promptManager.sanitizeName(prompt.name);
+            chatMessage.setName(messageName);
         }
 
         if (chatCompletion.canAfford(chatMessage)) chatCompletion.insertAtStart(chatMessage, 'chatHistory');
@@ -524,6 +533,12 @@ function populateChatHistory(prompts, chatCompletion, type = null, cyclePrompt =
     // Insert and free new chat
     chatCompletion.freeBudget(newChatMessage);
     chatCompletion.insertAtStart(newChatMessage, 'chatHistory');
+
+    // Reserve budget for group nudge
+    if(selected_group && groupNudgeMessage) {
+        chatCompletion.freeBudget(groupNudgeMessage);
+        chatCompletion.insertAtEnd(groupNudgeMessage, 'chatHistory');
+    }
 
     // Insert and free continue nudge
     if (type === 'continue' && continueMessage) {
@@ -542,9 +557,11 @@ function populateDialogueExamples(prompts, chatCompletion) {
     chatCompletion.add(new MessageCollection('dialogueExamples'), prompts.index('dialogueExamples'));
     if (openai_msgs_example.length) {
         const newExampleChat = new Message('system', oai_settings.new_example_chat_prompt, 'newChat');
-        chatCompletion.reserveBudget(newExampleChat);
-
         [...openai_msgs_example].forEach((dialogue, dialogueIndex) => {
+            let examplesAdded = 0;
+
+            if (chatCompletion.canAfford(newExampleChat)) chatCompletion.insert(newExampleChat, 'dialogueExamples');
+
             dialogue.forEach((prompt, promptIndex) => {
                 const role = 'system';
                 const content = prompt.content || '';
@@ -554,14 +571,14 @@ function populateDialogueExamples(prompts, chatCompletion) {
                 chatMessage.setName(prompt.name);
                 if (chatCompletion.canAfford(chatMessage)) {
                     chatCompletion.insert(chatMessage, 'dialogueExamples');
+                    examplesAdded++;
                 }
             });
+
+            if (0 === examplesAdded) {
+                chatCompletion.removeLastFrom('dialogueExamples');
+            }
         });
-
-        chatCompletion.freeBudget(newExampleChat);
-
-        const chatExamples = chatCompletion.getMessages().getItemByIdentifier('dialogueExamples').getCollection();
-        if (chatExamples.length) chatCompletion.insertAtStart(newExampleChat, 'dialogueExamples');
     }
 }
 
@@ -700,9 +717,10 @@ function populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, ty
  *
  * @returns {Object} prompts - The prepared and merged system and user-defined prompts.
  */
-function preparePromptsForChatCompletion(Scenario, charPersonality, name2, worldInfoBefore, worldInfoAfter, charDescription, quietPrompt, bias, extensionPrompts) {
+function preparePromptsForChatCompletion(Scenario, charPersonality, name2, worldInfoBefore, worldInfoAfter, charDescription, quietPrompt, bias, extensionPrompts, systemPromptOverride, jailbreakPromptOverride) {
     const scenarioText = Scenario ? `[Circumstances and context of the dialogue: ${Scenario}]` : '';
-    const charPersonalityText = charPersonality ? `[${name2}'s personality: ${charPersonality}]` : '';
+    const charPersonalityText = charPersonality ? `[${name2}'s personality: ${charPersonality}]` : ''
+    const groupNudge = `[Write the next reply only as ${name2}]`;
 
     // Create entries for system prompts
     const systemPrompts = [
@@ -716,7 +734,8 @@ function preparePromptsForChatCompletion(Scenario, charPersonality, name2, world
         { role: 'system', content: oai_settings.nsfw_avoidance_prompt, identifier: 'nsfwAvoidance' },
         { role: 'system', content: oai_settings.impersonation_prompt, identifier: 'impersonate' },
         { role: 'system', content: quietPrompt, identifier: 'quietPrompt' },
-        { role: 'system', content: bias, identifier: 'bias' }
+        { role: 'system', content: bias, identifier: 'bias' },
+        { role: 'system', content: groupNudge, identifier: 'groupNudge' }
     ];
 
     // Tavern Extras - Summary
@@ -753,7 +772,6 @@ function preparePromptsForChatCompletion(Scenario, charPersonality, name2, world
     });
 
     // Apply character-specific main prompt
-    const systemPromptOverride = promptManager.activeCharacter.data?.system_prompt ?? null;
     const systemPrompt = prompts.get('main') ?? null;
     if (systemPromptOverride && systemPrompt) {
         const mainOriginalContent = systemPrompt.content;
@@ -763,7 +781,6 @@ function preparePromptsForChatCompletion(Scenario, charPersonality, name2, world
     }
 
     // Apply character-specific jailbreak
-    const jailbreakPromptOverride = promptManager.activeCharacter.data?.post_history_instructions ?? null;
     const jailbreakPrompt = prompts.get('jailbreak') ?? null;
     if (jailbreakPromptOverride && jailbreakPrompt) {
         const jbOriginalContent = jailbreakPrompt.content;
@@ -807,7 +824,9 @@ function prepareOpenAIMessages({
     type,
     quietPrompt,
     extensionPrompts,
-    cyclePrompt
+    cyclePrompt,
+    systemPromptOverride,
+    jailbreakPromptOverride,
 } = {}, dryRun) {
     // Without a character selected, there is no way to accurately calculate tokens
     if (!promptManager.activeCharacter && dryRun) return [null, false];
@@ -820,7 +839,7 @@ function prepareOpenAIMessages({
 
     try {
         // Merge markers and ordered user prompts with system prompts
-        const prompts = preparePromptsForChatCompletion(Scenario, charPersonality, name2, worldInfoBefore, worldInfoAfter, charDescription, quietPrompt, bias, extensionPrompts);
+        const prompts = preparePromptsForChatCompletion(Scenario, charPersonality, name2, worldInfoBefore, worldInfoAfter, charDescription, quietPrompt, bias, extensionPrompts, systemPromptOverride, jailbreakPromptOverride);
 
         // Fill the chat completion with as much context as the budget allows
         populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, type, cyclePrompt });
@@ -1371,7 +1390,7 @@ function countTokens(messages, full = false) {
 
     for (const message of messages) {
         const model = getTokenizerModel();
-        const hash = getStringHash(message.content);
+        const hash = getStringHash(JSON.stringify(message));
         const cacheKey = `${model}-${hash}`;
         const cachedCount = tokenCache[chatId][cacheKey];
 
@@ -1443,8 +1462,8 @@ class Message {
         this.role = role;
         this.content = content;
 
-        if (this.content) {
-            this.tokens = tokenHandler.count({ role: this.role, content: this.content })
+        if (typeof this.content === 'string') {
+            this.tokens = tokenHandler.count({ role: this.role, content: this.content });
         } else {
             this.tokens = 0;
         }
@@ -1452,6 +1471,7 @@ class Message {
 
     setName(name) {
         this.name = name;
+        this.tokens = tokenHandler.count({ role: this.role, content: this.content, name: this.name });
     }
 
     /**
@@ -1661,6 +1681,21 @@ class ChatCompletion {
 
             this.log(`Inserted ${message.identifier} into ${identifier}. Remaining tokens: ${this.tokenBudget}`);
         }
+    }
+
+
+    /**
+     * Remove the last item of the collection
+     *
+     * @param identifier
+     */
+    removeLastFrom(identifier) {
+        const index = this.findMessageIndex(identifier);
+        const message = this.messages.collection[index].collection.pop();
+
+        this.increaseTokenBudgetBy(message.getTokens());
+
+        this.log(`Removed ${message.identifier} from ${identifier}. Remaining tokens: ${this.tokenBudget}`);
     }
 
     /**
@@ -2349,7 +2384,11 @@ async function onExportPresetClick() {
         return;
     }
 
-    const preset = openai_settings[openai_setting_names[oai_settings.preset_settings_openai]];
+    const preset = deepClone(openai_settings[openai_setting_names[oai_settings.preset_settings_openai]]);
+
+    delete preset.reverse_proxy;
+    delete preset.proxy_password;
+
     const presetJsonString = JSON.stringify(preset, null, 4);
     download(presetJsonString, oai_settings.preset_settings_openai, 'application/json');
 }

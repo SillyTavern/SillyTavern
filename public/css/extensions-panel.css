@@ -1,0 +1,96 @@
+/* Extensions */
+#extensions_url {
+    display: block;
+}
+
+#extensions_status {
+    /* margin-bottom: 10px; */
+    font-weight: 700;
+}
+
+.extensions_block input[type="submit"]:hover {
+    background-color: green;
+}
+
+.extensions_block input[type="checkbox"] {
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+label[for="extensions_autoconnect"] {
+    display: flex;
+    align-items: center;
+    margin: 0 !important;
+}
+
+.extensions_url_block {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.extensions_url_block h4 {
+    display: inline;
+}
+
+.extensions_block {
+    clear: both;
+    padding: 0.05px;
+}
+
+.extensions_info {
+    text-align: left;
+    margin: 0 1em;
+}
+
+.extensions_info h3 {
+    margin-bottom: 0.5em;
+}
+
+.extensions_info h4 {
+    margin-bottom: 0.5em;
+}
+
+.extensions_info p {
+    margin-bottom: 0.5em;
+    margin-left: 1em;
+}
+
+.extensions_info .disabled {
+    color: lightgray;
+}
+
+.extensions_info .toggle_enable {
+    color: lightgreen;
+}
+
+.extensions_info .toggle_disable {
+    color: rgb(238, 144, 144);
+}
+
+.extensions_info .extension_enabled {
+    color: green;
+}
+
+.extensions_info .extension_disabled {
+    color: lightgray;
+}
+
+.extensions_info .extension_missing {
+    color: gray;
+}
+
+input.extension_missing[type="checkbox"] {
+    opacity: 0.5;
+}
+
+#extensions_list .disabled {
+    text-decoration: line-through;
+    color: lightgray;
+}
+
+.update-button {
+    margin-right: 10px;
+    display: inline-flex;
+}

@@ -752,7 +752,7 @@ let create_save = {
 };
 
 //animation right menu
-let animation_duration = 250;
+let animation_duration = 125;
 let animation_easing = "ease-in-out";
 let popup_type = "";
 let bg_file_for_del = "";
@@ -1779,7 +1779,6 @@ function scrollChatToBottom() {
 function substituteParams(content, _name1, _name2, _original, _group) {
     _name1 = _name1 ?? name1;
     _name2 = _name2 ?? name2;
-    _original = _original || '';
     _group = _group ?? name2;
 
     if (!content) {
@@ -2136,6 +2135,8 @@ function baseChatReplace(value, name1, name2) {
         if (power_user.collapse_newlines) {
             value = collapseNewlines(value);
         }
+
+        value = value.replace(/\r/g, '');
     }
     return value;
 }
@@ -2387,10 +2388,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         abortController = new AbortController();
     }
 
-    if (main_api == 'novel' && quiet_prompt) {
-        quiet_prompt = adjustNovelInstructionPrompt(quiet_prompt);
-    }
-
     // OpenAI doesn't need instruct mode. Use OAI main prompt instead.
     const isInstruct = power_user.instruct.enabled && main_api !== 'openai';
     const isImpersonate = type == "impersonate";
@@ -2479,6 +2476,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         }
     }
 
+    if (quiet_prompt) {
+        quiet_prompt = substituteParams(quiet_prompt);
+        quiet_prompt = main_api == 'novel' ? adjustNovelInstructionPrompt(quiet_prompt) : quiet_prompt;
+    }
+
     if (true === dryRun ||
         (online_status != 'no_connection' && this_chid != undefined && this_chid !== 'invalid-safety-id')) {
         let textareaText;
@@ -2538,8 +2540,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         let charPersonality = baseChatReplace(characters[this_chid].personality.trim(), name1, name2);
         let Scenario = baseChatReplace(scenarioText.trim(), name1, name2);
         let mesExamples = baseChatReplace(characters[this_chid].mes_example.trim(), name1, name2);
-        let systemPrompt = baseChatReplace(characters[this_chid].data?.system_prompt?.trim(), name1, name2);
-        let jailbreakPrompt = baseChatReplace(characters[this_chid].data?.post_history_instructions?.trim(), name1, name2);
+        let systemPrompt = power_user.prefer_character_prompt ? baseChatReplace(characters[this_chid].data?.system_prompt?.trim(), name1, name2) : '';
+        let jailbreakPrompt = power_user.prefer_character_jailbreak ? baseChatReplace(characters[this_chid].data?.post_history_instructions?.trim(), name1, name2) : '';
 
         // Parse example messages
         if (!mesExamples.startsWith('<START>')) {
@@ -2995,8 +2997,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     bias: promptBias,
                     type: type,
                     quietPrompt: quiet_prompt,
-                    jailbreakPrompt: jailbreakPrompt,
                     cyclePrompt: cyclePrompt,
+                    systemPromptOverride: systemPrompt,
+                    jailbreakPromptOverride: jailbreakPrompt,
                 }, dryRun);
                 generate_data = { prompt: prompt };
 
@@ -5413,9 +5416,8 @@ async function getSettings(type) {
         setWorldInfoSettings(settings.world_info_settings ?? settings, data);
 
         api_server_textgenerationwebui = settings.api_server_textgenerationwebui;
-        $("#textgenerationwebui_api_url_text").val(
-            api_server_textgenerationwebui
-        );
+        $("#textgenerationwebui_api_url_text").val(api_server_textgenerationwebui);
+        $("#mancer_api_url_text").val(api_server_textgenerationwebui);
         api_use_mancer_webui = settings.api_use_mancer_webui
         $('#use-mancer-api-checkbox').prop("checked", api_use_mancer_webui);
         $('#use-mancer-api-checkbox').trigger("change");
@@ -5779,7 +5781,6 @@ export async function displayPastChats() {
                 }
             }
         }
-
     }
     displayChats('');  // Display all by default
 
@@ -7529,7 +7530,7 @@ $(document).ready(function () {
         $("#character_search_bar").val("").trigger("input");
     });
 
-    $(document).on("click", ".character_select", function() {
+    $(document).on("click", ".character_select", function () {
         const id = $(this).attr("chid");
         selectCharacterById(id);
     });
@@ -8013,7 +8014,9 @@ $(document).ready(function () {
 
     $("#use-mancer-api-checkbox").on("change", function (e) {
         const enabled = $("#use-mancer-api-checkbox").prop("checked");
-        $("#mancer-api-ui").toggle(enabled);
+        $("#mancer_api_subpanel").toggle(enabled);
+        $("#tgwebui_api_subpanel").toggle(!enabled);
+        
         api_use_mancer_webui = enabled;
         saveSettingsDebounced();
         getStatus();
@@ -8021,8 +8024,9 @@ $(document).ready(function () {
 
     $("#api_button_textgenerationwebui").click(async function (e) {
         e.stopPropagation();
-        if ($("#textgenerationwebui_api_url_text").val() != "") {
-            let value = formatTextGenURL($("#textgenerationwebui_api_url_text").val().trim(), api_use_mancer_webui);
+        const url_source = api_use_mancer_webui ? "#mancer_api_url_text" : "#textgenerationwebui_api_url_text";
+        if ($(url_source).val() != "") {
+            let value = formatTextGenURL($(url_source).val().trim(), api_use_mancer_webui);
             if (!value) {
                 callPopup("Please enter a valid URL.<br/>WebUI URLs should end with <tt>/api</tt><br/>Enable 'Relaxed API URLs' to allow other paths.", 'text');
                 return;
@@ -8033,9 +8037,13 @@ $(document).ready(function () {
                 await writeSecret(SECRET_KEYS.MANCER, mancer_key);
             }
 
-            $("#textgenerationwebui_api_url_text").val(value);
+            $(url_source).val(value);
             $("#api_loading_textgenerationwebui").css("display", "inline-block");
             $("#api_button_textgenerationwebui").css("display", "none");
+
+            if (api_use_mancer_webui) {
+                textgenerationwebui_settings.streaming_url = value.replace("http", "ws") + "/v1/stream";
+            }
             api_server_textgenerationwebui = value;
             main_api = "textgenerationwebui";
             saveSettingsDebounced();
