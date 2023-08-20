@@ -556,6 +556,8 @@ function populateDialogueExamples(prompts, chatCompletion) {
     if (openai_msgs_example.length) {
         const newExampleChat = new Message('system', oai_settings.new_example_chat_prompt, 'newChat');
         [...openai_msgs_example].forEach((dialogue, dialogueIndex) => {
+            let examplesAdded = 0;
+
             if (chatCompletion.canAfford(newExampleChat)) chatCompletion.insert(newExampleChat, 'dialogueExamples');
 
             dialogue.forEach((prompt, promptIndex) => {
@@ -567,8 +569,13 @@ function populateDialogueExamples(prompts, chatCompletion) {
                 chatMessage.setName(prompt.name);
                 if (chatCompletion.canAfford(chatMessage)) {
                     chatCompletion.insert(chatMessage, 'dialogueExamples');
+                    examplesAdded++;
                 }
             });
+
+            if (0 === examplesAdded) {
+                chatCompletion.removeLastFrom('dialogueExamples');
+            }
         });
     }
 }
@@ -1671,6 +1678,21 @@ class ChatCompletion {
 
             this.log(`Inserted ${message.identifier} into ${identifier}. Remaining tokens: ${this.tokenBudget}`);
         }
+    }
+
+
+    /**
+     * Remove the last item of the collection
+     *
+     * @param identifier
+     */
+    removeLastFrom(identifier) {
+        const index = this.findMessageIndex(identifier);
+        const message = this.messages.collection[index].collection.pop();
+
+        this.increaseTokenBudgetBy(message.getTokens());
+
+        this.log(`Removed ${message.identifier} from ${identifier}. Remaining tokens: ${this.tokenBudget}`);
     }
 
     /**
