@@ -479,9 +479,10 @@ function populateChatHistory(prompts, chatCompletion, type = null, cyclePrompt =
     // Chat History
     chatCompletion.add(new MessageCollection('chatHistory'), prompts.index('chatHistory'));
 
+    let names = (selected_group && groups.find(x => x.id === selected_group)?.members.map(member => characters.find(c => c.avatar === member)?.name).filter(Boolean).join(', ')) || '';
     // Reserve budget for new chat message
     const newChat = selected_group ? oai_settings.new_group_chat_prompt : oai_settings.new_chat_prompt;
-    const newChatMessage = new Message('system', newChat, 'newMainChat');
+    const newChatMessage = new Message('system', substituteParams(newChat, null, null, null, names), 'newMainChat');
     chatCompletion.reserveBudget(newChatMessage);
 
     // Reserve budget for continue nudge
@@ -512,7 +513,8 @@ function populateChatHistory(prompts, chatCompletion, type = null, cyclePrompt =
         const chatMessage = Message.fromPrompt(promptManager.preparePrompt(prompt));
 
         if (true === promptManager.serviceSettings.names_in_completion && prompt.name) {
-            chatMessage.name = promptManager.isValidName(prompt.name) ? prompt.name : promptManager.sanitizeName(prompt.name);
+            const messageName = promptManager.isValidName(prompt.name) ? prompt.name : promptManager.sanitizeName(prompt.name);
+            chatMessage.setName(messageName);
         }
 
         if (chatCompletion.canAfford(chatMessage)) chatCompletion.insertAtStart(chatMessage, 'chatHistory');
@@ -541,9 +543,8 @@ function populateDialogueExamples(prompts, chatCompletion) {
     chatCompletion.add(new MessageCollection('dialogueExamples'), prompts.index('dialogueExamples'));
     if (openai_msgs_example.length) {
         const newExampleChat = new Message('system', oai_settings.new_example_chat_prompt, 'newChat');
-        chatCompletion.reserveBudget(newExampleChat);
-
         [...openai_msgs_example].forEach((dialogue, dialogueIndex) => {
+            chatCompletion.insert(newExampleChat, 'dialogueExamples');
             dialogue.forEach((prompt, promptIndex) => {
                 const role = 'system';
                 const content = prompt.content || '';
@@ -556,11 +557,6 @@ function populateDialogueExamples(prompts, chatCompletion) {
                 }
             });
         });
-
-        chatCompletion.freeBudget(newExampleChat);
-
-        const chatExamples = chatCompletion.getMessages().getItemByIdentifier('dialogueExamples').getCollection();
-        if (chatExamples.length) chatCompletion.insertAtStart(newExampleChat, 'dialogueExamples');
     }
 }
 
@@ -767,6 +763,12 @@ function preparePromptsForChatCompletion(Scenario, charPersonality, name2, world
         jailbreakPrompt.content = jailbreakPromptOverride;
         const jbReplacement = promptManager.preparePrompt(jailbreakPrompt, jbOriginalContent);
         prompts.set(jbReplacement, prompts.index('jailbreak'));
+    }
+
+    // TODO: Integrate Group nudge into the prompt manager properly
+    if(selected_group) {
+        let group_nudge = {"role": "system", "content": `[Write the next reply only as ${name2}]`};
+        openai_msgs.push(group_nudge);
     }
 
     // Allow subscribers to manipulate the prompts object
@@ -1370,7 +1372,7 @@ function countTokens(messages, full = false) {
 
     for (const message of messages) {
         const model = getTokenizerModel();
-        const hash = getStringHash(message.content);
+        const hash = getStringHash(JSON.stringify(message));
         const cacheKey = `${model}-${hash}`;
         const cachedCount = tokenCache[chatId][cacheKey];
 
@@ -1442,8 +1444,8 @@ class Message {
         this.role = role;
         this.content = content;
 
-        if (this.content) {
-            this.tokens = tokenHandler.count({ role: this.role, content: this.content })
+        if (typeof this.content === 'string') {
+            this.tokens = tokenHandler.count({ role: this.role, content: this.content });
         } else {
             this.tokens = 0;
         }
@@ -1451,6 +1453,7 @@ class Message {
 
     setName(name) {
         this.name = name;
+        this.tokens = tokenHandler.count({ role: this.role, content: this.content, name: this.name });
     }
 
     /**

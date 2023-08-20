@@ -1,5 +1,4 @@
 import {
-    substituteParams,
     saveSettingsDebounced,
     systemUserName,
     hideSwipeButtons,
@@ -14,7 +13,8 @@ import {
 } from "../../../script.js";
 import { getApiUrl, getContext, extension_settings, doExtrasFetch, modules } from "../../extensions.js";
 import { selected_group } from "../../group-chats.js";
-import { stringFormat, initScrollHeight, resetScrollHeight, timestampToMoment, getCharaFilename } from "../../utils.js";
+import { stringFormat, initScrollHeight, resetScrollHeight, timestampToMoment, getCharaFilename, saveBase64AsFile } from "../../utils.js";
+import { humanizedDateTime } from "../../RossAscends-mods.js";
 export { MODULE_NAME };
 
 // Wraps a string into monospace font-face span
@@ -512,7 +512,7 @@ function getQuietPrompt(mode, trigger) {
         return trigger;
     }
 
-    return substituteParams(stringFormat(extension_settings.sd.prompts[mode], trigger));
+    return stringFormat(extension_settings.sd.prompts[mode], trigger);
 }
 
 function processReply(str) {
@@ -536,6 +536,7 @@ function processReply(str) {
 
     return str;
 }
+
 
 function getRawLastMessage() {
     const context = getContext();
@@ -565,6 +566,10 @@ async function generatePicture(_, trigger, message, callback) {
     const quiet_prompt = getQuietPrompt(generationType, trigger);
     const context = getContext();
 
+    // if context.characterId is not null, then we get context.characters[context.characterId].avatar, else we get groupId and context.groups[groupId].id
+    // sadly, groups is not an array, but is a dict with keys being index numbers, so we have to filter it
+    const characterName = context.characterId ? context.characters[context.characterId].name : context.groups[Object.keys(context.groups).filter(x => context.groups[x].id === context.groupId)[0]].id.toString();
+
     const prevSDHeight = extension_settings.sd.height;
     const prevSDWidth = extension_settings.sd.width;
     const aspectRatio = extension_settings.sd.width / extension_settings.sd.height;
@@ -580,8 +585,10 @@ async function generatePicture(_, trigger, message, callback) {
         // Round to nearest multiple of 64
         extension_settings.sd.width = Math.round(extension_settings.sd.height * 1.8 / 64) * 64;
         const callbackOriginal = callback;
-        callback = function (prompt, base64Image) {
-            const imgUrl = `url(${base64Image})`;
+        callback = async function (prompt, base64Image) {
+            const imagePath = base64Image;
+            const imgUrl = `url('${encodeURIComponent(base64Image)}')`;
+
             if ('forceSetBackground' in window) {
                 forceSetBackground(imgUrl);
             } else {
@@ -590,9 +597,9 @@ async function generatePicture(_, trigger, message, callback) {
             }
 
             if (typeof callbackOriginal === 'function') {
-                callbackOriginal(prompt, base64Image);
+                callbackOriginal(prompt, imagePath);
             } else {
-                sendMessage(prompt, base64Image);
+                sendMessage(prompt, imagePath);
             }
         }
     }
@@ -604,7 +611,7 @@ async function generatePicture(_, trigger, message, callback) {
         context.deactivateSendButtons();
         hideSwipeButtons();
 
-        await sendGenerationRequest(generationType, prompt, callback);
+        await sendGenerationRequest(generationType, prompt, characterName, callback);
     } catch (err) {
         console.trace(err);
         throw new Error('SD prompt text generation failed.')
@@ -644,19 +651,31 @@ async function generatePrompt(quiet_prompt) {
     return processReply(reply);
 }
 
-async function sendGenerationRequest(generationType, prompt, callback) {
+async function sendGenerationRequest(generationType, prompt, characterName = null, callback) {
     const prefix = generationType !== generationMode.BACKGROUND
         ? combinePrefixes(extension_settings.sd.prompt_prefix, getCharacterPrefix())
         : extension_settings.sd.prompt_prefix;
 
     if (extension_settings.sd.horde) {
-        await generateHordeImage(prompt, prefix, callback);
+        await generateHordeImage(prompt, prefix, characterName, callback);
     } else {
-        await generateExtrasImage(prompt, prefix, callback);
+        await generateExtrasImage(prompt, prefix, characterName, callback);
     }
 }
 
-async function generateExtrasImage(prompt, prefix, callback) {
+/**
+ * Generates an "extras" image using a provided prompt and other settings,
+ * then saves the generated image and either invokes a callback or sends a message with the image.
+ *
+ * @param {string} prompt - The main instruction used to guide the image generation.
+ * @param {string} prefix - Additional context or prefix to guide the image generation.
+ * @param {string} characterName - The name used to determine the sub-directory for saving.
+ * @param {function} [callback] - Optional callback function invoked with the prompt and saved image.
+ *                                If not provided, `sendMessage` is called instead.
+ *
+ * @returns {Promise<void>} - A promise that resolves when the image generation and processing are complete.
+ */
+async function generateExtrasImage(prompt, prefix, characterName, callback) {
     console.debug(extension_settings.sd);
     const url = new URL(getApiUrl());
     url.pathname = '/api/image';
@@ -680,14 +699,28 @@ async function generateExtrasImage(prompt, prefix, callback) {
 
     if (result.ok) {
         const data = await result.json();
-        const base64Image = `data:image/jpeg;base64,${data.image}`;
+        //filename should be character name + human readable timestamp + generation mode
+        const filename = `${characterName}_${humanizedDateTime()}`;
+        const base64Image = await saveBase64AsFile(data.image, characterName, filename, "jpg");
         callback ? callback(prompt, base64Image) : sendMessage(prompt, base64Image);
     } else {
         callPopup('Image generation has failed. Please try again.', 'text');
     }
 }
 
-async function generateHordeImage(prompt, prefix, callback) {
+/**
+ * Generates a "horde" image using the provided prompt and configuration settings,
+ * then saves the generated image and either invokes a callback or sends a message with the image.
+ *
+ * @param {string} prompt - The main instruction used to guide the image generation.
+ * @param {string} prefix - Additional context or prefix to guide the image generation.
+ * @param {string} characterName - The name used to determine the sub-directory for saving.
+ * @param {function} [callback] - Optional callback function invoked with the prompt and saved image.
+ *                                If not provided, `sendMessage` is called instead.
+ *
+ * @returns {Promise<void>} - A promise that resolves when the image generation and processing are complete.
+ */
+async function generateHordeImage(prompt, prefix, characterName, callback) {
     const result = await fetch('/horde_generateimage', {
         method: 'POST',
         headers: getRequestHeaders(),
@@ -709,7 +742,8 @@ async function generateHordeImage(prompt, prefix, callback) {
 
     if (result.ok) {
         const data = await result.text();
-        const base64Image = `data:image/webp;base64,${data}`;
+        const filename = `${characterName}_${humanizedDateTime()}`;
+        const base64Image = await saveBase64AsFile(data, characterName, filename, "webp");
         callback ? callback(prompt, base64Image) : sendMessage(prompt, base64Image);
     } else {
         toastr.error('Image generation has failed. Please try again.');
@@ -827,7 +861,7 @@ async function sdMessageButton(e) {
     const message_id = $mes.attr('mesid');
     const message = context.chat[message_id];
     const characterName = message?.name || context.name2;
-    const messageText = substituteParams(message?.mes);
+    const messageText = message?.mes;
     const hasSavedImage = message?.extra?.image && message?.extra?.title;
 
     if ($icon.hasClass(busyClass)) {
@@ -842,7 +876,7 @@ async function sdMessageButton(e) {
             message.extra.title = prompt;
 
             console.log('Regenerating an image, using existing prompt:', prompt);
-            await sendGenerationRequest(generationMode.FREE, prompt, saveGeneratedImage);
+            await sendGenerationRequest(generationMode.FREE, prompt, characterName, saveGeneratedImage);
         }
         else {
             console.log("doing /sd raw last");
