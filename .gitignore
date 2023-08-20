@@ -13,6 +13,7 @@ public/OpenAI Settings/
 public/KoboldAI Settings/
 public/NovelAI Settings/
 public/TextGen Settings/
+public/instruct/
 public/scripts/extensions/third-party/
 public/stats.json
 /uploads/
