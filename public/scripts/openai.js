@@ -710,7 +710,8 @@ function populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, ty
  */
 function preparePromptsForChatCompletion(Scenario, charPersonality, name2, worldInfoBefore, worldInfoAfter, charDescription, quietPrompt, bias, extensionPrompts, systemPromptOverride, jailbreakPromptOverride) {
     const scenarioText = Scenario ? `[Circumstances and context of the dialogue: ${Scenario}]` : '';
-    const charPersonalityText = charPersonality ? `[${name2}'s personality: ${charPersonality}]` : '';
+    const charPersonalityText = charPersonality ? `[${name2}'s personality: ${charPersonality}]` : ''
+    const groupNudge = `[Write the next reply only as ${name2}]`;
 
     // Create entries for system prompts
     const systemPrompts = [
@@ -724,7 +725,8 @@ function preparePromptsForChatCompletion(Scenario, charPersonality, name2, world
         { role: 'system', content: oai_settings.nsfw_avoidance_prompt, identifier: 'nsfwAvoidance' },
         { role: 'system', content: oai_settings.impersonation_prompt, identifier: 'impersonate' },
         { role: 'system', content: quietPrompt, identifier: 'quietPrompt' },
-        { role: 'system', content: bias, identifier: 'bias' }
+        { role: 'system', content: bias, identifier: 'bias' },
+        { role: 'system', content: groupNudge, identifier: 'groupNudge' }
     ];
 
     // Tavern Extras - Summary
@@ -776,12 +778,6 @@ function preparePromptsForChatCompletion(Scenario, charPersonality, name2, world
         jailbreakPrompt.content = jailbreakPromptOverride;
         const jbReplacement = promptManager.preparePrompt(jailbreakPrompt, jbOriginalContent);
         prompts.set(jbReplacement, prompts.index('jailbreak'));
-    }
-
-    // TODO: Integrate Group nudge into the prompt manager properly
-    if(selected_group) {
-        let group_nudge = {"role": "system", "content": `[Write the next reply only as ${name2}]`};
-        openai_msgs.push(group_nudge);
     }
 
     // Allow subscribers to manipulate the prompts object
