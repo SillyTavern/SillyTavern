@@ -11,14 +11,15 @@ export const cfgType = {
 export const metadataKeys = {
     guidance_scale: "cfg_guidance_scale",
     negative_prompt: "cfg_negative_prompt",
-    negative_combine: "cfg_negative_combine",
+    positive_prompt: "cfg_positive_prompt",
+    prompt_combine: "cfg_prompt_combine",
     groupchat_individual_chars: "cfg_groupchat_individual_chars",
-    negative_insertion_depth: "cfg_negative_insertion_depth",
-    negative_separator: "cfg_negative_separator"
+    prompt_insertion_depth: "cfg_prompt_insertion_depth",
+    prompt_separator: "cfg_prompt_separator"
 }
 
 // Gets the CFG guidance scale
-// If the guidance scale is 1, ignore the CFG negative prompt since it won't be used anyways
+// If the guidance scale is 1, ignore the CFG prompt(s) since it won't be used anyways
 export function getGuidanceScale() {
     const charaCfg = extension_settings.cfg.chara?.find((e) => e.name === getCharaFilename(this_chid));
     const chatGuidanceScale = chat_metadata[metadataKeys.guidance_scale];
@@ -44,32 +45,49 @@ export function getGuidanceScale() {
     };
 }
 
-// Gets the CFG prompt. Currently only gets the negative prompt
-export function getCfgPrompt(guidanceScale) {
-    let splitNegativePrompt = [];
+// Gets the CFG prompt
+export function getCfgPrompt(guidanceScale, isNegative) {
+    let splitCfgPrompt = [];
 
-    const chatNegativeCombine = chat_metadata[metadataKeys.negative_combine] ?? [];
-    if (guidanceScale.type === cfgType.chat || chatNegativeCombine.includes(cfgType.chat)) {
-        splitNegativePrompt.unshift(substituteParams(chat_metadata[metadataKeys.negative_prompt])?.trim());
+    const cfgPromptCombine = chat_metadata[metadataKeys.prompt_combine] ?? [];
+    if (guidanceScale.type === cfgType.chat || cfgPromptCombine.includes(cfgType.chat)) {
+        splitCfgPrompt.unshift(
+            substituteParams(
+                chat_metadata[isNegative ? metadataKeys.negative_prompt : metadataKeys.positive_prompt]
+            )
+            ?.trim()
+        );
     }
 
     const charaCfg = extension_settings.cfg.chara?.find((e) => e.name === getCharaFilename(this_chid));
-    if (guidanceScale.type === cfgType.chara || chatNegativeCombine.includes(cfgType.chara)) {
-        splitNegativePrompt.unshift(substituteParams(charaCfg.negative_prompt)?.trim())
+    if (guidanceScale.type === cfgType.chara || cfgPromptCombine.includes(cfgType.chara)) {
+        splitCfgPrompt.unshift(
+            substituteParams(
+                isNegative ? charaCfg.negative_prompt : charaCfg.positive_prompt
+            )
+            ?.trim()
+        );
     }
 
-    if (guidanceScale.type === cfgType.global || chatNegativeCombine.includes(cfgType.global)) {
-        splitNegativePrompt.unshift(substituteParams(extension_settings.cfg.global.negative_prompt)?.trim());
+    console.log(guidanceScale.type);
+    console.log(cfgPromptCombine);
+    if (guidanceScale.type === cfgType.global || cfgPromptCombine.includes(cfgType.global)) {
+        splitCfgPrompt.unshift(
+            substituteParams(
+                isNegative ? extension_settings.cfg.global.negative_prompt : extension_settings.cfg.global.positive_prompt
+            )
+            ?.trim()
+        );
     }
 
     // This line is a bit hacky with a JSON.stringify and JSON.parse. Fix this if possible.
-    const negativeSeparator = JSON.parse(chat_metadata[metadataKeys.negative_separator] || JSON.stringify("\n")) ?? "\n";
-    const combinedNegatives = splitNegativePrompt.filter((e) => e.length > 0).join(negativeSeparator);
-    const insertionDepth = chat_metadata[metadataKeys.negative_insertion_depth] ?? 1;
-    console.log(`Setting CFG with guidance scale: ${guidanceScale.value}, negatives: ${combinedNegatives}`);
+    const customSeparator = JSON.parse(chat_metadata[metadataKeys.prompt_separator] || JSON.stringify("\n")) ?? "\n";
+    const combinedCfgPrompt = splitCfgPrompt.filter((e) => e.length > 0).join(customSeparator);
+    const insertionDepth = chat_metadata[metadataKeys.prompt_insertion_depth] ?? 1;
+    console.log(`Setting CFG with guidance scale: ${guidanceScale.value}, negatives: ${combinedCfgPrompt}`);
 
     return {
-        value: combinedNegatives,
+        value: combinedCfgPrompt,
         depth: insertionDepth
     };
 }

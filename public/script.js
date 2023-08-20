@@ -2720,6 +2720,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 is_send_press = true;
             }
 
+            console.log(cycleGenerationPromt)
             generatedPromtCache += cycleGenerationPromt;
             if (generatedPromtCache.length == 0 || type === 'continue') {
                 if (main_api === 'openai') {
@@ -2871,17 +2872,28 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 setPromtString();
             }
 
+            // Fetches the combined prompt for both negative and positive prompts
             const cfgGuidanceScale = getGuidanceScale();
             function getCombinedPrompt(isNegative) {
-                if (isNegative && cfgGuidanceScale !== 1) {
-                    const negativePrompt = getCfgPrompt(cfgGuidanceScale);
-                    if (negativePrompt && negativePrompt?.value) {
-                        // TODO: kingbri: use the insertion depth method instead of splicing
-                        mesSend.splice(mesSend.length - negativePrompt.depth, 0, `${negativePrompt.value}\n`);
+                // Use a negative mesSend if present
+                let negativeMesSend = [];
+                let cfgPrompt = {};
+                if (cfgGuidanceScale && cfgGuidanceScale?.value !== 1) {
+                    cfgPrompt = getCfgPrompt(cfgGuidanceScale, isNegative);
+                }
+
+                if (cfgPrompt && cfgPrompt?.value && cfgPrompt?.depth !== 0) {
+                    const cfgPromptValue = `${cfgPrompt.value}\n`
+                    // TODO: kingbri: use the insertion depth method instead of splicing
+                    if (isNegative) {
+                        negativeMesSend = [...mesSend];
+                        negativeMesSend.splice(mesSend.length - cfgPrompt.depth, 0, cfgPromptValue);
+                    } else {
+                        mesSend.splice(mesSend.length - cfgPrompt.depth, 0, cfgPromptValue);
                     }
                 }
 
-                let mesSendString = mesSend.join('');
+                let mesSendString = isNegative ? negativeMesSend.join('') : mesSend.join('');
 
                 // add chat preamble
                 mesSendString = addChatsPreamble(mesSendString);
@@ -2889,18 +2901,25 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 // add a custom dingus (if defined)
                 mesSendString = addChatsSeparator(mesSendString);
 
-                if (zeroDepthAnchor && zeroDepthAnchor.length) {
-                    if (!isMultigenEnabled() || tokens_already_generated == 0) {
-                        combinedPrompt = appendZeroDepthAnchor(force_name2, zeroDepthAnchor, combinedPrompt);
-                    }
-                }
-
                 let combinedPrompt =
                     storyString +
                     afterScenarioAnchor +
                     mesExmString +
                     mesSendString +
                     generatedPromtCache;
+
+                if (zeroDepthAnchor && zeroDepthAnchor.length) {
+                    if (!isMultigenEnabled() || tokens_already_generated == 0) {
+                        combinedPrompt = appendZeroDepthAnchor(force_name2, zeroDepthAnchor, combinedPrompt);
+                    }
+                }
+
+                // Append zero-depth anchor for CFG
+                if (cfgPrompt && cfgPrompt?.value && cfgPrompt?.depth === 0) {
+                    if (!isMultigenEnabled() || tokens_already_generated == 0) {
+                        combinedPrompt = appendZeroDepthAnchor(force_name2, cfgPrompt.value, combinedPrompt);
+                    }
+                }
 
                 combinedPrompt = combinedPrompt.replace(/\r/gm, '');
 
@@ -2911,15 +2930,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 return combinedPrompt;
             }
 
-            let mesSendString = mesSend.join('');
-            // add chat preamble
-            mesSendString = addChatsPreamble(mesSendString);
-
-            // add a custom dingus (if defined)
-            mesSendString = addChatsSeparator(mesSendString);
-
-            let finalPromt = getCombinedPrompt(false);
+            // Get the negative prompt first since it has the unmodified mesSend array
             let negativePrompt = getCombinedPrompt(true);
+            let finalPromt = getCombinedPrompt(false);
             const cfgValues = {
                 guidanceScale: cfgGuidanceScale?.value,
                 negativePrompt: negativePrompt
@@ -3018,7 +3031,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 storyString: storyString,
                 afterScenarioAnchor: afterScenarioAnchor,
                 examplesString: examplesString,
-                mesSendString: mesSendString,
+                mesSendString: mesSend.join(''),
                 generatedPromtCache: generatedPromtCache,
                 promptBias: promptBias,
                 finalPromt: finalPromt,
