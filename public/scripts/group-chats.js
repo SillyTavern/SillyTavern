@@ -337,25 +337,25 @@ async function getGroups() {
 }
 
 export function getGroupBlock(group) {
-        const template = $("#group_list_template .group_select").clone();
-        template.data("id", group.id);
-        template.attr("grid", group.id);
-        template.find(".ch_name").html(group.name);
-        template.find('.group_fav_icon').css("display", 'none');
-        template.addClass(group.fav ? 'is_fav' : '');
-        template.find(".ch_fav").val(group.fav);
+    const template = $("#group_list_template .group_select").clone();
+    template.data("id", group.id);
+    template.attr("grid", group.id);
+    template.find(".ch_name").html(group.name);
+    template.find('.group_fav_icon').css("display", 'none');
+    template.addClass(group.fav ? 'is_fav' : '');
+    template.find(".ch_fav").val(group.fav);
 
-        // Display inline tags
-        const tags = getTagsList(group.id);
-        const tagsElement = template.find('.tags');
-        tags.forEach(tag => appendTagToList(tagsElement, tag, {}));
+    // Display inline tags
+    const tags = getTagsList(group.id);
+    const tagsElement = template.find('.tags');
+    tags.forEach(tag => appendTagToList(tagsElement, tag, {}));
 
-        const avatar = getGroupAvatar(group);
-        if (avatar) {
-            $(template).find(".avatar").replaceWith(avatar);
-        }
+    const avatar = getGroupAvatar(group);
+    if (avatar) {
+        $(template).find(".avatar").replaceWith(avatar);
+    }
 
-        return template;
+    return template;
 }
 
 function updateGroupAvatar(group) {
@@ -363,7 +363,7 @@ function updateGroupAvatar(group) {
 
     $(".group_select").each(function () {
         if ($(this).data("id") == group.id) {
-                $(this).find(".avatar").replaceWith(getGroupAvatar(group));
+            $(this).find(".avatar").replaceWith(getGroupAvatar(group));
         }
     });
 }
@@ -382,7 +382,7 @@ function getGroupAvatar(group) {
     if (!group) {
         return $(`<div class="avatar"><img src="${default_avatar}"></div>`);
     }
-// if isDataURL or if it's a valid local file url
+    // if isDataURL or if it's a valid local file url
     if (isValidImageUrl(group.avatar_url)) {
         return $(`<div class="avatar"><img src="${group.avatar_url}"></div>`);
     }
@@ -1132,16 +1132,16 @@ function select_group_chats(groupId, skipAnimation) {
         $("#rm_group_automode_label").hide();
     }
 
-    eventSource.emit('groupSelected', {detail: {id: openGroupId, group: group}});
+    eventSource.emit('groupSelected', { detail: { id: openGroupId, group: group } });
 }
 
 /**
  * Handles the upload and processing of a group avatar.
  * The selected image is read, cropped using a popup, processed into a thumbnail,
  * and then uploaded to the server.
- * 
+ *
  * @param {Event} event - The event triggered by selecting a file input, containing the image file to upload.
- * 
+ *
  * @returns {Promise<void>} - A promise that resolves when the processing and upload is complete.
  */
 async function uploadGroupAvatar(event) {

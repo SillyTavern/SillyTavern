@@ -651,7 +651,7 @@ async function generatePrompt(quiet_prompt) {
     return processReply(reply);
 }
 
-async function sendGenerationRequest(generationType, prompt, characterName=null, callback) {
+async function sendGenerationRequest(generationType, prompt, characterName = null, callback) {
     const prefix = generationType !== generationMode.BACKGROUND
         ? combinePrefixes(extension_settings.sd.prompt_prefix, getCharacterPrefix())
         : extension_settings.sd.prompt_prefix;
