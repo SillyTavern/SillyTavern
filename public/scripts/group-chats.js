@@ -371,7 +371,6 @@ function updateGroupAvatar(group) {
 
 // check if isDataURLor if it's a valid local file url
 function isValidImageUrl(url) {
-    console.trace(url);
     // check if empty dict
     if (Object.keys(url).length === 0) {
         return false;

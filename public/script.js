@@ -1004,7 +1004,7 @@ function getCharacterBlock(item, id) {
     template.attr({ 'chid': id, 'id': `CharID${id}` });
     template.find('img').attr('src', this_avatar);
     template.find('.avatar').attr('title', item.avatar);
-    template.find('.ch_name').text(item.name).css('color', item.fav ? 'gold' : 'white');
+    template.find('.ch_name').text(item.name);
     if (power_user.show_card_avatar_urls) {
         template.find('.ch_avatar_url').text(item.avatar);
     }
@@ -8016,7 +8016,7 @@ $(document).ready(function () {
         const enabled = $("#use-mancer-api-checkbox").prop("checked");
         $("#mancer_api_subpanel").toggle(enabled);
         $("#tgwebui_api_subpanel").toggle(!enabled);
-        
+
         api_use_mancer_webui = enabled;
         saveSettingsDebounced();
         getStatus();
