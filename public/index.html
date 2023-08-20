@@ -1797,22 +1797,27 @@
                                     <input id="use-mancer-api-checkbox" type="checkbox" />
                                 </label>
                             </div>
-                            <div id="mancer-api-ui" style="display:none;">
-                                <h4 data-i18n="Mancer API key">Mancer API key</h4>
-                                <div class="flex-container">
-                                    <input id="api_key_mancer" name="api_key_mancer" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
-                                    <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_mancer">
-                                    </div>
-                                </div>
-                            </div>
                             <div>
-                                <div class="flex-container flexFlowColumn">
+                                <div id="mancer_api_subpanel" class="flex-container flexFlowColumn" style="display:none;">
+                                    <h4 data-i18n="Mancer API key">Mancer API key</h4>
+                                    <div class="flex-container">
+                                        <input id="api_key_mancer" name="api_key_mancer" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
+                                        <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_mancer">
+                                        </div>
+                                    </div>
                                     <div data-for="api_key_mancer" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
                                         For privacy reasons, your API key will be hidden after you reload the page.
                                     </div>
                                     <div class="flex1">
+                                        <h4 data-i18n="Mancer API url">Mancer API url</h4>
+                                        <small>Example: https://neuro.mancer.tech/webui/MODEL/api</small>
+                                        <input id="mancer_api_url_text" name="mancer_api_url" class="text_pole wide100p" maxlength="500" value="" autocomplete="off">
+                                    </div>
+                                </div>
+                                <div id="tgwebui_api_subpanel" class="flex-container flexFlowColumn">
+                                    <div class="flex1">
                                         <h4 data-i18n="Blocking API url">Blocking API url</h4>
-                                        <small>Example: http://127.0.0.1:5000/</small>
+                                        <small>Example: http://127.0.0.1:5000/api</small>
                                         <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url" class="text_pole wide100p" maxlength="500" value="" autocomplete="off">
                                     </div>
                                     <div class="flex1">
