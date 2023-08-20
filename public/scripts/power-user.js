@@ -44,9 +44,7 @@ export {
 export const MAX_CONTEXT_DEFAULT = 4096;
 const MAX_CONTEXT_UNLOCKED = 65536;
 
-const defaultStoryString = `{{#if description}}{{description}}{{/if}}
-{{#if personality}}{{personality}}{{/if}}
-{{#if scenario}}Scenario: {{scenario}}{{/if}}`;
+const defaultStoryString = "{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}'s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}{{/if}}";
 const defaultExampleSeparator = '***';
 const defaultChatStart = '***';
 
@@ -165,6 +163,7 @@ let power_user = {
     trim_spaces: true,
     relaxed_api_urls: false,
 
+    default_instruct: '',
     instruct: {
         enabled: false,
         wrap: true,
@@ -179,6 +178,7 @@ let power_user = {
         separator_sequence: '',
         macro: false,
         names_force_groups: true,
+        activation_regex: '',
     },
 
     context: {
@@ -812,7 +812,7 @@ function loadPowerUserSettings(settings, data) {
 }
 
 async function loadCharListState() {
-    if (document.getElementById('CharID0') !== null) {
+    if (document.querySelector('.character_select') !== null) {
         console.debug('setting charlist state to...')
         if (power_user.charListGrid === true) {
             console.debug('..to grid')
@@ -940,6 +940,7 @@ function loadInstructMode() {
         { id: "instruct_macro", property: "macro", isCheckbox: true },
         { id: "instruct_names_force_groups", property: "names_force_groups", isCheckbox: true },
         { id: "instruct_last_output_sequence", property: "last_output_sequence", isCheckbox: false },
+        { id: "instruct_activation_regex", property: "activation_regex", isCheckbox: false },
     ];
 
     if (power_user.instruct.names_force_groups === undefined) {
@@ -970,6 +971,19 @@ function loadInstructMode() {
         $('#instruct_presets').append(option);
     });
 
+    function highlightDefaultPreset() {
+        $('#instruct_set_default').toggleClass('default', power_user.default_instruct === power_user.instruct.preset);
+    }
+
+    $('#instruct_set_default').on('click', function () {
+        power_user.default_instruct = power_user.instruct.preset;
+        $(this).addClass('default');
+        toastr.success(`Default instruct preset set to ${power_user.default_instruct}`);
+        saveSettingsDebounced();
+    });
+
+    highlightDefaultPreset();
+
     $('#instruct_presets').on('change', function () {
         const name = $(this).find(':selected').val();
         const preset = instruct_presets.find(x => x.name === name);
@@ -991,6 +1005,8 @@ function loadInstructMode() {
                 }
             }
         });
+
+        highlightDefaultPreset();
     });
 }
 
@@ -1066,8 +1082,8 @@ export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvata
     const separator = power_user.instruct.wrap ? '\n' : '';
     const separatorSequence = power_user.instruct.separator_sequence && !isUser
         ? power_user.instruct.separator_sequence
-        : (power_user.instruct.wrap ? '\n' : '');
-    const textArray = includeNames ? [sequence, `${name}: ${mes}`, separatorSequence] : [sequence, mes, separatorSequence];
+        : separator;
+    const textArray = includeNames ? [sequence, `${name}: ${mes}` + separatorSequence] : [sequence, mes + separatorSequence];
     const text = textArray.filter(x => x).join(separator);
     return text;
 }
@@ -1099,7 +1115,7 @@ export function formatInstructModePrompt(name, isImpersonate, promptBias, name1,
         text += (includeNames ? promptBias : (separator + promptBias));
     }
 
-    return text.trimEnd();
+    return text.trimEnd() + (includeNames ? '' : separator);
 }
 
 const sortFunc = (a, b) => power_user.sort_order == 'asc' ? compareFunc(a, b) : compareFunc(b, a);

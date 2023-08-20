@@ -64,8 +64,8 @@ import {
     getCropPopup,
     system_avatar,
 } from "../script.js";
-import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect, tag_map } from './tags.js';
-import { FilterHelper } from './filters.js';
+import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect, tag_map, printTagFilters } from './tags.js';
+import { FILTER_TYPES, FilterHelper } from './filters.js';
 
 export {
     selected_group,
@@ -176,6 +176,7 @@ export async function getGroupChat(groupId) {
                 addOneMessage(mes);
             }
         }
+        await saveGroupChat(groupId, false);
     }
 
     if (group) {
@@ -183,7 +184,6 @@ export async function getGroupChat(groupId) {
         updateChatMetadata(metadata, true);
     }
 
-    await saveGroupChat(groupId, true);
     eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
 }
 
@@ -309,6 +309,9 @@ async function getGroups() {
 
         // Convert groups to new format
         for (const group of groups) {
+            if (typeof group.id === 'number') {
+                group.id = String(group.id);
+            }
             if (group.disabled_members == undefined) {
                 group.disabled_members = [];
             }
@@ -813,10 +816,7 @@ async function deleteGroup(id) {
         printMessages();
         await getCharacters();
 
-        $("#rm_info_avatar").html("");
-        $("#rm_info_block").transition({ opacity: 0, duration: 0 });
         select_rm_info("group_delete", id);
-        $("#rm_info_block").transition({ opacity: 1.0, duration: 2000 });
 
         $("#rm_button_selected_ch").children("h2").text('');
         setRightTabSelectedClass();
@@ -968,6 +968,7 @@ function getGroupCharacters({ doFilter, onlyMembers } = {}) {
 }
 
 function printGroupCandidates() {
+    const storageKey = 'GroupCandidates_PerPage';
     $("#rm_group_add_members_pagination").pagination({
         dataSource: getGroupCharacters({ doFilter: true, onlyMembers: false }),
         pageSize: 5,
@@ -978,6 +979,12 @@ function printGroupCandidates() {
         prevText: '<',
         nextText: '>',
         showNavigator: true,
+        showSizeChanger: true,
+        pageSize: Number(localStorage.getItem(storageKey)) || 5,
+        sizeChangerOptions: [5, 10, 25, 50, 100, 200],
+        afterSizeSelectorChange: function (e) {
+            localStorage.setItem(storageKey, e.target.value);
+        },
         callback: function (data) {
             $("#rm_group_add_members").empty();
             for (const i of data) {
@@ -988,6 +995,7 @@ function printGroupCandidates() {
 }
 
 function printGroupMembers() {
+    const storageKey = 'GroupMembers_PerPage';
     $("#rm_group_members_pagination").pagination({
         dataSource: getGroupCharacters({ doFilter: false, onlyMembers: true }),
         pageSize: 5,
@@ -998,6 +1006,12 @@ function printGroupMembers() {
         prevText: '<',
         nextText: '>',
         showNavigator: true,
+        showSizeChanger: true,
+        pageSize: Number(localStorage.getItem(storageKey)) || 5,
+        sizeChangerOptions: [5, 10, 25, 50, 100, 200],
+        afterSizeSelectorChange: function (e) {
+            localStorage.setItem(storageKey, e.target.value);
+        },
         callback: function (data) {
             $("#rm_group_members").empty();
             for (const i of data) {
@@ -1236,9 +1250,7 @@ function updateFavButtonState(state) {
     $("#group_favorite_button").toggleClass('fav_off', !fav_grp_checked);
 }
 
-async function selectGroup() {
-    const groupId = $(this).data("id");
-
+export async function openGroupById(groupId) {
     if (!is_send_press && !is_group_generating) {
         if (selected_group !== groupId) {
             cancelTtsPlay();
@@ -1278,16 +1290,8 @@ function openCharacterDefinition(characterSelect) {
 }
 
 function filterGroupMembers() {
-    const searchValue = $(this).val().trim().toLowerCase();
-
-    if (!searchValue) {
-        $("#rm_group_add_members .group_member").removeClass('hiddenBySearch');
-    } else {
-        $("#rm_group_add_members .group_member").each(function () {
-            const isValidSearch = $(this).find(".ch_name").text().toLowerCase().includes(searchValue);
-            $(this).toggleClass('hiddenBySearch', !isValidSearch);
-        });
-    }
+    const searchValue = $(this).val().toLowerCase();
+    groupCandidatesFilter.setFilterData(FILTER_TYPES.SEARCH, searchValue);
 }
 
 async function createGroup() {
@@ -1558,7 +1562,10 @@ function doCurMemberListPopout() {
 }
 
 jQuery(() => {
-    $(document).on("click", ".group_select", selectGroup);
+    $(document).on("click", ".group_select", function () {
+        const groupId = $(this).data("id");
+        openGroupById(groupId);
+    });
     $("#rm_group_filter").on("input", filterGroupMembers);
     $("#rm_group_submit").on("click", createGroup);
     $("#rm_group_scenario").on("click", setScenarioOverride);

@@ -1275,6 +1275,7 @@ input[type="file"] {
     flex-direction: row;
     gap: 5px;
     justify-content: center;
+    align-items: center;
 }
 
 #rm_print_characters_block {
@@ -1350,7 +1351,8 @@ body.charListGrid #rm_print_characters_block .tags_inline {
     overflow-y: auto;
 }
 
-#floatingPrompt, #cfgConfig {
+#floatingPrompt,
+#cfgConfig {
     overflow-y: auto;
     max-width: 90svw;
     max-height: 90svh;
@@ -1468,6 +1470,14 @@ select option:not(:checked) {
 
 .world_set {
     color: #4b9c00 !important;
+}
+
+#instruct_set_default {
+    font-size: smaller;
+}
+
+#instruct_set_default.default {
+    color: #f44336 !important;
 }
 
 .displayBlock {
@@ -1983,35 +1993,6 @@ grammarly-extension {
     display: flex;
     justify-content: center;
     align-items: center;
-}
-
-#rm_info_block {
-    display: none;
-    width: 100%;
-    height: 80%;
-    justify-content: center;
-    flex-direction: column;
-
-}
-
-#rm_info_panel {
-    font-size: calc(var(--mainFontSize) + .5rem);
-    display: block;
-    text-align: center;
-}
-
-#rm_info_button {
-    width: min-content;
-    margin: 0 auto;
-}
-
-#rm_info_avatar {
-    display: flex;
-    column-gap: 10px;
-    width: fit-content;
-    text-align: center;
-    margin-left: auto;
-    margin-right: auto;
 }
 
 #delete_button,
@@ -3306,6 +3287,7 @@ h5 {
     justify-content: flex-start;
     max-height: 66%;
     overflow: hidden;
+    flex-basis: 100%;
 }
 
 .tag_name {
@@ -3995,13 +3977,6 @@ a {
     display: none;
 }
 
-.hiddenByTag,
-.hiddenByFav,
-.hiddenByGroup,
-.hiddenBySearch {
-    display: none !important;
-}
-
 /* Message images */
 .mes .mes_img_container {
     max-width: 100%;
@@ -4370,7 +4345,7 @@ input.extension_missing[type="checkbox"] {
 }
 
 .fillLeft .scrollableInner {
-   padding: 0.5em 1em 0.5em 0.5em
+    padding: 0.5em 1em 0.5em 0.5em
 }
 
 .width100p {
@@ -4681,6 +4656,7 @@ toolcool-color-picker {
     color: var(--SmartThemeQuoteColor);
     font-weight: bold;
     font-style: italic;
+    font-size: 0.8em;
 }
 
 .openai_restorable .right_menu_button img {
@@ -5061,6 +5037,10 @@ body.waifuMode .zoomed_avatar {
         font-size: 15px;
     }
 
+    .mes_text img {
+        width: 100%;
+    }
+
     #extensions_settings,
     #extensions_settings2 {
         width: 100% !important;
@@ -5212,10 +5192,8 @@ body.waifuMode .zoomed_avatar {
     }
 
     .mes_buttons {
-        font-size: calc(var(--mainFontSize)*1.2)
+        font-size: calc(var(--mainFontSize)*1.2);
     }
-
-    ;
 
     .drag-grabber,
     .pull-tab {
@@ -5226,10 +5204,6 @@ body.waifuMode .zoomed_avatar {
     #showRawPrompt,
     #groupCurrentMemberPopoutButton {
         display: none;
-    }
-
-    .mes-text {
-        padding-right: 25px;
     }
 
     #right-nav-panel,
@@ -5296,8 +5270,9 @@ body.waifuMode .zoomed_avatar {
     }
 
     body.waifuMode .expression-holder {
-        display: inline;
+        /*display: inline;*/
 
+        max-width: 100vw;
         height: 100vh;
         width: max-content;
         margin: 0 auto;
@@ -5646,6 +5621,7 @@ body.waifuMode .zoomed_avatar {
     justify-content: center;
     align-items: center;
     gap: 5px;
+    user-select: none;
 }
 
 .paginationjs-size-changer select {
@@ -5690,10 +5666,13 @@ body.waifuMode .zoomed_avatar {
     border: none;
     outline: none;
     color: white;
-    display: inline-block;  /* Change display to inline-block */
-    vertical-align: middle; /* Align to middle if there's a height discrepancy */
+    display: inline-block;
+    /* Change display to inline-block */
+    vertical-align: middle;
+    /* Align to middle if there's a height discrepancy */
     width: 200px;
     font-size: 16px;
     z-index: 10;
-    margin-left: 10px; /* Give some space between the button and search box */
+    margin-left: 10px;
+    /* Give some space between the button and search box */
 }

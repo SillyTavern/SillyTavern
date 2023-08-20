@@ -1,7 +1,7 @@
 import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, } from "./scripts/RossAscends-mods.js";
 import { userStatsHandler, statMesProcess } from './scripts/stats.js';
-import { encode } from "../scripts/gpt-2-3-tokenizer/mod.js";
-import { GPT3BrowserTokenizer } from "../scripts/gpt-3-tokenizer/gpt3-tokenizer.js";
+import { encode } from "../lib/gpt-2-3-tokenizer/mod.js";
+import { GPT3BrowserTokenizer } from "../lib/gpt-3-tokenizer/gpt3-tokenizer.js";
 import {
     generateKoboldWithStreaming,
     kai_settings,
@@ -157,7 +157,7 @@ import {
     secret_state,
     writeSecret
 } from "./scripts/secrets.js";
-import { EventEmitter } from './scripts/eventemitter.js';
+import { EventEmitter } from './lib/eventemitter.js';
 import { markdownExclusionExt } from "./scripts/showdown-exclusion.js";
 import { NOTE_MODULE_NAME, metadata_keys, setFloatingPrompt, shouldWIAddPrompt } from "./scripts/authors-note.js";
 import { deviceInfo } from "./scripts/RossAscends-mods.js";
@@ -751,7 +751,7 @@ let create_save = {
 };
 
 //animation right menu
-let animation_duration = 250;
+let animation_duration = 125;
 let animation_easing = "ease-in-out";
 let popup_type = "";
 let bg_file_for_del = "";
@@ -1041,7 +1041,7 @@ async function printCharacters(fullRefresh = false) {
     $("#rm_print_characters_pagination").pagination({
         dataSource: getEntitiesList({ doFilter: true }),
         pageSize: Number(localStorage.getItem(storageKey)) || 50,
-        sizeChangerOptions: [25, 50, 100, 250, 500, 1000],
+        sizeChangerOptions: [10, 25, 50, 100, 250, 500, 1000],
         pageRange: 1,
         position: 'top',
         showPageNumbers: false,
@@ -1087,6 +1087,30 @@ export function getEntitiesList({ doFilter } = {}) {
 
     sortEntitiesList(entities);
     return entities;
+}
+
+async function getOneCharacter(avatarUrl) {
+    const response = await fetch("/getonecharacter", {
+        method: "POST",
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+            avatar_url: avatarUrl,
+        }),
+    });
+
+    if (response.ok) {
+        const getData = await response.json();
+        getData['name'] = DOMPurify.sanitize(getData['name']);
+        getData['chat'] = String(getData['chat']);
+
+        const indexOf = characters.findIndex(x => x.avatar === avatarUrl);
+
+        if (indexOf !== -1) {
+            characters[indexOf] = getData;
+        } else {
+            toastr.error(`Character ${avatarUrl} not found in the list`, "Error", { timeOut: 5000, preventDuplicates: true });
+        }
+    }
 }
 
 async function getCharacters() {
@@ -1422,25 +1446,25 @@ function insertSVGIcon(mes, extra) {
         modelName = extra.api;
     }
 
-    // Fetch the SVG based on the modelName
-    $.get(`/img/${modelName}.svg`, function (data) {
-        // Extract the SVG content from the XML data
-        let svg = $(data).find('svg');
+    const image = new Image();
+    // Add classes for styling and identification
+    image.classList.add('icon-svg', 'timestamp-icon');
+    image.src = `/img/${modelName}.svg`;
 
-        // Add classes for styling and identification
-        svg.addClass('icon-svg timestamp-icon');
-
+    image.onload = async function () {
         // Check if an SVG already exists adjacent to the timestamp
         let existingSVG = mes.find('.timestamp').next('.timestamp-icon');
 
         if (existingSVG.length) {
             // Replace existing SVG
-            existingSVG.replaceWith(svg);
+            existingSVG.replaceWith(image);
         } else {
             // Append the new SVG if none exists
-            mes.find('.timestamp').after(svg);
+            mes.find('.timestamp').after(image);
         }
-    });
+
+        await SVGInject(this);
+    };
 }
 
 
@@ -1745,7 +1769,6 @@ function scrollChatToBottom() {
 function substituteParams(content, _name1, _name2, _original, _group) {
     _name1 = _name1 ?? name1;
     _name2 = _name2 ?? name2;
-    _original = _original || '';
     _group = _group ?? name2;
 
     if (!content) {
@@ -1897,8 +1920,13 @@ function getStoppingStrings(isImpersonate, addSpace) {
     }
 
     if (power_user.instruct.enabled) {
-        addInstructSequence(power_user.instruct.input_sequence);
-        addInstructSequence(power_user.instruct.output_sequence);
+        const input_sequence = power_user.instruct.input_sequence;
+        const output_sequence = power_user.instruct.output_sequence;
+        const last_output_sequence = power_user.instruct.last_output_sequence;
+
+        const combined_sequence = `${input_sequence}\n${output_sequence}\n${last_output_sequence}`;
+
+        combined_sequence.split('\n').filter((line, index, self) => self.indexOf(line) === index).forEach(addInstructSequence);
     }
 
     if (power_user.custom_stopping_strings) {
@@ -2097,12 +2125,14 @@ function baseChatReplace(value, name1, name2) {
         if (power_user.collapse_newlines) {
             value = collapseNewlines(value);
         }
+
+        value = value.replace(/\r/g, '');
     }
     return value;
 }
 
 function isStreamingEnabled() {
-    return ((main_api == 'openai' && oai_settings.stream_openai && oai_settings.chat_completion_source !== chat_completion_sources.SCALE)
+    return ((main_api == 'openai' && oai_settings.stream_openai && oai_settings.chat_completion_source !== chat_completion_sources.SCALE && oai_settings.chat_completion_source !== chat_completion_sources.AI21)
         || (main_api == 'kobold' && kai_settings.streaming_kobold && kai_settings.can_use_streaming)
         || (main_api == 'novel' && nai_settings.streaming_novel)
         || (main_api == 'textgenerationwebui' && textgenerationwebui_settings.streaming))
@@ -2499,8 +2529,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         let charPersonality = baseChatReplace(characters[this_chid].personality.trim(), name1, name2);
         let Scenario = baseChatReplace(scenarioText.trim(), name1, name2);
         let mesExamples = baseChatReplace(characters[this_chid].mes_example.trim(), name1, name2);
-        let systemPrompt = baseChatReplace(characters[this_chid].data?.system_prompt?.trim(), name1, name2);
-        let jailbreakPrompt = baseChatReplace(characters[this_chid].data?.post_history_instructions?.trim(), name1, name2);
+        let systemPrompt = power_user.prefer_character_prompt ? baseChatReplace(characters[this_chid].data?.system_prompt?.trim(), name1, name2) : '';
+        let jailbreakPrompt = power_user.prefer_character_jailbreak ? baseChatReplace(characters[this_chid].data?.post_history_instructions?.trim(), name1, name2) : '';
 
         // Parse example messages
         if (!mesExamples.startsWith('<START>')) {
@@ -2953,8 +2983,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     bias: promptBias,
                     type: type,
                     quietPrompt: quiet_prompt,
-                    jailbreakPrompt: jailbreakPrompt,
                     cyclePrompt: cyclePrompt,
+                    systemPromptOverride: systemPrompt,
+                    jailbreakPromptOverride: jailbreakPrompt,
                 }, dryRun);
                 generate_data = { prompt: prompt };
 
@@ -3989,10 +4020,28 @@ function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete
         }
     }
     if (isInstruct && power_user.instruct.input_sequence && isImpersonate) {
-        getMessage = getMessage.replaceAll(power_user.instruct.input_sequence, '');
+        //getMessage = getMessage.replaceAll(power_user.instruct.input_sequence, '');
+        power_user.instruct.input_sequence.split('\n')
+            .filter(line => line.trim() !== '')
+            .forEach(line => {
+                getMessage = getMessage.replaceAll(line, '');
+            });
     }
     if (isInstruct && power_user.instruct.output_sequence && !isImpersonate) {
-        getMessage = getMessage.replaceAll(power_user.instruct.output_sequence, '');
+        //getMessage = getMessage.replaceAll(power_user.instruct.output_sequence, '');
+        power_user.instruct.output_sequence.split('\n')
+            .filter(line => line.trim() !== '')
+            .forEach(line => {
+                getMessage = getMessage.replaceAll(line, '');
+            });
+    }
+    if (isInstruct && power_user.instruct.last_output_sequence && !isImpersonate) {
+        //getMessage = getMessage.replaceAll(power_user.instruct.last_output_sequence, '');
+        power_user.instruct.last_output_sequence.split('\n')
+            .filter(line => line.trim() !== '')
+            .forEach(line => {
+                getMessage = getMessage.replaceAll(line, '');
+            });
     }
     // clean-up group message from excessive generations
     if (selected_group) {
@@ -4518,9 +4567,8 @@ async function getChat() {
             chat_create_date = humanizedDateTime();
         }
         await getChatResult();
-        await saveChat();
+        saveChatDebounced();
         eventSource.emit('chatLoaded', { detail: { id: this_chid, character: characters[this_chid] } });
-
 
         setTimeout(function () {
             $('#send_textarea').click();
@@ -4573,7 +4621,7 @@ async function openCharacterChat(file_name) {
     chat_metadata = {};
     await getChat();
     $("#selected_chat_pole").val(file_name);
-    $("#create_button").click();
+    await createOrEditCharacter();
 }
 
 ////////// OPTIMZED MAIN API CHANGE FUNCTION ////////////
@@ -4692,6 +4740,7 @@ function changeMainAPI() {
         case chat_completion_sources.WINDOWAI:
         case chat_completion_sources.CLAUDE:
         case chat_completion_sources.OPENAI:
+        case chat_completion_sources.AI21:
         default:
             setupChatCompletionPromptManager(oai_settings);
             break;
@@ -5579,12 +5628,12 @@ async function messageEditDone(div) {
 
 /**
  * Fetches the chat content for each chat file from the server and compiles them into a dictionary.
- * The function iterates over a provided list of chat metadata and requests the actual chat content 
+ * The function iterates over a provided list of chat metadata and requests the actual chat content
  * for each chat, either as an individual chat or a group chat based on the context.
  *
  * @param {Array} data - An array containing metadata about each chat such as file_name.
  * @param {boolean} isGroupChat - A flag indicating if the chat is a group chat.
- * @returns {Object} chat_dict - A dictionary where each key is a file_name and the value is the 
+ * @returns {Object} chat_dict - A dictionary where each key is a file_name and the value is the
  * corresponding chat content fetched from the server.
  */
 export async function getChatsFromFiles(data, isGroupChat) {
@@ -5631,10 +5680,10 @@ export async function getChatsFromFiles(data, isGroupChat) {
 
 /**
  * Fetches the metadata of all past chats related to a specific character based on its avatar URL.
- * The function sends a POST request to the server to retrieve all chats for the character. It then 
+ * The function sends a POST request to the server to retrieve all chats for the character. It then
  * processes the received data, sorts it by the file name, and returns the sorted data.
  *
- * @returns {Array} - An array containing metadata of all past chats of the character, sorted 
+ * @returns {Array} - An array containing metadata of all past chats of the character, sorted
  * in descending order by file name. Returns `undefined` if the fetch request is unsuccessful.
  */
 async function getPastCharacterChats() {
@@ -5656,8 +5705,8 @@ async function getPastCharacterChats() {
 
 /**
  * Displays the past chats for a character or a group based on the selected context.
- * The function first fetches the chats, processes them, and then displays them in 
- * the HTML. It also has a built-in search functionality that allows filtering the 
+ * The function first fetches the chats, processes them, and then displays them in
+ * the HTML. It also has a built-in search functionality that allows filtering the
  * displayed chats based on a search query.
  */
 export async function displayPastChats() {
@@ -5719,7 +5768,6 @@ export async function displayPastChats() {
                 }
             }
         }
-    
     }
     displayChats('');  // Display all by default
 
@@ -5774,11 +5822,11 @@ async function getStatusNovel() {
 
 function selectRightMenuWithAnimation(selectedMenuId) {
     const displayModes = {
-        'rm_info_block': 'flex',
         'rm_group_chats_block': 'flex',
         'rm_api_block': 'grid',
         'rm_characters_block': 'flex',
     };
+    $('#hideCharPanelAvatarButton').toggle(selectedMenuId === 'rm_ch_create_block');
     document.querySelectorAll('#right-nav-panel .right_menu').forEach((menu) => {
         $(menu).css('display', 'none');
 
@@ -5832,7 +5880,6 @@ function select_rm_info(type, charId, previousCharId = null) {
         toastr.success(`Character Imported: ${displayName}`);
     }
 
-    getCharacters();
     selectRightMenuWithAnimation('rm_characters_block');
 
     setTimeout(function () {
@@ -6240,10 +6287,10 @@ function hideSwipeButtons() {
 
 async function saveMetadata() {
     if (selected_group) {
-        await editGroup(selected_group, true, false);
+        await editGroup(selected_group, false, false);
     }
     else {
-        await saveChat();
+        saveChatDebounced();
     }
 }
 
@@ -6647,12 +6694,8 @@ async function createOrEditCharacter(e) {
                     createTagMapFromList("#tagList", html);
                     await getCharacters();
 
-                    $("#rm_info_block").transition({ opacity: 0, duration: 0 });
-                    var $prev_img = $("#avatar_div_div").clone();
-                    $("#rm_info_avatar").append($prev_img);
                     select_rm_info(`char_create`, html, oldSelectedChar);
 
-                    $("#rm_info_block").transition({ opacity: 1.0, duration: 2000 });
                     crop_data = undefined;
                 },
                 error: function (jqXHR, exception) {
@@ -6741,7 +6784,8 @@ async function createOrEditCharacter(e) {
                     }
                 }
                 $("#create_button").removeAttr("disabled");
-                await getCharacters();
+
+                await getOneCharacter(formData.get('avatar_url'));
 
                 $("#add_avatar_button").replaceWith(
                     $("#add_avatar_button").val("").clone(true)
@@ -7136,6 +7180,11 @@ function connectAPISlash(_, text) {
             source: 'openrouter',
             button: '#api_button_openai',
         },
+        'ai21': {
+            selected: 'openai',
+            source: 'ai21',
+            button: '#api_button_openai',
+        }
     };
 
     const apiConfig = apiMap[text];
@@ -7198,12 +7247,6 @@ function importCharacter(file) {
 
             if (data.file_name !== undefined) {
                 $('#character_search_bar').val('').trigger('input');
-                $("#rm_info_block").transition({ opacity: 0, duration: 0 });
-                var $prev_img = $("#avatar_div_div").clone();
-                $prev_img
-                    .children("img")
-                    .attr("src", "characters/" + data.file_name + ".png");
-                $("#rm_info_avatar").append($prev_img);
 
                 let oldSelectedChar = null;
                 if (this_chid != undefined && this_chid != "invalid-safety-id") {
@@ -7218,7 +7261,6 @@ function importCharacter(file) {
                     let importedCharacter = currentContext.characters.find(character => character.avatar === avatarFileName);
                     await importTags(importedCharacter);
                 }
-                $("#rm_info_block").transition({ opacity: 1, duration: 1000 });
             }
         },
         error: function (jqXHR, exception) {
@@ -7361,7 +7403,7 @@ $(document).ready(function () {
     }
 
     registerSlashCommand('dupe', DupeChar, [], "– duplicates the currently selected character", true, true);
-    registerSlashCommand('api', connectAPISlash, [], "(kobold, horde, novel, ooba, oai, claude, windowai) – connect to an API", true, true);
+    registerSlashCommand('api', connectAPISlash, [], "(kobold, horde, novel, ooba, oai, claude, windowai, ai21) – connect to an API", true, true);
     registerSlashCommand('impersonate', doImpersonate, ['imp'], "- calls an impersonation response", true, true);
     registerSlashCommand('delchat', doDeleteChat, [], "- deletes the current chat", true, true);
     registerSlashCommand('closechat', doCloseChat, [], "- closes the current chat", true, true);
@@ -7686,7 +7728,7 @@ $(document).ready(function () {
             setTimeout(function () {
                 $("#option_select_chat").click();
                 $("#options").hide();
-            }, 200);
+            }, 2000);
         }
         if (popup_type == "del_ch") {
             const deleteChats = !!$("#del_char_checkbox").prop("checked");
@@ -7783,11 +7825,6 @@ $(document).ready(function () {
                     <span>Also delete the chat files</span>
                 </label><br></b>`
         );
-    });
-
-    $("#rm_info_button").on('click', function () {
-        $("#rm_info_avatar").html("");
-        select_rm_characters();
     });
 
     //////// OPTIMIZED ALL CHAR CREATION/EDITING TEXTAREA LISTENERS ///////////////
@@ -9193,8 +9230,7 @@ $(document).ready(function () {
         doCharListDisplaySwitch();
     });
 
-    $("#hideCharPanelAvatarButton").on('click', () => {
+    $("#hideCharPanelAvatarButton").hide().on('click', () => {
         $('#avatar-and-name-block').slideToggle()
-    })
-
+    });
 });
