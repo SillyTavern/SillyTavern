@@ -1,3 +1,5 @@
+"use strict";
+
 import { callPopup, event_types, eventSource, is_send_press, main_api, substituteParams } from "../script.js";
 import { is_group_generating } from "./group-chats.js";
 import { TokenHandler } from "./openai.js";
