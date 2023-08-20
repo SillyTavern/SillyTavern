@@ -1,3 +1,5 @@
+"use strict";
+
 import { callPopup, event_types, eventSource, is_send_press, main_api, substituteParams } from "../script.js";
 import { is_group_generating } from "./group-chats.js";
 import { TokenHandler } from "./openai.js";
@@ -270,6 +272,8 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     this.tokenHandler = this.tokenHandler || new TokenHandler();
     this.serviceSettings = serviceSettings;
     this.containerElement = document.getElementById(this.configuration.containerIdentifier);
+
+    if ('global' === this.configuration.promptOrder.strategy) this.activeCharacter = {id: this.configuration.promptOrder.dummyId};
 
     this.sanitizeServiceSettings();
 
@@ -590,7 +594,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
 PromptManagerModule.prototype.render = function (afterTryGenerate = true) {
     if (main_api !== 'openai') return;
 
-    if (null === this.activeCharacter) return;
+    if ('character' === this.configuration.promptOrder.strategy && null === this.activeCharacter) return;
     this.error = null;
 
     waitUntilCondition(() => !is_send_press && !is_group_generating, 1024 * 1024, 100).then(() => {
@@ -604,6 +608,11 @@ PromptManagerModule.prototype.render = function (afterTryGenerate = true) {
                 this.renderPromptManagerListItems()
                 this.makeDraggable();
                 this.profileEnd('render');
+            }).catch(error => {
+                this.log('Error caught during render: ' + error);
+                this.renderPromptManager();
+                this.renderPromptManagerListItems()
+                this.makeDraggable();
             });
         } else {
             // Executed during live communication

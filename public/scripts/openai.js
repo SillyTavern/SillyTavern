@@ -19,7 +19,6 @@ import {
     system_message_types,
     replaceBiasMarkup,
     is_send_press,
-    saveSettings,
     Generate,
     main_api,
     eventSource,
@@ -389,7 +388,7 @@ function setupChatCompletionPromptManager(openAiSettings) {
     promptManager.tokenHandler = tokenHandler;
 
     promptManager.init(configuration, openAiSettings);
-    promptManager.render();
+    promptManager.render(false);
 
     return promptManager;
 }
@@ -485,6 +484,13 @@ function populateChatHistory(prompts, chatCompletion, type = null, cyclePrompt =
     const newChatMessage = new Message('system', substituteParams(newChat, null, null, null, names), 'newMainChat');
     chatCompletion.reserveBudget(newChatMessage);
 
+    // Reserve budget for group nudge
+    let groupNudgeMessage = null;
+    if(selected_group) {
+        const groupNudgeMessage = new Message.fromPrompt(prompts.get('groupNudge'));
+        chatCompletion.reserveBudget(groupNudgeMessage);
+    }
+
     // Reserve budget for continue nudge
     let continueMessage = null;
     if (type === 'continue' && cyclePrompt) {
@@ -526,6 +532,12 @@ function populateChatHistory(prompts, chatCompletion, type = null, cyclePrompt =
     chatCompletion.freeBudget(newChatMessage);
     chatCompletion.insertAtStart(newChatMessage, 'chatHistory');
 
+    // Reserve budget for group nudge
+    if(selected_group && groupNudgeMessage) {
+        chatCompletion.freeBudget(groupNudgeMessage);
+        chatCompletion.insertAtEnd(groupNudgeMessage, 'chatHistory');
+    }
+
     // Insert and free continue nudge
     if (type === 'continue' && continueMessage) {
         chatCompletion.freeBudget(continueMessage);
@@ -544,7 +556,10 @@ function populateDialogueExamples(prompts, chatCompletion) {
     if (openai_msgs_example.length) {
         const newExampleChat = new Message('system', oai_settings.new_example_chat_prompt, 'newChat');
         [...openai_msgs_example].forEach((dialogue, dialogueIndex) => {
-            chatCompletion.insert(newExampleChat, 'dialogueExamples');
+            let examplesAdded = 0;
+
+            if (chatCompletion.canAfford(newExampleChat)) chatCompletion.insert(newExampleChat, 'dialogueExamples');
+
             dialogue.forEach((prompt, promptIndex) => {
                 const role = 'system';
                 const content = prompt.content || '';
@@ -554,8 +569,13 @@ function populateDialogueExamples(prompts, chatCompletion) {
                 chatMessage.setName(prompt.name);
                 if (chatCompletion.canAfford(chatMessage)) {
                     chatCompletion.insert(chatMessage, 'dialogueExamples');
+                    examplesAdded++;
                 }
             });
+
+            if (0 === examplesAdded) {
+                chatCompletion.removeLastFrom('dialogueExamples');
+            }
         });
     }
 }
@@ -697,7 +717,8 @@ function populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, ty
  */
 function preparePromptsForChatCompletion(Scenario, charPersonality, name2, worldInfoBefore, worldInfoAfter, charDescription, quietPrompt, bias, extensionPrompts, systemPromptOverride, jailbreakPromptOverride) {
     const scenarioText = Scenario ? `[Circumstances and context of the dialogue: ${Scenario}]` : '';
-    const charPersonalityText = charPersonality ? `[${name2}'s personality: ${charPersonality}]` : '';
+    const charPersonalityText = charPersonality ? `[${name2}'s personality: ${charPersonality}]` : ''
+    const groupNudge = `[Write the next reply only as ${name2}]`;
 
     // Create entries for system prompts
     const systemPrompts = [
@@ -711,7 +732,8 @@ function preparePromptsForChatCompletion(Scenario, charPersonality, name2, world
         { role: 'system', content: oai_settings.nsfw_avoidance_prompt, identifier: 'nsfwAvoidance' },
         { role: 'system', content: oai_settings.impersonation_prompt, identifier: 'impersonate' },
         { role: 'system', content: quietPrompt, identifier: 'quietPrompt' },
-        { role: 'system', content: bias, identifier: 'bias' }
+        { role: 'system', content: bias, identifier: 'bias' },
+        { role: 'system', content: groupNudge, identifier: 'groupNudge' }
     ];
 
     // Tavern Extras - Summary
@@ -763,12 +785,6 @@ function preparePromptsForChatCompletion(Scenario, charPersonality, name2, world
         jailbreakPrompt.content = jailbreakPromptOverride;
         const jbReplacement = promptManager.preparePrompt(jailbreakPrompt, jbOriginalContent);
         prompts.set(jbReplacement, prompts.index('jailbreak'));
-    }
-
-    // TODO: Integrate Group nudge into the prompt manager properly
-    if(selected_group) {
-        let group_nudge = {"role": "system", "content": `[Write the next reply only as ${name2}]`};
-        openai_msgs.push(group_nudge);
     }
 
     // Allow subscribers to manipulate the prompts object
@@ -1663,6 +1679,21 @@ class ChatCompletion {
 
             this.log(`Inserted ${message.identifier} into ${identifier}. Remaining tokens: ${this.tokenBudget}`);
         }
+    }
+
+
+    /**
+     * Remove the last item of the collection
+     *
+     * @param identifier
+     */
+    removeLastFrom(identifier) {
+        const index = this.findMessageIndex(identifier);
+        const message = this.messages.collection[index].collection.pop();
+
+        this.increaseTokenBudgetBy(message.getTokens());
+
+        this.log(`Removed ${message.identifier} from ${identifier}. Remaining tokens: ${this.tokenBudget}`);
     }
 
     /**
