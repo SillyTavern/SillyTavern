@@ -69,8 +69,6 @@ export function getCfgPrompt(guidanceScale, isNegative) {
         );
     }
 
-    console.log(guidanceScale.type);
-    console.log(cfgPromptCombine);
     if (guidanceScale.type === cfgType.global || cfgPromptCombine.includes(cfgType.global)) {
         splitCfgPrompt.unshift(
             substituteParams(

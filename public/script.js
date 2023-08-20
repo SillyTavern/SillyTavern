@@ -2720,7 +2720,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 is_send_press = true;
             }
 
-            console.log(cycleGenerationPromt)
             generatedPromtCache += cycleGenerationPromt;
             if (generatedPromtCache.length == 0 || type === 'continue') {
                 if (main_api === 'openai') {
@@ -2813,28 +2812,31 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
 
                 // Add character's name
-                if (!isInstruct && force_name2 && tokens_already_generated === 0) {
+                // Force name append on continue
+                if (!isInstruct && force_name2 && (tokens_already_generated === 0 || isContinue)) {
                     if (!lastMesString.endsWith('\n')) {
                         lastMesString += '\n';
                     }
 
-                    // Add a leading space to the prompt bias if applicable
-                    if (!promptBias || promptBias.length === 0) {
-                        console.debug("No prompt bias was found.");
-                        lastMesString += `${name2}:`;
-                    } else if (promptBias.startsWith(' ')) {
-                        console.debug(`A prompt bias with a leading space was found: ${promptBias}`);
-                        lastMesString += `${name2}:${promptBias}`
-                    } else {
-                        console.debug(`A prompt bias was found: ${promptBias}`);
-                        lastMesString += `${name2}: ${promptBias}`;
-                    }
-                } else if (power_user.user_prompt_bias && !isImpersonate && !isInstruct) {
-                    console.debug(`A prompt bias was found without character's name appended: ${promptBias}`);
-                    lastMesString += substituteParams(power_user.user_prompt_bias);
-                }
+                    lastMesString += `${name2}:`;
+                } 
 
                 return lastMesString;
+            }
+
+            // Clean up the already generated prompt for seamless addition
+            function cleanupPromptCache(promptCache) {
+                // Remove the first occurrance of character's name
+                if (promptCache.trimStart().startsWith(`${name2}:`)) {
+                    promptCache = promptCache.replace(`${name2}:`, '').trimStart();
+                }
+
+                // Remove the first occurrance of prompt bias
+                if (promptCache.trimStart().startsWith(promptBias)) {
+                    promptCache = promptCache.replace(promptBias, '');
+                }
+
+                return promptCache;
             }
 
             function checkPromtSize() {
@@ -2875,25 +2877,45 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             // Fetches the combined prompt for both negative and positive prompts
             const cfgGuidanceScale = getGuidanceScale();
             function getCombinedPrompt(isNegative) {
-                // Use a negative mesSend if present
-                let negativeMesSend = [];
+                let finalMesSend = [...mesSend];
                 let cfgPrompt = {};
                 if (cfgGuidanceScale && cfgGuidanceScale?.value !== 1) {
                     cfgPrompt = getCfgPrompt(cfgGuidanceScale, isNegative);
                 }
 
-                if (cfgPrompt && cfgPrompt?.value && cfgPrompt?.depth !== 0) {
-                    const cfgPromptValue = `${cfgPrompt.value}\n`
-                    // TODO: kingbri: use the insertion depth method instead of splicing
-                    if (isNegative) {
-                        negativeMesSend = [...mesSend];
-                        negativeMesSend.splice(mesSend.length - cfgPrompt.depth, 0, cfgPromptValue);
+                if (cfgPrompt && cfgPrompt?.value) {
+                    if (cfgPrompt?.depth === 0) {
+                        finalMesSend[finalMesSend.length - 1] +=
+                            /\s/.test(finalMesSend[finalMesSend.length - 1].slice(-1))
+                            ? cfgPrompt.value
+                            : ` ${cfgPrompt.value}`;
                     } else {
-                        mesSend.splice(mesSend.length - cfgPrompt.depth, 0, cfgPromptValue);
+                        // TODO: Switch from splice method to insertion depth method
+                        finalMesSend.splice(mesSend.length - cfgPrompt.depth, 0, `${cfgPrompt.value}\n`);
                     }
                 }
 
-                let mesSendString = isNegative ? negativeMesSend.join('') : mesSend.join('');
+                // Add prompt bias after everything else
+                // Always run with continue
+                if (!isInstruct && !isImpersonate && (tokens_already_generated === 0  || isContinue)) {
+                    const trimmedBias = promptBias.trimStart();
+                    finalMesSend[finalMesSend.length - 1] +=
+                        /\s/.test(finalMesSend[finalMesSend.length - 1].slice(-1))
+                        ? trimmedBias
+                        : ` ${trimmedBias}`;
+                } 
+
+                // Prune from prompt cache if it exists
+                if (generatedPromtCache.length !== 0) {
+                    generatedPromtCache = cleanupPromptCache(generatedPromtCache);
+                }
+
+                // Override for prompt bits data
+                if (!isNegative) {
+                    mesSend = finalMesSend;
+                }
+
+                let mesSendString = finalMesSend.join('');
 
                 // add chat preamble
                 mesSendString = addChatsPreamble(mesSendString);
@@ -2908,16 +2930,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     mesSendString +
                     generatedPromtCache;
 
+                // TODO: Move zero-depth anchor append to work like CFG and bias appends
                 if (zeroDepthAnchor && zeroDepthAnchor.length) {
                     if (!isMultigenEnabled() || tokens_already_generated == 0) {
                         combinedPrompt = appendZeroDepthAnchor(force_name2, zeroDepthAnchor, combinedPrompt);
-                    }
-                }
-
-                // Append zero-depth anchor for CFG
-                if (cfgPrompt && cfgPrompt?.value && cfgPrompt?.depth === 0) {
-                    if (!isMultigenEnabled() || tokens_already_generated == 0) {
-                        combinedPrompt = appendZeroDepthAnchor(force_name2, cfgPrompt.value, combinedPrompt);
                     }
                 }
 
