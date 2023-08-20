@@ -1573,7 +1573,8 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 .character_select.is_fav .ch_name,
-.group_select.is_fav .ch_name {
+.group_select.is_fav .ch_name,
+.group_member.is_fav .ch_name {
     color: var(--golden);
 }
 

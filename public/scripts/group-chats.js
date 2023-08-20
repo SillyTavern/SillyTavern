@@ -1040,7 +1040,7 @@ function getGroupCharacterBlock(character) {
     const isFav = character.fav || character.fav == 'true';
     template.data("id", character.avatar);
     template.find(".avatar img").attr({ "src": avatar, "title": character.avatar });
-    template.find(".ch_name").text(character.name).css('color', character.fav ? 'gold' : 'white');
+    template.find(".ch_name").text(character.name);
     template.attr("chid", characters.indexOf(character));
     template.find('.ch_fav').val(isFav);
     template.toggleClass('is_fav', isFav);
