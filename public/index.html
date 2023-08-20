@@ -1455,11 +1455,11 @@
                                         </div>
                                     </div>
                                     <div class="range-block" data-source="claude">
-                                        <label for="exclude_assistant" title="Exclude Assistant prefix" class="checkbox_label widthFreeExpand">
-                                            <input id="exclude_assistant" type="checkbox" /><span data-i18n="Exclude Assistant prefix">Exclude Assistant prefix</span>
+                                        <label for="exclude_assistant" title="Exclude Assistant suffix" class="checkbox_label widthFreeExpand">
+                                            <input id="exclude_assistant" type="checkbox" /><span data-i18n="Exclude Assistant suffix">Exclude Assistant suffix</span>
                                         </label>
                                         <div class="toggle-description justifyLeft">
-                                            <span data-i18n="Exclude the assistant prefix from being added to the end of prompt.">Exclude the assistant prefix from being added to the end of prompt (Requires jailbreak with 'Assistant:' in it).</span>
+                                            <span data-i18n="Exclude the assistant suffix from being added to the end of prompt.">Exclude the assistant suffix from being added to the end of prompt (Requires jailbreak with 'Assistant:' in it).</span>
                                         </div>
                                     </div>
                                     <div class="inline-drawer m-t-1 wide100p">
@@ -1473,7 +1473,7 @@
                                                     <span data-i18n="Select a character to show quick edit options.">Select a character to show quick edit options.</span>
                                                 </div>
                                             </div>
-                                            <div class="range-block" data-source="claude">
+                                            <div id="claude_assistant_prefill_block" data-source="claude" class="range-block">
                                                 <span id="claude_assistant_prefill_text" data-i18n="Assistant Prefill">Assistant Prefill</span>
                                                 <textarea id="claude_assistant_prefill" class="text_pole textarea_compact" name="assistant_prefill" rows="3" maxlength="5000" placeholder="Start Claude's answer with..."></textarea>
                                             </div>

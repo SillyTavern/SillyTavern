@@ -488,7 +488,7 @@ function populateChatHistory(prompts, chatCompletion, type = null, cyclePrompt =
 
     // Reserve budget for group nudge
     let groupNudgeMessage = null;
-    if(selected_group) {
+    if (selected_group) {
         const groupNudgeMessage = new Message.fromPrompt(prompts.get('groupNudge'));
         chatCompletion.reserveBudget(groupNudgeMessage);
     }
@@ -535,7 +535,7 @@ function populateChatHistory(prompts, chatCompletion, type = null, cyclePrompt =
     chatCompletion.insertAtStart(newChatMessage, 'chatHistory');
 
     // Reserve budget for group nudge
-    if(selected_group && groupNudgeMessage) {
+    if (selected_group && groupNudgeMessage) {
         chatCompletion.freeBudget(groupNudgeMessage);
         chatCompletion.insertAtEnd(groupNudgeMessage, 'chatHistory');
     }
@@ -2922,6 +2922,10 @@ function toggleChatCompletionForms() {
         const validSources = $(this).data('source').split(',');
         $(this).toggle(validSources.includes(oai_settings.chat_completion_source));
     });
+
+    if (chat_completion_sources.CLAUDE == oai_settings.chat_completion_source) {
+        $('#claude_assistant_prefill_block').toggle(!oai_settings.exclude_assistant);
+    }
 }
 
 async function testApiConnection() {
@@ -3028,13 +3032,7 @@ $(document).ready(async function () {
 
     $('#exclude_assistant').on('change', function () {
         oai_settings.exclude_assistant = !!$('#exclude_assistant').prop('checked');
-        if(oai_settings.exclude_assistant) {
-            $('#claude_assistant_prefill').css('display', 'none')
-            $('#claude_assistant_prefill_text').css('display', 'none')
-        } else {
-            $('#claude_assistant_prefill').css('display', '')
-            $('#claude_assistant_prefill_text').css('display', '')
-        }
+        $('#claude_assistant_prefill_block').toggle(!oai_settings.exclude_assistant);
         saveSettingsDebounced();
     });
 
