@@ -6,6 +6,7 @@ import {
     isDataURL,
     createThumbnail,
     extractAllWords,
+    saveBase64AsFile
 } from './utils.js';
 import { RA_CountCharTokens, humanizedDateTime, dragElement, favsToHotswap } from "./RossAscends-mods.js";
 import { loadMovingUIState, sortEntitiesList } from './power-user.js';
@@ -364,12 +365,22 @@ function updateGroupAvatar(group) {
     });
 }
 
+// check if isDataURLor if it's a valid local file url
+function isValidImageUrl(url) {
+    console.trace(url);
+    // check if empty dict
+    if (Object.keys(url).length === 0) {
+        return false;
+    }
+    return isDataURL(url) || (url && url.startsWith("user"));
+}
+
 function getGroupAvatar(group) {
     if (!group) {
         return $(`<div class="avatar"><img src="${default_avatar}"></div>`);
     }
-
-    if (isDataURL(group.avatar_url)) {
+// if isDataURL or if it's a valid local file url
+    if (isValidImageUrl(group.avatar_url)) {
         return $(`<div class="avatar"><img src="${group.avatar_url}"></div>`);
     }
 
@@ -1065,8 +1076,7 @@ function select_group_chats(groupId, skipAnimation) {
 
     setMenuType(!!group ? 'group_edit' : 'group_create');
     $("#group_avatar_preview").empty().append(getGroupAvatar(group));
-    $("#rm_group_restore_avatar").toggle(!!group && isDataURL(group.avatar_url));
-    $("#rm_group_chat_name").val(groupName);
+    $("#rm_group_restore_avatar").toggle(!!group && isValidImageUrl(group.avatar_url));
     $("#rm_group_filter").val("").trigger("input");
     $(`input[name="rm_group_activation_strategy"][value="${replyStrategy}"]`).prop('checked', true);
 
@@ -1133,16 +1143,19 @@ async function uploadGroupAvatar(event) {
         return;
     }
 
-    const thumbnail = await createThumbnail(croppedImage, 96, 144);
-
+    let thumbnail = await createThumbnail(croppedImage, 96, 144);
+    //remove data:image/whatever;base64
+    thumbnail = thumbnail.replace(/^data:image\/[a-z]+;base64,/, "");
+    let thumbnailUrl = await saveBase64AsFile(thumbnail, openGroupId.toString(), 'jpg');
     if (!openGroupId) {
-        $('#group_avatar_preview img').attr('src', thumbnail);
+        $('#group_avatar_preview img').attr('src', thumbnailUrl);
         $('#rm_group_restore_avatar').show();
         return;
     }
 
     let _thisGroup = groups.find((x) => x.id == openGroupId);
-    _thisGroup.avatar_url = thumbnail;
+    console.log(thumbnailUrl);
+    _thisGroup.avatar_url = thumbnailUrl;
     $("#group_avatar_preview").empty().append(getGroupAvatar(_thisGroup));
     $("#rm_group_restore_avatar").show();
     await editGroup(openGroupId, true, true);
@@ -1299,7 +1312,7 @@ async function createGroup() {
         body: JSON.stringify({
             name: name,
             members: members,
-            avatar_url: isDataURL(avatar_url) ? avatar_url : default_avatar,
+            avatar_url: isValidImageUrl(avatar_url) ? avatar_url : default_avatar,
             allow_self_responses: allow_self_responses,
             activation_strategy: activation_strategy,
             disabled_members: [],

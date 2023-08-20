@@ -14,7 +14,7 @@ import {
 } from "../../../script.js";
 import { getApiUrl, getContext, extension_settings, doExtrasFetch, modules } from "../../extensions.js";
 import { selected_group } from "../../group-chats.js";
-import { stringFormat, initScrollHeight, resetScrollHeight, timestampToMoment, getCharaFilename } from "../../utils.js";
+import { stringFormat, initScrollHeight, resetScrollHeight, timestampToMoment, getCharaFilename, saveBase64AsFile } from "../../utils.js";
 export { MODULE_NAME };
 
 // Wraps a string into monospace font-face span
@@ -535,37 +535,6 @@ function processReply(str) {
         .join(', '); // join it back with proper spacing
 
     return str;
-}
-
-async function saveBase64AsFile(base64Data, characterName, ext) {
-    // Construct the full data URL
-    const format = ext; // Extract the file extension (jpg, png, webp)
-    const dataURL = `data:image/${format};base64,${base64Data}`;
-
-    // Prepare the request body
-    const requestBody = {
-        image: dataURL,
-        ch_name: characterName
-    };
-
-    // Send the data URL to your backend using fetch
-    const response = await fetch('/uploadimage', {
-        method: 'POST',
-        body: JSON.stringify(requestBody),
-        headers: {
-            ...getRequestHeaders(),
-            'Content-Type': 'application/json'
-        },
-    });
-
-    // If the response is successful, get the saved image path from the server's response
-    if (response.ok) {
-        const responseData = await response.json();
-        return responseData.path;
-    } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to upload the image to the server');
-    }
 }
 
 

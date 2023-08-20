@@ -1,4 +1,5 @@
 import { getContext } from "./extensions.js";
+import { getRequestHeaders } from "../script.js";
 
 export function onlyUnique(value, index, array) {
     return array.indexOf(value) === index;
@@ -551,6 +552,37 @@ export function extractDataFromPng(data, identifier = 'chara') {
             console.log("Error decoding b64 in image: " + e);
             return null;
         }
+    }
+}
+
+export async function saveBase64AsFile(base64Data, characterName, ext) {
+    // Construct the full data URL
+    const format = ext; // Extract the file extension (jpg, png, webp)
+    const dataURL = `data:image/${format};base64,${base64Data}`;
+
+    // Prepare the request body
+    const requestBody = {
+        image: dataURL,
+        ch_name: characterName
+    };
+
+    // Send the data URL to your backend using fetch
+    const response = await fetch('/uploadimage', {
+        method: 'POST',
+        body: JSON.stringify(requestBody),
+        headers: {
+            ...getRequestHeaders(),
+            'Content-Type': 'application/json'
+        },
+    });
+
+    // If the response is successful, get the saved image path from the server's response
+    if (response.ok) {
+        const responseData = await response.json();
+        return responseData.path;
+    } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to upload the image to the server');
     }
 }
 
