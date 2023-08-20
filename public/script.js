@@ -1607,15 +1607,16 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     const bias = messageFormatting(mes.extra?.bias ?? "");
     let bookmarkLink = mes?.extra?.bookmark_link ?? '';
     // Verify bookmarked chat still exists
-    if (bookmarkLink !== '' ) {
+    // Cohee: Commented out for now. I'm worried of performance issues.
+    /*if (bookmarkLink !== '') {
         let chat_names = selected_group
             ? getGroupChatNames(selected_group)
-            : Object.values(getPastCharacterChats()).map(({file_name}) => file_name);
+            : Object.values(getPastCharacterChats()).map(({ file_name }) => file_name);
 
         if (!chat_names.includes(bookmarkLink)) {
             bookmarkLink = ''
         }
-    }
+    }*/
     let params = {
         mesId: count_view_mes,
         characterName: characterName,
@@ -2555,7 +2556,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         const blockHeading = main_api === 'openai' ? '<START>\n' : exampleSeparator;
         let mesExamplesArray = mesExamples.split(/<START>/gi).slice(1).map(block => `${blockHeading}${block.trim()}\n`);
 
-        if(power_user.strip_examples)
+        if (power_user.strip_examples)
             mesExamplesArray = []
 
         // First message in fresh 1-on-1 chat reacts to user/character settings changes
@@ -8611,7 +8612,7 @@ $(document).ready(function () {
             return;
         }
 
-        if($('#del_type').val() === 'swipe') {
+        if ($('#del_type').val() === 'swipe') {
             const swipe_id = chat[this_edit_mes_id]['swipe_id'];
             chat[this_edit_mes_id]['swipes'].splice(swipe_id, 1);
             if (swipe_id > 0) {
