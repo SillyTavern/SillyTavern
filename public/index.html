@@ -48,7 +48,19 @@
     <script type="module" src="lib/swiped-events.js"></script>
     <script type="module" src="lib/eventemitter.js"></script>
     <script type="module" src="scripts/power-user.js"></script>
+
     <link rel="stylesheet" type="text/css" href="style.css">
+
+    <link rel="stylesheet" type="text/css" href="css/st-tailwind.css">
+    <link rel="stylesheet" type="text/css" href="css/tags.css">
+    <link rel="stylesheet" type="text/css" href="css/rm-groups.css">
+    <link rel="stylesheet" type="text/css" href="css/group-avatars.css">
+    <link rel="stylesheet" type="text/css" href="css/toggle-dependent.css">
+    <link rel="stylesheet" type="text/css" href="css/world-info.css">
+    <link rel="stylesheet" type="text/css" href="css/extensions-panel.css">
+    <link rel="stylesheet" type="text/css" href="css/select2-overrides.css">
+    <link rel="stylesheet" type="text/css" href="css/mobile-styles.css">
+
     <link rel="stylesheet" href="css/bg_load.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <script>
@@ -131,7 +143,7 @@
                         <div class="checked fa-solid fa-lock "></div>
                     </label>
                 </div>
-                <div data-i18n="clickslidertips" class="toggle-description flex-container justifyLeft wide100p editable-slider-notification">
+                <div data-i18n="clickslidertips" class="toggle-description wide100p editable-slider-notification">
                     Click slider numbers to input manually.
                 </div>
                 <div class="scrollableInner">
@@ -1785,22 +1797,27 @@
                                     <input id="use-mancer-api-checkbox" type="checkbox" />
                                 </label>
                             </div>
-                            <div id="mancer-api-ui" style="display:none;">
-                                <h4 data-i18n="Mancer API key">Mancer API key</h4>
-                                <div class="flex-container">
-                                    <input id="api_key_mancer" name="api_key_mancer" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
-                                    <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_mancer">
-                                    </div>
-                                </div>
-                            </div>
                             <div>
-                                <div class="flex-container flexFlowColumn">
+                                <div id="mancer_api_subpanel" class="flex-container flexFlowColumn" style="display:none;">
+                                    <h4 data-i18n="Mancer API key">Mancer API key</h4>
+                                    <div class="flex-container">
+                                        <input id="api_key_mancer" name="api_key_mancer" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
+                                        <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_mancer">
+                                        </div>
+                                    </div>
                                     <div data-for="api_key_mancer" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
                                         For privacy reasons, your API key will be hidden after you reload the page.
                                     </div>
                                     <div class="flex1">
+                                        <h4 data-i18n="Mancer API url">Mancer API url</h4>
+                                        <small>Example: https://neuro.mancer.tech/webui/MODEL/api</small>
+                                        <input id="mancer_api_url_text" name="mancer_api_url" class="text_pole wide100p" maxlength="500" value="" autocomplete="off">
+                                    </div>
+                                </div>
+                                <div id="tgwebui_api_subpanel" class="flex-container flexFlowColumn">
+                                    <div class="flex1">
                                         <h4 data-i18n="Blocking API url">Blocking API url</h4>
-                                        <small>Example: http://127.0.0.1:5000/</small>
+                                        <small>Example: http://127.0.0.1:5000/api</small>
                                         <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url" class="text_pole wide100p" maxlength="500" value="" autocomplete="off">
                                     </div>
                                     <div class="flex1">
@@ -2144,7 +2161,7 @@
                                         <small data-i18n="Input Sequence">Input Sequence</small>
                                     </label>
                                     <div>
-                                        <textarea id="instruct_input_sequence" class="text_pole textarea_compact" maxlength="500" rows="1"></textarea>
+                                        <textarea id="instruct_input_sequence" class="text_pole textarea_compact" maxlength="500" rows="2"></textarea>
                                     </div>
                                 </div>
                                 <div class="flex1">
@@ -2152,7 +2169,7 @@
                                         <small data-i18n="Output Sequence">Output Sequence</small>
                                     </label>
                                     <div>
-                                        <textarea id="instruct_output_sequence" class="text_pole wide100p textarea_compact" maxlength="500" rows="1"></textarea>
+                                        <textarea id="instruct_output_sequence" class="text_pole wide100p textarea_compact" maxlength="500" rows="2"></textarea>
                                     </div>
                                 </div>
                                 <div class="flex1">
@@ -2160,7 +2177,7 @@
                                         <small data-i18n="Last Sequence">Last Sequence</small>
                                     </label>
                                     <div>
-                                        <textarea id="instruct_last_output_sequence" class="text_pole wide100p textarea_compact" maxlength="500" rows="1"></textarea>
+                                        <textarea id="instruct_last_output_sequence" class="text_pole wide100p textarea_compact" maxlength="500" rows="2"></textarea>
                                     </div>
                                 </div>
                             </div>
@@ -2170,7 +2187,7 @@
                                         <small data-i18n="System Sequence">System Sequence</small>
                                     </label>
                                     <div>
-                                        <textarea id="instruct_system_sequence" class="text_pole textarea_compact" maxlength="500" rows="1"></textarea>
+                                        <textarea id="instruct_system_sequence" class="text_pole textarea_compact" maxlength="500" rows="2"></textarea>
                                     </div>
                                 </div>
                                 <div class="flex1">
@@ -2178,7 +2195,7 @@
                                         <small data-i18n="Stop Sequence">Stop Sequence</small>
                                     </label>
                                     <div>
-                                        <textarea id="instruct_stop_sequence" class="text_pole wide100p textarea_compact" maxlength="500" rows="1"></textarea>
+                                        <textarea id="instruct_stop_sequence" class="text_pole wide100p textarea_compact" maxlength="500" rows="2"></textarea>
                                     </div>
                                 </div>
                                 <div class="flex1">
@@ -2186,7 +2203,7 @@
                                         <small data-i18n="Separator">Separator</small>
                                     </label>
                                     <div>
-                                        <textarea id="instruct_separator_sequence" class="text_pole wide100p textarea_compact" maxlength="500" rows="1"></textarea>
+                                        <textarea id="instruct_separator_sequence" class="text_pole wide100p textarea_compact" maxlength="500" rows="2"></textarea>
                                     </div>
                                 </div>
                             </div>
@@ -3696,9 +3713,7 @@
                                         <small>
                                             <span data-i18n="Content">
                                                 Content
-                                                <span>(Tokens:&nbsp;
-                                                    <span class="world_entry_form_token_counter">0</span>
-                                                    )
+                                                <span>(Tokens:&nbsp; <span class="world_entry_form_token_counter" data-first-run="true">counting...</span>)
                                                 </span>
                                             </span>
                                         </small>

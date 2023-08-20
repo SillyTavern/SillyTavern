@@ -1,0 +1,134 @@
+/* Customize the Select2 container */
+.select2-container {
+    color: var(--SmartThemeBodyColor);
+}
+
+/* Customize the dropdown */
+.select2-dropdown {
+    background-color: var(--SmartThemeBlurTintColor);
+    border: 1px solid var(--white30a) !important;
+    border-radius: 10px;
+    box-shadow: 0 0 5px black;
+    text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
+    backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)*2));
+    color: var(--SmartThemeBodyColor);
+    z-index: 40000;
+}
+
+.select2-selection__clear {
+    color: var(--SmartThemeBodyColor);
+}
+
+.select2-container .select2-selection--multiple .select2-selection__choice__remove {
+    padding: revert;
+    border-right: 1px solid var(--white30a);
+    font-size: 1.1em;
+
+}
+
+.select2-container .select2-selection--multiple .select2-selection__choice__display {
+    padding-left: 5px;
+}
+
+/* Customize the search input */
+.select2-search__field {
+    background-color: var(--black30a);
+    color: var(--SmartThemeBodyColor);
+    border: 1px solid var(--white30a);
+    border-radius: 7px;
+    font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
+    padding: 3px 5px;
+}
+
+/* Customize the selected option */
+.select2-selection--single {
+    border: 1px solid var(--SmartThemeShadowColor);
+    border-radius: 4px;
+    background-color: var(--SmartThemeBlurTintColor);
+}
+
+/* Customize the selected option text */
+.select2-selection__rendered {
+    color: var(--SmartThemeBodyColor);
+}
+
+/* Customize the option list item */
+.select2-results__option {
+    color: var(--SmartThemeBodyColor);
+    background-color: var(--SmartThemeBodyColor);
+}
+
+.select2-container .select2-selection--multiple {
+    background-color: var(--black30a);
+    color: var(--SmartThemeBodyColor);
+    border: 1px solid var(--white30a);
+    border-radius: 7px;
+    font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
+    padding: 3px 5px;
+}
+
+.select2-container.select2-container--focus .select2-selection--multiple {
+    border: 1px solid var(--white30a);
+}
+
+.select2-container .select2-selection--multiple .select2-selection__choice {
+    border-radius: 5px;
+    border-style: solid;
+    border-width: 1px;
+    box-sizing: border-box;
+    color: var(--SmartThemeBodyColor);
+    background-color: var(--black30a);
+    border-color: var(--white30a);
+    font-size: calc(var(--mainFontSize) - 5%);
+    text-shadow: none !important;
+}
+
+.select2-results .select2-results__option--selectable {
+    background-color: unset;
+    color: var(--SmartThemeBodyColor);
+    opacity: 0.5;
+    transition: opacity 200ms ease-in-out;
+    position: relative;
+}
+
+/* Customize the hovered option list item */
+.select2-results .select2-results__option--highlighted.select2-results__option--selectable {
+    color: var(--SmartThemeBodyColor);
+    background-color: unset;
+    opacity: 1;
+}
+
+/* Customize the option list item */
+.select2-results__option {
+    padding-left: 30px;
+    /* Add some padding to make room for the checkbox */
+}
+
+/* Add the custom checkbox */
+.select2-results__option:before {
+    content: '';
+    display: inline-block;
+    position: absolute;
+    left: 6px;
+    top: 50%;
+    margin-top: -7px;
+    width: 14px;
+    height: 14px;
+    border: 1px solid var(--white30a);
+    background-color: var(--SmartThemeBlurTintColor);
+    border-radius: 2px;
+}
+
+.select2-container .select2-selection--multiple .select2-selection__choice__remove {
+    color: var(--SmartThemeBodyColor);
+}
+
+/* Add the custom checkbox checkmark */
+.select2-results__option--selected.select2-results__option:before {
+    content: '\2713';
+    font-weight: bold;
+    color: var(--SmartThemeBodyColor);
+    background-color: var(--SmartThemeBlurTintColor);
+    text-align: center;
+    line-height: 14px;
+}
