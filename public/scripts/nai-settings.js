@@ -7,6 +7,7 @@ import {
     saveSettingsDebounced,
     setGenerationParamsFromPreset
 } from "../script.js";
+import { getCfgPrompt } from "./extensions/cfg/util.js";
 import { MAX_CONTEXT_DEFAULT, tokenizers } from "./power-user.js";
 import {
     getSortableDelay,
@@ -395,6 +396,10 @@ function getBadWordPermutations(text) {
 }
 
 export function getNovelGenerationData(finalPrompt, this_settings, this_amount_gen, isImpersonate, cfgValues) {
+    if (cfgValues.guidanceScale && cfgValues.guidanceScale !== 1) {
+        cfgValues.negativePrompt = (getCfgPrompt(cfgValues.guidanceScale, true))?.value;
+    }
+
     const clio = nai_settings.model_novel.includes('clio');
     const kayra = nai_settings.model_novel.includes('kayra');
 
