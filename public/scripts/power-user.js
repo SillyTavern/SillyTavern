@@ -12,8 +12,6 @@ import {
     event_types,
     getCurrentChatId,
     printCharacters,
-    name1,
-    name2,
     setCharacterId,
     setEditedMessageId
 } from "../script.js";
@@ -21,8 +19,8 @@ import { isMobile, initMovingUI } from "./RossAscends-mods.js";
 import {
     groups,
     resetSelectedGroup,
-    selected_group,
 } from "./group-chats.js";
+import { loadInstructMode } from "./instruct-mode.js";
 
 import { registerSlashCommand } from "./slash-commands.js";
 
@@ -206,7 +204,6 @@ let power_user = {
 
 let themes = [];
 let movingUIPresets = [];
-let instruct_presets = [];
 let context_presets = [];
 
 const storage_keys = {
@@ -666,9 +663,6 @@ function loadPowerUserSettings(settings, data) {
         movingUIPresets = data.movingUIPresets;
     }
 
-    if (data.instruct !== undefined) {
-        instruct_presets = data.instruct;
-    }
 
     if (data.context !== undefined) {
         context_presets = data.context;
@@ -804,7 +798,7 @@ function loadPowerUserSettings(settings, data) {
 
     $(`#character_sort_order option[data-order="${power_user.sort_order}"][data-field="${power_user.sort_field}"]`).prop("selected", true);
     reloadMarkdownProcessor(power_user.render_formulas);
-    loadInstructMode();
+    loadInstructMode(data);
     loadContextSettings();
     loadMaxContextUnlocked();
     switchWaifuMode();
@@ -928,90 +922,6 @@ function loadContextSettings() {
     });
 }
 
-function loadInstructMode() {
-    const controls = [
-        { id: "instruct_enabled", property: "enabled", isCheckbox: true },
-        { id: "instruct_wrap", property: "wrap", isCheckbox: true },
-        { id: "instruct_system_prompt", property: "system_prompt", isCheckbox: false },
-        { id: "instruct_system_sequence", property: "system_sequence", isCheckbox: false },
-        { id: "instruct_separator_sequence", property: "separator_sequence", isCheckbox: false },
-        { id: "instruct_input_sequence", property: "input_sequence", isCheckbox: false },
-        { id: "instruct_output_sequence", property: "output_sequence", isCheckbox: false },
-        { id: "instruct_stop_sequence", property: "stop_sequence", isCheckbox: false },
-        { id: "instruct_names", property: "names", isCheckbox: true },
-        { id: "instruct_macro", property: "macro", isCheckbox: true },
-        { id: "instruct_names_force_groups", property: "names_force_groups", isCheckbox: true },
-        { id: "instruct_last_output_sequence", property: "last_output_sequence", isCheckbox: false },
-        { id: "instruct_activation_regex", property: "activation_regex", isCheckbox: false },
-    ];
-
-    if (power_user.instruct.names_force_groups === undefined) {
-        power_user.instruct.names_force_groups = true;
-    }
-
-    controls.forEach(control => {
-        const $element = $(`#${control.id}`);
-
-        if (control.isCheckbox) {
-            $element.prop('checked', power_user.instruct[control.property]);
-        } else {
-            $element.val(power_user.instruct[control.property]);
-        }
-
-        $element.on('input', function () {
-            power_user.instruct[control.property] = control.isCheckbox ? !!$(this).prop('checked') : $(this).val();
-            saveSettingsDebounced();
-        });
-    });
-
-    instruct_presets.forEach((preset) => {
-        const name = preset.name;
-        const option = document.createElement('option');
-        option.value = name;
-        option.innerText = name;
-        option.selected = name === power_user.instruct.preset;
-        $('#instruct_presets').append(option);
-    });
-
-    function highlightDefaultPreset() {
-        $('#instruct_set_default').toggleClass('default', power_user.default_instruct === power_user.instruct.preset);
-    }
-
-    $('#instruct_set_default').on('click', function () {
-        power_user.default_instruct = power_user.instruct.preset;
-        $(this).addClass('default');
-        toastr.success(`Default instruct preset set to ${power_user.default_instruct}`);
-        saveSettingsDebounced();
-    });
-
-    highlightDefaultPreset();
-
-    $('#instruct_presets').on('change', function () {
-        const name = $(this).find(':selected').val();
-        const preset = instruct_presets.find(x => x.name === name);
-
-        if (!preset) {
-            return;
-        }
-
-        power_user.instruct.preset = name;
-        controls.forEach(control => {
-            if (preset[control.property] !== undefined) {
-                power_user.instruct[control.property] = preset[control.property];
-                const $element = $(`#${control.id}`);
-
-                if (control.isCheckbox) {
-                    $element.prop('checked', power_user.instruct[control.property]).trigger('input');
-                } else {
-                    $element.val(power_user.instruct[control.property]).trigger('input');
-                }
-            }
-        });
-
-        highlightDefaultPreset();
-    });
-}
-
 export function fuzzySearchCharacters(searchValue) {
     const fuse = new Fuse(characters, {
         keys: [
@@ -1066,58 +976,6 @@ export function renderStoryString(params) {
         console.error('Error rendering story string', e);
         throw e;
     }
-}
-
-export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvatar, name1, name2) {
-    let includeNames = isNarrator ? false : power_user.instruct.names;
-
-    if (!isNarrator && power_user.instruct.names_force_groups && (selected_group || forceAvatar)) {
-        includeNames = true;
-    }
-
-    let sequence = (isUser || isNarrator) ? power_user.instruct.input_sequence : power_user.instruct.output_sequence;
-
-    if (power_user.instruct.macro) {
-        sequence = substituteParams(sequence, name1, name2);
-    }
-
-    const separator = power_user.instruct.wrap ? '\n' : '';
-    const separatorSequence = power_user.instruct.separator_sequence && !isUser
-        ? power_user.instruct.separator_sequence
-        : separator;
-    const textArray = includeNames ? [sequence, `${name}: ${mes}` + separatorSequence] : [sequence, mes + separatorSequence];
-    const text = textArray.filter(x => x).join(separator);
-    return text;
-}
-
-export function formatInstructStoryString(story, systemPrompt) {
-    // If the character has a custom system prompt AND user has it preferred, use that instead of the default
-    systemPrompt = power_user.prefer_character_prompt && systemPrompt ? systemPrompt : power_user.instruct.system_prompt;
-    const sequence = power_user.instruct.system_sequence || '';
-    const prompt = substituteParams(systemPrompt, name1, name2, power_user.instruct.system_prompt) || '';
-    const separator = power_user.instruct.wrap ? '\n' : '';
-    const textArray = [sequence, prompt + '\n' + story];
-    const text = textArray.filter(x => x).join(separator);
-    return text;
-}
-
-export function formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2) {
-    const includeNames = power_user.instruct.names || (!!selected_group && power_user.instruct.names_force_groups);
-    const getOutputSequence = () => power_user.instruct.last_output_sequence || power_user.instruct.output_sequence;
-    let sequence = isImpersonate ? power_user.instruct.input_sequence : getOutputSequence();
-
-    if (power_user.instruct.macro) {
-        sequence = substituteParams(sequence, name1, name2);
-    }
-
-    const separator = power_user.instruct.wrap ? '\n' : '';
-    let text = includeNames ? (separator + sequence + separator + `${name}:`) : (separator + sequence);
-
-    if (!isImpersonate && promptBias) {
-        text += (includeNames ? promptBias : (separator + promptBias));
-    }
-
-    return text.trimEnd() + (includeNames ? '' : separator);
 }
 
 const sortFunc = (a, b) => power_user.sort_order == 'asc' ? compareFunc(a, b) : compareFunc(b, a);

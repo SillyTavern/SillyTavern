@@ -55,8 +55,10 @@ function autoSelectPreset() {
     }
 }
 
-function getPresetManager() {
-    const apiId = main_api == 'koboldhorde' ? 'kobold' : main_api;
+function getPresetManager(apiId) {
+    if (!apiId) {
+        apiId = main_api == 'koboldhorde' ? 'kobold' : main_api;
+    }
 
     if (!Object.keys(presetManagers).includes(apiId)) {
         return null;
@@ -289,9 +291,11 @@ jQuery(async () => {
     eventSource.on(event_types.CHAT_CHANGED, autoSelectPreset);
     registerPresetManagers();
     $(document).on("click", "[data-preset-manager-update]", async function () {
-        const presetManager = getPresetManager();
+        const apiId = $(this).data("preset-manager-update");
+        const presetManager = getPresetManager(apiId);
 
         if (!presetManager) {
+            console.warn(`Preset Manager not found for API: ${apiId}`);
             return;
         }
 
@@ -299,9 +303,11 @@ jQuery(async () => {
     });
 
     $(document).on("click", "[data-preset-manager-new]", async function () {
-        const presetManager = getPresetManager();
+        const apiId = $(this).data("preset-manager-new");
+        const presetManager = getPresetManager(apiId);
 
         if (!presetManager) {
+            console.warn(`Preset Manager not found for API: ${apiId}`);
             return;
         }
 
@@ -309,9 +315,11 @@ jQuery(async () => {
     });
 
     $(document).on("click", "[data-preset-manager-export]", async function () {
-        const presetManager = getPresetManager();
+        const apiId = $(this).data("preset-manager-export");
+        const presetManager = getPresetManager(apiId);
 
         if (!presetManager) {
+            console.warn(`Preset Manager not found for API: ${apiId}`);
             return;
         }
 
@@ -348,9 +356,11 @@ jQuery(async () => {
     });
 
     $(document).on("click", "[data-preset-manager-delete]", async function () {
-        const presetManager = getPresetManager();
+        const apiId = $(this).data("preset-manager-delete");
+        const presetManager = getPresetManager(apiId);
 
         if (!presetManager) {
+            console.warn(`Preset Manager not found for API: ${apiId}`);
             return;
         }
 
