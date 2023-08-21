@@ -58,10 +58,9 @@ const DEFAULT_EXPRESSIONS = [
     "neutral"
 ];
 const SPRITE_DOM_ID = "#expression-image";
-const AMBIENT_FOLDER = "sounds/ambient/";
 
-let fallback_BGMS = []; // Initialized only once with module workers
-let ambients = []; // Initialized only once with module workers
+let fallback_BGMS = null; // Initialized only once with module workers
+let ambients = null; // Initialized only once with module workers
 let characterMusics = {}; // Updated with module workers
 
 let currentCharacterBGM = null;
@@ -259,7 +258,7 @@ $(document).ready(function () {
 //#############################//
 
 async function getAmbientList() {
-    console.debug(DEBUG_PREFIX, "getting ambient adio files");
+    console.debug(DEBUG_PREFIX, "getting ambient audio files");
 
     try {
         const result = await fetch(`/get_default_ambient_list`);
@@ -556,7 +555,7 @@ async function updateAmbient() {
     let audio_file_path = null;
     for(const i of ambients) {
         console.debug(i)
-        if (i.includes(currentBackground)) {
+        if (i.includes(decodeURIComponent(currentBackground))) {
             audio_file_path = i;
             break;
         }
@@ -571,6 +570,7 @@ async function updateAmbient() {
     console.log(DEBUG_PREFIX,"Updating ambient");
     console.log(DEBUG_PREFIX,"Checking file",audio_file_path);
  
+    const audio = $("#audio_ambient");
     audio.animate({volume: 0.0}, 2000, function() {
         audio.attr("src",audio_file_path);
         audio[0].play();

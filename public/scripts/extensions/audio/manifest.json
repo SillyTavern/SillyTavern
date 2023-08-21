@@ -1,5 +1,5 @@
 {
-    "display_name": "Sounds",
+    "display_name": "Audio",
     "loading_order": 14,
     "requires": [],
     "optional": ["classify"],

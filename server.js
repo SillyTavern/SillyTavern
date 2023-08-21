@@ -317,8 +317,9 @@ const directories = {
     instruct: 'public/instruct',
     context: 'public/context',
     backups: 'backups/',
-    quickreplies: 'public/QuickReplies'
-    // TODO: add ambient music here
+    quickreplies: 'public/QuickReplies',
+    assets_bgm: 'public/assets/audio/bgm',
+    assets_ambient: 'public/assets/audio/ambient'
 };
 
 // CSRF Protection //
@@ -4943,32 +4944,27 @@ app.post('/delete_extension', jsonParser, async (request, response) => {
  * @returns {void}
  */
 app.get('/get_default_bgm_list', jsonParser, function (request, response) {
-    const AUDIO_FOLDER = "sounds";
-    const BGM_FOLDER = "bgm";
-    const musicsPath = path.join(AUDIO_FOLDER,BGM_FOLDER);
-    let musics = [];
+    const musicsPath = directories.assets_bgm;
+    let files = [];
+    let files_paths = [];
+    console.info("Checking audio file into",musicsPath);
 
     try {
         if (fs.existsSync(musicsPath) && fs.statSync(musicsPath).isDirectory()) {
-            musics = fs.readdirSync(musicsPath)
+            files = fs.readdirSync(musicsPath)
                 .filter(file => {
                     const mimeType = mime.lookup(file);
                     return mimeType && mimeType.startsWith('audio/');
-                })
-                .map((file) => {
-                    const pathToMusic = path.join(musicsPath, file);
-                    return {
-                        label: path.parse(pathToMusic).name.toLowerCase(),
-                        path: `/${AUDIO_FOLDER}/${BGM_FOLDER}/${file}`,
-                    };
                 });
+            for(const i of files)
+                files_paths.push(`/assets/audio/bgm/${i}`);
         }
     }
     catch (err) {
         console.log(err);
     }
     finally {
-        return response.send(musics);
+        return response.send(files_paths);
     }
 });
 
@@ -4981,32 +4977,27 @@ app.get('/get_default_bgm_list', jsonParser, function (request, response) {
  * @returns {void}
  */
 app.get('/get_default_ambient_list', jsonParser, function (request, response) {
-    const AUDIO_FOLDER = "sounds";
-    const BGM_FOLDER = "ambient";
-    const musicsPath = path.join(AUDIO_FOLDER,BGM_FOLDER);
-    let musics = [];
+    const musicsPath = directories.assets_ambient;
+    let files = [];
+    let files_paths = [];
+    console.info("Checking audio file into",musicsPath);
 
     try {
         if (fs.existsSync(musicsPath) && fs.statSync(musicsPath).isDirectory()) {
-            musics = fs.readdirSync(musicsPath)
+            files = fs.readdirSync(musicsPath)
                 .filter(file => {
                     const mimeType = mime.lookup(file);
                     return mimeType && mimeType.startsWith('audio/');
-                })
-                .map((file) => {
-                    const pathToMusic = path.join(musicsPath, file);
-                    return {
-                        label: path.parse(pathToMusic).name.toLowerCase(),
-                        path: `/${AUDIO_FOLDER}/${BGM_FOLDER}/${file}`,
-                    };
                 });
+            for(const i of files)
+                files_paths.push(path.join(`/assets/audio/ambient/${i}`));
         }
     }
     catch (err) {
         console.log(err);
     }
     finally {
-        return response.send(musics);
+        return response.send(files_paths);
     }
 });
 
