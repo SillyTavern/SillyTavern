@@ -2554,7 +2554,7 @@
                 </div>
                 <div class="flex-container spaceEvenly">
                     <div id="UI-Theme-Block" class="flex-container flexFlowColumn drawer33pWidth">
-                        <div id="color-picker-block" class="flex-container flexFlowColumn">
+                        <div id="color-picker-block" class="flex-container flexFlowColumn flexNoGap">
                             <h4><span data-i18n="UI Colors">UI Colors</span></h4>
                             <div class="flex-container">
                                 <toolcool-color-picker id="main-text-color-picker"></toolcool-color-picker>
@@ -3084,12 +3084,17 @@
                         <div id="rm_button_selected_ch">
                             <h2></h2>
                         </div>
-                        <i id="hideCharPanelAvatarButton" class="fa-solid fa-eye right_menu_button"></i>
+                        <div id="result_info" class="flex-container" style="display: none;">
+                            <span id="result_info_text"  title="Token counts may be inaccurate and provided just for reference." data-i18n="[title]Token counts may be inaccurate and provided just for reference.">
+                                <strong id="result_info_total_tokens">Calculating...</strong> Total Tokens
+                            </span>
+                            <a id="chartokenwarning" class="right_menu_button fa-solid fa-triangle-exclamation" href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-tokens" target="_blank" title="About Token 'Limits'"></a>
+                            <i title="Click for stats!" class="fa-solid fa-ranking-star right_menu_button rm_stats_button"></i>
+                            <i title="Toggle character info panel" id="hideCharPanelAvatarButton" class="fa-solid fa-eye right_menu_button"></i>
+                        </div>
                     </div>
                 </div>
                 <!-- end group peeking cope structure-->
-
-
 
                 <div name="Solo Char Create/Edit Panel" id="rm_ch_create_block" class="right_menu flex-container flexFlowColumn" style="display: none;">
                     <form id="form_create" action="javascript:void(null);" method="post" enctype="multipart/form-data">
@@ -3173,14 +3178,6 @@
                             <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-description" class="notes-link" target="_blank">
                                 <span class="note-link-span">?</span>
                             </a>
-                            <span class="expander">&nbsp;</span>
-                            <div id="result_info" class="flex-container" title="Token counts may be inaccurate and provided just for reference." data-i18n="[title]Token counts may be inaccurate and provided just for reference.">
-                                <span id="result_info_text"><strong id="result_info_total_tokens">Calculating...</strong> Total Tokens</span>
-                                <i title="Click for stats!" class="fa-solid fa-circle-info rm_stats_button"></i>
-                                <div id="chartokenwarning" class="menu_button margin0 whitespacenowrap">
-                                    <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-tokens" target="_blank">About Token 'Limits'</a>
-                                </div>
-                            </div>
                         </div>
 
                         <textarea id="description_textarea" data-i18n="[placeholder]Describe your character's physical and mental traits here." placeholder="Describe your character's physical and mental traits here." class="marginBot5" name="description" placeholder=""></textarea>
