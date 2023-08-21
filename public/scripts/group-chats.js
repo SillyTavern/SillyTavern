@@ -81,6 +81,7 @@ export {
     regenerateGroup,
     resetSelectedGroup,
     select_group_chats,
+    getGroupChatNames,
 }
 
 let is_group_generating = false; // Group generation flag
@@ -340,7 +341,7 @@ export function getGroupBlock(group) {
     const template = $("#group_list_template .group_select").clone();
     template.data("id", group.id);
     template.attr("grid", group.id);
-    template.find(".ch_name").html(group.name);
+    template.find(".ch_name").text(group.name);
     template.find('.group_fav_icon').css("display", 'none');
     template.addClass(group.fav ? 'is_fav' : '');
     template.find(".ch_fav").val(group.fav);
@@ -370,7 +371,6 @@ function updateGroupAvatar(group) {
 
 // check if isDataURLor if it's a valid local file url
 function isValidImageUrl(url) {
-    console.trace(url);
     // check if empty dict
     if (Object.keys(url).length === 0) {
         return false;
@@ -419,6 +419,19 @@ function getGroupAvatar(group) {
     return groupAvatar;
 }
 
+function getGroupChatNames(groupId) {
+    const group = groups.find(x => x.id === groupId);
+
+    if (!group) {
+        return [];
+    }
+
+    const names = [];
+    for (const chatId of group.chats) {
+        names.push(chatId);
+    }
+    return names;
+}
 
 async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
     if (online_status === "no_connection") {
@@ -1263,6 +1276,11 @@ function updateFavButtonState(state) {
 }
 
 export async function openGroupById(groupId) {
+    if (!groups.find(x => x.id === groupId)) {
+        console.log('Group not found', groupId);
+        return;
+    }
+
     if (!is_send_press && !is_group_generating) {
         if (selected_group !== groupId) {
             cancelTtsPlay();

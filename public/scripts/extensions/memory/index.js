@@ -380,8 +380,7 @@ async function summarizeChatMain(context, force) {
     }
 
     console.log('Summarizing chat, messages since last summary: ' + messagesSinceLastSummary, 'words since last summary: ' + wordsSinceLastSummary);
-    const prompt = substituteParams(extension_settings.memory.prompt)
-        .replace(/{{words}}/gi, extension_settings.memory.promptWords);
+    const prompt = extension_settings.memory.prompt?.replace(/{{words}}/gi, extension_settings.memory.promptWords);
 
     if (!prompt) {
         console.debug('Summarization prompt is empty. Skipping summarization.');

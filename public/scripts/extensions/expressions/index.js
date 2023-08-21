@@ -499,7 +499,7 @@ async function moduleWorker() {
     const context = getContext();
 
     // non-characters not supported
-    if (!context.groupId && context.characterId === undefined) {
+    if (!context.groupId && (context.characterId === undefined || context.characterId === 'invalid-safety-id')) {
         removeExpression();
         return;
     }

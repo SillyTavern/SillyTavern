@@ -601,7 +601,7 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
         });
 
         async function* readWebsocket() {
-            const streamingUrl = request.header('X-Streaming-URL');
+            const streamingUrl = request.header('X-Streaming-URL').replace("localhost", "127.0.0.1");
             const websocket = new WebSocket(streamingUrl);
 
             websocket.on('open', async function () {
@@ -3329,9 +3329,9 @@ async function sendClaudeRequest(request, response) {
             controller.abort();
         });
 
-        let requestPrompt = convertClaudePrompt(request.body.messages, true, true);
+        let requestPrompt = convertClaudePrompt(request.body.messages, true, !request.body.exclude_assistant);
 
-        if (request.body.assistant_prefill) {
+        if (request.body.assistant_prefill && !request.body.exclude_assistant) {
             requestPrompt += request.body.assistant_prefill;
         }
 
@@ -3472,7 +3472,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
         config.responseType = 'stream';
     }
 
-    async function makeRequest(config, response_generate_openai, request, retries = 5, timeout = 1000) {
+    async function makeRequest(config, response_generate_openai, request, retries = 5, timeout = 5000) {
         try {
             const response = await axios(config);
 
@@ -3494,7 +3494,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
             }
         } catch (error) {
             if (error.response && error.response.status === 429 && retries > 0) {
-                console.log('Out of quota, retrying...');
+                console.log(`Out of quota, retrying in ${Math.round(timeout / 1000)}s`);
                 setTimeout(() => {
                     makeRequest(config, response_generate_openai, request, retries - 1);
                 }, timeout);
@@ -3691,14 +3691,14 @@ app.post("/save_preset", jsonParser, function (request, response) {
         return response.sendStatus(400);
     }
 
-    const filename = `${name}.settings`;
-    const directory = getPresetFolderByApiId(request.body.apiId);
+    const settings = getPresetSettingsByAPI(request.body.apiId);
+    const filename = name + settings.extension;
 
-    if (!directory) {
+    if (!settings.folder) {
         return response.sendStatus(400);
     }
 
-    const fullpath = path.join(directory, filename);
+    const fullpath = path.join(settings.folder, filename);
     writeFileAtomicSync(fullpath, JSON.stringify(request.body.preset, null, 4), 'utf-8');
     return response.send({ name });
 });
@@ -3709,16 +3709,16 @@ app.post("/delete_preset", jsonParser, function (request, response) {
         return response.sendStatus(400);
     }
 
-    const filename = `${name}.settings`;
-    const directory = getPresetFolderByApiId(request.body.apiId);
+    const settings = getPresetSettingsByAPI(request.body.apiId);
+    const filename = name + settings.extension;
 
-    if (!directory) {
+    if (!settings.folder) {
         return response.sendStatus(400);
     }
 
-    const fullpath = path.join(directory, filename);
+    const fullpath = path.join(settings.folder, filename);
 
-    if (fs.existsSync) {
+    if (fs.existsSync(fullpath)) {
         fs.unlinkSync(fullpath);
         return response.sendStatus(200);
     } else {
@@ -3738,17 +3738,19 @@ app.post("/savepreset_openai", jsonParser, function (request, response) {
     return response.send({ name });
 });
 
-function getPresetFolderByApiId(apiId) {
+function getPresetSettingsByAPI(apiId) {
     switch (apiId) {
         case 'kobold':
         case 'koboldhorde':
-            return directories.koboldAI_Settings;
+            return { folder: directories.koboldAI_Settings, extension: '.settings' };
         case 'novel':
-            return directories.novelAI_Settings;
+            return { folder: directories.novelAI_Settings, extension: '.settings' };
         case 'textgenerationwebui':
-            return directories.textGen_Settings;
+            return { folder: directories.textGen_Settings, extension: '.settings' };
+        case 'instruct':
+            return { folder: directories.instruct, extension: '.json' };
         default:
-            return null;
+            return { folder: null, extension: null };
     }
 }
 

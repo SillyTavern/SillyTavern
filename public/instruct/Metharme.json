@@ -1,11 +1,15 @@
 {
     "name": "Metharme",
     "system_prompt": "Enter roleplay mode. You must act as {{char}}, whose persona follows:",
-    "system_sequence": "<|system|>",
-    "stop_sequence": "</s>",
     "input_sequence": "<|user|>",
     "output_sequence": "<|model|>",
     "last_output_sequence": "",
+    "system_sequence": "<|system|>",
+    "stop_sequence": "</s>",
     "separator_sequence": "",
-    "wrap": false
+    "wrap": false,
+    "macro": true,
+    "names": false,
+    "names_force_groups": true,
+    "activation_regex": ""
 }

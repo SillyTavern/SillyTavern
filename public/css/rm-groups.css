@@ -1,0 +1,227 @@
+/* GROUP CHATS */
+
+.group_pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#rm_group_chats_block .tag.filterByGroups {
+    display: none;
+}
+
+#rm_button_group_chats h2 {
+    margin-top: auto;
+    margin-bottom: auto;
+    color: rgb(188, 193, 200, 1);
+    border: 1px solid #333;
+    background-color: rgba(0, 0, 0, 0.3);
+    padding: 6px;
+    border-radius: 10px;
+}
+
+#rm_group_chats_block {
+    display: none;
+    align-items: flex-start;
+    padding: 0 5px;
+    overflow-y: auto;
+}
+
+#rm_group_chats_block h3,
+#rm_group_chats_block h5 {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+#rm_group_buttons>div {
+    display: flex;
+    flex-direction: column;
+}
+
+#rm_group_buttons .checkbox {
+    display: flex;
+}
+
+#rm_group_buttons .checkbox h4 {
+    display: inline-block;
+}
+
+#rm_group_buttons>input {
+
+    cursor: pointer;
+    user-select: none;
+}
+
+#rm_group_buttons>input:disabled {
+    filter: brightness(0.3);
+    cursor: unset;
+}
+
+#rm_group_members,
+#rm_group_add_members {
+    margin-top: 0.25rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid grey;
+    border-radius: 10px;
+    background-color: var(--black30a);
+}
+
+#rm_group_buttons_expander {
+    flex-grow: 1;
+}
+
+#rm_group_delete {
+    color: rgb(190, 0, 0);
+}
+
+#rm_group_members:empty {
+    width: 100%;
+}
+
+#rm_group_members:empty::before {
+    content: 'Group is empty';
+
+    font-weight: bolder;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0.8;
+}
+
+#rm_group_add_members:empty {
+    width: 100%;
+}
+
+#rm_group_add_members_header {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    column-gap: 10px;
+}
+
+#rm_group_add_members_header input {
+    flex: 1;
+    width: 100%;
+}
+
+#rm_group_add_members:empty::before {
+    content: 'No characters available';
+
+    font-weight: bolder;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0.8;
+}
+
+.group_member_icon {
+    display: flex;
+    column-gap: 10px;
+    align-items: center;
+    justify-content: end;
+    flex-grow: 1;
+}
+
+.group_member {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+    padding: 5px;
+    border-radius: 10px;
+}
+
+.group_member .group_member_name {
+    flex-grow: 1;
+    margin-left: 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: calc(100% - 110px);
+    display: flex;
+    gap: 5px;
+    height: 100%;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.group_member_icon .flex-container {
+    gap: 0px;
+}
+
+#rm_group_members .right_menu_button,
+#rm_group_add_members .right_menu_button {
+    padding: 0px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+}
+
+#rm_group_members .right_menu_button[data-action="speak"],
+#rm_group_members .group_member:not(.disabled) .right_menu_button[data-action="disable"] {
+    opacity: 0.4;
+    filter: brightness(0.5);
+    transition: all 0.2s ease-in-out;
+}
+
+/* #rm_group_members .right_menu_button[data-action="speak"]:hover, */
+#rm_group_members .group_member:not(.disabled) .right_menu_button[data-action="disable"]:hover {
+    opacity: inherit;
+    filter: drop-shadow(0px 0px 5px rgb(243, 166, 65));
+}
+
+#rm_group_members .group_member.disabled .right_menu_button[data-action="enable"] {
+    filter: drop-shadow(0px 0px 5px rgb(243, 166, 65));
+}
+
+
+#rm_group_members .right_menu_button[data-action="speak"]:hover {
+    opacity: inherit;
+    filter: drop-shadow(0px 0px 5px rgb(153, 255, 153));
+}
+
+/* Rules for icon display */
+#rm_group_add_members .right_menu_button:not([data-action="add"], [data-action="view"]),
+#rm_group_members .right_menu_button[data-action="add"],
+#rm_group_members .group_member.disabled .right_menu_button[data-action="disable"],
+#rm_group_members .group_member:not(.disabled) .right_menu_button[data-action="enable"] {
+    display: none;
+}
+
+.group_select {
+    display: flex;
+    flex-direction: row;
+    padding: 5px;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.group_select:hover {
+    background-color: var(--white30a);
+}
+
+.group_select .avatar {
+    flex: 0;
+}
+
+.group_select .group_icon {
+    width: 20px;
+    height: 20px;
+    margin: 0 10px;
+}
+
+.group_select .group_fav_icon {
+    filter: drop-shadow(0px 0px 1px black);
+    color: #c5b457;
+    font-size: 12px;
+    order: -1;
+    margin-left: -18px;
+    margin-top: 3px;
+}
+
+.group_member .avatar {
+    flex-shrink: 0;
+}

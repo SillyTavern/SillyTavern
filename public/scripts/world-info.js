@@ -464,7 +464,7 @@ function appendWorldEntry(name, data, entry) {
 
     const contentInput = template.find('textarea[name="content"]');
     contentInput.data("uid", entry.uid);
-    contentInput.on("input", function () {
+    contentInput.on("input", function (_, { skipCount } = {}) {
         const uid = $(this).data("uid");
         const value = $(this).val();
         data.entries[uid].content = value;
@@ -472,11 +472,24 @@ function appendWorldEntry(name, data, entry) {
         setOriginalDataValue(data, uid, "content", data.entries[uid].content);
         saveWorldInfo(name, data);
 
+        if (skipCount) {
+            return;
+        }
+
         // count tokens
         countTokensDebounced(this, value);
     });
-    contentInput.val(entry.content).trigger("input");
+    contentInput.val(entry.content).trigger("input", { skipCount: true });
     //initScrollHeight(contentInput);
+
+    template.find('.inline-drawer-toggle').on('click', function () {
+        const counter = template.find(".world_entry_form_token_counter");
+
+        if (counter.data('first-run')) {
+            counter.data('first-run', false);
+            countTokensDebounced(contentInput, contentInput.val());
+        }
+    });
 
     // selective
     const selectiveInput = template.find('input[name="selective"]');
