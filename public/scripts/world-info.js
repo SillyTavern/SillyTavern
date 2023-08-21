@@ -46,6 +46,11 @@ const saveSettingsDebounced = debounce(() => {
 }, 1000);
 const sortFn = (a, b) => b.order - a.order;
 
+const countTokensDebounced = debounce(function (counter, value) {
+    const numberOfTokens = getTokenCount(value);
+    $(counter).text(numberOfTokens);
+}, 1000);
+
 export function getWorldInfoSettings() {
     return {
         world_info,
@@ -454,13 +459,7 @@ function appendWorldEntry(name, data, entry) {
     commentToggle.parent().hide()
 
     // content
-    const countTokensDebounced = debounce(function (that, value) {
-        const numberOfTokens = getTokenCount(value);
-        $(that)
-            .closest(".world_entry")
-            .find(".world_entry_form_token_counter")
-            .text(numberOfTokens);
-    }, 1000);
+    const counter = template.find(".world_entry_form_token_counter");
 
     const contentInput = template.find('textarea[name="content"]');
     contentInput.data("uid", entry.uid);
@@ -477,17 +476,15 @@ function appendWorldEntry(name, data, entry) {
         }
 
         // count tokens
-        countTokensDebounced(this, value);
+        countTokensDebounced(counter, value);
     });
     contentInput.val(entry.content).trigger("input", { skipCount: true });
     //initScrollHeight(contentInput);
 
     template.find('.inline-drawer-toggle').on('click', function () {
-        const counter = template.find(".world_entry_form_token_counter");
-
         if (counter.data('first-run')) {
             counter.data('first-run', false);
-            countTokensDebounced(contentInput, contentInput.val());
+            countTokensDebounced(counter, contentInput.val());
         }
     });
 
