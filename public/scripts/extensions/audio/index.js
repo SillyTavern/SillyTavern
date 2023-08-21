@@ -75,12 +75,12 @@ let cooldownBGM = 0;
 //#############################//
 
 const defaultSettings = {
-    enabled: false,
+    enabled: true,
     bgm_muted: false,
     ambient_muted: false,
     bgm_volume: 50,
     ambient_volume: 50,
-    bgm_cooldown: 10
+    bgm_cooldown: 30
 }
 
 function loadSettings() {
