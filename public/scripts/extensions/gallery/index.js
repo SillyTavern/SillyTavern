@@ -1,123 +1,132 @@
 import {
-    eventSource, this_chid, characters, callPopup
+    eventSource,
+    this_chid,
+    characters,
+    callPopup,
 } from "../../../script.js";
 import { selected_group } from "../../group-chats.js";
-
-
-function loadFile(url, type, callback) {
-    return new Promise((resolve, reject) => {
-        if (type === "css") {
-            var link = document.createElement("link");
-            link.rel = "stylesheet";
-            link.href = url;
-            document.head.appendChild(link);
-            link.onload = resolve;
-            link.onerror = reject;
-        } else if (type === "js") {
-            var script = document.createElement("script");
-            script.src = url;
-            document.body.appendChild(script);
-            script.onload = resolve;
-            script.onerror = reject;
-        }
-    });
-}
 
 const extensionName = "gallery";
 const extensionFolderPath = `scripts/extensions/${extensionName}/`;
 let firstTime = true;
 
-async function showCharGallery() {
+/**
+ * Loads either a CSS or JS file and appends it to the appropriate document section.
+ * 
+ * @param {string} url - The URL of the file to be loaded.
+ * @param {string} type - The type of file to load: "css" or "js".
+ * @returns {Promise} - Resolves when the file has loaded, rejects if there's an error or invalid type.
+ */
+function loadFile(url, type) {
+    return new Promise((resolve, reject) => {
+        let element;
 
+        if (type === "css") {
+            element = document.createElement("link");
+            element.rel = "stylesheet";
+            element.href = url;
+        } else if (type === "js") {
+            element = document.createElement("script");
+            element.src = url;
+        } else {
+            reject("Invalid type specified");
+            return;
+        }
+
+        element.onload = resolve;
+        element.onerror = reject;
+
+        type === "css"
+            ? document.head.appendChild(element)
+            : document.body.appendChild(element);
+    });
+}
+
+/**
+ * Retrieves a list of gallery items based on a given URL. This function calls an API endpoint 
+ * to get the filenames and then constructs the item list.
+ * 
+ * @param {string} url - The base URL to retrieve the list of images.
+ * @returns {Promise<Array>} - Resolves with an array of gallery item objects, rejects on error.
+ */
+async function getGalleryItems(url) {
+    return new Promise((resolve, reject) => {
+        $.get(`/listimgfiles/${url}`, function (files) {
+            const items = files.map((file) => ({
+                src: `user/images/${url}/${file}`,
+                srct: `user/images/${url}/${file}`,
+                title: "", // Optional title for each item
+            }));
+            resolve(items);
+        }).fail(reject);
+    });
+}
+
+/**
+ * Displays a character gallery. The gallery is initialized using the nanogallery2 library. 
+ * This function takes care of preparing the gallery items, loading necessary resources,
+ * and ensuring body position is correctly set.
+ */
+async function showCharGallery() {
+    // Load necessary files if it's the first time calling the function
     if (firstTime) {
-        loadFile(`${extensionFolderPath}nanogallery2.woff.min.css`, "css")
-            .then(() => {
-                firstTime = false;
-                return loadFile(`${extensionFolderPath}jquery.nanogallery2.min.js`, "js");
-            })
+        await loadFile(
+            `${extensionFolderPath}nanogallery2.woff.min.css`,
+            "css"
+        );
+        await loadFile(
+            `${extensionFolderPath}jquery.nanogallery2.min.js`,
+            "js"
+        );
+        firstTime = false;
     }
 
-    console.trace('showCharGallery()');
     try {
-        let selectedID = this_chid;
-        let url = "";
-
-        if (selected_group) {
-            selectedID = selected_group;
-            url = selectedID;
-        }
-        if (selectedID) {
-            let char = characters[selectedID];
-            let avatar = char.avatar;
-            avatar = avatar.replace('.png', '');
-            url = avatar;
+        let url = selected_group || this_chid;
+        if (!selected_group && this_chid) {
+            const char = characters[this_chid];
+            url = char.avatar.replace(".png", "");
         }
 
         const items = await getGalleryItems(url);
 
-        // Create empty container for gallery and display popup
-        let close = callPopup('<div id="my-gallery"></div>', 'text');
+        let close = callPopup('<div id="my-gallery"></div>', "text");
         if ($("body").css("position") === "fixed") {
             $("body").css("position", "static");
         }
 
-        // Delayed initialization of nanogallery2
         setTimeout(() => {
             $("#my-gallery").nanogallery2({
                 items: items,
                 thumbnailHeight: 150,
                 thumbnailWidth: 150,
             });
-            console.log($("#my-gallery").children().length);
         }, 100);
 
         close.then(() => {
-            $("#my-gallery").nanogallery2('destroy');
+            $("#my-gallery").nanogallery2("destroy");
             if ($("body").css("position") === "static") {
                 $("body").css("position", "fixed");
             }
         });
-
     } catch (err) {
         console.error(err);
     }
 }
 
-
-async function getGalleryItems(url) {
-    return new Promise((resolve, reject) => {
-        $.get(`/listimgfiles/${url}`, function (files) {
-            const items = files.map(file => {
-                let imgSrc = `user/images/${url}/${file}`;
-                return {
-                    src: imgSrc,
-                    srct: imgSrc,
-                    title: ''  // Or add a title if you wish
-                };
-            });
-            resolve(items);
-        }).fail(error => {
-            reject(error);
-        });
-    });
-}
-
-jQuery(async () => { //wait for the page to load
-    $(document).ready(function () {
-        // Listen to the emitted event
-        eventSource.on('charManagementDropdown', (selectedOptionId) => {
-            console.log("Emitted event received with option ID:", selectedOptionId);
-
-            if (selectedOptionId === "show_char_gallery") {
-                showCharGallery();
-            }
-        });
-
-        let newOption = $('<option>')
-            .attr('id', 'show_char_gallery')
-            .text('Show Gallery');
-
-        $('#char-management-dropdown').append(newOption);
+$(document).ready(function () {
+    // Register an event listener
+    eventSource.on("charManagementDropdown", (selectedOptionId) => {
+        if (selectedOptionId === "show_char_gallery") {
+            showCharGallery();
+        }
     });
 
+    // Add an option to the dropdown
+    $("#char-management-dropdown").append(
+        $("<option>", {
+            id: "show_char_gallery",
+            text: "Show Gallery",
+        })
+    );
 });
