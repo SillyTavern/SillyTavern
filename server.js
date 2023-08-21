@@ -2686,8 +2686,7 @@ app.get('/listimgfiles/:folder', (req, res) => {
         if (err) {
             return res.status(500).send({ error: "Unable to retrieve files" });
         }
-        const imgFiles = files.filter(file => ['.jpg', '.jpeg', '.png', '.gif'].includes(path.extname(file)));
-        res.send(imgFiles);
+        res.send(files);
     });
 });
 

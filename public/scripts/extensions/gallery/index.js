@@ -5,42 +5,13 @@ import {
     callPopup,
 } from "../../../script.js";
 import { selected_group } from "../../group-chats.js";
+import { loadFileToDocument } from "../../utils.js";
 
 const extensionName = "gallery";
 const extensionFolderPath = `scripts/extensions/${extensionName}/`;
 let firstTime = true;
 
-/**
- * Loads either a CSS or JS file and appends it to the appropriate document section.
- * 
- * @param {string} url - The URL of the file to be loaded.
- * @param {string} type - The type of file to load: "css" or "js".
- * @returns {Promise} - Resolves when the file has loaded, rejects if there's an error or invalid type.
- */
-function loadFile(url, type) {
-    return new Promise((resolve, reject) => {
-        let element;
 
-        if (type === "css") {
-            element = document.createElement("link");
-            element.rel = "stylesheet";
-            element.href = url;
-        } else if (type === "js") {
-            element = document.createElement("script");
-            element.src = url;
-        } else {
-            reject("Invalid type specified");
-            return;
-        }
-
-        element.onload = resolve;
-        element.onerror = reject;
-
-        type === "css"
-            ? document.head.appendChild(element)
-            : document.body.appendChild(element);
-    });
-}
 
 /**
  * Retrieves a list of gallery items based on a given URL. This function calls an API endpoint 
@@ -70,11 +41,11 @@ async function getGalleryItems(url) {
 async function showCharGallery() {
     // Load necessary files if it's the first time calling the function
     if (firstTime) {
-        await loadFile(
+        await loadFileToDocument(
             `${extensionFolderPath}nanogallery2.woff.min.css`,
             "css"
         );
-        await loadFile(
+        await loadFileToDocument(
             `${extensionFolderPath}jquery.nanogallery2.min.js`,
             "js"
         );
