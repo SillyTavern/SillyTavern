@@ -59,7 +59,7 @@ const DEFAULT_EXPRESSIONS = [
 ];
 const SPRITE_DOM_ID = "#expression-image";
 const AMBIENT_FOLDER = "sounds/ambient/";
-const FALLBACK_BGMS = ["sounds/bgm/bgm_0.mp3"]; // TODO fetch them from folder default and custom
+const FALLBACK_BGMS = ["sounds/bgm/cup-of-cohee.ogg"]; // TODO fetch them from folder default and custom
 
 let characterMusics = {}; // Updated with module workers
 //let ambientMusics = []; // Initialized only once
