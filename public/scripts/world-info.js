@@ -1,5 +1,5 @@
 import { saveSettings, callPopup, substituteParams, getTokenCount, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types } from "../script.js";
-import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, deepClone, getSortableDelay, escapeRegex } from "./utils.js";
+import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, deepClone, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE } from "./utils.js";
 import { getContext } from "./extensions.js";
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from "./authors-note.js";
 import { registerSlashCommand } from "./slash-commands.js";
@@ -45,11 +45,8 @@ const saveSettingsDebounced = debounce(() => {
     saveSettings()
 }, 1000);
 const sortFn = (a, b) => b.order - a.order;
-
-const countTokensDebounced = debounce(function (counter, value) {
-    const numberOfTokens = getTokenCount(value);
-    $(counter).text(numberOfTokens);
-}, 1000);
+const navigation_option = { none: 0, previous: 1, last: 2, };
+let updateEditor = (navigation) => { navigation; };
 
 export function getWorldInfoSettings() {
     return {
@@ -228,7 +225,9 @@ function nullWorldInfo() {
     toastr.info("Create or import a new World Info file first.", "World Info is not set", { timeOut: 10000, preventDuplicates: true });
 }
 
-function displayWorldEntries(name, data) {
+function displayWorldEntries(name, data, navigation = navigation_option.none) {
+    updateEditor = (navigation) => displayWorldEntries(name, data, navigation);
+
     $("#world_popup_entries_list").empty().show();
 
     if (!data || !("entries" in data)) {
@@ -237,22 +236,55 @@ function displayWorldEntries(name, data) {
         $("#world_popup_export").off('click').on('click', nullWorldInfo);
         $("#world_popup_delete").off('click').on('click', nullWorldInfo);
         $("#world_popup_entries_list").hide();
+        $("#world_info_pagination").pagination('destroy');
         return;
     }
 
-    // Convert the data.entries object into an array
-    const entriesArray = Object.keys(data.entries).map(uid => {
-        const entry = data.entries[uid];
-        entry.displayIndex = entry.displayIndex ?? entry.uid;
-        return entry;
+    function getDataArray(callback) {
+        // Convert the data.entries object into an array
+        const entriesArray = Object.keys(data.entries).map(uid => {
+            const entry = data.entries[uid];
+            entry.displayIndex = entry.displayIndex ?? entry.uid;
+            return entry;
+        });
+
+        // Sort the entries array by displayIndex and uid
+        entriesArray.sort((a, b) => a.displayIndex - b.displayIndex || a.uid - b.uid);
+        callback(entriesArray);
+    }
+
+    let startPage = 1;
+
+    if (navigation === navigation_option.previous) {
+        startPage = $("#world_info_pagination").pagination('getCurrentPageNum');
+    }
+
+    const storageKey = 'WI_PerPage';
+    $("#world_info_pagination").pagination({
+        dataSource: getDataArray,
+        pageSize: Number(localStorage.getItem(storageKey)) || 10,
+        sizeChangerOptions: [10, 25, 50, 100],
+        pageRange: 1,
+        pageNumber: startPage,
+        position: 'top',
+        showPageNumbers: false,
+        showSizeChanger: true,
+        prevText: '<',
+        nextText: '>',
+        formatNavigator: PAGINATION_TEMPLATE,
+        showNavigator: true,
+        callback: function (page) {
+            $("#world_popup_entries_list").empty();
+            const blocks = page.map(entry => getWorldEntry(name, data, entry));
+            $("#world_popup_entries_list").append(blocks);
+        },
+        afterSizeSelectorChange: function (e) {
+            localStorage.setItem(storageKey, e.target.value);
+        }
     });
 
-    // Sort the entries array by displayIndex and uid
-    entriesArray.sort((a, b) => a.displayIndex - b.displayIndex || a.uid - b.uid);
-
-    // Loop through the sorted array and call appendWorldEntry
-    for (const entry of entriesArray) {
-        appendWorldEntry(name, data, entry);
+    if (navigation === navigation_option.last) {
+        $("#world_info_pagination").pagination('go', $("#world_info_pagination").pagination('getTotalPage'));
     }
 
     $("#world_popup_new").off('click').on('click', () => {
@@ -365,7 +397,7 @@ function deleteOriginalDataValue(data, uid) {
     }
 }
 
-function appendWorldEntry(name, data, entry) {
+function getWorldEntry(name, data, entry) {
     const template = $("#entry_edit_template .world_entry").clone();
     template.data("uid", entry.uid);
 
@@ -460,6 +492,10 @@ function appendWorldEntry(name, data, entry) {
 
     // content
     const counter = template.find(".world_entry_form_token_counter");
+    const countTokensDebounced = debounce(function (counter, value) {
+        const numberOfTokens = getTokenCount(value);
+        $(counter).text(numberOfTokens);
+    }, 1000);
 
     const contentInput = template.find('textarea[name="content"]');
     contentInput.data("uid", entry.uid);
@@ -661,11 +697,10 @@ function appendWorldEntry(name, data, entry) {
         const uid = $(this).data("uid");
         deleteWorldInfoEntry(data, uid);
         deleteOriginalDataValue(data, uid);
-        $(this).closest(".world_entry").remove();
         saveWorldInfo(name, data);
+        updateEditor(navigation_option.previous);
     });
 
-    template.appendTo("#world_popup_entries_list");
     template.find('.inline-drawer-content').css('display', 'none'); //entries start collapsed
 
     return template;
@@ -706,8 +741,7 @@ function createWorldInfoEntry(name, data) {
     const newEntry = { uid: newUid, ...newEntryTemplate };
     data.entries[newUid] = newEntry;
 
-    const entryTemplate = appendWorldEntry(name, data, newEntry);
-    entryTemplate.get(0).scrollIntoView({ behavior: "smooth" });
+    updateEditor(navigation_option.last);
 }
 
 async function _save(name, data) {

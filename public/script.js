@@ -133,6 +133,7 @@ import {
     isDataURL,
     getCharaFilename,
     isDigitsOnly,
+    PAGINATION_TEMPLATE,
 } from "./scripts/utils.js";
 
 import { extension_settings, getContext, loadExtensionSettings, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
@@ -1048,6 +1049,7 @@ async function printCharacters(fullRefresh = false) {
         showSizeChanger: true,
         prevText: '<',
         nextText: '>',
+        formatNavigator: PAGINATION_TEMPLATE,
         showNavigator: true,
         callback: function (data) {
             $("#rm_print_characters_block").empty();

@@ -6,7 +6,8 @@ import {
     isDataURL,
     createThumbnail,
     extractAllWords,
-    saveBase64AsFile
+    saveBase64AsFile,
+    PAGINATION_TEMPLATE,
 } from './utils.js';
 import { RA_CountCharTokens, humanizedDateTime, dragElement, favsToHotswap } from "./RossAscends-mods.js";
 import { loadMovingUIState, sortEntitiesList } from './power-user.js';
@@ -989,6 +990,7 @@ function printGroupCandidates() {
         showSizeChanger: false,
         prevText: '<',
         nextText: '>',
+        formatNavigator: PAGINATION_TEMPLATE,
         showNavigator: true,
         showSizeChanger: true,
         pageSize: Number(localStorage.getItem(storageKey)) || 5,
@@ -1016,6 +1018,7 @@ function printGroupMembers() {
         showSizeChanger: false,
         prevText: '<',
         nextText: '>',
+        formatNavigator: PAGINATION_TEMPLATE,
         showNavigator: true,
         showSizeChanger: true,
         pageSize: Number(localStorage.getItem(storageKey)) || 5,

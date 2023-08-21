@@ -39,7 +39,6 @@
 #world_popup_bottom_holder div {
     width: fit-content;
     user-select: none;
-    opacity: 0.8;
 }
 
 .world_popup_logo_block {
@@ -60,7 +59,6 @@
 #form_rename_world {
     display: flex;
     align-items: center;
-    opacity: 0.8;
     gap: 5px;
 }
 
@@ -179,3 +177,9 @@
 /* .world_entry_form .inline-drawer-header {
     background-color: var(--SmartThemeShadowColor);
 } */
+
+#world_editor_select {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 10em;
+}
