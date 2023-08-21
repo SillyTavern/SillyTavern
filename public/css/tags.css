@@ -134,7 +134,6 @@
 .open_alternate_greetings {
     margin: 0;
     aspect-ratio: 1 / 1;
-    height: 2rem;
 }
 
 .tag.selected {

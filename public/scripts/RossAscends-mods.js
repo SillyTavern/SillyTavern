@@ -23,11 +23,6 @@ import {
 } from "../script.js";
 
 import {
-    characterStatsHandler,
-} from "./stats.js";
-
-
-import {
     power_user,
     send_on_enter_options,
 } from "./power-user.js";
@@ -38,7 +33,7 @@ import {
     SECRET_KEYS,
     secret_state,
 } from "./secrets.js";
-import { debounce, delay } from "./utils.js";
+import { debounce, delay, getStringHash } from "./utils.js";
 import { chat_completion_sources, oai_settings } from "./openai.js";
 
 var NavToggle = document.getElementById("nav-toggle");
@@ -238,7 +233,6 @@ $("#rm_button_create").on("click", function () {                 //when "+New Ch
     create_save_first_message = "";
     create_save_scenario = "";
     create_save_mes_example = "";
-    $("#result_info").html('Type to start counting tokens!');
 });
 //when any input is made to the create/edit character form textareas
 $("#rm_ch_create_block").on("input", function () { countTokensDebounced(); });
@@ -246,96 +240,41 @@ $("#rm_ch_create_block").on("input", function () { countTokensDebounced(); });
 $("#character_popup").on("input", function () { countTokensDebounced(); });
 //function:
 export function RA_CountCharTokens() {
-    //console.log('RA_TC -- starting with this_chid = ' + this_chid);
-    if (menu_type === "create") {            //if new char
-        function saveFormVariables() {
-            create_save_name = $("#character_name_pole").val();
-            create_save_description = $("#description_textarea").val();
-            create_save_first_message = $("#firstmessage_textarea").val();
+    let total_tokens = 0;
+
+    $('[data-token-counter]').each(function () {
+        const counter = $(this);
+        const input = $(document.getElementById(counter.data('token-counter')));
+        const value = input.val();
+
+        if (input.length === 0) {
+            counter.text('Invalid input reference');
+            return;
         }
 
-        function savePopupVariables() {
-            create_save_personality = $("#personality_textarea").val();
-            create_save_scenario = $("#scenario_pole").val();
-            create_save_mes_example = $("#mes_example_textarea").val();
+        if (!value) {
+            counter.text(0);
+            return;
         }
 
-        saveFormVariables();
-        savePopupVariables();
+        const valueHash = getStringHash(value);
 
-        //count total tokens, including those that will be removed from context once chat history is long
-        let count_string = [
-            create_save_name,
-            create_save_description,
-            create_save_personality,
-            create_save_scenario,
-            create_save_first_message,
-            create_save_mes_example,
-        ].join('\n').replace(/\r/gm, '').trim();
-        count_tokens = getTokenCount(count_string);
-
-        //count permanent tokens that will never get flushed out of context
-        let perm_string = [
-            create_save_name,
-            create_save_description,
-            create_save_personality,
-            create_save_scenario,
-            // add examples to permanent if they are pinned
-            (power_user.pin_examples ? create_save_mes_example : ''),
-        ].join('\n').replace(/\r/gm, '').trim();
-        perm_tokens = getTokenCount(perm_string);
-
-    } else {
-        if (this_chid !== undefined && this_chid !== "invalid-safety-id") {    // if we are counting a valid pre-saved char
-
-            //same as above, all tokens including temporary ones
-            let count_string = [
-                characters[this_chid].description,
-                characters[this_chid].personality,
-                characters[this_chid].scenario,
-                characters[this_chid].first_mes,
-                characters[this_chid].mes_example,
-            ].join('\n').replace(/\r/gm, '').trim();
-            count_tokens = getTokenCount(count_string);
-
-            //permanent tokens count
-            let perm_string = [
-                characters[this_chid].name,
-                characters[this_chid].description,
-                characters[this_chid].personality,
-                characters[this_chid].scenario,
-                // add examples to permanent if they are pinned
-                (power_user.pin_examples ? characters[this_chid].mes_example : ''),
-            ].join('\n').replace(/\r/gm, '').trim();
-            perm_tokens = getTokenCount(perm_string);
-            // if neither, probably safety char or some error in loading
-        } else { console.debug("RA_TC -- no valid char found, closing."); }
-    }
-    //label rm_stats_button with a tooltip indicating stats
-    $("#result_info").html(`<small>${count_tokens} Tokens (${perm_tokens} Permanent)</small>
-
-    <i title='Click for stats!' class="fa-solid fa-circle-info rm_stats_button"></i>`);
-    // display the counted tokens
-    const tokenLimit = Math.max(((main_api !== 'openai' ? max_context : oai_settings.openai_max_context) / 2), 1024);
-    if (count_tokens < tokenLimit && perm_tokens < tokenLimit) {
-
-    } else {
-        $("#result_info").html(`
-        <div class="flex-container alignitemscenter">
-            <div class="flex-container flexnowrap flexNoGap">
-                <small class="flex-container flexnowrap flexNoGap">
-                    <div class="neutral_warning">${count_tokens}</div>&nbsp;Tokens (<div class="neutral_warning">${perm_tokens}</div><div>&nbsp;Permanent)</div>
-                </small>
-                <i title='Click for stats!' class="fa-solid fa-circle-info rm_stats_button"></i>
-            </div>
-            <div id="chartokenwarning" class="menu_button margin0 whitespacenowrap"><a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-tokens" target="_blank">About Token 'Limits'</a></div>
-        </div>`);
-
-
-    } //warn if either are over 1024
-    $(".rm_stats_button").on('click', function () {
-        characterStatsHandler(characters, this_chid);
+        if (input.data('last-value-hash') === valueHash) {
+            total_tokens += Number(counter.text());
+        } else {
+            const tokens = getTokenCount(value);
+            counter.text(tokens);
+            total_tokens += tokens;
+            input.data('last-value-hash', valueHash);
+        }
     });
+
+    // Warn if total tokens exceeds the limit of half the max context
+    const tokenLimit = Math.max(((main_api !== 'openai' ? max_context : oai_settings.openai_max_context) / 2), 1024);
+    const showWarning = (total_tokens > tokenLimit);
+    $('#result_info_total_tokens').text(total_tokens);
+    $('#result_info_text').toggleClass('neutral_warning', showWarning);
+    $('#chartokenwarning').toggle(showWarning);
 }
 /**
  * Auto load chat with the last active character or group.
