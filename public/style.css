@@ -57,7 +57,7 @@
     /* 800px; */
     /*base variable calculated in rems*/
     --fontScale: 1;
-    --mainFontSize: calc(var(--fontScale) * 14px);
+    --mainFontSize: calc(var(--fontScale) * 15px);
 
     /* base variable for blur strength slider calculations */
     --blurStrength: 10;
