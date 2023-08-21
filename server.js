@@ -2679,6 +2679,18 @@ app.post('/uploadimage', jsonParser, async (request, response) => {
     }
 });
 
+app.get('/listimgfiles/:folder', (req, res) => {
+    const directoryPath = path.join(__dirname, 'public/user/images/', req.params.folder);
+    console.log(directoryPath);
+    fs.readdir(directoryPath, (err, files) => {
+        if (err) {
+            return res.status(500).send({ error: "Unable to retrieve files" });
+        }
+        const imgFiles = files.filter(file => ['.jpg', '.jpeg', '.png', '.gif'].includes(path.extname(file)));
+        res.send(imgFiles);
+    });
+});
+
 
 app.post('/getgroups', jsonParser, (_, response) => {
     const groups = [];
