@@ -947,6 +947,25 @@ export function fuzzySearchCharacters(searchValue) {
     return indices;
 }
 
+export function fuzzySearchWorldInfo(data, searchValue) {
+    const fuse = new Fuse(data, {
+        keys: [
+            { name: 'key', weight: 3 },
+            { name: 'content', weight: 3 },
+            { name: 'comment', weight: 2 },
+            { name: 'keysecondary', weight: 2 },
+            { name: 'uid', weight: 1 },
+        ],
+        includeScore: true,
+        ignoreLocation: true,
+        threshold: 0.2,
+    });
+
+    const results = fuse.search(searchValue);
+    console.debug('World Info fuzzy search results for ' + searchValue, results);
+    return results.map(x => x.item?.uid);
+}
+
 export function fuzzySearchGroups(searchValue) {
     const fuse = new Fuse(groups, {
         keys: [

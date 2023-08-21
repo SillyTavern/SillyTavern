@@ -4,6 +4,7 @@ import { getContext } from "./extensions.js";
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from "./authors-note.js";
 import { registerSlashCommand } from "./slash-commands.js";
 import { deviceInfo } from "./RossAscends-mods.js";
+import { FILTER_TYPES, FilterHelper } from "./filters.js";
 
 export {
     world_info,
@@ -47,6 +48,9 @@ const saveSettingsDebounced = debounce(() => {
 const sortFn = (a, b) => b.order - a.order;
 const navigation_option = { none: 0, previous: 1, last: 2, };
 let updateEditor = (navigation) => { navigation; };
+
+// Do not optimize. updateEditor is a function that is updated by the displayWorldEntries with new data.
+const worldInfoFilter = new FilterHelper(() => updateEditor());
 
 export function getWorldInfoSettings() {
     return {
@@ -236,13 +240,13 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
         $("#world_popup_export").off('click').on('click', nullWorldInfo);
         $("#world_popup_delete").off('click').on('click', nullWorldInfo);
         $("#world_popup_entries_list").hide();
-        $("#world_info_pagination").pagination('destroy');
+        $('#world_info_pagination').html('');
         return;
     }
 
     function getDataArray(callback) {
         // Convert the data.entries object into an array
-        const entriesArray = Object.keys(data.entries).map(uid => {
+        let entriesArray = Object.keys(data.entries).map(uid => {
             const entry = data.entries[uid];
             entry.displayIndex = entry.displayIndex ?? entry.uid;
             return entry;
@@ -250,7 +254,9 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
 
         // Sort the entries array by displayIndex and uid
         entriesArray.sort((a, b) => a.displayIndex - b.displayIndex || a.uid - b.uid);
+        entriesArray = worldInfoFilter.applyFilters(entriesArray);
         callback(entriesArray);
+        return entriesArray;
     }
 
     let startPage = 1;
@@ -262,13 +268,14 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
     const storageKey = 'WI_PerPage';
     $("#world_info_pagination").pagination({
         dataSource: getDataArray,
-        pageSize: Number(localStorage.getItem(storageKey)) || 10,
-        sizeChangerOptions: [10, 25, 50, 100],
+        pageSize: 25,
+        //pageSize: Number(localStorage.getItem(storageKey)) || 25,
+        //sizeChangerOptions: [10, 25, 50, 100],
+        //showSizeChanger: true,
         pageRange: 1,
         pageNumber: startPage,
         position: 'top',
         showPageNumbers: false,
-        showSizeChanger: true,
         prevText: '<',
         nextText: '>',
         formatNavigator: PAGINATION_TEMPLATE,
@@ -1526,7 +1533,7 @@ jQuery(() => {
         await importWorldInfo(file);
 
         // Will allow to select the same file twice in a row
-        $("#form_world_import").trigger("reset");
+        e.target.value = '';
     });
 
     $("#world_create_button").on('click', async () => {
@@ -1539,6 +1546,8 @@ jQuery(() => {
     });
 
     $("#world_editor_select").on('change', async () => {
+        $("#world_info_search").val('');
+        worldInfoFilter.setFilterData(FILTER_TYPES.WORLD_INFO_SEARCH, '', true);
         const selectedIndex = $("#world_editor_select").find(":selected").val();
 
         if (selectedIndex === "") {
@@ -1619,23 +1628,10 @@ jQuery(() => {
         }
     });
 
-    /*
-    $("#world_info").on('mousewheel', function (e) {
-        e.preventDefault();
-        if ($(this).is(':animated')) {
-            return; //dont force multiple scroll animations
-        }
-        var wheelDelta = e.originalEvent.wheelDelta.toFixed(0);
-        var DeltaPosNeg = (wheelDelta >= 0) ? 1 : -1; //determine if scrolling up or down
-        var containerHeight = $(this).height().toFixed(0);
-        var optionHeight = $(this).find('option').first().height().toFixed(0);
-        var visibleOptions = (containerHeight / optionHeight).toFixed(0); //how many options we can see
-        var pixelsToScroll = (optionHeight * visibleOptions * DeltaPosNeg).toFixed(0); //scroll a full container height
-        var scrollTop = ($(this).scrollTop() - pixelsToScroll).toFixed(0);
-
-        $(this).animate({ scrollTop: scrollTop }, 200);
+    $('#world_info_search').on('input', function () {
+        const term = $(this).val();
+        worldInfoFilter.setFilterData(FILTER_TYPES.WORLD_INFO_SEARCH, term);
     });
-    */
 
     // Not needed on mobile
     if (deviceInfo.device.type === 'desktop') {
