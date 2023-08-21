@@ -11,7 +11,6 @@ export { CoquiTtsProvider }
 const DEBUG_PREFIX = "<Coqui TTS module> ";
 const UPDATE_INTERVAL = 1000;
 
-let inApiCall = false;
 let charactersList = []; // Updated with module worker
 let coquiApiModels = {}; // Initialized only once
 let coquiApiModelsFull = {}; // Initialized only once
@@ -194,18 +193,6 @@ class CoquiTtsProvider {
         .then(json => {
             coquiApiModels = json;
             console.debug(DEBUG_PREFIX,"initialized coqui-api model list to", coquiApiModels);
-            /*
-            $('#coqui_api_language')
-                .find('option')
-                .remove()
-                .end()
-                .append('<option value="none">Select model language</option>')
-                .val('none');
-
-            for(let language in coquiApiModels) {
-                $("#coqui_api_language").append(new Option(languageLabels[language],language));
-                console.log(DEBUG_PREFIX,"added language",language);
-            }*/
         });
 
         // Load coqui-api FULL settings from json file
@@ -214,18 +201,6 @@ class CoquiTtsProvider {
         .then(json => {
             coquiApiModelsFull = json;
             console.debug(DEBUG_PREFIX,"initialized coqui-api full model list to", coquiApiModelsFull);
-            /*
-            $('#coqui_api_full_language')
-                .find('option')
-                .remove()
-                .end()
-                .append('<option value="none">Select model language</option>')
-                .val('none');
-
-            for(let language in coquiApiModelsFull) {
-                $("#coqui_api_full_language").append(new Option(languageLabels[language],language));
-                console.log(DEBUG_PREFIX,"added language",language);
-            }*/
         });
     }
 

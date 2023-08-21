@@ -4,6 +4,8 @@ TODO:
     - per character bgms OK
     - simple fade out/in when switching OK
     - cross fading ?
+    - BGM switch cooldown
+    - group chat
  - Background based ambient sounds
     - global sounds OK
     - global overides ?
@@ -22,18 +24,52 @@ export { MODULE_NAME };
 const MODULE_NAME = 'Audio';
 const DEBUG_PREFIX = "<Audio module> ";
 const UPDATE_INTERVAL = 1000;
+const BGM_UPDATE_COOLDOWN =  10;
 
-const MUSIC_FALLBACK = "default"
-const EXPRESSIONS_LIST = ["default","anger","fear","joy","love","sadness","surprise"];
-const SPRITE_DOM_ID = "#expression-image"
-const AMBIENT_FOLDER = "backgrounds/audio/default/"
+const FALLBACK_EXPRESSION = "neutral";
+const DEFAULT_EXPRESSIONS = [
+    //"talkinghead",
+    "admiration",
+    "amusement",
+    "anger",
+    "annoyance",
+    "approval",
+    "caring",
+    "confusion",
+    "curiosity",
+    "desire",
+    "disappointment",
+    "disapproval",
+    "disgust",
+    "embarrassment",
+    "excitement",
+    "fear",
+    "gratitude",
+    "grief",
+    "joy",
+    "love",
+    "nervousness",
+    "optimism",
+    "pride",
+    "realization",
+    "relief",
+    "remorse",
+    "sadness",
+    "surprise",
+    "neutral"
+];
+const SPRITE_DOM_ID = "#expression-image";
+const AMBIENT_FOLDER = "audio/ambient/";
+const FALLBACK_BGMS = ["audio/bgm/bgm_0.mp3"]; // TODO fetch them from folder default and custom
 
-let characterMusics = {}; // Updated with module worker
+let characterMusics = {}; // Updated with module workers
 let ambientMusics = []; // Initialized only once
 
-let currentCharacter = null;
-let currentExpression = "default";
-let currentBackground = "default"
+let currentCharacterBGM = null;
+let currentExpressionBGM = null;
+let currentBackground = null;
+
+let cooldownBGM = 0;
 
 //#############################//
 //  Extension UI and Settings  //
@@ -45,6 +81,7 @@ const defaultSettings = {
     ambient_muted: false,
     bgm_volume: 50,
     ambient_volume: 50,
+    bgm_cooldown: 10
 }
 
 function loadSettings() {
@@ -73,13 +110,17 @@ function loadSettings() {
         $("#audio_ambient_mute_icon").toggleClass("fa-volume-mute");
         $("#audio_ambient").prop("muted", true);
     }
+
+    $("#audio_bgm_cooldown").val(extension_settings.audio.bgm_cooldown);
 }
 
 async function onEnabledClick() {
     extension_settings.audio.enabled = $('#audio_enabled').is(':checked');
     if (extension_settings.audio.enabled) {
-        $("#audio_character_bgm")[0].play();
-        $("#audio_ambient")[0].play();
+        if ($("#audio_character_bgm").attr("src") != "")
+            $("#audio_character_bgm")[0].play();
+        if ($("#audio_ambient").attr("src") != "")
+            $("#audio_ambient")[0].play();
     } else {
         $("#audio_character_bgm")[0].pause();
         $("#audio_ambient")[0].pause();
@@ -108,7 +149,7 @@ async function onBGMVolumeChange() {
     $("#audio_character_bgm").prop("volume",extension_settings.audio.bgm_volume * 0.01);
     $("#audio_character_bgm_volume").text(extension_settings.audio.bgm_volume);
     saveSettingsDebounced();
-    console.debug(DEBUG_PREFIX,"UPDATED BGM MAX TO",extension_settings.audio.bgm_volume)
+    console.debug(DEBUG_PREFIX,"UPDATED BGM MAX TO",extension_settings.audio.bgm_volume);
 }
 
 async function onAmbientVolumeChange() {
@@ -116,9 +157,15 @@ async function onAmbientVolumeChange() {
     $("#audio_ambient").prop("volume",extension_settings.audio.ambient_volume * 0.01);
     $("#audio_ambient_volume").text(extension_settings.audio.ambient_volume);
     saveSettingsDebounced();
-    console.debug(DEBUG_PREFIX,"UPDATED Ambient MAX TO",extension_settings.audio.ambient_volume)
+    console.debug(DEBUG_PREFIX,"UPDATED Ambient MAX TO",extension_settings.audio.ambient_volume);
 }
 
+async function onBGMCooldownInput() {
+    extension_settings.audio.bgm_cooldown = ~~($("#audio_bgm_cooldown").val());
+    cooldownBGM = extension_settings.audio.bgm_cooldown * 1000;
+    saveSettingsDebounced();
+    console.debug(DEBUG_PREFIX,"UPDATED BGM cooldown to",extension_settings.audio.bgm_cooldown);
+}
 
 $(document).ready(function () {
     function addExtensionControls() {
@@ -161,6 +208,10 @@ $(document).ready(function () {
                             </div>
                             <audio id="audio_ambient" controls src="">
                         </div>
+                        <div>
+                            <label for="audio_bgm_cooldown">Music update cooldown (in seconds)</label>
+                            <input id="audio_bgm_cooldown" class="text_pole wide30p">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -183,6 +234,8 @@ $(document).ready(function () {
     $("#audio_enabled").on("click", onEnabledClick);
     $("#audio_character_bgm_volume_slider").on("input", onBGMVolumeChange);
     $("#audio_ambient_volume_slider").on("input", onAmbientVolumeChange);
+
+    $("#audio_bgm_cooldown").on("input", onBGMCooldownInput);
 
     // DBG
     $("#audio_debug").on("click",function() {
@@ -225,8 +278,10 @@ async function getMusicsList(name) {
 //#############################//
 
 /*
-    - Update character BGM
     - Update ambient sound
+    - Update character BGM
+        - Solo dynamique expression
+        - Group only neutral bgm
 */
 async function moduleWorker() {
     const moduleEnabled = extension_settings.audio.enabled;
@@ -234,84 +289,199 @@ async function moduleWorker() {
     //console.debug(DEBUG_PREFIX, getContext());
 
     if (moduleEnabled) {
+        cooldownBGM -= UPDATE_INTERVAL;
+        //console.debug(DEBUG_PREFIX,currentCharacterBGM,currentExpressionBGM);
 
-        // Update ambient audio
+
+        // 1) Update ambient audio
+        // ---------------------------
         let newBackground = $("#bg1").css("background-image");
         newBackground = newBackground.substring(newBackground.lastIndexOf("/")+1).replace(/\.[^/.]+$/, "");
 
         //console.debug(DEBUG_PREFIX,"Current backgroung:",newBackground);
 
-        if (currentBackground !== newBackground & newBackground != "none") {
+        if (currentBackground !== newBackground) {
             currentBackground = newBackground;
 
-            //console.debug(DEBUG_PREFIX,"Changing ambient audio");
+            console.debug(DEBUG_PREFIX,"Changing ambient audio for",currentBackground);
             updateAmbient();
         }
 
-        const newCharacter = getContext().name2;
+        const context = getContext();
+        //console.debug(DEBUG_PREFIX,context);
 
-        // Case 1: character changed (new chat or group chat)
-        if (currentCharacter !== newCharacter) {
-            currentCharacter = newCharacter;
+        if (context.chat.length == 0)
+            return;
 
-            console.debug(DEBUG_PREFIX,"Updated current character to",currentCharacter);
-            
-            // 1.1) First time character appear, load its music folder
-            if (characterMusics[currentCharacter] === undefined) {
-                const audio_file_paths = await getMusicsList(currentCharacter);
-                console.debug(DEBUG_PREFIX, "Recieved", audio_file_paths);
+        let chatIsGroup = context.chat[0].is_group;
+        let newCharacter = null;
+
+        // 1) Update BGM (single chat)
+        // -----------------------------
+        if (!chatIsGroup) {
+            newCharacter = context.name2;
+
+            //console.log(DEBUG_PREFIX,"SOLO CHAT MODE"); // DBG
+
+            // 1.1) First time loading chat
+            if (characterMusics[newCharacter] === undefined) {
+                await loadCharacterBGM(newCharacter)
+                //currentExpressionBGM = FALLBACK_EXPRESSION;
+                //currentCharacterBGM = newCharacter;
                 
-                // Initialise expression/files mapping
-                characterMusics[currentCharacter] = {};
-                for(const e of EXPRESSIONS_LIST)
-                    characterMusics[currentCharacter][e] = [];
-
-                for(const i of audio_file_paths) {
-                    //console.debug(DEBUG_PREFIX,"File found:",i);
-                    for(const e of EXPRESSIONS_LIST)
-                        if (i["label"].includes(e))
-                            characterMusics[currentCharacter][e].push(i["path"]);
-                }
-                console.debug(DEBUG_PREFIX,"Updated BGM map of",currentCharacter,"to",characterMusics[currentCharacter]);
+                //updateBGM();
+                //cooldownBGM = BGM_UPDATE_COOLDOWN;
+                return;
             }
+
+            // 1.2) Switched chat
+            if (currentCharacterBGM !== newCharacter) {
+                currentCharacterBGM = newCharacter;
+                updateBGM();
+                cooldownBGM = extension_settings.audio.bgm_cooldown * 1000;
+                return;
+            }
+
+            const newExpression = getNewExpression();
+
+            // 1.3) Same character but different expression
+            if (currentExpressionBGM !== newExpression) {
+                
+                // Check cooldown
+                if (cooldownBGM > 0) {
+                    console.debug(DEBUG_PREFIX,"(SOLO) BGM switch on cooldown:",cooldownBGM);
+                    return;
+                }
+
+                cooldownBGM = extension_settings.audio.bgm_cooldown * 1000;
+                currentExpressionBGM = newExpression;
+                console.debug(DEBUG_PREFIX,"(SOLO) Updated current character expression to",currentExpressionBGM);
+                updateBGM();
+                return;
+            }
+
+            return;
+        }
+
+        // 2) Update BGM (group chat)
+        // -----------------------------
+        newCharacter = context.chat[context.chat.length-1].name; 
+        const userName = context.name1;
+        
+        if (newCharacter !== undefined && newCharacter != userName) {
+
+            //console.log(DEBUG_PREFIX,"GROUP CHAT MODE"); // DBG
+
+            // 2.1) First time character appear
+            if (characterMusics[newCharacter] === undefined) {
+                await loadCharacterBGM(newCharacter);
+                return;
+            }
+
+            // 2.2) Switched chat
+            if (currentCharacterBGM !== newCharacter) {
+                // Check cooldown
+                if (cooldownBGM > 0) {
+                    console.debug(DEBUG_PREFIX,"(GROUP) BGM switch on cooldown:",cooldownBGM);
+                    return;
+                }
+                cooldownBGM = extension_settings.audio.cooldownBGM;
+                currentCharacterBGM = newCharacter;
+                currentExpressionBGM = FALLBACK_EXPRESSION;
+                updateBGM();
+                console.debug(DEBUG_PREFIX,"(GROUP) Updated current character BGM to",currentExpressionBGM);
+                return;
+            }
+
+            /*
+            const newExpression = getNewExpression();
+
+            // 1.3) Same character but different expression
+            if (currentExpressionBGM !== newExpression) {
+                
+                // Check cooldown
+                if (cooldownBGM > 0) {
+                    console.debug(DEBUG_PREFIX,"BGM switch on cooldown:",cooldownBGM);
+                    return;
+                }
+
+                cooldownBGM = BGM_UPDATE_COOLDOWN;
+                currentExpressionBGM = newExpression;
+                console.debug(DEBUG_PREFIX,"Updated current character expression to",currentExpressionBGM);
+                updateBGM();
+                return;
+            }
+
+            return;*/
+
+        }
             
-            // Character changed require BGM/ambient update whatever the expression
-            currentExpression = "default";
-            updateBGM();
-            return;
-        }
-
-        let newExpression = MUSIC_FALLBACK; 
-
-        if (!$(SPRITE_DOM_ID).length) {
-            console.error(DEBUG_PREFIX,"ERROR: expression sprite does not exist, cannot extract expression from ",SPRITE_DOM_ID)
-        }
-
-        // HACK: use sprite file name as expression detection
-        const spriteFile = $("#expression-image").attr("src");
-        newExpression = spriteFile.substring(spriteFile.lastIndexOf("/")+1).replace(/\.[^/.]+$/, "");
-        //console.debug(DEBUG_PREFIX,"Current expression",newExpression);
-
-        if (!EXPRESSIONS_LIST.includes(newExpression)) {
-            console.debug(DEBUG_PREFIX,"Not a valid expression, ignored");
-            return;
-        }
-
-        // Case 2: Same character but different expression
-        if (currentExpression !== newExpression) {
-            currentExpression = newExpression;
-            console.debug(DEBUG_PREFIX,"Updated current character expression to",currentExpression);
-            updateBGM();
-            return;
-        }
-
-        // Case 3: Same character/expression keep playing same BGM
+        // Case 3: Same character/expression or BGM switch on cooldown keep playing same BGM
+        console.debug(DEBUG_PREFIX,"Nothing to do for",currentCharacterBGM, newCharacter, currentExpressionBGM, cooldownBGM);
     }
 }
 
+async function loadCharacterBGM(newCharacter) {
+    console.debug(DEBUG_PREFIX,"New character detected, loading BGM folder of",newCharacter);
+            
+    // 1.1) First time character appear, load its music folder
+    const audio_file_paths = await getMusicsList(newCharacter);
+    console.debug(DEBUG_PREFIX, "Recieved", audio_file_paths);
+    
+    // Initialise expression/files mapping
+    characterMusics[newCharacter] = {};
+    for(const e of DEFAULT_EXPRESSIONS)
+        characterMusics[newCharacter][e] = [];
+
+    for(const i of audio_file_paths) {
+        //console.debug(DEBUG_PREFIX,"File found:",i);
+        for(const e of DEFAULT_EXPRESSIONS)
+            if (i["label"].includes(e))
+                characterMusics[newCharacter][e].push(i["path"]);
+    }
+    console.debug(DEBUG_PREFIX,"Updated BGM map of",newCharacter,"to",characterMusics[newCharacter]);
+}
+
+function getNewExpression() {
+    let newExpression; 
+        
+    // HACK: use sprite file name as expression detection
+    if (!$(SPRITE_DOM_ID).length) {
+        console.error(DEBUG_PREFIX,"ERROR: expression sprite does not exist, cannot extract expression from ",SPRITE_DOM_ID)
+        return FALLBACK_EXPRESSION;
+    }
+
+    const spriteFile = $("#expression-image").attr("src");
+    newExpression = spriteFile.substring(spriteFile.lastIndexOf("/")+1).replace(/\.[^/.]+$/, "");
+    //
+
+    // No sprite to detect expression
+    if (newExpression == "") {
+        //console.info(DEBUG_PREFIX,"Warning: no expression extracted from sprite, switch to",FALLBACK_EXPRESSION);
+        newExpression = FALLBACK_EXPRESSION;
+    }
+
+    if (!DEFAULT_EXPRESSIONS.includes(newExpression)) {
+        console.info(DEBUG_PREFIX,"Warning:",newExpression," is not a handled expression, expected one of",FALLBACK_EXPRESSION);
+        return FALLBACK_EXPRESSION;
+    }
+
+    return newExpression;
+}
+
 async function updateBGM() {
-    const audio_files = characterMusics[currentCharacter][currentExpression];
-    const audio_file_path = audio_files[Math.floor(Math.random() * audio_files.length)]; // random pick
+    let audio_files = characterMusics[currentCharacterBGM][currentExpressionBGM];// Try char expression BGM
+
+    if (audio_files === undefined || audio_files.length == 0) { 
+        console.debug(DEBUG_PREFIX,"No BGM for", currentCharacterBGM,currentExpressionBGM);
+        audio_files = characterMusics[currentCharacterBGM][FALLBACK_EXPRESSION]; // Try char FALLBACK BGM
+        if (audio_files === undefined || audio_files.length == 0) {
+            console.debug(DEBUG_PREFIX,"No default BGM for",currentCharacterBGM,FALLBACK_EXPRESSION, "switch to ST BGM");
+            audio_files = FALLBACK_BGMS; // ST FALLBACK BGM
+        }
+    }
+
+    const audio_file_path = audio_files[Math.floor(Math.random() * audio_files.length)];
     console.log(DEBUG_PREFIX,"Updating BGM");
     console.log(DEBUG_PREFIX,"Checking file",audio_file_path);
     fetch(audio_file_path)
@@ -320,8 +490,13 @@ async function updateBGM() {
             console.log(DEBUG_PREFIX,"File not found!")
         }
         else {
-            console.log(DEBUG_PREFIX,"Switching BGM to ",currentExpression)
+            console.log(DEBUG_PREFIX,"Switching BGM to",currentExpressionBGM)
             const audio = $("#audio_character_bgm");
+
+            if (audio.attr("src") == audio_file_path) {
+                console.log(DEBUG_PREFIX,"Already playing, ignored");
+                return;
+            }
 
             audio.animate({volume: 0.0}, 2000, function() {
                 audio.attr("src",audio_file_path);
@@ -336,7 +511,7 @@ async function updateBGM() {
 async function updateAmbient() {
     const audio_file_path = AMBIENT_FOLDER+currentBackground+".mp3";
     console.log(DEBUG_PREFIX,"Updating ambient");
-    console.log(DEBUG_PREFIX,"Checking file",audio_file_path)
+    console.log(DEBUG_PREFIX,"Checking file",audio_file_path);
     fetch(audio_file_path)
     .then(response => {
         if (!response.ok) {
