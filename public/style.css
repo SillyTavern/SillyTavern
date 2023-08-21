@@ -178,7 +178,10 @@ table.responsiveTable {
 .tokenItemizingSubclass {
     font-size: calc(var(--mainFontSize) * 0.8);
     color: var(--SmartThemeEmColor);
-    /*white-space: pre-wrap;*/
+}
+
+#rawPromptWrapper {
+    white-space: pre-wrap;
 }
 
 .tokenGraph {

@@ -2997,7 +2997,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             if (true === dryRun) return onSuccess({ error: 'dryRun' });
 
             if (power_user.console_log_prompts) {
-
                 console.log(generate_data.prompt);
             }
 
@@ -3010,7 +3009,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             let currentArrayEntry = Number(thisPromptBits.length - 1);
             let additionalPromptStuff = {
                 ...thisPromptBits[currentArrayEntry],
-                rawPrompt: generate_data.prompt,
+                rawPrompt: generate_data.prompt || generate_data.input,
                 mesId: getNextMessageId(type),
                 allAnchors: allAnchors,
                 summarizeString: (extension_prompts['1_memory']?.value || ''),
