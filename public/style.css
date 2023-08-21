@@ -57,7 +57,7 @@
     /* 800px; */
     /*base variable calculated in rems*/
     --fontScale: 1;
-    --mainFontSize: calc(var(--fontScale) * 14px);
+    --mainFontSize: calc(var(--fontScale) * 15px);
 
     /* base variable for blur strength slider calculations */
     --blurStrength: 10;
@@ -1178,6 +1178,7 @@ input[type="file"] {
     font-size: calc(var(--mainFontSize) * 0.9);
     width: 100%;
     text-align: right;
+    margin-bottom: 5px;
 }
 
 .floating_prompt_settings textarea {
@@ -1586,7 +1587,8 @@ input[type=search]:focus::-webkit-search-cancel-button {
 }
 
 #description_div {
-    position: relative;
+    display: flex;
+    align-items: center;
 }
 
 #name_div {
@@ -1711,11 +1713,9 @@ grammarly-extension {
 }
 
 #result_info {
-    font-size: calc(var(--mainFontSize) - 0.1rem);
-    font-weight: bold;
-    margin-bottom: 5px;
+    font-size: calc(var(--mainFontSize) * 0.9);
     display: flex;
-    align-items: center;
+    align-items: baseline;
 }
 
 .rm_stats_button {

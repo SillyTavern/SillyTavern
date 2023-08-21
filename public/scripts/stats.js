@@ -1,5 +1,5 @@
 // statsHelper.js
-import { getRequestHeaders, callPopup, token, chat } from "../script.js";
+import { getRequestHeaders, callPopup, characters, this_chid } from "../script.js";
 import { humanizeGenTime } from "./RossAscends-mods.js";
 
 let charStats = {};
@@ -303,5 +303,11 @@ async function statMesProcess(line, type, characters, this_chid, oldMesssage) {
     );
     updateStats();
 }
+
+jQuery(() => {
+    $(".rm_stats_button").on('click', function () {
+        characterStatsHandler(characters, this_chid);
+    });
+})
 
 export { userStatsHandler, characterStatsHandler, getStats, statMesProcess, charStats };
