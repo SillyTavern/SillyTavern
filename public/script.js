@@ -559,7 +559,7 @@ async function getClientVersion() {
         let displayVersion = `SillyTavern ${data.pkgVersion}`;
 
         if (data.gitRevision && data.gitBranch) {
-            displayVersion += ` '${data.gitBranch}'(${data.gitRevision})`;
+            displayVersion += ` '${data.gitBranch}' (${data.gitRevision})`;
         }
 
         $('#version_display').text(displayVersion);
