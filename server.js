@@ -2617,7 +2617,7 @@ app.post('/uploaduseravatar', urlencodedParser, async (request, response) => {
 /**
  * Ensure the directory for the provided file path exists.
  * If not, it will recursively create the directory.
- * 
+ *
  * @param {string} filePath - The full path of the file for which the directory should be ensured.
  */
 function ensureDirectoryExistence(filePath) {
@@ -2633,7 +2633,7 @@ function ensureDirectoryExistence(filePath) {
  * Endpoint to handle image uploads.
  * The image should be provided in the request body in base64 format.
  * Optionally, a character name can be provided to save the image in a sub-folder.
- * 
+ *
  * @route POST /uploadimage
  * @param {Object} request.body - The request payload.
  * @param {string} request.body.image - The base64 encoded image data.
@@ -2656,13 +2656,13 @@ app.post('/uploadimage', jsonParser, async (request, response) => {
 
     // Constructing filename and path
     let filename = `${Date.now()}.${format}`;
-    if(request.body.filename){
+    if (request.body.filename) {
         filename = `${request.body.filename}.${format}`;
     }
 
     // if character is defined, save to a sub folder for that character
-    let  pathToNewFile = path.join(directories.userImages, filename);
-    if(request.body.ch_name){
+    let pathToNewFile = path.join(directories.userImages, filename);
+    if (request.body.ch_name) {
         pathToNewFile = path.join(directories.userImages, request.body.ch_name, filename);
     }
 
@@ -2672,7 +2672,7 @@ app.post('/uploadimage', jsonParser, async (request, response) => {
         await fs.promises.writeFile(pathToNewFile, imageBuffer);
         // send the path to the image, relative to the client folder, which means removing the first folder from the path which is 'public'
         pathToNewFile = pathToNewFile.split(path.sep).slice(1).join(path.sep);
-        response.send({ path:pathToNewFile });
+        response.send({ path: pathToNewFile });
     } catch (error) {
         console.log(error);
         response.status(500).send({ error: "Failed to save the image" });

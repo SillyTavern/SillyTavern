@@ -557,15 +557,15 @@ export function extractDataFromPng(data, identifier = 'chara') {
 
 /**
  * Sends a base64 encoded image to the backend to be saved as a file.
- * 
+ *
  * @param {string} base64Data - The base64 encoded image data.
  * @param {string} characterName - The character name to determine the sub-directory for saving.
  * @param {string} ext - The file extension for the image (e.g., 'jpg', 'png', 'webp').
- * 
- * @returns {Promise<string>} - Resolves to the saved image's path on the server. 
+ *
+ * @returns {Promise<string>} - Resolves to the saved image's path on the server.
  *                              Rejects with an error if the upload fails.
  */
-export async function saveBase64AsFile(base64Data, characterName, filename="", ext) {
+export async function saveBase64AsFile(base64Data, characterName, filename = "", ext) {
     // Construct the full data URL
     const format = ext; // Extract the file extension (jpg, png, webp)
     const dataURL = `data:image/${format};base64,${base64Data}`;

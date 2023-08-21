@@ -2378,10 +2378,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         abortController = new AbortController();
     }
 
-    if (main_api == 'novel' && quiet_prompt) {
-        quiet_prompt = adjustNovelInstructionPrompt(quiet_prompt);
-    }
-
     // OpenAI doesn't need instruct mode. Use OAI main prompt instead.
     const isInstruct = power_user.instruct.enabled && main_api !== 'openai';
     const isImpersonate = type == "impersonate";
@@ -2468,6 +2464,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             console.log('No enabled members found');
             return;
         }
+    }
+
+    if (quiet_prompt) {
+        quiet_prompt = substituteParams(quiet_prompt);
+        quiet_prompt = main_api == 'novel' ? adjustNovelInstructionPrompt(quiet_prompt) : quiet_prompt;
     }
 
     if (true === dryRun ||
@@ -7517,7 +7518,7 @@ $(document).ready(function () {
         $("#character_search_bar").val("").trigger("input");
     });
 
-    $(document).on("click", ".character_select", function() {
+    $(document).on("click", ".character_select", function () {
         const id = $(this).attr("chid");
         selectCharacterById(id);
     });

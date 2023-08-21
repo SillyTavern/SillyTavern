@@ -1,5 +1,4 @@
 import {
-    substituteParams,
     saveSettingsDebounced,
     systemUserName,
     hideSwipeButtons,
@@ -513,7 +512,7 @@ function getQuietPrompt(mode, trigger) {
         return trigger;
     }
 
-    return substituteParams(stringFormat(extension_settings.sd.prompts[mode], trigger));
+    return stringFormat(extension_settings.sd.prompts[mode], trigger);
 }
 
 function processReply(str) {
@@ -588,7 +587,7 @@ async function generatePicture(_, trigger, message, callback) {
         const callbackOriginal = callback;
         callback = async function (prompt, base64Image) {
             const imagePath = base64Image;
-            const imgUrl = `url(${base64Image})`;
+            const imgUrl = `url('${encodeURIComponent(base64Image)}')`;
 
             if ('forceSetBackground' in window) {
                 forceSetBackground(imgUrl);
@@ -652,7 +651,7 @@ async function generatePrompt(quiet_prompt) {
     return processReply(reply);
 }
 
-async function sendGenerationRequest(generationType, prompt, characterName=null, callback) {
+async function sendGenerationRequest(generationType, prompt, characterName = null, callback) {
     const prefix = generationType !== generationMode.BACKGROUND
         ? combinePrefixes(extension_settings.sd.prompt_prefix, getCharacterPrefix())
         : extension_settings.sd.prompt_prefix;
@@ -665,15 +664,15 @@ async function sendGenerationRequest(generationType, prompt, characterName=null,
 }
 
 /**
- * Generates an "extras" image using a provided prompt and other settings, 
+ * Generates an "extras" image using a provided prompt and other settings,
  * then saves the generated image and either invokes a callback or sends a message with the image.
- * 
+ *
  * @param {string} prompt - The main instruction used to guide the image generation.
  * @param {string} prefix - Additional context or prefix to guide the image generation.
  * @param {string} characterName - The name used to determine the sub-directory for saving.
  * @param {function} [callback] - Optional callback function invoked with the prompt and saved image.
  *                                If not provided, `sendMessage` is called instead.
- * 
+ *
  * @returns {Promise<void>} - A promise that resolves when the image generation and processing are complete.
  */
 async function generateExtrasImage(prompt, prefix, characterName, callback) {
@@ -702,7 +701,7 @@ async function generateExtrasImage(prompt, prefix, characterName, callback) {
         const data = await result.json();
         //filename should be character name + human readable timestamp + generation mode
         const filename = `${characterName}_${humanizedDateTime()}`;
-        const base64Image = await saveBase64AsFile(data.image, characterName, filename, "jpg"); 
+        const base64Image = await saveBase64AsFile(data.image, characterName, filename, "jpg");
         callback ? callback(prompt, base64Image) : sendMessage(prompt, base64Image);
     } else {
         callPopup('Image generation has failed. Please try again.', 'text');
@@ -710,15 +709,15 @@ async function generateExtrasImage(prompt, prefix, characterName, callback) {
 }
 
 /**
- * Generates a "horde" image using the provided prompt and configuration settings, 
+ * Generates a "horde" image using the provided prompt and configuration settings,
  * then saves the generated image and either invokes a callback or sends a message with the image.
- * 
+ *
  * @param {string} prompt - The main instruction used to guide the image generation.
  * @param {string} prefix - Additional context or prefix to guide the image generation.
  * @param {string} characterName - The name used to determine the sub-directory for saving.
  * @param {function} [callback] - Optional callback function invoked with the prompt and saved image.
  *                                If not provided, `sendMessage` is called instead.
- * 
+ *
  * @returns {Promise<void>} - A promise that resolves when the image generation and processing are complete.
  */
 async function generateHordeImage(prompt, prefix, characterName, callback) {
@@ -744,7 +743,7 @@ async function generateHordeImage(prompt, prefix, characterName, callback) {
     if (result.ok) {
         const data = await result.text();
         const filename = `${characterName}_${humanizedDateTime()}`;
-        const base64Image = await saveBase64AsFile(data, characterName, filename, "webp"); 
+        const base64Image = await saveBase64AsFile(data, characterName, filename, "webp");
         callback ? callback(prompt, base64Image) : sendMessage(prompt, base64Image);
     } else {
         toastr.error('Image generation has failed. Please try again.');
@@ -862,7 +861,7 @@ async function sdMessageButton(e) {
     const message_id = $mes.attr('mesid');
     const message = context.chat[message_id];
     const characterName = message?.name || context.name2;
-    const messageText = substituteParams(message?.mes);
+    const messageText = message?.mes;
     const hasSavedImage = message?.extra?.image && message?.extra?.title;
 
     if ($icon.hasClass(busyClass)) {
