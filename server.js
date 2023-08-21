@@ -2680,8 +2680,12 @@ app.post('/uploadimage', jsonParser, async (request, response) => {
 });
 
 app.get('/listimgfiles/:folder', (req, res) => {
-    const directoryPath = path.join(__dirname, 'public/user/images/', req.params.folder);
-    console.log(directoryPath);
+    const directoryPath = path.join(process.cwd(), 'public/user/images/', req.params.folder);
+
+    if (!fs.existsSync(directoryPath)) {
+        fs.mkdirSync(directoryPath, { recursive: true });
+    }
+
     fs.readdir(directoryPath, (err, files) => {
         if (err) {
             return res.status(500).send({ error: "Unable to retrieve files" });
