@@ -348,7 +348,7 @@ async function moduleWorker() {
                 
                 // Check cooldown
                 if (cooldownBGM > 0) {
-                    console.debug(DEBUG_PREFIX,"(SOLO) BGM switch on cooldown:",cooldownBGM);
+                    //console.debug(DEBUG_PREFIX,"(SOLO) BGM switch on cooldown:",cooldownBGM);
                     return;
                 }
 
@@ -381,7 +381,7 @@ async function moduleWorker() {
             if (currentCharacterBGM !== newCharacter) {
                 // Check cooldown
                 if (cooldownBGM > 0) {
-                    console.debug(DEBUG_PREFIX,"(GROUP) BGM switch on cooldown:",cooldownBGM);
+                    //console.debug(DEBUG_PREFIX,"(GROUP) BGM switch on cooldown:",cooldownBGM);
                     return;
                 }
                 cooldownBGM = extension_settings.audio.cooldownBGM;
