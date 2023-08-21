@@ -2964,37 +2964,37 @@ $(document).ready(async function () {
     $('#test_api_button').on('click', testApiConnection);
 
     $(document).on('input', '#temp_openai', function () {
-        oai_settings.temp_openai = $(this).val();
+        oai_settings.temp_openai = Number($(this).val());
         $('#temp_counter_openai').text(Number($(this).val()).toFixed(2));
         saveSettingsDebounced();
     });
 
     $(document).on('input', '#freq_pen_openai', function () {
-        oai_settings.freq_pen_openai = $(this).val();
+        oai_settings.freq_pen_openai = Number($(this).val());
         $('#freq_pen_counter_openai').text(Number($(this).val()).toFixed(2));
         saveSettingsDebounced();
     });
 
     $(document).on('input', '#pres_pen_openai', function () {
-        oai_settings.pres_pen_openai = $(this).val();
+        oai_settings.pres_pen_openai = Number($(this).val());
         $('#pres_pen_counter_openai').text(Number($(this).val()).toFixed(2));
         saveSettingsDebounced();
     });
 
     $(document).on('input', '#count_pen', function () {
-        oai_settings.count_pen = $(this).val();
+        oai_settings.count_pen = Number($(this).val());
         $('#count_pen_counter').text(Number($(this).val()).toFixed(2));
         saveSettingsDebounced();
     });
 
     $(document).on('input', '#top_p_openai', function () {
-        oai_settings.top_p_openai = $(this).val();
+        oai_settings.top_p_openai = Number($(this).val());
         $('#top_p_counter_openai').text(Number($(this).val()).toFixed(2));
         saveSettingsDebounced();
     });
 
     $(document).on('input', '#top_k_openai', function () {
-        oai_settings.top_k_openai = $(this).val();
+        oai_settings.top_k_openai = Number($(this).val());
         $('#top_k_counter_openai').text(Number($(this).val()).toFixed(0));
         saveSettingsDebounced();
     });
