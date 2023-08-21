@@ -1,11 +1,15 @@
 {
     "name": "Koala",
     "system_prompt": "Write {{char}}'s next reply in a fictional roleplay chat between {{user}} and {{char}}.\n",
-    "system_sequence": "BEGINNING OF CONVERSATION: ",
-    "stop_sequence": "",
     "input_sequence": "USER: ",
     "output_sequence": "GPT: ",
     "last_output_sequence": "",
+    "system_sequence": "BEGINNING OF CONVERSATION: ",
+    "stop_sequence": "",
     "separator_sequence": "</s>",
-    "wrap": false
+    "wrap": false,
+    "macro": true,
+    "names": false,
+    "names_force_groups": true,
+    "activation_regex": ""
 }

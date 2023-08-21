@@ -55,6 +55,7 @@ import {
     renameGroupChat,
     importGroupChat,
     getGroupBlock,
+    getGroupChatNames,
 } from "./scripts/group-chats.js";
 
 import {
@@ -65,9 +66,6 @@ import {
     power_user,
     pygmalion_options,
     tokenizers,
-    formatInstructModeChat,
-    formatInstructStoryString,
-    formatInstructModePrompt,
     persona_description_positions,
     loadMovingUIState,
     getCustomStoppingStrings,
@@ -164,6 +162,13 @@ import { deviceInfo } from "./scripts/RossAscends-mods.js";
 import { registerPromptManagerMigration } from "./scripts/PromptManager.js";
 import { getRegexedString, regex_placement } from "./scripts/extensions/regex/engine.js";
 import { FILTER_TYPES, FilterHelper } from "./scripts/filters.js";
+import {
+    formatInstructModeChat,
+    formatInstructModePrompt,
+    formatInstructModeExamples,
+    getInstructStoppingSequences,
+    autoSelectInstructPreset,
+} from "./scripts/instruct-mode.js";
 
 //exporting functions and vars for mods
 export {
@@ -329,7 +334,6 @@ let scrollLock = false;
 const durationSaveEdit = 1000;
 const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
 export const saveCharacterDebounced = debounce(() => $("#create_button").trigger('click'), durationSaveEdit);
-const getStatusDebounced = debounce(() => getStatus(), 300_000);
 const saveChatDebounced = debounce(() => saveChatConditional(), durationSaveEdit);
 
 const system_message_types = {
@@ -883,10 +887,6 @@ async function getStatus() {
                 const hordeStatus = await checkHordeStatus();
                 online_status = hordeStatus ? 'Connected' : 'no_connection';
                 resultCheckStatus();
-
-                if (online_status !== "no_connection") {
-                    getStatusDebounced();
-                }
             }
             catch {
                 online_status = "no_connection";
@@ -915,6 +915,10 @@ async function getStatus() {
                 if (online_status == undefined) {
                     online_status = "no_connection";
                 }
+
+                // Determine instruct mode preset
+                autoSelectInstructPreset(online_status);
+
                 if ((online_status.toLowerCase().indexOf("pygmalion") != -1 && power_user.pygmalion_formatting == pygmalion_options.AUTO)
                     || (online_status !== "no_connection" && power_user.pygmalion_formatting == pygmalion_options.ENABLED)) {
                     is_pygmalion = true;
@@ -936,9 +940,6 @@ async function getStatus() {
 
                 //console.log(online_status);
                 resultCheckStatus();
-                if (online_status !== "no_connection") {
-                    getStatusDebounced();
-                }
             },
             error: function (jqXHR, exception) {
                 console.log(exception);
@@ -1604,8 +1605,18 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         mes.is_user,
     );
     const bias = messageFormatting(mes.extra?.bias ?? "");
-    const bookmarkLink = mes?.extra?.bookmark_link ?? '';
+    let bookmarkLink = mes?.extra?.bookmark_link ?? '';
+    // Verify bookmarked chat still exists
+    // Cohee: Commented out for now. I'm worried of performance issues.
+    /*if (bookmarkLink !== '') {
+        let chat_names = selected_group
+            ? getGroupChatNames(selected_group)
+            : Object.values(getPastCharacterChats()).map(({ file_name }) => file_name);
 
+        if (!chat_names.includes(bookmarkLink)) {
+            bookmarkLink = ''
+        }
+    }*/
     let params = {
         mesId: count_view_mes,
         characterName: characterName,
@@ -1902,32 +1913,7 @@ function getStoppingStrings(isImpersonate, addSpace) {
         }
     }
 
-    function addInstructSequence(sequence) {
-        // Cohee: oobabooga's textgen always appends newline before the sequence as a stopping string
-        // But it's a problem for Metharme which doesn't use newlines to separate them.
-        const wrap = (s) => power_user.instruct.wrap ? '\n' + s : s;
-        // Sequence must be a non-empty string
-        if (typeof sequence === 'string' && sequence.length > 0) {
-            // If sequence is just a whitespace or newline - we don't want to make it a stopping string
-            // User can always add it as a custom stop string if really needed
-            if (sequence.trim().length > 0) {
-                const wrappedSequence = wrap(sequence);
-                // Need to respect "insert macro" setting
-                const stopString = power_user.instruct.macro ? substituteParams(wrappedSequence) : wrappedSequence;
-                result.push(stopString);
-            }
-        }
-    }
-
-    if (power_user.instruct.enabled) {
-        const input_sequence = power_user.instruct.input_sequence;
-        const output_sequence = power_user.instruct.output_sequence;
-        const last_output_sequence = power_user.instruct.last_output_sequence;
-
-        const combined_sequence = `${input_sequence}\n${output_sequence}\n${last_output_sequence}`;
-
-        combined_sequence.split('\n').filter((line, index, self) => self.indexOf(line) === index).forEach(addInstructSequence);
-    }
+    result.push(...getInstructStoppingSequences());
 
     if (power_user.custom_stopping_strings) {
         const customStoppingStrings = getCustomStoppingStrings();
@@ -2069,9 +2055,8 @@ function getPersonaDescription(storyString) {
 
     switch (power_user.persona_description_position) {
         case persona_description_positions.BEFORE_CHAR:
-            return `${substituteParams(power_user.persona_description)}\n${storyString}`;
         case persona_description_positions.AFTER_CHAR:
-            return `${storyString}${substituteParams(power_user.persona_description)}\n`;
+            return storyString;
         default:
             if (shouldWIAddPrompt) {
                 const originalAN = extension_prompts[NOTE_MODULE_NAME].value
@@ -2528,10 +2513,15 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         const scenarioText = chat_metadata['scenario'] || characters[this_chid].scenario;
         let charDescription = baseChatReplace(characters[this_chid].description.trim(), name1, name2);
         let charPersonality = baseChatReplace(characters[this_chid].personality.trim(), name1, name2);
+        let personaDescription = baseChatReplace(power_user.persona_description.trim(), name1, name2);
         let Scenario = baseChatReplace(scenarioText.trim(), name1, name2);
         let mesExamples = baseChatReplace(characters[this_chid].mes_example.trim(), name1, name2);
         let systemPrompt = power_user.prefer_character_prompt ? baseChatReplace(characters[this_chid].data?.system_prompt?.trim(), name1, name2) : '';
         let jailbreakPrompt = power_user.prefer_character_jailbreak ? baseChatReplace(characters[this_chid].data?.post_history_instructions?.trim(), name1, name2) : '';
+
+        if (isInstruct) {
+            systemPrompt = power_user.prefer_character_prompt && systemPrompt ? systemPrompt : baseChatReplace(power_user.instruct.system_prompt, name1, name2);
+        }
 
         // Parse example messages
         if (!mesExamples.startsWith('<START>')) {
@@ -2540,10 +2530,16 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         if (mesExamples.replace(/<START>/gi, '').trim().length === 0) {
             mesExamples = '';
         }
+        if (mesExamples && isInstruct) {
+            mesExamples = formatInstructModeExamples(mesExamples, name1, name2)
+        }
 
         const exampleSeparator = power_user.context.example_separator ? `${power_user.context.example_separator}\n` : '';
         const blockHeading = main_api === 'openai' ? '<START>\n' : exampleSeparator;
         let mesExamplesArray = mesExamples.split(/<START>/gi).slice(1).map(block => `${blockHeading}${block.trim()}\n`);
+
+        if (power_user.strip_examples)
+            mesExamplesArray = []
 
         // First message in fresh 1-on-1 chat reacts to user/character settings changes
         if (chat.length) {
@@ -2571,7 +2567,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         const storyStringParams = {
             description: charDescription,
             personality: charPersonality,
+            persona: personaDescription,
             scenario: Scenario,
+            system: isInstruct ? systemPrompt : '',
             char: name2,
             user: name1,
         };
@@ -2638,11 +2636,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         // Pre-format the World Info into the story string
         if (main_api !== 'openai') {
             storyString = worldInfoBefore + storyString + worldInfoAfter;
-        }
-
-        // Format the instruction string
-        if (isInstruct) {
-            storyString = formatInstructStoryString(storyString, systemPrompt);
         }
 
         if (main_api === 'openai') {
@@ -8003,7 +7996,7 @@ $(document).ready(function () {
         const enabled = $("#use-mancer-api-checkbox").prop("checked");
         $("#mancer_api_subpanel").toggle(enabled);
         $("#tgwebui_api_subpanel").toggle(!enabled);
-        
+
         api_use_mancer_webui = enabled;
         saveSettingsDebounced();
         getStatus();
@@ -8583,8 +8576,10 @@ $(document).ready(function () {
 
     $(document).on("click", ".mes_edit_delete", async function (event, customData) {
         const fromSlashCommand = customData?.fromSlashCommand || false;
+        const swipeExists = (!chat[this_edit_mes_id].swipes || chat[this_edit_mes_id].swipes.length <= 1 || chat.is_user || parseInt(this_edit_mes_id) !== chat.length - 1);
         if (power_user.confirm_message_delete && fromSlashCommand !== true) {
-            const confirmation = await callPopup("Are you sure you want to delete this message?", 'confirm');
+            const confirmation = swipeExists ? await callPopup("Are you sure you want to delete this message?", 'confirm')
+                : await callPopup("<h3>Delete this...</h3> <select id='del_type'><option value='swipe'>Swipe</option><option value='message'>Message</option></select>", 'confirm')
             if (!confirmation) {
                 return;
             }
@@ -8596,10 +8591,21 @@ $(document).ready(function () {
             return;
         }
 
-        chat.splice(this_edit_mes_id, 1);
+        if ($('#del_type').val() === 'swipe') {
+            const swipe_id = chat[this_edit_mes_id]['swipe_id'];
+            chat[this_edit_mes_id]['swipes'].splice(swipe_id, 1);
+            if (swipe_id > 0) {
+                $('.swipe_left:last').click();
+            } else {
+                $('.swipe_right:last').click()
+            }
+        } else {
+            chat.splice(this_edit_mes_id, 1);
+            mes.remove();
+            count_view_mes--;
+        }
+
         this_edit_mes_id = undefined;
-        mes.remove();
-        count_view_mes--;
 
         updateViewMessageIds();
         saveChatConditional();
