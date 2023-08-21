@@ -59,10 +59,10 @@ const DEFAULT_EXPRESSIONS = [
 ];
 const SPRITE_DOM_ID = "#expression-image";
 const AMBIENT_FOLDER = "sounds/ambient/";
-const FALLBACK_BGMS = ["sounds/bgm/cup-of-cohee.ogg"]; // TODO fetch them from folder default and custom
 
+let fallback_BGMS = []; // Initialized only once with module workers
+let ambients = []; // Initialized only once with module workers
 let characterMusics = {}; // Updated with module workers
-//let ambientMusics = []; // Initialized only once
 
 let currentCharacterBGM = null;
 let currentExpressionBGM = null;
@@ -258,11 +258,11 @@ $(document).ready(function () {
 //  API Calls                  //
 //#############################//
 
-async function getMusicsList(name) {
-    console.debug(DEBUG_PREFIX, "getting bgm list for", name);
+async function getAmbientList() {
+    console.debug(DEBUG_PREFIX, "getting ambient adio files");
 
     try {
-        const result = await fetch(`/get_character_background_musics?name=${encodeURIComponent(name)}`);
+        const result = await fetch(`/get_default_ambient_list`);
         let musics = result.ok ? (await result.json()) : [];
         return musics;
     }
@@ -271,6 +271,35 @@ async function getMusicsList(name) {
         return [];
     }
 }
+
+async function getDefaultBgmList() {
+    console.debug(DEBUG_PREFIX, "getting default bgm files");
+
+    try {
+        const result = await fetch(`/get_default_bgm_list`);
+        let musics = result.ok ? (await result.json()) : [];
+        return musics;
+    }
+    catch (err) {
+        console.log(err);
+        return [];
+    }
+}
+
+async function getCharacterBgmList(name) {
+    console.debug(DEBUG_PREFIX, "getting bgm list for", name);
+
+    try {
+        const result = await fetch(`/get_character_bgm_list?name=${encodeURIComponent(name)}`);
+        let musics = result.ok ? (await result.json()) : [];
+        return musics;
+    }
+    catch (err) {
+        console.log(err);
+        return [];
+    }
+}
+
 
 //#############################//
 //  Module Worker              //
@@ -291,6 +320,13 @@ async function moduleWorker() {
         cooldownBGM -= UPDATE_INTERVAL;
         //console.debug(DEBUG_PREFIX,currentCharacterBGM,currentExpressionBGM);
 
+        if (fallback_BGMS == null){
+            fallback_BGMS = await getDefaultBgmList();
+        }
+
+        if (ambients == null){
+            ambients = await getAmbientList();
+        }
 
         // 1) Update ambient audio
         // ---------------------------
@@ -424,7 +460,7 @@ async function loadCharacterBGM(newCharacter) {
     console.debug(DEBUG_PREFIX,"New character detected, loading BGM folder of",newCharacter);
             
     // 1.1) First time character appear, load its music folder
-    const audio_file_paths = await getMusicsList(newCharacter);
+    const audio_file_paths = await getCharacterBgmList(newCharacter);
     console.debug(DEBUG_PREFIX, "Recieved", audio_file_paths);
     
     // Initialise expression/files mapping
@@ -476,15 +512,21 @@ async function updateBGM() {
         audio_files = characterMusics[currentCharacterBGM][FALLBACK_EXPRESSION]; // Try char FALLBACK BGM
         if (audio_files === undefined || audio_files.length == 0) {
             console.debug(DEBUG_PREFIX,"No default BGM for",currentCharacterBGM,FALLBACK_EXPRESSION, "switch to ST BGM");
-            audio_files = FALLBACK_BGMS; // ST FALLBACK BGM
+            audio_files = fallback_BGMS; // ST FALLBACK BGM
+
+            if(audio_files.length == 0) {
+                console.debug(DEBUG_PREFIX,"No default BGM file found, bgm folder may be empty.");
+                return;
+            }
         }
     }
 
     const audio_file_path = audio_files[Math.floor(Math.random() * audio_files.length)];
     console.log(DEBUG_PREFIX,"Updating BGM");
     console.log(DEBUG_PREFIX,"Checking file",audio_file_path);
-    fetch(audio_file_path)
-    .then(response => {
+    try {
+        const response = await fetch(audio_file_path);
+        
         if (!response.ok) {
             console.log(DEBUG_PREFIX,"File not found!")
         }
@@ -504,28 +546,35 @@ async function updateBGM() {
                 audio.animate({volume: extension_settings.audio.bgm_volume * 0.01}, 2000);
             })
         }
-    });
+
+    } catch(error) {
+        console.log(DEBUG_PREFIX,"Error while trying to fetch",audio_file_path,":",error);
+    }
 }
 
 async function updateAmbient() {
-    const audio_file_path = AMBIENT_FOLDER+currentBackground+".mp3";
+    let audio_file_path = null;
+    for(const i of ambients) {
+        console.debug(i)
+        if (i.includes(currentBackground)) {
+            audio_file_path = i;
+            break;
+        }
+    }
+
+    if (audio_file_path === null) {
+        console.debug(DEBUG_PREFIX,"No ambient file found for background",currentBackground);
+        return;
+    }
+
+    //const audio_file_path = AMBIENT_FOLDER+currentBackground+".mp3";
     console.log(DEBUG_PREFIX,"Updating ambient");
     console.log(DEBUG_PREFIX,"Checking file",audio_file_path);
-    fetch(audio_file_path)
-    .then(response => {
-        if (!response.ok) {
-            console.log(DEBUG_PREFIX,"File not found!")
-        }
-        else {
-            console.log(DEBUG_PREFIX,"Switching ambient to ",currentBackground)
-            const audio = $("#audio_ambient");
-
-            audio.animate({volume: 0.0}, 2000, function() {
-                audio.attr("src",audio_file_path);
-                audio[0].play();
-                audio.volume = extension_settings.audio.ambient_volume * 0.01;
-                audio.animate({volume: extension_settings.audio.ambient_volume * 0.01}, 2000);
-            })
-        }
+ 
+    audio.animate({volume: 0.0}, 2000, function() {
+        audio.attr("src",audio_file_path);
+        audio[0].play();
+        audio.volume = extension_settings.audio.ambient_volume * 0.01;
+        audio.animate({volume: extension_settings.audio.ambient_volume * 0.01}, 2000);
     });
 }

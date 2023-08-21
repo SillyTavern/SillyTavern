@@ -4935,6 +4935,82 @@ app.post('/delete_extension', jsonParser, async (request, response) => {
 });
 
 /**
+ * HTTP POST handler function to retrieve local ST default BGM files.
+ *
+ * @param {Object} request - HTTP Request object.
+ * @param {Object} response - HTTP Response object will contain a list of audio file path.
+ *
+ * @returns {void}
+ */
+app.get('/get_default_bgm_list', jsonParser, function (request, response) {
+    const AUDIO_FOLDER = "sounds";
+    const BGM_FOLDER = "bgm";
+    const musicsPath = path.join(AUDIO_FOLDER,BGM_FOLDER);
+    let musics = [];
+
+    try {
+        if (fs.existsSync(musicsPath) && fs.statSync(musicsPath).isDirectory()) {
+            musics = fs.readdirSync(musicsPath)
+                .filter(file => {
+                    const mimeType = mime.lookup(file);
+                    return mimeType && mimeType.startsWith('audio/');
+                })
+                .map((file) => {
+                    const pathToMusic = path.join(musicsPath, file);
+                    return {
+                        label: path.parse(pathToMusic).name.toLowerCase(),
+                        path: `/${AUDIO_FOLDER}/${BGM_FOLDER}/${file}`,
+                    };
+                });
+        }
+    }
+    catch (err) {
+        console.log(err);
+    }
+    finally {
+        return response.send(musics);
+    }
+});
+
+/**
+ * HTTP POST handler function to retrieve a ST background ambient sounds files.
+ *
+ * @param {Object} request - HTTP Request object.
+ * @param {Object} response - HTTP Response object will contain a list of audio file path.
+ *
+ * @returns {void}
+ */
+app.get('/get_default_ambient_list', jsonParser, function (request, response) {
+    const AUDIO_FOLDER = "sounds";
+    const BGM_FOLDER = "ambient";
+    const musicsPath = path.join(AUDIO_FOLDER,BGM_FOLDER);
+    let musics = [];
+
+    try {
+        if (fs.existsSync(musicsPath) && fs.statSync(musicsPath).isDirectory()) {
+            musics = fs.readdirSync(musicsPath)
+                .filter(file => {
+                    const mimeType = mime.lookup(file);
+                    return mimeType && mimeType.startsWith('audio/');
+                })
+                .map((file) => {
+                    const pathToMusic = path.join(musicsPath, file);
+                    return {
+                        label: path.parse(pathToMusic).name.toLowerCase(),
+                        path: `/${AUDIO_FOLDER}/${BGM_FOLDER}/${file}`,
+                    };
+                });
+        }
+    }
+    catch (err) {
+        console.log(err);
+    }
+    finally {
+        return response.send(musics);
+    }
+});
+
+/**
  * HTTP POST handler function to retrieve a character background music list.
  *
  * @param {Object} request - HTTP Request object, expects a character name in the query.
@@ -4942,7 +5018,7 @@ app.post('/delete_extension', jsonParser, async (request, response) => {
  *
  * @returns {void}
  */
-app.get('/get_character_background_musics', jsonParser, function (request, response) {
+app.get('/get_character_bgm_list', jsonParser, function (request, response) {
     const AUDIO_FOLDER = "audio"
     const BGM_FOLDER = "bgm"
     const name = request.query.name;
