@@ -24,7 +24,6 @@ export { MODULE_NAME };
 const MODULE_NAME = 'Audio';
 const DEBUG_PREFIX = "<Audio module> ";
 const UPDATE_INTERVAL = 1000;
-const BGM_UPDATE_COOLDOWN =  10;
 
 const FALLBACK_EXPRESSION = "neutral";
 const DEFAULT_EXPRESSIONS = [
@@ -63,7 +62,7 @@ const AMBIENT_FOLDER = "sounds/ambient/";
 const FALLBACK_BGMS = ["sounds/bgm/bgm_0.mp3"]; // TODO fetch them from folder default and custom
 
 let characterMusics = {}; // Updated with module workers
-let ambientMusics = []; // Initialized only once
+//let ambientMusics = []; // Initialized only once
 
 let currentCharacterBGM = null;
 let currentExpressionBGM = null;
