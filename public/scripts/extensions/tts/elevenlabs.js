@@ -1,3 +1,5 @@
+import { deepClone } from "../../utils.js";
+
 export { ElevenLabsTtsProvider }
 
 class ElevenLabsTtsProvider {
@@ -47,18 +49,20 @@ class ElevenLabsTtsProvider {
 
     loadSettings(settings) {
         // Pupulate Provider UI given input settings
-        if (Object.keys(settings).length == 0) {
+        if (!settings || Object.keys(settings).length == 0) {
             console.info("Using default TTS Provider settings")
         }
 
         // Only accept keys defined in defaultSettings
-        this.settings = this.defaultSettings
+        this.settings = deepClone(this.defaultSettings);
 
-        for (const key in settings){
-            if (key in this.settings){
-                this.settings[key] = settings[key]
-            } else {
-                throw `Invalid setting passed to TTS Provider: ${key}`
+        if (settings) {
+            for (const key in settings) {
+                if (key in this.settings) {
+                    this.settings[key] = settings[key]
+                } else {
+                    throw `Invalid setting passed to TTS Provider: ${key}`
+                }
             }
         }
 
