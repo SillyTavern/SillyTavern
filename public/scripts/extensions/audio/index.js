@@ -452,7 +452,7 @@ async function moduleWorker() {
         }
             
         // Case 3: Same character/expression or BGM switch on cooldown keep playing same BGM
-        console.debug(DEBUG_PREFIX,"Nothing to do for",currentCharacterBGM, newCharacter, currentExpressionBGM, cooldownBGM);
+        //console.debug(DEBUG_PREFIX,"Nothing to do for",currentCharacterBGM, newCharacter, currentExpressionBGM, cooldownBGM);
     }
 }
 
