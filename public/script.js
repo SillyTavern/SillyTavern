@@ -5333,7 +5333,7 @@ async function getSettings(type) {
         loadTextGenSettings(data, settings);
 
         // OpenAI
-        loadOpenAISettings(data, settings);
+        loadOpenAISettings(data, settings.oai_settings ?? settings);
 
         // Horde
         loadHordeSettings(settings);
@@ -5448,7 +5448,7 @@ async function saveSettings(type) {
             tag_map: tag_map,
             nai_settings: nai_settings,
             kai_settings: kai_settings,
-            ...oai_settings,
+            oai_settings: oai_settings,
         }, null, 4),
         beforeSend: function () {
             if (type == "change_name") {
