@@ -63,15 +63,6 @@
         display: none;
     }
 
-    /*     #world_popup_header {
-        flex-direction: column;
-        align-items: flex-start;
-    } */
-
-    #world_popup_header .world_popup_expander {
-        display: none;
-    }
-
     body {
         touch-action: none;
         overflow: hidden;

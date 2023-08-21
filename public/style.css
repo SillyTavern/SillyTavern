@@ -1358,6 +1358,7 @@ input[type=search]::-webkit-search-cancel-button {
     border-radius: 50em;
     background: url('/img/times-circle.svg') no-repeat 50% 50%;
     background-size: contain;
+    backdrop-filter: invert(1) contrast(9);
     opacity: 0;
     pointer-events: none;
     cursor: pointer;
@@ -3007,6 +3008,10 @@ a {
     gap: 5px;
 }
 
+.menu_button_icon span {
+    font-size: calc(var(--mainFontSize) * 0.9);
+}
+
 /*------------ TOP SIDE SETTINGS ----------------*/
 
 #top-settings-holder {
@@ -3159,6 +3164,7 @@ a {
 
 .drawer-content select {
     width: 100%;
+    font-size: calc(var(--mainFontSize) * 0.9);
 }
 
 .settingsSectionWrap {
