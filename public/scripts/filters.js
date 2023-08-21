@@ -1,4 +1,4 @@
-import { fuzzySearchCharacters, fuzzySearchGroups, power_user } from "./power-user.js";
+import { fuzzySearchCharacters, fuzzySearchGroups, fuzzySearchWorldInfo, power_user } from "./power-user.js";
 import { tag_map } from "./tags.js";
 
 export const FILTER_TYPES = {
@@ -6,6 +6,7 @@ export const FILTER_TYPES = {
     TAG: 'tag',
     FAV: 'fav',
     GROUP: 'group',
+    WORLD_INFO_SEARCH: 'world_info_search',
 };
 
 export class FilterHelper {
@@ -18,6 +19,7 @@ export class FilterHelper {
         [FILTER_TYPES.GROUP]: this.groupFilter.bind(this),
         [FILTER_TYPES.FAV]: this.favFilter.bind(this),
         [FILTER_TYPES.TAG]: this.tagFilter.bind(this),
+        [FILTER_TYPES.WORLD_INFO_SEARCH]: this.wiSearchFilter.bind(this),
     }
 
     filterData = {
@@ -25,6 +27,18 @@ export class FilterHelper {
         [FILTER_TYPES.GROUP]: false,
         [FILTER_TYPES.FAV]: false,
         [FILTER_TYPES.TAG]: { excluded: [], selected: [] },
+        [FILTER_TYPES.WORLD_INFO_SEARCH]: '',
+    }
+
+    wiSearchFilter(data) {
+        const term = this.filterData[FILTER_TYPES.WORLD_INFO_SEARCH];
+
+        if (!term) {
+            return data;
+        }
+
+        const fuzzySearchResults = fuzzySearchWorldInfo(data, term);
+        return data.filter(entity => fuzzySearchResults.includes(entity.uid));
     }
 
     tagFilter(data) {
@@ -108,12 +122,12 @@ export class FilterHelper {
         return data.filter(entity => getIsValidSearch(entity));
     }
 
-    setFilterData(filterType, data) {
+    setFilterData(filterType, data, suppressDataChanged = false) {
         const oldData = this.filterData[filterType];
         this.filterData[filterType] = data;
 
         // only trigger a data change if the data actually changed
-        if (JSON.stringify(oldData) !== JSON.stringify(data)) {
+        if (JSON.stringify(oldData) !== JSON.stringify(data) && !suppressDataChanged) {
             this.onDataChanged();
         }
     }
