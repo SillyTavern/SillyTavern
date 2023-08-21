@@ -2922,12 +2922,14 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 // Add prompt bias after everything else
                 // Always run with continue
                 if (!isInstruct && !isImpersonate && (tokens_already_generated === 0  || isContinue)) {
-                    const trimmedBias = promptBias.trimStart();
-                    finalMesSend[finalMesSend.length - 1] +=
+                    if (promptBias.trim().length !== 0) {
+                        finalMesSend[finalMesSend.length - 1] +=
                         /\s/.test(finalMesSend[finalMesSend.length - 1].slice(-1))
-                        ? trimmedBias
-                        : ` ${trimmedBias}`;
+                            ? promptBias.trimStart()
+                            : ` ${promptBias.trimStart()}`;
+                    }
                 } 
+
 
                 // Prune from prompt cache if it exists
                 if (generatedPromtCache.length !== 0) {
