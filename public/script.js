@@ -9028,6 +9028,8 @@ $(document).ready(function () {
                         OF THE CHARACTER'S CHAT FILES.<br><br></b>`
                 );
                 break;*/
+            default:
+                eventSource.emit('charManagementDropdown', target);
         }
         $("#char-management-dropdown").prop('selectedIndex', 0);
     });
