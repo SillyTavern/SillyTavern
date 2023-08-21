@@ -4931,6 +4931,7 @@ app.post('/delete_extension', jsonParser, async (request, response) => {
         return response.status(500).send(`Server Error: ${error.message}`);
     }
 });
+
 /**
  * HTTP POST handler function to retrieve a character background music list.
  *
