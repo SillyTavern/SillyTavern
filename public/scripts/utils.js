@@ -1,6 +1,8 @@
 import { getContext } from "./extensions.js";
 import { getRequestHeaders } from "../script.js";
 
+export const PAGINATION_TEMPLATE = '<%= rangeStart %>-<%= rangeEnd %> of <%= totalNumber %>';
+
 export function onlyUnique(value, index, array) {
     return array.indexOf(value) === index;
 }

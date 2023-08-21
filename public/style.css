@@ -717,7 +717,6 @@ hr {
 .ui-settings {
     display: flex;
     flex-direction: column;
-    gap: 5px;
     flex-grow: 1;
 }
 
@@ -986,7 +985,7 @@ input[type="file"] {
     align-items: center;
     gap: 10px;
     overflow: hidden;
-    width: fit-content;
+    width: 100%;
 }
 
 #rm_PinAndTabs {
@@ -1000,6 +999,7 @@ input[type="file"] {
 #right-nav-panel-tabs .right_menu_button,
 #CharListButtonAndHotSwaps .right_menu_button {
     padding-right: 0;
+    color: unset;
 }
 
 #chartokenwarning.menu_button {
@@ -1586,11 +1586,6 @@ input[type=search]:focus::-webkit-search-cancel-button {
     display: flex;
 }
 
-#description_div {
-    display: flex;
-    align-items: center;
-}
-
 #name_div {
     width: 100%;
 }
@@ -1677,10 +1672,11 @@ grammarly-extension {
     align-self: center !important;
 }
 
+#description_div,
 #first_message_div {
-    position: relative;
+    display: flex;
+    align-items: center;
 }
-
 
 #rm_characters_block .form_create_bottom_buttons_block {
     justify-content: space-evenly !important;
@@ -1716,6 +1712,7 @@ grammarly-extension {
     font-size: calc(var(--mainFontSize) * 0.9);
     display: flex;
     align-items: baseline;
+    gap: 10px;
 }
 
 .rm_stats_button {

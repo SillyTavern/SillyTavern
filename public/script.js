@@ -133,6 +133,7 @@ import {
     isDataURL,
     getCharaFilename,
     isDigitsOnly,
+    PAGINATION_TEMPLATE,
 } from "./scripts/utils.js";
 
 import { extension_settings, getContext, loadExtensionSettings, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
@@ -195,7 +196,6 @@ export {
     setEditedMessageId,
     setSendButtonState,
     selectRightMenuWithAnimation,
-    setRightTabSelectedClass,
     openCharacterChat,
     saveChat,
     messageFormatting,
@@ -1049,6 +1049,7 @@ async function printCharacters(fullRefresh = false) {
         showSizeChanger: true,
         prevText: '<',
         nextText: '>',
+        formatNavigator: PAGINATION_TEMPLATE,
         showNavigator: true,
         callback: function (data) {
             $("#rm_print_characters_block").empty();
@@ -5819,7 +5820,7 @@ function selectRightMenuWithAnimation(selectedMenuId) {
         'rm_api_block': 'grid',
         'rm_characters_block': 'flex',
     };
-    $('#hideCharPanelAvatarButton').toggle(selectedMenuId === 'rm_ch_create_block');
+    $('#result_info').toggle(selectedMenuId === 'rm_ch_create_block');
     document.querySelectorAll('#right-nav-panel .right_menu').forEach((menu) => {
         $(menu).css('display', 'none');
 
@@ -5835,16 +5836,6 @@ function selectRightMenuWithAnimation(selectedMenuId) {
             });
         }
     })
-}
-
-function setRightTabSelectedClass(selectedButtonId) {
-    document.querySelectorAll('#right-nav-panel-tabs .right_menu_button').forEach((button) => {
-        button.classList.remove('selected-right-tab');
-
-        if (selectedButtonId && selectedButtonId.replace('#', '') === button.id) {
-            button.classList.add('selected-right-tab');
-        }
-    });
 }
 
 function select_rm_info(type, charId, previousCharId = null) {
@@ -5909,7 +5900,6 @@ function select_rm_info(type, charId, previousCharId = null) {
             }
         }
     }, 100);
-    setRightTabSelectedClass();
 
     if (previousCharId) {
         const newId = characters.findIndex((x) => x.avatar == previousCharId);
@@ -5926,7 +5916,6 @@ export function select_selected_character(chid) {
     menu_type = "character_edit";
     $("#delete_button").css("display", "flex");
     $("#export_button").css("display", "flex");
-    setRightTabSelectedClass('rm_button_selected_ch');
     var display_name = characters[chid].name;
 
     //create text poles
@@ -6001,8 +5990,6 @@ function select_rm_create() {
     }
 
     selectRightMenuWithAnimation('rm_ch_create_block');
-    setRightTabSelectedClass();
-
 
     $('#set_chat_scenario').hide();
     $("#delete_button_div").css("display", "none");
@@ -6049,7 +6036,6 @@ function select_rm_create() {
 function select_rm_characters() {
     menu_type = "characters";
     selectRightMenuWithAnimation('rm_characters_block');
-    setRightTabSelectedClass('rm_button_characters');
     printCharacters(false); // Do a quick refresh of the characters list
 }
 
@@ -7369,7 +7355,6 @@ export async function deleteCharacter(name, avatar) {
     name2 = systemUserName;
     chat = [...safetychat];
     chat_metadata = {};
-    setRightTabSelectedClass();
     $(document.getElementById("rm_button_selected_ch")).children("h2").text("");
     clearChat();
     this_chid = undefined;
@@ -7485,7 +7470,6 @@ $(document).ready(function () {
         selected_button = "settings";
         menu_type = "settings";
         selectRightMenuWithAnimation('rm_api_block');
-        setRightTabSelectedClass('rm_button_settings');
     });
     $("#rm_button_characters").click(function () {
         selected_button = "characters";
@@ -9242,7 +9226,7 @@ $(document).ready(function () {
         doCharListDisplaySwitch();
     });
 
-    $("#hideCharPanelAvatarButton").hide().on('click', () => {
+    $("#hideCharPanelAvatarButton").on('click', () => {
         $('#avatar-and-name-block').slideToggle()
     });
 });

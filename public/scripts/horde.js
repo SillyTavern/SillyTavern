@@ -30,8 +30,8 @@ let horde_settings = {
     trusted_workers_only: false,
 };
 
-const MAX_RETRIES = 100;
-const CHECK_INTERVAL = 3000;
+const MAX_RETRIES = 200;
+const CHECK_INTERVAL = 5000;
 const MIN_AMOUNT_GEN = 16;
 const getRequestArgs = () => ({
     method: "GET",

@@ -2091,7 +2091,7 @@
                                 <label for="context_story_string">
                                     <small data-i18n="Story String">Story String</small>
                                 </label>
-                                <textarea id="context_story_string" class="text_pole textarea_compact" rows="3"></textarea>
+                                <textarea id="context_story_string" class="text_pole textarea_compact" rows="6"></textarea>
                                 <div class="flex-container">
                                     <div class="flex1">
                                         <label for="context_example_separator">
@@ -2167,7 +2167,7 @@
                             <div class="prompt_overridden">
                                 Overridden by the Character Definitions.
                             </div>
-                            <textarea id="instruct_system_prompt" class="text_pole textarea_compact"></textarea>
+                            <textarea id="instruct_system_prompt" class="text_pole textarea_compact" rows="4"></textarea>
                             <div class="flex-container">
                                 <div class="flex1">
                                     <label for="instruct_input_sequence">
@@ -2219,15 +2219,6 @@
                                         <textarea id="instruct_separator_sequence" class="text_pole wide100p textarea_compact" maxlength="500" rows="2"></textarea>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-
-                        <div>
-                            <h4 data-i18n="Non-markdown strings">
-                                Non-markdown strings
-                            </h4>
-                            <div>
-                                <input id="markdown_escape_strings" class="text_pole textarea_compact" type="text" data-i18n="[placeholder]separate with commas w/o space between" placeholder="separate with commas w/o space between" maxlength="100" />
                             </div>
                         </div>
                     </div>
@@ -2306,6 +2297,14 @@
                                     Show reply prefix in chat
                                 </span>
                             </label>
+                            <div>
+                                <h4 data-i18n="Non-markdown strings">
+                                    Non-markdown strings
+                                </h4>
+                                <div>
+                                    <input id="markdown_escape_strings" class="text_pole textarea_compact" type="text" data-i18n="[placeholder]separate with commas w/o space between" placeholder="separate with commas w/o space between" maxlength="100" />
+                                </div>
+                            </div>
                             <h4>
                                 <span data-i18n="Custom Stopping Strings">
                                     Custom Stopping Strings (KoboldAI/TextGen/NovelAI)
@@ -2508,8 +2507,8 @@
                         <div id="world_popup_text">
                             <div id="world_popup_header" class="flex-container flexGap5">
                                 <div class="world_popup_logo_block">
-                                    <h3 data-i18n="World/Lore Editor">
-                                        World/Lore Editor
+                                    <h3 data-i18n="Editor">
+                                        Editor
                                         <a href="https://docs.sillytavern.app/usage/core-concepts/worldinfo/#world-info-entry" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
                                     </h3>
                                 </div>
@@ -2525,13 +2524,13 @@
                                         <div id="world_import_button" class="menu_button fa-solid fa-file-import fa-fw" title="Import World Info" data-i18n="[title]Import World Info"></div>
                                         <div id="world_popup_export" class="menu_button fa-solid fa-file-export margin0 fa-fw" title="Export World Info" data-i18n="[title]Export World Info"></div>
                                         <div id="world_popup_delete" class="menu_button fa-solid fa-trash-can redWarningBG margin0 fa-fw" title="Delete World Info" data-i18n="[title]Delete World Info"></div>
-                                        <span data-i18n="Editing:">&nbsp;Editing:</span>
+                                        <small data-i18n="Editing:">&nbsp;Editing:</small>
                                         <select id="world_editor_select" class="margin0">
                                             <option value="" data-i18n="--- None ---">--- None ---</option>
                                         </select>
                                         <div id="world_popup_name_button" class="menu_button fa-solid fa-i-cursor fa-fw" title="Rename World Info" data-i18n="[title]Rename World Info"></div>
+                                        <div id="world_info_pagination"></div>
                                     </form>
-
                                 </div>
                             </div>
                         </div>
@@ -2554,7 +2553,7 @@
                 </div>
                 <div class="flex-container spaceEvenly">
                     <div id="UI-Theme-Block" class="flex-container flexFlowColumn drawer33pWidth">
-                        <div id="color-picker-block" class="flex-container flexFlowColumn">
+                        <div id="color-picker-block" class="flex-container flexFlowColumn flexNoGap">
                             <h4><span data-i18n="UI Colors">UI Colors</span></h4>
                             <div class="flex-container">
                                 <toolcool-color-picker id="main-text-color-picker"></toolcool-color-picker>
@@ -3084,12 +3083,17 @@
                         <div id="rm_button_selected_ch">
                             <h2></h2>
                         </div>
-                        <i id="hideCharPanelAvatarButton" class="fa-solid fa-eye right_menu_button"></i>
+                        <div id="result_info" class="flex-container" style="display: none;">
+                            <span id="result_info_text"  title="Token counts may be inaccurate and provided just for reference." data-i18n="[title]Token counts may be inaccurate and provided just for reference.">
+                                <strong id="result_info_total_tokens">Calculating...</strong> Total Tokens
+                            </span>
+                            <a id="chartokenwarning" class="right_menu_button fa-solid fa-triangle-exclamation" href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-tokens" target="_blank" title="About Token 'Limits'"></a>
+                            <i title="Click for stats!" class="fa-solid fa-ranking-star right_menu_button rm_stats_button"></i>
+                            <i title="Toggle character info panel" id="hideCharPanelAvatarButton" class="fa-solid fa-eye right_menu_button"></i>
+                        </div>
                     </div>
                 </div>
                 <!-- end group peeking cope structure-->
-
-
 
                 <div name="Solo Char Create/Edit Panel" id="rm_ch_create_block" class="right_menu flex-container flexFlowColumn" style="display: none;">
                     <form id="form_create" action="javascript:void(null);" method="post" enctype="multipart/form-data">
@@ -3173,14 +3177,6 @@
                             <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-description" class="notes-link" target="_blank">
                                 <span class="note-link-span">?</span>
                             </a>
-                            <span class="expander">&nbsp;</span>
-                            <div id="result_info" class="flex-container" title="Token counts may be inaccurate and provided just for reference." data-i18n="[title]Token counts may be inaccurate and provided just for reference.">
-                                <span id="result_info_text"><strong id="result_info_total_tokens">Calculating...</strong> Total Tokens</span>
-                                <i title="Click for stats!" class="fa-solid fa-circle-info rm_stats_button"></i>
-                                <div id="chartokenwarning" class="menu_button margin0 whitespacenowrap">
-                                    <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-tokens" target="_blank">About Token 'Limits'</a>
-                                </div>
-                            </div>
                         </div>
 
                         <textarea id="description_textarea" data-i18n="[placeholder]Describe your character's physical and mental traits here." placeholder="Describe your character's physical and mental traits here." class="marginBot5" name="description" placeholder=""></textarea>
@@ -3551,61 +3547,6 @@
     </div>
 
     <!-- templates for JS to reuse when needed -->
-    <div id="context_editor_template" class="template_element">
-        <div class="context_editor">
-            <h3>Context Template Editor</h3>
-            <h4 class="template_name"></h4>
-
-            <div class="inline-drawer wide100p">
-                <div class="inline-drawer-toggle inline-drawer-header">
-                    Substitution Parameters
-                    <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
-                </div>
-                <div class="inline-drawer-content">
-                    <i>Click to copy.</i>
-                    <ul class="template_parameters_list justifyLeft margin0">
-                        <li><code>{{char}}</code> - current character name</li>
-                        <li><code>{{user}}</code> - current user name</li>
-                        <li><code>{{description}}</code> - character description</li>
-                        <li><code>{{scenario}}</code> - character or group scenario</li>
-                        <li><code>{{personality}}</code> - character personality</li>
-                        <li><code>{{mesExamples}}</code> - message examples</li>
-                        <li><code>{{wiBeforeCharacter}}</code> - activated World Info entries (Before Char)</li>
-                        <li><code>{{wiAfterCharacter}}</code> - activated World Info entries (After Char)</li>
-                        <li><code>{{instructSystemPrompt}}</code> - system prompt (Instruct mode only)</li>
-                    </ul>
-                </div>
-            </div>
-            <div>
-                <div class="margin-bot-10px wide100p justifyLeft">
-                    Story String Template
-                </div>
-                <textarea class="wide100p textarea_compact story_string_template" rows="8"></textarea>
-                <div>
-                    <small>Lines containing parameters resolving to an empty value will be removed from the template
-                        string.</small>
-                </div>
-            </div>
-            <div>
-                <div class="title_restorable">
-                    <span>Chat Injections</span>
-                    <div title="Add chat injection" data-i18n="[title]Add chat injection" class="menu_button chat_injection_add">
-                        <div class="fa-solid fa-plus"></div>
-                    </div>
-                </div>
-                <div class="chat_injections_list flex-container flexFlowColumn flexGap5 wide100p"></div>
-            </div>
-        </div>
-    </div>
-
-    <div id="chat_injection_template" class="template_element">
-        <div class="chat_injection flex-container wide100p flexGap5 flexnowrap">
-            <input class="chat_injection_text textarea_compact text_pole flex2" data-i18n="[placeholder]Injection text (supports parameters)" placeholder="Injection text (supports parameters)" type="text" />
-            <input class="chat_injection_depth textarea_compact text_pole flex1" data-i18n="[placeholder]Injection depth" placeholder="Injection depth" type="number" min="0" max="100" />
-            <div title="Remove injection" data-i18n="[title]Remove injection" class="menu_button fa-solid fa-xmark chat_injection_remove"></div>
-        </div>
-    </div>
-
     <div id="scenario_override_template" class="template_element">
         <div class="scenario_override range-block flexFlowColumn flex-container">
             <div class="range-block-title title_restorable">
@@ -3747,7 +3688,7 @@
                                 <textarea class="text_pole keysecondarytextpole" name="keysecondary" rows="1" data-i18n="[placeholder]Comma separated (ignored if empty)" placeholder="Comma separated (ignored if empty)" maxlength="1000"></textarea>
                             </div>
                         </div>
-                        <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                        <div class="fa-fw fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                     </div>
                     <div class="inline-drawer-content flex-container">
                         <div class="WIEntryContentAndMemo flex-container">

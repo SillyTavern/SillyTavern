@@ -6,7 +6,8 @@ import {
     isDataURL,
     createThumbnail,
     extractAllWords,
-    saveBase64AsFile
+    saveBase64AsFile,
+    PAGINATION_TEMPLATE,
 } from './utils.js';
 import { RA_CountCharTokens, humanizedDateTime, dragElement, favsToHotswap } from "./RossAscends-mods.js";
 import { loadMovingUIState, sortEntitiesList } from './power-user.js';
@@ -35,7 +36,6 @@ import {
     online_status,
     talkativeness_default,
     selectRightMenuWithAnimation,
-    setRightTabSelectedClass,
     default_ch_mes,
     deleteLastMessage,
     showSwipeButtons,
@@ -832,7 +832,6 @@ async function deleteGroup(id) {
         select_rm_info("group_delete", id);
 
         $("#rm_button_selected_ch").children("h2").text('');
-        setRightTabSelectedClass();
     }
 }
 
@@ -991,6 +990,7 @@ function printGroupCandidates() {
         showSizeChanger: false,
         prevText: '<',
         nextText: '>',
+        formatNavigator: PAGINATION_TEMPLATE,
         showNavigator: true,
         showSizeChanger: true,
         pageSize: Number(localStorage.getItem(storageKey)) || 5,
@@ -1018,6 +1018,7 @@ function printGroupMembers() {
         showSizeChanger: false,
         prevText: '<',
         nextText: '>',
+        formatNavigator: PAGINATION_TEMPLATE,
         showNavigator: true,
         showSizeChanger: true,
         pageSize: Number(localStorage.getItem(storageKey)) || 5,
@@ -1139,7 +1140,6 @@ function select_group_chats(groupId, skipAnimation) {
     if (group) {
         $("#rm_group_automode_label").show();
         $("#rm_button_selected_ch").children("h2").text(groupName);
-        setRightTabSelectedClass('rm_button_selected_ch');
     }
     else {
         $("#rm_group_automode_label").hide();
