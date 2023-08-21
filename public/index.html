@@ -2098,7 +2098,7 @@
                                             <small data-i18n="Example Separator">Example Separator</small>
                                         </label>
                                         <div>
-                                            <textarea id="context_example_separator" class="text_pole textarea_compact" maxlength="500" rows="1"></textarea>
+                                            <textarea id="context_example_separator" class="text_pole textarea_compact" maxlength="500" rows="2"></textarea>
                                         </div>
                                     </div>
                                     <div class="flex1">
@@ -2106,14 +2106,14 @@
                                             <small data-i18n="Chat Start">Chat Start</small>
                                         </label>
                                         <div>
-                                            <textarea id="context_chat_start" class="text_pole textarea_compact" maxlength="500" rows="1"></textarea>
+                                            <textarea id="context_chat_start" class="text_pole textarea_compact" maxlength="500" rows="2"></textarea>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div>
-                            <h4 data-i18n="Instruct mode">Instruct mode
+                            <h4 data-i18n="Instruct Mode">Instruct Mode
                                 <a href="https://docs.sillytavern.app/usage/core-concepts/instructmode/" class="notes-link" target="_blank">
                                     <span class="note-link-span">?</span>
                                 </a>
@@ -2123,22 +2123,7 @@
                                     <input id="instruct_enabled" type="checkbox" />
                                     <span data-i18n="Enabled">Enabled</span>
                                 </label>
-                                <label for="instruct_wrap" class="checkbox_label">
-                                    <input id="instruct_wrap" type="checkbox" />
-                                    <span data-i18n="Wrap Sequences with Newline">Wrap Sequences with Newline</span>
-                                </label>
-                                <label for="instruct_macro" class="checkbox_label">
-                                    <input id="instruct_macro" type="checkbox" />
-                                    <span data-i18n="Replace Macro in Sequences">Replace Macro in Sequences</span>
-                                </label>
-                                <label for="instruct_names" class="checkbox_label">
-                                    <input id="instruct_names" type="checkbox" />
-                                    <span data-i18n="Include Names">Include Names</span>
-                                </label>
-                                <label for="instruct_names_force_groups" class="checkbox_label indent20p">
-                                    <input id="instruct_names_force_groups" type="checkbox" />
-                                    <span data-i18n="Force for Groups and Personas">Force for Groups and Personas</span>
-                                </label>
+                            </div>
                             </div>
                             <label for="instruct_presets">
                                 <span data-i18n="Presets">Presets</span>
@@ -2161,6 +2146,23 @@
                             <div>
                                 <textarea id="instruct_activation_regex" class="text_pole textarea_compact" maxlength="5000" rows="1"></textarea>
                             </div>
+                            <div>
+                                <label for="instruct_wrap" class="checkbox_label">
+                                    <input id="instruct_wrap" type="checkbox" />
+                                    <span data-i18n="Wrap Sequences with Newline">Wrap Sequences with Newline</span>
+                                </label>
+                                <label for="instruct_macro" class="checkbox_label">
+                                    <input id="instruct_macro" type="checkbox" />
+                                    <span data-i18n="Replace Macro in Sequences">Replace Macro in Sequences</span>
+                                </label>
+                                <label for="instruct_names" class="checkbox_label">
+                                    <input id="instruct_names" type="checkbox" />
+                                    <span data-i18n="Include Names">Include Names</span>
+                                </label>
+                                <label for="instruct_names_force_groups" class="checkbox_label indent20p">
+                                    <input id="instruct_names_force_groups" type="checkbox" />
+                                    <span data-i18n="Force for Groups and Personas">Force for Groups and Personas</span>
+                                </label>
                             <label>
                                 <small data-i18n="System Prompt">System Prompt</small>
                             </label>
@@ -3399,8 +3401,8 @@
 
         <div class="inline-drawer">
             <div class="inline-drawer-toggle inline-drawer-header">
-                <h4 data-i18n="Prompt Overrides (For OpenAI/Claude/Scale APIs, Window/OpenRouter, and Instruct mode)">
-                    Prompt Overrides <small>(For OpenAI/Claude/Scale APIs, Window/OpenRouter, and Instruct mode)</small>
+                <h4 data-i18n="Prompt Overrides (For OpenAI/Claude/Scale APIs, Window/OpenRouter, and Instruct Mode)">
+                    Prompt Overrides <small>(For OpenAI/Claude/Scale APIs, Window/OpenRouter, and Instruct Mode)</small>
                 </h4>
 
 
