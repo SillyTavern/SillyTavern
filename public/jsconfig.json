@@ -1,0 +1,22 @@
+{
+    "compilerOptions": {
+        "checkJs": true,
+        "target": "esnext",
+        "module": "commonjs",
+        "allowUmdGlobalAccess": true,
+        "allowSyntheticDefaultImports": true
+    },
+    "exclude": [
+        "node_modules"
+    ],
+    "typeAcquisition": {
+        "include": [
+            "jquery",
+            "@popperjs/core",
+            "toastr",
+            "showdown",
+            "dompurify",
+            "@types/moment"
+        ]
+    }
+}

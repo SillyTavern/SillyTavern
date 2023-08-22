@@ -638,10 +638,10 @@ export function getTextTokens(tokenizerType, str) {
 function reloadMarkdownProcessor(render_formulas = false) {
     if (render_formulas) {
         converter = new showdown.Converter({
-            emoji: "true",
-            underline: "true",
-            tables: "true",
-            parseImgDimensions: "true",
+            emoji: true,
+            underline: true,
+            tables: true,
+            parseImgDimensions: true,
             extensions: [
                 showdownKatex(
                     {
@@ -655,10 +655,10 @@ function reloadMarkdownProcessor(render_formulas = false) {
     }
     else {
         converter = new showdown.Converter({
-            emoji: "true",
-            literalMidWordUnderscores: "true",
-            parseImgDimensions: "true",
-            tables: "true",
+            emoji: true,
+            literalMidWordUnderscores: true,
+            parseImgDimensions: true,
+            tables: true,
         });
     }
 
@@ -5571,7 +5571,7 @@ async function messageEditDone(div) {
  *
  * @param {Array} data - An array containing metadata about each chat such as file_name.
  * @param {boolean} isGroupChat - A flag indicating if the chat is a group chat.
- * @returns {Object} chat_dict - A dictionary where each key is a file_name and the value is the
+ * @returns {Promise<Object>} chat_dict - A dictionary where each key is a file_name and the value is the
  * corresponding chat content fetched from the server.
  */
 export async function getChatsFromFiles(data, isGroupChat) {
@@ -5621,7 +5621,7 @@ export async function getChatsFromFiles(data, isGroupChat) {
  * The function sends a POST request to the server to retrieve all chats for the character. It then
  * processes the received data, sorts it by the file name, and returns the sorted data.
  *
- * @returns {Array} - An array containing metadata of all past chats of the character, sorted
+ * @returns {Promise<Array>} - An array containing metadata of all past chats of the character, sorted
  * in descending order by file name. Returns `undefined` if the fetch request is unsuccessful.
  */
 async function getPastCharacterChats() {
@@ -7998,7 +7998,6 @@ $(document).ready(function () {
     /* $('#set_chat_scenario').on('click', setScenarioOverride); */
 
     ///////////// OPTIMIZED LISTENERS FOR LEFT SIDE OPTIONS POPUP MENU //////////////////////
-
     $("#options [id]").on("click", function (event, customData) {
         const fromSlashCommand = customData?.fromSlashCommand || false;
         var id = $(this).attr("id");
@@ -8499,7 +8498,6 @@ $(document).ready(function () {
         $('#chat')[0].scrollTop = oldScroll;
         showSwipeButtons();
     });
-
 
     $(document).on("click", ".mes_edit_delete", async function (event, customData) {
         const fromSlashCommand = customData?.fromSlashCommand || false;
@@ -9072,7 +9070,7 @@ $(document).ready(function () {
                 await importWorldInfo(file);
                 break;
             default:
-                toastr.warn('Unknown content type');
+                toastr.warning('Unknown content type');
                 console.error('Unknown content type', customContentType);
                 break;
         }

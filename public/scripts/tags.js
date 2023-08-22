@@ -7,7 +7,7 @@ import {
     getCharacters,
     entitiesFilter,
 } from "../script.js";
-import { FILTER_TYPES } from "./filters.js";
+import { FILTER_TYPES, FilterHelper } from "./filters.js";
 
 import { groupCandidatesFilter, selected_group } from "./group-chats.js";
 import { uuidv4 } from "./utils.js";
@@ -24,7 +24,6 @@ export {
     importTags,
 };
 
-const random_id = () => uuidv4();
 const CHARACTER_FILTER_SELECTOR = '#rm_characters_block .rm_tag_filter';
 const GROUP_FILTER_SELECTOR = '#rm_group_chats_block .rm_tag_filter';
 
@@ -49,17 +48,21 @@ const InListActionable = {
 }
 
 const DEFAULT_TAGS = [
-    { id: random_id(), name: "Plain Text" },
-    { id: random_id(), name: "OpenAI" },
-    { id: random_id(), name: "W++" },
-    { id: random_id(), name: "Boostyle" },
-    { id: random_id(), name: "PList" },
-    { id: random_id(), name: "AliChat" },
+    { id: uuidv4(), name: "Plain Text" },
+    { id: uuidv4(), name: "OpenAI" },
+    { id: uuidv4(), name: "W++" },
+    { id: uuidv4(), name: "Boostyle" },
+    { id: uuidv4(), name: "PList" },
+    { id: uuidv4(), name: "AliChat" },
 ];
 
 let tags = [];
 let tag_map = {};
 
+/**
+ * Applies the favorite filter to the character list.
+ * @param {FilterHelper} filterHelper Instance of FilterHelper class.
+ */
 function applyFavFilter(filterHelper) {
     const isSelected = $(this).hasClass('selected');
     const displayFavoritesOnly = !isSelected;
@@ -68,6 +71,10 @@ function applyFavFilter(filterHelper) {
     filterHelper.setFilterData(FILTER_TYPES.FAV, displayFavoritesOnly);
 }
 
+/**
+ * Applies the "is group" filter to the character list.
+ * @param {FilterHelper} filterHelper Instance of FilterHelper class.
+ */
 function filterByGroups(filterHelper) {
     const isSelected = $(this).hasClass('selected');
     const displayGroupsOnly = !isSelected;
@@ -253,7 +260,7 @@ async function importTags(imported_char) {
 
 function createNewTag(tagName) {
     const tag = {
-        id: random_id(),
+        id: uuidv4(),
         name: tagName,
         color: '',
     };

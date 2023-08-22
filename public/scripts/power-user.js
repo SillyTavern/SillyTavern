@@ -246,29 +246,42 @@ function playMessageSound() {
     }
 
     const audio = document.getElementById('audio_message_sound');
-    audio.volume = 0.8;
-    audio.pause();
-    audio.currentTime = 0;
-    audio.play();
+    if (audio instanceof HTMLAudioElement) {
+        audio.volume = 0.8;
+        audio.pause();
+        audio.currentTime = 0;
+        audio.play();
+    }
 }
 
+/**
+ * Replaces consecutive newlines with a single newline.
+ * @param {string} x String to be processed.
+ * @returns {string} Processed string.
+ * @example
+ * collapseNewlines("\n\n\n"); // "\n"
+ */
 function collapseNewlines(x) {
     return x.replaceAll(/\n+/g, "\n");
 }
 
+/**
+ * Fix formatting problems in markdown.
+ * @param {string} text Text to be processed.
+ * @returns {string} Processed text.
+ * @example
+ * "^example * text*\n" // "^example *text*\n"
+ *  "^*example * text\n"// "^*example* text\n"
+ * "^example *text *\n" // "^example *text*\n"
+ * "^* example * text\n" // "^*example* text\n"
+ * // take note that the side you move the asterisk depends on where its pairing is
+ * // i.e. both of the following strings have the same broken asterisk ' * ',
+ * // but you move the first to the left and the second to the right, to match the non-broken asterisk
+ * "^example * text*\n" // "^*example * text\n"
+ * // and you HAVE to handle the cases where multiple pairs of asterisks exist in the same line
+ * "^example * text* * harder problem *\n" // "^example *text* *harder problem*\n"
+ */
 function fixMarkdown(text) {
-    // fix formatting problems in markdown
-    // e.g.:
-    // "^example * text*\n" -> "^example *text*\n"
-    // "^*example * text\n" -> "^*example* text\n"
-    // "^example *text *\n" -> "^example *text*\n"
-    // "^* example * text\n" -> "^*example* text\n"
-    // take note that the side you move the asterisk depends on where its pairing is
-    // i.e. both of the following strings have the same broken asterisk ' * ',
-    // but you move the first to the left and the second to the right, to match the non-broken asterisk "^example * text*\n" "^*example * text\n"
-    // and you HAVE to handle the cases where multiple pairs of asterisks exist in the same line
-    // i.e. "^example * text* * harder problem *\n" -> "^example *text* *harder problem*\n"
-
     // Find pairs of formatting characters and capture the text in between them
     const format = /([\*_]{1,2})([\s\S]*?)\1/gm;
     let matches = [];

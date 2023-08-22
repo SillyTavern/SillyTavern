@@ -418,7 +418,7 @@ function getWorldEntry(name, data, entry) {
 
     keyInput.on("input", function () {
         const uid = $(this).data("uid");
-        const value = $(this).val();
+        const value = String($(this).val());
         resetScrollHeight(this);
         data.entries[uid].key = value
             .split(",")
@@ -454,7 +454,7 @@ function getWorldEntry(name, data, entry) {
     keySecondaryInput.data("uid", entry.uid);
     keySecondaryInput.on("input", function () {
         const uid = $(this).data("uid");
-        const value = $(this).val();
+        const value = String($(this).val());
         resetScrollHeight(this);
         data.entries[uid].keysecondary = value
             .split(",")
@@ -1505,19 +1505,6 @@ jQuery(() => {
             e.preventDefault();
             return;
         }
-
-        /*
-        if (deviceInfo.device.type === 'desktop') {
-            let selectScrollTop = null;
-            e.preventDefault();
-            const option = $(e.target);
-            const selectElement = $(this)[0];
-            selectScrollTop = selectElement.scrollTop;
-            option.prop('selected', !option.prop('selected'));
-            await delay(1);
-            selectElement.scrollTop = selectScrollTop;
-        }
-        */
 
         onWorldInfoChange('__notSlashCommand__');
     });
