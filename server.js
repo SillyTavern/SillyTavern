@@ -4947,7 +4947,7 @@ app.get('/get_default_bgm_list', jsonParser, function (request, response) {
     const musicsPath = directories.assets_bgm;
     let files = [];
     let files_paths = [];
-    console.info("Checking audio file into",musicsPath);
+    //console.info("Checking audio file into",musicsPath);
 
     try {
         if (fs.existsSync(musicsPath) && fs.statSync(musicsPath).isDirectory()) {
@@ -4980,7 +4980,7 @@ app.get('/get_default_ambient_list', jsonParser, function (request, response) {
     const musicsPath = directories.assets_ambient;
     let files = [];
     let files_paths = [];
-    console.info("Checking audio file into",musicsPath);
+    //console.info("Checking audio file into",musicsPath);
 
     try {
         if (fs.existsSync(musicsPath) && fs.statSync(musicsPath).isDirectory()) {
@@ -5038,4 +5038,45 @@ app.get('/get_character_bgm_list', jsonParser, function (request, response) {
     finally {
         return response.send(musics);
     }
+});
+
+/**
+ * HTTP POST handler function to retrieve a character background music list.
+ *
+ * @param {Object} request - HTTP Request object, expects a folder path in the query.
+ * @param {Object} response - HTTP Response object will contain the path to save file.
+ *
+ * @returns {void}
+ */
+app.get('/asset_download', jsonParser, function (request, response) {
+    const fs = require('fs');
+    const { Readable } = require('stream');
+    const { finished } = require('stream/promises');
+    const path = require("path");
+    const url = request.query.url;
+    const file_path = request.query.save_path;
+
+    console.debug("Request received to download", url,"to",file_path);
+
+    
+    const downloadFile = (async (url, file_path) => {
+    const res = await fetch(url);
+    const destination = path.resolve(file_path);
+    const fileStream = fs.createWriteStream(destination, { flags: 'wx' });
+    await finished(Readable.fromWeb(res.body).pipe(fileStream));
+    console.debug("Download finished, file saved to",file_path);
+    });
+
+    downloadFile(url, file_path)
+/*
+    https.get(url, function(response) {
+        const fileStream  = fs.createWriteStream(file_path);
+        response.pipe(fileStream);
+
+        // after download completed close filestream
+        fileStream.on("finish", () => {
+            fileStream .close();
+            console.log("Download Completed");
+        });
+    });*/
 });
