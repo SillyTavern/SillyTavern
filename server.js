@@ -3329,11 +3329,11 @@ app.post("/generate_altscale", jsonParser, function (request, response_generate_
                     modelType: 'OpenAi',
                     maxTokens: request.body.max_tokens,
                     temperature: request.body.temp,
-                    stop: null,
+                    stop: "user:",
                     suffix: null,
-                    topP: null,
+                    topP: request.body.top_p,
                     logprobs: null,
-                    logitBias: null
+                    logitBias: request.body.logit_bias
                 },
                 inputs: [
                     {
@@ -3348,11 +3348,8 @@ app.post("/generate_altscale", jsonParser, function (request, response_generate_
                 values: {
                     'variant.taxonomy': ['undefined'],
                     'prompt.variablesSourceDataId': ['undefined'],
-                    'modelParameters.stop': ['undefined'],
                     'modelParameters.suffix': ['undefined'],
-                    'modelParameters.topP': ['undefined'],
                     'modelParameters.logprobs': ['undefined'],
-                    'modelParameters.logitBias': ['undefined']
                 }
             }
         })

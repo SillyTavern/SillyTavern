@@ -1084,23 +1084,34 @@ function saveModelList(data) {
     }
 }
 
-async function sendAltScaleRequest(openai_msgs_tosend, signal) {
+async function sendAltScaleRequest(openai_msgs_tosend, logit_bias, signal) {
     const generate_url = '/generate_altscale';
 
-    let firstMsg = substituteParams(openai_msgs_tosend[0].content);
-    let subsequentMsgs = openai_msgs_tosend.slice(1);
+    let firstSysMsgs = []
+    for(let msg of openai_msgs_tosend){
+        if(msg.role === 'system') {
+            firstSysMsgs.push(substituteParams(msg.content));
+        } else {
+            break;
+        }
+    }
 
-    const joinedMsgs = subsequentMsgs.reduce((acc, obj) => {
+    let subsequentMsgs = openai_msgs_tosend.slice(firstSysMsgs.length);
+
+    const joinedSysMsgs = substituteParams(firstSysMsgs.join("\n"));
+    const joinedSubsequentMsgs = subsequentMsgs.reduce((acc, obj) => {
         return acc + obj.role + ": " + obj.content + "\n";
     }, "");
-    openai_msgs_tosend = substituteParams(joinedMsgs);
-    console.log(openai_msgs_tosend)
+
+    openai_msgs_tosend = substituteParams(joinedSubsequentMsgs);
 
     const generate_data = {
-        sysprompt: firstMsg,
+        sysprompt: joinedSysMsgs,
         prompt: openai_msgs_tosend,
         temp: parseFloat(oai_settings.temp_openai),
+        top_p: parseFloat(oai_settings.top_p_openai),
         max_tokens: parseFloat(oai_settings.openai_max_tokens),
+        logit_bias: logit_bias,
     }
 
     const response = await fetch(generate_url, {
@@ -1109,6 +1120,7 @@ async function sendAltScaleRequest(openai_msgs_tosend, signal) {
         headers: getRequestHeaders(),
         signal: signal
     });
+
     const data = await response.json();
     return data.output;
 }
@@ -1143,23 +1155,23 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
         openai_msgs_tosend = substituteParams(joinedMsgs);
     }
 
-    if (isScale && !!$('#scale-alt').prop('checked')) {
-        return sendAltScaleRequest(openai_msgs_tosend, signal)
-    }
-
     // If we're using the window.ai extension, use that instead
     // Doesn't support logit bias yet
     if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
         return sendWindowAIRequest(openai_msgs_tosend, signal, stream);
     }
 
-    const logitBiasSources = [chat_completion_sources.OPENAI, chat_completion_sources.OPENROUTER];
+    const logitBiasSources = [chat_completion_sources.OPENAI, chat_completion_sources.OPENROUTER, chat_completion_sources.SCALE];
     if (oai_settings.bias_preset_selected
         && logitBiasSources.includes(oai_settings.chat_completion_source)
         && Array.isArray(oai_settings.bias_presets[oai_settings.bias_preset_selected])
         && oai_settings.bias_presets[oai_settings.bias_preset_selected].length) {
         logit_bias = biasCache || await calculateLogitBias();
         biasCache = logit_bias;
+    }
+
+    if (isScale && oai_settings.use_alt_scale) {
+        return sendAltScaleRequest(openai_msgs_tosend, logit_bias, signal)
     }
 
     const model = getChatCompletionModel();
