@@ -7,7 +7,7 @@ import {
     saveSettingsDebounced,
     setGenerationParamsFromPreset
 } from "../script.js";
-import { getCfg } from "./extensions/cfg/util.js";
+import { getCfgPrompt } from "./extensions/cfg/util.js";
 import { MAX_CONTEXT_DEFAULT, tokenizers } from "./power-user.js";
 import {
     getSortableDelay,
@@ -395,7 +395,11 @@ function getBadWordPermutations(text) {
     return result;
 }
 
-export function getNovelGenerationData(finalPrompt, this_settings, this_amount_gen, isImpersonate) {
+export function getNovelGenerationData(finalPrompt, this_settings, this_amount_gen, isImpersonate, cfgValues) {
+    if (cfgValues.guidanceScale && cfgValues.guidanceScale?.value !== 1) {
+        cfgValues.negativePrompt = (getCfgPrompt(cfgValues.guidanceScale, true))?.value;
+    }
+
     const clio = nai_settings.model_novel.includes('clio');
     const kayra = nai_settings.model_novel.includes('kayra');
 
@@ -410,7 +414,6 @@ export function getNovelGenerationData(finalPrompt, this_settings, this_amount_g
         : undefined;
 
     const prefix = selectPrefix(nai_settings.prefix, finalPrompt);
-    const cfgSettings = getCfg();
 
     let logitBias = [];
     if (tokenizerType !== tokenizers.NONE && Array.isArray(nai_settings.logit_bias) && nai_settings.logit_bias.length) {
@@ -437,8 +440,8 @@ export function getNovelGenerationData(finalPrompt, this_settings, this_amount_g
         "typical_p": parseFloat(nai_settings.typical_p),
         "mirostat_lr": parseFloat(nai_settings.mirostat_lr),
         "mirostat_tau": parseFloat(nai_settings.mirostat_tau),
-        "cfg_scale": cfgSettings?.guidanceScale ?? parseFloat(nai_settings.cfg_scale),
-        "cfg_uc": cfgSettings?.negativePrompt ?? nai_settings.cfg_uc ?? "",
+        "cfg_scale": cfgValues?.guidanceScale?.value ?? parseFloat(nai_settings.cfg_scale),
+        "cfg_uc": cfgValues?.negativePrompt ?? nai_settings.cfg_uc ?? "",
         "phrase_rep_pen": nai_settings.phrase_rep_pen,
         "stop_sequences": stopSequences,
         "bad_words_ids": badWordIds,
