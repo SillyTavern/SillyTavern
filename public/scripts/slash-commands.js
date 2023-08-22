@@ -338,8 +338,8 @@ async function sendMessageAs(_, text) {
     };
 
     chat.push(message);
-    addOneMessage(message);
     await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
+    addOneMessage(message);
     saveChatConditional();
 }
 
@@ -369,8 +369,8 @@ async function sendNarratorMessage(_, text) {
     };
 
     chat.push(message);
-    addOneMessage(message);
     await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
+    addOneMessage(message);
     saveChatConditional();
 }
 
@@ -394,8 +394,8 @@ async function sendCommentMessage(_, text) {
     };
 
     chat.push(message);
-    addOneMessage(message);
     await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
+    addOneMessage(message);
     saveChatConditional();
 }
 

@@ -1088,8 +1088,8 @@ async function sendAltScaleRequest(openai_msgs_tosend, logit_bias, signal) {
     const generate_url = '/generate_altscale';
 
     let firstSysMsgs = []
-    for(let msg of openai_msgs_tosend){
-        if(msg.role === 'system') {
+    for (let msg of openai_msgs_tosend) {
+        if (msg.role === 'system') {
             firstSysMsgs.push(substituteParams(msg.name ? msg.name + ": " + msg.content : msg.content));
         } else {
             break;
@@ -2587,7 +2587,7 @@ function onSettingsPresetChange() {
         use_ai21_tokenizer: ['#use_ai21_tokenizer', 'use_ai21_tokenizer', false],
         exclude_assistant: ['#exclude_assistant', 'exclude_assistant', false],
         use_alt_scale: ['#use_alt_scale', 'use_alt_scale', false],
-        };
+    };
 
     const presetName = $('#settings_perset_openai').find(":selected").text();
     oai_settings.preset_settings_openai = presetName;

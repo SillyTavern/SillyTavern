@@ -3301,7 +3301,7 @@ async function sendScaleRequest(request, response) {
 }
 
 app.post("/generate_altscale", jsonParser, function (request, response_generate_scale) {
-    if(!request.body) return response_generate_scale.sendStatus(400);
+    if (!request.body) return response_generate_scale.sendStatus(400);
 
     fetch('https://dashboard.scale.com/spellbook/api/trpc/v2.variant.run', {
         method: 'POST',
@@ -3357,11 +3357,11 @@ app.post("/generate_altscale", jsonParser, function (request, response_generate_
         .then(response => response.json())
         .then(data => {
             console.log(data.result.data.json.outputs[0])
-            return response_generate_scale.send({output: data.result.data.json.outputs[0]});
+            return response_generate_scale.send({ output: data.result.data.json.outputs[0] });
         })
         .catch((error) => {
             console.error('Error:', error)
-            return response_generate_scale.send({error: true})
+            return response_generate_scale.send({ error: true })
         });
 
 });

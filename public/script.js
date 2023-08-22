@@ -136,7 +136,7 @@ import {
     PAGINATION_TEMPLATE,
 } from "./scripts/utils.js";
 
-import { extension_settings, getContext, loadExtensionSettings, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
+import { extension_settings, getContext, loadExtensionSettings, registerExtensionHelper, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
 import { executeSlashCommands, getSlashCommandsHelp, registerSlashCommand } from "./scripts/slash-commands.js";
 import {
     tag_map,
@@ -2087,14 +2087,14 @@ class StreamingProcessor {
         $(`#chat .mes[mesid="${messageId}"] .mes_buttons`).css({ 'display': 'flex' });
     }
 
-    onStartStreaming(text) {
+    async onStartStreaming(text) {
         let messageId = -1;
 
         if (this.type == "impersonate") {
             $('#send_textarea').val('').trigger('input');
         }
         else {
-            saveReply(this.type, text);
+            await saveReply(this.type, text);
             messageId = count_view_mes - 1;
             this.showMessageButtons(messageId);
         }
@@ -2170,8 +2170,13 @@ class StreamingProcessor {
         }
     }
 
-    onFinishStreaming(messageId, text) {
+    async onFinishStreaming(messageId, text) {
         this.hideMessageButtons(this.messageId);
+
+        const eventType = this.type !== 'impersonate' ? event_types.MESSAGE_RECEIVED : event_types.IMPERSONATE_READY;
+        const eventData = this.type !== 'impersonate' ? this.messageId : text;
+        await eventSource.emit(eventType, eventData);
+
         this.onProgressStreaming(messageId, text, true);
         addCopyToCodeBlocks($(`#chat .mes[mesid="${messageId}"]`));
         saveChatConditional();
@@ -2213,10 +2218,6 @@ class StreamingProcessor {
             }
         }
         playMessageSound();
-
-        const eventType = this.type !== 'impersonate' ? event_types.MESSAGE_RECEIVED : event_types.IMPERSONATE_READY;
-        const eventData = this.type !== 'impersonate' ? this.messageId : text;
-        eventSource.emit(eventType, eventData);
     }
 
     onErrorStreaming() {
@@ -2241,7 +2242,7 @@ class StreamingProcessor {
         this.onErrorStreaming();
     }
 
-    nullStreamingGeneration() {
+    *nullStreamingGeneration() {
         throw new Error('Generation function for streaming is not hooked up');
     }
 
@@ -2260,7 +2261,7 @@ class StreamingProcessor {
 
     async generate() {
         if (this.messageId == -1) {
-            this.messageId = this.onStartStreaming(this.firstMessageText);
+            this.messageId = await this.onStartStreaming(this.firstMessageText);
             await delay(1); // delay for message to be rendered
             scrollLock = false;
         }
@@ -3026,7 +3027,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
 
                 if (streamingProcessor && !streamingProcessor.isStopped && streamingProcessor.isFinished) {
-                    streamingProcessor.onFinishStreaming(streamingProcessor.messageId, getMessage);
+                    await streamingProcessor.onFinishStreaming(streamingProcessor.messageId, getMessage);
                     streamingProcessor = null;
                 }
             }
@@ -3059,11 +3060,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         if (!isImpersonate) {
                             if (tokens_already_generated == 0) {
                                 console.debug("New message");
-                                ({ type, getMessage } = saveReply(type, getMessage, this_mes_is_name, title));
+                                ({ type, getMessage } = await saveReply(type, getMessage, this_mes_is_name, title));
                             }
                             else {
                                 console.debug("Should append message");
-                                ({ type, getMessage } = saveReply('append', getMessage, this_mes_is_name, title));
+                                ({ type, getMessage } = await saveReply('append', getMessage, this_mes_is_name, title));
                             }
                         } else {
                             let chunk = cleanUpMessage(message_already_generated, true, isContinue, true);
@@ -3112,12 +3113,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         else {
                             // Without streaming we'll be having a full message on continuation. Treat it as a multigen last chunk.
                             if (!isMultigenEnabled() && originalType !== 'continue') {
-                                ({ type, getMessage } = saveReply(type, getMessage, this_mes_is_name, title));
+                                ({ type, getMessage } = await saveReply(type, getMessage, this_mes_is_name, title));
                             }
                             else {
-                                ({ type, getMessage } = saveReply('appendFinal', getMessage, this_mes_is_name, title));
+                                ({ type, getMessage } = await saveReply('appendFinal', getMessage, this_mes_is_name, title));
                             }
-                            await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
                         }
                         activateSendButtons();
 
@@ -3294,9 +3294,9 @@ export async function sendMessageAsUser(textareaText, messageBias) {
         chat[chat.length - 1]['extra']['bias'] = messageBias;
     }
     statMesProcess(chat[chat.length - 1], 'user', characters, this_chid, '');
-    addOneMessage(chat[chat.length - 1]);
     // Wait for all handlers to finish before continuing with the prompt
     await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
+    addOneMessage(chat[chat.length - 1]);
     console.debug('message sent as user');
 }
 
@@ -3814,10 +3814,7 @@ function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete
     return getMessage;
 }
 
-
-
-
-function saveReply(type, getMessage, this_mes_is_name, title) {
+async function saveReply(type, getMessage, this_mes_is_name, title) {
     if (type != 'append' && type != 'continue' && type != 'appendFinal' && chat.length && (chat[chat.length - 1]['swipe_id'] === undefined ||
         chat[chat.length - 1]['is_user'])) {
         type = 'normal';
@@ -3838,6 +3835,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
             chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
             chat[chat.length - 1]['extra']['api'] = getGeneratingApi();
             chat[chat.length - 1]['extra']['model'] = getGeneratingModel();
+            await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
             addOneMessage(chat[chat.length - 1], { type: 'swipe' });
         } else {
             chat[chat.length - 1]['mes'] = getMessage;
@@ -3852,6 +3850,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
         chat[chat.length - 1]["extra"]["api"] = getGeneratingApi();
         chat[chat.length - 1]["extra"]["model"] = getGeneratingModel();
+        await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
         addOneMessage(chat[chat.length - 1], { type: 'swipe' });
     } else if (type === 'appendFinal') {
         oldMessage = chat[chat.length - 1]['mes'];
@@ -3863,6 +3862,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
         chat[chat.length - 1]["extra"]["api"] = getGeneratingApi();
         chat[chat.length - 1]["extra"]["model"] = getGeneratingModel();
+        await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
         addOneMessage(chat[chat.length - 1], { type: 'swipe' });
 
     } else {
@@ -3896,6 +3896,7 @@ function saveReply(type, getMessage, this_mes_is_name, title) {
         }
 
         saveImageToMessage(img, chat[chat.length - 1]);
+        await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
         addOneMessage(chat[chat.length - 1]);
     }
 
@@ -6503,8 +6504,8 @@ async function createOrEditCharacter(e) {
 
                         add_mes_without_animation = true;
                         //console.log('form create submission calling addOneMessage');
-                        addOneMessage(chat[0]);
                         await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
+                        addOneMessage(chat[0]);
                     }
                 }
                 $("#create_button").removeAttr("disabled");
@@ -6558,6 +6559,7 @@ window["SillyTavern"].getContext = function () {
         deactivateSendButtons,
         saveReply,
         registerSlashCommand: registerSlashCommand,
+        registerHelper: registerExtensionHelper,
     };
 };
 

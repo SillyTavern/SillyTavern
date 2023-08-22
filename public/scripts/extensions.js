@@ -1,5 +1,5 @@
 import { callPopup, eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders } from "../script.js";
-import { isSubsetOf, debounce } from "./utils.js";
+import { isSubsetOf, debounce, waitUntilCondition } from "./utils.js";
 export {
     getContext,
     getApiUrl,
@@ -15,6 +15,42 @@ let extensionNames = [];
 let manifests = [];
 const defaultUrl = "http://localhost:5100";
 export const saveMetadataDebounced = debounce(async () => await getContext().saveMetadata(), 1000);
+
+export const extensionsHandlebars = Handlebars.create();
+
+/**
+ * Registers a Handlebars helper for use in extensions.
+ * @param {string} name Handlebars helper name
+ * @param {function} helper Handlebars helper function
+ */
+export function registerExtensionHelper(name, helper) {
+    extensionsHandlebars.registerHelper(name, helper);
+}
+
+/**
+ * Applies handlebars extension helpers to a message.
+ * @param {number} messageId Message index in the chat.
+ */
+function processExtensionHelpers(messageId) {
+    const context = getContext();
+    const message = context.chat[messageId];
+
+    if (!message?.mes || typeof message.mes !== 'string') {
+        return;
+    }
+
+    // Don't waste time if there are no mustaches
+    if (!message.mes.includes('{{')) {
+        return;
+    }
+
+    try {
+        const template = extensionsHandlebars.compile(message.mes, { noEscape: true });
+        message.mes = template({});
+    } catch {
+        // Ignore
+    }
+}
 
 // Disables parallel updates
 class ModuleWorkerWrapper {
@@ -629,10 +665,13 @@ async function runGenerationInterceptors(chat, contextSize) {
     }
 }
 
-$(document).ready(async function () {
-    setTimeout(function () {
+jQuery(function () {
+    setTimeout(async function () {
         addExtensionsButtonAndMenu();
         $("#extensionsMenuButton").css("display", "flex");
+        await waitUntilCondition(() => eventSource !== undefined, 1000, 100);
+        eventSource.on(event_types.MESSAGE_RECEIVED, processExtensionHelpers);
+        eventSource.on(event_types.MESSAGE_SENT, processExtensionHelpers);
     }, 100)
 
     $("#extensions_connect").on('click', connectClickHandler);

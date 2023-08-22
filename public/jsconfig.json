@@ -21,6 +21,7 @@
             "showdown-katex",
             "droll",
             "handlebars",
+            "highlight.js"
         ]
     }
 }
