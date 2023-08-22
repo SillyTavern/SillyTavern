@@ -1437,6 +1437,11 @@ function countTokens(messages, full = false) {
 
     for (const message of messages) {
         const model = getTokenizerModel();
+
+        if (model === 'claude' || shouldTokenizeAI21) {
+            full = true;
+        }
+
         const hash = getStringHash(JSON.stringify(message));
         const cacheKey = `${model}-${hash}`;
         const cachedCount = tokenCache[chatId][cacheKey];
