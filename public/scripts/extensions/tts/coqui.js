@@ -84,6 +84,7 @@ class CoquiTtsProvider {
     //#############################//
 
     settings
+    ready
 
     defaultSettings = {
         voiceMap: "",
@@ -147,6 +148,7 @@ class CoquiTtsProvider {
     loadSettings(settings) {
         // Only accept keys defined in defaultSettings
         this.settings = this.defaultSettings
+        this.ready = false
 
         for (const key in settings) {
             if (key in this.settings) {
@@ -225,6 +227,21 @@ class CoquiTtsProvider {
                 console.log(DEBUG_PREFIX,"added language",language);
             }*/
         });
+    }
+
+    // Perform a simple readiness check by trying to fetch voiceIds
+    async checkReady(){
+        try {
+            if (!modules.includes('coqui-tts')){
+                this.ready = false
+                return
+            }
+            await this.fetchTtsVoiceIds()
+            this.ready = true
+
+        } catch {
+            this.ready = false
+        }
     }
 
     updateVoiceMap() {

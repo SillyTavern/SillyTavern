@@ -80,6 +80,7 @@ class SystemTtsProvider {
     //########//
 
     settings
+    ready = false
     voices = []
     separator = ' ... '
 
@@ -145,7 +146,19 @@ class SystemTtsProvider {
         $('#system_tts_pitch').val(this.settings.pitch || this.defaultSettings.pitch);
         $('#system_tts_pitch_output').text(this.settings.pitch);
         $('#system_tts_rate_output').text(this.settings.rate);
+        this.checkReady()
         console.info("Settings loaded");
+    }
+
+    // Perform a simple readiness check by trying to fetch voiceIds
+    async checkReady(){
+        try {
+            await this.fetchTtsVoiceIds()
+            this.ready = true
+
+        } catch {
+            this.ready = false
+        }
     }
 
     async onApplyClick() {
