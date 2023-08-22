@@ -1910,7 +1910,7 @@ function sendSystemMessage(type, text, extra = {}) {
         return;
     }
 
-    const newMessage = { ...systemMessage, send_date: humanizedDateTime() };
+    const newMessage = { ...systemMessage, send_date: getMessageTimeStamp() };
 
     if (text) {
         newMessage.mes = text;

@@ -22,7 +22,7 @@ import {
     reloadCurrentChat,
     sendMessageAsUser,
 } from "../script.js";
-import { humanizedDateTime } from "./RossAscends-mods.js";
+import { getMessageTimeStamp } from "./RossAscends-mods.js";
 import { resetSelectedGroup } from "./group-chats.js";
 import { getRegexedString, regex_placement } from "./extensions/regex/engine.js";
 import { chat_styles, power_user } from "./power-user.js";
@@ -327,7 +327,7 @@ async function sendMessageAs(_, text) {
         is_user: false,
         is_name: true,
         is_system: isSystem,
-        send_date: humanizedDateTime(),
+        send_date: getMessageTimeStamp(),
         mes: substituteParams(mesText),
         force_avatar: force_avatar,
         original_avatar: original_avatar,
@@ -358,7 +358,7 @@ async function sendNarratorMessage(_, text) {
         is_user: false,
         is_name: false,
         is_system: isSystem,
-        send_date: humanizedDateTime(),
+        send_date: getMessageTimeStamp(),
         mes: substituteParams(text.trim()),
         force_avatar: system_avatar,
         extra: {
@@ -384,7 +384,7 @@ async function sendCommentMessage(_, text) {
         is_user: false,
         is_name: true,
         is_system: true,
-        send_date: humanizedDateTime(),
+        send_date: getMessageTimeStamp(),
         mes: substituteParams(text.trim()),
         force_avatar: comment_avatar,
         extra: {

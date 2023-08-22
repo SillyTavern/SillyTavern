@@ -9,7 +9,7 @@ import {
     saveBase64AsFile,
     PAGINATION_TEMPLATE,
 } from './utils.js';
-import { RA_CountCharTokens, humanizedDateTime, dragElement, favsToHotswap } from "./RossAscends-mods.js";
+import { RA_CountCharTokens, humanizedDateTime, dragElement, favsToHotswap, getMessageTimeStamp } from "./RossAscends-mods.js";
 import { loadMovingUIState, sortEntitiesList } from './power-user.js';
 
 import {
@@ -202,7 +202,7 @@ function getFirstCharacterMessage(character) {
     mes["is_system"] = false;
     mes["name"] = character.name;
     mes["is_name"] = true;
-    mes["send_date"] = humanizedDateTime();
+    mes["send_date"] = getMessageTimeStamp();
     mes["original_avatar"] = character.avatar;
     mes["extra"] = { "gen_id": Date.now() * Math.random() * 1000000 };
     mes["mes"] = messageText
