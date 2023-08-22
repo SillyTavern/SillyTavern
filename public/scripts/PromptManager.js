@@ -551,31 +551,9 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     eventSource.on(event_types.MESSAGE_RECEIVED, () => this.renderDebounced());
 
     // Re-render when chatcompletion settings change
-    eventSource.on(event_types.CHATCOMPLETION_SOURCE_CHANGED, () => {
-        this.renderDebounced();
+    eventSource.on(event_types.CHATCOMPLETION_SOURCE_CHANGED, () => this.renderDebounced());
 
-        const mainPrompt = this.getPromptById('main');
-        this.updateQuickEdit('main', mainPrompt);
-
-        const nsfwPrompt = this.getPromptById('nsfw');
-        this.updateQuickEdit('nsfw', nsfwPrompt);
-
-        const jailbreakPrompt = this.getPromptById('jailbreak');
-        this.updateQuickEdit('jailbreak', jailbreakPrompt);
-    });
-
-    eventSource.on(event_types.CHATCOMPLETION_MODEL_CHANGED, () => {
-        this.renderDebounced();
-
-        const mainPrompt = this.getPromptById('main');
-        this.updateQuickEdit('main', mainPrompt);
-
-        const nsfwPrompt = this.getPromptById('nsfw');
-        this.updateQuickEdit('nsfw', nsfwPrompt);
-
-        const jailbreakPrompt = this.getPromptById('jailbreak');
-        this.updateQuickEdit('jailbreak', jailbreakPrompt);
-    });
+    eventSource.on(event_types.CHATCOMPLETION_MODEL_CHANGED, () => this.renderDebounced());
 
     // Re-render when the character changes.
     eventSource.on('chatLoaded', (event) => {
@@ -632,6 +610,15 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
             this.hidePopup();
             this.clearEditForm();
             this.renderDebounced();
+
+            const mainPrompt = this.getPromptById('main');
+            this.updateQuickEdit('main', mainPrompt);
+
+            const nsfwPrompt = this.getPromptById('nsfw');
+            this.updateQuickEdit('nsfw', nsfwPrompt);
+
+            const jailbreakPrompt = this.getPromptById('jailbreak');
+            this.updateQuickEdit('jailbreak', jailbreakPrompt);
         });
     });
 
