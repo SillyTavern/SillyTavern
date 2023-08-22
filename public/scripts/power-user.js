@@ -12,8 +12,6 @@ import {
     event_types,
     getCurrentChatId,
     printCharacters,
-    name1,
-    name2,
     setCharacterId,
     setEditedMessageId
 } from "../script.js";
@@ -21,8 +19,8 @@ import { isMobile, initMovingUI } from "./RossAscends-mods.js";
 import {
     groups,
     resetSelectedGroup,
-    selected_group,
 } from "./group-chats.js";
+import { loadInstructMode } from "./instruct-mode.js";
 
 import { registerSlashCommand } from "./slash-commands.js";
 
@@ -44,7 +42,7 @@ export {
 export const MAX_CONTEXT_DEFAULT = 4096;
 const MAX_CONTEXT_UNLOCKED = 65536;
 
-const defaultStoryString = "{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}'s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}{{/if}}";
+const defaultStoryString =  "{{#if system}}{{system}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}'s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}";
 const defaultExampleSeparator = '***';
 const defaultChatStart = '***';
 
@@ -95,6 +93,7 @@ let power_user = {
     collapse_newlines: false,
     pygmalion_formatting: pygmalion_options.AUTO,
     pin_examples: false,
+    strip_examples: false,
     trim_sentences: false,
     include_newline: false,
     always_force_name2: false,
@@ -205,11 +204,9 @@ let power_user = {
 
 let themes = [];
 let movingUIPresets = [];
-let instruct_presets = [];
 let context_presets = [];
 
 const storage_keys = {
-    ui_language: "language",
     fast_ui_mode: "TavernAI_fast_ui_mode",
     avatar_style: "TavernAI_avatar_style",
     chat_display: "TavernAI_chat_display",
@@ -249,29 +246,42 @@ function playMessageSound() {
     }
 
     const audio = document.getElementById('audio_message_sound');
-    audio.volume = 0.8;
-    audio.pause();
-    audio.currentTime = 0;
-    audio.play();
+    if (audio instanceof HTMLAudioElement) {
+        audio.volume = 0.8;
+        audio.pause();
+        audio.currentTime = 0;
+        audio.play();
+    }
 }
 
+/**
+ * Replaces consecutive newlines with a single newline.
+ * @param {string} x String to be processed.
+ * @returns {string} Processed string.
+ * @example
+ * collapseNewlines("\n\n\n"); // "\n"
+ */
 function collapseNewlines(x) {
     return x.replaceAll(/\n+/g, "\n");
 }
 
+/**
+ * Fix formatting problems in markdown.
+ * @param {string} text Text to be processed.
+ * @returns {string} Processed text.
+ * @example
+ * "^example * text*\n" // "^example *text*\n"
+ *  "^*example * text\n"// "^*example* text\n"
+ * "^example *text *\n" // "^example *text*\n"
+ * "^* example * text\n" // "^*example* text\n"
+ * // take note that the side you move the asterisk depends on where its pairing is
+ * // i.e. both of the following strings have the same broken asterisk ' * ',
+ * // but you move the first to the left and the second to the right, to match the non-broken asterisk
+ * "^example * text*\n" // "^*example * text\n"
+ * // and you HAVE to handle the cases where multiple pairs of asterisks exist in the same line
+ * "^example * text* * harder problem *\n" // "^example *text* *harder problem*\n"
+ */
 function fixMarkdown(text) {
-    // fix formatting problems in markdown
-    // e.g.:
-    // "^example * text*\n" -> "^example *text*\n"
-    // "^*example * text\n" -> "^*example* text\n"
-    // "^example *text *\n" -> "^example *text*\n"
-    // "^* example * text\n" -> "^*example* text\n"
-    // take note that the side you move the asterisk depends on where its pairing is
-    // i.e. both of the following strings have the same broken asterisk ' * ',
-    // but you move the first to the left and the second to the right, to match the non-broken asterisk "^example * text*\n" "^*example * text\n"
-    // and you HAVE to handle the cases where multiple pairs of asterisks exist in the same line
-    // i.e. "^example * text* * harder problem *\n" -> "^example *text* *harder problem*\n"
-
     // Find pairs of formatting characters and capture the text in between them
     const format = /([\*_]{1,2})([\s\S]*?)\1/gm;
     let matches = [];
@@ -665,9 +675,6 @@ function loadPowerUserSettings(settings, data) {
         movingUIPresets = data.movingUIPresets;
     }
 
-    if (data.instruct !== undefined) {
-        instruct_presets = data.instruct;
-    }
 
     if (data.context !== undefined) {
         context_presets = data.context;
@@ -731,6 +738,7 @@ function loadPowerUserSettings(settings, data) {
     $("#spoiler_free_mode").prop("checked", power_user.spoiler_free_mode);
     $("#collapse-newlines-checkbox").prop("checked", power_user.collapse_newlines);
     $("#pin-examples-checkbox").prop("checked", power_user.pin_examples);
+    $("#remove-examples-checkbox").prop("checked", power_user.strip_examples);
     $("#always-force-name2-checkbox").prop("checked", power_user.always_force_name2);
     $("#trim_sentences_checkbox").prop("checked", power_user.trim_sentences);
     $("#include_newline_checkbox").prop("checked", power_user.include_newline);
@@ -802,7 +810,7 @@ function loadPowerUserSettings(settings, data) {
 
     $(`#character_sort_order option[data-order="${power_user.sort_order}"][data-field="${power_user.sort_field}"]`).prop("selected", true);
     reloadMarkdownProcessor(power_user.render_formulas);
-    loadInstructMode();
+    loadInstructMode(data);
     loadContextSettings();
     loadMaxContextUnlocked();
     switchWaifuMode();
@@ -926,90 +934,6 @@ function loadContextSettings() {
     });
 }
 
-function loadInstructMode() {
-    const controls = [
-        { id: "instruct_enabled", property: "enabled", isCheckbox: true },
-        { id: "instruct_wrap", property: "wrap", isCheckbox: true },
-        { id: "instruct_system_prompt", property: "system_prompt", isCheckbox: false },
-        { id: "instruct_system_sequence", property: "system_sequence", isCheckbox: false },
-        { id: "instruct_separator_sequence", property: "separator_sequence", isCheckbox: false },
-        { id: "instruct_input_sequence", property: "input_sequence", isCheckbox: false },
-        { id: "instruct_output_sequence", property: "output_sequence", isCheckbox: false },
-        { id: "instruct_stop_sequence", property: "stop_sequence", isCheckbox: false },
-        { id: "instruct_names", property: "names", isCheckbox: true },
-        { id: "instruct_macro", property: "macro", isCheckbox: true },
-        { id: "instruct_names_force_groups", property: "names_force_groups", isCheckbox: true },
-        { id: "instruct_last_output_sequence", property: "last_output_sequence", isCheckbox: false },
-        { id: "instruct_activation_regex", property: "activation_regex", isCheckbox: false },
-    ];
-
-    if (power_user.instruct.names_force_groups === undefined) {
-        power_user.instruct.names_force_groups = true;
-    }
-
-    controls.forEach(control => {
-        const $element = $(`#${control.id}`);
-
-        if (control.isCheckbox) {
-            $element.prop('checked', power_user.instruct[control.property]);
-        } else {
-            $element.val(power_user.instruct[control.property]);
-        }
-
-        $element.on('input', function () {
-            power_user.instruct[control.property] = control.isCheckbox ? !!$(this).prop('checked') : $(this).val();
-            saveSettingsDebounced();
-        });
-    });
-
-    instruct_presets.forEach((preset) => {
-        const name = preset.name;
-        const option = document.createElement('option');
-        option.value = name;
-        option.innerText = name;
-        option.selected = name === power_user.instruct.preset;
-        $('#instruct_presets').append(option);
-    });
-
-    function highlightDefaultPreset() {
-        $('#instruct_set_default').toggleClass('default', power_user.default_instruct === power_user.instruct.preset);
-    }
-
-    $('#instruct_set_default').on('click', function () {
-        power_user.default_instruct = power_user.instruct.preset;
-        $(this).addClass('default');
-        toastr.success(`Default instruct preset set to ${power_user.default_instruct}`);
-        saveSettingsDebounced();
-    });
-
-    highlightDefaultPreset();
-
-    $('#instruct_presets').on('change', function () {
-        const name = $(this).find(':selected').val();
-        const preset = instruct_presets.find(x => x.name === name);
-
-        if (!preset) {
-            return;
-        }
-
-        power_user.instruct.preset = name;
-        controls.forEach(control => {
-            if (preset[control.property] !== undefined) {
-                power_user.instruct[control.property] = preset[control.property];
-                const $element = $(`#${control.id}`);
-
-                if (control.isCheckbox) {
-                    $element.prop('checked', power_user.instruct[control.property]).trigger('input');
-                } else {
-                    $element.val(power_user.instruct[control.property]).trigger('input');
-                }
-            }
-        });
-
-        highlightDefaultPreset();
-    });
-}
-
 export function fuzzySearchCharacters(searchValue) {
     const fuse = new Fuse(characters, {
         keys: [
@@ -1033,6 +957,25 @@ export function fuzzySearchCharacters(searchValue) {
     console.debug('Characters fuzzy search results for ' + searchValue, results);
     const indices = results.map(x => x.refIndex);
     return indices;
+}
+
+export function fuzzySearchWorldInfo(data, searchValue) {
+    const fuse = new Fuse(data, {
+        keys: [
+            { name: 'key', weight: 3 },
+            { name: 'content', weight: 3 },
+            { name: 'comment', weight: 2 },
+            { name: 'keysecondary', weight: 2 },
+            { name: 'uid', weight: 1 },
+        ],
+        includeScore: true,
+        ignoreLocation: true,
+        threshold: 0.2,
+    });
+
+    const results = fuse.search(searchValue);
+    console.debug('World Info fuzzy search results for ' + searchValue, results);
+    return results.map(x => x.item?.uid);
 }
 
 export function fuzzySearchGroups(searchValue) {
@@ -1064,58 +1007,6 @@ export function renderStoryString(params) {
         console.error('Error rendering story string', e);
         throw e;
     }
-}
-
-export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvatar, name1, name2) {
-    let includeNames = isNarrator ? false : power_user.instruct.names;
-
-    if (!isNarrator && power_user.instruct.names_force_groups && (selected_group || forceAvatar)) {
-        includeNames = true;
-    }
-
-    let sequence = (isUser || isNarrator) ? power_user.instruct.input_sequence : power_user.instruct.output_sequence;
-
-    if (power_user.instruct.macro) {
-        sequence = substituteParams(sequence, name1, name2);
-    }
-
-    const separator = power_user.instruct.wrap ? '\n' : '';
-    const separatorSequence = power_user.instruct.separator_sequence && !isUser
-        ? power_user.instruct.separator_sequence
-        : separator;
-    const textArray = includeNames ? [sequence, `${name}: ${mes}` + separatorSequence] : [sequence, mes + separatorSequence];
-    const text = textArray.filter(x => x).join(separator);
-    return text;
-}
-
-export function formatInstructStoryString(story, systemPrompt) {
-    // If the character has a custom system prompt AND user has it preferred, use that instead of the default
-    systemPrompt = power_user.prefer_character_prompt && systemPrompt ? systemPrompt : power_user.instruct.system_prompt;
-    const sequence = power_user.instruct.system_sequence || '';
-    const prompt = substituteParams(systemPrompt, name1, name2, power_user.instruct.system_prompt) || '';
-    const separator = power_user.instruct.wrap ? '\n' : '';
-    const textArray = [sequence, prompt + '\n' + story];
-    const text = textArray.filter(x => x).join(separator);
-    return text;
-}
-
-export function formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2) {
-    const includeNames = power_user.instruct.names || (!!selected_group && power_user.instruct.names_force_groups);
-    const getOutputSequence = () => power_user.instruct.last_output_sequence || power_user.instruct.output_sequence;
-    let sequence = isImpersonate ? power_user.instruct.input_sequence : getOutputSequence();
-
-    if (power_user.instruct.macro) {
-        sequence = substituteParams(sequence, name1, name2);
-    }
-
-    const separator = power_user.instruct.wrap ? '\n' : '';
-    let text = includeNames ? (separator + sequence + separator + `${name}:`) : (separator + sequence);
-
-    if (!isImpersonate && promptBias) {
-        text += (includeNames ? promptBias : (separator + promptBias));
-    }
-
-    return text.trimEnd() + (includeNames ? '' : separator);
 }
 
 const sortFunc = (a, b) => power_user.sort_order == 'asc' ? compareFunc(a, b) : compareFunc(b, a);
@@ -1398,26 +1289,6 @@ function doResetPanels() {
     $("#movingUIreset").trigger('click');
 }
 
-function addLanguagesToDropdown() {
-    $.getJSON('i18n.json', function (data) {
-        if (!Array.isArray(data?.lang)) {
-            return;
-        }
-
-        for (const lang of data.lang) {
-            const option = document.createElement('option');
-            option.value = lang;
-            option.innerText = lang;
-            $('#ui_language_select').append(option);
-        }
-
-        const selectedLanguage = localStorage.getItem(storage_keys.ui_language);
-        if (selectedLanguage) {
-            $('#ui_language_select').val(selectedLanguage);
-        }
-    });
-}
-
 function setAvgBG() {
     const bgimg = new Image();
     bgimg.src = $('#bg1')
@@ -1693,7 +1564,24 @@ $(document).ready(() => {
     });
 
     $("#pin-examples-checkbox").change(function () {
+        if ($(this).prop("checked")) {
+            $("#remove-examples-checkbox").prop("checked", false).prop("disabled", true);
+            power_user.strip_examples = false;
+        } else {
+            $("#remove-examples-checkbox").prop("disabled", false);
+        }
         power_user.pin_examples = !!$(this).prop("checked");
+        saveSettingsDebounced();
+    });
+
+    $("#remove-examples-checkbox").change(function () {
+        if ($(this).prop("checked")) {
+            $("#pin-examples-checkbox").prop("checked", false).prop("disabled", true);
+            power_user.pin_examples = false;
+        } else {
+            $("#pin-examples-checkbox").prop("disabled", false);
+        }
+        power_user.strip_examples = !!$(this).prop("checked");
         saveSettingsDebounced();
     });
 
@@ -2129,18 +2017,6 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $('#ui_language_select').on('change', async function () {
-        const language = $(this).val();
-
-        if (language) {
-            localStorage.setItem(storage_keys.ui_language, language);
-        } else {
-            localStorage.removeItem(storage_keys.ui_language);
-        }
-
-        location.reload();
-    });
-
     $(window).on('focus', function () {
         browser_has_focus = true;
     });
@@ -2156,5 +2032,4 @@ $(document).ready(() => {
     registerSlashCommand('cut', doMesCut, [], ' <span class="monospace">(requred number)</span> – cuts the specified message from the chat', true, true);
     registerSlashCommand('resetpanels', doResetPanels, ['resetui'], ' – resets UI panels to original state.', true, true);
     registerSlashCommand('bgcol', setAvgBG, [], ' – WIP test of auto-bg avg coloring', true, true);
-    addLanguagesToDropdown();
 });

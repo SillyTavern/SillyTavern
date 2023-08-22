@@ -6,6 +6,8 @@ import {
     isDataURL,
     createThumbnail,
     extractAllWords,
+    saveBase64AsFile,
+    PAGINATION_TEMPLATE,
 } from './utils.js';
 import { RA_CountCharTokens, humanizedDateTime, dragElement, favsToHotswap } from "./RossAscends-mods.js";
 import { loadMovingUIState, sortEntitiesList } from './power-user.js';
@@ -34,7 +36,6 @@ import {
     online_status,
     talkativeness_default,
     selectRightMenuWithAnimation,
-    setRightTabSelectedClass,
     default_ch_mes,
     deleteLastMessage,
     showSwipeButtons,
@@ -80,6 +81,7 @@ export {
     regenerateGroup,
     resetSelectedGroup,
     select_group_chats,
+    getGroupChatNames,
 }
 
 let is_group_generating = false; // Group generation flag
@@ -336,25 +338,25 @@ async function getGroups() {
 }
 
 export function getGroupBlock(group) {
-        const template = $("#group_list_template .group_select").clone();
-        template.data("id", group.id);
-        template.attr("grid", group.id);
-        template.find(".ch_name").html(group.name);
-        template.find('.group_fav_icon').css("display", 'none');
-        template.addClass(group.fav ? 'is_fav' : '');
-        template.find(".ch_fav").val(group.fav);
+    const template = $("#group_list_template .group_select").clone();
+    template.data("id", group.id);
+    template.attr("grid", group.id);
+    template.find(".ch_name").text(group.name);
+    template.find('.group_fav_icon').css("display", 'none');
+    template.addClass(group.fav ? 'is_fav' : '');
+    template.find(".ch_fav").val(group.fav);
 
-        // Display inline tags
-        const tags = getTagsList(group.id);
-        const tagsElement = template.find('.tags');
-        tags.forEach(tag => appendTagToList(tagsElement, tag, {}));
+    // Display inline tags
+    const tags = getTagsList(group.id);
+    const tagsElement = template.find('.tags');
+    tags.forEach(tag => appendTagToList(tagsElement, tag, {}));
 
-        const avatar = getGroupAvatar(group);
-        if (avatar) {
-            $(template).find(".avatar").replaceWith(avatar);
-        }
+    const avatar = getGroupAvatar(group);
+    if (avatar) {
+        $(template).find(".avatar").replaceWith(avatar);
+    }
 
-        return template;
+    return template;
 }
 
 function updateGroupAvatar(group) {
@@ -362,17 +364,26 @@ function updateGroupAvatar(group) {
 
     $(".group_select").each(function () {
         if ($(this).data("id") == group.id) {
-                $(this).find(".avatar").replaceWith(getGroupAvatar(group));
+            $(this).find(".avatar").replaceWith(getGroupAvatar(group));
         }
     });
+}
+
+// check if isDataURLor if it's a valid local file url
+function isValidImageUrl(url) {
+    // check if empty dict
+    if (Object.keys(url).length === 0) {
+        return false;
+    }
+    return isDataURL(url) || (url && url.startsWith("user"));
 }
 
 function getGroupAvatar(group) {
     if (!group) {
         return $(`<div class="avatar"><img src="${default_avatar}"></div>`);
     }
-
-    if (isDataURL(group.avatar_url)) {
+    // if isDataURL or if it's a valid local file url
+    if (isValidImageUrl(group.avatar_url)) {
         return $(`<div class="avatar"><img src="${group.avatar_url}"></div>`);
     }
 
@@ -408,6 +419,19 @@ function getGroupAvatar(group) {
     return groupAvatar;
 }
 
+function getGroupChatNames(groupId) {
+    const group = groups.find(x => x.id === groupId);
+
+    if (!group) {
+        return [];
+    }
+
+    const names = [];
+    for (const chatId of group.chats) {
+        names.push(chatId);
+    }
+    return names;
+}
 
 async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
     if (online_status === "no_connection") {
@@ -808,7 +832,6 @@ async function deleteGroup(id) {
         select_rm_info("group_delete", id);
 
         $("#rm_button_selected_ch").children("h2").text('');
-        setRightTabSelectedClass();
     }
 }
 
@@ -967,6 +990,7 @@ function printGroupCandidates() {
         showSizeChanger: false,
         prevText: '<',
         nextText: '>',
+        formatNavigator: PAGINATION_TEMPLATE,
         showNavigator: true,
         showSizeChanger: true,
         pageSize: Number(localStorage.getItem(storageKey)) || 5,
@@ -994,6 +1018,7 @@ function printGroupMembers() {
         showSizeChanger: false,
         prevText: '<',
         nextText: '>',
+        formatNavigator: PAGINATION_TEMPLATE,
         showNavigator: true,
         showSizeChanger: true,
         pageSize: Number(localStorage.getItem(storageKey)) || 5,
@@ -1079,8 +1104,7 @@ function select_group_chats(groupId, skipAnimation) {
 
     setMenuType(!!group ? 'group_edit' : 'group_create');
     $("#group_avatar_preview").empty().append(getGroupAvatar(group));
-    $("#rm_group_restore_avatar").toggle(!!group && isDataURL(group.avatar_url));
-    $("#rm_group_chat_name").val(groupName);
+    $("#rm_group_restore_avatar").toggle(!!group && isValidImageUrl(group.avatar_url));
     $("#rm_group_filter").val("").trigger("input");
     $(`input[name="rm_group_activation_strategy"][value="${replyStrategy}"]`).prop('checked', true);
 
@@ -1116,15 +1140,23 @@ function select_group_chats(groupId, skipAnimation) {
     if (group) {
         $("#rm_group_automode_label").show();
         $("#rm_button_selected_ch").children("h2").text(groupName);
-        setRightTabSelectedClass('rm_button_selected_ch');
     }
     else {
         $("#rm_group_automode_label").hide();
     }
 
-    eventSource.emit('groupSelected', {detail: {id: openGroupId, group: group}});
+    eventSource.emit('groupSelected', { detail: { id: openGroupId, group: group } });
 }
 
+/**
+ * Handles the upload and processing of a group avatar.
+ * The selected image is read, cropped using a popup, processed into a thumbnail,
+ * and then uploaded to the server.
+ *
+ * @param {Event} event - The event triggered by selecting a file input, containing the image file to upload.
+ *
+ * @returns {Promise<void>} - A promise that resolves when the processing and upload is complete.
+ */
 async function uploadGroupAvatar(event) {
     const file = event.target.files[0];
 
@@ -1147,16 +1179,22 @@ async function uploadGroupAvatar(event) {
         return;
     }
 
-    const thumbnail = await createThumbnail(croppedImage, 96, 144);
-
+    let thumbnail = await createThumbnail(croppedImage, 96, 144);
+    //remove data:image/whatever;base64
+    thumbnail = thumbnail.replace(/^data:image\/[a-z]+;base64,/, "");
+    let _thisGroup = groups.find((x) => x.id == openGroupId);
+    // filename should be group id + human readable timestamp
+    const filename = `${_thisGroup.id}_${humanizedDateTime()}`;
+    let thumbnailUrl = await saveBase64AsFile(thumbnail, openGroupId.toString(), filename, 'jpg');
     if (!openGroupId) {
-        $('#group_avatar_preview img').attr('src', thumbnail);
+        $('#group_avatar_preview img').attr('src', thumbnailUrl);
         $('#rm_group_restore_avatar').show();
         return;
     }
 
-    let _thisGroup = groups.find((x) => x.id == openGroupId);
-    _thisGroup.avatar_url = thumbnail;
+
+
+    _thisGroup.avatar_url = thumbnailUrl;
     $("#group_avatar_preview").empty().append(getGroupAvatar(_thisGroup));
     $("#rm_group_restore_avatar").show();
     await editGroup(openGroupId, true, true);
@@ -1238,6 +1276,11 @@ function updateFavButtonState(state) {
 }
 
 export async function openGroupById(groupId) {
+    if (!groups.find(x => x.id === groupId)) {
+        console.log('Group not found', groupId);
+        return;
+    }
+
     if (!is_send_press && !is_group_generating) {
         if (selected_group !== groupId) {
             cancelTtsPlay();
@@ -1303,7 +1346,7 @@ async function createGroup() {
         body: JSON.stringify({
             name: name,
             members: members,
-            avatar_url: isDataURL(avatar_url) ? avatar_url : default_avatar,
+            avatar_url: isValidImageUrl(avatar_url) ? avatar_url : default_avatar,
             allow_self_responses: allow_self_responses,
             activation_strategy: activation_strategy,
             disabled_members: [],

@@ -63,42 +63,8 @@
 
     <link rel="stylesheet" href="css/bg_load.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
-    <script>
-        function applyLocale() {
-            const overrideLanguage = localStorage.getItem("language");
-            var language = overrideLanguage || navigator.language || navigator.userLanguage;
-            language = language.toLowerCase();
-            console.log(language)
-            //load the appropriate language file
-            $.getJSON("i18n.json", function (data) {
-                console.log(data)
-                if (data.lang.indexOf(language) < 0) language = "en";
-                console.log(language)
-                //find all the elements with `data-i18n` attribute
-                $("[data-i18n]").each(function () {
-                    //read the translation from the language data
-                    const keys = $(this).data("i18n").split(';'); // Multi-key entries are ; delimited
-                    for (const key of keys) {
-                        const attrmatch = key.match(/\[(\S+)\](.+)/); // [attribute]key
-                        if (attrmatch) { // attribute-tagged key
-                            const locval = data?.[language]?.[attrmatch[2]];
-                            if (locval) {
-                                $(this).attr(attrmatch[1], locval);
-                            }
-                        } else { // No attribute tag, treat as 'text'
-                            const locval = data?.[language]?.[key];
-                            if (locval) {
-                                $(this).text(locval);
-                            }
-                        }
-                    }
-                });
-            });
-        }
-        $(document).ready(applyLocale);
-        window["applyLocale"] = applyLocale;
-    </script>
-    <script type=module src="script.js"></script>
+    <script type="module" src="scripts/i18n.js"></script>
+    <script type="module" src="script.js"></script>
 
     <script type="module" src="scripts/world-info.js"></script>
     <script type="module" src="scripts/group-chats.js"></script>
@@ -149,7 +115,6 @@
                 <div class="scrollableInner">
                     <div class="flex-container" id="ai_response_configuration">
                         <div id="respective-presets-block" class="width100p">
-                            <input type="file" hidden data-preset-manager-file="" accept=".json, .settings">
                             <div id="kobold_api-presets">
                                 <h3><span data-i18n="kobldpresets">Kobold Presets</span>
                                     <a href="https://docs.sillytavern.app/usage/api-connections/koboldai/" class="notes-link" target="_blank">
@@ -161,6 +126,7 @@
                                     <select id="settings_perset" data-preset-manager-for="kobold">
                                         <option value="gui" data-i18n="guikoboldaisettings">GUI KoboldAI Settings</option>
                                     </select>
+                                    <input type="file" hidden data-preset-manager-file="kobold" accept=".json, .settings">
                                     <i data-preset-manager-update="kobold" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
                                     <i data-preset-manager-new="kobold" class="menu_button fa-solid fa-plus" title="Create new preset" data-i18n="[title]Create new preset"></i>
                                     <i data-preset-manager-import="kobold" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
@@ -179,6 +145,7 @@
                                     <select id="settings_perset_novel" data-preset-manager-for="novel">
                                         <option value="gui" data-i18n="default">Default</option>
                                     </select>
+                                    <input type="file" hidden data-preset-manager-file="novel" accept=".json, .settings">
                                     <i data-preset-manager-update="novel" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
                                     <i data-preset-manager-new="novel" class="menu_button fa-solid fa-plus" title="Create new preset" data-i18n="[title]Create new preset"></i>
                                     <i data-preset-manager-import="novel" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
@@ -208,6 +175,7 @@
                                 <div class="preset_buttons">
                                     <select id="settings_preset_textgenerationwebui" data-preset-manager-for="textgenerationwebui">
                                     </select>
+                                    <input type="file" hidden data-preset-manager-file="textgenerationwebui" accept=".json, .settings">
                                     <i data-preset-manager-update="textgenerationwebui" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
                                     <i data-preset-manager-new="textgenerationwebui" class="menu_button fa-solid fa-plus" title="Create new preset" data-i18n="[title]Create new preset"></i>
                                     <i data-preset-manager-import="textgenerationwebui" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
@@ -1454,6 +1422,14 @@
                                             <span data-i18n="Use the appropriate tokenizer for Jurassic models, which is more efficient than GPT's.">Use the appropriate tokenizer for Jurassic models, which is more efficient than GPT's.</span>
                                         </div>
                                     </div>
+                                    <div class="range-block" data-source="claude">
+                                        <label for="exclude_assistant" title="Exclude Assistant suffix" class="checkbox_label widthFreeExpand">
+                                            <input id="exclude_assistant" type="checkbox" /><span data-i18n="Exclude Assistant suffix">Exclude Assistant suffix</span>
+                                        </label>
+                                        <div class="toggle-description justifyLeft">
+                                            <span data-i18n="Exclude the assistant suffix from being added to the end of prompt.">Exclude the assistant suffix from being added to the end of prompt (Requires jailbreak with 'Assistant:' in it).</span>
+                                        </div>
+                                    </div>
                                     <div class="inline-drawer m-t-1 wide100p">
                                         <div class="inline-drawer-toggle inline-drawer-header">
                                             <b data-i18n="Quick Edit">Quick Edit</b>
@@ -1465,8 +1441,8 @@
                                                     <span data-i18n="Select a character to show quick edit options.">Select a character to show quick edit options.</span>
                                                 </div>
                                             </div>
-                                            <div class="range-block" data-source="claude">
-                                                <span data-i18n="Assistant Prefill">Assistant Prefill</span>
+                                            <div id="claude_assistant_prefill_block" data-source="claude" class="range-block">
+                                                <span id="claude_assistant_prefill_text" data-i18n="Assistant Prefill">Assistant Prefill</span>
                                                 <textarea id="claude_assistant_prefill" class="text_pole textarea_compact" name="assistant_prefill" rows="3" maxlength="5000" placeholder="Start Claude's answer with..."></textarea>
                                             </div>
                                         </div>
@@ -2097,14 +2073,14 @@
                                 <label for="context_story_string">
                                     <small data-i18n="Story String">Story String</small>
                                 </label>
-                                <textarea id="context_story_string" class="text_pole textarea_compact" rows="3"></textarea>
+                                <textarea id="context_story_string" class="text_pole textarea_compact" rows="6"></textarea>
                                 <div class="flex-container">
                                     <div class="flex1">
                                         <label for="context_example_separator">
                                             <small data-i18n="Example Separator">Example Separator</small>
                                         </label>
                                         <div>
-                                            <textarea id="context_example_separator" class="text_pole textarea_compact" maxlength="500" rows="1"></textarea>
+                                            <textarea id="context_example_separator" class="text_pole textarea_compact" maxlength="500" rows="2"></textarea>
                                         </div>
                                     </div>
                                     <div class="flex1">
@@ -2112,14 +2088,14 @@
                                             <small data-i18n="Chat Start">Chat Start</small>
                                         </label>
                                         <div>
-                                            <textarea id="context_chat_start" class="text_pole textarea_compact" maxlength="500" rows="1"></textarea>
+                                            <textarea id="context_chat_start" class="text_pole textarea_compact" maxlength="500" rows="2"></textarea>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div>
-                            <h4 data-i18n="Instruct mode">Instruct mode
+                            <h4 data-i18n="Instruct Mode">Instruct Mode
                                 <a href="https://docs.sillytavern.app/usage/core-concepts/instructmode/" class="notes-link" target="_blank">
                                     <span class="note-link-span">?</span>
                                 </a>
@@ -2129,6 +2105,30 @@
                                     <input id="instruct_enabled" type="checkbox" />
                                     <span data-i18n="Enabled">Enabled</span>
                                 </label>
+                            </div>
+                            </div>
+                            <label for="instruct_presets">
+                                <span data-i18n="Presets">Presets</span>
+                            </label>
+                            <div class="preset_buttons">
+                                <select id="instruct_presets" data-preset-manager-for="instruct" class="flex1"></select>
+                                <input type="file" hidden data-preset-manager-file="instruct" accept=".json, .settings">
+                                <i id="instruct_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this preset on API connection."></i>
+                                <i data-preset-manager-update="instruct" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
+                                <i data-preset-manager-new="instruct" class="menu_button fa-solid fa-plus" title="Create new preset" data-i18n="[title]Create new preset"></i>
+                                <i data-preset-manager-import="instruct" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
+                                <i data-preset-manager-export="instruct" class="menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
+                                <i data-preset-manager-delete="instruct" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
+                            </div>
+                            <label>
+                                <small data-i18n="Activation Regex">
+                                    Activation Regex
+                                </small>
+                            </label>
+                            <div>
+                                <textarea id="instruct_activation_regex" class="text_pole textarea_compact" maxlength="5000" rows="1"></textarea>
+                            </div>
+                            <div>
                                 <label for="instruct_wrap" class="checkbox_label">
                                     <input id="instruct_wrap" type="checkbox" />
                                     <span data-i18n="Wrap Sequences with Newline">Wrap Sequences with Newline</span>
@@ -2145,32 +2145,13 @@
                                     <input id="instruct_names_force_groups" type="checkbox" />
                                     <span data-i18n="Force for Groups and Personas">Force for Groups and Personas</span>
                                 </label>
-                            </div>
-                            <label for="instruct_presets">
-                                <span data-i18n="Presets">Presets</span>
-                            </label>
-                            <div class="flex-container">
-                                <select id="instruct_presets" class="flex1 margin0"></select>
-                                <div id="instruct_set_default" class="menu_button menu_button_icon margin0">
-                                    <i class="fa-solid fa-xs fa-fw fa-heart"></i>
-                                    <span data-i18n="Default">Default</span>
-                                </div>
-                            </div>
-                            <label>
-                                <small data-i18n="Activation Regex">
-                                    Activation Regex
-                                </small>
-                            </label>
-                            <div>
-                                <textarea id="instruct_activation_regex" class="text_pole textarea_compact" maxlength="5000" rows="1"></textarea>
-                            </div>
                             <label>
                                 <small data-i18n="System Prompt">System Prompt</small>
                             </label>
                             <div class="prompt_overridden">
                                 Overridden by the Character Definitions.
                             </div>
-                            <textarea id="instruct_system_prompt" class="text_pole textarea_compact"></textarea>
+                            <textarea id="instruct_system_prompt" class="text_pole textarea_compact" rows="4"></textarea>
                             <div class="flex-container">
                                 <div class="flex1">
                                     <label for="instruct_input_sequence">
@@ -2224,15 +2205,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        <div>
-                            <h4 data-i18n="Non-markdown strings">
-                                Non-markdown strings
-                            </h4>
-                            <div>
-                                <input id="markdown_escape_strings" class="text_pole textarea_compact" type="text" data-i18n="[placeholder]separate with commas w/o space between" placeholder="separate with commas w/o space between" maxlength="100" />
-                            </div>
-                        </div>
                     </div>
                     <div name="ContextFormatting" class="flex1">
                         <div>
@@ -2273,6 +2245,10 @@
                                 Keep Example Messages in Prompt
                             </span>
                         </label>
+                        <label class="checkbox_label" for="remove-examples-checkbox">
+                            <input id="remove-examples-checkbox" type="checkbox" />
+                            Strip Example Messages from Prompt
+                        </label>
                         <label class="checkbox_label" for="collapse-newlines-checkbox"><input id="collapse-newlines-checkbox" type="checkbox" />
                             <span data-i18n="Remove Empty New Lines from Output">
                                 Remove Empty New Lines from Output
@@ -2305,6 +2281,14 @@
                                     Show reply prefix in chat
                                 </span>
                             </label>
+                            <div>
+                                <h4 data-i18n="Non-markdown strings">
+                                    Non-markdown strings
+                                </h4>
+                                <div>
+                                    <input id="markdown_escape_strings" class="text_pole textarea_compact" type="text" data-i18n="[placeholder]separate with commas w/o space between" placeholder="separate with commas w/o space between" maxlength="100" />
+                                </div>
+                            </div>
                             <h4>
                                 <span data-i18n="Custom Stopping Strings">
                                     Custom Stopping Strings (KoboldAI/TextGen/NovelAI)
@@ -2504,35 +2488,25 @@
 
                     <div id="world_popup">
                         <hr>
-                        <div id="world_popup_text">
-                            <div id="world_popup_header" class="flex-container flexGap5">
-                                <div class="world_popup_logo_block">
-                                    <h3 data-i18n="World/Lore Editor">
-                                        World/Lore Editor
-                                        <a href="https://docs.sillytavern.app/usage/core-concepts/worldinfo/#world-info-entry" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
-                                    </h3>
-                                </div>
-                                <div id="OpenAllWIEntries" class="menu_button fa-solid fa-expand" title="Open all Entries" data-i18n="[title]Open all Entries"></div>
-                                <div id="CloseAllWIEntries" class="menu_button fa-solid fa-compress" title="Close all Entries" data-i18n="[title]Close all Entries"></div>
-                                <div id="world_popup_new" class="menu_button fa-solid fa-plus" title="New Entry" data-i18n="[title]New Entry"></div>
-                                <div class="flex-container">
-                                    <form id="form_world_import" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                                        <input type="file" id="world_import_file" accept=".json,.lorebook,.png" name="avatar" hidden>
-                                    </form>
-                                    <form id="form_rename_world" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                                        <div id="world_create_button" class="menu_button fa-solid fa-globe fa-fw" title="Create" data-i18n="[title]Create"></div>
-                                        <div id="world_import_button" class="menu_button fa-solid fa-file-import fa-fw" title="Import World Info" data-i18n="[title]Import World Info"></div>
-                                        <div id="world_popup_export" class="menu_button fa-solid fa-file-export margin0 fa-fw" title="Export World Info" data-i18n="[title]Export World Info"></div>
-                                        <div id="world_popup_delete" class="menu_button fa-solid fa-trash-can redWarningBG margin0 fa-fw" title="Delete World Info" data-i18n="[title]Delete World Info"></div>
-                                        <span data-i18n="Editing:">&nbsp;Editing:</span>
-                                        <select id="world_editor_select" class="margin0">
-                                            <option value="" data-i18n="--- None ---">--- None ---</option>
-                                        </select>
-                                        <div id="world_popup_name_button" class="menu_button fa-solid fa-i-cursor fa-fw" title="Rename World Info" data-i18n="[title]Rename World Info"></div>
-                                    </form>
-
-                                </div>
+                        <div class="flex-container alignitemscenter">
+                            <input type="file" id="world_import_file" accept=".json,.lorebook,.png" name="avatar" hidden>
+                            <div id="world_create_button" class="menu_button menu_button_icon">
+                                <i class="fa-solid fa-globe"></i>
+                                <span data-i18n="Create">Create</span>
                             </div>
+                            <small data-i18n="or">or</small>
+                            <select id="world_editor_select" class="margin0">
+                                <option value="" data-i18n="--- Pick to Edit ---">--- Pick to Edit ---</option>
+                            </select>
+                            <div id="world_popup_name_button" class="menu_button fa-pencil fa-solid" title="Rename World Info" data-i18n="[title]Rename World Info"></div>
+                            <div id="OpenAllWIEntries" class="menu_button fa-solid fa-expand" title="Open all Entries" data-i18n="[title]Open all Entries"></div>
+                            <div id="CloseAllWIEntries" class="menu_button fa-solid fa-compress" title="Close all Entries" data-i18n="[title]Close all Entries"></div>
+                            <div id="world_popup_new" class="menu_button fa-solid fa-plus" title="New Entry" data-i18n="[title]New Entry"></div>
+                            <div id="world_import_button" class="menu_button fa-solid fa-file-import" title="Import World Info" data-i18n="[title]Import World Info"></div>
+                            <div id="world_popup_export" class="menu_button fa-solid fa-file-export" title="Export World Info" data-i18n="[title]Export World Info"></div>
+                            <div id="world_popup_delete" class="menu_button fa-solid fa-trash-can redWarningBG" title="Delete World Info" data-i18n="[title]Delete World Info"></div>
+                            <input type="search" class="text_pole textarea_compact" data-i18n="[placeholder]Search..." id="world_info_search" placeholder="Search...">
+                            <div id="world_info_pagination"></div>
                         </div>
 
                         <div id="world_popup_entries_list">
@@ -2553,7 +2527,7 @@
                 </div>
                 <div class="flex-container spaceEvenly">
                     <div id="UI-Theme-Block" class="flex-container flexFlowColumn drawer33pWidth">
-                        <div id="color-picker-block" class="flex-container flexFlowColumn">
+                        <div id="color-picker-block" class="flex-container flexFlowColumn flexNoGap">
                             <h4><span data-i18n="UI Colors">UI Colors</span></h4>
                             <div class="flex-container">
                                 <toolcool-color-picker id="main-text-color-picker"></toolcool-color-picker>
@@ -3010,8 +2984,8 @@
                                 <textarea id="persona_description" name="persona_description" placeholder="Example:&#10;[{{user}} is a 28-year-old Romanian cat girl.]" class="text_pole textarea_compact" maxlength="5000" value="" autocomplete="off" rows="4"></textarea>
                                 <label for="persona_description_position" data-i18n="Position:">Position:</label>
                                 <select id="persona_description_position">
-                                    <option value="0" data-i18n="Before Character Card">Before Character Card</option>
-                                    <option value="1" data-i18n="After Character Card">After Character Card</option>
+                                    <option value="0" data-i18n="In Story String / Chat Completion: Before Character Card">In Story String / Chat Completion: Before Character Card</option>
+                                    <option value="1" data-i18n="In Story String / Chat Completion: After Character Card">In Story String / Chat Completion: After Character Card</option>
                                     <option value="2" data-i18n="Top of Author's Note">Top of Author's Note</option>
                                     <option value="3" data-i18n="Bottom of Author's Note">Bottom of Author's Note</option>
                                 </select>
@@ -3083,12 +3057,17 @@
                         <div id="rm_button_selected_ch">
                             <h2></h2>
                         </div>
-                        <i id="hideCharPanelAvatarButton" class="fa-solid fa-eye right_menu_button"></i>
+                        <div id="result_info" class="flex-container" style="display: none;">
+                            <span id="result_info_text" title="Token counts may be inaccurate and provided just for reference." data-i18n="[title]Token counts may be inaccurate and provided just for reference.">
+                                <strong id="result_info_total_tokens">Calculating...</strong> Total Tokens
+                            </span>
+                            <a id="chartokenwarning" class="right_menu_button fa-solid fa-triangle-exclamation" href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-tokens" target="_blank" title="About Token 'Limits'"></a>
+                            <i title="Click for stats!" class="fa-solid fa-ranking-star right_menu_button rm_stats_button"></i>
+                            <i title="Toggle character info panel" id="hideCharPanelAvatarButton" class="fa-solid fa-eye right_menu_button"></i>
+                        </div>
                     </div>
                 </div>
                 <!-- end group peeking cope structure-->
-
-
 
                 <div name="Solo Char Create/Edit Panel" id="rm_ch_create_block" class="right_menu flex-container flexFlowColumn" style="display: none;">
                     <form id="form_create" action="javascript:void(null);" method="post" enctype="multipart/form-data">
@@ -3096,9 +3075,10 @@
                         <div id="avatar-and-name-block">
                             <div id="name_div">
                                 <input id="character_name_pole" name="ch_name" class="text_pole" data-i18n="[placeholder]Name this character" placeholder="Name this character" maxlength="50" value="" autocomplete="off">
+                                <div class="extension_token_counter">
+                                    Tokens: <span data-token-counter="character_name_pole">counting...</span>
+                                </div>
                             </div>
-
-
 
                             <div id="avatar_div" class="avatar_div alignitemsflexstart justifySpaceBetween flexnowrap flexGap5">
                                 <label id="avatar_div_div" class="add_avatar avatar" for="add_avatar_button" title="Click to select a new avatar for this character" data-i18n="[title]Click to select a new avatar for this character">
@@ -3163,21 +3143,20 @@
                                     </div>
                                 </div>
                             </div>
-
                         </div>
                         <hr>
 
-
-
                         <div id="description_div" class="marginBot5">
                             <span data-i18n="Character Description">Description</span>
-                            <div id="result_info" class="flex-container" title="Token counts may be inaccurate and provided just for reference." data-i18n="[title]Token counts may be inaccurate and provided just for reference.">&nbsp;</div>
                             <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-description" class="notes-link" target="_blank">
                                 <span class="note-link-span">?</span>
                             </a>
                         </div>
 
                         <textarea id="description_textarea" data-i18n="[placeholder]Describe your character's physical and mental traits here." placeholder="Describe your character's physical and mental traits here." class="marginBot5" name="description" placeholder=""></textarea>
+                        <div class="extension_token_counter">
+                            Tokens: <span data-token-counter="description_textarea">counting...</span>
+                        </div>
 
                         <div id="first_message_div" class="marginBot5 title_restorable">
                             <span>
@@ -3191,6 +3170,10 @@
                             </div>
                         </div>
                         <textarea id="firstmessage_textarea" data-i18n="[placeholder]This will be the first message from the character that starts every chat." placeholder="This will be the first message from the character that starts every chat." class="marginBot5" name="first_mes" placeholder=""></textarea>
+                        <div class="extension_token_counter">
+                            Tokens: <span data-token-counter="firstmessage_textarea">counting...</span>
+                        </div>
+
                         <div id="spoiler_free_desc">
                             <div id="creators_notes_div" class="marginBot5 title_restorable">
                                 <span data-i18n="Creator's Notes">Creator's Notes</span>
@@ -3390,8 +3373,8 @@
 
         <div class="inline-drawer">
             <div class="inline-drawer-toggle inline-drawer-header">
-                <h4 data-i18n="Prompt Overrides (For OpenAI/Claude/Scale APIs, Window/OpenRouter, and Instruct mode)">
-                    Prompt Overrides <small>(For OpenAI/Claude/Scale APIs, Window/OpenRouter, and Instruct mode)</small>
+                <h4 data-i18n="Prompt Overrides (For OpenAI/Claude/Scale APIs, Window/OpenRouter, and Instruct Mode)">
+                    Prompt Overrides <small>(For OpenAI/Claude/Scale APIs, Window/OpenRouter, and Instruct Mode)</small>
                 </h4>
 
 
@@ -3402,10 +3385,16 @@
                 <div>
                     <h4 data-i18n="Main Prompt">Main Prompt</h4>
                     <textarea id="system_prompt_textarea" name="system_prompt" data-i18n="[placeholder]Any contents here will replace the default Main Prompt used for this character. (v2 spec: system_prompt)" placeholder="Any contents here will replace the default Main Prompt used for this character.&#10;(v2 spec: system_prompt)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="20000"></textarea>
+                    <div class="extension_token_counter">
+                        Tokens: <span data-token-counter="system_prompt_textarea">counting...</span>
+                    </div>
                 </div>
                 <div>
                     <h4 data-i18n="Jailbreak">Jailbreak</h4>
                     <textarea id="post_history_instructions_textarea" name="post_history_instructions" data-i18n="[placeholder]Any contents here will replace the default Jailbreak Prompt used for this character. (v2 spec: post_history_instructions)" placeholder="Any contents here will replace the default Jailbreak Prompt used for this character.&#10;(v2 spec: post_history_instructions)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="20000"></textarea>
+                    <div class="extension_token_counter">
+                        Tokens: <span data-token-counter="post_history_instructions_textarea">counting...</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -3449,6 +3438,9 @@
                 <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#personality-summary" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
             </h4>
             <textarea id="personality_textarea" name="personality" data-i18n="[placeholder](A brief description of the personality)" placeholder="(A brief description of the personality)" form="form_create" class="text_pole" autocomplete="off" rows="1" maxlength="20000"></textarea>
+            <div class="extension_token_counter">
+                Tokens: <span data-token-counter="personality_textarea">counting...</span>
+            </div>
         </div>
 
         <div id="scenario_div">
@@ -3459,6 +3451,9 @@
                 </a>
             </h4>
             <textarea id="scenario_pole" name="scenario" data-i18n="[placeholder](Circumstances and context of the interaction)" placeholder="(Circumstances and context of the interaction)" class="text_pole" maxlength="20000" value="" autocomplete="off" form="form_create" rows="1"></textarea>
+            <div class="extension_token_counter">
+                Tokens: <span data-token-counter="scenario_pole">counting...</span>
+            </div>
         </div>
 
         <div id="talkativeness_div">
@@ -3479,6 +3474,9 @@
                 <h5 data-i18n="Important to set the character's writing style.">Important to set the character's writing style. <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#examples-of-dialogue" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
             </div>
             <textarea id="mes_example_textarea" class="flexGrow" name="mes_example" data-i18n="[placeholder](Examples of chat dialog. Begin each example with START on a new line.)" placeholder="(Examples of chat dialog. Begin each example with &lt;START&gt; on a new line.)" form="form_create" maxlength="20000" rows="6"></textarea>
+            <div class="extension_token_counter">
+                Tokens: <span data-token-counter="mes_example_textarea">counting...</span>
+            </div>
         </div>
         <div id="character_popup_ok" class="menu_button" data-i18n="Save">Save</div>
 
@@ -3523,61 +3521,6 @@
     </div>
 
     <!-- templates for JS to reuse when needed -->
-    <div id="context_editor_template" class="template_element">
-        <div class="context_editor">
-            <h3>Context Template Editor</h3>
-            <h4 class="template_name"></h4>
-
-            <div class="inline-drawer wide100p">
-                <div class="inline-drawer-toggle inline-drawer-header">
-                    Substitution Parameters
-                    <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
-                </div>
-                <div class="inline-drawer-content">
-                    <i>Click to copy.</i>
-                    <ul class="template_parameters_list justifyLeft margin0">
-                        <li><code>{{char}}</code> - current character name</li>
-                        <li><code>{{user}}</code> - current user name</li>
-                        <li><code>{{description}}</code> - character description</li>
-                        <li><code>{{scenario}}</code> - character or group scenario</li>
-                        <li><code>{{personality}}</code> - character personality</li>
-                        <li><code>{{mesExamples}}</code> - message examples</li>
-                        <li><code>{{wiBeforeCharacter}}</code> - activated World Info entries (Before Char)</li>
-                        <li><code>{{wiAfterCharacter}}</code> - activated World Info entries (After Char)</li>
-                        <li><code>{{instructSystemPrompt}}</code> - system prompt (Instruct mode only)</li>
-                    </ul>
-                </div>
-            </div>
-            <div>
-                <div class="margin-bot-10px wide100p justifyLeft">
-                    Story String Template
-                </div>
-                <textarea class="wide100p textarea_compact story_string_template" rows="8"></textarea>
-                <div>
-                    <small>Lines containing parameters resolving to an empty value will be removed from the template
-                        string.</small>
-                </div>
-            </div>
-            <div>
-                <div class="title_restorable">
-                    <span>Chat Injections</span>
-                    <div title="Add chat injection" data-i18n="[title]Add chat injection" class="menu_button chat_injection_add">
-                        <div class="fa-solid fa-plus"></div>
-                    </div>
-                </div>
-                <div class="chat_injections_list flex-container flexFlowColumn flexGap5 wide100p"></div>
-            </div>
-        </div>
-    </div>
-
-    <div id="chat_injection_template" class="template_element">
-        <div class="chat_injection flex-container wide100p flexGap5 flexnowrap">
-            <input class="chat_injection_text textarea_compact text_pole flex2" data-i18n="[placeholder]Injection text (supports parameters)" placeholder="Injection text (supports parameters)" type="text" />
-            <input class="chat_injection_depth textarea_compact text_pole flex1" data-i18n="[placeholder]Injection depth" placeholder="Injection depth" type="number" min="0" max="100" />
-            <div title="Remove injection" data-i18n="[title]Remove injection" class="menu_button fa-solid fa-xmark chat_injection_remove"></div>
-        </div>
-    </div>
-
     <div id="scenario_override_template" class="template_element">
         <div class="scenario_override range-block flexFlowColumn flex-container">
             <div class="range-block-title title_restorable">
@@ -3651,7 +3594,7 @@
                 <div class="select_chat_block_mes"></div>
             </div>
             <div class="flex-container height100pSpaceEvenly">
-                <div title="Rename chat file" class="renameChatButton fa-solid fa-pen" data-i18n="[title]Rename chat file"></div>
+                <div title="Rename chat file" class="renameChatButton fa-solid fa-pencil" data-i18n="[title]Rename chat file"></div>
                 <div title="Export JSONL chat file" data-format="jsonl" class="exportRawChatButton fa-solid fa-file-export" data-i18n="[title]Export JSONL chat file"></div>
                 <div title="Download chat as plain text document" data-format="txt" class="exportChatButton fa-solid fa-file-lines" data-i18n="[title]Download chat as plain text document"></div>
                 <div title="Delete chat file" file_name="" class="PastChat_cross fa-solid fa-skull" data-i18n="[title]Delete chat file"></div>
@@ -3719,7 +3662,7 @@
                                 <textarea class="text_pole keysecondarytextpole" name="keysecondary" rows="1" data-i18n="[placeholder]Comma separated (ignored if empty)" placeholder="Comma separated (ignored if empty)" maxlength="1000"></textarea>
                             </div>
                         </div>
-                        <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                        <div class="fa-fw fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                     </div>
                     <div class="inline-drawer-content flex-container">
                         <div class="WIEntryContentAndMemo flex-container">
@@ -3729,9 +3672,7 @@
                                         <small>
                                             <span data-i18n="Content">
                                                 Content
-                                                <span>(Tokens:&nbsp;
-                                                    <span class="world_entry_form_token_counter">0</span>
-                                                    )
+                                                <span>(Tokens:&nbsp; <span class="world_entry_form_token_counter" data-first-run="true">counting...</span>)
                                                 </span>
                                             </span>
                                         </small>

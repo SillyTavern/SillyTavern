@@ -55,6 +55,7 @@ import {
     renameGroupChat,
     importGroupChat,
     getGroupBlock,
+    getGroupChatNames,
 } from "./scripts/group-chats.js";
 
 import {
@@ -65,9 +66,6 @@ import {
     power_user,
     pygmalion_options,
     tokenizers,
-    formatInstructModeChat,
-    formatInstructStoryString,
-    formatInstructModePrompt,
     persona_description_positions,
     loadMovingUIState,
     getCustomStoppingStrings,
@@ -135,6 +133,7 @@ import {
     isDataURL,
     getCharaFilename,
     isDigitsOnly,
+    PAGINATION_TEMPLATE,
 } from "./scripts/utils.js";
 
 import { extension_settings, getContext, loadExtensionSettings, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
@@ -164,6 +163,14 @@ import { deviceInfo } from "./scripts/RossAscends-mods.js";
 import { registerPromptManagerMigration } from "./scripts/PromptManager.js";
 import { getRegexedString, regex_placement } from "./scripts/extensions/regex/engine.js";
 import { FILTER_TYPES, FilterHelper } from "./scripts/filters.js";
+import {
+    formatInstructModeChat,
+    formatInstructModePrompt,
+    formatInstructModeExamples,
+    getInstructStoppingSequences,
+    autoSelectInstructPreset,
+} from "./scripts/instruct-mode.js";
+import { applyLocale } from "./scripts/i18n.js";
 
 //exporting functions and vars for mods
 export {
@@ -190,7 +197,6 @@ export {
     setEditedMessageId,
     setSendButtonState,
     selectRightMenuWithAnimation,
-    setRightTabSelectedClass,
     openCharacterChat,
     saveChat,
     messageFormatting,
@@ -235,6 +241,14 @@ export {
     mesForShowdownParse,
     printCharacters,
 }
+
+// Allow target="_blank" in links
+DOMPurify.addHook('afterSanitizeAttributes', function (node) {
+    if ('target' in node) {
+        node.setAttribute('target', '_blank');
+        node.setAttribute('rel', 'noopener');
+    }
+});
 
 // API OBJECT FOR EXTERNAL WIRING
 window["SillyTavern"] = {};
@@ -329,7 +343,6 @@ let scrollLock = false;
 const durationSaveEdit = 1000;
 const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
 export const saveCharacterDebounced = debounce(() => $("#create_button").trigger('click'), durationSaveEdit);
-const getStatusDebounced = debounce(() => getStatus(), 300_000);
 const saveChatDebounced = debounce(() => saveChatConditional(), durationSaveEdit);
 
 const system_message_types = {
@@ -353,186 +366,102 @@ const extension_prompt_types = {
     IN_CHAT: 1
 };
 
-const system_messages = {
-    help: {
-        name: systemUserName,
-        force_avatar: system_avatar,
-        is_user: false,
-        is_system: true,
-        is_name: true,
-        mes:
-            `Hello there! Please select the help topic you would like to learn more about:
-            <ul>
-            <li><a href="#" data-displayHelp="1">Slash Commands</a> (or <tt>/help slash</tt>)</li>
-            <li><a href="#" data-displayHelp="2">Formatting</a> (or <tt>/help format</tt>)</li>
-            <li><a href="#" data-displayHelp="3">Hotkeys</a> (or <tt>/help hotkeys</tt>)</li>
-            <li><a href="#" data-displayHelp="4">{{Macros}}</a> (or <tt>/help macros</tt>)</li>
-            </ul>
-            <br><b>Still got questions left? The <a target="_blank" href="https://docs.sillytavern.app/">Official SillyTavern Documentation Website</a> has much more information!</b>`
-    },
-    slash_commands: {
-        name: systemUserName,
-        force_avatar: system_avatar,
-        is_user: false,
-        is_system: true,
-        is_name: true,
-        mes: '',
-    },
-    hotkeys: {
-        name: systemUserName,
-        force_avatar: system_avatar,
-        is_user: false,
-        is_system: true,
-        is_name: true,
-        mes:
-            `Hotkeys/Keybinds:
-            <ul>
-            <li><tt>Up</tt> = Edit last message in chat</li>
-            <li><tt>Ctrl+Up</tt> = Edit last USER message in chat</li>
-            <li><tt>Left</tt> = swipe left</li>
-            <li><tt>Right</tt> = swipe right (NOTE: swipe hotkeys are disabled when chatbar has something typed into it)</li>
-            <li><tt>Ctrl+Left</tt> = view locally stored variables (in the browser console window)</li>
-            <li><tt>Enter</tt> (with chat bar selected) = send your message to AI</li>
-            <li><tt>Ctrl+Enter</tt> = Regenerate the last AI response</li>
-            <li><tt>Escape</tt> = stop AI response generation</li>
-            <li><tt>Ctrl+Shift+Up</tt> = Scroll to context line</li>
-            <li><tt>Ctrl+Shift+Down</tt> = Scroll chat to bottom</li>
-            </ul>`
-    },
-    formatting: {
-        name: systemUserName,
-        force_avatar: system_avatar,
-        is_user: false,
-        is_system: true,
-        is_name: true,
-        mes:
-            `Text formatting commands:
-            <ul>
-            <li><tt>*text*</tt> - displays as <i>italics</i></li>
-            <li><tt>**text**</tt> - displays as <b>bold</b></li>
-            <li><tt>***text***</tt> - displays as <b><i>bold italics</i></b></li>
-            <li><tt>` + "```" + `text` + "```" + `</tt> - displays as a code block (new lines allowed between the backticks)</li>
-            <pre>
-<code>
-like
-this
-</code>
-            </pre>
-            <li><tt>` + "`" + `text` + "`" + `</tt> - displays as <code>inline code</code></li>
-            <li><tt>` + "> " + `text` + `</tt> - displays as a blockquote (note the space after >)</li>
-            <blockquote>like this</blockquote>
-            <li><tt>` + "# " + `text` + `</tt> - displays as a large header (note the space)</li>
-            <h1>like this</h1>
-            <li><tt>` + "## " + `text` + `</tt> - displays as a medium header (note the space)</li>
-            <h2>like this</h2>
-            <li><tt>` + "### " + `text` + `</tt> - displays as a small header (note the space)</li>
-            <h3>like this</h3>
-            <li><tt>$$ text $$</tt> - renders a LaTeX formula (if enabled)</li>
-            <li><tt>$ text $</tt> - renders an AsciiMath formula (if enabled)</li>
-            </ul>`
-    },
-    macros: {
-        name: systemUserName,
-        force_avatar: system_avatar,
-        is_user: false,
-        is_system: true,
-        is_name: true,
-        mes:
-            `System-wide Replacement Macros:
-            <ul>
-            <li><tt>{​{user}​}</tt> - your current Persona username</li>
-            <li><tt>{​{char}​}</tt> - the Character's name</li>
-            <li><tt>{​{input}​}</tt> - the user input</li>
-            <li><tt>{​{time}​}</tt> - the current time</li>
-            <li><tt>{​{date}​}</tt> - the current date</li>
-            <li><tt>{{idle_duration}}</tt> - the time since the last user message was sent</li>
-            <li><tt>{{random:(args)}}</tt> - returns a random item from the list. (ex: {{random:1,2,3,4}} will return 1 of the 4 numbers at random. Works with text lists too.</li>
-            <li><tt>{{roll:(formula)}}</tt> - rolls a dice. (ex: {{roll:1d6}} will roll a 6-sided dice and return a number between 1 and 6)</li>
-            </ul>`
-    },
-    welcome:
-    {
-        name: systemUserName,
-        force_avatar: system_avatar,
-        is_user: false,
-        is_system: true,
-        is_name: true,
-        mes: [
-            '<h3><span id="version_display_welcome">SillyTavern</span><div id="version_display_welcome"></div></h3>',
-            "<a href='https://docs.sillytavern.app/usage/update/' target='_blank'>Want to update?</a>",
-            '<hr>',
-            '<h3>How to start chatting?</h3>',
-            '<ol>',
-            '<li>Click <code><i class="fa-solid fa-plug"></i></code> and select a <a href="https://docs.sillytavern.app/usage/api-connections/" target_"blank">Chat API</a>.</li>',
-            '<li>Click <code><i class="fa-solid fa-address-card"></i></code> and pick a character</li>',
-            '</ol>',
-            '<hr>',
-            '<h3>Want more characters?</h3>',
-            '<i>Not controlled by SillyTavern team.</i>',
-            '<ul>',
-            '<li><a target="_blank" href="https://discord.gg/pygmalionai">Pygmalion AI Discord</a></li>',
-            '<li><a target="_blank" href="https://chub.ai/">Chub (NSFW)</a></li>',
-            '</ul>',
-            '<hr>',
-            '<h3>Confused or lost?</h3>',
-            '<ul>',
-            '<li><span class="note-link-span">?</span> - click these icons!</li>',
-            '<li>Enter <code>/?</code> in the chat bar</li>',
-            '<li><a target="_blank" href="https://docs.sillytavern.app/">SillyTavern Documentation Site</a></li>',
-            '<li><a target="_blank" href="https://docs.sillytavern.app/extras/installation/">Extras Installation Guide</a></li>',
+let system_messages = {};
 
-            '</ul>',
-
-            '<hr>',
-            '<h3>Still have questions?</h3 > ',
-            '<ul>',
-            '<li><a target="_blank" href="https://discord.gg/RZdyAEUPvj">Join the SillyTavern Discord</a></li>',
-            '<li><a target="_blank" href="https://github.com/SillyTavern/SillyTavern/issues">Post a GitHub issue</a></li>',
-            '<li><a target="_blank" href="https://github.com/SillyTavern/SillyTavern#questions-or-suggestions">Contact the developers</a></li>',
-        ].join('')
-    },
-    group: {
-        name: systemUserName,
-        force_avatar: system_avatar,
-        is_user: false,
-        is_system: true,
-        is_name: true,
-        is_group: true,
-        mes: "Group chat created. Say 'Hi' to lovely people!",
-    },
-    empty: {
-        name: systemUserName,
-        force_avatar: system_avatar,
-        is_user: false,
-        is_system: true,
-        is_name: true,
-        mes: "No one hears you. <b>Hint&#58;</b> add more members to the group!",
-    },
-    generic: {
-        name: systemUserName,
-        force_avatar: system_avatar,
-        is_user: false,
-        is_system: true,
-        is_name: true,
-        mes: "Generic system message. User `text` parameter to override the contents",
-    },
-    bookmark_created: {
-        name: systemUserName,
-        force_avatar: system_avatar,
-        is_user: false,
-        is_system: true,
-        is_name: true,
-        mes: `Bookmark created! Click here to open the bookmark chat: <a class="bookmark_link" file_name="{0}" href="javascript:void(null);">{1}</a>`,
-    },
-    bookmark_back: {
-        name: systemUserName,
-        force_avatar: system_avatar,
-        is_user: false,
-        is_system: true,
-        is_name: true,
-        mes: `Click here to return to the previous chat: <a class="bookmark_link" file_name="{0}" href="javascript:void(null);">Return</a>`,
-    },
-};
+function getSystemMessages() {
+    system_messages = {
+        help: {
+            name: systemUserName,
+            force_avatar: system_avatar,
+            is_user: false,
+            is_system: true,
+            is_name: true,
+            mes: renderTemplate("help"),
+        },
+        slash_commands: {
+            name: systemUserName,
+            force_avatar: system_avatar,
+            is_user: false,
+            is_system: true,
+            is_name: true,
+            mes: '',
+        },
+        hotkeys: {
+            name: systemUserName,
+            force_avatar: system_avatar,
+            is_user: false,
+            is_system: true,
+            is_name: true,
+            mes: renderTemplate("hotkeys"),
+        },
+        formatting: {
+            name: systemUserName,
+            force_avatar: system_avatar,
+            is_user: false,
+            is_system: true,
+            is_name: true,
+            mes: renderTemplate("formatting"),
+        },
+        macros: {
+            name: systemUserName,
+            force_avatar: system_avatar,
+            is_user: false,
+            is_system: true,
+            is_name: true,
+            mes: renderTemplate("macros"),
+        },
+        welcome:
+        {
+            name: systemUserName,
+            force_avatar: system_avatar,
+            is_user: false,
+            is_system: true,
+            is_name: true,
+            mes: renderTemplate("welcome"),
+        },
+        group: {
+            name: systemUserName,
+            force_avatar: system_avatar,
+            is_user: false,
+            is_system: true,
+            is_name: true,
+            is_group: true,
+            mes: "Group chat created. Say 'Hi' to lovely people!",
+        },
+        empty: {
+            name: systemUserName,
+            force_avatar: system_avatar,
+            is_user: false,
+            is_system: true,
+            is_name: true,
+            mes: "No one hears you. <b>Hint&#58;</b> add more members to the group!",
+        },
+        generic: {
+            name: systemUserName,
+            force_avatar: system_avatar,
+            is_user: false,
+            is_system: true,
+            is_name: true,
+            mes: "Generic system message. User `text` parameter to override the contents",
+        },
+        bookmark_created: {
+            name: systemUserName,
+            force_avatar: system_avatar,
+            is_user: false,
+            is_system: true,
+            is_name: true,
+            mes: `Bookmark created! Click here to open the bookmark chat: <a class="bookmark_link" file_name="{0}" href="javascript:void(null);">{1}</a>`,
+        },
+        bookmark_back: {
+            name: systemUserName,
+            force_avatar: system_avatar,
+            is_user: false,
+            is_system: true,
+            is_name: true,
+            mes: `Click here to return to the previous chat: <a class="bookmark_link" file_name="{0}" href="javascript:void(null);">Return</a>`,
+        },
+    };
+}
 
 // Register configuration migrations
 registerPromptManagerMigration();
@@ -547,6 +476,36 @@ $(document).ajaxError(function myErrorHandler(_, xhr) {
     }
 });
 
+function getUrlSync(url, cache = true) {
+    return $.ajax({
+        type: "GET",
+        url: url,
+        cache: cache,
+        async: false
+    }).responseText;
+}
+
+function renderTemplate(templateId, templateData = {}, sanitize = true, localize = true) {
+    try {
+        const templateContent = getUrlSync(`/scripts/templates/${templateId}.html`);
+        const template = Handlebars.compile(templateContent);
+        let result = template(templateData);
+
+        if (sanitize) {
+            result = DOMPurify.sanitize(result);
+        }
+
+        if (localize) {
+            result = applyLocale(result);
+        }
+
+        return result;
+    } catch (err) {
+        console.error("Error rendering template", templateId, templateData, err);
+        toastr.error("Check the DevTools console for more information.", "Error rendering template");
+    }
+}
+
 async function getClientVersion() {
     try {
         const response = await fetch('/version');
@@ -555,7 +514,7 @@ async function getClientVersion() {
         let displayVersion = `SillyTavern ${data.pkgVersion}`;
 
         if (data.gitRevision && data.gitBranch) {
-            displayVersion += ` '${data.gitBranch}'(${data.gitRevision})`;
+            displayVersion += ` '${data.gitBranch}' (${data.gitRevision})`;
         }
 
         $('#version_display').text(displayVersion);
@@ -679,10 +638,10 @@ export function getTextTokens(tokenizerType, str) {
 function reloadMarkdownProcessor(render_formulas = false) {
     if (render_formulas) {
         converter = new showdown.Converter({
-            emoji: "true",
-            underline: "true",
-            tables: "true",
-            parseImgDimensions: "true",
+            emoji: true,
+            underline: true,
+            tables: true,
+            parseImgDimensions: true,
             extensions: [
                 showdownKatex(
                     {
@@ -696,10 +655,10 @@ function reloadMarkdownProcessor(render_formulas = false) {
     }
     else {
         converter = new showdown.Converter({
-            emoji: "true",
-            literalMidWordUnderscores: "true",
-            parseImgDimensions: "true",
-            tables: "true",
+            emoji: true,
+            literalMidWordUnderscores: true,
+            parseImgDimensions: true,
+            tables: true,
         });
     }
 
@@ -833,6 +792,7 @@ $.ajaxPrefilter((options, originalOptions, xhr) => {
 ///// initialization protocol ////////
 $.get("/csrf-token").then(async (data) => {
     token = data.token;
+    getSystemMessages();
     sendSystemMessage(system_message_types.WELCOME);
     await readSecretState();
     await getClientVersion();
@@ -883,10 +843,6 @@ async function getStatus() {
                 const hordeStatus = await checkHordeStatus();
                 online_status = hordeStatus ? 'Connected' : 'no_connection';
                 resultCheckStatus();
-
-                if (online_status !== "no_connection") {
-                    getStatusDebounced();
-                }
             }
             catch {
                 online_status = "no_connection";
@@ -915,6 +871,10 @@ async function getStatus() {
                 if (online_status == undefined) {
                     online_status = "no_connection";
                 }
+
+                // Determine instruct mode preset
+                autoSelectInstructPreset(online_status);
+
                 if ((online_status.toLowerCase().indexOf("pygmalion") != -1 && power_user.pygmalion_formatting == pygmalion_options.AUTO)
                     || (online_status !== "no_connection" && power_user.pygmalion_formatting == pygmalion_options.ENABLED)) {
                     is_pygmalion = true;
@@ -936,9 +896,6 @@ async function getStatus() {
 
                 //console.log(online_status);
                 resultCheckStatus();
-                if (online_status !== "no_connection") {
-                    getStatusDebounced();
-                }
             },
             error: function (jqXHR, exception) {
                 console.log(exception);
@@ -1048,6 +1005,7 @@ async function printCharacters(fullRefresh = false) {
         showSizeChanger: true,
         prevText: '<',
         nextText: '>',
+        formatNavigator: PAGINATION_TEMPLATE,
         showNavigator: true,
         callback: function (data) {
             $("#rm_print_characters_block").empty();
@@ -1397,17 +1355,6 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
         mes = mes.replace(new RegExp(`(^|\n)${ch_name}:`, 'g'), "$1");
     }
 
-    //function to hide any <tags> from AI response output
-    /*  if (power_user.removeXML && ch_name && !isUser && !isSystem) {
-         //console.log('incoming mes')
-         //console.log(mes)
-         mes = mes.replaceAll(/&lt;/g, "<");
-         mes = mes.replaceAll(/&gt;/g, ">");
-         mes = mes.replaceAll(/<<[^>>]+>>/g, "");
-         //console.log('mes after removed <tags>')
-         //console.log(mes)
-     } */
-
     mes = DOMPurify.sanitize(mes);
 
     return mes;
@@ -1604,8 +1551,18 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         mes.is_user,
     );
     const bias = messageFormatting(mes.extra?.bias ?? "");
-    const bookmarkLink = mes?.extra?.bookmark_link ?? '';
+    let bookmarkLink = mes?.extra?.bookmark_link ?? '';
+    // Verify bookmarked chat still exists
+    // Cohee: Commented out for now. I'm worried of performance issues.
+    /*if (bookmarkLink !== '') {
+        let chat_names = selected_group
+            ? getGroupChatNames(selected_group)
+            : Object.values(getPastCharacterChats()).map(({ file_name }) => file_name);
 
+        if (!chat_names.includes(bookmarkLink)) {
+            bookmarkLink = ''
+        }
+    }*/
     let params = {
         mesId: count_view_mes,
         characterName: characterName,
@@ -1902,32 +1859,7 @@ function getStoppingStrings(isImpersonate, addSpace) {
         }
     }
 
-    function addInstructSequence(sequence) {
-        // Cohee: oobabooga's textgen always appends newline before the sequence as a stopping string
-        // But it's a problem for Metharme which doesn't use newlines to separate them.
-        const wrap = (s) => power_user.instruct.wrap ? '\n' + s : s;
-        // Sequence must be a non-empty string
-        if (typeof sequence === 'string' && sequence.length > 0) {
-            // If sequence is just a whitespace or newline - we don't want to make it a stopping string
-            // User can always add it as a custom stop string if really needed
-            if (sequence.trim().length > 0) {
-                const wrappedSequence = wrap(sequence);
-                // Need to respect "insert macro" setting
-                const stopString = power_user.instruct.macro ? substituteParams(wrappedSequence) : wrappedSequence;
-                result.push(stopString);
-            }
-        }
-    }
-
-    if (power_user.instruct.enabled) {
-        const input_sequence = power_user.instruct.input_sequence;
-        const output_sequence = power_user.instruct.output_sequence;
-        const last_output_sequence = power_user.instruct.last_output_sequence;
-
-        const combined_sequence = `${input_sequence}\n${output_sequence}\n${last_output_sequence}`;
-
-        combined_sequence.split('\n').filter((line, index, self) => self.indexOf(line) === index).forEach(addInstructSequence);
-    }
+    result.push(...getInstructStoppingSequences());
 
     if (power_user.custom_stopping_strings) {
         const customStoppingStrings = getCustomStoppingStrings();
@@ -2069,9 +2001,8 @@ function getPersonaDescription(storyString) {
 
     switch (power_user.persona_description_position) {
         case persona_description_positions.BEFORE_CHAR:
-            return `${substituteParams(power_user.persona_description)}\n${storyString}`;
         case persona_description_positions.AFTER_CHAR:
-            return `${storyString}${substituteParams(power_user.persona_description)}\n`;
+            return storyString;
         default:
             if (shouldWIAddPrompt) {
                 const originalAN = extension_prompts[NOTE_MODULE_NAME].value
@@ -2378,10 +2309,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         abortController = new AbortController();
     }
 
-    if (main_api == 'novel' && quiet_prompt) {
-        quiet_prompt = adjustNovelInstructionPrompt(quiet_prompt);
-    }
-
     // OpenAI doesn't need instruct mode. Use OAI main prompt instead.
     const isInstruct = power_user.instruct.enabled && main_api !== 'openai';
     const isImpersonate = type == "impersonate";
@@ -2470,6 +2397,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         }
     }
 
+    if (quiet_prompt) {
+        quiet_prompt = substituteParams(quiet_prompt);
+        quiet_prompt = main_api == 'novel' ? adjustNovelInstructionPrompt(quiet_prompt) : quiet_prompt;
+    }
+
     if (true === dryRun ||
         (online_status != 'no_connection' && this_chid != undefined && this_chid !== 'invalid-safety-id')) {
         let textareaText;
@@ -2527,10 +2459,15 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         const scenarioText = chat_metadata['scenario'] || characters[this_chid].scenario;
         let charDescription = baseChatReplace(characters[this_chid].description.trim(), name1, name2);
         let charPersonality = baseChatReplace(characters[this_chid].personality.trim(), name1, name2);
+        let personaDescription = baseChatReplace(power_user.persona_description.trim(), name1, name2);
         let Scenario = baseChatReplace(scenarioText.trim(), name1, name2);
         let mesExamples = baseChatReplace(characters[this_chid].mes_example.trim(), name1, name2);
         let systemPrompt = power_user.prefer_character_prompt ? baseChatReplace(characters[this_chid].data?.system_prompt?.trim(), name1, name2) : '';
         let jailbreakPrompt = power_user.prefer_character_jailbreak ? baseChatReplace(characters[this_chid].data?.post_history_instructions?.trim(), name1, name2) : '';
+
+        if (isInstruct) {
+            systemPrompt = power_user.prefer_character_prompt && systemPrompt ? systemPrompt : baseChatReplace(power_user.instruct.system_prompt, name1, name2);
+        }
 
         // Parse example messages
         if (!mesExamples.startsWith('<START>')) {
@@ -2539,10 +2476,16 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         if (mesExamples.replace(/<START>/gi, '').trim().length === 0) {
             mesExamples = '';
         }
+        if (mesExamples && isInstruct) {
+            mesExamples = formatInstructModeExamples(mesExamples, name1, name2)
+        }
 
         const exampleSeparator = power_user.context.example_separator ? `${power_user.context.example_separator}\n` : '';
         const blockHeading = main_api === 'openai' ? '<START>\n' : exampleSeparator;
         let mesExamplesArray = mesExamples.split(/<START>/gi).slice(1).map(block => `${blockHeading}${block.trim()}\n`);
+
+        if (power_user.strip_examples)
+            mesExamplesArray = []
 
         // First message in fresh 1-on-1 chat reacts to user/character settings changes
         if (chat.length) {
@@ -2570,7 +2513,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         const storyStringParams = {
             description: charDescription,
             personality: charPersonality,
+            persona: personaDescription,
             scenario: Scenario,
+            system: isInstruct ? systemPrompt : '',
             char: name2,
             user: name1,
         };
@@ -2637,11 +2582,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         // Pre-format the World Info into the story string
         if (main_api !== 'openai') {
             storyString = worldInfoBefore + storyString + worldInfoAfter;
-        }
-
-        // Format the instruction string
-        if (isInstruct) {
-            storyString = formatInstructStoryString(storyString, systemPrompt);
         }
 
         if (main_api === 'openai') {
@@ -3002,7 +2942,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             if (true === dryRun) return onSuccess({ error: 'dryRun' });
 
             if (power_user.console_log_prompts) {
-
                 console.log(generate_data.prompt);
             }
 
@@ -3015,7 +2954,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             let currentArrayEntry = Number(thisPromptBits.length - 1);
             let additionalPromptStuff = {
                 ...thisPromptBits[currentArrayEntry],
-                rawPrompt: generate_data.prompt,
+                rawPrompt: generate_data.prompt || generate_data.input,
                 mesId: getNextMessageId(type),
                 allAnchors: allAnchors,
                 summarizeString: (extension_prompts['1_memory']?.value || ''),
@@ -5339,7 +5278,7 @@ async function getSettings(type) {
         loadTextGenSettings(data, settings);
 
         // OpenAI
-        loadOpenAISettings(data, settings);
+        loadOpenAISettings(data, settings.oai_settings ?? settings);
 
         // Horde
         loadHordeSettings(settings);
@@ -5454,7 +5393,7 @@ async function saveSettings(type) {
             tag_map: tag_map,
             nai_settings: nai_settings,
             kai_settings: kai_settings,
-            ...oai_settings,
+            oai_settings: oai_settings,
         }, null, 4),
         beforeSend: function () {
             if (type == "change_name") {
@@ -5632,7 +5571,7 @@ async function messageEditDone(div) {
  *
  * @param {Array} data - An array containing metadata about each chat such as file_name.
  * @param {boolean} isGroupChat - A flag indicating if the chat is a group chat.
- * @returns {Object} chat_dict - A dictionary where each key is a file_name and the value is the
+ * @returns {Promise<Object>} chat_dict - A dictionary where each key is a file_name and the value is the
  * corresponding chat content fetched from the server.
  */
 export async function getChatsFromFiles(data, isGroupChat) {
@@ -5682,7 +5621,7 @@ export async function getChatsFromFiles(data, isGroupChat) {
  * The function sends a POST request to the server to retrieve all chats for the character. It then
  * processes the received data, sorts it by the file name, and returns the sorted data.
  *
- * @returns {Array} - An array containing metadata of all past chats of the character, sorted
+ * @returns {Promise<Array>} - An array containing metadata of all past chats of the character, sorted
  * in descending order by file name. Returns `undefined` if the fetch request is unsuccessful.
  */
 async function getPastCharacterChats() {
@@ -5767,7 +5706,6 @@ export async function displayPastChats() {
                 }
             }
         }
-
     }
     displayChats('');  // Display all by default
 
@@ -5826,7 +5764,7 @@ function selectRightMenuWithAnimation(selectedMenuId) {
         'rm_api_block': 'grid',
         'rm_characters_block': 'flex',
     };
-    $('#hideCharPanelAvatarButton').toggle(selectedMenuId === 'rm_ch_create_block');
+    $('#result_info').toggle(selectedMenuId === 'rm_ch_create_block');
     document.querySelectorAll('#right-nav-panel .right_menu').forEach((menu) => {
         $(menu).css('display', 'none');
 
@@ -5842,16 +5780,6 @@ function selectRightMenuWithAnimation(selectedMenuId) {
             });
         }
     })
-}
-
-function setRightTabSelectedClass(selectedButtonId) {
-    document.querySelectorAll('#right-nav-panel-tabs .right_menu_button').forEach((button) => {
-        button.classList.remove('selected-right-tab');
-
-        if (selectedButtonId && selectedButtonId.replace('#', '') === button.id) {
-            button.classList.add('selected-right-tab');
-        }
-    });
 }
 
 function select_rm_info(type, charId, previousCharId = null) {
@@ -5916,7 +5844,6 @@ function select_rm_info(type, charId, previousCharId = null) {
             }
         }
     }, 100);
-    setRightTabSelectedClass();
 
     if (previousCharId) {
         const newId = characters.findIndex((x) => x.avatar == previousCharId);
@@ -5933,7 +5860,6 @@ export function select_selected_character(chid) {
     menu_type = "character_edit";
     $("#delete_button").css("display", "flex");
     $("#export_button").css("display", "flex");
-    setRightTabSelectedClass('rm_button_selected_ch');
     var display_name = characters[chid].name;
 
     //create text poles
@@ -6008,8 +5934,6 @@ function select_rm_create() {
     }
 
     selectRightMenuWithAnimation('rm_ch_create_block');
-    setRightTabSelectedClass();
-
 
     $('#set_chat_scenario').hide();
     $("#delete_button_div").css("display", "none");
@@ -6056,7 +5980,6 @@ function select_rm_create() {
 function select_rm_characters() {
     menu_type = "characters";
     selectRightMenuWithAnimation('rm_characters_block');
-    setRightTabSelectedClass('rm_button_characters');
     printCharacters(false); // Do a quick refresh of the characters list
 }
 
@@ -6703,7 +6626,7 @@ async function createOrEditCharacter(e) {
                 },
             });
         } else {
-            $("#result_info").html("Name not entered");
+            toastr.error('Name is required');
         }
     } else {
         let url = '/editcharacter';
@@ -6796,7 +6719,6 @@ async function createOrEditCharacter(e) {
             },
             error: function (jqXHR, exception) {
                 $("#create_button").removeAttr("disabled");
-                $("#result_info").html("<font color=red>Error: no connection</font>");
                 console.log('Error! Either a file with the same name already existed, or the image file provided was in an invalid format. Double check that the image is not a webp.');
                 toastr.error('Something went wrong while saving the character, or the image file provided was in an invalid format. Double check that the image is not a webp.');
             },
@@ -7377,7 +7299,6 @@ export async function deleteCharacter(name, avatar) {
     name2 = systemUserName;
     chat = [...safetychat];
     chat_metadata = {};
-    setRightTabSelectedClass();
     $(document.getElementById("rm_button_selected_ch")).children("h2").text("");
     clearChat();
     this_chid = undefined;
@@ -7493,7 +7414,6 @@ $(document).ready(function () {
         selected_button = "settings";
         menu_type = "settings";
         selectRightMenuWithAnimation('rm_api_block');
-        setRightTabSelectedClass('rm_button_settings');
     });
     $("#rm_button_characters").click(function () {
         selected_button = "characters";
@@ -7517,7 +7437,7 @@ $(document).ready(function () {
         $("#character_search_bar").val("").trigger("input");
     });
 
-    $(document).on("click", ".character_select", function() {
+    $(document).on("click", ".character_select", function () {
         const id = $(this).attr("chid");
         selectCharacterById(id);
     });
@@ -8003,7 +7923,7 @@ $(document).ready(function () {
         const enabled = $("#use-mancer-api-checkbox").prop("checked");
         $("#mancer_api_subpanel").toggle(enabled);
         $("#tgwebui_api_subpanel").toggle(!enabled);
-        
+
         api_use_mancer_webui = enabled;
         saveSettingsDebounced();
         getStatus();
@@ -8078,7 +7998,6 @@ $(document).ready(function () {
     /* $('#set_chat_scenario').on('click', setScenarioOverride); */
 
     ///////////// OPTIMIZED LISTENERS FOR LEFT SIDE OPTIONS POPUP MENU //////////////////////
-
     $("#options [id]").on("click", function (event, customData) {
         const fromSlashCommand = customData?.fromSlashCommand || false;
         var id = $(this).attr("id");
@@ -8580,11 +8499,12 @@ $(document).ready(function () {
         showSwipeButtons();
     });
 
-
     $(document).on("click", ".mes_edit_delete", async function (event, customData) {
         const fromSlashCommand = customData?.fromSlashCommand || false;
+        const swipeExists = (!chat[this_edit_mes_id].swipes || chat[this_edit_mes_id].swipes.length <= 1 || chat.is_user || parseInt(this_edit_mes_id) !== chat.length - 1);
         if (power_user.confirm_message_delete && fromSlashCommand !== true) {
-            const confirmation = await callPopup("Are you sure you want to delete this message?", 'confirm');
+            const confirmation = swipeExists ? await callPopup("Are you sure you want to delete this message?", 'confirm')
+                : await callPopup("<h3>Delete this...</h3> <select id='del_type'><option value='swipe'>Swipe</option><option value='message'>Message</option></select>", 'confirm')
             if (!confirmation) {
                 return;
             }
@@ -8596,10 +8516,21 @@ $(document).ready(function () {
             return;
         }
 
-        chat.splice(this_edit_mes_id, 1);
+        if ($('#del_type').val() === 'swipe') {
+            const swipe_id = chat[this_edit_mes_id]['swipe_id'];
+            chat[this_edit_mes_id]['swipes'].splice(swipe_id, 1);
+            if (swipe_id > 0) {
+                $('.swipe_left:last').click();
+            } else {
+                $('.swipe_right:last').click()
+            }
+        } else {
+            chat.splice(this_edit_mes_id, 1);
+            mes.remove();
+            count_view_mes--;
+        }
+
         this_edit_mes_id = undefined;
-        mes.remove();
-        count_view_mes--;
 
         updateViewMessageIds();
         saveChatConditional();
@@ -9139,7 +9070,7 @@ $(document).ready(function () {
                 await importWorldInfo(file);
                 break;
             default:
-                toastr.warn('Unknown content type');
+                toastr.warning('Unknown content type');
                 console.error('Unknown content type', customContentType);
                 break;
         }
@@ -9237,7 +9168,7 @@ $(document).ready(function () {
         doCharListDisplaySwitch();
     });
 
-    $("#hideCharPanelAvatarButton").hide().on('click', () => {
+    $("#hideCharPanelAvatarButton").on('click', () => {
         $('#avatar-and-name-block').slideToggle()
     });
 });

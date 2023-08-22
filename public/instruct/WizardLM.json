@@ -1,11 +1,15 @@
 {
     "name": "WizardLM",
     "system_prompt": "Write {{char}}'s next reply in a fictional roleplay chat between {{user}} and {{char}}.\n",
-    "system_sequence": "",
-    "stop_sequence": "",
     "input_sequence": "",
     "output_sequence": "### Response:",
     "last_output_sequence": "",
+    "system_sequence": "",
+    "stop_sequence": "",
     "separator_sequence": "</s>",
-    "wrap": true
+    "wrap": true,
+    "macro": true,
+    "names": false,
+    "names_force_groups": true,
+    "activation_regex": ""
 }
