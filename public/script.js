@@ -2786,7 +2786,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     }
 
                     lastMesString += `${name2}:`;
-                } 
+                }
 
                 return lastMesString;
             }
@@ -2854,8 +2854,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     if (cfgPrompt?.depth === 0) {
                         finalMesSend[finalMesSend.length - 1] +=
                             /\s/.test(finalMesSend[finalMesSend.length - 1].slice(-1))
-                            ? cfgPrompt.value
-                            : ` ${cfgPrompt.value}`;
+                                ? cfgPrompt.value
+                                : ` ${cfgPrompt.value}`;
                     } else {
                         // TODO: Switch from splice method to insertion depth method
                         finalMesSend.splice(mesSend.length - cfgPrompt.depth, 0, `${cfgPrompt.value}\n`);
@@ -2864,14 +2864,14 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
                 // Add prompt bias after everything else
                 // Always run with continue
-                if (!isInstruct && !isImpersonate && (tokens_already_generated === 0  || isContinue)) {
+                if (!isInstruct && !isImpersonate && (tokens_already_generated === 0 || isContinue)) {
                     if (promptBias.trim().length !== 0) {
                         finalMesSend[finalMesSend.length - 1] +=
-                        /\s/.test(finalMesSend[finalMesSend.length - 1].slice(-1))
-                            ? promptBias.trimStart()
-                            : ` ${promptBias.trimStart()}`;
+                            /\s/.test(finalMesSend[finalMesSend.length - 1].slice(-1))
+                                ? promptBias.trimStart()
+                                : ` ${promptBias.trimStart()}`;
                     }
-                } 
+                }
 
 
                 // Prune from prompt cache if it exists
@@ -3395,17 +3395,25 @@ function getMaxContextSize() {
 }
 
 function parseTokenCounts(counts, thisPromptBits) {
-    const total = Object.values(counts).filter(x => !Number.isNaN(x)).reduce((acc, val) => acc + val, 0);
+    /**
+     * @param {any[]} numbers
+     */
+    function getSum(...numbers) {
+        return numbers.map(x => Number(x)).filter(x => !Number.isNaN(x)).reduce((acc, val) => acc + val, 0);
+    }
+    const total = getSum(Object.values(counts));
 
     thisPromptBits.push({
-        oaiStartTokens: Object.entries(counts)?.[0]?.[1] ?? 0,
-        oaiPromptTokens: Object.entries(counts)?.[1]?.[1] ?? 0,
-        oaiBiasTokens: Object.entries(counts)?.[2]?.[1] ?? 0,
-        oaiNudgeTokens: Object.entries(counts)?.[3]?.[1] ?? 0,
-        oaiJailbreakTokens: Object.entries(counts)?.[4]?.[1] ?? 0,
-        oaiImpersonateTokens: Object.entries(counts)?.[5]?.[1] ?? 0,
-        oaiExamplesTokens: Object.entries(counts)?.[6]?.[1] ?? 0,
-        oaiConversationTokens: Object.entries(counts)?.[7]?.[1] ?? 0,
+        oaiStartTokens: (counts?.start + counts?.controlPrompts) || 0,
+        oaiPromptTokens: getSum(counts?.prompt, counts?.charDescription, counts?.charPersonality, counts?.scenario) || 0,
+        oaiBiasTokens: counts?.bias || 0,
+        oaiNudgeTokens: counts?.nudge || 0,
+        oaiJailbreakTokens: counts?.jailbreak || 0,
+        oaiImpersonateTokens: counts?.impersonate || 0,
+        oaiExamplesTokens: (counts?.dialogueExamples + counts?.examples) || 0,
+        oaiConversationTokens: (counts?.conversation + counts?.chatHistory) || 0,
+        oaiNsfwTokens: counts?.nsfw || 0,
+        oaiMainTokens: counts?.main || 0,
         oaiTotalTokens: total,
     });
 }
@@ -3448,25 +3456,25 @@ function appendZeroDepthAnchor(force_name2, zeroDepthAnchor, finalPromt) {
 }
 
 function getMultigenAmount() {
-    let this_amount_gen = parseInt(amount_gen);
+    let this_amount_gen = Number(amount_gen);
 
     if (tokens_already_generated === 0) {
         // if the max gen setting is > 50...(
-        if (parseInt(amount_gen) >= power_user.multigen_first_chunk) {
+        if (Number(amount_gen) >= power_user.multigen_first_chunk) {
             // then only try to make 50 this cycle..
             this_amount_gen = power_user.multigen_first_chunk;
         }
         else {
             // otherwise, make as much as the max amount request.
-            this_amount_gen = parseInt(amount_gen);
+            this_amount_gen = Number(amount_gen);
         }
     }
     // if we already received some generated text...
     else {
         // if the remaining tokens to be made is less than next potential cycle count
-        if (parseInt(amount_gen) - tokens_already_generated < power_user.multigen_next_chunks) {
+        if (Number(amount_gen) - tokens_already_generated < power_user.multigen_next_chunks) {
             // subtract already generated amount from the desired max gen amount
-            this_amount_gen = parseInt(amount_gen) - tokens_already_generated;
+            this_amount_gen = Number(amount_gen) - tokens_already_generated;
         }
         else {
             // otherwise make the standard cycle amount (first 50, and 30 after that)
@@ -3549,17 +3557,21 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         //console.log('-- Counting OAI Tokens');
 
         //var finalPromptTokens = itemizedPrompts[thisPromptSet].oaiTotalTokens;
+        var oaiMainTokens = itemizedPrompts[thisPromptSet].oaiMainTokens;
         var oaiStartTokens = itemizedPrompts[thisPromptSet].oaiStartTokens;
-        var oaiPromptTokens = itemizedPrompts[thisPromptSet].oaiPromptTokens - worldInfoStringTokens - afterScenarioAnchorTokens;
         var ActualChatHistoryTokens = itemizedPrompts[thisPromptSet].oaiConversationTokens;
         var examplesStringTokens = itemizedPrompts[thisPromptSet].oaiExamplesTokens;
+        var oaiPromptTokens = itemizedPrompts[thisPromptSet].oaiPromptTokens - worldInfoStringTokens - afterScenarioAnchorTokens + examplesStringTokens;
         var oaiBiasTokens = itemizedPrompts[thisPromptSet].oaiBiasTokens;
         var oaiJailbreakTokens = itemizedPrompts[thisPromptSet].oaiJailbreakTokens;
         var oaiNudgeTokens = itemizedPrompts[thisPromptSet].oaiNudgeTokens;
         var oaiImpersonateTokens = itemizedPrompts[thisPromptSet].oaiImpersonateTokens;
+        var oaiNsfwTokens = itemizedPrompts[thisPromptSet].oaiNsfwTokens;
         var finalPromptTokens =
             oaiStartTokens +
             oaiPromptTokens +
+            oaiMainTokens +
+            oaiNsfwTokens +
             oaiBiasTokens +
             oaiImpersonateTokens +
             oaiJailbreakTokens +
@@ -3569,8 +3581,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
             //charPersonalityTokens +
             //allAnchorsTokens +
             worldInfoStringTokens +
-            afterScenarioAnchorTokens +
-            examplesStringTokens;
+            afterScenarioAnchorTokens;
         // OAI doesn't use padding
         thisPrompt_padding = 0;
         // Max context size - max completion tokens
@@ -3601,13 +3612,13 @@ function promptItemize(itemizedPrompts, requestedMesId) {
     if (this_main_api == 'openai') {
         //console.log('-- applying % on OAI tokens');
         var oaiStartTokensPercentage = ((oaiStartTokens / (finalPromptTokens)) * 100).toFixed(2);
-        var storyStringTokensPercentage = (((examplesStringTokens + afterScenarioAnchorTokens + oaiPromptTokens) / (finalPromptTokens)) * 100).toFixed(2);
+        var storyStringTokensPercentage = (((afterScenarioAnchorTokens + oaiPromptTokens) / (finalPromptTokens)) * 100).toFixed(2);
         var ActualChatHistoryTokensPercentage = ((ActualChatHistoryTokens / (finalPromptTokens)) * 100).toFixed(2);
         var promptBiasTokensPercentage = ((oaiBiasTokens / (finalPromptTokens)) * 100).toFixed(2);
         var worldInfoStringTokensPercentage = ((worldInfoStringTokens / (finalPromptTokens)) * 100).toFixed(2);
         var allAnchorsTokensPercentage = ((allAnchorsTokens / (finalPromptTokens)) * 100).toFixed(2);
         var selectedTokenizer = `tiktoken (${getTokenizerModel()})`;
-        var oaiSystemTokens = oaiImpersonateTokens + oaiJailbreakTokens + oaiNudgeTokens + oaiStartTokens;
+        var oaiSystemTokens = oaiImpersonateTokens + oaiJailbreakTokens + oaiNudgeTokens + oaiStartTokens + oaiNsfwTokens + oaiMainTokens;
         var oaiSystemTokensPercentage = ((oaiSystemTokens / (finalPromptTokens)) * 100).toFixed(2);
 
     } else {
@@ -3656,6 +3667,8 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         oaiImpersonateTokens,
         oaiPromptTokens,
         oaiBiasTokens,
+        oaiNsfwTokens,
+        oaiMainTokens,
     };
 
     if (this_main_api == 'openai') {
