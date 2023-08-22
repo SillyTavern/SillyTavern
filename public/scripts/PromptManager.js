@@ -664,6 +664,7 @@ PromptManagerModule.prototype.render = function (afterTryGenerate = true) {
                 this.makeDraggable();
                 this.profileEnd('render');
             }).catch(error => {
+                this.profileEnd('filling context');
                 this.log('Error caught during render: ' + error);
                 this.renderPromptManager();
                 this.renderPromptManagerListItems()
