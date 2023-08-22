@@ -1937,34 +1937,24 @@ export function extractMessageBias(message) {
         return null;
     }
 
-    const forbiddenMatches = ['user', 'char', 'time', 'date', 'random', 'idle_duration', 'roll'];
-    const found = [];
-    const rxp = /\{\{([\s\S]+?)\}\}/gm;
-    //const rxp = /{([^}]+)}/g;
-    let curMatch;
+    try {
+        const biasHandlebars = Handlebars.create();
+        const biasMatches = [];
+        biasHandlebars.registerHelper('bias', function (text) {
+            biasMatches.push(text);
+            return '';
+        });
+        const template = biasHandlebars.compile(message);
+        template({});
 
-    while ((curMatch = rxp.exec(message))) {
-        const match = curMatch[1].trim();
-
-        // Ignore random/roll pattern matches
-        if (/^random[ : ].+/i.test(match) || /^roll[ : ].+/i.test(match)) {
-            continue;
+        if (biasMatches && biasMatches.length > 0) {
+            return ` ${biasMatches.join(" ")}`;
         }
 
-        if (forbiddenMatches.includes(match.toLowerCase())) {
-            continue;
-        }
-
-        found.push(match);
+        return '';
+    } catch {
+        return '';
     }
-
-    let biasString = '';
-
-    if (found.length) {
-        biasString = ` ${found.join(" ")}`
-    }
-
-    return biasString;
 }
 
 function cleanGroupMessage(getMessage) {
