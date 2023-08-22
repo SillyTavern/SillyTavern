@@ -2,15 +2,12 @@ esversion: 6
 
 import {
     Generate,
-    this_chid,
     characters,
     online_status,
     main_api,
     api_server,
     api_server_textgenerationwebui,
     is_send_press,
-    getTokenCount,
-    menu_type,
     max_context,
     saveSettingsDebounced,
     active_group,
@@ -35,6 +32,7 @@ import {
 } from "./secrets.js";
 import { debounce, delay, getStringHash, waitUntilCondition } from "./utils.js";
 import { chat_completion_sources, oai_settings } from "./openai.js";
+import { getTokenCount } from "./tokenizers.js";
 
 var RPanelPin = document.getElementById("rm_button_panel_pin");
 var LPanelPin = document.getElementById("lm_button_panel_pin");

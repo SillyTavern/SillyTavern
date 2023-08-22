@@ -1,14 +1,14 @@
 import {
     getRequestHeaders,
     getStoppingStrings,
-    getTextTokens,
     max_context,
     novelai_setting_names,
     saveSettingsDebounced,
     setGenerationParamsFromPreset
 } from "../script.js";
 import { getCfgPrompt } from "./extensions/cfg/util.js";
-import { MAX_CONTEXT_DEFAULT, tokenizers } from "./power-user.js";
+import { MAX_CONTEXT_DEFAULT } from "./power-user.js";
+import { getTextTokens, tokenizers } from "./tokenizers.js";
 import {
     getSortableDelay,
     getStringHash,

@@ -1,10 +1,11 @@
-import { saveSettings, callPopup, substituteParams, getTokenCount, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types } from "../script.js";
+import { saveSettings, callPopup, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types } from "../script.js";
 import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, deepClone, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option } from "./utils.js";
 import { getContext } from "./extensions.js";
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from "./authors-note.js";
 import { registerSlashCommand } from "./slash-commands.js";
 import { deviceInfo } from "./RossAscends-mods.js";
 import { FILTER_TYPES, FilterHelper } from "./filters.js";
+import { getTokenCount } from "./tokenizers.js";
 
 export {
     world_info,

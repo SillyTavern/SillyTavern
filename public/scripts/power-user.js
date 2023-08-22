@@ -23,6 +23,7 @@ import {
 import { loadInstructMode } from "./instruct-mode.js";
 
 import { registerSlashCommand } from "./slash-commands.js";
+import { tokenizers } from "./tokenizers.js";
 
 import { delay } from "./utils.js";
 
@@ -35,7 +36,6 @@ export {
     fixMarkdown,
     power_user,
     pygmalion_options,
-    tokenizers,
     send_on_enter_options,
 };
 
@@ -61,17 +61,6 @@ const pygmalion_options = {
     DISABLED: -1,
     AUTO: 0,
     ENABLED: 1,
-}
-
-const tokenizers = {
-    NONE: 0,
-    GPT3: 1,
-    CLASSIC: 2,
-    LLAMA: 3,
-    NERD: 4,
-    NERD2: 5,
-    API: 6,
-    BEST_MATCH: 99,
 }
 
 const send_on_enter_options = {

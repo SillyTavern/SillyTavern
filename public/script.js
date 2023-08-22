@@ -1,7 +1,5 @@
 import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, } from "./scripts/RossAscends-mods.js";
 import { userStatsHandler, statMesProcess } from './scripts/stats.js';
-import { encode } from "../lib/gpt-2-3-tokenizer/mod.js";
-import { GPT3BrowserTokenizer } from "../lib/gpt-3-tokenizer/gpt3-tokenizer.js";
 import {
     generateKoboldWithStreaming,
     kai_settings,
@@ -65,7 +63,6 @@ import {
     fixMarkdown,
     power_user,
     pygmalion_options,
-    tokenizers,
     persona_description_positions,
     loadMovingUIState,
     getCustomStoppingStrings,
@@ -86,9 +83,7 @@ import {
     oai_settings,
     is_get_status_openai,
     openai_messages_count,
-    getTokenCountOpenAI,
     chat_completion_sources,
-    getTokenizerModel,
     getChatCompletionModel,
 } from "./scripts/openai.js";
 
@@ -172,6 +167,7 @@ import {
     autoSelectInstructPreset,
 } from "./scripts/instruct-mode.js";
 import { applyLocale } from "./scripts/i18n.js";
+import { getTokenCount, getTokenizerModel, saveTokenCache } from "./scripts/tokenizers.js";
 
 //exporting functions and vars for mods
 export {
@@ -208,7 +204,6 @@ export {
     setGenerationProgress,
     updateChatMetadata,
     scrollChatToBottom,
-    getTokenCount,
     isStreamingEnabled,
     getThumbnailUrl,
     getStoppingStrings,
@@ -292,7 +287,6 @@ eventSource.on(event_types.CHAT_CHANGED, setChatLockedPersona);
 eventSource.on(event_types.MESSAGE_RECEIVED, processExtensionHelpers);
 eventSource.on(event_types.MESSAGE_SENT, processExtensionHelpers);
 
-const gpt3 = new GPT3BrowserTokenizer({ type: 'gpt3' });
 hljs.addPlugin({ "before:highlightElement": ({ el }) => { el.textContent = el.innerText } });
 
 // Markdown converter
@@ -535,123 +529,6 @@ async function getClientVersion() {
     }
 }
 
-function getTokenizerBestMatch() {
-    if (main_api === 'novel') {
-        if (nai_settings.model_novel.includes('krake') || nai_settings.model_novel.includes('euterpe')) {
-            return tokenizers.CLASSIC;
-        }
-        if (nai_settings.model_novel.includes('clio')) {
-            return tokenizers.NERD;
-        }
-        if (nai_settings.model_novel.includes('kayra')) {
-            return tokenizers.NERD2;
-        }
-    }
-    if (main_api === 'kobold' || main_api === 'textgenerationwebui' || main_api === 'koboldhorde') {
-        return tokenizers.LLAMA;
-    }
-
-    return power_user.NONE;
-}
-
-/**
- * Gets the token count for a string using the current model tokenizer.
- * @param {string} str String to tokenize
- * @param {number | undefined} padding Optional padding tokens. Defaults to 0.
- * @returns {number} Token count.
- */
-function getTokenCount(str, padding = undefined) {
-    if (typeof str !== 'string' || !str?.length) {
-        return 0;
-    }
-
-    let tokenizerType = power_user.tokenizer;
-
-    if (main_api === 'openai') {
-        if (padding === power_user.token_padding) {
-            // For main "shadow" prompt building
-            tokenizerType = tokenizers.NONE;
-        } else {
-            // For extensions and WI
-            return getTokenCountOpenAI(str);
-        }
-    }
-
-    if (tokenizerType === tokenizers.BEST_MATCH) {
-        tokenizerType = getTokenizerBestMatch();
-    }
-
-    if (padding === undefined) {
-        padding = 0;
-    }
-
-    switch (tokenizerType) {
-        case tokenizers.NONE:
-            return Math.ceil(str.length / CHARACTERS_PER_TOKEN_RATIO) + padding;
-        case tokenizers.GPT3:
-            return gpt3.encode(str).bpe.length + padding;
-        case tokenizers.CLASSIC:
-            return encode(str).length + padding;
-        case tokenizers.LLAMA:
-            return countTokensRemote('/tokenize_llama', str, padding);
-        case tokenizers.NERD:
-            return countTokensRemote('/tokenize_nerdstash', str, padding);
-        case tokenizers.NERD2:
-            return countTokensRemote('/tokenize_nerdstash_v2', str, padding);
-        case tokenizers.API:
-            return countTokensRemote('/tokenize_via_api', str, padding);
-        default:
-            console.warn("Unknown tokenizer type", tokenizerType);
-            return Math.ceil(str.length / CHARACTERS_PER_TOKEN_RATIO) + padding;
-    }
-}
-
-function countTokensRemote(endpoint, str, padding) {
-    let tokenCount = 0;
-    jQuery.ajax({
-        async: false,
-        type: 'POST',
-        url: endpoint,
-        data: JSON.stringify({ text: str }),
-        dataType: "json",
-        contentType: "application/json",
-        success: function (data) {
-            tokenCount = data.count;
-        }
-    });
-    return tokenCount + padding;
-}
-
-function getTextTokensRemote(endpoint, str) {
-    let ids = [];
-    jQuery.ajax({
-        async: false,
-        type: 'POST',
-        url: endpoint,
-        data: JSON.stringify({ text: str }),
-        dataType: "json",
-        contentType: "application/json",
-        success: function (data) {
-            ids = data.ids;
-        }
-    });
-    return ids;
-}
-
-export function getTextTokens(tokenizerType, str) {
-    switch (tokenizerType) {
-        case tokenizers.LLAMA:
-            return getTextTokensRemote('/tokenize_llama', str);
-        case tokenizers.NERD:
-            return getTextTokensRemote('/tokenize_nerdstash', str);
-        case tokenizers.NERD2:
-            return getTextTokensRemote('/tokenize_nerdstash_v2', str);
-        default:
-            console.warn("Calling getTextTokens with unsupported tokenizer type", tokenizerType);
-            return [];
-    }
-}
-
 function reloadMarkdownProcessor(render_formulas = false) {
     if (render_formulas) {
         converter = new showdown.Converter({
@@ -699,7 +576,6 @@ function getCurrentChatId() {
     }
 }
 
-export const CHARACTERS_PER_TOKEN_RATIO = 3.35;
 const talkativeness_default = 0.5;
 
 var is_advanced_char_open = false;
@@ -6132,6 +6008,9 @@ export async function saveChatConditional() {
     else {
         await saveChat();
     }
+
+    // Save token cache to IndexedDB storage
+    await saveTokenCache();
 }
 
 async function importCharacterChat(formData) {

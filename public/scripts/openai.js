@@ -48,10 +48,10 @@ import {
     delay,
     download,
     getFileText, getSortableDelay,
-    getStringHash,
     parseJsonFile,
     stringFormat,
 } from "./utils.js";
+import { countTokensOpenAI } from "./tokenizers.js";
 
 export {
     is_get_status_openai,
@@ -67,7 +67,6 @@ export {
     sendOpenAIRequest,
     setOpenAIOnlineStatus,
     getChatCompletionModel,
-    countTokens,
     TokenHandler,
     IdentifierNotFoundError,
     Message,
@@ -124,40 +123,6 @@ const openrouter_website_model = 'OR_Website';
 
 let biasCache = undefined;
 let model_list = [];
-const objectStore = new localforage.createInstance({ name: "SillyTavern_ChatCompletions" });
-
-let tokenCache = {};
-
-async function loadTokenCache() {
-    try {
-        console.debug('Chat Completions: loading token cache')
-        tokenCache = await objectStore.getItem('tokenCache') || {};
-    } catch (e) {
-        console.log('Chat Completions: unable to load token cache, using default value', e);
-        tokenCache = {};
-    }
-}
-
-async function saveTokenCache() {
-    try {
-        console.debug('Chat Completions: saving token cache')
-        await objectStore.setItem('tokenCache', tokenCache);
-    } catch (e) {
-        console.log('Chat Completions: unable to save token cache', e);
-    }
-}
-
-async function resetTokenCache() {
-    try {
-        console.debug('Chat Completions: resetting token cache');
-        Object.keys(tokenCache).forEach(key => delete tokenCache[key]);
-        await objectStore.removeItem('tokenCache');
-    } catch (e) {
-        console.log('Chat Completions: unable to reset token cache', e);
-    }
-}
-
-window['resetTokenCache'] = resetTokenCache;
 
 export const chat_completion_sources = {
     OPENAI: 'openai',
@@ -268,10 +233,6 @@ const oai_settings = {
 let openai_setting_names;
 let openai_settings;
 
-export function getTokenCountOpenAI(text) {
-    const message = { role: 'system', content: text };
-    return countTokens(message, true);
-}
 
 let promptManager = null;
 
@@ -871,8 +832,6 @@ function prepareOpenAIMessages({
 
     const chat = chatCompletion.getChat();
     openai_messages_count = chat.filter(x => x?.role === "user" || x?.role === "assistant")?.length || 0;
-    // Save token cache to IndexedDB storage (async, no need to await)
-    saveTokenCache();
 
     return [chat, promptManager.tokenHandler.counts];
 }
@@ -1410,68 +1369,8 @@ class TokenHandler {
     }
 }
 
-function countTokens(messages, full = false) {
-    let shouldTokenizeAI21 = oai_settings.chat_completion_source === chat_completion_sources.AI21 && oai_settings.use_ai21_tokenizer;
-    let chatId = 'undefined';
 
-    try {
-        if (selected_group) {
-            chatId = groups.find(x => x.id == selected_group)?.chat_id;
-        }
-        else if (this_chid) {
-            chatId = characters[this_chid].chat;
-        }
-    } catch {
-        console.log('No character / group selected. Using default cache item');
-    }
-
-    if (typeof tokenCache[chatId] !== 'object') {
-        tokenCache[chatId] = {};
-    }
-
-    if (!Array.isArray(messages)) {
-        messages = [messages];
-    }
-
-    let token_count = -1;
-
-    for (const message of messages) {
-        const model = getTokenizerModel();
-
-        if (model === 'claude' || shouldTokenizeAI21) {
-            full = true;
-        }
-
-        const hash = getStringHash(JSON.stringify(message));
-        const cacheKey = `${model}-${hash}`;
-        const cachedCount = tokenCache[chatId][cacheKey];
-
-        if (typeof cachedCount === 'number') {
-            token_count += cachedCount;
-        }
-
-        else {
-            jQuery.ajax({
-                async: false,
-                type: 'POST', //
-                url: shouldTokenizeAI21 ? '/tokenize_ai21' : `/tokenize_openai?model=${model}`,
-                data: JSON.stringify([message]),
-                dataType: "json",
-                contentType: "application/json",
-                success: function (data) {
-                    token_count += Number(data.token_count);
-                    tokenCache[chatId][cacheKey] = Number(data.token_count);
-                }
-            });
-        }
-    }
-
-    if (!full) token_count -= 2;
-
-    return token_count;
-}
-
-const tokenHandler = new TokenHandler(countTokens);
+const tokenHandler = new TokenHandler(countTokensOpenAI);
 
 // Thrown by ChatCompletion when a requested prompt couldn't be found.
 class IdentifierNotFoundError extends Error {
@@ -1906,62 +1805,6 @@ class ChatCompletion {
         }
         return index;
     }
-}
-
-export function getTokenizerModel() {
-    // OpenAI models always provide their own tokenizer
-    if (oai_settings.chat_completion_source == chat_completion_sources.OPENAI) {
-        return oai_settings.openai_model;
-    }
-
-    const turboTokenizer = 'gpt-3.5-turbo';
-    const gpt4Tokenizer = 'gpt-4';
-    const gpt2Tokenizer = 'gpt2';
-    const claudeTokenizer = 'claude';
-
-    // Assuming no one would use it for different models.. right?
-    if (oai_settings.chat_completion_source == chat_completion_sources.SCALE) {
-        return gpt4Tokenizer;
-    }
-
-    // Select correct tokenizer for WindowAI proxies
-    if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI && oai_settings.windowai_model) {
-        if (oai_settings.windowai_model.includes('gpt-4')) {
-            return gpt4Tokenizer;
-        }
-        else if (oai_settings.windowai_model.includes('gpt-3.5-turbo')) {
-            return turboTokenizer;
-        }
-        else if (oai_settings.windowai_model.includes('claude')) {
-            return claudeTokenizer;
-        }
-        else if (oai_settings.windowai_model.includes('GPT-NeoXT')) {
-            return gpt2Tokenizer;
-        }
-    }
-
-    // And for OpenRouter (if not a site model, then it's impossible to determine the tokenizer)
-    if (oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER && oai_settings.openrouter_model) {
-        if (oai_settings.openrouter_model.includes('gpt-4')) {
-            return gpt4Tokenizer;
-        }
-        else if (oai_settings.openrouter_model.includes('gpt-3.5-turbo')) {
-            return turboTokenizer;
-        }
-        else if (oai_settings.openrouter_model.includes('claude')) {
-            return claudeTokenizer;
-        }
-        else if (oai_settings.openrouter_model.includes('GPT-NeoXT')) {
-            return gpt2Tokenizer;
-        }
-    }
-
-    if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
-        return claudeTokenizer;
-    }
-
-    // Default to Turbo 3.5
-    return turboTokenizer;
 }
 
 function loadOpenAISettings(data, settings) {
@@ -3036,8 +2879,6 @@ function updateScaleForm() {
 }
 
 $(document).ready(async function () {
-    await loadTokenCache();
-
     $('#test_api_button').on('click', testApiConnection);
 
     $('#scale-alt').on('change', function () {

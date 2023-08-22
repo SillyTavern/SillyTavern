@@ -21,7 +21,8 @@
             "showdown-katex",
             "droll",
             "handlebars",
-            "highlight.js"
+            "highlight.js",
+            "localforage"
         ]
     }
 }
