@@ -63,42 +63,8 @@
 
     <link rel="stylesheet" href="css/bg_load.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
-    <script>
-        function applyLocale() {
-            const overrideLanguage = localStorage.getItem("language");
-            var language = overrideLanguage || navigator.language || navigator.userLanguage;
-            language = language.toLowerCase();
-            console.log(language)
-            //load the appropriate language file
-            $.getJSON("i18n.json", function (data) {
-                console.log(data)
-                if (data.lang.indexOf(language) < 0) language = "en";
-                console.log(language)
-                //find all the elements with `data-i18n` attribute
-                $("[data-i18n]").each(function () {
-                    //read the translation from the language data
-                    const keys = $(this).data("i18n").split(';'); // Multi-key entries are ; delimited
-                    for (const key of keys) {
-                        const attrmatch = key.match(/\[(\S+)\](.+)/); // [attribute]key
-                        if (attrmatch) { // attribute-tagged key
-                            const locval = data?.[language]?.[attrmatch[2]];
-                            if (locval) {
-                                $(this).attr(attrmatch[1], locval);
-                            }
-                        } else { // No attribute tag, treat as 'text'
-                            const locval = data?.[language]?.[key];
-                            if (locval) {
-                                $(this).text(locval);
-                            }
-                        }
-                    }
-                });
-            });
-        }
-        $(document).ready(applyLocale);
-        window["applyLocale"] = applyLocale;
-    </script>
-    <script type=module src="script.js"></script>
+    <script type="module" src="scripts/i18n.js"></script>
+    <script type="module" src="script.js"></script>
 
     <script type="module" src="scripts/world-info.js"></script>
     <script type="module" src="scripts/group-chats.js"></script>

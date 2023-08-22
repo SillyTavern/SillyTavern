@@ -33,7 +33,7 @@ import {
     SECRET_KEYS,
     secret_state,
 } from "./secrets.js";
-import { debounce, delay, getStringHash } from "./utils.js";
+import { debounce, delay, getStringHash, waitUntilCondition } from "./utils.js";
 import { chat_completion_sources, oai_settings } from "./openai.js";
 
 var NavToggle = document.getElementById("nav-toggle");
@@ -717,7 +717,12 @@ export async function initMovingUI() {
 
 // ---------------------------------------------------
 
-$("document").ready(function () {
+jQuery(async function () {
+    try {
+        await waitUntilCondition(() => online_status !== undefined, 1000, 10);
+    } catch {
+        console.log('Timeout waiting for online_status');
+    }
 
     // initial status check
     setTimeout(() => {

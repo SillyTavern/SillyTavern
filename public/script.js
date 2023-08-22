@@ -170,6 +170,7 @@ import {
     getInstructStoppingSequences,
     autoSelectInstructPreset,
 } from "./scripts/instruct-mode.js";
+import { applyLocale } from "./scripts/i18n.js";
 
 //exporting functions and vars for mods
 export {
@@ -240,6 +241,14 @@ export {
     mesForShowdownParse,
     printCharacters,
 }
+
+// Allow target="_blank" in links
+DOMPurify.addHook('afterSanitizeAttributes', function (node) {
+    if ('target' in node) {
+        node.setAttribute('target', '_blank');
+        node.setAttribute('rel', 'noopener');
+    }
+});
 
 // API OBJECT FOR EXTERNAL WIRING
 window["SillyTavern"] = {};
@@ -357,186 +366,102 @@ const extension_prompt_types = {
     IN_CHAT: 1
 };
 
-const system_messages = {
-    help: {
-        name: systemUserName,
-        force_avatar: system_avatar,
-        is_user: false,
-        is_system: true,
-        is_name: true,
-        mes:
-            `Hello there! Please select the help topic you would like to learn more about:
-            <ul>
-            <li><a href="#" data-displayHelp="1">Slash Commands</a> (or <tt>/help slash</tt>)</li>
-            <li><a href="#" data-displayHelp="2">Formatting</a> (or <tt>/help format</tt>)</li>
-            <li><a href="#" data-displayHelp="3">Hotkeys</a> (or <tt>/help hotkeys</tt>)</li>
-            <li><a href="#" data-displayHelp="4">{{Macros}}</a> (or <tt>/help macros</tt>)</li>
-            </ul>
-            <br><b>Still got questions left? The <a target="_blank" href="https://docs.sillytavern.app/">Official SillyTavern Documentation Website</a> has much more information!</b>`
-    },
-    slash_commands: {
-        name: systemUserName,
-        force_avatar: system_avatar,
-        is_user: false,
-        is_system: true,
-        is_name: true,
-        mes: '',
-    },
-    hotkeys: {
-        name: systemUserName,
-        force_avatar: system_avatar,
-        is_user: false,
-        is_system: true,
-        is_name: true,
-        mes:
-            `Hotkeys/Keybinds:
-            <ul>
-            <li><tt>Up</tt> = Edit last message in chat</li>
-            <li><tt>Ctrl+Up</tt> = Edit last USER message in chat</li>
-            <li><tt>Left</tt> = swipe left</li>
-            <li><tt>Right</tt> = swipe right (NOTE: swipe hotkeys are disabled when chatbar has something typed into it)</li>
-            <li><tt>Ctrl+Left</tt> = view locally stored variables (in the browser console window)</li>
-            <li><tt>Enter</tt> (with chat bar selected) = send your message to AI</li>
-            <li><tt>Ctrl+Enter</tt> = Regenerate the last AI response</li>
-            <li><tt>Escape</tt> = stop AI response generation</li>
-            <li><tt>Ctrl+Shift+Up</tt> = Scroll to context line</li>
-            <li><tt>Ctrl+Shift+Down</tt> = Scroll chat to bottom</li>
-            </ul>`
-    },
-    formatting: {
-        name: systemUserName,
-        force_avatar: system_avatar,
-        is_user: false,
-        is_system: true,
-        is_name: true,
-        mes:
-            `Text formatting commands:
-            <ul>
-            <li><tt>*text*</tt> - displays as <i>italics</i></li>
-            <li><tt>**text**</tt> - displays as <b>bold</b></li>
-            <li><tt>***text***</tt> - displays as <b><i>bold italics</i></b></li>
-            <li><tt>` + "```" + `text` + "```" + `</tt> - displays as a code block (new lines allowed between the backticks)</li>
-            <pre>
-<code>
-like
-this
-</code>
-            </pre>
-            <li><tt>` + "`" + `text` + "`" + `</tt> - displays as <code>inline code</code></li>
-            <li><tt>` + "> " + `text` + `</tt> - displays as a blockquote (note the space after >)</li>
-            <blockquote>like this</blockquote>
-            <li><tt>` + "# " + `text` + `</tt> - displays as a large header (note the space)</li>
-            <h1>like this</h1>
-            <li><tt>` + "## " + `text` + `</tt> - displays as a medium header (note the space)</li>
-            <h2>like this</h2>
-            <li><tt>` + "### " + `text` + `</tt> - displays as a small header (note the space)</li>
-            <h3>like this</h3>
-            <li><tt>$$ text $$</tt> - renders a LaTeX formula (if enabled)</li>
-            <li><tt>$ text $</tt> - renders an AsciiMath formula (if enabled)</li>
-            </ul>`
-    },
-    macros: {
-        name: systemUserName,
-        force_avatar: system_avatar,
-        is_user: false,
-        is_system: true,
-        is_name: true,
-        mes:
-            `System-wide Replacement Macros:
-            <ul>
-            <li><tt>{​{user}​}</tt> - your current Persona username</li>
-            <li><tt>{​{char}​}</tt> - the Character's name</li>
-            <li><tt>{​{input}​}</tt> - the user input</li>
-            <li><tt>{​{time}​}</tt> - the current time</li>
-            <li><tt>{​{date}​}</tt> - the current date</li>
-            <li><tt>{{idle_duration}}</tt> - the time since the last user message was sent</li>
-            <li><tt>{{random:(args)}}</tt> - returns a random item from the list. (ex: {{random:1,2,3,4}} will return 1 of the 4 numbers at random. Works with text lists too.</li>
-            <li><tt>{{roll:(formula)}}</tt> - rolls a dice. (ex: {{roll:1d6}} will roll a 6-sided dice and return a number between 1 and 6)</li>
-            </ul>`
-    },
-    welcome:
-    {
-        name: systemUserName,
-        force_avatar: system_avatar,
-        is_user: false,
-        is_system: true,
-        is_name: true,
-        mes: [
-            '<h3><span id="version_display_welcome">SillyTavern</span><div id="version_display_welcome"></div></h3>',
-            "<a href='https://docs.sillytavern.app/usage/update/' target='_blank'>Want to update?</a>",
-            '<hr>',
-            '<h3>How to start chatting?</h3>',
-            '<ol>',
-            '<li>Click <code><i class="fa-solid fa-plug"></i></code> and select a <a href="https://docs.sillytavern.app/usage/api-connections/" target_"blank">Chat API</a>.</li>',
-            '<li>Click <code><i class="fa-solid fa-address-card"></i></code> and pick a character</li>',
-            '</ol>',
-            '<hr>',
-            '<h3>Want more characters?</h3>',
-            '<i>Not controlled by SillyTavern team.</i>',
-            '<ul>',
-            '<li><a target="_blank" href="https://discord.gg/pygmalionai">Pygmalion AI Discord</a></li>',
-            '<li><a target="_blank" href="https://chub.ai/">Chub (NSFW)</a></li>',
-            '</ul>',
-            '<hr>',
-            '<h3>Confused or lost?</h3>',
-            '<ul>',
-            '<li><span class="note-link-span">?</span> - click these icons!</li>',
-            '<li>Enter <code>/?</code> in the chat bar</li>',
-            '<li><a target="_blank" href="https://docs.sillytavern.app/">SillyTavern Documentation Site</a></li>',
-            '<li><a target="_blank" href="https://docs.sillytavern.app/extras/installation/">Extras Installation Guide</a></li>',
+let system_messages = {};
 
-            '</ul>',
-
-            '<hr>',
-            '<h3>Still have questions?</h3 > ',
-            '<ul>',
-            '<li><a target="_blank" href="https://discord.gg/RZdyAEUPvj">Join the SillyTavern Discord</a></li>',
-            '<li><a target="_blank" href="https://github.com/SillyTavern/SillyTavern/issues">Post a GitHub issue</a></li>',
-            '<li><a target="_blank" href="https://github.com/SillyTavern/SillyTavern#questions-or-suggestions">Contact the developers</a></li>',
-        ].join('')
-    },
-    group: {
-        name: systemUserName,
-        force_avatar: system_avatar,
-        is_user: false,
-        is_system: true,
-        is_name: true,
-        is_group: true,
-        mes: "Group chat created. Say 'Hi' to lovely people!",
-    },
-    empty: {
-        name: systemUserName,
-        force_avatar: system_avatar,
-        is_user: false,
-        is_system: true,
-        is_name: true,
-        mes: "No one hears you. <b>Hint&#58;</b> add more members to the group!",
-    },
-    generic: {
-        name: systemUserName,
-        force_avatar: system_avatar,
-        is_user: false,
-        is_system: true,
-        is_name: true,
-        mes: "Generic system message. User `text` parameter to override the contents",
-    },
-    bookmark_created: {
-        name: systemUserName,
-        force_avatar: system_avatar,
-        is_user: false,
-        is_system: true,
-        is_name: true,
-        mes: `Bookmark created! Click here to open the bookmark chat: <a class="bookmark_link" file_name="{0}" href="javascript:void(null);">{1}</a>`,
-    },
-    bookmark_back: {
-        name: systemUserName,
-        force_avatar: system_avatar,
-        is_user: false,
-        is_system: true,
-        is_name: true,
-        mes: `Click here to return to the previous chat: <a class="bookmark_link" file_name="{0}" href="javascript:void(null);">Return</a>`,
-    },
-};
+function getSystemMessages() {
+    system_messages = {
+        help: {
+            name: systemUserName,
+            force_avatar: system_avatar,
+            is_user: false,
+            is_system: true,
+            is_name: true,
+            mes: renderTemplate("help"),
+        },
+        slash_commands: {
+            name: systemUserName,
+            force_avatar: system_avatar,
+            is_user: false,
+            is_system: true,
+            is_name: true,
+            mes: '',
+        },
+        hotkeys: {
+            name: systemUserName,
+            force_avatar: system_avatar,
+            is_user: false,
+            is_system: true,
+            is_name: true,
+            mes: renderTemplate("hotkeys"),
+        },
+        formatting: {
+            name: systemUserName,
+            force_avatar: system_avatar,
+            is_user: false,
+            is_system: true,
+            is_name: true,
+            mes: renderTemplate("formatting"),
+        },
+        macros: {
+            name: systemUserName,
+            force_avatar: system_avatar,
+            is_user: false,
+            is_system: true,
+            is_name: true,
+            mes: renderTemplate("macros"),
+        },
+        welcome:
+        {
+            name: systemUserName,
+            force_avatar: system_avatar,
+            is_user: false,
+            is_system: true,
+            is_name: true,
+            mes: renderTemplate("welcome"),
+        },
+        group: {
+            name: systemUserName,
+            force_avatar: system_avatar,
+            is_user: false,
+            is_system: true,
+            is_name: true,
+            is_group: true,
+            mes: "Group chat created. Say 'Hi' to lovely people!",
+        },
+        empty: {
+            name: systemUserName,
+            force_avatar: system_avatar,
+            is_user: false,
+            is_system: true,
+            is_name: true,
+            mes: "No one hears you. <b>Hint&#58;</b> add more members to the group!",
+        },
+        generic: {
+            name: systemUserName,
+            force_avatar: system_avatar,
+            is_user: false,
+            is_system: true,
+            is_name: true,
+            mes: "Generic system message. User `text` parameter to override the contents",
+        },
+        bookmark_created: {
+            name: systemUserName,
+            force_avatar: system_avatar,
+            is_user: false,
+            is_system: true,
+            is_name: true,
+            mes: `Bookmark created! Click here to open the bookmark chat: <a class="bookmark_link" file_name="{0}" href="javascript:void(null);">{1}</a>`,
+        },
+        bookmark_back: {
+            name: systemUserName,
+            force_avatar: system_avatar,
+            is_user: false,
+            is_system: true,
+            is_name: true,
+            mes: `Click here to return to the previous chat: <a class="bookmark_link" file_name="{0}" href="javascript:void(null);">Return</a>`,
+        },
+    };
+}
 
 // Register configuration migrations
 registerPromptManagerMigration();
@@ -550,6 +475,36 @@ $(document).ajaxError(function myErrorHandler(_, xhr) {
         );
     }
 });
+
+function getUrlSync(url, cache = true) {
+    return $.ajax({
+        type: "GET",
+        url: url,
+        cache: cache,
+        async: false
+    }).responseText;
+}
+
+function renderTemplate(templateId, templateData = {}, sanitize = true, localize = true) {
+    try {
+        const templateContent = getUrlSync(`/scripts/templates/${templateId}.html`);
+        const template = Handlebars.compile(templateContent);
+        let result = template(templateData);
+
+        if (sanitize) {
+            result = DOMPurify.sanitize(result);
+        }
+
+        if (localize) {
+            result = applyLocale(result);
+        }
+
+        return result;
+    } catch (err) {
+        console.error("Error rendering template", templateId, templateData, err);
+        toastr.error("Check the DevTools console for more information.", "Error rendering template");
+    }
+}
 
 async function getClientVersion() {
     try {
@@ -837,6 +792,7 @@ $.ajaxPrefilter((options, originalOptions, xhr) => {
 ///// initialization protocol ////////
 $.get("/csrf-token").then(async (data) => {
     token = data.token;
+    getSystemMessages();
     sendSystemMessage(system_message_types.WELCOME);
     await readSecretState();
     await getClientVersion();
@@ -1398,17 +1354,6 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
     if (!power_user.allow_name2_display && ch_name && !isUser && !isSystem) {
         mes = mes.replace(new RegExp(`(^|\n)${ch_name}:`, 'g'), "$1");
     }
-
-    //function to hide any <tags> from AI response output
-    /*  if (power_user.removeXML && ch_name && !isUser && !isSystem) {
-         //console.log('incoming mes')
-         //console.log(mes)
-         mes = mes.replaceAll(/&lt;/g, "<");
-         mes = mes.replaceAll(/&gt;/g, ">");
-         mes = mes.replaceAll(/<<[^>>]+>>/g, "");
-         //console.log('mes after removed <tags>')
-         //console.log(mes)
-     } */
 
     mes = DOMPurify.sanitize(mes);
 
