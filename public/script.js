@@ -2975,8 +2975,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             // Get the negative prompt first since it has the unmodified mesSend array
             let negativePrompt = main_api == 'textgenerationwebui' ? getCombinedPrompt(true) : undefined;
             let finalPromt = getCombinedPrompt(false);
+
+            // Include the entire guidance scale object
             const cfgValues = {
-                guidanceScale: cfgGuidanceScale?.value,
+                guidanceScale: cfgGuidanceScale,
                 negativePrompt: negativePrompt
             };
 

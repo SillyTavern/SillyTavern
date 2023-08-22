@@ -396,7 +396,7 @@ function getBadWordPermutations(text) {
 }
 
 export function getNovelGenerationData(finalPrompt, this_settings, this_amount_gen, isImpersonate, cfgValues) {
-    if (cfgValues.guidanceScale && cfgValues.guidanceScale !== 1) {
+    if (cfgValues.guidanceScale && cfgValues.guidanceScale?.value !== 1) {
         cfgValues.negativePrompt = (getCfgPrompt(cfgValues.guidanceScale, true))?.value;
     }
 
@@ -440,7 +440,7 @@ export function getNovelGenerationData(finalPrompt, this_settings, this_amount_g
         "typical_p": parseFloat(nai_settings.typical_p),
         "mirostat_lr": parseFloat(nai_settings.mirostat_lr),
         "mirostat_tau": parseFloat(nai_settings.mirostat_tau),
-        "cfg_scale": cfgValues?.guidanceScale ?? parseFloat(nai_settings.cfg_scale),
+        "cfg_scale": cfgValues?.guidanceScale?.value ?? parseFloat(nai_settings.cfg_scale),
         "cfg_uc": cfgValues?.negativePrompt ?? nai_settings.cfg_uc ?? "",
         "phrase_rep_pen": nai_settings.phrase_rep_pen,
         "stop_sequences": stopSequences,

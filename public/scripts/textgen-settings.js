@@ -251,7 +251,7 @@ export function getTextGenGenerationData(finalPromt, this_amount_gen, isImperson
         'penalty_alpha': textgenerationwebui_settings.penalty_alpha,
         'length_penalty': textgenerationwebui_settings.length_penalty,
         'early_stopping': textgenerationwebui_settings.early_stopping,
-        'guidance_scale': isImpersonate ? 1 : cfgValues?.guidanceScale ?? textgenerationwebui_settings.guidance_scale ?? 1,
+        'guidance_scale': isImpersonate ? 1 : cfgValues?.guidanceScale?.value ?? textgenerationwebui_settings.guidance_scale ?? 1,
         'negative_prompt': isImpersonate ? '' : cfgValues?.negativePrompt ?? textgenerationwebui_settings.negative_prompt ?? '',
         'seed': textgenerationwebui_settings.seed,
         'add_bos_token': textgenerationwebui_settings.add_bos_token,
