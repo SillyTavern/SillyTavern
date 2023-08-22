@@ -2318,7 +2318,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     const magName = isImpersonate ? (is_pygmalion ? 'You' : name1) : name2;
 
     if (isInstruct) {
-        message_already_generated = formatInstructModePrompt(magName, isImpersonate, false, name1, name2);
+        message_already_generated = formatInstructModePrompt(magName, isImpersonate, '', name1, name2);
     } else {
         message_already_generated = `${magName}: `;
     }
@@ -4743,7 +4743,7 @@ function onPersonaDescriptionPositionInput() {
 }
 
 function onPersonaDescriptionInput() {
-    power_user.persona_description = $("#persona_description").val();
+    power_user.persona_description = String($("#persona_description").val());
 
     if (power_user.personas[user_avatar]) {
         let object = power_user.persona_descriptions[user_avatar];
@@ -7397,7 +7397,7 @@ $(document).ready(function () {
     $(document).on('click', '.swipe_left', swipe_left);
 
     $("#character_search_bar").on("input", function () {
-        const searchValue = $(this).val().toLowerCase();
+        const searchValue = String($(this).val()).toLowerCase();
         entitiesFilter.setFilterData(FILTER_TYPES.SEARCH, searchValue);
     });
 
@@ -7465,7 +7465,7 @@ $(document).ready(function () {
             $(this).parent().css("background", css_mes_bg);
         });
         $(this).css("background", "#600"); //sets the bg of the mes selected for deletion
-        var i = $(this).attr("mesid"); //checks the message ID in the chat
+        var i = Number($(this).attr("mesid")); //checks the message ID in the chat
         this_del_mes = i;
         while (i < chat.length) {
             //as long as the current message ID is less than the total chat length
@@ -7899,7 +7899,7 @@ $(document).ready(function () {
     $("#api_button").click(function (e) {
         e.stopPropagation();
         if ($("#api_url_text").val() != "") {
-            let value = formatKoboldUrl($.trim($("#api_url_text").val()));
+            let value = formatKoboldUrl(String($("#api_url_text").val()).trim());
 
             if (!value) {
                 toastr.error('Please enter a valid URL.');
@@ -7933,13 +7933,13 @@ $(document).ready(function () {
         e.stopPropagation();
         const url_source = api_use_mancer_webui ? "#mancer_api_url_text" : "#textgenerationwebui_api_url_text";
         if ($(url_source).val() != "") {
-            let value = formatTextGenURL($(url_source).val().trim(), api_use_mancer_webui);
+            let value = formatTextGenURL(String($(url_source).val()).trim(), api_use_mancer_webui);
             if (!value) {
                 callPopup("Please enter a valid URL.<br/>WebUI URLs should end with <tt>/api</tt><br/>Enable 'Relaxed API URLs' to allow other paths.", 'text');
                 return;
             }
 
-            const mancer_key = $("#api_key_mancer").val().trim();
+            const mancer_key = String($("#api_key_mancer").val()).trim();
             if (mancer_key.length) {
                 await writeSecret(SECRET_KEYS.MANCER, mancer_key);
             }
@@ -8194,8 +8194,8 @@ $(document).ready(function () {
 
         const preset = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
         loadNovelPreset(preset);
-        amount_gen = parseInt($("#amount_gen").val());
-        max_context = parseInt($("#max_context").val());
+        amount_gen = Number($("#amount_gen").val());
+        max_context = Number($("#max_context").val());
 
         saveSettingsDebounced();
     });
@@ -8572,7 +8572,7 @@ $(document).ready(function () {
 
     $("#api_button_novel").on('click', async function (e) {
         e.stopPropagation();
-        const api_key_novel = $("#api_key_novel").val().trim();
+        const api_key_novel = String($("#api_key_novel").val()).trim();
 
         if (api_key_novel.length) {
             await writeSecret(SECRET_KEYS.NOVEL, api_key_novel);
@@ -8922,7 +8922,7 @@ $(document).ready(function () {
     });
 
     $("#bg-filter").on("input", function () {
-        const filterValue = $(this).val().toLowerCase();
+        const filterValue = String($(this).val()).toLowerCase();
         $("#bg_menu_content > div").each(function () {
             const $bgContent = $(this);
             if ($bgContent.attr("title").toLowerCase().includes(filterValue)) {

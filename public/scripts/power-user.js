@@ -911,7 +911,7 @@ function loadContextSettings() {
     });
 
     $('#context_presets').on('change', function () {
-        const name = $(this).find(':selected').val();
+        const name = String($(this).find(':selected').val());
         const preset = context_presets.find(x => x.name === name);
 
         if (!preset) {
@@ -1032,6 +1032,10 @@ const compareFunc = (first, second) => {
     }
 };
 
+/**
+ * Sorts an array of entities based on the current sort settings
+ * @param {any[]} entities An array of objects with an `item` property
+ */
 function sortEntitiesList(entities) {
     if (power_user.sort_field == undefined || entities.length === 0) {
         return;
@@ -1039,6 +1043,7 @@ function sortEntitiesList(entities) {
 
     entities.sort((a, b) => sortFunc(a.item, b.item));
 }
+
 async function saveTheme() {
     const name = await callPopup('Enter a theme preset name:', 'input');
 
@@ -1262,8 +1267,8 @@ async function doDelMode(_, text) {
     if (text) {
         await delay(300) //same as above, need event signal for 'entered del mode'
         console.debug('parsing msgs to del')
-        let numMesToDel = Number(text).toFixed(0)
-        let lastMesID = $('.last_mes').attr('mesid')
+        let numMesToDel = Number(text);
+        let lastMesID = Number($('.last_mes').attr('mesid'));
         let oldestMesIDToDel = lastMesID - numMesToDel + 1;
 
         //disallow targeting first message
@@ -1340,10 +1345,6 @@ function setAvgBG() {
             $("#user-mes-blur-tint-color-picker").attr('color', 'rgb(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ')');
         } */
 
-
-
-
-
     function getAverageRGB(imgEl) {
 
         var blockSize = 5, // only visit every 5 pixels
@@ -1388,6 +1389,13 @@ function setAvgBG() {
 
     }
 
+    /**
+     * Converts an HSL color value to RGB.
+     * @param {number} h Hue value
+     * @param {number} s Saturation value
+     * @param {number} l Luminance value
+     * @return {Array} The RGB representation
+     */
     function hslToRgb(h, s, l) {
         const hueToRgb = (p, q, t) => {
             if (t < 0) t += 1;
@@ -1429,7 +1437,7 @@ function setAvgBG() {
 
         console.log(`rLum ${rLuminance}, gLum ${gLuminance}, bLum ${bLuminance}`)
 
-        return 0.2126 * rLuminance + 0.7152 * gLuminance + 0.0722 * bLuminance;
+        return 0.2126 * Number(rLuminance) + 0.7152 * Number(gLuminance) + 0.0722 * Number(bLuminance);
     }
 
     //this version keeps BG and main text in same hue
@@ -1612,13 +1620,13 @@ $(document).ready(() => {
     });
 
     $("#markdown_escape_strings").on('input', function () {
-        power_user.markdown_escape_strings = $(this).val();
+        power_user.markdown_escape_strings = String($(this).val());
         saveSettingsDebounced();
         reloadMarkdownProcessor(power_user.render_formulas);
     });
 
     $("#start_reply_with").on('input', function () {
-        power_user.user_prompt_bias = $(this).val();
+        power_user.user_prompt_bias = String($(this).val());
         saveSettingsDebounced();
     });
 
@@ -1745,7 +1753,7 @@ $(document).ready(() => {
     });
 
     $("#themes").on('change', function () {
-        const themeSelected = $(this).find(':selected').val();
+        const themeSelected = String($(this).find(':selected').val());
         power_user.theme = themeSelected;
         applyTheme(themeSelected);
         saveSettingsDebounced();
@@ -1753,7 +1761,7 @@ $(document).ready(() => {
 
     $("#movingUIPresets").on('change', async function () {
         console.log('saw MUI preset change')
-        const movingUIPresetSelected = $(this).find(':selected').val();
+        const movingUIPresetSelected = String($(this).find(':selected').val());
         power_user.movingUIPreset = movingUIPresetSelected;
         applyMovingUIPreset(movingUIPresetSelected);
         saveSettingsDebounced();
@@ -1813,7 +1821,7 @@ $(document).ready(() => {
     });
 
     $('#auto_swipe_blacklist').on('input', function () {
-        power_user.auto_swipe_blacklist = $(this).val()
+        power_user.auto_swipe_blacklist = String($(this).val())
             .split(",")
             .map(str => str.trim())
             .filter(str => str);
@@ -1822,7 +1830,7 @@ $(document).ready(() => {
     });
 
     $('#auto_swipe_minimum_length').on('input', function () {
-        const number = parseInt($(this).val());
+        const number = Number($(this).val());
         if (!isNaN(number)) {
             power_user.auto_swipe_minimum_length = number;
             saveSettingsDebounced();
@@ -1830,7 +1838,7 @@ $(document).ready(() => {
     });
 
     $('#auto_swipe_blacklist_threshold').on('input', function () {
-        const number = parseInt($(this).val());
+        const number = Number($(this).val());
         if (!isNaN(number)) {
             power_user.auto_swipe_blacklist_threshold = number;
             saveSettingsDebounced();
@@ -1913,35 +1921,35 @@ $(document).ready(() => {
     $("#messageTimerEnabled").on("input", function () {
         const value = !!$(this).prop('checked');
         power_user.timer_enabled = value;
-        localStorage.setItem(storage_keys.timer_enabled, power_user.timer_enabled);
+        localStorage.setItem(storage_keys.timer_enabled, String(power_user.timer_enabled));
         switchTimer();
     });
 
     $("#messageTimestampsEnabled").on("input", function () {
         const value = !!$(this).prop('checked');
         power_user.timestamps_enabled = value;
-        localStorage.setItem(storage_keys.timestamps_enabled, power_user.timestamps_enabled);
+        localStorage.setItem(storage_keys.timestamps_enabled, String(power_user.timestamps_enabled));
         switchTimestamps();
     });
 
     $("#messageModelIconEnabled").on("input", function () {
         const value = !!$(this).prop('checked');
         power_user.timestamp_model_icon = value;
-        localStorage.setItem(storage_keys.timestamp_model_icon, power_user.timestamp_model_icon);
+        localStorage.setItem(storage_keys.timestamp_model_icon, String(power_user.timestamp_model_icon));
         switchIcons();
     });
 
     $("#mesIDDisplayEnabled").on("input", function () {
         const value = !!$(this).prop('checked');
         power_user.mesIDDisplay_enabled = value;
-        localStorage.setItem(storage_keys.mesIDDisplay_enabled, power_user.mesIDDisplay_enabled);
+        localStorage.setItem(storage_keys.mesIDDisplay_enabled, String(power_user.mesIDDisplay_enabled));
         switchMesIDDisplay();
     });
 
     $("#hotswapEnabled").on("input", function () {
         const value = !!$(this).prop('checked');
         power_user.hotswap_enabled = value;
-        localStorage.setItem(storage_keys.hotswap_enabled, power_user.hotswap_enabled);
+        localStorage.setItem(storage_keys.hotswap_enabled, String(power_user.hotswap_enabled));
         switchHotswap();
     });
 
@@ -1987,7 +1995,7 @@ $(document).ready(() => {
     });
 
     $('#custom_stopping_strings').on('input', function () {
-        power_user.custom_stopping_strings = $(this).val();
+        power_user.custom_stopping_strings = String($(this).val());
         saveSettingsDebounced();
     });
 

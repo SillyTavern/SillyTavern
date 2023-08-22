@@ -463,7 +463,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         is_group_generating = true;
         setCharacterName('');
         setCharacterId(undefined);
-        const userInput = $("#send_textarea").val();
+        const userInput = String($("#send_textarea").val());
 
         if (typingIndicator.length === 0 && !isStreamingEnabled()) {
             typingIndicator = $(
@@ -983,11 +983,9 @@ function printGroupCandidates() {
     const storageKey = 'GroupCandidates_PerPage';
     $("#rm_group_add_members_pagination").pagination({
         dataSource: getGroupCharacters({ doFilter: true, onlyMembers: false }),
-        pageSize: 5,
         pageRange: 1,
         position: 'top',
         showPageNumbers: false,
-        showSizeChanger: false,
         prevText: '<',
         nextText: '>',
         formatNavigator: PAGINATION_TEMPLATE,
@@ -1011,11 +1009,9 @@ function printGroupMembers() {
     const storageKey = 'GroupMembers_PerPage';
     $("#rm_group_members_pagination").pagination({
         dataSource: getGroupCharacters({ doFilter: false, onlyMembers: true }),
-        pageSize: 5,
         pageRange: 1,
         position: 'top',
         showPageNumbers: false,
-        showSizeChanger: false,
         prevText: '<',
         nextText: '>',
         formatNavigator: PAGINATION_TEMPLATE,
@@ -1320,7 +1316,7 @@ function openCharacterDefinition(characterSelect) {
 }
 
 function filterGroupMembers() {
-    const searchValue = $(this).val().toLowerCase();
+    const searchValue = String($(this).val()).toLowerCase();
     groupCandidatesFilter.setFilterData(FILTER_TYPES.SEARCH, searchValue);
 }
 

@@ -62,7 +62,7 @@ jQuery(async () => {
     addLanguagesToDropdown();
 
     $('#ui_language_select').on('change', async function () {
-        const language = $(this).val();
+        const language = String($(this).val());
 
         if (language) {
             localStorage.setItem(storageKey, language);

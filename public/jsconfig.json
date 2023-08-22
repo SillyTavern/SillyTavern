@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
         "checkJs": true,
-        "target": "esnext",
+        "target": "ESNext",
         "module": "commonjs",
         "allowUmdGlobalAccess": true,
         "allowSyntheticDefaultImports": true
@@ -16,7 +16,11 @@
             "toastr",
             "showdown",
             "dompurify",
-            "@types/moment"
+            "moment",
+            "seedrandom",
+            "showdown-katex",
+            "droll",
+            "handlebars",
         ]
     }
 }

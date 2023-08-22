@@ -80,12 +80,7 @@
         ]
     },
     "devDependencies": {
-        "@popperjs/core": "^2.11.8",
-        "@types/moment": "^2.13.0",
-        "dompurify": "^3.0.5",
         "pkg": "^5.8.1",
-        "pkg-fetch": "^3.5.2",
-        "showdown": "^2.1.0",
-        "toastr": "^2.1.4"
+        "pkg-fetch": "^3.5.2"
     }
 }
