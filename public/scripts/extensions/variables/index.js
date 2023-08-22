@@ -26,6 +26,10 @@ function getChatVariable(name) {
  * @param {any} value The value of the variable to set.
  */
 function setChatVariable(name, value) {
+    if (name === undefined || value === undefined) {
+        return;
+    }
+
     const metadata = getContext().chatMetadata;
 
     if (!metadata) {
