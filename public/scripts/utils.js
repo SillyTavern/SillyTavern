@@ -1,8 +1,25 @@
 import { getContext } from "./extensions.js";
 import { getRequestHeaders } from "../script.js";
 
+/**
+ * Pagination status string template.
+ * @type {string}
+ */
 export const PAGINATION_TEMPLATE = '<%= rangeStart %>-<%= rangeEnd %> of <%= totalNumber %>';
 
+/**
+ * Navigation options for pagination.
+ * @enum {number}
+ */
+export const navigation_option = { none: 0, previous: 1, last: 2, };
+
+/**
+ * Determines if a value is unique in an array.
+ * @param {any} value Current value.
+ * @param {number} index Current index.
+ * @param {any} array The array being processed.
+ * @returns {boolean} True if the value is unique, false otherwise.
+ */
 export function onlyUnique(value, index, array) {
     return array.indexOf(value) === index;
 }
@@ -19,7 +36,10 @@ export function isDigitsOnly(str) {
     return /^\d+$/.test(str);
 }
 
-// Increase delay on touch screens
+/**
+ * Gets a drag delay for sortable elements. This is to prevent accidental drags when scrolling.
+ * @returns {number} The delay in milliseconds. 100ms for desktop, 750ms for mobile.
+ */
 export function getSortableDelay() {
     return navigator.maxTouchPoints > 0 ? 750 : 100;
 }
@@ -60,12 +80,23 @@ export function download(content, fileName, contentType) {
     a.click();
 }
 
+/**
+ * Fetches a file by URL and parses its contents as data URI.
+ * @param {string} url The URL to fetch.
+ * @param {any} params Fetch parameters.
+ * @returns {Promise<string>} A promise that resolves to the data URI.
+ */
 export async function urlContentToDataUri(url, params) {
     const response = await fetch(url, params);
     const blob = await response.blob();
-    return await new Promise(callback => {
-        let reader = new FileReader();
-        reader.onload = function () { callback(this.result); };
+    return await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = function () {
+            resolve(String(reader.result));
+        };
+        reader.onerror = function (error) {
+            reject(error);
+        };
         reader.readAsDataURL(blob);
     });
 }
@@ -195,7 +226,7 @@ export function throttle(func, limit = 300) {
 
 /**
  * Checks if an element is in the viewport.
- * @param {any[]} el The element to check.
+ * @param {Element} el The element to check.
  * @returns {boolean} True if the element is in the viewport, false otherwise.
  */
 export function isElementInViewport(el) {

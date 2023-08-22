@@ -136,7 +136,7 @@ import {
     PAGINATION_TEMPLATE,
 } from "./scripts/utils.js";
 
-import { extension_settings, getContext, loadExtensionSettings, registerExtensionHelper, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
+import { extension_settings, getContext, loadExtensionSettings, processExtensionHelpers, registerExtensionHelper, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
 import { executeSlashCommands, getSlashCommandsHelp, registerSlashCommand } from "./scripts/slash-commands.js";
 import {
     tag_map,
@@ -278,9 +278,19 @@ export const event_types = {
     OAI_PRESET_CHANGED: 'oai_preset_changed',
     WORLDINFO_SETTINGS_UPDATED: 'worldinfo_settings_updated',
     CHARACTER_EDITED: 'character_edited',
+    USER_MESSAGE_RENDERED: 'user_message_rendered',
+    CHARACTER_MESSAGE_RENDERED: 'character_message_rendered',
 }
 
 export const eventSource = new EventEmitter();
+
+// Check for override warnings every 5 seconds...
+setInterval(displayOverrideWarnings, 5000);
+// ...or when the chat changes
+eventSource.on(event_types.CHAT_CHANGED, displayOverrideWarnings);
+eventSource.on(event_types.CHAT_CHANGED, setChatLockedPersona);
+eventSource.on(event_types.MESSAGE_RECEIVED, processExtensionHelpers);
+eventSource.on(event_types.MESSAGE_SENT, processExtensionHelpers);
 
 const gpt3 = new GPT3BrowserTokenizer({ type: 'gpt3' });
 hljs.addPlugin({ "before:highlightElement": ({ el }) => { el.textContent = el.innerText } });
@@ -2179,14 +2189,17 @@ class StreamingProcessor {
 
     async onFinishStreaming(messageId, text) {
         this.hideMessageButtons(this.messageId);
-
-        const eventType = this.type !== 'impersonate' ? event_types.MESSAGE_RECEIVED : event_types.IMPERSONATE_READY;
-        const eventData = this.type !== 'impersonate' ? this.messageId : text;
-        await eventSource.emit(eventType, eventData);
-
         this.onProgressStreaming(messageId, text, true);
         addCopyToCodeBlocks($(`#chat .mes[mesid="${messageId}"]`));
-        saveChatConditional();
+
+        if (this.type !== 'impersonate') {
+            await eventSource.emit(event_types.MESSAGE_RECEIVED, this.messageId);
+            await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, this.messageId);
+        } else {
+            await eventSource.emit(event_types.IMPERSONATE_READY, text);
+        }
+
+        await saveChatConditional();
         activateSendButtons();
         showSwipeButtons();
         setGenerationProgress(0);
@@ -3360,6 +3373,7 @@ export async function sendMessageAsUser(textareaText, messageBias) {
     // Wait for all handlers to finish before continuing with the prompt
     await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
     addOneMessage(chat[chat.length - 1]);
+    await eventSource.emit(event_types.USER_MESSAGE_RENDERED, (chat.length - 1));
     console.debug('message sent as user');
 }
 
@@ -3913,6 +3927,7 @@ async function saveReply(type, getMessage, this_mes_is_name, title) {
             chat[chat.length - 1]['extra']['model'] = getGeneratingModel();
             await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
             addOneMessage(chat[chat.length - 1], { type: 'swipe' });
+            await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, (chat.length - 1));
         } else {
             chat[chat.length - 1]['mes'] = getMessage;
         }
@@ -3928,6 +3943,7 @@ async function saveReply(type, getMessage, this_mes_is_name, title) {
         chat[chat.length - 1]["extra"]["model"] = getGeneratingModel();
         await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
         addOneMessage(chat[chat.length - 1], { type: 'swipe' });
+        await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, (chat.length - 1));
     } else if (type === 'appendFinal') {
         oldMessage = chat[chat.length - 1]['mes'];
         console.debug("Trying to appendFinal.")
@@ -3940,6 +3956,7 @@ async function saveReply(type, getMessage, this_mes_is_name, title) {
         chat[chat.length - 1]["extra"]["model"] = getGeneratingModel();
         await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
         addOneMessage(chat[chat.length - 1], { type: 'swipe' });
+        await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, (chat.length - 1));
 
     } else {
         console.debug('entering chat update routine for non-swipe post');
@@ -3974,6 +3991,7 @@ async function saveReply(type, getMessage, this_mes_is_name, title) {
         saveImageToMessage(img, chat[chat.length - 1]);
         await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
         addOneMessage(chat[chat.length - 1]);
+        await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, (chat.length - 1));
     }
 
     const item = chat[chat.length - 1];
@@ -4428,6 +4446,7 @@ async function getChatResult() {
 
     if (chat.length === 1) {
         await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
+        await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, (chat.length - 1));
     }
 }
 
@@ -5009,7 +5028,7 @@ function lockUserNameToChat() {
     updateUserLockIcon();
 }
 
-eventSource.on(event_types.CHAT_CHANGED, () => {
+function setChatLockedPersona() {
     // Define a persona for this chat
     let chatPersona = '';
 
@@ -5051,7 +5070,7 @@ eventSource.on(event_types.CHAT_CHANGED, () => {
     // Persona avatar found, select it
     personaAvatar.trigger('click');
     updateUserLockIcon();
-});
+}
 
 async function doOnboarding(avatarId) {
     const template = $('#onboarding_template .onboarding');
@@ -6593,6 +6612,7 @@ async function createOrEditCharacter(e) {
                         //console.log('form create submission calling addOneMessage');
                         await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
                         addOneMessage(chat[0]);
+                        await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, (chat.length - 1));
                     }
                 }
                 $("#create_button").removeAttr("disabled");
@@ -7019,12 +7039,6 @@ function connectAPISlash(_, text) {
 
     toastr.info(`API set to ${text}, trying to connect..`);
 }
-
-
-// Check for override warnings every 5 seconds...
-setInterval(displayOverrideWarnings, 5000);
-// ...or when the chat changes
-eventSource.on(event_types.CHAT_CHANGED, displayOverrideWarnings);
 
 function importCharacter(file) {
     const ext = file.name.match(/\.(\w+)$/);

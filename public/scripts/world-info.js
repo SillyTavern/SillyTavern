@@ -1,5 +1,5 @@
 import { saveSettings, callPopup, substituteParams, getTokenCount, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types } from "../script.js";
-import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, deepClone, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE } from "./utils.js";
+import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, deepClone, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option } from "./utils.js";
 import { getContext } from "./extensions.js";
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from "./authors-note.js";
 import { registerSlashCommand } from "./slash-commands.js";
@@ -46,7 +46,6 @@ const saveSettingsDebounced = debounce(() => {
     saveSettings()
 }, 1000);
 const sortFn = (a, b) => b.order - a.order;
-const navigation_option = { none: 0, previous: 1, last: 2, };
 let updateEditor = (navigation) => { navigation; };
 
 // Do not optimize. updateEditor is a function that is updated by the displayWorldEntries with new data.

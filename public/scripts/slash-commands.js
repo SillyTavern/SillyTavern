@@ -340,6 +340,7 @@ async function sendMessageAs(_, text) {
     chat.push(message);
     await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
     addOneMessage(message);
+    await eventSource.emit(event_types.USER_MESSAGE_RENDERED, (chat.length - 1));
     saveChatConditional();
 }
 
@@ -371,6 +372,7 @@ async function sendNarratorMessage(_, text) {
     chat.push(message);
     await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
     addOneMessage(message);
+    await eventSource.emit(event_types.USER_MESSAGE_RENDERED, (chat.length - 1));
     saveChatConditional();
 }
 
@@ -396,6 +398,7 @@ async function sendCommentMessage(_, text) {
     chat.push(message);
     await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
     addOneMessage(message);
+    await eventSource.emit(event_types.USER_MESSAGE_RENDERED, (chat.length - 1));
     saveChatConditional();
 }
 
