@@ -14,7 +14,7 @@ import {
 import { getApiUrl, getContext, extension_settings, doExtrasFetch, modules } from "../../extensions.js";
 import { selected_group } from "../../group-chats.js";
 import { stringFormat, initScrollHeight, resetScrollHeight, timestampToMoment, getCharaFilename, saveBase64AsFile } from "../../utils.js";
-import { humanizedDateTime } from "../../RossAscends-mods.js";
+import { getMessageTimeStamp, humanizedDateTime } from "../../RossAscends-mods.js";
 export { MODULE_NAME };
 
 // Wraps a string into monospace font-face span
@@ -755,11 +755,10 @@ async function sendMessage(prompt, image) {
     const messageText = `[${context.name2} sends a picture that contains: ${prompt}]`;
     const message = {
         name: context.groupId ? systemUserName : context.name2,
-        is_system: context.groupId ? true : false,
         is_user: false,
         is_system: true,
         is_name: true,
-        send_date: timestampToMoment(Date.now()).format('LL LT'),
+        send_date: getMessageTimeStamp(),
         mes: context.groupId ? p(messageText) : messageText,
         extra: {
             image: image,

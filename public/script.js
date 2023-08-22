@@ -543,6 +543,12 @@ function getTokenizerBestMatch() {
     return power_user.NONE;
 }
 
+/**
+ * Gets the token count for a string using the current model tokenizer.
+ * @param {string} str String to tokenize
+ * @param {number | undefined} padding Optional padding tokens. Defaults to 0.
+ * @returns {number} Token count.
+ */
 function getTokenCount(str, padding = undefined) {
     if (typeof str !== 'string' || !str?.length) {
         return 0;
@@ -4520,6 +4526,7 @@ function setPersonaDescription() {
         .val(power_user.persona_description_position)
         .find(`option[value='${power_user.persona_description_position}']`)
         .attr("selected", true);
+    countPersonaDescriptionTokens();
 }
 
 function onPersonaDescriptionPositionInput() {
@@ -4544,8 +4551,18 @@ function onPersonaDescriptionPositionInput() {
     saveSettingsDebounced();
 }
 
+/**
+ * Counts the number of tokens in a persona description.
+ */
+const countPersonaDescriptionTokens = debounce(() => {
+    const description = String($("#persona_description").val());
+    const count = getTokenCount(description);
+    $("#persona_description_token_count").text(String(count));
+}, durationSaveEdit);
+
 function onPersonaDescriptionInput() {
     power_user.persona_description = String($("#persona_description").val());
+    countPersonaDescriptionTokens();
 
     if (power_user.personas[user_avatar]) {
         let object = power_user.persona_descriptions[user_avatar];

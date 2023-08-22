@@ -197,7 +197,7 @@ export function RA_CountCharTokens() {
     $('[data-token-counter]').each(function () {
         const counter = $(this);
         const input = $(document.getElementById(counter.data('token-counter')));
-        const value = input.val();
+        const value = String(input.val());
 
         if (input.length === 0) {
             counter.text('Invalid input reference');
