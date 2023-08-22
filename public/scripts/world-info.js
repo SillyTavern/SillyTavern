@@ -1,10 +1,11 @@
-import { saveSettings, callPopup, substituteParams, getTokenCount, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types } from "../script.js";
-import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, deepClone, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE } from "./utils.js";
+import { saveSettings, callPopup, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types } from "../script.js";
+import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, deepClone, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option } from "./utils.js";
 import { getContext } from "./extensions.js";
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from "./authors-note.js";
 import { registerSlashCommand } from "./slash-commands.js";
 import { deviceInfo } from "./RossAscends-mods.js";
 import { FILTER_TYPES, FilterHelper } from "./filters.js";
+import { getTokenCount } from "./tokenizers.js";
 
 export {
     world_info,
@@ -46,7 +47,6 @@ const saveSettingsDebounced = debounce(() => {
     saveSettings()
 }, 1000);
 const sortFn = (a, b) => b.order - a.order;
-const navigation_option = { none: 0, previous: 1, last: 2, };
 let updateEditor = (navigation) => { navigation; };
 
 // Do not optimize. updateEditor is a function that is updated by the displayWorldEntries with new data.
@@ -418,7 +418,7 @@ function getWorldEntry(name, data, entry) {
 
     keyInput.on("input", function () {
         const uid = $(this).data("uid");
-        const value = $(this).val();
+        const value = String($(this).val());
         resetScrollHeight(this);
         data.entries[uid].key = value
             .split(",")
@@ -454,7 +454,7 @@ function getWorldEntry(name, data, entry) {
     keySecondaryInput.data("uid", entry.uid);
     keySecondaryInput.on("input", function () {
         const uid = $(this).data("uid");
-        const value = $(this).val();
+        const value = String($(this).val());
         resetScrollHeight(this);
         data.entries[uid].keysecondary = value
             .split(",")
@@ -1505,19 +1505,6 @@ jQuery(() => {
             e.preventDefault();
             return;
         }
-
-        /*
-        if (deviceInfo.device.type === 'desktop') {
-            let selectScrollTop = null;
-            e.preventDefault();
-            const option = $(e.target);
-            const selectElement = $(this)[0];
-            selectScrollTop = selectElement.scrollTop;
-            option.prop('selected', !option.prop('selected'));
-            await delay(1);
-            selectElement.scrollTop = selectScrollTop;
-        }
-        */
 
         onWorldInfoChange('__notSlashCommand__');
     });
