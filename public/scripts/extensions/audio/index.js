@@ -330,7 +330,7 @@ async function moduleWorker() {
         // 1) Update ambient audio
         // ---------------------------
         let newBackground = $("#bg1").css("background-image");
-        newBackground = newBackground.substring(newBackground.lastIndexOf("/")+1).replace(/\.[^/.]+$/, "");
+        newBackground = newBackground.substring(newBackground.lastIndexOf("/")+1).replace(/\.[^/.]+$/, "").replaceAll("%20","-"); // remove path and spaces
 
         //console.debug(DEBUG_PREFIX,"Current backgroung:",newBackground);
 
@@ -555,7 +555,7 @@ async function updateAmbient() {
     let audio_file_path = null;
     for(const i of ambients) {
         console.debug(i)
-        if (i.includes(decodeURIComponent(currentBackground))) {
+        if (i.includes(currentBackground)) {
             audio_file_path = i;
             break;
         }
