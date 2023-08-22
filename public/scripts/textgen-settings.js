@@ -168,9 +168,9 @@ $(document).ready(function () {
                 textgenerationwebui_settings[id] = value;
             }
             else {
-                const value = parseFloat($(this).val());
+                const value = Number($(this).val());
                 $(`#${id}_counter_textgenerationwebui`).text(value.toFixed(2));
-                textgenerationwebui_settings[id] = parseFloat(value);
+                textgenerationwebui_settings[id] = value;
             }
 
             saveSettingsDebounced();
@@ -207,7 +207,7 @@ async function generateTextGenWithStreaming(generate_data, signal) {
     const response = await fetch('/generate_textgenerationwebui', {
         headers: {
             ...getRequestHeaders(),
-            'X-Response-Streaming': true,
+            'X-Response-Streaming': String(true),
             'X-Streaming-URL': textgenerationwebui_settings.streaming_url,
         },
         body: JSON.stringify(generate_data),
@@ -251,8 +251,8 @@ export function getTextGenGenerationData(finalPromt, this_amount_gen, isImperson
         'penalty_alpha': textgenerationwebui_settings.penalty_alpha,
         'length_penalty': textgenerationwebui_settings.length_penalty,
         'early_stopping': textgenerationwebui_settings.early_stopping,
-        'guidance_scale': isImpersonate ? 1 : cfgValues?.guidanceScale?.value ?? textgenerationwebui_settings.guidance_scale ?? 1,
-        'negative_prompt': isImpersonate ? '' : cfgValues?.negativePrompt ?? textgenerationwebui_settings.negative_prompt ?? '',
+        'guidance_scale': cfgValues?.guidanceScale?.value ?? textgenerationwebui_settings.guidance_scale ?? 1,
+        'negative_prompt': cfgValues?.negativePrompt ?? textgenerationwebui_settings.negative_prompt ?? '',
         'seed': textgenerationwebui_settings.seed,
         'add_bos_token': textgenerationwebui_settings.add_bos_token,
         'stopping_strings': getStoppingStrings(isImpersonate, false),
