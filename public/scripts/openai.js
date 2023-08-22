@@ -109,7 +109,7 @@ const max_4k = 4095;
 const max_8k = 8191;
 const max_16k = 16383;
 const max_32k = 32767;
-const scale_max = 8191; // Probably more. Save some for the system prompt defined on Scale site.
+const scale_max = 8191;
 const claude_max = 9000; // We have a proper tokenizer, so theoretically could be larger (up to 9k)
 const palm2_max = 7500; // The real context window is 8192, spare some for padding due to using turbo tokenizer
 const claude_100k_max = 99000;
@@ -1090,7 +1090,7 @@ async function sendAltScaleRequest(openai_msgs_tosend, logit_bias, signal) {
     let firstSysMsgs = []
     for(let msg of openai_msgs_tosend){
         if(msg.role === 'system') {
-            firstSysMsgs.push(substituteParams(msg.content));
+            firstSysMsgs.push(substituteParams(msg.name ? msg.name + ": " + msg.content : msg.content));
         } else {
             break;
         }
