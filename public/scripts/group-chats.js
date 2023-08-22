@@ -1386,7 +1386,7 @@ export async function createNewGroupChat(groupId) {
     group.chat_metadata = {};
     updateChatMetadata(group.chat_metadata, true);
 
-    await editGroup(group.id, true);
+    await editGroup(group.id, true, false);
     await getGroupChat(group.id);
 }
 

@@ -109,8 +109,8 @@ const max_4k = 4095;
 const max_8k = 8191;
 const max_16k = 16383;
 const max_32k = 32767;
-const scale_max = 7900; // Probably more. Save some for the system prompt defined on Scale site.
-const claude_max = 8000; // We have a proper tokenizer, so theoretically could be larger (up to 9k)
+const scale_max = 8191;
+const claude_max = 9000; // We have a proper tokenizer, so theoretically could be larger (up to 9k)
 const palm2_max = 7500; // The real context window is 8192, spare some for padding due to using turbo tokenizer
 const claude_100k_max = 99000;
 let ai21_max = 9200; //can easily fit 9k gpt tokens because j2's tokenizer is efficient af
@@ -219,6 +219,7 @@ const default_settings = {
     assistant_prefill: '',
     use_ai21_tokenizer: false,
     exclude_assistant: false,
+    use_alt_scale: false,
 };
 
 const oai_settings = {
@@ -261,6 +262,7 @@ const oai_settings = {
     assistant_prefill: '',
     use_ai21_tokenizer: false,
     exclude_assistant: false,
+    use_alt_scale: false,
 };
 
 let openai_setting_names;
@@ -1082,6 +1084,47 @@ function saveModelList(data) {
     }
 }
 
+async function sendAltScaleRequest(openai_msgs_tosend, logit_bias, signal) {
+    const generate_url = '/generate_altscale';
+
+    let firstSysMsgs = []
+    for(let msg of openai_msgs_tosend){
+        if(msg.role === 'system') {
+            firstSysMsgs.push(substituteParams(msg.name ? msg.name + ": " + msg.content : msg.content));
+        } else {
+            break;
+        }
+    }
+
+    let subsequentMsgs = openai_msgs_tosend.slice(firstSysMsgs.length);
+
+    const joinedSysMsgs = substituteParams(firstSysMsgs.join("\n"));
+    const joinedSubsequentMsgs = subsequentMsgs.reduce((acc, obj) => {
+        return acc + obj.role + ": " + obj.content + "\n";
+    }, "");
+
+    openai_msgs_tosend = substituteParams(joinedSubsequentMsgs);
+
+    const generate_data = {
+        sysprompt: joinedSysMsgs,
+        prompt: openai_msgs_tosend,
+        temp: parseFloat(oai_settings.temp_openai),
+        top_p: parseFloat(oai_settings.top_p_openai),
+        max_tokens: parseFloat(oai_settings.openai_max_tokens),
+        logit_bias: logit_bias,
+    }
+
+    const response = await fetch(generate_url, {
+        method: 'POST',
+        body: JSON.stringify(generate_data),
+        headers: getRequestHeaders(),
+        signal: signal
+    });
+
+    const data = await response.json();
+    return data.output;
+}
+
 async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
     // Provide default abort signal
     if (!signal) {
@@ -1118,13 +1161,17 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
         return sendWindowAIRequest(openai_msgs_tosend, signal, stream);
     }
 
-    const logitBiasSources = [chat_completion_sources.OPENAI, chat_completion_sources.OPENROUTER];
+    const logitBiasSources = [chat_completion_sources.OPENAI, chat_completion_sources.OPENROUTER, chat_completion_sources.SCALE];
     if (oai_settings.bias_preset_selected
         && logitBiasSources.includes(oai_settings.chat_completion_source)
         && Array.isArray(oai_settings.bias_presets[oai_settings.bias_preset_selected])
         && oai_settings.bias_presets[oai_settings.bias_preset_selected].length) {
         logit_bias = biasCache || await calculateLogitBias();
         biasCache = logit_bias;
+    }
+
+    if (isScale && oai_settings.use_alt_scale) {
+        return sendAltScaleRequest(openai_msgs_tosend, logit_bias, signal)
     }
 
     const model = getChatCompletionModel();
@@ -1971,6 +2018,7 @@ function loadOpenAISettings(data, settings) {
     if (settings.openai_model !== undefined) oai_settings.openai_model = settings.openai_model;
     if (settings.use_ai21_tokenizer !== undefined) { oai_settings.use_ai21_tokenizer = !!settings.use_ai21_tokenizer; oai_settings.use_ai21_tokenizer ? ai21_max = 8191 : ai21_max = 9200; }
     if (settings.exclude_assistant !== undefined) oai_settings.exclude_assistant = !!settings.exclude_assistant;
+    if (settings.use_alt_scale !== undefined) { oai_settings.use_alt_scale = !!settings.use_alt_scale; updateScaleForm(); }
     $('#stream_toggle').prop('checked', oai_settings.stream_openai);
     $('#api_url_scale').val(oai_settings.api_url_scale);
     $('#openai_proxy_password').val(oai_settings.proxy_password);
@@ -2001,6 +2049,7 @@ function loadOpenAISettings(data, settings) {
     $('#openai_external_category').toggle(oai_settings.show_external_models);
     $('#use_ai21_tokenizer').prop('checked', oai_settings.use_ai21_tokenizer);
     $('#exclude_assistant').prop('checked', oai_settings.exclude_assistant);
+    $('#scale-alt').prop('checked', oai_settings.use_alt_scale);
     if (settings.impersonation_prompt !== undefined) oai_settings.impersonation_prompt = settings.impersonation_prompt;
 
     $('#impersonation_prompt_textarea').val(oai_settings.impersonation_prompt);
@@ -2199,6 +2248,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         assistant_prefill: settings.assistant_prefill,
         use_ai21_tokenizer: settings.use_ai21_tokenizer,
         exclude_assistant: settings.exclude_assistant,
+        use_alt_scale: settings.use_alt_scale,
     };
 
     const savePresetSettings = await fetch(`/savepreset_openai?name=${name}`, {
@@ -2536,7 +2586,8 @@ function onSettingsPresetChange() {
         assistant_prefill: ['#claude_assistant_prefill', 'assistant_prefill', false],
         use_ai21_tokenizer: ['#use_ai21_tokenizer', 'use_ai21_tokenizer', false],
         exclude_assistant: ['#exclude_assistant', 'exclude_assistant', false],
-    };
+        use_alt_scale: ['#use_alt_scale', 'use_alt_scale', false],
+        };
 
     const presetName = $('#settings_perset_openai').find(":selected").text();
     oai_settings.preset_settings_openai = presetName;
@@ -2831,20 +2882,31 @@ async function onConnectButtonClick(e) {
 
     if (oai_settings.chat_completion_source == chat_completion_sources.SCALE) {
         const api_key_scale = $('#api_key_scale').val().trim();
+        const scale_cookie = $('#scale_cookie').val().trim();
 
         if (api_key_scale.length) {
             await writeSecret(SECRET_KEYS.SCALE, api_key_scale);
         }
 
-        if (!oai_settings.api_url_scale) {
+        if (scale_cookie.length) {
+            await writeSecret(SECRET_KEYS.SCALE_COOKIE, scale_cookie);
+        }
+
+        if (!oai_settings.api_url_scale && !oai_settings.use_alt_scale) {
             console.log('No API URL saved for Scale');
             return;
         }
 
-        if (!secret_state[SECRET_KEYS.SCALE]) {
+        if (!secret_state[SECRET_KEYS.SCALE] && !oai_settings.use_alt_scale) {
             console.log('No secret key saved for Scale');
             return;
         }
+
+        if (!secret_state[SECRET_KEYS.SCALE_COOKIE] && oai_settings.use_alt_scale) {
+            console.log("No cookie set for Scale");
+            return;
+        }
+
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
@@ -2958,10 +3020,26 @@ function onProxyPasswordShowClick() {
     $(this).toggleClass('fa-eye-slash fa-eye');
 }
 
+function updateScaleForm() {
+    if (oai_settings.use_alt_scale) {
+        $('#normal_scale_form').css('display', 'none');
+        $('#alt_scale_form').css('display', '');
+    } else {
+        $('#normal_scale_form').css('display', '');
+        $('#alt_scale_form').css('display', 'none');
+    }
+}
+
 $(document).ready(async function () {
     await loadTokenCache();
 
     $('#test_api_button').on('click', testApiConnection);
+
+    $('#scale-alt').on('change', function () {
+        oai_settings.use_alt_scale = !!$('#scale-alt').prop('checked');
+        saveSettingsDebounced();
+        updateScaleForm();
+    });
 
     $(document).on('input', '#temp_openai', function () {
         oai_settings.temp_openai = Number($(this).val());
