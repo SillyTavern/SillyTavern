@@ -339,7 +339,7 @@ function setupChatCompletionPromptManager(openAiSettings) {
         },
         promptOrder: {
             strategy: 'global',
-            dummyId: 100000
+            dummyId: 100001
         },
     };
 
