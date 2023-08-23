@@ -2741,6 +2741,12 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             // Fetches the combined prompt for both negative and positive prompts
             const cfgGuidanceScale = getGuidanceScale();
             function getCombinedPrompt(isNegative) {
+                // Only return if the guidance scale doesn't exist or the value is 1
+                // Also don't return if constructing the neutral prompt
+                if (isNegative && (!cfgGuidanceScale || cfgGuidanceScale?.value === 1)) {
+                    return;
+                }
+
                 let finalMesSend = [...mesSend];
                 let cfgPrompt = {};
                 if (cfgGuidanceScale && cfgGuidanceScale?.value !== 1) {
@@ -2754,7 +2760,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                                 ? cfgPrompt.value
                                 : ` ${cfgPrompt.value}`;
                     } else {
-                        // TODO: Switch from splice method to insertion depth method
+                        // TODO: Make all extension prompts use an array/splice method
                         finalMesSend.splice(mesSend.length - cfgPrompt.depth, 0, `${cfgPrompt.value}\n`);
                     }
                 }
