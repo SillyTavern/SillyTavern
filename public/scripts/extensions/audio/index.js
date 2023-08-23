@@ -75,8 +75,8 @@ let cooldownBGM = 0;
 
 const defaultSettings = {
     enabled: false,
-    bgm_muted: false,
-    ambient_muted: false,
+    bgm_muted: true,
+    ambient_muted: true,
     bgm_volume: 50,
     ambient_volume: 50,
     bgm_cooldown: 30
