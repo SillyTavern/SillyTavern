@@ -5056,20 +5056,52 @@ app.post('/asset_download', jsonParser, async (request, response) => {
     const { finished } = require('stream/promises');
     const path = require("path");
     const url = request.query.url;
-    const file_path = request.query.save_path;
+    const inputCategory = request.query.category;
+    const inputFilename = request.query.filename;
+    const validCategories = ["bgm","ambient"]
+    
+    // Check category
+    let category = null
+    for(i of validCategories)
+        if (i == inputCategory)
+            category = i
 
+    if (category === null) {
+        console.debug("Bad request: unsuported asset category.");
+        return response.sendStatus(400);
+    }
+
+    // Sanitize filename
+    if (inputFilename.indexOf('\0') !== -1) {
+        console.debug("Bad request: poisong null bytes in filename.");
+        return response.sendStatus(400);
+    }
+
+    if (!/^[a-zA-Z0-9_\-\.]+$/.test(inputFilename)) {
+        console.debug("Bad request: illegal character in filename, only alphanumeric, '_', '-' are accepted.");
+        return response.sendStatus(400);
+    }
+
+    const safe_input = path.normalize(inputFilename).replace(/^(\.\.(\/|\\|$))+/, '');
+    const file_path = path.join(directories.assets, category, safe_input)
     console.debug("Request received to download", url,"to",file_path);
 
-    
-    const downloadFile = (async (url, file_path) => {
-    const res = await fetch(url);
-    const destination = path.resolve(file_path);
-    const fileStream = fs.createWriteStream(destination, { flags: 'wx' });
-    await finished(Readable.fromWeb(res.body).pipe(fileStream));
-    console.debug("Download finished, file saved to",file_path);
-    });
+    try {
+        const downloadFile = (async (url, file_path) => {
+        const res = await fetch(url);
+        const destination = path.resolve(file_path);
+        const fileStream = fs.createWriteStream(destination, { flags: 'wx' });
+        await finished(Readable.fromWeb(res.body).pipe(fileStream));
+        console.debug("Download finished, file saved to",file_path);
+        });
 
-    downloadFile(url, file_path)
+        await downloadFile(url, file_path);
+        response.sendStatus(200);
+    }
+    catch(error) {
+        console.log(error);
+        response.sendStatus(500);
+    }
 });
 
 

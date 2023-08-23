@@ -56,7 +56,9 @@ function downloadAssetsList(url) {
                 for (const i in availableAssets[assetType]) {
                     const asset = availableAssets[assetType][i];
                     const elemId = `assets_install_${assetType}_${i}`;
-                    let element = $('<input />', { type: 'checkbox', id: elemId})
+                    let element = $('<button />', { id:elemId, type:"button", class:"asset-download-button menu_button"})
+                    const label = $("<i class=\"fa-solid fa-download fa-xl\"></i>");
+                    element.append(label);
     
                     //if (DEBUG_TONY_SAMA_FORK_MODE)
                     //    assetUrl = assetUrl.replace("https://github.com/SillyTavern/","https://github.com/Tony-sama/"); // DBG
@@ -64,17 +66,20 @@ function downloadAssetsList(url) {
                     console.debug(DEBUG_PREFIX,"Checking asset",asset["id"], asset["url"]);
     
                     if (isAssetInstalled(assetType, asset["id"])) {
-                        console.debug(DEBUG_PREFIX,"installed, checked")
-                        element.prop("disabled",true);
-                        element.prop("checked",true);
+                        console.debug(DEBUG_PREFIX,"installed, checked");
+                        label.toggleClass("fa-download");
+                        label.toggleClass("fa-check");
                     }
                     else {
                         console.debug(DEBUG_PREFIX,"not installed, unchecked")
                         element.prop("checked",false);
-                        element.on("click", function(){
-                            installAsset(asset["url"], assetType, asset["id"]);
-                            element.prop("disabled",true);
+                        element.on("click", async function(){
                             element.off("click");
+                            label.toggleClass("fa-download");
+                            this.classList.toggle('asset-download-button-loading');
+                            await installAsset(asset["url"], assetType, asset["id"]);
+                            label.toggleClass("fa-check");
+                            this.classList.toggle('asset-download-button-loading');
                         })
                     }
     
@@ -82,7 +87,7 @@ function downloadAssetsList(url) {
     
                     $(`<i></i>`)
                     .append(element)
-                    .append(`<p>${asset["id"]}</p>`)
+                    .append(`<span>${asset["id"]}</span>`)
                     .appendTo(assetTypeMenu);
                 }
                 assetTypeMenu.appendTo("#assets_menu");
@@ -109,14 +114,15 @@ function isAssetInstalled(assetType,filename) {
 
 async function installAsset(url, assetType, filename) {
     console.debug(DEBUG_PREFIX,"Downloading ",url);
-    const save_path = "public/assets/"+assetType+"/"+filename;
+    const category = assetType;
     try {
-        const result = await fetch(`/asset_download?url=${url}&save_path=${save_path}`, {
+        const result = await fetch(`/asset_download?url=${url}&category=${category}&filename=${filename}`, {
             method: 'POST',
             headers: getRequestHeaders(),
         });
-        let assets = result.ok ? (await result.json()) : [];
-        return assets;
+        if(result.ok) {
+            console.debug(DEBUG_PREFIX,"Download success.")
+        }
     }
     catch (err) {
         console.log(err);
