@@ -2991,8 +2991,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     return;
                 }
 
-                hideStopButton();
-                is_send_press = false;
                 if (!data.error) {
                     //const getData = await response.json();
                     let getMessage = extractMessageFromData(data);
@@ -3113,6 +3111,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         }
                         if (generatedTextFiltered(getMessage)) {
                             console.debug('swiping right automatically');
+                            is_send_press = false;
                             swipe_right();
                             return
                         }
@@ -3132,7 +3131,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
                 console.debug('/savechat called by /Generate');
 
-                saveChatConditional();
+                await saveChatConditional();
+                is_send_press = false;
+                hideStopButton();
                 activateSendButtons();
                 showSwipeButtons();
                 setGenerationProgress(0);
@@ -6113,7 +6114,7 @@ async function deleteMessageImage() {
     delete message.extra.inline_image;
     mesBlock.find('.mes_img_container').removeClass('img_extra');
     mesBlock.find('.mes_img').attr('src', '');
-    saveChatConditional();
+    await saveChatConditional();
 }
 
 function enlargeMessageImage() {
@@ -7908,7 +7909,7 @@ $(document).ready(function () {
     });
 
     //confirms message deletion with the "ok" button
-    $("#dialogue_del_mes_ok").click(function () {
+    $("#dialogue_del_mes_ok").click(async function () {
         $("#dialogue_del_mes").css("display", "none");
         $("#send_form").css("display", css_send_form_display);
         $(".del_checkbox").each(function () {
@@ -7924,7 +7925,7 @@ $(document).ready(function () {
             $(".mes[mesid='" + this_del_mes + "']").remove();
             chat.length = this_del_mes;
             count_view_mes = this_del_mes;
-            saveChatConditional();
+            await saveChatConditional();
             var $textchat = $("#chat");
             $textchat.scrollTop($textchat[0].scrollHeight);
             eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
@@ -8199,7 +8200,7 @@ $(document).ready(function () {
         this_edit_mes_id = undefined;
     });
 
-    $(document).on("click", ".mes_edit_up", function () {
+    $(document).on("click", ".mes_edit_up", async function () {
         if (is_send_press || this_edit_mes_id <= 0) {
             return;
         }
@@ -8224,11 +8225,11 @@ $(document).ready(function () {
 
         this_edit_mes_id = targetId;
         updateViewMessageIds();
-        saveChatConditional();
+        await saveChatConditional();
         showSwipeButtons();
     });
 
-    $(document).on("click", ".mes_edit_down", function () {
+    $(document).on("click", ".mes_edit_down", async function () {
         if (is_send_press || this_edit_mes_id >= chat.length - 1) {
             return;
         }
@@ -8253,7 +8254,7 @@ $(document).ready(function () {
 
         this_edit_mes_id = targetId;
         updateViewMessageIds();
-        saveChatConditional();
+        await saveChatConditional();
         showSwipeButtons();
     });
 
@@ -8277,14 +8278,14 @@ $(document).ready(function () {
         addOneMessage(clone, { insertAfter: this_edit_mes_id });
 
         updateViewMessageIds();
-        saveChatConditional();
+        await saveChatConditional();
         $('#chat')[0].scrollTop = oldScroll;
         showSwipeButtons();
     });
 
     $(document).on("click", ".mes_edit_delete", async function (event, customData) {
         const fromSlashCommand = customData?.fromSlashCommand || false;
-        const swipeExists = (!chat[this_edit_mes_id].swipes || chat[this_edit_mes_id].swipes.length <= 1 || chat.is_user || parseInt(this_edit_mes_id) !== chat.length - 1);
+        const swipeExists = (!Array.isArray(chat[this_edit_mes_id].swipes) || chat[this_edit_mes_id].swipes.length <= 1 || chat[this_edit_mes_id].is_user || parseInt(this_edit_mes_id) !== chat.length - 1);
         if (power_user.confirm_message_delete && fromSlashCommand !== true) {
             const confirmation = swipeExists ? await callPopup("Are you sure you want to delete this message?", 'confirm')
                 : await callPopup("<h3>Delete this...</h3> <select id='del_type'><option value='swipe'>Swipe</option><option value='message'>Message</option></select>", 'confirm')
@@ -8316,7 +8317,7 @@ $(document).ready(function () {
         this_edit_mes_id = undefined;
 
         updateViewMessageIds();
-        saveChatConditional();
+        await saveChatConditional();
 
         eventSource.emit(event_types.MESSAGE_DELETED, count_view_mes);
 
