@@ -1,5 +1,5 @@
 {
-    "name": "🧙 Roleplay",
+    "name": "Roleplay",
     "system_prompt": "Avoid repetition, don't loop. Develop the plot slowly, always stay in character. Describe all actions in full, elaborate, explicit, graphic, and vivid detail. Mention all relevant sensory perceptions.",
     "input_sequence": "\n### Instruction:",
     "output_sequence": "\n### Response:",
