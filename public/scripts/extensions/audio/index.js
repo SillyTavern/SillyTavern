@@ -160,7 +160,7 @@ async function onBGMCooldownInput() {
     extension_settings.audio.bgm_cooldown = ~~($("#audio_bgm_cooldown").val());
     cooldownBGM = extension_settings.audio.bgm_cooldown * 1000;
     saveSettingsDebounced();
-    //console.debug(DEBUG_PREFIX,"UPDATED BGM cooldown to",extension_settings.audio.bgm_cooldown);
+    console.debug(DEBUG_PREFIX,"UPDATED BGM cooldown to",extension_settings.audio.bgm_cooldown);
 }
 
 $(document).ready(function () {
@@ -301,7 +301,9 @@ async function moduleWorker() {
     const moduleEnabled = extension_settings.audio.enabled;
 
     if (moduleEnabled) {
-        cooldownBGM -= UPDATE_INTERVAL;
+
+        if(cooldownBGM > 0)
+            cooldownBGM -= UPDATE_INTERVAL;
 
         if (fallback_BGMS == null){
             console.debug(DEBUG_PREFIX,"Updating audio bgm assets...");
@@ -384,7 +386,7 @@ async function moduleWorker() {
 
                 cooldownBGM = extension_settings.audio.bgm_cooldown * 1000;
                 currentExpressionBGM = newExpression;
-                console.debug(DEBUG_PREFIX,"(SOLO) Updated current character expression to",currentExpressionBGM);
+                console.debug(DEBUG_PREFIX,"(SOLO) Updated current character expression to",currentExpressionBGM,"cooldown",cooldownBGM);
                 updateBGM();
                 return;
             }
@@ -414,11 +416,12 @@ async function moduleWorker() {
                     //console.debug(DEBUG_PREFIX,"(GROUP) BGM switch on cooldown:",cooldownBGM);
                     return;
                 }
-                cooldownBGM = extension_settings.audio.cooldownBGM;
+                
+                cooldownBGM = extension_settings.audio.bgm_cooldown * 1000;
                 currentCharacterBGM = newCharacter;
                 currentExpressionBGM = FALLBACK_EXPRESSION;
                 updateBGM();
-                console.debug(DEBUG_PREFIX,"(GROUP) Updated current character BGM to",currentExpressionBGM);
+                console.debug(DEBUG_PREFIX,"(GROUP) Updated current character BGM to",currentExpressionBGM,"cooldown",cooldownBGM);
                 return;
             }
 
