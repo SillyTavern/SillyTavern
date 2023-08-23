@@ -509,19 +509,19 @@ hr {
 #send_but_sheld {
     padding: 0;
     border: 0;
-    height: 40px;
+    height: 30px;
     position: relative;
     background-position: center;
     display: flex;
     flex-direction: row;
     column-gap: 5px;
-    font-size: 30px;
+    font-size: 25px;
     overflow: hidden;
 }
 
 #send_but_sheld>div {
-    width: 40px;
-    height: 40px;
+    width: 30px;
+    height: 30px;
     margin: 0;
     outline: none;
     border: none;
@@ -549,8 +549,8 @@ hr {
 }
 
 #options_button {
-    width: 40px;
-    height: 40px;
+    width: 30px;
+    height: 30px;
     margin: 0;
     outline: none;
     border: none;
@@ -558,10 +558,10 @@ hr {
     opacity: 0.7;
     cursor: pointer;
     z-index: 2001;
-    padding-left: 10px;
-    padding-top: 0;
+    margin-left: 10px;
+    padding: 0;
     transition: 0.3s;
-    font-size: 30px;
+    font-size: 25px;
     display: flex;
     align-items: center;
 }
@@ -872,17 +872,17 @@ select {
 }
 
 #send_textarea {
-    min-height: 40px;
+    min-height: 30px;
     max-height: 50vh;
     max-height: 50svh;
     word-wrap: break-word;
-    height: 40px;
+    height: 30px;
     resize: vertical;
     display: block;
     background-color: rgba(255, 0, 0, 0);
     border: 0;
     box-shadow: none;
-    padding: 6px;
+    padding: 0;
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
     margin: 0;
     text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
