@@ -543,13 +543,16 @@ hr {
 }
 
 #send_but {
-    display: none;
     order: 99999;
+}
+
+#mes_continue {
+    order: 99998;
 }
 
 .mes_stop {
     display: none;
-    order: 99998;
+    order: 99997;
 }
 
 #options_button {

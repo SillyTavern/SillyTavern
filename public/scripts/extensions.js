@@ -14,7 +14,37 @@ export {
 let extensionNames = [];
 let manifests = {};
 const defaultUrl = "http://localhost:5100";
-export const saveMetadataDebounced = debounce(async () => await getContext().saveMetadata(), 1000);
+
+let saveMetadataTimeout = null;
+
+export function saveMetadataDebounced() {
+    const context = getContext();
+    const groupId = context.groupId;
+    const characterId = context.characterId;
+
+    if (saveMetadataTimeout) {
+        console.debug('Clearing save metadata timeout');
+        clearTimeout(saveMetadataTimeout);
+    }
+
+    saveMetadataTimeout = setTimeout(async () => {
+        const newContext = getContext();
+
+        if (groupId !== newContext.groupId) {
+            console.warn('Group changed, not saving metadata');
+            return;
+        }
+
+        if (characterId !== newContext.characterId) {
+            console.warn('Character changed, not saving metadata');
+            return;
+        }
+
+        console.debug('Saving metadata...');
+        newContext.saveMetadata();
+        console.debug('Saved metadata...');
+    }, 1000);
+}
 
 export const extensionsHandlebars = Handlebars.create();
 

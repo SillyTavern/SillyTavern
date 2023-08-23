@@ -20,7 +20,11 @@ import {
     groups,
     resetSelectedGroup,
 } from "./group-chats.js";
-import { loadInstructMode } from "./instruct-mode.js";
+import {
+    instruct_presets,
+    loadInstructMode,
+    selectInstructPreset,
+} from "./instruct-mode.js";
 
 import { registerSlashCommand } from "./slash-commands.js";
 import { tokenizers } from "./tokenizers.js";
@@ -147,7 +151,7 @@ let power_user = {
     max_context_unlocked: false,
     prefer_character_prompt: true,
     prefer_character_jailbreak: true,
-    continue_on_send: false,
+    quick_continue: false,
     trim_spaces: true,
     relaxed_api_urls: false,
 
@@ -193,7 +197,7 @@ let power_user = {
 
 let themes = [];
 let movingUIPresets = [];
-let context_presets = [];
+export let context_presets = [];
 
 const storage_keys = {
     fast_ui_mode: "TavernAI_fast_ui_mode",
@@ -704,7 +708,8 @@ function loadPowerUserSettings(settings, data) {
 
     $('#relaxed_api_urls').prop("checked", power_user.relaxed_api_urls);
     $('#trim_spaces').prop("checked", power_user.trim_spaces);
-    $('#continue_on_send').prop("checked", power_user.continue_on_send);
+    $('#quick_continue').prop("checked", power_user.quick_continue);
+    $('#mes_continue').css('display', power_user.quick_continue ? '' : 'none');
     $('#auto_swipe').prop("checked", power_user.auto_swipe);
     $('#auto_swipe_minimum_length').val(power_user.auto_swipe_minimum_length);
     $('#auto_swipe_blacklist').val(power_user.auto_swipe_blacklist.join(", "));
@@ -920,6 +925,15 @@ function loadContextSettings() {
                 }
             }
         });
+
+        // Select matching instruct preset
+        for (const instruct_preset of instruct_presets) {
+            // If instruct preset matches the context template
+            if (instruct_preset.name === name) {
+                selectInstructPreset(instruct_preset.name);
+                break;
+            }
+        }
     });
 }
 
@@ -1954,9 +1968,10 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $("#continue_on_send").on("input", function () {
+    $("#quick_continue").on("input", function () {
         const value = !!$(this).prop('checked');
-        power_user.continue_on_send = value;
+        power_user.quick_continue = value;
+        $("#mes_continue").css('display', value ? '' : 'none');
         saveSettingsDebounced();
     });
 
