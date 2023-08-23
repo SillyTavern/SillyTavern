@@ -318,8 +318,7 @@ const directories = {
     context: 'public/context',
     backups: 'backups/',
     quickreplies: 'public/QuickReplies',
-    assets_bgm: 'public/assets/audio/bgm',
-    assets_ambient: 'public/assets/audio/ambient'
+    assets: 'public/assets',
 };
 
 // CSRF Protection //
@@ -4935,108 +4934,36 @@ app.post('/delete_extension', jsonParser, async (request, response) => {
     }
 });
 
+
 /**
- * HTTP POST handler function to retrieve local ST default BGM files.
+ * HTTP POST handler function to retrieve name of all files of a given folder path.
  *
- * @param {Object} request - HTTP Request object.
- * @param {Object} response - HTTP Response object will contain a list of audio file path.
+ * @param {Object} request - HTTP Request object. Require folder path in query
+ * @param {Object} response - HTTP Response object will contain a list of file path.
  *
  * @returns {void}
  */
-app.get('/get_default_bgm_list', jsonParser, function (request, response) {
-    const musicsPath = directories.assets_bgm;
-    let files = [];
-    let files_paths = [];
-    //console.info("Checking audio file into",musicsPath);
+app.get('/get_assets_list', jsonParser, function (request, response) {
+    const folderPath = path.join(directories.assets,request.query.folderPath);
+    let output = []
+    //console.info("Checking files into",folderPath);
 
     try {
-        if (fs.existsSync(musicsPath) && fs.statSync(musicsPath).isDirectory()) {
-            files = fs.readdirSync(musicsPath)
-                .filter(file => {
-                    const mimeType = mime.lookup(file);
-                    return mimeType && mimeType.startsWith('audio/');
-                });
-            for(const i of files)
-                files_paths.push(`/assets/audio/bgm/${i}`);
+        if (fs.existsSync(folderPath) && fs.statSync(folderPath).isDirectory()) {
+            const files = fs.readdirSync(folderPath)
+            .filter(filename => {
+                return filename != ".placeholder";
+            });
+
+            for (i of files)
+                output.push(`/assets/${request.query.folderPath}/${i}`);
         }
     }
     catch (err) {
         console.log(err);
     }
     finally {
-        return response.send(files_paths);
-    }
-});
-
-/**
- * HTTP POST handler function to retrieve a ST background ambient sounds files.
- *
- * @param {Object} request - HTTP Request object.
- * @param {Object} response - HTTP Response object will contain a list of audio file path.
- *
- * @returns {void}
- */
-app.get('/get_default_ambient_list', jsonParser, function (request, response) {
-    const musicsPath = directories.assets_ambient;
-    let files = [];
-    let files_paths = [];
-    //console.info("Checking audio file into",musicsPath);
-
-    try {
-        if (fs.existsSync(musicsPath) && fs.statSync(musicsPath).isDirectory()) {
-            files = fs.readdirSync(musicsPath)
-                .filter(file => {
-                    const mimeType = mime.lookup(file);
-                    return mimeType && mimeType.startsWith('audio/');
-                });
-            for(const i of files)
-                files_paths.push(path.join(`/assets/audio/ambient/${i}`));
-        }
-    }
-    catch (err) {
-        console.log(err);
-    }
-    finally {
-        return response.send(files_paths);
-    }
-});
-
-/**
- * HTTP POST handler function to retrieve a character background music list.
- *
- * @param {Object} request - HTTP Request object, expects a character name in the query.
- * @param {Object} response - HTTP Response object will contain a list of audio file path.
- *
- * @returns {void}
- */
-app.get('/get_character_bgm_list', jsonParser, function (request, response) {
-    const AUDIO_FOLDER = "audio"
-    const BGM_FOLDER = "bgm"
-    const name = request.query.name;
-    const musicsPath = path.join(directories.characters, name, AUDIO_FOLDER,BGM_FOLDER);
-    let musics = [];
-
-    try {
-        if (fs.existsSync(musicsPath) && fs.statSync(musicsPath).isDirectory()) {
-            musics = fs.readdirSync(musicsPath)
-                .filter(file => {
-                    const mimeType = mime.lookup(file);
-                    return mimeType && mimeType.startsWith('audio/');
-                })
-                .map((file) => {
-                    const pathToMusic = path.join(musicsPath, file);
-                    return {
-                        label: path.parse(pathToMusic).name.toLowerCase(),
-                        path: `/characters/${name}/${AUDIO_FOLDER}/${BGM_FOLDER}/${file}`,
-                    };
-                });
-        }
-    }
-    catch (err) {
-        console.log(err);
-    }
-    finally {
-        return response.send(musics);
+        return response.send(output);
     }
 });
 
@@ -5068,15 +4995,40 @@ app.get('/asset_download', jsonParser, function (request, response) {
     });
 
     downloadFile(url, file_path)
-/*
-    https.get(url, function(response) {
-        const fileStream  = fs.createWriteStream(file_path);
-        response.pipe(fileStream);
+});
 
-        // after download completed close filestream
-        fileStream.on("finish", () => {
-            fileStream .close();
-            console.log("Download Completed");
-        });
-    });*/
+
+
+///////////////////////////////
+/**
+ * HTTP POST handler function to retrieve a character background music list.
+ *
+ * @param {Object} request - HTTP Request object, expects a character name in the query.
+ * @param {Object} response - HTTP Response object will contain a list of audio file path.
+ *
+ * @returns {void}
+ */
+app.get('/get_character_assets_list', jsonParser, function (request, response) {
+    const name = request.query.name;
+    const assetsFolder = request.query.assetsFolder
+    const folderPath = path.join(directories.characters, name, assetsFolder);
+    let output = [];
+
+    try {
+        if (fs.existsSync(folderPath) && fs.statSync(folderPath).isDirectory()) {
+            const files = fs.readdirSync(folderPath)
+            .filter(filename => {
+                return filename != ".placeholder";
+            });
+
+            for (i of files)
+                output.push(`/characters/${name}/${assetsFolder}/${i}`);
+        }
+    }
+    catch (err) {
+        console.log(err);
+    }
+    finally {
+        return response.send(output);
+    }
 });
