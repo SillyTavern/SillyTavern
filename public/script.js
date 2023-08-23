@@ -129,6 +129,7 @@ import {
     getCharaFilename,
     isDigitsOnly,
     PAGINATION_TEMPLATE,
+    waitUntilCondition,
 } from "./scripts/utils.js";
 
 import { extension_settings, getContext, loadExtensionSettings, processExtensionHelpers, registerExtensionHelper, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
@@ -314,6 +315,8 @@ let safetychat = [
         mes: "You deleted a character/chat and arrived back here for safety reasons! Pick another character!",
     },
 ];
+let chatSaveTimeout;
+export let isChatSaving = false;
 let chat_create_date = 0;
 let firstRun = false;
 
@@ -350,7 +353,6 @@ let scrollLock = false;
 const durationSaveEdit = 1000;
 const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
 export const saveCharacterDebounced = debounce(() => $("#create_button").trigger('click'), durationSaveEdit);
-const saveChatDebounced = debounce(() => saveChatConditional(), durationSaveEdit);
 
 const system_message_types = {
     HELP: "help",
@@ -623,7 +625,6 @@ let is_api_button_press_novel = false;
 let api_use_mancer_webui = false;
 
 let is_send_press = false; //Send generation
-let add_mes_without_animation = false;
 
 let this_del_mes = 0;
 
@@ -818,6 +819,11 @@ function resultCheckStatus() {
 
 export function selectCharacterById(id) {
     if (characters[id] == undefined) {
+        return;
+    }
+
+    if (isChatSaving) {
+        toastr.info("Please wait until the chat is saved before switching characters.", "Your chat is still saving...");
         return;
     }
 
@@ -2287,6 +2293,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             setCharacterName('');
         } else {
             console.log('No enabled members found');
+            is_send_press = false;
             return;
         }
     }
@@ -4133,6 +4140,32 @@ async function renamePastChats(newAvatar, newValue) {
     }
 }
 
+function saveChatDebounced() {
+    const chid = this_chid;
+    const selectedGroup = selected_group;
+
+    if (chatSaveTimeout) {
+        console.debug('Clearing chat save timeout');
+        clearTimeout(chatSaveTimeout);
+    }
+
+    chatSaveTimeout = setTimeout(async () => {
+        if (selectedGroup !== selected_group) {
+            console.warn('Chat save timeout triggered, but group changed. Aborting.');
+            return;
+        }
+
+        if (chid !== this_chid) {
+            console.warn('Chat save timeout triggered, but chid changed. Aborting.');
+            return;
+        }
+
+        console.debug('Chat save timeout triggered');
+        await saveChatConditional();
+        console.debug('Chat saved');
+    }, 1000);
+}
+
 async function saveChat(chat_name, withMetadata, mesId) {
     const metadata = { ...chat_metadata, ...(withMetadata || {}) };
     let file_name = chat_name ?? characters[this_chid].chat;
@@ -4284,7 +4317,6 @@ async function getChat() {
             chat_create_date = humanizedDateTime();
         }
         await getChatResult();
-        saveChatDebounced();
         eventSource.emit('chatLoaded', { detail: { id: this_chid, character: characters[this_chid] } });
 
         setTimeout(function () {
@@ -4300,26 +4332,9 @@ async function getChat() {
 async function getChatResult() {
     name2 = characters[this_chid].name;
     if (chat.length === 0) {
-        const firstMes = characters[this_chid].first_mes || default_ch_mes;
-        const alternateGreetings = characters[this_chid]?.data?.alternate_greetings;
-
-        chat[0] = {
-            name: name2,
-            is_user: false,
-            is_name: true,
-            send_date: getMessageTimeStamp(),
-            mes: getRegexedString(firstMes, regex_placement.AI_OUTPUT),
-        };
-
-        if (Array.isArray(alternateGreetings) && alternateGreetings.length > 0) {
-            chat[0]['swipe_id'] = 0;
-            chat[0]['swipes'] = [chat[0]['mes']].concat(
-                alternateGreetings.map(
-                    (greeting) => substituteParams(getRegexedString(greeting, regex_placement.AI_OUTPUT))
-                )
-            );
-            chat[0]['swipe_info'] = [];
-        }
+        const message = getFirstMessage();
+        chat.push(message);
+        await saveChatConditional();
     }
     printMessages();
     select_selected_character(this_chid);
@@ -4330,6 +4345,30 @@ async function getChatResult() {
         await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
         await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, (chat.length - 1));
     }
+}
+
+function getFirstMessage() {
+    const firstMes = characters[this_chid].first_mes || default_ch_mes;
+    const alternateGreetings = characters[this_chid]?.data?.alternate_greetings;
+
+    const message = {
+        name: name2,
+        is_user: false,
+        is_name: true,
+        send_date: getMessageTimeStamp(),
+        mes: getRegexedString(firstMes, regex_placement.AI_OUTPUT),
+    };
+
+    if (Array.isArray(alternateGreetings) && alternateGreetings.length > 0) {
+        message['swipe_id'] = 0;
+        message['swipes'] = message['mes'].concat(
+            alternateGreetings.map(
+                (greeting) => substituteParams(getRegexedString(greeting, regex_placement.AI_OUTPUT))
+            )
+        );
+        message['swipe_info'] = [];
+    }
+    return message;
 }
 
 async function openCharacterChat(file_name) {
@@ -4866,7 +4905,7 @@ async function deleteUserAvatar() {
         if (avatarId === chat_metadata['persona']) {
             toastr.warning('The locked persona was deleted. You will need to set a new persona for this chat.', 'Persona deleted');
             delete chat_metadata['persona'];
-            saveMetadata();
+            await saveMetadata();
         }
 
         saveSettingsDebounced();
@@ -4875,11 +4914,11 @@ async function deleteUserAvatar() {
     }
 }
 
-function lockUserNameToChat() {
+async function lockUserNameToChat() {
     if (chat_metadata['persona']) {
         console.log(`Unlocking persona for this chat ${chat_metadata['persona']}`);
         delete chat_metadata['persona'];
-        saveMetadata();
+        await saveMetadata();
         if (power_user.persona_show_notifications) {
             toastr.info('User persona is now unlocked for this chat. Click the "Lock" again to revert.', 'Persona unlocked');
         }
@@ -4901,7 +4940,7 @@ function lockUserNameToChat() {
     }
 
     chat_metadata['persona'] = user_avatar;
-    saveMetadata();
+    await saveMetadata();
     saveSettingsDebounced();
     console.log(`Locking persona for this chat ${user_avatar}`);
     if (power_user.persona_show_notifications) {
@@ -6000,23 +6039,38 @@ function hideSwipeButtons() {
 
 async function saveMetadata() {
     if (selected_group) {
-        await editGroup(selected_group, false, false);
+        await editGroup(selected_group, true, false);
     }
     else {
-        saveChatDebounced();
+        await saveChatConditional();
     }
 }
 
 export async function saveChatConditional() {
-    if (selected_group) {
-        await saveGroupChat(selected_group, true);
-    }
-    else {
-        await saveChat();
+    try {
+        await waitUntilCondition(() => !isChatSaving, durationSaveEdit, 100);
+    } catch {
+        console.warn('Timeout waiting for chat to save');
+        return;
     }
 
-    // Save token cache to IndexedDB storage
-    await saveTokenCache();
+    try {
+        isChatSaving = true;
+
+        if (selected_group) {
+            await saveGroupChat(selected_group, true);
+        }
+        else {
+            await saveChat();
+        }
+
+        // Save token cache to IndexedDB storage
+        saveTokenCache();
+    } catch (error) {
+        console.error('Error saving chat', error);
+    } finally {
+        isChatSaving = false;
+    }
 }
 
 async function importCharacterChat(formData) {
@@ -6448,58 +6502,6 @@ async function createOrEditCharacter(e) {
             contentType: false,
             processData: false,
             success: async function (html) {
-                if (chat.length === 1 && !selected_group) {
-                    var this_ch_mes = default_ch_mes;
-
-                    if ($("#firstmessage_textarea").val() != "") {
-                        this_ch_mes = $("#firstmessage_textarea").val();
-                    }
-
-                    if (
-                        this_ch_mes !=
-                        $.trim(
-                            $("#chat")
-                                .children(".mes")
-                                .children(".mes_block")
-                                .children(".mes_text")
-                                .text()
-                        )
-                    ) {
-                        // MARK - kingbri: Regex on character greeting message
-                        // May need to be placed somewhere else
-                        this_ch_mes = getRegexedString(this_ch_mes, regex_placement.AI_OUTPUT);
-
-                        clearChat();
-                        chat.length = 0;
-                        chat[0] = {};
-                        chat[0]["name"] = name2;
-                        chat[0]["is_user"] = false;
-                        chat[0]["is_name"] = true;
-                        chat[0]["mes"] = this_ch_mes;
-                        chat[0]["extra"] = {};
-                        chat[0]["send_date"] = getMessageTimeStamp();
-
-                        const alternateGreetings = characters[this_chid]?.data?.alternate_greetings;
-
-                        if (Array.isArray(alternateGreetings) && alternateGreetings.length > 0) {
-                            chat[0]['swipe_id'] = 0;
-                            chat[0]['swipes'] = [];
-                            chat[0]['swipe_info'] = [];
-                            chat[0]['swipes'][0] = chat[0]['mes'];
-
-                            for (let i = 0; i < alternateGreetings.length; i++) {
-                                const alternateGreeting = getRegexedString(alternateGreetings[i], regex_placement.AI_OUTPUT);
-                                chat[0]['swipes'].push(substituteParams(alternateGreeting));
-                            }
-                        }
-
-                        add_mes_without_animation = true;
-                        //console.log('form create submission calling addOneMessage');
-                        await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
-                        addOneMessage(chat[0]);
-                        await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, (chat.length - 1));
-                    }
-                }
                 $("#create_button").removeAttr("disabled");
 
                 await getOneCharacter(formData.get('avatar_url'));
@@ -6510,6 +6512,17 @@ async function createOrEditCharacter(e) {
                 $("#create_button").attr("value", "Save");
                 crop_data = undefined;
                 eventSource.emit(event_types.CHARACTER_EDITED, { detail: { id: this_chid, character: characters[this_chid] } });
+
+                if (chat.length === 1 && !selected_group) {
+                    const firstMessage = getFirstMessage();
+                    chat[0] = firstMessage;
+
+                    await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
+                    clearChat();
+                    printMessages();
+                    await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, (chat.length - 1));
+                    await saveChatConditional();
+                }
             },
             error: function (jqXHR, exception) {
                 $("#create_button").removeAttr("disabled");
@@ -7624,11 +7637,11 @@ $(document).ready(function () {
             else {
                 if (characters[this_chid].chat == old_filename) {
                     characters[this_chid].chat = newName;
-                    saveCharacterDebounced();
+                    await createOrEditCharacter();
                 }
             }
 
-            reloadCurrentChat();
+            await reloadCurrentChat();
 
             await delay(250);
             $("#option_select_chat").trigger('click');
