@@ -20,7 +20,11 @@ import {
     groups,
     resetSelectedGroup,
 } from "./group-chats.js";
-import { loadInstructMode } from "./instruct-mode.js";
+import {
+    instruct_presets,
+    loadInstructMode,
+    selectInstructPreset,
+} from "./instruct-mode.js";
 
 import { registerSlashCommand } from "./slash-commands.js";
 
@@ -204,7 +208,7 @@ let power_user = {
 
 let themes = [];
 let movingUIPresets = [];
-let context_presets = [];
+export let context_presets = [];
 
 const storage_keys = {
     fast_ui_mode: "TavernAI_fast_ui_mode",
@@ -931,6 +935,13 @@ function loadContextSettings() {
                 }
             }
         });
+
+        for (const instruct_preset of instruct_presets) {
+            // If instruct preset matches the context template
+            if (instruct_preset.name === name) {
+                selectInstructPreset(name);
+            }
+        }
     });
 }
 

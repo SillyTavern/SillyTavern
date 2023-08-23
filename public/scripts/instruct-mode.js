@@ -2,7 +2,10 @@
 
 import { saveSettingsDebounced, substituteParams } from "../script.js";
 import { selected_group } from "./group-chats.js";
-import { power_user } from "./power-user.js";
+import {
+    power_user,
+    context_presets,
+} from "./power-user.js";
 
 /**
  * @type {any[]} Instruct mode presets.
@@ -70,6 +73,44 @@ function highlightDefaultPreset() {
 }
 
 /**
+ * Select context template if not already selected.
+ * @param {string} preset Preset name.
+ */
+function selectContextPreset(preset) {
+    // If preset is not already selected, select it
+    if (power_user.context.preset !== preset) {
+        $('#context_presets').val(preset).trigger('change');
+        toastr.info(`Context Template: preset "${preset}" auto-selected`);
+
+        // If instruct mode is disabled, enable it
+        if (!power_user.instruct.enabled) {
+            $('#instruct_enabled').prop('checked', true).trigger('change');
+            power_user.instruct.enabled = true;
+            toastr.info(`Instruct Mode enabled`);
+        }
+    }
+}
+
+/**
+ * Select instruct preset if not already selected.
+ * @param {string} preset Preset name.
+ */
+export function selectInstructPreset(preset) {
+    // If preset is not already selected, select it
+    if (power_user.instruct.preset !== preset) {
+        $('#instruct_presets').val(preset).trigger('change');
+        toastr.info(`Instruct Mode: preset "${preset}" auto-selected`);
+
+        // If instruct mode is disabled, enable it
+        if (!power_user.instruct.enabled) {
+            $('#instruct_enabled').prop('checked', true).trigger('change');
+            power_user.instruct.enabled = true;
+            toastr.info(`Instruct Mode enabled`);
+        }
+    }
+}
+
+/**
  * Automatically select instruct preset based on model id.
  * Otherwise, if default instruct preset is set, selects it.
  * @param {string} modelId Model name reported by the API.
@@ -82,20 +123,17 @@ export function autoSelectInstructPreset(modelId) {
     }
 
     for (const preset of instruct_presets) {
-        // If activation regex is set, check if it matches the model id
-        if (preset.activation_regex) {
+        // If context template matches the preset name
+        if (power_user.context.preset === preset.name) {
+            selectInstructPreset(preset.name);
+        // Else if activation regex is set, check if it matches the model id
+        } else if (preset.activation_regex) {
             try {
                 const regex = new RegExp(preset.activation_regex, 'i');
 
                 // Stop on first match so it won't cycle back and forth between presets if multiple regexes match
                 if (regex.test(modelId)) {
-                    // If preset is not already selected, select it
-                    if (power_user.instruct.preset !== preset.name) {
-                        $('#instruct_presets').val(preset.name).trigger('change');
-                        toastr.info(`Instruct mode: preset "${preset.name}" auto-selected`);
-
-                        return true;
-                    }
+                    selectInstructPreset(preset.name);
                 }
             } catch {
                 // If regex is invalid, ignore it
@@ -259,6 +297,13 @@ jQuery(() => {
         saveSettingsDebounced();
     });
 
+    $('#instruct_enabled').on('change', function () {
+        // When instruct mode gets enabled, select context template matching selected instruct preset
+        if (power_user.instruct.enabled) {
+            $('#instruct_presets').trigger('change');
+        }
+    });
+
     $('#instruct_presets').on('change', function () {
         const name = $(this).find(':selected').val();
         const preset = instruct_presets.find(x => x.name === name);
@@ -280,6 +325,13 @@ jQuery(() => {
                 }
             }
         });
+
+        for (const context_preset of context_presets) {
+            // If context template matches the instruct preset
+            if (context_preset.name === name) {
+                selectContextPreset(name);
+            }
+        }
 
         highlightDefaultPreset();
     });
