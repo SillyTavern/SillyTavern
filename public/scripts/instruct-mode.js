@@ -219,9 +219,10 @@ export function getInstructStoppingSequences() {
  * @param {string} forceAvatar Force avatar string.
  * @param {string} name1 User name.
  * @param {string} name2 Character name.
+ * @param {boolean} forceLastOutputSequence Force to use last outline sequence (if configured).
  * @returns {string} Formatted instruct mode chat message.
  */
-export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvatar, name1, name2) {
+export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvatar, name1, name2, forceLastOutputSequence) {
     let includeNames = isNarrator ? false : power_user.instruct.names;
 
     if (!isNarrator && power_user.instruct.names_force_groups && (selected_group || forceAvatar)) {
@@ -229,6 +230,10 @@ export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvata
     }
 
     let sequence = (isUser || isNarrator) ? power_user.instruct.input_sequence : power_user.instruct.output_sequence;
+
+    if (sequence === power_user.instruct.output_sequence && forceLastOutputSequence && power_user.instruct.last_output_sequence) {
+        sequence = power_user.instruct.last_output_sequence;
+    }
 
     if (power_user.instruct.macro) {
         sequence = substituteParams(sequence, name1, name2);

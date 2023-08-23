@@ -2423,10 +2423,15 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 break;
             }
 
-            chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct);
+            chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct, false);
 
             // Do not suffix the message for continuation
             if (i === 0 && isContinue) {
+                if (isInstruct) {
+                    // Reformat with the last output line (if any)
+                    chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct, true);
+                }
+
                 chat2[i] = chat2[i].slice(0, chat2[i].lastIndexOf(coreChat[j].mes) + coreChat[j].mes.length);
                 continue_mag = coreChat[j].mes;
             }
@@ -2595,16 +2600,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         return;
                     }
 
-                    if (i === arrMes.length - 1 && !item.trim().startsWith(name1 + ":")) {
-                        //if (textareaText == "") {
-                        // Cohee: I think this was added to allow the model to continue
-                        // where it left off by removing the trailing newline at the end
-                        // that was added by chat2 generator. This causes problems with
-                        // instruct mode that could not have a trailing newline. So we're
-                        // removing a newline ONLY at the end of the string if it exists.
+                    // Cohee: I'm not even sure what this is for anymore
+                    if (i === arrMes.length - 1 && type !== 'continue') {
                         item = item.replace(/\n?$/, '');
-                        //item = item.substr(0, item.length - 1);
-                        //}
                     }
                     if (is_pygmalion && !isInstruct) {
                         if (item.trim().startsWith(name1)) {
@@ -2650,7 +2648,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 // Add quiet generation prompt at depth 0
                 if (quiet_prompt && quiet_prompt.length) {
                     const name = is_pygmalion ? 'You' : name1;
-                    const quietAppend = isInstruct ? formatInstructModeChat(name, quiet_prompt, false, true, false, name1, name2) : `\n${name}: ${quiet_prompt}`;
+                    const quietAppend = isInstruct ? formatInstructModeChat(name, quiet_prompt, false, true, '', name1, name2, false) : `\n${name}: ${quiet_prompt}`;
                     lastMesString += quietAppend;
                     // Bail out early
                     return lastMesString;
@@ -3213,7 +3211,12 @@ export function getBiasStrings(textareaText, type) {
     return { messageBias, promptBias, isUserPromptBias };
 }
 
-function formatMessageHistoryItem(chatItem, isInstruct) {
+/**
+ * @param {Object} chatItem Message history item.
+ * @param {boolean} isInstruct Whether instruct mode is enabled.
+ * @param {boolean} forceLastOutputSequence Whether to force the last output sequence for instruct mode.
+ */
+function formatMessageHistoryItem(chatItem, isInstruct, forceLastOutputSequence) {
     const isNarratorType = chatItem?.extra?.type === system_message_types.NARRATOR;
     const characterName = (selected_group || chatItem.force_avatar) ? chatItem.name : name2;
     const itemName = chatItem.is_user ? chatItem['name'] : characterName;
@@ -3222,7 +3225,7 @@ function formatMessageHistoryItem(chatItem, isInstruct) {
     let textResult = shouldPrependName ? `${itemName}: ${chatItem.mes}\n` : `${chatItem.mes}\n`;
 
     if (isInstruct) {
-        textResult = formatInstructModeChat(itemName, chatItem.mes, chatItem.is_user, isNarratorType, chatItem.force_avatar, name1, name2);
+        textResult = formatInstructModeChat(itemName, chatItem.mes, chatItem.is_user, isNarratorType, chatItem.force_avatar, name1, name2, forceLastOutputSequence);
     }
 
     textResult = replaceBiasMarkup(textResult);
