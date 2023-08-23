@@ -1772,6 +1772,12 @@ const chatCompletionDefaultPrompts = {
             "system_prompt": true,
             "marker": true,
         },
+        {
+            "identifier": "personaDescription",
+            "name": "Persona Description",
+            "system_prompt": true,
+            "marker": true,
+        },
     ]
 };
 
@@ -1786,6 +1792,10 @@ const promptManagerDefaultPromptOrder = [
     },
     {
         "identifier": "worldInfoBefore",
+        "enabled": true
+    },
+    {
+        "identifier": "personaDescription",
         "enabled": true
     },
     {

@@ -2887,6 +2887,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     cyclePrompt: cyclePrompt,
                     systemPromptOverride: systemPrompt,
                     jailbreakPromptOverride: jailbreakPrompt,
+                    personaDescription: personaDescription
                 }, dryRun);
                 generate_data = { prompt: prompt };
 
