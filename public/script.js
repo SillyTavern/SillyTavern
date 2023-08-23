@@ -2823,7 +2823,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             let finalPromt = getCombinedPrompt(false);
 
             // Include the entire guidance scale object
-            const cfgValues = cfgGuidanceScale && cfgGuidanceScale?.value !== 1 ? ({guidanceScale: cfgGuidanceScale, negativePrompt: negativePrompt }) : null;
+            const cfgValues = cfgGuidanceScale && cfgGuidanceScale?.value !== 1 ? ({ guidanceScale: cfgGuidanceScale, negativePrompt: negativePrompt }) : null;
 
             let this_amount_gen = Number(amount_gen); // how many tokens the AI will be requested to generate
             let this_settings = koboldai_settings[koboldai_setting_names[preset_settings]];
@@ -8007,6 +8007,32 @@ $(document).ready(function () {
     });
 
     ////////////////// OPTIMIZED RANGE SLIDER LISTENERS////////////////
+
+    var sliderLocked = true;
+    var sliderTimer;
+
+    $("input[type='range']").on("touchstart", function () {
+        // Unlock the slider after 500ms
+        sliderTimer = setTimeout(function () {
+            sliderLocked = false;
+        }, 500);
+    });
+
+    $("input[type='range']").on("touchend", function () {
+        clearTimeout(sliderTimer);
+        $(this).css('background-color', '')
+        sliderLocked = true
+    });
+
+    $("input[type='range']").on("touchmove", function (event) {
+        if (sliderLocked) {
+            event.preventDefault();
+        }
+        else {
+            $(this).css('background-color', 'var(--SmartThemeQuoteColor)')
+        }
+    });
+
 
     const sliders = [
         {
