@@ -818,7 +818,7 @@ function addSDGenButtons() {
     $(document).on('click touchend', function (e) {
         const target = $(e.target);
         if (target.is(dropdown)) return;
-        if (target.is(button) && !dropdown.is(":visible") && $("#send_but").css('display') === 'flex') {
+        if (target.is(button) && !dropdown.is(":visible") && $("#send_but").is(":visible")) {
             e.preventDefault();
 
             dropdown.fadeIn(250);

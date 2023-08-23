@@ -151,7 +151,7 @@ let power_user = {
     max_context_unlocked: false,
     prefer_character_prompt: true,
     prefer_character_jailbreak: true,
-    continue_on_send: false,
+    quick_continue: false,
     trim_spaces: true,
     relaxed_api_urls: false,
 
@@ -708,7 +708,8 @@ function loadPowerUserSettings(settings, data) {
 
     $('#relaxed_api_urls').prop("checked", power_user.relaxed_api_urls);
     $('#trim_spaces').prop("checked", power_user.trim_spaces);
-    $('#continue_on_send').prop("checked", power_user.continue_on_send);
+    $('#quick_continue').prop("checked", power_user.quick_continue);
+    $('#mes_continue').css('display', power_user.quick_continue ? '' : 'none');
     $('#auto_swipe').prop("checked", power_user.auto_swipe);
     $('#auto_swipe_minimum_length').val(power_user.auto_swipe_minimum_length);
     $('#auto_swipe_blacklist').val(power_user.auto_swipe_blacklist.join(", "));
@@ -1967,9 +1968,10 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $("#continue_on_send").on("input", function () {
+    $("#quick_continue").on("input", function () {
         const value = !!$(this).prop('checked');
-        power_user.continue_on_send = value;
+        power_user.quick_continue = value;
+        $("#mes_continue").css('display', value ? '' : 'none');
         saveSettingsDebounced();
     });
 

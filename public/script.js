@@ -2320,10 +2320,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
         }
 
-        if (!type && !textareaText && power_user.continue_on_send && !selected_group && chat.length && !chat[chat.length - 1]['is_user']) {
-            type = 'continue';
-        }
-
         const isContinue = type == 'continue';
 
         if (!dryRun) {
@@ -3966,14 +3962,16 @@ export function isMultigenEnabled() {
 
 export function activateSendButtons() {
     is_send_press = false;
-    $("#send_but").css("display", "flex");
+    $("#send_but").removeClass("displayNone");
+    $("#mes_continue").removeClass("displayNone");
     $("#send_textarea").attr("disabled", false);
     $('.mes_buttons:last').show();
     hideStopButton();
 }
 
 export function deactivateSendButtons() {
-    $("#send_but").css("display", "none");
+    $("#send_but").addClass("displayNone");
+    $("#mes_continue").addClass("displayNone");
     showStopButton();
 }
 
@@ -7160,7 +7158,7 @@ $(document).ready(function () {
         S_TAPreviouslyFocused = true;
     });
     $('#send_textarea').on('focusout blur', () => S_TAFocused = false);
-    $('#options_button, #send_but, #option_regenerate').on('click', () => {
+    $('#options_button, #send_but, #option_regenerate, #option_continue, #mes_continue').on('click', () => {
         if (S_TAPreviouslyFocused) {
             $('#send_textarea').focus();
             S_TAFocused = true;
@@ -7168,8 +7166,8 @@ $(document).ready(function () {
     });
     $(document).click(event => {
         if ($(':focus').attr('id') !== 'send_textarea') {
-            var validIDs = ["options_button", "send_but", "send_textarea", "option_regenerate"];
-            if ($(event.target).attr('id') !== validIDs) {
+            var validIDs = ["options_button", "send_but", "mes_continue", "send_textarea", "option_regenerate", "option_continue"];
+            if (!validIDs.includes($(event.target).attr('id'))) {
                 S_TAFocused = false;
                 S_TAPreviouslyFocused = false;
             }
@@ -7203,7 +7201,11 @@ $(document).ready(function () {
         entitiesFilter.setFilterData(FILTER_TYPES.SEARCH, searchValue);
     });
 
-    $("#send_but").click(function () {
+    $("#mes_continue").on('click', function () {
+        $("#option_continue").trigger('click');
+    });
+
+    $("#send_but").on('click', function () {
         if (is_send_press == false) {
             is_send_press = true;
             Generate();

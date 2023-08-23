@@ -128,7 +128,7 @@
         "max_context_unlocked": false,
         "prefer_character_prompt": true,
         "prefer_character_jailbreak": true,
-        "continue_on_send": false,
+        "quick_continue": false,
         "trim_spaces": true,
         "relaxed_api_urls": false,
         "default_instruct": "",
