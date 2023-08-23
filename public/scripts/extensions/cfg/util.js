@@ -39,10 +39,12 @@ export function getGuidanceScale() {
         };
     }
 
-    return {
-        type: cfgType.global,
-        value: extension_settings.cfg.global.guidance_scale
-    };
+    if (extension_settings.cfg.global && extension_settings.cfg.global?.guidance_scale !== 1) {
+        return {
+            type: cfgType.global,
+            value: extension_settings.cfg.global.guidance_scale
+        };
+    }
 }
 
 // Gets the CFG prompt
