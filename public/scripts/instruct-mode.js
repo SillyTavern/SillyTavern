@@ -77,18 +77,20 @@ function highlightDefaultPreset() {
  * @param {string} preset Preset name.
  */
 function selectContextPreset(preset) {
-    // If preset is not already selected, select it
-    if (power_user.context.preset !== preset) {
+    // If context template is not already selected, select it
+    if (preset !== power_user.context.preset) {
         $('#context_presets').val(preset).trigger('change');
         toastr.info(`Context Template: preset "${preset}" auto-selected`);
-
-        // If instruct mode is disabled, enable it
-        if (!power_user.instruct.enabled) {
-            $('#instruct_enabled').prop('checked', true).trigger('change');
-            power_user.instruct.enabled = true;
-            toastr.info(`Instruct Mode enabled`);
-        }
     }
+
+    // If instruct mode is disabled, enable it, except for default context template
+    if (!power_user.instruct.enabled && preset !== 'Default') {
+        power_user.instruct.enabled = true;
+        $('#instruct_enabled').prop('checked', true).trigger('change');
+        toastr.info(`Instruct Mode enabled`);
+    }
+
+    saveSettingsDebounced();
 }
 
 /**
@@ -96,18 +98,20 @@ function selectContextPreset(preset) {
  * @param {string} preset Preset name.
  */
 export function selectInstructPreset(preset) {
-    // If preset is not already selected, select it
-    if (power_user.instruct.preset !== preset) {
+    // If instruct preset is not already selected, select it
+    if (preset !== power_user.instruct.preset) {
         $('#instruct_presets').val(preset).trigger('change');
         toastr.info(`Instruct Mode: preset "${preset}" auto-selected`);
-
-        // If instruct mode is disabled, enable it
-        if (!power_user.instruct.enabled) {
-            $('#instruct_enabled').prop('checked', true).trigger('change');
-            power_user.instruct.enabled = true;
-            toastr.info(`Instruct Mode enabled`);
-        }
     }
+
+    // If instruct mode is disabled, enable it
+    if (!power_user.instruct.enabled) {
+        power_user.instruct.enabled = true;
+        $('#instruct_enabled').prop('checked', true).trigger('change');
+        toastr.info(`Instruct Mode enabled`);
+    }
+
+    saveSettingsDebounced();
 }
 
 /**
@@ -122,30 +126,42 @@ export function autoSelectInstructPreset(modelId) {
         return false;
     }
 
-    for (const preset of instruct_presets) {
-        // If context template matches the preset name
-        if (power_user.context.preset === preset.name) {
-            selectInstructPreset(preset.name);
-        // Else if activation regex is set, check if it matches the model id
-        } else if (preset.activation_regex) {
-            try {
-                const regex = new RegExp(preset.activation_regex, 'i');
-
-                // Stop on first match so it won't cycle back and forth between presets if multiple regexes match
-                if (regex.test(modelId)) {
-                    selectInstructPreset(preset.name);
-                }
-            } catch {
-                // If regex is invalid, ignore it
-                console.warn(`Invalid instruct activation regex in preset "${preset.name}"`);
-            }
+    // Select matching instruct preset
+    let foundMatch = false;
+    for (const instruct_preset of instruct_presets) {
+        // If instruct preset matches the context template
+        if (instruct_preset.name === power_user.context.preset) {
+            foundMatch = true;
+            selectInstructPreset(instruct_preset.name);
+            break;
         }
     }
+    // If no match was found, auto-select instruct preset
+    if (!foundMatch) {
+        for (const preset of instruct_presets) {
+            // If activation regex is set, check if it matches the model id
+            if (preset.activation_regex) {
+                try {
+                    const regex = new RegExp(preset.activation_regex, 'i');
 
-    if (power_user.default_instruct && power_user.instruct.preset !== power_user.default_instruct) {
-        if (instruct_presets.some(p => p.name === power_user.default_instruct)) {
-            console.log(`Instruct mode: default preset "${power_user.default_instruct}" selected`);
-            $('#instruct_presets').val(power_user.default_instruct).trigger('change');
+                    // Stop on first match so it won't cycle back and forth between presets if multiple regexes match
+                    if (regex.test(modelId)) {
+                        selectInstructPreset(preset.name);
+
+                        return true;
+                    }
+                } catch {
+                    // If regex is invalid, ignore it
+                    console.warn(`Invalid instruct activation regex in preset "${preset.name}"`);
+                }
+            }
+        }
+
+        if (power_user.default_instruct && power_user.instruct.preset !== power_user.default_instruct) {
+            if (instruct_presets.some(p => p.name === power_user.default_instruct)) {
+                console.log(`Instruct mode: default preset "${power_user.default_instruct}" selected`);
+                $('#instruct_presets').val(power_user.default_instruct).trigger('change');
+            }
         }
     }
 
@@ -301,6 +317,9 @@ jQuery(() => {
         // When instruct mode gets enabled, select context template matching selected instruct preset
         if (power_user.instruct.enabled) {
             $('#instruct_presets').trigger('change');
+        // When instruct mode gets disabled, select default context preset
+        } else {
+            selectContextPreset('Default');
         }
     });
 
@@ -326,11 +345,19 @@ jQuery(() => {
             }
         });
 
+        // Select matching context template
+        let foundMatch = false;
         for (const context_preset of context_presets) {
             // If context template matches the instruct preset
             if (context_preset.name === name) {
-                selectContextPreset(name);
+                foundMatch = true;
+                selectContextPreset(context_preset.name);
+                break;
             }
+        }
+        if (!foundMatch) {
+            // If no match was found, select default context preset
+            selectContextPreset('Default');
         }
 
         highlightDefaultPreset();

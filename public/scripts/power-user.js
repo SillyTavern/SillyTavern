@@ -936,10 +936,12 @@ function loadContextSettings() {
             }
         });
 
+        // Select matching instruct preset
         for (const instruct_preset of instruct_presets) {
             // If instruct preset matches the context template
             if (instruct_preset.name === name) {
-                selectInstructPreset(name);
+                selectInstructPreset(instruct_preset.name);
+                break;
             }
         }
     });
