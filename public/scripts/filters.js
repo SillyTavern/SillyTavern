@@ -1,6 +1,10 @@
 import { fuzzySearchCharacters, fuzzySearchGroups, fuzzySearchWorldInfo, power_user } from "./power-user.js";
 import { tag_map } from "./tags.js";
 
+/**
+ * The filter types.
+ * @type {Object.<string, string>}
+ */
 export const FILTER_TYPES = {
     SEARCH: 'search',
     TAG: 'tag',
@@ -9,11 +13,26 @@ export const FILTER_TYPES = {
     WORLD_INFO_SEARCH: 'world_info_search',
 };
 
+/**
+ * Helper class for filtering data.
+ * @example
+ * const filterHelper = new FilterHelper(() => console.log('data changed'));
+ * filterHelper.setFilterData(FILTER_TYPES.SEARCH, 'test');
+ * data = filterHelper.applyFilters(data);
+ */
 export class FilterHelper {
+    /**
+     * Creates a new FilterHelper
+     * @param {Function} onDataChanged Callback to trigger when the filter data changes
+     */
     constructor(onDataChanged) {
         this.onDataChanged = onDataChanged;
     }
 
+    /**
+     * The filter functions.
+     * @type {Object.<string, Function>}
+     */
     filterFunctions = {
         [FILTER_TYPES.SEARCH]: this.searchFilter.bind(this),
         [FILTER_TYPES.GROUP]: this.groupFilter.bind(this),
@@ -22,6 +41,10 @@ export class FilterHelper {
         [FILTER_TYPES.WORLD_INFO_SEARCH]: this.wiSearchFilter.bind(this),
     }
 
+    /**
+     * The filter data.
+     * @type {Object.<string, any>}
+     */
     filterData = {
         [FILTER_TYPES.SEARCH]: '',
         [FILTER_TYPES.GROUP]: false,
@@ -30,6 +53,11 @@ export class FilterHelper {
         [FILTER_TYPES.WORLD_INFO_SEARCH]: '',
     }
 
+    /**
+     * Applies a fuzzy search filter to the World Info data.
+     * @param {any[]} data The data to filter. Must have a uid property.
+     * @returns {any[]} The filtered data.
+     */
     wiSearchFilter(data) {
         const term = this.filterData[FILTER_TYPES.WORLD_INFO_SEARCH];
 
@@ -41,6 +69,11 @@ export class FilterHelper {
         return data.filter(entity => fuzzySearchResults.includes(entity.uid));
     }
 
+    /**
+     * Applies a tag filter to the data.
+     * @param {any[]} data The data to filter.
+     * @returns {any[]} The filtered data.
+     */
     tagFilter(data) {
         const TAG_LOGIC_AND = true; // switch to false to use OR logic for combining tags
         const { selected, excluded } = this.filterData[FILTER_TYPES.TAG];
@@ -76,6 +109,11 @@ export class FilterHelper {
         return data.filter(entity => getIsTagged(entity));
     }
 
+    /**
+     * Applies a favorite filter to the data.
+     * @param {any[]} data The data to filter.
+     * @returns {any[]} The filtered data.
+     */
     favFilter(data) {
         if (!this.filterData[FILTER_TYPES.FAV]) {
             return data;
@@ -84,6 +122,11 @@ export class FilterHelper {
         return data.filter(entity => entity.item.fav || entity.item.fav == "true");
     }
 
+    /**
+     * Applies a group type filter to the data.
+     * @param {any[]} data The data to filter.
+     * @returns {any[]} The filtered data.
+     */
     groupFilter(data) {
         if (!this.filterData[FILTER_TYPES.GROUP]) {
             return data;
@@ -92,6 +135,11 @@ export class FilterHelper {
         return data.filter(entity => entity.type === 'group');
     }
 
+    /**
+     * Applies a search filter to the data. Uses fuzzy search if enabled.
+     * @param {any[]} data The data to filter.
+     * @returns {any[]} The filtered data.
+     */
     searchFilter(data) {
         if (!this.filterData[FILTER_TYPES.SEARCH]) {
             return data;
@@ -122,6 +170,12 @@ export class FilterHelper {
         return data.filter(entity => getIsValidSearch(entity));
     }
 
+    /**
+     * Sets the filter data for the given filter type.
+     * @param {string} filterType The filter type to set data for.
+     * @param {any} data The data to set.
+     * @param {boolean} suppressDataChanged Whether to suppress the data changed callback.
+     */
     setFilterData(filterType, data, suppressDataChanged = false) {
         const oldData = this.filterData[filterType];
         this.filterData[filterType] = data;
@@ -132,10 +186,19 @@ export class FilterHelper {
         }
     }
 
+    /**
+     * Gets the filter data for the given filter type.
+     * @param {string} filterType The filter type to get data for.
+     */
     getFilterData(filterType) {
         return this.filterData[filterType];
     }
 
+    /**
+     * Applies all filters to the given data.
+     * @param {any[]} data The data to filter.
+     * @returns {any[]} The filtered data.
+     */
     applyFilters(data) {
         return Object.values(this.filterFunctions)
             .reduce((data, fn) => fn(data), data);

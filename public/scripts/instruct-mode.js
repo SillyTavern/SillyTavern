@@ -4,6 +4,9 @@ import { saveSettingsDebounced, substituteParams } from "../script.js";
 import { selected_group } from "./group-chats.js";
 import { power_user } from "./power-user.js";
 
+/**
+ * @type {any[]} Instruct mode presets.
+ */
 export let instruct_presets = [];
 
 const controls = [
@@ -116,6 +119,11 @@ export function autoSelectInstructPreset(modelId) {
  * @returns {string[]} Array of instruct mode stopping strings.
  */
 export function getInstructStoppingSequences() {
+    /**
+     * Adds instruct mode sequence to the result array.
+     * @param {string} sequence Sequence string.
+     * @returns {void}
+     */
     function addInstructSequence(sequence) {
         // Cohee: oobabooga's textgen always appends newline before the sequence as a stopping string
         // But it's a problem for Metharme which doesn't use newlines to separate them.
@@ -215,6 +223,7 @@ export function formatInstructModeExamples(mesExamples, name1, name2) {
  * @param {string} promptBias Prompt bias string.
  * @param {string} name1 User name.
  * @param {string} name2 Character name.
+ * @returns {string} Formatted instruct mode last prompt line.
  */
 export function formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2) {
     const includeNames = power_user.instruct.names || (!!selected_group && power_user.instruct.names_force_groups);
@@ -258,7 +267,7 @@ jQuery(() => {
             return;
         }
 
-        power_user.instruct.preset = name;
+        power_user.instruct.preset = String(name);
         controls.forEach(control => {
             if (preset[control.property] !== undefined) {
                 power_user.instruct[control.property] = preset[control.property];

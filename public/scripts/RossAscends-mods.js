@@ -2,15 +2,12 @@ esversion: 6
 
 import {
     Generate,
-    this_chid,
     characters,
     online_status,
     main_api,
     api_server,
     api_server_textgenerationwebui,
     is_send_press,
-    getTokenCount,
-    menu_type,
     max_context,
     saveSettingsDebounced,
     active_group,
@@ -33,10 +30,9 @@ import {
     SECRET_KEYS,
     secret_state,
 } from "./secrets.js";
-import { debounce, delay, getStringHash } from "./utils.js";
+import { debounce, delay, getStringHash, waitUntilCondition } from "./utils.js";
 import { chat_completion_sources, oai_settings } from "./openai.js";
-
-var NavToggle = document.getElementById("nav-toggle");
+import { getTokenCount } from "./tokenizers.js";
 
 var RPanelPin = document.getElementById("rm_button_panel_pin");
 var LPanelPin = document.getElementById("lm_button_panel_pin");
@@ -47,20 +43,8 @@ var LeftNavPanel = document.getElementById("left-nav-panel");
 var WorldInfo = document.getElementById("WorldInfo");
 
 var SelectedCharacterTab = document.getElementById("rm_button_selected_ch");
-var AdvancedCharDefsPopup = document.getElementById("character_popup");
-var ConfirmationPopup = document.getElementById("dialogue_popup");
 var AutoConnectCheckbox = document.getElementById("auto-connect-checkbox");
 var AutoLoadChatCheckbox = document.getElementById("auto-load-chat-checkbox");
-var SelectedNavTab = ("#" + LoadLocal('SelectedNavTab'));
-
-var create_save_name;
-var create_save_description;
-var create_save_personality;
-var create_save_first_message;
-var create_save_scenario;
-var create_save_mes_example;
-var count_tokens;
-var perm_tokens;
 
 var connection_made = false;
 var retry_delay = 500;
@@ -83,32 +67,6 @@ const observer = new MutationObserver(function (mutations) {
 
 observer.observe(document.documentElement, observerConfig);
 
-/**
- * Wait for an element before resolving a promise
- * @param {String} querySelector - Selector of element to wait for
- * @param {Integer} timeout - Milliseconds to wait before timing out, or 0 for no timeout
- */
-function waitForElement(querySelector, timeout) {
-    return new Promise((resolve, reject) => {
-        var timer = false;
-        if (document.querySelectorAll(querySelector).length) return resolve();
-        const observer = new MutationObserver(() => {
-            if (document.querySelectorAll(querySelector).length) {
-                observer.disconnect();
-                if (timer !== false) clearTimeout(timer);
-                return resolve();
-            }
-        });
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
-        if (timeout) timer = setTimeout(() => {
-            observer.disconnect();
-            reject();
-        }, timeout);
-    });
-}
 
 /**
  * Converts generation time from milliseconds to a human-readable format.
@@ -225,14 +183,6 @@ export function getMessageTimeStamp() {
 // triggers:
 $("#rm_button_create").on("click", function () {                 //when "+New Character" is clicked
     $(SelectedCharacterTab).children("h2").html('');        // empty nav's 3rd panel tab
-
-    //empty temp vars to store new char data for counting
-    create_save_name = "";
-    create_save_description = "";
-    create_save_personality = "";
-    create_save_first_message = "";
-    create_save_scenario = "";
-    create_save_mes_example = "";
 });
 //when any input is made to the create/edit character form textareas
 $("#rm_ch_create_block").on("input", function () { countTokensDebounced(); });
@@ -245,7 +195,7 @@ export function RA_CountCharTokens() {
     $('[data-token-counter]').each(function () {
         const counter = $(this);
         const input = $(document.getElementById(counter.data('token-counter')));
-        const value = input.val();
+        const value = String(input.val());
 
         if (input.length === 0) {
             counter.text('Invalid input reference');
@@ -413,7 +363,7 @@ function RA_autoconnect(PrevApi) {
             case 'openai':
                 if (((secret_state[SECRET_KEYS.OPENAI] || oai_settings.reverse_proxy) && oai_settings.chat_completion_source == chat_completion_sources.OPENAI)
                     || ((secret_state[SECRET_KEYS.CLAUDE] || oai_settings.reverse_proxy) && oai_settings.chat_completion_source == chat_completion_sources.CLAUDE)
-                    || (secret_state[SECRET_KEYS.SCALE] && oai_settings.chat_completion_source == chat_completion_sources.SCALE)
+                    || ((secret_state[SECRET_KEYS.SCALE] || secret_state[SECRET_KEYS.SCALE_COOKIE]) && oai_settings.chat_completion_source == chat_completion_sources.SCALE)
                     || (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI)
                     || (secret_state[SECRET_KEYS.OPENROUTER] && oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER)
                     || (secret_state[SECRET_KEYS.AI21] && oai_settings.chat_completion_source == chat_completion_sources.AI21)
@@ -717,7 +667,12 @@ export async function initMovingUI() {
 
 // ---------------------------------------------------
 
-$("document").ready(function () {
+jQuery(async function () {
+    try {
+        await waitUntilCondition(() => online_status !== undefined, 1000, 10);
+    } catch {
+        console.log('Timeout waiting for online_status');
+    }
 
     // initial status check
     setTimeout(() => {
@@ -799,7 +754,7 @@ $("document").ready(function () {
         //console.log('setting pin class via local var');
         $(RightNavPanel).addClass('pinnedOpen');
     }
-    if ($(RPanelPin).prop('checked' == true)) {
+    if (!!$(RPanelPin).prop('checked')) {
         console.debug('setting pin class via checkbox state');
         $(RightNavPanel).addClass('pinnedOpen');
     }
@@ -809,7 +764,7 @@ $("document").ready(function () {
         //console.log('setting pin class via local var');
         $(LeftNavPanel).addClass('pinnedOpen');
     }
-    if ($(LPanelPin).prop('checked' == true)) {
+    if (!!$(LPanelPin).prop('checked')) {
         console.debug('setting pin class via checkbox state');
         $(LeftNavPanel).addClass('pinnedOpen');
     }
@@ -821,7 +776,7 @@ $("document").ready(function () {
         $(WorldInfo).addClass('pinnedOpen');
     }
 
-    if ($(WIPanelPin).prop('checked' == true)) {
+    if (!!$(WIPanelPin).prop('checked')) {
         console.debug('setting pin class via checkbox state');
         $(WorldInfo).addClass('pinnedOpen');
     }
@@ -884,8 +839,6 @@ $("document").ready(function () {
         saveSettingsDebounced();
     });
 
-
-
     //this makes the chat input text area resize vertically to match the text size (limited by CSS at 50% window height)
     $('#send_textarea').on('input', function () {
         this.style.height = '40px';
@@ -896,7 +849,7 @@ $("document").ready(function () {
 
     document.addEventListener('swiped-left', function (e) {
         var SwipeButR = $('.swipe_right:last');
-        var SwipeTargetMesClassParent = e.target.closest('.last_mes');
+        var SwipeTargetMesClassParent = $(e.target).closest('.last_mes');
         if (SwipeTargetMesClassParent !== null) {
             if (SwipeButR.css('display') === 'flex') {
                 SwipeButR.click();
@@ -905,7 +858,7 @@ $("document").ready(function () {
     });
     document.addEventListener('swiped-right', function (e) {
         var SwipeButL = $('.swipe_left:last');
-        var SwipeTargetMesClassParent = e.target.closest('.last_mes');
+        var SwipeTargetMesClassParent = $(e.target).closest('.last_mes');
         if (SwipeTargetMesClassParent !== null) {
             if (SwipeButL.css('display') === 'flex') {
                 SwipeButL.click();

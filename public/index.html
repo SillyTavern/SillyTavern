@@ -63,42 +63,8 @@
 
     <link rel="stylesheet" href="css/bg_load.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
-    <script>
-        function applyLocale() {
-            const overrideLanguage = localStorage.getItem("language");
-            var language = overrideLanguage || navigator.language || navigator.userLanguage;
-            language = language.toLowerCase();
-            console.log(language)
-            //load the appropriate language file
-            $.getJSON("i18n.json", function (data) {
-                console.log(data)
-                if (data.lang.indexOf(language) < 0) language = "en";
-                console.log(language)
-                //find all the elements with `data-i18n` attribute
-                $("[data-i18n]").each(function () {
-                    //read the translation from the language data
-                    const keys = $(this).data("i18n").split(';'); // Multi-key entries are ; delimited
-                    for (const key of keys) {
-                        const attrmatch = key.match(/\[(\S+)\](.+)/); // [attribute]key
-                        if (attrmatch) { // attribute-tagged key
-                            const locval = data?.[language]?.[attrmatch[2]];
-                            if (locval) {
-                                $(this).attr(attrmatch[1], locval);
-                            }
-                        } else { // No attribute tag, treat as 'text'
-                            const locval = data?.[language]?.[key];
-                            if (locval) {
-                                $(this).text(locval);
-                            }
-                        }
-                    }
-                });
-            });
-        }
-        $(document).ready(applyLocale);
-        window["applyLocale"] = applyLocale;
-    </script>
-    <script type=module src="script.js"></script>
+    <script type="module" src="scripts/i18n.js"></script>
+    <script type="module" src="script.js"></script>
 
     <script type="module" src="scripts/world-info.js"></script>
     <script type="module" src="scripts/group-chats.js"></script>
@@ -669,7 +635,7 @@
                                     Max prompt cost: <span id="openrouter_max_prompt_cost">Unknown</span>
                                 </div>
                                 <hr>
-                                <div class="range-block" data-source="openai,claude,windowai,openrouter,ai21">
+                                <div class="range-block" data-source="openai,claude,windowai,openrouter,ai21,scale">
                                     <div class="range-block-title" data-i18n="Temperature">
                                         Temperature
                                     </div>
@@ -744,7 +710,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block" data-source="openai,claude,openrouter,ai21">
+                                <div class="range-block" data-source="openai,claude,openrouter,ai21,scale">
                                     <div class="range-block-title" data-i18n="Top-p">
                                         Top P
                                     </div>
@@ -1470,9 +1436,22 @@
                                             <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                                         </div>
                                         <div class="inline-drawer-content">
-                                            <div id="quick-edit-container">
-                                                <div class="range-block">
-                                                    <span data-i18n="Select a character to show quick edit options.">Select a character to show quick edit options.</span>
+                                            <div class="range-block m-t-1">
+                                                <div class="justifyLeft" data-i18n="Main">Main</div>
+                                                <div class="wide100p">
+                                                    <textarea id="main_prompt_quick_edit_textarea" class="text_pole textarea_compact" rows="6" placeholder="" data-pm-prompt="main"></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="range-block m-t-1">
+                                                <div class="justifyLeft" data-i18n="NSFW">NSFW</div>
+                                                <div class="wide100p">
+                                                    <textarea id="nsfw_prompt_quick_edit_textarea" class="text_pole textarea_compact" rows="6" placeholder="" data-pm-prompt="nsfw"></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="range-block m-t-1">
+                                                <div class="justifyLeft" data-i18n="Jailbreak">Jailbreak</div>
+                                                <div class="wide100p">
+                                                    <textarea id="jailbreak_prompt_quick_edit_textarea" class="text_pole textarea_compact" rows="6" placeholder="" data-pm-prompt="jailbreak"></textarea>
                                                 </div>
                                             </div>
                                             <div id="claude_assistant_prefill_block" data-source="claude" class="range-block">
@@ -1612,7 +1591,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="range-block m-t-1" data-source="openai,openrouter">
+                                <div class="range-block m-t-1" data-source="openai,openrouter,scale">
                                     <div class="range-block-title openai_restorable" data-i18n="Logit Bias">
                                         Logit Bias
                                     </div>
@@ -2010,18 +1989,34 @@
                         </form>
 
                         <form id="scale_form" data-source="scale" action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                            <h4>Scale API Key</h4>
-                            <div class="flex-container">
-                                <input id="api_key_scale" name="api_key_scale" class="text_pole flex1" maxlength="500" value="" autocomplete="off">
-                                <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_scale"></div>
+                            <div id="normal_scale_form">
+                                <h4>Scale API Key</h4>
+                                <div class="flex-container">
+                                    <input id="api_key_scale" name="api_key_scale" class="text_pole flex1" maxlength="500" value="" autocomplete="off">
+                                    <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_scale"></div>
+                                </div>
+                                <div data-for="api_key_scale" class="neutral_warning">
+                                    For privacy reasons, your API key will be hidden after you reload the page.
+                                </div>
+                                <h4>Scale API URL</h4>
+                                <input id="api_url_scale" name="api_url_scale" class="text_pole" maxlength="500" value="" autocomplete="off" placeholder="https://dashboard.scale.com/spellbook/api/v2/deploy/xxxxxxx">
                             </div>
-                            <div data-for="api_key_scale" class="neutral_warning">
-                                For privacy reasons, your API key will be hidden after you reload the page.
+                            <div id="alt_scale_form">
+                                <h4>Scale Cookie (_jwt)</h4>
+                                <div class="flex-container">
+                                    <input id="scale_cookie" name="scale_cookie" class="text_pole flex1" maxlength="500" value="" autocomplete="off">
+                                    <div title="Clear your cookie" data-i18n="[title]Clear your cookie" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="scale_cookie"></div>
+                                </div>
+                                <div data-for="scale_cookie" class="neutral_warning">
+                                    For privacy reasons, your cookie will be hidden after you reload the page.
+                                </div>
                             </div>
-                            <h4>Scale API URL</h4>
-                            <input id="api_url_scale" name="api_url_scale" class="text_pole" maxlength="500" value="" autocomplete="off" placeholder="https://dashboard.scale.com/spellbook/api/v2/deploy/xxxxxxx">
                             <!-- Its only purpose is to trigger max context size check -->
                             <select id="model_scale_select" class="displayNone"></select>
+                            <label for="scale-alt" class="checkbox_label">
+                                <input id="scale-alt" type="checkbox" checked>
+                                <span data-i18n="Alt Method">Alt Method</span>
+                            </label>
                         </form>
 
                         <form id="ai21_form" data-source="ai21" action="javascript:void(null);" method="post" enctype="multipart/form-data">
@@ -2999,7 +2994,10 @@
                             </div>
                             <div>
                                 <h4 data-i18n="Persona Description">Persona Description</h4>
-                                <textarea id="persona_description" name="persona_description" placeholder="Example:&#10;[{{user}} is a 28-year-old Romanian cat girl.]" class="text_pole textarea_compact" maxlength="5000" value="" autocomplete="off" rows="4"></textarea>
+                                <textarea id="persona_description" name="persona_description" placeholder="Example:&#10;[{{user}} is a 28-year-old Romanian cat girl.]" class="text_pole textarea_compact" maxlength="5000" value="" autocomplete="off" rows="8"></textarea>
+                                <div class="extension_token_counter">
+                                    Tokens: <span id="persona_description_token_count">0</span>
+                                </div>
                                 <label for="persona_description_position" data-i18n="Position:">Position:</label>
                                 <select id="persona_description_position">
                                     <option value="0" data-i18n="In Story String / Chat Completion: Before Character Card">In Story String / Chat Completion: Before Character Card</option>

@@ -2,7 +2,6 @@ import {
     chat_metadata,
     eventSource,
     event_types,
-    getTokenCount,
     saveSettingsDebounced,
     this_chid,
 } from "../script.js";
@@ -10,6 +9,7 @@ import { selected_group } from "./group-chats.js";
 import { extension_settings, getContext, saveMetadataDebounced } from "./extensions.js";
 import { registerSlashCommand } from "./slash-commands.js";
 import { getCharaFilename, debounce, waitUntilCondition, delay } from "./utils.js";
+import { getTokenCount } from "./tokenizers.js";
 export { MODULE_NAME as NOTE_MODULE_NAME };
 
 const MODULE_NAME = '2_floating_prompt'; // <= Deliberate, for sorting lower than memory

@@ -1,6 +1,6 @@
 import { callPopup, main_api } from "../../../script.js";
 import { getContext } from "../../extensions.js";
-import { getTokenizerModel } from "../../openai.js";
+import { getTokenizerModel } from "../../tokenizers.js";
 
 async function doTokenCounter() {
     const selectedTokenizer = main_api == 'openai'

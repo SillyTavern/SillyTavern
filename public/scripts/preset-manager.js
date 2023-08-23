@@ -118,7 +118,7 @@ class PresetManager {
     async savePresetAs() {
         const popupText = `
             <h3>Preset name:</h3>
-            <h4>Hint: Use a character/group name to bind preset to a specific chat.</h4>`;
+            ${!this.isNonGenericApi() ? '<h4>Hint: Use a character/group name to bind preset to a specific chat.</h4>' : ''}`;
         const name = await callPopup(popupText, "input");
 
         if (!name) {
@@ -131,7 +131,8 @@ class PresetManager {
     }
 
     async savePreset(name, settings) {
-        const preset = settings ?? this.getPresetSettings();
+        const preset = settings ?? this.getPresetSettings(name);
+
         const res = await fetch(`/save_preset`, {
             method: "POST",
             headers: getRequestHeaders(),
@@ -220,7 +221,7 @@ class PresetManager {
         }
     }
 
-    getPresetSettings() {
+    getPresetSettings(name) {
         function getSettingsByApiId(apiId) {
             switch (apiId) {
                 case "koboldhorde":
@@ -232,7 +233,7 @@ class PresetManager {
                     return textgenerationwebui_settings;
                 case "instruct":
                     const preset = deepClone(power_user.instruct);
-                    preset['name'] = power_user.instruct.preset;
+                    preset['name'] = name || power_user.instruct.preset;
                     return preset;
                 default:
                     console.warn(`Unknown API ID ${apiId}`);
@@ -346,7 +347,7 @@ jQuery(async () => {
 
         const selected = $(presetManager.select).find("option:selected");
         const name = selected.text();
-        const preset = presetManager.getPresetSettings();
+        const preset = presetManager.getPresetSettings(name);
         const data = JSON.stringify(preset, null, 4);
         download(data, `${name}.json`, "application/json");
     });

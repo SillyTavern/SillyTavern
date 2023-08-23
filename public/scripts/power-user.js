@@ -23,6 +23,7 @@ import {
 import { loadInstructMode } from "./instruct-mode.js";
 
 import { registerSlashCommand } from "./slash-commands.js";
+import { tokenizers } from "./tokenizers.js";
 
 import { delay } from "./utils.js";
 
@@ -35,7 +36,6 @@ export {
     fixMarkdown,
     power_user,
     pygmalion_options,
-    tokenizers,
     send_on_enter_options,
 };
 
@@ -61,17 +61,6 @@ const pygmalion_options = {
     DISABLED: -1,
     AUTO: 0,
     ENABLED: 1,
-}
-
-const tokenizers = {
-    NONE: 0,
-    GPT3: 1,
-    CLASSIC: 2,
-    LLAMA: 3,
-    NERD: 4,
-    NERD2: 5,
-    API: 6,
-    BEST_MATCH: 99,
 }
 
 const send_on_enter_options = {
@@ -207,7 +196,6 @@ let movingUIPresets = [];
 let context_presets = [];
 
 const storage_keys = {
-    ui_language: "language",
     fast_ui_mode: "TavernAI_fast_ui_mode",
     avatar_style: "TavernAI_avatar_style",
     chat_display: "TavernAI_chat_display",
@@ -247,29 +235,42 @@ function playMessageSound() {
     }
 
     const audio = document.getElementById('audio_message_sound');
-    audio.volume = 0.8;
-    audio.pause();
-    audio.currentTime = 0;
-    audio.play();
+    if (audio instanceof HTMLAudioElement) {
+        audio.volume = 0.8;
+        audio.pause();
+        audio.currentTime = 0;
+        audio.play();
+    }
 }
 
+/**
+ * Replaces consecutive newlines with a single newline.
+ * @param {string} x String to be processed.
+ * @returns {string} Processed string.
+ * @example
+ * collapseNewlines("\n\n\n"); // "\n"
+ */
 function collapseNewlines(x) {
     return x.replaceAll(/\n+/g, "\n");
 }
 
+/**
+ * Fix formatting problems in markdown.
+ * @param {string} text Text to be processed.
+ * @returns {string} Processed text.
+ * @example
+ * "^example * text*\n" // "^example *text*\n"
+ *  "^*example * text\n"// "^*example* text\n"
+ * "^example *text *\n" // "^example *text*\n"
+ * "^* example * text\n" // "^*example* text\n"
+ * // take note that the side you move the asterisk depends on where its pairing is
+ * // i.e. both of the following strings have the same broken asterisk ' * ',
+ * // but you move the first to the left and the second to the right, to match the non-broken asterisk
+ * "^example * text*\n" // "^*example * text\n"
+ * // and you HAVE to handle the cases where multiple pairs of asterisks exist in the same line
+ * "^example * text* * harder problem *\n" // "^example *text* *harder problem*\n"
+ */
 function fixMarkdown(text) {
-    // fix formatting problems in markdown
-    // e.g.:
-    // "^example * text*\n" -> "^example *text*\n"
-    // "^*example * text\n" -> "^*example* text\n"
-    // "^example *text *\n" -> "^example *text*\n"
-    // "^* example * text\n" -> "^*example* text\n"
-    // take note that the side you move the asterisk depends on where its pairing is
-    // i.e. both of the following strings have the same broken asterisk ' * ',
-    // but you move the first to the left and the second to the right, to match the non-broken asterisk "^example * text*\n" "^*example * text\n"
-    // and you HAVE to handle the cases where multiple pairs of asterisks exist in the same line
-    // i.e. "^example * text* * harder problem *\n" -> "^example *text* *harder problem*\n"
-
     // Find pairs of formatting characters and capture the text in between them
     const format = /([\*_]{1,2})([\s\S]*?)\1/gm;
     let matches = [];
@@ -899,7 +900,7 @@ function loadContextSettings() {
     });
 
     $('#context_presets').on('change', function () {
-        const name = $(this).find(':selected').val();
+        const name = String($(this).find(':selected').val());
         const preset = context_presets.find(x => x.name === name);
 
         if (!preset) {
@@ -1020,6 +1021,10 @@ const compareFunc = (first, second) => {
     }
 };
 
+/**
+ * Sorts an array of entities based on the current sort settings
+ * @param {any[]} entities An array of objects with an `item` property
+ */
 function sortEntitiesList(entities) {
     if (power_user.sort_field == undefined || entities.length === 0) {
         return;
@@ -1027,6 +1032,7 @@ function sortEntitiesList(entities) {
 
     entities.sort((a, b) => sortFunc(a.item, b.item));
 }
+
 async function saveTheme() {
     const name = await callPopup('Enter a theme preset name:', 'input');
 
@@ -1250,8 +1256,8 @@ async function doDelMode(_, text) {
     if (text) {
         await delay(300) //same as above, need event signal for 'entered del mode'
         console.debug('parsing msgs to del')
-        let numMesToDel = Number(text).toFixed(0)
-        let lastMesID = $('.last_mes').attr('mesid')
+        let numMesToDel = Number(text);
+        let lastMesID = Number($('.last_mes').attr('mesid'));
         let oldestMesIDToDel = lastMesID - numMesToDel + 1;
 
         //disallow targeting first message
@@ -1275,26 +1281,6 @@ async function doDelMode(_, text) {
 
 function doResetPanels() {
     $("#movingUIreset").trigger('click');
-}
-
-function addLanguagesToDropdown() {
-    $.getJSON('i18n.json', function (data) {
-        if (!Array.isArray(data?.lang)) {
-            return;
-        }
-
-        for (const lang of data.lang) {
-            const option = document.createElement('option');
-            option.value = lang;
-            option.innerText = lang;
-            $('#ui_language_select').append(option);
-        }
-
-        const selectedLanguage = localStorage.getItem(storage_keys.ui_language);
-        if (selectedLanguage) {
-            $('#ui_language_select').val(selectedLanguage);
-        }
-    });
 }
 
 function setAvgBG() {
@@ -1348,10 +1334,6 @@ function setAvgBG() {
             $("#user-mes-blur-tint-color-picker").attr('color', 'rgb(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ')');
         } */
 
-
-
-
-
     function getAverageRGB(imgEl) {
 
         var blockSize = 5, // only visit every 5 pixels
@@ -1396,6 +1378,13 @@ function setAvgBG() {
 
     }
 
+    /**
+     * Converts an HSL color value to RGB.
+     * @param {number} h Hue value
+     * @param {number} s Saturation value
+     * @param {number} l Luminance value
+     * @return {Array} The RGB representation
+     */
     function hslToRgb(h, s, l) {
         const hueToRgb = (p, q, t) => {
             if (t < 0) t += 1;
@@ -1437,7 +1426,7 @@ function setAvgBG() {
 
         console.log(`rLum ${rLuminance}, gLum ${gLuminance}, bLum ${bLuminance}`)
 
-        return 0.2126 * rLuminance + 0.7152 * gLuminance + 0.0722 * bLuminance;
+        return 0.2126 * Number(rLuminance) + 0.7152 * Number(gLuminance) + 0.0722 * Number(bLuminance);
     }
 
     //this version keeps BG and main text in same hue
@@ -1620,13 +1609,13 @@ $(document).ready(() => {
     });
 
     $("#markdown_escape_strings").on('input', function () {
-        power_user.markdown_escape_strings = $(this).val();
+        power_user.markdown_escape_strings = String($(this).val());
         saveSettingsDebounced();
         reloadMarkdownProcessor(power_user.render_formulas);
     });
 
     $("#start_reply_with").on('input', function () {
-        power_user.user_prompt_bias = $(this).val();
+        power_user.user_prompt_bias = String($(this).val());
         saveSettingsDebounced();
     });
 
@@ -1753,7 +1742,7 @@ $(document).ready(() => {
     });
 
     $("#themes").on('change', function () {
-        const themeSelected = $(this).find(':selected').val();
+        const themeSelected = String($(this).find(':selected').val());
         power_user.theme = themeSelected;
         applyTheme(themeSelected);
         saveSettingsDebounced();
@@ -1761,7 +1750,7 @@ $(document).ready(() => {
 
     $("#movingUIPresets").on('change', async function () {
         console.log('saw MUI preset change')
-        const movingUIPresetSelected = $(this).find(':selected').val();
+        const movingUIPresetSelected = String($(this).find(':selected').val());
         power_user.movingUIPreset = movingUIPresetSelected;
         applyMovingUIPreset(movingUIPresetSelected);
         saveSettingsDebounced();
@@ -1821,7 +1810,7 @@ $(document).ready(() => {
     });
 
     $('#auto_swipe_blacklist').on('input', function () {
-        power_user.auto_swipe_blacklist = $(this).val()
+        power_user.auto_swipe_blacklist = String($(this).val())
             .split(",")
             .map(str => str.trim())
             .filter(str => str);
@@ -1830,7 +1819,7 @@ $(document).ready(() => {
     });
 
     $('#auto_swipe_minimum_length').on('input', function () {
-        const number = parseInt($(this).val());
+        const number = Number($(this).val());
         if (!isNaN(number)) {
             power_user.auto_swipe_minimum_length = number;
             saveSettingsDebounced();
@@ -1838,7 +1827,7 @@ $(document).ready(() => {
     });
 
     $('#auto_swipe_blacklist_threshold').on('input', function () {
-        const number = parseInt($(this).val());
+        const number = Number($(this).val());
         if (!isNaN(number)) {
             power_user.auto_swipe_blacklist_threshold = number;
             saveSettingsDebounced();
@@ -1921,35 +1910,35 @@ $(document).ready(() => {
     $("#messageTimerEnabled").on("input", function () {
         const value = !!$(this).prop('checked');
         power_user.timer_enabled = value;
-        localStorage.setItem(storage_keys.timer_enabled, power_user.timer_enabled);
+        localStorage.setItem(storage_keys.timer_enabled, String(power_user.timer_enabled));
         switchTimer();
     });
 
     $("#messageTimestampsEnabled").on("input", function () {
         const value = !!$(this).prop('checked');
         power_user.timestamps_enabled = value;
-        localStorage.setItem(storage_keys.timestamps_enabled, power_user.timestamps_enabled);
+        localStorage.setItem(storage_keys.timestamps_enabled, String(power_user.timestamps_enabled));
         switchTimestamps();
     });
 
     $("#messageModelIconEnabled").on("input", function () {
         const value = !!$(this).prop('checked');
         power_user.timestamp_model_icon = value;
-        localStorage.setItem(storage_keys.timestamp_model_icon, power_user.timestamp_model_icon);
+        localStorage.setItem(storage_keys.timestamp_model_icon, String(power_user.timestamp_model_icon));
         switchIcons();
     });
 
     $("#mesIDDisplayEnabled").on("input", function () {
         const value = !!$(this).prop('checked');
         power_user.mesIDDisplay_enabled = value;
-        localStorage.setItem(storage_keys.mesIDDisplay_enabled, power_user.mesIDDisplay_enabled);
+        localStorage.setItem(storage_keys.mesIDDisplay_enabled, String(power_user.mesIDDisplay_enabled));
         switchMesIDDisplay();
     });
 
     $("#hotswapEnabled").on("input", function () {
         const value = !!$(this).prop('checked');
         power_user.hotswap_enabled = value;
-        localStorage.setItem(storage_keys.hotswap_enabled, power_user.hotswap_enabled);
+        localStorage.setItem(storage_keys.hotswap_enabled, String(power_user.hotswap_enabled));
         switchHotswap();
     });
 
@@ -1995,7 +1984,7 @@ $(document).ready(() => {
     });
 
     $('#custom_stopping_strings').on('input', function () {
-        power_user.custom_stopping_strings = $(this).val();
+        power_user.custom_stopping_strings = String($(this).val());
         saveSettingsDebounced();
     });
 
@@ -2025,18 +2014,6 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $('#ui_language_select').on('change', async function () {
-        const language = $(this).val();
-
-        if (language) {
-            localStorage.setItem(storage_keys.ui_language, language);
-        } else {
-            localStorage.removeItem(storage_keys.ui_language);
-        }
-
-        location.reload();
-    });
-
     $(window).on('focus', function () {
         browser_has_focus = true;
     });
@@ -2052,5 +2029,4 @@ $(document).ready(() => {
     registerSlashCommand('cut', doMesCut, [], ' <span class="monospace">(requred number)</span> – cuts the specified message from the chat', true, true);
     registerSlashCommand('resetpanels', doResetPanels, ['resetui'], ' – resets UI panels to original state.', true, true);
     registerSlashCommand('bgcol', setAvgBG, [], ' – WIP test of auto-bg avg coloring', true, true);
-    addLanguagesToDropdown();
 });

@@ -23,7 +23,8 @@ const defaultSettings = {
 };
 const settingType = {
     guidance_scale: 0,
-    negative_prompt: 1
+    negative_prompt: 1,
+    positive_prompt: 2
 }
 
 // Used for character and chat CFG values
@@ -36,19 +37,19 @@ function setCharCfg(tempValue, setting) {
     const avatarName = getCharaFilename();
 
     // Assign temp object
-    let tempCharaCfg;
+    let tempCharaCfg = {
+        name: avatarName
+    };
+
     switch(setting) {
         case settingType.guidance_scale:
-            tempCharaCfg = {
-                "name": avatarName,
-                "guidance_scale": Number(tempValue)
-            }
+            tempCharaCfg["guidance_scale"] = Number(tempValue);
             break;
         case settingType.negative_prompt:
-            tempCharaCfg = {
-                "name": avatarName,
-                "negative_prompt": tempValue
-            }
+            tempCharaCfg["negative_prompt"] = tempValue;
+            break;
+        case settingType.positive_prompt:
+            tempCharaCfg["positive_prompt"] = tempValue;
             break;
         default:
             return false;
@@ -66,7 +67,11 @@ function setCharCfg(tempValue, setting) {
         const tempAssign = Object.assign(existingCharaCfg, tempCharaCfg);
 
         // If both values are default, remove the entry
-        if (!existingCharaCfg.useChara && (tempAssign.guidance_scale ?? 1.00) === 1.00 && (tempAssign.negative_prompt?.length ?? 0) === 0) {
+        if (!existingCharaCfg.useChara &&
+            (tempAssign.guidance_scale ?? 1.00) === 1.00 &&
+            (tempAssign.negative_prompt?.length ?? 0) === 0 &&
+            (tempAssign.positive_prompt?.length ?? 0) === 0)
+        {
             extension_settings.cfg.chara.splice(existingCharaCfgIndex, 1);
         }
     } else if (avatarName && tempValue.length > 0) {
@@ -94,6 +99,9 @@ function setChatCfg(tempValue, setting) {
             break;
         case settingType.negative_prompt:
             chat_metadata[metadataKeys.negative_prompt] = tempValue;
+            break;
+        case settingType.positive_prompt:
+            chat_metadata[metadataKeys.positive_prompt] = tempValue;
             break;
         default:
             return false;
@@ -174,13 +182,32 @@ function loadSettings() {
     $('#chat_cfg_guidance_scale').val(chat_metadata[metadataKeys.guidance_scale] ?? 1.0.toFixed(2));
     $('#chat_cfg_guidance_scale_counter').text(chat_metadata[metadataKeys.guidance_scale]?.toFixed(2) ?? 1.0.toFixed(2));
     $('#chat_cfg_negative_prompt').val(chat_metadata[metadataKeys.negative_prompt] ?? '');
+    $('#chat_cfg_positive_prompt').val(chat_metadata[metadataKeys.positive_prompt] ?? '');
     $('#groupchat_cfg_use_chara').prop('checked', chat_metadata[metadataKeys.groupchat_individual_chars] ?? false);
-    if (chat_metadata[metadataKeys.negative_combine]?.length > 0) {
-        chat_metadata[metadataKeys.negative_combine].forEach((element) => {
-            $(`input[name="cfg_negative_combine"][value="${element}"]`)
+    if (chat_metadata[metadataKeys.prompt_combine]?.length > 0) {
+        chat_metadata[metadataKeys.prompt_combine].forEach((element) => {
+            $(`input[name="cfg_prompt_combine"][value="${element}"]`)
                 .prop("checked", true);
         });
     }
+
+    // Display the negative separator in quotes if not quoted already
+    let promptSeparatorDisplay = [];
+    const promptSeparator = chat_metadata[metadataKeys.prompt_separator];
+    if (promptSeparator) {
+        promptSeparatorDisplay.push(promptSeparator);
+        if (!promptSeparator.startsWith(`"`)) {
+            promptSeparatorDisplay.unshift(`"`);
+        }
+    
+        if (!promptSeparator.endsWith(`"`)) {
+            promptSeparatorDisplay.push(`"`);
+        }
+    }
+
+    $('#cfg_prompt_separator').val(promptSeparatorDisplay.length === 0 ? '' : promptSeparatorDisplay.join(''));
+
+    $('#cfg_prompt_insertion_depth').val(chat_metadata[metadataKeys.prompt_insertion_depth] ?? 1);
 
     // Set character CFG if it exists
     if (!selected_group) {
@@ -188,6 +215,7 @@ function loadSettings() {
         $('#chara_cfg_guidance_scale').val(charaCfg?.guidance_scale ?? 1.00);
         $('#chara_cfg_guidance_scale_counter').text(charaCfg?.guidance_scale?.toFixed(2) ?? 1.0.toFixed(2));
         $('#chara_cfg_negative_prompt').val(charaCfg?.negative_prompt ?? '');
+        $('#chara_cfg_positive_prompt').val(charaCfg?.positive_prompt ?? '');
     }
 }
 
@@ -204,25 +232,49 @@ async function initialLoadSettings() {
     $('#global_cfg_guidance_scale').val(extension_settings.cfg.global.guidance_scale);
     $('#global_cfg_guidance_scale_counter').text(extension_settings.cfg.global.guidance_scale.toFixed(2));
     $('#global_cfg_negative_prompt').val(extension_settings.cfg.global.negative_prompt);
+    $('#global_cfg_positive_prompt').val(extension_settings.cfg.global.positive_prompt);
 }
 
 function migrateSettings() {
-    let performSave = false;
+    let performSettingsSave = false;
+    let performMetaSave = false;
 
     if (power_user.guidance_scale) {
         extension_settings.cfg.global.guidance_scale = power_user.guidance_scale;
         delete power_user['guidance_scale'];
-        performSave = true;
+        performSettingsSave = true;
     }
 
     if (power_user.negative_prompt) {
         extension_settings.cfg.global.negative_prompt = power_user.negative_prompt;
         delete power_user['negative_prompt'];
-        performSave = true;
+        performSettingsSave = true;
     }
 
-    if (performSave) {
+    if (chat_metadata["cfg_negative_combine"]) {
+        chat_metadata[metadataKeys.prompt_combine] = chat_metadata["cfg_negative_combine"];
+        chat_metadata["cfg_negative_combine"] = undefined;
+        performMetaSave = true;
+    }
+
+    if (chat_metadata["cfg_negative_insertion_depth"]) {
+        chat_metadata[metadataKeys.prompt_insertion_depth] = chat_metadata["cfg_negative_insertion_depth"];
+        chat_metadata["cfg_negative_insertion_depth"] = undefined;
+        performMetaSave = true;
+    }
+
+    if (chat_metadata["cfg_negative_separator"]) {
+        chat_metadata[metadataKeys.prompt_separator] = chat_metadata["cfg_negative_separator"];
+        chat_metadata["cfg_negative_separator"] = undefined;
+        performMetaSave = true;
+    }
+
+    if (performSettingsSave) {
         saveSettingsDebounced();
+    }
+
+    if (performMetaSave) {
+        saveMetadataDebounced();
     }
 }
 
@@ -255,6 +307,10 @@ jQuery(async () => {
         setChatCfg($(this).val(), settingType.negative_prompt);
     });
 
+    windowHtml.find('#chat_cfg_positive_prompt').on('input', function() {
+        setChatCfg($(this).val(), settingType.positive_prompt);
+    });
+
     windowHtml.find('#chara_cfg_guidance_scale').on('input', function() {
         const value = $(this).val();
         const success = setCharCfg(value, settingType.guidance_scale);
@@ -265,6 +321,10 @@ jQuery(async () => {
 
     windowHtml.find('#chara_cfg_negative_prompt').on('input', function() {
         setCharCfg($(this).val(), settingType.negative_prompt);
+    });
+
+    windowHtml.find('#chara_cfg_positive_prompt').on('input', function() {
+        setCharCfg($(this).val(), settingType.positive_prompt);
     });
 
     windowHtml.find('#global_cfg_guidance_scale').on('input', function() {
@@ -278,14 +338,29 @@ jQuery(async () => {
         saveSettingsDebounced();
     });
 
-    windowHtml.find(`input[name="cfg_negative_combine"]`).on('input', function() {
-        const values = windowHtml.find(`input[name="cfg_negative_combine"]`)
+    windowHtml.find('#global_cfg_positive_prompt').on('input', function() {
+        extension_settings.cfg.global.positive_prompt = $(this).val();
+        saveSettingsDebounced();
+    });
+
+    windowHtml.find(`input[name="cfg_prompt_combine"]`).on('input', function() {
+        const values = windowHtml.find(`input[name="cfg_prompt_combine"]`)
             .filter(":checked")
             .map(function() { return parseInt($(this).val()) })
             .get()
             .filter((e) => e !== NaN) || [];
 
-        chat_metadata[metadataKeys.negative_combine] = values;
+        chat_metadata[metadataKeys.prompt_combine] = values;
+        saveMetadataDebounced();
+    });
+
+    windowHtml.find(`#cfg_prompt_insertion_depth`).on('input', function() {
+        chat_metadata[metadataKeys.prompt_insertion_depth] = Number($(this).val());
+        saveMetadataDebounced();
+    });
+
+    windowHtml.find(`#cfg_prompt_separator`).on('input', function() {
+        chat_metadata[metadataKeys.prompt_separator] = $(this).val();
         saveMetadataDebounced();
     });
 
