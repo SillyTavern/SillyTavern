@@ -2165,7 +2165,7 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
     width: max-content;
     margin-left: 5px;
     margin-right: 15px;
-    font-size: calc(var(--mainFontSize) * 0.8);
+    font-size: calc(var(--mainFontSize) * 0.85);
     color: var(--SmartThemeEmColor);
     text-align: center;
 }
