@@ -1,6 +1,17 @@
+#assets-json-url-field {
+    width: 350px;
+}
+
+#assets-connect-button {
+    width: 50px;
+    height: 50px;
+    margin-left: 5px;
+}
+
 .assets-connect-div {
     display: flex;
     flex-direction: row;
+    padding: 5px;
 }
 
 .assets-list-div i {

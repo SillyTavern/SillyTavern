@@ -97,7 +97,8 @@ function downloadAssetsList(url) {
         })
         .catch((error) => {
             console.error(error);
-            toastr.error("Problem with assets URL",DEBUG_PREFIX+"Cannot get assets list")
+            toastr.error("Problem with assets URL",DEBUG_PREFIX+"Cannot get assets list");
+            $('#assets-connect-button').addClass("fa-plug-circle-xmark");
         });
     });
 }
@@ -159,19 +160,25 @@ jQuery(async () => {
     // This is an example of loading HTML from a file
     const windowHtml = $(await $.get(`${extensionFolderPath}/window.html`));
 
-    const assetsJsonUrl = windowHtml.find('#assets_json_url_field');
+    const assetsJsonUrl = windowHtml.find('#assets-json-url-field');
     assetsJsonUrl.val(ASSETS_JSON_URL);
 
-    const connectButton = windowHtml.find('#assets_connect_button');
+    const connectButton = windowHtml.find('#assets-connect-button');
     connectButton.on("click", async function(){
         const confirmation = await callPopup(`Are you sure you want to connect to '${assetsJsonUrl.val()}'?`, 'confirm')
         if (confirmation) {
             try {
                 console.debug(DEBUG_PREFIX,"Confimation, loading assets...");
                 downloadAssetsList(assetsJsonUrl.val());
+                connectButton.removeClass("fa-plug");
+                connectButton.removeClass("fa-plug-circle-xmark");
+                connectButton.addClass("fa-plug-circle-check");
             } catch (error) {
                 console.error('Error:', error);
                 toastr.error(`Cannot get assets list from ${assetsJsonUrl.val()}`);
+                connectButton.removeClass("fa-plug");
+                connectButton.removeClass("fa-plug-circle-check");
+                connectButton.addClass("fa-plug-circle-xmark");
             }
         }
         else {
