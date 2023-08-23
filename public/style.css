@@ -3168,7 +3168,7 @@ a {
 
 .drawer-content select {
     width: 100%;
-    font-size: calc(var(--mainFontSize) * 0.9);
+    font-size: calc(var(--mainFontSize) * 0.95);
 }
 
 .settingsSectionWrap {
