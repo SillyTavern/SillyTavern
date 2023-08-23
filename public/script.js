@@ -2694,6 +2694,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     promptCache = promptCache.replace(promptBias, '');
                 }
 
+                // Add a space if prompt cache doesn't start with one
+                if (!/^\s/.test(promptCache) && !isInstruct) {
+                    promptCache = ' ' + promptCache;
+                }
+
                 return promptCache;
             }
 
