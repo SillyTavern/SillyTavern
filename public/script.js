@@ -322,6 +322,7 @@ let generatedPromtCache = "";
 let generation_started = new Date();
 let characters = [];
 let this_chid;
+let saveCharactersPage = 0;
 let backgrounds = [];
 const default_avatar = "img/ai4.png";
 export const system_avatar = "img/five.png";
@@ -893,6 +894,7 @@ async function printCharacters(fullRefresh = false) {
         pageSize: Number(localStorage.getItem(storageKey)) || 50,
         sizeChangerOptions: [10, 25, 50, 100, 250, 500, 1000],
         pageRange: 1,
+        pageNumber: saveCharactersPage || 1,
         position: 'top',
         showPageNumbers: false,
         showSizeChanger: true,
@@ -913,10 +915,14 @@ async function printCharacters(fullRefresh = false) {
         },
         afterSizeSelectorChange: function (e) {
             localStorage.setItem(storageKey, e.target.value);
-        }
+        },
+        afterPaging: function (e) {
+            saveCharactersPage = e;
+        },
     });
 
     favsToHotswap();
+    saveCharactersPage = 0;
 
     if (fullRefresh) {
         printTagFilters(tag_filter_types.character);
