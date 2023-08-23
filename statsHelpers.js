@@ -9,7 +9,8 @@
 const fs = require("fs");
 const path = require("path");
 const util = require("util");
-const writeFile = util.promisify(fs.writeFile);
+const writeFileAtomic = require("write-file-atomic");
+const writeFile = util.promisify(writeFileAtomic);
 const readFile = util.promisify(fs.readFile);
 const readdir = util.promisify(fs.readdir);
 const crypto = require("crypto");
@@ -165,7 +166,7 @@ async function loadStatsFile(chatsPath, charactersPath) {
  */
 async function saveStatsToFile() {
     if (charStats.timestamp > lastSaveTimestamp) {
-        console.debug("Saving stats to file...");
+        //console.debug("Saving stats to file...");
         await writeFile(statsFilePath, JSON.stringify(charStats));
         lastSaveTimestamp = Date.now();
     } else {

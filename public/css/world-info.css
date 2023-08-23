@@ -1,0 +1,162 @@
+.world_info_select_block {
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+    gap: 5px;
+}
+
+.budget_cap_note {
+    flex-basis: 100%;
+    line-height: 0.1;
+}
+
+#world_popup {
+    min-height: 100px;
+    min-width: 100px;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    z-index: 3010;
+    overflow-y: hidden;
+}
+
+.WIEntryContentAndMemo {
+    width: 100% !important;
+    flex-wrap: nowrap !important;
+}
+
+.WIEntryContentAndMemo .world_entry_thin_controls {
+    flex: 1;
+}
+
+#world_popup_bottom_holder {
+    display: flex;
+    flex-flow: row;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
+#world_popup_bottom_holder div {
+    width: fit-content;
+    user-select: none;
+}
+
+#form_rename_world {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.world_popup_expander {
+    flex-grow: 1;
+}
+
+#world_popup_entries_list {
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+#world_popup_entries_list:empty {
+    width: 100%;
+    height: 100%;
+}
+
+#world_popup_entries_list:empty::before {
+    content: 'No entries found.';
+    font-size: calc(var(--mainFontSize) + .1rem);
+    font-weight: bolder;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0.8;
+}
+
+.world_entry_form_control {
+    display: flex;
+    flex-direction: column;
+}
+
+.world_entry_thin_controls {
+    display: flex;
+    flex-direction: row;
+}
+
+/* .world_entry_thin_controls>div {
+    flex: 1;
+} */
+
+.world_entry_form_control label h4 {
+    margin-bottom: 0;
+    margin-top: 0;
+}
+
+.world_entry_form_control label h5 {
+    margin-top: 3px;
+    margin-bottom: 3px;
+}
+
+.world_entry_form_control textarea {
+    height: auto;
+    margin-top: 0;
+    margin-bottom: 0;
+    min-height: 32px;
+}
+
+.delete_entry_button {
+    height: min-content;
+}
+
+.world_entry_form_control.world_entry_form_horizontal {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.world_entry_form_control input[type=button] {
+    cursor: pointer;
+}
+
+.world_entry_form_horizontal h5 {
+    margin: 0 1rem;
+}
+
+.world_entry_form_control .checkbox {
+    align-items: center;
+    display: flex;
+    flex-direction: row;
+    column-gap: 10px;
+}
+
+.world_entry_form_control .checkbox h4 {
+    margin: 0;
+    display: inline-block;
+}
+
+.world_entry_form_radios label {
+    margin-left: 0;
+}
+
+.world_entry_form_radios h4 {
+    display: inline;
+}
+
+#world_popup h5 {
+    color: var(--grey70);
+}
+
+/* possible place for WI Entry header styling */
+/* .world_entry_form .inline-drawer-header {
+    background-color: var(--SmartThemeShadowColor);
+} */
+
+#world_editor_select {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 10em;
+}
+
+#world_info_search {
+    width: 10em;
+}

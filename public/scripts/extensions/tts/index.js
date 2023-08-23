@@ -1,13 +1,15 @@
 import { callPopup, cancelTtsPlay, eventSource, event_types, isMultigenEnabled, is_send_press, saveSettingsDebounced } from '../../../script.js'
-import { ModuleWorkerWrapper, doExtrasFetch, extension_settings, getApiUrl, getContext } from '../../extensions.js'
+import { ModuleWorkerWrapper, doExtrasFetch, extension_settings, getApiUrl, getContext, modules } from '../../extensions.js'
 import { escapeRegex, getStringHash } from '../../utils.js'
 import { EdgeTtsProvider } from './edge.js'
 import { ElevenLabsTtsProvider } from './elevenlabs.js'
 import { SileroTtsProvider } from './silerotts.js'
-import { CoquiTtsProvider } from './coquitts.js'
+import { CoquiTtsProvider } from './coqui.js'
 import { SystemTtsProvider } from './system.js'
 import { NovelTtsProvider } from './novel.js'
 import { power_user } from '../../power-user.js'
+import { rvcVoiceConversion } from "../rvc/index.js"
+export { talkingAnimation };
 
 const UPDATE_INTERVAL = 1000
 
@@ -164,18 +166,24 @@ async function moduleWorker() {
 }
 
 function talkingAnimation(switchValue) {
+    if (!modules.includes('talkinghead')) {
+        console.debug("Talking Animation module not loaded");
+        return;
+    }
+
     const apiUrl = getApiUrl();
     const animationType = switchValue ? "start" : "stop";
 
     if (switchValue !== storedvalue) {
         try {
             console.log(animationType + " Talking Animation");
-            doExtrasFetch(`${apiUrl}/api/live2d/${animationType}_talking`);
+            doExtrasFetch(`${apiUrl}/api/talkinghead/${animationType}_talking`);
             storedvalue = switchValue; // Update the storedvalue to the current switchValue
         } catch (error) {
             // Handle the error here or simply ignore it to prevent logging
         }
     }
+    updateUiAudioPlayState()
 }
 
 function resetTtsPlayback() {
@@ -304,10 +312,8 @@ function updateUiAudioPlayState() {
         // Give user feedback that TTS is active by setting the stop icon if processing or playing
         if (!audioElement.paused || isTtsProcessing()) {
             img = 'fa-solid fa-stop-circle extensionsMenuExtensionButton'
-            talkingAnimation(true)
         } else {
             img = 'fa-solid fa-circle-play extensionsMenuExtensionButton'
-            talkingAnimation(false)
         }
         $('#tts_media_control').attr('class', img);
     } else {
@@ -321,6 +327,7 @@ function onAudioControlClicked() {
     // Not pausing, doing a full stop to anything TTS is doing. Better UX as pause is not as useful
     if (!audioElement.paused || isTtsProcessing()) {
         resetTtsPlayback()
+        talkingAnimation(false);
     } else {
         // Default play behavior if not processing or playing is to play the last message.
         ttsJobQueue.push(context.chat[context.chat.length - 1])
@@ -344,6 +351,7 @@ function completeCurrentAudioJob() {
     audioQueueProcessorReady = true
     currentAudioJob = null
     lastAudioPosition = 0
+    talkingAnimation(false) //stop lip animation
     // updateUiPlayState();
 }
 
@@ -399,8 +407,13 @@ function saveLastValues() {
     )
 }
 
-async function tts(text, voiceId) {
-    const response = await ttsProvider.generateTts(text, voiceId)
+async function tts(text, voiceId, char) {
+    let response = await ttsProvider.generateTts(text, voiceId)
+
+    // RVC injection
+    if (extension_settings.rvc.enabled)
+        response = await rvcVoiceConversion(response, char)
+
     addAudioJob(response)
     completeTtsJob()
 }
@@ -450,7 +463,7 @@ async function processTtsQueue() {
             toastr.error(`Specified voice for ${char} was not found. Check the TTS extension settings.`)
             throw `Unable to attain voiceId for ${char}`
         }
-        tts(text, voiceId)
+        tts(text, voiceId, char)
     } catch (error) {
         console.error(error)
         currentTtsJob = null
@@ -566,6 +579,7 @@ function onEnableClick() {
     updateUiAudioPlayState()
     saveSettingsDebounced()
 }
+
 
 function onAutoGenerationClick() {
     extension_settings.tts.auto_generation = $('#tts_auto_generation').prop('checked');

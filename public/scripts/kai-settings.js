@@ -7,6 +7,7 @@ import {
 import {
     power_user,
 } from "./power-user.js";
+import { getSortableDelay } from "./utils.js";
 
 export {
     kai_settings,
@@ -74,18 +75,18 @@ function loadKoboldSettings(preset) {
     }
 }
 
-function getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, this_max_context, isImpersonate, type) {
+function getKoboldGenerationData(finalPrompt, this_settings, this_amount_gen, this_max_context, isImpersonate, type) {
     const sampler_order = kai_settings.sampler_order || this_settings.sampler_order;
     let generate_data = {
-        prompt: finalPromt,
+        prompt: finalPrompt,
         gui_settings: false,
         sampler_order: sampler_order,
-        max_context_length: parseInt(this_max_context),
+        max_context_length: Number(this_max_context),
         max_length: this_amount_gen,
-        rep_pen: parseFloat(kai_settings.rep_pen),
-        rep_pen_range: parseInt(kai_settings.rep_pen_range),
+        rep_pen: Number(kai_settings.rep_pen),
+        rep_pen_range: Number(kai_settings.rep_pen_range),
         rep_pen_slope: kai_settings.rep_pen_slope,
-        temperature: parseFloat(kai_settings.temp),
+        temperature: Number(kai_settings.temp),
         tfs: kai_settings.tfs,
         top_a: kai_settings.top_a,
         top_k: kai_settings.top_k,
@@ -222,16 +223,30 @@ const sliders = [
     }
 ];
 
+/**
+ * Determines if the Kobold stop sequence can be used with the given version.
+ * @param {string} version KoboldAI version to check.
+ * @returns {boolean} True if the Kobold stop sequence can be used, false otherwise.
+ */
 function canUseKoboldStopSequence(version) {
     return (version || '0.0.0').localeCompare(MIN_STOP_SEQUENCE_VERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
 }
 
+/**
+ * Determines if the Kobold streaming API can be used with the given version.
+ * @param {{ result: string; version: string; }} koboldVersion KoboldAI version object.
+ * @returns {boolean} True if the Kobold streaming API can be used, false otherwise.
+ */
 function canUseKoboldStreaming(koboldVersion) {
     if (koboldVersion && koboldVersion.result == 'KoboldCpp') {
         return (koboldVersion.version || '0.0').localeCompare(MIN_STREAMING_KCPPVERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
     } else return false;
 }
 
+/**
+ * Sorts the sampler items by the given order.
+ * @param {any[]} orderArray Sampler order array.
+ */
 function sortItemsByOrder(orderArray) {
     console.debug('Preset samplers order: ' + orderArray);
     const $draggableItems = $("#kobold_order");
@@ -243,7 +258,7 @@ function sortItemsByOrder(orderArray) {
     }
 }
 
-$(document).ready(function () {
+jQuery(function () {
     sliders.forEach(slider => {
         $(document).on("input", slider.sliderId, function () {
             const value = $(this).val();
@@ -267,6 +282,7 @@ $(document).ready(function () {
     });
 
     $('#kobold_order').sortable({
+        delay: getSortableDelay(),
         stop: function () {
             const order = [];
             $('#kobold_order').children().each(function () {

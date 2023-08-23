@@ -68,6 +68,7 @@ app.use(compression());
 app.use(responseTime());
 
 const fs = require('fs');
+const writeFileAtomicSync = require('write-file-atomic').sync;
 const readline = require('readline');
 const open = require('open');
 
@@ -172,8 +173,8 @@ function get_mancer_headers() {
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
-const { SentencePieceProcessor, cleanText } = require("sentencepiece-js");
-const { Tokenizer } = require('@mlc-ai/web-tokenizers');
+const { SentencePieceProcessor } = require("@agnai/sentencepiece-js");
+const { Tokenizer } = require('@agnai/web-tokenizers');
 const CHARS_PER_TOKEN = 3.35;
 
 let spp_llama;
@@ -287,6 +288,7 @@ function humanizedISO8601DateTime() {
 var is_colab = process.env.colaburl !== undefined;
 var charactersPath = 'public/characters/';
 var chatsPath = 'public/chats/';
+const UPLOADS_PATH = './uploads';
 const AVATAR_WIDTH = 400;
 const AVATAR_HEIGHT = 600;
 const jsonParser = express.json({ limit: '100mb' });
@@ -295,6 +297,8 @@ const baseRequestArgs = { headers: { "Content-Type": "application/json" } };
 const directories = {
     worlds: 'public/worlds/',
     avatars: 'public/User Avatars',
+    images: 'public/img/',
+    userImages: 'public/user/images/',
     groups: 'public/groups/',
     groupChats: 'public/group chats',
     chats: 'public/chats/',
@@ -426,7 +430,7 @@ app.use('/characters', (req, res) => {
         res.send(data);
     });
 });
-app.use(multer({ dest: "uploads", limits: { fieldSize: 10 * 1024 * 1024 } }).single("avatar"));
+app.use(multer({ dest: UPLOADS_PATH, limits: { fieldSize: 10 * 1024 * 1024 } }).single("avatar"));
 app.get("/", function (request, response) {
     response.sendFile(process.cwd() + "/public/index.html");
 });
@@ -551,6 +555,7 @@ app.post("/generate", jsonParser, async function (request, response_generate = r
                 }
 
                 const data = await response.json();
+                console.log("Endpoint response:", data);
                 return response_generate.send(data);
             }
         } catch (error) {
@@ -596,22 +601,18 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
         });
 
         async function* readWebsocket() {
-            const streamingUrl = request.header('X-Streaming-URL');
+            const streamingUrl = request.header('X-Streaming-URL').replace("localhost", "127.0.0.1");
             const websocket = new WebSocket(streamingUrl);
 
             websocket.on('open', async function () {
-                console.log('websocket open');
-                websocket.send(JSON.stringify(request.body));
-            });
-
-            websocket.on('error', (err) => {
-                console.error(err);
-                websocket.close();
+                console.log('WebSocket opened');
+                const combined_args = Object.assign(request.body.use_mancer ? get_mancer_headers() : {}, request.body);
+                websocket.send(JSON.stringify(combined_args));
             });
 
             websocket.on('close', (code, buffer) => {
                 const reason = new TextDecoder().decode(buffer)
-                console.log(reason);
+                console.log("WebSocket closed (reason: %o)", reason);
             });
 
             while (true) {
@@ -621,7 +622,26 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
                     return;
                 }
 
-                const rawMessage = await new Promise(resolve => websocket.once('message', resolve));
+                let rawMessage = null;
+                try {
+                    // This lunacy is because the websocket can fail to connect AFTER we're awaiting 'message'... so 'message' never triggers.
+                    // So instead we need to look for 'error' at the same time to reject the promise. And then remove the listener if we resolve.
+                    // This is awful.
+                    // Welcome to the shenanigan shack.
+                    rawMessage = await new Promise(function (resolve, reject) {
+                        websocket.once('error', reject);
+                        websocket.once('message', (data, isBinary) => {
+                            websocket.removeListener('error', reject);
+                            resolve(data, isBinary);
+                        });
+                    });
+                } catch (err) {
+                    console.error("Socket error:", err);
+                    websocket.close();
+                    yield "[SillyTavern] Streaming failed:\n" + err;
+                    return;
+                }
+
                 const message = json5.parse(rawMessage);
 
                 switch (message.event) {
@@ -672,11 +692,11 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
 
         try {
             const data = await postAsync(api_server + "/v1/generate", args);
-            console.log(data);
+            console.log("Endpoint response:", data);
             return response_generate.send(data);
         } catch (error) {
             retval = { error: true, status: error.status, response: error.statusText };
-            console.log(error);
+            console.log("Endpoint error:", error);
             try {
                 retval.response = await error.json();
                 retval.response = retval.response.result;
@@ -692,7 +712,7 @@ app.post("/savechat", jsonParser, function (request, response) {
         var dir_name = String(request.body.avatar_url).replace('.png', '');
         let chat_data = request.body.chat;
         let jsonlData = chat_data.map(JSON.stringify).join('\n');
-        fs.writeFileSync(`${chatsPath + sanitize(dir_name)}/${sanitize(String(request.body.file_name))}.jsonl`, jsonlData, 'utf8');
+        writeFileAtomicSync(`${chatsPath + sanitize(dir_name)}/${sanitize(String(request.body.file_name))}.jsonl`, jsonlData, 'utf8');
         return response.send({ result: "ok" });
     } catch (error) {
         response.send(error);
@@ -988,7 +1008,7 @@ function charaFormatData(data) {
     return char;
 }
 
-app.post("/createcharacter", urlencodedParser, function (request, response) {
+app.post("/createcharacter", urlencodedParser, async function (request, response) {
     if (!request.body) return response.sendStatus(400);
 
     request.body.ch_name = sanitize(request.body.ch_name);
@@ -1005,8 +1025,9 @@ app.post("/createcharacter", urlencodedParser, function (request, response) {
         charaWrite(defaultAvatar, char, internalName, response, avatarName);
     } else {
         const crop = tryParse(request.query.crop);
-        const uploadPath = path.join("./uploads/", request.file.filename);
-        charaWrite(uploadPath, char, internalName, response, avatarName, crop);
+        const uploadPath = path.join(UPLOADS_PATH, request.file.filename);
+        await charaWrite(uploadPath, char, internalName, response, avatarName, crop);
+        fs.unlinkSync(uploadPath);
     }
 });
 
@@ -1103,9 +1124,10 @@ app.post("/editcharacter", urlencodedParser, async function (request, response) 
             await charaWrite(avatarPath, char, target_img, response, 'Character saved');
         } else {
             const crop = tryParse(request.query.crop);
-            const newAvatarPath = path.join("./uploads/", request.file.filename);
+            const newAvatarPath = path.join(UPLOADS_PATH, request.file.filename);
             invalidateThumbnail('avatar', request.body.avatar_url);
             await charaWrite(newAvatarPath, char, target_img, response, 'Character saved', crop);
+            fs.unlinkSync(newAvatarPath);
         }
     }
     catch {
@@ -1217,7 +1239,7 @@ async function charaWrite(img_url, data, target_img, response = undefined, mes =
         chunks.splice(-1, 0, PNGtext.encode('chara', base64EncodedData));
         //chunks.splice(-1, 0, text.encode('lorem', 'ipsum'));
 
-        fs.writeFileSync(charactersPath + target_img + '.png', new Buffer.from(encode(chunks)));
+        writeFileAtomicSync(charactersPath + target_img + '.png', new Buffer.from(encode(chunks)));
         if (response !== undefined) response.send(mes);
         return true;
     } catch (err) {
@@ -1356,7 +1378,20 @@ app.post("/getcharacters", jsonParser, function (request, response) {
     });
 });
 
+app.post("/getonecharacter", jsonParser, async function (request, response) {
+    if (!request.body) return response.sendStatus(400);
+    const item = request.body.avatar_url;
+    const filePath = path.join(charactersPath, item);
 
+    if (!fs.existsSync(filePath)) {
+        return response.sendStatus(404);
+    }
+
+    characters = {};
+    await processCharacter(item, 0);
+
+    return response.send(characters[0]);
+});
 
 /**
  * Handle a POST request to get the stats object
@@ -1428,18 +1463,16 @@ app.post('/deleteuseravatar', jsonParser, function (request, response) {
 });
 
 app.post("/setbackground", jsonParser, function (request, response) {
-    var bg = "#bg1 {background-image: url('../backgrounds/" + request.body.bg + "');}";
-    fs.writeFile('public/css/bg_load.css', bg, 'utf8', function (err) {
-        if (err) {
-            response.send(err);
-            return console.log(err);
-        } else {
-            //response.redirect("/");
-            response.send({ result: 'ok' });
-        }
-    });
-
+    try {
+        const bg = `#bg1 {background-image: url('../backgrounds/${request.body.bg}');}`;
+        writeFileAtomicSync('public/css/bg_load.css', bg, 'utf8');
+        response.send({ result: 'ok' });
+    } catch (err) {
+        console.log(err);
+        response.send(err);
+    }
 });
+
 app.post("/delbackground", jsonParser, function (request, response) {
     if (!request.body) return response.sendStatus(400);
 
@@ -1516,13 +1549,14 @@ app.post("/downloadbackground", urlencodedParser, function (request, response) {
     response_dw_bg = response;
     if (!request.body || !request.file) return response.sendStatus(400);
 
-    const img_path = path.join("uploads/", request.file.filename);
+    const img_path = path.join(UPLOADS_PATH, request.file.filename);
     const filename = request.file.originalname;
 
     try {
         fs.copyFileSync(img_path, path.join('public/backgrounds/', filename));
         invalidateThumbnail('bg', filename);
         response_dw_bg.send(filename);
+        fs.unlinkSync(img_path);
     } catch (err) {
         console.error(err);
         response_dw_bg.sendStatus(500);
@@ -1530,25 +1564,13 @@ app.post("/downloadbackground", urlencodedParser, function (request, response) {
 });
 
 app.post("/savesettings", jsonParser, function (request, response) {
-    fs.writeFile('public/settings.json', JSON.stringify(request.body, null, 4), 'utf8', function (err) {
-        if (err) {
-            response.send(err);
-            console.log(err);
-        } else {
-            response.send({ result: "ok" });
-        }
-    });
-
-    /*fs.writeFile('public/settings.json', JSON.stringify(request.body), 'utf8', function (err) {
-        if (err) {
-            response.send(err);
-            return console.log(err);
-            //response.send(err);
-        } else {
-            //response.redirect("/");
-            response.send({ result: "ok" });
-        }
-    });*/
+    try {
+        writeFileAtomicSync('public/settings.json', JSON.stringify(request.body, null, 4), 'utf8');
+        response.send({ result: "ok" });
+    } catch (err) {
+        console.log(err);
+        response.send(err);
+    }
 });
 
 function getCharaCardV2(jsonObject) {
@@ -1714,7 +1736,7 @@ app.post('/savetheme', jsonParser, (request, response) => {
     }
 
     const filename = path.join(directories.themes, sanitize(request.body.name) + '.json');
-    fs.writeFileSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
+    writeFileAtomicSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
 
     return response.sendStatus(200);
 });
@@ -1725,7 +1747,7 @@ app.post('/savemovingui', jsonParser, (request, response) => {
     }
 
     const filename = path.join(directories.movingUI, sanitize(request.body.name) + '.json');
-    fs.writeFileSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
+    writeFileAtomicSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
 
     return response.sendStatus(200);
 });
@@ -1736,7 +1758,7 @@ app.post('/savequickreply', jsonParser, (request, response) => {
     }
 
     const filename = path.join(directories.quickreplies, sanitize(request.body.name) + '.json');
-    fs.writeFileSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
+    writeFileAtomicSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
 
     return response.sendStatus(200);
 });
@@ -1853,6 +1875,24 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
     const novelai = require('./src/novelai');
     const isNewModel = (request.body.model.includes('clio') || request.body.model.includes('kayra'));
     const isKrake = request.body.model.includes('krake');
+    const badWordsList = (isNewModel ? novelai.badWordsList : (isKrake ? novelai.krakeBadWordsList : novelai.euterpeBadWordsList)).slice();
+
+    // Add customized bad words for Clio and Kayra
+    if (isNewModel && Array.isArray(request.body.bad_words_ids)) {
+        for (const badWord of request.body.bad_words_ids) {
+            if (Array.isArray(badWord) && badWord.every(x => Number.isInteger(x))) {
+                badWordsList.push(badWord);
+            }
+        }
+    }
+
+    // Add default biases for dinkus and asterism
+    const logit_bias_exp = isNewModel ? novelai.logitBiasExp.slice() : null;
+
+    if (Array.isArray(logit_bias_exp) && Array.isArray(request.body.logit_bias_exp)) {
+        logit_bias_exp.push(...request.body.logit_bias_exp);
+    }
+
     const data = {
         "input": request.body.input,
         "model": request.body.model,
@@ -1872,13 +1912,14 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
             "top_p": request.body.top_p,
             "top_k": request.body.top_k,
             "typical_p": request.body.typical_p,
+            "mirostat_lr": request.body.mirostat_lr,
+            "mirostat_tau": request.body.mirostat_tau,
             "cfg_scale": request.body.cfg_scale,
             "cfg_uc": request.body.cfg_uc,
             "phrase_rep_pen": request.body.phrase_rep_pen,
             "stop_sequences": request.body.stop_sequences,
-            //"stop_sequences": {{187}},
-            "bad_words_ids": isNewModel ? novelai.badWordsList : (isKrake ? novelai.krakeBadWordsList : novelai.euterpeBadWordsList),
-            "logit_bias_exp": isNewModel ? novelai.logitBiasExp : null,
+            "bad_words_ids": badWordsList,
+            "logit_bias_exp": logit_bias_exp,
             //generate_until_sentence = true;
             "use_cache": request.body.use_cache,
             "use_string": true,
@@ -1932,6 +1973,7 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
             }
 
             const data = await response.json();
+            console.log(data);
             return response_generate_novel.send(data);
         }
     } catch (error) {
@@ -2029,13 +2071,15 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
 
     let png_name = '';
     let filedata = request.file;
-    let uploadPath = path.join('./uploads', filedata.filename);
+    let uploadPath = path.join(UPLOADS_PATH, filedata.filename);
     var format = request.body.file_type;
     const defaultAvatarPath = './public/img/ai4.png';
     //console.log(format);
     if (filedata) {
         if (format == 'json') {
             fs.readFile(uploadPath, 'utf8', async (err, data) => {
+                fs.unlinkSync(uploadPath);
+
                 if (err) {
                     console.log(err);
                     response.send({ error: true });
@@ -2116,8 +2160,9 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
 
                 if (format == 'webp') {
                     try {
-                        let convertedPath = path.join('./uploads', path.basename(uploadPath, ".webp") + ".png")
+                        let convertedPath = path.join(UPLOADS_PATH, path.basename(uploadPath, ".webp") + ".png")
                         await webp.dwebp(uploadPath, convertedPath, "-o");
+                        fs.unlinkSync(uploadPath);
                         uploadPath = convertedPath;
                     }
                     catch {
@@ -2132,7 +2177,8 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     unsetFavFlag(jsonData);
                     jsonData = readFromV2(jsonData);
                     let char = JSON.stringify(jsonData);
-                    charaWrite(uploadPath, char, png_name, response, { file_name: png_name });
+                    await charaWrite(uploadPath, char, png_name, response, { file_name: png_name });
+                    fs.unlinkSync(uploadPath);
                 } else if (jsonData.name !== undefined) {
                     console.log('Found a v1 character file.');
 
@@ -2158,6 +2204,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     char = convertToV2(char);
                     char = JSON.stringify(char);
                     await charaWrite(uploadPath, char, png_name, response, { file_name: png_name });
+                    fs.unlinkSync(uploadPath);
                 } else {
                     console.log('Unknown character card format');
                     response.send({ error: true });
@@ -2300,9 +2347,9 @@ app.post("/exportcharacter", jsonParser, async function (request, response) {
             try {
                 let json = await charaRead(filename);
                 let stringByteArray = utf8Encode.encode(json).toString();
-                let inputWebpPath = `./uploads/${Date.now()}_input.webp`;
-                let outputWebpPath = `./uploads/${Date.now()}_output.webp`;
-                let metadataPath = `./uploads/${Date.now()}_metadata.exif`;
+                let inputWebpPath = path.join(UPLOADS_PATH, `${Date.now()}_input.webp`);
+                let outputWebpPath = path.join(UPLOADS_PATH, `${Date.now()}_output.webp`);
+                let metadataPath = path.join(UPLOADS_PATH, `${Date.now()}_metadata.exif`);
                 let metadata =
                 {
                     "Exif": {
@@ -2310,7 +2357,7 @@ app.post("/exportcharacter", jsonParser, async function (request, response) {
                     },
                 };
                 const exifString = exif.dump(metadata);
-                fs.writeFileSync(metadataPath, exifString, 'binary');
+                writeFileAtomicSync(metadataPath, exifString, 'binary');
 
                 await webp.cwebp(filename, inputWebpPath, '-q 95');
                 await webp.webpmux_add(inputWebpPath, outputWebpPath, metadataPath, 'exif');
@@ -2337,7 +2384,10 @@ app.post("/importgroupchat", urlencodedParser, function (request, response) {
     try {
         const filedata = request.file;
         const chatname = humanizedISO8601DateTime();
-        fs.copyFileSync(`./uploads/${filedata.filename}`, (`${directories.groupChats}/${chatname}.jsonl`));
+        const pathToUpload = path.join(UPLOADS_PATH, filedata.filename);
+        const pathToNewFile = path.join(directories.groupChats, `${chatname}.jsonl`);
+        fs.copyFileSync(pathToUpload, pathToNewFile);
+        fs.unlinkSync(pathToUpload);
         return response.send({ res: chatname });
     } catch (error) {
         console.error(error);
@@ -2356,7 +2406,7 @@ app.post("/importchat", urlencodedParser, function (request, response) {
 
     if (filedata) {
         if (format === 'json') {
-            fs.readFile(`./uploads/${filedata.filename}`, 'utf8', (err, data) => {
+            fs.readFile(path.join(UPLOADS_PATH, filedata.filename), 'utf8', (err, data) => {
 
                 if (err) {
                     console.log(err);
@@ -2392,13 +2442,17 @@ app.post("/importchat", urlencodedParser, function (request, response) {
                     });
 
                     const errors = [];
-                    newChats.forEach(chat => fs.writeFile(
-                        `${chatsPath + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()} imported.jsonl`,
-                        chat.map(JSON.stringify).join('\n'),
-                        'utf8',
-                        (err) => err ?? errors.push(err)
-                    )
-                    );
+
+                    for (const chat of newChats) {
+                        const filePath = `${chatsPath + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()} imported.jsonl`;
+                        const fileContent = chat.map(tryParse).filter(x => x).join('\n');
+
+                        try {
+                            writeFileAtomicSync(filePath, fileContent, 'utf8');
+                        } catch (err) {
+                            errors.push(err);
+                        }
+                    }
 
                     if (0 < errors.length) {
                         response.send('Errors occurred while writing character files. Errors: ' + JSON.stringify(errors));
@@ -2436,7 +2490,7 @@ app.post("/importchat", urlencodedParser, function (request, response) {
                         }
                     }
 
-                    fs.writeFileSync(`${chatsPath + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()} imported.jsonl`, chat.map(JSON.stringify).join('\n'), 'utf8');
+                    writeFileAtomicSync(`${chatsPath + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()} imported.jsonl`, chat.map(JSON.stringify).join('\n'), 'utf8');
 
                     response.send({ res: true });
                 } else {
@@ -2446,7 +2500,7 @@ app.post("/importchat", urlencodedParser, function (request, response) {
         }
         if (format === 'jsonl') {
             //console.log(humanizedISO8601DateTime()+':imported chat format is JSONL');
-            const fileStream = fs.createReadStream('./uploads/' + filedata.filename);
+            const fileStream = fs.createReadStream(path.join(UPLOADS_PATH, filedata.filename));
             const rl = readline.createInterface({
                 input: fileStream,
                 crlfDelay: Infinity
@@ -2456,7 +2510,7 @@ app.post("/importchat", urlencodedParser, function (request, response) {
                 let jsonData = json5.parse(line);
 
                 if (jsonData.user_name !== undefined || jsonData.name !== undefined) {
-                    fs.copyFile(`./uploads/${filedata.filename}`, (`${chatsPath + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()}.jsonl`), (err) => {
+                    fs.copyFile(path.join(UPLOADS_PATH, filedata.filename), (`${chatsPath + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()}.jsonl`), (err) => {
                         if (err) {
                             response.send({ error: true });
                             return console.log(err);
@@ -2485,8 +2539,9 @@ app.post('/importworldinfo', urlencodedParser, (request, response) => {
     if (request.body.convertedData) {
         fileContents = request.body.convertedData;
     } else {
-        const pathToUpload = path.join('./uploads/', request.file.filename);
+        const pathToUpload = path.join(UPLOADS_PATH, request.file.filename);
         fileContents = fs.readFileSync(pathToUpload, 'utf8');
+        fs.unlinkSync(pathToUpload);
     }
 
     try {
@@ -2505,7 +2560,7 @@ app.post('/importworldinfo', urlencodedParser, (request, response) => {
         return response.status(400).send('World file must have a name');
     }
 
-    fs.writeFileSync(pathToNewFile, fileContents);
+    writeFileAtomicSync(pathToNewFile, fileContents);
     return response.send({ name: worldName });
 });
 
@@ -2529,7 +2584,7 @@ app.post('/editworldinfo', jsonParser, (request, response) => {
     const filename = `${sanitize(request.body.name)}.json`;
     const pathToFile = path.join(directories.worlds, filename);
 
-    fs.writeFileSync(pathToFile, JSON.stringify(request.body.data, null, 4));
+    writeFileAtomicSync(pathToFile, JSON.stringify(request.body.data, null, 4));
 
     return response.send({ ok: true });
 });
@@ -2538,7 +2593,7 @@ app.post('/uploaduseravatar', urlencodedParser, async (request, response) => {
     if (!request.file) return response.sendStatus(400);
 
     try {
-        const pathToUpload = path.join('./uploads/' + request.file.filename);
+        const pathToUpload = path.join(UPLOADS_PATH, request.file.filename);
         const crop = tryParse(request.query.crop);
         let rawImg = await jimp.read(pathToUpload);
 
@@ -2550,13 +2605,80 @@ app.post('/uploaduseravatar', urlencodedParser, async (request, response) => {
 
         const filename = request.body.overwrite_name || `${Date.now()}.png`;
         const pathToNewFile = path.join(directories.avatars, filename);
-        fs.writeFileSync(pathToNewFile, image);
+        writeFileAtomicSync(pathToNewFile, image);
         fs.rmSync(pathToUpload);
         return response.send({ path: filename });
     } catch (err) {
         return response.status(400).send('Is not a valid image');
     }
 });
+
+
+/**
+ * Ensure the directory for the provided file path exists.
+ * If not, it will recursively create the directory.
+ *
+ * @param {string} filePath - The full path of the file for which the directory should be ensured.
+ */
+function ensureDirectoryExistence(filePath) {
+    const dirname = path.dirname(filePath);
+    if (fs.existsSync(dirname)) {
+        return true;
+    }
+    ensureDirectoryExistence(dirname);
+    fs.mkdirSync(dirname);
+}
+
+/**
+ * Endpoint to handle image uploads.
+ * The image should be provided in the request body in base64 format.
+ * Optionally, a character name can be provided to save the image in a sub-folder.
+ *
+ * @route POST /uploadimage
+ * @param {Object} request.body - The request payload.
+ * @param {string} request.body.image - The base64 encoded image data.
+ * @param {string} [request.body.ch_name] - Optional character name to determine the sub-directory.
+ * @returns {Object} response - The response object containing the path where the image was saved.
+ */
+app.post('/uploadimage', jsonParser, async (request, response) => {
+    // Check for image data
+    if (!request.body || !request.body.image) {
+        return response.status(400).send({ error: "No image data provided" });
+    }
+
+    // Extracting the base64 data and the image format
+    const match = request.body.image.match(/^data:image\/(png|jpg|webp);base64,(.+)$/);
+    if (!match) {
+        return response.status(400).send({ error: "Invalid image format" });
+    }
+
+    const [, format, base64Data] = match;
+
+    // Constructing filename and path
+    let filename = `${Date.now()}.${format}`;
+    if (request.body.filename) {
+        filename = `${request.body.filename}.${format}`;
+    }
+
+    // if character is defined, save to a sub folder for that character
+    let pathToNewFile = path.join(directories.userImages, filename);
+    if (request.body.ch_name) {
+        pathToNewFile = path.join(directories.userImages, request.body.ch_name, filename);
+    }
+
+    try {
+        ensureDirectoryExistence(pathToNewFile);
+        const imageBuffer = Buffer.from(base64Data, 'base64');
+        await fs.promises.writeFile(pathToNewFile, imageBuffer);
+        // send the path to the image, relative to the client folder, which means removing the first folder from the path which is 'public'
+        pathToNewFile = pathToNewFile.split(path.sep).slice(1).join(path.sep);
+        response.send({ path: pathToNewFile });
+    } catch (error) {
+        console.log(error);
+        response.status(500).send({ error: "Failed to save the image" });
+    }
+});
+
 
 app.post('/getgroups', jsonParser, (_, response) => {
     const groups = [];
@@ -2606,7 +2728,7 @@ app.post('/creategroup', jsonParser, (request, response) => {
         return response.sendStatus(400);
     }
 
-    const id = Date.now();
+    const id = String(Date.now());
     const groupMetadata = {
         id: id,
         name: request.body.name ?? 'New Group',
@@ -2627,7 +2749,7 @@ app.post('/creategroup', jsonParser, (request, response) => {
         fs.mkdirSync(directories.groups);
     }
 
-    fs.writeFileSync(pathToFile, fileData);
+    writeFileAtomicSync(pathToFile, fileData);
     return response.send(groupMetadata);
 });
 
@@ -2639,7 +2761,7 @@ app.post('/editgroup', jsonParser, (request, response) => {
     const pathToFile = path.join(directories.groups, `${id}.json`);
     const fileData = JSON.stringify(request.body);
 
-    fs.writeFileSync(pathToFile, fileData);
+    writeFileAtomicSync(pathToFile, fileData);
     return response.send({ ok: true });
 });
 
@@ -2693,7 +2815,7 @@ app.post('/savegroupchat', jsonParser, (request, response) => {
 
     let chat_data = request.body.chat;
     let jsonlData = chat_data.map(JSON.stringify).join('\n');
-    fs.writeFileSync(pathToFile, jsonlData, 'utf8');
+    writeFileAtomicSync(pathToFile, jsonlData, 'utf8');
     return response.send({ ok: true });
 });
 
@@ -2828,6 +2950,26 @@ function invalidateThumbnail(type, file) {
     }
 }
 
+function cleanUploads() {
+    try {
+        if (fs.existsSync(UPLOADS_PATH)) {
+            const uploads = fs.readdirSync(UPLOADS_PATH);
+
+            if (!uploads.length) {
+                return;
+            }
+
+            console.debug(`Cleaning uploads folder (${uploads.length} files)`);
+            uploads.forEach(file => {
+                const pathToFile = path.join(UPLOADS_PATH, file);
+                fs.unlinkSync(pathToFile);
+            });
+        }
+    } catch (err) {
+        console.error(err);
+    }
+}
+
 async function ensureThumbnailCache() {
     const cacheFiles = fs.readdirSync(directories.thumbnailsBg);
 
@@ -2892,7 +3034,7 @@ async function generateThumbnail(type, file) {
             buffer = fs.readFileSync(pathToOriginalFile);
         }
 
-        fs.writeFileSync(pathToCachedFile, buffer);
+        writeFileAtomicSync(pathToCachedFile, buffer);
     }
     catch (outer) {
         return null;
@@ -2964,8 +3106,22 @@ app.post("/getstatus_openai", jsonParser, function (request, response_getstatus_
     client.get(api_url + "/models", args, function (data, response) {
         if (response.statusCode == 200) {
             response_getstatus_openai.send(data);
-            const modelIds = data?.data?.map(x => x.id)?.sort();
-            console.log('Available OpenAI models:', modelIds);
+            if (request.body.use_openrouter) {
+                let models = [];
+                data.data.forEach(model => {
+                    const context_length = model.context_length;
+                    const tokens_dollar = parseFloat(1 / (1000 * model.pricing.prompt));
+                    const tokens_rounded = (Math.round(tokens_dollar * 1000) / 1000).toFixed(0);
+                    models[model.id] = {
+                        tokens_per_dollar: tokens_rounded + 'k',
+                        context_length: context_length,
+                    };
+                });
+                console.log('Available OpenRouter models:', models);
+            } else {
+                const modelIds = data?.data?.map(x => x.id)?.sort();
+                console.log('Available OpenAI models:', modelIds);
+            }
         }
         if (response.statusCode == 401) {
             console.log('Access Token is incorrect.');
@@ -3144,6 +3300,72 @@ async function sendScaleRequest(request, response) {
     }
 }
 
+app.post("/generate_altscale", jsonParser, function (request, response_generate_scale) {
+    if (!request.body) return response_generate_scale.sendStatus(400);
+
+    fetch('https://dashboard.scale.com/spellbook/api/trpc/v2.variant.run', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'cookie': `_jwt=${readSecret(SECRET_KEYS.SCALE_COOKIE)}`,
+        },
+        body: JSON.stringify({
+            json: {
+                variant: {
+                    name: 'New Variant',
+                    appId: '',
+                    taxonomy: null
+                },
+                prompt: {
+                    id: '',
+                    template: '{{input}}\n',
+                    exampleVariables: {},
+                    variablesSourceDataId: null,
+                    systemMessage: request.body.sysprompt
+                },
+                modelParameters: {
+                    id: '',
+                    modelId: 'GPT4',
+                    modelType: 'OpenAi',
+                    maxTokens: request.body.max_tokens,
+                    temperature: request.body.temp,
+                    stop: "user:",
+                    suffix: null,
+                    topP: request.body.top_p,
+                    logprobs: null,
+                    logitBias: request.body.logit_bias
+                },
+                inputs: [
+                    {
+                        index: '-1',
+                        valueByName: {
+                            input: request.body.prompt
+                        }
+                    }
+                ]
+            },
+            meta: {
+                values: {
+                    'variant.taxonomy': ['undefined'],
+                    'prompt.variablesSourceDataId': ['undefined'],
+                    'modelParameters.suffix': ['undefined'],
+                    'modelParameters.logprobs': ['undefined'],
+                }
+            }
+        })
+    })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data.result.data.json.outputs[0])
+            return response_generate_scale.send({ output: data.result.data.json.outputs[0] });
+        })
+        .catch((error) => {
+            console.error('Error:', error)
+            return response_generate_scale.send({ error: true })
+        });
+
+});
+
 async function sendClaudeRequest(request, response) {
     const fetch = require('node-fetch').default;
 
@@ -3161,9 +3383,9 @@ async function sendClaudeRequest(request, response) {
             controller.abort();
         });
 
-        let requestPrompt = convertClaudePrompt(request.body.messages, true, true);
+        let requestPrompt = convertClaudePrompt(request.body.messages, true, !request.body.exclude_assistant);
 
-        if (request.body.assistant_prefill) {
+        if (request.body.assistant_prefill && !request.body.exclude_assistant) {
             requestPrompt += request.body.assistant_prefill;
         }
 
@@ -3236,6 +3458,10 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
         return sendScaleRequest(request, response_generate_openai);
     }
 
+    if (request.body.use_ai21) {
+        return sendAI21Request(request, response_generate_openai);
+    }
+
     let api_url;
     let api_key_openai;
     let headers;
@@ -3300,7 +3526,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
         config.responseType = 'stream';
     }
 
-    async function makeRequest(config, response_generate_openai, request, retries = 5, timeout = 1000) {
+    async function makeRequest(config, response_generate_openai, request, retries = 5, timeout = 5000) {
         try {
             const response = await axios(config);
 
@@ -3322,7 +3548,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
             }
         } catch (error) {
             if (error.response && error.response.status === 429 && retries > 0) {
-                console.log('Out of quota, retrying...');
+                console.log(`Out of quota, retrying in ${Math.round(timeout / 1000)}s`);
                 setTimeout(() => {
                     makeRequest(config, response_generate_openai, request, retries - 1);
                 }, timeout);
@@ -3425,21 +3651,109 @@ app.post("/tokenize_openai", jsonParser, function (request, response_tokenize_op
     response_tokenize_openai.send({ "token_count": num_tokens });
 });
 
+async function sendAI21Request(request, response) {
+    if (!request.body) return response.sendStatus(400);
+    const controller = new AbortController();
+    console.log(request.body.messages)
+    request.socket.removeAllListeners('close');
+    request.socket.on('close', function () {
+        controller.abort();
+    });
+    const options = {
+        method: 'POST',
+        headers: {
+            accept: 'application/json',
+            'content-type': 'application/json',
+            Authorization: `Bearer ${readSecret(SECRET_KEYS.AI21)}`
+        },
+        body: JSON.stringify({
+            numResults: 1,
+            maxTokens: request.body.max_tokens,
+            minTokens: 0,
+            temperature: request.body.temperature,
+            topP: request.body.top_p,
+            stopSequences: request.body.stop_tokens,
+            topKReturn: request.body.top_k,
+            frequencyPenalty: {
+                scale: request.body.frequency_penalty * 100,
+                applyToWhitespaces: false,
+                applyToPunctuations: false,
+                applyToNumbers: false,
+                applyToStopwords: false,
+                applyToEmojis: false
+            },
+            presencePenalty: {
+                scale: request.body.presence_penalty,
+                applyToWhitespaces: false,
+                applyToPunctuations: false,
+                applyToNumbers: false,
+                applyToStopwords: false,
+                applyToEmojis: false
+            },
+            countPenalty: {
+                scale: request.body.count_pen,
+                applyToWhitespaces: false,
+                applyToPunctuations: false,
+                applyToNumbers: false,
+                applyToStopwords: false,
+                applyToEmojis: false
+            },
+            prompt: request.body.messages
+        }),
+        signal: controller.signal,
+    };
+
+    fetch(`https://api.ai21.com/studio/v1/${request.body.model}/complete`, options)
+        .then(r => r.json())
+        .then(r => {
+            if (r.completions === undefined) {
+                console.log(r)
+            } else {
+                console.log(r.completions[0].data.text)
+            }
+            const reply = { choices: [{ "message": { "content": r.completions[0].data.text, } }] };
+            return response.send(reply)
+        })
+        .catch(err => {
+            console.error(err)
+            return response.send({ error: true })
+        });
+
+}
+
+app.post("/tokenize_ai21", jsonParser, function (request, response_tokenize_ai21 = response) {
+    if (!request.body) return response_tokenize_ai21.sendStatus(400);
+    const options = {
+        method: 'POST',
+        headers: {
+            accept: 'application/json',
+            'content-type': 'application/json',
+            Authorization: `Bearer ${readSecret(SECRET_KEYS.AI21)}`
+        },
+        body: JSON.stringify({ text: request.body[0].content })
+    };
+
+    fetch('https://api.ai21.com/studio/v1/tokenize', options)
+        .then(response => response.json())
+        .then(response => response_tokenize_ai21.send({ "token_count": response.tokens.length }))
+        .catch(err => console.error(err));
+});
+
 app.post("/save_preset", jsonParser, function (request, response) {
     const name = sanitize(request.body.name);
     if (!request.body.preset || !name) {
         return response.sendStatus(400);
     }
 
-    const filename = `${name}.settings`;
-    const directory = getPresetFolderByApiId(request.body.apiId);
+    const settings = getPresetSettingsByAPI(request.body.apiId);
+    const filename = name + settings.extension;
 
-    if (!directory) {
+    if (!settings.folder) {
         return response.sendStatus(400);
     }
 
-    const fullpath = path.join(directory, filename);
-    fs.writeFileSync(fullpath, JSON.stringify(request.body.preset, null, 4), 'utf-8');
+    const fullpath = path.join(settings.folder, filename);
+    writeFileAtomicSync(fullpath, JSON.stringify(request.body.preset, null, 4), 'utf-8');
     return response.send({ name });
 });
 
@@ -3449,16 +3763,16 @@ app.post("/delete_preset", jsonParser, function (request, response) {
         return response.sendStatus(400);
     }
 
-    const filename = `${name}.settings`;
-    const directory = getPresetFolderByApiId(request.body.apiId);
+    const settings = getPresetSettingsByAPI(request.body.apiId);
+    const filename = name + settings.extension;
 
-    if (!directory) {
+    if (!settings.folder) {
         return response.sendStatus(400);
     }
 
-    const fullpath = path.join(directory, filename);
+    const fullpath = path.join(settings.folder, filename);
 
-    if (fs.existsSync) {
+    if (fs.existsSync(fullpath)) {
         fs.unlinkSync(fullpath);
         return response.sendStatus(200);
     } else {
@@ -3474,21 +3788,23 @@ app.post("/savepreset_openai", jsonParser, function (request, response) {
 
     const filename = `${name}.settings`;
     const fullpath = path.join(directories.openAI_Settings, filename);
-    fs.writeFileSync(fullpath, JSON.stringify(request.body, null, 4), 'utf-8');
+    writeFileAtomicSync(fullpath, JSON.stringify(request.body, null, 4), 'utf-8');
     return response.send({ name });
 });
 
-function getPresetFolderByApiId(apiId) {
+function getPresetSettingsByAPI(apiId) {
     switch (apiId) {
         case 'kobold':
         case 'koboldhorde':
-            return directories.koboldAI_Settings;
+            return { folder: directories.koboldAI_Settings, extension: '.settings' };
         case 'novel':
-            return directories.novelAI_Settings;
+            return { folder: directories.novelAI_Settings, extension: '.settings' };
         case 'textgenerationwebui':
-            return directories.textGen_Settings;
+            return { folder: directories.textGen_Settings, extension: '.settings' };
+        case 'instruct':
+            return { folder: directories.instruct, extension: '.json' };
         default:
-            return null;
+            return { folder: null, extension: null };
     }
 }
 
@@ -3582,6 +3898,7 @@ const setupTasks = async function () {
     ensurePublicDirectoriesExist();
     await ensureThumbnailCache();
     contentManager.checkForNewContent();
+    cleanUploads();
 
     // Colab users could run the embedded tool
     if (!is_colab) await convertWebp();
@@ -3608,7 +3925,8 @@ const setupTasks = async function () {
     console.log('Launching...');
 
     if (autorun) open(autorunUrl.toString());
-    console.log('SillyTavern is listening on: ' + tavernUrl);
+
+    console.log('\x1b[32mSillyTavern is listening on: ' + tavernUrl + '\x1b[0m');
 
     if (listen) {
         console.log('\n0.0.0.0 means SillyTavern is listening on all network interfaces (Wi-Fi, LAN, localhost). If you want to limit it only to internal localhost (127.0.0.1), change the setting in config.conf to “listen=false”\n');
@@ -3736,6 +4054,8 @@ const SECRET_KEYS = {
     DEEPL: 'deepl',
     OPENROUTER: 'api_key_openrouter',
     SCALE: 'api_key_scale',
+    AI21: 'api_key_ai21',
+    SCALE_COOKIE: 'scale_cookie',
 }
 
 function migrateSecrets() {
@@ -3776,7 +4096,7 @@ function migrateSecrets() {
         if (modified) {
             console.log('Writing updated settings.json...');
             const settingsContent = JSON.stringify(settings);
-            fs.writeFileSync(SETTINGS_FILE, settingsContent, "utf-8");
+            writeFileAtomicSync(SETTINGS_FILE, settingsContent, "utf-8");
         }
     }
     catch (error) {
@@ -4133,7 +4453,7 @@ app.post('/upload_sprite_pack', urlencodedParser, async (request, response) => {
             return response.sendStatus(404);
         }
 
-        const spritePackPath = path.join("./uploads/", file.filename);
+        const spritePackPath = path.join(UPLOADS_PATH, file.filename);
         const sprites = await getImageBuffers(spritePackPath);
         const files = fs.readdirSync(spritesPath);
 
@@ -4147,7 +4467,7 @@ app.post('/upload_sprite_pack', urlencodedParser, async (request, response) => {
 
             // Write sprite buffer to disk
             const pathToSprite = path.join(spritesPath, filename);
-            fs.writeFileSync(pathToSprite, buffer);
+            writeFileAtomicSync(pathToSprite, buffer);
         }
 
         // Remove uploaded ZIP file
@@ -4191,7 +4511,7 @@ app.post('/upload_sprite', urlencodedParser, async (request, response) => {
         }
 
         const filename = label + path.parse(file.originalname).ext;
-        const spritePath = path.join("./uploads/", file.filename);
+        const spritePath = path.join(UPLOADS_PATH, file.filename);
         const pathToFile = path.join(spritesPath, filename);
         // Copy uploaded file to sprites folder
         fs.cpSync(spritePath, pathToFile);
@@ -4372,7 +4692,7 @@ function importRisuSprites(data) {
 
             const filename = label + '.png';
             const pathToFile = path.join(spritesPath, filename);
-            fs.writeFileSync(pathToFile, fileBase64, { encoding: 'base64' });
+            writeFileAtomicSync(pathToFile, fileBase64, { encoding: 'base64' });
         }
 
         // Remove additionalAssets and emotions from data (they are now in the sprites folder)
@@ -4386,13 +4706,13 @@ function importRisuSprites(data) {
 function writeSecret(key, value) {
     if (!fs.existsSync(SECRETS_FILE)) {
         const emptyFile = JSON.stringify({});
-        fs.writeFileSync(SECRETS_FILE, emptyFile, "utf-8");
+        writeFileAtomicSync(SECRETS_FILE, emptyFile, "utf-8");
     }
 
     const fileContents = fs.readFileSync(SECRETS_FILE);
     const secrets = JSON.parse(fileContents);
     secrets[key] = value;
-    fs.writeFileSync(SECRETS_FILE, JSON.stringify(secrets), "utf-8");
+    writeFileAtomicSync(SECRETS_FILE, JSON.stringify(secrets), "utf-8");
 }
 
 function readSecret(key) {

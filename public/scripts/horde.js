@@ -8,6 +8,8 @@ import {
 import { SECRET_KEYS, writeSecret } from "./secrets.js";
 import { delay } from "./utils.js";
 import { deviceInfo } from "./RossAscends-mods.js";
+import { power_user } from "./power-user.js";
+import { autoSelectInstructPreset } from "./instruct-mode.js";
 
 export {
     horde_settings,
@@ -28,8 +30,8 @@ let horde_settings = {
     trusted_workers_only: false,
 };
 
-const MAX_RETRIES = 100;
-const CHECK_INTERVAL = 3000;
+const MAX_RETRIES = 200;
+const CHECK_INTERVAL = 5000;
 const MIN_AMOUNT_GEN = 16;
 const getRequestArgs = () => ({
     method: "GET",
@@ -226,19 +228,11 @@ async function showKudos() {
 
 jQuery(function () {
     $("#horde_model").on('mousedown change', async function (e) {
-        //desktop-only routine for multi-select without CTRL
-        /*if (deviceInfo.device.type === 'desktop') {
-            let hordeModelSelectScrollTop = null;
-            e.preventDefault();
-            const option = $(e.target);
-            const selectElement = $(this)[0];
-            hordeModelSelectScrollTop = selectElement.scrollTop;
-            option.prop('selected', !option.prop('selected'));
-            await delay(1);
-            selectElement.scrollTop = hordeModelSelectScrollTop;
-        }*/
         horde_settings.models = $('#horde_model').val();
         console.log('Updated Horde models', horde_settings.models);
+
+        // Try select instruct preset
+        autoSelectInstructPreset(horde_settings.models.join(' '));
     });
 
     $("#horde_auto_adjust_response_length").on("input", function () {

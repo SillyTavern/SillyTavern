@@ -1,5 +1,5 @@
 // statsHelper.js
-import { getRequestHeaders, callPopup, token, chat } from "../script.js";
+import { getRequestHeaders, callPopup, characters, this_chid } from "../script.js";
 import { humanizeGenTime } from "./RossAscends-mods.js";
 
 let charStats = {};
@@ -25,13 +25,12 @@ function createStatBlock(statName, statValue) {
  * @returns {number} - The stat value if it is a number, otherwise 0.
  */
 function verifyStatValue(stat) {
-    return isNaN(stat) ? 0 : stat;
+    return isNaN(Number(stat)) ? 0 : Number(stat);
 }
 
 /**
  * Calculates total stats from character statistics.
  *
- * @param {Object} charStats - Object containing character statistics.
  * @returns {Object} - Object containing total statistics.
  */
 function calculateTotalStats() {
@@ -303,5 +302,11 @@ async function statMesProcess(line, type, characters, this_chid, oldMesssage) {
     );
     updateStats();
 }
+
+jQuery(() => {
+    $(".rm_stats_button").on('click', function () {
+        characterStatsHandler(characters, this_chid);
+    });
+})
 
 export { userStatsHandler, characterStatsHandler, getStats, statMesProcess, charStats };

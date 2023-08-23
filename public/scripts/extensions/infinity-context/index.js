@@ -1,11 +1,12 @@
-import { saveSettingsDebounced, getCurrentChatId, system_message_types, extension_prompt_types, eventSource, event_types, getRequestHeaders, CHARACTERS_PER_TOKEN_RATIO, substituteParams, max_context, } from "../../../script.js";
+import { saveSettingsDebounced, getCurrentChatId, system_message_types, extension_prompt_types, eventSource, event_types, getRequestHeaders, substituteParams, } from "../../../script.js";
 import { humanizedDateTime } from "../../RossAscends-mods.js";
 import { getApiUrl, extension_settings, getContext, doExtrasFetch } from "../../extensions.js";
-import { getFileText, onlyUnique, splitRecursive, IndexedDBStore } from "../../utils.js";
+import { CHARACTERS_PER_TOKEN_RATIO } from "../../tokenizers.js";
+import { getFileText, onlyUnique, splitRecursive } from "../../utils.js";
 export { MODULE_NAME };
 
 const MODULE_NAME = 'chromadb';
-const dbStore = new IndexedDBStore('SillyTavern', MODULE_NAME);
+const dbStore = localforage.createInstance({ name: 'SillyTavern_ChromaDB' });
 
 const defaultSettings = {
     strategy: 'original',
@@ -59,7 +60,7 @@ async function invalidateMessageSyncState(messageId) {
     console.log('CHROMADB: invalidating message sync state', messageId);
     const state = await getChatSyncState();
     state[messageId] = 0;
-    await dbStore.put(getCurrentChatId(), state);
+    await dbStore.setItem(getCurrentChatId(), state);
 }
 
 async function getChatSyncState() {
@@ -69,7 +70,7 @@ async function getChatSyncState() {
     }
 
     const context = getContext();
-    const chatState = (await dbStore.get(currentChatId)) || [];
+    const chatState = (await dbStore.getItem(currentChatId)) || [];
 
     // if the chat length has decreased, it means that some messages were deleted
     if (chatState.length > context.chat.length) {
@@ -92,7 +93,7 @@ async function getChatSyncState() {
             chatState[i] = 0;
         }
     }
-    await dbStore.put(currentChatId, chatState);
+    await dbStore.setItem(currentChatId, chatState);
 
     return chatState;
 }
@@ -125,7 +126,7 @@ async function loadSettings() {
 
     $('#chromadb_auto_adjust').prop('checked', extension_settings.chromadb.auto_adjust);
     $('#chromadb_freeze').prop('checked', extension_settings.chromadb.freeze);
-    $('#chromadb_query_last_only').val(extension_settings.chromadb.query_last_only).trigger('input');
+    $('#chromadb_query_last_only').prop('checked', extension_settings.chromadb.query_last_only);
     enableDisableSliders();
     onStrategyChange();
 }
@@ -304,7 +305,7 @@ async function filterSyncedMessages(splitMessages) {
     }
 
     console.debug('CHROMADB: sync state', syncState.map((v, i) => ({ id: i, synced: v })));
-    await dbStore.put(getCurrentChatId(), syncState);
+    await dbStore.setItem(getCurrentChatId(), syncState);
 
     // remove messages that are already synced
     return splitMessages.filter((_, i) => !removeIndices.includes(i));
@@ -325,7 +326,7 @@ async function onPurgeClick() {
     });
 
     if (purgeResult.ok) {
-        await dbStore.delete(chat_id);
+        await dbStore.removeItem(chat_id);
         toastr.success('ChromaDB context has been successfully cleared');
     }
 }
@@ -573,6 +574,11 @@ function getCharacterDataLength() {
 * on the chat history and a specified maximum context length.
 */
 function doAutoAdjust(chat, maxContext) {
+    // Only valid for chat injections strategy
+    if (extension_settings.chromadb.recall_strategy !== 0) {
+        return;
+    }
+
     console.debug('CHROMADB: Auto-adjusting sliders (messages: %o, maxContext: %o)', chat.length, maxContext);
     // Get mean message length
     const meanMessageLength = chat.reduce((acc, cur) => acc + (cur?.mes?.length ?? 0), 0) / chat.length;
@@ -592,8 +598,8 @@ function doAutoAdjust(chat, maxContext) {
     console.debug('CHROMADB: Mean message length (tokens): %o', meanMessageLengthTokens);
     // Get number of messages in context
     const contextMessages = Math.max(1, Math.ceil(maxContext / meanMessageLengthTokens));
-    // Round up to nearest 10
-    const contextMessagesRounded = Math.ceil(contextMessages / 10) * 10;
+    // Round up to nearest 5
+    const contextMessagesRounded = Math.ceil(contextMessages / 5) * 5;
     console.debug('CHROMADB: Estimated context messages (rounded): %o', contextMessagesRounded);
     // Messages to keep (proportional, rounded to nearest 5, minimum 5, maximum 500)
     const messagesToKeep = Math.min(defaultSettings.keep_context_max, Math.max(5, Math.floor(contextMessagesRounded * extension_settings.chromadb.keep_context_proportion / 5) * 5));
