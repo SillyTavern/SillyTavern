@@ -2537,7 +2537,7 @@ function getMaxContextWindowAI(value) {
 
 async function onModelChange() {
     biasCache = undefined;
-    let value = String($(this).val());
+    let value = String($(this).val() || '');
 
     if ($(this).is('#model_claude_select')) {
         console.log('Claude model changed to', value);
