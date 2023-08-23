@@ -17,8 +17,8 @@ const MODULE_NAME = 'Audio';
 const DEBUG_PREFIX = "<Audio module> ";
 const UPDATE_INTERVAL = 1000;
 
-const ASSETS_BGM_FOLDER = "audio/bgm";
-const ASSETS_AMBIENT_FOLDER = "audio/ambient";
+const ASSETS_BGM_FOLDER = "bgm";
+const ASSETS_AMBIENT_FOLDER = "ambient";
 const CHARACTER_BGM_FOLDER = "bgm"
 
 const FALLBACK_EXPRESSION = "neutral";
@@ -106,6 +106,8 @@ function loadSettings() {
     }
 
     $("#audio_bgm_cooldown").val(extension_settings.audio.bgm_cooldown);
+
+    $("#audio_debug_div").hide(); // DBG
 }
 
 async function onEnabledClick() {
@@ -176,10 +178,12 @@ $(document).ready(function () {
                             <input type="checkbox" id="audio_enabled" name="audio_enabled">
                             <small>Enabled</small>
                         </label>
-                        <label class="checkbox_label" for="audio_debug">
-                            <input type="checkbox" id="audio_debug" name="audio_debug">
-                            <small>Debug</small>
-                        </label>
+                        <div id="audio_debug_div">
+                            <label class="checkbox_label" for="audio_debug">
+                                <input type="checkbox" id="audio_debug" name="audio_debug">
+                                <small>Debug</small>
+                            </label>
+                        </div>
                     </div>
                     <div>
                         <div>
@@ -253,13 +257,14 @@ $(document).ready(function () {
 //  API Calls                  //
 //#############################//
 
-async function getAssetsList(folderPath) {
-    console.debug(DEBUG_PREFIX, "getting files from",folderPath);
+async function getAssetsList(type) {
+    console.debug(DEBUG_PREFIX, "getting assets of type",type);
 
     try {
-        const result = await fetch(`/get_assets_list?folderPath=${folderPath}`);
-        let file_paths = result.ok ? (await result.json()) : [];
-        return file_paths;
+        const result = await fetch(`/get_assets`);
+        const assets = result.ok ? (await result.json()) : {type:[]};
+        console.debug(DEBUG_PREFIX, "Found assets:",assets);
+        return assets[type];
     }
     catch (err) {
         console.log(err);
@@ -553,6 +558,9 @@ async function updateAmbient() {
 
     if (audio_file_path === null) {
         console.debug(DEBUG_PREFIX,"No ambient file found for background",currentBackground);
+        const audio = $("#audio_ambient");
+        audio.attr("src","");
+        audio[0].pause();
         return;
     }
 

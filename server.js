@@ -4943,20 +4943,28 @@ app.post('/delete_extension', jsonParser, async (request, response) => {
  *
  * @returns {void}
  */
-app.get('/get_assets_list', jsonParser, function (request, response) {
-    const folderPath = path.join(directories.assets,request.query.folderPath);
-    let output = []
+app.get('/get_assets', jsonParser, function (request, response) {
+    const folderPath = path.join(directories.assets);
+    let output = {}
     //console.info("Checking files into",folderPath);
 
     try {
         if (fs.existsSync(folderPath) && fs.statSync(folderPath).isDirectory()) {
-            const files = fs.readdirSync(folderPath)
+            const folders = fs.readdirSync(folderPath)
             .filter(filename => {
-                return filename != ".placeholder";
+                return fs.statSync(path.join(folderPath,filename)).isDirectory();
             });
 
-            for (i of files)
-                output.push(`/assets/${request.query.folderPath}/${i}`);
+            for (const folder of folders) {
+                const files = fs.readdirSync(path.join(folderPath,folder))
+                .filter(filename => {
+                    return filename != ".placeholder";
+                });
+                output[folder] = [];
+                for (const file of files){
+                    output[folder].push(path.join("assets",folder,file));
+                }
+            }
         }
     }
     catch (err) {
