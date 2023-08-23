@@ -7478,14 +7478,15 @@ $(document).ready(function () {
             chat.length = 0;
 
             if (selected_group) {
-                createNewGroupChat(selected_group);
+                await createNewGroupChat(selected_group);
             }
             else {
                 //RossAscends: added character name to new chat filenames and replaced Date.now() with humanizedDateTime;
                 chat_metadata = {};
                 characters[this_chid].chat = name2 + " - " + humanizedDateTime();
                 $("#selected_chat_pole").val(characters[this_chid].chat);
-                getChat();
+                await getChat();
+                await createOrEditCharacter();
             }
         }
 
