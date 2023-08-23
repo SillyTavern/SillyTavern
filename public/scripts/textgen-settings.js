@@ -233,9 +233,9 @@ async function generateTextGenWithStreaming(generate_data, signal) {
     }
 }
 
-export function getTextGenGenerationData(finalPromt, this_amount_gen, isImpersonate, cfgValues) {
+export function getTextGenGenerationData(finalPrompt, this_amount_gen, isImpersonate, cfgValues) {
     return {
-        'prompt': finalPromt,
+        'prompt': finalPrompt,
         'max_new_tokens': this_amount_gen,
         'do_sample': textgenerationwebui_settings.do_sample,
         'temperature': textgenerationwebui_settings.temp,

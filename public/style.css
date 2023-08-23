@@ -202,6 +202,10 @@ table.responsiveTable {
     color: var(--white50a);
 }
 
+.mes[is_system="true"] .mes_text br {
+    display: none;
+}
+
 .mes_text table {
     border-spacing: 0;
     border-collapse: collapse;
@@ -373,7 +377,7 @@ hr {
     left: 0;
     right: 0;
     display: inline-block;
-    height: 40px;
+    height: 35px;
     position: absolute;
     border-bottom: 1px solid var(--grey30a);
     box-shadow: 0 2px 20px 0 var(--black70a);
@@ -386,14 +390,14 @@ hr {
 #sheld {
     display: grid;
     grid-template-rows: auto min-content;
-    height: calc(100vh - 42px);
-    height: calc(100svh - 42px);
+    height: calc(100vh - 36px);
+    height: calc(100svh - 36px);
     overflow-x: hidden;
     /* max-width: 50vw; */
     position: absolute;
     left: calc((100vw - var(--sheldWidth))/2);
     left: calc((100svw - var(--sheldWidth))/2);
-    top: 41px;
+    top: 36px;
     margin: 0 auto;
     left: 0;
     right: 0;
@@ -509,19 +513,19 @@ hr {
 #send_but_sheld {
     padding: 0;
     border: 0;
-    height: 40px;
+    height: 30px;
     position: relative;
     background-position: center;
     display: flex;
     flex-direction: row;
     column-gap: 5px;
-    font-size: 30px;
+    font-size: 25px;
     overflow: hidden;
 }
 
 #send_but_sheld>div {
-    width: 40px;
-    height: 40px;
+    width: 30px;
+    height: 30px;
     margin: 0;
     outline: none;
     border: none;
@@ -549,8 +553,8 @@ hr {
 }
 
 #options_button {
-    width: 40px;
-    height: 40px;
+    width: 30px;
+    height: 30px;
     margin: 0;
     outline: none;
     border: none;
@@ -558,10 +562,10 @@ hr {
     opacity: 0.7;
     cursor: pointer;
     z-index: 2001;
-    padding-left: 10px;
-    padding-top: 0;
+    margin-left: 10px;
+    padding: 0;
     transition: 0.3s;
-    font-size: 30px;
+    font-size: 25px;
     display: flex;
     align-items: center;
 }
@@ -872,17 +876,17 @@ select {
 }
 
 #send_textarea {
-    min-height: 40px;
+    min-height: 30px;
     max-height: 50vh;
     max-height: 50svh;
     word-wrap: break-word;
-    height: 40px;
+    height: 30px;
     resize: vertical;
     display: block;
     background-color: rgba(255, 0, 0, 0);
     border: 0;
     box-shadow: none;
-    padding: 6px;
+    padding-top: 6px;
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
     margin: 0;
     text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
@@ -2161,7 +2165,7 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
     width: max-content;
     margin-left: 5px;
     margin-right: 15px;
-    font-size: calc(var(--mainFontSize) * 0.8);
+    font-size: calc(var(--mainFontSize) * 0.85);
     color: var(--SmartThemeEmColor);
     text-align: center;
 }
@@ -3016,8 +3020,8 @@ a {
 
 #top-settings-holder {
     margin: 0 auto;
-    padding-top: 5px;
-    height: 40px;
+    padding-top: 2px;
+    height: 30px;
     /* max-width: var(--sheldWidth); */
     justify-content: center;
     display: grid;
@@ -3039,7 +3043,7 @@ a {
 .drawer-icon {
     display: inline-block;
     cursor: pointer;
-    font-size: 1.8rem;
+    font-size: 25px;
 }
 
 .drawer-icon.openIcon {
@@ -3164,7 +3168,7 @@ a {
 
 .drawer-content select {
     width: 100%;
-    font-size: calc(var(--mainFontSize) * 0.9);
+    font-size: calc(var(--mainFontSize) * 0.95);
 }
 
 .settingsSectionWrap {

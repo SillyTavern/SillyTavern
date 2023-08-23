@@ -521,7 +521,7 @@ export function dragElement(elmnt) {
             }
 
             //prevent resizing from top left into the top bar
-            if (top < 40 && maxX >= topBarFirstX && left <= topBarFirstX
+            if (top < 35 && maxX >= topBarFirstX && left <= topBarFirstX
             ) {
                 console.debug('prevent topbar underlap resize')
                 elmnt.css('width', width - 1 + "px");
@@ -556,7 +556,7 @@ export function dragElement(elmnt) {
             }
 
             //prevent underlap with topbar div
-            if (top < 40
+            if (top < 35
                 && (maxX >= topBarFirstX && left <= topBarFirstX //elmnt is hitting topbar from left side
                     || left <= topBarLastX && maxX >= topBarLastX //elmnt is hitting topbar from right side
                     || left >= topBarFirstX && maxX <= topBarLastX) //elmnt hitting topbar in the middle
@@ -841,7 +841,7 @@ jQuery(async function () {
 
     //this makes the chat input text area resize vertically to match the text size (limited by CSS at 50% window height)
     $('#send_textarea').on('input', function () {
-        this.style.height = '40px';
+        this.style.height = '30px';
         this.style.height = (this.scrollHeight) + 'px';
     });
 

@@ -165,6 +165,7 @@ const default_settings = {
     new_group_chat_prompt: default_new_group_chat_prompt,
     new_example_chat_prompt: default_new_example_chat_prompt,
     continue_nudge_prompt: default_continue_nudge_prompt,
+    nsfw_avoidance_prompt: default_nsfw_avoidance_prompt,
     bias_preset_selected: default_bias,
     bias_presets: default_bias_presets,
     wi_format: default_wi_format,
@@ -228,6 +229,7 @@ const oai_settings = {
     use_ai21_tokenizer: false,
     exclude_assistant: false,
     use_alt_scale: false,
+    nsfw_avoidance_prompt: default_nsfw_avoidance_prompt,
 };
 
 let openai_setting_names;
@@ -772,6 +774,7 @@ function preparePromptsForChatCompletion(Scenario, charPersonality, name2, world
  * @param {string} content.bias - The bias to be added in the conversation.
  * @param {string} content.type - The type of the chat, can be 'impersonate'.
  * @param {string} content.quietPrompt - The quiet prompt to be used in the conversation.
+ * @param {string} content.cyclePrompt - The last prompt used for chat message continuation.
  * @param {Array} content.extensionPrompts - An array of additional prompts.
  * @param dryRun - Whether this is a live call or not.
  * @returns {(*[]|boolean)[]} An array where the first element is the prepared chat and the second element is a boolean flag.
@@ -882,7 +885,7 @@ async function sendWindowAIRequest(openai_msgs_tosend, signal, stream) {
     let finished = false;
 
     const currentModel = await window.ai.getCurrentModel();
-    let temperature = parseFloat(oai_settings.temp_openai);
+    let temperature = Number(oai_settings.temp_openai);
 
     if ((currentModel.includes('claude') || currentModel.includes('palm-2')) && temperature > claude_max_temp) {
         console.warn(`Claude and PaLM models only supports temperature up to ${claude_max_temp}. Clamping ${temperature} to ${claude_max_temp}.`);
@@ -1014,7 +1017,7 @@ function saveModelList(data) {
         $('#model_openrouter_select').empty();
         $('#model_openrouter_select').append($('<option>', { value: openrouter_website_model, text: 'Use OpenRouter website setting' }));
         model_list.forEach((model) => {
-            let tokens_dollar = parseFloat(1 / (1000 * model.pricing.prompt));
+            let tokens_dollar = Number(1 / (1000 * model.pricing.prompt));
             let tokens_rounded = (Math.round(tokens_dollar * 1000) / 1000).toFixed(0);
             let model_description = `${model.id} | ${tokens_rounded}k t/$ | ${model.context_length} ctx`;
             $('#model_openrouter_select').append(
@@ -1067,9 +1070,9 @@ async function sendAltScaleRequest(openai_msgs_tosend, logit_bias, signal) {
     const generate_data = {
         sysprompt: joinedSysMsgs,
         prompt: openai_msgs_tosend,
-        temp: parseFloat(oai_settings.temp_openai),
-        top_p: parseFloat(oai_settings.top_p_openai),
-        max_tokens: parseFloat(oai_settings.openai_max_tokens),
+        temp: Number(oai_settings.temp_openai),
+        top_p: Number(oai_settings.top_p_openai),
+        max_tokens: Number(oai_settings.openai_max_tokens),
         logit_bias: logit_bias,
     }
 
@@ -1137,10 +1140,10 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
     const generate_data = {
         "messages": openai_msgs_tosend,
         "model": model,
-        "temperature": parseFloat(oai_settings.temp_openai),
-        "frequency_penalty": parseFloat(oai_settings.freq_pen_openai),
-        "presence_penalty": parseFloat(oai_settings.pres_pen_openai),
-        "top_p": parseFloat(oai_settings.top_p_openai),
+        "temperature": Number(oai_settings.temp_openai),
+        "frequency_penalty": Number(oai_settings.freq_pen_openai),
+        "presence_penalty": Number(oai_settings.pres_pen_openai),
+        "top_p": Number(oai_settings.top_p_openai),
         "max_tokens": oai_settings.openai_max_tokens,
         "stream": stream,
         "logit_bias": logit_bias,
@@ -1155,7 +1158,7 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
 
     if (isClaude) {
         generate_data['use_claude'] = true;
-        generate_data['top_k'] = parseFloat(oai_settings.top_k_openai);
+        generate_data['top_k'] = Number(oai_settings.top_k_openai);
         generate_data['exclude_assistant'] = oai_settings.exclude_assistant;
         // Don't add a prefill on quiet gens (summarization)
         if (!isQuiet && !oai_settings.exclude_assistant) {
@@ -1165,7 +1168,7 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
 
     if (isOpenRouter) {
         generate_data['use_openrouter'] = true;
-        generate_data['top_k'] = parseFloat(oai_settings.top_k_openai);
+        generate_data['top_k'] = Number(oai_settings.top_k_openai);
     }
 
     if (isScale) {
@@ -1175,8 +1178,8 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
 
     if (isAI21) {
         generate_data['use_ai21'] = true;
-        generate_data['top_k'] = parseFloat(oai_settings.top_k_openai);
-        generate_data['count_pen'] = parseFloat(oai_settings.count_pen);
+        generate_data['top_k'] = Number(oai_settings.top_k_openai);
+        generate_data['count_pen'] = Number(oai_settings.count_pen);
         generate_data['stop_tokens'] = [name1 + ':', oai_settings.new_chat_prompt, oai_settings.new_group_chat_prompt];
     }
 
@@ -1644,6 +1647,11 @@ class ChatCompletion {
         const index = this.findMessageIndex(identifier);
         const message = this.messages.collection[index].collection.pop();
 
+        if (!message) {
+            this.log(`No message to remove from ${identifier}`);
+            return;
+        }
+
         this.increaseTokenBudgetBy(message.getTokens());
 
         this.log(`Removed ${message.identifier} from ${identifier}. Remaining tokens: ${this.tokenBudget}`);
@@ -1860,7 +1868,6 @@ function loadOpenAISettings(data, settings) {
     oai_settings.new_example_chat_prompt = settings.new_example_chat_prompt ?? default_settings.new_example_chat_prompt;
     oai_settings.continue_nudge_prompt = settings.continue_nudge_prompt ?? default_settings.continue_nudge_prompt;
 
-    if (settings.keep_example_dialogue !== undefined) oai_settings.keep_example_dialogue = !!settings.keep_example_dialogue;
     if (settings.wrap_in_quotes !== undefined) oai_settings.wrap_in_quotes = !!settings.wrap_in_quotes;
     if (settings.names_in_completion !== undefined) oai_settings.names_in_completion = !!settings.names_in_completion;
     if (settings.openai_model !== undefined) oai_settings.openai_model = settings.openai_model;
@@ -1886,11 +1893,8 @@ function loadOpenAISettings(data, settings) {
 
     $('#openai_max_tokens').val(oai_settings.openai_max_tokens);
 
-    $('#nsfw_toggle').prop('checked', oai_settings.nsfw_toggle);
-    $('#keep_example_dialogue').prop('checked', oai_settings.keep_example_dialogue);
     $('#wrap_in_quotes').prop('checked', oai_settings.wrap_in_quotes);
     $('#names_in_completion').prop('checked', oai_settings.names_in_completion);
-    $('#nsfw_first').prop('checked', oai_settings.nsfw_first);
     $('#jailbreak_system').prop('checked', oai_settings.jailbreak_system);
     $('#legacy_streaming').prop('checked', oai_settings.legacy_streaming);
     $('#openai_show_external_models').prop('checked', oai_settings.show_external_models);
@@ -2130,7 +2134,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
 }
 
 function onLogitBiasPresetChange() {
-    const value = $('#openai_logit_bias_preset').find(':selected').val();
+    const value = String($('#openai_logit_bias_preset').find(':selected').val());
     const preset = oai_settings.bias_presets[value];
 
     if (!Array.isArray(preset)) {
@@ -2164,20 +2168,33 @@ function createLogitBiasListItem(entry) {
     const template = $('#openai_logit_bias_template .openai_logit_bias_form').clone();
     template.data('id', id);
     template.find('.openai_logit_bias_text').val(entry.text).on('input', function () {
-        oai_settings.bias_presets[oai_settings.bias_preset_selected][id].text = $(this).val();
+        oai_settings.bias_presets[oai_settings.bias_preset_selected][id].text = String($(this).val());
         biasCache = undefined;
         saveSettingsDebounced();
     });
     template.find('.openai_logit_bias_value').val(entry.value).on('input', function () {
-        oai_settings.bias_presets[oai_settings.bias_preset_selected][id].value = Number($(this).val());
+        const min = Number($(this).attr('min'));
+        const max = Number($(this).attr('max'));
+        let value = Number($(this).val());
+
+        if (value < min) {
+            $(this).val(min);
+            value = min;
+        }
+
+        if (value > max) {
+            $(this).val(max);
+            value = max;
+        }
+
+        oai_settings.bias_presets[oai_settings.bias_preset_selected][id].value = value;
         biasCache = undefined;
         saveSettingsDebounced();
     });
     template.find('.openai_logit_bias_remove').on('click', function () {
         $(this).closest('.openai_logit_bias_form').remove();
-        oai_settings.bias_presets[oai_settings.bias_preset_selected][id] = undefined;
-        biasCache = undefined;
-        saveSettingsDebounced();
+        oai_settings.bias_presets[oai_settings.bias_preset_selected].splice(id, 1);
+        onLogitBiasPresetChange();
     });
     $('.openai_logit_bias_list').prepend(template);
 }
@@ -2312,18 +2329,17 @@ async function onLogitBiasPresetImportFileChange(e) {
         return;
     }
 
+    const validEntries = [];
+
     for (const entry of importedFile) {
-        if (typeof entry == 'object') {
+        if (typeof entry == 'object' && entry !== null) {
             if (entry.hasOwnProperty('text') && entry.hasOwnProperty('value')) {
-                continue;
+                validEntries.push(entry);
             }
         }
-
-        callPopup('Invalid logit bias preset file.', 'text');
-        return;
     }
 
-    oai_settings.bias_presets[name] = importedFile;
+    oai_settings.bias_presets[name] = validEntries;
     oai_settings.bias_preset_selected = name;
 
     addLogitBiasPresetOption(name);
@@ -2496,7 +2512,6 @@ function getMaxContextOpenAI(value) {
     }
 }
 
-
 function getMaxContextWindowAI(value) {
     if (oai_settings.max_context_unlocked) {
         return unlocked_max;
@@ -2532,7 +2547,8 @@ function getMaxContextWindowAI(value) {
 }
 
 async function onModelChange() {
-    let value = $(this).val();
+    biasCache = undefined;
+    let value = String($(this).val());
 
     if ($(this).is('#model_claude_select')) {
         console.log('Claude model changed to', value);
@@ -2700,7 +2716,7 @@ async function onNewPresetClick() {
 }
 
 function onReverseProxyInput() {
-    oai_settings.reverse_proxy = $(this).val();
+    oai_settings.reverse_proxy = String($(this).val());
     $(".reverse_proxy_warning").toggle(oai_settings.reverse_proxy != '');
     saveSettingsDebounced();
 }
@@ -2716,7 +2732,7 @@ async function onConnectButtonClick(e) {
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER) {
-        const api_key_openrouter = $('#api_key_openrouter').val().trim();
+        const api_key_openrouter = String($('#api_key_openrouter').val()).trim();
 
         if (api_key_openrouter.length) {
             await writeSecret(SECRET_KEYS.OPENROUTER, api_key_openrouter);
@@ -2729,8 +2745,8 @@ async function onConnectButtonClick(e) {
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.SCALE) {
-        const api_key_scale = $('#api_key_scale').val().trim();
-        const scale_cookie = $('#scale_cookie').val().trim();
+        const api_key_scale = String($('#api_key_scale').val()).trim();
+        const scale_cookie = String($('#scale_cookie').val()).trim();
 
         if (api_key_scale.length) {
             await writeSecret(SECRET_KEYS.SCALE, api_key_scale);
@@ -2758,7 +2774,7 @@ async function onConnectButtonClick(e) {
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
-        const api_key_claude = $('#api_key_claude').val().trim();
+        const api_key_claude = String($('#api_key_claude').val()).trim();
 
         if (api_key_claude.length) {
             await writeSecret(SECRET_KEYS.CLAUDE, api_key_claude);
@@ -2771,7 +2787,7 @@ async function onConnectButtonClick(e) {
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.OPENAI) {
-        const api_key_openai = $('#api_key_openai').val().trim();
+        const api_key_openai = String($('#api_key_openai').val()).trim();
 
         if (api_key_openai.length) {
             await writeSecret(SECRET_KEYS.OPENAI, api_key_openai);
@@ -2784,7 +2800,7 @@ async function onConnectButtonClick(e) {
     }
 
     if (oai_settings.chat_completion_source == chat_completion_sources.AI21) {
-        const api_key_ai21 = $('#api_key_ai21').val().trim();
+        const api_key_ai21 = String($('#api_key_ai21').val()).trim();
 
         if (api_key_ai21.length) {
             await writeSecret(SECRET_KEYS.AI21, api_key_ai21);
@@ -2924,14 +2940,14 @@ $(document).ready(async function () {
     });
 
     $(document).on('input', '#openai_max_context', function () {
-        oai_settings.openai_max_context = parseInt($(this).val());
+        oai_settings.openai_max_context = Number($(this).val());
         $('#openai_max_context_counter').text(`${$(this).val()}`);
         calculateOpenRouterCost();
         saveSettingsDebounced();
     });
 
     $(document).on('input', '#openai_max_tokens', function () {
-        oai_settings.openai_max_tokens = parseInt($(this).val());
+        oai_settings.openai_max_tokens = Number($(this).val());
         calculateOpenRouterCost();
         saveSettingsDebounced();
     });
@@ -2966,42 +2982,42 @@ $(document).ready(async function () {
     });
 
     $("#send_if_empty_textarea").on('input', function () {
-        oai_settings.send_if_empty = $('#send_if_empty_textarea').val();
+        oai_settings.send_if_empty = String($('#send_if_empty_textarea').val());
         saveSettingsDebounced();
     });
 
     $("#impersonation_prompt_textarea").on('input', function () {
-        oai_settings.impersonation_prompt = $('#impersonation_prompt_textarea').val();
+        oai_settings.impersonation_prompt = String($('#impersonation_prompt_textarea').val());
         saveSettingsDebounced();
     });
 
     $("#newchat_prompt_textarea").on('input', function () {
-        oai_settings.new_chat_prompt = $('#newchat_prompt_textarea').val();
+        oai_settings.new_chat_prompt = String($('#newchat_prompt_textarea').val());
         saveSettingsDebounced();
     });
 
     $("#newgroupchat_prompt_textarea").on('input', function () {
-        oai_settings.new_group_chat_prompt = $('#newgroupchat_prompt_textarea').val();
+        oai_settings.new_group_chat_prompt = String($('#newgroupchat_prompt_textarea').val());
         saveSettingsDebounced();
     });
 
     $("#newexamplechat_prompt_textarea").on('input', function () {
-        oai_settings.new_example_chat_prompt = $('#newexamplechat_prompt_textarea').val();
+        oai_settings.new_example_chat_prompt = String($('#newexamplechat_prompt_textarea').val());
         saveSettingsDebounced();
     });
 
     $("#continue_nudge_prompt_textarea").on('input', function () {
-        oai_settings.continue_nudge_prompt = $('#continue_nudge_prompt_textarea').val();
+        oai_settings.continue_nudge_prompt = String($('#continue_nudge_prompt_textarea').val());
         saveSettingsDebounced();
     });
 
     $("#nsfw_avoidance_prompt_textarea").on('input', function () {
-        oai_settings.nsfw_avoidance_prompt = $('#nsfw_avoidance_prompt_textarea').val();
+        oai_settings.nsfw_avoidance_prompt = String($('#nsfw_avoidance_prompt_textarea').val());
         saveSettingsDebounced();
     });
 
     $("#wi_format_textarea").on('input', function () {
-        oai_settings.wi_format = $('#wi_format_textarea').val();
+        oai_settings.wi_format = String($('#wi_format_textarea').val());
         saveSettingsDebounced();
     });
 
@@ -3082,7 +3098,7 @@ $(document).ready(async function () {
     });
 
     $('#chat_completion_source').on('change', function () {
-        oai_settings.chat_completion_source = $(this).find(":selected").val();
+        oai_settings.chat_completion_source = String($(this).find(":selected").val());
         toggleChatCompletionForms();
         saveSettingsDebounced();
 
@@ -3100,7 +3116,7 @@ $(document).ready(async function () {
     });
 
     $('#api_url_scale').on('input', function () {
-        oai_settings.api_url_scale = $(this).val();
+        oai_settings.api_url_scale = String($(this).val());
         saveSettingsDebounced();
     });
 
@@ -3111,12 +3127,12 @@ $(document).ready(async function () {
     });
 
     $('#openai_proxy_password').on('input', function () {
-        oai_settings.proxy_password = $(this).val();
+        oai_settings.proxy_password = String($(this).val());
         saveSettingsDebounced();
     });
 
     $('#claude_assistant_prefill').on('input', function () {
-        oai_settings.assistant_prefill = $(this).val();
+        oai_settings.assistant_prefill = String($(this).val());
         saveSettingsDebounced();
     });
 

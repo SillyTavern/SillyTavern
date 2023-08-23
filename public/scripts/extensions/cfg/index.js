@@ -348,7 +348,7 @@ jQuery(async () => {
             .filter(":checked")
             .map(function() { return parseInt($(this).val()) })
             .get()
-            .filter((e) => e !== NaN) || [];
+            .filter((e) => !Number.isNaN(e)) || [];
 
         chat_metadata[metadataKeys.prompt_combine] = values;
         saveMetadataDebounced();

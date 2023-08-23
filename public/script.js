@@ -165,6 +165,7 @@ import {
     formatInstructModeExamples,
     getInstructStoppingSequences,
     autoSelectInstructPreset,
+    formatInstructModeSystemPrompt,
 } from "./scripts/instruct-mode.js";
 import { applyLocale } from "./scripts/i18n.js";
 import { getTokenCount, getTokenizerModel, saveTokenCache } from "./scripts/tokenizers.js";
@@ -322,6 +323,7 @@ let generatedPromtCache = "";
 let generation_started = new Date();
 let characters = [];
 let this_chid;
+let saveCharactersPage = 0;
 let backgrounds = [];
 const default_avatar = "img/ai4.png";
 export const system_avatar = "img/five.png";
@@ -893,6 +895,7 @@ async function printCharacters(fullRefresh = false) {
         pageSize: Number(localStorage.getItem(storageKey)) || 50,
         sizeChangerOptions: [10, 25, 50, 100, 250, 500, 1000],
         pageRange: 1,
+        pageNumber: saveCharactersPage || 1,
         position: 'top',
         showPageNumbers: false,
         showSizeChanger: true,
@@ -913,10 +916,14 @@ async function printCharacters(fullRefresh = false) {
         },
         afterSizeSelectorChange: function (e) {
             localStorage.setItem(storageKey, e.target.value);
-        }
+        },
+        afterPaging: function (e) {
+            saveCharactersPage = e;
+        },
     });
 
     favsToHotswap();
+    saveCharactersPage = 0;
 
     if (fullRefresh) {
         printTagFilters(tag_filter_types.character);
@@ -2354,6 +2361,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
         if (isInstruct) {
             systemPrompt = power_user.prefer_character_prompt && systemPrompt ? systemPrompt : baseChatReplace(power_user.instruct.system_prompt, name1, name2);
+            systemPrompt = formatInstructModeSystemPrompt(substituteParams(systemPrompt, name1, name2, power_user.instruct.system_prompt));
         }
 
         // Parse example messages
@@ -2733,6 +2741,12 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             // Fetches the combined prompt for both negative and positive prompts
             const cfgGuidanceScale = getGuidanceScale();
             function getCombinedPrompt(isNegative) {
+                // Only return if the guidance scale doesn't exist or the value is 1
+                // Also don't return if constructing the neutral prompt
+                if (isNegative && (!cfgGuidanceScale || cfgGuidanceScale?.value === 1)) {
+                    return;
+                }
+
                 let finalMesSend = [...mesSend];
                 let cfgPrompt = {};
                 if (cfgGuidanceScale && cfgGuidanceScale?.value !== 1) {
@@ -2746,7 +2760,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                                 ? cfgPrompt.value
                                 : ` ${cfgPrompt.value}`;
                     } else {
-                        // TODO: Switch from splice method to insertion depth method
+                        // TODO: Make all extension prompts use an array/splice method
                         finalMesSend.splice(mesSend.length - cfgPrompt.depth, 0, `${cfgPrompt.value}\n`);
                     }
                 }
@@ -2809,12 +2823,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             let finalPromt = getCombinedPrompt(false);
 
             // Include the entire guidance scale object
-            const cfgValues = {
-                guidanceScale: cfgGuidanceScale,
-                negativePrompt: negativePrompt
-            };
+            const cfgValues = cfgGuidanceScale && cfgGuidanceScale?.value !== 1 ? ({guidanceScale: cfgGuidanceScale, negativePrompt: negativePrompt }) : null;
 
-            let this_amount_gen = parseInt(amount_gen); // how many tokens the AI will be requested to generate
+            let this_amount_gen = Number(amount_gen); // how many tokens the AI will be requested to generate
             let this_settings = koboldai_settings[koboldai_setting_names[preset_settings]];
 
             if (isMultigenEnabled() && type !== 'quiet') {
@@ -2991,8 +3002,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     return;
                 }
 
-                hideStopButton();
-                is_send_press = false;
                 if (!data.error) {
                     //const getData = await response.json();
                     let getMessage = extractMessageFromData(data);
@@ -3113,6 +3122,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         }
                         if (generatedTextFiltered(getMessage)) {
                             console.debug('swiping right automatically');
+                            is_send_press = false;
                             swipe_right();
                             return
                         }
@@ -3132,7 +3142,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
                 console.debug('/savechat called by /Generate');
 
-                saveChatConditional();
+                await saveChatConditional();
+                is_send_press = false;
+                hideStopButton();
                 activateSendButtons();
                 showSwipeButtons();
                 setGenerationProgress(0);
@@ -6113,7 +6125,7 @@ async function deleteMessageImage() {
     delete message.extra.inline_image;
     mesBlock.find('.mes_img_container').removeClass('img_extra');
     mesBlock.find('.mes_img').attr('src', '');
-    saveChatConditional();
+    await saveChatConditional();
 }
 
 function enlargeMessageImage() {
@@ -7908,7 +7920,7 @@ $(document).ready(function () {
     });
 
     //confirms message deletion with the "ok" button
-    $("#dialogue_del_mes_ok").click(function () {
+    $("#dialogue_del_mes_ok").click(async function () {
         $("#dialogue_del_mes").css("display", "none");
         $("#send_form").css("display", css_send_form_display);
         $(".del_checkbox").each(function () {
@@ -7924,7 +7936,7 @@ $(document).ready(function () {
             $(".mes[mesid='" + this_del_mes + "']").remove();
             chat.length = this_del_mes;
             count_view_mes = this_del_mes;
-            saveChatConditional();
+            await saveChatConditional();
             var $textchat = $("#chat");
             $textchat.scrollTop($textchat[0].scrollHeight);
             eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
@@ -8199,7 +8211,7 @@ $(document).ready(function () {
         this_edit_mes_id = undefined;
     });
 
-    $(document).on("click", ".mes_edit_up", function () {
+    $(document).on("click", ".mes_edit_up", async function () {
         if (is_send_press || this_edit_mes_id <= 0) {
             return;
         }
@@ -8224,11 +8236,11 @@ $(document).ready(function () {
 
         this_edit_mes_id = targetId;
         updateViewMessageIds();
-        saveChatConditional();
+        await saveChatConditional();
         showSwipeButtons();
     });
 
-    $(document).on("click", ".mes_edit_down", function () {
+    $(document).on("click", ".mes_edit_down", async function () {
         if (is_send_press || this_edit_mes_id >= chat.length - 1) {
             return;
         }
@@ -8253,7 +8265,7 @@ $(document).ready(function () {
 
         this_edit_mes_id = targetId;
         updateViewMessageIds();
-        saveChatConditional();
+        await saveChatConditional();
         showSwipeButtons();
     });
 
@@ -8277,14 +8289,14 @@ $(document).ready(function () {
         addOneMessage(clone, { insertAfter: this_edit_mes_id });
 
         updateViewMessageIds();
-        saveChatConditional();
+        await saveChatConditional();
         $('#chat')[0].scrollTop = oldScroll;
         showSwipeButtons();
     });
 
     $(document).on("click", ".mes_edit_delete", async function (event, customData) {
         const fromSlashCommand = customData?.fromSlashCommand || false;
-        const swipeExists = (!chat[this_edit_mes_id].swipes || chat[this_edit_mes_id].swipes.length <= 1 || chat.is_user || parseInt(this_edit_mes_id) !== chat.length - 1);
+        const swipeExists = (!Array.isArray(chat[this_edit_mes_id].swipes) || chat[this_edit_mes_id].swipes.length <= 1 || chat[this_edit_mes_id].is_user || parseInt(this_edit_mes_id) !== chat.length - 1);
         if (power_user.confirm_message_delete && fromSlashCommand !== true) {
             const confirmation = swipeExists ? await callPopup("Are you sure you want to delete this message?", 'confirm')
                 : await callPopup("<h3>Delete this...</h3> <select id='del_type'><option value='swipe'>Swipe</option><option value='message'>Message</option></select>", 'confirm')
@@ -8316,7 +8328,7 @@ $(document).ready(function () {
         this_edit_mes_id = undefined;
 
         updateViewMessageIds();
-        saveChatConditional();
+        await saveChatConditional();
 
         eventSource.emit(event_types.MESSAGE_DELETED, count_view_mes);
 

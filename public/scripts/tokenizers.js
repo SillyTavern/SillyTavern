@@ -134,7 +134,7 @@ export function getTokenCount(str, padding = undefined) {
 
     const cacheObject = getTokenCacheObject();
     const hash = getStringHash(str);
-    const cacheKey = `${tokenizerType}-${hash}`;
+    const cacheKey = `${tokenizerType}-${hash}+${padding}`;
 
     if (typeof cacheObject[cacheKey] === 'number') {
         return cacheObject[cacheKey];
