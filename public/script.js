@@ -1890,24 +1890,19 @@ function cleanGroupMessage(getMessage) {
     return getMessage;
 }
 
-function getPersonaDescription(storyString) {
+function addPersonaDescriptionExtensionPrompt() {
     if (!power_user.persona_description) {
-        return storyString;
+        return;
     }
 
-    switch (power_user.persona_description_position) {
-        case persona_description_positions.BEFORE_CHAR:
-        case persona_description_positions.AFTER_CHAR:
-            return storyString;
-        default:
-            if (shouldWIAddPrompt) {
-                const originalAN = extension_prompts[NOTE_MODULE_NAME].value
-                const ANWithDesc = power_user.persona_description_position === persona_description_positions.TOP_AN
-                    ? `${power_user.persona_description}\n${originalAN}`
-                    : `${originalAN}\n${power_user.persona_description}`;
-                setExtensionPrompt(NOTE_MODULE_NAME, ANWithDesc, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth]);
-            }
-            return storyString;
+    const promptPositions = [persona_description_positions.BOTTOM_AN, persona_description_positions.TOP_AN];
+
+    if (promptPositions.includes(power_user.persona_description_position) && shouldWIAddPrompt) {
+        const originalAN = extension_prompts[NOTE_MODULE_NAME].value
+        const ANWithDesc = power_user.persona_description_position === persona_description_positions.TOP_AN
+            ? `${power_user.persona_description}\n${originalAN}`
+            : `${originalAN}\n${power_user.persona_description}`;
+        setExtensionPrompt(NOTE_MODULE_NAME, ANWithDesc, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth]);
     }
 }
 
@@ -2412,18 +2407,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
         console.log(`Core/all messages: ${coreChat.length}/${chat.length}`);
 
-        const storyStringParams = {
-            description: charDescription,
-            personality: charPersonality,
-            persona: personaDescription,
-            scenario: Scenario,
-            system: isInstruct ? systemPrompt : '',
-            char: name2,
-            user: name1,
-        };
-
-        let storyString = renderStoryString(storyStringParams);
-
         // kingbri MARK: - Make sure the prompt bias isn't the same as the user bias
         if ((promptBias && !isUserPromptBias) || power_user.always_force_name2 || is_pygmalion) {
             force_name2 = true;
@@ -2469,22 +2452,32 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         }
 
         // Extension added strings
-
         // Set non-WI AN
         setFloatingPrompt();
         // Add WI to prompt (and also inject WI to AN value via hijack)
         let { worldInfoString, worldInfoBefore, worldInfoAfter } = await getWorldInfoPrompt(chat2, this_max_context);
         // Add persona description to prompt
-        storyString = getPersonaDescription(storyString);
+        addPersonaDescriptionExtensionPrompt();
         // Call combined AN into Generate
         let allAnchors = getAllExtensionPrompts();
         const afterScenarioAnchor = getExtensionPrompt(extension_prompt_types.AFTER_SCENARIO);
         let zeroDepthAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, 0, ' ');
 
-        // Pre-format the World Info into the story string
-        if (main_api !== 'openai') {
-            storyString = worldInfoBefore + storyString + worldInfoAfter;
-        }
+        const storyStringParams = {
+            description: charDescription,
+            personality: charPersonality,
+            persona: personaDescription,
+            scenario: Scenario,
+            system: isInstruct ? systemPrompt : '',
+            char: name2,
+            user: name1,
+            wiBefore: worldInfoBefore,
+            wiAfter: worldInfoAfter,
+            loreBefore: worldInfoBefore,
+            loreAfter: worldInfoAfter,
+        };
+
+        const storyString = renderStoryString(storyStringParams);
 
         if (main_api === 'openai') {
             message_already_generated = ''; // OpenAI doesn't have multigen
