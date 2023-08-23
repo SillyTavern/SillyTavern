@@ -6,7 +6,6 @@ class ElevenLabsTtsProvider {
     //########//
 
     settings
-    ready = false
     voices = []
     separator = ' ... ... ... '
 
@@ -74,13 +73,7 @@ class ElevenLabsTtsProvider {
 
     // Perform a simple readiness check by trying to fetch voiceIds
     async checkReady(){
-        try {
-            await this.fetchTtsVoiceIds()
-            this.ready = true
-
-        } catch {
-            this.ready = false
-        }
+        await this.fetchTtsVoiceIds()
     }
 
     async onApplyClick() {

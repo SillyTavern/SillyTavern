@@ -9,7 +9,6 @@ class NovelTtsProvider {
     //########//
 
     settings
-    ready = false
     voices = []
     separator = ' . '
     audioElement = document.createElement('audio')
@@ -95,13 +94,7 @@ class NovelTtsProvider {
     // Perform a simple readiness check by trying to fetch voiceIds
     // Doesnt really do much for Novel, not seeing a good way to test this at the moment.
     async checkReady(){
-        try {
-            await this.fetchTtsVoiceIds()
-            this.ready = true
-
-        } catch {
-            this.ready = false
-        }
+        await this.fetchTtsVoiceIds()
     }
 
     async onApplyClick() {

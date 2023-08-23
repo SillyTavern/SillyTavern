@@ -42,8 +42,9 @@ const languageLabels = {
 
 function throwIfModuleMissing() {
     if (!modules.includes('coqui-tts')) {
-        toastr.error(`Add coqui-tts to enable-modules and restart the Extras API.`, "Coqui TTS module not loaded.", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
-        throw new Error(DEBUG_PREFIX, `Coqui TTS module not loaded.`);
+        const message = `Coqui TTS module not loaded. Add coqui-tts to enable-modules and restart the Extras API.`
+        // toastr.error(message, { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+        throw new Error(DEBUG_PREFIX, message);
     }
 }
 
@@ -84,7 +85,6 @@ class CoquiTtsProvider {
     //#############################//
 
     settings
-    ready
 
     defaultSettings = {
         voiceMap: "",
@@ -148,7 +148,6 @@ class CoquiTtsProvider {
     loadSettings(settings) {
         // Only accept keys defined in defaultSettings
         this.settings = this.defaultSettings
-        this.ready = false
 
         for (const key in settings) {
             if (key in this.settings) {
@@ -231,17 +230,8 @@ class CoquiTtsProvider {
 
     // Perform a simple readiness check by trying to fetch voiceIds
     async checkReady(){
-        try {
-            if (!modules.includes('coqui-tts')){
-                this.ready = false
-                return
-            }
-            await this.fetchTtsVoiceIds()
-            this.ready = true
-
-        } catch {
-            this.ready = false
-        }
+        throwIfModuleMissing()
+        await this.fetchTtsVoiceIds()
     }
 
     updateVoiceMap() {

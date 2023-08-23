@@ -11,7 +11,6 @@ class EdgeTtsProvider {
     //########//
 
     settings
-    ready = false
     voices = []
     separator = ' . '
     audioElement = document.createElement('audio')
@@ -61,17 +60,8 @@ class EdgeTtsProvider {
 
     // Perform a simple readiness check by trying to fetch voiceIds
     async checkReady(){
-        try {
-            if (!modules.includes('edge-tts')){
-                this.ready = false
-                return
-            }
-            await this.fetchTtsVoiceIds()
-            this.ready = true
-
-        } catch {
-            this.ready = false
-        }
+        throwIfModuleMissing()
+        await this.fetchTtsVoiceIds()
     }
 
     async onApplyClick() {
@@ -162,8 +152,9 @@ class EdgeTtsProvider {
 }
 function throwIfModuleMissing() {
     if (!modules.includes('edge-tts')) {
-        toastr.error(`Edge TTS module not loaded. Add edge-tts to enable-modules and restart the Extras API.`)
-        throw new Error(`Edge TTS module not loaded.`)
+        const message = `Edge TTS module not loaded. Add edge-tts to enable-modules and restart the Extras API.`
+        // toastr.error(message)
+        throw new Error(message)
     }
 }
 

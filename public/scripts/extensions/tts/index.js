@@ -13,6 +13,7 @@ export { talkingAnimation };
 
 const UPDATE_INTERVAL = 1000
 
+let voiceMapEntries = []
 let voiceMap = {} // {charName:voiceid, charName2:voiceid2}
 let audioControl
 let storedvalue = false;
@@ -224,8 +225,8 @@ function debugTtsPlayback() {
     console.log(JSON.stringify(
         {
             "ttsProviderName": ttsProviderName,
+            "voiceMap": voiceMap,
             "currentMessageNumber": currentMessageNumber,
-            "isWorkerBusy": isWorkerBusy,
             "audioPaused": audioPaused,
             "audioJobQueue": audioJobQueue,
             "currentAudioJob": currentAudioJob,
@@ -486,6 +487,7 @@ function loadSettings() {
     if (Object.keys(extension_settings.tts).length === 0) {
         Object.assign(extension_settings.tts, defaultSettings)
     }
+    $('#tts_provider').val(extension_settings.tts.currentProvider)
     $('#tts_enabled').prop(
         'checked',
         extension_settings.tts.enabled
@@ -513,59 +515,17 @@ function setTtsStatus(status, success) {
     }
 }
 
-function parseVoiceMap(voiceMapString) {
-    let parsedVoiceMap = {}
-    for (const [charName, voiceId] of voiceMapString
-        .split(',')
-        .map(s => s.split(':'))) {
-        if (charName && voiceId) {
-            parsedVoiceMap[charName.trim()] = voiceId.trim()
-        }
-    }
-    return parsedVoiceMap
-}
-
-async function voicemapIsValid(parsedVoiceMap) {
-    let valid = true
-    for (const characterName in parsedVoiceMap) {
-        const parsedVoiceName = parsedVoiceMap[characterName]
-        try {
-            await ttsProvider.getVoice(parsedVoiceName)
-        } catch (error) {
-            console.error(error)
-            valid = false
-        }
-    }
-    return valid
-}
-
-async function updateVoiceMap() {
-    let isValidResult = false
-
-    const value = $('#tts_voice_map').val()
-    const parsedVoiceMap = parseVoiceMap(value)
-
-    isValidResult = await voicemapIsValid(parsedVoiceMap)
-    if (isValidResult) {
-        ttsProvider.settings.voiceMap = String(value)
-        // console.debug(`ttsProvider.voiceMap: ${ttsProvider.settings.voiceMap}`)
-        voiceMap = parsedVoiceMap
-        console.debug(`Saved new voiceMap: ${value}`)
-        saveSettingsDebounced()
-    } else {
-        throw 'Voice map is invalid, check console for errors'
-    }
-}
-
 function onApplyClick() {
     Promise.all([
         ttsProvider.onApplyClick(),
-        updateVoiceMap()
+        // updateVoiceMap()
     ]).then(() => {
         extension_settings.tts[ttsProviderName] = ttsProvider.settings
         saveSettingsDebounced()
         setTtsStatus('Successfully applied settings', true)
         console.info(`Saved settings ${ttsProviderName} ${JSON.stringify(ttsProvider.settings)}`)
+        initVoiceMap()
+        updateVoiceMap()
     }).catch(error => {
         console.error(error)
         setTtsStatus(error, false)
@@ -608,13 +568,14 @@ function onNarrateTranslatedOnlyClick() {
 // TTS Provider //
 //##############//
 
-function loadTtsProvider(provider) {
+async function loadTtsProvider(provider) {
     //Clear the current config and add new config
     $("#tts_provider_settings").html("")
 
     if (!provider) {
-        provider
+        return
     }
+    
     // Init provider references
     extension_settings.tts.currentProvider = provider
     ttsProviderName = provider
@@ -626,27 +587,17 @@ function loadTtsProvider(provider) {
         console.warn(`Provider ${ttsProviderName} not in Extension Settings, initiatilizing provider in settings`)
         extension_settings.tts[ttsProviderName] = {}
     }
-
-    // Load voicemap settings
-    let voiceMapFromSettings
-    if ("voiceMap" in extension_settings.tts[ttsProviderName]) {
-        voiceMapFromSettings = extension_settings.tts[ttsProviderName].voiceMap
-        voiceMap = parseVoiceMap(voiceMapFromSettings)
-    } else {
-        voiceMapFromSettings = ""
-        voiceMap = {}
-    }
-    $('#tts_voice_map').val(voiceMapFromSettings)
-    $('#tts_provider').val(ttsProviderName)
-
     ttsProvider.loadSettings(extension_settings.tts[ttsProviderName])
+    initVoiceMap()
 }
 
 function onTtsProviderChange() {
     const ttsProviderSelection = $('#tts_provider').val()
+    extension_settings.tts.currentProvider = ttsProviderSelection
     loadTtsProvider(ttsProviderSelection)
 }
 
+// Ensure that TTS provider settings are saved to extension settings.
 function onTtsProviderSettingsInput() {
     ttsProvider.onSettingsChange()
 
@@ -658,6 +609,191 @@ function onTtsProviderSettingsInput() {
 }
 
 
+//###################//
+// voiceMap Handling //
+//###################//
+
+async function onChatChanged() {
+    await resetTtsPlayback()
+    await initVoiceMap()
+}
+
+function getCharacters(){
+    const context = getContext()
+    let characters = []
+    if (context.groupId === null){
+        // Single char chat
+        characters.push(context.name1)
+        characters.push(context.name2)
+    } else {
+        // Group chat
+        characters.push(context.name1)
+        const group = context.groups.find(group => context.groupId == group.id)
+        for (let member of group.members) {
+            // Remove suffix
+            if (member.endsWith('.png')){
+                member = member.slice(0, -4)
+            }
+            characters.push(member)
+        }
+    }
+    return characters
+}
+
+function sanitizeId(input) {
+  // Remove any non-alphanumeric characters except underscore (_) and hyphen (-)
+  let sanitized = input.replace(/[^a-zA-Z0-9-_]/g, '');
+
+  // Ensure first character is always a letter
+  if (!/^[a-zA-Z]/.test(sanitized)) {
+    sanitized = 'element_' + sanitized;
+  }
+
+  return sanitized;
+}
+
+function parseVoiceMap(voiceMapString) {
+    let parsedVoiceMap = {}
+    for (const [charName, voiceId] of voiceMapString
+        .split(',')
+        .map(s => s.split(':'))) {
+        if (charName && voiceId) {
+            parsedVoiceMap[charName.trim()] = voiceId.trim()
+        }
+    }
+    return parsedVoiceMap
+}
+
+
+
+/**
+ * Apply voiceMap based on current voiceMapEntries
+ */
+function updateVoiceMap() {
+    const tempVoiceMap = {}
+    for (const voice of voiceMapEntries){
+        if (voice.voiceId === null){
+            continue
+        }
+        tempVoiceMap[voice.name] = voice.voiceId
+    }
+    if (Object.keys(tempVoiceMap).length !== 0){
+        voiceMap = tempVoiceMap
+        console.log(`Voicemap updated to ${JSON.stringify(voiceMap)}`)
+    }
+    extension_settings.tts[ttsProviderName].voiceMap = voiceMap
+    saveSettingsDebounced()
+}
+
+class VoiceMapEntry {
+    name
+    voiceId
+    selectElement
+    constructor (name, voiceId='disabled') {
+        this.name = name
+        this.voiceId = voiceId
+        this.selectElement = null
+    }
+
+    addUI(voiceIds){
+        let sanitizedName = sanitizeId(this.name)
+        let template = `
+            <div class='tts_voicemap_block_char flex-container flexGap5'>
+                <span id='tts_voicemap_char_${sanitizedName}'>${this.name}</span>
+                <select id='tts_voicemap_char_${sanitizedName}_voice'>
+                    <option>disabled</option>
+                </select>
+            </div>
+        `
+        $('#tts_voicemap_block').append(template)
+
+        // Populate voice ID select list
+        for (const voiceId of voiceIds){
+            const option = document.createElement('option');
+            option.innerText = voiceId.name;
+            option.value = voiceId.name;
+            $(`#tts_voicemap_char_${sanitizedName}_voice`).append(option)
+        }
+
+        this.selectElement = $(`#tts_voicemap_char_${sanitizedName}_voice`)
+        this.selectElement.on('change', args => this.onSelectChange(args))
+        this.selectElement.val(this.voiceId)
+    }
+
+    onSelectChange(args) {
+        this.voiceId = this.selectElement.find(':selected').val()
+        updateVoiceMap()
+    }
+}
+
+/**
+ * Init voiceMapEntries for character select list. Should only be called when character/chat is changed.
+ * 
+ */
+async function initVoiceMap(){
+    // Clear existing voiceMap state
+    $('#tts_voicemap_block').empty()
+    voiceMapEntries = []
+
+    // Gate initialization if not enabled or TTS Provider not ready. Prevents error popups.
+    const enabled = $('#tts_enabled').is(':checked')
+    if (!enabled){
+        return
+    }
+
+    // Keep errors inside extension UI rather than toastr. Toastr errors for TTS are annoying.
+    try {
+        await ttsProvider.checkReady()
+    } catch (error) {
+        const message = `TTS Provider not ready. ${error}`
+        setTtsStatus(message, false)
+        return
+    }
+
+    setTtsStatus("TTS Provider Loaded", true)
+
+    // Get characters in current chat
+    const characters = getCharacters()
+    
+    // Get saved voicemap from provider settings, handling new and old representations
+    let voiceMapFromSettings = {}
+    if ("voiceMap" in extension_settings.tts[ttsProviderName]) {
+        // Handle previous representation
+        if (typeof extension_settings.tts[ttsProviderName].voiceMap === "string"){
+            voiceMapFromSettings = parseVoiceMap(extension_settings.tts[ttsProviderName].voiceMap)
+        // Handle new representation
+        } else if (typeof extension_settings.tts[ttsProviderName].voiceMap === "object"){
+            voiceMapFromSettings = extension_settings.tts[ttsProviderName].voiceMap
+        }
+    }
+
+    // Get voiceIds from provider
+    let voiceIdsFromProvider
+    try {
+        voiceIdsFromProvider = await ttsProvider.fetchTtsVoiceIds()
+    }
+    catch {
+        toastr.error("TTS Provider failed to return voice ids.")
+    }
+
+    // Build UI using VoiceMapEntry objects
+    for (const character of characters){
+        if (character === "SillyTavern System"){
+            continue
+        }
+        // Check provider settings for voiceIds
+        let voiceId
+        if (character in voiceMapFromSettings){
+            voiceId = voiceMapFromSettings[character]
+        } else {
+            voiceId = 'disabled'
+        }
+        const voiceMapEntry = new VoiceMapEntry(character, voiceId)
+        voiceMapEntry.addUI(voiceIdsFromProvider)
+        voiceMapEntries.push(voiceMapEntry)
+    }
+    updateVoiceMap()
+}
 
 $(document).ready(function () {
     function addExtensionControls() {
@@ -669,6 +805,8 @@ $(document).ready(function () {
                     <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                 </div>
                 <div class="inline-drawer-content">
+                    <div id="tts_status">
+                    </div>
                     <div>
                         <span>Select TTS Provider</span> </br>
                         <select id="tts_provider">
@@ -696,16 +834,13 @@ $(document).ready(function () {
                             <small>Narrate only the translated text</small>
                         </label>
                     </div>
-                    <label>Voice Map</label>
-                    <textarea id="tts_voice_map" type="text" class="text_pole textarea_compact" rows="4"
-                        placeholder="Enter comma separated map of charName:ttsName. Example: \nAqua:Bella,\nYou:Josh,"></textarea>
-
-                    <div id="tts_status">
+                    <div id="tts_voicemap_block">
                     </div>
+                    <hr>
                     <form id="tts_provider_settings" class="inline-drawer-content">
                     </form>
                     <div class="tts_buttons">
-                        <input id="tts_apply" class="menu_button" type="submit" value="Apply" />
+                        <input id="tts_apply" class="menu_button" type="submit" value="Reload / Apply" />
                         <input id="tts_voices" class="menu_button" type="submit" value="Available voices" />
                     </div>
                     </div>
@@ -735,4 +870,6 @@ $(document).ready(function () {
     const wrapper = new ModuleWorkerWrapper(moduleWorker);
     setInterval(wrapper.update.bind(wrapper), UPDATE_INTERVAL) // Init depends on all the things
     eventSource.on(event_types.MESSAGE_SWIPED, resetTtsPlayback);
+    eventSource.on(event_types.CHAT_CHANGED, onChatChanged)
+    eventSource.on(event_types.GROUP_UPDATED, onChatChanged)
 })

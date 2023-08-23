@@ -69,17 +69,7 @@ class SileroTtsProvider {
 
     // Perform a simple readiness check by trying to fetch voiceIds
     async checkReady(){
-        try {
-            if (!modules.includes('silero-tts')){
-                this.ready = false
-                return
-            }
-            await this.fetchTtsVoiceIds()
-            this.ready = true
-
-        } catch {
-            this.ready = false
-        }
+        await this.fetchTtsVoiceIds()
     }
 
     async onApplyClick() {

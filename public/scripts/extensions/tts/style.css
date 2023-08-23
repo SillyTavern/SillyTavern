@@ -51,3 +51,19 @@
 .voice_preview .fa-play {
     cursor: pointer;
 }
+
+.tts-button {
+    margin: 0;
+    outline: none;
+    border: none;
+    cursor: pointer;
+    transition: 0.3s;
+    opacity: 0.7;
+    align-items: center;
+    justify-content: center;
+
+}
+
+.tts-button:hover {
+    opacity: 1;
+}
