@@ -5010,7 +5010,7 @@ app.post('/delete_extension', jsonParser, async (request, response) => {
  *
  * @returns {void}
  */
-app.get('/get_assets', jsonParser, function (request, response) {
+app.post('/get_assets', jsonParser, async (request, response) => {
     const folderPath = path.join(directories.assets);
     let output = {}
     //console.info("Checking files into",folderPath);
@@ -5050,7 +5050,7 @@ app.get('/get_assets', jsonParser, function (request, response) {
  *
  * @returns {void}
  */
-app.get('/asset_download', jsonParser, function (request, response) {
+app.post('/asset_download', jsonParser, async (request, response) => {
     const fs = require('fs');
     const { Readable } = require('stream');
     const { finished } = require('stream/promises');
@@ -5083,7 +5083,7 @@ app.get('/asset_download', jsonParser, function (request, response) {
  *
  * @returns {void}
  */
-app.get('/get_character_assets_list', jsonParser, function (request, response) {
+app.post('/get_character_assets_list', jsonParser, async (request, response) => {
     const name = request.query.name;
     const assetsFolder = request.query.assetsFolder
     const folderPath = path.join(directories.characters, name, assetsFolder);

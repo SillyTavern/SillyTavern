@@ -1,0 +1,48 @@
+<div id="audio_settings">
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <b>Dynamic Audio</b>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            <div>
+                <label class="checkbox_label" for="audio_enabled">
+                    <input type="checkbox" id="audio_enabled" name="audio_enabled">
+                    <small>Enabled</small>
+                </label>
+                <div id="audio_debug_div">
+                    <label class="checkbox_label" for="audio_debug">
+                        <input type="checkbox" id="audio_debug" name="audio_debug">
+                        <small>Debug</small>
+                    </label>
+                </div>
+            </div>
+            <div>
+                <div>
+                    <label for="audio_character_bgm_volume_slider">Music <span id="audio_character_bgm_volume"></span></label>
+                    <div class="mixer-div">
+                        <div id="audio_character_bgm_mute" class="menu_button audio-mute-button">
+                            <i class="fa-solid fa-volume-high fa-lg" id="audio_character_bgm_mute_icon"></i>
+                        </div>
+                        <input type="range" class ="slider" id ="audio_character_bgm_volume_slider" value = "0" maxlength ="100">
+                    </div>
+                    <audio id="audio_character_bgm" controls src="">
+                </div>
+                <div>
+                    <label for="audio_ambient_volume_slider">Ambient <span id="audio_ambient_volume"></span></label>
+                    <div class="mixer-div">
+                        <div id="audio_character_ambient_mute" class="menu_button audio-mute-button">
+                            <i class="fa-solid fa-volume-high fa-lg" id="audio_ambient_mute_icon"></i>
+                        </div>
+                        <input type="range" class ="slider" id ="audio_ambient_volume_slider" value = "0" maxlength ="100">
+                    </div>
+                    <audio id="audio_ambient" controls src="">
+                </div>
+                <div>
+                    <label for="audio_bgm_cooldown">Music update cooldown (in seconds)</label>
+                    <input id="audio_bgm_cooldown" class="text_pole wide30p">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

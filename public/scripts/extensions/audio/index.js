@@ -9,9 +9,13 @@ Ideas:
     - https://codepen.io/xrocker/pen/abdKVGy
 */
 
-import { saveSettingsDebounced } from "../../../script.js";
+import { saveSettingsDebounced, getRequestHeaders } from "../../../script.js";
 import { getContext, extension_settings, ModuleWorkerWrapper } from "../../extensions.js";
+import {isDataURL} from "../../utils.js";
 export { MODULE_NAME };
+
+const extensionName = "audio";
+const extensionFolderPath = `scripts/extensions/${extensionName}`;
 
 const MODULE_NAME = 'Audio';
 const DEBUG_PREFIX = "<Audio module> ";
@@ -70,7 +74,7 @@ let cooldownBGM = 0;
 //#############################//
 
 const defaultSettings = {
-    enabled: true,
+    enabled: false,
     bgm_muted: false,
     ambient_muted: false,
     bgm_volume: 50,
@@ -163,96 +167,6 @@ async function onBGMCooldownInput() {
     console.debug(DEBUG_PREFIX,"UPDATED BGM cooldown to",extension_settings.audio.bgm_cooldown);
 }
 
-$(document).ready(function () {
-    function addExtensionControls() {
-        const settingsHtml = `
-        <div id="audio_settings">
-            <div class="inline-drawer">
-                <div class="inline-drawer-toggle inline-drawer-header">
-                    <b>Audio</b>
-                    <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
-                </div>
-                <div class="inline-drawer-content">
-                    <div>
-                        <label class="checkbox_label" for="audio_enabled">
-                            <input type="checkbox" id="audio_enabled" name="audio_enabled">
-                            <small>Enabled</small>
-                        </label>
-                        <div id="audio_debug_div">
-                            <label class="checkbox_label" for="audio_debug">
-                                <input type="checkbox" id="audio_debug" name="audio_debug">
-                                <small>Debug</small>
-                            </label>
-                        </div>
-                    </div>
-                    <div>
-                        <div>
-                            <label for="audio_character_bgm_volume_slider">Music <span id="audio_character_bgm_volume"></span></label>
-                            <div class="mixer-div">
-                                <div id="audio_character_bgm_mute" class="menu_button audio-mute-button">
-                                    <i class="fa-solid fa-volume-high fa-lg" id="audio_character_bgm_mute_icon"></i>
-                                </div>
-                                <input type="range" class ="slider" id ="audio_character_bgm_volume_slider" value = "0" maxlength ="100">
-                            </div>
-                            <audio id="audio_character_bgm" controls src="">
-                        </div>
-                        <div>
-                            <label for="audio_ambient_volume_slider">Ambient <span id="audio_ambient_volume"></span></label>
-                            <div class="mixer-div">
-                                <div id="audio_character_ambient_mute" class="menu_button audio-mute-button">
-                                    <i class="fa-solid fa-volume-high fa-lg" id="audio_ambient_mute_icon"></i>
-                                </div>
-                                <input type="range" class ="slider" id ="audio_ambient_volume_slider" value = "0" maxlength ="100">
-                            </div>
-                            <audio id="audio_ambient" controls src="">
-                        </div>
-                        <div>
-                            <label for="audio_bgm_cooldown">Music update cooldown (in seconds)</label>
-                            <input id="audio_bgm_cooldown" class="text_pole wide30p">
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        `;
-        $('#extensions_settings').append(settingsHtml);
-    }
-    
-    addExtensionControls(); // No init dependencies
-    loadSettings(); // Depends on Extension Controls
-    
-    $("#audio_character_bgm").attr("loop",true);
-    $("#audio_ambient").attr("loop",true);
-
-    $("#audio_character_bgm").hide();
-    $("#audio_ambient").hide();
-    $("#audio_character_bgm_mute").on("click",onBGMMuteClick);
-    $("#audio_character_ambient_mute").on("click",onAmbientMuteClick);
-
-    $("#audio_enabled").on("click", onEnabledClick);
-    $("#audio_character_bgm_volume_slider").on("input", onBGMVolumeChange);
-    $("#audio_ambient_volume_slider").on("input", onAmbientVolumeChange);
-
-    $("#audio_bgm_cooldown").on("input", onBGMCooldownInput);
-
-    // DBG
-    $("#audio_debug").on("click",function() {
-        if($("#audio_debug").is(':checked')) {
-            $("#audio_character_bgm").show();
-            $("#audio_ambient").show();
-        }
-        else {
-            $("#audio_character_bgm").hide();
-            $("#audio_ambient").hide();
-        }
-    });
-    //
-
-    const wrapper = new ModuleWorkerWrapper(moduleWorker);
-    setInterval(wrapper.update.bind(wrapper), UPDATE_INTERVAL);
-    moduleWorker();
-})
-
 //#############################//
 //  API Calls                  //
 //#############################//
@@ -261,7 +175,10 @@ async function getAssetsList(type) {
     console.debug(DEBUG_PREFIX, "getting assets of type",type);
 
     try {
-        const result = await fetch(`/get_assets`);
+        const result = await fetch(`/get_assets`, {
+            method: 'POST',
+            headers: getRequestHeaders(),
+        });
         const assets = result.ok ? (await result.json()) : {type:[]};
         console.debug(DEBUG_PREFIX, "Found assets:",assets);
         return assets[type];
@@ -276,7 +193,10 @@ async function getCharacterBgmList(name) {
     console.debug(DEBUG_PREFIX, "getting bgm list for", name);
 
     try {
-        const result = await fetch(`/get_character_assets_list?name=${encodeURIComponent(name)}&assetsFolder=${CHARACTER_BGM_FOLDER}`);
+        const result = await fetch(`/get_character_assets_list?name=${encodeURIComponent(name)}&assetsFolder=${CHARACTER_BGM_FOLDER}`, {
+            method: 'POST',
+            headers: getRequestHeaders(),
+        });
         let musics = result.ok ? (await result.json()) : [];
         return musics;
     }
@@ -327,15 +247,18 @@ async function moduleWorker() {
         if(custom_background !== undefined)
             newBackground = custom_background
 
-        newBackground = newBackground.substring(newBackground.lastIndexOf("/")+1).replace(/\.[^/.]+$/, "").replaceAll("%20","-").replaceAll(" ","-"); // remove path and spaces
+        if (!isDataURL(newBackground))
+        {
+            newBackground = newBackground.substring(newBackground.lastIndexOf("/")+1).replace(/\.[^/.]+$/, "").replaceAll("%20","-").replaceAll(" ","-"); // remove path and spaces
 
-        //console.debug(DEBUG_PREFIX,"Current backgroung:",newBackground);
+            //console.debug(DEBUG_PREFIX,"Current backgroung:",newBackground);
 
-        if (currentBackground !== newBackground) {
-            currentBackground = newBackground;
+            if (currentBackground !== newBackground) {
+                currentBackground = newBackground;
 
-            console.debug(DEBUG_PREFIX,"Changing ambient audio for",currentBackground);
-            updateAmbient();
+                console.debug(DEBUG_PREFIX,"Changing ambient audio for",currentBackground);
+                updateAmbient();
+            }
         }
 
         const context = getContext();
@@ -579,3 +502,47 @@ async function updateAmbient() {
         audio.animate({volume: extension_settings.audio.ambient_volume * 0.01}, 2000);
     });
 }
+
+//#############################//
+//  Extension load             //
+//#############################//
+
+// This function is called when the extension is loaded
+jQuery(async () => {
+    // This is an example of loading HTML from a file
+    const windowHtml = $(await $.get(`${extensionFolderPath}/window.html`));
+
+    $('#extensions_settings').append(windowHtml);
+    loadSettings();
+    
+    $("#audio_character_bgm").attr("loop",true);
+    $("#audio_ambient").attr("loop",true);
+
+    $("#audio_character_bgm").hide();
+    $("#audio_ambient").hide();
+    $("#audio_character_bgm_mute").on("click",onBGMMuteClick);
+    $("#audio_character_ambient_mute").on("click",onAmbientMuteClick);
+
+    $("#audio_enabled").on("click", onEnabledClick);
+    $("#audio_character_bgm_volume_slider").on("input", onBGMVolumeChange);
+    $("#audio_ambient_volume_slider").on("input", onAmbientVolumeChange);
+
+    $("#audio_bgm_cooldown").on("input", onBGMCooldownInput);
+
+    // DBG
+    $("#audio_debug").on("click",function() {
+        if($("#audio_debug").is(':checked')) {
+            $("#audio_character_bgm").show();
+            $("#audio_ambient").show();
+        }
+        else {
+            $("#audio_character_bgm").hide();
+            $("#audio_ambient").hide();
+        }
+    });
+    //
+
+    const wrapper = new ModuleWorkerWrapper(moduleWorker);
+    setInterval(wrapper.update.bind(wrapper), UPDATE_INTERVAL);
+    moduleWorker();
+});
