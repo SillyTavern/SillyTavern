@@ -577,6 +577,7 @@ function populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, ty
     addToChatCompletion('charDescription');
     addToChatCompletion('charPersonality');
     addToChatCompletion('scenario');
+    addToChatCompletion('personaDescription')
 
     // Collection of control prompts that will always be positioned last
     const controlPrompts = new MessageCollection('controlPrompts');
@@ -626,34 +627,6 @@ function populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, ty
         if (true === afterScenario) chatCompletion.insert(authorsNote, 'scenario');
     }
 
-    // Persona Description
-    if (power_user.persona_description) {
-        const personaDescription = Message.fromPrompt(prompts.get('personaDescription'));
-
-        try {
-            switch (power_user.persona_description_position) {
-                case persona_description_positions.BEFORE_CHAR:
-                    chatCompletion.insertAtStart(personaDescription, 'charDescription');
-                    break;
-                case persona_description_positions.AFTER_CHAR:
-                    chatCompletion.insertAtEnd(personaDescription, 'charDescription');
-                    break;
-                case persona_description_positions.TOP_AN:
-                    chatCompletion.insertAtStart(personaDescription, 'authorsNote');
-                    break;
-                case persona_description_positions.BOTTOM_AN:
-                    chatCompletion.insertAtEnd(personaDescription, 'authorsNote');
-                    break;
-            }
-        } catch (error) {
-            if (error instanceof IdentifierNotFoundError) {
-                // Error is acceptable in this context
-            } else {
-                throw error;
-            }
-        }
-    }
-
     // Decide whether dialogue examples should always be added
     if (power_user.pin_examples) {
         populateDialogueExamples(prompts, chatCompletion);
@@ -679,10 +652,12 @@ function populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, ty
  * @param {string} quietPrompt - The quiet prompt to be used in the conversation.
  * @param {string} bias - The bias to be added in the conversation.
  * @param {Object} extensionPrompts - An object containing additional prompts.
- *
+ * @param {string} systemPromptOverride
+ * @param {string} jailbreakPromptOverride
+ * @param {string} personaDescription
  * @returns {Object} prompts - The prepared and merged system and user-defined prompts.
  */
-function preparePromptsForChatCompletion(Scenario, charPersonality, name2, worldInfoBefore, worldInfoAfter, charDescription, quietPrompt, bias, extensionPrompts, systemPromptOverride, jailbreakPromptOverride) {
+function preparePromptsForChatCompletion({Scenario, charPersonality, name2, worldInfoBefore, worldInfoAfter, charDescription, quietPrompt, bias, extensionPrompts, systemPromptOverride, jailbreakPromptOverride, personaDescription} = {}) {
     const scenarioText = Scenario ? `[Circumstances and context of the dialogue: ${Scenario}]` : '';
     const charPersonalityText = charPersonality ? `[${name2}'s personality: ${charPersonality}]` : ''
     const groupNudge = `[Write the next reply only as ${name2}]`;
@@ -695,6 +670,7 @@ function preparePromptsForChatCompletion(Scenario, charPersonality, name2, world
         { role: 'system', content: charDescription, identifier: 'charDescription' },
         { role: 'system', content: charPersonalityText, identifier: 'charPersonality' },
         { role: 'system', content: scenarioText, identifier: 'scenario' },
+        { role: 'system', content: personaDescription, identifier: 'personaDescription' },
         // Unordered prompts without marker
         { role: 'system', content: oai_settings.nsfw_avoidance_prompt, identifier: 'nsfwAvoidance' },
         { role: 'system', content: oai_settings.impersonation_prompt, identifier: 'impersonate' },
@@ -793,6 +769,7 @@ function prepareOpenAIMessages({
     cyclePrompt,
     systemPromptOverride,
     jailbreakPromptOverride,
+    personaDescription
 } = {}, dryRun) {
     // Without a character selected, there is no way to accurately calculate tokens
     if (!promptManager.activeCharacter && dryRun) return [null, false];
@@ -805,7 +782,19 @@ function prepareOpenAIMessages({
 
     try {
         // Merge markers and ordered user prompts with system prompts
-        const prompts = preparePromptsForChatCompletion(Scenario, charPersonality, name2, worldInfoBefore, worldInfoAfter, charDescription, quietPrompt, bias, extensionPrompts, systemPromptOverride, jailbreakPromptOverride);
+        const prompts = preparePromptsForChatCompletion({
+            Scenario,
+            charPersonality,
+            name2,
+            worldInfoBefore,
+            worldInfoAfter,
+            charDescription,
+            quietPrompt,
+            bias,
+            extensionPrompts,
+            systemPromptOverride,
+            jailbreakPromptOverride,
+            personaDescription});
 
         // Fill the chat completion with as much context as the budget allows
         populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, type, cyclePrompt });
