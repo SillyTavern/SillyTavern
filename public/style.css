@@ -886,7 +886,7 @@ select {
     background-color: rgba(255, 0, 0, 0);
     border: 0;
     box-shadow: none;
-    padding: 0;
+    padding-top: 6px;
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
     margin: 0;
     text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
