@@ -2324,18 +2324,17 @@ async function onLogitBiasPresetImportFileChange(e) {
         return;
     }
 
+    const validEntries = [];
+
     for (const entry of importedFile) {
-        if (typeof entry == 'object') {
+        if (typeof entry == 'object' && entry !== null) {
             if (entry.hasOwnProperty('text') && entry.hasOwnProperty('value')) {
-                continue;
+                validEntries.push(entry);
             }
         }
-
-        callPopup('Invalid logit bias preset file.', 'text');
-        return;
     }
 
-    oai_settings.bias_presets[name] = importedFile;
+    oai_settings.bias_presets[name] = validEntries;
     oai_settings.bias_preset_selected = name;
 
     addLogitBiasPresetOption(name);
