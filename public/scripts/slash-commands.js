@@ -282,11 +282,11 @@ function setNameCallback(_, name) {
     setUserName(name); //this prevented quickReply usage
 }
 
-function setNarratorName(_, text) {
+async function setNarratorName(_, text) {
     const name = text || NARRATOR_NAME_DEFAULT;
     chat_metadata[NARRATOR_NAME_KEY] = name;
     toastr.info(`System narrator name set to ${name}`);
-    saveChatConditional();
+    await saveChatConditional();
 }
 
 async function sendMessageAs(_, text) {
@@ -341,7 +341,7 @@ async function sendMessageAs(_, text) {
     await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
     addOneMessage(message);
     await eventSource.emit(event_types.USER_MESSAGE_RENDERED, (chat.length - 1));
-    saveChatConditional();
+    await saveChatConditional();
 }
 
 async function sendNarratorMessage(_, text) {
@@ -373,7 +373,7 @@ async function sendNarratorMessage(_, text) {
     await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
     addOneMessage(message);
     await eventSource.emit(event_types.USER_MESSAGE_RENDERED, (chat.length - 1));
-    saveChatConditional();
+    await saveChatConditional();
 }
 
 async function sendCommentMessage(_, text) {
@@ -399,7 +399,7 @@ async function sendCommentMessage(_, text) {
     await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
     addOneMessage(message);
     await eventSource.emit(event_types.USER_MESSAGE_RENDERED, (chat.length - 1));
-    saveChatConditional();
+    await saveChatConditional();
 }
 
 function helpCommandCallback(_, type) {

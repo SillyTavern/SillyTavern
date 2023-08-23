@@ -128,8 +128,8 @@ function loadNovelPreset(preset) {
 function loadNovelSettings(settings) {
     //load the rest of the Novel settings without any checks
     nai_settings.model_novel = settings.model_novel;
-    $(`#model_novel_select option[value=${nai_settings.model_novel}]`).attr("selected", true);
     $('#model_novel_select').val(nai_settings.model_novel);
+    $(`#model_novel_select option[value=${nai_settings.model_novel}]`).attr("selected", true);
 
     if (settings.nai_preamble !== undefined) {
         nai_settings.preamble = settings.nai_preamble;

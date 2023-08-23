@@ -217,6 +217,10 @@ async function translateProviderDeepl(text, lang) {
 
 async function translate(text, lang) {
     try {
+        if (text == '') {
+            return '';
+        }
+
         switch (extension_settings.translate.provider) {
             case 'google':
                 return await translateProviderGoogle(text, lang);

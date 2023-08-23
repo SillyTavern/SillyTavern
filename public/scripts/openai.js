@@ -1647,6 +1647,11 @@ class ChatCompletion {
         const index = this.findMessageIndex(identifier);
         const message = this.messages.collection[index].collection.pop();
 
+        if (!message) {
+            this.log(`No message to remove from ${identifier}`);
+            return;
+        }
+
         this.increaseTokenBudgetBy(message.getTokens());
 
         this.log(`Removed ${message.identifier} from ${identifier}. Remaining tokens: ${this.tokenBudget}`);
@@ -2542,6 +2547,7 @@ function getMaxContextWindowAI(value) {
 }
 
 async function onModelChange() {
+    biasCache = undefined;
     let value = String($(this).val());
 
     if ($(this).is('#model_claude_select')) {
