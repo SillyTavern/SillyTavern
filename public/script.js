@@ -165,6 +165,7 @@ import {
     formatInstructModeExamples,
     getInstructStoppingSequences,
     autoSelectInstructPreset,
+    formatInstructModeSystemPrompt,
 } from "./scripts/instruct-mode.js";
 import { applyLocale } from "./scripts/i18n.js";
 import { getTokenCount, getTokenizerModel, saveTokenCache } from "./scripts/tokenizers.js";
@@ -2360,6 +2361,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
         if (isInstruct) {
             systemPrompt = power_user.prefer_character_prompt && systemPrompt ? systemPrompt : baseChatReplace(power_user.instruct.system_prompt, name1, name2);
+            systemPrompt = formatInstructModeSystemPrompt(substituteParams(systemPrompt, name1, name2, power_user.instruct.system_prompt));
         }
 
         // Parse example messages

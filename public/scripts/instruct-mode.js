@@ -190,6 +190,20 @@ export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvata
 }
 
 /**
+ * Formats instruct mode system prompt.
+ * @param {string} systemPrompt System prompt string.
+ * @returns {string} Formatted instruct mode system prompt.
+ */
+export function formatInstructModeSystemPrompt(systemPrompt){
+    if (power_user.instruct.system_sequence) {
+        const separator = power_user.instruct.wrap ? '\n' : '';
+        return power_user.instruct.system_sequence + separator + systemPrompt;
+    }
+
+    return systemPrompt;
+}
+
+/**
  * Formats example messages according to instruct mode settings.
  * @param {string} mesExamples Example messages string.
  * @param {string} name1 User name.
