@@ -193,7 +193,7 @@ async function getCharacterBgmList(name) {
     console.debug(DEBUG_PREFIX, "getting bgm list for", name);
 
     try {
-        const result = await fetch(`/get_character_assets_list?name=${encodeURIComponent(name)}&assetsFolder=${CHARACTER_BGM_FOLDER}`, {
+        const result = await fetch(`/get_character_assets_list?name=${encodeURIComponent(name)}&category=${CHARACTER_BGM_FOLDER}`, {
             method: 'POST',
             headers: getRequestHeaders(),
         });

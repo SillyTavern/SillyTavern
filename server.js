@@ -5117,10 +5117,23 @@ app.post('/asset_download', jsonParser, async (request, response) => {
  */
 app.post('/get_character_assets_list', jsonParser, async (request, response) => {
     const name = request.query.name;
-    const assetsFolder = request.query.assetsFolder
-    const folderPath = path.join(directories.characters, name, assetsFolder);
-    let output = [];
+    const inputCategory = request.query.category;
+    const validCategories = ["bgm","ambient"]
+    
+    // Check category
+    let category = null
+    for(i of validCategories)
+        if (i == inputCategory)
+            category = i
 
+    if (category === null) {
+        console.debug("Bad request: unsuported asset category.");
+        return response.sendStatus(400);
+    }
+
+    const folderPath = path.join(directories.characters, name, category);
+
+    let output = [];
     try {
         if (fs.existsSync(folderPath) && fs.statSync(folderPath).isDirectory()) {
             const files = fs.readdirSync(folderPath)
@@ -5129,13 +5142,16 @@ app.post('/get_character_assets_list', jsonParser, async (request, response) => 
             });
 
             for (i of files)
-                output.push(`/characters/${name}/${assetsFolder}/${i}`);
+                output.push(`/characters/${name}/${category}/${i}`);
+                
         }
+        return response.send(output);
     }
     catch (err) {
         console.log(err);
+        return response.sendStatus(500);
     }
     finally {
-        return response.send(output);
+        
     }
 });
