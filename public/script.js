@@ -2817,12 +2817,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             let finalPromt = getCombinedPrompt(false);
 
             // Include the entire guidance scale object
-            const cfgValues = {
-                guidanceScale: cfgGuidanceScale,
-                negativePrompt: negativePrompt
-            };
+            const cfgValues = cfgGuidanceScale && cfgGuidanceScale?.value !== 1 ? ({guidanceScale: cfgGuidanceScale, negativePrompt: negativePrompt }) : null;
 
-            let this_amount_gen = parseInt(amount_gen); // how many tokens the AI will be requested to generate
+            let this_amount_gen = Number(amount_gen); // how many tokens the AI will be requested to generate
             let this_settings = koboldai_settings[koboldai_setting_names[preset_settings]];
 
             if (isMultigenEnabled() && type !== 'quiet') {

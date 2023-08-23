@@ -234,10 +234,6 @@ async function generateTextGenWithStreaming(generate_data, signal) {
 }
 
 export function getTextGenGenerationData(finalPrompt, this_amount_gen, isImpersonate, cfgValues) {
-    if (cfgValues?.guidanceScale?.value === 1) {
-        cfgValues = null;
-    }
-
     return {
         'prompt': finalPrompt,
         'max_new_tokens': this_amount_gen,
