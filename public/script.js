@@ -2600,7 +2600,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 console.debug('generating prompt');
                 chatString = "";
                 arrMes = arrMes.reverse();
-                arrMes.forEach(function (item, i, arr) {//For added anchors and others
+                arrMes.forEach(function (item, i, arr) {// For added anchors and others
                     // OAI doesn't need all of this
                     if (main_api === 'openai') {
                         return;
@@ -2616,25 +2616,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         }
                     }
 
-                    if (i === 0) {
-                        // Process those that couldn't get that far
-                        for (let upperDepth = 100; upperDepth >= arrMes.length; upperDepth--) {
-                            const upperAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, upperDepth);
-                            if (upperAnchor && upperAnchor.length) {
-                                item = upperAnchor + item;
-                            }
-                        }
-                    }
-
-                    const anchorDepth = Math.abs(i - arrMes.length + 1);
-                    // NOTE: Depth injected here!
-                    const extensionAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, anchorDepth);
-
-                    if (anchorDepth > 0 && extensionAnchor && extensionAnchor.length) {
-                        item += extensionAnchor;
-                    }
-
-                    mesSend[mesSend.length] = item;
+                    mesSend[mesSend.length] = { message: item, extensionPrompts: [] };
                 });
             }
 
@@ -2649,7 +2631,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 mesExmString = pinExmString ?? mesExamplesArray.slice(0, count_exm_add).join('');
 
                 if (mesSend.length) {
-                    mesSend[mesSend.length - 1] = modifyLastPromptLine(mesSend[mesSend.length - 1]);
+                    mesSend[mesSend.length - 1].message = modifyLastPromptLine(mesSend[mesSend.length - 1].message);
                 }
             }
 
@@ -2748,6 +2730,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
             // Fetches the combined prompt for both negative and positive prompts
             const cfgGuidanceScale = getGuidanceScale();
+
+            // For prompt bit itemization
+            let mesSendString = '';
+
             function getCombinedPrompt(isNegative) {
                 // Only return if the guidance scale doesn't exist or the value is 1
                 // Also don't return if constructing the neutral prompt
@@ -2755,7 +2741,43 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     return;
                 }
 
-                let finalMesSend = [...mesSend];
+                // Deep clone
+                let finalMesSend = structuredClone(mesSend);
+
+                // TODO: Rewrite getExtensionPrompt to not require multiple for loops
+                // Set all extension prompts where insertion depth > mesSend length
+                for (let upperDepth = 100; upperDepth >= finalMesSend.length; upperDepth--) {
+                    const upperAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, upperDepth);
+                    if (upperAnchor && upperAnchor.length) {
+                        finalMesSend[0].extensionPrompts.push(upperAnchor);
+                    }
+                }
+
+                finalMesSend.forEach((mesItem, index) => {
+                    if (index === 0) {
+                        return;
+                    }
+
+                    const anchorDepth = Math.abs(index - finalMesSend.length + 1);
+                    // NOTE: Depth injected here!
+                    const extensionAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, anchorDepth);
+    
+                    if (anchorDepth > 0 && extensionAnchor && extensionAnchor.length) {
+                        mesItem.extensionPrompts.push(extensionAnchor);
+                    }
+                });
+
+                // TODO: Move zero-depth anchor append to work like CFG and bias appends
+                if (zeroDepthAnchor && zeroDepthAnchor.length) {
+                    if (!isMultigenEnabled() || tokens_already_generated == 0) {
+                        console.log(/\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1)))
+                        finalMesSend[finalMesSend.length - 1].message +=
+                            /\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1))
+                                ? zeroDepthAnchor
+                                : `${zeroDepthAnchor}`;
+                    }
+                }
+
                 let cfgPrompt = {};
                 if (cfgGuidanceScale && cfgGuidanceScale?.value !== 1) {
                     cfgPrompt = getCfgPrompt(cfgGuidanceScale, isNegative);
@@ -2763,13 +2785,13 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
                 if (cfgPrompt && cfgPrompt?.value) {
                     if (cfgPrompt?.depth === 0) {
-                        finalMesSend[finalMesSend.length - 1] +=
-                            /\s/.test(finalMesSend[finalMesSend.length - 1].slice(-1))
+                        finalMesSend[finalMesSend.length - 1].message +=
+                            /\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1))
                                 ? cfgPrompt.value
                                 : ` ${cfgPrompt.value}`;
                     } else {
                         // TODO: Make all extension prompts use an array/splice method
-                        finalMesSend.splice(mesSend.length - cfgPrompt.depth, 0, `${cfgPrompt.value}\n`);
+                        finalMesSend[mesSend.length - cfgPrompt.depth].extensionPrompts.push(`${cfgPrompt.value}\n`);
                     }
                 }
 
@@ -2777,25 +2799,20 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 // Always run with continue
                 if (!isInstruct && !isImpersonate && (tokens_already_generated === 0 || isContinue)) {
                     if (promptBias.trim().length !== 0) {
-                        finalMesSend[finalMesSend.length - 1] +=
-                            /\s/.test(finalMesSend[finalMesSend.length - 1].slice(-1))
+                        finalMesSend[finalMesSend.length - 1].message +=
+                            /\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1))
                                 ? promptBias.trimStart()
                                 : ` ${promptBias.trimStart()}`;
                     }
                 }
-
 
                 // Prune from prompt cache if it exists
                 if (generatedPromtCache.length !== 0) {
                     generatedPromtCache = cleanupPromptCache(generatedPromtCache);
                 }
 
-                // Override for prompt bits data
-                if (!isNegative) {
-                    mesSend = finalMesSend;
-                }
-
-                let mesSendString = finalMesSend.join('');
+                // Right now, everything is suffixed with a newline
+                mesSendString = finalMesSend.map((e) => `${e.extensionPrompts.join('')}${e.message}`).join('');
 
                 // add chat preamble
                 mesSendString = addChatsPreamble(mesSendString);
@@ -2809,13 +2826,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     mesExmString +
                     mesSendString +
                     generatedPromtCache;
-
-                // TODO: Move zero-depth anchor append to work like CFG and bias appends
-                if (zeroDepthAnchor && zeroDepthAnchor.length) {
-                    if (!isMultigenEnabled() || tokens_already_generated == 0) {
-                        combinedPrompt = appendZeroDepthAnchor(force_name2, zeroDepthAnchor, combinedPrompt);
-                    }
-                }
 
                 combinedPrompt = combinedPrompt.replace(/\r/gm, '');
 
@@ -2927,7 +2937,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 storyString: storyString,
                 afterScenarioAnchor: afterScenarioAnchor,
                 examplesString: examplesString,
-                mesSendString: mesSend.join(''),
+                mesSendString: mesSendString,
                 generatedPromtCache: generatedPromtCache,
                 promptBias: promptBias,
                 finalPromt: finalPromt,
