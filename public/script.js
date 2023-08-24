@@ -2051,7 +2051,7 @@ class StreamingProcessor {
             chat[messageId]['gen_started'] = this.timeStarted;
             chat[messageId]['gen_finished'] = currentTime;
 
-            if (this.type == 'swipe' && Array.isArray(chat[messageId]['swipes'])) {
+            if ((this.type == 'swipe' || this.type === 'continue') && Array.isArray(chat[messageId]['swipes'])) {
                 chat[messageId]['swipes'][chat[messageId]['swipe_id']] = processedText;
                 chat[messageId]['swipe_info'][chat[messageId]['swipe_id']] = { 'send_date': chat[messageId]['send_date'], 'gen_started': chat[messageId]['gen_started'], 'gen_finished': chat[messageId]['gen_finished'], 'extra': JSON.parse(JSON.stringify(chat[messageId]['extra'])) };
             }
@@ -3901,8 +3901,9 @@ async function saveReply(type, getMessage, this_mes_is_name, title) {
         item["swipe_info"] = [];
     }
     if (item["swipe_id"] !== undefined) {
-        item["swipes"][item["swipes"].length - 1] = item["mes"];
-        item["swipe_info"][item["swipes"].length - 1] = {
+        const swipeId = item["swipe_id"];
+        item["swipes"][swipeId] = item["mes"];
+        item["swipe_info"][swipeId] = {
             send_date: item["send_date"],
             gen_started: item["gen_started"],
             gen_finished: item["gen_finished"],
