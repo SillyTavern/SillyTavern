@@ -2320,6 +2320,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
         }
 
+        if (!type && !textareaText && power_user.continue_on_send && !selected_group && chat.length && !chat[chat.length - 1]['is_user'] && !chat[chat.length - 1]['is_system']) {
+            type = 'continue';
+        }
+
         const isContinue = type == 'continue';
 
         if (!dryRun) {
@@ -2641,7 +2645,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
                 console.debug('--setting Prompt string');
                 mesExmString = pinExmString ?? mesExamplesArray.slice(0, count_exm_add).join('');
-                mesSend[mesSend.length - 1] = modifyLastPromptLine(mesSend[mesSend.length - 1]);
+
+                if (mesSend.length) {
+                    mesSend[mesSend.length - 1] = modifyLastPromptLine(mesSend[mesSend.length - 1]);
+                }
             }
 
             function modifyLastPromptLine(lastMesString) {
@@ -3799,6 +3806,10 @@ async function saveReply(type, getMessage, this_mes_is_name, title) {
         type = 'normal';
     }
 
+    if (chat.length && typeof chat[chat.length - 1]['extra'] !== 'object') {
+        chat[chat.length - 1]['extra'] = {};
+    }
+
     let oldMessage = ''
     const generationFinished = new Date();
     const img = extractImageFromMessage(getMessage);
@@ -4356,9 +4367,11 @@ function getFirstMessage() {
     const message = {
         name: name2,
         is_user: false,
+        is_system: false,
         is_name: true,
         send_date: getMessageTimeStamp(),
         mes: getRegexedString(firstMes, regex_placement.AI_OUTPUT),
+        extra: {},
     };
 
     if (Array.isArray(alternateGreetings) && alternateGreetings.length > 0) {

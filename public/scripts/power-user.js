@@ -152,6 +152,7 @@ let power_user = {
     prefer_character_prompt: true,
     prefer_character_jailbreak: true,
     quick_continue: false,
+    continue_on_send: false,
     trim_spaces: true,
     relaxed_api_urls: false,
 
@@ -708,6 +709,7 @@ function loadPowerUserSettings(settings, data) {
 
     $('#relaxed_api_urls').prop("checked", power_user.relaxed_api_urls);
     $('#trim_spaces').prop("checked", power_user.trim_spaces);
+    $('#continue_on_send').prop("checked", power_user.continue_on_send);
     $('#quick_continue').prop("checked", power_user.quick_continue);
     $('#mes_continue').css('display', power_user.quick_continue ? '' : 'none');
     $('#auto_swipe').prop("checked", power_user.auto_swipe);
@@ -1965,6 +1967,12 @@ $(document).ready(() => {
     $("#prefer_character_jailbreak").on("input", function () {
         const value = !!$(this).prop('checked');
         power_user.prefer_character_jailbreak = value;
+        saveSettingsDebounced();
+    });
+
+    $("#continue_on_send").on("input", function () {
+        const value = !!$(this).prop('checked');
+        power_user.continue_on_send = value;
         saveSettingsDebounced();
     });
 

@@ -2,7 +2,7 @@
     "compilerOptions": {
         "checkJs": true,
         "target": "ESNext",
-        "module": "commonjs",
+        "module": "ESNext",
         "allowUmdGlobalAccess": true,
         "allowSyntheticDefaultImports": true
     },

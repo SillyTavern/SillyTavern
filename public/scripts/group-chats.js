@@ -8,6 +8,7 @@ import {
     extractAllWords,
     saveBase64AsFile,
     PAGINATION_TEMPLATE,
+    waitUntilCondition,
 } from './utils.js';
 import { RA_CountCharTokens, humanizedDateTime, dragElement, favsToHotswap, getMessageTimeStamp } from "./RossAscends-mods.js";
 import { loadMovingUIState, sortEntitiesList } from './power-user.js';
@@ -665,6 +666,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
                     if (streamingProcessor && !streamingProcessor.isFinished) {
                         await delay(100);
                     } else {
+                        await waitUntilCondition(() => streamingProcessor == null, 1000, 10);
                         messagesBefore++;
                         break;
                     }
