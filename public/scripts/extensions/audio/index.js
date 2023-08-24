@@ -291,8 +291,14 @@ async function moduleWorker() {
             // 1.2) Switched chat
             if (currentCharacterBGM !== newCharacter) {
                 currentCharacterBGM = newCharacter;
-                updateBGM();
-                cooldownBGM = extension_settings.audio.bgm_cooldown * 1000;
+                try {
+                    await updateBGM();
+                    cooldownBGM = extension_settings.audio.bgm_cooldown * 1000;
+                }
+                catch(error){
+                    console.debug(DEBUG_PREFIX,"Error while trying to update BGM character, will try again");
+                    currentCharacterBGM = null
+                }
                 return;
             }
 
@@ -307,10 +313,16 @@ async function moduleWorker() {
                     return;
                 }
 
-                cooldownBGM = extension_settings.audio.bgm_cooldown * 1000;
-                currentExpressionBGM = newExpression;
-                console.debug(DEBUG_PREFIX,"(SOLO) Updated current character expression to",currentExpressionBGM,"cooldown",cooldownBGM);
-                updateBGM();
+                try {
+                    await updateBGM();
+                    cooldownBGM = extension_settings.audio.bgm_cooldown * 1000;
+                    currentExpressionBGM = newExpression;
+                    console.debug(DEBUG_PREFIX,"(SOLO) Updated current character expression to",currentExpressionBGM,"cooldown",cooldownBGM);
+                }
+                catch(error){
+                    console.debug(DEBUG_PREFIX,"Error while trying to update BGM expression, will try again");
+                    currentCharacterBGM = null
+                }
                 return;
             }
 
@@ -340,11 +352,18 @@ async function moduleWorker() {
                     return;
                 }
                 
-                cooldownBGM = extension_settings.audio.bgm_cooldown * 1000;
-                currentCharacterBGM = newCharacter;
-                currentExpressionBGM = FALLBACK_EXPRESSION;
-                updateBGM();
-                console.debug(DEBUG_PREFIX,"(GROUP) Updated current character BGM to",currentExpressionBGM,"cooldown",cooldownBGM);
+                try {
+                    currentCharacterBGM = newCharacter;
+                    await updateBGM();
+                    cooldownBGM = extension_settings.audio.bgm_cooldown * 1000;
+                    currentCharacterBGM = newCharacter;
+                    currentExpressionBGM = FALLBACK_EXPRESSION;
+                    console.debug(DEBUG_PREFIX,"(GROUP) Updated current character BGM to",currentExpressionBGM,"cooldown",cooldownBGM);
+                }
+                catch(error){
+                    console.debug(DEBUG_PREFIX,"Error while trying to update BGM group, will try again");
+                    currentCharacterBGM = null
+                }
                 return;
             }
 

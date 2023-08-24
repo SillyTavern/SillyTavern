@@ -5023,6 +5023,8 @@ app.post('/get_assets', jsonParser, async (request, response) => {
             });
 
             for (const folder of folders) {
+                if (folder == "temp")
+                    continue;
                 const files = fs.readdirSync(path.join(folderPath,folder))
                 .filter(filename => {
                     return filename != ".placeholder";
@@ -5083,19 +5085,33 @@ app.post('/asset_download', jsonParser, async (request, response) => {
     }
 
     const safe_input = path.normalize(inputFilename).replace(/^(\.\.(\/|\\|$))+/, '');
+    const temp_path = path.join(directories.assets, "temp", safe_input)
     const file_path = path.join(directories.assets, category, safe_input)
     console.debug("Request received to download", url,"to",file_path);
 
     try {
-        const downloadFile = (async (url, file_path) => {
-        const res = await fetch(url);
-        const destination = path.resolve(file_path);
-        const fileStream = fs.createWriteStream(destination, { flags: 'wx' });
-        await finished(Readable.fromWeb(res.body).pipe(fileStream));
-        console.debug("Download finished, file saved to",file_path);
+        // Download to temp
+        const downloadFile = (async (url, temp_path) => {
+            const res = await fetch(url);
+            const destination = path.resolve(temp_path);
+            // Delete if previous download failed
+            if (fs.existsSync(temp_path)) {
+                fs.unlink(temp_path, (err) => {
+                    if (err) throw err;
+                });
+            }
+            const fileStream = fs.createWriteStream(destination, { flags: 'wx' });
+            await finished(Readable.fromWeb(res.body).pipe(fileStream));
         });
 
-        await downloadFile(url, file_path);
+        await downloadFile(url, temp_path);
+
+        // Move into asset place
+        console.debug("Download finished, moving file from",temp_path,"to",file_path);
+        fs.rename(temp_path,file_path, (err) => {
+            if (err) throw err;
+            console.log('Rename complete!');
+            });
         response.sendStatus(200);
     }
     catch(error) {
