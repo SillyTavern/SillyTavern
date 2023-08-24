@@ -5070,7 +5070,7 @@ app.post('/asset_download', jsonParser, async (request, response) => {
     const url = request.body.url;
     const inputCategory = request.body.category;
     const inputFilename = sanitize(request.body.filename);
-    const validCategories = ["bgm", "ambient"]
+    const validCategories = ["bgm", "ambient"];
 
     // Check category
     let category = null
@@ -5094,6 +5094,16 @@ app.post('/asset_download', jsonParser, async (request, response) => {
         return response.sendStatus(400);
     }
 
+    if (contentManager.unsafeExtensions.some(ext => inputFilename.toLowerCase().endsWith(ext))) {
+        console.debug("Bad request: forbidden file extension.");
+        return response.sendStatus(400);
+    }
+
+    if (inputFilename.startsWith('.')) {
+        console.debug("Bad request: filename cannot start with '.'");
+        return response.sendStatus(400);
+    }
+
     const safe_input = path.normalize(inputFilename).replace(/^(\.\.(\/|\\|$))+/, '');
     const temp_path = path.join(directories.assets, "temp", safe_input)
     const file_path = path.join(directories.assets, category, safe_input)
@@ -5103,6 +5113,9 @@ app.post('/asset_download', jsonParser, async (request, response) => {
         // Download to temp
         const downloadFile = (async (url, temp_path) => {
             const res = await fetch(url);
+            if (!res.ok) {
+                throw new Error(`Unexpected response ${res.statusText}`);
+            }
             const destination = path.resolve(temp_path);
             // Delete if previous download failed
             if (fs.existsSync(temp_path)) {
