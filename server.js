@@ -5056,11 +5056,37 @@ app.post('/get_assets', jsonParser, async (request, response) => {
     }
 });
 
+
+function checkAssetFileName(inputFilename) {
+    // Sanitize filename
+    if (inputFilename.indexOf('\0') !== -1) {
+        console.debug("Bad request: poisong null bytes in filename.");
+        return '';
+    }
+
+    if (!/^[a-zA-Z0-9_\-\.]+$/.test(inputFilename)) {
+        console.debug("Bad request: illegal character in filename, only alphanumeric, '_', '-' are accepted.");
+        return '';
+    }
+
+    if (contentManager.unsafeExtensions.some(ext => inputFilename.toLowerCase().endsWith(ext))) {
+        console.debug("Bad request: forbidden file extension.");
+        return '';
+    }
+
+    if (inputFilename.startsWith('.')) {
+        console.debug("Bad request: filename cannot start with '.'");
+        return '';
+    }
+
+    return path.normalize(inputFilename).replace(/^(\.\.(\/|\\|$))+/, '');;
+}
+
 /**
- * HTTP POST handler function to retrieve a character background music list.
+ * HTTP POST handler function to download the requested asset.
  *
- * @param {Object} request - HTTP Request object, expects a folder path in the query.
- * @param {Object} response - HTTP Response object will contain the path to save file.
+ * @param {Object} request - HTTP Request object, expects a url, a category and a filename.
+ * @param {Object} response - HTTP Response only gives status.
  *
  * @returns {void}
  */
@@ -5084,27 +5110,10 @@ app.post('/asset_download', jsonParser, async (request, response) => {
     }
 
     // Sanitize filename
-    if (inputFilename.indexOf('\0') !== -1) {
-        console.debug("Bad request: poisong null bytes in filename.");
-        return response.sendStatus(400);
-    }
+    const safe_input = checkAssetFileName(inputFilename);
+    if (safe_input == '')
+        return response.sendFile(400);
 
-    if (!/^[a-zA-Z0-9_\-\.]+$/.test(inputFilename)) {
-        console.debug("Bad request: illegal character in filename, only alphanumeric, '_', '-' are accepted.");
-        return response.sendStatus(400);
-    }
-
-    if (contentManager.unsafeExtensions.some(ext => inputFilename.toLowerCase().endsWith(ext))) {
-        console.debug("Bad request: forbidden file extension.");
-        return response.sendStatus(400);
-    }
-
-    if (inputFilename.startsWith('.')) {
-        console.debug("Bad request: filename cannot start with '.'");
-        return response.sendStatus(400);
-    }
-
-    const safe_input = path.normalize(inputFilename).replace(/^(\.\.(\/|\\|$))+/, '');
     const temp_path = path.join(directories.assets, "temp", safe_input)
     const file_path = path.join(directories.assets, category, safe_input)
     console.debug("Request received to download", url, "to", file_path);
@@ -5132,6 +5141,61 @@ app.post('/asset_download', jsonParser, async (request, response) => {
         // Move into asset place
         console.debug("Download finished, moving file from", temp_path, "to", file_path);
         fs.renameSync(temp_path, file_path);
+        response.sendStatus(200);
+    }
+    catch (error) {
+        console.log(error);
+        response.sendStatus(500);
+    }
+});
+
+/**
+ * HTTP POST handler function to delete the requested asset.
+ *
+ * @param {Object} request - HTTP Request object, expects a category and a filename
+ * @param {Object} response - HTTP Response only gives stats.
+ *
+ * @returns {void}
+ */
+app.post('/asset_delete', jsonParser, async (request, response) => {
+    const { Readable } = require('stream');
+    const { finished } = require('stream/promises');
+    const inputCategory = request.body.category;
+    const inputFilename = sanitize(request.body.filename);
+    const validCategories = ["bgm", "ambient"];
+
+    // Check category
+    let category = null;
+    for (i of validCategories)
+        if (i == inputCategory)
+            category = i;
+
+    if (category === null) {
+        console.debug("Bad request: unsuported asset category.");
+        return response.sendStatus(400);
+    }
+
+    // Sanitize filename
+    const safe_input = checkAssetFileName(inputFilename);
+    if (safe_input == '')
+        return response.sendFile(400);
+
+    const file_path = path.join(directories.assets, category, safe_input)
+    console.debug("Request received to delete", category, file_path);
+
+    try {
+        // Delete if previous download failed
+        if (fs.existsSync(file_path)) {
+            fs.unlink(file_path, (err) => {
+                if (err) throw err;
+            });
+            console.debug("Asset deleted.");
+        }
+        else {
+            console.debug("Asset not found.");
+            response.sendStatus(400);
+        }
+        // Move into asset place
         response.sendStatus(200);
     }
     catch (error) {

@@ -63,22 +63,55 @@ function downloadAssetsList(url) {
 
                         console.debug(DEBUG_PREFIX, "Checking asset", asset["id"], asset["url"]);
 
+                        const assetInstall = async function () {
+                            element.off("click");
+                            label.removeClass("fa-download");
+                            this.classList.add('asset-download-button-loading');
+                            await installAsset(asset["url"], assetType, asset["id"]);
+                            label.addClass("fa-check");
+                            this.classList.remove('asset-download-button-loading');
+                            element.on("click", assetDelete);
+                            element.on("mouseenter", function(){
+                                label.removeClass("fa-check");
+                                label.addClass("fa-trash");
+                                label.addClass("redOverlayGlow");
+                            }).on("mouseleave", function(){
+                                label.addClass("fa-check");
+                                label.removeClass("fa-trash");
+                                label.removeClass("redOverlayGlow");
+                            });
+                        };
+
+                        const assetDelete = async function() {
+                            element.off("click");
+                            await deleteAsset(assetType, asset["id"]);
+                            label.removeClass("fa-check");
+                            label.removeClass("redOverlayGlow");
+                            label.removeClass("fa-trash");
+                            label.addClass("fa-download");
+                            element.off("mouseenter").off("mouseleave");
+                            element.on("click", assetInstall);
+                        }
+
                         if (isAssetInstalled(assetType, asset["id"])) {
                             console.debug(DEBUG_PREFIX, "installed, checked");
                             label.toggleClass("fa-download");
                             label.toggleClass("fa-check");
+                            element.on("click", assetDelete);
+                            element.on("mouseenter", function(){
+                                label.removeClass("fa-check");
+                                label.addClass("fa-trash");
+                                label.addClass("redOverlayGlow");
+                            }).on("mouseleave", function(){
+                                label.addClass("fa-check");
+                                label.removeClass("fa-trash");
+                                label.removeClass("redOverlayGlow");
+                            });
                         }
                         else {
                             console.debug(DEBUG_PREFIX, "not installed, unchecked")
                             element.prop("checked", false);
-                            element.on("click", async function () {
-                                element.off("click");
-                                label.toggleClass("fa-download");
-                                this.classList.toggle('asset-download-button-loading');
-                                await installAsset(asset["url"], assetType, asset["id"]);
-                                label.toggleClass("fa-check");
-                                this.classList.toggle('asset-download-button-loading');
-                            })
+                            element.on("click", assetInstall);
                         }
 
                         console.debug(DEBUG_PREFIX, "Created element for BGM", asset["id"])
@@ -125,6 +158,27 @@ async function installAsset(url, assetType, filename) {
         });
         if (result.ok) {
             console.debug(DEBUG_PREFIX, "Download success.")
+        }
+    }
+    catch (err) {
+        console.log(err);
+        return [];
+    }
+}
+
+async function deleteAsset(assetType, filename) {
+    console.debug(DEBUG_PREFIX, "Deleting ", assetType, filename);
+    const category = assetType;
+    try {
+        const body = { category, filename };
+        const result = await fetch('/asset_delete', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify(body),
+            cache: 'no-cache',
+        });
+        if (result.ok) {
+            console.debug(DEBUG_PREFIX, "Deletion success.")
         }
     }
     catch (err) {
