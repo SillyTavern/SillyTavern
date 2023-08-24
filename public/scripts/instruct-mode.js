@@ -256,7 +256,12 @@ export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvata
 export function formatInstructModeSystemPrompt(systemPrompt){
     if (power_user.instruct.system_sequence) {
         const separator = power_user.instruct.wrap ? '\n' : '';
-        return power_user.instruct.system_sequence + separator + systemPrompt;
+
+        if (power_user.instruct.system_sequence.includes("{{sys}}")) {
+            return power_user.instruct.system_sequence.replace(/{{sys}}/gi, systemPrompt);
+        } else {
+            return power_user.instruct.system_sequence + separator + systemPrompt;
+        }
     }
 
     return systemPrompt;
