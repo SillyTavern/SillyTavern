@@ -3,6 +3,55 @@ import { waitUntilCondition } from "./utils.js";
 const storageKey = "language";
 export const localeData = await fetch("i18n.json").then(response => response.json());
 
+function getMissingTranslations() {
+    const missingData = [];
+
+    for (const language of localeData.lang) {
+        $(document).find("[data-i18n]").each(function () {
+            const keys = $(this).data("i18n").split(';'); // Multi-key entries are ; delimited
+            for (const key of keys) {
+                const attributeMatch = key.match(/\[(\S+)\](.+)/); // [attribute]key
+                if (attributeMatch) { // attribute-tagged key
+                    const localizedValue = localeData?.[language]?.[attributeMatch[2]];
+                    if (!localizedValue) {
+                        missingData.push({ key, language, value: $(this).attr(attributeMatch[1]) });
+                    }
+                } else { // No attribute tag, treat as 'text'
+                    const localizedValue = localeData?.[language]?.[key];
+                    if (!localizedValue) {
+                        missingData.push({ key, language, value: $(this).text().trim() });
+                    }
+                }
+            }
+        });
+    }
+
+    // Remove duplicates
+    const uniqueMissingData = [];
+    for (const { key, language, value } of missingData) {
+        if (!uniqueMissingData.some(x => x.key === key && x.language === language && x.value === value)) {
+            uniqueMissingData.push({ key, language, value });
+        }
+    }
+
+    // Sort by language, then key
+    uniqueMissingData.sort((a, b) => a.language.localeCompare(b.language) || a.key.localeCompare(b.key));
+
+    // Map to { language: { key: value } }
+    const missingDataMap = {};
+    for (const { key, language, value } of uniqueMissingData) {
+        if (!missingDataMap[language]) {
+            missingDataMap[language] = {};
+        }
+        missingDataMap[language][key] = value;
+    }
+
+    console.table(uniqueMissingData);
+    console.log(missingDataMap);
+}
+
+window["getMissingTranslations"] = getMissingTranslations;
+
 export function applyLocale(root = document) {
     const overrideLanguage = localStorage.getItem("language");
     var language = overrideLanguage || navigator.language || navigator.userLanguage;

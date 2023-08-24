@@ -129,6 +129,7 @@
         "prefer_character_prompt": true,
         "prefer_character_jailbreak": true,
         "quick_continue": false,
+        "continue_on_send": false,
         "trim_spaces": true,
         "relaxed_api_urls": false,
         "default_instruct": "",
