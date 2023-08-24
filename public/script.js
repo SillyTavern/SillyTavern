@@ -1,4 +1,4 @@
-import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, } from "./scripts/RossAscends-mods.js";
+import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods, } from "./scripts/RossAscends-mods.js";
 import { userStatsHandler, statMesProcess } from './scripts/stats.js';
 import {
     generateKoboldWithStreaming,
@@ -156,7 +156,7 @@ import {
 import { EventEmitter } from './lib/eventemitter.js';
 import { markdownExclusionExt } from "./scripts/showdown-exclusion.js";
 import { NOTE_MODULE_NAME, metadata_keys, setFloatingPrompt, shouldWIAddPrompt } from "./scripts/authors-note.js";
-import { deviceInfo } from "./scripts/RossAscends-mods.js";
+import { getDeviceInfo } from "./scripts/RossAscends-mods.js";
 import { registerPromptManagerMigration } from "./scripts/PromptManager.js";
 import { getRegexedString, regex_placement } from "./scripts/extensions/regex/engine.js";
 import { FILTER_TYPES, FilterHelper } from "./scripts/filters.js";
@@ -6293,6 +6293,7 @@ function openCharacterWorldPopup() {
     template.find('.character_name').text(name);
 
     // Not needed on mobile
+    const deviceInfo = getDeviceInfo();
     if (deviceInfo && deviceInfo.device.type === 'desktop') {
         $(extraSelect).select2({
             width: '100%',
@@ -6336,18 +6337,6 @@ function openCharacterWorldPopup() {
             e.preventDefault();
             return;
         }
-
-        /*let selectScrollTop = null;
-
-        if (deviceInfo && deviceInfo.device.type === 'desktop') {
-            e.preventDefault();
-            const option = $(e.target);
-            const selectElement = $(extraSelect)[0];
-            selectScrollTop = selectElement.scrollTop;
-            option.prop('selected', !option.prop('selected'));
-            await delay(1);
-            selectElement.scrollTop = selectScrollTop;
-        }*/
 
         onExtraWorldInfoChanged();
     });
@@ -9022,4 +9011,7 @@ $(document).ready(function () {
     $("#hideCharPanelAvatarButton").on('click', () => {
         $('#avatar-and-name-block').slideToggle()
     });
+
+    // Added here to prevent execution before script.js is loaded and get rid of quirky timeouts
+    initRossMods();
 });
