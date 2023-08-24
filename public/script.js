@@ -2320,6 +2320,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
         }
 
+        if (!type && !textareaText && power_user.continue_on_send && !selected_group && chat.length && !chat[chat.length - 1]['is_user'] && !chat[chat.length - 1]['is_system']) {
+            type = 'continue';
+        }
+
         const isContinue = type == 'continue';
 
         if (!dryRun) {
@@ -2641,7 +2645,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
                 console.debug('--setting Prompt string');
                 mesExmString = pinExmString ?? mesExamplesArray.slice(0, count_exm_add).join('');
-                mesSend[mesSend.length - 1] = modifyLastPromptLine(mesSend[mesSend.length - 1]);
+
+                if (mesSend.length) {
+                    mesSend[mesSend.length - 1] = modifyLastPromptLine(mesSend[mesSend.length - 1]);
+                }
             }
 
             function modifyLastPromptLine(lastMesString) {
@@ -3332,11 +3339,7 @@ function addChatsPreamble(mesSendString) {
 }
 
 function addChatsSeparator(mesSendString) {
-    if (main_api === 'novel') {
-        return '***\n' + mesSendString;
-    }
-
-    else if (power_user.context.chat_start) {
+    if (power_user.context.chat_start) {
         return power_user.context.chat_start + '\n' + mesSendString;
     }
 
@@ -3801,6 +3804,10 @@ async function saveReply(type, getMessage, this_mes_is_name, title) {
     if (type != 'append' && type != 'continue' && type != 'appendFinal' && chat.length && (chat[chat.length - 1]['swipe_id'] === undefined ||
         chat[chat.length - 1]['is_user'])) {
         type = 'normal';
+    }
+
+    if (chat.length && typeof chat[chat.length - 1]['extra'] !== 'object') {
+        chat[chat.length - 1]['extra'] = {};
     }
 
     let oldMessage = ''
@@ -4360,18 +4367,17 @@ function getFirstMessage() {
     const message = {
         name: name2,
         is_user: false,
+        is_system: false,
         is_name: true,
         send_date: getMessageTimeStamp(),
         mes: getRegexedString(firstMes, regex_placement.AI_OUTPUT),
+        extra: {},
     };
 
     if (Array.isArray(alternateGreetings) && alternateGreetings.length > 0) {
+        const swipes = [message.mes, ...(alternateGreetings.map(greeting => substituteParams(getRegexedString(greeting, regex_placement.AI_OUTPUT))))];
         message['swipe_id'] = 0;
-        message['swipes'] = message['mes'].concat(
-            alternateGreetings.map(
-                (greeting) => substituteParams(getRegexedString(greeting, regex_placement.AI_OUTPUT))
-            )
-        );
+        message['swipes'] = swipes;
         message['swipe_info'] = [];
     }
     return message;
