@@ -67,6 +67,10 @@
 
     color-scheme: only light;
 
+    /* Send form variables */
+    --bottomFormBlockPadding: calc(var(--mainFontSize) / 3);
+    --bottomFormIconSize: calc(var(--mainFontSize) * 2);
+    --bottomFormBlockSize: calc(var(--bottomFormIconSize) + var(--bottomFormBlockPadding));
 
     /*styles for the color picker*/
     --tool-cool-color-picker-btn-bg: transparent;
@@ -513,19 +517,19 @@ hr {
 #send_but_sheld {
     padding: 0;
     border: 0;
-    height: 30px;
+    height: var(--bottomFormBlockSize);
     position: relative;
     background-position: center;
     display: flex;
     flex-direction: row;
     column-gap: 5px;
-    font-size: 25px;
+    font-size: var(--bottomFormIconSize);
     overflow: hidden;
 }
 
 #send_but_sheld>div {
-    width: 30px;
-    height: 30px;
+    width: var(--bottomFormBlockSize);
+    height: var(--bottomFormBlockSize);
     margin: 0;
     outline: none;
     border: none;
@@ -556,8 +560,9 @@ hr {
 }
 
 #options_button {
-    width: 30px;
-    height: 30px;
+    width: var(--bottomFormBlockSize);
+    height: var(--bottomFormBlockSize);
+    font-size: var(--bottomFormIconSize);
     margin: 0;
     outline: none;
     border: none;
@@ -568,7 +573,6 @@ hr {
     margin-left: 10px;
     padding: 0;
     transition: 0.3s;
-    font-size: 25px;
     display: flex;
     align-items: center;
 }
@@ -879,11 +883,11 @@ select {
 }
 
 #send_textarea {
-    min-height: 30px;
+    min-height: var(--bottomFormBlockSize);
+    height: var(--bottomFormBlockSize);
     max-height: 50vh;
     max-height: 50svh;
     word-wrap: break-word;
-    height: 30px;
     resize: vertical;
     display: block;
     background-color: rgba(255, 0, 0, 0);

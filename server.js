@@ -3843,11 +3843,19 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
 
         if (main_api == 'textgenerationwebui' && request.body.use_mancer) {
             args.headers = Object.assign(args.headers, get_mancer_headers());
+            const data = await postAsync(api_server + "/v1/token-count", args);
+            return response.send({ count: data['results'][0]['tokens'] });
         }
 
-        const data = await postAsync(api_server + "/v1/token-count", args);
-        console.log(data);
-        return response.send({ count: data['results'][0]['tokens'] });
+        else if (main_api == 'kobold') {
+            const data = await postAsync(api_server + "/extra/tokencount", args);
+            const count = data['value'];
+            return response.send({ count: count });
+        }
+
+        else {
+            return response.send({ error: true });
+        }
     } catch (error) {
         console.log(error);
         return response.send({ error: true });

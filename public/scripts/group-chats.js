@@ -8,6 +8,7 @@ import {
     extractAllWords,
     saveBase64AsFile,
     PAGINATION_TEMPLATE,
+    waitUntilCondition,
 } from './utils.js';
 import { RA_CountCharTokens, humanizedDateTime, dragElement, favsToHotswap, getMessageTimeStamp } from "./RossAscends-mods.js";
 import { loadMovingUIState, sortEntitiesList } from './power-user.js';
@@ -64,6 +65,7 @@ import {
     getCropPopup,
     system_avatar,
     isChatSaving,
+    setExternalAbortController,
 } from "../script.js";
 import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect, tag_map, printTagFilters } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
@@ -134,7 +136,9 @@ async function regenerateGroup() {
         await deleteLastMessage();
     }
 
-    generateGroupWrapper();
+    const abortController = new AbortController();
+    setExternalAbortController(abortController);
+    generateGroupWrapper(false, 'normal', { signal: abortController.signal });
 }
 
 async function loadGroupChat(chatId) {
@@ -665,6 +669,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
                     if (streamingProcessor && !streamingProcessor.isFinished) {
                         await delay(100);
                     } else {
+                        await waitUntilCondition(() => streamingProcessor == null, 1000, 10);
                         messagesBefore++;
                         break;
                     }
