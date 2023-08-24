@@ -4366,12 +4366,9 @@ function getFirstMessage() {
     };
 
     if (Array.isArray(alternateGreetings) && alternateGreetings.length > 0) {
+        const swipes = [message.mes, ...(alternateGreetings.map(greeting => substituteParams(getRegexedString(greeting, regex_placement.AI_OUTPUT))))];
         message['swipe_id'] = 0;
-        message['swipes'] = message['mes'].concat(
-            alternateGreetings.map(
-                (greeting) => substituteParams(getRegexedString(greeting, regex_placement.AI_OUTPUT))
-            )
-        );
+        message['swipes'] = swipes;
         message['swipe_info'] = [];
     }
     return message;
