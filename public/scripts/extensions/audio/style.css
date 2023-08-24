@@ -15,3 +15,8 @@
 .audio-mute-button-muted {
     color: red;
 }
+
+#audio_refresh_assets {
+    width: 50px;
+    height: 30px;
+}

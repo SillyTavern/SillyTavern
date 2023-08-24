@@ -5070,13 +5070,13 @@ app.post('/asset_download', jsonParser, async (request, response) => {
     const url = request.body.url;
     const inputCategory = request.body.category;
     const inputFilename = sanitize(request.body.filename);
-    const validCategories = ["bgm", "ambient"]
+    const validCategories = ["bgm", "ambient"];
 
     // Check category
-    let category = null
+    let category = null;
     for (i of validCategories)
         if (i == inputCategory)
-            category = i
+            category = i;
 
     if (category === null) {
         console.debug("Bad request: unsuported asset category.");

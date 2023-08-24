@@ -563,6 +563,17 @@ jQuery(async () => {
 
     $("#audio_bgm_cooldown").on("input", onBGMCooldownInput);
 
+    // Reset assets container, will be redected like if ST restarted
+    $("#audio_refresh_assets").on("click", function(){
+        console.debug(DEBUG_PREFIX,"Refreshing audio assets");
+        fallback_BGMS = null;
+        ambients = null;
+        characterMusics = {};
+        currentCharacterBGM = null;
+        currentExpressionBGM = null;
+        currentBackground = null;
+    })
+
     // DBG
     $("#audio_debug").on("click", function () {
         if ($("#audio_debug").is(':checked')) {
