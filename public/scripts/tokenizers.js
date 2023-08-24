@@ -24,6 +24,15 @@ const gpt3 = new GPT3BrowserTokenizer({ type: 'gpt3' });
 
 let tokenCache = {};
 
+/**
+ * Guesstimates the token count for a string.
+ * @param {string} str String to tokenize.
+ * @returns {number} Token count.
+ */
+export function guesstimate(str) {
+    return Math.ceil(str.length / CHARACTERS_PER_TOKEN_RATIO);
+}
+
 async function loadTokenCache() {
     try {
         console.debug('Chat Completions: loading token cache')
@@ -89,7 +98,7 @@ export function getTokenCount(str, padding = undefined) {
     function calculate(type) {
         switch (type) {
             case tokenizers.NONE:
-                return Math.ceil(str.length / CHARACTERS_PER_TOKEN_RATIO) + padding;
+                return guesstimate(str) + padding;
             case tokenizers.GPT3:
                 return gpt3.encode(str).bpe.length + padding;
             case tokenizers.CLASSIC:
@@ -291,8 +300,16 @@ function getTokenCacheObject() {
     return tokenCache[String(chatId)];
 }
 
+/**
+ * Counts token using the remote server API.
+ * @param {string} endpoint API endpoint.
+ * @param {string} str String to tokenize.
+ * @param {number} padding Number of padding tokens.
+ * @returns {number} Token count with padding.
+ */
 function countTokensRemote(endpoint, str, padding) {
     let tokenCount = 0;
+
     jQuery.ajax({
         async: false,
         type: 'POST',
@@ -301,9 +318,25 @@ function countTokensRemote(endpoint, str, padding) {
         dataType: "json",
         contentType: "application/json",
         success: function (data) {
-            tokenCount = data.count;
+            if (typeof data.count === 'number') {
+                tokenCount = data.count;
+            } else {
+                tokenCount = guesstimate(str);
+                console.error("Error counting tokens");
+
+                if (!sessionStorage.getItem('tokenizationWarningShown')) {
+                    toastr.warning(
+                        "Your selected API doesn't support the tokenization endpoint. Using estimated counts.",
+                        "Error counting tokens",
+                        { timeOut: 10000, preventDuplicates: true },
+                    );
+
+                    sessionStorage.setItem('tokenizationWarningShown', String(true));
+                }
+            }
         }
     });
+
     return tokenCount + padding;
 }
 
