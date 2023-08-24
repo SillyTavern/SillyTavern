@@ -65,6 +65,7 @@ import {
     getCropPopup,
     system_avatar,
     isChatSaving,
+    setExternalAbortController,
 } from "../script.js";
 import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect, tag_map, printTagFilters } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
@@ -135,7 +136,9 @@ async function regenerateGroup() {
         await deleteLastMessage();
     }
 
-    generateGroupWrapper();
+    const abortController = new AbortController();
+    setExternalAbortController(abortController);
+    generateGroupWrapper(false, 'normal', { signal: abortController.signal });
 }
 
 async function loadGroupChat(chatId) {

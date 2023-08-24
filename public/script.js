@@ -8,6 +8,7 @@ import {
     getKoboldGenerationData,
     canUseKoboldStopSequence,
     canUseKoboldStreaming,
+    canUseKoboldTokenization,
 } from "./scripts/kai-settings.js";
 
 import {
@@ -783,6 +784,7 @@ async function getStatus() {
                 if (main_api === "kobold" || main_api === "koboldhorde") {
                     kai_settings.use_stop_sequence = canUseKoboldStopSequence(data.version);
                     kai_settings.can_use_streaming = canUseKoboldStreaming(data.koboldVersion);
+                    kai_settings.can_use_tokenization = canUseKoboldTokenization(data.koboldVersion);
                 }
 
                 // We didn't get a 200 status code, but the endpoint has an explanation. Which means it DID connect, but I digress.
@@ -4005,6 +4007,10 @@ function resetChatState() {
 
 export function setMenuType(value) {
     menu_type = value;
+}
+
+export function setExternalAbortController(controller) {
+    abortController = controller;
 }
 
 function setCharacterId(value) {

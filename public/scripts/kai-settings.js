@@ -9,16 +9,7 @@ import {
 } from "./power-user.js";
 import { getSortableDelay } from "./utils.js";
 
-export {
-    kai_settings,
-    loadKoboldSettings,
-    formatKoboldUrl,
-    getKoboldGenerationData,
-    canUseKoboldStopSequence,
-    canUseKoboldStreaming,
-};
-
-const kai_settings = {
+export const kai_settings = {
     temp: 1,
     rep_pen: 1,
     rep_pen_range: 0,
@@ -30,15 +21,17 @@ const kai_settings = {
     rep_pen_slope: 0.9,
     single_line: false,
     use_stop_sequence: false,
+    can_use_tokenization: false,
     streaming_kobold: false,
     sampler_order: [0, 1, 2, 3, 4, 5, 6],
 };
 
 const MIN_STOP_SEQUENCE_VERSION = '1.2.2';
 const MIN_STREAMING_KCPPVERSION = '1.30';
+const MIN_TOKENIZATION_KCPPVERSION = '1.41';
 const KOBOLDCPP_ORDER = [6, 0, 1, 3, 4, 2, 5];
 
-function formatKoboldUrl(value) {
+export function formatKoboldUrl(value) {
     try {
         const url = new URL(value);
         if (!power_user.relaxed_api_urls) {
@@ -49,7 +42,7 @@ function formatKoboldUrl(value) {
     return null;
 }
 
-function loadKoboldSettings(preset) {
+export function loadKoboldSettings(preset) {
     for (const name of Object.keys(kai_settings)) {
         const value = preset[name];
         const slider = sliders.find(x => x.name === name);
@@ -75,7 +68,7 @@ function loadKoboldSettings(preset) {
     }
 }
 
-function getKoboldGenerationData(finalPrompt, this_settings, this_amount_gen, this_max_context, isImpersonate, type) {
+export function getKoboldGenerationData(finalPrompt, this_settings, this_amount_gen, this_max_context, isImpersonate, type) {
     const sampler_order = kai_settings.sampler_order || this_settings.sampler_order;
     let generate_data = {
         prompt: finalPrompt,
@@ -228,7 +221,7 @@ const sliders = [
  * @param {string} version KoboldAI version to check.
  * @returns {boolean} True if the Kobold stop sequence can be used, false otherwise.
  */
-function canUseKoboldStopSequence(version) {
+export function canUseKoboldStopSequence(version) {
     return (version || '0.0.0').localeCompare(MIN_STOP_SEQUENCE_VERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
 }
 
@@ -237,9 +230,20 @@ function canUseKoboldStopSequence(version) {
  * @param {{ result: string; version: string; }} koboldVersion KoboldAI version object.
  * @returns {boolean} True if the Kobold streaming API can be used, false otherwise.
  */
-function canUseKoboldStreaming(koboldVersion) {
+export function canUseKoboldStreaming(koboldVersion) {
     if (koboldVersion && koboldVersion.result == 'KoboldCpp') {
         return (koboldVersion.version || '0.0').localeCompare(MIN_STREAMING_KCPPVERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
+    } else return false;
+}
+
+/**
+ * Determines if the Kobold tokenization API can be used with the given version.
+ * @param {{ result: string; version: string; }} koboldVersion KoboldAI version object.
+ * @returns {boolean} True if the Kobold tokenization API can be used, false otherwise.
+ */
+export function canUseKoboldTokenization(koboldVersion) {
+    if (koboldVersion && koboldVersion.result == 'KoboldCpp') {
+        return (koboldVersion.version || '0.0').localeCompare(MIN_TOKENIZATION_KCPPVERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
     } else return false;
 }
 
