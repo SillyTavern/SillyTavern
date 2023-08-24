@@ -3332,11 +3332,7 @@ function addChatsPreamble(mesSendString) {
 }
 
 function addChatsSeparator(mesSendString) {
-    if (main_api === 'novel') {
-        return '***\n' + mesSendString;
-    }
-
-    else if (power_user.context.chat_start) {
+    if (power_user.context.chat_start) {
         return power_user.context.chat_start + '\n' + mesSendString;
     }
 
