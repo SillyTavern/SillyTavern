@@ -91,22 +91,36 @@ function loadSettings() {
     }
     $("#audio_enabled").prop('checked', extension_settings.audio.enabled);
 
-    $("#audio_character_bgm_volume").text(extension_settings.audio.bgm_volume);
+    $("#audio_bgm_volume").text(extension_settings.audio.bgm_volume);
     $("#audio_ambient_volume").text(extension_settings.audio.ambient_volume);
 
-    $("#audio_character_bgm_volume_slider").val(extension_settings.audio.bgm_volume);
+    $("#audio_bgm_volume_slider").val(extension_settings.audio.bgm_volume);
     $("#audio_ambient_volume_slider").val(extension_settings.audio.ambient_volume);
 
     if (extension_settings.audio.bgm_muted) {
-        $("#audio_character_bgm_mute_icon").toggleClass("fa-volume-high");
-        $("#audio_character_bgm_mute_icon").toggleClass("fa-volume-mute");
-        $("#audio_character_bgm").prop("muted", true);
+        $("#audio_bgm_mute_icon").removeClass("fa-volume-high");
+        $("#audio_bgm_mute_icon").addClass("fa-volume-mute");
+        $("#audio_bgm_mute").addClass("redOverlayGlow");
+        $("#audio_bgm").prop("muted", true);
+    }
+    else{
+        $("#audio_bgm_mute_icon").addClass("fa-volume-high");
+        $("#audio_bgm_mute_icon").removeClass("fa-volume-mute");
+        $("#audio_bgm_mute").removeClass("redOverlayGlow");
+        $("#audio_bgm").prop("muted", false);
     }
 
     if (extension_settings.audio.ambient_muted) {
-        $("#audio_ambient_mute_icon").toggleClass("fa-volume-high");
-        $("#audio_ambient_mute_icon").toggleClass("fa-volume-mute");
+        $("#audio_ambient_mute_icon").removeClass("fa-volume-high");
+        $("#audio_ambient_mute_icon").addClass("fa-volume-mute");
+        $("#audio_ambient_mute").addClass("redOverlayGlow");
         $("#audio_ambient").prop("muted", true);
+    }
+    else{
+        $("#audio_ambient_mute_icon").addClass("fa-volume-high");
+        $("#audio_ambient_mute_icon").removeClass("fa-volume-mute");
+        $("#audio_ambient_mute").removeClass("redOverlayGlow");
+        $("#audio_ambient").prop("muted", false);
     }
 
     $("#audio_bgm_cooldown").val(extension_settings.audio.bgm_cooldown);
@@ -117,12 +131,12 @@ function loadSettings() {
 async function onEnabledClick() {
     extension_settings.audio.enabled = $('#audio_enabled').is(':checked');
     if (extension_settings.audio.enabled) {
-        if ($("#audio_character_bgm").attr("src") != "")
-            $("#audio_character_bgm")[0].play();
+        if ($("#audio_bgm").attr("src") != "")
+            $("#audio_bgm")[0].play();
         if ($("#audio_ambient").attr("src") != "")
             $("#audio_ambient")[0].play();
     } else {
-        $("#audio_character_bgm")[0].pause();
+        $("#audio_bgm")[0].pause();
         $("#audio_ambient")[0].pause();
     }
     saveSettingsDebounced();
@@ -130,9 +144,10 @@ async function onEnabledClick() {
 
 async function onBGMMuteClick() {
     extension_settings.audio.bgm_muted = !extension_settings.audio.bgm_muted;
-    $("#audio_character_bgm_mute_icon").toggleClass("fa-volume-high");
-    $("#audio_character_bgm_mute_icon").toggleClass("fa-volume-mute");
-    $("#audio_character_bgm").prop("muted", !$("#audio_character_bgm").prop("muted"));
+    $("#audio_bgm_mute_icon").toggleClass("fa-volume-high");
+    $("#audio_bgm_mute_icon").toggleClass("fa-volume-mute");
+    $("#audio_bgm").prop("muted", !$("#audio_bgm").prop("muted"));
+    $("#audio_bgm_mute").toggleClass("redOverlayGlow");
     saveSettingsDebounced();
 }
 
@@ -141,13 +156,14 @@ async function onAmbientMuteClick() {
     $("#audio_ambient_mute_icon").toggleClass("fa-volume-high");
     $("#audio_ambient_mute_icon").toggleClass("fa-volume-mute");
     $("#audio_ambient").prop("muted", !$("#audio_ambient").prop("muted"));
+    $("#audio_ambient_mute").toggleClass("redOverlayGlow");
     saveSettingsDebounced();
 }
 
 async function onBGMVolumeChange() {
-    extension_settings.audio.bgm_volume = ~~($("#audio_character_bgm_volume_slider").val());
-    $("#audio_character_bgm").prop("volume", extension_settings.audio.bgm_volume * 0.01);
-    $("#audio_character_bgm_volume").text(extension_settings.audio.bgm_volume);
+    extension_settings.audio.bgm_volume = ~~($("#audio_bgm_volume_slider").val());
+    $("#audio_bgm").prop("volume", extension_settings.audio.bgm_volume * 0.01);
+    $("#audio_bgm_volume").text(extension_settings.audio.bgm_volume);
     saveSettingsDebounced();
     //console.debug(DEBUG_PREFIX,"UPDATED BGM MAX TO",extension_settings.audio.bgm_volume);
 }
@@ -470,7 +486,7 @@ async function updateBGM() {
         }
         else {
             console.log(DEBUG_PREFIX, "Switching BGM to", currentExpressionBGM)
-            const audio = $("#audio_character_bgm");
+            const audio = $("#audio_bgm");
 
             if (audio.attr("src") == audio_file_path) {
                 console.log(DEBUG_PREFIX, "Already playing, ignored");
@@ -533,16 +549,16 @@ jQuery(async () => {
     $('#extensions_settings').append(windowHtml);
     loadSettings();
 
-    $("#audio_character_bgm").attr("loop", true);
+    $("#audio_bgm").attr("loop", true);
     $("#audio_ambient").attr("loop", true);
 
-    $("#audio_character_bgm").hide();
+    $("#audio_bgm").hide();
     $("#audio_ambient").hide();
-    $("#audio_character_bgm_mute").on("click", onBGMMuteClick);
-    $("#audio_character_ambient_mute").on("click", onAmbientMuteClick);
+    $("#audio_bgm_mute").on("click", onBGMMuteClick);
+    $("#audio_ambient_mute").on("click", onAmbientMuteClick);
 
     $("#audio_enabled").on("click", onEnabledClick);
-    $("#audio_character_bgm_volume_slider").on("input", onBGMVolumeChange);
+    $("#audio_bgm_volume_slider").on("input", onBGMVolumeChange);
     $("#audio_ambient_volume_slider").on("input", onAmbientVolumeChange);
 
     $("#audio_bgm_cooldown").on("input", onBGMCooldownInput);
@@ -550,11 +566,11 @@ jQuery(async () => {
     // DBG
     $("#audio_debug").on("click", function () {
         if ($("#audio_debug").is(':checked')) {
-            $("#audio_character_bgm").show();
+            $("#audio_bgm").show();
             $("#audio_ambient").show();
         }
         else {
-            $("#audio_character_bgm").hide();
+            $("#audio_bgm").hide();
             $("#audio_ambient").hide();
         }
     });

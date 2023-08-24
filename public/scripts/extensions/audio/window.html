@@ -19,19 +19,19 @@
             </div>
             <div>
                 <div>
-                    <label for="audio_character_bgm_volume_slider">Music <span id="audio_character_bgm_volume"></span></label>
+                    <label for="audio_bgm_volume_slider">Music <span id="audio_bgm_volume"></span></label>
                     <div class="mixer-div">
-                        <div id="audio_character_bgm_mute" class="menu_button audio-mute-button">
-                            <i class="fa-solid fa-volume-high fa-lg" id="audio_character_bgm_mute_icon"></i>
+                        <div id="audio_bgm_mute" class="menu_button audio-mute-button">
+                            <i class="fa-solid fa-volume-high fa-lg" id="audio_bgm_mute_icon"></i>
                         </div>
-                        <input type="range" class ="slider" id ="audio_character_bgm_volume_slider" value = "0" maxlength ="100">
+                        <input type="range" class ="slider" id ="audio_bgm_volume_slider" value = "0" maxlength ="100">
                     </div>
-                    <audio id="audio_character_bgm" controls src="">
+                    <audio id="audio_bgm" controls src="">
                 </div>
                 <div>
                     <label for="audio_ambient_volume_slider">Ambient <span id="audio_ambient_volume"></span></label>
                     <div class="mixer-div">
-                        <div id="audio_character_ambient_mute" class="menu_button audio-mute-button">
+                        <div id="audio_ambient_mute" class="menu_button audio-mute-button">
                             <i class="fa-solid fa-volume-high fa-lg" id="audio_ambient_mute_icon"></i>
                         </div>
                         <input type="range" class ="slider" id ="audio_ambient_volume_slider" value = "0" maxlength ="100">
@@ -42,6 +42,18 @@
                     <label for="audio_bgm_cooldown">Music update cooldown (in seconds)</label>
                     <input id="audio_bgm_cooldown" class="text_pole wide30p">
                 </div>
+            </div>
+            <div>
+                <b>Hint:</b>
+                <i>
+                    Create new folder in the
+                    <b>public/characters/</b>
+                    folder and name it as the name of the character.
+                    Create a folder name <b>bgm</b> inside of it.
+                    Put bgm music with expressions there. File names should follow the pattern:
+                    <it>[expression_label]_[number].mp3</it>
+                    By default one of the <it>neutral_[number].mp3</it> will play if classify module is not active. 
+                </i>
             </div>
         </div>
     </div>

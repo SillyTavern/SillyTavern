@@ -96,7 +96,8 @@ function downloadAssetsList(url) {
             .catch((error) => {
                 console.error(error);
                 toastr.error("Problem with assets URL", DEBUG_PREFIX + "Cannot get assets list");
-                $('#assets-connect-button').addClass("fa-plug-circle-xmark");
+                $('#assets-connect-button').addClass("fa-plug-circle-exclamation");
+                $('#assets-connect-button').addClass("redOverlayGlow");
             });
     });
 }
@@ -171,15 +172,15 @@ jQuery(async () => {
             try {
                 console.debug(DEBUG_PREFIX, "Confimation, loading assets...");
                 downloadAssetsList(assetsJsonUrl.val());
-                connectButton.removeClass("fa-plug");
-                connectButton.removeClass("fa-plug-circle-xmark");
+                connectButton.removeClass("fa-plug-circle-exclamation");
+                connectButton.removeClass("redOverlayGlow");
                 connectButton.addClass("fa-plug-circle-check");
             } catch (error) {
                 console.error('Error:', error);
                 toastr.error(`Cannot get assets list from ${assetsJsonUrl.val()}`);
-                connectButton.removeClass("fa-plug");
                 connectButton.removeClass("fa-plug-circle-check");
-                connectButton.addClass("fa-plug-circle-xmark");
+                connectButton.addClass("fa-plug-circle-exclamation");
+                connectButton.removeClass("redOverlayGlow");
             }
         }
         else {
