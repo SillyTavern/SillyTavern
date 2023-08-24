@@ -1920,7 +1920,7 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
             "stop_sequences": request.body.stop_sequences,
             "bad_words_ids": badWordsList,
             "logit_bias_exp": logit_bias_exp,
-            //generate_until_sentence = true;
+            "generate_until_sentence": request.body.generate_until_sentence,
             "use_cache": request.body.use_cache,
             "use_string": true,
             "return_full_text": request.body.return_full_text,
