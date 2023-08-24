@@ -1,5 +1,6 @@
 import { getContext } from "./extensions.js";
 import { getRequestHeaders } from "../script.js";
+import { isMobile } from "./RossAscends-mods.js";
 
 /**
  * Pagination status string template.
@@ -38,10 +39,10 @@ export function isDigitsOnly(str) {
 
 /**
  * Gets a drag delay for sortable elements. This is to prevent accidental drags when scrolling.
- * @returns {number} The delay in milliseconds. 100ms for desktop, 750ms for mobile.
+ * @returns {number} The delay in milliseconds. 50ms for desktop, 750ms for mobile.
  */
 export function getSortableDelay() {
-    return navigator.maxTouchPoints > 0 ? 750 : 100;
+    return isMobile() ? 750 : 50;
 }
 
 /**

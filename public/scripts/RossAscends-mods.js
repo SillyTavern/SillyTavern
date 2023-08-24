@@ -98,26 +98,43 @@ export function humanizeGenTime(total_gen_time) {
     return time_spent;
 }
 
-
-
-// Device detection
-export const deviceInfo = await getDeviceInfo();
-
-async function getDeviceInfo() {
-    try {
-        const deviceInfo = await (await fetch('/deviceinfo')).json();
-        console.log("Device type: " + deviceInfo?.device?.type);
-        return deviceInfo;
-    }
-    catch {
-        console.log("Couldn't load device info. Defaulting to desktop");
-        return { device: { type: 'desktop' } };
-    }
-}
-
+/**
+ * Checks if the device is a mobile device.
+ * @returns {boolean} - True if the device is a mobile device, false otherwise.
+ */
 export function isMobile() {
     const mobileTypes = ['smartphone', 'tablet', 'phablet', 'feature phone', 'portable media player'];
+    const deviceInfo = getDeviceInfo();
+
     return mobileTypes.includes(deviceInfo?.device?.type);
+}
+
+/**
+ * Loads device info from the server. Caches the result in sessionStorage.
+ * @returns {object} - The device info object.
+ */
+export function getDeviceInfo() {
+    let deviceInfo = null;
+
+    if (sessionStorage.getItem('deviceInfo')) {
+        deviceInfo = JSON.parse(sessionStorage.getItem('deviceInfo'));
+    } else {
+        $.ajax({
+            url: '/deviceinfo',
+            dataType: 'json',
+            async: false,
+            cache: true,
+            success: function (result) {
+                sessionStorage.setItem('deviceInfo', JSON.stringify(result));
+                deviceInfo = result;
+            },
+            error: function () {
+                console.log("Couldn't load device info. Defaulting to desktop");
+                deviceInfo = { device: { type: 'desktop' } };
+            },
+        });
+    }
+    return deviceInfo;
 }
 
 function shouldSendOnEnter() {
@@ -394,8 +411,8 @@ function isUrlOrAPIKey(string) {
 }
 
 function OpenNavPanels() {
-
-    if (deviceInfo.device.type === 'desktop') {
+    const deviceInfo = getDeviceInfo();
+    if (deviceInfo && deviceInfo.device.type === 'desktop') {
         //auto-open R nav if locked and previously open
         if (LoadLocalBool("NavLockOn") == true && LoadLocalBool("NavOpened") == true) {
             //console.log("RA -- clicking right nav to open");
@@ -669,13 +686,7 @@ export async function initMovingUI() {
 
 // ---------------------------------------------------
 
-jQuery(async function () {
-    try {
-        await waitUntilCondition(() => online_status !== undefined, 1000, 10);
-    } catch {
-        console.log('Timeout waiting for online_status');
-    }
-
+export function initRossMods() {
     // initial status check
     setTimeout(() => {
         RA_checkOnlineStatus();
@@ -1070,4 +1081,4 @@ jQuery(async function () {
             console.log("Ctrl +" + event.key + " pressed!");
         }
     }
-});
+}

@@ -699,10 +699,8 @@ async function runGenerationInterceptors(chat, contextSize) {
 }
 
 jQuery(function () {
-    setTimeout(async function () {
-        addExtensionsButtonAndMenu();
-        $("#extensionsMenuButton").css("display", "flex");
-    }, 100)
+    addExtensionsButtonAndMenu();
+    $("#extensionsMenuButton").css("display", "flex");
 
     $("#extensions_connect").on('click', connectClickHandler);
     $("#extensions_autoconnect").on('input', autoConnectInputHandler);
