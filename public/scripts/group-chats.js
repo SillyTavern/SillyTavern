@@ -63,6 +63,7 @@ import {
     setScenarioOverride,
     getCropPopup,
     system_avatar,
+    isChatSaving,
 } from "../script.js";
 import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect, tag_map, printTagFilters } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
@@ -1272,6 +1273,11 @@ function updateFavButtonState(state) {
 }
 
 export async function openGroupById(groupId) {
+    if (isChatSaving) {
+        toastr.info("Please wait until the chat is saved before switching characters.", "Your chat is still saving...");
+        return;
+    }
+
     if (!groups.find(x => x.id === groupId)) {
         console.log('Group not found', groupId);
         return;

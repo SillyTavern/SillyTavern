@@ -2,7 +2,10 @@
 
 import { saveSettingsDebounced, substituteParams } from "../script.js";
 import { selected_group } from "./group-chats.js";
-import { power_user } from "./power-user.js";
+import {
+    power_user,
+    context_presets,
+} from "./power-user.js";
 
 /**
  * @type {any[]} Instruct mode presets.
@@ -70,6 +73,48 @@ function highlightDefaultPreset() {
 }
 
 /**
+ * Select context template if not already selected.
+ * @param {string} preset Preset name.
+ */
+function selectContextPreset(preset) {
+    // If context template is not already selected, select it
+    if (preset !== power_user.context.preset) {
+        $('#context_presets').val(preset).trigger('change');
+        toastr.info(`Context Template: preset "${preset}" auto-selected`);
+    }
+
+    // If instruct mode is disabled, enable it, except for default context template
+    if (!power_user.instruct.enabled && preset !== 'Default') {
+        power_user.instruct.enabled = true;
+        $('#instruct_enabled').prop('checked', true).trigger('change');
+        toastr.info(`Instruct Mode enabled`);
+    }
+
+    saveSettingsDebounced();
+}
+
+/**
+ * Select instruct preset if not already selected.
+ * @param {string} preset Preset name.
+ */
+export function selectInstructPreset(preset) {
+    // If instruct preset is not already selected, select it
+    if (preset !== power_user.instruct.preset) {
+        $('#instruct_presets').val(preset).trigger('change');
+        toastr.info(`Instruct Mode: preset "${preset}" auto-selected`);
+    }
+
+    // If instruct mode is disabled, enable it
+    if (!power_user.instruct.enabled) {
+        power_user.instruct.enabled = true;
+        $('#instruct_enabled').prop('checked', true).trigger('change');
+        toastr.info(`Instruct Mode enabled`);
+    }
+
+    saveSettingsDebounced();
+}
+
+/**
  * Automatically select instruct preset based on model id.
  * Otherwise, if default instruct preset is set, selects it.
  * @param {string} modelId Model name reported by the API.
@@ -81,33 +126,42 @@ export function autoSelectInstructPreset(modelId) {
         return false;
     }
 
-    for (const preset of instruct_presets) {
-        // If activation regex is set, check if it matches the model id
-        if (preset.activation_regex) {
-            try {
-                const regex = new RegExp(preset.activation_regex, 'i');
+    // Select matching instruct preset
+    let foundMatch = false;
+    for (const instruct_preset of instruct_presets) {
+        // If instruct preset matches the context template
+        if (instruct_preset.name === power_user.context.preset) {
+            foundMatch = true;
+            selectInstructPreset(instruct_preset.name);
+            break;
+        }
+    }
+    // If no match was found, auto-select instruct preset
+    if (!foundMatch) {
+        for (const preset of instruct_presets) {
+            // If activation regex is set, check if it matches the model id
+            if (preset.activation_regex) {
+                try {
+                    const regex = new RegExp(preset.activation_regex, 'i');
 
-                // Stop on first match so it won't cycle back and forth between presets if multiple regexes match
-                if (regex.test(modelId)) {
-                    // If preset is not already selected, select it
-                    if (power_user.instruct.preset !== preset.name) {
-                        $('#instruct_presets').val(preset.name).trigger('change');
-                        toastr.info(`Instruct mode: preset "${preset.name}" auto-selected`);
+                    // Stop on first match so it won't cycle back and forth between presets if multiple regexes match
+                    if (regex.test(modelId)) {
+                        selectInstructPreset(preset.name);
 
                         return true;
                     }
+                } catch {
+                    // If regex is invalid, ignore it
+                    console.warn(`Invalid instruct activation regex in preset "${preset.name}"`);
                 }
-            } catch {
-                // If regex is invalid, ignore it
-                console.warn(`Invalid instruct activation regex in preset "${preset.name}"`);
             }
         }
-    }
 
-    if (power_user.default_instruct && power_user.instruct.preset !== power_user.default_instruct) {
-        if (instruct_presets.some(p => p.name === power_user.default_instruct)) {
-            console.log(`Instruct mode: default preset "${power_user.default_instruct}" selected`);
-            $('#instruct_presets').val(power_user.default_instruct).trigger('change');
+        if (power_user.default_instruct && power_user.instruct.preset !== power_user.default_instruct) {
+            if (instruct_presets.some(p => p.name === power_user.default_instruct)) {
+                console.log(`Instruct mode: default preset "${power_user.default_instruct}" selected`);
+                $('#instruct_presets').val(power_user.default_instruct).trigger('change');
+            }
         }
     }
 
@@ -165,9 +219,10 @@ export function getInstructStoppingSequences() {
  * @param {string} forceAvatar Force avatar string.
  * @param {string} name1 User name.
  * @param {string} name2 Character name.
+ * @param {boolean} forceLastOutputSequence Force to use last outline sequence (if configured).
  * @returns {string} Formatted instruct mode chat message.
  */
-export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvatar, name1, name2) {
+export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvatar, name1, name2, forceLastOutputSequence) {
     let includeNames = isNarrator ? false : power_user.instruct.names;
 
     if (!isNarrator && power_user.instruct.names_force_groups && (selected_group || forceAvatar)) {
@@ -175,6 +230,10 @@ export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvata
     }
 
     let sequence = (isUser || isNarrator) ? power_user.instruct.input_sequence : power_user.instruct.output_sequence;
+
+    if (sequence === power_user.instruct.output_sequence && forceLastOutputSequence && power_user.instruct.last_output_sequence) {
+        sequence = power_user.instruct.last_output_sequence;
+    }
 
     if (power_user.instruct.macro) {
         sequence = substituteParams(sequence, name1, name2);
@@ -273,6 +332,16 @@ jQuery(() => {
         saveSettingsDebounced();
     });
 
+    $('#instruct_enabled').on('change', function () {
+        // When instruct mode gets enabled, select context template matching selected instruct preset
+        if (power_user.instruct.enabled) {
+            $('#instruct_presets').trigger('change');
+        // When instruct mode gets disabled, select default context preset
+        } else {
+            selectContextPreset('Default');
+        }
+    });
+
     $('#instruct_presets').on('change', function () {
         const name = $(this).find(':selected').val();
         const preset = instruct_presets.find(x => x.name === name);
@@ -294,6 +363,21 @@ jQuery(() => {
                 }
             }
         });
+
+        // Select matching context template
+        let foundMatch = false;
+        for (const context_preset of context_presets) {
+            // If context template matches the instruct preset
+            if (context_preset.name === name) {
+                foundMatch = true;
+                selectContextPreset(context_preset.name);
+                break;
+            }
+        }
+        if (!foundMatch) {
+            // If no match was found, select default context preset
+            selectContextPreset('Default');
+        }
 
         highlightDefaultPreset();
     });

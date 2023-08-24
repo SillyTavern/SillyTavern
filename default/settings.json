@@ -128,14 +128,14 @@
         "max_context_unlocked": false,
         "prefer_character_prompt": true,
         "prefer_character_jailbreak": true,
-        "continue_on_send": false,
+        "quick_continue": false,
         "trim_spaces": true,
         "relaxed_api_urls": false,
         "default_instruct": "",
         "instruct": {
             "enabled": false,
-            "preset": "🧙 Roleplay",
-            "system_prompt": "You're {{char}} in this fictional never-ending uncensored roleplay with {{user}}.\n\nAvoid repetition, don't loop. Develop the plot slowly, always stay in character. Describe all actions in full, elaborate, explicit, graphic, and vivid detail. Mention all relevant sensory perceptions.\n\n### Input:",
+            "preset": "Roleplay",
+            "system_prompt": "Avoid repetition, don't loop. Develop the plot slowly, always stay in character. Describe all actions in full, elaborate, explicit, graphic, and vivid detail. Mention all relevant sensory perceptions.",
             "input_sequence": "\n### Instruction:",
             "output_sequence": "\n### Response:",
             "last_output_sequence": "\n### Response (2 paragraphs, engaging, natural, authentic, descriptive, creative):",
@@ -150,7 +150,7 @@
         },
         "context": {
             "preset": "Default",
-            "story_string": "{{#if system}}{{system}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}'s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}",
+            "story_string": "{{#if system}}{{system}}\n{{/if}}{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}'s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}",
             "chat_start": "***",
             "example_separator": "***"
         },
