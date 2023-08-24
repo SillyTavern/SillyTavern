@@ -1,4 +1,4 @@
-import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, } from "./scripts/RossAscends-mods.js";
+import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods, } from "./scripts/RossAscends-mods.js";
 import { userStatsHandler, statMesProcess } from './scripts/stats.js';
 import {
     generateKoboldWithStreaming,
@@ -156,7 +156,7 @@ import {
 import { EventEmitter } from './lib/eventemitter.js';
 import { markdownExclusionExt } from "./scripts/showdown-exclusion.js";
 import { NOTE_MODULE_NAME, metadata_keys, setFloatingPrompt, shouldWIAddPrompt } from "./scripts/authors-note.js";
-import { deviceInfo } from "./scripts/RossAscends-mods.js";
+import { getDeviceInfo } from "./scripts/RossAscends-mods.js";
 import { registerPromptManagerMigration } from "./scripts/PromptManager.js";
 import { getRegexedString, regex_placement } from "./scripts/extensions/regex/engine.js";
 import { FILTER_TYPES, FilterHelper } from "./scripts/filters.js";
@@ -2051,7 +2051,7 @@ class StreamingProcessor {
             chat[messageId]['gen_started'] = this.timeStarted;
             chat[messageId]['gen_finished'] = currentTime;
 
-            if (this.type == 'swipe' && Array.isArray(chat[messageId]['swipes'])) {
+            if ((this.type == 'swipe' || this.type === 'continue') && Array.isArray(chat[messageId]['swipes'])) {
                 chat[messageId]['swipes'][chat[messageId]['swipe_id']] = processedText;
                 chat[messageId]['swipe_info'][chat[messageId]['swipe_id']] = { 'send_date': chat[messageId]['send_date'], 'gen_started': chat[messageId]['gen_started'], 'gen_finished': chat[messageId]['gen_finished'], 'extra': JSON.parse(JSON.stringify(chat[messageId]['extra'])) };
             }
@@ -3901,8 +3901,9 @@ async function saveReply(type, getMessage, this_mes_is_name, title) {
         item["swipe_info"] = [];
     }
     if (item["swipe_id"] !== undefined) {
-        item["swipes"][item["swipes"].length - 1] = item["mes"];
-        item["swipe_info"][item["swipes"].length - 1] = {
+        const swipeId = item["swipe_id"];
+        item["swipes"][swipeId] = item["mes"];
+        item["swipe_info"][swipeId] = {
             send_date: item["send_date"],
             gen_started: item["gen_started"],
             gen_finished: item["gen_finished"],
@@ -6293,6 +6294,7 @@ function openCharacterWorldPopup() {
     template.find('.character_name').text(name);
 
     // Not needed on mobile
+    const deviceInfo = getDeviceInfo();
     if (deviceInfo && deviceInfo.device.type === 'desktop') {
         $(extraSelect).select2({
             width: '100%',
@@ -6336,18 +6338,6 @@ function openCharacterWorldPopup() {
             e.preventDefault();
             return;
         }
-
-        /*let selectScrollTop = null;
-
-        if (deviceInfo && deviceInfo.device.type === 'desktop') {
-            e.preventDefault();
-            const option = $(e.target);
-            const selectElement = $(extraSelect)[0];
-            selectScrollTop = selectElement.scrollTop;
-            option.prop('selected', !option.prop('selected'));
-            await delay(1);
-            selectElement.scrollTop = selectScrollTop;
-        }*/
 
         onExtraWorldInfoChanged();
     });
@@ -8042,26 +8032,25 @@ $(document).ready(function () {
     var sliderTimer;
 
     $("input[type='range']").on("touchstart", function () {
-        // Unlock the slider after 500ms
-        sliderTimer = setTimeout(function () {
+        // Unlock the slider after 300ms
+        setTimeout(function () {
             sliderLocked = false;
-        }, 500);
+            $(this).css('background-color', 'var(--SmartThemeQuoteColor)');
+        }.bind(this), 300);
     });
 
     $("input[type='range']").on("touchend", function () {
         clearTimeout(sliderTimer);
-        $(this).css('background-color', '')
-        sliderLocked = true
+        $(this).css('background-color', '');
+        sliderLocked = true;
     });
 
     $("input[type='range']").on("touchmove", function (event) {
         if (sliderLocked) {
             event.preventDefault();
         }
-        else {
-            $(this).css('background-color', 'var(--SmartThemeQuoteColor)')
-        }
     });
+
 
 
     const sliders = [
@@ -9022,4 +9011,7 @@ $(document).ready(function () {
     $("#hideCharPanelAvatarButton").on('click', () => {
         $('#avatar-and-name-block').slideToggle()
     });
+
+    // Added here to prevent execution before script.js is loaded and get rid of quirky timeouts
+    initRossMods();
 });
