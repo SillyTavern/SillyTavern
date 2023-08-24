@@ -4,13 +4,11 @@ TODO:
 */
 //const DEBUG_TONY_SAMA_FORK_MODE = false
 
-import { saveSettingsDebounced, getRequestHeaders, callPopup } from "../../../script.js";
-import { getContext, getApiUrl, extension_settings, doExtrasFetch, ModuleWorkerWrapper, modules } from "../../extensions.js";
+import { getRequestHeaders, callPopup } from "../../../script.js";
 export { MODULE_NAME };
 
 const MODULE_NAME = 'Assets';
 const DEBUG_PREFIX = "<Assets module> ";
-const UPDATE_INTERVAL = 1000;
 let ASSETS_JSON_URL = "https://raw.githubusercontent.com/SillyTavern/SillyTavern-Content/main/index.json"
 
 const extensionName = "assets";
@@ -30,83 +28,83 @@ const defaultSettings = {
 }
 
 function downloadAssetsList(url) {
-    updateCurrentAssets().then(function(){
-    fetch(url)
-        .then(response => response.json())
-        .then(json => {
-            
-            availableAssets = {};
-            $("#assets_menu").empty();
+    updateCurrentAssets().then(function () {
+        fetch(url)
+            .then(response => response.json())
+            .then(json => {
 
-            console.debug(DEBUG_PREFIX,"Received assets dictionary", json);
+                availableAssets = {};
+                $("#assets_menu").empty();
 
-            for(const i of json){
-                //console.log(DEBUG_PREFIX,i)
-                if (availableAssets[i["type"]] === undefined)
-                    availableAssets[i["type"]] = [];
-            
-                availableAssets[i["type"]].push(i);
-            }
+                console.debug(DEBUG_PREFIX, "Received assets dictionary", json);
 
-            console.debug(DEBUG_PREFIX,"Updated available assets to",availableAssets);
+                for (const i of json) {
+                    //console.log(DEBUG_PREFIX,i)
+                    if (availableAssets[i["type"]] === undefined)
+                        availableAssets[i["type"]] = [];
 
-            for (const assetType in availableAssets) {
-                let assetTypeMenu = $('<div />', {id:"assets_audio_ambient_div", class:"assets-list-div"});
-                assetTypeMenu.append(`<h3>${assetType}</h3>`)
-                for (const i in availableAssets[assetType]) {
-                    const asset = availableAssets[assetType][i];
-                    const elemId = `assets_install_${assetType}_${i}`;
-                    let element = $('<button />', { id:elemId, type:"button", class:"asset-download-button menu_button"})
-                    const label = $("<i class=\"fa-solid fa-download fa-xl\"></i>");
-                    element.append(label);
-    
-                    //if (DEBUG_TONY_SAMA_FORK_MODE)
-                    //    assetUrl = assetUrl.replace("https://github.com/SillyTavern/","https://github.com/Tony-sama/"); // DBG
-    
-                    console.debug(DEBUG_PREFIX,"Checking asset",asset["id"], asset["url"]);
-    
-                    if (isAssetInstalled(assetType, asset["id"])) {
-                        console.debug(DEBUG_PREFIX,"installed, checked");
-                        label.toggleClass("fa-download");
-                        label.toggleClass("fa-check");
-                    }
-                    else {
-                        console.debug(DEBUG_PREFIX,"not installed, unchecked")
-                        element.prop("checked",false);
-                        element.on("click", async function(){
-                            element.off("click");
-                            label.toggleClass("fa-download");
-                            this.classList.toggle('asset-download-button-loading');
-                            await installAsset(asset["url"], assetType, asset["id"]);
-                            label.toggleClass("fa-check");
-                            this.classList.toggle('asset-download-button-loading');
-                        })
-                    }
-    
-                    console.debug(DEBUG_PREFIX,"Created element for BGM",asset["id"])
-    
-                    $(`<i></i>`)
-                    .append(element)
-                    .append(`<span>${asset["id"]}</span>`)
-                    .appendTo(assetTypeMenu);
+                    availableAssets[i["type"]].push(i);
                 }
-                assetTypeMenu.appendTo("#assets_menu");
-            }
 
-            $("#assets_menu").show();
-        })
-        .catch((error) => {
-            console.error(error);
-            toastr.error("Problem with assets URL",DEBUG_PREFIX+"Cannot get assets list");
-            $('#assets-connect-button').addClass("fa-plug-circle-xmark");
-        });
+                console.debug(DEBUG_PREFIX, "Updated available assets to", availableAssets);
+
+                for (const assetType in availableAssets) {
+                    let assetTypeMenu = $('<div />', { id: "assets_audio_ambient_div", class: "assets-list-div" });
+                    assetTypeMenu.append(`<h3>${assetType}</h3>`)
+                    for (const i in availableAssets[assetType]) {
+                        const asset = availableAssets[assetType][i];
+                        const elemId = `assets_install_${assetType}_${i}`;
+                        let element = $('<button />', { id: elemId, type: "button", class: "asset-download-button menu_button" })
+                        const label = $("<i class=\"fa-solid fa-download fa-xl\"></i>");
+                        element.append(label);
+
+                        //if (DEBUG_TONY_SAMA_FORK_MODE)
+                        //    assetUrl = assetUrl.replace("https://github.com/SillyTavern/","https://github.com/Tony-sama/"); // DBG
+
+                        console.debug(DEBUG_PREFIX, "Checking asset", asset["id"], asset["url"]);
+
+                        if (isAssetInstalled(assetType, asset["id"])) {
+                            console.debug(DEBUG_PREFIX, "installed, checked");
+                            label.toggleClass("fa-download");
+                            label.toggleClass("fa-check");
+                        }
+                        else {
+                            console.debug(DEBUG_PREFIX, "not installed, unchecked")
+                            element.prop("checked", false);
+                            element.on("click", async function () {
+                                element.off("click");
+                                label.toggleClass("fa-download");
+                                this.classList.toggle('asset-download-button-loading');
+                                await installAsset(asset["url"], assetType, asset["id"]);
+                                label.toggleClass("fa-check");
+                                this.classList.toggle('asset-download-button-loading');
+                            })
+                        }
+
+                        console.debug(DEBUG_PREFIX, "Created element for BGM", asset["id"])
+
+                        $(`<i></i>`)
+                            .append(element)
+                            .append(`<span>${asset["id"]}</span>`)
+                            .appendTo(assetTypeMenu);
+                    }
+                    assetTypeMenu.appendTo("#assets_menu");
+                }
+
+                $("#assets_menu").show();
+            })
+            .catch((error) => {
+                console.error(error);
+                toastr.error("Problem with assets URL", DEBUG_PREFIX + "Cannot get assets list");
+                $('#assets-connect-button').addClass("fa-plug-circle-xmark");
+            });
     });
 }
 
-function isAssetInstalled(assetType,filename) {
-    for(const i of currentAssets[assetType]){
+function isAssetInstalled(assetType, filename) {
+    for (const i of currentAssets[assetType]) {
         //console.debug(DEBUG_PREFIX,i,filename)
-        if(i.includes(filename))
+        if (i.includes(filename))
             return true;
     }
 
@@ -114,15 +112,18 @@ function isAssetInstalled(assetType,filename) {
 }
 
 async function installAsset(url, assetType, filename) {
-    console.debug(DEBUG_PREFIX,"Downloading ",url);
+    console.debug(DEBUG_PREFIX, "Downloading ", url);
     const category = assetType;
     try {
-        const result = await fetch(`/asset_download?url=${url}&category=${category}&filename=${filename}`, {
+        const body = { url, category, filename };
+        const result = await fetch('/asset_download', {
             method: 'POST',
             headers: getRequestHeaders(),
+            body: JSON.stringify(body),
+            cache: 'no-cache',
         });
-        if(result.ok) {
-            console.debug(DEBUG_PREFIX,"Download success.")
+        if (result.ok) {
+            console.debug(DEBUG_PREFIX, "Download success.")
         }
     }
     catch (err) {
@@ -136,7 +137,7 @@ async function installAsset(url, assetType, filename) {
 //#############################//
 
 async function updateCurrentAssets() {
-    console.debug(DEBUG_PREFIX,"Checking installed assets...")
+    console.debug(DEBUG_PREFIX, "Checking installed assets...")
     try {
         const result = await fetch(`/get_assets`, {
             method: 'POST',
@@ -147,7 +148,7 @@ async function updateCurrentAssets() {
     catch (err) {
         console.log(err);
     }
-    console.debug(DEBUG_PREFIX,"Current assets found:",currentAssets)
+    console.debug(DEBUG_PREFIX, "Current assets found:", currentAssets)
 }
 
 
@@ -164,11 +165,11 @@ jQuery(async () => {
     assetsJsonUrl.val(ASSETS_JSON_URL);
 
     const connectButton = windowHtml.find('#assets-connect-button');
-    connectButton.on("click", async function(){
+    connectButton.on("click", async function () {
         const confirmation = await callPopup(`Are you sure you want to connect to '${assetsJsonUrl.val()}'?`, 'confirm')
         if (confirmation) {
             try {
-                console.debug(DEBUG_PREFIX,"Confimation, loading assets...");
+                console.debug(DEBUG_PREFIX, "Confimation, loading assets...");
                 downloadAssetsList(assetsJsonUrl.val());
                 connectButton.removeClass("fa-plug");
                 connectButton.removeClass("fa-plug-circle-xmark");
@@ -182,7 +183,7 @@ jQuery(async () => {
             }
         }
         else {
-            console.debug(DEBUG_PREFIX,"Connection refused by user");
+            console.debug(DEBUG_PREFIX, "Connection refused by user");
         }
     });
 

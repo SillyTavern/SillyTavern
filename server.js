@@ -5022,20 +5022,20 @@ app.post('/get_assets', jsonParser, async (request, response) => {
     try {
         if (fs.existsSync(folderPath) && fs.statSync(folderPath).isDirectory()) {
             const folders = fs.readdirSync(folderPath)
-            .filter(filename => {
-                return fs.statSync(path.join(folderPath,filename)).isDirectory();
-            });
+                .filter(filename => {
+                    return fs.statSync(path.join(folderPath, filename)).isDirectory();
+                });
 
             for (const folder of folders) {
                 if (folder == "temp")
                     continue;
-                const files = fs.readdirSync(path.join(folderPath,folder))
-                .filter(filename => {
-                    return filename != ".placeholder";
-                });
+                const files = fs.readdirSync(path.join(folderPath, folder))
+                    .filter(filename => {
+                        return filename != ".placeholder";
+                    });
                 output[folder] = [];
-                for (const file of files){
-                    output[folder].push(path.join("assets",folder,file));
+                for (const file of files) {
+                    output[folder].push(path.join("assets", folder, file));
                 }
             }
         }
@@ -5057,18 +5057,16 @@ app.post('/get_assets', jsonParser, async (request, response) => {
  * @returns {void}
  */
 app.post('/asset_download', jsonParser, async (request, response) => {
-    const fs = require('fs');
     const { Readable } = require('stream');
     const { finished } = require('stream/promises');
-    const path = require("path");
-    const url = request.query.url;
-    const inputCategory = request.query.category;
-    const inputFilename = request.query.filename;
-    const validCategories = ["bgm","ambient"]
-    
+    const url = request.body.url;
+    const inputCategory = request.body.category;
+    const inputFilename = sanitize(request.body.filename);
+    const validCategories = ["bgm", "ambient"]
+
     // Check category
     let category = null
-    for(i of validCategories)
+    for (i of validCategories)
         if (i == inputCategory)
             category = i
 
@@ -5091,7 +5089,7 @@ app.post('/asset_download', jsonParser, async (request, response) => {
     const safe_input = path.normalize(inputFilename).replace(/^(\.\.(\/|\\|$))+/, '');
     const temp_path = path.join(directories.assets, "temp", safe_input)
     const file_path = path.join(directories.assets, category, safe_input)
-    console.debug("Request received to download", url,"to",file_path);
+    console.debug("Request received to download", url, "to", file_path);
 
     try {
         // Download to temp
@@ -5111,19 +5109,15 @@ app.post('/asset_download', jsonParser, async (request, response) => {
         await downloadFile(url, temp_path);
 
         // Move into asset place
-        console.debug("Download finished, moving file from",temp_path,"to",file_path);
-        fs.rename(temp_path,file_path, (err) => {
-            if (err) throw err;
-            console.log('Rename complete!');
-            });
+        console.debug("Download finished, moving file from", temp_path, "to", file_path);
+        fs.renameSync(temp_path, file_path);
         response.sendStatus(200);
     }
-    catch(error) {
+    catch (error) {
         console.log(error);
         response.sendStatus(500);
     }
 });
-
 
 
 ///////////////////////////////
@@ -5136,13 +5130,13 @@ app.post('/asset_download', jsonParser, async (request, response) => {
  * @returns {void}
  */
 app.post('/get_character_assets_list', jsonParser, async (request, response) => {
-    const name = request.query.name;
+    const name = sanitize(request.query.name);
     const inputCategory = request.query.category;
-    const validCategories = ["bgm","ambient"]
-    
+    const validCategories = ["bgm", "ambient"]
+
     // Check category
     let category = null
-    for(i of validCategories)
+    for (i of validCategories)
         if (i == inputCategory)
             category = i
 
@@ -5157,21 +5151,18 @@ app.post('/get_character_assets_list', jsonParser, async (request, response) => 
     try {
         if (fs.existsSync(folderPath) && fs.statSync(folderPath).isDirectory()) {
             const files = fs.readdirSync(folderPath)
-            .filter(filename => {
-                return filename != ".placeholder";
-            });
+                .filter(filename => {
+                    return filename != ".placeholder";
+                });
 
             for (i of files)
                 output.push(`/characters/${name}/${category}/${i}`);
-                
+
         }
         return response.send(output);
     }
     catch (err) {
         console.log(err);
         return response.sendStatus(500);
-    }
-    finally {
-        
     }
 });

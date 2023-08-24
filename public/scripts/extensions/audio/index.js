@@ -11,7 +11,7 @@ Ideas:
 
 import { saveSettingsDebounced, getRequestHeaders } from "../../../script.js";
 import { getContext, extension_settings, ModuleWorkerWrapper } from "../../extensions.js";
-import {isDataURL} from "../../utils.js";
+import { isDataURL } from "../../utils.js";
 export { MODULE_NAME };
 
 const extensionName = "audio";
@@ -96,7 +96,7 @@ function loadSettings() {
 
     $("#audio_character_bgm_volume_slider").val(extension_settings.audio.bgm_volume);
     $("#audio_ambient_volume_slider").val(extension_settings.audio.ambient_volume);
-    
+
     if (extension_settings.audio.bgm_muted) {
         $("#audio_character_bgm_mute_icon").toggleClass("fa-volume-high");
         $("#audio_character_bgm_mute_icon").toggleClass("fa-volume-mute");
@@ -146,7 +146,7 @@ async function onAmbientMuteClick() {
 
 async function onBGMVolumeChange() {
     extension_settings.audio.bgm_volume = ~~($("#audio_character_bgm_volume_slider").val());
-    $("#audio_character_bgm").prop("volume",extension_settings.audio.bgm_volume * 0.01);
+    $("#audio_character_bgm").prop("volume", extension_settings.audio.bgm_volume * 0.01);
     $("#audio_character_bgm_volume").text(extension_settings.audio.bgm_volume);
     saveSettingsDebounced();
     //console.debug(DEBUG_PREFIX,"UPDATED BGM MAX TO",extension_settings.audio.bgm_volume);
@@ -154,7 +154,7 @@ async function onBGMVolumeChange() {
 
 async function onAmbientVolumeChange() {
     extension_settings.audio.ambient_volume = ~~($("#audio_ambient_volume_slider").val());
-    $("#audio_ambient").prop("volume",extension_settings.audio.ambient_volume * 0.01);
+    $("#audio_ambient").prop("volume", extension_settings.audio.ambient_volume * 0.01);
     $("#audio_ambient_volume").text(extension_settings.audio.ambient_volume);
     saveSettingsDebounced();
     //console.debug(DEBUG_PREFIX,"UPDATED Ambient MAX TO",extension_settings.audio.ambient_volume);
@@ -164,7 +164,7 @@ async function onBGMCooldownInput() {
     extension_settings.audio.bgm_cooldown = ~~($("#audio_bgm_cooldown").val());
     cooldownBGM = extension_settings.audio.bgm_cooldown * 1000;
     saveSettingsDebounced();
-    console.debug(DEBUG_PREFIX,"UPDATED BGM cooldown to",extension_settings.audio.bgm_cooldown);
+    console.debug(DEBUG_PREFIX, "UPDATED BGM cooldown to", extension_settings.audio.bgm_cooldown);
 }
 
 //#############################//
@@ -172,15 +172,15 @@ async function onBGMCooldownInput() {
 //#############################//
 
 async function getAssetsList(type) {
-    console.debug(DEBUG_PREFIX, "getting assets of type",type);
+    console.debug(DEBUG_PREFIX, "getting assets of type", type);
 
     try {
         const result = await fetch(`/get_assets`, {
             method: 'POST',
             headers: getRequestHeaders(),
         });
-        const assets = result.ok ? (await result.json()) : {type:[]};
-        console.debug(DEBUG_PREFIX, "Found assets:",assets);
+        const assets = result.ok ? (await result.json()) : { type: [] };
+        console.debug(DEBUG_PREFIX, "Found assets:", assets);
         return assets[type];
     }
     catch (err) {
@@ -222,21 +222,21 @@ async function moduleWorker() {
 
     if (moduleEnabled) {
 
-        if(cooldownBGM > 0)
+        if (cooldownBGM > 0)
             cooldownBGM -= UPDATE_INTERVAL;
 
-        if (fallback_BGMS == null){
-            console.debug(DEBUG_PREFIX,"Updating audio bgm assets...");
+        if (fallback_BGMS == null) {
+            console.debug(DEBUG_PREFIX, "Updating audio bgm assets...");
             fallback_BGMS = await getAssetsList(ASSETS_BGM_FOLDER);
             fallback_BGMS = fallback_BGMS.filter((filename) => filename != ".placeholder")
-            console.debug(DEBUG_PREFIX,"Detected assets:",fallback_BGMS);
+            console.debug(DEBUG_PREFIX, "Detected assets:", fallback_BGMS);
         }
 
-        if (ambients == null){
-            console.debug(DEBUG_PREFIX,"Updating audio ambient assets...");
+        if (ambients == null) {
+            console.debug(DEBUG_PREFIX, "Updating audio ambient assets...");
             ambients = await getAssetsList(ASSETS_AMBIENT_FOLDER);
             ambients = ambients.filter((filename) => filename != ".placeholder")
-            console.debug(DEBUG_PREFIX,"Detected assets:",ambients);
+            console.debug(DEBUG_PREFIX, "Detected assets:", ambients);
         }
 
         // 1) Update ambient audio
@@ -244,19 +244,18 @@ async function moduleWorker() {
         let newBackground = $("#bg1").css("background-image");
         const custom_background = getContext()["chatMetadata"]["custom_background"];
 
-        if(custom_background !== undefined)
+        if (custom_background !== undefined)
             newBackground = custom_background
 
-        if (!isDataURL(newBackground))
-        {
-            newBackground = newBackground.substring(newBackground.lastIndexOf("/")+1).replace(/\.[^/.]+$/, "").replaceAll("%20","-").replaceAll(" ","-"); // remove path and spaces
+        if (!isDataURL(newBackground)) {
+            newBackground = newBackground.substring(newBackground.lastIndexOf("/") + 1).replace(/\.[^/.]+$/, "").replaceAll("%20", "-").replaceAll(" ", "-"); // remove path and spaces
 
             //console.debug(DEBUG_PREFIX,"Current backgroung:",newBackground);
 
             if (currentBackground !== newBackground) {
                 currentBackground = newBackground;
 
-                console.debug(DEBUG_PREFIX,"Changing ambient audio for",currentBackground);
+                console.debug(DEBUG_PREFIX, "Changing ambient audio for", currentBackground);
                 updateAmbient();
             }
         }
@@ -282,7 +281,7 @@ async function moduleWorker() {
                 await loadCharacterBGM(newCharacter);
                 currentExpressionBGM = FALLBACK_EXPRESSION;
                 //currentCharacterBGM = newCharacter;
-                
+
                 //updateBGM();
                 //cooldownBGM = BGM_UPDATE_COOLDOWN;
                 return;
@@ -295,8 +294,8 @@ async function moduleWorker() {
                     await updateBGM();
                     cooldownBGM = extension_settings.audio.bgm_cooldown * 1000;
                 }
-                catch(error){
-                    console.debug(DEBUG_PREFIX,"Error while trying to update BGM character, will try again");
+                catch (error) {
+                    console.debug(DEBUG_PREFIX, "Error while trying to update BGM character, will try again");
                     currentCharacterBGM = null
                 }
                 return;
@@ -306,7 +305,7 @@ async function moduleWorker() {
 
             // 1.3) Same character but different expression
             if (currentExpressionBGM !== newExpression) {
-                
+
                 // Check cooldown
                 if (cooldownBGM > 0) {
                     //console.debug(DEBUG_PREFIX,"(SOLO) BGM switch on cooldown:",cooldownBGM);
@@ -317,10 +316,10 @@ async function moduleWorker() {
                     await updateBGM();
                     cooldownBGM = extension_settings.audio.bgm_cooldown * 1000;
                     currentExpressionBGM = newExpression;
-                    console.debug(DEBUG_PREFIX,"(SOLO) Updated current character expression to",currentExpressionBGM,"cooldown",cooldownBGM);
+                    console.debug(DEBUG_PREFIX, "(SOLO) Updated current character expression to", currentExpressionBGM, "cooldown", cooldownBGM);
                 }
-                catch(error){
-                    console.debug(DEBUG_PREFIX,"Error while trying to update BGM expression, will try again");
+                catch (error) {
+                    console.debug(DEBUG_PREFIX, "Error while trying to update BGM expression, will try again");
                     currentCharacterBGM = null
                 }
                 return;
@@ -331,9 +330,9 @@ async function moduleWorker() {
 
         // 2) Update BGM (group chat)
         // -----------------------------
-        newCharacter = context.chat[context.chat.length-1].name; 
+        newCharacter = context.chat[context.chat.length - 1].name;
         const userName = context.name1;
-        
+
         if (newCharacter !== undefined && newCharacter != userName) {
 
             //console.log(DEBUG_PREFIX,"GROUP CHAT MODE"); // DBG
@@ -351,17 +350,17 @@ async function moduleWorker() {
                     //console.debug(DEBUG_PREFIX,"(GROUP) BGM switch on cooldown:",cooldownBGM);
                     return;
                 }
-                
+
                 try {
                     currentCharacterBGM = newCharacter;
                     await updateBGM();
                     cooldownBGM = extension_settings.audio.bgm_cooldown * 1000;
                     currentCharacterBGM = newCharacter;
                     currentExpressionBGM = FALLBACK_EXPRESSION;
-                    console.debug(DEBUG_PREFIX,"(GROUP) Updated current character BGM to",currentExpressionBGM,"cooldown",cooldownBGM);
+                    console.debug(DEBUG_PREFIX, "(GROUP) Updated current character BGM to", currentExpressionBGM, "cooldown", cooldownBGM);
                 }
-                catch(error){
-                    console.debug(DEBUG_PREFIX,"Error while trying to update BGM group, will try again");
+                catch (error) {
+                    console.debug(DEBUG_PREFIX, "Error while trying to update BGM group, will try again");
                     currentCharacterBGM = null
                 }
                 return;
@@ -372,7 +371,7 @@ async function moduleWorker() {
 
             // 1.3) Same character but different expression
             if (currentExpressionBGM !== newExpression) {
-                
+
                 // Check cooldown
                 if (cooldownBGM > 0) {
                     console.debug(DEBUG_PREFIX,"BGM switch on cooldown:",cooldownBGM);
@@ -389,44 +388,44 @@ async function moduleWorker() {
             return;*/
 
         }
-            
+
         // Case 3: Same character/expression or BGM switch on cooldown keep playing same BGM
         //console.debug(DEBUG_PREFIX,"Nothing to do for",currentCharacterBGM, newCharacter, currentExpressionBGM, cooldownBGM);
     }
 }
 
 async function loadCharacterBGM(newCharacter) {
-    console.debug(DEBUG_PREFIX,"New character detected, loading BGM folder of",newCharacter);
-            
+    console.debug(DEBUG_PREFIX, "New character detected, loading BGM folder of", newCharacter);
+
     // 1.1) First time character appear, load its music folder
     const audio_file_paths = await getCharacterBgmList(newCharacter);
     //console.debug(DEBUG_PREFIX, "Recieved", audio_file_paths);
-    
+
     // Initialise expression/files mapping
     characterMusics[newCharacter] = {};
-    for(const e of DEFAULT_EXPRESSIONS)
+    for (const e of DEFAULT_EXPRESSIONS)
         characterMusics[newCharacter][e] = [];
 
-    for(const i of audio_file_paths) {
+    for (const i of audio_file_paths) {
         //console.debug(DEBUG_PREFIX,"File found:",i);
-        for(const e of DEFAULT_EXPRESSIONS)
+        for (const e of DEFAULT_EXPRESSIONS)
             if (i.includes(e))
                 characterMusics[newCharacter][e].push(i);
     }
-    console.debug(DEBUG_PREFIX,"Updated BGM map of",newCharacter,"to",characterMusics[newCharacter]);
+    console.debug(DEBUG_PREFIX, "Updated BGM map of", newCharacter, "to", characterMusics[newCharacter]);
 }
 
 function getNewExpression() {
-    let newExpression; 
-        
+    let newExpression;
+
     // HACK: use sprite file name as expression detection
     if (!$(SPRITE_DOM_ID).length) {
-        console.error(DEBUG_PREFIX,"ERROR: expression sprite does not exist, cannot extract expression from ",SPRITE_DOM_ID)
+        console.error(DEBUG_PREFIX, "ERROR: expression sprite does not exist, cannot extract expression from ", SPRITE_DOM_ID)
         return FALLBACK_EXPRESSION;
     }
 
     const spriteFile = $("#expression-image").attr("src");
-    newExpression = spriteFile.substring(spriteFile.lastIndexOf("/")+1).replace(/\.[^/.]+$/, "");
+    newExpression = spriteFile.substring(spriteFile.lastIndexOf("/") + 1).replace(/\.[^/.]+$/, "");
     //
 
     // No sprite to detect expression
@@ -436,7 +435,7 @@ function getNewExpression() {
     }
 
     if (!DEFAULT_EXPRESSIONS.includes(newExpression)) {
-        console.info(DEBUG_PREFIX,"Warning:",newExpression," is not a handled expression, expected one of",FALLBACK_EXPRESSION);
+        console.info(DEBUG_PREFIX, "Warning:", newExpression, " is not a handled expression, expected one of", FALLBACK_EXPRESSION);
         return FALLBACK_EXPRESSION;
     }
 
@@ -446,54 +445,54 @@ function getNewExpression() {
 async function updateBGM() {
     let audio_files = characterMusics[currentCharacterBGM][currentExpressionBGM];// Try char expression BGM
 
-    if (audio_files === undefined || audio_files.length == 0) { 
-        console.debug(DEBUG_PREFIX,"No BGM for", currentCharacterBGM,currentExpressionBGM);
+    if (audio_files === undefined || audio_files.length == 0) {
+        console.debug(DEBUG_PREFIX, "No BGM for", currentCharacterBGM, currentExpressionBGM);
         audio_files = characterMusics[currentCharacterBGM][FALLBACK_EXPRESSION]; // Try char FALLBACK BGM
         if (audio_files === undefined || audio_files.length == 0) {
-            console.debug(DEBUG_PREFIX,"No default BGM for",currentCharacterBGM,FALLBACK_EXPRESSION, "switch to ST BGM");
+            console.debug(DEBUG_PREFIX, "No default BGM for", currentCharacterBGM, FALLBACK_EXPRESSION, "switch to ST BGM");
             audio_files = fallback_BGMS; // ST FALLBACK BGM
 
-            if(audio_files.length == 0) {
-                console.debug(DEBUG_PREFIX,"No default BGM file found, bgm folder may be empty.");
+            if (audio_files.length == 0) {
+                console.debug(DEBUG_PREFIX, "No default BGM file found, bgm folder may be empty.");
                 return;
             }
         }
     }
 
     const audio_file_path = audio_files[Math.floor(Math.random() * audio_files.length)];
-    console.log(DEBUG_PREFIX,"Updating BGM");
-    console.log(DEBUG_PREFIX,"Checking file",audio_file_path);
+    console.log(DEBUG_PREFIX, "Updating BGM");
+    console.log(DEBUG_PREFIX, "Checking file", audio_file_path);
     try {
         const response = await fetch(audio_file_path);
-        
+
         if (!response.ok) {
-            console.log(DEBUG_PREFIX,"File not found!")
+            console.log(DEBUG_PREFIX, "File not found!")
         }
         else {
-            console.log(DEBUG_PREFIX,"Switching BGM to",currentExpressionBGM)
+            console.log(DEBUG_PREFIX, "Switching BGM to", currentExpressionBGM)
             const audio = $("#audio_character_bgm");
 
             if (audio.attr("src") == audio_file_path) {
-                console.log(DEBUG_PREFIX,"Already playing, ignored");
+                console.log(DEBUG_PREFIX, "Already playing, ignored");
                 return;
             }
 
-            audio.animate({volume: 0.0}, 2000, function() {
-                audio.attr("src",audio_file_path);
+            audio.animate({ volume: 0.0 }, 2000, function () {
+                audio.attr("src", audio_file_path);
                 audio[0].play();
                 audio.volume = extension_settings.audio.bgm_volume * 0.01;
-                audio.animate({volume: extension_settings.audio.bgm_volume * 0.01}, 2000);
+                audio.animate({ volume: extension_settings.audio.bgm_volume * 0.01 }, 2000);
             })
         }
 
-    } catch(error) {
-        console.log(DEBUG_PREFIX,"Error while trying to fetch",audio_file_path,":",error);
+    } catch (error) {
+        console.log(DEBUG_PREFIX, "Error while trying to fetch", audio_file_path, ":", error);
     }
 }
 
 async function updateAmbient() {
     let audio_file_path = null;
-    for(const i of ambients) {
+    for (const i of ambients) {
         console.debug(i)
         if (i.includes(currentBackground)) {
             audio_file_path = i;
@@ -502,23 +501,23 @@ async function updateAmbient() {
     }
 
     if (audio_file_path === null) {
-        console.debug(DEBUG_PREFIX,"No ambient file found for background",currentBackground);
+        console.debug(DEBUG_PREFIX, "No ambient file found for background", currentBackground);
         const audio = $("#audio_ambient");
-        audio.attr("src","");
+        audio.attr("src", "");
         audio[0].pause();
         return;
     }
 
     //const audio_file_path = AMBIENT_FOLDER+currentBackground+".mp3";
-    console.log(DEBUG_PREFIX,"Updating ambient");
-    console.log(DEBUG_PREFIX,"Checking file",audio_file_path);
- 
+    console.log(DEBUG_PREFIX, "Updating ambient");
+    console.log(DEBUG_PREFIX, "Checking file", audio_file_path);
+
     const audio = $("#audio_ambient");
-    audio.animate({volume: 0.0}, 2000, function() {
-        audio.attr("src",audio_file_path);
+    audio.animate({ volume: 0.0 }, 2000, function () {
+        audio.attr("src", audio_file_path);
         audio[0].play();
         audio.volume = extension_settings.audio.ambient_volume * 0.01;
-        audio.animate({volume: extension_settings.audio.ambient_volume * 0.01}, 2000);
+        audio.animate({ volume: extension_settings.audio.ambient_volume * 0.01 }, 2000);
     });
 }
 
@@ -533,14 +532,14 @@ jQuery(async () => {
 
     $('#extensions_settings').append(windowHtml);
     loadSettings();
-    
-    $("#audio_character_bgm").attr("loop",true);
-    $("#audio_ambient").attr("loop",true);
+
+    $("#audio_character_bgm").attr("loop", true);
+    $("#audio_ambient").attr("loop", true);
 
     $("#audio_character_bgm").hide();
     $("#audio_ambient").hide();
-    $("#audio_character_bgm_mute").on("click",onBGMMuteClick);
-    $("#audio_character_ambient_mute").on("click",onAmbientMuteClick);
+    $("#audio_character_bgm_mute").on("click", onBGMMuteClick);
+    $("#audio_character_ambient_mute").on("click", onAmbientMuteClick);
 
     $("#audio_enabled").on("click", onEnabledClick);
     $("#audio_character_bgm_volume_slider").on("input", onBGMVolumeChange);
@@ -549,8 +548,8 @@ jQuery(async () => {
     $("#audio_bgm_cooldown").on("input", onBGMCooldownInput);
 
     // DBG
-    $("#audio_debug").on("click",function() {
-        if($("#audio_debug").is(':checked')) {
+    $("#audio_debug").on("click", function () {
+        if ($("#audio_debug").is(':checked')) {
             $("#audio_character_bgm").show();
             $("#audio_ambient").show();
         }
