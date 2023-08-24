@@ -46,7 +46,7 @@ export {
 export const MAX_CONTEXT_DEFAULT = 4096;
 const MAX_CONTEXT_UNLOCKED = 65536;
 
-const defaultStoryString =  "{{#if system}}{{system}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}'s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}";
+const defaultStoryString = "{{#if system}}{{system}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}'s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}";
 const defaultExampleSeparator = '***';
 const defaultChatStart = '***';
 
@@ -482,9 +482,19 @@ async function applyShadowWidth() {
 
 }
 
-async function applyFontScale() {
+async function applyFontScale(type) {
+
     power_user.font_scale = Number(localStorage.getItem(storage_keys.font_scale) ?? 1);
-    document.documentElement.style.setProperty('--fontScale', power_user.font_scale);
+    //this is to allow forced setting on page load, theme swap, etc
+    if (type === 'forced') {
+        document.documentElement.style.setProperty('--fontScale', power_user.font_scale);
+    } else {
+        //this is to prevent the slider from updating page in real time
+        $("#font_scale").off('mouseup touchend').on('mouseup touchend', () => {
+            document.documentElement.style.setProperty('--fontScale', power_user.font_scale);
+        })
+    }
+
     $("#font_scale_counter").text(power_user.font_scale);
     $("#font_scale").val(power_user.font_scale);
 }
@@ -522,7 +532,7 @@ async function applyTheme(name) {
             key: 'font_scale',
             action: async () => {
                 localStorage.setItem(storage_keys.font_scale, power_user.font_scale);
-                await applyFontScale();
+                await applyFontScale('forced');
             }
         },
         {
@@ -641,7 +651,7 @@ async function applyMovingUIPreset(name) {
 }
 
 switchUiMode();
-applyFontScale();
+applyFontScale('forced');
 applyThemeColor();
 applyChatWidth();
 applyAvatarStyle();

@@ -8042,26 +8042,25 @@ $(document).ready(function () {
     var sliderTimer;
 
     $("input[type='range']").on("touchstart", function () {
-        // Unlock the slider after 500ms
-        sliderTimer = setTimeout(function () {
+        // Unlock the slider after 300ms
+        setTimeout(function () {
             sliderLocked = false;
-        }, 500);
+            $(this).css('background-color', 'var(--SmartThemeQuoteColor)');
+        }.bind(this), 300);
     });
 
     $("input[type='range']").on("touchend", function () {
         clearTimeout(sliderTimer);
-        $(this).css('background-color', '')
-        sliderLocked = true
+        $(this).css('background-color', '');
+        sliderLocked = true;
     });
 
     $("input[type='range']").on("touchmove", function (event) {
         if (sliderLocked) {
             event.preventDefault();
         }
-        else {
-            $(this).css('background-color', 'var(--SmartThemeQuoteColor)')
-        }
     });
+
 
 
     const sliders = [

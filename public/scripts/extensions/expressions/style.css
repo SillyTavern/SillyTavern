@@ -6,13 +6,13 @@
 
 #expression-wrapper {
     display: flex;
-    height: calc(100vh - 40px);
+    height: calc(100vh - var(--topBarBlockSize));
     width: 100vw;
 }
 
 #visual-novel-wrapper {
     display: flex;
-    height: calc(100vh - 40px);
+    height: calc(100vh - var(--topBarBlockSize));
     width: 100vw;
     position: relative;
     overflow: hidden;
