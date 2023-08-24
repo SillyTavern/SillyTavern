@@ -3478,6 +3478,10 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
         // OpenRouter needs to pass the referer: https://openrouter.ai/docs
         headers = { 'HTTP-Referer': request.headers.referer };
         bodyParams = { 'transforms': ["middle-out"] };
+
+        if (request.body.use_fallback) {
+            bodyParams['route'] = 'fallback';
+        }
     }
 
     if (!api_key_openai && !request.body.reverse_proxy) {
