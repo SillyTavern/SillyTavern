@@ -135,6 +135,7 @@ const default_settings = {
     claude_model: 'claude-instant-v1',
     windowai_model: '',
     openrouter_model: openrouter_website_model,
+    openrouter_use_fallback: true,
     jailbreak_system: false,
     reverse_proxy: '',
     legacy_streaming: false,
@@ -173,6 +174,7 @@ const oai_settings = {
     claude_model: 'claude-instant-v1',
     windowai_model: '',
     openrouter_model: openrouter_website_model,
+    openrouter_use_fallback: true,
     jailbreak_system: false,
     reverse_proxy: '',
     legacy_streaming: false,
@@ -804,7 +806,8 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
 
     if (isOpenRouter) {
         generate_data['use_openrouter'] = true;
-        generate_data['top_k'] = parseFloat(oai_settings.top_k_openai);
+        generate_data['top_k'] = Number(oai_settings.top_k_openai);
+        generate_data['use_fallback'] = oai_settings.openrouter_use_fallback;
     }
 
     if (isScale) {
@@ -1130,6 +1133,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.claude_model = settings.claude_model ?? default_settings.claude_model;
     oai_settings.windowai_model = settings.windowai_model ?? default_settings.windowai_model;
     oai_settings.openrouter_model = settings.openrouter_model ?? default_settings.openrouter_model;
+    oai_settings.openrouter_use_fallback = settings.openrouter_use_fallback ?? default_settings.openrouter_use_fallback;
     oai_settings.chat_completion_source = settings.chat_completion_source ?? default_settings.chat_completion_source;
     oai_settings.api_url_scale = settings.api_url_scale ?? default_settings.api_url_scale;
     oai_settings.show_external_models = settings.show_external_models ?? default_settings.show_external_models;
@@ -1170,6 +1174,7 @@ function loadOpenAISettings(data, settings) {
     $('#legacy_streaming').prop('checked', oai_settings.legacy_streaming);
     $('#openai_show_external_models').prop('checked', oai_settings.show_external_models);
     $('#openai_external_category').toggle(oai_settings.show_external_models);
+    $('#openrouter_use_fallback').prop('checked', oai_settings.openrouter_use_fallback);
 
     if (settings.main_prompt !== undefined) oai_settings.main_prompt = settings.main_prompt;
     if (settings.nsfw_prompt !== undefined) oai_settings.nsfw_prompt = settings.nsfw_prompt;
@@ -1323,6 +1328,7 @@ async function saveOpenAIPreset(name, settings) {
         claude_model: settings.claude_model,
         windowai_model: settings.windowai_model,
         openrouter_model: settings.openrouter_model,
+        openrouter_use_fallback: settings.openrouter_use_fallback,
         temperature: settings.temp_openai,
         frequency_penalty: settings.freq_pen_openai,
         presence_penalty: settings.pres_pen_openai,
@@ -1663,6 +1669,7 @@ function onSettingsPresetChange() {
         claude_model: ['#model_claude_select', 'claude_model', false],
         windowai_model: ['#model_windowai_select', 'windowai_model', false],
         openrouter_model: ['#model_openrouter_select', 'openrouter_model', false],
+        openrouter_use_fallback: ['#openrouter_use_fallback', 'openrouter_use_fallback', true],
         openai_max_context: ['#openai_max_context', 'openai_max_context', false],
         openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false],
         nsfw_toggle: ['#nsfw_toggle', 'nsfw_toggle', true],
@@ -2241,6 +2248,11 @@ $(document).ready(function () {
 
     $('#claude_assistant_prefill').on('input', function () {
         oai_settings.assistant_prefill = $(this).val();
+        saveSettingsDebounced();
+    });
+
+    $('#openrouter_use_fallback').on('input', function () {
+        oai_settings.openrouter_use_fallback = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 
