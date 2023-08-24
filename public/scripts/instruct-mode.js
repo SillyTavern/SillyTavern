@@ -258,7 +258,7 @@ export function formatInstructModeSystemPrompt(systemPrompt){
         const separator = power_user.instruct.wrap ? '\n' : '';
 
         if (power_user.instruct.system_sequence.includes("{{sys}}")) {
-            return power_user.instruct.system_sequence.replace(/{{sys}}/gi, systemPrompt) + separator;
+            return power_user.instruct.system_sequence.replace(/{{sys}}/gi, systemPrompt);
         } else {
             return power_user.instruct.system_sequence + separator + systemPrompt;
         }
