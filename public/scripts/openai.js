@@ -683,9 +683,9 @@ function preparePromptsForChatCompletion({Scenario, charPersonality, name2, worl
 
     // Tavern Extras - Summary
     const summary = extensionPrompts['1_memory'];
-    if (summary && summary.content) systemPrompts.push({
+    if (summary && summary.value) systemPrompts.push({
         role: 'system',
-        content: summary.content,
+        content: summary.value,
         identifier: 'summary'
     });
 

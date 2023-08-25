@@ -1022,7 +1022,7 @@
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
-                                            <input type="range" id="typical_p_novel" name="volume" min="0" max="1" step="0.01">
+                                            <input type="range" id="typical_p_novel" name="volume" min="0" max="1" step="0.001">
                                         </div>
                                         <div class="range-block-counter">
                                             <div contenteditable="true" data-for="typical_p_novel" id="typical_p_counter_novel">
@@ -2344,9 +2344,14 @@
                                 </div>
                             </div>
                             <h4>
-                                <span data-i18n="Custom Stopping Strings">
-                                    Custom Stopping Strings (KoboldAI/TextGen/NovelAI)
-                                </span>
+                                <div class="range-block-title justifyLeft">
+                                    <span data-i18n="Custom Stopping Strings">
+                                        Custom Stopping Strings
+                                    </span>
+                                    <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/#custom-stopping-strings" class="notes-link" target="_blank">
+                                        <span class="note-link-span">?</span>
+                                    </a>
+                                </div>
                                 <div>
                                     <small>
                                         <span data-i18n="JSON serialized array of strings">JSON serialized array of strings, for example:</span><br>
@@ -4151,7 +4156,7 @@
                         <div class="floating_prompt_radio_group">
                             <label>
                                 <input type="radio" name="extension_floating_position" value="0" />
-                                After scenario
+                                After Main Prompt / Story String
                             </label>
                             <label>
                                 <input type="radio" name="extension_floating_position" value="1" />
@@ -4219,7 +4224,7 @@
                         <div class="floating_prompt_radio_group">
                             <label>
                                 <input type="radio" name="extension_default_position" value="0" />
-                                After scenario
+                                After Main Prompt / Story String
                             </label>
                             <label>
                                 <input type="radio" name="extension_default_position" value="1" />

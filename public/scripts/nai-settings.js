@@ -185,7 +185,7 @@ function loadNovelSettingsUi(ui_settings) {
     $("#top_a_novel").val(ui_settings.top_a);
     $("#top_a_counter_novel").text(Number(ui_settings.top_a).toFixed(2));
     $("#typical_p_novel").val(ui_settings.typical_p);
-    $("#typical_p_counter_novel").text(Number(ui_settings.typical_p).toFixed(2));
+    $("#typical_p_counter_novel").text(Number(ui_settings.typical_p).toFixed(3));
     $("#cfg_scale_novel").val(ui_settings.cfg_scale);
     $("#cfg_scale_counter_novel").text(Number(ui_settings.cfg_scale).toFixed(2));
     $("#phrase_rep_pen_novel").val(ui_settings.phrase_rep_pen || "off");
@@ -269,8 +269,8 @@ const sliders = [
     {
         sliderId: "#typical_p_novel",
         counterId: "#typical_p_counter_novel",
-        format: (val) => Number(val).toFixed(2),
-        setValue: (val) => { nai_settings.typical_p = Number(val).toFixed(2); },
+        format: (val) => Number(val).toFixed(3),
+        setValue: (val) => { nai_settings.typical_p = Number(val).toFixed(3); },
     },
     {
         sliderId: "#mirostat_tau_novel",
