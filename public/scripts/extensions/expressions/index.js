@@ -1,6 +1,6 @@
 import { callPopup, eventSource, event_types, getRequestHeaders, saveSettingsDebounced } from "../../../script.js";
 import { dragElement, isMobile } from "../../RossAscends-mods.js";
-import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch } from "../../extensions.js";
+import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch, renderExtensionTemplate } from "../../extensions.js";
 import { loadMovingUIState, power_user } from "../../power-user.js";
 import { onlyUnique, debounce, getCharaFilename } from "../../utils.js";
 export { MODULE_NAME };
@@ -800,20 +800,7 @@ function drawSpritesList(character, labels, sprites) {
 }
 
 function getListItem(item, imageSrc, textClass) {
-    return `
-        <div id="${item}" class="expression_list_item">
-            <div class="expression_list_buttons">
-                <div class="menu_button expression_list_upload" title="Upload image">
-                    <i class="fa-solid fa-upload"></i>
-                </div>
-                <div class="menu_button expression_list_delete" title="Delete image">
-                    <i class="fa-solid fa-trash"></i>
-                </div>
-            </div>
-            <span class="expression_list_title ${textClass}">${item}</span>
-            <img class="expression_list_image" src="${imageSrc}" />
-        </div>
-        `;
+    return renderExtensionTemplate(MODULE_NAME, 'list-item', { item, imageSrc, textClass });
 }
 
 async function getSpritesList(name) {
@@ -991,7 +978,7 @@ async function setExpression(character, expression, force) {
             }
         });
 
-        
+
     }
 }
 
@@ -1240,54 +1227,7 @@ function setExpressionOverrideHtml(forceClear = false) {
         $('body').append(element);
     }
     function addSettings() {
-        const html = `
-        <div class="expression_settings">
-            <div class="inline-drawer">
-                <div class="inline-drawer-toggle inline-drawer-header">
-                    <b>Character Expressions</b>
-                    <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
-                </div>
-
-                <div class="inline-drawer-content">
-                    <!-- Toggle button for aituber/static images -->
-                    <div class="toggle_button">
-                        <label class="switch">
-                            <input id="image_type_toggle" type="checkbox">
-                            <span class="slider round"></span>
-                            <label for="image_type_toggle">Image Type - talkinghead (extras)</label>
-                        </label>
-                    </div>
-                    <div class="offline_mode">
-                        <small>You are in offline mode. Click on the image below to set the expression.</small>
-                    </div>
-                    <div class="flex-container flexnowrap">
-                        <input id="expression_override" type="text" class="text_pole" placeholder="Override folder name" />
-                        <input id="expression_override_button" class="menu_button" type="submit" value="Submit" />
-                    </div>
-                    <div id="image_list"></div>
-                    <div class="expression_buttons flex-container spaceEvenly">
-                        <div id="expression_upload_pack_button" class="menu_button">
-                            <i class="fa-solid fa-file-zipper"></i>
-                            <span>Upload sprite pack (ZIP)</span>
-                        </div>
-                        <div id="expression_override_cleanup_button" class="menu_button">
-                            <i class="fa-solid fa-trash-can"></i>
-                            <span>Remove all image overrides</span>
-                        </div>
-                    </div>
-                    <p class="hint"><b>Hint:</b> <i>Create new folder in the <b>public/characters/</b> folder and name it as the name of the character.
-                    Put images with expressions there. File names should follow the pattern: <tt>[expression_label].[image_format]</tt></i></p>
-                    <label for="expressions_show_default"><input id="expressions_show_default" type="checkbox">Show default images (emojis) if missing</label>
-                </div>
-            </div>
-            <form>
-                <input type="file" id="expression_upload_pack" name="expression_upload_pack" accept="application/zip" hidden>
-                <input type="file" id="expression_upload" name="expression_upload" accept="image/*" hidden>
-            </form>
-        </div>
-        `;
-
-        $('#extensions_settings').append(html);
+        $('#extensions_settings').append(renderExtensionTemplate(MODULE_NAME, 'settings'));
         $('#expression_override_button').on('click', onClickExpressionOverrideButton);
         $('#expressions_show_default').on('input', onExpressionsShowDefaultInput);
         $('#expression_upload_pack_button').on('click', onClickExpressionUploadPackButton);
