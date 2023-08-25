@@ -916,12 +916,22 @@ select {
     white-space: nowrap;
 }
 
+@media screen and (max-width: 1000px) {
+    #form_create textarea {
+        flex-grow: 1;
+    }
+}
 
+@media screen and (min-width: 1001px) {
+    #description_textarea {
+        height: 33vh;
+        height: 33svh;
+    }
 
-#description_textarea,
-#firstmessage_textarea {
-    height: -webkit-fill-available;
-    width: -moz-available;
+    #firstmessage_textarea {
+        resize: none;
+        flex: 1;
+    }
 }
 
 #character_name_pole {
@@ -1548,10 +1558,6 @@ input[type=search]:focus::-webkit-search-cancel-button {
     flex-direction: column;
     height: 100%;
     overflow-y: auto;
-}
-
-#form_create textarea {
-    flex-grow: 1;
 }
 
 .avatar_div {
