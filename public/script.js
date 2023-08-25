@@ -2431,6 +2431,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
             chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct, false);
 
+            if (j === 0 && isInstruct) {
+                // Reformat with the first output line (if any)
+                chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct, true);
+            }
+
             // Do not suffix the message for continuation
             if (i === 0 && isContinue) {
                 if (isInstruct) {
