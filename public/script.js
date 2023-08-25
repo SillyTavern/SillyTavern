@@ -373,6 +373,9 @@ const system_message_types = {
 };
 
 const extension_prompt_types = {
+    /**
+     * @deprecated Outdated term. In reality it's "after main prompt or story string"
+     */
     AFTER_SCENARIO: 0,
     IN_CHAT: 1
 };
