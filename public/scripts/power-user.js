@@ -29,7 +29,7 @@ import {
 import { registerSlashCommand } from "./slash-commands.js";
 import { tokenizers } from "./tokenizers.js";
 
-import { delay } from "./utils.js";
+import { delay, resetScrollHeight } from "./utils.js";
 
 export {
     loadPowerUserSettings,
@@ -906,6 +906,9 @@ function loadContextSettings() {
         $element.on('input', function () {
             power_user.context[control.property] = control.isCheckbox ? !!$(this).prop('checked') : $(this).val();
             saveSettingsDebounced();
+            if (!control.isCheckbox) {
+                resetScrollHeight($element);
+            }
         });
     });
 

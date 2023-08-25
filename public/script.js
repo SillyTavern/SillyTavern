@@ -131,6 +131,7 @@ import {
     isDigitsOnly,
     PAGINATION_TEMPLATE,
     waitUntilCondition,
+    resetScrollHeight,
 } from "./scripts/utils.js";
 
 import { extension_settings, getContext, loadExtensionSettings, processExtensionHelpers, registerExtensionHelper, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
@@ -8623,6 +8624,10 @@ $(document).ready(function () {
                 });
             }
 
+            // Set the height of "autoSetHeight" textareas within the drawer to their scroll height
+            $(this).closest('.drawer').find('.drawer-content textarea.autoSetHeight').each(function() {
+                resetScrollHeight($(this));
+           });
 
         } else if (drawerWasOpenAlready) { //to close manually
             icon.toggleClass('closedIcon openIcon');
@@ -8689,6 +8694,11 @@ $(document).ready(function () {
         icon.toggleClass('down up');
         icon.toggleClass('fa-circle-chevron-down fa-circle-chevron-up');
         $(this).closest('.inline-drawer').find('.inline-drawer-content').stop().slideToggle();
+
+        // Set the height of "autoSetHeight" textareas within the inline-drawer to their scroll height
+        $(this).closest('.inline-drawer').find('.inline-drawer-content textarea.autoSetHeight').each(function() {
+            resetScrollHeight($(this));
+        });
     });
 
     $(document).on('click', '.mes .avatar', function () {

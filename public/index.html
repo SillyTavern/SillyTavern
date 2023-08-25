@@ -2097,14 +2097,14 @@
                                 <label for="context_story_string">
                                     <small data-i18n="Story String">Story String</small>
                                 </label>
-                                <textarea id="context_story_string" class="text_pole textarea_compact" rows="3"></textarea>
+                                <textarea id="context_story_string" class="text_pole textarea_compact autoSetHeight" rows="1"></textarea>
                                 <div class="flex-container">
                                     <div class="flex1">
                                         <label for="context_example_separator">
                                             <small data-i18n="Example Separator">Example Separator</small>
                                         </label>
                                         <div>
-                                            <textarea id="context_example_separator" class="text_pole textarea_compact" maxlength="500" rows="1"></textarea>
+                                            <textarea id="context_example_separator" class="text_pole textarea_compact autoSetHeight" maxlength="500" rows="1"></textarea>
                                         </div>
                                     </div>
                                     <div class="flex1">
@@ -2112,7 +2112,7 @@
                                             <small data-i18n="Chat Start">Chat Start</small>
                                         </label>
                                         <div>
-                                            <textarea id="context_chat_start" class="text_pole textarea_compact" maxlength="500" rows="1"></textarea>
+                                            <textarea id="context_chat_start" class="text_pole textarea_compact autoSetHeight" maxlength="500" rows="1"></textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -2150,7 +2150,7 @@
                                 </small>
                             </label>
                             <div>
-                                <textarea id="instruct_activation_regex" class="text_pole textarea_compact" maxlength="5000" rows="1"></textarea>
+                                <textarea id="instruct_activation_regex" class="text_pole textarea_compact autoSetHeight" maxlength="5000" rows="1"></textarea>
                             </div>
                             <div>
                                 <label for="instruct_wrap" class="checkbox_label">
@@ -2175,79 +2175,89 @@
                             <div class="prompt_overridden">
                                 Overridden by the Character Definitions.
                             </div>
-                            <textarea id="instruct_system_prompt" class="text_pole textarea_compact" rows="4"></textarea>
-                            <div class="flex-container">
-                                <div class="flex1">
-                                    <label for="instruct_input_sequence">
-                                        <small data-i18n="Input Sequence">Input Sequence</small>
-                                    </label>
-                                    <div>
-                                        <textarea id="instruct_input_sequence" class="text_pole textarea_compact" maxlength="500" rows="1"></textarea>
-                                    </div>
+                            <textarea id="instruct_system_prompt" class="text_pole textarea_compact autoSetHeight" rows="1"></textarea>
+
+                            <div class="inline-drawer wide100p flexFlowColumn">
+                                <div class="inline-drawer-toggle inline-drawer-header">
+                                    <b><span data-i18n="Instruct Mode Sequences">Instruct Mode Sequences</span></b>
+                                    <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                                 </div>
-                                <div class="flex1">
-                                    <label for="instruct_output_sequence">
-                                        <small data-i18n="Output Sequence">Output Sequence</small>
-                                    </label>
-                                    <div>
-                                        <textarea id="instruct_output_sequence" class="text_pole wide100p textarea_compact" maxlength="500" rows="1"></textarea>
+                                <div class="inline-drawer-content">
+                                    <div class="flex-container">
+                                        <div class="flex1">
+                                            <label for="instruct_input_sequence">
+                                                <small data-i18n="Input Sequence">Input Sequence</small>
+                                            </label>
+                                            <div>
+                                                <textarea id="instruct_input_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="500" placeholder="&mdash;" rows="1"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="flex1">
+                                            <label for="instruct_output_sequence">
+                                                <small data-i18n="Output Sequence">Output Sequence</small>
+                                            </label>
+                                            <div>
+                                                <textarea id="instruct_output_sequence" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="500" placeholder="&mdash;" rows="1"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex-container">
+                                        <div class="flex1">
+                                            <label for="instruct_first_output_sequence">
+                                                <small data-i18n="First Output Sequence">First Output Sequence</small>
+                                            </label>
+                                            <div>
+                                                <textarea id="instruct_first_output_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="500" placeholder="&mdash;" rows="1"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="flex1">
+                                            <label for="instruct_last_output_sequence">
+                                                <small data-i18n="Last Output Sequence">Last Output Sequence</small>
+                                            </label>
+                                            <div>
+                                                <textarea id="instruct_last_output_sequence" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="500" placeholder="&mdash;" rows="1"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex-container">
+                                        <div class="flex1">
+                                            <label for="instruct_system_sequence">
+                                                <small data-i18n="System Sequence Prefix">System Sequence Prefix</small>
+                                            </label>
+                                            <div>
+                                                <textarea id="instruct_system_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="500" placeholder="&mdash;" rows="1"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="flex1">
+                                            <label for="instruct_system_sequence_suffix">
+                                                <small data-i18n="System Sequence Suffix">System Sequence Suffix</small>
+                                            </label>
+                                            <div>
+                                                <textarea id="instruct_system_sequence_suffix" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="500" placeholder="&mdash;" rows="1"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex-container">
+                                        <div class="flex1">
+                                            <label for="instruct_stop_sequence">
+                                                <small data-i18n="Stop Sequence">Stop Sequence</small>
+                                            </label>
+                                            <div>
+                                                <textarea id="instruct_stop_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="500" placeholder="&mdash;" rows="1"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="flex1">
+                                            <label for="instruct_separator_sequence">
+                                                <small data-i18n="Separator">Separator</small>
+                                            </label>
+                                            <div>
+                                                <textarea id="instruct_separator_sequence" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="500" placeholder="&mdash;" rows="1"></textarea>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="flex-container">
-                                <div class="flex1">
-                                    <label for="instruct_first_output_sequence">
-                                        <small data-i18n="First Output Sequence">First Output Sequence</small>
-                                    </label>
-                                    <div>
-                                        <textarea id="instruct_first_output_sequence" class="text_pole textarea_compact" maxlength="500" rows="1"></textarea>
-                                    </div>
-                                </div>
-                                <div class="flex1">
-                                    <label for="instruct_last_output_sequence">
-                                        <small data-i18n="Last Output Sequence">Last Output Sequence</small>
-                                    </label>
-                                    <div>
-                                        <textarea id="instruct_last_output_sequence" class="text_pole wide100p textarea_compact" maxlength="500" rows="1"></textarea>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="flex-container">
-                                <div class="flex1">
-                                    <label for="instruct_system_sequence">
-                                        <small data-i18n="System Sequence Prefix">System Sequence Prefix</small>
-                                    </label>
-                                    <div>
-                                        <textarea id="instruct_system_sequence" class="text_pole textarea_compact" maxlength="500" rows="1"></textarea>
-                                    </div>
-                                </div>
-                                <div class="flex1">
-                                    <label for="instruct_system_sequence_suffix">
-                                        <small data-i18n="System Sequence Suffix">System Sequence Suffix</small>
-                                    </label>
-                                    <div>
-                                        <textarea id="instruct_system_sequence_suffix" class="text_pole wide100p textarea_compact" maxlength="500" rows="1"></textarea>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="flex-container">
-                                <div class="flex1">
-                                    <label for="instruct_stop_sequence">
-                                        <small data-i18n="Stop Sequence">Stop Sequence</small>
-                                    </label>
-                                    <div>
-                                        <textarea id="instruct_stop_sequence" class="text_pole textarea_compact" maxlength="500" rows="1"></textarea>
-                                    </div>
-                                </div>
-                                <div class="flex1">
-                                    <label for="instruct_separator_sequence">
-                                        <small data-i18n="Separator">Separator</small>
-                                    </label>
-                                    <div>
-                                        <textarea id="instruct_separator_sequence" class="text_pole wide100p textarea_compact" maxlength="500" rows="1"></textarea>
-                                    </div>
-                                </div>
-                            </div>
+
                         </div>
                     </div>
                     <div name="ContextFormatting" class="flex1">

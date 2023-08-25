@@ -6,6 +6,7 @@ import {
     power_user,
     context_presets,
 } from "./power-user.js";
+import { resetScrollHeight } from "./utils.js";
 
 /**
  * @type {any[]} Instruct mode presets.
@@ -55,6 +56,9 @@ export function loadInstructMode(data) {
         $element.on('input', function () {
             power_user.instruct[control.property] = control.isCheckbox ? !!$(this).prop('checked') : $(this).val();
             saveSettingsDebounced();
+            if (!control.isCheckbox) {
+                resetScrollHeight($element);
+            }
         });
     });
 
