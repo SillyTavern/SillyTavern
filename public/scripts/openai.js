@@ -2687,8 +2687,8 @@ async function onModelChange() {
         oai_settings.freq_pen_openai = Math.min(2.0, oai_settings.freq_pen_openai);
         $('#freq_pen_openai').attr('min', -2.0).attr('max', 2.0).val(oai_settings.freq_pen_openai).trigger('input');
 
-        oai_settings.freq_pen_openai = Math.min(2.0, oai_settings.pres_pen_openai);
-        $('#pres_pen_openai').attr('min', -2.0).attr('max', 2.0).val(oai_settings.freq_pen_openai).trigger('input');
+        oai_settings.pres_pen_openai = Math.min(2.0, oai_settings.pres_pen_openai);
+        $('#pres_pen_openai').attr('min', -2.0).attr('max', 2.0).val(oai_settings.pres_pen_openai).trigger('input');
 
         oai_settings.top_k_openai = Math.min(200, oai_settings.top_k_openai);
         $('#top_k_openai').attr('max', 200).val(oai_settings.top_k_openai).trigger('input');

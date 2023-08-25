@@ -334,7 +334,7 @@ async function setImage(img, path) {
             expressionHolder.css('min-height', imgHeight > 100 ? imgHeight : 100);
 
             //position absolute prevent the original from jumping around during transition
-            img.css('position', 'absolute');
+            img.css('position', 'absolute').width(imgWidth).height(imgHeight);
             expressionClone.addClass('expression-animating');
             //fade the clone in
             expressionClone.css({
@@ -919,7 +919,7 @@ async function setExpression(character, expression, force) {
                 expressionHolder.css('min-height', imgHeight > 100 ? imgHeight : 100);
 
                 //position absolute prevent the original from jumping around during transition
-                img.css('position', 'absolute');
+                img.css('position', 'absolute').width(imgWidth).height(imgHeight);
                 expressionClone.addClass('expression-animating');
                 //fade the clone in
                 expressionClone.css({
