@@ -17,7 +17,7 @@ const controls = [
     { id: "instruct_enabled", property: "enabled", isCheckbox: true },
     { id: "instruct_wrap", property: "wrap", isCheckbox: true },
     { id: "instruct_system_prompt", property: "system_prompt", isCheckbox: false },
-    { id: "instruct_system_sequence", property: "system_sequence", isCheckbox: false },
+    { id: "instruct_system_sequence_prefix", property: "system_sequence_prefix", isCheckbox: false },
     { id: "instruct_system_sequence_suffix", property: "system_sequence_suffix", isCheckbox: false },
     { id: "instruct_separator_sequence", property: "separator_sequence", isCheckbox: false },
     { id: "instruct_input_sequence", property: "input_sequence", isCheckbox: false },
@@ -272,8 +272,8 @@ export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvata
 export function formatInstructModeSystemPrompt(systemPrompt){
     const separator = power_user.instruct.wrap ? '\n' : '';
 
-    if (power_user.instruct.system_sequence) {
-        systemPrompt = power_user.instruct.system_sequence + separator + systemPrompt;
+    if (power_user.instruct.system_sequence_prefix) {
+        systemPrompt = power_user.instruct.system_sequence_prefix + separator + systemPrompt;
     }
 
     if (power_user.instruct.system_sequence_suffix) {

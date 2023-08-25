@@ -5,7 +5,7 @@
     "output_sequence": " [/INST] ",
     "first_output_sequence": "[/INST] ",
     "last_output_sequence": "",
-    "system_sequence": "[INST] <<SYS>>\n",
+    "system_sequence_prefix": "[INST] <<SYS>>\n",
     "system_sequence_suffix": "\n<</SYS>>\n",
     "stop_sequence": "",
     "separator_sequence": "\n",
