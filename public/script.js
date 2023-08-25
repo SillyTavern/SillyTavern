@@ -131,6 +131,7 @@ import {
     isDigitsOnly,
     PAGINATION_TEMPLATE,
     waitUntilCondition,
+    escapeRegex,
     resetScrollHeight,
 } from "./scripts/utils.js";
 
