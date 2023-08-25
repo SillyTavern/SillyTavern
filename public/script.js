@@ -155,7 +155,7 @@ import {
 } from "./scripts/secrets.js";
 import { EventEmitter } from './lib/eventemitter.js';
 import { markdownExclusionExt } from "./scripts/showdown-exclusion.js";
-import { NOTE_MODULE_NAME, metadata_keys, setFloatingPrompt, shouldWIAddPrompt } from "./scripts/authors-note.js";
+import { NOTE_MODULE_NAME, initAuthorsNote, metadata_keys, setFloatingPrompt, shouldWIAddPrompt } from "./scripts/authors-note.js";
 import { getDeviceInfo } from "./scripts/RossAscends-mods.js";
 import { registerPromptManagerMigration } from "./scripts/PromptManager.js";
 import { getRegexedString, regex_placement } from "./scripts/extensions/regex/engine.js";
@@ -2761,7 +2761,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     const anchorDepth = Math.abs(index - finalMesSend.length + 1);
                     // NOTE: Depth injected here!
                     const extensionAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, anchorDepth);
-    
+
                     if (anchorDepth > 0 && extensionAnchor && extensionAnchor.length) {
                         mesItem.extensionPrompts.push(extensionAnchor);
                     }
@@ -9023,5 +9023,6 @@ $(document).ready(function () {
     });
 
     // Added here to prevent execution before script.js is loaded and get rid of quirky timeouts
+    initAuthorsNote();
     initRossMods();
 });
