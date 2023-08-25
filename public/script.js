@@ -157,7 +157,7 @@ import {
 } from "./scripts/secrets.js";
 import { EventEmitter } from './lib/eventemitter.js';
 import { markdownExclusionExt } from "./scripts/showdown-exclusion.js";
-import { NOTE_MODULE_NAME, metadata_keys, setFloatingPrompt, shouldWIAddPrompt } from "./scripts/authors-note.js";
+import { NOTE_MODULE_NAME, initAuthorsNote, metadata_keys, setFloatingPrompt, shouldWIAddPrompt } from "./scripts/authors-note.js";
 import { getDeviceInfo } from "./scripts/RossAscends-mods.js";
 import { registerPromptManagerMigration } from "./scripts/PromptManager.js";
 import { getRegexedString, regex_placement } from "./scripts/extensions/regex/engine.js";
@@ -2613,7 +2613,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 console.debug('generating prompt');
                 chatString = "";
                 arrMes = arrMes.reverse();
-                arrMes.forEach(function (item, i, arr) {//For added anchors and others
+                arrMes.forEach(function (item, i, arr) {// For added anchors and others
                     // OAI doesn't need all of this
                     if (main_api === 'openai') {
                         return;
@@ -2629,25 +2629,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         }
                     }
 
-                    if (i === 0) {
-                        // Process those that couldn't get that far
-                        for (let upperDepth = 100; upperDepth >= arrMes.length; upperDepth--) {
-                            const upperAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, upperDepth);
-                            if (upperAnchor && upperAnchor.length) {
-                                item = upperAnchor + item;
-                            }
-                        }
-                    }
-
-                    const anchorDepth = Math.abs(i - arrMes.length + 1);
-                    // NOTE: Depth injected here!
-                    const extensionAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, anchorDepth);
-
-                    if (anchorDepth > 0 && extensionAnchor && extensionAnchor.length) {
-                        item += extensionAnchor;
-                    }
-
-                    mesSend[mesSend.length] = item;
+                    mesSend[mesSend.length] = { message: item, extensionPrompts: [] };
                 });
             }
 
@@ -2662,7 +2644,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 mesExmString = pinExmString ?? mesExamplesArray.slice(0, count_exm_add).join('');
 
                 if (mesSend.length) {
-                    mesSend[mesSend.length - 1] = modifyLastPromptLine(mesSend[mesSend.length - 1]);
+                    mesSend[mesSend.length - 1].message = modifyLastPromptLine(mesSend[mesSend.length - 1].message);
                 }
             }
 
@@ -2761,6 +2743,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
             // Fetches the combined prompt for both negative and positive prompts
             const cfgGuidanceScale = getGuidanceScale();
+
+            // For prompt bit itemization
+            let mesSendString = '';
+
             function getCombinedPrompt(isNegative) {
                 // Only return if the guidance scale doesn't exist or the value is 1
                 // Also don't return if constructing the neutral prompt
@@ -2768,7 +2754,50 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     return;
                 }
 
-                let finalMesSend = [...mesSend];
+                // OAI has its own prompt manager. No need to do anything here
+                if (main_api === 'openai') {
+                    return ''
+                }
+
+                // Deep clone
+                let finalMesSend = structuredClone(mesSend);
+
+                // TODO: Rewrite getExtensionPrompt to not require multiple for loops
+                // Set all extension prompts where insertion depth > mesSend length
+                if (finalMesSend.length) {
+                    for (let upperDepth = 100; upperDepth >= finalMesSend.length; upperDepth--) {
+                        const upperAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, upperDepth);
+                        if (upperAnchor && upperAnchor.length) {
+                            finalMesSend[0].extensionPrompts.push(upperAnchor);
+                        }
+                    }
+                }
+
+                finalMesSend.forEach((mesItem, index) => {
+                    if (index === 0) {
+                        return;
+                    }
+
+                    const anchorDepth = Math.abs(index - finalMesSend.length + 1);
+                    // NOTE: Depth injected here!
+                    const extensionAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, anchorDepth);
+
+                    if (anchorDepth > 0 && extensionAnchor && extensionAnchor.length) {
+                        mesItem.extensionPrompts.push(extensionAnchor);
+                    }
+                });
+
+                // TODO: Move zero-depth anchor append to work like CFG and bias appends
+                if (zeroDepthAnchor && zeroDepthAnchor.length) {
+                    if (!isMultigenEnabled() || tokens_already_generated == 0) {
+                        console.log(/\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1)))
+                        finalMesSend[finalMesSend.length - 1].message +=
+                            /\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1))
+                                ? zeroDepthAnchor
+                                : `${zeroDepthAnchor}`;
+                    }
+                }
+
                 let cfgPrompt = {};
                 if (cfgGuidanceScale && cfgGuidanceScale?.value !== 1) {
                     cfgPrompt = getCfgPrompt(cfgGuidanceScale, isNegative);
@@ -2776,13 +2805,13 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
                 if (cfgPrompt && cfgPrompt?.value) {
                     if (cfgPrompt?.depth === 0) {
-                        finalMesSend[finalMesSend.length - 1] +=
-                            /\s/.test(finalMesSend[finalMesSend.length - 1].slice(-1))
+                        finalMesSend[finalMesSend.length - 1].message +=
+                            /\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1))
                                 ? cfgPrompt.value
                                 : ` ${cfgPrompt.value}`;
                     } else {
                         // TODO: Make all extension prompts use an array/splice method
-                        finalMesSend.splice(mesSend.length - cfgPrompt.depth, 0, `${cfgPrompt.value}\n`);
+                        finalMesSend[mesSend.length - cfgPrompt.depth].extensionPrompts.push(`${cfgPrompt.value}\n`);
                     }
                 }
 
@@ -2790,25 +2819,20 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 // Always run with continue
                 if (!isInstruct && !isImpersonate && (tokens_already_generated === 0 || isContinue)) {
                     if (promptBias.trim().length !== 0) {
-                        finalMesSend[finalMesSend.length - 1] +=
-                            /\s/.test(finalMesSend[finalMesSend.length - 1].slice(-1))
+                        finalMesSend[finalMesSend.length - 1].message +=
+                            /\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1))
                                 ? promptBias.trimStart()
                                 : ` ${promptBias.trimStart()}`;
                     }
                 }
-
 
                 // Prune from prompt cache if it exists
                 if (generatedPromtCache.length !== 0) {
                     generatedPromtCache = cleanupPromptCache(generatedPromtCache);
                 }
 
-                // Override for prompt bits data
-                if (!isNegative) {
-                    mesSend = finalMesSend;
-                }
-
-                let mesSendString = finalMesSend.join('');
+                // Right now, everything is suffixed with a newline
+                mesSendString = finalMesSend.map((e) => `${e.extensionPrompts.join('')}${e.message}`).join('');
 
                 // add chat preamble
                 mesSendString = addChatsPreamble(mesSendString);
@@ -2823,13 +2847,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     mesSendString +
                     generatedPromtCache;
 
-                // TODO: Move zero-depth anchor append to work like CFG and bias appends
-                if (zeroDepthAnchor && zeroDepthAnchor.length) {
-                    if (!isMultigenEnabled() || tokens_already_generated == 0) {
-                        combinedPrompt = appendZeroDepthAnchor(force_name2, zeroDepthAnchor, combinedPrompt);
-                    }
-                }
-
                 combinedPrompt = combinedPrompt.replace(/\r/gm, '');
 
                 if (power_user.collapse_newlines) {
@@ -2841,7 +2858,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
             // Get the negative prompt first since it has the unmodified mesSend array
             let negativePrompt = main_api == 'textgenerationwebui' ? getCombinedPrompt(true) : undefined;
-            let finalPromt = getCombinedPrompt(false);
+            let finalPrompt = getCombinedPrompt(false);
 
             // Include the entire guidance scale object
             const cfgValues = cfgGuidanceScale && cfgGuidanceScale?.value !== 1 ? ({ guidanceScale: cfgGuidanceScale, negativePrompt: negativePrompt }) : null;
@@ -2865,7 +2882,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             let generate_data;
             if (main_api == 'koboldhorde' || main_api == 'kobold') {
                 generate_data = {
-                    prompt: finalPromt,
+                    prompt: finalPrompt,
                     gui_settings: true,
                     max_length: amount_gen,
                     temperature: kai_settings.temp,
@@ -2875,16 +2892,16 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
                 if (preset_settings != 'gui') {
                     const maxContext = (adjustedParams && horde_settings.auto_adjust_context_length) ? adjustedParams.maxContextLength : max_context;
-                    generate_data = getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, maxContext, isImpersonate, type);
+                    generate_data = getKoboldGenerationData(finalPrompt, this_settings, this_amount_gen, maxContext, isImpersonate, type);
                 }
             }
             else if (main_api == 'textgenerationwebui') {
-                generate_data = getTextGenGenerationData(finalPromt, this_amount_gen, isImpersonate, cfgValues);
+                generate_data = getTextGenGenerationData(finalPrompt, this_amount_gen, isImpersonate, cfgValues);
                 generate_data.use_mancer = api_use_mancer_webui;
             }
             else if (main_api == 'novel') {
                 const this_settings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
-                generate_data = getNovelGenerationData(finalPromt, this_settings, this_amount_gen, isImpersonate, cfgValues);
+                generate_data = getNovelGenerationData(finalPrompt, this_settings, this_amount_gen, isImpersonate, cfgValues);
             }
             else if (main_api == 'openai') {
                 let [prompt, counts] = prepareOpenAIMessages({
@@ -2940,10 +2957,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 storyString: storyString,
                 afterScenarioAnchor: afterScenarioAnchor,
                 examplesString: examplesString,
-                mesSendString: mesSend.join(''),
+                mesSendString: mesSendString,
                 generatedPromtCache: generatedPromtCache,
                 promptBias: promptBias,
-                finalPromt: finalPromt,
+                finalPromt: finalPrompt,
                 charDescription: charDescription,
                 charPersonality: charPersonality,
                 scenarioText: scenarioText,
@@ -2970,7 +2987,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
             }
             else if (main_api == 'koboldhorde') {
-                generateHorde(finalPromt, generate_data, abortController.signal).then(onSuccess).catch(onError);
+                generateHorde(finalPrompt, generate_data, abortController.signal).then(onSuccess).catch(onError);
             }
             else if (main_api == 'textgenerationwebui' && isStreamingEnabled() && type !== 'quiet') {
                 streamingProcessor.generator = await generateTextGenWithStreaming(generate_data, streamingProcessor.abortController.signal);
@@ -5844,10 +5861,22 @@ function select_rm_characters() {
     printCharacters(false); // Do a quick refresh of the characters list
 }
 
+/**
+ * Sets a prompt injection to insert custom text into any outgoing prompt. For use in UI extensions.
+ * @param {string} key Prompt injection id.
+ * @param {string} value Prompt injection value.
+ * @param {number} position Insertion position. 0 is after story string, 1 is in-chat with custom depth.
+ * @param {number} depth Insertion depth. 0 represets the last message in context. Expected values up to 100.
+ */
 function setExtensionPrompt(key, value, position, depth) {
-    extension_prompts[key] = { value, position, depth };
+    extension_prompts[key] = { value: String(value), position: Number(position), depth: Number(depth) };
 }
 
+/**
+ * Adds or updates the metadata for the currently active chat.
+ * @param {Object} newValues An object with collection of new values to be added into the metadata.
+ * @param {boolean} reset Should a metadata be reset by this call.
+ */
 function updateChatMetadata(newValues, reset) {
     chat_metadata = reset ? { ...newValues } : { ...chat_metadata, ...newValues };
 }
@@ -9035,5 +9064,6 @@ $(document).ready(function () {
     });
 
     // Added here to prevent execution before script.js is loaded and get rid of quirky timeouts
+    initAuthorsNote();
     initRossMods();
 });
