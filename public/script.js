@@ -496,9 +496,10 @@ function getUrlSync(url, cache = true) {
     }).responseText;
 }
 
-function renderTemplate(templateId, templateData = {}, sanitize = true, localize = true) {
+export function renderTemplate(templateId, templateData = {}, sanitize = true, localize = true, fullPath = false) {
     try {
-        const templateContent = getUrlSync(`/scripts/templates/${templateId}.html`);
+        const pathToTemplate = fullPath ? templateId : `/scripts/templates/${templateId}.html`;
+        const templateContent = getUrlSync(pathToTemplate);
         const template = Handlebars.compile(templateContent);
         let result = template(templateData);
 

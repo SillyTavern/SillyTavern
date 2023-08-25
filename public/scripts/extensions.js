@@ -1,5 +1,5 @@
-import { callPopup, eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, substituteParams } from "../script.js";
-import { isSubsetOf, debounce, waitUntilCondition } from "./utils.js";
+import { callPopup, eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, substituteParams, renderTemplate } from "../script.js";
+import { isSubsetOf } from "./utils.js";
 export {
     getContext,
     getApiUrl,
@@ -47,6 +47,18 @@ export function saveMetadataDebounced() {
 }
 
 export const extensionsHandlebars = Handlebars.create();
+
+/**
+ * Provides an ability for extensions to render HTML templates.
+ * Templates sanitation and localization is forced.
+ * @param {string} extensionName Extension name
+ * @param {string} templateId Template ID
+ * @param {object} templateData Additional data to pass to the template
+ * @returns {string} Rendered HTML
+ */
+export function renderExtensionTemplate(extensionName, templateId, templateData = {}, sanitize = true, localize = true) {
+    return renderTemplate(`scripts/extensions/${extensionName}/${templateId}.html`, templateData, sanitize, localize, true);
+}
 
 /**
  * Registers a Handlebars helper for use in extensions.
