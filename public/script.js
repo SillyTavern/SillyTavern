@@ -2256,8 +2256,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         return;
     }
 
-    // Hide swipes on either multigen or real streaming
-    if ((isStreamingEnabled() || isMultigenEnabled()) && !dryRun) {
+    // Hide swipes if not in a dry run.
+    if (!dryRun) {
         hideSwipeButtons();
     }
 
