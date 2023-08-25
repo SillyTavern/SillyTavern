@@ -2741,15 +2741,22 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     return;
                 }
 
+                // OAI has its own prompt manager. No need to do anything here
+                if (main_api === 'openai') {
+                    return ''
+                }
+
                 // Deep clone
                 let finalMesSend = structuredClone(mesSend);
 
                 // TODO: Rewrite getExtensionPrompt to not require multiple for loops
                 // Set all extension prompts where insertion depth > mesSend length
-                for (let upperDepth = 100; upperDepth >= finalMesSend.length; upperDepth--) {
-                    const upperAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, upperDepth);
-                    if (upperAnchor && upperAnchor.length) {
-                        finalMesSend[0].extensionPrompts.push(upperAnchor);
+                if (finalMesSend.length) {
+                    for (let upperDepth = 100; upperDepth >= finalMesSend.length; upperDepth--) {
+                        const upperAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, upperDepth);
+                        if (upperAnchor && upperAnchor.length) {
+                            finalMesSend[0].extensionPrompts.push(upperAnchor);
+                        }
                     }
                 }
 
@@ -2838,7 +2845,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
             // Get the negative prompt first since it has the unmodified mesSend array
             let negativePrompt = main_api == 'textgenerationwebui' ? getCombinedPrompt(true) : undefined;
-            let finalPromt = getCombinedPrompt(false);
+            let finalPrompt = getCombinedPrompt(false);
 
             // Include the entire guidance scale object
             const cfgValues = cfgGuidanceScale && cfgGuidanceScale?.value !== 1 ? ({ guidanceScale: cfgGuidanceScale, negativePrompt: negativePrompt }) : null;
@@ -2862,7 +2869,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             let generate_data;
             if (main_api == 'koboldhorde' || main_api == 'kobold') {
                 generate_data = {
-                    prompt: finalPromt,
+                    prompt: finalPrompt,
                     gui_settings: true,
                     max_length: amount_gen,
                     temperature: kai_settings.temp,
@@ -2872,16 +2879,16 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
                 if (preset_settings != 'gui') {
                     const maxContext = (adjustedParams && horde_settings.auto_adjust_context_length) ? adjustedParams.maxContextLength : max_context;
-                    generate_data = getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, maxContext, isImpersonate, type);
+                    generate_data = getKoboldGenerationData(finalPrompt, this_settings, this_amount_gen, maxContext, isImpersonate, type);
                 }
             }
             else if (main_api == 'textgenerationwebui') {
-                generate_data = getTextGenGenerationData(finalPromt, this_amount_gen, isImpersonate, cfgValues);
+                generate_data = getTextGenGenerationData(finalPrompt, this_amount_gen, isImpersonate, cfgValues);
                 generate_data.use_mancer = api_use_mancer_webui;
             }
             else if (main_api == 'novel') {
                 const this_settings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
-                generate_data = getNovelGenerationData(finalPromt, this_settings, this_amount_gen, isImpersonate, cfgValues);
+                generate_data = getNovelGenerationData(finalPrompt, this_settings, this_amount_gen, isImpersonate, cfgValues);
             }
             else if (main_api == 'openai') {
                 let [prompt, counts] = prepareOpenAIMessages({
@@ -2940,7 +2947,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 mesSendString: mesSendString,
                 generatedPromtCache: generatedPromtCache,
                 promptBias: promptBias,
-                finalPromt: finalPromt,
+                finalPromt: finalPrompt,
                 charDescription: charDescription,
                 charPersonality: charPersonality,
                 scenarioText: scenarioText,
@@ -2967,7 +2974,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
             }
             else if (main_api == 'koboldhorde') {
-                generateHorde(finalPromt, generate_data, abortController.signal).then(onSuccess).catch(onError);
+                generateHorde(finalPrompt, generate_data, abortController.signal).then(onSuccess).catch(onError);
             }
             else if (main_api == 'textgenerationwebui' && isStreamingEnabled() && type !== 'quiet') {
                 streamingProcessor.generator = await generateTextGenWithStreaming(generate_data, streamingProcessor.abortController.signal);
@@ -5840,10 +5847,22 @@ function select_rm_characters() {
     printCharacters(false); // Do a quick refresh of the characters list
 }
 
+/**
+ * Sets a prompt injection to insert custom text into any outgoing prompt. For use in UI extensions.
+ * @param {string} key Prompt injection id.
+ * @param {string} value Prompt injection value.
+ * @param {number} position Insertion position. 0 is after story string, 1 is in-chat with custom depth.
+ * @param {number} depth Insertion depth. 0 represets the last message in context. Expected values up to 100.
+ */
 function setExtensionPrompt(key, value, position, depth) {
-    extension_prompts[key] = { value, position, depth };
+    extension_prompts[key] = { value: String(value), position: Number(position), depth: Number(depth) };
 }
 
+/**
+ * Adds or updates the metadata for the currently active chat.
+ * @param {Object} newValues An object with collection of new values to be added into the metadata.
+ * @param {boolean} reset Should a metadata be reset by this call.
+ */
 function updateChatMetadata(newValues, reset) {
     chat_metadata = reset ? { ...newValues } : { ...chat_metadata, ...newValues };
 }
