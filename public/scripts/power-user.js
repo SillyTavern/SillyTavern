@@ -29,7 +29,7 @@ import {
 import { registerSlashCommand } from "./slash-commands.js";
 import { tokenizers } from "./tokenizers.js";
 
-import { delay } from "./utils.js";
+import { delay, resetScrollHeight } from "./utils.js";
 
 export {
     loadPowerUserSettings,
@@ -46,7 +46,7 @@ export {
 export const MAX_CONTEXT_DEFAULT = 4096;
 const MAX_CONTEXT_UNLOCKED = 65536;
 
-const defaultStoryString =  "{{#if system}}{{system}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}'s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}";
+const defaultStoryString = "{{#if system}}{{system}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}'s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}";
 const defaultExampleSeparator = '***';
 const defaultChatStart = '***';
 
@@ -159,19 +159,21 @@ let power_user = {
     default_instruct: '',
     instruct: {
         enabled: false,
+        preset: "Alpaca",
+        system_prompt: "Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\nWrite {{char}}'s next reply in a fictional roleplay chat between {{user}} and {{char}}.\n",
+        input_sequence: "### Instruction:",
+        output_sequence: "### Response:",
+        first_output_sequence: "",
+        last_output_sequence: "",
+        system_sequence_prefix: "",
+        system_sequence_suffix: "",
+        stop_sequence: "",
+        separator_sequence: "",
         wrap: true,
+        macro: true,
         names: false,
-        system_prompt: "Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\nWrite {{char}}'s next reply in a fictional roleplay chat between {{user}} and {{char}}. Write 1 reply only.",
-        system_sequence: '',
-        stop_sequence: '',
-        input_sequence: '### Instruction:',
-        output_sequence: '### Response:',
-        last_output_sequence: '',
-        preset: 'Alpaca',
-        separator_sequence: '',
-        macro: false,
         names_force_groups: true,
-        activation_regex: '',
+        activation_regex: "",
     },
 
     context: {
@@ -482,9 +484,19 @@ async function applyShadowWidth() {
 
 }
 
-async function applyFontScale() {
+async function applyFontScale(type) {
+
     power_user.font_scale = Number(localStorage.getItem(storage_keys.font_scale) ?? 1);
-    document.documentElement.style.setProperty('--fontScale', power_user.font_scale);
+    //this is to allow forced setting on page load, theme swap, etc
+    if (type === 'forced') {
+        document.documentElement.style.setProperty('--fontScale', power_user.font_scale);
+    } else {
+        //this is to prevent the slider from updating page in real time
+        $("#font_scale").off('mouseup touchend').on('mouseup touchend', () => {
+            document.documentElement.style.setProperty('--fontScale', power_user.font_scale);
+        })
+    }
+
     $("#font_scale_counter").text(power_user.font_scale);
     $("#font_scale").val(power_user.font_scale);
 }
@@ -522,7 +534,7 @@ async function applyTheme(name) {
             key: 'font_scale',
             action: async () => {
                 localStorage.setItem(storage_keys.font_scale, power_user.font_scale);
-                await applyFontScale();
+                await applyFontScale('forced');
             }
         },
         {
@@ -641,7 +653,7 @@ async function applyMovingUIPreset(name) {
 }
 
 switchUiMode();
-applyFontScale();
+applyFontScale('forced');
 applyThemeColor();
 applyChatWidth();
 applyAvatarStyle();
@@ -894,6 +906,9 @@ function loadContextSettings() {
         $element.on('input', function () {
             power_user.context[control.property] = control.isCheckbox ? !!$(this).prop('checked') : $(this).val();
             saveSettingsDebounced();
+            if (!control.isCheckbox) {
+                resetScrollHeight($element);
+            }
         });
     });
 
@@ -1527,8 +1542,19 @@ function setAvgBG() {
 
 }
 
-export function getCustomStoppingStrings() {
+
+/**
+ * Gets the custom stopping strings from the power user settings.
+ * @param {number | undefined} limit Number of strings to return. If undefined, returns all strings.
+ * @returns {string[]} An array of custom stopping strings
+ */
+export function getCustomStoppingStrings(limit = undefined) {
     try {
+        // If there's no custom stopping strings, return an empty array
+        if (!power_user.custom_stopping_strings) {
+            return [];
+        }
+
         // Parse the JSON string
         const strings = JSON.parse(power_user.custom_stopping_strings);
 
@@ -1537,8 +1563,8 @@ export function getCustomStoppingStrings() {
             return [];
         }
 
-        // Make sure all the elements are strings
-        return strings.filter((s) => typeof s === 'string');
+        // Make sure all the elements are strings. Apply the limit.
+        return strings.filter((s) => typeof s === 'string').slice(0, limit);
     } catch (error) {
         // If there's an error, return an empty array
         console.warn('Error parsing custom stopping strings:', error);

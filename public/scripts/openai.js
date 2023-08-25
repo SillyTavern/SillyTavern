@@ -34,6 +34,7 @@ import {
 } from "./PromptManager.js";
 
 import {
+    getCustomStoppingStrings,
     persona_description_positions,
     power_user,
 } from "./power-user.js";
@@ -120,6 +121,7 @@ const j2_max_topk = 10.0;
 const j2_max_freq = 5.0;
 const j2_max_pres = 5.0;
 const openrouter_website_model = 'OR_Website';
+const openai_max_stop_strings = 4;
 
 let biasCache = undefined;
 let model_list = [];
@@ -683,9 +685,9 @@ function preparePromptsForChatCompletion({Scenario, charPersonality, name2, worl
 
     // Tavern Extras - Summary
     const summary = extensionPrompts['1_memory'];
-    if (summary && summary.content) systemPrompts.push({
+    if (summary && summary.value) systemPrompts.push({
         role: 'system',
-        content: summary.content,
+        content: summary.value,
         identifier: 'summary'
     });
 
@@ -1138,6 +1140,7 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
         "max_tokens": oai_settings.openai_max_tokens,
         "stream": stream,
         "logit_bias": logit_bias,
+        "stop": getCustomStoppingStrings(openai_max_stop_strings),
     };
 
     // Proxy is only supported for Claude and OpenAI
@@ -1151,6 +1154,7 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
         generate_data['use_claude'] = true;
         generate_data['top_k'] = Number(oai_settings.top_k_openai);
         generate_data['exclude_assistant'] = oai_settings.exclude_assistant;
+        generate_data['stop'] = getCustomStoppingStrings(); // Claude shouldn't have limits on stop strings.
         // Don't add a prefill on quiet gens (summarization)
         if (!isQuiet && !oai_settings.exclude_assistant) {
             generate_data['assistant_prefill'] = substituteParams(oai_settings.assistant_prefill);
@@ -2687,8 +2691,8 @@ async function onModelChange() {
         oai_settings.freq_pen_openai = Math.min(2.0, oai_settings.freq_pen_openai);
         $('#freq_pen_openai').attr('min', -2.0).attr('max', 2.0).val(oai_settings.freq_pen_openai).trigger('input');
 
-        oai_settings.freq_pen_openai = Math.min(2.0, oai_settings.pres_pen_openai);
-        $('#pres_pen_openai').attr('min', -2.0).attr('max', 2.0).val(oai_settings.freq_pen_openai).trigger('input');
+        oai_settings.pres_pen_openai = Math.min(2.0, oai_settings.pres_pen_openai);
+        $('#pres_pen_openai').attr('min', -2.0).attr('max', 2.0).val(oai_settings.pres_pen_openai).trigger('input');
 
         oai_settings.top_k_openai = Math.min(200, oai_settings.top_k_openai);
         $('#top_k_openai').attr('max', 200).val(oai_settings.top_k_openai).trigger('input');

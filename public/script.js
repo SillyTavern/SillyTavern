@@ -131,6 +131,8 @@ import {
     isDigitsOnly,
     PAGINATION_TEMPLATE,
     waitUntilCondition,
+    escapeRegex,
+    resetScrollHeight,
 } from "./scripts/utils.js";
 
 import { extension_settings, getContext, loadExtensionSettings, processExtensionHelpers, registerExtensionHelper, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
@@ -162,6 +164,7 @@ import { getRegexedString, regex_placement } from "./scripts/extensions/regex/en
 import { FILTER_TYPES, FilterHelper } from "./scripts/filters.js";
 import { getCfgPrompt, getGuidanceScale } from "./scripts/extensions/cfg/util.js";
 import {
+    force_output_sequence,
     formatInstructModeChat,
     formatInstructModePrompt,
     formatInstructModeExamples,
@@ -372,6 +375,9 @@ const system_message_types = {
 };
 
 const extension_prompt_types = {
+    /**
+     * @deprecated Outdated term. In reality it's "after main prompt or story string"
+     */
     AFTER_SCENARIO: 0,
     IN_CHAT: 1
 };
@@ -495,9 +501,10 @@ function getUrlSync(url, cache = true) {
     }).responseText;
 }
 
-function renderTemplate(templateId, templateData = {}, sanitize = true, localize = true) {
+export function renderTemplate(templateId, templateData = {}, sanitize = true, localize = true, fullPath = false) {
     try {
-        const templateContent = getUrlSync(`/scripts/templates/${templateId}.html`);
+        const pathToTemplate = fullPath ? templateId : `/scripts/templates/${templateId}.html`;
+        const templateContent = getUrlSync(pathToTemplate);
         const template = Handlebars.compile(templateContent);
         let result = template(templateData);
 
@@ -1883,9 +1890,10 @@ function cleanGroupMessage(getMessage) {
                 continue;
             }
 
-            const indexOfMember = getMessage.indexOf(`${name}:`);
-            if (indexOfMember != -1) {
-                getMessage = getMessage.substr(0, indexOfMember);
+            const regex = new RegExp(`(^|\n)${escapeRegex(name)}:`);
+            const nameMatch = getMessage.match(regex);
+            if (nameMatch) {
+                getMessage = getMessage.substring(nameMatch.index + nameMatch[0].length);
             }
         }
     }
@@ -2051,7 +2059,7 @@ class StreamingProcessor {
             chat[messageId]['gen_started'] = this.timeStarted;
             chat[messageId]['gen_finished'] = currentTime;
 
-            if (this.type == 'swipe' && Array.isArray(chat[messageId]['swipes'])) {
+            if ((this.type == 'swipe' || this.type === 'continue') && Array.isArray(chat[messageId]['swipes'])) {
                 chat[messageId]['swipes'][chat[messageId]['swipe_id']] = processedText;
                 chat[messageId]['swipe_info'][chat[messageId]['swipe_id']] = { 'send_date': chat[messageId]['send_date'], 'gen_started': chat[messageId]['gen_started'], 'gen_finished': chat[messageId]['gen_finished'], 'extra': JSON.parse(JSON.stringify(chat[messageId]['extra'])) };
             }
@@ -2254,8 +2262,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         return;
     }
 
-    // Hide swipes on either multigen or real streaming
-    if ((isStreamingEnabled() || isMultigenEnabled()) && !dryRun) {
+    // Hide swipes if not in a dry run.
+    if (!dryRun) {
         hideSwipeButtons();
     }
 
@@ -2431,11 +2439,16 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
             chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct, false);
 
+            if (j === 0 && isInstruct) {
+                // Reformat with the first output sequence (if any)
+                chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct, force_output_sequence.FIRST);
+            }
+
             // Do not suffix the message for continuation
             if (i === 0 && isContinue) {
                 if (isInstruct) {
-                    // Reformat with the last output line (if any)
-                    chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct, true);
+                    // Reformat with the last output sequence (if any)
+                    chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct, force_output_sequence.LAST);
                 }
 
                 chat2[i] = chat2[i].slice(0, chat2[i].lastIndexOf(coreChat[j].mes) + coreChat[j].mes.length);
@@ -3245,9 +3258,9 @@ export function getBiasStrings(textareaText, type) {
 /**
  * @param {Object} chatItem Message history item.
  * @param {boolean} isInstruct Whether instruct mode is enabled.
- * @param {boolean} forceLastOutputSequence Whether to force the last output sequence for instruct mode.
+ * @param {boolean|number} forceOutputSequence Whether to force the first/last output sequence for instruct mode.
  */
-function formatMessageHistoryItem(chatItem, isInstruct, forceLastOutputSequence) {
+function formatMessageHistoryItem(chatItem, isInstruct, forceOutputSequence) {
     const isNarratorType = chatItem?.extra?.type === system_message_types.NARRATOR;
     const characterName = (selected_group || chatItem.force_avatar) ? chatItem.name : name2;
     const itemName = chatItem.is_user ? chatItem['name'] : characterName;
@@ -3256,7 +3269,7 @@ function formatMessageHistoryItem(chatItem, isInstruct, forceLastOutputSequence)
     let textResult = shouldPrependName ? `${itemName}: ${chatItem.mes}\n` : `${chatItem.mes}\n`;
 
     if (isInstruct) {
-        textResult = formatInstructModeChat(itemName, chatItem.mes, chatItem.is_user, isNarratorType, chatItem.force_avatar, name1, name2, forceLastOutputSequence);
+        textResult = formatInstructModeChat(itemName, chatItem.mes, chatItem.is_user, isNarratorType, chatItem.force_avatar, name1, name2, forceOutputSequence);
     }
 
     textResult = replaceBiasMarkup(textResult);
@@ -3918,8 +3931,9 @@ async function saveReply(type, getMessage, this_mes_is_name, title) {
         item["swipe_info"] = [];
     }
     if (item["swipe_id"] !== undefined) {
-        item["swipes"][item["swipes"].length - 1] = item["mes"];
-        item["swipe_info"][item["swipes"].length - 1] = {
+        const swipeId = item["swipe_id"];
+        item["swipes"][swipeId] = item["mes"];
+        item["swipe_info"][swipeId] = {
             send_date: item["send_date"],
             gen_started: item["gen_started"],
             gen_finished: item["gen_finished"],
@@ -8060,26 +8074,25 @@ $(document).ready(function () {
     var sliderTimer;
 
     $("input[type='range']").on("touchstart", function () {
-        // Unlock the slider after 500ms
-        sliderTimer = setTimeout(function () {
+        // Unlock the slider after 300ms
+        setTimeout(function () {
             sliderLocked = false;
-        }, 500);
+            $(this).css('background-color', 'var(--SmartThemeQuoteColor)');
+        }.bind(this), 300);
     });
 
     $("input[type='range']").on("touchend", function () {
         clearTimeout(sliderTimer);
-        $(this).css('background-color', '')
-        sliderLocked = true
+        $(this).css('background-color', '');
+        sliderLocked = true;
     });
 
     $("input[type='range']").on("touchmove", function (event) {
         if (sliderLocked) {
             event.preventDefault();
         }
-        else {
-            $(this).css('background-color', 'var(--SmartThemeQuoteColor)')
-        }
     });
+
 
 
     const sliders = [
@@ -8647,6 +8660,10 @@ $(document).ready(function () {
                 });
             }
 
+            // Set the height of "autoSetHeight" textareas within the drawer to their scroll height
+            $(this).closest('.drawer').find('.drawer-content textarea.autoSetHeight').each(function() {
+                resetScrollHeight($(this));
+           });
 
         } else if (drawerWasOpenAlready) { //to close manually
             icon.toggleClass('closedIcon openIcon');
@@ -8713,6 +8730,11 @@ $(document).ready(function () {
         icon.toggleClass('down up');
         icon.toggleClass('fa-circle-chevron-down fa-circle-chevron-up');
         $(this).closest('.inline-drawer').find('.inline-drawer-content').stop().slideToggle();
+
+        // Set the height of "autoSetHeight" textareas within the inline-drawer to their scroll height
+        $(this).closest('.inline-drawer').find('.inline-drawer-content textarea.autoSetHeight').each(function() {
+            resetScrollHeight($(this));
+        });
     });
 
     $(document).on('click', '.mes .avatar', function () {

@@ -205,7 +205,7 @@
         width: 100%;
         border-radius: 0 0 20px 20px;
         margin-top: 0px;
-        height: calc(100% - 40px);
+        height: calc(100% - var(--topBarBlockSize));
     }
 
     .drawer25pWidth {

@@ -1,0 +1,22 @@
+.mixer-div {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    padding: 5px;
+}
+
+.audio-mute-button {
+    padding: 5px;
+    width: 50px;
+    height: 30px;
+}
+
+.audio-mute-button-muted {
+    color: red;
+}
+
+#audio_refresh_assets {
+    width: 50px;
+    height: 30px;
+}

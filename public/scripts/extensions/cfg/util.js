@@ -57,7 +57,6 @@ export function getCfgPrompt(guidanceScale, isNegative) {
             substituteParams(
                 chat_metadata[isNegative ? metadataKeys.negative_prompt : metadataKeys.positive_prompt]
             )
-            ?.trim()
         );
     }
 
@@ -67,7 +66,6 @@ export function getCfgPrompt(guidanceScale, isNegative) {
             substituteParams(
                 isNegative ? charaCfg.negative_prompt : charaCfg.positive_prompt
             )
-            ?.trim()
         );
     }
 
@@ -76,7 +74,6 @@ export function getCfgPrompt(guidanceScale, isNegative) {
             substituteParams(
                 isNegative ? extension_settings.cfg.global.negative_prompt : extension_settings.cfg.global.positive_prompt
             )
-            ?.trim()
         );
     }
 
