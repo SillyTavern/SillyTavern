@@ -88,7 +88,7 @@ class ElevenLabsTtsProvider {
     async onConnectClick() {
         // Update on Apply click
         return await this.updateApiKey().catch( (error) => {
-            throw error
+            toastr.error(`ElevenLabs: ${error}`)
         })
     }
 

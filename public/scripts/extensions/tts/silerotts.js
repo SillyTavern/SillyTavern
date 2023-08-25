@@ -63,7 +63,7 @@ class SileroTtsProvider {
         }, 2000);
 
         $('#silero_tts_endpoint').val(this.settings.provider_endpoint)
-        $('#silero_tts_endpoint').on("input", this.onSettingsChange)
+        $('#silero_tts_endpoint').on("input", () => {this.onSettingsChange()})
 
         this.checkReady()
 

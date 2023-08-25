@@ -53,7 +53,7 @@ class EdgeTtsProvider {
 
         $('#edge_tts_rate').val(this.settings.rate || 0);
         $('#edge_tts_rate_output').text(this.settings.rate || 0);
-        $('#edge_tts_rate').on("input",this.onSettingsChange)
+        $('#edge_tts_rate').on("input", () => {this.onSettingsChange()})
         this.checkReady()
 
         console.info("Settings loaded")

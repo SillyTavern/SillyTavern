@@ -146,8 +146,8 @@ class SystemTtsProvider {
         $('#system_tts_pitch').val(this.settings.pitch || this.defaultSettings.pitch);
 
         // Trigger updates
-        $('#system_tts_rate').on("input", this.onSettingsChange)
-        $('#system_tts_rate').on("input", this.onSettingsChange)
+        $('#system_tts_rate').on("input", () =>{this.onSettingsChange()})
+        $('#system_tts_rate').on("input", () => {this.onSettingsChange()})
 
         $('#system_tts_pitch_output').text(this.settings.pitch);
         $('#system_tts_rate_output').text(this.settings.rate);
