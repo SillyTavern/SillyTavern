@@ -217,6 +217,11 @@ export function getInstructStoppingSequences() {
     return result;
 }
 
+export const force_output_sequence = {
+    FIRST: 1,
+    LAST: 2,
+}
+
 /**
  * Formats instruct mode chat message.
  * @param {string} name Character name.
@@ -226,10 +231,10 @@ export function getInstructStoppingSequences() {
  * @param {string} forceAvatar Force avatar string.
  * @param {string} name1 User name.
  * @param {string} name2 Character name.
- * @param {boolean} forceLastOutputSequence Force to use last outline sequence (if configured).
+ * @param {boolean|number} forceOutputSequence Force to use first/last output sequence (if configured).
  * @returns {string} Formatted instruct mode chat message.
  */
-export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvatar, name1, name2, forceLastOutputSequence) {
+export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvatar, name1, name2, forceOutputSequence) {
     let includeNames = isNarrator ? false : power_user.instruct.names;
 
     if (!isNarrator && power_user.instruct.names_force_groups && (selected_group || forceAvatar)) {
@@ -238,10 +243,10 @@ export function formatInstructModeChat(name, mes, isUser, isNarrator, forceAvata
 
     let sequence = (isUser || isNarrator) ? power_user.instruct.input_sequence : power_user.instruct.output_sequence;
 
-    if (forceLastOutputSequence) {
-        if (sequence === power_user.instruct.output_sequence && power_user.instruct.first_output_sequence) {
+    if (forceOutputSequence && sequence === power_user.instruct.output_sequence) {
+        if (forceOutputSequence === force_output_sequence.FIRST && power_user.instruct.first_output_sequence) {
             sequence = power_user.instruct.first_output_sequence;
-        } else if (sequence === power_user.instruct.output_sequence && power_user.instruct.last_output_sequence) {
+        } else if (forceOutputSequence === force_output_sequence.LAST && power_user.instruct.last_output_sequence) {
             sequence = power_user.instruct.last_output_sequence;
         }
     }

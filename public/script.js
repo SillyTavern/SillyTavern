@@ -164,6 +164,7 @@ import { getRegexedString, regex_placement } from "./scripts/extensions/regex/en
 import { FILTER_TYPES, FilterHelper } from "./scripts/filters.js";
 import { getCfgPrompt, getGuidanceScale } from "./scripts/extensions/cfg/util.js";
 import {
+    force_output_sequence,
     formatInstructModeChat,
     formatInstructModePrompt,
     formatInstructModeExamples,
@@ -2434,15 +2435,15 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct, false);
 
             if (j === 0 && isInstruct) {
-                // Reformat with the first output line (if any)
-                chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct, true);
+                // Reformat with the first output sequence (if any)
+                chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct, force_output_sequence.FIRST);
             }
 
             // Do not suffix the message for continuation
             if (i === 0 && isContinue) {
                 if (isInstruct) {
-                    // Reformat with the last output line (if any)
-                    chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct, true);
+                    // Reformat with the last output sequence (if any)
+                    chat2[i] = formatMessageHistoryItem(coreChat[j], isInstruct, force_output_sequence.LAST);
                 }
 
                 chat2[i] = chat2[i].slice(0, chat2[i].lastIndexOf(coreChat[j].mes) + coreChat[j].mes.length);
@@ -3235,9 +3236,9 @@ export function getBiasStrings(textareaText, type) {
 /**
  * @param {Object} chatItem Message history item.
  * @param {boolean} isInstruct Whether instruct mode is enabled.
- * @param {boolean} forceLastOutputSequence Whether to force the last output sequence for instruct mode.
+ * @param {boolean|number} forceOutputSequence Whether to force the first/last output sequence for instruct mode.
  */
-function formatMessageHistoryItem(chatItem, isInstruct, forceLastOutputSequence) {
+function formatMessageHistoryItem(chatItem, isInstruct, forceOutputSequence) {
     const isNarratorType = chatItem?.extra?.type === system_message_types.NARRATOR;
     const characterName = (selected_group || chatItem.force_avatar) ? chatItem.name : name2;
     const itemName = chatItem.is_user ? chatItem['name'] : characterName;
@@ -3246,7 +3247,7 @@ function formatMessageHistoryItem(chatItem, isInstruct, forceLastOutputSequence)
     let textResult = shouldPrependName ? `${itemName}: ${chatItem.mes}\n` : `${chatItem.mes}\n`;
 
     if (isInstruct) {
-        textResult = formatInstructModeChat(itemName, chatItem.mes, chatItem.is_user, isNarratorType, chatItem.force_avatar, name1, name2, forceLastOutputSequence);
+        textResult = formatInstructModeChat(itemName, chatItem.mes, chatItem.is_user, isNarratorType, chatItem.force_avatar, name1, name2, forceOutputSequence);
     }
 
     textResult = replaceBiasMarkup(textResult);
