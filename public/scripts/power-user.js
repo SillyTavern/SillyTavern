@@ -1537,8 +1537,19 @@ function setAvgBG() {
 
 }
 
-export function getCustomStoppingStrings() {
+
+/**
+ * Gets the custom stopping strings from the power user settings.
+ * @param {number | undefined} limit Number of strings to return. If undefined, returns all strings.
+ * @returns {string[]} An array of custom stopping strings
+ */
+export function getCustomStoppingStrings(limit = undefined) {
     try {
+        // If there's no custom stopping strings, return an empty array
+        if (!power_user.custom_stopping_strings) {
+            return [];
+        }
+
         // Parse the JSON string
         const strings = JSON.parse(power_user.custom_stopping_strings);
 
@@ -1547,8 +1558,8 @@ export function getCustomStoppingStrings() {
             return [];
         }
 
-        // Make sure all the elements are strings
-        return strings.filter((s) => typeof s === 'string');
+        // Make sure all the elements are strings. Apply the limit.
+        return strings.filter((s) => typeof s === 'string').slice(0, limit);
     } catch (error) {
         // If there's an error, return an empty array
         console.warn('Error parsing custom stopping strings:', error);

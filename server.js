@@ -3391,6 +3391,12 @@ async function sendClaudeRequest(request, response) {
         }
 
         console.log('Claude request:', requestPrompt);
+        const stop_sequences = ["\n\nHuman:", "\n\nSystem:", "\n\nAssistant:"];
+
+        // Add custom stop sequences
+        if (Array.isArray(request.body.stop)) {
+            stop_sequences.push(...request.body.stop);
+        }
 
         const generateResponse = await fetch(api_url + '/complete', {
             method: "POST",
@@ -3399,7 +3405,7 @@ async function sendClaudeRequest(request, response) {
                 prompt: requestPrompt,
                 model: request.body.model,
                 max_tokens_to_sample: request.body.max_tokens,
-                stop_sequences: ["\n\nHuman:", "\n\nSystem:", "\n\nAssistant:"],
+                stop_sequences: stop_sequences,
                 temperature: request.body.temperature,
                 top_p: request.body.top_p,
                 top_k: request.body.top_k,
@@ -3487,6 +3493,11 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
 
     if (!api_key_openai && !request.body.reverse_proxy) {
         return response_generate_openai.status(401).send({ error: true });
+    }
+
+    // Add custom stop sequences
+    if (Array.isArray(request.body.stop)) {
+        bodyParams['stop'] = request.body.stop;
     }
 
     const isTextCompletion = Boolean(request.body.model && (request.body.model.startsWith('text-') || request.body.model.startsWith('code-')));
