@@ -131,6 +131,7 @@ import {
     isDigitsOnly,
     PAGINATION_TEMPLATE,
     waitUntilCondition,
+    escapeRegex,
 } from "./scripts/utils.js";
 
 import { extension_settings, getContext, loadExtensionSettings, processExtensionHelpers, registerExtensionHelper, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
@@ -1883,9 +1884,10 @@ function cleanGroupMessage(getMessage) {
                 continue;
             }
 
-            const indexOfMember = getMessage.indexOf(`${name}:`);
-            if (indexOfMember != -1) {
-                getMessage = getMessage.substr(0, indexOfMember);
+            const regex = new RegExp(`(^|\n)${escapeRegex(name)}:`);
+            const nameMatch = getMessage.match(regex);
+            if (nameMatch) {
+                getMessage = getMessage.substring(nameMatch.index + nameMatch[0].length);
             }
         }
     }
