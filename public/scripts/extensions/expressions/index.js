@@ -991,8 +991,7 @@ async function setExpression(character, expression, force) {
             }
         });
 
-
-
+        
     }
 }
 
