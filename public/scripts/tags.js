@@ -338,6 +338,10 @@ function onTagFilterClick(listElement) {
         }
     }
 
+    runTagFilters(listElement);
+}
+
+function runTagFilters(listElement) {
     const tagIds = [...($(listElement).find(".tag.selected:not(.actionable)").map((_, el) => $(el).attr("id")))];
     const excludedTagIds = [...($(listElement).find(".tag.excluded:not(.actionable)").map((_, el) => $(el).attr("id")))];
     const filterHelper = getFilterHelper($(listElement));
@@ -364,6 +368,9 @@ function printTagFilters(type = tag_filter_types.character) {
     }
     for (const tag of tagsToDisplay) {
         appendTagToList(FILTER_SELECTOR, tag, { removable: false, selectable: true, isGeneralList: true });
+        if (tag.excluded) {
+            runTagFilters(FILTER_SELECTOR);
+        }
     }
 
     for (const tagId of selectedTagIds) {
