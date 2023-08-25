@@ -1015,17 +1015,35 @@ export function fuzzySearchGroups(searchValue) {
     return ids;
 }
 
+/**
+ * Renders a story string template with the given parameters.
+ * @param {object} params Template parameters.
+ * @returns {string} The rendered story string.
+ */
 export function renderStoryString(params) {
     try {
+        // compile the story string template into a function, with no HTML escaping
         const compiledTemplate = Handlebars.compile(power_user.context.story_string, { noEscape: true });
+
+        // render the story string template with the given params
         let output = compiledTemplate(params);
+
+        // substitute {{macro}} params that are not defined in the story string
         output = substituteParams(output, params.user, params.char);
-        output = `${output.trim()}\n`; // add a newline to the end
+
+        // remove leading whitespace
+        output = output.trimStart();
+
+        // add a newline to the end of the story string if it doesn't have one
+        if (!output.endsWith('\n')) {
+            output += '\n';
+        }
+
         return output;
     } catch (e) {
         toastr.error('Check the story string template for validity', 'Error rendering story string');
         console.error('Error rendering story string', e);
-        throw e;
+        throw e; // rethrow the error
     }
 }
 
