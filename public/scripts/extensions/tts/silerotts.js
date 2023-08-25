@@ -1,4 +1,5 @@
 import { doExtrasFetch, getApiUrl, modules } from "../../extensions.js"
+import { onTtsProviderSettingsInput } from "./index.js"
 
 export { SileroTtsProvider }
 
@@ -30,6 +31,7 @@ class SileroTtsProvider {
     onSettingsChange() {
         // Used when provider settings are updated from UI
         this.settings.provider_endpoint = $('#silero_tts_endpoint').val()
+        onTtsProviderSettingsInput()
     }
 
     loadSettings(settings) {
@@ -61,6 +63,7 @@ class SileroTtsProvider {
         }, 2000);
 
         $('#silero_tts_endpoint').val(this.settings.provider_endpoint)
+        $('#silero_tts_endpoint').on("input", this.onSettingsChange)
 
         this.checkReady()
 

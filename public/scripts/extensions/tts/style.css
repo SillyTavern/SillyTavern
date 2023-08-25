@@ -67,3 +67,10 @@
 .tts-button:hover {
     opacity: 1;
 }
+
+.tts_block {
+    display: flex;
+    align-items: center;
+    column-gap: 5px;
+    flex-wrap: wrap;
+}

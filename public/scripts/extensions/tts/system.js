@@ -1,7 +1,7 @@
 import { isMobile } from "../../RossAscends-mods.js";
 import { getPreviewString } from "./index.js";
 import { talkingAnimation } from './index.js';
-
+import { onTtsProviderSettingsInput } from "./index.js"
 export { SystemTtsProvider }
 
 /**
@@ -107,7 +107,7 @@ class SystemTtsProvider {
         this.settings.pitch = Number($('#system_tts_pitch').val());
         $('#system_tts_pitch_output').text(this.settings.pitch);
         $('#system_tts_rate_output').text(this.settings.rate);
-        console.log('Save changes');
+        onTtsProviderSettingsInput()
     }
 
     loadSettings(settings) {
@@ -144,6 +144,11 @@ class SystemTtsProvider {
 
         $('#system_tts_rate').val(this.settings.rate || this.defaultSettings.rate);
         $('#system_tts_pitch').val(this.settings.pitch || this.defaultSettings.pitch);
+
+        // Trigger updates
+        $('#system_tts_rate').on("input", this.onSettingsChange)
+        $('#system_tts_rate').on("input", this.onSettingsChange)
+
         $('#system_tts_pitch_output').text(this.settings.pitch);
         $('#system_tts_rate_output').text(this.settings.rate);
         console.info("Settings loaded");

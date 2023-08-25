@@ -515,7 +515,7 @@ function setTtsStatus(status, success) {
     }
 }
 
-function onApplyClick() {
+function onRefreshClick() {
     Promise.all([
         ttsProvider.onApplyClick(),
         // updateVoiceMap()
@@ -598,11 +598,7 @@ function onTtsProviderChange() {
 }
 
 // Ensure that TTS provider settings are saved to extension settings.
-function onTtsProviderSettingsInput() {
-    ttsProvider.onSettingsChange()
-
-    // Persist changes to SillyTavern tts extension settings
-
+export function onTtsProviderSettingsInput() {
     extension_settings.tts[ttsProviderName] = ttsProvider.settings
     saveSettingsDebounced()
     console.info(`Saved settings ${ttsProviderName} ${JSON.stringify(ttsProvider.settings)}`)
@@ -807,10 +803,11 @@ $(document).ready(function () {
                 <div class="inline-drawer-content">
                     <div id="tts_status">
                     </div>
-                    <div>
-                        <span>Select TTS Provider</span> </br>
-                        <select id="tts_provider">
+                    <span>Select TTS Provider</span> </br>
+                    <div class="tts_block">
+                        <select id="tts_provider" class="flex1">
                         </select>
+                        <input id="tts_refresh" class="menu_button" type="submit" value="Reload" />
                     </div>
                     <div>
                         <label class="checkbox_label" for="tts_enabled">
@@ -840,7 +837,6 @@ $(document).ready(function () {
                     <form id="tts_provider_settings" class="inline-drawer-content">
                     </form>
                     <div class="tts_buttons">
-                        <input id="tts_apply" class="menu_button" type="submit" value="Reload / Apply" />
                         <input id="tts_voices" class="menu_button" type="submit" value="Available voices" />
                     </div>
                     </div>
@@ -849,14 +845,13 @@ $(document).ready(function () {
         </div>
         `
         $('#extensions_settings').append(settingsHtml)
-        $('#tts_apply').on('click', onApplyClick)
+        $('#tts_refresh').on('click', onRefreshClick)
         $('#tts_enabled').on('click', onEnableClick)
         $('#tts_narrate_dialogues').on('click', onNarrateDialoguesClick);
         $('#tts_narrate_quoted').on('click', onNarrateQuotedClick);
         $('#tts_narrate_translated_only').on('click', onNarrateTranslatedOnlyClick);
         $('#tts_auto_generation').on('click', onAutoGenerationClick);
         $('#tts_voices').on('click', onTtsVoicesClick)
-        $('#tts_provider_settings').on('input', onTtsProviderSettingsInput)
         for (const provider in ttsProviders) {
             $('#tts_provider').append($("<option />").val(provider).text(provider))
         }

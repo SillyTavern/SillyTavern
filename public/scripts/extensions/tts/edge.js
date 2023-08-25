@@ -2,6 +2,7 @@ import { getRequestHeaders } from "../../../script.js"
 import { getApiUrl } from "../../extensions.js"
 import { doExtrasFetch, modules } from "../../extensions.js"
 import { getPreviewString } from "./index.js"
+import { onTtsProviderSettingsInput } from "./index.js"
 
 export { EdgeTtsProvider }
 
@@ -30,6 +31,7 @@ class EdgeTtsProvider {
     onSettingsChange() {
         this.settings.rate = Number($('#edge_tts_rate').val());
         $('#edge_tts_rate_output').text(this.settings.rate);
+        onTtsProviderSettingsInput()
     }
 
     loadSettings(settings) {
@@ -51,7 +53,7 @@ class EdgeTtsProvider {
 
         $('#edge_tts_rate').val(this.settings.rate || 0);
         $('#edge_tts_rate_output').text(this.settings.rate || 0);
-
+        $('#edge_tts_rate').on("input",this.onSettingsChange)
         this.checkReady()
 
         console.info("Settings loaded")

@@ -1,5 +1,6 @@
 import { getRequestHeaders, callPopup } from "../../../script.js"
 import { getPreviewString } from "./index.js"
+import { onTtsProviderSettingsInput } from "./index.js"
 
 export { NovelTtsProvider }
 
@@ -37,7 +38,7 @@ class NovelTtsProvider {
     }
 
     onSettingsChange() {
-
+        onTtsProviderSettingsInput()
     }
 
     // Add a new Novel custom voice to provider
@@ -65,6 +66,7 @@ class NovelTtsProvider {
         this.settings.customVoices.forEach(voice => {
             voiceSelect.append(`<option>${voice}</option>`)
         })
+        this.onSettingsChange()
     }
 
     loadSettings(settings) {
