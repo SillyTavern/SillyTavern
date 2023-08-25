@@ -29,7 +29,7 @@ import {
 import { registerSlashCommand } from "./slash-commands.js";
 import { tokenizers } from "./tokenizers.js";
 
-import { delay } from "./utils.js";
+import { delay, resetScrollHeight } from "./utils.js";
 
 export {
     loadPowerUserSettings,
@@ -159,19 +159,21 @@ let power_user = {
     default_instruct: '',
     instruct: {
         enabled: false,
+        preset: "Alpaca",
+        system_prompt: "Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\nWrite {{char}}'s next reply in a fictional roleplay chat between {{user}} and {{char}}.\n",
+        input_sequence: "### Instruction:",
+        output_sequence: "### Response:",
+        first_output_sequence: "",
+        last_output_sequence: "",
+        system_sequence_prefix: "",
+        system_sequence_suffix: "",
+        stop_sequence: "",
+        separator_sequence: "",
         wrap: true,
+        macro: true,
         names: false,
-        system_prompt: "Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\nWrite {{char}}'s next reply in a fictional roleplay chat between {{user}} and {{char}}. Write 1 reply only.",
-        system_sequence: '',
-        stop_sequence: '',
-        input_sequence: '### Instruction:',
-        output_sequence: '### Response:',
-        last_output_sequence: '',
-        preset: 'Alpaca',
-        separator_sequence: '',
-        macro: false,
         names_force_groups: true,
-        activation_regex: '',
+        activation_regex: "",
     },
 
     context: {
@@ -904,6 +906,9 @@ function loadContextSettings() {
         $element.on('input', function () {
             power_user.context[control.property] = control.isCheckbox ? !!$(this).prop('checked') : $(this).val();
             saveSettingsDebounced();
+            if (!control.isCheckbox) {
+                resetScrollHeight($element);
+            }
         });
     });
 
