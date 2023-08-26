@@ -1,5 +1,5 @@
 import { doExtrasFetch, getApiUrl, modules } from "../../extensions.js"
-import { onTtsProviderSettingsInput } from "./index.js"
+import { saveTtsProviderSettings } from "./index.js"
 
 export { SileroTtsProvider }
 
@@ -31,7 +31,7 @@ class SileroTtsProvider {
     onSettingsChange() {
         // Used when provider settings are updated from UI
         this.settings.provider_endpoint = $('#silero_tts_endpoint').val()
-        onTtsProviderSettingsInput()
+        saveTtsProviderSettings()
     }
 
     loadSettings(settings) {
@@ -72,10 +72,10 @@ class SileroTtsProvider {
 
     // Perform a simple readiness check by trying to fetch voiceIds
     async checkReady(){
-        await this.fetchTtsVoiceIds()
+        await this.fetchTtsVoiceObjects()
     }
 
-    async onApplyClick() {
+    async onRefreshClick() {
         return
     }
 
@@ -85,7 +85,7 @@ class SileroTtsProvider {
 
     async getVoice(voiceName) {
         if (this.voices.length == 0) {
-            this.voices = await this.fetchTtsVoiceIds()
+            this.voices = await this.fetchTtsVoiceObjects()
         }
         const match = this.voices.filter(
             sileroVoice => sileroVoice.name == voiceName
@@ -104,7 +104,7 @@ class SileroTtsProvider {
     //###########//
     // API CALLS //
     //###########//
-    async fetchTtsVoiceIds() {
+    async fetchTtsVoiceObjects() {
         const response = await doExtrasFetch(`${this.settings.provider_endpoint}/speakers`)
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${await response.json()}`)

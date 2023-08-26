@@ -1,7 +1,7 @@
 import { isMobile } from "../../RossAscends-mods.js";
 import { getPreviewString } from "./index.js";
 import { talkingAnimation } from './index.js';
-import { onTtsProviderSettingsInput } from "./index.js"
+import { saveTtsProviderSettings } from "./index.js"
 export { SystemTtsProvider }
 
 /**
@@ -107,7 +107,7 @@ class SystemTtsProvider {
         this.settings.pitch = Number($('#system_tts_pitch').val());
         $('#system_tts_pitch_output').text(this.settings.pitch);
         $('#system_tts_rate_output').text(this.settings.rate);
-        onTtsProviderSettingsInput()
+        saveTtsProviderSettings()
     }
 
     loadSettings(settings) {
@@ -156,17 +156,17 @@ class SystemTtsProvider {
 
     // Perform a simple readiness check by trying to fetch voiceIds
     async checkReady(){
-        await this.fetchTtsVoiceIds()
+        await this.fetchTtsVoiceObjects()
     }
 
-    async onApplyClick() {
+    async onRefreshClick() {
         return
     }
 
     //#################//
     //  TTS Interfaces //
     //#################//
-    fetchTtsVoiceIds() {
+    fetchTtsVoiceObjects() {
         if (!('speechSynthesis' in window)) {
             return [];
         }

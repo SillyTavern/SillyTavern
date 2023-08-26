@@ -1,6 +1,6 @@
 import { getRequestHeaders, callPopup } from "../../../script.js"
 import { getPreviewString } from "./index.js"
-import { onTtsProviderSettingsInput } from "./index.js"
+import { initVoiceMap } from "./index.js"
 
 export { NovelTtsProvider }
 
@@ -37,15 +37,13 @@ class NovelTtsProvider {
         return html;
     }
 
-    onSettingsChange() {
-        onTtsProviderSettingsInput()
-    }
 
     // Add a new Novel custom voice to provider
     async addCustomVoice(){
         const voiceName = await callPopup('<h3>Custom Voice name:</h3>', 'input')
         this.settings.customVoices.push(voiceName)
         this.populateCustomVoices()
+        initVoiceMap() // Update TTS extension voiceMap
     }
 
     // Delete selected custom voice from provider
@@ -57,6 +55,7 @@ class NovelTtsProvider {
             this.settings.customVoices.splice(voiceIndex, 1);
         }
         this.populateCustomVoices()
+        initVoiceMap() // Update TTS extension voiceMap
     }
 
     // Create the UI dropdown list of voices in provider
@@ -66,7 +65,6 @@ class NovelTtsProvider {
         this.settings.customVoices.forEach(voice => {
             voiceSelect.append(`<option>${voice}</option>`)
         })
-        this.onSettingsChange()
     }
 
     loadSettings(settings) {
@@ -96,10 +94,10 @@ class NovelTtsProvider {
     // Perform a simple readiness check by trying to fetch voiceIds
     // Doesnt really do much for Novel, not seeing a good way to test this at the moment.
     async checkReady(){
-        await this.fetchTtsVoiceIds()
+        await this.fetchTtsVoiceObjects()
     }
 
-    async onApplyClick() {
+    async onRefreshClick() {
         return
     }
 
@@ -123,7 +121,7 @@ class NovelTtsProvider {
     //###########//
     // API CALLS //
     //###########//
-    async fetchTtsVoiceIds() {
+    async fetchTtsVoiceObjects() {
         let voices = [
             { name: 'Ligeia', voice_id: 'Ligeia', lang: 'en-US', preview_url: false },
             { name: 'Aini', voice_id: 'Aini', lang: 'en-US', preview_url: false },

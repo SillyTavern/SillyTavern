@@ -1,4 +1,4 @@
-import { onTtsProviderSettingsInput } from "./index.js"
+import { saveTtsProviderSettings } from "./index.js"
 export { ElevenLabsTtsProvider }
 
 class ElevenLabsTtsProvider {
@@ -46,7 +46,7 @@ class ElevenLabsTtsProvider {
         this.settings.stability = $('#elevenlabs_tts_stability').val()
         this.settings.similarity_boost = $('#elevenlabs_tts_similarity_boost').val()
         this.settings.multilingual = $('#elevenlabs_tts_multilingual').prop('checked')
-        onTtsProviderSettingsInput()
+        saveTtsProviderSettings()
     }
 
 
@@ -79,10 +79,10 @@ class ElevenLabsTtsProvider {
 
     // Perform a simple readiness check by trying to fetch voiceIds
     async checkReady(){
-        await this.fetchTtsVoiceIds()
+        await this.fetchTtsVoiceObjects()
     }
 
-    async onApplyClick() {
+    async onRefreshClick() {
     }
 
     async onConnectClick() {
@@ -97,7 +97,7 @@ class ElevenLabsTtsProvider {
         // Using this call to validate API key
         this.settings.apiKey = $('#elevenlabs_tts_api_key').val()
 
-        await this.fetchTtsVoiceIds().catch(error => {
+        await this.fetchTtsVoiceObjects().catch(error => {
             throw `TTS API key validation failed`
         })
         this.settings.apiKey = this.settings.apiKey
@@ -111,7 +111,7 @@ class ElevenLabsTtsProvider {
 
     async getVoice(voiceName) {
         if (this.voices.length == 0) {
-            this.voices = await this.fetchTtsVoiceIds()
+            this.voices = await this.fetchTtsVoiceObjects()
         }
         const match = this.voices.filter(
             elevenVoice => elevenVoice.name == voiceName
@@ -158,7 +158,7 @@ class ElevenLabsTtsProvider {
     //###########//
     // API CALLS //
     //###########//
-    async fetchTtsVoiceIds() {
+    async fetchTtsVoiceObjects() {
         const headers = {
             'xi-api-key': this.settings.apiKey
         }

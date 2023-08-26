@@ -2,7 +2,7 @@ import { getRequestHeaders } from "../../../script.js"
 import { getApiUrl } from "../../extensions.js"
 import { doExtrasFetch, modules } from "../../extensions.js"
 import { getPreviewString } from "./index.js"
-import { onTtsProviderSettingsInput } from "./index.js"
+import { saveTtsProviderSettings } from "./index.js"
 
 export { EdgeTtsProvider }
 
@@ -31,7 +31,7 @@ class EdgeTtsProvider {
     onSettingsChange() {
         this.settings.rate = Number($('#edge_tts_rate').val());
         $('#edge_tts_rate_output').text(this.settings.rate);
-        onTtsProviderSettingsInput()
+        saveTtsProviderSettings()
     }
 
     loadSettings(settings) {
@@ -63,10 +63,10 @@ class EdgeTtsProvider {
     // Perform a simple readiness check by trying to fetch voiceIds
     async checkReady(){
         throwIfModuleMissing()
-        await this.fetchTtsVoiceIds()
+        await this.fetchTtsVoiceObjects()
     }
 
-    async onApplyClick() {
+    async onRefreshClick() {
         return
     }
 
@@ -76,7 +76,7 @@ class EdgeTtsProvider {
 
     async getVoice(voiceName) {
         if (this.voices.length == 0) {
-            this.voices = await this.fetchTtsVoiceIds()
+            this.voices = await this.fetchTtsVoiceObjects()
         }
         const match = this.voices.filter(
             voice => voice.name == voiceName
@@ -95,7 +95,7 @@ class EdgeTtsProvider {
     //###########//
     // API CALLS //
     //###########//
-    async fetchTtsVoiceIds() {
+    async fetchTtsVoiceObjects() {
         throwIfModuleMissing()
 
         const url = new URL(getApiUrl());
