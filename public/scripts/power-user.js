@@ -975,6 +975,8 @@ function loadContextSettings() {
 
 function highlightDefaultContext() {
     $('#context_set_default').toggleClass('default', power_user.default_context === power_user.context.preset);
+    $('#context_set_default').toggleClass('disabled', power_user.default_context === power_user.context.preset);
+    $('#context_delete_preset').toggleClass('disabled', power_user.default_context === power_user.context.preset);
 }
 
 export function fuzzySearchCharacters(searchValue) {
