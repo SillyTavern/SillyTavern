@@ -385,7 +385,7 @@ async function sendCommentMessage(_, text) {
         name: COMMENT_NAME_DEFAULT,
         is_user: false,
         is_name: true,
-        is_system: true,
+        is_system: false,
         send_date: getMessageTimeStamp(),
         mes: substituteParams(text.trim()),
         force_avatar: comment_avatar,
