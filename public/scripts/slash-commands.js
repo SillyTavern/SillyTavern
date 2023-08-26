@@ -131,7 +131,7 @@ parser.addCommand('send', sendUserMessageCallback, ['add'], '<span class="monosp
 
 const NARRATOR_NAME_KEY = 'narrator_name';
 const NARRATOR_NAME_DEFAULT = 'System';
-const COMMENT_NAME_DEFAULT = 'Note';
+export const COMMENT_NAME_DEFAULT = 'Note';
 
 async function sendUserMessageCallback(_, text) {
     if (!text) {

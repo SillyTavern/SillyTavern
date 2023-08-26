@@ -136,7 +136,7 @@ import {
 } from "./scripts/utils.js";
 
 import { extension_settings, getContext, loadExtensionSettings, processExtensionHelpers, registerExtensionHelper, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
-import { executeSlashCommands, getSlashCommandsHelp, registerSlashCommand } from "./scripts/slash-commands.js";
+import { COMMENT_NAME_DEFAULT, executeSlashCommands, getSlashCommandsHelp, registerSlashCommand } from "./scripts/slash-commands.js";
 import {
     tag_map,
     tags,
@@ -1197,6 +1197,11 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
 
     if (!mes) {
         mes = '';
+    }
+
+    // Force isSystem = false on comment messages so they get formatted properly
+    if (ch_name === COMMENT_NAME_DEFAULT && isSystem && !isUser) {
+        isSystem = false;
     }
 
     // Prompt bias replacement should be applied on the raw message
