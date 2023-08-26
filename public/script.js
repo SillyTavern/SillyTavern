@@ -907,6 +907,15 @@ function getCharacterBlock(item, id) {
 }
 
 async function printCharacters(fullRefresh = false) {
+    if (fullRefresh) {
+        saveCharactersPage = 0;
+        printTagFilters(tag_filter_types.character);
+        printTagFilters(tag_filter_types.group_member);
+
+        await delay(1);
+        displayOverrideWarnings();
+    }
+
     const storageKey = 'Characters_PerPage';
     $("#rm_print_characters_pagination").pagination({
         dataSource: getEntitiesList({ doFilter: true }),
@@ -938,18 +947,12 @@ async function printCharacters(fullRefresh = false) {
         afterPaging: function (e) {
             saveCharactersPage = e;
         },
+        afterRender: function () {
+            $('#rm_print_characters_block').scrollTop(0);
+        },
     });
 
     favsToHotswap();
-    saveCharactersPage = 0;
-
-    if (fullRefresh) {
-        printTagFilters(tag_filter_types.character);
-        printTagFilters(tag_filter_types.group_member);
-
-        await delay(300);
-        displayOverrideWarnings();
-    }
 }
 
 export function getEntitiesList({ doFilter } = {}) {
@@ -5873,9 +5876,10 @@ function select_rm_create() {
 }
 
 function select_rm_characters() {
+    const doFullRefresh = menu_type === 'characters';
     menu_type = "characters";
     selectRightMenuWithAnimation('rm_characters_block');
-    printCharacters(false); // Do a quick refresh of the characters list
+    printCharacters(doFullRefresh);
 }
 
 /**
