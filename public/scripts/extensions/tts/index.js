@@ -286,7 +286,7 @@ async function onTtsVoicesClick() {
     let popupText = ''
 
     try {
-        const voiceIds = await ttsProvider.fetchTtsVoiceIds()
+        const voiceIds = await ttsProvider.fetchTtsVoiceObjects()
 
         for (const voice of voiceIds) {
             popupText += `
@@ -517,7 +517,7 @@ function setTtsStatus(status, success) {
 
 function onRefreshClick() {
     Promise.all([
-        ttsProvider.onApplyClick(),
+        ttsProvider.onRefreshClick(),
         // updateVoiceMap()
     ]).then(() => {
         extension_settings.tts[ttsProviderName] = ttsProvider.settings
@@ -598,7 +598,8 @@ function onTtsProviderChange() {
 }
 
 // Ensure that TTS provider settings are saved to extension settings.
-export function onTtsProviderSettingsInput() {
+export function saveTtsProviderSettings() {
+    updateVoiceMap()
     extension_settings.tts[ttsProviderName] = ttsProvider.settings
     saveSettingsDebounced()
     console.info(`Saved settings ${ttsProviderName} ${JSON.stringify(ttsProvider.settings)}`)
@@ -723,10 +724,10 @@ class VoiceMapEntry {
 }
 
 /**
- * Init voiceMapEntries for character select list. Should only be called when character/chat is changed.
+ * Init voiceMapEntries for character select list.
  * 
  */
-async function initVoiceMap(){
+export async function initVoiceMap(){
     // Clear existing voiceMap state
     $('#tts_voicemap_block').empty()
     voiceMapEntries = []
@@ -766,7 +767,7 @@ async function initVoiceMap(){
     // Get voiceIds from provider
     let voiceIdsFromProvider
     try {
-        voiceIdsFromProvider = await ttsProvider.fetchTtsVoiceIds()
+        voiceIdsFromProvider = await ttsProvider.fetchTtsVoiceObjects()
     }
     catch {
         toastr.error("TTS Provider failed to return voice ids.")
