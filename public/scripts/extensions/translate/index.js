@@ -217,6 +217,10 @@ async function translateProviderDeepl(text, lang) {
 
 async function translate(text, lang) {
     try {
+        if (text == '') {
+            return '';
+        }
+
         switch (extension_settings.translate.provider) {
             case 'google':
                 return await translateProviderGoogle(text, lang);
@@ -421,9 +425,9 @@ jQuery(() => {
 
     loadSettings();
 
-    eventSource.on(event_types.MESSAGE_RECEIVED, handleIncomingMessage);
+    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, handleIncomingMessage);
     eventSource.on(event_types.MESSAGE_SWIPED, handleIncomingMessage);
-    eventSource.on(event_types.MESSAGE_SENT, handleOutgoingMessage);
+    eventSource.on(event_types.USER_MESSAGE_RENDERED, handleOutgoingMessage);
     eventSource.on(event_types.IMPERSONATE_READY, handleImpersonateReady);
     eventSource.on(event_types.MESSAGE_EDITED, handleMessageEdit);
 

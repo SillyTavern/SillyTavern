@@ -513,6 +513,38 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
             });
     }
 
+    // Fill quick edit fields for the first time
+    if ('global' === this.configuration.promptOrder.strategy) {
+        const handleQuickEditSave = (event) => {
+            const promptId = event.target.dataset.pmPrompt;
+            const prompt = this.getPromptById(promptId);
+
+            prompt.content = event.target.value;
+
+            // Update edit form if present
+            // @see https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/offsetParent
+            const popupEditFormPrompt = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt');
+            if (popupEditFormPrompt.offsetParent) {
+                popupEditFormPrompt.value = prompt.content;
+            }
+
+            this.log('Saved prompt: ' + promptId);
+            this.saveServiceSettings().then(() => this.render());
+        };
+
+        const mainPrompt = this.getPromptById('main');
+        const mainElementId = this.updateQuickEdit('main', mainPrompt);
+        document.getElementById(mainElementId).addEventListener('blur', handleQuickEditSave);
+
+        const nsfwPrompt = this.getPromptById('nsfw');
+        const nsfwElementId = this.updateQuickEdit('nsfw', nsfwPrompt);
+        document.getElementById(nsfwElementId).addEventListener('blur', handleQuickEditSave);
+
+        const jailbreakPrompt = this.getPromptById('jailbreak');
+        const jailbreakElementId = this.updateQuickEdit('jailbreak', jailbreakPrompt);
+        document.getElementById(jailbreakElementId).addEventListener('blur', handleQuickEditSave);
+    }
+
     // Re-render when chat history changes.
     eventSource.on(event_types.MESSAGE_DELETED, () => this.renderDebounced());
     eventSource.on(event_types.MESSAGE_EDITED, () => this.renderDebounced());
@@ -520,6 +552,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
 
     // Re-render when chatcompletion settings change
     eventSource.on(event_types.CHATCOMPLETION_SOURCE_CHANGED, () => this.renderDebounced());
+
     eventSource.on(event_types.CHATCOMPLETION_MODEL_CHANGED, () => this.renderDebounced());
 
     // Re-render when the character changes.
@@ -577,6 +610,15 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
             this.hidePopup();
             this.clearEditForm();
             this.renderDebounced();
+
+            const mainPrompt = this.getPromptById('main');
+            this.updateQuickEdit('main', mainPrompt);
+
+            const nsfwPrompt = this.getPromptById('nsfw');
+            this.updateQuickEdit('nsfw', nsfwPrompt);
+
+            const jailbreakPrompt = this.getPromptById('jailbreak');
+            this.updateQuickEdit('jailbreak', jailbreakPrompt);
         });
     });
 
@@ -609,6 +651,7 @@ PromptManagerModule.prototype.render = function (afterTryGenerate = true) {
                 this.makeDraggable();
                 this.profileEnd('render');
             }).catch(error => {
+                this.profileEnd('filling context');
                 this.log('Error caught during render: ' + error);
                 this.renderPromptManager();
                 this.renderPromptManagerListItems()
@@ -1016,8 +1059,11 @@ PromptManagerModule.prototype.createQuickEdit = function (identifier, title) {
 }
 
 PromptManagerModule.prototype.updateQuickEdit = function (identifier, prompt) {
-    const textarea = document.getElementById(`${identifier}_prompt_quick_edit_textarea`);
+    const elementId = `${identifier}_prompt_quick_edit_textarea`;
+    const textarea = document.getElementById(elementId);
     textarea.value = prompt.content;
+
+    return elementId;
 }
 
 /**
@@ -1312,47 +1358,8 @@ PromptManagerModule.prototype.renderPromptManager = function () {
         footerDiv.querySelector('#prompt-manager-export').addEventListener('click', showExportSelection);
         rangeBlockDiv.querySelector('.export-promptmanager-prompts-full').addEventListener('click', this.handleFullExport);
         rangeBlockDiv.querySelector('.export-promptmanager-prompts-character')?.addEventListener('click', this.handleCharacterExport);
-
-        const quickEditContainer = document.getElementById('quick-edit-container');
-        const heights = this.saveTextAreaHeights(quickEditContainer);
-        quickEditContainer.innerHTML = '';
-
-        this.createQuickEdit('jailbreak', 'Jailbreak');
-        this.createQuickEdit('nsfw', 'NSFW');
-        this.createQuickEdit('main', 'Main');
-
-        this.restoreTextAreaHeights(quickEditContainer, heights);
     }
 };
-
-/**
- * Restores the height of each textarea in the container
- * @param container The container to search for textareas
- * @param heights An object with textarea ids as keys and heights as values
- */
-PromptManagerModule.prototype.restoreTextAreaHeights = function(container, heights) {
-    if (Object.keys(heights).length === 0) return;
-
-    $(container).find('textarea').each(function () {
-        const height = heights[this.id];
-        if (height > 0) $(this).height(height);
-    });
-}
-
-/**
- * Saves the current height of each textarea in the container
- * @param container The container to search for textareas
- * @returns {{}} An object with textarea ids as keys and heights as values
- */
-PromptManagerModule.prototype.saveTextAreaHeights = function(container) {
-    const heights = {};
-
-    $(container).find('textarea').each(function () {
-        heights[this.id] = $(this).height();
-    });
-
-    return heights;
-}
 
 /**
  * Empties, then re-assembles the prompt list
@@ -1765,6 +1772,12 @@ const chatCompletionDefaultPrompts = {
             "system_prompt": true,
             "marker": true,
         },
+        {
+            "identifier": "personaDescription",
+            "name": "Persona Description",
+            "system_prompt": true,
+            "marker": true,
+        },
     ]
 };
 
@@ -1779,6 +1792,10 @@ const promptManagerDefaultPromptOrder = [
     },
     {
         "identifier": "worldInfoBefore",
+        "enabled": true
+    },
+    {
+        "identifier": "personaDescription",
         "enabled": true
     },
     {

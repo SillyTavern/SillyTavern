@@ -6,3 +6,4 @@ Start.bat
 /dist
 /backups/
 cloudflared.exe
+access.log

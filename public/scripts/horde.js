@@ -7,8 +7,7 @@ import {
 } from "../script.js";
 import { SECRET_KEYS, writeSecret } from "./secrets.js";
 import { delay } from "./utils.js";
-import { deviceInfo } from "./RossAscends-mods.js";
-import { power_user } from "./power-user.js";
+import { getDeviceInfo } from "./RossAscends-mods.js";
 import { autoSelectInstructPreset } from "./instruct-mode.js";
 
 export {
@@ -30,8 +29,8 @@ let horde_settings = {
     trusted_workers_only: false,
 };
 
-const MAX_RETRIES = 100;
-const CHECK_INTERVAL = 3000;
+const MAX_RETRIES = 200;
+const CHECK_INTERVAL = 5000;
 const MIN_AMOUNT_GEN = 16;
 const getRequestArgs = () => ({
     method: "GET",
@@ -259,7 +258,8 @@ jQuery(function () {
     $("#horde_kudos").on("click", showKudos);
 
     // Not needed on mobile
-    if (deviceInfo.device.type === 'desktop') {
+    const deviceInfo = getDeviceInfo();
+    if (deviceInfo && deviceInfo.device.type === 'desktop') {
         $('#horde_model').select2({
             width: '100%',
             placeholder: 'Select Horde models',

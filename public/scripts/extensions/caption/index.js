@@ -1,6 +1,7 @@
 import { getBase64Async } from "../../utils.js";
 import { getContext, getApiUrl, doExtrasFetch, extension_settings } from "../../extensions.js";
 import { callPopup, saveSettingsDebounced } from "../../../script.js";
+import { getMessageTimeStamp } from "../../RossAscends-mods.js";
 export { MODULE_NAME };
 
 const MODULE_NAME = 'caption';
@@ -52,7 +53,7 @@ async function sendCaptionedMessage(caption, image) {
         name: context.name1,
         is_user: true,
         is_name: true,
-        send_date: Date.now(),
+        send_date: getMessageTimeStamp(),
         mes: messageText,
         extra: {
             image: image,
