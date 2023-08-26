@@ -99,7 +99,6 @@ function loadNovelPreset(preset) {
         setGenerationParamsFromPreset(preset);
     }
 
-    $("#rep_pen_size_novel").attr('max', max_context);
     nai_settings.temperature = preset.temperature;
     nai_settings.repetition_penalty = preset.repetition_penalty;
     nai_settings.repetition_penalty_range = preset.repetition_penalty_range;
@@ -168,7 +167,6 @@ function loadNovelSettingsUi(ui_settings) {
     $("#rep_pen_novel").val(ui_settings.repetition_penalty);
     $("#rep_pen_counter_novel").text(Number(ui_settings.repetition_penalty).toFixed(2));
     $("#rep_pen_size_novel").val(ui_settings.repetition_penalty_range);
-    $("#rep_pen_size_novel").attr('max', max_context);
     $("#rep_pen_size_counter_novel").text(Number(ui_settings.repetition_penalty_range).toFixed(0));
     $("#rep_pen_slope_novel").val(ui_settings.repetition_penalty_slope);
     $("#rep_pen_slope_counter_novel").text(Number(`${ui_settings.repetition_penalty_slope}`).toFixed(2));

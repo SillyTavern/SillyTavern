@@ -878,13 +878,16 @@ function loadMaxContextUnlocked() {
 }
 
 function switchMaxContextSize() {
-    const element = $('#max_context');
+    const elements = [$('#max_context'), $('#rep_pen_range'), $('#rep_pen_range_textgenerationwebui')];
     const maxValue = power_user.max_context_unlocked ? MAX_CONTEXT_UNLOCKED : MAX_CONTEXT_DEFAULT;
-    element.attr('max', maxValue);
-    const value = Number(element.val());
 
-    if (value >= maxValue) {
-        element.val(maxValue).trigger('input');
+    for (const element of elements) {
+        element.attr('max', maxValue);
+        const value = Number(element.val());
+
+        if (value >= maxValue) {
+            element.val(maxValue).trigger('input');
+        }
     }
 }
 
