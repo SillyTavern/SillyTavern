@@ -151,7 +151,6 @@ let main_api = "kobold";
 let response_generate_novel;
 let characters = {};
 let response_dw_bg;
-let response_getstatus;
 let first_run = true;
 
 
@@ -735,14 +734,15 @@ app.post("/getchat", jsonParser, function (request, response) {
     }
 });
 
-app.post("/getstatus", jsonParser, async function (request, response_getstatus = response) {
-    if (!request.body) return response_getstatus.sendStatus(400);
+app.post("/getstatus", jsonParser, async function (request, response) {
+    if (!request.body) return response.sendStatus(400);
     api_server = request.body.api_server;
     main_api = request.body.main_api;
     if (api_server.indexOf('localhost') != -1) {
         api_server = api_server.replace('localhost', '127.0.0.1');
     }
-    var args = {
+
+    const args = {
         headers: { "Content-Type": "application/json" }
     };
 
@@ -750,9 +750,10 @@ app.post("/getstatus", jsonParser, async function (request, response_getstatus =
         args.headers = Object.assign(args.headers, get_mancer_headers());
     }
 
-    var url = api_server + "/v1/model";
+    const url = api_server + "/v1/model";
     let version = '';
     let koboldVersion = {};
+
     if (main_api == "kobold") {
         try {
             version = (await getAsync(api_server + "/v1/info/version")).result;
@@ -770,24 +771,26 @@ app.post("/getstatus", jsonParser, async function (request, response_getstatus =
             };
         }
     }
-    client.get(url, args, async function (data, response) {
-        if (typeof data !== 'object') {
+
+    try {
+        let data = await getAsync(url, args);
+
+        if (!data || typeof data !== 'object') {
             data = {};
         }
-        if (response.statusCode == 200) {
-            data.version = version;
-            data.koboldVersion = koboldVersion;
-            if (data.result == "ReadOnly") {
-                data.result = "no_connection";
-            }
-        } else {
-            data.response = data.result;
+
+        if (data.result == "ReadOnly") {
             data.result = "no_connection";
         }
-        response_getstatus.send(data);
-    }).on('error', function () {
-        response_getstatus.send({ result: "no_connection" });
-    });
+
+        data.version = version;
+        data.koboldVersion = koboldVersion;
+
+        return response.send(data);
+    } catch (error) {
+        console.log(error);
+        return response.send({ result: "no_connection" });
+    }
 });
 
 const formatApiUrl = (url) => (url.indexOf('localhost') !== -1)
