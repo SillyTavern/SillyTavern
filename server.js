@@ -3835,6 +3835,8 @@ function getPresetSettingsByAPI(apiId) {
             return { folder: directories.textGen_Settings, extension: '.settings' };
         case 'instruct':
             return { folder: directories.instruct, extension: '.json' };
+        case 'context':
+            return { folder: directories.context, extension: '.json' };
         default:
             return { folder: null, extension: null };
     }

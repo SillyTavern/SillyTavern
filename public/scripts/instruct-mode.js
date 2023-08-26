@@ -90,7 +90,7 @@ function selectContextPreset(preset) {
     }
 
     // If instruct mode is disabled, enable it, except for default context template
-    if (!power_user.instruct.enabled && preset !== 'Default') {
+    if (!power_user.instruct.enabled && preset !== power_user.default_context) {
         power_user.instruct.enabled = true;
         $('#instruct_enabled').prop('checked', true).trigger('change');
         toastr.info(`Instruct Mode enabled`);
@@ -359,7 +359,7 @@ jQuery(() => {
             $('#instruct_presets').trigger('change');
         // When instruct mode gets disabled, select default context preset
         } else {
-            selectContextPreset('Default');
+            selectContextPreset(power_user.default_context);
         }
     });
 
@@ -397,7 +397,7 @@ jQuery(() => {
         }
         if (!foundMatch) {
             // If no match was found, select default context preset
-            selectContextPreset('Default');
+            selectContextPreset(power_user.default_context);
         }
 
         highlightDefaultPreset();
