@@ -1,0 +1,40 @@
+{
+    "languages": [
+        {
+            "code": "en",
+            "name": "English",
+            "flag": "en"
+
+        },
+        {
+            "code": "it",
+            "name": "Italian"
+
+        },
+        {
+            "code": "ja",
+            "name": "Japanese"
+
+        },
+        {
+            "code": "ko",
+            "name": "Korean"
+
+        },
+        {
+            "code": "nl",
+            "name": "Dutch"
+
+        },
+        {
+            "code": "ru",
+            "name": "Russian"
+
+        },
+        {
+            "code": "zh-CN",
+            "name": "Chinese (Simplified)"
+
+        }
+    ]
+}
