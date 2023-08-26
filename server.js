@@ -156,6 +156,21 @@ let response_getstatus;
 let first_run = true;
 
 
+let color = {
+    byNum: (mess, fgNum) => {
+        mess = mess || '';
+        fgNum = fgNum === undefined ? 31 : fgNum;
+        return '\u001b[' + fgNum + 'm' + mess + '\u001b[39m';
+    },
+    black: (mess) => color.byNum(mess, 30),
+    red: (mess) => color.byNum(mess, 31),
+    green: (mess) => color.byNum(mess, 32),
+    yellow: (mess) => color.byNum(mess, 33),
+    blue: (mess) => color.byNum(mess, 34),
+    magenta: (mess) => color.byNum(mess, 35),
+    cyan: (mess) => color.byNum(mess, 36),
+    white: (mess) => color.byNum(mess, 37)
+};
 
 function get_mancer_headers() {
     const api_key_mancer = readSecret(SECRET_KEYS.MANCER);
@@ -368,7 +383,10 @@ app.use(CORS);
 
 if (listen && config.basicAuthMode) app.use(basicAuthMiddleware);
 
-app.use(function (req, res, next) { //Security
+// IP Whitelist //
+let knownIPs = new Set();
+
+function getIpFromRequest(req) {
     let clientIp = req.connection.remoteAddress;
     let ip = ipaddr.parse(clientIp);
     // Check if the IP address is IPv4-mapped IPv6 address
@@ -379,33 +397,35 @@ app.use(function (req, res, next) { //Security
         clientIp = ip;
         clientIp = clientIp.toString();
     }
+    return clientIp;
+}
+
+app.use(function (req, res, next) {
+    const clientIp = getIpFromRequest(req);
+
+    if (listen && !knownIPs.has(clientIp)) {
+        const userAgent = req.headers['user-agent'];
+        console.log(color.yellow(`New connection from ${clientIp}; User Agent: ${userAgent}]\n`));
+        knownIPs.add(clientIp);
+
+        // Write access log
+        const timestamp = new Date().toISOString();
+        const log = `${timestamp} ${clientIp} ${userAgent}\n`;
+        fs.appendFile('access.log', log, (err) => {
+            if (err) {
+                console.error('Failed to write access log:', err);
+            }
+        });
+    }
 
     //clientIp = req.connection.remoteAddress.split(':').pop();
     if (whitelistMode === true && !whitelist.some(x => ipMatching.matches(clientIp, ipMatching.getMatch(x)))) {
-        console.log('Forbidden: Connection attempt from ' + clientIp + '. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.conf in root of SillyTavern folder.\n');
+        console.log(color.red('Forbidden: Connection attempt from ' + clientIp + '. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.conf in root of SillyTavern folder.\n'));
         return res.status(403).send('<b>Forbidden</b>: Connection attempt from <b>' + clientIp + '</b>. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.conf in root of SillyTavern folder.');
     }
     next();
 });
 
-app.use((req, res, next) => {
-    if (req.url.startsWith('/characters/') && is_colab && process.env.googledrive == 2) {
-
-        const filePath = path.join(charactersPath, decodeURIComponent(req.url.substr('/characters'.length)));
-        console.log('req.url: ' + req.url);
-        console.log(filePath);
-        fs.access(filePath, fs.constants.R_OK, (err) => {
-            if (!err) {
-                res.sendFile(filePath, { root: process.cwd() });
-            } else {
-                res.send('Character not found: ' + filePath);
-                //next();
-            }
-        });
-    } else {
-        next();
-    }
-});
 
 app.use(express.static(process.cwd() + "/public", { refresh: true }));
 
@@ -810,10 +830,6 @@ app.post("/getstatus", jsonParser, async function (request, response_getstatus =
         response_getstatus.send({ result: "no_connection" });
     });
 });
-
-const formatApiUrl = (url) => (url.indexOf('localhost') !== -1)
-    ? url.replace('localhost', '127.0.0.1')
-    : url;
 
 function getVersion() {
     let pkgVersion = 'UNKNOWN';
@@ -3950,21 +3966,23 @@ const setupTasks = async function () {
 
     if (autorun) open(autorunUrl.toString());
 
-    console.log('\x1b[32mSillyTavern is listening on: ' + tavernUrl + '\x1b[0m');
+    console.log(color.green('SillyTavern is listening on: ' + tavernUrl));
 
     if (listen) {
-        console.log('\n0.0.0.0 means SillyTavern is listening on all network interfaces (Wi-Fi, LAN, localhost). If you want to limit it only to internal localhost (127.0.0.1), change the setting in config.conf to “listen=false”\n');
+        console.log('\n0.0.0.0 means SillyTavern is listening on all network interfaces (Wi-Fi, LAN, localhost). If you want to limit it only to internal localhost (127.0.0.1), change the setting in config.conf to "listen=false". Check "access.log" file in the SillyTavern directory if you want to inspect incoming connections.\n');
     }
 }
 
 if (listen && !config.whitelistMode && !config.basicAuthMode) {
-    if (config.securityOverride)
-        console.warn("Security has been override. If it's not a trusted network, change the settings.");
+    if (config.securityOverride) {
+        console.warn(color.red("Security has been overridden. If it's not a trusted network, change the settings."));
+    }
     else {
-        console.error('Your SillyTavern is currently unsecurely open to the public. Enable whitelisting or basic authentication.');
+        console.error(color.red('Your SillyTavern is currently unsecurely open to the public. Enable whitelisting or basic authentication.'));
         process.exit(1);
     }
 }
+
 if (true === cliArguments.ssl)
     https.createServer(
         {
