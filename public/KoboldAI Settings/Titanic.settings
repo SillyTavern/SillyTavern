@@ -1,7 +1,7 @@
 {
     "temp": 1.01,
     "rep_pen": 1.21,
-    "rep_pen_range": 0,
+    "rep_pen_range": 2048,
     "streaming_kobold": true,
     "top_p": 0.21,
     "top_a": 0.75,
