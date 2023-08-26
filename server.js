@@ -405,7 +405,7 @@ app.use(function (req, res, next) {
 
     if (listen && !knownIPs.has(clientIp)) {
         const userAgent = req.headers['user-agent'];
-        console.log(color.yellow(`New connection from ${clientIp}; User Agent: ${userAgent}]\n`));
+        console.log(color.yellow(`New connection from ${clientIp}; User Agent: ${userAgent}\n`));
         knownIPs.add(clientIp);
 
         // Write access log
