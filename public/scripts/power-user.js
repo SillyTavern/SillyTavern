@@ -176,6 +176,7 @@ let power_user = {
         activation_regex: "",
     },
 
+    default_context: 'Default',
     context: {
         preset: 'Default',
         story_string: defaultStoryString,
@@ -951,7 +952,29 @@ function loadContextSettings() {
                 break;
             }
         }
+
+        highlightDefaultContext();
+
+        saveSettingsDebounced();
     });
+
+    $('#context_set_default').on('click', function () {
+        if (power_user.context.preset !== power_user.default_context) {
+            power_user.default_context = power_user.context.preset;
+            $(this).addClass('default');
+            toastr.info(`Default context template set to ${power_user.default_context}`);
+
+            highlightDefaultContext();
+
+            saveSettingsDebounced();
+        }
+    });
+
+    highlightDefaultContext();
+}
+
+function highlightDefaultContext() {
+    $('#context_set_default').toggleClass('default', power_user.default_context === power_user.context.preset);
 }
 
 export function fuzzySearchCharacters(searchValue) {

@@ -1291,6 +1291,10 @@ select option:not(:checked) {
     color: var(--active) !important;
 }
 
+#context_set_default.default {
+    color: var(--preferred) !important;
+}
+
 #instruct_set_default.default {
     color: var(--preferred) !important;
 }
