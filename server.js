@@ -4096,6 +4096,8 @@ const SECRET_KEYS = {
     NOVEL: 'api_key_novel',
     CLAUDE: 'api_key_claude',
     DEEPL: 'deepl',
+    LIBRE: 'libre',
+    LIBRE_URL: 'libre_url',
     OPENROUTER: 'api_key_openrouter',
     SCALE: 'api_key_scale',
     AI21: 'api_key_ai21',
@@ -4320,6 +4322,46 @@ app.post('/horde_generateimage', jsonParser, async (request, response) => {
         return response.sendStatus(504);
     } catch (error) {
         console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+app.post('/libre_translate', jsonParser, async (request, response) => {
+    const key = readSecret(SECRET_KEYS.LIBRE);
+    const url = readSecret(SECRET_KEYS.LIBRE_URL);
+
+    const text = request.body.text;
+    const lang = request.body.lang;
+
+    if (!text || !lang) {
+        return response.sendStatus(400);
+    }
+
+    console.log('Input text: ' + text);
+
+    try {
+		const result = await fetch(url, {
+			method: "POST",
+			body: JSON.stringify({
+				q: text,
+				source: "auto",
+				target: lang,
+				format: "text",
+				api_key: key
+			}),
+			headers: { "Content-Type": "application/json" }
+		});
+
+        if (!result.ok) {
+            return response.sendStatus(result.status);
+        }
+
+        const json = await result.json();
+        console.log('Translated text: ' + json.translatedText);
+
+        return response.send(json.translatedText);
+    } catch (error) {
+        console.log("Translation error: " + error.message);
         return response.sendStatus(500);
     }
 });
