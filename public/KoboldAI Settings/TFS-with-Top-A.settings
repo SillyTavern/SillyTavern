@@ -1,12 +1,12 @@
 {
-    "temp": 0,
-    "rep_pen": 1.18,
+    "temp": 0.7,
+    "rep_pen": 1.15,
     "rep_pen_range": 2048,
-    "top_p": 0,
-    "top_a": 0,
-    "top_k": 1,
+    "top_p": 1,
+    "top_a": 0.2,
+    "top_k": 0,
     "typical": 1,
-    "tfs": 1,
+    "tfs": 0.95,
     "rep_pen_slope": 0,
     "single_line": false,
     "sampler_order": [
