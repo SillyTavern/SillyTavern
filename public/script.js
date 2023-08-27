@@ -1324,6 +1324,7 @@ function insertSVGIcon(mes, extra) {
     // Add classes for styling and identification
     image.classList.add('icon-svg', 'timestamp-icon');
     image.src = `/img/${modelName}.svg`;
+    image.title = `${extra?.api ? extra.api + ' - ' : ''}${extra?.model ?? ''}`;
 
     image.onload = async function () {
         // Check if an SVG already exists adjacent to the timestamp
