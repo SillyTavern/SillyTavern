@@ -45,6 +45,17 @@ export function getSortableDelay() {
     return isMobile() ? 750 : 50;
 }
 
+export async function bufferToBase64(buffer) {
+    // use a FileReader to generate a base64 data URI:
+    const base64url = await new Promise(resolve => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result)
+        reader.readAsDataURL(new Blob([buffer]))
+    });
+    // remove the `data:...;base64,` part from the start
+    return base64url.slice(base64url.indexOf(',') + 1);
+}
+
 /**
  * Rearranges an array in a random order.
  * @param {any[]} array The array to shuffle.

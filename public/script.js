@@ -320,13 +320,14 @@ let safetychat = [
     },
 ];
 let chatSaveTimeout;
+let importFlashTimeout;
 export let isChatSaving = false;
 let chat_create_date = 0;
 let firstRun = false;
 
 const default_ch_mes = "Hello";
 let count_view_mes = 0;
-let generatedPromtCache = "";
+let generatedPromptCache = "";
 let generation_started = new Date();
 let characters = [];
 let this_chid;
@@ -1323,6 +1324,7 @@ function insertSVGIcon(mes, extra) {
     // Add classes for styling and identification
     image.classList.add('icon-svg', 'timestamp-icon');
     image.src = `/img/${modelName}.svg`;
+    image.title = `${extra?.api ? extra.api + ' - ' : ''}${extra?.model ?? ''}`;
 
     image.onload = async function () {
         // Check if an SVG already exists adjacent to the timestamp
@@ -1443,7 +1445,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     var avatarImg = getUserAvatar(user_avatar);
     const isSystem = mes.is_system;
     const title = mes.title;
-    generatedPromtCache = "";
+    generatedPromptCache = "";
 
     //for non-user mesages
     if (!mes["is_user"]) {
@@ -2117,7 +2119,7 @@ class StreamingProcessor {
         activateSendButtons();
         showSwipeButtons();
         setGenerationProgress(0);
-        generatedPromtCache = '';
+        generatedPromptCache = '';
 
         //console.log("Generated text size:", text.length, text)
 
@@ -2340,10 +2342,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             if (chat.length && chat[chat.length - 1]['is_user']) {
                 //do nothing? why does this check exist?
             }
-            else if (type !== 'quiet' && type !== "swipe" && !isImpersonate && !dryRun) {
+            else if (type !== 'quiet' && type !== "swipe" && !isImpersonate && !dryRun && chat.length) {
                 chat.length = chat.length - 1;
                 count_view_mes -= 1;
-                $('#chat').children().last().hide(500, function () {
+                $('#chat').children().last().hide(250, function () {
                     $(this).remove();
                 });
                 await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
@@ -2619,13 +2621,13 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         const originalType = type;
         runGenerate(cyclePrompt);
 
-        async function runGenerate(cycleGenerationPromt = '') {
+        async function runGenerate(cycleGenerationPrompt = '') {
             if (!dryRun) {
                 is_send_press = true;
             }
 
-            generatedPromtCache += cycleGenerationPromt;
-            if (generatedPromtCache.length == 0 || type === 'continue') {
+            generatedPromptCache += cycleGenerationPrompt;
+            if (generatedPromptCache.length == 0 || type === 'continue') {
                 if (main_api === 'openai') {
                     generateOpenAIPromptCache();
                 }
@@ -2655,7 +2657,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
             let mesExmString = '';
 
-            function setPromtString() {
+            function setPromptString() {
                 if (main_api == 'openai') {
                     return;
                 }
@@ -2726,26 +2728,26 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 return promptCache;
             }
 
-            function checkPromtSize() {
+            function checkPromptSize() {
                 console.debug('---checking Prompt size');
-                setPromtString();
+                setPromptString();
                 const prompt = [
                     storyString,
                     mesExmString,
                     mesSend.join(''),
-                    generatedPromtCache,
+                    generatedPromptCache,
                     allAnchors,
                     quiet_prompt,
                 ].join('').replace(/\r/gm, '');
-                let thisPromtContextSize = getTokenCount(prompt, power_user.token_padding);
+                let thisPromptContextSize = getTokenCount(prompt, power_user.token_padding);
 
-                if (thisPromtContextSize > this_max_context) {        //if the prepared prompt is larger than the max context size...
+                if (thisPromptContextSize > this_max_context) {        //if the prepared prompt is larger than the max context size...
                     if (count_exm_add > 0) {                            // ..and we have example mesages..
                         count_exm_add--;                            // remove the example messages...
-                        checkPromtSize();                            // and try agin...
+                        checkPromptSize();                            // and try agin...
                     } else if (mesSend.length > 0) {                    // if the chat history is longer than 0
                         mesSend.shift();                            // remove the first (oldest) chat entry..
-                        checkPromtSize();                            // and check size again..
+                        checkPromptSize();                            // and check size again..
                     } else {
                         //end
                         console.debug(`---mesSend.length = ${mesSend.length}`);
@@ -2753,12 +2755,12 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
             }
 
-            if (generatedPromtCache.length > 0 && main_api !== 'openai') {
-                console.debug('---Generated Prompt Cache length: ' + generatedPromtCache.length);
-                checkPromtSize();
+            if (generatedPromptCache.length > 0 && main_api !== 'openai') {
+                console.debug('---Generated Prompt Cache length: ' + generatedPromptCache.length);
+                checkPromptSize();
             } else {
-                console.debug('---calling setPromtString ' + generatedPromtCache.length)
-                setPromtString();
+                console.debug('---calling setPromptString ' + generatedPromptCache.length)
+                setPromptString();
             }
 
             // Fetches the combined prompt for both negative and positive prompts
@@ -2847,8 +2849,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
 
                 // Prune from prompt cache if it exists
-                if (generatedPromtCache.length !== 0) {
-                    generatedPromtCache = cleanupPromptCache(generatedPromtCache);
+                if (generatedPromptCache.length !== 0) {
+                    generatedPromptCache = cleanupPromptCache(generatedPromptCache);
                 }
 
                 // Right now, everything is suffixed with a newline
@@ -2865,7 +2867,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     afterScenarioAnchor +
                     mesExmString +
                     mesSendString +
-                    generatedPromtCache;
+                    generatedPromptCache;
 
                 combinedPrompt = combinedPrompt.replace(/\r/gm, '');
 
@@ -2978,9 +2980,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 afterScenarioAnchor: afterScenarioAnchor,
                 examplesString: examplesString,
                 mesSendString: mesSendString,
-                generatedPromtCache: generatedPromtCache,
+                generatedPromptCache: generatedPromptCache,
                 promptBias: promptBias,
-                finalPromt: finalPrompt,
+                finalPrompt: finalPrompt,
                 charDescription: charDescription,
                 charPersonality: charPersonality,
                 scenarioText: scenarioText,
@@ -3056,7 +3058,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
             async function onSuccess(data) {
                 if (data.error == 'dryRun') {
-                    generatedPromtCache = '';
+                    generatedPromptCache = '';
                     resolve();
                     return;
                 }
@@ -3106,7 +3108,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         }
 
                         tokens_already_generated = 0;
-                        generatedPromtCache = "";
+                        generatedPromptCache = "";
                         const substringStart = originalType !== 'continue' ? magFirst.length : 0;
                         getMessage = message_already_generated.substring(substringStart);
                     }
@@ -3124,7 +3126,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     if (getMessage.length > 0) {
                         if (isImpersonate) {
                             $('#send_textarea').val(getMessage).trigger('input');
-                            generatedPromtCache = "";
+                            generatedPromptCache = "";
                             await eventSource.emit(event_types.IMPERSONATE_READY, getMessage);
                         }
                         else if (type == 'quiet') {
@@ -3187,7 +3189,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         }
                     }
                 } else {
-                    generatedPromtCache = '';
+                    generatedPromptCache = '';
                     activateSendButtons();
                     //console.log('runGenerate calling showSwipeBtns');
                     showSwipeButtons();
@@ -3400,21 +3402,21 @@ function addChatsSeparator(mesSendString) {
     }
 }
 
-function appendZeroDepthAnchor(force_name2, zeroDepthAnchor, finalPromt) {
+function appendZeroDepthAnchor(force_name2, zeroDepthAnchor, finalPrompt) {
     const trimBothEnds = !force_name2 && !is_pygmalion;
     let trimmedPrompt = (trimBothEnds ? zeroDepthAnchor.trim() : zeroDepthAnchor.trimEnd());
 
-    if (trimBothEnds && !finalPromt.endsWith('\n')) {
-        finalPromt += '\n';
+    if (trimBothEnds && !finalPrompt.endsWith('\n')) {
+        finalPrompt += '\n';
     }
 
-    finalPromt += trimmedPrompt;
+    finalPrompt += trimmedPrompt;
 
     if (force_name2 || is_pygmalion) {
-        finalPromt += ' ';
+        finalPrompt += ' ';
     }
 
-    return finalPromt;
+    return finalPrompt;
 }
 
 function getMultigenAmount() {
@@ -3551,7 +3553,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
     } else {
         //for non-OAI APIs
         //console.log('-- Counting non-OAI Tokens');
-        var finalPromptTokens = getTokenCount(itemizedPrompts[thisPromptSet].finalPromt);
+        var finalPromptTokens = getTokenCount(itemizedPrompts[thisPromptSet].finalPrompt);
         var storyStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].storyString) - worldInfoStringTokens;
         var examplesStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].examplesString);
         var mesSendStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].mesSendString)
@@ -3568,7 +3570,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
             //afterScenarioAnchorTokens +       //only counts if AN is set to 'after scenario'
             //zeroDepthAnchorTokens +           //same as above, even if AN not on 0 depth
             promptBiasTokens;       //{{}}
-        //- thisPrompt_padding;  //not sure this way of calculating is correct, but the math results in same value as 'finalPromt'
+        //- thisPrompt_padding;  //not sure this way of calculating is correct, but the math results in same value as 'finalPrompt'
     }
 
     if (this_main_api == 'openai') {
@@ -5708,19 +5710,39 @@ function select_rm_info(type, charId, previousCharId = null) {
 
     selectRightMenuWithAnimation('rm_characters_block');
 
-    setTimeout(function () {
+    // Set a timeout so multiple flashes don't overlap
+    clearTimeout(importFlashTimeout);
+    importFlashTimeout = setTimeout(function () {
         if (type === 'char_import' || type === 'char_create') {
-            const element = $(`#rm_characters_block [title="${charId}"]`).parent().get(0);
-            console.log(element);
-            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // Find the page at which the character is located
+            const charData = getEntitiesList({ doFilter: true });
+            const charIndex = charData.findIndex((x) => x?.item?.avatar?.startsWith(charId));
+
+            if (charIndex === -1) {
+                console.log(`Could not find character ${charId} in the list`);
+                return;
+            }
 
             try {
-                if (element !== undefined || element !== null) {
+                const perPage = Number(localStorage.getItem('Characters_PerPage'));
+                const page = Math.floor(charIndex / perPage) + 1;
+                const selector = `#rm_print_characters_block [title^="${charId}"]`;
+                $('#rm_print_characters_pagination').pagination('go', page);
+
+                waitUntilCondition(() => document.querySelector(selector) !== null).then(() => {
+                    const element = $(selector).parent().get(0);
+
+                    if (!element) {
+                        console.log(`Could not find element for character ${charId}`);
+                        return;
+                    }
+
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     $(element).addClass('flash animated');
                     setTimeout(function () {
                         $(element).removeClass('flash animated');
                     }, 5000);
-                } else { console.log('didnt find the element'); }
+                });
             } catch (e) {
                 console.error(e);
             }
@@ -5741,7 +5763,7 @@ function select_rm_info(type, charId, previousCharId = null) {
                 console.error(e);
             }
         }
-    }, 100);
+    }, 250);
 
     if (previousCharId) {
         const newId = characters.findIndex((x) => x.avatar == previousCharId);
@@ -8682,9 +8704,9 @@ $(document).ready(function () {
             }
 
             // Set the height of "autoSetHeight" textareas within the drawer to their scroll height
-            $(this).closest('.drawer').find('.drawer-content textarea.autoSetHeight').each(function() {
+            $(this).closest('.drawer').find('.drawer-content textarea.autoSetHeight').each(function () {
                 resetScrollHeight($(this));
-           });
+            });
 
         } else if (drawerWasOpenAlready) { //to close manually
             icon.toggleClass('closedIcon openIcon');
@@ -8753,7 +8775,7 @@ $(document).ready(function () {
         $(this).closest('.inline-drawer').find('.inline-drawer-content').stop().slideToggle();
 
         // Set the height of "autoSetHeight" textareas within the inline-drawer to their scroll height
-        $(this).closest('.inline-drawer').find('.inline-drawer-content textarea.autoSetHeight').each(function() {
+        $(this).closest('.inline-drawer').find('.inline-drawer-content textarea.autoSetHeight').each(function () {
             resetScrollHeight($(this));
         });
     });

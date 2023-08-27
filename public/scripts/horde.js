@@ -117,12 +117,18 @@ async function generateHorde(prompt, params, signal) {
     });
 
     if (!response.ok) {
-        const error = await response.json();
-        callPopup(error.message, 'text');
-        throw new Error('Horde generation failed: ' + error.message);
+        toastr.error(response.statusText, 'Horde generation failed');
+        throw new Error(`Horde generation failed: ${response.statusText}`);
     }
 
     const responseJson = await response.json();
+
+    if (responseJson.error) {
+        const reason = responseJson.error?.message || 'Unknown error';
+        toastr.error(reason, 'Horde generation failed');
+        throw new Error(`Horde generation failed: ${reason}`);
+    }
+
     const task_id = responseJson.id;
     let queue_position_first = null;
     console.log(`Horde task id = ${task_id}`);
