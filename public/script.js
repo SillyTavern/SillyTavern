@@ -2342,10 +2342,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             if (chat.length && chat[chat.length - 1]['is_user']) {
                 //do nothing? why does this check exist?
             }
-            else if (type !== 'quiet' && type !== "swipe" && !isImpersonate && !dryRun) {
+            else if (type !== 'quiet' && type !== "swipe" && !isImpersonate && !dryRun && chat.length) {
                 chat.length = chat.length - 1;
                 count_view_mes -= 1;
-                $('#chat').children().last().hide(500, function () {
+                $('#chat').children().last().hide(250, function () {
                     $(this).remove();
                 });
                 await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
