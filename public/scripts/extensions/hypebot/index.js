@@ -172,6 +172,8 @@ async function generateHypeBot() {
         const output = decodeTextTokens(tokenizers.GPT2, ids).replace(/�/g, '').trim();
 
         setHypeBotText(formatReply(output));
+    } else {
+        setHypeBotText('<div class="hypebot_error">Something went wrong while generating a HypeBot reply. Please try again.</div>');
     }
 }
 

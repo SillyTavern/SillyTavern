@@ -646,6 +646,24 @@ export function adjustNovelInstructionPrompt(prompt) {
     return stripedPrompt;
 }
 
+function tryParseStreamingError(decoded) {
+    try {
+        const data = JSON.parse(decoded);
+
+        if (!data) {
+            return;
+        }
+
+        if (data.message && data.statusCode >= 400) {
+            toastr.error(data.message, 'Error');
+            throw new Error(data);
+        }
+    }
+    catch {
+        // No JSON. Do nothing.
+    }
+}
+
 export async function generateNovelWithStreaming(generate_data, signal) {
     generate_data.streaming = nai_settings.streaming_novel;
 
@@ -663,12 +681,14 @@ export async function generateNovelWithStreaming(generate_data, signal) {
         let messageBuffer = "";
         while (true) {
             const { done, value } = await reader.read();
-            let response = decoder.decode(value);
+            let decoded = decoder.decode(value);
             let eventList = [];
+
+            tryParseStreamingError(decoded);
 
             // ReadableStream's buffer is not guaranteed to contain full SSE messages as they arrive in chunks
             // We need to buffer chunks until we have one or more full messages (separated by double newlines)
-            messageBuffer += response;
+            messageBuffer += decoded;
             eventList = messageBuffer.split("\n\n");
             // Last element will be an empty string or a leftover partial message
             messageBuffer = eventList.pop();
