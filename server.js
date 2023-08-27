@@ -4202,8 +4202,15 @@ app.post('/generate_horde', jsonParser, async (request, response) => {
         const data = await postAsync(url, args);
         return response.send(data);
     } catch (error) {
-        console.error(error);
-        return response.sendStatus(500);
+        console.log('Horde returned an error:', error.statusText);
+
+        if (typeof error.text === 'function') {
+            const message = await error.text();
+            console.log(message);
+            return response.send({ error: { message } });
+        } else {
+            return response.send({ error: true });
+        }
     }
 });
 
