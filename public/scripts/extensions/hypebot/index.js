@@ -91,7 +91,7 @@ async function generateHypeBot() {
     }
 
     if (!secret_state[SECRET_KEYS.NOVEL]) {
-        setHypeBotText('<span class="hypebot_nokey">No API key found. Please enter your API key in the NovelAI API Settings</span>');
+        setHypeBotText('<div class="hypebot_nokey">No API key found. Please enter your API key in the NovelAI API Settings to use the HypeBot.</div>');
         return;
     }
 

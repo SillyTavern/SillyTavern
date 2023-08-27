@@ -517,7 +517,7 @@ hr {
 }
 
 #send_form.no-connection {
-    background-color: rgba(100, 0, 0, 0.5) !important;
+    background-color: var(--crimson70a) !important;
 }
 
 #send_but_sheld {
@@ -1980,14 +1980,19 @@ grammarly-extension {
 
 /* ------ online status indicators and texts. 2 = kobold AI, 3 = Novel AI  ----------*/
 #online_status2,
+#online_status3,
 #online_status_horde,
 .online_status4 {
-    opacity: 0.5;
+    opacity: 0.8;
     margin-top: 2px;
     margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
 }
 
 #online_status_indicator2,
+#online_status_indicator3,
 #online_status_indicator_horde,
 .online_status_indicator4 {
     border-radius: 7px;
@@ -1998,28 +2003,9 @@ grammarly-extension {
 }
 
 #online_status_text2,
+#online_status_text3,
 #online_status_text_horde,
 .online_status_text4 {
-    margin-left: 4px;
-    display: inline-block;
-}
-
-#online_status3 {
-    opacity: 0.5;
-    margin-top: 2px;
-
-    margin-bottom: 30px;
-}
-
-#online_status_indicator3 {
-    border-radius: 7px;
-    width: 14px;
-    height: 14px;
-    background-color: red;
-    display: inline-block;
-}
-
-#online_status_text3 {
     margin-left: 4px;
     display: inline-block;
 }
