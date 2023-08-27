@@ -320,6 +320,7 @@ let safetychat = [
     },
 ];
 let chatSaveTimeout;
+let importFlashTimeout;
 export let isChatSaving = false;
 let chat_create_date = 0;
 let firstRun = false;
@@ -907,6 +908,15 @@ function getCharacterBlock(item, id) {
 }
 
 async function printCharacters(fullRefresh = false) {
+    if (fullRefresh) {
+        saveCharactersPage = 0;
+        printTagFilters(tag_filter_types.character);
+        printTagFilters(tag_filter_types.group_member);
+
+        await delay(1);
+        displayOverrideWarnings();
+    }
+
     const storageKey = 'Characters_PerPage';
     $("#rm_print_characters_pagination").pagination({
         dataSource: getEntitiesList({ doFilter: true }),
@@ -938,18 +948,12 @@ async function printCharacters(fullRefresh = false) {
         afterPaging: function (e) {
             saveCharactersPage = e;
         },
+        afterRender: function () {
+            $('#rm_print_characters_block').scrollTop(0);
+        },
     });
 
     favsToHotswap();
-    saveCharactersPage = 0;
-
-    if (fullRefresh) {
-        printTagFilters(tag_filter_types.character);
-        printTagFilters(tag_filter_types.group_member);
-
-        await delay(300);
-        displayOverrideWarnings();
-    }
 }
 
 export function getEntitiesList({ doFilter } = {}) {
@@ -1320,6 +1324,7 @@ function insertSVGIcon(mes, extra) {
     // Add classes for styling and identification
     image.classList.add('icon-svg', 'timestamp-icon');
     image.src = `/img/${modelName}.svg`;
+    image.title = `${extra?.api ? extra.api + ' - ' : ''}${extra?.model ?? ''}`;
 
     image.onload = async function () {
         // Check if an SVG already exists adjacent to the timestamp
@@ -5705,19 +5710,39 @@ function select_rm_info(type, charId, previousCharId = null) {
 
     selectRightMenuWithAnimation('rm_characters_block');
 
-    setTimeout(function () {
+    // Set a timeout so multiple flashes don't overlap
+    clearTimeout(importFlashTimeout);
+    importFlashTimeout = setTimeout(function () {
         if (type === 'char_import' || type === 'char_create') {
-            const element = $(`#rm_characters_block [title="${charId}"]`).parent().get(0);
-            console.log(element);
-            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // Find the page at which the character is located
+            const charData = getEntitiesList({ doFilter: true });
+            const charIndex = charData.findIndex((x) => x?.item?.avatar?.startsWith(charId));
+
+            if (charIndex === -1) {
+                console.log(`Could not find character ${charId} in the list`);
+                return;
+            }
 
             try {
-                if (element !== undefined || element !== null) {
+                const perPage = Number(localStorage.getItem('Characters_PerPage'));
+                const page = Math.floor(charIndex / perPage) + 1;
+                const selector = `#rm_print_characters_block [title^="${charId}"]`;
+                $('#rm_print_characters_pagination').pagination('go', page);
+
+                waitUntilCondition(() => document.querySelector(selector) !== null).then(() => {
+                    const element = $(selector).parent().get(0);
+
+                    if (!element) {
+                        console.log(`Could not find element for character ${charId}`);
+                        return;
+                    }
+
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     $(element).addClass('flash animated');
                     setTimeout(function () {
                         $(element).removeClass('flash animated');
                     }, 5000);
-                } else { console.log('didnt find the element'); }
+                });
             } catch (e) {
                 console.error(e);
             }
@@ -5738,7 +5763,7 @@ function select_rm_info(type, charId, previousCharId = null) {
                 console.error(e);
             }
         }
-    }, 100);
+    }, 250);
 
     if (previousCharId) {
         const newId = characters.findIndex((x) => x.avatar == previousCharId);
@@ -5873,9 +5898,10 @@ function select_rm_create() {
 }
 
 function select_rm_characters() {
+    const doFullRefresh = menu_type === 'characters';
     menu_type = "characters";
     selectRightMenuWithAnimation('rm_characters_block');
-    printCharacters(false); // Do a quick refresh of the characters list
+    printCharacters(doFullRefresh);
 }
 
 /**
@@ -8678,9 +8704,9 @@ $(document).ready(function () {
             }
 
             // Set the height of "autoSetHeight" textareas within the drawer to their scroll height
-            $(this).closest('.drawer').find('.drawer-content textarea.autoSetHeight').each(function() {
+            $(this).closest('.drawer').find('.drawer-content textarea.autoSetHeight').each(function () {
                 resetScrollHeight($(this));
-           });
+            });
 
         } else if (drawerWasOpenAlready) { //to close manually
             icon.toggleClass('closedIcon openIcon');
@@ -8749,7 +8775,7 @@ $(document).ready(function () {
         $(this).closest('.inline-drawer').find('.inline-drawer-content').stop().slideToggle();
 
         // Set the height of "autoSetHeight" textareas within the inline-drawer to their scroll height
-        $(this).closest('.inline-drawer').find('.inline-drawer-content textarea.autoSetHeight').each(function() {
+        $(this).closest('.inline-drawer').find('.inline-drawer-content textarea.autoSetHeight').each(function () {
             resetScrollHeight($(this));
         });
     });
