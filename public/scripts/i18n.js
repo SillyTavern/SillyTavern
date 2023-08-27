@@ -1,3 +1,4 @@
+import { registerDebugFunction } from "./power-user.js";
 import { waitUntilCondition } from "./utils.js";
 
 const storageKey = "language";
@@ -48,9 +49,9 @@ function getMissingTranslations() {
 
     console.table(uniqueMissingData);
     console.log(missingDataMap);
-}
 
-window["getMissingTranslations"] = getMissingTranslations;
+    toastr.success(`Found ${uniqueMissingData.length} missing translations. See browser console for details.`);
+}
 
 export function applyLocale(root = document) {
     const overrideLanguage = localStorage.getItem("language");
@@ -106,7 +107,6 @@ function addLanguagesToDropdown() {
 
 jQuery(async () => {
     waitUntilCondition(() => !!localeData);
-    window["applyLocale"] = applyLocale;
     applyLocale();
     addLanguagesToDropdown();
 
@@ -121,4 +121,7 @@ jQuery(async () => {
 
         location.reload();
     });
+
+    registerDebugFunction('getMissingTranslations', 'Get missing translations', 'Detects missing localization data and dumps the data into the browser console.', getMissingTranslations);
+    registerDebugFunction('applyLocale', 'Apply locale', 'Reapplies the currently selected locale to the page.', applyLocale);
 });

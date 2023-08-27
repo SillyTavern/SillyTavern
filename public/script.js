@@ -70,6 +70,7 @@ import {
     MAX_CONTEXT_DEFAULT,
     renderStoryString,
     sortEntitiesList,
+    registerDebugFunction,
 } from "./scripts/power-user.js";
 
 import {
@@ -6658,6 +6659,7 @@ window["SillyTavern"].getContext = function () {
         saveReply,
         registerSlashCommand: registerSlashCommand,
         registerHelper: registerExtensionHelper,
+        registedDebugFunction: registerDebugFunction,
     };
 };
 

@@ -1,5 +1,5 @@
 import { characters, main_api, nai_settings, online_status, this_chid } from "../script.js";
-import { power_user } from "./power-user.js";
+import { power_user, registerDebugFunction } from "./power-user.js";
 import { chat_completion_sources, oai_settings } from "./openai.js";
 import { groups, selected_group } from "./group-chats.js";
 import { getStringHash } from "./utils.js";
@@ -59,12 +59,11 @@ async function resetTokenCache() {
         console.debug('Chat Completions: resetting token cache');
         Object.keys(tokenCache).forEach(key => delete tokenCache[key]);
         await objectStore.removeItem('tokenCache');
+        toastr.success('Token cache cleared. Please reload the chat to re-tokenize it.');
     } catch (e) {
         console.log('Chat Completions: unable to reset token cache', e);
     }
 }
-
-window['resetTokenCache'] = resetTokenCache;
 
 function getTokenizerBestMatch() {
     if (main_api === 'novel') {
@@ -438,4 +437,5 @@ export function decodeTextTokens(tokenizerType, ids) {
 
 jQuery(async () => {
     await loadTokenCache();
+    registerDebugFunction('resetTokenCache', 'Reset token cache', 'Purges the calculated token counts. Use this if you want to force a full re-tokenization of all chats or suspect the token counts are wrong.', resetTokenCache);
 });

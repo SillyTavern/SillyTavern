@@ -1768,10 +1768,10 @@ grammarly-extension {
     top: 50%;
     transform: translateY(-50%);
     text-align: center;
-    box-shadow: 0px 0px 14px var(--black50a);
+    box-shadow: 0px 0px 14px var(--black70a);
     border: 1px solid var(--white30a);
     padding: 4px;
-    background-color: var(--black30a);
+    background-color: var(--black50a);
     border-radius: 10px;
     max-height: 90vh;
     max-height: 90svh;
