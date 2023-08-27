@@ -949,8 +949,15 @@ export function initRossMods() {
             CheckLocal();
         }
 
+        // Helper function to check if nanogallery2's lightbox is active
+        function isNanogallery2LightboxActive() {
+            // Check if the body has the 'nGY2On' class, adjust this based on actual behavior
+            return $('body').hasClass('nGY2_body_scrollbar');
+        }
+
         if (event.key == "ArrowLeft") {        //swipes left
             if (
+                !isNanogallery2LightboxActive() &&  // Check if lightbox is NOT active
                 $(".swipe_left:last").css('display') === 'flex' &&
                 $("#send_textarea").val() === '' &&
                 $("#character_popup").css("display") === "none" &&
@@ -962,6 +969,7 @@ export function initRossMods() {
         }
         if (event.key == "ArrowRight") { //swipes right
             if (
+                !isNanogallery2LightboxActive() &&  // Check if lightbox is NOT active
                 $(".swipe_right:last").css('display') === 'flex' &&
                 $("#send_textarea").val() === '' &&
                 $("#character_popup").css("display") === "none" &&
@@ -971,6 +979,7 @@ export function initRossMods() {
                 $('.swipe_right:last').click();
             }
         }
+
 
         if (event.ctrlKey && event.key == "ArrowUp") { //edits last USER message if chatbar is empty and focused
             if (
