@@ -327,7 +327,7 @@ let firstRun = false;
 
 const default_ch_mes = "Hello";
 let count_view_mes = 0;
-let generatedPromtCache = "";
+let generatedPromptCache = "";
 let generation_started = new Date();
 let characters = [];
 let this_chid;
@@ -1445,7 +1445,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     var avatarImg = getUserAvatar(user_avatar);
     const isSystem = mes.is_system;
     const title = mes.title;
-    generatedPromtCache = "";
+    generatedPromptCache = "";
 
     //for non-user mesages
     if (!mes["is_user"]) {
@@ -2119,7 +2119,7 @@ class StreamingProcessor {
         activateSendButtons();
         showSwipeButtons();
         setGenerationProgress(0);
-        generatedPromtCache = '';
+        generatedPromptCache = '';
 
         //console.log("Generated text size:", text.length, text)
 
@@ -2621,13 +2621,13 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         const originalType = type;
         runGenerate(cyclePrompt);
 
-        async function runGenerate(cycleGenerationPromt = '') {
+        async function runGenerate(cycleGenerationPrompt = '') {
             if (!dryRun) {
                 is_send_press = true;
             }
 
-            generatedPromtCache += cycleGenerationPromt;
-            if (generatedPromtCache.length == 0 || type === 'continue') {
+            generatedPromptCache += cycleGenerationPrompt;
+            if (generatedPromptCache.length == 0 || type === 'continue') {
                 if (main_api === 'openai') {
                     generateOpenAIPromptCache();
                 }
@@ -2657,7 +2657,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
             let mesExmString = '';
 
-            function setPromtString() {
+            function setPromptString() {
                 if (main_api == 'openai') {
                     return;
                 }
@@ -2728,26 +2728,26 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 return promptCache;
             }
 
-            function checkPromtSize() {
+            function checkPromptSize() {
                 console.debug('---checking Prompt size');
-                setPromtString();
+                setPromptString();
                 const prompt = [
                     storyString,
                     mesExmString,
                     mesSend.join(''),
-                    generatedPromtCache,
+                    generatedPromptCache,
                     allAnchors,
                     quiet_prompt,
                 ].join('').replace(/\r/gm, '');
-                let thisPromtContextSize = getTokenCount(prompt, power_user.token_padding);
+                let thisPromptContextSize = getTokenCount(prompt, power_user.token_padding);
 
-                if (thisPromtContextSize > this_max_context) {        //if the prepared prompt is larger than the max context size...
+                if (thisPromptContextSize > this_max_context) {        //if the prepared prompt is larger than the max context size...
                     if (count_exm_add > 0) {                            // ..and we have example mesages..
                         count_exm_add--;                            // remove the example messages...
-                        checkPromtSize();                            // and try agin...
+                        checkPromptSize();                            // and try agin...
                     } else if (mesSend.length > 0) {                    // if the chat history is longer than 0
                         mesSend.shift();                            // remove the first (oldest) chat entry..
-                        checkPromtSize();                            // and check size again..
+                        checkPromptSize();                            // and check size again..
                     } else {
                         //end
                         console.debug(`---mesSend.length = ${mesSend.length}`);
@@ -2755,12 +2755,12 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
             }
 
-            if (generatedPromtCache.length > 0 && main_api !== 'openai') {
-                console.debug('---Generated Prompt Cache length: ' + generatedPromtCache.length);
-                checkPromtSize();
+            if (generatedPromptCache.length > 0 && main_api !== 'openai') {
+                console.debug('---Generated Prompt Cache length: ' + generatedPromptCache.length);
+                checkPromptSize();
             } else {
-                console.debug('---calling setPromtString ' + generatedPromtCache.length)
-                setPromtString();
+                console.debug('---calling setPromptString ' + generatedPromptCache.length)
+                setPromptString();
             }
 
             // Fetches the combined prompt for both negative and positive prompts
@@ -2849,8 +2849,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
 
                 // Prune from prompt cache if it exists
-                if (generatedPromtCache.length !== 0) {
-                    generatedPromtCache = cleanupPromptCache(generatedPromtCache);
+                if (generatedPromptCache.length !== 0) {
+                    generatedPromptCache = cleanupPromptCache(generatedPromptCache);
                 }
 
                 // Right now, everything is suffixed with a newline
@@ -2867,7 +2867,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     afterScenarioAnchor +
                     mesExmString +
                     mesSendString +
-                    generatedPromtCache;
+                    generatedPromptCache;
 
                 combinedPrompt = combinedPrompt.replace(/\r/gm, '');
 
@@ -2980,9 +2980,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 afterScenarioAnchor: afterScenarioAnchor,
                 examplesString: examplesString,
                 mesSendString: mesSendString,
-                generatedPromtCache: generatedPromtCache,
+                generatedPromptCache: generatedPromptCache,
                 promptBias: promptBias,
-                finalPromt: finalPrompt,
+                finalPrompt: finalPrompt,
                 charDescription: charDescription,
                 charPersonality: charPersonality,
                 scenarioText: scenarioText,
@@ -3058,7 +3058,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
             async function onSuccess(data) {
                 if (data.error == 'dryRun') {
-                    generatedPromtCache = '';
+                    generatedPromptCache = '';
                     resolve();
                     return;
                 }
@@ -3108,7 +3108,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         }
 
                         tokens_already_generated = 0;
-                        generatedPromtCache = "";
+                        generatedPromptCache = "";
                         const substringStart = originalType !== 'continue' ? magFirst.length : 0;
                         getMessage = message_already_generated.substring(substringStart);
                     }
@@ -3126,7 +3126,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     if (getMessage.length > 0) {
                         if (isImpersonate) {
                             $('#send_textarea').val(getMessage).trigger('input');
-                            generatedPromtCache = "";
+                            generatedPromptCache = "";
                             await eventSource.emit(event_types.IMPERSONATE_READY, getMessage);
                         }
                         else if (type == 'quiet') {
@@ -3189,7 +3189,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         }
                     }
                 } else {
-                    generatedPromtCache = '';
+                    generatedPromptCache = '';
                     activateSendButtons();
                     //console.log('runGenerate calling showSwipeBtns');
                     showSwipeButtons();
@@ -3402,21 +3402,21 @@ function addChatsSeparator(mesSendString) {
     }
 }
 
-function appendZeroDepthAnchor(force_name2, zeroDepthAnchor, finalPromt) {
+function appendZeroDepthAnchor(force_name2, zeroDepthAnchor, finalPrompt) {
     const trimBothEnds = !force_name2 && !is_pygmalion;
     let trimmedPrompt = (trimBothEnds ? zeroDepthAnchor.trim() : zeroDepthAnchor.trimEnd());
 
-    if (trimBothEnds && !finalPromt.endsWith('\n')) {
-        finalPromt += '\n';
+    if (trimBothEnds && !finalPrompt.endsWith('\n')) {
+        finalPrompt += '\n';
     }
 
-    finalPromt += trimmedPrompt;
+    finalPrompt += trimmedPrompt;
 
     if (force_name2 || is_pygmalion) {
-        finalPromt += ' ';
+        finalPrompt += ' ';
     }
 
-    return finalPromt;
+    return finalPrompt;
 }
 
 function getMultigenAmount() {
@@ -3553,7 +3553,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
     } else {
         //for non-OAI APIs
         //console.log('-- Counting non-OAI Tokens');
-        var finalPromptTokens = getTokenCount(itemizedPrompts[thisPromptSet].finalPromt);
+        var finalPromptTokens = getTokenCount(itemizedPrompts[thisPromptSet].finalPrompt);
         var storyStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].storyString) - worldInfoStringTokens;
         var examplesStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].examplesString);
         var mesSendStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].mesSendString)
@@ -3570,7 +3570,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
             //afterScenarioAnchorTokens +       //only counts if AN is set to 'after scenario'
             //zeroDepthAnchorTokens +           //same as above, even if AN not on 0 depth
             promptBiasTokens;       //{{}}
-        //- thisPrompt_padding;  //not sure this way of calculating is correct, but the math results in same value as 'finalPromt'
+        //- thisPrompt_padding;  //not sure this way of calculating is correct, but the math results in same value as 'finalPrompt'
     }
 
     if (this_main_api == 'openai') {
