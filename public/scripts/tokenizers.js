@@ -1,7 +1,5 @@
 import { characters, main_api, nai_settings, online_status, this_chid } from "../script.js";
-import { power_user } from "./power-user.js";
-import { encode } from "../lib/gpt-2-3-tokenizer/mod.js";
-import { GPT3BrowserTokenizer } from "../lib/gpt-3-tokenizer/gpt3-tokenizer.js";
+import { power_user, registerDebugFunction } from "./power-user.js";
 import { chat_completion_sources, oai_settings } from "./openai.js";
 import { groups, selected_group } from "./group-chats.js";
 import { getStringHash } from "./utils.js";
@@ -12,8 +10,11 @@ const TOKENIZER_WARNING_KEY = 'tokenizationWarningShown';
 
 export const tokenizers = {
     NONE: 0,
-    GPT3: 1,
-    CLASSIC: 2,
+    GPT2: 1,
+    /**
+     * @deprecated Use GPT2 instead.
+     */
+    LEGACY: 2,
     LLAMA: 3,
     NERD: 4,
     NERD2: 5,
@@ -22,7 +23,6 @@ export const tokenizers = {
 };
 
 const objectStore = new localforage.createInstance({ name: "SillyTavern_ChatCompletions" });
-const gpt3 = new GPT3BrowserTokenizer({ type: 'gpt3' });
 
 let tokenCache = {};
 
@@ -59,17 +59,16 @@ async function resetTokenCache() {
         console.debug('Chat Completions: resetting token cache');
         Object.keys(tokenCache).forEach(key => delete tokenCache[key]);
         await objectStore.removeItem('tokenCache');
+        toastr.success('Token cache cleared. Please reload the chat to re-tokenize it.');
     } catch (e) {
         console.log('Chat Completions: unable to reset token cache', e);
     }
 }
 
-window['resetTokenCache'] = resetTokenCache;
-
 function getTokenizerBestMatch() {
     if (main_api === 'novel') {
         if (nai_settings.model_novel.includes('krake') || nai_settings.model_novel.includes('euterpe')) {
-            return tokenizers.CLASSIC;
+            return tokenizers.GPT2;
         }
         if (nai_settings.model_novel.includes('clio')) {
             return tokenizers.NERD;
@@ -94,39 +93,39 @@ function getTokenizerBestMatch() {
 }
 
 /**
+ * Calls the underlying tokenizer model to the token count for a string.
+ * @param {number} type Tokenizer type.
+ * @param {string} str String to tokenize.
+ * @param {number} padding Number of padding tokens.
+ * @returns {number} Token count.
+ */
+function callTokenizer(type, str, padding) {
+    switch (type) {
+        case tokenizers.NONE:
+            return guesstimate(str) + padding;
+        case tokenizers.GPT2:
+            return countTokensRemote('/tokenize_gpt2', str, padding);
+        case tokenizers.LLAMA:
+            return countTokensRemote('/tokenize_llama', str, padding);
+        case tokenizers.NERD:
+            return countTokensRemote('/tokenize_nerdstash', str, padding);
+        case tokenizers.NERD2:
+            return countTokensRemote('/tokenize_nerdstash_v2', str, padding);
+        case tokenizers.API:
+            return countTokensRemote('/tokenize_via_api', str, padding);
+        default:
+            console.warn("Unknown tokenizer type", type);
+            return callTokenizer(tokenizers.NONE, str, padding);
+    }
+}
+
+/**
  * Gets the token count for a string using the current model tokenizer.
  * @param {string} str String to tokenize
  * @param {number | undefined} padding Optional padding tokens. Defaults to 0.
  * @returns {number} Token count.
  */
 export function getTokenCount(str, padding = undefined) {
-    /**
-     * Calculates the token count for a string.
-     * @param {number} [type] Tokenizer type.
-     * @returns {number} Token count.
-     */
-    function calculate(type) {
-        switch (type) {
-            case tokenizers.NONE:
-                return guesstimate(str) + padding;
-            case tokenizers.GPT3:
-                return gpt3.encode(str).bpe.length + padding;
-            case tokenizers.CLASSIC:
-                return encode(str).length + padding;
-            case tokenizers.LLAMA:
-                return countTokensRemote('/tokenize_llama', str, padding);
-            case tokenizers.NERD:
-                return countTokensRemote('/tokenize_nerdstash', str, padding);
-            case tokenizers.NERD2:
-                return countTokensRemote('/tokenize_nerdstash_v2', str, padding);
-            case tokenizers.API:
-                return countTokensRemote('/tokenize_via_api', str, padding);
-            default:
-                console.warn("Unknown tokenizer type", type);
-                return calculate(tokenizers.NONE);
-        }
-    }
-
     if (typeof str !== 'string' || !str?.length) {
         return 0;
     }
@@ -159,7 +158,7 @@ export function getTokenCount(str, padding = undefined) {
         return cacheObject[cacheKey];
     }
 
-    const result = calculate(tokenizerType);
+    const result = callTokenizer(tokenizerType, str, padding);
 
     if (isNaN(result)) {
         console.warn("Token count calculation returned NaN");
@@ -350,6 +349,12 @@ function countTokensRemote(endpoint, str, padding) {
     return tokenCount + padding;
 }
 
+/**
+ * Calls the underlying tokenizer model to encode a string to tokens.
+ * @param {string} endpoint API endpoint.
+ * @param {string} str String to tokenize.
+ * @returns {number[]} Array of token ids.
+ */
 function getTextTokensRemote(endpoint, str) {
     let ids = [];
     jQuery.ajax({
@@ -366,8 +371,37 @@ function getTextTokensRemote(endpoint, str) {
     return ids;
 }
 
+/**
+ * Calls the underlying tokenizer model to decode token ids to text.
+ * @param {string} endpoint API endpoint.
+ * @param {number[]} ids Array of token ids
+ */
+function decodeTextTokensRemote(endpoint, ids) {
+    let text = '';
+    jQuery.ajax({
+        async: false,
+        type: 'POST',
+        url: endpoint,
+        data: JSON.stringify({ ids: ids }),
+        dataType: "json",
+        contentType: "application/json",
+        success: function (data) {
+            text = data.text;
+        }
+    });
+    return text;
+}
+
+/**
+ * Encodes a string to tokens using the remote server API.
+ * @param {number} tokenizerType Tokenizer type.
+ * @param {string} str String to tokenize.
+ * @returns {number[]} Array of token ids.
+ */
 export function getTextTokens(tokenizerType, str) {
     switch (tokenizerType) {
+        case tokenizers.GPT2:
+            return getTextTokensRemote('/tokenize_gpt2', str);
         case tokenizers.LLAMA:
             return getTextTokensRemote('/tokenize_llama', str);
         case tokenizers.NERD:
@@ -380,6 +414,28 @@ export function getTextTokens(tokenizerType, str) {
     }
 }
 
+/**
+ * Decodes token ids to text using the remote server API.
+ * @param {any} tokenizerType Tokenizer type.
+ * @param {number[]} ids Array of token ids
+ */
+export function decodeTextTokens(tokenizerType, ids) {
+    switch (tokenizerType) {
+        case tokenizers.GPT2:
+            return decodeTextTokensRemote('/decode_gpt2', ids);
+        case tokenizers.LLAMA:
+            return decodeTextTokensRemote('/decode_llama', ids);
+        case tokenizers.NERD:
+            return decodeTextTokensRemote('/decode_nerdstash', ids);
+        case tokenizers.NERD2:
+            return decodeTextTokensRemote('/decode_nerdstash_v2', ids);
+        default:
+            console.warn("Calling decodeTextTokens with unsupported tokenizer type", tokenizerType);
+            return '';
+    }
+}
+
 jQuery(async () => {
     await loadTokenCache();
+    registerDebugFunction('resetTokenCache', 'Reset token cache', 'Purges the calculated token counts. Use this if you want to force a full re-tokenization of all chats or suspect the token counts are wrong.', resetTokenCache);
 });

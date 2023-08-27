@@ -13,7 +13,8 @@ import {
     getCurrentChatId,
     printCharacters,
     setCharacterId,
-    setEditedMessageId
+    setEditedMessageId,
+    renderTemplate,
 } from "../script.js";
 import { isMobile, initMovingUI } from "./RossAscends-mods.js";
 import {
@@ -232,6 +233,7 @@ const storage_keys = {
 };
 
 let browser_has_focus = true;
+const debug_functions = [];
 
 function playMessageSound() {
     if (!power_user.play_message_sound) {
@@ -653,6 +655,22 @@ async function applyMovingUIPreset(name) {
     loadMovingUIState()
 }
 
+/**
+ * Register a function to be executed when the debug menu is opened.
+ * @param {string} functionId Unique ID for the function.
+ * @param {string} name Name of the function.
+ * @param {string} description Description of the function.
+ * @param {function} func Function to be executed.
+ */
+export function registerDebugFunction(functionId, name, description, func) {
+    debug_functions.push({ functionId, name, description, func });
+}
+
+function showDebugMenu() {
+    const template = renderTemplate('debug', { functions: debug_functions });
+    callPopup(template, 'text', '', { wide: true, large: true });
+}
+
 switchUiMode();
 applyFontScale('forced');
 applyThemeColor();
@@ -718,6 +736,10 @@ function loadPowerUserSettings(settings, data) {
 
     if (power_user.chat_width === '') {
         power_user.chat_width = 50;
+    }
+
+    if (power_user.tokenizer === tokenizers.LEGACY) {
+        power_user.tokenizer = tokenizers.GPT2;
     }
 
     $('#relaxed_api_urls').prop("checked", power_user.relaxed_api_urls);
@@ -2107,6 +2129,21 @@ $(document).ready(() => {
     $('#lazy_load').on('input', function () {
         power_user.lazy_load = Number($(this).val());
         saveSettingsDebounced();
+    });
+
+    $('#debug_menu').on('click', function () {
+        showDebugMenu();
+    });
+
+    $(document).on('click', '#debug_table [data-debug-function]', function () {
+        const functionId = $(this).data('debug-function');
+        const functionRecord = debug_functions.find(f => f.functionId === functionId);
+
+        if (functionRecord) {
+            functionRecord.func();
+        } else {
+            console.warn(`Debug function ${functionId} not found`);
+        }
     });
 
     $(window).on('focus', function () {

@@ -453,7 +453,7 @@ export function getNovelGenerationData(finalPrompt, this_settings, this_amount_g
 }
 
 // Check if the prefix needs to be overriden to use instruct mode
-function selectPrefix(selected_prefix, finalPromt) {
+function selectPrefix(selected_prefix, finalPrompt) {
     let useInstruct = false;
     const clio = nai_settings.model_novel.includes('clio');
     const kayra = nai_settings.model_novel.includes('kayra');
@@ -461,7 +461,7 @@ function selectPrefix(selected_prefix, finalPromt) {
 
     if (isNewModel) {
         // NovelAI claims they scan backwards 1000 characters (not tokens!) to look for instruct brackets. That's really short.
-        const tail = finalPromt.slice(-1500);
+        const tail = finalPrompt.slice(-1500);
         useInstruct = tail.includes("}");
         return useInstruct ? "special_instruct" : selected_prefix;
     }
@@ -558,6 +558,10 @@ function createLogitBiasListItem(entry) {
     $('.novelai_logit_bias_list').prepend(template);
 }
 
+/**
+ * Calculates logit bias for Novel AI
+ * @returns {object[]} Array of logit bias objects
+ */
 function calculateLogitBias() {
     const bias_preset = nai_settings.logit_bias;
 
@@ -569,12 +573,62 @@ function calculateLogitBias() {
     const kayra = nai_settings.model_novel.includes('kayra');
     const tokenizerType = kayra ? tokenizers.NERD2 : (clio ? tokenizers.NERD : tokenizers.NONE);
 
-    return bias_preset.filter(b => b.text?.length > 0).map(bias => ({
-        bias: bias.value,
-        ensure_sequence_finish: false,
-        generate_once: false,
-        sequence: getTextTokens(tokenizerType, bias.text)
-    }));
+    /**
+     * Creates a bias object for Novel AI
+     * @param {number} bias Bias value
+     * @param {number[]} sequence Sequence of token ids
+     */
+    function getBiasObject(bias, sequence) {
+        return {
+            bias: bias,
+            ensure_sequence_finish: false,
+            generate_once: false,
+            sequence: sequence
+        };
+    }
+
+    const result = [];
+
+    for (const entry of bias_preset) {
+        if (entry.text?.length > 0) {
+            const text = entry.text.trim();
+
+            // Skip empty lines
+            if (text.length === 0) {
+                continue;
+            }
+
+            // Verbatim text
+            if (text.startsWith('{') && text.endsWith('}')) {
+                const tokens = getTextTokens(tokenizerType, text.slice(1, -1));
+                result.push(getBiasObject(entry.value, tokens));
+            }
+
+            // Raw token ids, JSON serialized
+            else if (text.startsWith('[') && text.endsWith(']')) {
+                try {
+                    const tokens = JSON.parse(text);
+
+                    if (Array.isArray(tokens) && tokens.every(t => Number.isInteger(t))) {
+                        result.push(getBiasObject(entry.value, tokens));
+                    } else {
+                        throw new Error('Not an array of integers');
+                    }
+                } catch (err) {
+                    console.log(`Failed to parse logit bias token list: ${text}`, err);
+                }
+            }
+
+            // Text with a leading space
+            else {
+                const biasText = ` ${text}`;
+                const tokens = getTextTokens(tokenizerType, biasText);
+                result.push(getBiasObject(entry.value, tokens));
+            }
+        }
+    }
+
+    return result;
 }
 
 /**
@@ -590,6 +644,24 @@ export function adjustNovelInstructionPrompt(prompt) {
         return `{ ${stripedPrompt} }`;
     }
     return stripedPrompt;
+}
+
+function tryParseStreamingError(decoded) {
+    try {
+        const data = JSON.parse(decoded);
+
+        if (!data) {
+            return;
+        }
+
+        if (data.message && data.statusCode >= 400) {
+            toastr.error(data.message, 'Error');
+            throw new Error(data);
+        }
+    }
+    catch {
+        // No JSON. Do nothing.
+    }
 }
 
 export async function generateNovelWithStreaming(generate_data, signal) {
@@ -609,12 +681,14 @@ export async function generateNovelWithStreaming(generate_data, signal) {
         let messageBuffer = "";
         while (true) {
             const { done, value } = await reader.read();
-            let response = decoder.decode(value);
+            let decoded = decoder.decode(value);
             let eventList = [];
+
+            tryParseStreamingError(decoded);
 
             // ReadableStream's buffer is not guaranteed to contain full SSE messages as they arrive in chunks
             // We need to buffer chunks until we have one or more full messages (separated by double newlines)
-            messageBuffer += response;
+            messageBuffer += decoded;
             eventList = messageBuffer.split("\n\n");
             // Last element will be an empty string or a leftover partial message
             messageBuffer = eventList.pop();

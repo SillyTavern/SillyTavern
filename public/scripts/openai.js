@@ -50,6 +50,7 @@ import {
     download,
     getFileText, getSortableDelay,
     parseJsonFile,
+    resetScrollHeight,
     stringFormat,
 } from "./utils.js";
 import { countTokensOpenAI } from "./tokenizers.js";
@@ -176,7 +177,7 @@ const default_settings = {
     ai21_model: 'j2-ultra',
     windowai_model: '',
     openrouter_model: openrouter_website_model,
-    openrouter_use_fallback: true,
+    openrouter_use_fallback: false,
     jailbreak_system: false,
     reverse_proxy: '',
     legacy_streaming: false,
@@ -220,7 +221,7 @@ const oai_settings = {
     ai21_model: 'j2-ultra',
     windowai_model: '',
     openrouter_model: openrouter_website_model,
-    openrouter_use_fallback: true,
+    openrouter_use_fallback: false,
     jailbreak_system: false,
     reverse_proxy: '',
     legacy_streaming: false,
@@ -3139,6 +3140,10 @@ $(document).ready(async function () {
     $('#openrouter_use_fallback').on('input', function () {
         oai_settings.openrouter_use_fallback = !!$(this).prop('checked');
         saveSettingsDebounced();
+    });
+
+    $(document).on('input', '#openai_settings .autoSetHeight', function () {
+        resetScrollHeight($(this));
     });
 
     $("#api_button_openai").on("click", onConnectButtonClick);

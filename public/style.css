@@ -517,7 +517,7 @@ hr {
 }
 
 #send_form.no-connection {
-    background-color: rgba(100, 0, 0, 0.5) !important;
+    background-color: var(--crimson70a) !important;
 }
 
 #send_but_sheld {
@@ -531,6 +531,7 @@ hr {
     column-gap: 5px;
     font-size: var(--bottomFormIconSize);
     overflow: hidden;
+    order: 1003;
 }
 
 #send_but_sheld>div {
@@ -581,6 +582,7 @@ hr {
     transition: 0.3s;
     display: flex;
     align-items: center;
+    order: 1001;
 }
 
 .font-family-reset {
@@ -904,6 +906,7 @@ select {
     margin: 0;
     text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
     flex: 1;
+    order: 1002;
 }
 
 .text_pole::placeholder {
@@ -1765,10 +1768,10 @@ grammarly-extension {
     top: 50%;
     transform: translateY(-50%);
     text-align: center;
-    box-shadow: 0px 0px 14px var(--black50a);
+    box-shadow: 0px 0px 14px var(--black70a);
     border: 1px solid var(--white30a);
     padding: 4px;
-    background-color: var(--black30a);
+    background-color: var(--black50a);
     border-radius: 10px;
     max-height: 90vh;
     max-height: 90svh;
@@ -1977,14 +1980,19 @@ grammarly-extension {
 
 /* ------ online status indicators and texts. 2 = kobold AI, 3 = Novel AI  ----------*/
 #online_status2,
+#online_status3,
 #online_status_horde,
 .online_status4 {
-    opacity: 0.5;
+    opacity: 0.8;
     margin-top: 2px;
     margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
 }
 
 #online_status_indicator2,
+#online_status_indicator3,
 #online_status_indicator_horde,
 .online_status_indicator4 {
     border-radius: 7px;
@@ -1995,28 +2003,9 @@ grammarly-extension {
 }
 
 #online_status_text2,
+#online_status_text3,
 #online_status_text_horde,
 .online_status_text4 {
-    margin-left: 4px;
-    display: inline-block;
-}
-
-#online_status3 {
-    opacity: 0.5;
-    margin-top: 2px;
-
-    margin-bottom: 30px;
-}
-
-#online_status_indicator3 {
-    border-radius: 7px;
-    width: 14px;
-    height: 14px;
-    background-color: red;
-    display: inline-block;
-}
-
-#online_status_text3 {
     margin-left: 4px;
     display: inline-block;
 }
