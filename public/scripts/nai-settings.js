@@ -558,6 +558,10 @@ function createLogitBiasListItem(entry) {
     $('.novelai_logit_bias_list').prepend(template);
 }
 
+/**
+ * Calculates logit bias for Novel AI
+ * @returns {object[]} Array of logit bias objects
+ */
 function calculateLogitBias() {
     const bias_preset = nai_settings.logit_bias;
 
@@ -569,12 +573,62 @@ function calculateLogitBias() {
     const kayra = nai_settings.model_novel.includes('kayra');
     const tokenizerType = kayra ? tokenizers.NERD2 : (clio ? tokenizers.NERD : tokenizers.NONE);
 
-    return bias_preset.filter(b => b.text?.length > 0).map(bias => ({
-        bias: bias.value,
-        ensure_sequence_finish: false,
-        generate_once: false,
-        sequence: getTextTokens(tokenizerType, bias.text)
-    }));
+    /**
+     * Creates a bias object for Novel AI
+     * @param {number} bias Bias value
+     * @param {number[]} sequence Sequence of token ids
+     */
+    function getBiasObject(bias, sequence) {
+        return {
+            bias: bias,
+            ensure_sequence_finish: false,
+            generate_once: false,
+            sequence: sequence
+        };
+    }
+
+    const result = [];
+
+    for (const entry of bias_preset) {
+        if (entry.text?.length > 0) {
+            const text = entry.text.trim();
+
+            // Skip empty lines
+            if (text.length === 0) {
+                continue;
+            }
+
+            // Verbatim text
+            if (text.startsWith('{') && text.endsWith('}')) {
+                const tokens = getTextTokens(tokenizerType, text.slice(1, -1));
+                result.push(getBiasObject(entry.value, tokens));
+            }
+
+            // Raw token ids, JSON serialized
+            else if (text.startsWith('[') && text.endsWith(']')) {
+                try {
+                    const tokens = JSON.parse(text);
+
+                    if (Array.isArray(tokens) && tokens.every(t => Number.isInteger(t))) {
+                        result.push(getBiasObject(entry.value, tokens));
+                    } else {
+                        throw new Error('Not an array of integers');
+                    }
+                } catch (err) {
+                    console.log(`Failed to parse logit bias token list: ${text}`, err);
+                }
+            }
+
+            // Text with a leading space
+            else {
+                const biasText = ` ${text}`;
+                const tokens = getTextTokens(tokenizerType, biasText);
+                result.push(getBiasObject(entry.value, tokens));
+            }
+        }
+    }
+
+    return result;
 }
 
 /**
