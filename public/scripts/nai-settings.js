@@ -253,7 +253,7 @@ const sliders = [
     },
 ];
 
-export function getNovelGenerationData(finalPromt, this_settings, this_amount_gen, isImpersonate) {
+export function getNovelGenerationData(finalPrompt, this_settings, this_amount_gen, isImpersonate) {
     const clio = nai_settings.model_novel.includes('clio');
     const kayra = nai_settings.model_novel.includes('kayra');
     const isNewModel = clio || kayra;
@@ -267,12 +267,12 @@ export function getNovelGenerationData(finalPromt, this_settings, this_amount_ge
     let useInstruct = false;
     if (isNewModel) {
         // NovelAI claims they scan backwards 1000 characters (not tokens!) to look for instruct brackets. That's really short.
-        const tail = finalPromt.slice(-1500);
+        const tail = finalPrompt.slice(-1500);
         useInstruct = tail.includes("}");
     }
 
     return {
-        "input": finalPromt,
+        "input": finalPrompt,
         "model": nai_settings.model_novel,
         "use_string": true,
         "temperature": parseFloat(nai_settings.temperature),

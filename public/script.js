@@ -294,7 +294,7 @@ let firstRun = false;
 const default_ch_mes = "Hello";
 let count_view_mes = 0;
 let mesStr = "";
-let generatedPromtCache = "";
+let generatedPromptCache = "";
 let generation_started = new Date();
 let characters = [];
 let this_chid;
@@ -1431,7 +1431,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     var avatarImg = getUserAvatar(user_avatar);
     const isSystem = mes.is_system;
     const title = mes.title;
-    generatedPromtCache = "";
+    generatedPromptCache = "";
 
     //for non-user mesages
     if (!mes["is_user"]) {
@@ -2099,7 +2099,7 @@ class StreamingProcessor {
         activateSendButtons();
         showSwipeButtons();
         setGenerationProgress(0);
-        generatedPromtCache = '';
+        generatedPromptCache = '';
 
         //console.log("Generated text size:", text.length, text)
 
@@ -2552,11 +2552,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         const originalType = type;
         runGenerate(cyclePrompt);
 
-        async function runGenerate(cycleGenerationPromt = '') {
+        async function runGenerate(cycleGenerationPrompt = '') {
             is_send_press = true;
 
-            generatedPromtCache += cycleGenerationPromt;
-            if (generatedPromtCache.length == 0 || type === 'continue') {
+            generatedPromptCache += cycleGenerationPrompt;
+            if (generatedPromptCache.length == 0 || type === 'continue') {
                 if (main_api === 'openai') {
                     generateOpenAIPromptCache();
                 }
@@ -2611,7 +2611,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             let mesExmString = '';
             let mesSendString = '';
 
-            function setPromtString() {
+            function setPromptString() {
                 if (main_api == 'openai') {
                     return;
                 }
@@ -2679,26 +2679,26 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 return mesSendString;
             }
 
-            function checkPromtSize() {
+            function checkPromptSize() {
                 console.debug('---checking Prompt size');
-                setPromtString();
+                setPromptString();
                 const prompt = [
                     storyString,
                     mesExmString,
                     mesSendString,
-                    generatedPromtCache,
+                    generatedPromptCache,
                     allAnchors,
                     quiet_prompt,
                 ].join('').replace(/\r/gm, '');
-                let thisPromtContextSize = getTokenCount(prompt, power_user.token_padding);
+                let thisPromptContextSize = getTokenCount(prompt, power_user.token_padding);
 
-                if (thisPromtContextSize > this_max_context) {        //if the prepared prompt is larger than the max context size...
+                if (thisPromptContextSize > this_max_context) {        //if the prepared prompt is larger than the max context size...
                     if (count_exm_add > 0) {                            // ..and we have example mesages..
                         count_exm_add--;                            // remove the example messages...
-                        checkPromtSize();                            // and try agin...
+                        checkPromptSize();                            // and try agin...
                     } else if (mesSend.length > 0) {                    // if the chat history is longer than 0
                         mesSend.shift();                            // remove the first (oldest) chat entry..
-                        checkPromtSize();                            // and check size again..
+                        checkPromptSize();                            // and check size again..
                     } else {
                         //end
                         console.debug(`---mesSend.length = ${mesSend.length}`);
@@ -2706,12 +2706,12 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
             }
 
-            if (generatedPromtCache.length > 0 && main_api !== 'openai') {
-                console.debug('---Generated Prompt Cache length: ' + generatedPromtCache.length);
-                checkPromtSize();
+            if (generatedPromptCache.length > 0 && main_api !== 'openai') {
+                console.debug('---Generated Prompt Cache length: ' + generatedPromptCache.length);
+                checkPromptSize();
             } else {
-                console.debug('---calling setPromtString ' + generatedPromtCache.length)
-                setPromtString();
+                console.debug('---calling setPromptString ' + generatedPromptCache.length)
+                setPromptString();
             }
 
             // add chat preamble
@@ -2720,23 +2720,23 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             // add a custom dingus (if defined)
             mesSendString = addChatsSeparator(mesSendString);
 
-            let finalPromt =
+            let finalPrompt =
                 storyString +
                 afterScenarioAnchor +
                 mesExmString +
                 mesSendString +
-                generatedPromtCache;
+                generatedPromptCache;
 
             if (zeroDepthAnchor && zeroDepthAnchor.length) {
                 if (!isMultigenEnabled() || tokens_already_generated == 0) {
-                    finalPromt = appendZeroDepthAnchor(force_name2, zeroDepthAnchor, finalPromt);
+                    finalPrompt = appendZeroDepthAnchor(force_name2, zeroDepthAnchor, finalPrompt);
                 }
             }
 
-            finalPromt = finalPromt.replace(/\r/gm, '');
+            finalPrompt = finalPrompt.replace(/\r/gm, '');
 
             if (power_user.collapse_newlines) {
-                finalPromt = collapseNewlines(finalPromt);
+                finalPrompt = collapseNewlines(finalPrompt);
             }
             let this_amount_gen = parseInt(amount_gen); // how many tokens the AI will be requested to generate
             let this_settings = koboldai_settings[koboldai_setting_names[preset_settings]];
@@ -2756,7 +2756,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             let generate_data;
             if (main_api == 'koboldhorde' || main_api == 'kobold') {
                 generate_data = {
-                    prompt: finalPromt,
+                    prompt: finalPrompt,
                     gui_settings: true,
                     max_length: amount_gen,
                     temperature: kai_settings.temp,
@@ -2766,16 +2766,16 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
                 if (preset_settings != 'gui') {
                     const maxContext = (adjustedParams && horde_settings.auto_adjust_context_length) ? adjustedParams.maxContextLength : max_context;
-                    generate_data = getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, maxContext, isImpersonate, type);
+                    generate_data = getKoboldGenerationData(finalPrompt, this_settings, this_amount_gen, maxContext, isImpersonate, type);
                 }
             }
             else if (main_api == 'textgenerationwebui') {
-                generate_data = getTextGenGenerationData(finalPromt, this_amount_gen, isImpersonate);
+                generate_data = getTextGenGenerationData(finalPrompt, this_amount_gen, isImpersonate);
                 generate_data.use_mancer = api_use_mancer_webui;
             }
             else if (main_api == 'novel') {
                 const this_settings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
-                generate_data = getNovelGenerationData(finalPromt, this_settings, this_amount_gen, isImpersonate);
+                generate_data = getNovelGenerationData(finalPrompt, this_settings, this_amount_gen, isImpersonate);
             }
             else if (main_api == 'openai') {
                 let [prompt, counts] = await prepareOpenAIMessages({
@@ -2826,9 +2826,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 afterScenarioAnchor: afterScenarioAnchor,
                 examplesString: examplesString,
                 mesSendString: mesSendString,
-                generatedPromtCache: generatedPromtCache,
+                generatedPromptCache: generatedPromptCache,
                 promptBias: promptBias,
-                finalPromt: finalPromt,
+                finalPrompt: finalPrompt,
                 charDescription: charDescription,
                 charPersonality: charPersonality,
                 scenarioText: scenarioText,
@@ -2855,7 +2855,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
             }
             else if (main_api == 'koboldhorde') {
-                generateHorde(finalPromt, generate_data, abortController.signal).then(onSuccess).catch(onError);
+                generateHorde(finalPrompt, generate_data, abortController.signal).then(onSuccess).catch(onError);
             }
             else if (main_api == 'textgenerationwebui' && isStreamingEnabled() && type !== 'quiet') {
                 streamingProcessor.generator = await generateTextGenWithStreaming(generate_data, streamingProcessor.abortController.signal);
@@ -2950,7 +2950,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         }
 
                         tokens_already_generated = 0;
-                        generatedPromtCache = "";
+                        generatedPromptCache = "";
                         const substringStart = originalType !== 'continue' ? magFirst.length : 0;
                         getMessage = message_already_generated.substring(substringStart);
                     }
@@ -2968,7 +2968,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     if (getMessage.length > 0) {
                         if (isImpersonate) {
                             $('#send_textarea').val(getMessage).trigger('input');
-                            generatedPromtCache = "";
+                            generatedPromptCache = "";
                             await eventSource.emit(event_types.IMPERSONATE_READY, getMessage);
                         }
                         else if (type == 'quiet') {
@@ -3031,7 +3031,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         }
                     }
                 } else {
-                    generatedPromtCache = '';
+                    generatedPromptCache = '';
                     activateSendButtons();
                     //console.log('runGenerate calling showSwipeBtns');
                     showSwipeButtons();
@@ -3238,21 +3238,21 @@ function addChatsSeparator(mesSendString) {
     return mesSendString;
 }
 
-function appendZeroDepthAnchor(force_name2, zeroDepthAnchor, finalPromt) {
+function appendZeroDepthAnchor(force_name2, zeroDepthAnchor, finalPrompt) {
     const trimBothEnds = !force_name2 && !is_pygmalion;
     let trimmedPrompt = (trimBothEnds ? zeroDepthAnchor.trim() : zeroDepthAnchor.trimEnd());
 
-    if (trimBothEnds && !finalPromt.endsWith('\n')) {
-        finalPromt += '\n';
+    if (trimBothEnds && !finalPrompt.endsWith('\n')) {
+        finalPrompt += '\n';
     }
 
-    finalPromt += trimmedPrompt;
+    finalPrompt += trimmedPrompt;
 
     if (force_name2 || is_pygmalion) {
-        finalPromt += ' ';
+        finalPrompt += ' ';
     }
 
-    return finalPromt;
+    return finalPrompt;
 }
 
 function getMultigenAmount() {
@@ -3386,7 +3386,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
     } else {
         //for non-OAI APIs
         //console.log('-- Counting non-OAI Tokens');
-        var finalPromptTokens = getTokenCount(itemizedPrompts[thisPromptSet].finalPromt);
+        var finalPromptTokens = getTokenCount(itemizedPrompts[thisPromptSet].finalPrompt);
         var storyStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].storyString) - worldInfoStringTokens;
         var examplesStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].examplesString);
         var mesSendStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].mesSendString)
@@ -3403,7 +3403,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
             //afterScenarioAnchorTokens +       //only counts if AN is set to 'after scenario'
             //zeroDepthAnchorTokens +           //same as above, even if AN not on 0 depth
             promptBiasTokens;       //{{}}
-        //- thisPrompt_padding;  //not sure this way of calculating is correct, but the math results in same value as 'finalPromt'
+        //- thisPrompt_padding;  //not sure this way of calculating is correct, but the math results in same value as 'finalPrompt'
     }
 
     if (this_main_api == 'openai') {
@@ -3645,7 +3645,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
                 <div class="flex-container wide100p">
                     <div  class="flex1">Total Tokens in Prompt:</div><div  class=""> ${totalTokensInPrompt}</div>
                 </div>
-                    <!-- <div  class="flex1">finalPromt:</div><div  class=""> ${finalPromptTokens}</div> -->
+                    <!-- <div  class="flex1">finalPrompt:</div><div  class=""> ${finalPromptTokens}</div> -->
                 <div class="flex-container wide100p">
                     <div  class="flex1">Max Context (Context Size - Response Length):</div><div  class="">${thisPrompt_max_context}</div>
                 </div>

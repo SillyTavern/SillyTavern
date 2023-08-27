@@ -74,10 +74,10 @@ function loadKoboldSettings(preset) {
     }
 }
 
-function getKoboldGenerationData(finalPromt, this_settings, this_amount_gen, this_max_context, isImpersonate, type) {
+function getKoboldGenerationData(finalPrompt, this_settings, this_amount_gen, this_max_context, isImpersonate, type) {
     const sampler_order = kai_settings.sampler_order || this_settings.sampler_order;
     let generate_data = {
-        prompt: finalPromt,
+        prompt: finalPrompt,
         gui_settings: false,
         sampler_order: sampler_order,
         max_context_length: parseInt(this_max_context),
