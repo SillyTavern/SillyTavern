@@ -720,6 +720,10 @@ function loadPowerUserSettings(settings, data) {
         power_user.chat_width = 50;
     }
 
+    if (power_user.tokenizer === tokenizers.LEGACY) {
+        power_user.tokenizer = tokenizers.GPT2;
+    }
+
     $('#relaxed_api_urls').prop("checked", power_user.relaxed_api_urls);
     $('#trim_spaces').prop("checked", power_user.trim_spaces);
     $('#continue_on_send').prop("checked", power_user.continue_on_send);

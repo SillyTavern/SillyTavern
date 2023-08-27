@@ -1,6 +1,5 @@
 import { characters, main_api, nai_settings, online_status, this_chid } from "../script.js";
 import { power_user } from "./power-user.js";
-import { encode } from "../lib/gpt-2-3-tokenizer/mod.js";
 import { chat_completion_sources, oai_settings } from "./openai.js";
 import { groups, selected_group } from "./group-chats.js";
 import { getStringHash } from "./utils.js";
@@ -12,7 +11,10 @@ const TOKENIZER_WARNING_KEY = 'tokenizationWarningShown';
 export const tokenizers = {
     NONE: 0,
     GPT2: 1,
-    CLASSIC: 2,
+    /**
+     * @deprecated Use GPT2 instead.
+     */
+    LEGACY: 2,
     LLAMA: 3,
     NERD: 4,
     NERD2: 5,
@@ -67,7 +69,7 @@ window['resetTokenCache'] = resetTokenCache;
 function getTokenizerBestMatch() {
     if (main_api === 'novel') {
         if (nai_settings.model_novel.includes('krake') || nai_settings.model_novel.includes('euterpe')) {
-            return tokenizers.CLASSIC;
+            return tokenizers.GPT2;
         }
         if (nai_settings.model_novel.includes('clio')) {
             return tokenizers.NERD;
@@ -104,8 +106,6 @@ function callTokenizer(type, str, padding) {
             return guesstimate(str) + padding;
         case tokenizers.GPT2:
             return countTokensRemote('/tokenize_gpt2', str, padding);
-        case tokenizers.CLASSIC:
-            return encode(str).length + padding;
         case tokenizers.LLAMA:
             return countTokensRemote('/tokenize_llama', str, padding);
         case tokenizers.NERD:
