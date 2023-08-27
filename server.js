@@ -3515,7 +3515,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
     }
 
     // Add custom stop sequences
-    if (Array.isArray(request.body.stop)) {
+    if (Array.isArray(request.body.stop) && request.body.stop.length > 0) {
         bodyParams['stop'] = request.body.stop;
     }
 
