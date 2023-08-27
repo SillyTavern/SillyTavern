@@ -1,0 +1,28 @@
+{
+    "compilerOptions": {
+        "checkJs": true,
+        "target": "ESNext",
+        "module": "ESNext",
+        "allowUmdGlobalAccess": true,
+        "allowSyntheticDefaultImports": true
+    },
+    "exclude": [
+        "node_modules"
+    ],
+    "typeAcquisition": {
+        "include": [
+            "jquery",
+            "@popperjs/core",
+            "toastr",
+            "showdown",
+            "dompurify",
+            "moment",
+            "seedrandom",
+            "showdown-katex",
+            "droll",
+            "handlebars",
+            "highlight.js",
+            "localforage"
+        ]
+    }
+}

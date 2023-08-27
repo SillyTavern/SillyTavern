@@ -152,10 +152,24 @@ let main_api = "kobold";
 let response_generate_novel;
 let characters = {};
 let response_dw_bg;
-let response_getstatus;
 let first_run = true;
 
 
+let color = {
+    byNum: (mess, fgNum) => {
+        mess = mess || '';
+        fgNum = fgNum === undefined ? 31 : fgNum;
+        return '\u001b[' + fgNum + 'm' + mess + '\u001b[39m';
+    },
+    black: (mess) => color.byNum(mess, 30),
+    red: (mess) => color.byNum(mess, 31),
+    green: (mess) => color.byNum(mess, 32),
+    yellow: (mess) => color.byNum(mess, 33),
+    blue: (mess) => color.byNum(mess, 34),
+    magenta: (mess) => color.byNum(mess, 35),
+    cyan: (mess) => color.byNum(mess, 36),
+    white: (mess) => color.byNum(mess, 37)
+};
 
 function get_mancer_headers() {
     const api_key_mancer = readSecret(SECRET_KEYS.MANCER);
@@ -317,7 +331,8 @@ const directories = {
     instruct: 'public/instruct',
     context: 'public/context',
     backups: 'backups/',
-    quickreplies: 'public/QuickReplies'
+    quickreplies: 'public/QuickReplies',
+    assets: 'public/assets',
 };
 
 // CSRF Protection //
@@ -367,7 +382,10 @@ app.use(CORS);
 
 if (listen && config.basicAuthMode) app.use(basicAuthMiddleware);
 
-app.use(function (req, res, next) { //Security
+// IP Whitelist //
+let knownIPs = new Set();
+
+function getIpFromRequest(req) {
     let clientIp = req.connection.remoteAddress;
     let ip = ipaddr.parse(clientIp);
     // Check if the IP address is IPv4-mapped IPv6 address
@@ -378,33 +396,35 @@ app.use(function (req, res, next) { //Security
         clientIp = ip;
         clientIp = clientIp.toString();
     }
+    return clientIp;
+}
+
+app.use(function (req, res, next) {
+    const clientIp = getIpFromRequest(req);
+
+    if (listen && !knownIPs.has(clientIp)) {
+        const userAgent = req.headers['user-agent'];
+        console.log(color.yellow(`New connection from ${clientIp}; User Agent: ${userAgent}\n`));
+        knownIPs.add(clientIp);
+
+        // Write access log
+        const timestamp = new Date().toISOString();
+        const log = `${timestamp} ${clientIp} ${userAgent}\n`;
+        fs.appendFile('access.log', log, (err) => {
+            if (err) {
+                console.error('Failed to write access log:', err);
+            }
+        });
+    }
 
     //clientIp = req.connection.remoteAddress.split(':').pop();
     if (whitelistMode === true && !whitelist.some(x => ipMatching.matches(clientIp, ipMatching.getMatch(x)))) {
-        console.log('Forbidden: Connection attempt from ' + clientIp + '. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.conf in root of SillyTavern folder.\n');
+        console.log(color.red('Forbidden: Connection attempt from ' + clientIp + '. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.conf in root of SillyTavern folder.\n'));
         return res.status(403).send('<b>Forbidden</b>: Connection attempt from <b>' + clientIp + '</b>. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.conf in root of SillyTavern folder.');
     }
     next();
 });
 
-app.use((req, res, next) => {
-    if (req.url.startsWith('/characters/') && is_colab && process.env.googledrive == 2) {
-
-        const filePath = path.join(charactersPath, decodeURIComponent(req.url.substr('/characters'.length)));
-        console.log('req.url: ' + req.url);
-        console.log(filePath);
-        fs.access(filePath, fs.constants.R_OK, (err) => {
-            if (!err) {
-                res.sendFile(filePath, { root: process.cwd() });
-            } else {
-                res.send('Character not found: ' + filePath);
-                //next();
-            }
-        });
-    } else {
-        next();
-    }
-});
 
 app.use(express.static(process.cwd() + "/public", { refresh: true }));
 
@@ -755,14 +775,15 @@ app.post("/getchat", jsonParser, function (request, response) {
     }
 });
 
-app.post("/getstatus", jsonParser, async function (request, response_getstatus = response) {
-    if (!request.body) return response_getstatus.sendStatus(400);
+app.post("/getstatus", jsonParser, async function (request, response) {
+    if (!request.body) return response.sendStatus(400);
     api_server = request.body.api_server;
     main_api = request.body.main_api;
     if (api_server.indexOf('localhost') != -1) {
         api_server = api_server.replace('localhost', '127.0.0.1');
     }
-    var args = {
+
+    const args = {
         headers: { "Content-Type": "application/json" }
     };
 
@@ -770,9 +791,10 @@ app.post("/getstatus", jsonParser, async function (request, response_getstatus =
         args.headers = Object.assign(args.headers, get_mancer_headers());
     }
 
-    var url = api_server + "/v1/model";
+    const url = api_server + "/v1/model";
     let version = '';
     let koboldVersion = {};
+
     if (main_api == "kobold") {
         try {
             version = (await getAsync(api_server + "/v1/info/version")).result;
@@ -790,29 +812,27 @@ app.post("/getstatus", jsonParser, async function (request, response_getstatus =
             };
         }
     }
-    client.get(url, args, async function (data, response) {
-        if (typeof data !== 'object') {
+
+    try {
+        let data = await getAsync(url, args);
+
+        if (!data || typeof data !== 'object') {
             data = {};
         }
-        if (response.statusCode == 200) {
-            data.version = version;
-            data.koboldVersion = koboldVersion;
-            if (data.result == "ReadOnly") {
-                data.result = "no_connection";
-            }
-        } else {
-            data.response = data.result;
+
+        if (data.result == "ReadOnly") {
             data.result = "no_connection";
         }
-        response_getstatus.send(data);
-    }).on('error', function () {
-        response_getstatus.send({ result: "no_connection" });
-    });
-});
 
-const formatApiUrl = (url) => (url.indexOf('localhost') !== -1)
-    ? url.replace('localhost', '127.0.0.1')
-    : url;
+        data.version = version;
+        data.koboldVersion = koboldVersion;
+
+        return response.send(data);
+    } catch (error) {
+        console.log(error);
+        return response.send({ result: "no_connection" });
+    }
+});
 
 function getVersion() {
     let pkgVersion = 'UNKNOWN';
@@ -1920,7 +1940,7 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
             "stop_sequences": request.body.stop_sequences,
             "bad_words_ids": badWordsList,
             "logit_bias_exp": logit_bias_exp,
-            //generate_until_sentence = true;
+            "generate_until_sentence": request.body.generate_until_sentence,
             "use_cache": request.body.use_cache,
             "use_string": true,
             "return_full_text": request.body.return_full_text,
@@ -3315,6 +3335,72 @@ async function sendScaleRequest(request, response) {
     }
 }
 
+app.post("/generate_altscale", jsonParser, function (request, response_generate_scale) {
+    if (!request.body) return response_generate_scale.sendStatus(400);
+
+    fetch('https://dashboard.scale.com/spellbook/api/trpc/v2.variant.run', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'cookie': `_jwt=${readSecret(SECRET_KEYS.SCALE_COOKIE)}`,
+        },
+        body: JSON.stringify({
+            json: {
+                variant: {
+                    name: 'New Variant',
+                    appId: '',
+                    taxonomy: null
+                },
+                prompt: {
+                    id: '',
+                    template: '{{input}}\n',
+                    exampleVariables: {},
+                    variablesSourceDataId: null,
+                    systemMessage: request.body.sysprompt
+                },
+                modelParameters: {
+                    id: '',
+                    modelId: 'GPT4',
+                    modelType: 'OpenAi',
+                    maxTokens: request.body.max_tokens,
+                    temperature: request.body.temp,
+                    stop: "user:",
+                    suffix: null,
+                    topP: request.body.top_p,
+                    logprobs: null,
+                    logitBias: request.body.logit_bias
+                },
+                inputs: [
+                    {
+                        index: '-1',
+                        valueByName: {
+                            input: request.body.prompt
+                        }
+                    }
+                ]
+            },
+            meta: {
+                values: {
+                    'variant.taxonomy': ['undefined'],
+                    'prompt.variablesSourceDataId': ['undefined'],
+                    'modelParameters.suffix': ['undefined'],
+                    'modelParameters.logprobs': ['undefined'],
+                }
+            }
+        })
+    })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data.result.data.json.outputs[0])
+            return response_generate_scale.send({ output: data.result.data.json.outputs[0] });
+        })
+        .catch((error) => {
+            console.error('Error:', error)
+            return response_generate_scale.send({ error: true })
+        });
+
+});
+
 async function sendClaudeRequest(request, response) {
     const fetch = require('node-fetch').default;
 
@@ -3339,6 +3425,12 @@ async function sendClaudeRequest(request, response) {
         }
 
         console.log('Claude request:', requestPrompt);
+        const stop_sequences = ["\n\nHuman:", "\n\nSystem:", "\n\nAssistant:"];
+
+        // Add custom stop sequences
+        if (Array.isArray(request.body.stop)) {
+            stop_sequences.push(...request.body.stop);
+        }
 
         const generateResponse = await fetch(api_url + '/complete', {
             method: "POST",
@@ -3347,7 +3439,7 @@ async function sendClaudeRequest(request, response) {
                 prompt: requestPrompt,
                 model: request.body.model,
                 max_tokens_to_sample: request.body.max_tokens,
-                stop_sequences: ["\n\nHuman:", "\n\nSystem:", "\n\nAssistant:"],
+                stop_sequences: stop_sequences,
                 temperature: request.body.temperature,
                 top_p: request.body.top_p,
                 top_k: request.body.top_k,
@@ -3427,10 +3519,19 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
         // OpenRouter needs to pass the referer: https://openrouter.ai/docs
         headers = { 'HTTP-Referer': request.headers.referer };
         bodyParams = { 'transforms': ["middle-out"] };
+
+        if (request.body.use_fallback) {
+            bodyParams['route'] = 'fallback';
+        }
     }
 
     if (!api_key_openai && !request.body.reverse_proxy) {
         return response_generate_openai.status(401).send({ error: true });
+    }
+
+    // Add custom stop sequences
+    if (Array.isArray(request.body.stop)) {
+        bodyParams['stop'] = request.body.stop;
     }
 
     const isTextCompletion = Boolean(request.body.model && (request.body.model.startsWith('text-') || request.body.model.startsWith('code-')));
@@ -3752,6 +3853,8 @@ function getPresetSettingsByAPI(apiId) {
             return { folder: directories.textGen_Settings, extension: '.settings' };
         case 'instruct':
             return { folder: directories.instruct, extension: '.json' };
+        case 'context':
+            return { folder: directories.context, extension: '.json' };
         default:
             return { folder: null, extension: null };
     }
@@ -3787,11 +3890,19 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
 
         if (main_api == 'textgenerationwebui' && request.body.use_mancer) {
             args.headers = Object.assign(args.headers, get_mancer_headers());
+            const data = await postAsync(api_server + "/v1/token-count", args);
+            return response.send({ count: data['results'][0]['tokens'] });
         }
 
-        const data = await postAsync(api_server + "/v1/token-count", args);
-        console.log(data);
-        return response.send({ count: data['results'][0]['tokens'] });
+        else if (main_api == 'kobold') {
+            const data = await postAsync(api_server + "/extra/tokencount", args);
+            const count = data['value'];
+            return response.send({ count: count });
+        }
+
+        else {
+            return response.send({ error: true });
+        }
     } catch (error) {
         console.log(error);
         return response.send({ error: true });
@@ -3875,21 +3986,23 @@ const setupTasks = async function () {
 
     if (autorun) open(autorunUrl.toString());
 
-    console.log('\x1b[32mSillyTavern is listening on: ' + tavernUrl + '\x1b[0m');
+    console.log(color.green('SillyTavern is listening on: ' + tavernUrl));
 
     if (listen) {
-        console.log('\n0.0.0.0 means SillyTavern is listening on all network interfaces (Wi-Fi, LAN, localhost). If you want to limit it only to internal localhost (127.0.0.1), change the setting in config.conf to “listen=false”\n');
+        console.log('\n0.0.0.0 means SillyTavern is listening on all network interfaces (Wi-Fi, LAN, localhost). If you want to limit it only to internal localhost (127.0.0.1), change the setting in config.conf to "listen=false". Check "access.log" file in the SillyTavern directory if you want to inspect incoming connections.\n');
     }
 }
 
 if (listen && !config.whitelistMode && !config.basicAuthMode) {
-    if (config.securityOverride)
-        console.warn("Security has been override. If it's not a trusted network, change the settings.");
+    if (config.securityOverride) {
+        console.warn(color.red("Security has been overridden. If it's not a trusted network, change the settings."));
+    }
     else {
-        console.error('Your SillyTavern is currently unsecurely open to the public. Enable whitelisting or basic authentication.');
+        console.error(color.red('Your SillyTavern is currently unsecurely open to the public. Enable whitelisting or basic authentication.'));
         process.exit(1);
     }
 }
+
 if (true === cliArguments.ssl)
     https.createServer(
         {
@@ -4001,9 +4114,12 @@ const SECRET_KEYS = {
     NOVEL: 'api_key_novel',
     CLAUDE: 'api_key_claude',
     DEEPL: 'deepl',
+    LIBRE: 'libre',
+    LIBRE_URL: 'libre_url',
     OPENROUTER: 'api_key_openrouter',
     SCALE: 'api_key_scale',
-    AI21: 'api_key_ai21'
+    AI21: 'api_key_ai21',
+    SCALE_COOKIE: 'scale_cookie',
 }
 
 function migrateSecrets() {
@@ -4224,6 +4340,46 @@ app.post('/horde_generateimage', jsonParser, async (request, response) => {
         return response.sendStatus(504);
     } catch (error) {
         console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+app.post('/libre_translate', jsonParser, async (request, response) => {
+    const key = readSecret(SECRET_KEYS.LIBRE);
+    const url = readSecret(SECRET_KEYS.LIBRE_URL);
+
+    const text = request.body.text;
+    const lang = request.body.lang;
+
+    if (!text || !lang) {
+        return response.sendStatus(400);
+    }
+
+    console.log('Input text: ' + text);
+
+    try {
+		const result = await fetch(url, {
+			method: "POST",
+			body: JSON.stringify({
+				q: text,
+				source: "auto",
+				target: lang,
+				format: "text",
+				api_key: key
+			}),
+			headers: { "Content-Type": "application/json" }
+		});
+
+        if (!result.ok) {
+            return response.sendStatus(result.status);
+        }
+
+        const json = await result.json();
+        console.log('Translated text: ' + json.translatedText);
+
+        return response.send(json.translatedText);
+    } catch (error) {
+        console.log("Translation error: " + error.message);
         return response.sendStatus(500);
     }
 });
@@ -4945,5 +5101,244 @@ app.post('/delete_extension', jsonParser, async (request, response) => {
     } catch (error) {
         console.log('Deleting custom content failed', error);
         return response.status(500).send(`Server Error: ${error.message}`);
+    }
+});
+
+
+/**
+ * HTTP POST handler function to retrieve name of all files of a given folder path.
+ *
+ * @param {Object} request - HTTP Request object. Require folder path in query
+ * @param {Object} response - HTTP Response object will contain a list of file path.
+ *
+ * @returns {void}
+ */
+app.post('/get_assets', jsonParser, async (request, response) => {
+    const folderPath = path.join(directories.assets);
+    let output = {}
+    //console.info("Checking files into",folderPath);
+
+    try {
+        if (fs.existsSync(folderPath) && fs.statSync(folderPath).isDirectory()) {
+            const folders = fs.readdirSync(folderPath)
+                .filter(filename => {
+                    return fs.statSync(path.join(folderPath, filename)).isDirectory();
+                });
+
+            for (const folder of folders) {
+                if (folder == "temp")
+                    continue;
+                const files = fs.readdirSync(path.join(folderPath, folder))
+                    .filter(filename => {
+                        return filename != ".placeholder";
+                    });
+                output[folder] = [];
+                for (const file of files) {
+                    output[folder].push(path.join("assets", folder, file));
+                }
+            }
+        }
+    }
+    catch (err) {
+        console.log(err);
+    }
+    finally {
+        return response.send(output);
+    }
+});
+
+
+function checkAssetFileName(inputFilename) {
+    // Sanitize filename
+    if (inputFilename.indexOf('\0') !== -1) {
+        console.debug("Bad request: poisong null bytes in filename.");
+        return '';
+    }
+
+    if (!/^[a-zA-Z0-9_\-\.]+$/.test(inputFilename)) {
+        console.debug("Bad request: illegal character in filename, only alphanumeric, '_', '-' are accepted.");
+        return '';
+    }
+
+    if (contentManager.unsafeExtensions.some(ext => inputFilename.toLowerCase().endsWith(ext))) {
+        console.debug("Bad request: forbidden file extension.");
+        return '';
+    }
+
+    if (inputFilename.startsWith('.')) {
+        console.debug("Bad request: filename cannot start with '.'");
+        return '';
+    }
+
+    return path.normalize(inputFilename).replace(/^(\.\.(\/|\\|$))+/, '');;
+}
+
+/**
+ * HTTP POST handler function to download the requested asset.
+ *
+ * @param {Object} request - HTTP Request object, expects a url, a category and a filename.
+ * @param {Object} response - HTTP Response only gives status.
+ *
+ * @returns {void}
+ */
+app.post('/asset_download', jsonParser, async (request, response) => {
+    const { Readable } = require('stream');
+    const { finished } = require('stream/promises');
+    const url = request.body.url;
+    const inputCategory = request.body.category;
+    const inputFilename = sanitize(request.body.filename);
+    const validCategories = ["bgm", "ambient"];
+
+    // Check category
+    let category = null;
+    for (i of validCategories)
+        if (i == inputCategory)
+            category = i;
+
+    if (category === null) {
+        console.debug("Bad request: unsuported asset category.");
+        return response.sendStatus(400);
+    }
+
+    // Sanitize filename
+    const safe_input = checkAssetFileName(inputFilename);
+    if (safe_input == '')
+        return response.sendFile(400);
+
+    const temp_path = path.join(directories.assets, "temp", safe_input)
+    const file_path = path.join(directories.assets, category, safe_input)
+    console.debug("Request received to download", url, "to", file_path);
+
+    try {
+        // Download to temp
+        const downloadFile = (async (url, temp_path) => {
+            const res = await fetch(url);
+            if (!res.ok) {
+                throw new Error(`Unexpected response ${res.statusText}`);
+            }
+            const destination = path.resolve(temp_path);
+            // Delete if previous download failed
+            if (fs.existsSync(temp_path)) {
+                fs.unlink(temp_path, (err) => {
+                    if (err) throw err;
+                });
+            }
+            const fileStream = fs.createWriteStream(destination, { flags: 'wx' });
+            await finished(Readable.fromWeb(res.body).pipe(fileStream));
+        });
+
+        await downloadFile(url, temp_path);
+
+        // Move into asset place
+        console.debug("Download finished, moving file from", temp_path, "to", file_path);
+        fs.renameSync(temp_path, file_path);
+        response.sendStatus(200);
+    }
+    catch (error) {
+        console.log(error);
+        response.sendStatus(500);
+    }
+});
+
+/**
+ * HTTP POST handler function to delete the requested asset.
+ *
+ * @param {Object} request - HTTP Request object, expects a category and a filename
+ * @param {Object} response - HTTP Response only gives stats.
+ *
+ * @returns {void}
+ */
+app.post('/asset_delete', jsonParser, async (request, response) => {
+    const { Readable } = require('stream');
+    const { finished } = require('stream/promises');
+    const inputCategory = request.body.category;
+    const inputFilename = sanitize(request.body.filename);
+    const validCategories = ["bgm", "ambient"];
+
+    // Check category
+    let category = null;
+    for (i of validCategories)
+        if (i == inputCategory)
+            category = i;
+
+    if (category === null) {
+        console.debug("Bad request: unsuported asset category.");
+        return response.sendStatus(400);
+    }
+
+    // Sanitize filename
+    const safe_input = checkAssetFileName(inputFilename);
+    if (safe_input == '')
+        return response.sendFile(400);
+
+    const file_path = path.join(directories.assets, category, safe_input)
+    console.debug("Request received to delete", category, file_path);
+
+    try {
+        // Delete if previous download failed
+        if (fs.existsSync(file_path)) {
+            fs.unlink(file_path, (err) => {
+                if (err) throw err;
+            });
+            console.debug("Asset deleted.");
+        }
+        else {
+            console.debug("Asset not found.");
+            response.sendStatus(400);
+        }
+        // Move into asset place
+        response.sendStatus(200);
+    }
+    catch (error) {
+        console.log(error);
+        response.sendStatus(500);
+    }
+});
+
+
+///////////////////////////////
+/**
+ * HTTP POST handler function to retrieve a character background music list.
+ *
+ * @param {Object} request - HTTP Request object, expects a character name in the query.
+ * @param {Object} response - HTTP Response object will contain a list of audio file path.
+ *
+ * @returns {void}
+ */
+app.post('/get_character_assets_list', jsonParser, async (request, response) => {
+    const name = sanitize(request.query.name);
+    const inputCategory = request.query.category;
+    const validCategories = ["bgm", "ambient"]
+
+    // Check category
+    let category = null
+    for (i of validCategories)
+        if (i == inputCategory)
+            category = i
+
+    if (category === null) {
+        console.debug("Bad request: unsuported asset category.");
+        return response.sendStatus(400);
+    }
+
+    const folderPath = path.join(directories.characters, name, category);
+
+    let output = [];
+    try {
+        if (fs.existsSync(folderPath) && fs.statSync(folderPath).isDirectory()) {
+            const files = fs.readdirSync(folderPath)
+                .filter(filename => {
+                    return filename != ".placeholder";
+                });
+
+            for (i of files)
+                output.push(`/characters/${name}/${category}/${i}`);
+
+        }
+        return response.send(output);
+    }
+    catch (err) {
+        console.log(err);
+        return response.sendStatus(500);
     }
 });

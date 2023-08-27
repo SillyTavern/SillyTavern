@@ -135,12 +135,15 @@ const languageCodes = {
     'Zulu': 'zu',
 };
 
-const KEY_REQUIRED = ['deepl'];
+const KEY_REQUIRED = ['deepl','libre'];
+const LOCAL_URL = ['libre'];
 
-function showKeyButton() {
+function showKeysButton() {
     const providerRequiresKey = KEY_REQUIRED.includes(extension_settings.translate.provider);
+    const providerOptionalUrl = LOCAL_URL.includes(extension_settings.translate.provider);
     $("#translate_key_button").toggle(providerRequiresKey);
     $("#translate_key_button").toggleClass('success', Boolean(secret_state[extension_settings.translate.provider]));
+    $("#translate_url_button").toggle(providerOptionalUrl);
 }
 
 function loadSettings() {
@@ -153,7 +156,7 @@ function loadSettings() {
     $(`#translation_provider option[value="${extension_settings.translate.provider}"]`).attr('selected', true);
     $(`#translation_target_language option[value="${extension_settings.translate.target_language}"]`).attr('selected', true);
     $(`#translation_auto_mode option[value="${extension_settings.translate.auto_mode}"]`).attr('selected', true);
-    showKeyButton();
+    showKeysButton();
 }
 
 async function translateImpersonate(text) {
@@ -180,6 +183,22 @@ async function translateIncomingMessage(messageId) {
 
     updateMessageBlock(messageId, message);
 }
+
+async function translateProviderLibre(text, lang) {
+    const response = await fetch('/libre_translate', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ text: text, lang: lang }),
+    });
+
+    if (response.ok) {
+        const result = await response.text();
+        return result;
+    }
+
+    throw new Error(response.statusText);
+}
+
 
 async function translateProviderGoogle(text, lang) {
     const response = await fetch('/google_translate', {
@@ -217,7 +236,13 @@ async function translateProviderDeepl(text, lang) {
 
 async function translate(text, lang) {
     try {
+        if (text == '') {
+            return '';
+        }
+
         switch (extension_settings.translate.provider) {
+            case 'libre':
+                return await translateProviderLibre(text, lang);
             case 'google':
                 return await translateProviderGoogle(text, lang);
             case 'deepl':
@@ -364,10 +389,12 @@ jQuery(() => {
                 <label for="translation_provider">Provider</label>
                 <div class="flex-container gap5px flexnowrap marginBot5">
                     <select id="translation_provider" name="provider" class="margin0">
+                        <option value="libre">Libre</option>
                         <option value="google">Google</option>
                         <option value="deepl">DeepL</option>
                     <select>
                     <div id="translate_key_button" class="menu_button fa-solid fa-key margin0"></div>
+                    <div id="translate_url_button" class="menu_button fa-solid fa-link margin0"></div>
                 </div>
                 <label for="translation_target_language">Target Language</label>
                 <select id="translation_target_language" name="target_language"></select>
@@ -399,7 +426,7 @@ jQuery(() => {
     });
     $('#translation_provider').on('change', (event) => {
         extension_settings.translate.provider = event.target.value;
-        showKeyButton();
+        showKeysButton();
         saveSettingsDebounced();
     });
     $('#translation_target_language').on('change', (event) => {
@@ -418,12 +445,23 @@ jQuery(() => {
         await writeSecret(extension_settings.translate.provider, key);
         toastr.success('API Key saved');
     });
+    $('#translate_url_button').on('click', async () => {
+        const optionText = $('#translation_provider option:selected').text();
+        const url = await callPopup(`<h3>${optionText} API URL</h3>`, 'input');
+
+        if (url == false) {
+            return;
+        }
+
+        await writeSecret(extension_settings.translate.provider + "_url", url);
+        toastr.success('API URL saved');
+    });
 
     loadSettings();
 
-    eventSource.on(event_types.MESSAGE_RECEIVED, handleIncomingMessage);
+    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, handleIncomingMessage);
     eventSource.on(event_types.MESSAGE_SWIPED, handleIncomingMessage);
-    eventSource.on(event_types.MESSAGE_SENT, handleOutgoingMessage);
+    eventSource.on(event_types.USER_MESSAGE_RENDERED, handleOutgoingMessage);
     eventSource.on(event_types.IMPERSONATE_READY, handleImpersonateReady);
     eventSource.on(event_types.MESSAGE_EDITED, handleMessageEdit);
 

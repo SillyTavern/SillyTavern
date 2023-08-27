@@ -39,41 +39,12 @@
 #world_popup_bottom_holder div {
     width: fit-content;
     user-select: none;
-    opacity: 0.8;
-}
-
-.world_popup_logo_block {
-    display: flex;
-    align-items: center;
-}
-
-#world_popup_header {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-}
-
-#world_popup_header h3 {
-    margin: 0;
 }
 
 #form_rename_world {
     display: flex;
     align-items: center;
-    opacity: 0.8;
     gap: 5px;
-}
-
-#form_rename_world input[type="submit"] {
-    cursor: pointer;
-}
-
-#form_world_import {
-    display: none;
-}
-
-#world_popup_header h5 {
-    display: inline-block;
 }
 
 .world_popup_expander {
@@ -91,8 +62,8 @@
 }
 
 #world_popup_entries_list:empty::before {
-    content: 'No entries exist. Try creating one!';
-    font-size: calc(var(--mainFontSize) + .5rem);
+    content: 'No entries found.';
+    font-size: calc(var(--mainFontSize) + .1rem);
     font-weight: bolder;
     width: 100%;
     height: 100%;
@@ -179,3 +150,13 @@
 /* .world_entry_form .inline-drawer-header {
     background-color: var(--SmartThemeShadowColor);
 } */
+
+#world_editor_select {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 10em;
+}
+
+#world_info_search {
+    width: 10em;
+}

@@ -1,14 +1,14 @@
 import {
     getRequestHeaders,
     getStoppingStrings,
-    getTextTokens,
     max_context,
     novelai_setting_names,
     saveSettingsDebounced,
     setGenerationParamsFromPreset
 } from "../script.js";
-import { getCfg } from "./extensions/cfg/util.js";
-import { MAX_CONTEXT_DEFAULT, tokenizers } from "./power-user.js";
+import { getCfgPrompt } from "./extensions/cfg/util.js";
+import { MAX_CONTEXT_DEFAULT } from "./power-user.js";
+import { getTextTokens, tokenizers } from "./tokenizers.js";
 import {
     getSortableDelay,
     getStringHash,
@@ -99,7 +99,6 @@ function loadNovelPreset(preset) {
         setGenerationParamsFromPreset(preset);
     }
 
-    $("#rep_pen_size_novel").attr('max', max_context);
     nai_settings.temperature = preset.temperature;
     nai_settings.repetition_penalty = preset.repetition_penalty;
     nai_settings.repetition_penalty_range = preset.repetition_penalty_range;
@@ -128,8 +127,8 @@ function loadNovelPreset(preset) {
 function loadNovelSettings(settings) {
     //load the rest of the Novel settings without any checks
     nai_settings.model_novel = settings.model_novel;
-    $(`#model_novel_select option[value=${nai_settings.model_novel}]`).attr("selected", true);
     $('#model_novel_select').val(nai_settings.model_novel);
+    $(`#model_novel_select option[value=${nai_settings.model_novel}]`).attr("selected", true);
 
     if (settings.nai_preamble !== undefined) {
         nai_settings.preamble = settings.nai_preamble;
@@ -168,7 +167,6 @@ function loadNovelSettingsUi(ui_settings) {
     $("#rep_pen_novel").val(ui_settings.repetition_penalty);
     $("#rep_pen_counter_novel").text(Number(ui_settings.repetition_penalty).toFixed(2));
     $("#rep_pen_size_novel").val(ui_settings.repetition_penalty_range);
-    $("#rep_pen_size_novel").attr('max', max_context);
     $("#rep_pen_size_counter_novel").text(Number(ui_settings.repetition_penalty_range).toFixed(0));
     $("#rep_pen_slope_novel").val(ui_settings.repetition_penalty_slope);
     $("#rep_pen_slope_counter_novel").text(Number(`${ui_settings.repetition_penalty_slope}`).toFixed(2));
@@ -185,7 +183,7 @@ function loadNovelSettingsUi(ui_settings) {
     $("#top_a_novel").val(ui_settings.top_a);
     $("#top_a_counter_novel").text(Number(ui_settings.top_a).toFixed(2));
     $("#typical_p_novel").val(ui_settings.typical_p);
-    $("#typical_p_counter_novel").text(Number(ui_settings.typical_p).toFixed(2));
+    $("#typical_p_counter_novel").text(Number(ui_settings.typical_p).toFixed(3));
     $("#cfg_scale_novel").val(ui_settings.cfg_scale);
     $("#cfg_scale_counter_novel").text(Number(ui_settings.cfg_scale).toFixed(2));
     $("#phrase_rep_pen_novel").val(ui_settings.phrase_rep_pen || "off");
@@ -269,8 +267,8 @@ const sliders = [
     {
         sliderId: "#typical_p_novel",
         counterId: "#typical_p_counter_novel",
-        format: (val) => Number(val).toFixed(2),
-        setValue: (val) => { nai_settings.typical_p = Number(val).toFixed(2); },
+        format: (val) => Number(val).toFixed(3),
+        setValue: (val) => { nai_settings.typical_p = Number(val).toFixed(3); },
     },
     {
         sliderId: "#mirostat_tau_novel",
@@ -395,7 +393,11 @@ function getBadWordPermutations(text) {
     return result;
 }
 
-export function getNovelGenerationData(finalPrompt, this_settings, this_amount_gen, isImpersonate) {
+export function getNovelGenerationData(finalPrompt, this_settings, this_amount_gen, isImpersonate, cfgValues) {
+    if (cfgValues && cfgValues.guidanceScale && cfgValues.guidanceScale?.value !== 1) {
+        cfgValues.negativePrompt = (getCfgPrompt(cfgValues.guidanceScale, true))?.value;
+    }
+
     const clio = nai_settings.model_novel.includes('clio');
     const kayra = nai_settings.model_novel.includes('kayra');
 
@@ -410,7 +412,6 @@ export function getNovelGenerationData(finalPrompt, this_settings, this_amount_g
         : undefined;
 
     const prefix = selectPrefix(nai_settings.prefix, finalPrompt);
-    const cfgSettings = getCfg();
 
     let logitBias = [];
     if (tokenizerType !== tokenizers.NONE && Array.isArray(nai_settings.logit_bias) && nai_settings.logit_bias.length) {
@@ -422,30 +423,29 @@ export function getNovelGenerationData(finalPrompt, this_settings, this_amount_g
         "input": finalPrompt,
         "model": nai_settings.model_novel,
         "use_string": true,
-        "temperature": parseFloat(nai_settings.temperature),
+        "temperature": Number(nai_settings.temperature),
         "max_length": this_amount_gen < maximum_output_length ? this_amount_gen : maximum_output_length,
-        "min_length": parseInt(nai_settings.min_length),
-        "tail_free_sampling": parseFloat(nai_settings.tail_free_sampling),
-        "repetition_penalty": parseFloat(nai_settings.repetition_penalty),
-        "repetition_penalty_range": parseInt(nai_settings.repetition_penalty_range),
-        "repetition_penalty_slope": parseFloat(nai_settings.repetition_penalty_slope),
-        "repetition_penalty_frequency": parseFloat(nai_settings.repetition_penalty_frequency),
-        "repetition_penalty_presence": parseFloat(nai_settings.repetition_penalty_presence),
-        "top_a": parseFloat(nai_settings.top_a),
-        "top_p": parseFloat(nai_settings.top_p),
-        "top_k": parseInt(nai_settings.top_k),
-        "typical_p": parseFloat(nai_settings.typical_p),
-        "mirostat_lr": parseFloat(nai_settings.mirostat_lr),
-        "mirostat_tau": parseFloat(nai_settings.mirostat_tau),
-        "cfg_scale": cfgSettings?.guidanceScale ?? parseFloat(nai_settings.cfg_scale),
-        "cfg_uc": cfgSettings?.negativePrompt ?? nai_settings.cfg_uc ?? "",
+        "min_length": Number(nai_settings.min_length),
+        "tail_free_sampling": Number(nai_settings.tail_free_sampling),
+        "repetition_penalty": Number(nai_settings.repetition_penalty),
+        "repetition_penalty_range": Number(nai_settings.repetition_penalty_range),
+        "repetition_penalty_slope": Number(nai_settings.repetition_penalty_slope),
+        "repetition_penalty_frequency": Number(nai_settings.repetition_penalty_frequency),
+        "repetition_penalty_presence": Number(nai_settings.repetition_penalty_presence),
+        "top_a": Number(nai_settings.top_a),
+        "top_p": Number(nai_settings.top_p),
+        "top_k": Number(nai_settings.top_k),
+        "typical_p": Number(nai_settings.typical_p),
+        "mirostat_lr": Number(nai_settings.mirostat_lr),
+        "mirostat_tau": Number(nai_settings.mirostat_tau),
+        "cfg_scale": cfgValues?.guidanceScale?.value ?? Number(nai_settings.cfg_scale),
+        "cfg_uc": cfgValues?.negativePrompt ?? nai_settings.cfg_uc ?? "",
         "phrase_rep_pen": nai_settings.phrase_rep_pen,
         "stop_sequences": stopSequences,
         "bad_words_ids": badWordIds,
         "logit_bias_exp": logitBias,
         "generate_until_sentence": true,
         "use_cache": false,
-        "use_string": true,
         "return_full_text": false,
         "prefix": prefix,
         "order": nai_settings.order || this_settings.order || default_order,
@@ -637,7 +637,7 @@ export async function generateNovelWithStreaming(generate_data, signal) {
 }
 
 $("#nai_preamble_textarea").on('input', function () {
-    nai_settings.preamble = $('#nai_preamble_textarea').val();
+    nai_settings.preamble = String($('#nai_preamble_textarea').val());
     saveSettingsDebounced();
 });
 
@@ -665,7 +665,7 @@ jQuery(function () {
     });
 
     $("#model_novel_select").change(function () {
-        nai_settings.model_novel = $("#model_novel_select").find(":selected").val();
+        nai_settings.model_novel = String($("#model_novel_select").find(":selected").val());
         saveSettingsDebounced();
 
         // Update the selected preset to something appropriate
@@ -676,12 +676,12 @@ jQuery(function () {
     });
 
     $("#nai_prefix").on('change', function () {
-        nai_settings.prefix = $("#nai_prefix").find(":selected").val();
+        nai_settings.prefix = String($("#nai_prefix").find(":selected").val());
         saveSettingsDebounced();
     });
 
     $("#phrase_rep_pen_novel").on('change', function () {
-        nai_settings.phrase_rep_pen = $("#phrase_rep_pen_novel").find(":selected").val();
+        nai_settings.phrase_rep_pen = String($("#phrase_rep_pen_novel").find(":selected").val());
         saveSettingsDebounced();
     });
 

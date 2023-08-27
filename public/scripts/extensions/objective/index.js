@@ -164,7 +164,7 @@ function getNextIncompleteTaskRecurse(task){
 }
 
 // Set a task in extensionPrompt context. Defaults to first incomplete
-function setCurrentTask(taskId = null) {
+function setCurrentTask(taskId = null, skipSave = false) {
     const context = getContext();
 
     // TODO: Should probably null this rather than set empty object
@@ -202,7 +202,10 @@ function setCurrentTask(taskId = null) {
         console.info(`No current task`);
     }
 
-    saveState();
+    // Save state if not skipping
+    if (!skipSave) {
+        saveState();
+    }
 }
 
 function getHighestTaskIdRecurse(task) {
@@ -731,7 +734,7 @@ function loadSettings() {
     $('#objective-check-frequency').val(chat_metadata['objective'].checkFrequency)
     $('#objective-hide-tasks').prop('checked', chat_metadata['objective'].hideTasks)
     $('#objective-tasks').prop('hidden', $('#objective-hide-tasks').prop('checked'))
-    setCurrentTask()
+    setCurrentTask(null, true)
 }
 
 function addManualTaskCheckUi() {
