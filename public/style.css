@@ -531,6 +531,7 @@ hr {
     column-gap: 5px;
     font-size: var(--bottomFormIconSize);
     overflow: hidden;
+    order: 1003;
 }
 
 #send_but_sheld>div {
@@ -581,6 +582,7 @@ hr {
     transition: 0.3s;
     display: flex;
     align-items: center;
+    order: 1001;
 }
 
 .font-family-reset {
@@ -904,6 +906,7 @@ select {
     margin: 0;
     text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
     flex: 1;
+    order: 1002;
 }
 
 .text_pole::placeholder {

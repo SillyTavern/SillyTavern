@@ -1894,8 +1894,7 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
 
     const novelai = require('./src/novelai');
     const isNewModel = (request.body.model.includes('clio') || request.body.model.includes('kayra'));
-    const isKrake = request.body.model.includes('krake');
-    const badWordsList = (isNewModel ? novelai.badWordsList : (isKrake ? novelai.krakeBadWordsList : novelai.euterpeBadWordsList)).slice();
+    const badWordsList = novelai.getBadWordsList(request.body.model);
 
     // Add customized bad words for Clio and Kayra
     if (isNewModel && Array.isArray(request.body.bad_words_ids)) {
@@ -1907,7 +1906,7 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
     }
 
     // Add default biases for dinkus and asterism
-    const logit_bias_exp = isNewModel ? novelai.logitBiasExp.slice() : null;
+    const logit_bias_exp = isNewModel ? novelai.logitBiasExp.slice() : [];
 
     if (Array.isArray(logit_bias_exp) && Array.isArray(request.body.logit_bias_exp)) {
         logit_bias_exp.push(...request.body.logit_bias_exp);
@@ -1942,7 +1941,7 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
             "logit_bias_exp": logit_bias_exp,
             "generate_until_sentence": request.body.generate_until_sentence,
             "use_cache": request.body.use_cache,
-            "use_string": true,
+            "use_string": request.body.use_string ?? true,
             "return_full_text": request.body.return_full_text,
             "prefix": request.body.prefix,
             "order": request.body.order
@@ -3845,22 +3844,87 @@ function getPresetSettingsByAPI(apiId) {
     }
 }
 
-function createTokenizationHandler(getTokenizerFn) {
+function createSentencepieceEncodingHandler(getTokenizerFn) {
     return async function (request, response) {
-        if (!request.body) {
-            return response.sendStatus(400);
-        }
+        try {
+            if (!request.body) {
+                return response.sendStatus(400);
+            }
 
-        const text = request.body.text || '';
-        const tokenizer = getTokenizerFn();
-        const { ids, count } = await countSentencepieceTokens(tokenizer, text);
-        return response.send({ ids, count });
+            const text = request.body.text || '';
+            const tokenizer = getTokenizerFn();
+            const { ids, count } = await countSentencepieceTokens(tokenizer, text);
+            return response.send({ ids, count });
+        } catch (error) {
+            console.log(error);
+            return response.send({ ids: [], count: 0 });
+        }
     };
 }
 
-app.post("/tokenize_llama", jsonParser, createTokenizationHandler(() => spp_llama));
-app.post("/tokenize_nerdstash", jsonParser, createTokenizationHandler(() => spp_nerd));
-app.post("/tokenize_nerdstash_v2", jsonParser, createTokenizationHandler(() => spp_nerd_v2));
+function createSentencepieceDecodingHandler(getTokenizerFn) {
+    return async function (request, response) {
+        try {
+            if (!request.body) {
+                return response.sendStatus(400);
+            }
+
+            const ids = request.body.ids || [];
+            const tokenizer = getTokenizerFn();
+            const text = await tokenizer.decodeIds(ids);
+            return response.send({ text });
+        } catch (error) {
+            console.log(error);
+            return response.send({ text: '' });
+        }
+    };
+}
+
+function createTiktokenEncodingHandler(modelId) {
+    return async function (request, response) {
+        try {
+            if (!request.body) {
+                return response.sendStatus(400);
+            }
+
+            const text = request.body.text || '';
+            const tokenizer = getTiktokenTokenizer(modelId);
+            const tokens = Object.values(tokenizer.encode(text));
+            return response.send({ ids: tokens, count: tokens.length });
+        } catch (error) {
+            console.log(error);
+            return response.send({ ids: [], count: 0 });
+        }
+    }
+}
+
+function createTiktokenDecodingHandler(modelId) {
+    return async function (request, response) {
+        try {
+            if (!request.body) {
+                return response.sendStatus(400);
+            }
+
+            const ids = request.body.ids || [];
+            const tokenizer = getTiktokenTokenizer(modelId);
+            const textBytes = tokenizer.decode(new Uint32Array(ids));
+            const text = new TextDecoder().decode(textBytes);
+            return response.send({ text });
+        } catch (error) {
+            console.log(error);
+            return response.send({ text: '' });
+        }
+    }
+}
+
+app.post("/tokenize_llama", jsonParser, createSentencepieceEncodingHandler(() => spp_llama));
+app.post("/tokenize_nerdstash", jsonParser, createSentencepieceEncodingHandler(() => spp_nerd));
+app.post("/tokenize_nerdstash_v2", jsonParser, createSentencepieceEncodingHandler(() => spp_nerd_v2));
+app.post("/tokenize_gpt2", jsonParser, createTiktokenEncodingHandler('gpt2'));
+app.post("/decode_llama", jsonParser, createSentencepieceDecodingHandler(() => spp_llama));
+app.post("/decode_nerdstash", jsonParser, createSentencepieceDecodingHandler(() => spp_nerd));
+app.post("/decode_nerdstash_v2", jsonParser, createSentencepieceDecodingHandler(() => spp_nerd_v2));
+app.post("/decode_gpt2", jsonParser, createTiktokenDecodingHandler('gpt2'));
 app.post("/tokenize_via_api", jsonParser, async function (request, response) {
     if (!request.body) {
         return response.sendStatus(400);
@@ -4350,17 +4414,17 @@ app.post('/libre_translate', jsonParser, async (request, response) => {
     console.log('Input text: ' + text);
 
     try {
-		const result = await fetch(url, {
-			method: "POST",
-			body: JSON.stringify({
-				q: text,
-				source: "auto",
-				target: lang,
-				format: "text",
-				api_key: key
-			}),
-			headers: { "Content-Type": "application/json" }
-		});
+        const result = await fetch(url, {
+            method: "POST",
+            body: JSON.stringify({
+                q: text,
+                source: "auto",
+                target: lang,
+                format: "text",
+                api_key: key
+            }),
+            headers: { "Content-Type": "application/json" }
+        });
 
         if (!result.ok) {
             return response.sendStatus(result.status);
