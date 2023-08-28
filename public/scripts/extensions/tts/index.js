@@ -678,7 +678,7 @@ function updateVoiceMap() {
         voiceMap = tempVoiceMap
         console.log(`Voicemap updated to ${JSON.stringify(voiceMap)}`)
     }
-    extension_settings.tts[ttsProviderName].voiceMap = voiceMap
+    Object.assign(extension_settings.tts[ttsProviderName].voiceMap, voiceMap)
     saveSettingsDebounced()
 }
 
