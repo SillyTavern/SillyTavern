@@ -487,6 +487,11 @@ function loadSettings() {
     if (Object.keys(extension_settings.tts).length === 0) {
         Object.assign(extension_settings.tts, defaultSettings)
     }
+    for (const key in defaultSettings) {
+        if (!(key in extension_settings.tts)) {
+            extension_settings.tts[key] = defaultSettings[key]
+        }
+    }
     $('#tts_provider').val(extension_settings.tts.currentProvider)
     $('#tts_enabled').prop(
         'checked',
@@ -575,7 +580,7 @@ async function loadTtsProvider(provider) {
     if (!provider) {
         return
     }
-    
+
     // Init provider references
     extension_settings.tts.currentProvider = provider
     ttsProviderName = provider
@@ -725,7 +730,7 @@ class VoiceMapEntry {
 
 /**
  * Init voiceMapEntries for character select list.
- * 
+ *
  */
 export async function initVoiceMap(){
     // Clear existing voiceMap state
@@ -751,7 +756,7 @@ export async function initVoiceMap(){
 
     // Get characters in current chat
     const characters = getCharacters()
-    
+
     // Get saved voicemap from provider settings, handling new and old representations
     let voiceMapFromSettings = {}
     if ("voiceMap" in extension_settings.tts[ttsProviderName]) {

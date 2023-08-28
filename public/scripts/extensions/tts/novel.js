@@ -1,5 +1,5 @@
 import { getRequestHeaders, callPopup } from "../../../script.js"
-import { getPreviewString } from "./index.js"
+import { getPreviewString, saveTtsProviderSettings } from "./index.js"
 import { initVoiceMap } from "./index.js"
 
 export { NovelTtsProvider }
@@ -21,17 +21,19 @@ class NovelTtsProvider {
 
     get settingsHtml() {
         let html = `
-        <br>
-        <small>
-        Use NovelAI's TTS engine.<br>
-        The default Voice IDs are only examples. Add custom voices and Novel will create a new random voice for it. Feel free to try different options!<br>
-        </small>
-        <small><i>Hint: Save an API key in the NovelAI API settings to use it here.</i></small> <br>
+        <div class="novel_tts_hints">
+            <div>Use NovelAI's TTS engine.</div>
+            <div>
+                The default Voice IDs are only examples. Add custom voices and Novel will create a new random voice for it.
+                Feel free to try different options!
+            </div>
+            <i>Hint: Save an API key in the NovelAI API settings to use it here.</i>
+        </div>
         <label for="tts-novel-custom-voices-add">Custom Voices</label>
-        <div style="display:flex; align-items: baseline">
+        <div class="tts_custom_voices">
             <select id="tts-novel-custom-voices-select"><select>
-            <i id="tts-novel-custom-voices-add" class="tts-button fa-solid fa-plus fa-2x" title="Add" style="color:green"></i>
-            <i id="tts-novel-custom-voices-delete" class="tts-button fa-solid fa-xmark fa-2x" title="Delete" style="color:red"></i>
+            <i id="tts-novel-custom-voices-add" class="tts-button fa-solid fa-plus fa-xl success" title="Add"></i>
+            <i id="tts-novel-custom-voices-delete" class="tts-button fa-solid fa-xmark fa-xl failure" title="Delete"></i>
         </div>
         `;
         return html;
@@ -44,18 +46,20 @@ class NovelTtsProvider {
         this.settings.customVoices.push(voiceName)
         this.populateCustomVoices()
         initVoiceMap() // Update TTS extension voiceMap
+        saveTtsProviderSettings()
     }
 
     // Delete selected custom voice from provider
     deleteCustomVoice() {
         const selected = $("#tts-novel-custom-voices-select").find(':selected').val();
         const voiceIndex = this.settings.customVoices.indexOf(selected);
-        
+
         if (voiceIndex !== -1) {
             this.settings.customVoices.splice(voiceIndex, 1);
         }
         this.populateCustomVoices()
         initVoiceMap() // Update TTS extension voiceMap
+        saveTtsProviderSettings()
     }
 
     // Create the UI dropdown list of voices in provider
@@ -139,7 +143,7 @@ class NovelTtsProvider {
         ];
 
         // Add in custom voices to the map
-        let addVoices = this.settings.customVoices.map(voice => 
+        let addVoices = this.settings.customVoices.map(voice =>
             ({ name: voice, voice_id: voice, lang: 'en-US', preview_url: false })
         )
         voices = voices.concat(addVoices)

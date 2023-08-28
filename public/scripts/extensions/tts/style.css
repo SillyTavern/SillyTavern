@@ -70,7 +70,21 @@
 
 .tts_block {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     column-gap: 5px;
     flex-wrap: wrap;
+}
+
+.tts_custom_voices {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+}
+
+.novel_tts_hints {
+    font-size: calc(0.9 * var(--mainFontSize));
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 5px;
 }
