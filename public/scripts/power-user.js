@@ -20,11 +20,16 @@ import {
     groups,
     resetSelectedGroup,
 } from "./group-chats.js";
-import { loadInstructMode } from "./instruct-mode.js";
+import {
+    instruct_presets,
+    loadInstructMode,
+    selectInstructPreset,
+} from "./instruct-mode.js";
 
 import { registerSlashCommand } from "./slash-commands.js";
+import { tokenizers } from "./tokenizers.js";
 
-import { delay } from "./utils.js";
+import { delay, resetScrollHeight } from "./utils.js";
 
 export {
     loadPowerUserSettings,
@@ -35,14 +40,13 @@ export {
     fixMarkdown,
     power_user,
     pygmalion_options,
-    tokenizers,
     send_on_enter_options,
 };
 
 export const MAX_CONTEXT_DEFAULT = 4096;
 const MAX_CONTEXT_UNLOCKED = 65536;
 
-const defaultStoryString =  "{{#if system}}{{system}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}'s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}";
+const defaultStoryString = "{{#if system}}{{system}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}'s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}";
 const defaultExampleSeparator = '***';
 const defaultChatStart = '***';
 
@@ -61,17 +65,6 @@ const pygmalion_options = {
     DISABLED: -1,
     AUTO: 0,
     ENABLED: 1,
-}
-
-const tokenizers = {
-    NONE: 0,
-    GPT3: 1,
-    CLASSIC: 2,
-    LLAMA: 3,
-    NERD: 4,
-    NERD2: 5,
-    API: 6,
-    BEST_MATCH: 99,
 }
 
 const send_on_enter_options = {
@@ -158,6 +151,7 @@ let power_user = {
     max_context_unlocked: false,
     prefer_character_prompt: true,
     prefer_character_jailbreak: true,
+    quick_continue: false,
     continue_on_send: false,
     trim_spaces: true,
     relaxed_api_urls: false,
@@ -165,21 +159,24 @@ let power_user = {
     default_instruct: '',
     instruct: {
         enabled: false,
+        preset: "Alpaca",
+        system_prompt: "Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\nWrite {{char}}'s next reply in a fictional roleplay chat between {{user}} and {{char}}.\n",
+        input_sequence: "### Instruction:",
+        output_sequence: "### Response:",
+        first_output_sequence: "",
+        last_output_sequence: "",
+        system_sequence_prefix: "",
+        system_sequence_suffix: "",
+        stop_sequence: "",
+        separator_sequence: "",
         wrap: true,
+        macro: true,
         names: false,
-        system_prompt: "Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\nWrite {{char}}'s next reply in a fictional roleplay chat between {{user}} and {{char}}. Write 1 reply only.",
-        system_sequence: '',
-        stop_sequence: '',
-        input_sequence: '### Instruction:',
-        output_sequence: '### Response:',
-        last_output_sequence: '',
-        preset: 'Alpaca',
-        separator_sequence: '',
-        macro: false,
         names_force_groups: true,
-        activation_regex: '',
+        activation_regex: "",
     },
 
+    default_context: 'Default',
     context: {
         preset: 'Default',
         story_string: defaultStoryString,
@@ -204,10 +201,9 @@ let power_user = {
 
 let themes = [];
 let movingUIPresets = [];
-let context_presets = [];
+export let context_presets = [];
 
 const storage_keys = {
-    ui_language: "language",
     fast_ui_mode: "TavernAI_fast_ui_mode",
     avatar_style: "TavernAI_avatar_style",
     chat_display: "TavernAI_chat_display",
@@ -247,29 +243,42 @@ function playMessageSound() {
     }
 
     const audio = document.getElementById('audio_message_sound');
-    audio.volume = 0.8;
-    audio.pause();
-    audio.currentTime = 0;
-    audio.play();
+    if (audio instanceof HTMLAudioElement) {
+        audio.volume = 0.8;
+        audio.pause();
+        audio.currentTime = 0;
+        audio.play();
+    }
 }
 
+/**
+ * Replaces consecutive newlines with a single newline.
+ * @param {string} x String to be processed.
+ * @returns {string} Processed string.
+ * @example
+ * collapseNewlines("\n\n\n"); // "\n"
+ */
 function collapseNewlines(x) {
     return x.replaceAll(/\n+/g, "\n");
 }
 
+/**
+ * Fix formatting problems in markdown.
+ * @param {string} text Text to be processed.
+ * @returns {string} Processed text.
+ * @example
+ * "^example * text*\n" // "^example *text*\n"
+ *  "^*example * text\n"// "^*example* text\n"
+ * "^example *text *\n" // "^example *text*\n"
+ * "^* example * text\n" // "^*example* text\n"
+ * // take note that the side you move the asterisk depends on where its pairing is
+ * // i.e. both of the following strings have the same broken asterisk ' * ',
+ * // but you move the first to the left and the second to the right, to match the non-broken asterisk
+ * "^example * text*\n" // "^*example * text\n"
+ * // and you HAVE to handle the cases where multiple pairs of asterisks exist in the same line
+ * "^example * text* * harder problem *\n" // "^example *text* *harder problem*\n"
+ */
 function fixMarkdown(text) {
-    // fix formatting problems in markdown
-    // e.g.:
-    // "^example * text*\n" -> "^example *text*\n"
-    // "^*example * text\n" -> "^*example* text\n"
-    // "^example *text *\n" -> "^example *text*\n"
-    // "^* example * text\n" -> "^*example* text\n"
-    // take note that the side you move the asterisk depends on where its pairing is
-    // i.e. both of the following strings have the same broken asterisk ' * ',
-    // but you move the first to the left and the second to the right, to match the non-broken asterisk "^example * text*\n" "^*example * text\n"
-    // and you HAVE to handle the cases where multiple pairs of asterisks exist in the same line
-    // i.e. "^example * text* * harder problem *\n" -> "^example *text* *harder problem*\n"
-
     // Find pairs of formatting characters and capture the text in between them
     const format = /([\*_]{1,2})([\s\S]*?)\1/gm;
     let matches = [];
@@ -476,9 +485,19 @@ async function applyShadowWidth() {
 
 }
 
-async function applyFontScale() {
+async function applyFontScale(type) {
+
     power_user.font_scale = Number(localStorage.getItem(storage_keys.font_scale) ?? 1);
-    document.documentElement.style.setProperty('--fontScale', power_user.font_scale);
+    //this is to allow forced setting on page load, theme swap, etc
+    if (type === 'forced') {
+        document.documentElement.style.setProperty('--fontScale', power_user.font_scale);
+    } else {
+        //this is to prevent the slider from updating page in real time
+        $("#font_scale").off('mouseup touchend').on('mouseup touchend', () => {
+            document.documentElement.style.setProperty('--fontScale', power_user.font_scale);
+        })
+    }
+
     $("#font_scale_counter").text(power_user.font_scale);
     $("#font_scale").val(power_user.font_scale);
 }
@@ -516,7 +535,7 @@ async function applyTheme(name) {
             key: 'font_scale',
             action: async () => {
                 localStorage.setItem(storage_keys.font_scale, power_user.font_scale);
-                await applyFontScale();
+                await applyFontScale('forced');
             }
         },
         {
@@ -635,7 +654,7 @@ async function applyMovingUIPreset(name) {
 }
 
 switchUiMode();
-applyFontScale();
+applyFontScale('forced');
 applyThemeColor();
 applyChatWidth();
 applyAvatarStyle();
@@ -704,6 +723,8 @@ function loadPowerUserSettings(settings, data) {
     $('#relaxed_api_urls').prop("checked", power_user.relaxed_api_urls);
     $('#trim_spaces').prop("checked", power_user.trim_spaces);
     $('#continue_on_send').prop("checked", power_user.continue_on_send);
+    $('#quick_continue').prop("checked", power_user.quick_continue);
+    $('#mes_continue').css('display', power_user.quick_continue ? '' : 'none');
     $('#auto_swipe').prop("checked", power_user.auto_swipe);
     $('#auto_swipe_minimum_length').val(power_user.auto_swipe_minimum_length);
     $('#auto_swipe_blacklist').val(power_user.auto_swipe_blacklist.join(", "));
@@ -886,6 +907,9 @@ function loadContextSettings() {
         $element.on('input', function () {
             power_user.context[control.property] = control.isCheckbox ? !!$(this).prop('checked') : $(this).val();
             saveSettingsDebounced();
+            if (!control.isCheckbox) {
+                resetScrollHeight($element);
+            }
         });
     });
 
@@ -899,7 +923,7 @@ function loadContextSettings() {
     });
 
     $('#context_presets').on('change', function () {
-        const name = $(this).find(':selected').val();
+        const name = String($(this).find(':selected').val());
         const preset = context_presets.find(x => x.name === name);
 
         if (!preset) {
@@ -919,7 +943,40 @@ function loadContextSettings() {
                 }
             }
         });
+
+        // Select matching instruct preset
+        for (const instruct_preset of instruct_presets) {
+            // If instruct preset matches the context template
+            if (instruct_preset.name === name) {
+                selectInstructPreset(instruct_preset.name);
+                break;
+            }
+        }
+
+        highlightDefaultContext();
+
+        saveSettingsDebounced();
     });
+
+    $('#context_set_default').on('click', function () {
+        if (power_user.context.preset !== power_user.default_context) {
+            power_user.default_context = power_user.context.preset;
+            $(this).addClass('default');
+            toastr.info(`Default context template set to ${power_user.default_context}`);
+
+            highlightDefaultContext();
+
+            saveSettingsDebounced();
+        }
+    });
+
+    highlightDefaultContext();
+}
+
+function highlightDefaultContext() {
+    $('#context_set_default').toggleClass('default', power_user.default_context === power_user.context.preset);
+    $('#context_set_default').toggleClass('disabled', power_user.default_context === power_user.context.preset);
+    $('#context_delete_preset').toggleClass('disabled', power_user.default_context === power_user.context.preset);
 }
 
 export function fuzzySearchCharacters(searchValue) {
@@ -947,6 +1004,25 @@ export function fuzzySearchCharacters(searchValue) {
     return indices;
 }
 
+export function fuzzySearchWorldInfo(data, searchValue) {
+    const fuse = new Fuse(data, {
+        keys: [
+            { name: 'key', weight: 3 },
+            { name: 'content', weight: 3 },
+            { name: 'comment', weight: 2 },
+            { name: 'keysecondary', weight: 2 },
+            { name: 'uid', weight: 1 },
+        ],
+        includeScore: true,
+        ignoreLocation: true,
+        threshold: 0.2,
+    });
+
+    const results = fuse.search(searchValue);
+    console.debug('World Info fuzzy search results for ' + searchValue, results);
+    return results.map(x => x.item?.uid);
+}
+
 export function fuzzySearchGroups(searchValue) {
     const fuse = new Fuse(groups, {
         keys: [
@@ -964,17 +1040,35 @@ export function fuzzySearchGroups(searchValue) {
     return ids;
 }
 
+/**
+ * Renders a story string template with the given parameters.
+ * @param {object} params Template parameters.
+ * @returns {string} The rendered story string.
+ */
 export function renderStoryString(params) {
     try {
+        // compile the story string template into a function, with no HTML escaping
         const compiledTemplate = Handlebars.compile(power_user.context.story_string, { noEscape: true });
+
+        // render the story string template with the given params
         let output = compiledTemplate(params);
+
+        // substitute {{macro}} params that are not defined in the story string
         output = substituteParams(output, params.user, params.char);
-        output = `${output.trim()}\n`; // add a newline to the end
+
+        // remove leading whitespace
+        output = output.trimStart();
+
+        // add a newline to the end of the story string if it doesn't have one
+        if (!output.endsWith('\n')) {
+            output += '\n';
+        }
+
         return output;
     } catch (e) {
         toastr.error('Check the story string template for validity', 'Error rendering story string');
         console.error('Error rendering story string', e);
-        throw e;
+        throw e; // rethrow the error
     }
 }
 
@@ -1001,6 +1095,10 @@ const compareFunc = (first, second) => {
     }
 };
 
+/**
+ * Sorts an array of entities based on the current sort settings
+ * @param {any[]} entities An array of objects with an `item` property
+ */
 function sortEntitiesList(entities) {
     if (power_user.sort_field == undefined || entities.length === 0) {
         return;
@@ -1008,6 +1106,7 @@ function sortEntitiesList(entities) {
 
     entities.sort((a, b) => sortFunc(a.item, b.item));
 }
+
 async function saveTheme() {
     const name = await callPopup('Enter a theme preset name:', 'input');
 
@@ -1231,8 +1330,8 @@ async function doDelMode(_, text) {
     if (text) {
         await delay(300) //same as above, need event signal for 'entered del mode'
         console.debug('parsing msgs to del')
-        let numMesToDel = Number(text).toFixed(0)
-        let lastMesID = $('.last_mes').attr('mesid')
+        let numMesToDel = Number(text);
+        let lastMesID = Number($('.last_mes').attr('mesid'));
         let oldestMesIDToDel = lastMesID - numMesToDel + 1;
 
         //disallow targeting first message
@@ -1256,26 +1355,6 @@ async function doDelMode(_, text) {
 
 function doResetPanels() {
     $("#movingUIreset").trigger('click');
-}
-
-function addLanguagesToDropdown() {
-    $.getJSON('i18n.json', function (data) {
-        if (!Array.isArray(data?.lang)) {
-            return;
-        }
-
-        for (const lang of data.lang) {
-            const option = document.createElement('option');
-            option.value = lang;
-            option.innerText = lang;
-            $('#ui_language_select').append(option);
-        }
-
-        const selectedLanguage = localStorage.getItem(storage_keys.ui_language);
-        if (selectedLanguage) {
-            $('#ui_language_select').val(selectedLanguage);
-        }
-    });
 }
 
 function setAvgBG() {
@@ -1329,10 +1408,6 @@ function setAvgBG() {
             $("#user-mes-blur-tint-color-picker").attr('color', 'rgb(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ')');
         } */
 
-
-
-
-
     function getAverageRGB(imgEl) {
 
         var blockSize = 5, // only visit every 5 pixels
@@ -1377,6 +1452,13 @@ function setAvgBG() {
 
     }
 
+    /**
+     * Converts an HSL color value to RGB.
+     * @param {number} h Hue value
+     * @param {number} s Saturation value
+     * @param {number} l Luminance value
+     * @return {Array} The RGB representation
+     */
     function hslToRgb(h, s, l) {
         const hueToRgb = (p, q, t) => {
             if (t < 0) t += 1;
@@ -1418,7 +1500,7 @@ function setAvgBG() {
 
         console.log(`rLum ${rLuminance}, gLum ${gLuminance}, bLum ${bLuminance}`)
 
-        return 0.2126 * rLuminance + 0.7152 * gLuminance + 0.0722 * bLuminance;
+        return 0.2126 * Number(rLuminance) + 0.7152 * Number(gLuminance) + 0.0722 * Number(bLuminance);
     }
 
     //this version keeps BG and main text in same hue
@@ -1503,8 +1585,19 @@ function setAvgBG() {
 
 }
 
-export function getCustomStoppingStrings() {
+
+/**
+ * Gets the custom stopping strings from the power user settings.
+ * @param {number | undefined} limit Number of strings to return. If undefined, returns all strings.
+ * @returns {string[]} An array of custom stopping strings
+ */
+export function getCustomStoppingStrings(limit = undefined) {
     try {
+        // If there's no custom stopping strings, return an empty array
+        if (!power_user.custom_stopping_strings) {
+            return [];
+        }
+
         // Parse the JSON string
         const strings = JSON.parse(power_user.custom_stopping_strings);
 
@@ -1513,8 +1606,8 @@ export function getCustomStoppingStrings() {
             return [];
         }
 
-        // Make sure all the elements are strings
-        return strings.filter((s) => typeof s === 'string');
+        // Make sure all the elements are strings. Apply the limit.
+        return strings.filter((s) => typeof s === 'string').slice(0, limit);
     } catch (error) {
         // If there's an error, return an empty array
         console.warn('Error parsing custom stopping strings:', error);
@@ -1601,13 +1694,13 @@ $(document).ready(() => {
     });
 
     $("#markdown_escape_strings").on('input', function () {
-        power_user.markdown_escape_strings = $(this).val();
+        power_user.markdown_escape_strings = String($(this).val());
         saveSettingsDebounced();
         reloadMarkdownProcessor(power_user.render_formulas);
     });
 
     $("#start_reply_with").on('input', function () {
-        power_user.user_prompt_bias = $(this).val();
+        power_user.user_prompt_bias = String($(this).val());
         saveSettingsDebounced();
     });
 
@@ -1734,7 +1827,7 @@ $(document).ready(() => {
     });
 
     $("#themes").on('change', function () {
-        const themeSelected = $(this).find(':selected').val();
+        const themeSelected = String($(this).find(':selected').val());
         power_user.theme = themeSelected;
         applyTheme(themeSelected);
         saveSettingsDebounced();
@@ -1742,7 +1835,7 @@ $(document).ready(() => {
 
     $("#movingUIPresets").on('change', async function () {
         console.log('saw MUI preset change')
-        const movingUIPresetSelected = $(this).find(':selected').val();
+        const movingUIPresetSelected = String($(this).find(':selected').val());
         power_user.movingUIPreset = movingUIPresetSelected;
         applyMovingUIPreset(movingUIPresetSelected);
         saveSettingsDebounced();
@@ -1802,7 +1895,7 @@ $(document).ready(() => {
     });
 
     $('#auto_swipe_blacklist').on('input', function () {
-        power_user.auto_swipe_blacklist = $(this).val()
+        power_user.auto_swipe_blacklist = String($(this).val())
             .split(",")
             .map(str => str.trim())
             .filter(str => str);
@@ -1811,7 +1904,7 @@ $(document).ready(() => {
     });
 
     $('#auto_swipe_minimum_length').on('input', function () {
-        const number = parseInt($(this).val());
+        const number = Number($(this).val());
         if (!isNaN(number)) {
             power_user.auto_swipe_minimum_length = number;
             saveSettingsDebounced();
@@ -1819,7 +1912,7 @@ $(document).ready(() => {
     });
 
     $('#auto_swipe_blacklist_threshold').on('input', function () {
-        const number = parseInt($(this).val());
+        const number = Number($(this).val());
         if (!isNaN(number)) {
             power_user.auto_swipe_blacklist_threshold = number;
             saveSettingsDebounced();
@@ -1902,35 +1995,35 @@ $(document).ready(() => {
     $("#messageTimerEnabled").on("input", function () {
         const value = !!$(this).prop('checked');
         power_user.timer_enabled = value;
-        localStorage.setItem(storage_keys.timer_enabled, power_user.timer_enabled);
+        localStorage.setItem(storage_keys.timer_enabled, String(power_user.timer_enabled));
         switchTimer();
     });
 
     $("#messageTimestampsEnabled").on("input", function () {
         const value = !!$(this).prop('checked');
         power_user.timestamps_enabled = value;
-        localStorage.setItem(storage_keys.timestamps_enabled, power_user.timestamps_enabled);
+        localStorage.setItem(storage_keys.timestamps_enabled, String(power_user.timestamps_enabled));
         switchTimestamps();
     });
 
     $("#messageModelIconEnabled").on("input", function () {
         const value = !!$(this).prop('checked');
         power_user.timestamp_model_icon = value;
-        localStorage.setItem(storage_keys.timestamp_model_icon, power_user.timestamp_model_icon);
+        localStorage.setItem(storage_keys.timestamp_model_icon, String(power_user.timestamp_model_icon));
         switchIcons();
     });
 
     $("#mesIDDisplayEnabled").on("input", function () {
         const value = !!$(this).prop('checked');
         power_user.mesIDDisplay_enabled = value;
-        localStorage.setItem(storage_keys.mesIDDisplay_enabled, power_user.mesIDDisplay_enabled);
+        localStorage.setItem(storage_keys.mesIDDisplay_enabled, String(power_user.mesIDDisplay_enabled));
         switchMesIDDisplay();
     });
 
     $("#hotswapEnabled").on("input", function () {
         const value = !!$(this).prop('checked');
         power_user.hotswap_enabled = value;
-        localStorage.setItem(storage_keys.hotswap_enabled, power_user.hotswap_enabled);
+        localStorage.setItem(storage_keys.hotswap_enabled, String(power_user.hotswap_enabled));
         switchHotswap();
     });
 
@@ -1949,6 +2042,13 @@ $(document).ready(() => {
     $("#continue_on_send").on("input", function () {
         const value = !!$(this).prop('checked');
         power_user.continue_on_send = value;
+        saveSettingsDebounced();
+    });
+
+    $("#quick_continue").on("input", function () {
+        const value = !!$(this).prop('checked');
+        power_user.quick_continue = value;
+        $("#mes_continue").css('display', value ? '' : 'none');
         saveSettingsDebounced();
     });
 
@@ -1976,7 +2076,7 @@ $(document).ready(() => {
     });
 
     $('#custom_stopping_strings').on('input', function () {
-        power_user.custom_stopping_strings = $(this).val();
+        power_user.custom_stopping_strings = String($(this).val());
         saveSettingsDebounced();
     });
 
@@ -2006,18 +2106,6 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $('#ui_language_select').on('change', async function () {
-        const language = $(this).val();
-
-        if (language) {
-            localStorage.setItem(storage_keys.ui_language, language);
-        } else {
-            localStorage.removeItem(storage_keys.ui_language);
-        }
-
-        location.reload();
-    });
-
     $(window).on('focus', function () {
         browser_has_focus = true;
     });
@@ -2033,5 +2121,4 @@ $(document).ready(() => {
     registerSlashCommand('cut', doMesCut, [], ' <span class="monospace">(requred number)</span> – cuts the specified message from the chat', true, true);
     registerSlashCommand('resetpanels', doResetPanels, ['resetui'], ' – resets UI panels to original state.', true, true);
     registerSlashCommand('bgcol', setAvgBG, [], ' – WIP test of auto-bg avg coloring', true, true);
-    addLanguagesToDropdown();
 });

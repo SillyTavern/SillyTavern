@@ -1,6 +1,7 @@
-import { saveSettingsDebounced, getCurrentChatId, system_message_types, extension_prompt_types, eventSource, event_types, getRequestHeaders, CHARACTERS_PER_TOKEN_RATIO, substituteParams, max_context, } from "../../../script.js";
+import { saveSettingsDebounced, getCurrentChatId, system_message_types, extension_prompt_types, eventSource, event_types, getRequestHeaders, substituteParams, } from "../../../script.js";
 import { humanizedDateTime } from "../../RossAscends-mods.js";
 import { getApiUrl, extension_settings, getContext, doExtrasFetch } from "../../extensions.js";
+import { CHARACTERS_PER_TOKEN_RATIO } from "../../tokenizers.js";
 import { getFileText, onlyUnique, splitRecursive } from "../../utils.js";
 export { MODULE_NAME };
 

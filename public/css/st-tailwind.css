@@ -349,7 +349,7 @@
 }
 
 .textarea_compact {
-    font-size: calc(var(--mainFontSize) * 0.9);
+    font-size: calc(var(--mainFontSize) * 0.95);
     line-height: 1.2;
 }
 

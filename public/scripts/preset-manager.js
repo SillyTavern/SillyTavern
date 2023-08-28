@@ -18,7 +18,7 @@ import {
 import { groups, selected_group } from "./group-chats.js";
 import { instruct_presets } from "./instruct-mode.js";
 import { kai_settings } from "./kai-settings.js";
-import { power_user } from "./power-user.js";
+import { context_presets, power_user } from "./power-user.js";
 import {
     textgenerationwebui_preset_names,
     textgenerationwebui_presets,
@@ -118,7 +118,7 @@ class PresetManager {
     async savePresetAs() {
         const popupText = `
             <h3>Preset name:</h3>
-            <h4>Hint: Use a character/group name to bind preset to a specific chat.</h4>`;
+            ${!this.isNonGenericApi() ? '<h4>Hint: Use a character/group name to bind preset to a specific chat.</h4>' : ''}`;
         const name = await callPopup(popupText, "input");
 
         if (!name) {
@@ -131,7 +131,8 @@ class PresetManager {
     }
 
     async savePreset(name, settings) {
-        const preset = settings ?? this.getPresetSettings();
+        const preset = settings ?? this.getPresetSettings(name);
+
         const res = await fetch(`/save_preset`, {
             method: "POST",
             headers: getRequestHeaders(),
@@ -166,6 +167,10 @@ class PresetManager {
                 presets = textgenerationwebui_presets;
                 preset_names = textgenerationwebui_preset_names;
                 break;
+            case "context":
+                presets = context_presets;
+                preset_names = context_presets.map(x => x.name);
+                break;
             case "instruct":
                 presets = instruct_presets;
                 preset_names = instruct_presets.map(x => x.name);
@@ -178,11 +183,11 @@ class PresetManager {
     }
 
     isKeyedApi() {
-        return this.apiId == "textgenerationwebui" || this.apiId == "instruct";
+        return this.apiId == "textgenerationwebui" || this.apiId == "context" || this.apiId == "instruct";
     }
 
     isNonGenericApi() {
-        return this.apiId == "instruct";
+        return this.apiId == "context" || this.apiId == "instruct";
     }
 
     updateList(name, preset) {
@@ -220,7 +225,7 @@ class PresetManager {
         }
     }
 
-    getPresetSettings() {
+    getPresetSettings(name) {
         function getSettingsByApiId(apiId) {
             switch (apiId) {
                 case "koboldhorde":
@@ -230,10 +235,14 @@ class PresetManager {
                     return nai_settings;
                 case "textgenerationwebui":
                     return textgenerationwebui_settings;
+                case "context":
+                    const context_preset = deepClone(power_user.context);
+                    context_preset['name'] = name || power_user.context.preset;
+                    return context_preset;
                 case "instruct":
-                    const preset = deepClone(power_user.instruct);
-                    preset['name'] = power_user.instruct.preset;
-                    return preset;
+                    const instruct_preset = deepClone(power_user.instruct);
+                    instruct_preset['name'] = name || power_user.instruct.preset;
+                    return instruct_preset;
                 default:
                     console.warn(`Unknown API ID ${apiId}`);
                     return {};
@@ -245,6 +254,8 @@ class PresetManager {
             'streaming_url',
             'stopping_strings',
             'use_stop_sequence',
+            'can_use_tokenization',
+            'can_use_streaming',
             'preset_settings_novel',
             'streaming_novel',
             'nai_preamble',
@@ -346,7 +357,7 @@ jQuery(async () => {
 
         const selected = $(presetManager.select).find("option:selected");
         const name = selected.text();
-        const preset = presetManager.getPresetSettings();
+        const preset = presetManager.getPresetSettings(name);
         const data = JSON.stringify(preset, null, 4);
         download(data, `${name}.json`, "application/json");
     });
@@ -385,6 +396,11 @@ jQuery(async () => {
 
         if (!presetManager) {
             console.warn(`Preset Manager not found for API: ${apiId}`);
+            return;
+        }
+
+        // default context preset cannot be deleted
+        if (apiId == "context" && power_user.default_context === power_user.context.preset) {
             return;
         }
 

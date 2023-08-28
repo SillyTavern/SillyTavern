@@ -1,0 +1,79 @@
+#assets-json-url-field {
+    width: 85%;
+}
+
+#assets-connect-button {
+    width: 15%;
+    margin-left: 5px;
+}
+
+.assets-connect-div {
+    display: flex;
+    flex-direction: row;
+    padding: 5px;
+}
+
+.assets-list-div i {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: left;
+    padding: 5px;
+}
+
+.assets-list-div i span{
+    margin-left: 10px;
+}
+
+.asset-download-button {
+    position: relative;
+    width: 50px;
+    padding: 8px 16px;
+    border: none;
+    outline: none;
+    border-radius: 2px;
+    cursor: pointer;
+  }
+  
+.asset-download-button:active {
+    background: #007a63;
+}
+
+.asset-download-button-text {
+    font: bold 20px "Quicksand", san-serif;
+    color: #ffffff;
+    transition: all 0.2s;
+}
+
+.asset-download-button-loading .asset-download-button-text {
+    visibility: hidden;
+    opacity: 0;
+}
+
+.asset-download-button-loading::after {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin: auto;
+    border: 4px solid transparent;
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: asset-download-button-loading-spinner 1s ease infinite;
+}
+
+@keyframes asset-download-button-loading-spinner {
+from {
+    transform: rotate(0turn);
+}
+
+to {
+    transform: rotate(1turn);
+}
+}
+  
+  

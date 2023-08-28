@@ -94,7 +94,7 @@
 
 #completion_prompt_manager_popup .completion_prompt_manager_popup_entry {
     padding: 1em;
-    margin-top:2em;
+    margin-top: 2em;
 }
 
 #completion_prompt_manager_popup #completion_prompt_manager_popup_inspect .completion_prompt_manager_popup_entry {
@@ -123,7 +123,7 @@
 }
 
 .completion_prompt_manager_popup_entry_form_control {
-    margin-top:1em;
+    margin-top: 1em;
 }
 
 #prompt-manager-reset-character,
@@ -236,13 +236,13 @@
     font-size: 16px;
 }
 
-#prompt-manager-export-format-popup  {
+#prompt-manager-export-format-popup {
     padding: 0.25em;
-    display:none;
+    display: none;
 }
 
-#prompt-manager-export-format-popup[data-show]  {
-    display:block;
+#prompt-manager-export-format-popup[data-show] {
+    display: block;
 }
 
 #completion_prompt_manager_popup {
@@ -251,24 +251,24 @@
 
 #completion_prompt_manager_popup {
     overflow-y: auto;
-    height: calc(100% - 40px);
+    height: calc(100% - var(--topBarBlockSize));
     position: absolute;
     margin-left: auto;
     margin-right: auto;
     left: 0;
     right: 0;
-    top: 40px;
+    top: var(--topBarBlockSize);
     box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
     padding: 1em;
     border: 1px solid #333333;
     flex-direction: column;
     z-index: 3010 !important;
     border-radius: 0 0 20px 20px;
-    background-color:  var(--SmartThemeBlurTintColor);
+    background-color: var(--SmartThemeBlurTintColor);
 }
 
 #prompt-manager-export-format-popup {
-    display:none;
+    display: none;
 }
 
 .prompt-manager-export-format-popup-flex {
@@ -296,6 +296,7 @@
     #completion_prompt_manager_popup {
         max-width: 100%;
     }
+
     #completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt span span span {
         margin-left: 0.5em;
     }

@@ -6,9 +6,11 @@ import {
     isDataURL,
     createThumbnail,
     extractAllWords,
-    saveBase64AsFile
+    saveBase64AsFile,
+    PAGINATION_TEMPLATE,
+    waitUntilCondition,
 } from './utils.js';
-import { RA_CountCharTokens, humanizedDateTime, dragElement, favsToHotswap } from "./RossAscends-mods.js";
+import { RA_CountCharTokens, humanizedDateTime, dragElement, favsToHotswap, getMessageTimeStamp } from "./RossAscends-mods.js";
 import { loadMovingUIState, sortEntitiesList } from './power-user.js';
 
 import {
@@ -35,7 +37,6 @@ import {
     online_status,
     talkativeness_default,
     selectRightMenuWithAnimation,
-    setRightTabSelectedClass,
     default_ch_mes,
     deleteLastMessage,
     showSwipeButtons,
@@ -63,6 +64,8 @@ import {
     setScenarioOverride,
     getCropPopup,
     system_avatar,
+    isChatSaving,
+    setExternalAbortController,
 } from "../script.js";
 import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect, tag_map, printTagFilters } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
@@ -133,7 +136,9 @@ async function regenerateGroup() {
         await deleteLastMessage();
     }
 
-    generateGroupWrapper();
+    const abortController = new AbortController();
+    setExternalAbortController(abortController);
+    generateGroupWrapper(false, 'normal', { signal: abortController.signal });
 }
 
 async function loadGroupChat(chatId) {
@@ -202,7 +207,7 @@ function getFirstCharacterMessage(character) {
     mes["is_system"] = false;
     mes["name"] = character.name;
     mes["is_name"] = true;
-    mes["send_date"] = humanizedDateTime();
+    mes["send_date"] = getMessageTimeStamp();
     mes["original_avatar"] = character.avatar;
     mes["extra"] = { "gen_id": Date.now() * Math.random() * 1000000 };
     mes["mes"] = messageText
@@ -463,7 +468,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         is_group_generating = true;
         setCharacterName('');
         setCharacterId(undefined);
-        const userInput = $("#send_textarea").val();
+        const userInput = String($("#send_textarea").val());
 
         if (typingIndicator.length === 0 && !isStreamingEnabled()) {
             typingIndicator = $(
@@ -664,6 +669,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
                     if (streamingProcessor && !streamingProcessor.isFinished) {
                         await delay(100);
                     } else {
+                        await waitUntilCondition(() => streamingProcessor == null, 1000, 10);
                         messagesBefore++;
                         break;
                     }
@@ -832,7 +838,6 @@ async function deleteGroup(id) {
         select_rm_info("group_delete", id);
 
         $("#rm_button_selected_ch").children("h2").text('');
-        setRightTabSelectedClass();
     }
 }
 
@@ -984,13 +989,12 @@ function printGroupCandidates() {
     const storageKey = 'GroupCandidates_PerPage';
     $("#rm_group_add_members_pagination").pagination({
         dataSource: getGroupCharacters({ doFilter: true, onlyMembers: false }),
-        pageSize: 5,
         pageRange: 1,
         position: 'top',
         showPageNumbers: false,
-        showSizeChanger: false,
         prevText: '<',
         nextText: '>',
+        formatNavigator: PAGINATION_TEMPLATE,
         showNavigator: true,
         showSizeChanger: true,
         pageSize: Number(localStorage.getItem(storageKey)) || 5,
@@ -1011,13 +1015,12 @@ function printGroupMembers() {
     const storageKey = 'GroupMembers_PerPage';
     $("#rm_group_members_pagination").pagination({
         dataSource: getGroupCharacters({ doFilter: false, onlyMembers: true }),
-        pageSize: 5,
         pageRange: 1,
         position: 'top',
         showPageNumbers: false,
-        showSizeChanger: false,
         prevText: '<',
         nextText: '>',
+        formatNavigator: PAGINATION_TEMPLATE,
         showNavigator: true,
         showSizeChanger: true,
         pageSize: Number(localStorage.getItem(storageKey)) || 5,
@@ -1139,7 +1142,6 @@ function select_group_chats(groupId, skipAnimation) {
     if (group) {
         $("#rm_group_automode_label").show();
         $("#rm_button_selected_ch").children("h2").text(groupName);
-        setRightTabSelectedClass('rm_button_selected_ch');
     }
     else {
         $("#rm_group_automode_label").hide();
@@ -1276,6 +1278,11 @@ function updateFavButtonState(state) {
 }
 
 export async function openGroupById(groupId) {
+    if (isChatSaving) {
+        toastr.info("Please wait until the chat is saved before switching characters.", "Your chat is still saving...");
+        return;
+    }
+
     if (!groups.find(x => x.id === groupId)) {
         console.log('Group not found', groupId);
         return;
@@ -1320,7 +1327,7 @@ function openCharacterDefinition(characterSelect) {
 }
 
 function filterGroupMembers() {
-    const searchValue = $(this).val().toLowerCase();
+    const searchValue = String($(this).val()).toLowerCase();
     groupCandidatesFilter.setFilterData(FILTER_TYPES.SEARCH, searchValue);
 }
 
@@ -1390,7 +1397,7 @@ export async function createNewGroupChat(groupId) {
     group.chat_metadata = {};
     updateChatMetadata(group.chat_metadata, true);
 
-    await editGroup(group.id, true);
+    await editGroup(group.id, true, false);
     await getGroupChat(group.id);
 }
 
