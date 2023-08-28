@@ -175,6 +175,7 @@ import {
 } from "./scripts/instruct-mode.js";
 import { applyLocale } from "./scripts/i18n.js";
 import { getTokenCount, getTokenizerModel, saveTokenCache } from "./scripts/tokenizers.js";
+import { initPersonas, selectCurrentPersona, setPersonaDescription } from "./scripts/personas.js";
 
 //exporting functions and vars for mods
 export {
@@ -290,7 +291,6 @@ export const eventSource = new EventEmitter();
 setInterval(displayOverrideWarnings, 5000);
 // ...or when the chat changes
 eventSource.on(event_types.CHAT_CHANGED, displayOverrideWarnings);
-eventSource.on(event_types.CHAT_CHANGED, setChatLockedPersona);
 eventSource.on(event_types.MESSAGE_RECEIVED, processExtensionHelpers);
 eventSource.on(event_types.MESSAGE_SENT, processExtensionHelpers);
 
@@ -653,7 +653,7 @@ var settings;
 export let koboldai_settings;
 export let koboldai_setting_names;
 var preset_settings = "gui";
-var user_avatar = "you.png";
+export let user_avatar = "you.png";
 export var amount_gen = 80; //default max length of AI generated responses
 var max_context = 2048;
 
@@ -4574,7 +4574,7 @@ function changeMainAPI() {
 
 ////////////////////////////////////////////////////
 
-async function getUserAvatars() {
+export async function getUserAvatars() {
     const response = await fetch("/getuseravatars", {
         method: "POST",
         headers: getRequestHeaders(),
@@ -4598,70 +4598,8 @@ async function getUserAvatars() {
     }
 }
 
-function setPersonaDescription() {
-    if (power_user.persona_description_position === persona_description_positions.AFTER_CHAR) {
-        power_user.persona_description_position = persona_description_positions.IN_PROMPT;
-    }
 
-    $("#persona_description").val(power_user.persona_description);
-    $("#persona_description_position")
-        .val(power_user.persona_description_position)
-        .find(`option[value='${power_user.persona_description_position}']`)
-        .attr("selected", true);
-    countPersonaDescriptionTokens();
-}
 
-function onPersonaDescriptionPositionInput() {
-    power_user.persona_description_position = Number(
-        $("#persona_description_position").find(":selected").val()
-    );
-
-    if (power_user.personas[user_avatar]) {
-        let object = power_user.persona_descriptions[user_avatar];
-
-        if (!object) {
-            object = {
-                description: power_user.persona_description,
-                position: power_user.persona_description_position,
-            };
-            power_user.persona_descriptions[user_avatar] = object;
-        }
-
-        object.position = power_user.persona_description_position;
-    }
-
-    saveSettingsDebounced();
-}
-
-/**
- * Counts the number of tokens in a persona description.
- */
-const countPersonaDescriptionTokens = debounce(() => {
-    const description = String($("#persona_description").val());
-    const count = getTokenCount(description);
-    $("#persona_description_token_count").text(String(count));
-}, durationSaveEdit);
-
-function onPersonaDescriptionInput() {
-    power_user.persona_description = String($("#persona_description").val());
-    countPersonaDescriptionTokens();
-
-    if (power_user.personas[user_avatar]) {
-        let object = power_user.persona_descriptions[user_avatar];
-
-        if (!object) {
-            object = {
-                description: power_user.persona_description,
-                position: Number($("#persona_description_position").find(":selected").val()),
-            };
-            power_user.persona_descriptions[user_avatar] = object;
-        }
-
-        object.description = power_user.persona_description;
-    }
-
-    saveSettingsDebounced();
-}
 
 function highlightSelectedAvatar() {
     $("#user_avatar_block").find(".avatar").removeClass("selected");
@@ -4710,124 +4648,13 @@ export function setUserName(value) {
     saveSettings("change_name");
 }
 
-export function autoSelectPersona(name) {
-    for (const [key, value] of Object.entries(power_user.personas)) {
-        if (value === name) {
-            console.log(`Auto-selecting persona ${key} for name ${name}`);
-            $(`.avatar[imgfile="${key}"]`).trigger('click');
-            return;
-        }
-    }
-}
-
-async function bindUserNameToPersona() {
-    const avatarId = $(this).closest('.avatar-container').find('.avatar').attr('imgfile');
-
-    if (!avatarId) {
-        console.warn('No avatar id found');
-        return;
-    }
-
-    const existingPersona = power_user.personas[avatarId];
-    const personaName = await callPopup('<h3>Enter a name for this persona:</h3>(If empty name is provided, this will unbind the name from this avatar)', 'input', existingPersona || '');
-
-    // If the user clicked cancel, don't do anything
-    if (personaName === false) {
-        return;
-    }
-
-    if (personaName.length > 0) {
-        // If the user clicked ok and entered a name, bind the name to the persona
-        console.log(`Binding persona ${avatarId} to name ${personaName}`);
-        power_user.personas[avatarId] = personaName;
-        const descriptor = power_user.persona_descriptions[avatarId];
-        const isCurrentPersona = avatarId === user_avatar;
-
-        // Create a description object if it doesn't exist
-        if (!descriptor) {
-            // If the user is currently using this persona, set the description to the current description
-            power_user.persona_descriptions[avatarId] = {
-                description: isCurrentPersona ? power_user.persona_description : '',
-                position: isCurrentPersona ? power_user.persona_description_position : persona_description_positions.IN_PROMPT,
-            };
-        }
-
-        // If the user is currently using this persona, update the name
-        if (isCurrentPersona) {
-            console.log(`Auto-updating user name to ${personaName}`);
-            setUserName(personaName);
-        }
-    } else {
-        // If the user clicked ok, but didn't enter a name, delete the persona
-        console.log(`Unbinding persona ${avatarId}`);
-        delete power_user.personas[avatarId];
-        delete power_user.persona_descriptions[avatarId];
-    }
-
-    saveSettingsDebounced();
-    await getUserAvatars();
-    setPersonaDescription();
-}
-
-async function createDummyPersona() {
-    const fetchResult = await fetch(default_avatar);
-    const blob = await fetchResult.blob();
-    const file = new File([blob], "avatar.png", { type: "image/png" });
-    const formData = new FormData();
-    formData.append("avatar", file);
-
-    jQuery.ajax({
-        type: "POST",
-        url: "/uploaduseravatar",
-        data: formData,
-        beforeSend: () => { },
-        cache: false,
-        contentType: false,
-        processData: false,
-        success: async function (data) {
-            await getUserAvatars();
-        },
-    });
-}
-
-function updateUserLockIcon() {
-    const hasLock = !!chat_metadata['persona'];
-    $('#lock_user_name').toggleClass('fa-unlock', !hasLock);
-    $('#lock_user_name').toggleClass('fa-lock', hasLock);
-}
 
 function setUserAvatar() {
     user_avatar = $(this).attr("imgfile");
     reloadUserAvatar();
     saveSettingsDebounced();
     highlightSelectedAvatar();
-
-    const personaName = power_user.personas[user_avatar];
-    if (personaName && name1 !== personaName) {
-        const lockedPersona = chat_metadata['persona'];
-        if (lockedPersona && lockedPersona !== user_avatar && power_user.persona_show_notifications) {
-            toastr.info(
-                `To permanently set "${personaName}" as the selected persona, unlock and relock it using the "Lock" button. Otherwise, the selection resets upon reloading the chat.`,
-                `This chat is locked to a different persona (${power_user.personas[lockedPersona]}).`,
-                { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true },
-            );
-        }
-
-        setUserName(personaName);
-
-        const descriptor = power_user.persona_descriptions[user_avatar];
-
-        if (descriptor) {
-            power_user.persona_description = descriptor.description;
-            power_user.persona_description_position = descriptor.position;
-        } else {
-            power_user.persona_description = '';
-            power_user.persona_description_position = persona_description_positions.IN_PROMPT;
-            power_user.persona_descriptions[user_avatar] = { description: '', position: persona_description_positions.IN_PROMPT };
-        }
-
-        setPersonaDescription();
-    }
+    selectCurrentPersona();
 }
 
 async function uploadUserAvatar(e) {
@@ -4885,185 +4712,7 @@ async function uploadUserAvatar(e) {
     $("#form_upload_avatar").trigger("reset");
 }
 
-async function setDefaultPersona() {
-    const avatarId = $(this).closest('.avatar-container').find('.avatar').attr('imgfile');
 
-    if (!avatarId) {
-        console.warn('No avatar id found');
-        return;
-    }
-
-    const currentDefault = power_user.default_persona;
-
-    if (power_user.personas[avatarId] === undefined) {
-        console.warn(`No persona name found for avatar ${avatarId}`);
-        toastr.warning('You must bind a name to this persona before you can set it as the default.', 'Persona name not set');
-        return;
-    }
-
-    const personaName = power_user.personas[avatarId];
-
-    if (avatarId === currentDefault) {
-        const confirm = await callPopup('Are you sure you want to remove the default persona?', 'confirm');
-
-        if (!confirm) {
-            console.debug('User cancelled removing default persona');
-            return;
-        }
-
-        console.log(`Removing default persona ${avatarId}`);
-        if (power_user.persona_show_notifications) {
-            toastr.info('This persona will no longer be used by default when you open a new chat.', `Default persona removed`);
-        }
-        delete power_user.default_persona;
-    } else {
-        const confirm = await callPopup(`<h3>Are you sure you want to set "${personaName}" as the default persona?</h3>
-        This name and avatar will be used for all new chats, as well as existing chats where the user persona is not locked.`, 'confirm');
-
-        if (!confirm) {
-            console.debug('User cancelled setting default persona');
-            return;
-        }
-
-        power_user.default_persona = avatarId;
-        if (power_user.persona_show_notifications) {
-            toastr.success('This persona will be used by default when you open a new chat.', `Default persona set to ${personaName}`);
-        }
-    }
-
-    saveSettingsDebounced();
-    await getUserAvatars();
-}
-
-async function deleteUserAvatar() {
-    const avatarId = $(this).closest('.avatar-container').find('.avatar').attr('imgfile');
-
-    if (!avatarId) {
-        console.warn('No avatar id found');
-        return;
-    }
-
-    if (avatarId == user_avatar) {
-        console.warn(`User tried to delete their current avatar ${avatarId}`);
-        toastr.warning('You cannot delete the avatar you are currently using', 'Warning');
-        return;
-    }
-
-    const confirm = await callPopup('<h3>Are you sure you want to delete this avatar?</h3>All information associated with its linked persona will be lost.', 'confirm');
-
-    if (!confirm) {
-        console.debug('User cancelled deleting avatar');
-        return;
-    }
-
-    const request = await fetch("/deleteuseravatar", {
-        method: "POST",
-        headers: getRequestHeaders(),
-        body: JSON.stringify({
-            "avatar": avatarId,
-        }),
-    });
-
-    if (request.ok) {
-        console.log(`Deleted avatar ${avatarId}`);
-        delete power_user.personas[avatarId];
-        delete power_user.persona_descriptions[avatarId];
-
-        if (avatarId === power_user.default_persona) {
-            toastr.warning('The default persona was deleted. You will need to set a new default persona.', 'Default persona deleted');
-            power_user.default_persona = null;
-        }
-
-        if (avatarId === chat_metadata['persona']) {
-            toastr.warning('The locked persona was deleted. You will need to set a new persona for this chat.', 'Persona deleted');
-            delete chat_metadata['persona'];
-            await saveMetadata();
-        }
-
-        saveSettingsDebounced();
-        await getUserAvatars();
-        updateUserLockIcon();
-    }
-}
-
-async function lockUserNameToChat() {
-    if (chat_metadata['persona']) {
-        console.log(`Unlocking persona for this chat ${chat_metadata['persona']}`);
-        delete chat_metadata['persona'];
-        await saveMetadata();
-        if (power_user.persona_show_notifications) {
-            toastr.info('User persona is now unlocked for this chat. Click the "Lock" again to revert.', 'Persona unlocked');
-        }
-        updateUserLockIcon();
-        return;
-    }
-
-    if (!(user_avatar in power_user.personas)) {
-        console.log(`Creating a new persona ${user_avatar}`);
-        if (power_user.persona_show_notifications) {
-            toastr.info(
-                'Creating a new persona for currently selected user name and avatar...',
-                'Persona not set for this avatar',
-                { timeOut: 10000, extendedTimeOut: 20000, },
-            );
-        }
-        power_user.personas[user_avatar] = name1;
-        power_user.persona_descriptions[user_avatar] = { description: '', position: persona_description_positions.IN_PROMPT };
-    }
-
-    chat_metadata['persona'] = user_avatar;
-    await saveMetadata();
-    saveSettingsDebounced();
-    console.log(`Locking persona for this chat ${user_avatar}`);
-    if (power_user.persona_show_notifications) {
-        toastr.success(`User persona is locked to ${name1} in this chat`);
-    }
-    updateUserLockIcon();
-}
-
-function setChatLockedPersona() {
-    // Define a persona for this chat
-    let chatPersona = '';
-
-    if (chat_metadata['persona']) {
-        // If persona is locked in chat metadata, select it
-        console.log(`Using locked persona ${chat_metadata['persona']}`);
-        chatPersona = chat_metadata['persona'];
-    } else if (power_user.default_persona) {
-        // If default persona is set, select it
-        console.log(`Using default persona ${power_user.default_persona}`);
-        chatPersona = power_user.default_persona;
-    }
-
-    // No persona set: user current settings
-    if (!chatPersona) {
-        console.debug('No default or locked persona set for this chat');
-        return;
-    }
-
-    // Find the avatar file
-    const personaAvatar = $(`.avatar[imgfile="${chatPersona}"]`).trigger('click');
-
-    // Avatar missing (persona deleted)
-    if (chat_metadata['persona'] && personaAvatar.length == 0) {
-        console.warn('Persona avatar not found, unlocking persona');
-        delete chat_metadata['persona'];
-        updateUserLockIcon();
-        return;
-    }
-
-    // Default persona missing
-    if (power_user.default_persona && personaAvatar.length == 0) {
-        console.warn('Default persona avatar not found, clearing default persona');
-        power_user.default_persona = null;
-        saveSettingsDebounced();
-        return;
-    }
-
-    // Persona avatar found, select it
-    personaAvatar.trigger('click');
-    updateUserLockIcon();
-}
 
 async function doOnboarding(avatarId) {
     const template = $('#onboarding_template .onboarding');
@@ -6142,7 +5791,7 @@ function hideSwipeButtons() {
     $("#chat").children().filter(`[mesid="${count_view_mes - 1}"]`).children('.swipe_left').css('display', 'none');
 }
 
-async function saveMetadata() {
+export async function saveMetadata() {
     if (selected_group) {
         await editGroup(selected_group, true, false);
     }
@@ -8476,7 +8125,6 @@ $(document).ready(function () {
         setUserName($('#your_name').val());
     });
 
-    $("#create_dummy_persona").on('click', createDummyPersona);
 
     $('#sync_name_button').on('click', async function () {
         const confirmation = await callPopup(`<h3>Are you sure?</h3>All user-sent messages in this chat will be attributed to ${name1}.`, 'confirm');
@@ -8517,13 +8165,6 @@ $(document).ready(function () {
         // Check near immediately rather than waiting for up to 90s
         setTimeout(getStatusNovel, 10);
     });
-
-    $(document).on('click', '.bind_user_name', bindUserNameToPersona);
-    $(document).on('click', '.delete_avatar', deleteUserAvatar);
-    $(document).on('click', '.set_default_persona', setDefaultPersona);
-    $('#lock_user_name').on('click', lockUserNameToChat);
-    $('#persona_description').on('input', onPersonaDescriptionInput);
-    $('#persona_description_position').on('input', onPersonaDescriptionPositionInput);
 
     //**************************CHARACTER IMPORT EXPORT*************************//
     $("#character_import_button").click(function () {
@@ -8902,6 +8543,8 @@ $(document).ready(function () {
                         OF THE CHARACTER'S CHAT FILES.<br><br></b>`
                 );
                 break;*/
+            default:
+                eventSource.emit('charManagementDropdown', target);
         }
         $("#char-management-dropdown").prop('selectedIndex', 0);
     });
@@ -9111,4 +8754,5 @@ $(document).ready(function () {
     // Added here to prevent execution before script.js is loaded and get rid of quirky timeouts
     initAuthorsNote();
     initRossMods();
+    initPersonas();
 });

@@ -1,6 +1,5 @@
 import {
     addOneMessage,
-    autoSelectPersona,
     characters,
     chat,
     chat_metadata,
@@ -26,6 +25,7 @@ import { getMessageTimeStamp } from "./RossAscends-mods.js";
 import { resetSelectedGroup } from "./group-chats.js";
 import { getRegexedString, regex_placement } from "./extensions/regex/engine.js";
 import { chat_styles, power_user } from "./power-user.js";
+import { autoSelectPersona } from "./personas.js";
 export {
     executeSlashCommands,
     registerSlashCommand,
