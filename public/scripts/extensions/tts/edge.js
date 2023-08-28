@@ -34,7 +34,7 @@ class EdgeTtsProvider {
         saveTtsProviderSettings()
     }
 
-    loadSettings(settings) {
+    async loadSettings(settings) {
         // Pupulate Provider UI given input settings
         if (Object.keys(settings).length == 0) {
             console.info("Using default TTS Provider settings")
@@ -54,7 +54,7 @@ class EdgeTtsProvider {
         $('#edge_tts_rate').val(this.settings.rate || 0);
         $('#edge_tts_rate_output').text(this.settings.rate || 0);
         $('#edge_tts_rate').on("input", () => {this.onSettingsChange()})
-        this.checkReady()
+        await this.checkReady()
 
         console.info("Settings loaded")
     }

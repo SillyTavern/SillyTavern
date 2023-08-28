@@ -592,8 +592,8 @@ async function loadTtsProvider(provider) {
         console.warn(`Provider ${ttsProviderName} not in Extension Settings, initiatilizing provider in settings`)
         extension_settings.tts[ttsProviderName] = {}
     }
-    ttsProvider.loadSettings(extension_settings.tts[ttsProviderName])
-    initVoiceMap()
+    await ttsProvider.loadSettings(extension_settings.tts[ttsProviderName])
+    await initVoiceMap()
 }
 
 function onTtsProviderChange() {

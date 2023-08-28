@@ -110,7 +110,7 @@ class SystemTtsProvider {
         saveTtsProviderSettings()
     }
 
-    loadSettings(settings) {
+    async loadSettings(settings) {
         // Populate Provider UI given input settings
         if (Object.keys(settings).length == 0) {
             console.info("Using default TTS Provider settings");

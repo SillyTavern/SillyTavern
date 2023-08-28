@@ -71,7 +71,7 @@ class NovelTtsProvider {
         })
     }
 
-    loadSettings(settings) {
+    async loadSettings(settings) {
         // Populate Provider UI given input settings
         if (Object.keys(settings).length == 0) {
             console.info("Using default TTS Provider settings")
@@ -91,7 +91,7 @@ class NovelTtsProvider {
         }
 
         this.populateCustomVoices()
-        this.checkReady()
+        await this.checkReady()
         console.info("Settings loaded")
     }
 

@@ -34,7 +34,7 @@ class SileroTtsProvider {
         saveTtsProviderSettings()
     }
 
-    loadSettings(settings) {
+    async loadSettings(settings) {
         // Pupulate Provider UI given input settings
         if (Object.keys(settings).length == 0) {
             console.info("Using default TTS Provider settings")
@@ -65,7 +65,7 @@ class SileroTtsProvider {
         $('#silero_tts_endpoint').val(this.settings.provider_endpoint)
         $('#silero_tts_endpoint').on("input", () => {this.onSettingsChange()})
 
-        this.checkReady()
+        await this.checkReady()
 
         console.info("Settings loaded")
     }

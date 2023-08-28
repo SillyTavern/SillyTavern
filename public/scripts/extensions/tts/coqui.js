@@ -54,7 +54,7 @@ function resetModelSettings() {
     $("#coqui_api_model_settings_language").val("none");
     $("#coqui_api_model_settings_speaker").val("none");
 }
- 
+
 class CoquiTtsProvider {
     //#############################//
     //  Extension UI and Settings  //
@@ -111,7 +111,7 @@ class CoquiTtsProvider {
                         <span id="coqui_api_model_install_status">Model installed on extras server</span>
                         <input id="coqui_api_model_install_button" class="menu_button" type="button" value="Install" />
                     </div>
-                    
+
                     <div id="coqui_local_model_div">
                         <select id="coqui_local_model_name">
                             <!-- Populated by JS and request -->
@@ -125,7 +125,7 @@ class CoquiTtsProvider {
         return html
     }
 
-    loadSettings(settings) {
+    async loadSettings(settings) {
         // Only accept keys defined in defaultSettings
         this.settings = this.defaultSettings
 
@@ -137,7 +137,7 @@ class CoquiTtsProvider {
             }
         }
 
-        initLocalModels();
+        await initLocalModels();
         this.updateCustomVoices(); // Overide any manual modification
 
         $("#coqui_api_model_div").hide();
@@ -158,7 +158,7 @@ class CoquiTtsProvider {
         $("#coqui_add_voiceId_mapping").on("click", function () { that.onAddClick() });
 
         // Load coqui-api settings from json file
-        fetch("/scripts/extensions/tts/coqui_api_models_settings.json")
+        await fetch("/scripts/extensions/tts/coqui_api_models_settings.json")
         .then(response => response.json())
         .then(json => {
             coquiApiModels = json;
@@ -178,7 +178,7 @@ class CoquiTtsProvider {
         });
 
         // Load coqui-api FULL settings from json file
-        fetch("/scripts/extensions/tts/coqui_api_models_settings_full.json")
+        await fetch("/scripts/extensions/tts/coqui_api_models_settings_full.json")
         .then(response => response.json())
         .then(json => {
             coquiApiModelsFull = json;
@@ -229,7 +229,7 @@ class CoquiTtsProvider {
         for (const voiceName in this.settings.voiceMapDict) {
             $("#coqui_voicename_select").append(new Option(voiceName, voiceName));
         }
-        
+
         this.onSettingsChange()
     }
 
@@ -246,7 +246,7 @@ class CoquiTtsProvider {
         if (inApiCall) {
             return; //TODO: block dropdown
         }
-        
+
         // Ask user for voiceId name to save voice
         const voiceName = await callPopup('<h3>Name of Coqui voice to add to voice select dropdown:</h3>', 'input')
 
@@ -374,7 +374,7 @@ class CoquiTtsProvider {
             $("#coqui_local_model_div").hide();
             $("#coqui_api_model_div").hide();
         }
-        
+
         // show coqui model selected list (SAFE)
         if (model_origin == "coqui-api") {
             $("#coqui_local_model_div").hide();

@@ -50,7 +50,7 @@ class ElevenLabsTtsProvider {
     }
 
 
-    loadSettings(settings) {
+    async loadSettings(settings) {
         // Pupulate Provider UI given input settings
         if (Object.keys(settings).length == 0) {
             console.info("Using default TTS Provider settings")
@@ -72,8 +72,8 @@ class ElevenLabsTtsProvider {
         $('#tts_auto_generation').prop('checked', this.settings.multilingual)
         $('#eleven_labs_connect').on('click', () => {this.onConnectClick()})
         $('#elevenlabs_tts_settings').on('input',this.onSettingsChange)
-        
-        this.checkReady()
+
+        await this.checkReady()
         console.info("Settings loaded")
     }
 
