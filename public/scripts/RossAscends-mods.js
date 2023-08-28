@@ -17,6 +17,7 @@ import {
     getEntitiesList,
     getThumbnailUrl,
     selectCharacterById,
+    eventSource,
 } from "../script.js";
 
 import {
@@ -33,6 +34,7 @@ import {
 import { debounce, delay, getStringHash, waitUntilCondition } from "./utils.js";
 import { chat_completion_sources, oai_settings } from "./openai.js";
 import { getTokenCount } from "./tokenizers.js";
+
 
 var RPanelPin = document.getElementById("rm_button_panel_pin");
 var LPanelPin = document.getElementById("lm_button_panel_pin");
@@ -556,6 +558,7 @@ export function dragElement(elmnt) {
                 console.debug(`Saving ${elmntName} Height/Width`)
                 power_user.movingUIState[elmntName].width = width;
                 power_user.movingUIState[elmntName].height = height;
+                eventSource.emit('resizeUI', elmntName);
                 saveSettingsDebounced();
             })
         }

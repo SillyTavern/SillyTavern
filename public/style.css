@@ -3406,6 +3406,34 @@ a {
     border-radius: 10px;
 }
 
+.draggable {
+    min-width: 100px;
+    min-height: 100px;
+    max-height: 90vh;
+    max-width: 90vh;
+    width: calc((100vw - var(--sheldWidth)) /2);
+    position: absolute;
+    padding: 0;
+    filter: drop-shadow(2px 2px 2px var(--grey7070a));
+    z-index: 29;
+    overflow: hidden;
+    display: none;
+    bottom: 0;
+    aspect-ratio: 2 / 3;
+    border-radius: 10px;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+/* Hide scrollbar for IE, Edge, and Firefox */
+.no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;     /* Firefox */
+}
+
 #groupMemberListPopoutClose {
     height: 15px;
     aspect-ratio: 1 / 1;

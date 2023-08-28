@@ -7,11 +7,15 @@ import {
 } from "../../../script.js";
 import { selected_group } from "../../group-chats.js";
 import { loadFileToDocument } from "../../utils.js";
+import { loadMovingUIState } from '../../power-user.js';
+import { dragElement } from '../../RossAscends-mods.js'
 
 const extensionName = "gallery";
 const extensionFolderPath = `scripts/extensions/${extensionName}/`;
 let firstTime = true;
 
+// TODO:Some user wanted the gallery to be detachable / movable.For hmm, good chatting experience.I think it's easy to make any block movable with Ross's function, you need to check this out.
+// TODO:Haven't seen any guidance on how to populate the gallery in-app still.
 
 
 /**
@@ -44,18 +48,41 @@ async function getGalleryItems(url) {
  * @returns {Promise<void>} - Promise representing the completion of the gallery initialization.
  */
 async function initGallery(items, url) {
-    $("#my-gallery").nanogallery2({
-        items: items,
+    $("#zoomFor_test").nanogallery2({
+        "items": items,
+        thumbnailWidth: 'auto',
         thumbnailHeight: 150,
-        thumbnailWidth: 150,
+        paginationVisiblePages: 5,
+        paginationMaxLinesPerPage: 2,
+        galleryMaxRows : 3,
+        "galleryDisplayMode": "pagination",
+        "fnThumbnailOpen": viewWithFancybox,
     });
 
+    $(document).ready(function () {
+        $('.nGY2GThumbnailImage').on('click', function () {
+            let imageUrl = $(this).find('.nGY2GThumbnailImg').attr('src');
+            // Do what you want with the imageUrl, for example:
+            // Display it in a full-size view or replace the gallery grid content with this image
+            console.log(imageUrl);
+        });
+    });
+
+    eventSource.on('resizeUI', function (elmntName) {
+        console.log('resizeUI saw', elmntName);
+        // Your logic here
+
+        // If you want to resize the nanogallery2 instance when this event is triggered:
+        jQuery("#zoomFor_test").nanogallery2('resize');
+    });
+
+
     // Initialize dropzone handlers
-    const dropZone = $('#dialogue_popup');
+    const dropZone = $('#zoomFor_test'); 
     dropZone.on('dragover', function (e) {
         e.stopPropagation();  // Ensure this event doesn't propagate
         e.preventDefault();
-        $(this).addClass('dragging');  // Add a CSS class to change appearance during drag-over
+        $(this).addClass('dragging');  // Add a CSS class to change appearance during drag-over        
     });
 
     dropZone.on('dragleave', function (e) {
@@ -106,8 +133,8 @@ async function showCharGallery() {
         }
 
         const items = await getGalleryItems(url);
-
-        let close = callPopup('<div id="my-gallery"></div>', "text");
+        makeMovable();
+        let close = callPopup('', "text");
         console.log("close", close);
         if ($("body").css("position") === "fixed") {
             $("body").css("position", "static");
@@ -117,14 +144,17 @@ async function showCharGallery() {
             await initGallery(items, url); 
         }, 100);
 
-        close.then(() => {
-            $("#my-gallery").nanogallery2("destroy");
-            if ($("body").css("position") === "static") {
-                $("body").css("position", "fixed");
-            }
-            const dropZone = $('#dialogue_popup');
-            dropZone.off('dragover dragleave drop');
-        });
+        //next, we add `<div id="" class="fa-solid fa-grip drag-grabber"></div>` to zoomFor_test
+        document.getElementById(`zoomFor_test`).innerHTML += `<div id="" class="fa-solid fa-grip drag-grabber"></div>`;
+
+        // close.then(() => {
+        //     $("#my-gallery").nanogallery2("destroy");
+        //     if ($("body").css("position") === "static") {
+        //         $("body").css("position", "fixed");
+        //     }
+        //     const dropZone = $('#dialogue_popup');
+        //     dropZone.off('dragover dragleave drop');
+        // });
     } catch (err) {
         console.error(err);
     }
@@ -207,3 +237,41 @@ $(document).ready(function () {
         })
     );
 });
+
+function makeMovable(){
+
+    let charname = "gallery"
+
+    console.debug('making new container from template')
+    const template = $('#generic_draggable_template').html();
+    const newElement = $(template);
+    newElement.attr('forChar', charname);
+    newElement.attr('id', `zoomFor_${charname}`);
+    newElement.find('.drag-grabber').attr('id', `zoomFor_${charname}header`);
+    //add a div for the gallery
+    newElement.append(`<div id="zoomFor_test"></div>`);
+    // add no-scrollbar class to this element
+    newElement.addClass('no-scrollbar');
+
+
+    $(`#zoomFor_test`).css('display', 'block');
+
+    $('body').append(newElement);
+
+    loadMovingUIState();
+    $(`.draggable[forChar="${charname}"]`).css('display', 'block');
+    dragElement(newElement);
+
+    $(`.draggable[forChar="${charname}"] img`).on('dragstart', (e) => {
+        console.log('saw drag on avatar!');
+        e.preventDefault();
+        return false;
+    });
+}
+
+function viewWithFancybox(items) {
+    if (items && items.length > 0) {
+        var url = items[0].responsiveURL(); // Get the URL of the clicked image/video
+        window.open(url, '_blank'); // Open the URL in a new window/tab
+    }
+}
