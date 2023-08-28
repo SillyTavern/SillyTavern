@@ -75,7 +75,10 @@ const send_on_enter_options = {
 }
 
 export const persona_description_positions = {
-    BEFORE_CHAR: 0,
+    IN_PROMPT: 0,
+    /**
+     * @deprecated Use persona_description_positions.IN_PROMPT instead.
+     */
     AFTER_CHAR: 1,
     TOP_AN: 2,
     BOTTOM_AN: 3,
@@ -190,7 +193,7 @@ let power_user = {
     persona_descriptions: {},
 
     persona_description: '',
-    persona_description_position: persona_description_positions.BEFORE_CHAR,
+    persona_description_position: persona_description_positions.IN_PROMPT,
     persona_show_notifications: true,
 
     custom_stopping_strings: '',

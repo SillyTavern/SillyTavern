@@ -4603,6 +4603,10 @@ async function getUserAvatars() {
 }
 
 function setPersonaDescription() {
+    if (power_user.persona_description_position === persona_description_positions.AFTER_CHAR) {
+        power_user.persona_description_position = persona_description_positions.IN_PROMPT;
+    }
+
     $("#persona_description").val(power_user.persona_description);
     $("#persona_description_position")
         .val(power_user.persona_description_position)
@@ -4748,7 +4752,7 @@ async function bindUserNameToPersona() {
             // If the user is currently using this persona, set the description to the current description
             power_user.persona_descriptions[avatarId] = {
                 description: isCurrentPersona ? power_user.persona_description : '',
-                position: isCurrentPersona ? power_user.persona_description_position : persona_description_positions.BEFORE_CHAR,
+                position: isCurrentPersona ? power_user.persona_description_position : persona_description_positions.IN_PROMPT,
             };
         }
 
@@ -4822,8 +4826,8 @@ function setUserAvatar() {
             power_user.persona_description_position = descriptor.position;
         } else {
             power_user.persona_description = '';
-            power_user.persona_description_position = persona_description_positions.BEFORE_CHAR;
-            power_user.persona_descriptions[user_avatar] = { description: '', position: persona_description_positions.BEFORE_CHAR };
+            power_user.persona_description_position = persona_description_positions.IN_PROMPT;
+            power_user.persona_descriptions[user_avatar] = { description: '', position: persona_description_positions.IN_PROMPT };
         }
 
         setPersonaDescription();
@@ -5008,7 +5012,7 @@ async function lockUserNameToChat() {
             );
         }
         power_user.personas[user_avatar] = name1;
-        power_user.persona_descriptions[user_avatar] = { description: '', position: persona_description_positions.BEFORE_CHAR };
+        power_user.persona_descriptions[user_avatar] = { description: '', position: persona_description_positions.IN_PROMPT };
     }
 
     chat_metadata['persona'] = user_avatar;
@@ -5075,7 +5079,7 @@ async function doOnboarding(avatarId) {
         power_user.personas[avatarId] = userName;
         power_user.persona_descriptions[avatarId] = {
             description: '',
-            position: persona_description_positions.BEFORE_CHAR,
+            position: persona_description_positions.IN_PROMPT,
         };
     }
 }
