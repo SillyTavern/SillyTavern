@@ -2,6 +2,7 @@ import { getRequestHeaders } from "../../../script.js"
 import { getApiUrl } from "../../extensions.js"
 import { doExtrasFetch, modules } from "../../extensions.js"
 import { getPreviewString } from "./index.js"
+import { saveTtsProviderSettings } from "./index.js"
 
 export { EdgeTtsProvider }
 
@@ -30,9 +31,10 @@ class EdgeTtsProvider {
     onSettingsChange() {
         this.settings.rate = Number($('#edge_tts_rate').val());
         $('#edge_tts_rate_output').text(this.settings.rate);
+        saveTtsProviderSettings()
     }
 
-    loadSettings(settings) {
+    async loadSettings(settings) {
         // Pupulate Provider UI given input settings
         if (Object.keys(settings).length == 0) {
             console.info("Using default TTS Provider settings")
@@ -51,12 +53,20 @@ class EdgeTtsProvider {
 
         $('#edge_tts_rate').val(this.settings.rate || 0);
         $('#edge_tts_rate_output').text(this.settings.rate || 0);
+        $('#edge_tts_rate').on("input", () => {this.onSettingsChange()})
+        await this.checkReady()
 
         console.info("Settings loaded")
     }
 
 
-    async onApplyClick() {
+    // Perform a simple readiness check by trying to fetch voiceIds
+    async checkReady(){
+        throwIfModuleMissing()
+        await this.fetchTtsVoiceObjects()
+    }
+
+    async onRefreshClick() {
         return
     }
 
@@ -66,7 +76,7 @@ class EdgeTtsProvider {
 
     async getVoice(voiceName) {
         if (this.voices.length == 0) {
-            this.voices = await this.fetchTtsVoiceIds()
+            this.voices = await this.fetchTtsVoiceObjects()
         }
         const match = this.voices.filter(
             voice => voice.name == voiceName
@@ -85,7 +95,7 @@ class EdgeTtsProvider {
     //###########//
     // API CALLS //
     //###########//
-    async fetchTtsVoiceIds() {
+    async fetchTtsVoiceObjects() {
         throwIfModuleMissing()
 
         const url = new URL(getApiUrl());
@@ -144,8 +154,9 @@ class EdgeTtsProvider {
 }
 function throwIfModuleMissing() {
     if (!modules.includes('edge-tts')) {
-        toastr.error(`Edge TTS module not loaded. Add edge-tts to enable-modules and restart the Extras API.`)
-        throw new Error(`Edge TTS module not loaded.`)
+        const message = `Edge TTS module not loaded. Add edge-tts to enable-modules and restart the Extras API.`
+        // toastr.error(message)
+        throw new Error(message)
     }
 }
 

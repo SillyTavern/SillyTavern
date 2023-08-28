@@ -51,3 +51,40 @@
 .voice_preview .fa-play {
     cursor: pointer;
 }
+
+.tts-button {
+    margin: 0;
+    outline: none;
+    border: none;
+    cursor: pointer;
+    transition: 0.3s;
+    opacity: 0.7;
+    align-items: center;
+    justify-content: center;
+
+}
+
+.tts-button:hover {
+    opacity: 1;
+}
+
+.tts_block {
+    display: flex;
+    align-items: baseline;
+    column-gap: 5px;
+    flex-wrap: wrap;
+}
+
+.tts_custom_voices {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+}
+
+.novel_tts_hints {
+    font-size: calc(0.9 * var(--mainFontSize));
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 5px;
+}

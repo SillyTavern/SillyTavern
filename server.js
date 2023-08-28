@@ -4894,7 +4894,7 @@ async function readAllChunks(readableStream) {
         });
 
         readableStream.on('end', () => {
-            console.log('Finished reading the stream.');
+            //console.log('Finished reading the stream.');
             resolve(chunks);
         });
 
