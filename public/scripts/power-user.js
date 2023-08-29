@@ -75,7 +75,10 @@ const send_on_enter_options = {
 }
 
 export const persona_description_positions = {
-    BEFORE_CHAR: 0,
+    IN_PROMPT: 0,
+    /**
+     * @deprecated Use persona_description_positions.IN_PROMPT instead.
+     */
     AFTER_CHAR: 1,
     TOP_AN: 2,
     BOTTOM_AN: 3,
@@ -190,7 +193,7 @@ let power_user = {
     persona_descriptions: {},
 
     persona_description: '',
-    persona_description_position: persona_description_positions.BEFORE_CHAR,
+    persona_description_position: persona_description_positions.IN_PROMPT,
     persona_show_notifications: true,
 
     custom_stopping_strings: '',
@@ -1613,7 +1616,7 @@ function setAvgBG() {
 
 /**
  * Gets the custom stopping strings from the power user settings.
- * @param {number | undefined} limit Number of strings to return. If undefined, returns all strings.
+ * @param {number | undefined} limit Number of strings to return. If 0 or undefined, returns all strings.
  * @returns {string[]} An array of custom stopping strings
  */
 export function getCustomStoppingStrings(limit = undefined) {
@@ -1624,15 +1627,27 @@ export function getCustomStoppingStrings(limit = undefined) {
         }
 
         // Parse the JSON string
-        const strings = JSON.parse(power_user.custom_stopping_strings);
+        let strings = JSON.parse(power_user.custom_stopping_strings);
 
         // Make sure it's an array
         if (!Array.isArray(strings)) {
             return [];
         }
 
-        // Make sure all the elements are strings. Apply the limit.
-        return strings.filter((s) => typeof s === 'string').slice(0, limit);
+        // Make sure all the elements are strings.
+        strings = strings.filter((s) => typeof s === 'string');
+
+        // Substitute params if necessary
+        if (power_user.custom_stopping_strings_macro) {
+            strings = strings.map(x => substituteParams(x));
+        }
+
+        // Apply the limit. If limit is 0, return all strings.
+        if (limit > 0) {
+            strings = strings.slice(0, limit);
+        }
+
+        return strings;
     } catch (error) {
         // If there's an error, return an empty array
         console.warn('Error parsing custom stopping strings:', error);

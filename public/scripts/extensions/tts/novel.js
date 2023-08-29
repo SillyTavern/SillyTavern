@@ -1,5 +1,6 @@
-import { getRequestHeaders } from "../../../script.js"
-import { getPreviewString } from "./index.js"
+import { getRequestHeaders, callPopup } from "../../../script.js"
+import { getPreviewString, saveTtsProviderSettings } from "./index.js"
+import { initVoiceMap } from "./index.js"
 
 export { NovelTtsProvider }
 
@@ -14,24 +15,69 @@ class NovelTtsProvider {
     audioElement = document.createElement('audio')
 
     defaultSettings = {
-        voiceMap: {}
+        voiceMap: {},
+        customVoices: []
     }
 
     get settingsHtml() {
-        let html = `Use NovelAI's TTS engine.<br>
-        The Voice IDs in the preview list are only examples, as it can be any string of text. Feel free to try different options!<br>
-        <small><i>Hint: Save an API key in the NovelAI API settings to use it here.</i></small>`;
+        let html = `
+        <div class="novel_tts_hints">
+            <div>Use NovelAI's TTS engine.</div>
+            <div>
+                The default Voice IDs are only examples. Add custom voices and Novel will create a new random voice for it.
+                Feel free to try different options!
+            </div>
+            <i>Hint: Save an API key in the NovelAI API settings to use it here.</i>
+        </div>
+        <label for="tts-novel-custom-voices-add">Custom Voices</label>
+        <div class="tts_custom_voices">
+            <select id="tts-novel-custom-voices-select"><select>
+            <i id="tts-novel-custom-voices-add" class="tts-button fa-solid fa-plus fa-xl success" title="Add"></i>
+            <i id="tts-novel-custom-voices-delete" class="tts-button fa-solid fa-xmark fa-xl failure" title="Delete"></i>
+        </div>
+        `;
         return html;
     }
 
-    onSettingsChange() {
+
+    // Add a new Novel custom voice to provider
+    async addCustomVoice(){
+        const voiceName = await callPopup('<h3>Custom Voice name:</h3>', 'input')
+        this.settings.customVoices.push(voiceName)
+        this.populateCustomVoices()
+        initVoiceMap() // Update TTS extension voiceMap
+        saveTtsProviderSettings()
     }
 
-    loadSettings(settings) {
+    // Delete selected custom voice from provider
+    deleteCustomVoice() {
+        const selected = $("#tts-novel-custom-voices-select").find(':selected').val();
+        const voiceIndex = this.settings.customVoices.indexOf(selected);
+
+        if (voiceIndex !== -1) {
+            this.settings.customVoices.splice(voiceIndex, 1);
+        }
+        this.populateCustomVoices()
+        initVoiceMap() // Update TTS extension voiceMap
+        saveTtsProviderSettings()
+    }
+
+    // Create the UI dropdown list of voices in provider
+    populateCustomVoices(){
+        let voiceSelect = $("#tts-novel-custom-voices-select")
+        voiceSelect.empty()
+        this.settings.customVoices.forEach(voice => {
+            voiceSelect.append(`<option>${voice}</option>`)
+        })
+    }
+
+    async loadSettings(settings) {
         // Populate Provider UI given input settings
         if (Object.keys(settings).length == 0) {
             console.info("Using default TTS Provider settings")
         }
+        $("#tts-novel-custom-voices-add").on('click', () => (this.addCustomVoice()))
+        $("#tts-novel-custom-voices-delete").on('click',() => (this.deleteCustomVoice()))
 
         // Only accept keys defined in defaultSettings
         this.settings = this.defaultSettings
@@ -44,11 +90,18 @@ class NovelTtsProvider {
             }
         }
 
+        this.populateCustomVoices()
+        await this.checkReady()
         console.info("Settings loaded")
     }
 
+    // Perform a simple readiness check by trying to fetch voiceIds
+    // Doesnt really do much for Novel, not seeing a good way to test this at the moment.
+    async checkReady(){
+        await this.fetchTtsVoiceObjects()
+    }
 
-    async onApplyClick() {
+    async onRefreshClick() {
         return
     }
 
@@ -72,8 +125,8 @@ class NovelTtsProvider {
     //###########//
     // API CALLS //
     //###########//
-    async fetchTtsVoiceIds() {
-        const voices = [
+    async fetchTtsVoiceObjects() {
+        let voices = [
             { name: 'Ligeia', voice_id: 'Ligeia', lang: 'en-US', preview_url: false },
             { name: 'Aini', voice_id: 'Aini', lang: 'en-US', preview_url: false },
             { name: 'Orea', voice_id: 'Orea', lang: 'en-US', preview_url: false },
@@ -88,6 +141,12 @@ class NovelTtsProvider {
             { name: 'Pega', voice_id: 'Pega', lang: 'en-US', preview_url: false },
             { name: 'Lam', voice_id: 'Lam', lang: 'en-US', preview_url: false },
         ];
+
+        // Add in custom voices to the map
+        let addVoices = this.settings.customVoices.map(voice =>
+            ({ name: voice, voice_id: voice, lang: 'en-US', preview_url: false })
+        )
+        voices = voices.concat(addVoices)
 
         return voices;
     }

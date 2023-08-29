@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, viewport-fit=cover, initial-scale=1, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="darkreader-lock">
+    <meta name="robots" content="noindex, nofollow" />
     <link href="webfonts/NotoSans/stylesheet.css" rel="stylesheet">
     <!-- fontawesome webfonts-->
     <link href="css/fontawesome.css" rel="stylesheet">
@@ -81,6 +82,7 @@
     <script type="module" src="scripts/authors-note.js"></script>
     <script type="module" src="scripts/preset-manager.js"></script>
     <script type="module" src="scripts/filters.js"></script>
+    <script type="module" src="scripts/personas.js"></script>
 
     <title>SillyTavern</title>
 </head>
@@ -3064,8 +3066,7 @@
                                 </div>
                                 <label for="persona_description_position" data-i18n="Position:">Position:</label>
                                 <select id="persona_description_position">
-                                    <option value="0" data-i18n="In Story String / Chat Completion: Before Character Card">In Story String / Chat Completion: Before Character Card</option>
-                                    <option value="1" data-i18n="In Story String / Chat Completion: After Character Card">In Story String / Chat Completion: After Character Card</option>
+                                    <option value="0" data-i18n="In Story String / Prompt Manager">In Story String / Prompt Manager</option>
                                     <option value="2" data-i18n="Top of Author's Note">Top of Author's Note</option>
                                     <option value="3" data-i18n="Bottom of Author's Note">Bottom of Author's Note</option>
                                 </select>
@@ -3196,6 +3197,9 @@
                                                     </option>
                                                     <option id="set_chat_scenario" data-i18n="Scenario Override">
                                                         Scenario Override
+                                                    </option>
+                                                    <option id="convert_to_persona" data-i18n="Convert to Persona">
+                                                        Convert to Persona
                                                     </option>
                                                     <option id="renameCharButton" data-i18n="Rename">
                                                         Rename

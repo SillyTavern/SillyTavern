@@ -1,4 +1,3 @@
-body.tts .mes[is_user="true"] .mes_narrate,
 body.tts .mes[is_system="true"] .mes_narrate {
     display: none;
 }
