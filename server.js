@@ -5,6 +5,12 @@ const child_process = require('child_process')
 const fs = require('fs');
 const path = require('path');
 
+// express related library imports
+const express = require('express');
+const compression = require('compression');
+const responseTime = require('response-time');
+const multer = require("multer");
+
 createDefaultFiles();
 
 function createDefaultFiles() {
@@ -59,10 +65,9 @@ const directory = process.pkg ? path.dirname(process.execPath) : __dirname;
 console.log(process.pkg ? 'Running from binary' : 'Running from source');
 process.chdir(directory);
 
-const express = require('express');
-const compression = require('compression');
+
 const app = express();
-const responseTime = require('response-time');
+
 const simpleGit = require('simple-git');
 
 app.use(compression());
@@ -72,7 +77,6 @@ const writeFileAtomicSync = require('write-file-atomic').sync;
 const readline = require('readline');
 const open = require('open');
 
-const multer = require("multer");
 const http = require("http");
 const https = require('https');
 const basicAuthMiddleware = require('./src/middleware/basicAuthMiddleware');
