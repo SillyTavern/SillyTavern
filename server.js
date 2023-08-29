@@ -5,6 +5,13 @@ const child_process = require('child_process')
 const fs = require('fs');
 const path = require('path');
 
+// cli/fs related library imports
+const yargs = require('yargs/yargs');
+const { hideBin } = require('yargs/helpers');
+const simpleGit = require('simple-git');
+const writeFileAtomicSync = require('write-file-atomic').sync;
+const sanitize = require('sanitize-filename');
+
 // express related library imports
 const express = require('express');
 const compression = require('compression');
@@ -42,8 +49,6 @@ function createDefaultFiles() {
     }
 }
 
-const yargs = require('yargs/yargs');
-const { hideBin } = require('yargs/helpers');
 const net = require("net");
 // work around a node v20 bug: https://github.com/nodejs/node/issues/47822#issuecomment-1564708870
 if (net.setDefaultAutoSelectFamily) {
@@ -77,12 +82,12 @@ process.chdir(directory);
 
 const app = express();
 
-const simpleGit = require('simple-git');
+
 
 app.use(compression());
 app.use(responseTime());
 
-const writeFileAtomicSync = require('write-file-atomic').sync;
+
 const readline = require('readline');
 const open = require('open');
 
@@ -91,7 +96,7 @@ const https = require('https');
 const basicAuthMiddleware = require('./src/middleware/basicAuthMiddleware');
 const contentManager = require('./src/content-manager');
 
-const sanitize = require('sanitize-filename');
+
 const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
 const ipaddr = require('ipaddr.js');
