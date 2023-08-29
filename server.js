@@ -2,13 +2,12 @@
 
 // native node modules
 const child_process = require('child_process')
-
+const fs = require('fs');
+const path = require('path');
 
 createDefaultFiles();
 
 function createDefaultFiles() {
-    const fs = require('fs');
-    const path = require('path');
     const files = {
         settings: 'public/settings.json',
         bg_load: 'public/css/bg_load.css',
@@ -56,7 +55,6 @@ const cliArguments = yargs(hideBin(process.argv))
     }).argv;
 
 // change all relative paths
-const path = require('path');
 const directory = process.pkg ? path.dirname(process.execPath) : __dirname;
 console.log(process.pkg ? 'Running from binary' : 'Running from source');
 process.chdir(directory);
@@ -70,7 +68,6 @@ const simpleGit = require('simple-git');
 app.use(compression());
 app.use(responseTime());
 
-const fs = require('fs');
 const writeFileAtomicSync = require('write-file-atomic').sync;
 const readline = require('readline');
 const open = require('open');
