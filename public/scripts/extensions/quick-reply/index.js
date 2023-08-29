@@ -12,7 +12,7 @@ let presets = [];
 let selected_preset = '';
 
 const defaultSettings = {
-    quickReplyEnabled: true,
+    quickReplyEnabled: false,
     numberOfSlots: 5,
     quickReplySlots: [],
 }

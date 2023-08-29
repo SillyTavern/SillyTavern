@@ -3505,6 +3505,17 @@ a {
     font-weight: bold;
 }
 
+.onboarding {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    text-align: left;
+}
+
+.onboarding > h3 {
+    align-self: center;
+}
+
 #select_chat_search {
     background-color: transparent;
     border: none;

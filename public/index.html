@@ -2095,13 +2095,13 @@
                                 <select id="context_presets" data-preset-manager-for="context" class="flex1"></select>
                                 <input type="file" hidden data-preset-manager-file="context" accept=".json, .settings">
                                 <i id="context_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this preset for Instruct Mode."></i>
-                                <i data-preset-manager-update="context" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
-                                <i data-preset-manager-new="context" class="menu_button fa-solid fa-plus" title="Create new preset" data-i18n="[title]Create new preset"></i>
-                                <i data-preset-manager-import="context" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
-                                <i data-preset-manager-export="context" class="menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
-                                <i id="context_delete_preset" data-preset-manager-delete="context" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
+                                <i data-newbie-hidden data-preset-manager-update="context" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
+                                <i data-newbie-hidden data-preset-manager-new="context" class="menu_button fa-solid fa-plus" title="Create new preset" data-i18n="[title]Create new preset"></i>
+                                <i data-newbie-hidden data-preset-manager-import="context" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
+                                <i data-newbie-hidden data-preset-manager-export="context" class="menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
+                                <i data-newbie-hidden id="context_delete_preset" data-preset-manager-delete="context" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
                             </div>
-                            <div>
+                            <div data-newbie-hidden>
                                 <label for="context_story_string">
                                     <small data-i18n="Story String">Story String</small>
                                 </label>
@@ -2145,21 +2145,21 @@
                                 <select id="instruct_presets" data-preset-manager-for="instruct" class="flex1"></select>
                                 <input type="file" hidden data-preset-manager-file="instruct" accept=".json, .settings">
                                 <i id="instruct_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this preset on API connection."></i>
-                                <i data-preset-manager-update="instruct" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
-                                <i data-preset-manager-new="instruct" class="menu_button fa-solid fa-plus" title="Create new preset" data-i18n="[title]Create new preset"></i>
-                                <i data-preset-manager-import="instruct" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
-                                <i data-preset-manager-export="instruct" class="menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
-                                <i data-preset-manager-delete="instruct" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
+                                <i data-newbie-hidden data-preset-manager-update="instruct" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
+                                <i data-newbie-hidden data-preset-manager-new="instruct" class="menu_button fa-solid fa-plus" title="Create new preset" data-i18n="[title]Create new preset"></i>
+                                <i data-newbie-hidden data-preset-manager-import="instruct" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
+                                <i data-newbie-hidden data-preset-manager-export="instruct" class="menu_button fa-solid fa-file-export" title="Export preset" data-i18n="[title]Export preset"></i>
+                                <i data-newbie-hidden data-preset-manager-delete="instruct" class="menu_button fa-solid fa-trash-can" title="Delete the preset" data-i18n="[title]Delete the preset"></i>
                             </div>
-                            <label>
+                            <label data-newbie-hidden>
                                 <small data-i18n="Activation Regex">
                                     Activation Regex
                                 </small>
                             </label>
-                            <div>
+                            <div data-newbie-hidden>
                                 <textarea id="instruct_activation_regex" class="text_pole textarea_compact autoSetHeight" maxlength="5000" rows="1"></textarea>
                             </div>
-                            <div>
+                            <div data-newbie-hidden>
                                 <label for="instruct_wrap" class="checkbox_label">
                                     <input id="instruct_wrap" type="checkbox" />
                                     <span data-i18n="Wrap Sequences with Newline">Wrap Sequences with Newline</span>
@@ -2177,15 +2177,18 @@
                                     <span data-i18n="Force for Groups and Personas">Force for Groups and Personas</span>
                                 </label>
                             </div>
-                            <label>
-                                <small data-i18n="System Prompt">System Prompt</small>
-                            </label>
-                            <div class="prompt_overridden">
-                                Overridden by the Character Definitions.
-                            </div>
-                            <textarea id="instruct_system_prompt" class="text_pole textarea_compact autoSetHeight" rows="1"></textarea>
+                            <div data-newbie-hidden>
+                                <label>
+                                    <small data-i18n="System Prompt">System Prompt</small>
+                                </label>
+                                <div class="prompt_overridden">
+                                    Overridden by the Character Definitions.
+                                </div>
 
-                            <div class="inline-drawer wide100p flexFlowColumn">
+                                <textarea id="instruct_system_prompt" class="text_pole textarea_compact autoSetHeight" rows="1"></textarea>
+                            </div>
+
+                            <div data-newbie-hidden class="inline-drawer wide100p flexFlowColumn">
                                 <div class="inline-drawer-toggle inline-drawer-header">
                                     <b><span data-i18n="Instruct Mode Sequences">Instruct Mode Sequences</span></b>
                                     <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
@@ -2269,7 +2272,7 @@
                         </div>
                     </div>
                     <div name="ContextFormatting" class="flex1">
-                        <div>
+                        <div data-newbie-hidden>
                             <h4><span data-i18n="Tokenizer">Tokenizer</span>
                                 <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/#tokenizer" class="notes-link" target="_blank">
                                     <span class="note-link-span">?</span>
@@ -2286,7 +2289,7 @@
                                 <option value="6">API (WebUI / koboldcpp)</option>
                             </select>
                         </div>
-                        <div class="range-block">
+                        <div class="range-block" data-newbie-hidden>
                             <div class="range-block-title justifyLeft">
                                 <span data-i18n="Token Padding">Token Padding</span>
                                 <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/#token-padding" class="notes-link" target="_blank">
@@ -2301,13 +2304,13 @@
                                 Always add character's name to prompt
                             </span>
                         </label>
-                        <label class="checkbox_label" for="pin-examples-checkbox">
+                        <label data-newbie-hidden class="checkbox_label" for="pin-examples-checkbox">
                             <input id="pin-examples-checkbox" type="checkbox" />
                             <span data-i18n="Keep Example Messages in Prompt">
                                 Keep Example Messages in Prompt
                             </span>
                         </label>
-                        <label class="checkbox_label" for="remove-examples-checkbox">
+                        <label data-newbie-hidden class="checkbox_label" for="remove-examples-checkbox">
                             <input id="remove-examples-checkbox" type="checkbox" />
                             Strip Example Messages from Prompt
                         </label>
@@ -2316,7 +2319,7 @@
                                 Remove Empty New Lines from Output
                             </span>
                         </label>
-                        <label class="checkbox_label" for="trim_spaces">
+                        <label data-newbie-hidden class="checkbox_label" for="trim_spaces">
                             <input id="trim_spaces" type="checkbox" />
                             <span data-i18n="Trim spaces">Trim spaces</span>
                         </label>
@@ -2325,11 +2328,11 @@
                             <span data-i18n="Trim Incomplete Sentences">Trim Incomplete Sentences</span>
                         </label>
                         <!-- Add margin since this is a child of above -->
-                        <label class="checkbox_label indent20p" for="include_newline_checkbox">
+                        <label data-newbie-hidden class="checkbox_label indent20p" for="include_newline_checkbox">
                             <input id="include_newline_checkbox" type="checkbox" />
                             <span data-i18n="Include Newline">Include Newline</span>
                         </label>
-                        <div>
+                        <div data-newbie-hidden>
                             <h4>
                                 <span data-i18n="Start Reply With">
                                     Start Reply With
@@ -2393,7 +2396,7 @@
                                 </option>
                             </select>
                         </div>
-                        <div>
+                        <div data-newbie-hidden>
                             <h4>
                                 <span data-i18n="Multigen">Multigen</span>
                                 <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/#multigen" class="notes-link" target="_blank">
@@ -2595,40 +2598,51 @@
                 <div class="flex-container spaceEvenly">
                     <div id="UI-Theme-Block" class="flex-container flexFlowColumn drawer33pWidth">
                         <div id="color-picker-block" class="flex-container flexFlowColumn flexNoGap">
-                            <h4><span data-i18n="UI Colors">UI Colors</span></h4>
-                            <div class="flex-container">
-                                <toolcool-color-picker id="main-text-color-picker"></toolcool-color-picker>
-                                <span data-i18n="Main Text">Main Text</span>
+                            <div id="UI-Mode-Block">
+                                <h4 data-i18n="UI Mode">
+                                    UI Mode
+                                </h4>
+                                <select id="ui_mode_select" class="margin0 margin-r5">
+                                    <option value="0" data-i18n="Simple">Simple</option>
+                                    <option value="1" data-i18n="Advanced">Advanced</option>
+                                </select>
                             </div>
-                            <div class="flex-container">
-                                <toolcool-color-picker id="italics-color-picker"></toolcool-color-picker>
-                                <span data-i18n="Italics Text">Italics Text</span>
+                            <div data-newbie-hidden>
+                                <h4><span data-i18n="UI Colors">UI Colors</span></h4>
+                                <div class="flex-container">
+                                    <toolcool-color-picker id="main-text-color-picker"></toolcool-color-picker>
+                                    <span data-i18n="Main Text">Main Text</span>
+                                </div>
+                                <div class="flex-container">
+                                    <toolcool-color-picker id="italics-color-picker"></toolcool-color-picker>
+                                    <span data-i18n="Italics Text">Italics Text</span>
+                                </div>
+                                <div class="flex-container">
+                                    <toolcool-color-picker id="quote-color-picker"></toolcool-color-picker>
+                                    <span data-i18n="Quote Text">Quote Text</span>
+                                </div>
+                                <div class="flex-container">
+                                    <toolcool-color-picker id="shadow-color-picker"></toolcool-color-picker>
+                                    <span data-i18n="Shadow Color">Text Shadow</span>
+                                </div>
+                                <!--                             <div class="flex-container">
+                                    <toolcool-color-picker id="fastui-bg-color-picker"></toolcool-color-picker>
+                                    <span data-i18n="FastUI BG">FastUI BG</span>
+                                </div> -->
+                                <div class="flex-container">
+                                    <toolcool-color-picker id="blur-tint-color-picker"></toolcool-color-picker>
+                                    <span data-i18n="Blur Tint">UI Background</span>
+                                </div>
+                                <div class="flex-container">
+                                    <toolcool-color-picker id="user-mes-blur-tint-color-picker"></toolcool-color-picker>
+                                    <span data-i18n="User Message Blur Tint">User Message</span>
+                                </div>
+                                <div class="flex-container">
+                                    <toolcool-color-picker id="bot-mes-blur-tint-color-picker"></toolcool-color-picker>
+                                    <span data-i18n="AI Message Blur Tint">AI Message</span>
+                                </div>
                             </div>
-                            <div class="flex-container">
-                                <toolcool-color-picker id="quote-color-picker"></toolcool-color-picker>
-                                <span data-i18n="Quote Text">Quote Text</span>
-                            </div>
-                            <div class="flex-container">
-                                <toolcool-color-picker id="shadow-color-picker"></toolcool-color-picker>
-                                <span data-i18n="Shadow Color">Text Shadow</span>
-                            </div>
-                            <!--                             <div class="flex-container">
-                                <toolcool-color-picker id="fastui-bg-color-picker"></toolcool-color-picker>
-                                <span data-i18n="FastUI BG">FastUI BG</span>
-                            </div> -->
-                            <div class="flex-container">
-                                <toolcool-color-picker id="blur-tint-color-picker"></toolcool-color-picker>
-                                <span data-i18n="Blur Tint">UI Background</span>
-                            </div>
-                            <div class="flex-container">
-                                <toolcool-color-picker id="user-mes-blur-tint-color-picker"></toolcool-color-picker>
-                                <span data-i18n="User Message Blur Tint">User Message</span>
-                            </div>
-                            <div class="flex-container">
-                                <toolcool-color-picker id="bot-mes-blur-tint-color-picker"></toolcool-color-picker>
-                                <span data-i18n="AI Message Blur Tint">AI Message</span>
-                            </div>
-                            <div id="font-blur-UIpresets-block" class="flex-container flexFlowColumn">
+                            <div data-newbie-hidden id="font-blur-UIpresets-block" class="flex-container flexFlowColumn">
                                 <div id="font-scale-block" class="range-block">
                                     <div class="range-block-title" data-i18n="Font Scale">
                                         Font Scale
@@ -2700,7 +2714,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div id="MovingUI-presets-block" class="flex-container flexFlowColumn">
+                            <div data-newbie-hidden id="MovingUI-presets-block" class="flex-container flexFlowColumn">
                                 <h4>
                                     <span data-i18n="MovingUI Preset">MovingUI Preset</span>
                                 </h4>
@@ -2721,7 +2735,7 @@
                     <div name="UI Customization" class="flex-container drawer33pWidth">
                         <div class="ui-settings">
                             <h4><span data-i18n="UI Customization">UI Customization</span></h4>
-                            <div class="range-block">
+                            <div data-newbie-hidden class="range-block">
                                 <div class="range-block-title" data-i18n="Chat Width (PC)">
                                     Chat Width (PC)
                                 </div>
@@ -2736,7 +2750,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="range-block">
+                            <div data-newbie-hidden class="range-block">
                                 <div class="range-block-title">
                                     <span data-i18n="Lazy Chat Loading">Lazy Chat Loading</span><br>
                                     <small># of messages (0 = disabled)</small>
@@ -2786,11 +2800,11 @@
                                     <input id="play_sound_unfocused" type="checkbox" />
                                     <span data-i18n="Background Sound Only">Background Sound Only</span>
                                 </label>
-                                <label for="fast_ui_mode" class="checkbox_label" title="removes blur and uses alternative background color for divs" data-i18n="[title]removes blur and uses alternative background color for divs">
+                                <label data-newbie-hidden for="fast_ui_mode" class="checkbox_label" title="removes blur and uses alternative background color for divs" data-i18n="[title]removes blur and uses alternative background color for divs">
                                     <input id="fast_ui_mode" type="checkbox" />
                                     <span data-i18n="No Blur Effect">No Blur Effect</span>
                                 </label>
-                                <label for="noShadowsmode" class="checkbox_label">
+                                <label data-newbie-hidden for="noShadowsmode" class="checkbox_label">
                                     <input id="noShadowsmode" type="checkbox" />
                                     <span data-i18n="No Text Shadows">No Text Shadows</span>
                                 </label>
@@ -2804,37 +2818,37 @@
                                     <span data-i18n="Message Timer">Message Timer</span>
                                 </label>
 
-                                <label for="messageTimestampsEnabled" class="checkbox_label">
+                                <label data-newbie-hidden for="messageTimestampsEnabled" class="checkbox_label">
                                     <input id="messageTimestampsEnabled" type="checkbox" />
                                     <span data-i18n="Chat Timestamps">Chat Timestamps</span>
                                 </label>
 
-                                <label for="messageModelIconEnabled" class="checkbox_label">
+                                <label data-newbie-hidden for="messageModelIconEnabled" class="checkbox_label">
                                     <input id="messageModelIconEnabled" type="checkbox" />
                                     <span data-i18n="Model Icon">Show Model Icons</span>
                                 </label>
 
-                                <label for="mesIDDisplayEnabled" class="checkbox_label">
+                                <label data-newbie-hidden for="mesIDDisplayEnabled" class="checkbox_label">
                                     <input id="mesIDDisplayEnabled" type="checkbox" />
                                     <span data-i18n="Message IDs">Show Message IDs</span>
                                 </label>
 
-                                <label for="auto_scroll_chat_to_bottom" class="checkbox_label">
+                                <label data-newbie-hidden for="auto_scroll_chat_to_bottom" class="checkbox_label">
                                     <input id="auto_scroll_chat_to_bottom" type="checkbox" />
                                     <span data-i18n="Auto-scroll Chat">Auto-scroll Chat</span>
                                 </label>
 
-                                <label for="hotswapEnabled" class="checkbox_label">
+                                <label data-newbie-hidden for="hotswapEnabled" class="checkbox_label">
                                     <input id="hotswapEnabled" type="checkbox" />
                                     <span data-i18n="Characters Hotswap">Characters Hotswap</span>
                                 </label>
 
-                                <label id="movingUIModeCheckBlock" for="movingUImode" class="checkbox_label">
+                                <label data-newbie-hidden id="movingUIModeCheckBlock" for="movingUImode" class="checkbox_label">
                                     <input id="movingUImode" type="checkbox" />
                                     <span data-i18n="Movable UI Panels">Movable UI Panels</span>
                                 </label>
 
-                                <div class="flex-container flexFlowColumn">
+                                <div data-newbie-hidden class="flex-container flexFlowColumn">
                                     <h4 data-i18n="Send on Enter">
                                         Send on Enter
                                     </h4>
@@ -2842,10 +2856,8 @@
                                         <option value="-1" data-i18n="Always disabled">Always disabled</option>
                                         <option value="0" data-i18n="Automatic (desktop)">Automatic (desktop)</option>
                                         <option value="1" data-i18n="Always enabled">Always enabled</option>
-                                    </select>
+                                    </select>♦
                                 </div>
-
-
                             </div>
                         </div>
 
@@ -2854,23 +2866,23 @@
                     <div id="power-user-options-block" class="flex-container drawer33pWidth">
                         <div id="power-user-option-checkboxes">
                             <h4 data-i18n="Power User Options">Power User Options</h4>
-                            <label class="checkbox_label" for="swipes-checkbox">
+                            <label data-newbie-hidden class="checkbox_label" for="swipes-checkbox">
                                 <input id="swipes-checkbox" type="checkbox" />
                                 <span data-i18n="Swipes">Swipes</span>
                             </label>
-                            <label class="checkbox_label" for="fuzzy_search_checkbox">
+                            <label data-newbie-hidden class="checkbox_label" for="fuzzy_search_checkbox">
                                 <input id="fuzzy_search_checkbox" type="checkbox" />
                                 <span data-i18n="Advanced Character Search">Advanced Character Search</span>
                             </label>
-                            <label for="prefer_character_prompt" title="If checked and the character card contains a prompt override (System Prompt), use that instead." data-i18n="[title]If checked and the character card contains a prompt override (System Prompt), use that instead." class="checkbox_label">
+                            <label data-newbie-hidden for="prefer_character_prompt" title="If checked and the character card contains a prompt override (System Prompt), use that instead." data-i18n="[title]If checked and the character card contains a prompt override (System Prompt), use that instead." class="checkbox_label">
                                 <input id="prefer_character_prompt" type="checkbox" />
                                 <span data-i18n="Prefer Character Card Prompt">Prefer Char. Prompt</span>
                             </label>
-                            <label for="prefer_character_jailbreak" title="If checked and the character card contains a jailbreak override (Post History Instruction), use that instead." data-i18n="[title]If checked and the character card contains a jailbreak override (Post History Instruction), use that instead." class="checkbox_label">
+                            <label data-newbie-hidden for="prefer_character_jailbreak" title="If checked and the character card contains a jailbreak override (Post History Instruction), use that instead." data-i18n="[title]If checked and the character card contains a jailbreak override (Post History Instruction), use that instead." class="checkbox_label">
                                 <input id="prefer_character_jailbreak" type="checkbox" />
                                 <span data-i18n="Prefer Character Card Jailbreak">Prefer Char. JB</span>
                             </label>
-                            <label class="checkbox_label" for="continue_on_send">
+                            <label data-newbie-hidden class="checkbox_label" for="continue_on_send">
                                 <input id="continue_on_send" type="checkbox" />
                                 <span data-i18n="Press Send to continue">
                                     Press "Send" to continue
@@ -2886,7 +2898,7 @@
                                 <input id="auto-load-chat-checkbox" type="checkbox" />
                                 <span data-i18n="Auto-load Last Chat">Auto-load Last Chat</span>
                             </label>
-                            <label class="checkbox_label" for="auto_save_msg_edits">
+                            <label data-newbie-hidden class="checkbox_label" for="auto_save_msg_edits">
                                 <input id="auto_save_msg_edits" type="checkbox" />
                                 <span data-i18n="Auto-save Message Edits">Auto-save Message Edits</span>
                             </label>
@@ -2894,11 +2906,11 @@
                                 <input id="auto_fix_generated_markdown" type="checkbox" />
                                 <span data-i18n="Auto-fix Markdown">Auto-fix Markdown</span>
                             </label>
-                            <label class="checkbox_label" for="allow_name2_display">
+                            <label data-newbie-hidden class="checkbox_label" for="allow_name2_display">
                                 <input id="allow_name2_display" type="checkbox" />
                                 <span data-i18n="Allow {{char}}: in bot messages">Show {{char}}: in responses</span>
                             </label>
-                            <label class="checkbox_label" for="allow_name1_display">
+                            <label data-newbie-hidden class="checkbox_label" for="allow_name1_display">
                                 <input id="allow_name1_display" type="checkbox" />
                                 <span data-i18n="Allow {{user}}: in bot messages">Show {{user}}: in responses</span>
                             </label>
@@ -2906,43 +2918,43 @@
                                 <input id="encode_tags" type="checkbox" />
                                 <span data-i18n="Show tags in responses">Show &lt;tags&gt; in responses</span>
                             </label>
-                            <label class="checkbox_label" for="console_log_prompts">
+                            <label data-newbie-hidden class="checkbox_label" for="console_log_prompts">
                                 <input id="console_log_prompts" type="checkbox" />
                                 <span data-i18n="Log prompts to console">Log prompts to console</span>
                             </label>
-                            <label class="checkbox_label" for="render_formulas">
+                            <label data-newbie-hidden class="checkbox_label" for="render_formulas">
                                 <input id="render_formulas" type="checkbox" />
                                 <span data-i18n="Render Formulas">Render Formulas</span>
                                 <a href="https://docs.sillytavern.app/usage/core-concepts/uicustomization/#formulas-rendering" class="notes-link" target="_blank">
                                     <span class="note-link-span">?</span>
                                 </a>
                             </label>
-                            <label class="checkbox_label" for="never_resize_avatars">
+                            <label data-newbie-hidden class="checkbox_label" for="never_resize_avatars">
                                 <input id="never_resize_avatars" type="checkbox" />
                                 <span data-i18n="Never resize avatars">Never resize avatars</span>
                             </label>
-                            <label class="checkbox_label" for="show_card_avatar_urls">
+                            <label data-newbie-hidden class="checkbox_label" for="show_card_avatar_urls">
                                 <input id="show_card_avatar_urls" type="checkbox" />
                                 <span data-i18n="Show avatar filenames">Show avatar filenames</span>
                             </label>
-                            <label class="checkbox_label" for="import_card_tags">
+                            <label data-newbie-hidden class="checkbox_label" for="import_card_tags">
                                 <input id="import_card_tags" type="checkbox" />
                                 <span data-i18n="Import Card Tags">Import Card Tags</span>
                             </label>
-                            <label class="checkbox_label" for="confirm_message_delete">
+                            <label data-newbie-hidden class="checkbox_label" for="confirm_message_delete">
                                 <input id="confirm_message_delete" type="checkbox" />
                                 <span data-i18n="Confirm message deletion">Confirm message deletion</span>
                             </label>
-                            <label class="checkbox_label" for="spoiler_free_mode">
+                            <label data-newbie-hidden class="checkbox_label" for="spoiler_free_mode">
                                 <input id="spoiler_free_mode" type="checkbox" />
                                 <span data-i18n="Spoiler Free Mode">Spoiler Free Mode</span>
                             </label>
-                            <label class="checkbox_label" for="relaxed_api_urls" title="Reduce the formatting requirements on API URLS">
+                            <label data-newbie-hidden class="checkbox_label" for="relaxed_api_urls" title="Reduce the formatting requirements on API URLS">
                                 <input id="relaxed_api_urls" type="checkbox" />
                                 <span data-i18n="Relaxed API URLS">Relaxed API URLS</span>
                             </label>
 
-                            <div class="inline-drawer wide100p flexFlowColumn">
+                            <div data-newbie-hidden class="inline-drawer wide100p flexFlowColumn">
                                 <div class="inline-drawer-toggle inline-drawer-header">
                                     <b><span data-i18n="Auto-swipe">Auto-swipe</span></b>
                                     <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
@@ -2963,7 +2975,7 @@
                                 </div>
                             </div>
 
-                            <div class="flex-container">
+                            <div data-newbie-hidden class="flex-container">
                                 <div id="reload_chat" class="menu_button whitespacenowrap" data-i18n="Reload Chat">
                                     Reload Chat
                                 </div>
@@ -4061,6 +4073,14 @@
                 <li>Type <code>/help</code> in chat for commands and macros.</li>
                 <li>Join the <a href="https://discord.gg/RZdyAEUPvj" target="_blank">Discord server</a> for info and announcements.</li>
             </ul>
+            <b>SillyTavern is aimed at advanced users.</b>
+            <div>
+                If you're new to this, enable the simplified UI mode below.
+            </div>
+            <label class="checkbox_label">
+                <input type="checkbox" name="enable_simple_mode" />
+                <span data-i18n="Enable simple UI mode">Enable simple UI mode</span>
+            </label>
             <div class="justifyLeft margin-bot-10px">
                 Before you get started, you must select a user name.
                 This can be changed at any time via the <code><i class="fa-solid fa-face-smile"></i></code> icon.
