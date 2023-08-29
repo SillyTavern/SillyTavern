@@ -1912,7 +1912,7 @@ function cleanGroupMessage(getMessage) {
             const regex = new RegExp(`(^|\n)${escapeRegex(name)}:`);
             const nameMatch = getMessage.match(regex);
             if (nameMatch) {
-                getMessage = getMessage.substring(nameMatch.index + nameMatch[0].length);
+                getMessage = getMessage.substring(0, nameMatch.index);
             }
         }
     }
