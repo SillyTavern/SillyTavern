@@ -72,8 +72,11 @@ async function moduleWorker() {
                     }
                     else {
                         console.debug(DEBUG_PREFIX+"Found trigger word: ", triggerWord, " at index ", triggerPos);
-                        if (triggerPos < messageStart | messageStart == -1) { // & (triggerPos + triggerWord.length) < userMessageFormatted.length)) {
+                        if (triggerPos < messageStart || messageStart == -1) { // & (triggerPos + triggerWord.length) < userMessageFormatted.length)) {
                             messageStart = triggerPos; // + triggerWord.length + 1;
+
+                            if (!extension_settings.speech_recognition.Streaming.triggerWordsIncluded)
+                                messageStart = triggerPos + triggerWord.length + 1;
                         }
                     }
                 }
@@ -93,6 +96,16 @@ async function moduleWorker() {
             }
             else{
                 userMessageFormatted = userMessageFormatted.substring(messageStart);
+                // Trim non alphanumeric character from the start
+                messageStart = 0;
+                for(const i of userMessageFormatted) {
+                    if(/^[a-z]$/i.test(i)) {
+                        break;
+                    }
+                    messageStart += 1;
+                }
+                userMessageFormatted = userMessageFormatted.substring(messageStart);
+                userMessageFormatted = userMessageFormatted.charAt(0).toUpperCase() + userMessageFormatted.substring(1);
                 processTranscript(userMessageFormatted);
             }
         }
