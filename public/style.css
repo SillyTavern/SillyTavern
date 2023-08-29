@@ -882,6 +882,13 @@ textarea {
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
     padding: 5px 10px;
     scrollbar-width: thin;
+    max-height: 90vh;
+    max-height: 90svh;
+}
+
+textarea.autoSetHeight {
+    max-height: 50vh;
+    max-height: 50svh;
 }
 
 input,
