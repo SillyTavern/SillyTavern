@@ -8,6 +8,9 @@ const http = require("http");
 const https = require('https');
 const path = require('path');
 const readline = require('readline');
+const util = require('util');
+const { Readable } = require('stream');
+const { finished } = require('stream/promises');
 const { TextEncoder, TextDecoder } = require('util');
 
 // cli/fs related library imports
@@ -19,7 +22,9 @@ const writeFileAtomicSync = require('write-file-atomic').sync;
 const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers');
 
-// express related library imports
+// express/server related library imports
+const cors = require('cors');
+const doubleCsrf = require('csrf-csrf').doubleCsrf;
 const express = require('express');
 const compression = require('compression');
 const cookieParser = require('cookie-parser');
@@ -29,6 +34,7 @@ const responseTime = require('response-time');
 // net related library imports
 const axios = require('axios');
 const DeviceDetector = require("device-detector-js");
+const fetch = require('node-fetch').default;
 const ipaddr = require('ipaddr.js');
 const ipMatching = require('ip-matching');
 const json5 = require('json5');
@@ -46,13 +52,20 @@ const webp = require('webp-converter');
 const yauzl = require('yauzl');
 
 // tokenizing related library imports
+const { SentencePieceProcessor } = require("@agnai/sentencepiece-js");
 const tiktoken = require('@dqbd/tiktoken');
+const { Tokenizer } = require('@agnai/web-tokenizers');
+
+// misc/other imports
+const _ = require('lodash');
+const { generateRequestUrl, normaliseResponse } = require('google-translate-api-browser');
 
 // local library imports
 const AIHorde = require("./src/horde");
 const basicAuthMiddleware = require('./src/middleware/basicAuthMiddleware');
 const characterCardParser = require('./src/character-card-parser.js');
 const contentManager = require('./src/content-manager');
+const novelai = require('./src/novelai');
 const statsHelpers = require('./statsHelpers.js');
 
 createDefaultFiles();
@@ -189,8 +202,6 @@ function get_mancer_headers() {
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms))
 
-const { SentencePieceProcessor } = require("@agnai/sentencepiece-js");
-const { Tokenizer } = require('@agnai/web-tokenizers');
 const CHARS_PER_TOKEN = 3.35;
 
 let spp_llama;
@@ -339,8 +350,6 @@ const directories = {
 
 // CSRF Protection //
 if (cliArguments.disableCsrf === false) {
-    const doubleCsrf = require('csrf-csrf').doubleCsrf;
-
     const CSRF_SECRET = crypto.randomBytes(8).toString('hex');
     const COOKIES_SECRET = crypto.randomBytes(8).toString('hex');
 
@@ -374,7 +383,6 @@ if (cliArguments.disableCsrf === false) {
 }
 
 // CORS Settings //
-const cors = require('cors');
 const CORS = cors({
     origin: 'null',
     methods: ['OPTIONS']
@@ -545,7 +553,6 @@ app.post("/generate", jsonParser, async function (request, response_generate = r
     let fetch, url, response;
     for (let i = 0; i < MAX_RETRIES; i++) {
         try {
-            fetch = require('node-fetch').default;
             url = request.body.streaming ? `${api_server}/extra/generate/stream` : `${api_server}/v1/generate`;
             response = await fetch(url, { method: 'POST', timeout: 0, ...args });
 
@@ -893,13 +900,11 @@ function convertToV2(char) {
 
 
 function unsetFavFlag(char) {
-    const _ = require('lodash');
     _.set(char, 'fav', false);
     _.set(char, 'data.extensions.fav', false);
 }
 
 function readFromV2(char) {
-    const _ = require('lodash');
     if (_.isUndefined(char.data)) {
         console.warn('Spec v2 data missing');
         return char;
@@ -954,7 +959,6 @@ function readFromV2(char) {
 //***************** Main functions
 function charaFormatData(data) {
     // This is supposed to save all the foreign keys that ST doesn't care about
-    const _ = require('lodash');
     const char = tryParse(data.json_data) || {};
 
     // This function uses _.cond() to create a series of conditional checks that return the desired output based on the input data.
@@ -1093,7 +1097,6 @@ app.post("/renamecharacter", jsonParser, async function (request, response) {
     const newChatsPath = path.join(chatsPath, newInternalName);
 
     try {
-        const _ = require('lodash');
         // Read old file, replace name int it
         const rawOldData = await charaRead(oldAvatarPath);
         const oldData = getCharaCardV2(json5.parse(rawOldData));
@@ -1895,7 +1898,6 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
         controller.abort();
     });
 
-    const novelai = require('./src/novelai');
     const isNewModel = (request.body.model.includes('clio') || request.body.model.includes('kayra'));
     const badWordsList = novelai.getBadWordsList(request.body.model);
 
@@ -1950,7 +1952,7 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
             "order": request.body.order
         }
     };
-    const util = require('util');
+    
     console.log(util.inspect(data, { depth: 4 }))
 
     const args = {
@@ -1960,7 +1962,6 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
     };
 
     try {
-        const fetch = require('node-fetch').default;
         const url = request.body.streaming ? `${api_novelai}/ai/generate-stream` : `${api_novelai}/ai/generate`;
         const response = await fetch(url, { method: 'POST', timeout: 0, ...args });
 
@@ -2311,7 +2312,6 @@ app.post("/exportchat", jsonParser, async function (request, response) {
             }
         }
 
-        const readline = require('readline');
         const readStream = fs.createReadStream(filename);
         const rl = readline.createInterface({
             input: readStream,
@@ -3275,7 +3275,6 @@ function convertClaudePrompt(messages, addHumanPrefix, addAssistantPostfix) {
 }
 
 async function sendScaleRequest(request, response) {
-    const fetch = require('node-fetch').default;
 
     const api_url = new URL(request.body.api_url_scale).toString();
     const api_key_scale = readSecret(SECRET_KEYS.SCALE);
@@ -3389,7 +3388,6 @@ app.post("/generate_altscale", jsonParser, function (request, response_generate_
 });
 
 async function sendClaudeRequest(request, response) {
-    const fetch = require('node-fetch').default;
 
     const api_url = new URL(request.body.reverse_proxy || api_claude).toString();
     const api_key_claude = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.CLAUDE);
@@ -3965,7 +3963,6 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
 // ** REST CLIENT ASYNC WRAPPERS **
 
 async function postAsync(url, args) {
-    const fetch = require('node-fetch').default;
     const response = await fetch(url, { method: 'POST', timeout: 0, ...args });
 
     if (response.ok) {
@@ -4444,8 +4441,6 @@ app.post('/libre_translate', jsonParser, async (request, response) => {
 });
 
 app.post('/google_translate', jsonParser, async (request, response) => {
-    const { generateRequestUrl, normaliseResponse } = require('google-translate-api-browser');
-
     const text = request.body.text;
     const lang = request.body.lang;
 
@@ -4491,7 +4486,6 @@ app.post('/deepl_translate', jsonParser, async (request, response) => {
 
     console.log('Input text: ' + text);
 
-    const fetch = require('node-fetch').default;
     const params = new URLSearchParams();
     params.append('text', text);
     params.append('target_lang', lang);
@@ -4537,7 +4531,6 @@ app.post('/novel_tts', jsonParser, async (request, response) => {
     }
 
     try {
-        const fetch = require('node-fetch').default;
         const url = `${api_novelai}/ai/generate-voice?text=${encodeURIComponent(text)}&voice=-1&seed=${encodeURIComponent(voice)}&opus=false&version=v2`;
         const result = await fetch(url, {
             method: 'GET',
@@ -4721,8 +4714,6 @@ app.post('/import_custom', jsonParser, async (request, response) => {
 });
 
 async function downloadChubLorebook(id) {
-    const fetch = require('node-fetch').default;
-
     const result = await fetch('https://api.chub.ai/api/lorebooks/download', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -4746,8 +4737,6 @@ async function downloadChubLorebook(id) {
 }
 
 async function downloadChubCharacter(id) {
-    const fetch = require('node-fetch').default;
-
     const result = await fetch('https://api.chub.ai/api/characters/download', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -5241,8 +5230,6 @@ function checkAssetFileName(inputFilename) {
  * @returns {void}
  */
 app.post('/asset_download', jsonParser, async (request, response) => {
-    const { Readable } = require('stream');
-    const { finished } = require('stream/promises');
     const url = request.body.url;
     const inputCategory = request.body.category;
     const inputFilename = sanitize(request.body.filename);
@@ -5308,8 +5295,6 @@ app.post('/asset_download', jsonParser, async (request, response) => {
  * @returns {void}
  */
 app.post('/asset_delete', jsonParser, async (request, response) => {
-    const { Readable } = require('stream');
-    const { finished } = require('stream/promises');
     const inputCategory = request.body.category;
     const inputFilename = sanitize(request.body.filename);
     const validCategories = ["bgm", "ambient"];
