@@ -12,19 +12,28 @@ const { TextEncoder, TextDecoder } = require('util');
 
 // cli/fs related library imports
 const commandExistsSync = require('command-exists').sync;
+const open = require('open');
 const sanitize = require('sanitize-filename');
 const simpleGit = require('simple-git');
 const writeFileAtomicSync = require('write-file-atomic').sync;
 const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers');
 
-// express/net related library imports
+// express related library imports
 const express = require('express');
 const compression = require('compression');
 const cookieParser = require('cookie-parser');
 const multer = require("multer");
 const responseTime = require('response-time');
+
+// net related library imports
+const axios = require('axios');
 const DeviceDetector = require("device-detector-js");
+const ipaddr = require('ipaddr.js');
+const ipMatching = require('ip-matching');
+const json5 = require('json5');
+const Client = require('node-rest-client').Client;
+const WebSocket = require('ws');
 
 // image processing related library imports
 const exif = require('piexifjs');
@@ -34,6 +43,16 @@ const jimp = require('jimp');
 const mime = require('mime-types');
 const PNGtext = require('png-chunk-text');
 const webp = require('webp-converter');
+const yauzl = require('yauzl');
+
+// tokenizing related library imports
+const tiktoken = require('@dqbd/tiktoken');
+
+// local library imports
+const basicAuthMiddleware = require('./src/middleware/basicAuthMiddleware');
+const characterCardParser = require('./src/character-card-parser.js');
+const contentManager = require('./src/content-manager');
+const statsHelpers = require('./statsHelpers.js');
 
 createDefaultFiles();
 
@@ -91,23 +110,10 @@ const app = express();
 app.use(compression());
 app.use(responseTime());
 
-const open = require('open');
-
-const basicAuthMiddleware = require('./src/middleware/basicAuthMiddleware');
-const contentManager = require('./src/content-manager');
-
-const ipaddr = require('ipaddr.js');
-const json5 = require('json5');
-
-
-
 const utf8Encode = new TextEncoder();
 
-
 // impoort from statsHelpers.js
-const statsHelpers = require('./statsHelpers.js');
 
-const characterCardParser = require('./src/character-card-parser.js');
 const config = require(path.join(process.cwd(), './config.conf'));
 
 const server_port = process.env.SILLY_TAVERN_PORT || config.port;
@@ -128,10 +134,6 @@ const enableExtensions = config.enableExtensions;
 const listen = config.listen;
 const allowKeysExposure = config.allowKeysExposure;
 
-const axios = require('axios');
-const tiktoken = require('@dqbd/tiktoken');
-const WebSocket = require('ws');
-
 function getHordeClient() {
     const AIHorde = require("./src/horde");
     const ai_horde = new AIHorde({
@@ -140,10 +142,6 @@ function getHordeClient() {
     return ai_horde;
 }
 
-const ipMatching = require('ip-matching');
-const yauzl = require('yauzl');
-
-const Client = require('node-rest-client').Client;
 const client = new Client();
 
 client.on('error', (err) => {
