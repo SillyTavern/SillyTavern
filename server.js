@@ -148,11 +148,8 @@ let api_openai = "https://api.openai.com/v1";
 let api_claude = "https://api.anthropic.com/v1";
 let main_api = "kobold";
 
-let response_generate_novel;
 let characters = {};
 let response_dw_bg;
-let first_run = true;
-
 
 let color = {
     byNum: (mess, fgNum) => {
