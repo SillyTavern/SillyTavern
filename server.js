@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// native node modules
+const child_process = require('child_process')
+
+
 createDefaultFiles();
 
 function createDefaultFiles() {
@@ -838,11 +842,11 @@ function getVersion() {
         const pkgJson = require('./package.json');
         pkgVersion = pkgJson.version;
         if (!process.pkg && commandExistsSync('git')) {
-            gitRevision = require('child_process')
+            gitRevision = child_process
                 .execSync('git rev-parse --short HEAD', { cwd: process.cwd(), stdio: ['ignore', 'pipe', 'ignore'] })
                 .toString().trim();
 
-            gitBranch = require('child_process')
+            gitBranch = child_process
                 .execSync('git rev-parse --abbrev-ref HEAD', { cwd: process.cwd(), stdio: ['ignore', 'pipe', 'ignore'] })
                 .toString().trim();
         }
@@ -1855,6 +1859,7 @@ app.post("/getstatus_novelai", jsonParser, function (request, response_getstatus
         data: data,
         headers: { "Content-Type": "application/json", "Authorization": "Bearer " + api_key_novel }
     };
+    
     client.get(api_novelai + "/user/subscription", args, function (data, response) {
         if (response.statusCode == 200) {
             //console.log(data);
