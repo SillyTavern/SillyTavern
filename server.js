@@ -11,6 +11,15 @@ const compression = require('compression');
 const responseTime = require('response-time');
 const multer = require("multer");
 
+// image processing related library imports
+const extract = require('png-chunks-extract');
+const encode = require('png-chunks-encode');
+const PNGtext = require('png-chunk-text');
+const jimp = require('jimp');
+const mime = require('mime-types');
+const exif = require('piexifjs');
+const webp = require('webp-converter');
+
 createDefaultFiles();
 
 function createDefaultFiles() {
@@ -81,21 +90,13 @@ const http = require("http");
 const https = require('https');
 const basicAuthMiddleware = require('./src/middleware/basicAuthMiddleware');
 const contentManager = require('./src/content-manager');
-const extract = require('png-chunks-extract');
-const encode = require('png-chunks-encode');
-const PNGtext = require('png-chunk-text');
 
-const jimp = require('jimp');
 const sanitize = require('sanitize-filename');
-const mime = require('mime-types');
-
 const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
 const ipaddr = require('ipaddr.js');
 const json5 = require('json5');
 
-const exif = require('piexifjs');
-const webp = require('webp-converter');
 const DeviceDetector = require("device-detector-js");
 const { TextEncoder, TextDecoder } = require('util');
 const utf8Encode = new TextEncoder();
