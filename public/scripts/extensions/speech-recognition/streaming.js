@@ -14,6 +14,7 @@ class StreamingSttProvider {
         triggerWordsText: "",
         triggerWords : [],
         triggerWordsEnabled : false,
+        triggerWordsIncluded: false,
         debug : false,
     }
 
@@ -25,6 +26,10 @@ class StreamingSttProvider {
         <label class="checkbox_label" for="speech_recognition_streaming_trigger_words_enabled">\
             <input type="checkbox" id="speech_recognition_streaming_trigger_words_enabled" name="speech_recognition_trigger_words_enabled">\
             <small>Enable trigger words</small>\
+        </label>\
+        <label class="checkbox_label" for="speech_recognition_trigger_words_included">\
+            <input type="checkbox" id="speech_recognition_trigger_words_included" name="speech_recognition_trigger_words_included">\
+            <small>Include trigger words in message</small>\
         </label>\
         <label class="checkbox_label" for="speech_recognition_streaming_debug">\
             <input type="checkbox" id="speech_recognition_streaming_debug" name="speech_recognition_streaming_debug">\
@@ -42,6 +47,7 @@ class StreamingSttProvider {
         array = array.filter((str) => str !== '');
         this.settings.triggerWords = array;
         this.settings.triggerWordsEnabled = $("#speech_recognition_streaming_trigger_words_enabled").is(':checked');
+        this.settings.triggerWordsIncluded = $("#speech_recognition_trigger_words_included").is(':checked');
         this.settings.debug = $("#speech_recognition_streaming_debug").is(':checked');
         console.debug(DEBUG_PREFIX+" Updated settings: ", this.settings);
         this.loadSettings(this.settings);
@@ -66,6 +72,7 @@ class StreamingSttProvider {
 
         $("#speech_recognition_streaming_trigger_words").val(this.settings.triggerWordsText);
         $("#speech_recognition_streaming_trigger_words_enabled").prop('checked',this.settings.triggerWordsEnabled);
+        $("#speech_recognition_trigger_words_included").prop('checked',this.settings.triggerWordsIncluded);
         $("#speech_recognition_streaming_debug").prop('checked',this.settings.debug);
 
         console.debug(DEBUG_PREFIX+"streaming STT settings loaded")
