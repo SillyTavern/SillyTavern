@@ -4,11 +4,12 @@ TODO:
 */
 
 import { saveSettingsDebounced } from "../../../script.js";
-import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch } from "../../extensions.js";
+import { getContext, extension_settings, ModuleWorkerWrapper } from "../../extensions.js";
 import { VoskSttProvider } from './vosk.js'
 import { WhisperSttProvider } from './whisper.js'
 import { BrowserSttProvider } from './browser.js'
 import { StreamingSttProvider } from './streaming.js'
+import { getMessageTimeStamp } from "../../RossAscends-mods.js";
 export { MODULE_NAME };
 
 const MODULE_NAME = 'Speech Recognition';
@@ -61,18 +62,21 @@ async function moduleWorker() {
             let messageStart = -1;
 
             if (extension_settings.speech_recognition.Streaming.triggerWordsEnabled) {
-            
+
                 for (const triggerWord of extension_settings.speech_recognition.Streaming.triggerWords) {
                     const triggerPos = userMessageRaw.indexOf(triggerWord.toLowerCase());
-                    
+
                     // Trigger word not found or not starting message and just a substring
                     if (triggerPos == -1){ // | (triggerPos > 0 & userMessageFormatted[triggerPos-1] != " ")) {
                         console.debug(DEBUG_PREFIX+"trigger word not found: ", triggerWord);
                     }
                     else {
                         console.debug(DEBUG_PREFIX+"Found trigger word: ", triggerWord, " at index ", triggerPos);
-                        if (triggerPos < messageStart | messageStart == -1) { // & (triggerPos + triggerWord.length) < userMessageFormatted.length)) {
+                        if (triggerPos < messageStart || messageStart == -1) { // & (triggerPos + triggerWord.length) < userMessageFormatted.length)) {
                             messageStart = triggerPos; // + triggerWord.length + 1;
+
+                            if (!extension_settings.speech_recognition.Streaming.triggerWordsIncluded)
+                                messageStart = triggerPos + triggerWord.length + 1;
                         }
                     }
                 }
@@ -92,6 +96,16 @@ async function moduleWorker() {
             }
             else{
                 userMessageFormatted = userMessageFormatted.substring(messageStart);
+                // Trim non alphanumeric character from the start
+                messageStart = 0;
+                for(const i of userMessageFormatted) {
+                    if(/^[a-z]$/i.test(i)) {
+                        break;
+                    }
+                    messageStart += 1;
+                }
+                userMessageFormatted = userMessageFormatted.substring(messageStart);
+                userMessageFormatted = userMessageFormatted.charAt(0).toUpperCase() + userMessageFormatted.substring(1);
                 processTranscript(userMessageFormatted);
             }
         }
@@ -152,12 +166,12 @@ async function processTranscript(transcript) {
                         name: context.name1,
                         is_user: true,
                         is_name: true,
-                        send_date: Date.now(),
+                        send_date: getMessageTimeStamp(),
                         mes: messageText,
                     };
                     context.chat.push(message);
                     context.addOneMessage(message);
-                    
+
                     await context.generate();
 
                     $('#debug_output').text("<SST-module DEBUG>: message sent: \""+ transcriptFormatted +"\"");
@@ -191,10 +205,10 @@ async function processTranscript(transcript) {
 function loadNavigatorAudioRecording() {
     if (navigator.mediaDevices.getUserMedia) {
         console.debug(DEBUG_PREFIX+' getUserMedia supported by browser.');
-      
+
         let onSuccess = function(stream) {
           const mediaRecorder = new MediaRecorder(stream);
-      
+
           $("#microphone_button").off('click').on("click", function() {
             if (!audioRecording) {
                 mediaRecorder.start();
@@ -211,30 +225,30 @@ function loadNavigatorAudioRecording() {
                 $("#microphone_button").toggleClass('fa-microphone fa-microphone-slash');
             }
           });
-      
+
           mediaRecorder.onstop = async function() {
             console.debug(DEBUG_PREFIX+"data available after MediaRecorder.stop() called: ", audioChunks.length, " chunks");
             const audioBlob = new Blob(audioChunks, { type: "audio/wav; codecs=0" });
             audioChunks = [];
-            
+
             const transcript = await sttProvider.processAudio(audioBlob);
-            
+
             // TODO: lock and release recording while processing?
             console.debug(DEBUG_PREFIX+"received transcript:", transcript);
             processTranscript(transcript);
           }
-      
+
           mediaRecorder.ondataavailable = function(e) {
             audioChunks.push(e.data);
           }
         }
-      
+
         let onError = function(err) {
           console.debug(DEBUG_PREFIX+"The following error occured: " + err);
         }
-      
+
         navigator.mediaDevices.getUserMedia(constraints).then(onSuccess, onError);
-      
+
       } else {
          console.debug(DEBUG_PREFIX+"getUserMedia not supported on your browser!");
          toastr.error("getUserMedia not supported", DEBUG_PREFIX+"not supported for your browser.", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
@@ -257,7 +271,7 @@ function loadSttProvider(provider) {
         console.warn(`Provider ${sttProviderName} not in Extension Settings, initiatilizing provider in settings`);
         extension_settings.speech_recognition[sttProviderName] = {};
     }
-    
+
     $('#speech_recognition_provider').val(sttProviderName);
 
     if (sttProviderName == "None") {
@@ -287,13 +301,13 @@ function loadSttProvider(provider) {
         loadNavigatorAudioRecording();
         $("#microphone_button").show();
     }
-    
+
     if (sttProviderName == "Streaming") {
         sttProvider.loadSettings(extension_settings.speech_recognition[sttProviderName]);
         $("#microphone_button").off('click');
         $("#microphone_button").hide();
     }
-    
+
 }
 
 function onSttProviderChange() {
@@ -365,7 +379,7 @@ async function onMessageMappingChange() {
             console.debug(DEBUG_PREFIX+"Wrong syntax for message mapping, no '=' found in:", text);
         }
     }
-    
+
     $("#speech_recognition_message_mapping_status").text("Message mapping updated to: "+JSON.stringify(extension_settings.speech_recognition.messageMapping))
     console.debug(DEBUG_PREFIX+"Updated message mapping", extension_settings.speech_recognition.messageMapping);
     extension_settings.speech_recognition.messageMappingText = $('#speech_recognition_message_mapping').val()
@@ -425,7 +439,7 @@ $(document).ready(function () {
         $('#speech_recognition_message_mode').on('change', onMessageModeChange);
         $('#speech_recognition_message_mapping').on('change', onMessageMappingChange);
         $('#speech_recognition_message_mapping_enabled').on('click', onMessageMappingEnabledClick);
-        
+
         const $button = $('<div id="microphone_button" class="fa-solid fa-microphone speech-toggle" title="Click to speak"></div>');
         $('#send_but_sheld').prepend($button);
 

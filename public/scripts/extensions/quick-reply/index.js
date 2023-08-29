@@ -12,7 +12,7 @@ let presets = [];
 let selected_preset = '';
 
 const defaultSettings = {
-    quickReplyEnabled: true,
+    quickReplyEnabled: false,
     numberOfSlots: 5,
     quickReplySlots: [],
 }
@@ -28,7 +28,7 @@ async function updateQuickReplyPresetList() {
     if (result.ok) {
         var data = await result.json();
         presets = data.quickReplyPresets?.length ? data.quickReplyPresets : [];
-        console.log(presets)
+        console.debug('Quick Reply presets', presets);
         $("#quickReplyPresets").find('option[value!=""]').remove();
 
 
@@ -284,7 +284,7 @@ async function doQR(_, text) {
     }
 
     text = Number(text)
-    //use scale starting with 0 
+    //use scale starting with 0
     //ex: user inputs "/qr 2" >> qr with data-index 1 (but 2nd item displayed) gets triggered
     let QRnum = Number(text - 1)
     if (QRnum <= 0) { QRnum = 0 }

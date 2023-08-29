@@ -1,5 +1,0 @@
-{
-    "name": "Classic",
-    "storyString": "{{instructSystemPrompt}}\n{{wiBeforeCharacter}}\n{{description}}\n{{char}}'s personality: {{personality}}\nCircumstances and context of the dialogue: {{scenario}}\n{{wiAfterCharacter}}\nThis is how {{char}} should talk\n{{mesExamples}}\nThen the roleplay chat between {{user}} and {{char}} begins\n",
-    "injections": []
-}

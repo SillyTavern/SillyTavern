@@ -1,7 +1,8 @@
 {
     "dependencies": {
+        "@agnai/sentencepiece-js": "^1.1.1",
+        "@agnai/web-tokenizers": "^0.1.3",
         "@dqbd/tiktoken": "^1.0.2",
-        "@mlc-ai/web-tokenizers": "^0.1.0",
         "axios": "^1.4.0",
         "command-exists": "^1.2.9",
         "compression": "^1",
@@ -30,10 +31,10 @@
         "png-chunks-extract": "^1.0.0",
         "response-time": "^2.3.2",
         "sanitize-filename": "^1.6.3",
-        "sentencepiece-js": "^1.1.0",
         "simple-git": "^3.19.1",
         "uniqolor": "^1.1.0",
         "webp-converter": "2.3.2",
+        "write-file-atomic": "^5.0.1",
         "ws": "^8.13.0",
         "yargs": "^17.7.1",
         "yauzl": "^2.10.0"
@@ -50,7 +51,7 @@
         "type": "git",
         "url": "https://github.com/SillyTavern/SillyTavern.git"
     },
-    "version": "1.9.7",
+    "version": "1.10.0",
     "scripts": {
         "start": "node server.js",
         "start-multi": "node server.js --disableCsrf",
@@ -80,7 +81,6 @@
     },
     "devDependencies": {
         "pkg": "^5.8.1",
-        "pkg-fetch": "^3.5.2",
-        "toastr": "^2.1.4"
+        "pkg-fetch": "^3.5.2"
     }
 }

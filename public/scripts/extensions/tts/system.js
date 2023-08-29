@@ -1,6 +1,7 @@
 import { isMobile } from "../../RossAscends-mods.js";
 import { getPreviewString } from "./index.js";
-
+import { talkingAnimation } from './index.js';
+import { saveTtsProviderSettings } from "./index.js"
 export { SystemTtsProvider }
 
 /**
@@ -69,6 +70,7 @@ var speechUtteranceChunker = function (utt, settings, callback) {
     //placing the speak invocation inside a callback fixes ordering and onend issues.
     setTimeout(function () {
         speechSynthesis.speak(newUtt);
+        talkingAnimation(true);
     }, 0);
 };
 
@@ -78,6 +80,7 @@ class SystemTtsProvider {
     //########//
 
     settings
+    ready = false
     voices = []
     separator = ' ... '
 
@@ -104,10 +107,10 @@ class SystemTtsProvider {
         this.settings.pitch = Number($('#system_tts_pitch').val());
         $('#system_tts_pitch_output').text(this.settings.pitch);
         $('#system_tts_rate_output').text(this.settings.rate);
-        console.log('Save changes');
+        saveTtsProviderSettings()
     }
 
-    loadSettings(settings) {
+    async loadSettings(settings) {
         // Populate Provider UI given input settings
         if (Object.keys(settings).length == 0) {
             console.info("Using default TTS Provider settings");
@@ -141,19 +144,29 @@ class SystemTtsProvider {
 
         $('#system_tts_rate').val(this.settings.rate || this.defaultSettings.rate);
         $('#system_tts_pitch').val(this.settings.pitch || this.defaultSettings.pitch);
+
+        // Trigger updates
+        $('#system_tts_rate').on("input", () =>{this.onSettingsChange()})
+        $('#system_tts_rate').on("input", () => {this.onSettingsChange()})
+
         $('#system_tts_pitch_output').text(this.settings.pitch);
         $('#system_tts_rate_output').text(this.settings.rate);
         console.info("Settings loaded");
     }
 
-    async onApplyClick() {
+    // Perform a simple readiness check by trying to fetch voiceIds
+    async checkReady(){
+        await this.fetchTtsVoiceObjects()
+    }
+
+    async onRefreshClick() {
         return
     }
 
     //#################//
     //  TTS Interfaces //
     //#################//
-    fetchTtsVoiceIds() {
+    fetchTtsVoiceObjects() {
         if (!('speechSynthesis' in window)) {
             return [];
         }
@@ -221,6 +234,7 @@ class SystemTtsProvider {
                 //some code to execute when done
                 resolve(silence);
                 console.log('System TTS done');
+                talkingAnimation(false);
             });
         });
     }

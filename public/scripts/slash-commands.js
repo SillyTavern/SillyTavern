@@ -1,6 +1,5 @@
 import {
     addOneMessage,
-    autoSelectPersona,
     characters,
     chat,
     chat_metadata,
@@ -22,10 +21,11 @@ import {
     reloadCurrentChat,
     sendMessageAsUser,
 } from "../script.js";
-import { humanizedDateTime } from "./RossAscends-mods.js";
+import { getMessageTimeStamp } from "./RossAscends-mods.js";
 import { resetSelectedGroup } from "./group-chats.js";
 import { getRegexedString, regex_placement } from "./extensions/regex/engine.js";
 import { chat_styles, power_user } from "./power-user.js";
+import { autoSelectPersona } from "./personas.js";
 export {
     executeSlashCommands,
     registerSlashCommand,
@@ -131,7 +131,7 @@ parser.addCommand('send', sendUserMessageCallback, ['add'], '<span class="monosp
 
 const NARRATOR_NAME_KEY = 'narrator_name';
 const NARRATOR_NAME_DEFAULT = 'System';
-const COMMENT_NAME_DEFAULT = 'Note';
+export const COMMENT_NAME_DEFAULT = 'Note';
 
 async function sendUserMessageCallback(_, text) {
     if (!text) {
@@ -282,11 +282,11 @@ function setNameCallback(_, name) {
     setUserName(name); //this prevented quickReply usage
 }
 
-function setNarratorName(_, text) {
+async function setNarratorName(_, text) {
     const name = text || NARRATOR_NAME_DEFAULT;
     chat_metadata[NARRATOR_NAME_KEY] = name;
     toastr.info(`System narrator name set to ${name}`);
-    saveChatConditional();
+    await saveChatConditional();
 }
 
 async function sendMessageAs(_, text) {
@@ -327,7 +327,7 @@ async function sendMessageAs(_, text) {
         is_user: false,
         is_name: true,
         is_system: isSystem,
-        send_date: humanizedDateTime(),
+        send_date: getMessageTimeStamp(),
         mes: substituteParams(mesText),
         force_avatar: force_avatar,
         original_avatar: original_avatar,
@@ -338,9 +338,10 @@ async function sendMessageAs(_, text) {
     };
 
     chat.push(message);
-    addOneMessage(message);
     await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
-    saveChatConditional();
+    addOneMessage(message);
+    await eventSource.emit(event_types.USER_MESSAGE_RENDERED, (chat.length - 1));
+    await saveChatConditional();
 }
 
 async function sendNarratorMessage(_, text) {
@@ -358,7 +359,7 @@ async function sendNarratorMessage(_, text) {
         is_user: false,
         is_name: false,
         is_system: isSystem,
-        send_date: humanizedDateTime(),
+        send_date: getMessageTimeStamp(),
         mes: substituteParams(text.trim()),
         force_avatar: system_avatar,
         extra: {
@@ -369,9 +370,10 @@ async function sendNarratorMessage(_, text) {
     };
 
     chat.push(message);
-    addOneMessage(message);
     await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
-    saveChatConditional();
+    addOneMessage(message);
+    await eventSource.emit(event_types.USER_MESSAGE_RENDERED, (chat.length - 1));
+    await saveChatConditional();
 }
 
 async function sendCommentMessage(_, text) {
@@ -384,7 +386,7 @@ async function sendCommentMessage(_, text) {
         is_user: false,
         is_name: true,
         is_system: true,
-        send_date: humanizedDateTime(),
+        send_date: getMessageTimeStamp(),
         mes: substituteParams(text.trim()),
         force_avatar: comment_avatar,
         extra: {
@@ -394,9 +396,10 @@ async function sendCommentMessage(_, text) {
     };
 
     chat.push(message);
-    addOneMessage(message);
     await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
-    saveChatConditional();
+    addOneMessage(message);
+    await eventSource.emit(event_types.USER_MESSAGE_RENDERED, (chat.length - 1));
+    await saveChatConditional();
 }
 
 function helpCommandCallback(_, type) {

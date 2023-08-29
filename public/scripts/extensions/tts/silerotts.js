@@ -1,4 +1,5 @@
 import { doExtrasFetch, getApiUrl, modules } from "../../extensions.js"
+import { saveTtsProviderSettings } from "./index.js"
 
 export { SileroTtsProvider }
 
@@ -8,6 +9,7 @@ class SileroTtsProvider {
     //########//
 
     settings
+    ready = false
     voices = []
     separator = ' .. '
 
@@ -29,9 +31,10 @@ class SileroTtsProvider {
     onSettingsChange() {
         // Used when provider settings are updated from UI
         this.settings.provider_endpoint = $('#silero_tts_endpoint').val()
+        saveTtsProviderSettings()
     }
 
-    loadSettings(settings) {
+    async loadSettings(settings) {
         // Pupulate Provider UI given input settings
         if (Object.keys(settings).length == 0) {
             console.info("Using default TTS Provider settings")
@@ -60,11 +63,19 @@ class SileroTtsProvider {
         }, 2000);
 
         $('#silero_tts_endpoint').val(this.settings.provider_endpoint)
+        $('#silero_tts_endpoint').on("input", () => {this.onSettingsChange()})
+
+        await this.checkReady()
+
         console.info("Settings loaded")
     }
 
+    // Perform a simple readiness check by trying to fetch voiceIds
+    async checkReady(){
+        await this.fetchTtsVoiceObjects()
+    }
 
-    async onApplyClick() {
+    async onRefreshClick() {
         return
     }
 
@@ -74,7 +85,7 @@ class SileroTtsProvider {
 
     async getVoice(voiceName) {
         if (this.voices.length == 0) {
-            this.voices = await this.fetchTtsVoiceIds()
+            this.voices = await this.fetchTtsVoiceObjects()
         }
         const match = this.voices.filter(
             sileroVoice => sileroVoice.name == voiceName
@@ -93,7 +104,7 @@ class SileroTtsProvider {
     //###########//
     // API CALLS //
     //###########//
-    async fetchTtsVoiceIds() {
+    async fetchTtsVoiceObjects() {
         const response = await doExtrasFetch(`${this.settings.provider_endpoint}/speakers`)
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${await response.json()}`)

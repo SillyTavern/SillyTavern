@@ -2,7 +2,6 @@ import {
     chat_metadata,
     eventSource,
     event_types,
-    getTokenCount,
     saveSettingsDebounced,
     this_chid,
 } from "../script.js";
@@ -10,13 +9,11 @@ import { selected_group } from "./group-chats.js";
 import { extension_settings, getContext, saveMetadataDebounced } from "./extensions.js";
 import { registerSlashCommand } from "./slash-commands.js";
 import { getCharaFilename, debounce, waitUntilCondition, delay } from "./utils.js";
+import { getTokenCount } from "./tokenizers.js";
 export { MODULE_NAME as NOTE_MODULE_NAME };
 
 const MODULE_NAME = '2_floating_prompt'; // <= Deliberate, for sorting lower than memory
 
-const DEFAULT_DEPTH = 4;
-const DEFAULT_POSITION = 1;
-const DEFAULT_INTERVAL = 1;
 export var shouldWIAddPrompt = false;
 
 export const metadata_keys = {
@@ -120,6 +117,28 @@ async function onExtensionFloatingPositionInput(e) {
     saveMetadataDebounced();
 }
 
+async function onDefaultPositionInput(e) {
+    extension_settings.note.defaultPosition = e.target.value;
+    saveSettingsDebounced();
+}
+
+async function onDefaultDepthInput() {
+    let value = Number($(this).val());
+
+    if (value < 0) {
+        value = Math.abs(value);
+        $(this).val(value);
+    }
+
+    extension_settings.note.defaultDepth = value;
+    saveSettingsDebounced();
+}
+
+async function onDefaultIntervalInput() {
+    extension_settings.note.defaultInterval = Number($(this).val());
+    saveSettingsDebounced();
+}
+
 async function onExtensionFloatingCharPositionInput(e) {
     const value = e.target.value;
     const charaNote = extension_settings.note.chara.find((e) => e.name === getCharaFilename());
@@ -194,10 +213,26 @@ function onExtensionFloatingDefaultInput() {
 }
 
 function loadSettings() {
+    const DEFAULT_DEPTH = 4;
+    const DEFAULT_POSITION = 1;
+    const DEFAULT_INTERVAL = 1;
+
+    if (extension_settings.note.defaultPosition === undefined) {
+        extension_settings.note.defaultPosition = DEFAULT_POSITION;
+    }
+
+    if (extension_settings.note.defaultDepth === undefined) {
+        extension_settings.note.defaultDepth = DEFAULT_DEPTH;
+    }
+
+    if (extension_settings.note.defaultInterval === undefined) {
+        extension_settings.note.defaultInterval = DEFAULT_INTERVAL;
+    }
+
     chat_metadata[metadata_keys.prompt] = chat_metadata[metadata_keys.prompt] ?? extension_settings.note.default ?? '';
-    chat_metadata[metadata_keys.interval] = chat_metadata[metadata_keys.interval] ?? DEFAULT_INTERVAL;
-    chat_metadata[metadata_keys.position] = chat_metadata[metadata_keys.position] ?? DEFAULT_POSITION;
-    chat_metadata[metadata_keys.depth] = chat_metadata[metadata_keys.depth] ?? DEFAULT_DEPTH;
+    chat_metadata[metadata_keys.interval] = chat_metadata[metadata_keys.interval] ?? extension_settings.note.defaultInterval ?? DEFAULT_INTERVAL;
+    chat_metadata[metadata_keys.position] = chat_metadata[metadata_keys.position] ?? extension_settings.note.defaultPosition ?? DEFAULT_POSITION;
+    chat_metadata[metadata_keys.depth] = chat_metadata[metadata_keys.depth] ?? extension_settings.note.defaultDepth ?? DEFAULT_DEPTH;
     $('#extension_floating_prompt').val(chat_metadata[metadata_keys.prompt]);
     $('#extension_floating_interval').val(chat_metadata[metadata_keys.interval]);
     $('#extension_floating_depth').val(chat_metadata[metadata_keys.depth]);
@@ -216,6 +251,9 @@ function loadSettings() {
     }
 
     $('#extension_floating_default').val(extension_settings.note.default);
+    $('#extension_default_depth').val(extension_settings.note.defaultDepth);
+    $('#extension_default_interval').val(extension_settings.note.defaultInterval);
+    $(`input[name="extension_default_position"][value="${extension_settings.note.defaultPosition}"]`).prop('checked', true);
 }
 
 export function setFloatingPrompt() {
@@ -351,17 +389,21 @@ function onChatChanged() {
     $('#extension_floating_default_token_counter').text(tokenCounter3);
 }
 
-// Inject extension when extensions_activating is fired
+/**
+ * Inject author's note options and setup event listeners.
+ */
 // Inserts the extension first since it's statically imported
-jQuery(async () => {
-    await waitUntilCondition(() => eventSource !== undefined);
+export function initAuthorsNote() {
     $('#extension_floating_prompt').on('input', onExtensionFloatingPromptInput);
     $('#extension_floating_interval').on('input', onExtensionFloatingIntervalInput);
     $('#extension_floating_depth').on('input', onExtensionFloatingDepthInput);
     $('#extension_floating_chara').on('input', onExtensionFloatingCharaPromptInput);
     $('#extension_use_floating_chara').on('input', onExtensionFloatingCharaCheckboxChanged);
     $('#extension_floating_default').on('input', onExtensionFloatingDefaultInput);
+    $('#extension_default_depth').on('input', onDefaultDepthInput);
+    $('#extension_default_interval').on('input', onDefaultIntervalInput);
     $('input[name="extension_floating_position"]').on('change', onExtensionFloatingPositionInput);
+    $('input[name="extension_default_position"]').on('change', onDefaultPositionInput);
     $('input[name="extension_floating_char_position"]').on('change', onExtensionFloatingCharPositionInput);
     $('#ANClose').on('click', function () {
         $("#floatingPrompt").transition({
@@ -378,4 +420,4 @@ jQuery(async () => {
     registerSlashCommand('freq', setNoteIntervalCommand, ['interval'], "<span class='monospace'>(number)</span> – sets an author's note insertion frequency", true, true);
     registerSlashCommand('pos', setNotePositionCommand, ['position'], "(<span class='monospace'>chat</span> or <span class='monospace'>scenario</span>) – sets an author's note position", true, true);
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
-});
+}

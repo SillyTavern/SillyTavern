@@ -1,9 +1,86 @@
 const fs = require('fs');
-const path=  require('path');
+const path = require('path');
 const config = require(path.join(process.cwd(), './config.conf'));
 const contentDirectory = path.join(process.cwd(), 'default/content');
 const contentLogPath = path.join(contentDirectory, 'content.log');
 const contentIndexPath = path.join(contentDirectory, 'index.json');
+
+const unsafeExtensions = [
+    ".php",
+    ".exe",
+    ".com",
+    ".dll",
+    ".pif",
+    ".application",
+    ".gadget",
+    ".msi",
+    ".jar",
+    ".cmd",
+    ".bat",
+    ".reg",
+    ".sh",
+    ".py",
+    ".js",
+    ".jse",
+    ".jsp",
+    ".pdf",
+    ".html",
+    ".htm",
+    ".hta",
+    ".vb",
+    ".vbs",
+    ".vbe",
+    ".cpl",
+    ".msc",
+    ".scr",
+    ".sql",
+    ".iso",
+    ".img",
+    ".dmg",
+    ".ps1",
+    ".ps1xml",
+    ".ps2",
+    ".ps2xml",
+    ".psc1",
+    ".psc2",
+    ".msh",
+    ".msh1",
+    ".msh2",
+    ".mshxml",
+    ".msh1xml",
+    ".msh2xml",
+    ".scf",
+    ".lnk",
+    ".inf",
+    ".reg",
+    ".doc",
+    ".docm",
+    ".docx",
+    ".dot",
+    ".dotm",
+    ".dotx",
+    ".xls",
+    ".xlsm",
+    ".xlsx",
+    ".xlt",
+    ".xltm",
+    ".xltx",
+    ".xlam",
+    ".ppt",
+    ".pptm",
+    ".pptx",
+    ".pot",
+    ".potm",
+    ".potx",
+    ".ppam",
+    ".ppsx",
+    ".ppsm",
+    ".pps",
+    ".ppam",
+    ".sldx",
+    ".sldm",
+    ".ws",
+];
 
 function checkForNewContent() {
     try {
@@ -85,4 +162,5 @@ function getContentLog() {
 
 module.exports = {
     checkForNewContent,
+    unsafeExtensions,
 }

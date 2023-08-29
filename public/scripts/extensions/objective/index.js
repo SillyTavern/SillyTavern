@@ -72,20 +72,22 @@ function getTaskByIdRecurse(taskId, task) {
     return null;
 }
 
-function substituteParamsPrompts(content) {
+function substituteParamsPrompts(content, substituteGlobal) {
     content = content.replace(/{{objective}}/gi, currentObjective.description)
     content = content.replace(/{{task}}/gi, currentTask.description)
     if (currentTask.parent){
         content = content.replace(/{{parent}}/gi, currentTask.parent.description)
     }
-    content = substituteParams(content)
+    if (substituteGlobal) {
+        content = substituteParams(content)
+    }
     return content
 }
 
 // Call Quiet Generate to create task list using character context, then convert to tasks. Should not be called much.
 async function generateTasks() {
 
-    const prompt = substituteParamsPrompts(objectivePrompts.createTask);
+    const prompt = substituteParamsPrompts(objectivePrompts.createTask, false);
     console.log(`Generating tasks for objective with prompt`)
     toastr.info('Generating tasks for objective', 'Please wait...');
     const taskResponse = await generateQuietPrompt(prompt)
@@ -128,7 +130,7 @@ async function checkTaskCompleted() {
     checkCounter = $('#objective-check-frequency').val()
     toastr.info("Checking for task completion.")
 
-    const prompt = substituteParamsPrompts(objectivePrompts.checkTaskCompleted);
+    const prompt = substituteParamsPrompts(objectivePrompts.checkTaskCompleted, false);
     const taskResponse = (await generateQuietPrompt(prompt)).toLowerCase()
 
     // Check response if task complete
@@ -162,7 +164,7 @@ function getNextIncompleteTaskRecurse(task){
 }
 
 // Set a task in extensionPrompt context. Defaults to first incomplete
-function setCurrentTask(taskId = null) {
+function setCurrentTask(taskId = null, skipSave = false) {
     const context = getContext();
 
     // TODO: Should probably null this rather than set empty object
@@ -178,7 +180,7 @@ function setCurrentTask(taskId = null) {
     // Don't just check for a current task, check if it has data
     const description = currentTask.description || null;
     if (description) {
-        const extensionPromptText =  substituteParamsPrompts(objectivePrompts.currentTask);
+        const extensionPromptText =  substituteParamsPrompts(objectivePrompts.currentTask, true);
 
         // Remove highlights
         $('.objective-task').css({'border-color':'','border-width':''})
@@ -200,7 +202,10 @@ function setCurrentTask(taskId = null) {
         console.info(`No current task`);
     }
 
-    saveState();
+    // Save state if not skipping
+    if (!skipSave) {
+        saveState();
+    }
 }
 
 function getHighestTaskIdRecurse(task) {
@@ -729,7 +734,7 @@ function loadSettings() {
     $('#objective-check-frequency').val(chat_metadata['objective'].checkFrequency)
     $('#objective-hide-tasks').prop('checked', chat_metadata['objective'].hideTasks)
     $('#objective-tasks').prop('hidden', $('#objective-hide-tasks').prop('checked'))
-    setCurrentTask()
+    setCurrentTask(null, true)
 }
 
 function addManualTaskCheckUi() {

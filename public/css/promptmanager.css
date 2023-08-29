@@ -1,0 +1,303 @@
+#completion_prompt_manager .caution {
+    color: var(--fullred);
+}
+
+#completion_prompt_manager #completion_prompt_manager_list {
+    display: flex;
+    flex-direction: column;
+    min-height: 300px;
+}
+
+#completion_prompt_manager .completion_prompt_manager_list_separator hr {
+    grid-column-start: 1;
+    grid-column-end: 4;
+    width: 100%;
+    margin: 0.5em 0;
+    background-image: linear-gradient(90deg, var(--transparent), var(--white30a), var(--transparent));
+    min-height: 1px;
+}
+
+#completion_prompt_manager #completion_prompt_manager_list li {
+    display: grid;
+    grid-template-columns: 4fr 80px 60px;
+    margin-bottom: 0.5em;
+    width: 100%
+}
+
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt .completion_prompt_manager_prompt_name .fa-solid {
+    padding: 0 0.5em;
+    color: var(--white50a);
+}
+
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt_invisible {
+    display: none;
+}
+
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt_visible {
+    display: grid;
+}
+
+
+#completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_list_head .prompt_manager_prompt_tokens,
+#completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt .prompt_manager_prompt_tokens {
+    text-align: right;
+}
+
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt .prompt_manager_prompt_controls {
+    text-align: right;
+}
+
+#completion_prompt_manager .completion_prompt_manager_list_head {
+    padding: 0.5em 0.5em 0;
+}
+
+#completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt {
+    align-items: center;
+    padding: 0.5em;
+    border: 1px solid var(--white30a);
+}
+
+#completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt .prompt_manager_prompt_controls {
+    display: flex;
+    justify-content: space-between;
+}
+
+#completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt .prompt_manager_prompt_controls span {
+    display: flex;
+    height: 18px;
+    width: 18px;
+}
+
+#completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt span span span {
+    flex-direction: column;
+    justify-content: center;
+    margin-left: 0.25em;
+    cursor: pointer;
+    transition: 0.3s ease-in-out;
+    height: 20px;
+    width: 20px;
+    filter: drop-shadow(0px 0px 2px black);
+    opacity: 0.2;
+}
+
+#completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt span span:hover {
+    opacity: 1;
+}
+
+#completion_prompt_manager_popup #completion_prompt_manager_popup_edit,
+#completion_prompt_manager_popup #completion_prompt_manager_popup_chathistory_edit,
+#completion_prompt_manager_popup #completion_prompt_manager_popup_dialogueexamples_edit,
+#completion_prompt_manager_popup #completion_prompt_manager_popup_inspect {
+    display: none;
+    padding: 0.5em;
+}
+
+#completion_prompt_manager_popup .completion_prompt_manager_popup_entry {
+    padding: 1em;
+    margin-top: 2em;
+}
+
+#completion_prompt_manager_popup #completion_prompt_manager_popup_inspect .completion_prompt_manager_popup_entry {
+    padding: 1em;
+}
+
+#completion_prompt_manager_popup #completion_prompt_manager_popup_entry_form_inspect_list {
+    margin-top: 1em;
+}
+
+#completion_prompt_manager_popup .completion_prompt_manager_prompt {
+    margin: 1em 0;
+    padding: 0.5em;
+    border: 1px solid var(--white30a);
+}
+
+#completion_prompt_manager_popup .completion_prompt_manager_popup_header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#completion_prompt_manager_popup #completion_prompt_manager_popup_close_button {
+    font-size: 1em;
+    padding: 0.5em;
+}
+
+.completion_prompt_manager_popup_entry_form_control {
+    margin-top: 1em;
+}
+
+#prompt-manager-reset-character,
+#completion_prompt_manager_popup .completion_prompt_manager_popup_entry_form_footer #completion_prompt_manager_popup_entry_form_reset {
+    color: rgb(220 173 16);
+}
+
+#completion_prompt_manager_popup .completion_prompt_manager_popup_entry_form_footer #completion_prompt_manager_popup_entry_form_close,
+#completion_prompt_manager_popup .completion_prompt_manager_popup_entry_form_footer #completion_prompt_manager_popup_entry_form_reset,
+#completion_prompt_manager_popup .completion_prompt_manager_popup_entry_form_footer #completion_prompt_manager_popup_entry_form_save {
+    font-size: 1.25em;
+    padding: 0.5em;
+}
+
+#completion_prompt_manager_popup .completion_prompt_manager_popup_entry_form_control #completion_prompt_manager_popup_entry_form_prompt {
+    min-height: 200px;
+}
+
+#completion_prompt_manager_popup .completion_prompt_manager_popup_entry .completion_prompt_manager_popup_entry_form_footer {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1em;
+}
+
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt_draggable {
+    cursor: grab;
+}
+
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt_name {
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt_name .prompt-manager-inspect-action {
+    color: var(--SmartThemeBodyColor);
+    cursor: pointer;
+}
+
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt_name .prompt-manager-inspect-action:hover {
+    text-decoration: underline;
+}
+
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt_disabled .completion_prompt_manager_prompt_name,
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt_disabled .completion_prompt_manager_prompt_name .prompt-manager-inspect-action {
+    color: var(--white30a);
+}
+
+#completion_prompt_manager #completion_prompt_manager_list .completion_prompt_manager_prompt.completion_prompt_manager_prompt_disabled {
+    border: 1px solid var(--white20a);
+}
+
+#completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt .mes_edit {
+    margin-left: 0.5em;
+}
+
+#completion_prompt_manager .completion_prompt_manager_error {
+    padding: 1em;
+    border: 3px solid var(--fullred);
+    margin-top: 1em;
+    margin-bottom: 0.5em;
+}
+
+#completion_prompt_manager .completion_prompt_manager_header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    color: var(--white50a);
+    margin-top: 0.5em;
+    padding: 0 0.25em;
+    width: 100%
+}
+
+#completion_prompt_manager .completion_prompt_manager_header div {
+    margin-top: 0.5em;
+    width: fit-content;
+}
+
+#completion_prompt_manager .completion_prompt_manager_header_advanced {
+    display: flex;
+    margin-right: 0.25em;
+}
+
+#completion_prompt_manager .completion_prompt_manager_header_advanced span {
+    flex-direction: column;
+    justify-content: center;
+    margin-left: 0.25em;
+    transition: 0.3s ease-in-out;
+    filter: drop-shadow(0px 0px 2px black);
+}
+
+#completion_prompt_manager .completion_prompt_manager_header_advanced span.fa-solid {
+    display: inherit;
+}
+
+#completion_prompt_manager .completion_prompt_manager_footer {
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+    gap: 0.25em;
+    padding: 0 0.25em;
+    width: 100%
+}
+
+#completion_prompt_manager .completion_prompt_manager_footer a {
+    padding: 0.75em;
+    font-size: 12px;
+}
+
+#completion_prompt_manager_footer_append_prompt {
+    font-size: 16px;
+}
+
+#prompt-manager-export-format-popup {
+    padding: 0.25em;
+    display: none;
+}
+
+#prompt-manager-export-format-popup[data-show] {
+    display: block;
+}
+
+#completion_prompt_manager_popup {
+    margin-top: 0;
+}
+
+#completion_prompt_manager_popup {
+    overflow-y: auto;
+    height: calc(100% - var(--topBarBlockSize));
+    position: absolute;
+    margin-left: auto;
+    margin-right: auto;
+    left: 0;
+    right: 0;
+    top: var(--topBarBlockSize);
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+    padding: 1em;
+    border: 1px solid #333333;
+    flex-direction: column;
+    z-index: 3010 !important;
+    border-radius: 0 0 20px 20px;
+    background-color: var(--SmartThemeBlurTintColor);
+}
+
+#prompt-manager-export-format-popup {
+    display: none;
+}
+
+.prompt-manager-export-format-popup-flex {
+    display: flex;
+    flex-direction: column;
+}
+
+.prompt-manager-export-format-popup-flex .row {
+    display: flex;
+    justify-content: space-between;
+}
+
+.prompt-manager-export-format-popup-flex a,
+.prompt-manager-export-format-popup-flex span {
+    display: flex;
+    margin: auto 0;
+    justify-content: space-between;
+}
+
+#prompt-manager-export-format-popup span {
+    font-size: 16px;
+}
+
+@media screen and (max-width: 412px) {
+    #completion_prompt_manager_popup {
+        max-width: 100%;
+    }
+
+    #completion_prompt_manager #completion_prompt_manager_list li.completion_prompt_manager_prompt span span span {
+        margin-left: 0.5em;
+    }
+}

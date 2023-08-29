@@ -1,9 +1,11 @@
-import { saveSettings, callPopup, substituteParams, getTokenCount, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type } from "../script.js";
-import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, delay, getCharaFilename, deepClone } from "./utils.js";
+import { saveSettings, callPopup, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types } from "../script.js";
+import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, deepClone, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option } from "./utils.js";
 import { getContext } from "./extensions.js";
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from "./authors-note.js";
 import { registerSlashCommand } from "./slash-commands.js";
-import { deviceInfo } from "./RossAscends-mods.js";
+import { getDeviceInfo } from "./RossAscends-mods.js";
+import { FILTER_TYPES, FilterHelper } from "./filters.js";
+import { getTokenCount } from "./tokenizers.js";
 
 export {
     world_info,
@@ -14,6 +16,7 @@ export {
     world_info_case_sensitive,
     world_info_match_whole_words,
     world_info_character_strategy,
+    world_info_budget_cap,
     world_names,
     checkWorldInfo,
     deleteWorldInfo,
@@ -37,12 +40,31 @@ let world_info_overflow_alert = false;
 let world_info_case_sensitive = false;
 let world_info_match_whole_words = false;
 let world_info_character_strategy = world_info_insertion_strategy.character_first;
+let world_info_budget_cap = 0;
 const saveWorldDebounced = debounce(async (name, data) => await _save(name, data), 1000);
 const saveSettingsDebounced = debounce(() => {
     Object.assign(world_info, { globalSelect: selected_world_info })
     saveSettings()
 }, 1000);
 const sortFn = (a, b) => b.order - a.order;
+let updateEditor = (navigation) => { navigation; };
+
+// Do not optimize. updateEditor is a function that is updated by the displayWorldEntries with new data.
+const worldInfoFilter = new FilterHelper(() => updateEditor());
+
+export function getWorldInfoSettings() {
+    return {
+        world_info,
+        world_info_depth,
+        world_info_budget,
+        world_info_recursive,
+        world_info_overflow_alert,
+        world_info_case_sensitive,
+        world_info_match_whole_words,
+        world_info_character_strategy,
+        world_info_budget_cap,
+    }
+}
 
 const world_info_position = {
     before: 0,
@@ -80,6 +102,8 @@ function setWorldInfoSettings(settings, data) {
         world_info_match_whole_words = Boolean(settings.world_info_match_whole_words);
     if (settings.world_info_character_strategy !== undefined)
         world_info_character_strategy = Number(settings.world_info_character_strategy);
+    if (settings.world_info_budget_cap !== undefined)
+        world_info_budget_cap = Number(settings.world_info_budget_cap);
 
     // Migrate old settings
     if (world_info_budget > 100) {
@@ -113,6 +137,9 @@ function setWorldInfoSettings(settings, data) {
     $(`#world_info_character_strategy option[value='${world_info_character_strategy}']`).prop('selected', true);
     $("#world_info_character_strategy").val(world_info_character_strategy);
 
+    $("#world_info_budget_cap").val(world_info_budget_cap);
+    $("#world_info_budget_cap_counter").text(world_info_budget_cap);
+
     world_names = data.world_names?.length ? data.world_names : [];
 
     // Add to existing selected WI if it exists
@@ -128,9 +155,6 @@ function setWorldInfoSettings(settings, data) {
     });
 
     $("#world_editor_select").trigger("change");
-
-    // Update settings
-    saveSettingsDebounced();
 }
 
 // World Info Editor
@@ -205,7 +229,9 @@ function nullWorldInfo() {
     toastr.info("Create or import a new World Info file first.", "World Info is not set", { timeOut: 10000, preventDuplicates: true });
 }
 
-function displayWorldEntries(name, data) {
+function displayWorldEntries(name, data, navigation = navigation_option.none) {
+    updateEditor = (navigation) => displayWorldEntries(name, data, navigation);
+
     $("#world_popup_entries_list").empty().show();
 
     if (!data || !("entries" in data)) {
@@ -214,22 +240,58 @@ function displayWorldEntries(name, data) {
         $("#world_popup_export").off('click').on('click', nullWorldInfo);
         $("#world_popup_delete").off('click').on('click', nullWorldInfo);
         $("#world_popup_entries_list").hide();
+        $('#world_info_pagination').html('');
         return;
     }
 
-    // Convert the data.entries object into an array
-    const entriesArray = Object.keys(data.entries).map(uid => {
-        const entry = data.entries[uid];
-        entry.displayIndex = entry.displayIndex ?? entry.uid;
-        return entry;
+    function getDataArray(callback) {
+        // Convert the data.entries object into an array
+        let entriesArray = Object.keys(data.entries).map(uid => {
+            const entry = data.entries[uid];
+            entry.displayIndex = entry.displayIndex ?? entry.uid;
+            return entry;
+        });
+
+        // Sort the entries array by displayIndex and uid
+        entriesArray.sort((a, b) => a.displayIndex - b.displayIndex || a.uid - b.uid);
+        entriesArray = worldInfoFilter.applyFilters(entriesArray);
+        callback(entriesArray);
+        return entriesArray;
+    }
+
+    let startPage = 1;
+
+    if (navigation === navigation_option.previous) {
+        startPage = $("#world_info_pagination").pagination('getCurrentPageNum');
+    }
+
+    const storageKey = 'WI_PerPage';
+    $("#world_info_pagination").pagination({
+        dataSource: getDataArray,
+        pageSize: 25,
+        //pageSize: Number(localStorage.getItem(storageKey)) || 25,
+        //sizeChangerOptions: [10, 25, 50, 100],
+        //showSizeChanger: true,
+        pageRange: 1,
+        pageNumber: startPage,
+        position: 'top',
+        showPageNumbers: false,
+        prevText: '<',
+        nextText: '>',
+        formatNavigator: PAGINATION_TEMPLATE,
+        showNavigator: true,
+        callback: function (page) {
+            $("#world_popup_entries_list").empty();
+            const blocks = page.map(entry => getWorldEntry(name, data, entry));
+            $("#world_popup_entries_list").append(blocks);
+        },
+        afterSizeSelectorChange: function (e) {
+            localStorage.setItem(storageKey, e.target.value);
+        }
     });
 
-    // Sort the entries array by displayIndex and uid
-    entriesArray.sort((a, b) => a.displayIndex - b.displayIndex || a.uid - b.uid);
-
-    // Loop through the sorted array and call appendWorldEntry
-    for (const entry of entriesArray) {
-        appendWorldEntry(name, data, entry);
+    if (navigation === navigation_option.last) {
+        $("#world_info_pagination").pagination('go', $("#world_info_pagination").pagination('getTotalPage'));
     }
 
     $("#world_popup_new").off('click').on('click', () => {
@@ -281,6 +343,7 @@ function displayWorldEntries(name, data) {
     }
 
     $("#world_popup_entries_list").sortable({
+        delay: getSortableDelay(),
         handle: ".drag-handle",
         stop: async function (event, ui) {
             $('#world_popup_entries_list .world_entry').each(function (index) {
@@ -341,7 +404,7 @@ function deleteOriginalDataValue(data, uid) {
     }
 }
 
-function appendWorldEntry(name, data, entry) {
+function getWorldEntry(name, data, entry) {
     const template = $("#entry_edit_template .world_entry").clone();
     template.data("uid", entry.uid);
 
@@ -355,7 +418,7 @@ function appendWorldEntry(name, data, entry) {
 
     keyInput.on("input", function () {
         const uid = $(this).data("uid");
-        const value = $(this).val();
+        const value = String($(this).val());
         resetScrollHeight(this);
         data.entries[uid].key = value
             .split(",")
@@ -391,7 +454,7 @@ function appendWorldEntry(name, data, entry) {
     keySecondaryInput.data("uid", entry.uid);
     keySecondaryInput.on("input", function () {
         const uid = $(this).data("uid");
-        const value = $(this).val();
+        const value = String($(this).val());
         resetScrollHeight(this);
         data.entries[uid].keysecondary = value
             .split(",")
@@ -435,17 +498,15 @@ function appendWorldEntry(name, data, entry) {
     commentToggle.parent().hide()
 
     // content
-    const countTokensDebounced = debounce(function (that, value) {
+    const counter = template.find(".world_entry_form_token_counter");
+    const countTokensDebounced = debounce(function (counter, value) {
         const numberOfTokens = getTokenCount(value);
-        $(that)
-            .closest(".world_entry")
-            .find(".world_entry_form_token_counter")
-            .text(numberOfTokens);
+        $(counter).text(numberOfTokens);
     }, 1000);
 
     const contentInput = template.find('textarea[name="content"]');
     contentInput.data("uid", entry.uid);
-    contentInput.on("input", function () {
+    contentInput.on("input", function (_, { skipCount } = {}) {
         const uid = $(this).data("uid");
         const value = $(this).val();
         data.entries[uid].content = value;
@@ -453,11 +514,22 @@ function appendWorldEntry(name, data, entry) {
         setOriginalDataValue(data, uid, "content", data.entries[uid].content);
         saveWorldInfo(name, data);
 
+        if (skipCount) {
+            return;
+        }
+
         // count tokens
-        countTokensDebounced(this, value);
+        countTokensDebounced(counter, value);
     });
-    contentInput.val(entry.content).trigger("input");
+    contentInput.val(entry.content).trigger("input", { skipCount: true });
     //initScrollHeight(contentInput);
+
+    template.find('.inline-drawer-toggle').on('click', function () {
+        if (counter.data('first-run')) {
+            counter.data('first-run', false);
+            countTokensDebounced(counter, contentInput.val());
+        }
+    });
 
     // selective
     const selectiveInput = template.find('input[name="selective"]');
@@ -632,11 +704,10 @@ function appendWorldEntry(name, data, entry) {
         const uid = $(this).data("uid");
         deleteWorldInfoEntry(data, uid);
         deleteOriginalDataValue(data, uid);
-        $(this).closest(".world_entry").remove();
         saveWorldInfo(name, data);
+        updateEditor(navigation_option.previous);
     });
 
-    template.appendTo("#world_popup_entries_list");
     template.find('.inline-drawer-content').css('display', 'none'); //entries start collapsed
 
     return template;
@@ -677,8 +748,7 @@ function createWorldInfoEntry(name, data) {
     const newEntry = { uid: newUid, ...newEntryTemplate };
     data.entries[newUid] = newEntry;
 
-    const entryTemplate = appendWorldEntry(name, data, newEntry);
-    entryTemplate.get(0).scrollIntoView({ behavior: "smooth" });
+    updateEditor(navigation_option.last);
 }
 
 async function _save(name, data) {
@@ -922,8 +992,14 @@ async function checkWorldInfo(chat, maxContext) {
     let failedProbabilityChecks = new Set();
     let allActivatedText = '';
 
-    const budget = Math.round(world_info_budget * maxContext / 100) || 1;
-    console.debug(`Context size: ${maxContext}; WI budget: ${budget} (${world_info_budget}%)`);
+    let budget = Math.round(world_info_budget * maxContext / 100) || 1;
+
+    if (world_info_budget_cap > 0 && budget > world_info_budget_cap) {
+        console.debug(`Budget ${budget} exceeds cap ${world_info_budget_cap}, using cap`);
+        budget = world_info_budget_cap;
+    }
+
+    console.debug(`Context size: ${maxContext}; WI budget: ${budget} (max% = ${world_info_budget}%, cap = ${world_info_budget_cap})`);
     const sortedEntries = await getSortedEntries();
 
     if (sortedEntries.length === 0) {
@@ -1080,8 +1156,8 @@ async function checkWorldInfo(chat, maxContext) {
         }
     });
 
-    const worldInfoBefore = WIBeforeEntries.length ? `${WIBeforeEntries.join("\n")}\n` : '';
-    const worldInfoAfter = WIAfterEntries.length ? `${WIAfterEntries.join("\n")}\n` : '';
+    const worldInfoBefore = WIBeforeEntries.length ? WIBeforeEntries.join("\n") : '';
+    const worldInfoAfter = WIAfterEntries.length ? WIAfterEntries.join("\n") : '';
 
     if (shouldWIAddPrompt) {
         const originalAN = context.extensionPrompts[NOTE_MODULE_NAME].value;
@@ -1102,7 +1178,7 @@ function matchKeys(haystack, needle) {
             return haystack.includes(transformedString);
         }
         else {
-            const regex = new RegExp(`\\b${transformedString}\\b`);
+            const regex = new RegExp(`\\b${escapeRegex(transformedString)}\\b`);
             if (regex.test(haystack)) {
                 return true;
             }
@@ -1304,7 +1380,6 @@ export async function importEmbeddedWorldInfo() {
 }
 
 function onWorldInfoChange(_, text) {
-    let selectedWorlds;
     if (_ !== '__notSlashCommand__') { // if it's a slash command
         if (text !== undefined) { // and args are provided
             const slashInputSplitText = text.trim().toLowerCase().split(",");
@@ -1312,12 +1387,14 @@ function onWorldInfoChange(_, text) {
             slashInputSplitText.forEach((worldName) => {
                 const wiElement = getWIElement(worldName);
                 if (wiElement.length > 0) {
+                    selected_world_info.push(wiElement.text());
                     wiElement.prop("selected", true);
                     toastr.success(`Activated world: ${wiElement.text()}`);
                 } else {
                     toastr.error(`No world found named: ${worldName}`);
                 }
-            })
+            });
+            $("#world_info").trigger("change");
         } else { // if no args, unset all worlds
             toastr.success('Deactivated all worlds');
             selected_world_info = [];
@@ -1342,6 +1419,7 @@ function onWorldInfoChange(_, text) {
     }
 
     saveSettingsDebounced();
+    eventSource.emit(event_types.WORLDINFO_SETTINGS_UPDATED);
 }
 
 export async function importWorldInfo(file) {
@@ -1428,19 +1506,6 @@ jQuery(() => {
             return;
         }
 
-        /*
-        if (deviceInfo.device.type === 'desktop') {
-            let selectScrollTop = null;
-            e.preventDefault();
-            const option = $(e.target);
-            const selectElement = $(this)[0];
-            selectScrollTop = selectElement.scrollTop;
-            option.prop('selected', !option.prop('selected'));
-            await delay(1);
-            selectElement.scrollTop = selectScrollTop;
-        }
-        */
-
         onWorldInfoChange('__notSlashCommand__');
     });
 
@@ -1455,7 +1520,7 @@ jQuery(() => {
         await importWorldInfo(file);
 
         // Will allow to select the same file twice in a row
-        $("#form_world_import").trigger("reset");
+        e.target.value = '';
     });
 
     $("#world_create_button").on('click', async () => {
@@ -1468,6 +1533,8 @@ jQuery(() => {
     });
 
     $("#world_editor_select").on('change', async () => {
+        $("#world_info_search").val('');
+        worldInfoFilter.setFilterData(FILTER_TYPES.WORLD_INFO_SEARCH, '', true);
         const selectedIndex = $("#world_editor_select").find(":selected").val();
 
         if (selectedIndex === "") {
@@ -1478,41 +1545,52 @@ jQuery(() => {
         }
     });
 
+    const saveSettings = () => {
+        saveSettingsDebounced()
+        eventSource.emit(event_types.WORLDINFO_SETTINGS_UPDATED);
+    }
+
     $(document).on("input", "#world_info_depth", function () {
         world_info_depth = Number($(this).val());
         $("#world_info_depth_counter").text($(this).val());
-        saveSettingsDebounced();
+        saveSettings();
     });
 
     $(document).on("input", "#world_info_budget", function () {
         world_info_budget = Number($(this).val());
         $("#world_info_budget_counter").text($(this).val());
-        saveSettingsDebounced();
+        saveSettings();
     });
 
     $(document).on("input", "#world_info_recursive", function () {
         world_info_recursive = !!$(this).prop('checked');
-        saveSettingsDebounced();
+        saveSettings();
     })
 
     $('#world_info_case_sensitive').on('input', function () {
         world_info_case_sensitive = !!$(this).prop('checked');
-        saveSettingsDebounced();
+        saveSettings();
     })
 
     $('#world_info_match_whole_words').on('input', function () {
         world_info_match_whole_words = !!$(this).prop('checked');
-        saveSettingsDebounced();
+        saveSettings();
     });
 
     $('#world_info_character_strategy').on('change', function () {
         world_info_character_strategy = $(this).val();
-        saveSettingsDebounced();
+        saveSettings();
     });
 
     $('#world_info_overflow_alert').on('change', function () {
         world_info_overflow_alert = !!$(this).prop('checked');
         saveSettingsDebounced();
+    });
+
+    $('#world_info_budget_cap').on('input', function () {
+        world_info_budget_cap = Number($(this).val());
+        $("#world_info_budget_cap_counter").text(world_info_budget_cap);
+        saveSettings();
     });
 
     $('#world_button').on('click', async function () {
@@ -1537,26 +1615,14 @@ jQuery(() => {
         }
     });
 
-    /*
-    $("#world_info").on('mousewheel', function (e) {
-        e.preventDefault();
-        if ($(this).is(':animated')) {
-            return; //dont force multiple scroll animations
-        }
-        var wheelDelta = e.originalEvent.wheelDelta.toFixed(0);
-        var DeltaPosNeg = (wheelDelta >= 0) ? 1 : -1; //determine if scrolling up or down
-        var containerHeight = $(this).height().toFixed(0);
-        var optionHeight = $(this).find('option').first().height().toFixed(0);
-        var visibleOptions = (containerHeight / optionHeight).toFixed(0); //how many options we can see
-        var pixelsToScroll = (optionHeight * visibleOptions * DeltaPosNeg).toFixed(0); //scroll a full container height
-        var scrollTop = ($(this).scrollTop() - pixelsToScroll).toFixed(0);
-
-        $(this).animate({ scrollTop: scrollTop }, 200);
+    $('#world_info_search').on('input', function () {
+        const term = $(this).val();
+        worldInfoFilter.setFilterData(FILTER_TYPES.WORLD_INFO_SEARCH, term);
     });
-    */
 
     // Not needed on mobile
-    if (deviceInfo.device.type === 'desktop') {
+    const deviceInfo = getDeviceInfo();
+    if (deviceInfo && deviceInfo.device.type === 'desktop') {
         $('#world_info').select2({
             width: '100%',
             placeholder: 'No Worlds active. Click here to select.',

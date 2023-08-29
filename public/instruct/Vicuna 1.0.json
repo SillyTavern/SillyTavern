@@ -1,10 +1,17 @@
 {
     "name": "Vicuna 1.0",
     "system_prompt": "A chat between a curious human and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the human's questions.\n\nWrite {{char}}'s next reply in a fictional roleplay chat between {{user}} and {{char}}.\n",
-    "system_sequence": "",
-    "stop_sequence": "",
     "input_sequence": "### Human:",
     "output_sequence": "### Assistant:",
+    "first_output_sequence": "",
+    "last_output_sequence": "",
+    "system_sequence_prefix": "",
+    "system_sequence_suffix": "",
+    "stop_sequence": "",
     "separator_sequence": "",
-    "wrap": true
+    "wrap": true,
+    "macro": true,
+    "names": false,
+    "names_force_groups": true,
+    "activation_regex": ""
 }

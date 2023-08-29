@@ -2,7 +2,6 @@
     "temp": 0.65,
     "rep_pen": 1.18,
     "rep_pen_range": 2048,
-    "streaming_kobold": true,
     "top_p": 0.47,
     "top_a": 0,
     "top_k": 42,

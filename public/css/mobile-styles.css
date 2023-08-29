@@ -1,0 +1,410 @@
+/*will apply to anything 1000px or less. this catches ipads, horizontal phones, and vertical phones)*/
+@media screen and (max-width: 1000px) {
+
+    .bg_button {
+        font-size: 15px;
+    }
+
+    .mes_text img {
+        width: 100%;
+    }
+
+    #extensions_settings,
+    #extensions_settings2 {
+        width: 100% !important;
+        min-width: 100% !important;
+    }
+
+    body:not(.waifuMode) .zoomed_avatar {
+        min-width: 100px;
+        min-height: 100px;
+        position: absolute;
+        padding: 0;
+        filter: drop-shadow(2px 2px 2px #51515199);
+        z-index: 30;
+        overflow: hidden;
+        left: 0;
+        right: 0;
+        margin: 0 auto;
+        top: 50px;
+        aspect-ratio: 2 / 3;
+        width: fit-content;
+        max-height: calc(60vh - 60px);
+        max-height: calc(60svh - 60px);
+        max-width: 90vw;
+        max-width: 90svw;
+    }
+
+    .world_entry_thin_controls,
+    #persona-management-block,
+    #character_popup .flex-container {
+        flex-direction: column;
+    }
+
+    #WIMultiSelector {
+        align-self: normal;
+    }
+
+    .WIEntryContentAndMemo {
+        flex-flow: column;
+    }
+
+    .WIEntryContentAndMemo .world_entry_thin_controls {
+        width: 100%;
+    }
+
+    .world_entry_form_control.world_entry_form_horizontal {
+        /* flex-direction: column; */
+        align-items: flex-start;
+        row-gap: 0.5rem;
+    }
+
+    .world_entry_form_control.world_entry_form_horizontal .world_popup_expander {
+        display: none;
+    }
+
+    body {
+        touch-action: none;
+        overflow: hidden;
+        position: fixed;
+
+    }
+
+    .drawer-content {
+        min-width: unset;
+        width: 100%;
+        max-height: calc(100vh - 45px);
+        max-height: calc(100svh - 45px);
+        position: fixed;
+        left: 0;
+        top: 5px;
+        border: 1px solid var(--grey30);
+    }
+
+    #select_chat_popup {
+        align-items: start;
+        height: min-content;
+        align-content: start;
+        max-width: unset;
+    }
+
+    #top-settings-holder,
+    #top-bar {
+        position: fixed;
+        padding-top: 3px;
+        width: 100vw;
+        width: 100svw;
+    }
+
+    #bg1,
+    #bg_custom {
+        height: 100vh !important;
+        height: 100svh !important;
+        width: 100vw !important;
+        width: 100svw !important;
+        background-position: center;
+
+    }
+
+
+    #sheld,
+    #character_popup,
+    .drawer-content
+
+    /* ,
+    #world_popup  */
+        {
+        max-height: calc(100vh - 36px);
+        max-height: calc(100svh - 36px);
+        width: 100% !important;
+        margin: 0 auto;
+        max-width: 100%;
+        left: 0 !important;
+        resize: none !important;
+        top: 36px;
+    }
+
+    .wi-settings {
+        flex-direction: column;
+    }
+
+    #character_popup,
+    #world_popup {
+        overflow-y: auto;
+    }
+
+    #character_popup,
+    #send_form {
+        border: 1px solid var(--grey30);
+        backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
+        max-width: 100dvw;
+    }
+
+    #chat {
+        border-left: 1px solid var(--grey30);
+        border-right: 1px solid var(--grey30);
+        border-bottom: 1px solid var(--grey30);
+        align-items: start;
+        align-content: start;
+        overflow-y: auto;
+        overflow-x: hidden
+    }
+
+    .mes_buttons {
+        font-size: calc(var(--mainFontSize)*1.2);
+    }
+
+    .drag-grabber,
+    .pull-tab {
+        display: none !important;
+
+    }
+
+    #showRawPrompt,
+    #groupCurrentMemberPopoutButton {
+        display: none;
+    }
+
+    #right-nav-panel,
+    #left-nav-panel,
+    #floatingPrompt,
+    #cfgConfig {
+        height: calc(100vh - 45px);
+        height: calc(100svh - 45px);
+        min-width: 100% !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        overflow-y: hidden;
+        border-left: 1px solid var(--grey30);
+        border-right: 1px solid var(--grey30);
+        border-bottom: 1px solid var(--grey30);
+        border-radius: 0 0 20px 20px;
+        top: 36px !important;
+        left: 0 !important;
+        backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
+    }
+
+    #floatingPrompt,
+    #cfgConfig {
+        height: min-content;
+    }
+
+    #right-nav-panel h4 {
+        margin: 5px auto;
+    }
+
+    #result_info {
+        font-size: calc(var(--mainFontSize) - .1rem);
+    }
+
+    /*     .avatar_div {
+        margin-top: 5px;
+    } */
+
+    #character_popup {
+        width: 100%;
+        border-radius: 0 0 20px 20px;
+        margin-top: 0px;
+        height: calc(100% - var(--topBarBlockSize));
+    }
+
+    .drawer25pWidth {
+        flex-basis: max(calc(100% / 4 - 10px), 190px);
+    }
+
+    .drawer33pWidth {
+        flex-basis: max(calc(100% / 3 - 10px), 190px);
+    }
+
+    .expression-holder {
+        display: none;
+    }
+
+    body.waifuMode #sheld {
+        height: 40vh;
+        height: 40svh;
+        top: 60vh;
+        top: 60svh;
+        bottom: 0 !important;
+    }
+
+    body.waifuMode .expression-holder {
+        /*display: inline;*/
+
+        max-width: 100vw;
+        height: 100vh;
+        width: max-content;
+        margin: 0 auto;
+        position: absolute;
+        left: 0;
+        right: 0;
+        filter: drop-shadow(2px 2px 2px #51515199);
+        z-index: 1;
+    }
+
+    body.waifuMode img.expression {
+        object-fit: cover;
+    }
+
+    body.waifuMode .zoomed_avatar {
+        width: fit-content;
+        max-height: calc(60vh - 60px);
+        max-height: calc(60svh - 60px);
+        max-width: 90vw;
+        max-width: 90svw;
+    }
+
+    .scrollableInner {
+        overflow-y: auto;
+        overflow-x: hidden;
+        max-height: calc(100vh - 90px);
+        max-height: calc(100svh - 90px);
+    }
+
+    .horde_multiple_hint {
+        display: none;
+    }
+
+    #bg_menu_content {
+        width: unset;
+    }
+}
+
+/*landscape mode phones and ipads*/
+@media screen and (max-width: 1000px) and (orientation: landscape) {
+    body.waifuMode img.expression {
+        object-fit: contain;
+    }
+
+    .tag.excluded:after {
+        top: unset;
+        bottom: unset;
+    }
+
+    body:not(.waifuMode) .zoomed_avatar {
+
+        width: fit-content;
+        max-height: calc(60vh - 60px);
+        max-height: calc(60svh - 60px);
+        max-width: 90vw;
+        max-width: 90svw;
+    }
+
+
+}
+
+/*portrait mode phones*/
+@media screen and (max-width: 450px) {
+
+    body:not(.waifuMode) .zoomed_avatar {
+        min-width: 100px;
+        min-height: 100px;
+        max-height: 50vh;
+        max-width: 50vh;
+        width: 50vw;
+        position: absolute;
+        padding: 0;
+        filter: drop-shadow(2px 2px 2px #51515199);
+        z-index: 30;
+        overflow: hidden;
+        display: none;
+        left: 0;
+        right: 0;
+        margin: 0 auto;
+        top: 50px;
+        aspect-ratio: 2 / 3;
+    }
+
+    .drawer25pWidth {
+        flex-basis: max(calc(100% / 2 - 10px), 180px);
+    }
+
+    .drawer33pWidth {
+        flex-basis: max(calc(100% / 2 - 10px), 180px);
+    }
+
+    .BGSampleTitle {
+        display: none;
+    }
+
+    .tag.excluded:after {
+        top: unset;
+        bottom: unset;
+    }
+}
+
+/*iOS specific*/
+@supports (-webkit-touch-callout: none) {
+    body {
+        margin: 0 auto;
+    }
+
+    #top-bar {
+        width: 100vw;
+    }
+
+    #sheld {
+        margin: unset;
+        padding: unset;
+        width: unset;
+        height: unset;
+        min-width: unset;
+        max-width: unset;
+        min-height: unset;
+        max-height: unset;
+        width: 100vw;
+        width: 100svw;
+        height: calc(100vh - 36px);
+        height: calc(100svh - 36px);
+        padding-right: max(env(safe-area-inset-right), 0px);
+        padding-left: max(env(safe-area-inset-left), 0px);
+        padding-bottom: 0;
+    }
+
+    body.PWA #sheld {
+        padding-right: max(env(safe-area-inset-right), 2px);
+        padding-left: max(env(safe-area-inset-left), 2px);
+        padding-bottom: max(env(safe-area-inset-bottom), 15px);
+
+    }
+
+    #character_popup,
+    #world_popup,
+    #left-nav-panel,
+    #right-nav-panel,
+    .drawer-content {
+        width: unset;
+        height: unset;
+        min-width: unset;
+        max-width: unset;
+        min-height: unset;
+        max-height: unset;
+        backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
+        left: 0;
+        right: 0;
+        top: 0;
+        margin: 0 auto;
+        height: calc(100vh - 70px);
+        height: calc(100svh - 70px);
+        width: calc(100% - 5px);
+        max-height: calc(100vh - 70px);
+        max-height: calc(100svh - 70px);
+        max-width: calc(100% - 5px);
+
+    }
+
+    #character_popup,
+    #world_popup,
+    .drawer-content {
+        margin-top: 36px;
+    }
+
+    .scrollableInner {
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    #horde_model {
+        height: unset;
+    }
+}

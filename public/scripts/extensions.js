@@ -1,5 +1,5 @@
-import { callPopup, eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders } from "../script.js";
-import { isSubsetOf, debounce } from "./utils.js";
+import { callPopup, eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, substituteParams, renderTemplate } from "../script.js";
+import { isSubsetOf } from "./utils.js";
 export {
     getContext,
     getApiUrl,
@@ -12,9 +12,87 @@ export {
 };
 
 let extensionNames = [];
-let manifests = [];
+let manifests = {};
 const defaultUrl = "http://localhost:5100";
-export const saveMetadataDebounced = debounce(async () => await getContext().saveMetadata(), 1000);
+
+let saveMetadataTimeout = null;
+
+export function saveMetadataDebounced() {
+    const context = getContext();
+    const groupId = context.groupId;
+    const characterId = context.characterId;
+
+    if (saveMetadataTimeout) {
+        console.debug('Clearing save metadata timeout');
+        clearTimeout(saveMetadataTimeout);
+    }
+
+    saveMetadataTimeout = setTimeout(async () => {
+        const newContext = getContext();
+
+        if (groupId !== newContext.groupId) {
+            console.warn('Group changed, not saving metadata');
+            return;
+        }
+
+        if (characterId !== newContext.characterId) {
+            console.warn('Character changed, not saving metadata');
+            return;
+        }
+
+        console.debug('Saving metadata...');
+        newContext.saveMetadata();
+        console.debug('Saved metadata...');
+    }, 1000);
+}
+
+export const extensionsHandlebars = Handlebars.create();
+
+/**
+ * Provides an ability for extensions to render HTML templates.
+ * Templates sanitation and localization is forced.
+ * @param {string} extensionName Extension name
+ * @param {string} templateId Template ID
+ * @param {object} templateData Additional data to pass to the template
+ * @returns {string} Rendered HTML
+ */
+export function renderExtensionTemplate(extensionName, templateId, templateData = {}, sanitize = true, localize = true) {
+    return renderTemplate(`scripts/extensions/${extensionName}/${templateId}.html`, templateData, sanitize, localize, true);
+}
+
+/**
+ * Registers a Handlebars helper for use in extensions.
+ * @param {string} name Handlebars helper name
+ * @param {function} helper Handlebars helper function
+ */
+export function registerExtensionHelper(name, helper) {
+    extensionsHandlebars.registerHelper(name, helper);
+}
+
+/**
+ * Applies handlebars extension helpers to a message.
+ * @param {number} messageId Message index in the chat.
+ */
+export function processExtensionHelpers(messageId) {
+    const context = getContext();
+    const message = context.chat[messageId];
+
+    if (!message?.mes || typeof message.mes !== 'string') {
+        return;
+    }
+
+    // Don't waste time if there are no mustaches
+    if (!substituteParams(message.mes).includes('{{')) {
+        return;
+    }
+
+    try {
+        const template = extensionsHandlebars.compile(substituteParams(message.mes), { noEscape: true });
+        message.mes = template({});
+    } catch {
+        // Ignore
+    }
+}
 
 // Disables parallel updates
 class ModuleWorkerWrapper {
@@ -74,6 +152,7 @@ const extension_settings = {
         enabled: false,
     },
     speech_recognition: {},
+    rvc: {},
 };
 
 let modules = [];
@@ -174,7 +253,10 @@ async function getManifests(names) {
                 } else {
                     reject();
                 }
-            }).catch(err => reject() && console.log('Could not load manifest.json for ' + name, err));
+            }).catch(err => {
+                reject();
+                console.log('Could not load manifest.json for ' + name, err);
+            });
         });
 
         promises.push(promise);
@@ -231,9 +313,9 @@ async function activateExtensions() {
 
 async function connectClickHandler() {
     const baseUrl = $("#extensions_url").val();
-    extension_settings.apiUrl = baseUrl;
+    extension_settings.apiUrl = String(baseUrl);
     const testApiKey = $("#extensions_api_key").val();
-    extension_settings.apiKey = testApiKey;
+    extension_settings.apiKey = String(testApiKey);
     saveSettingsDebounced();
     await connectToApi(baseUrl);
 }
@@ -458,7 +540,7 @@ async function generateExtensionHtml(name, manifest, isActive, isDisabled, isExt
  * Gets extension data and generates the corresponding HTML for displaying the extension.
  *
  * @param {Array} extension - An array where the first element is the extension name and the second element is the extension manifest.
- * @return {object} - An object with 'isExternal' indicating whether the extension is external, and 'extensionHtml' for the extension's HTML string.
+ * @return {Promise<object>} - An object with 'isExternal' indicating whether the extension is external, and 'extensionHtml' for the extension's HTML string.
  */
 async function getExtensionData(extension) {
     const name = extension[0];
@@ -575,7 +657,7 @@ async function onDeleteClick() {
  * Fetches the version details of a specific extension.
  *
  * @param {string} extensionName - The name of the extension.
- * @return {object} - An object containing the extension's version details.
+ * @return {Promise<object>} - An object containing the extension's version details.
  * This object includes the currentBranchName, currentCommitHash, isUpToDate, and remoteUrl.
  * @throws {error} - If there is an error during the fetch operation, it logs the error to the console.
  */
@@ -628,11 +710,9 @@ async function runGenerationInterceptors(chat, contextSize) {
     }
 }
 
-$(document).ready(async function () {
-    setTimeout(function () {
-        addExtensionsButtonAndMenu();
-        $("#extensionsMenuButton").css("display", "flex");
-    }, 100)
+jQuery(function () {
+    addExtensionsButtonAndMenu();
+    $("#extensionsMenuButton").css("display", "flex");
 
     $("#extensions_connect").on('click', connectClickHandler);
     $("#extensions_autoconnect").on('input', autoConnectInputHandler);

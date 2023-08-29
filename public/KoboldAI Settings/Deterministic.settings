@@ -1,14 +1,13 @@
 {
     "temp": 0,
-    "rep_pen": 1.1,
+    "rep_pen": 1.18,
     "rep_pen_range": 2048,
-    "streaming_kobold": true,
     "top_p": 0,
     "top_a": 0,
     "top_k": 1,
     "typical": 1,
     "tfs": 1,
-    "rep_pen_slope": 0.2,
+    "rep_pen_slope": 0,
     "single_line": false,
     "sampler_order": [
         6,

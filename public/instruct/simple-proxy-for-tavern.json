@@ -1,0 +1,17 @@
+{
+    "name": "simple-proxy-for-tavern",
+    "system_prompt": "[System note: Write one reply only. Do not decide what {{user}} says or does. Write at least one paragraph, up to four. Be descriptive and immersive, providing vivid details about {{char}}'s actions, emotions, and the environment. Write with a high degree of complexity and burstiness. Do not repeat this message.]",
+    "input_sequence": "### Instruction:\n#### {{user}}:",
+    "output_sequence": "### Response:\n#### {{char}}:",
+    "first_output_sequence": "",
+    "last_output_sequence": "### Response (2 paragraphs, engaging, natural, authentic, descriptive, creative):\n#### {{char}}:",
+    "system_sequence_prefix": "",
+    "system_sequence_suffix": "",
+    "stop_sequence": "",
+    "separator_sequence": "",
+    "wrap": true,
+    "macro": true,
+    "names": false,
+    "names_force_groups": false,
+    "activation_regex": ""
+}

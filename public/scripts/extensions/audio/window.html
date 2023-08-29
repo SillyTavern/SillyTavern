@@ -1,0 +1,66 @@
+<div id="audio_settings">
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <b>Dynamic Audio</b>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            <div>
+                <label class="checkbox_label" for="audio_enabled">
+                    <input type="checkbox" id="audio_enabled" name="audio_enabled">
+                    <small>Enabled</small>
+                </label>
+                <div id="audio_debug_div">
+                    <label class="checkbox_label" for="audio_debug">
+                        <input type="checkbox" id="audio_debug" name="audio_debug">
+                        <small>Debug</small>
+                    </label>
+                </div>
+                <div>
+                    <label for="audio_refresh_assets">Refresh assets</label>
+                    <div id="audio_refresh_assets" class="menu_button">
+                        <i class="fa-solid fa-refresh fa-lg"></i>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div>
+                    <label for="audio_bgm_volume_slider">Music <span id="audio_bgm_volume"></span></label>
+                    <div class="mixer-div">
+                        <div id="audio_bgm_mute" class="menu_button audio-mute-button">
+                            <i class="fa-solid fa-volume-high fa-lg" id="audio_bgm_mute_icon"></i>
+                        </div>
+                        <input type="range" class ="slider" id ="audio_bgm_volume_slider" value = "0" maxlength ="100">
+                    </div>
+                    <audio id="audio_bgm" controls src="">
+                </div>
+                <div>
+                    <label for="audio_ambient_volume_slider">Ambient <span id="audio_ambient_volume"></span></label>
+                    <div class="mixer-div">
+                        <div id="audio_ambient_mute" class="menu_button audio-mute-button">
+                            <i class="fa-solid fa-volume-high fa-lg" id="audio_ambient_mute_icon"></i>
+                        </div>
+                        <input type="range" class ="slider" id ="audio_ambient_volume_slider" value = "0" maxlength ="100">
+                    </div>
+                    <audio id="audio_ambient" controls src="">
+                </div>
+                <div>
+                    <label for="audio_bgm_cooldown">Music update cooldown (in seconds)</label>
+                    <input id="audio_bgm_cooldown" class="text_pole wide30p">
+                </div>
+            </div>
+            <div>
+                <b>Hint:</b>
+                <i>
+                    Create new folder in the
+                    <b>public/characters/</b>
+                    folder and name it as the name of the character.
+                    Create a folder name <b>bgm</b> inside of it.
+                    Put bgm music with expressions there. File names should follow the pattern:
+                    <it>[expression_label]_[number].mp3</it>
+                    By default one of the <it>neutral_[number].mp3</it> will play if classify module is not active. 
+                </i>
+            </div>
+        </div>
+    </div>
+</div>

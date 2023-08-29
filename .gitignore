@@ -6,11 +6,15 @@ public/backgrounds/
 public/groups/
 public/group chats/
 public/worlds/
+public/user/
 public/css/bg_load.css
 public/themes/
 public/OpenAI Settings/
 public/KoboldAI Settings/
+public/NovelAI Settings/
 public/TextGen Settings/
+public/instruct/
+public/context/
 public/scripts/extensions/third-party/
 public/stats.json
 /uploads/
@@ -29,3 +33,5 @@ public/movingUI/
 public/QuickReplies/
 content.log
 cloudflared.exe
+public/assets/
+access.log

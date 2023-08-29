@@ -1,0 +1,17 @@
+{
+    "name": "Llama 2 Chat",
+    "system_prompt": "Write {{char}}'s next reply in this fictional roleplay with {{user}}.",
+    "input_sequence": "[INST] ",
+    "output_sequence": " [/INST] ",
+    "first_output_sequence": "[/INST] ",
+    "last_output_sequence": "",
+    "system_sequence_prefix": "[INST] <<SYS>>\n",
+    "system_sequence_suffix": "\n<</SYS>>\n",
+    "stop_sequence": "",
+    "separator_sequence": "\n",
+    "wrap": false,
+    "macro": true,
+    "names": false,
+    "names_force_groups": true,
+    "activation_regex": ""
+}

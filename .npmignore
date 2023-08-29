@@ -5,3 +5,4 @@ node_modules/
 secrets.json
 /dist
 /backups/
+access.log

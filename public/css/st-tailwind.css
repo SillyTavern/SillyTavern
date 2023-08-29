@@ -1,0 +1,419 @@
+.text_warning {
+    color: rgb(220 173 16);
+}
+
+.text_danger {
+    color: var(--fullred);
+}
+
+.m-t-1 {
+    margin-top: 1em;
+}
+
+.m-t-2 {
+    margin-top: 2em;
+}
+
+.m-t-3 {
+    margin-top: 3em;
+}
+
+.m-t-4 {
+    margin-top: 4em;
+}
+
+.m-t-5 {
+    margin-top: 5em;
+}
+
+.m-b-1 {
+    margin-bottom: 1em;
+}
+
+.m-b-2 {
+    margin-bottom: 2em;
+}
+
+.m-b-3 {
+    margin-bottom: 3em;
+}
+
+.m-b-4 {
+    margin-bottom: 4em;
+}
+
+.m-b-5 {
+    margin-bottom: 5em;
+}
+
+.tooltip {
+    cursor: help;
+}
+
+.margin-bot-10px,
+.marginBot10 {
+    margin-bottom: 10px;
+}
+
+.marginTop10 {
+    margin-top: 10px;
+}
+
+.marginBot5 {
+    margin-bottom: 5px;
+}
+
+.marginTop5 {
+    margin-top: 5px;
+}
+
+.marginTopBot5 {
+    margin: 5px 0;
+}
+
+.margin5 {
+    margin: 5px;
+}
+
+.overflowYAuto {
+    overflow-y: auto;
+}
+
+.heightMinContent {
+    height: min-content;
+}
+
+.justifySpaceBetween {
+    justify-content: space-between;
+}
+
+.alignitemsflexstart {
+    align-items: flex-start !important;
+}
+
+.alignItemsFlexEnd {
+    align-items: flex-end !important;
+}
+
+.alignSelfStart {
+    align-self: start;
+}
+
+.gap5px {
+    gap: 5px !important;
+}
+
+.gap10px {
+    gap: 10px !important;
+}
+
+.wide10pMinFit {
+    width: 10%;
+    min-width: fit-content;
+}
+
+.wide100pLess70px {
+    width: calc(100% - 70px);
+}
+
+.wideMax100px {
+    max-width: 100px;
+}
+
+.widthUnset {
+    width: unset;
+}
+
+.no-border {
+    border: none !important;
+}
+
+.no-shadow {
+    box-shadow: none !important;
+}
+
+.height100pSpaceEvenly {
+    align-content: space-evenly;
+    height: 100%;
+}
+
+.height32px {
+    height: 32px;
+}
+
+.TxtLrgBoldCenter {
+    text-align: center;
+    font-size: large;
+    font-weight: 600;
+}
+
+.margin-right-10px {
+    margin-right: 10px;
+}
+
+
+.success {
+    color: green;
+}
+
+.failure {
+    color: red;
+}
+
+.optional {
+    color: lightgray;
+}
+
+.monospace {
+    font-family: monospace;
+}
+
+.expander {
+    flex-grow: 1;
+}
+
+.redOverlayGlow {
+    color: #800;
+    opacity: 0.8 !important;
+    text-shadow: none !important;
+}
+
+.width100p {
+    width: 100%;
+}
+
+.flex {
+    display: flex;
+}
+
+.flex-container {
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap;
+}
+
+.flexNoGap {
+    gap: unset !important;
+}
+
+.flexGrow {
+    flex-grow: 1;
+}
+
+.flexnowrap {
+    flex-wrap: nowrap;
+}
+
+.alignitemscenter {
+    align-items: center;
+}
+
+.alignitemsstart {
+    align-items: start;
+}
+
+.overflow-hidden {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.maxWidth200px {
+    max-width: 200px;
+}
+
+.alignContentFlexStart {
+    align-content: flex-start;
+}
+
+.overflowHidden {
+    overflow: hidden;
+}
+
+.padding5 {
+    padding: 5px;
+}
+
+.padding10 {
+    padding: 10px;
+}
+
+.margin0 {
+    margin: 0;
+}
+
+.margin0auto {
+    margin: 0 auto;
+}
+
+.margin-r5 {
+    margin-right: 5px;
+}
+
+.flex1 {
+    flex: 1;
+}
+
+.flex2 {
+    flex: 2 !important;
+}
+
+.flexFlowColumn {
+    flex-flow: column;
+}
+
+.wideMinContent {
+    width: min-content;
+}
+
+.flexWide50p {
+    flex: 50%;
+}
+
+.wide50p {
+    width: 50% !important;
+}
+
+.wide25p {
+    width: 25%;
+}
+
+.wide30p {
+    width: 30% !important;
+}
+
+.justifyLeft {
+    text-align: start;
+    justify-content: left;
+    margin-left: unset;
+}
+
+.justifyCenter {
+    justify-content: center;
+    margin: 0 auto;
+}
+
+.justifyContentSpaceAround {
+    justify-content: space-around;
+}
+
+.justifyContentFlexStart {
+    justify-content: flex-start;
+}
+
+.justifyContentFlexEnd {
+    justify-content: flex-end;
+}
+
+.spaceEvenly {
+    justify-content: space-evenly;
+}
+
+.spaceBetween {
+    justify-content: space-between;
+}
+
+.widthNatural {
+    width: unset !important;
+    min-width: unset !important;
+    max-width: unset !important;
+}
+
+.widthFreeExpand {
+    width: -webkit-fill-available;
+    width: -moz-available;
+}
+
+.wide100p {
+    width: 100%;
+}
+
+.wide50p {
+    width: 50%;
+}
+
+.wide50px {
+    width: 50px;
+}
+
+.indent20p {
+    margin-left: 20px;
+}
+
+/*used to fix smallness of certain FontAwesome glyph which break button squareness*/
+/*currently used on: CharList Import*/
+
+.faSmallFontSquareFix {
+    font-size: calc(var(--mainFontSize) *1.25);
+    width: calc(var(--mainFontSize) *1.95);
+}
+
+.textarea_compact {
+    font-size: calc(var(--mainFontSize) * 0.95);
+    line-height: 1.2;
+}
+
+.katex-html {
+    display: none;
+}
+
+.hoverglow:hover {
+    opacity: 1 !important;
+    cursor: pointer;
+}
+
+.debug-red {
+    border: 1px solid red !important;
+}
+
+.debug-yellow {
+    border: 1px solid yellow !important;
+}
+
+.debug-green {
+    border: 1px solid green !important;
+}
+
+.debug-blue {
+    border: 1px solid blue !important;
+}
+
+.debug-purple {
+    border: 1px solid purple !important;
+}
+
+.fontsize80p {
+    font-size: calc(var(--mainFontSize) * 0.8) !important;
+}
+
+.fontsize60p {
+    font-size: calc(var(--mainFontSize) * 0.6) !important;
+}
+
+.paddingTopBot5 {
+    padding: 5px 0;
+}
+
+.paddingLeftRight5 {
+    padding: 0 5px;
+}
+
+.heightFitContent {
+    height: fit-content;
+}
+
+.widthFitContent {
+    width: fit-content;
+}
+
+.flexGap5 {
+    gap: 5px;
+}
+
+.flexGap10 {
+    gap: 10px;
+}
+
+.opacity1 {
+    opacity: 1 !important;
+}

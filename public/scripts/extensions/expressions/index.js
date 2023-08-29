@@ -1,6 +1,6 @@
 import { callPopup, eventSource, event_types, getRequestHeaders, saveSettingsDebounced } from "../../../script.js";
 import { dragElement, isMobile } from "../../RossAscends-mods.js";
-import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch } from "../../extensions.js";
+import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch, renderExtensionTemplate } from "../../extensions.js";
 import { loadMovingUIState, power_user } from "../../power-user.js";
 import { onlyUnique, debounce, getCharaFilename } from "../../utils.js";
 export { MODULE_NAME };
@@ -9,7 +9,7 @@ const MODULE_NAME = 'expressions';
 const UPDATE_INTERVAL = 2000;
 const FALLBACK_EXPRESSION = 'joy';
 const DEFAULT_EXPRESSIONS = [
-    "live2d",
+    "talkinghead",
     "admiration",
     "amusement",
     "anger",
@@ -334,7 +334,7 @@ async function setImage(img, path) {
             expressionHolder.css('min-height', imgHeight > 100 ? imgHeight : 100);
 
             //position absolute prevent the original from jumping around during transition
-            img.css('position', 'absolute');
+            img.css('position', 'absolute').width(imgWidth).height(imgHeight);
             expressionClone.addClass('expression-animating');
             //fade the clone in
             expressionClone.css({
@@ -396,7 +396,7 @@ function onExpressionsShowDefaultInput() {
 async function unloadLiveChar() {
     try {
         const url = new URL(getApiUrl());
-        url.pathname = '/api/live2d/unload';
+        url.pathname = '/api/talkinghead/unload';
         const loadResponse = await doExtrasFetch(url);
         if (!loadResponse.ok) {
             throw new Error(loadResponse.statusText);
@@ -409,8 +409,8 @@ async function unloadLiveChar() {
 }
 
 async function loadLiveChar() {
-    if (!modules.includes('live2d')) {
-        console.debug('live2d module is disabled');
+    if (!modules.includes('talkinghead')) {
+        console.debug('talkinghead module is disabled');
         return;
     }
 
@@ -426,22 +426,22 @@ async function loadLiveChar() {
         spriteFolderName = expressionOverride.path;
     }
 
-    const live2dPath = `/characters/${encodeURIComponent(spriteFolderName)}/live2d.png`;
+    const talkingheadPath = `/characters/${encodeURIComponent(spriteFolderName)}/talkinghead.png`;
 
     try {
-        const spriteResponse = await fetch(live2dPath);
+        const spriteResponse = await fetch(talkingheadPath);
 
         if (!spriteResponse.ok) {
             throw new Error(spriteResponse.statusText);
         }
 
         const spriteBlob = await spriteResponse.blob();
-        const spriteFile = new File([spriteBlob], 'live2d.png', { type: 'image/png' });
+        const spriteFile = new File([spriteBlob], 'talkinghead.png', { type: 'image/png' });
         const formData = new FormData();
         formData.append('file', spriteFile);
 
         const url = new URL(getApiUrl());
-        url.pathname = '/api/live2d/load';
+        url.pathname = '/api/talkinghead/load';
 
         const loadResponse = await doExtrasFetch(url, {
             method: 'POST',
@@ -453,10 +453,10 @@ async function loadLiveChar() {
         }
 
         const loadResponseText = await loadResponse.text();
-        console.log(`Load live2d response: ${loadResponseText}`);
+        console.log(`Load talkinghead response: ${loadResponseText}`);
 
     } catch (error) {
-        console.error(`Error loading live2d image: ${live2dPath} - ${error}`);
+        console.error(`Error loading talkinghead image: ${talkingheadPath} - ${error}`);
     }
 }
 
@@ -468,11 +468,11 @@ function handleImageChange() {
         return;
     }
 
-    if (extension_settings.expressions.live2d) {
+    if (extension_settings.expressions.talkinghead) {
         // Method get IP of endpoint
-        const live2dResultFeedSrc = `${getApiUrl()}/api/live2d/result_feed`;
+        const talkingheadResultFeedSrc = `${getApiUrl()}/api/talkinghead/result_feed`;
         $('#expression-holder').css({ display: '' });
-        if (imgElement.src !== live2dResultFeedSrc) {
+        if (imgElement.src !== talkingheadResultFeedSrc) {
             const expressionImageElement = document.querySelector('.expression_list_image');
 
             if (expressionImageElement) {
@@ -481,7 +481,7 @@ function handleImageChange() {
                 })
                     .then(response => {
                         if (response.ok) {
-                            imgElement.src = live2dResultFeedSrc;
+                            imgElement.src = talkingheadResultFeedSrc;
                         }
                     })
                     .catch(error => {
@@ -499,7 +499,7 @@ async function moduleWorker() {
     const context = getContext();
 
     // non-characters not supported
-    if (!context.groupId && context.characterId === undefined) {
+    if (!context.groupId && (context.characterId === undefined || context.characterId === 'invalid-safety-id')) {
         removeExpression();
         return;
     }
@@ -514,9 +514,9 @@ async function moduleWorker() {
         imgElement.src = "";
 
         //set checkbox to global var
-        $('#image_type_toggle').prop('checked', extension_settings.expressions.live2d);
-        if (extension_settings.expressions.live2d) {
-            setLive2dState(extension_settings.expressions.live2d);
+        $('#image_type_toggle').prop('checked', extension_settings.expressions.talkinghead);
+        if (extension_settings.expressions.talkinghead) {
+            settalkingheadState(extension_settings.expressions.talkinghead);
         }
     }
 
@@ -622,7 +622,7 @@ async function moduleWorker() {
     }
 }
 
-async function live2dcheck() {
+async function talkingheadcheck() {
     const context = getContext();
     let spriteFolderName = context.name2;
     const message = getLastCharacterMessage();
@@ -638,14 +638,14 @@ async function live2dcheck() {
     try {
         await validateImages(spriteFolderName);
 
-        let live2dObj = spriteCache[spriteFolderName].find(obj => obj.label === 'live2d');
-        let live2dPath_f = live2dObj ? live2dObj.path : null;
+        let talkingheadObj = spriteCache[spriteFolderName].find(obj => obj.label === 'talkinghead');
+        let talkingheadPath_f = talkingheadObj ? talkingheadObj.path : null;
 
-        if (live2dPath_f != null) {
-            //console.log("live2dPath_f " + live2dPath_f);
+        if (talkingheadPath_f != null) {
+            //console.log("talkingheadPath_f " + talkingheadPath_f);
             return true;
         } else {
-            //console.log("live2dPath_f is null");
+            //console.log("talkingheadPath_f is null");
             unloadLiveChar();
             return false;
         }
@@ -654,15 +654,15 @@ async function live2dcheck() {
     }
 }
 
-function setLive2dState(switch_var) {
-    extension_settings.expressions.live2d = switch_var; // Store setting
+function settalkingheadState(switch_var) {
+    extension_settings.expressions.talkinghead = switch_var; // Store setting
     saveSettingsDebounced();
 
-    live2dcheck().then(result => {
+    talkingheadcheck().then(result => {
         if (result) {
-            //console.log("Live2d exists!");
+            //console.log("talkinghead exists!");
 
-            if (extension_settings.expressions.live2d) {
+            if (extension_settings.expressions.talkinghead) {
                 loadLiveChar();
             } else {
                 unloadLiveChar();
@@ -671,7 +671,7 @@ function setLive2dState(switch_var) {
 
 
         } else {
-            //console.log("Live2d does not exist.");
+            //console.log("talkinghead does not exist.");
         }
     });
 }
@@ -800,20 +800,7 @@ function drawSpritesList(character, labels, sprites) {
 }
 
 function getListItem(item, imageSrc, textClass) {
-    return `
-        <div id="${item}" class="expression_list_item">
-            <div class="expression_list_buttons">
-                <div class="menu_button expression_list_upload" title="Upload image">
-                    <i class="fa-solid fa-upload"></i>
-                </div>
-                <div class="menu_button expression_list_delete" title="Delete image">
-                    <i class="fa-solid fa-trash"></i>
-                </div>
-            </div>
-            <span class="expression_list_title ${textClass}">${item}</span>
-            <img class="expression_list_image" src="${imageSrc}" />
-        </div>
-        `;
+    return renderExtensionTemplate(MODULE_NAME, 'list-item', { item, imageSrc, textClass });
 }
 
 async function getSpritesList(name) {
@@ -863,7 +850,7 @@ async function getExpressionsList() {
 }
 
 async function setExpression(character, expression, force) {
-    if (!extension_settings.expressions.live2d) {
+    if (!extension_settings.expressions.talkinghead) {
         console.debug('entered setExpressions');
         await validateImages(character);
         const img = $('img.expression');
@@ -919,7 +906,7 @@ async function setExpression(character, expression, force) {
                 expressionHolder.css('min-height', imgHeight > 100 ? imgHeight : 100);
 
                 //position absolute prevent the original from jumping around during transition
-                img.css('position', 'absolute');
+                img.css('position', 'absolute').width(imgWidth).height(imgHeight);
                 expressionClone.addClass('expression-animating');
                 //fade the clone in
                 expressionClone.css({
@@ -976,21 +963,20 @@ async function setExpression(character, expression, force) {
     } else {
 
 
-        live2dcheck().then(result => {
+        talkingheadcheck().then(result => {
             if (result) {
                 // Find the <img> element with id="expression-image" and class="expression"
                 const imgElement = document.querySelector('img#expression-image.expression');
                 //console.log("searching");
                 if (imgElement) {
                     //console.log("setting value");
-                    imgElement.src = getApiUrl() + '/api/live2d/result_feed';
+                    imgElement.src = getApiUrl() + '/api/talkinghead/result_feed';
                 }
 
             } else {
                 //console.log("The fetch failed!");
             }
         });
-
 
 
     }
@@ -1241,54 +1227,7 @@ function setExpressionOverrideHtml(forceClear = false) {
         $('body').append(element);
     }
     function addSettings() {
-        const html = `
-        <div class="expression_settings">
-            <div class="inline-drawer">
-                <div class="inline-drawer-toggle inline-drawer-header">
-                    <b>Character Expressions</b>
-                    <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
-                </div>
-
-                <div class="inline-drawer-content">
-                    <!-- Toggle button for aituber/static images -->
-                    <div class="toggle_button">
-                        <label class="switch">
-                            <input id="image_type_toggle" type="checkbox">
-                            <span class="slider round"></span>
-                            <label for="image_type_toggle">Image Type - Live2d (extras)</label>
-                        </label>
-                    </div>
-                    <div class="offline_mode">
-                        <small>You are in offline mode. Click on the image below to set the expression.</small>
-                    </div>
-                    <div class="flex-container flexnowrap">
-                        <input id="expression_override" type="text" class="text_pole" placeholder="Override folder name" />
-                        <input id="expression_override_button" class="menu_button" type="submit" value="Submit" />
-                    </div>
-                    <div id="image_list"></div>
-                    <div class="expression_buttons flex-container spaceEvenly">
-                        <div id="expression_upload_pack_button" class="menu_button">
-                            <i class="fa-solid fa-file-zipper"></i>
-                            <span>Upload sprite pack (ZIP)</span>
-                        </div>
-                        <div id="expression_override_cleanup_button" class="menu_button">
-                            <i class="fa-solid fa-trash-can"></i>
-                            <span>Remove all image overrides</span>
-                        </div>
-                    </div>
-                    <p class="hint"><b>Hint:</b> <i>Create new folder in the <b>public/characters/</b> folder and name it as the name of the character.
-                    Put images with expressions there. File names should follow the pattern: <tt>[expression_label].[image_format]</tt></i></p>
-                    <label for="expressions_show_default"><input id="expressions_show_default" type="checkbox">Show default images (emojis) if missing</label>
-                </div>
-            </div>
-            <form>
-                <input type="file" id="expression_upload_pack" name="expression_upload_pack" accept="application/zip" hidden>
-                <input type="file" id="expression_upload" name="expression_upload" accept="image/*" hidden>
-            </form>
-        </div>
-        `;
-
-        $('#extensions_settings').append(html);
+        $('#extensions_settings').append(renderExtensionTemplate(MODULE_NAME, 'settings'));
         $('#expression_override_button').on('click', onClickExpressionOverrideButton);
         $('#expressions_show_default').on('input', onExpressionsShowDefaultInput);
         $('#expression_upload_pack_button').on('click', onClickExpressionUploadPackButton);
@@ -1305,7 +1244,7 @@ function setExpressionOverrideHtml(forceClear = false) {
         $('.expression_settings').hide();
 
         $('#image_type_toggle').on('click', function () {
-            setLive2dState(this.checked);
+            settalkingheadState(this.checked);
         });
     }
 

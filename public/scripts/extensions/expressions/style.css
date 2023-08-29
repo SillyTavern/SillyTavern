@@ -6,13 +6,13 @@
 
 #expression-wrapper {
     display: flex;
-    height: calc(100vh - 40px);
+    height: calc(100vh - var(--topBarBlockSize));
     width: 100vw;
 }
 
 #visual-novel-wrapper {
     display: flex;
-    height: calc(100vh - 40px);
+    height: calc(100vh - var(--topBarBlockSize));
     width: 100vw;
     position: relative;
     overflow: hidden;
@@ -48,7 +48,7 @@
     z-index: 2;
     overflow: hidden;
     resize: both;
-
+    display: flex;
 }
 
 img.expression {
@@ -56,7 +56,6 @@ img.expression {
     min-height: 100px;
     max-height: 90vh;
     max-width: 90vh;
-    width: 100%;
     top: 0;
     bottom: 0;
     padding: 0;

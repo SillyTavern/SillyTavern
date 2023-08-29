@@ -48,6 +48,8 @@ const textgenerationwebui_settings = {
     mirostat_mode: 0,
     mirostat_tau: 5,
     mirostat_eta: 0.1,
+    guidance_scale: 1,
+    negative_prompt: '',
 };
 
 export let textgenerationwebui_presets = [];
@@ -81,6 +83,8 @@ const setting_names = [
     "mirostat_mode",
     "mirostat_tau",
     "mirostat_eta",
+    "guidance_scale",
+    "negative_prompt",
 ];
 
 function selectPreset(name) {
@@ -152,7 +156,7 @@ $(document).ready(function () {
         $(`#${i}_textgenerationwebui`).attr("x-setting-id", i);
         $(document).on("input", `#${i}_textgenerationwebui`, function () {
             const isCheckbox = $(this).attr('type') == 'checkbox';
-            const isText = $(this).attr('type') == 'text';
+            const isText = $(this).attr('type') == 'text' || $(this).is('textarea');
             const id = $(this).attr("x-setting-id");
 
             if (isCheckbox) {
@@ -164,9 +168,9 @@ $(document).ready(function () {
                 textgenerationwebui_settings[id] = value;
             }
             else {
-                const value = parseFloat($(this).val());
+                const value = Number($(this).val());
                 $(`#${id}_counter_textgenerationwebui`).text(value.toFixed(2));
-                textgenerationwebui_settings[id] = parseFloat(value);
+                textgenerationwebui_settings[id] = value;
             }
 
             saveSettingsDebounced();
@@ -180,7 +184,7 @@ function setSettingByName(i, value, trigger) {
     }
 
     const isCheckbox = $(`#${i}_textgenerationwebui`).attr('type') == 'checkbox';
-    const isText = $(`#${i}_textgenerationwebui`).attr('type') == 'text';
+    const isText = $(`#${i}_textgenerationwebui`).attr('type') == 'text' || $(`#${i}_textgenerationwebui`).is('textarea');
     if (isCheckbox) {
         const val = Boolean(value);
         $(`#${i}_textgenerationwebui`).prop('checked', val);
@@ -203,7 +207,7 @@ async function generateTextGenWithStreaming(generate_data, signal) {
     const response = await fetch('/generate_textgenerationwebui', {
         headers: {
             ...getRequestHeaders(),
-            'X-Response-Streaming': true,
+            'X-Response-Streaming': String(true),
             'X-Streaming-URL': textgenerationwebui_settings.streaming_url,
         },
         body: JSON.stringify(generate_data),
@@ -229,9 +233,9 @@ async function generateTextGenWithStreaming(generate_data, signal) {
     }
 }
 
-export function getTextGenGenerationData(finalPromt, this_amount_gen, isImpersonate) {
+export function getTextGenGenerationData(finalPrompt, this_amount_gen, isImpersonate, cfgValues) {
     return {
-        'prompt': finalPromt,
+        'prompt': finalPrompt,
         'max_new_tokens': this_amount_gen,
         'do_sample': textgenerationwebui_settings.do_sample,
         'temperature': textgenerationwebui_settings.temp,
@@ -247,6 +251,8 @@ export function getTextGenGenerationData(finalPromt, this_amount_gen, isImperson
         'penalty_alpha': textgenerationwebui_settings.penalty_alpha,
         'length_penalty': textgenerationwebui_settings.length_penalty,
         'early_stopping': textgenerationwebui_settings.early_stopping,
+        'guidance_scale': cfgValues?.guidanceScale?.value ?? textgenerationwebui_settings.guidance_scale ?? 1,
+        'negative_prompt': cfgValues?.negativePrompt ?? textgenerationwebui_settings.negative_prompt ?? '',
         'seed': textgenerationwebui_settings.seed,
         'add_bos_token': textgenerationwebui_settings.add_bos_token,
         'stopping_strings': getStoppingStrings(isImpersonate, false),

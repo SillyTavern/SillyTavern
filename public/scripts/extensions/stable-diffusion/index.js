@@ -1,5 +1,4 @@
 import {
-    substituteParams,
     saveSettingsDebounced,
     systemUserName,
     hideSwipeButtons,
@@ -14,7 +13,8 @@ import {
 } from "../../../script.js";
 import { getApiUrl, getContext, extension_settings, doExtrasFetch, modules } from "../../extensions.js";
 import { selected_group } from "../../group-chats.js";
-import { stringFormat, initScrollHeight, resetScrollHeight, timestampToMoment, getCharaFilename } from "../../utils.js";
+import { stringFormat, initScrollHeight, resetScrollHeight, timestampToMoment, getCharaFilename, saveBase64AsFile } from "../../utils.js";
+import { getMessageTimeStamp, humanizedDateTime } from "../../RossAscends-mods.js";
 export { MODULE_NAME };
 
 // Wraps a string into monospace font-face span
@@ -40,6 +40,7 @@ const generationMode = {
     NOW: 4,
     FACE: 5,
     FREE: 6,
+    BACKGROUND: 7,
 }
 
 const modeLabels = {
@@ -49,6 +50,7 @@ const modeLabels = {
     [generationMode.SCENARIO]: 'Scenario ("The Whole Story")',
     [generationMode.NOW]: 'Last Message',
     [generationMode.RAW_LAST]: 'Raw Last Message',
+    [generationMode.BACKGROUND]: 'Background',
 }
 
 const triggerWords = {
@@ -58,6 +60,7 @@ const triggerWords = {
     [generationMode.RAW_LAST]: ['raw_last'],
     [generationMode.NOW]: ['last'],
     [generationMode.FACE]: ['face'],
+    [generationMode.BACKGROUND]: ['background'],
 }
 
 const promptTemplates = {
@@ -94,6 +97,7 @@ const promptTemplates = {
     '(location),(character list by gender),(primary action), (relative character position) POV, (character 1's description and actions), (character 2's description and actions)']`,
 
     [generationMode.RAW_LAST]: "[Pause your roleplay and provide ONLY the last chat message string back to me verbatim. Do not write anything after the string. Do not roleplay at all in your response. Do not continue the roleplay story.]",
+    [generationMode.BACKGROUND]: "[Pause your roleplay and provide a detailed description of {{char}}'s surroundings in the form of a comma-delimited list of keywords and phrases. The list must include all of the following items in this order: location, time of day, weather, lighting, and any other relevant details. Do not include descriptions of characters and non-visual qualities such as names, personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase 'background,'. Ignore the rest of the story when crafting this description. Do not roleplay as {{user}} when writing this description, and do not attempt to continue the story.]",
 }
 
 const helpString = [
@@ -105,6 +109,7 @@ const helpString = [
     `<li>${m(j(triggerWords[generationMode.SCENARIO]))} – visual recap of the whole chat scenario</li>`,
     `<li>${m(j(triggerWords[generationMode.NOW]))} – visual recap of the last chat message</li>`,
     `<li>${m(j(triggerWords[generationMode.RAW_LAST]))} – visual recap of the last chat message with no summary</li>`,
+    `<li>${m(j(triggerWords[generationMode.BACKGROUND]))} – generate a background for this chat based on the chat's context</li>`,
     '</ul>',
     `Anything else would trigger a "free mode" to make SD generate whatever you prompted.<Br>
     example: '/sd apple tree' would generate a picture of an apple tree.`,
@@ -157,6 +162,13 @@ async function loadSettings() {
 
     if (extension_settings.sd.prompts === undefined) {
         extension_settings.sd.prompts = promptTemplates;
+    }
+
+    // Insert missing templates
+    for (const [key, value] of Object.entries(promptTemplates)) {
+        if (extension_settings.sd.prompts[key] === undefined) {
+            extension_settings.sd.prompts[key] = value;
+        }
     }
 
     if (extension_settings.sd.character_prompts === undefined) {
@@ -500,7 +512,7 @@ function getQuietPrompt(mode, trigger) {
         return trigger;
     }
 
-    return substituteParams(stringFormat(extension_settings.sd.prompts[mode], trigger));
+    return stringFormat(extension_settings.sd.prompts[mode], trigger);
 }
 
 function processReply(str) {
@@ -525,9 +537,23 @@ function processReply(str) {
     return str;
 }
 
+
 function getRawLastMessage() {
+    const getLastUsableMessage = () => {
+        for (const message of context.chat.slice().reverse()) {
+            if (message.is_system) {
+                continue;
+            }
+
+            return message.mes;
+        }
+
+        toastr.warning('No usable messages found.', 'Stable Diffusion');
+        throw new Error('No usable messages found.');
+    }
+
     const context = getContext();
-    const lastMessage = context.chat.slice(-1)[0].mes,
+    const lastMessage = getLastUsableMessage(),
         characterDescription = context.characters[context.characterId].description,
         situation = context.characters[context.characterId].scenario;
     return `((${processReply(lastMessage)})), (${processReply(situation)}:0.7), (${processReply(characterDescription)}:0.5)`
@@ -553,10 +579,42 @@ async function generatePicture(_, trigger, message, callback) {
     const quiet_prompt = getQuietPrompt(generationType, trigger);
     const context = getContext();
 
+    // if context.characterId is not null, then we get context.characters[context.characterId].avatar, else we get groupId and context.groups[groupId].id
+    // sadly, groups is not an array, but is a dict with keys being index numbers, so we have to filter it
+    const characterName = context.characterId ? context.characters[context.characterId].name : context.groups[Object.keys(context.groups).filter(x => context.groups[x].id === context.groupId)[0]].id.toString();
+
     const prevSDHeight = extension_settings.sd.height;
-    if (generationType == generationMode.FACE) {
+    const prevSDWidth = extension_settings.sd.width;
+    const aspectRatio = extension_settings.sd.width / extension_settings.sd.height;
+
+    // Face images are always portrait (pun intended)
+    if (generationType == generationMode.FACE && aspectRatio >= 1) {
         // Round to nearest multiple of 64
-        extension_settings.sd.height = Math.round(extension_settings.sd.height * 1.5 / 64) * 64; 
+        extension_settings.sd.height = Math.round(extension_settings.sd.width * 1.5 / 64) * 64;
+    }
+
+    // Background images are always landscape
+    if (generationType == generationMode.BACKGROUND && aspectRatio <= 1) {
+        // Round to nearest multiple of 64
+        extension_settings.sd.width = Math.round(extension_settings.sd.height * 1.8 / 64) * 64;
+        const callbackOriginal = callback;
+        callback = async function (prompt, base64Image) {
+            const imagePath = base64Image;
+            const imgUrl = `url('${encodeURIComponent(base64Image)}')`;
+
+            if ('forceSetBackground' in window) {
+                forceSetBackground(imgUrl);
+            } else {
+                toastr.info('Background image will not be preserved.', '"Chat backgrounds" extension is disabled.');
+                $('#bg_custom').css('background-image', imgUrl);
+            }
+
+            if (typeof callbackOriginal === 'function') {
+                callbackOriginal(prompt, imagePath);
+            } else {
+                sendMessage(prompt, imagePath);
+            }
+        }
     }
 
     try {
@@ -566,13 +624,14 @@ async function generatePicture(_, trigger, message, callback) {
         context.deactivateSendButtons();
         hideSwipeButtons();
 
-        await sendGenerationRequest(prompt, callback);
+        await sendGenerationRequest(generationType, prompt, characterName, callback);
     } catch (err) {
         console.trace(err);
         throw new Error('SD prompt text generation failed.')
     }
     finally {
         extension_settings.sd.height = prevSDHeight;
+        extension_settings.sd.width = prevSDWidth;
         context.activateSendButtons();
         showSwipeButtons();
     }
@@ -605,16 +664,32 @@ async function generatePrompt(quiet_prompt) {
     return processReply(reply);
 }
 
-async function sendGenerationRequest(prompt, callback) {
+async function sendGenerationRequest(generationType, prompt, characterName = null, callback) {
+    const prefix = generationType !== generationMode.BACKGROUND
+        ? combinePrefixes(extension_settings.sd.prompt_prefix, getCharacterPrefix())
+        : extension_settings.sd.prompt_prefix;
+
     if (extension_settings.sd.horde) {
-        await generateHordeImage(prompt, callback);
+        await generateHordeImage(prompt, prefix, characterName, callback);
     } else {
-        await generateExtrasImage(prompt, callback);
+        await generateExtrasImage(prompt, prefix, characterName, callback);
     }
 }
 
-async function generateExtrasImage(prompt, callback) {
-    console.log(extension_settings.sd);
+/**
+ * Generates an "extras" image using a provided prompt and other settings,
+ * then saves the generated image and either invokes a callback or sends a message with the image.
+ *
+ * @param {string} prompt - The main instruction used to guide the image generation.
+ * @param {string} prefix - Additional context or prefix to guide the image generation.
+ * @param {string} characterName - The name used to determine the sub-directory for saving.
+ * @param {function} [callback] - Optional callback function invoked with the prompt and saved image.
+ *                                If not provided, `sendMessage` is called instead.
+ *
+ * @returns {Promise<void>} - A promise that resolves when the image generation and processing are complete.
+ */
+async function generateExtrasImage(prompt, prefix, characterName, callback) {
+    console.debug(extension_settings.sd);
     const url = new URL(getApiUrl());
     url.pathname = '/api/image';
     const result = await doExtrasFetch(url, {
@@ -627,7 +702,7 @@ async function generateExtrasImage(prompt, callback) {
             scale: extension_settings.sd.scale,
             width: extension_settings.sd.width,
             height: extension_settings.sd.height,
-            prompt_prefix: combinePrefixes(extension_settings.sd.prompt_prefix, getCharacterPrefix()),
+            prompt_prefix: prefix,
             negative_prompt: extension_settings.sd.negative_prompt,
             restore_faces: !!extension_settings.sd.restore_faces,
             enable_hr: !!extension_settings.sd.enable_hr,
@@ -637,14 +712,28 @@ async function generateExtrasImage(prompt, callback) {
 
     if (result.ok) {
         const data = await result.json();
-        const base64Image = `data:image/jpeg;base64,${data.image}`;
+        //filename should be character name + human readable timestamp + generation mode
+        const filename = `${characterName}_${humanizedDateTime()}`;
+        const base64Image = await saveBase64AsFile(data.image, characterName, filename, "jpg");
         callback ? callback(prompt, base64Image) : sendMessage(prompt, base64Image);
     } else {
         callPopup('Image generation has failed. Please try again.', 'text');
     }
 }
 
-async function generateHordeImage(prompt, callback) {
+/**
+ * Generates a "horde" image using the provided prompt and configuration settings,
+ * then saves the generated image and either invokes a callback or sends a message with the image.
+ *
+ * @param {string} prompt - The main instruction used to guide the image generation.
+ * @param {string} prefix - Additional context or prefix to guide the image generation.
+ * @param {string} characterName - The name used to determine the sub-directory for saving.
+ * @param {function} [callback] - Optional callback function invoked with the prompt and saved image.
+ *                                If not provided, `sendMessage` is called instead.
+ *
+ * @returns {Promise<void>} - A promise that resolves when the image generation and processing are complete.
+ */
+async function generateHordeImage(prompt, prefix, characterName, callback) {
     const result = await fetch('/horde_generateimage', {
         method: 'POST',
         headers: getRequestHeaders(),
@@ -655,7 +744,7 @@ async function generateHordeImage(prompt, callback) {
             scale: extension_settings.sd.scale,
             width: extension_settings.sd.width,
             height: extension_settings.sd.height,
-            prompt_prefix: combinePrefixes(extension_settings.sd.prompt_prefix, getCharacterPrefix()),
+            prompt_prefix: prefix,
             negative_prompt: extension_settings.sd.negative_prompt,
             model: extension_settings.sd.model,
             nsfw: extension_settings.sd.horde_nsfw,
@@ -666,7 +755,8 @@ async function generateHordeImage(prompt, callback) {
 
     if (result.ok) {
         const data = await result.text();
-        const base64Image = `data:image/webp;base64,${data}`;
+        const filename = `${characterName}_${humanizedDateTime()}`;
+        const base64Image = await saveBase64AsFile(data, characterName, filename, "webp");
         callback ? callback(prompt, base64Image) : sendMessage(prompt, base64Image);
     } else {
         toastr.error('Image generation has failed. Please try again.');
@@ -678,10 +768,10 @@ async function sendMessage(prompt, image) {
     const messageText = `[${context.name2} sends a picture that contains: ${prompt}]`;
     const message = {
         name: context.groupId ? systemUserName : context.name2,
-        is_system: context.groupId ? true : false,
         is_user: false,
+        is_system: true,
         is_name: true,
-        send_date: timestampToMoment(Date.now()).format('LL LT'),
+        send_date: getMessageTimeStamp(),
         mes: context.groupId ? p(messageText) : messageText,
         extra: {
             image: image,
@@ -715,6 +805,7 @@ function addSDGenButtons() {
             <li class="list-group-item" id="sd_world" data-value="world">The Whole Story</li>
             <li class="list-group-item" id="sd_last" data-value="last">The Last Message</li>
             <li class="list-group-item" id="sd_raw_last" data-value="raw_last">Raw Last Message</li>
+            <li class="list-group-item" id="sd_background" data-value="background">Background</li>
         </ul>
     </div>`;
 
@@ -740,7 +831,7 @@ function addSDGenButtons() {
     $(document).on('click touchend', function (e) {
         const target = $(e.target);
         if (target.is(dropdown)) return;
-        if (target.is(button) && !dropdown.is(":visible") && $("#send_but").css('display') === 'flex') {
+        if (target.is(button) && !dropdown.is(":visible") && $("#send_but").is(":visible")) {
             e.preventDefault();
 
             dropdown.fadeIn(250);
@@ -782,7 +873,7 @@ async function sdMessageButton(e) {
     const message_id = $mes.attr('mesid');
     const message = context.chat[message_id];
     const characterName = message?.name || context.name2;
-    const messageText = substituteParams(message?.mes);
+    const messageText = message?.mes;
     const hasSavedImage = message?.extra?.image && message?.extra?.title;
 
     if ($icon.hasClass(busyClass)) {
@@ -797,7 +888,7 @@ async function sdMessageButton(e) {
             message.extra.title = prompt;
 
             console.log('Regenerating an image, using existing prompt:', prompt);
-            await sendGenerationRequest(prompt, saveGeneratedImage);
+            await sendGenerationRequest(generationMode.FREE, prompt, characterName, saveGeneratedImage);
         }
         else {
             console.log("doing /sd raw last");
@@ -828,36 +919,22 @@ async function sdMessageButton(e) {
 };
 
 $("#sd_dropdown [id]").on("click", function () {
-    var id = $(this).attr("id");
-    if (id == "sd_you") {
-        console.log("doing /sd you");
-        generatePicture('sd', 'you');
-    }
+    const id = $(this).attr("id");
+    const idParamMap = {
+        "sd_you": "you",
+        "sd_face": "face",
+        "sd_me": "me",
+        "sd_world": "scene",
+        "sd_last": "last",
+        "sd_raw_last": "raw_last",
+        "sd_background": "background"
+    };
 
-    else if (id == "sd_face") {
-        console.log("doing /sd face");
-        generatePicture('sd', 'face');
+    const param = idParamMap[id];
 
-    }
-
-    else if (id == "sd_me") {
-        console.log("doing /sd me");
-        generatePicture('sd', 'me');
-    }
-
-    else if (id == "sd_world") {
-        console.log("doing /sd scene");
-        generatePicture('sd', 'scene');
-    }
-
-    else if (id == "sd_last") {
-        console.log("doing /sd last");
-        generatePicture('sd', 'last');
-    }
-
-    else if (id == "sd_raw_last") {
-        console.log("doing /sd raw last");
-        generatePicture('sd', 'raw_last');
+    if (param) {
+        console.log("doing /sd " + param)
+        generatePicture('sd', param);
     }
 });
 
