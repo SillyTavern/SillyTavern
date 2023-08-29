@@ -4134,7 +4134,7 @@ function backupSettings() {
         const backupFile = path.join(directories.backups, `settings_${generateTimestamp()}.json`);
         fs.copyFileSync(SETTINGS_FILE, backupFile);
 
-        let files = fs.readdirSync(directories.backups);
+        let files = fs.readdirSync(directories.backups).filter(f => f.startsWith('settings_'));
         if (files.length > MAX_BACKUPS) {
             files = files.map(f => path.join(directories.backups, f));
             files.sort((a, b) => fs.statSync(a).mtimeMs - fs.statSync(b).mtimeMs);
