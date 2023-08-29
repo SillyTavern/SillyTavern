@@ -11,25 +11,28 @@ const readline = require('readline');
 const { TextEncoder, TextDecoder } = require('util');
 
 // cli/fs related library imports
-const yargs = require('yargs/yargs');
-const { hideBin } = require('yargs/helpers');
+const commandExistsSync = require('command-exists').sync;
+const sanitize = require('sanitize-filename');
 const simpleGit = require('simple-git');
 const writeFileAtomicSync = require('write-file-atomic').sync;
-const sanitize = require('sanitize-filename');
+const yargs = require('yargs/yargs');
+const { hideBin } = require('yargs/helpers');
 
-// express related library imports
+// express/net related library imports
 const express = require('express');
 const compression = require('compression');
-const responseTime = require('response-time');
+const cookieParser = require('cookie-parser');
 const multer = require("multer");
+const responseTime = require('response-time');
+const DeviceDetector = require("device-detector-js");
 
 // image processing related library imports
-const extract = require('png-chunks-extract');
+const exif = require('piexifjs');
 const encode = require('png-chunks-encode');
-const PNGtext = require('png-chunk-text');
+const extract = require('png-chunks-extract');
 const jimp = require('jimp');
 const mime = require('mime-types');
-const exif = require('piexifjs');
+const PNGtext = require('png-chunk-text');
 const webp = require('webp-converter');
 
 createDefaultFiles();
@@ -93,14 +96,13 @@ const open = require('open');
 const basicAuthMiddleware = require('./src/middleware/basicAuthMiddleware');
 const contentManager = require('./src/content-manager');
 
-const cookieParser = require('cookie-parser');
 const ipaddr = require('ipaddr.js');
 const json5 = require('json5');
 
-const DeviceDetector = require("device-detector-js");
+
 
 const utf8Encode = new TextEncoder();
-const commandExistsSync = require('command-exists').sync;
+
 
 // impoort from statsHelpers.js
 const statsHelpers = require('./statsHelpers.js');
