@@ -32,7 +32,7 @@ const DeviceDetector = require("device-detector-js");
 const ipaddr = require('ipaddr.js');
 const ipMatching = require('ip-matching');
 const json5 = require('json5');
-const Client = require('node-rest-client').Client;
+const RESTClient = require('node-rest-client').Client;
 const WebSocket = require('ws');
 
 // image processing related library imports
@@ -142,9 +142,9 @@ function getHordeClient() {
     return ai_horde;
 }
 
-const client = new Client();
+const restClient = new RESTClient();
 
-client.on('error', (err) => {
+restClient.on('error', (err) => {
     console.error('An error occurred:', err);
 });
 
@@ -1862,7 +1862,7 @@ app.post("/getstatus_novelai", jsonParser, function (request, response_getstatus
         headers: { "Content-Type": "application/json", "Authorization": "Bearer " + api_key_novel }
     };
     
-    client.get(api_novelai + "/user/subscription", args, function (data, response) {
+    restClient.get(api_novelai + "/user/subscription", args, function (data, response) {
         if (response.statusCode == 200) {
             //console.log(data);
             response_getstatus_novel.send(data);//data);
@@ -3125,7 +3125,7 @@ app.post("/getstatus_openai", jsonParser, function (request, response_getstatus_
             ...headers,
         },
     };
-    client.get(api_url + "/models", args, function (data, response) {
+    restClient.get(api_url + "/models", args, function (data, response) {
         if (response.statusCode == 200) {
             response_getstatus_openai.send(data);
             if (request.body.use_openrouter) {
@@ -3978,7 +3978,7 @@ async function postAsync(url, args) {
 
 function getAsync(url, args) {
     return new Promise((resolve, reject) => {
-        client.get(url, args, (data, response) => {
+        restClient.get(url, args, (data, response) => {
             if (response.statusCode >= 400) {
                 reject(data);
             }
