@@ -863,8 +863,8 @@
                                         </div>
                                     </div>
                                 </div>
+                                <hr>
                                 <div class="range-block" data-source="openai,claude">
-                                    <hr>
                                     <div class="range-block-title justifyLeft" data-i18n="OpenAI Reverse Proxy">
                                         OpenAI / Claude Reverse Proxy
                                     </div>
@@ -2467,7 +2467,7 @@
                             </div>
                         </div>
                         <div class="flex2 flex-container flexFlowColumn">
-                            <div class="flex range-block">
+                            <div data-newbie-hidden class="flex range-block">
                                 <div class="range-block-title justifyLeft">
                                     <label for="world_info_character_strategy">
                                         <span data-i18n="Character Lore Insertion Strategy"><small>Character Lore Insertion Strategy</small></span>
@@ -2483,7 +2483,7 @@
                             </div>
 
                             <div name="WIScanAndTokens" class="flex1 flex-container flexFlowColumn">
-                                <div class="flex1 gap5px range-block">
+                                <div data-newbie-hidden class="flex1 gap5px range-block">
                                     <div class="wide10pMinFit">
                                         <small data-i18n="Scan Depth">Scan Depth</small>
                                     </div>
@@ -2515,7 +2515,7 @@
                                     </div>
                                 </div>
 
-                                <div class="flex1 gap5px range-block">
+                                <div data-newbie-hidden class="flex1 gap5px range-block">
                                     <div class="wide10pMinFit">
                                         <small data-i18n="Budget Cap">Budget Cap</small>
                                     </div>
@@ -2536,7 +2536,7 @@
                             </div>
                         </div>
 
-                        <div class="alignitemsflexstart flex1 range-block flex-container flexFlowColumn">
+                        <div data-newbie-hidden class="alignitemsflexstart flex1 range-block flex-container flexFlowColumn">
                             <label title="Entries can activate other entries by mentioning their keywords" data-i18n="[title]Entries can activate other entries by mentioning their keywords" class="checkbox_label">
                                 <input id="world_info_recursive" type="checkbox" />
                                 <small data-i18n="Recursive Scan">
@@ -3084,12 +3084,14 @@
                                 <div class="extension_token_counter">
                                     Tokens: <span id="persona_description_token_count">0</span>
                                 </div>
-                                <label for="persona_description_position" data-i18n="Position:">Position:</label>
-                                <select id="persona_description_position">
-                                    <option value="0" data-i18n="In Story String / Prompt Manager">In Story String / Prompt Manager</option>
-                                    <option value="2" data-i18n="Top of Author's Note">Top of Author's Note</option>
-                                    <option value="3" data-i18n="Bottom of Author's Note">Bottom of Author's Note</option>
-                                </select>
+                                <div data-newbie-hidden>
+                                    <label for="persona_description_position" data-i18n="Position:">Position:</label>
+                                    <select id="persona_description_position">
+                                        <option value="0" data-i18n="In Story String / Prompt Manager">In Story String / Prompt Manager</option>
+                                        <option value="2" data-i18n="Top of Author's Note">Top of Author's Note</option>
+                                        <option value="3" data-i18n="Bottom of Author's Note">Bottom of Author's Note</option>
+                                    </select>
+                                </div>
                             </div>
                             <div class="range-block">
                                 <label for="persona_show_notifications" class="checkbox_label">
@@ -3103,9 +3105,9 @@
                         <div class="flex1">
                             <h4 class="title_restorable">
                                 <span data-i18n="Your Persona">Your Persona</span>
-                                <button class="menu_button menu_button_icon user_stats_button" title="Click for stats!">
-                                    <i class="fa-solid fa-circle-info"></i><span data-i18n="Usage Stats">Usage Stats</span>
-                                </button>
+                                <div class="menu_button menu_button_icon user_stats_button" title="Click for stats!">
+                                    <i class="fa-solid fa-ranking-star"></i><span data-i18n="Usage Stats">Usage Stats</span>
+                                </div>
                                 <div id="create_dummy_persona" class="menu_button menu_button_icon" title="Create a dummy persona" data-i18n="[title]Create a dummy persona">
                                     <i class="fa-solid fa-person-circle-question fa-fw"></i>
                                     <span data-i18n="Blank">Blank</span>
