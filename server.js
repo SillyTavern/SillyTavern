@@ -49,6 +49,7 @@ const yauzl = require('yauzl');
 const tiktoken = require('@dqbd/tiktoken');
 
 // local library imports
+const AIHorde = require("./src/horde");
 const basicAuthMiddleware = require('./src/middleware/basicAuthMiddleware');
 const characterCardParser = require('./src/character-card-parser.js');
 const contentManager = require('./src/content-manager');
@@ -135,7 +136,6 @@ const listen = config.listen;
 const allowKeysExposure = config.allowKeysExposure;
 
 function getHordeClient() {
-    const AIHorde = require("./src/horde");
     const ai_horde = new AIHorde({
         client_agent: getVersion()?.agent || 'SillyTavern:UNKNOWN:Cohee#1207',
     });
