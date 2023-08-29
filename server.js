@@ -24,7 +24,6 @@ function createDefaultFiles() {
     }
 }
 
-const process = require('process')
 const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers');
 const net = require("net");
