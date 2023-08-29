@@ -2,8 +2,13 @@
 
 // native node modules
 const child_process = require('child_process')
+const crypto = require('crypto');
 const fs = require('fs');
+const http = require("http");
+const https = require('https');
 const path = require('path');
+const readline = require('readline');
+const { TextEncoder, TextDecoder } = require('util');
 
 // cli/fs related library imports
 const yargs = require('yargs/yargs');
@@ -79,31 +84,21 @@ const directory = process.pkg ? path.dirname(process.execPath) : __dirname;
 console.log(process.pkg ? 'Running from binary' : 'Running from source');
 process.chdir(directory);
 
-
 const app = express();
-
-
-
 app.use(compression());
 app.use(responseTime());
 
-
-const readline = require('readline');
 const open = require('open');
 
-const http = require("http");
-const https = require('https');
 const basicAuthMiddleware = require('./src/middleware/basicAuthMiddleware');
 const contentManager = require('./src/content-manager');
 
-
 const cookieParser = require('cookie-parser');
-const crypto = require('crypto');
 const ipaddr = require('ipaddr.js');
 const json5 = require('json5');
 
 const DeviceDetector = require("device-detector-js");
-const { TextEncoder, TextDecoder } = require('util');
+
 const utf8Encode = new TextEncoder();
 const commandExistsSync = require('command-exists').sync;
 
