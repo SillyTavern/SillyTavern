@@ -1886,7 +1886,7 @@ app.post("/getstatus_novelai", jsonParser, async function (request, response_get
     }
 });
 
-app.post("/generate_novelai", jsonParser, async function (request, response_generate_novel = response) {
+app.post("/generate_novelai", jsonParser, async function (request, response_generate_novel) {
     if (!request.body) return response_generate_novel.sendStatus(400);
 
     const api_key_novel = readSecret(SECRET_KEYS.NOVEL);
