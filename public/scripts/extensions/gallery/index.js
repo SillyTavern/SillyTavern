@@ -55,8 +55,10 @@ async function initGallery(items, url) {
         paginationVisiblePages: 5,
         paginationMaxLinesPerPage: 2,
         galleryMaxRows : 3,
+        galleryPaginationTopButtons: false,
+        galleryNavigationOverlayButtons: true,
         "galleryDisplayMode": "pagination",
-        "fnThumbnailOpen": viewWithFancybox,
+        "fnThumbnailOpen": viewWithDragbox,
     });
 
     $(document).ready(function () {
@@ -237,6 +239,12 @@ $(document).ready(function () {
     );
 });
 
+/**
+ * Creates a new draggable container based on a template.
+ * This function takes a template with the ID 'generic_draggable_template' and clones it.
+ * The cloned element has its attributes set, a new child div appended, and is made visible on the body.
+ * Additionally, it sets up the element to prevent dragging on its images.
+ */
 function makeMovable(){
 
     let charname = "gallery"
@@ -268,6 +276,17 @@ function makeMovable(){
     });
 }
 
+/**
+ * Creates a new draggable image based on a template.
+ * 
+ * This function clones a provided template with the ID 'generic_draggable_template',
+ * appends the given image URL, ensures the element has a unique ID,
+ * and attaches the element to the body. After appending, it also prevents
+ * dragging on the appended image.
+ * 
+ * @param {string} id - A base identifier for the new draggable element.
+ * @param {string} url - The URL of the image to be added to the draggable element.
+ */
 function makeDragImg(id, url) {
     // Step 1: Clone the template content
     const template = document.getElementById('generic_draggable_template');
@@ -282,21 +301,27 @@ function makeDragImg(id, url) {
     // Step 2: Append the given image
     const imgElem = document.createElement('img');
     imgElem.src = url;
-
+    let uniqueId = `draggable_${id}`;
     const draggableElem = newElement.querySelector('.draggable');
     if (draggableElem) {
         draggableElem.appendChild(imgElem);
 
-        // Set a unique id for the draggable element
-        draggableElem.id = `draggable_${id}`;
+        // Find a unique id for the draggable element
+
+        let counter = 1;
+        while (document.getElementById(uniqueId)) {
+            uniqueId = `draggable_${id}_${counter}`;
+            counter++;
+        }
+        draggableElem.id = uniqueId;
 
         // Ensure that the newly added element is displayed as block
         draggableElem.style.display = 'block';
 
-        // Find the .drag-grabber and set its ID
+        // Find the .drag-grabber and set its matching unique ID
         const dragGrabber = draggableElem.querySelector('.drag-grabber');
         if (dragGrabber) {
-            dragGrabber.id = `draggable_${id}header`;
+            dragGrabber.id = `${uniqueId}header`; // appending _header to make it match the parent's unique ID
         }
     }
 
@@ -304,16 +329,14 @@ function makeDragImg(id, url) {
     document.body.appendChild(newElement);
 
     // Step 4: Call dragElement and loadMovingUIState
-    const appendedElement = document.getElementById(`draggable_${id}`);
+    const appendedElement = document.getElementById(uniqueId);
     if (appendedElement) {
         var elmntName = $(appendedElement);
         loadMovingUIState();
         dragElement(elmntName);
- 
 
         // Prevent dragging the image
-        console.log(`#draggable_${id} img`);
-        $(`#draggable_${id} img`).on('dragstart', (e) => {
+        $(`#${uniqueId} img`).on('dragstart', (e) => {
             console.log('saw drag on avatar!');
             e.preventDefault();
             return false;
@@ -324,7 +347,16 @@ function makeDragImg(id, url) {
 }
 
 
-function viewWithFancybox(items) {
+/**
+ * Processes a list of items (containing URLs) and creates a draggable box for the first item.
+ * 
+ * If the provided list of items is non-empty, it takes the URL of the first item,
+ * derives an ID from the URL, and uses the makeDragImg function to create
+ * a draggable image element based on that ID and URL.
+ * 
+ * @param {Array} items - A list of items where each item has a responsiveURL method that returns a URL.
+ */
+function viewWithDragbox(items) {
     if (items && items.length > 0) {
         var url = items[0].responsiveURL(); // Get the URL of the clicked image/video
         // ID should just be the last part of the URL, removing the extension
