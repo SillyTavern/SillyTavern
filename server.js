@@ -1100,7 +1100,7 @@ app.post("/renamecharacter", jsonParser, async function (request, response) {
         // Read old file, replace name int it
         const rawOldData = await charaRead(oldAvatarPath);
         if (rawOldData === false || rawOldData === undefined) throw new Error("Failed to read character file");
-        
+
         const oldData = getCharaCardV2(json5.parse(rawOldData));
         _.set(oldData, 'data.name', newName);
         _.set(oldData, 'name', newName);
@@ -1245,7 +1245,7 @@ app.post("/deletecharacter", jsonParser, async function (request, response) {
 });
 
 /**
- * @param {express.Response | undefined} response 
+ * @param {express.Response | undefined} response
  * @param {{file_name: string} | string} mes
  */
 async function charaWrite(img_url, data, target_img, response = undefined, mes = 'ok', crop = undefined) {
@@ -4184,7 +4184,7 @@ function migrateSecrets() {
     try {
         let modified = false;
         const fileContents = fs.readFileSync(SETTINGS_FILE, 'utf8');
-        const settings = JSON.parse(fileContents.toString());
+        const settings = JSON.parse(fileContents);
         const oaiKey = settings?.api_key_openai;
         const hordeKey = settings?.horde_settings?.api_key;
         const novelKey = settings?.api_key_novel;
