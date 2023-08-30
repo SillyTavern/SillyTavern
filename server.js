@@ -477,7 +477,7 @@ app.get('/version', function (_, response) {
 })
 
 //**************Kobold api
-app.post("/generate", jsonParser, async function (request, response_generate = response) {
+app.post("/generate", jsonParser, async function (request, response_generate) {
     if (!request.body) return response_generate.sendStatus(400);
 
     const request_prompt = request.body.prompt;
