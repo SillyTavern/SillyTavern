@@ -2144,8 +2144,8 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                         "tags": jsonData.tags ?? '',
                     };
                     char = convertToV2(char);
-                    char = JSON.stringify(char);
-                    charaWrite(defaultAvatarPath, char, png_name, response, { file_name: png_name });
+                    let charJSON = JSON.stringify(char);
+                    charaWrite(defaultAvatarPath, charJSON, png_name, response, { file_name: png_name });
                 } else if (jsonData.char_name !== undefined) {//json Pygmalion notepad
                     console.log('importing from gradio json');
                     jsonData.char_name = sanitize(jsonData.char_name);
@@ -2169,8 +2169,8 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                         "tags": jsonData.tags ?? '',
                     };
                     char = convertToV2(char);
-                    char = JSON.stringify(char);
-                    charaWrite(defaultAvatarPath, char, png_name, response, { file_name: png_name });
+                    let charJSON = JSON.stringify(char);
+                    charaWrite(defaultAvatarPath, charJSON, png_name, response, { file_name: png_name });
                 } else {
                     console.log('Incorrect character format .json');
                     response.send({ error: true });
@@ -2179,6 +2179,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
         } else {
             try {
                 var img_data = await charaRead(uploadPath, format);
+
                 let jsonData = json5.parse(img_data);
 
                 jsonData.name = sanitize(jsonData.data?.name || jsonData.name);
