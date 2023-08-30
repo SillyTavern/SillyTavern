@@ -4180,7 +4180,7 @@ function migrateSecrets() {
 
     try {
         let modified = false;
-        const fileContents = fs.readFileSync(SETTINGS_FILE);
+        const fileContents = fs.readFileSync(SETTINGS_FILE, 'utf8');
         const settings = JSON.parse(fileContents);
         const oaiKey = settings?.api_key_openai;
         const hordeKey = settings?.horde_settings?.api_key;
