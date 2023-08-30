@@ -4227,7 +4227,7 @@ app.post('/readsecretstate', jsonParser, (_, response) => {
     }
 
     try {
-        const fileContents = fs.readFileSync(SECRETS_FILE);
+        const fileContents = fs.readFileSync(SECRETS_FILE, 'utf8');
         const secrets = JSON.parse(fileContents);
         const state = {};
 
@@ -4286,7 +4286,7 @@ app.post('/viewsecrets', jsonParser, async (_, response) => {
     }
 
     try {
-        const fileContents = fs.readFileSync(SECRETS_FILE, 'utf8');
+        const fileContents = fs.readFileSync(SECRETS_FILE, 'utf-8');
         const secrets = JSON.parse(fileContents);
         return response.send(secrets);
     } catch (error) {
@@ -4872,8 +4872,8 @@ function writeSecret(key, value) {
         writeFileAtomicSync(SECRETS_FILE, emptyFile, "utf-8");
     }
 
-    const fileContents = fs.readFileSync(SECRETS_FILE);
-    const secrets = JSON.parse(fileContents.toString());
+    const fileContents = fs.readFileSync(SECRETS_FILE, 'utf-8');
+    const secrets = JSON.parse(fileContents);
     secrets[key] = value;
     writeFileAtomicSync(SECRETS_FILE, JSON.stringify(secrets), "utf-8");
 }
@@ -4883,8 +4883,8 @@ function readSecret(key) {
         return undefined;
     }
 
-    const fileContents = fs.readFileSync(SECRETS_FILE);
-    const secrets = JSON.parse(fileContents.toString());
+    const fileContents = fs.readFileSync(SECRETS_FILE, 'utf-8');
+    const secrets = JSON.parse(fileContents);
     return secrets[key];
 }
 
