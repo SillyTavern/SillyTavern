@@ -1100,6 +1100,8 @@ app.post("/renamecharacter", jsonParser, async function (request, response) {
     try {
         // Read old file, replace name int it
         const rawOldData = await charaRead(oldAvatarPath);
+        if (rawOldData === false || rawOldData === undefined) throw new Error("Failed to read character file");
+        
         const oldData = getCharaCardV2(json5.parse(rawOldData));
         _.set(oldData, 'data.name', newName);
         _.set(oldData, 'name', newName);
