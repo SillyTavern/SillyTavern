@@ -2705,19 +2705,20 @@ app.post('/uploadimage', jsonParser, async (request, response) => {
     }
 });
 
-app.get('/listimgfiles/:folder', (req, res) => {
-    const directoryPath = path.join(process.cwd(), 'public/user/images/', req.params.folder);
+app.post('/listimgfiles/:folder', (req, res) => {
+    const directoryPath = path.join(process.cwd(), 'public/user/images/', sanitize(req.params.folder));
 
     if (!fs.existsSync(directoryPath)) {
         fs.mkdirSync(directoryPath, { recursive: true });
     }
 
-    fs.readdir(directoryPath, (err, files) => {
-        if (err) {
-            return res.status(500).send({ error: "Unable to retrieve files" });
-        }
-        res.send(files);
-    });
+    try {
+        const images = getImages(directoryPath);
+        return res.send(images);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).send({ error: "Unable to retrieve files" });
+    }
 });
 
 

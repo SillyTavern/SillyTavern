@@ -19,30 +19,33 @@ let firstTime = true;
 
 
 /**
- * Retrieves a list of gallery items based on a given URL. This function calls an API endpoint 
+ * Retrieves a list of gallery items based on a given URL. This function calls an API endpoint
  * to get the filenames and then constructs the item list.
- * 
+ *
  * @param {string} url - The base URL to retrieve the list of images.
  * @returns {Promise<Array>} - Resolves with an array of gallery item objects, rejects on error.
  */
 async function getGalleryItems(url) {
-    return new Promise((resolve, reject) => {
-        $.get(`/listimgfiles/${url}`, function (files) {
-            const items = files.map((file) => ({
-                src: `user/images/${url}/${file}`,
-                srct: `user/images/${url}/${file}`,
-                title: "", // Optional title for each item
-            }));
-            resolve(items);
-        }).fail(reject);
+    const response = await fetch(`/listimgfiles/${url}`, {
+        method: 'POST',
+        headers: getRequestHeaders(),
     });
+
+    const data = await response.json();
+    const items = data.map((file) => ({
+        src: `user/images/${url}/${file}`,
+        srct: `user/images/${url}/${file}`,
+        title: "", // Optional title for each item
+    }));
+
+    return items;
 }
 
 /**
  * Initializes a gallery using the provided items and sets up the drag-and-drop functionality.
- * It uses the nanogallery2 library to display the items and also initializes 
+ * It uses the nanogallery2 library to display the items and also initializes
  * event listeners to handle drag-and-drop of files onto the gallery.
- * 
+ *
  * @param {Array<Object>} items - An array of objects representing the items to display in the gallery.
  * @param {string} url - The URL to use when a file is dropped onto the gallery for uploading.
  * @returns {Promise<void>} - Promise representing the completion of the gallery initialization.
@@ -78,18 +81,18 @@ async function initGallery(items, url) {
         jQuery("#dragGallery").nanogallery2('resize');
     });
 
-    const dropZone = $('#dragGallery'); 
+    const dropZone = $('#dragGallery');
     //remove any existing handlers
     dropZone.off('dragover');
     dropZone.off('dragleave');
     dropZone.off('drop');
-    
+
 
     // Initialize dropzone handlers
     dropZone.on('dragover', function (e) {
         e.stopPropagation();  // Ensure this event doesn't propagate
         e.preventDefault();
-        $(this).addClass('dragging');  // Add a CSS class to change appearance during drag-over        
+        $(this).addClass('dragging');  // Add a CSS class to change appearance during drag-over
     });
 
     dropZone.on('dragleave', function (e) {
@@ -108,14 +111,14 @@ async function initGallery(items, url) {
 
 /**
  * Displays a character gallery using the nanogallery2 library.
- * 
+ *
  * This function takes care of:
  * - Loading necessary resources for the gallery on the first invocation.
  * - Preparing gallery items based on the character or group selection.
  * - Handling the drag-and-drop functionality for image upload.
  * - Displaying the gallery in a popup.
  * - Cleaning up resources when the gallery popup is closed.
- * 
+ *
  * @returns {Promise<void>} - Promise representing the completion of the gallery display process.
  */
 async function showCharGallery() {
@@ -160,7 +163,7 @@ async function showCharGallery() {
  * Uploads a given file to a specified URL.
  * Once the file is uploaded, it provides a success message using toastr,
  * destroys the existing gallery, fetches the latest items, and reinitializes the gallery.
- * 
+ *
  * @param {File} file - The file object to be uploaded.
  * @param {string} url - The URL indicating where the file should be uploaded.
  * @returns {Promise<void>} - Promise representing the completion of the file upload and gallery refresh.
@@ -271,12 +274,12 @@ function makeMovable(id="gallery"){
 
 /**
  * Creates a new draggable image based on a template.
- * 
+ *
  * This function clones a provided template with the ID 'generic_draggable_template',
  * appends the given image URL, ensures the element has a unique ID,
  * and attaches the element to the body. After appending, it also prevents
  * dragging on the appended image.
- * 
+ *
  * @param {string} id - A base identifier for the new draggable element.
  * @param {string} url - The URL of the image to be added to the draggable element.
  */
@@ -342,11 +345,11 @@ function makeDragImg(id, url) {
 
 /**
  * Processes a list of items (containing URLs) and creates a draggable box for the first item.
- * 
+ *
  * If the provided list of items is non-empty, it takes the URL of the first item,
  * derives an ID from the URL, and uses the makeDragImg function to create
  * a draggable image element based on that ID and URL.
- * 
+ *
  * @param {Array} items - A list of items where each item has a responsiveURL method that returns a URL.
  */
 function viewWithDragbox(items) {
