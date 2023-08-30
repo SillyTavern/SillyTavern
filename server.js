@@ -5250,6 +5250,7 @@ app.post('/asset_download', jsonParser, async (request, response) => {
     const inputCategory = request.body.category;
     const inputFilename = sanitize(request.body.filename);
     const validCategories = ["bgm", "ambient"];
+    const fetch = require('node-fetch').default;
 
     // Check category
     let category = null;
@@ -5285,7 +5286,7 @@ app.post('/asset_download', jsonParser, async (request, response) => {
             });
         }
         const fileStream = fs.createWriteStream(destination, { flags: 'wx' });
-        await finished(Readable.fromWeb(res.body).pipe(fileStream));
+        await finished(res.body.pipe(fileStream));
 
         // Move into asset place
         console.debug("Download finished, moving file from", temp_path, "to", file_path);
