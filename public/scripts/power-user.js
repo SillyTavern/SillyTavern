@@ -165,6 +165,7 @@ let power_user = {
     continue_on_send: false,
     trim_spaces: true,
     relaxed_api_urls: false,
+    disable_group_trimming: false,
 
     default_instruct: '',
     instruct: {
@@ -789,6 +790,7 @@ function loadPowerUserSettings(settings, data) {
     $("#trim_sentences_checkbox").prop("checked", power_user.trim_sentences);
     $("#include_newline_checkbox").prop("checked", power_user.include_newline);
     $('#render_formulas').prop("checked", power_user.render_formulas);
+    $('#disable_group_trimming').prop("checked", power_user.disable_group_trimming);
     $("#markdown_escape_strings").val(power_user.markdown_escape_strings);
     $("#fast_ui_mode").prop("checked", power_user.fast_ui_mode);
     $("#waifuMode").prop("checked", power_user.waifuMode);
@@ -2157,6 +2159,11 @@ $(document).ready(() => {
 
     $('#lazy_load').on('input', function () {
         power_user.lazy_load = Number($(this).val());
+        saveSettingsDebounced();
+    });
+
+    $('#disable_group_trimming').on('input', function () {
+        power_user.disable_group_trimming = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 
