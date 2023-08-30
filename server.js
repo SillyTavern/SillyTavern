@@ -596,7 +596,7 @@ app.post("/generate", jsonParser, async function (request, response_generate = r
 });
 
 //************** Text generation web UI
-app.post("/generate_textgenerationwebui", jsonParser, async function (request, response_generate = response) {
+app.post("/generate_textgenerationwebui", jsonParser, async function (request, response_generate) {
     if (!request.body) return response_generate.sendStatus(400);
 
     console.log(request.body);
