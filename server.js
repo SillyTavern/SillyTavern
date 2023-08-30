@@ -1248,6 +1248,10 @@ app.post("/deletecharacter", jsonParser, async function (request, response) {
     return response.sendStatus(200);
 });
 
+/**
+ * @param {express.Response | undefined} response 
+ * @param {{file_name: string} | string} mes
+ */
 async function charaWrite(img_url, data, target_img, response = undefined, mes = 'ok', crop = undefined) {
     try {
         // Read the image, resize, and save it as a PNG into the buffer
