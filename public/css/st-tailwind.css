@@ -404,6 +404,7 @@
 
 .widthFitContent {
     width: fit-content;
+    min-width: fit-content;
 }
 
 .flexGap5 {
