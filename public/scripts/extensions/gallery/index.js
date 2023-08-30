@@ -48,7 +48,7 @@ async function getGalleryItems(url) {
  * @returns {Promise<void>} - Promise representing the completion of the gallery initialization.
  */
 async function initGallery(items, url) {
-    $("#zoomFor_test").nanogallery2({
+    $("#dragGallery").nanogallery2({
         "items": items,
         thumbnailWidth: 'auto',
         thumbnailHeight: 150,
@@ -75,12 +75,17 @@ async function initGallery(items, url) {
         // Your logic here
 
         // If you want to resize the nanogallery2 instance when this event is triggered:
-        jQuery("#zoomFor_test").nanogallery2('resize');
+        jQuery("#dragGallery").nanogallery2('resize');
     });
 
+    const dropZone = $('#dragGallery'); 
+    //remove any existing handlers
+    dropZone.off('dragover');
+    dropZone.off('dragleave');
+    dropZone.off('drop');
+    
 
     // Initialize dropzone handlers
-    const dropZone = $('#zoomFor_test'); 
     dropZone.on('dragover', function (e) {
         e.stopPropagation();  // Ensure this event doesn't propagate
         e.preventDefault();
@@ -135,27 +140,17 @@ async function showCharGallery() {
         }
 
         const items = await getGalleryItems(url);
-        makeMovable();
-        console.log("close", close);
-        if ($("body").css("position") === "fixed") {
-            $("body").css("position", "static");
+        // if there already is a gallery, destroy it and place this one in its place
+        if ($(`#dragGallery`).length) {
+            $(`#dragGallery`).nanogallery2("destroy");
+            initGallery(items, url);
+        } else {
+            makeMovable();
+            setTimeout(async () => {
+                await initGallery(items, url);
+            }, 100);
         }
 
-        setTimeout(async () => {
-            await initGallery(items, url); 
-        }, 100);
-
-        //next, we add `<div id="" class="fa-solid fa-grip drag-grabber"></div>` to zoomFor_test
-        //document.getElementById(`zoomFor_test`).innerHTML += `<div id="" class="fa-solid fa-grip drag-grabber"></div>`;
-
-        // close.then(() => {
-        //     $("#my-gallery").nanogallery2("destroy");
-        //     if ($("body").css("position") === "static") {
-        //         $("body").css("position", "fixed");
-        //     }
-        //     const dropZone = $('#dialogue_popup');
-        //     dropZone.off('dragover dragleave drop');
-        // });
     } catch (err) {
         console.error(err);
     }
@@ -207,7 +202,7 @@ async function uploadFile(file, url) {
             toastr.success('File uploaded successfully. Saved at: ' + result.path);
 
             // Refresh the gallery
-            $("#my-gallery").nanogallery2("destroy");  // Destroy old gallery
+            $("#dragGallery").nanogallery2("destroy");  // Destroy old gallery
             const newItems = await getGalleryItems(url);  // Fetch the latest items
             initGallery(newItems, url);  // Reinitialize the gallery with new items and pass 'url'
 
@@ -245,31 +240,29 @@ $(document).ready(function () {
  * The cloned element has its attributes set, a new child div appended, and is made visible on the body.
  * Additionally, it sets up the element to prevent dragging on its images.
  */
-function makeMovable(){
-
-    let charname = "gallery"
+function makeMovable(id="gallery"){
 
     console.debug('making new container from template')
     const template = $('#generic_draggable_template').html();
     const newElement = $(template);
-    newElement.attr('forChar', charname);
-    newElement.attr('id', `zoomFor_${charname}`);
-    newElement.find('.drag-grabber').attr('id', `zoomFor_${charname}header`);
+    newElement.attr('forChar', id);
+    newElement.attr('id', `${id}`);
+    newElement.find('.drag-grabber').attr('id', `${id}header`);
     //add a div for the gallery
-    newElement.append(`<div id="zoomFor_test"></div>`);
+    newElement.append(`<div id="dragGallery"></div>`);
     // add no-scrollbar class to this element
     newElement.addClass('no-scrollbar');
 
 
-    $(`#zoomFor_test`).css('display', 'block');
+    $(`#dragGallery`).css('display', 'block');
 
     $('body').append(newElement);
 
     loadMovingUIState();
-    $(`.draggable[forChar="${charname}"]`).css('display', 'block');
+    $(`.draggable[forChar="${id}"]`).css('display', 'block');
     dragElement(newElement);
 
-    $(`.draggable[forChar="${charname}"] img`).on('dragstart', (e) => {
+    $(`.draggable[forChar="${id}"] img`).on('dragstart', (e) => {
         console.log('saw drag on avatar!');
         e.preventDefault();
         return false;
