@@ -449,7 +449,8 @@ REM Create a backup using 7zip
     "public\User Avatars\*" ^
     "public\user\*" ^
     "public\worlds\*" ^
-    "public\settings.json"
+    "public\settings.json" ^
+    "secrets.json"
 
 REM Rename the backup file with current date and time
 for /f "tokens=1-5 delims=/ " %%d in ("%date%") do (
