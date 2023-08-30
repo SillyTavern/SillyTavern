@@ -4764,8 +4764,8 @@ async function downloadChubCharacter(id) {
 }
 
 /**
- * 
- * @param {String} str 
+ *
+ * @param {String} str
  * @returns { { id: string, type: "character" | "lorebook" } | null }
  */
 function parseChubUrl(str) {
@@ -5267,7 +5267,7 @@ app.post('/asset_download', jsonParser, async (request, response) => {
     // Sanitize filename
     const safe_input = checkAssetFileName(inputFilename);
     if (safe_input == '')
-        return response.sendFile('400');
+        return response.sendStatus(400);
 
     const temp_path = path.join(directories.assets, "temp", safe_input)
     const file_path = path.join(directories.assets, category, safe_input)
@@ -5329,7 +5329,7 @@ app.post('/asset_delete', jsonParser, async (request, response) => {
     // Sanitize filename
     const safe_input = checkAssetFileName(inputFilename);
     if (safe_input == '')
-        return response.sendFile('400');
+        return response.sendStatus(400);
 
     const file_path = path.join(directories.assets, category, safe_input)
     console.debug("Request received to delete", category, file_path);
