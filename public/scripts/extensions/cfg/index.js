@@ -385,7 +385,7 @@ jQuery(async () => {
 
     const buttonHtml = $(await $.get(`${extensionFolderPath}/menuButton.html`));
     buttonHtml.on('click', onCfgMenuItemClick)
-    buttonHtml.insertAfter("#option_toggle_AN");
+    buttonHtml.appendTo("#options_advanced");
 
     // Hook events
     eventSource.on(event_types.CHAT_CHANGED, async () => {
