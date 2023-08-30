@@ -422,7 +422,7 @@ app.use(function (req, res, next) {
 });
 
 
-app.use(express.static(process.cwd() + "/public", { refresh: true }));
+app.use(express.static(process.cwd() + "/public", {}));
 
 app.use('/backgrounds', (req, res) => {
     const filePath = decodeURIComponent(path.join(process.cwd(), 'public/backgrounds', req.url.replace(/%20/g, ' ')));
