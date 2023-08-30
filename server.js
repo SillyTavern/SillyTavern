@@ -3098,7 +3098,7 @@ app.get('/thumbnail', jsonParser, async function (request, response) {
 });
 
 /* OpenAI */
-app.post("/getstatus_openai", jsonParser, function (request, response_getstatus_openai = response) {
+app.post("/getstatus_openai", jsonParser, function (request, response_getstatus_openai) {
     if (!request.body) return response_getstatus_openai.sendStatus(400);
 
     let api_url;
@@ -3133,7 +3133,7 @@ app.post("/getstatus_openai", jsonParser, function (request, response_getstatus_
                 let models = [];
                 data.data.forEach(model => {
                     const context_length = model.context_length;
-                    const tokens_dollar = parseFloat(1 / (1000 * model.pricing.prompt));
+                    const tokens_dollar = Number(1 / (1000 * model.pricing.prompt));
                     const tokens_rounded = (Math.round(tokens_dollar * 1000) / 1000).toFixed(0);
                     models[model.id] = {
                         tokens_per_dollar: tokens_rounded + 'k',
@@ -3649,7 +3649,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
     makeRequest(config, response_generate_openai, request);
 });
 
-app.post("/tokenize_openai", jsonParser, function (request, response_tokenize_openai = response) {
+app.post("/tokenize_openai", jsonParser, function (request, response_tokenize_openai) {
     if (!request.body) return response_tokenize_openai.sendStatus(400);
 
     let num_tokens = 0;
@@ -3757,7 +3757,7 @@ async function sendAI21Request(request, response) {
 
 }
 
-app.post("/tokenize_ai21", jsonParser, function (request, response_tokenize_ai21 = response) {
+app.post("/tokenize_ai21", jsonParser, function (request, response_tokenize_ai21) {
     if (!request.body) return response_tokenize_ai21.sendStatus(400);
     const options = {
         method: 'POST',
