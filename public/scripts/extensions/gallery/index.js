@@ -296,7 +296,7 @@ function makeDragImg(id, url) {
         // Find the .drag-grabber and set its ID
         const dragGrabber = draggableElem.querySelector('.drag-grabber');
         if (dragGrabber) {
-            dragGrabber.id = `zoomFor_${id}header`;
+            dragGrabber.id = `draggable_${id}header`;
         }
     }
 
@@ -307,8 +307,9 @@ function makeDragImg(id, url) {
     const appendedElement = document.getElementById(`draggable_${id}`);
     if (appendedElement) {
         var elmntName = $(appendedElement);
-        dragElement(elmntName);
         loadMovingUIState();
+        dragElement(elmntName);
+ 
 
         // Prevent dragging the image
         console.log(`#draggable_${id} img`);

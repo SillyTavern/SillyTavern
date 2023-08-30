@@ -452,6 +452,7 @@ export function dragElement(elmnt) {
     var elmntName = elmnt.attr('id');
     console.log(`dragElement called for ${elmntName}`);
     const elmntNameEscaped = $.escapeSelector(elmntName);
+    console.log(`dragElement escaped name: ${elmntNameEscaped}`);
     const elmntHeader = $(`#${elmntNameEscaped}header`);
 
     if (elmntHeader.length) {

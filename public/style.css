@@ -3562,3 +3562,9 @@ a {
     margin-left: 10px;
     /* Give some space between the button and search box */
 }
+
+.draggable img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
