@@ -1924,7 +1924,7 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
         "input": request.body.input,
         "model": request.body.model,
         "parameters": {
-            "use_string": request.body.use_string,
+            "use_string": request.body.use_string ?? true,
             "temperature": request.body.temperature,
             "max_length": request.body.max_length,
             "min_length": request.body.min_length,
@@ -1949,7 +1949,6 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
             "logit_bias_exp": logit_bias_exp,
             "generate_until_sentence": request.body.generate_until_sentence,
             "use_cache": request.body.use_cache,
-            "use_string": request.body.use_string ?? true,
             "return_full_text": request.body.return_full_text,
             "prefix": request.body.prefix,
             "order": request.body.order
