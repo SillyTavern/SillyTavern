@@ -5328,7 +5328,7 @@ app.post('/asset_delete', jsonParser, async (request, response) => {
     // Sanitize filename
     const safe_input = checkAssetFileName(inputFilename);
     if (safe_input == '')
-        return response.sendFile(400);
+        return response.sendFile('400');
 
     const file_path = path.join(directories.assets, category, safe_input)
     console.debug("Request received to delete", category, file_path);
