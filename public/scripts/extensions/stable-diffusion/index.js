@@ -873,6 +873,7 @@ async function sdMessageButton(e) {
     const message_id = $mes.attr('mesid');
     const message = context.chat[message_id];
     const characterName = message?.name || context.name2;
+    const characterFileName = context.characterId ? context.characters[context.characterId].name : context.groups[Object.keys(context.groups).filter(x => context.groups[x].id === context.groupId)[0]].id.toString();
     const messageText = message?.mes;
     const hasSavedImage = message?.extra?.image && message?.extra?.title;
 
@@ -888,7 +889,7 @@ async function sdMessageButton(e) {
             message.extra.title = prompt;
 
             console.log('Regenerating an image, using existing prompt:', prompt);
-            await sendGenerationRequest(generationMode.FREE, prompt, characterName, saveGeneratedImage);
+            await sendGenerationRequest(generationMode.FREE, prompt, characterFileName, saveGeneratedImage);
         }
         else {
             console.log("doing /sd raw last");
