@@ -4375,6 +4375,7 @@ app.post('/horde_generateimage', jsonParser, async (request, response) => {
 
             if (check.done) {
                 const result = await ai_horde.getImageGenerationStatus(generation.id);
+                if (result.generations === undefined) return response.sendStatus(500);
                 return response.send(result.generations[0].img);
             }
 
