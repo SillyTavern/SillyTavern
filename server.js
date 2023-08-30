@@ -5274,7 +5274,7 @@ app.post('/asset_download', jsonParser, async (request, response) => {
     try {
         // Download to temp
         const res = await fetch(url);
-        if (!res.ok) {
+        if (!res.ok || res.body === null) {
             throw new Error(`Unexpected response ${res.statusText}`);
         }
         const destination = path.resolve(temp_path);
