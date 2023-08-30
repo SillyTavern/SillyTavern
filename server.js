@@ -963,11 +963,11 @@ function charaFormatData(data) {
     const char = tryParse(data.json_data) || {};
 
     // Checks if data.alternate_greetings is an array, a string, or neither, and acts accordingly. (expected to be an array of strings)
-    const getAlternateGreetings = data => data.map(d => {
-        if (Array.isArray(d.alternate_greetings)) return d.alternate_greetings
-        if (typeof d.alternate_greetings === 'string') return [d.alternate_greetings]
+    const getAlternateGreetings = data => {
+        if (Array.isArray(data.alternate_greetings)) return data.alternate_greetings
+        if (typeof data.alternate_greetings === 'string') return [data.alternate_greetings]
         return []
-    })
+    }
 
     // Spec V1 fields
     _.set(char, 'name', data.ch_name);
