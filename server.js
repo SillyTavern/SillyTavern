@@ -711,7 +711,7 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
             console.log("Endpoint response:", data);
             return response_generate.send(data);
         } catch (error) {
-            retval = { error: true, status: error.status, response: error.statusText };
+            let retval = { error: true, status: error.status, response: error.statusText };
             console.log("Endpoint error:", error);
             try {
                 retval.response = await error.json();
