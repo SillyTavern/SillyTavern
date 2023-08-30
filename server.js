@@ -4963,7 +4963,7 @@ async function getImageBuffers(zipFilePath) {
 /**
  * This function extracts the extension information from the manifest file.
  * @param {string} extensionPath - The path of the extension folder
- * @returns {Object} - Returns the manifest data as an object
+ * @returns {Promise<Object>} - Returns the manifest data as an object
  */
 async function getManifest(extensionPath) {
     const manifestPath = path.join(extensionPath, 'manifest.json');
