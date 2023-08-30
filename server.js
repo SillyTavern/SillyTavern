@@ -1461,6 +1461,7 @@ app.post("/getbackgrounds", jsonParser, function (request, response) {
 
 });
 app.post("/iscolab", jsonParser, function (request, response) {
+    /** @type {false | string} */
     let send_data = false;
     if (is_colab) {
         send_data = String(process.env.colaburl).trim();
