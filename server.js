@@ -1703,7 +1703,7 @@ app.post('/getsettings', jsonParser, (request, response) => {
     const worldFiles = fs
         .readdirSync(directories.worlds)
         .filter(file => path.extname(file).toLowerCase() === '.json')
-        .sort((a, b) => a < b);
+        .sort((a, b) => a.localeCompare(b));
     const world_names = worldFiles.map(item => path.parse(item).name);
 
     const themes = readAndParseFromDirectory(directories.themes);
