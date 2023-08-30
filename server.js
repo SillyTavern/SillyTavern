@@ -4704,7 +4704,7 @@ app.post('/import_custom', jsonParser, async (request, response) => {
             return response.sendStatus(404);
         }
 
-        response.set('Content-Type', result.fileType);
+        if (result.fileType) response.set('Content-Type', result.fileType)
         response.set('Content-Disposition', `attachment; filename="${result.fileName}"`);
         response.set('X-Custom-Content-Type', chubParsed?.type);
         return response.send(result.buffer);
