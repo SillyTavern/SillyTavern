@@ -7,7 +7,8 @@
         "strictFunctionTypes": true,
         "checkJs": true,
         "allowUmdGlobalAccess": true,
-        "allowSyntheticDefaultImports": true
+        "allowSyntheticDefaultImports": true,
+        "resolveJsonModule": true
     },
     "exclude": [
         "node_modules",

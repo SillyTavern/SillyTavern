@@ -91,10 +91,8 @@ function createDefaultFiles() {
 }
 
 const net = require("net");
-// work around a node v20 bug: https://github.com/nodejs/node/issues/47822#issuecomment-1564708870
-if (net.setDefaultAutoSelectFamily) {
-    net.setDefaultAutoSelectFamily(false);
-}
+// @ts-ignore work around a node v20 bug: https://github.com/nodejs/node/issues/47822#issuecomment-1564708870
+if (net.setDefaultAutoSelectFamily) net.setDefaultAutoSelectFamily(false);
 
 const cliArguments = yargs(hideBin(process.argv))
     .option('disableCsrf', {
@@ -113,7 +111,7 @@ const cliArguments = yargs(hideBin(process.argv))
         type: 'string',
         default: 'certs/privkey.pem',
         describe: 'Path to your private key file.'
-    }).argv;
+    }).parseSync();
 
 // change all relative paths
 const directory = process['pkg'] ? path.dirname(process.execPath) : __dirname;
@@ -367,7 +365,7 @@ if (cliArguments.disableCsrf === false) {
 
     app.get("/csrf-token", (req, res) => {
         res.json({
-            "token": generateToken(res)
+            "token": generateToken(res, req)
         });
     });
 
@@ -470,7 +468,7 @@ app.get("/notes/*", function (request, response) {
 app.get('/deviceinfo', function (request, response) {
     const userAgent = request.header('user-agent');
     const deviceDetector = new DeviceDetector();
-    const deviceInfo = deviceDetector.parse(userAgent);
+    const deviceInfo = deviceDetector.parse(userAgent || "");
     return response.send(deviceInfo);
 });
 app.get('/version', function (_, response) {
@@ -479,7 +477,7 @@ app.get('/version', function (_, response) {
 })
 
 //**************Kobold api
-app.post("/generate", jsonParser, async function (request, response_generate = response) {
+app.post("/generate", jsonParser, async function (request, response_generate) {
     if (!request.body) return response_generate.sendStatus(400);
 
     const request_prompt = request.body.prompt;
@@ -623,6 +621,10 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
     });
 
     if (request.header('X-Response-Streaming')) {
+        const streamingUrlHeader = request.header('X-Streaming-URL');
+        if (streamingUrlHeader === undefined) return response_generate.sendStatus(400);
+        const streamingUrl = streamingUrlHeader.replace("localhost", "127.0.0.1");
+
         response_generate.writeHead(200, {
             'Content-Type': 'text/plain;charset=utf-8',
             'Transfer-Encoding': 'chunked',
@@ -630,7 +632,6 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
         });
 
         async function* readWebsocket() {
-            const streamingUrl = request.header('X-Streaming-URL').replace("localhost", "127.0.0.1");
             const websocket = new WebSocket(streamingUrl);
 
             websocket.on('open', async function () {
@@ -661,7 +662,7 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
                         websocket.once('error', reject);
                         websocket.once('message', (data, isBinary) => {
                             websocket.removeListener('error', reject);
-                            resolve(data, isBinary);
+                            resolve(data);
                         });
                     });
                 } catch (err) {
@@ -961,13 +962,12 @@ function charaFormatData(data) {
     // This is supposed to save all the foreign keys that ST doesn't care about
     const char = tryParse(data.json_data) || {};
 
-    // This function uses _.cond() to create a series of conditional checks that return the desired output based on the input data.
-    // It checks if data.alternate_greetings is an array, a string, or neither, and acts accordingly.
-    const getAlternateGreetings = data => _.cond([
-        [d => Array.isArray(d.alternate_greetings), d => d.alternate_greetings],
-        [d => typeof d.alternate_greetings === 'string', d => [d.alternate_greetings]],
-        [_.stubTrue, _.constant([])]
-    ])(data);
+    // Checks if data.alternate_greetings is an array, a string, or neither, and acts accordingly. (expected to be an array of strings)
+    const getAlternateGreetings = data => {
+        if (Array.isArray(data.alternate_greetings)) return data.alternate_greetings
+        if (typeof data.alternate_greetings === 'string') return [data.alternate_greetings]
+        return []
+    }
 
     // Spec V1 fields
     _.set(char, 'name', data.ch_name);
@@ -1099,6 +1099,8 @@ app.post("/renamecharacter", jsonParser, async function (request, response) {
     try {
         // Read old file, replace name int it
         const rawOldData = await charaRead(oldAvatarPath);
+        if (rawOldData === false || rawOldData === undefined) throw new Error("Failed to read character file");
+
         const oldData = getCharaCardV2(json5.parse(rawOldData));
         _.set(oldData, 'data.name', newName);
         _.set(oldData, 'name', newName);
@@ -1187,26 +1189,22 @@ app.post("/editcharacterattribute", jsonParser, async function (request, respons
 
     try {
         const avatarPath = path.join(charactersPath, request.body.avatar_url);
-        charaRead(avatarPath).then((char) => {
-            char = JSON.parse(char);
-            //check if the field exists
-            if (char[request.body.field] === undefined && char.data[request.body.field] === undefined) {
-                console.error('Error: invalid field.');
-                response.status(400).send('Error: invalid field.');
-                return;
-            }
-            char[request.body.field] = request.body.value;
-            char.data[request.body.field] = request.body.value;
-            char = JSON.stringify(char);
-            return { char };
-        }).then(({ char }) => {
-            charaWrite(avatarPath, char, (request.body.avatar_url).replace('.png', ''), response, 'Character saved');
-        }).catch((err) => {
-            console.error('An error occured, character edit invalidated.', err);
-        });
-    }
-    catch {
-        console.error('An error occured, character edit invalidated.');
+        let charJSON = await charaRead(avatarPath);
+        if (typeof charJSON !== 'string') throw new Error("Failed to read character file");
+
+        let char = JSON.parse(charJSON)
+        //check if the field exists
+        if (char[request.body.field] === undefined && char.data[request.body.field] === undefined) {
+            console.error('Error: invalid field.');
+            response.status(400).send('Error: invalid field.');
+            return;
+        }
+        char[request.body.field] = request.body.value;
+        char.data[request.body.field] = request.body.value;
+        let newCharJSON = JSON.stringify(char);
+        await charaWrite(avatarPath, newCharJSON, (request.body.avatar_url).replace('.png', ''), response, 'Character saved');
+    } catch (err) {
+        console.error('An error occured, character edit invalidated.', err);
     }
 });
 
@@ -1246,6 +1244,10 @@ app.post("/deletecharacter", jsonParser, async function (request, response) {
     return response.sendStatus(200);
 });
 
+/**
+ * @param {express.Response | undefined} response
+ * @param {{file_name: string} | string} mes
+ */
 async function charaWrite(img_url, data, target_img, response = undefined, mes = 'ok', crop = undefined) {
     try {
         // Read the image, resize, and save it as a PNG into the buffer
@@ -4053,23 +4055,24 @@ if (listen && !config.whitelistMode && !config.basicAuthMode) {
     }
 }
 
-if (true === cliArguments.ssl)
+if (true === cliArguments.ssl) {
     https.createServer(
         {
             cert: fs.readFileSync(cliArguments.certPath),
             key: fs.readFileSync(cliArguments.keyPath)
         }, app)
         .listen(
-            tavernUrl.port || 443,
+            Number(tavernUrl.port) || 443,
             tavernUrl.hostname,
             setupTasks
         );
-else
+} else {
     http.createServer(app).listen(
-        tavernUrl.port || 80,
+        Number(tavernUrl.port) || 80,
         tavernUrl.hostname,
         setupTasks
     );
+}
 
 async function convertWebp() {
     const files = fs.readdirSync(directories.characters).filter(e => e.endsWith(".webp"));
