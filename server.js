@@ -2179,6 +2179,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
         } else {
             try {
                 var img_data = await charaRead(uploadPath, format);
+                if (img_data === false || img_data === undefined) throw new Error('Failed to read character data');
 
                 let jsonData = json5.parse(img_data);
 
