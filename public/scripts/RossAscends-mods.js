@@ -1089,6 +1089,13 @@ export function initRossMods() {
             }
         }
 
+        if ($(".draggable").is(":visible")) {
+            // Remove the first matched element
+            $('.draggable:first').remove();
+            return;
+        }
+
+
         if (event.ctrlKey && /^[1-9]$/.test(event.key)) {
             // Your code here
             event.preventDefault();
