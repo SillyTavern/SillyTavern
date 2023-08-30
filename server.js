@@ -4286,8 +4286,8 @@ app.post('/viewsecrets', jsonParser, async (_, response) => {
     }
 
     try {
-        const fileContents = fs.readFileSync(SECRETS_FILE);
-        const secrets = JSON.parse(fileContents.toString());
+        const fileContents = fs.readFileSync(SECRETS_FILE, 'utf8');
+        const secrets = JSON.parse(fileContents);
         return response.send(secrets);
     } catch (error) {
         console.error(error);
