@@ -13,7 +13,8 @@ import {
     getCurrentChatId,
     printCharacters,
     setCharacterId,
-    setEditedMessageId
+    setEditedMessageId,
+    renderTemplate,
 } from "../script.js";
 import { isMobile, initMovingUI } from "./RossAscends-mods.js";
 import {
@@ -50,6 +51,11 @@ const defaultStoryString = "{{#if system}}{{system}}\n{{/if}}{{#if description}}
 const defaultExampleSeparator = '***';
 const defaultChatStart = '***';
 
+export const ui_mode = {
+    SIMPLE: 0,
+    POWER: 1,
+}
+
 const avatar_styles = {
     ROUND: 0,
     RECTANGULAR: 1,
@@ -74,7 +80,10 @@ const send_on_enter_options = {
 }
 
 export const persona_description_positions = {
-    BEFORE_CHAR: 0,
+    IN_PROMPT: 0,
+    /**
+     * @deprecated Use persona_description_positions.IN_PROMPT instead.
+     */
     AFTER_CHAR: 1,
     TOP_AN: 2,
     BOTTOM_AN: 3,
@@ -97,6 +106,7 @@ let power_user = {
     multigen_next_chunks: 30,
     markdown_escape_strings: '',
 
+    ui_mode: ui_mode.POWER,
     fast_ui_mode: true,
     avatar_style: avatar_styles.ROUND,
     chat_display: chat_styles.DEFAULT,
@@ -189,7 +199,7 @@ let power_user = {
     persona_descriptions: {},
 
     persona_description: '',
-    persona_description_position: persona_description_positions.BEFORE_CHAR,
+    persona_description_position: persona_description_positions.IN_PROMPT,
     persona_show_notifications: true,
 
     custom_stopping_strings: '',
@@ -232,6 +242,13 @@ const storage_keys = {
 };
 
 let browser_has_focus = true;
+const debug_functions = [];
+
+export function switchSimpleMode() {
+    $('[data-newbie-hidden]').each(function () {
+        $(this).toggleClass('displayNone', power_user.ui_mode === ui_mode.SIMPLE);
+    });
+}
 
 function playMessageSound() {
     if (!power_user.play_message_sound) {
@@ -653,6 +670,22 @@ async function applyMovingUIPreset(name) {
     loadMovingUIState()
 }
 
+/**
+ * Register a function to be executed when the debug menu is opened.
+ * @param {string} functionId Unique ID for the function.
+ * @param {string} name Name of the function.
+ * @param {string} description Description of the function.
+ * @param {function} func Function to be executed.
+ */
+export function registerDebugFunction(functionId, name, description, func) {
+    debug_functions.push({ functionId, name, description, func });
+}
+
+function showDebugMenu() {
+    const template = renderTemplate('debug', { functions: debug_functions });
+    callPopup(template, 'text', '', { wide: true, large: true });
+}
+
 switchUiMode();
 applyFontScale('forced');
 applyThemeColor();
@@ -718,6 +751,10 @@ function loadPowerUserSettings(settings, data) {
 
     if (power_user.chat_width === '') {
         power_user.chat_width = 50;
+    }
+
+    if (power_user.tokenizer === tokenizers.LEGACY) {
+        power_user.tokenizer = tokenizers.GPT2;
     }
 
     $('#relaxed_api_urls').prop("checked", power_user.relaxed_api_urls);
@@ -799,6 +836,7 @@ function loadPowerUserSettings(settings, data) {
     $("#user-mes-blur-tint-color-picker").attr('color', power_user.user_mes_blur_tint_color);
     $("#bot-mes-blur-tint-color-picker").attr('color', power_user.bot_mes_blur_tint_color);
     $("#shadow-color-picker").attr('color', power_user.shadow_color);
+    $("#ui_mode_select").val(power_user.ui_mode).find(`option[value="${power_user.ui_mode}"]`).attr('selected', true);
 
     for (const theme of themes) {
         const option = document.createElement('option');
@@ -826,6 +864,7 @@ function loadPowerUserSettings(settings, data) {
     switchSpoilerMode();
     loadMovingUIState();
     loadCharListState();
+    switchSimpleMode();
 }
 
 async function loadCharListState() {
@@ -1591,7 +1630,7 @@ function setAvgBG() {
 
 /**
  * Gets the custom stopping strings from the power user settings.
- * @param {number | undefined} limit Number of strings to return. If undefined, returns all strings.
+ * @param {number | undefined} limit Number of strings to return. If 0 or undefined, returns all strings.
  * @returns {string[]} An array of custom stopping strings
  */
 export function getCustomStoppingStrings(limit = undefined) {
@@ -1602,15 +1641,27 @@ export function getCustomStoppingStrings(limit = undefined) {
         }
 
         // Parse the JSON string
-        const strings = JSON.parse(power_user.custom_stopping_strings);
+        let strings = JSON.parse(power_user.custom_stopping_strings);
 
         // Make sure it's an array
         if (!Array.isArray(strings)) {
             return [];
         }
 
-        // Make sure all the elements are strings. Apply the limit.
-        return strings.filter((s) => typeof s === 'string').slice(0, limit);
+        // Make sure all the elements are strings.
+        strings = strings.filter((s) => typeof s === 'string');
+
+        // Substitute params if necessary
+        if (power_user.custom_stopping_strings_macro) {
+            strings = strings.map(x => substituteParams(x));
+        }
+
+        // Apply the limit. If limit is 0, return all strings.
+        if (limit > 0) {
+            strings = strings.slice(0, limit);
+        }
+
+        return strings;
     } catch (error) {
         // If there's an error, return an empty array
         console.warn('Error parsing custom stopping strings:', error);
@@ -2107,6 +2158,28 @@ $(document).ready(() => {
     $('#lazy_load').on('input', function () {
         power_user.lazy_load = Number($(this).val());
         saveSettingsDebounced();
+    });
+
+    $('#debug_menu').on('click', function () {
+        showDebugMenu();
+    });
+
+    $("#ui_mode_select").on('change', function () {
+        const value = $(this).find(':selected').val();
+        power_user.ui_mode = Number(value);
+        saveSettingsDebounced();
+        switchSimpleMode();
+    });
+
+    $(document).on('click', '#debug_table [data-debug-function]', function () {
+        const functionId = $(this).data('debug-function');
+        const functionRecord = debug_functions.find(f => f.functionId === functionId);
+
+        if (functionRecord) {
+            functionRecord.func();
+        } else {
+            console.warn(`Debug function ${functionId} not found`);
+        }
     });
 
     $(window).on('focus', function () {

@@ -50,6 +50,7 @@ import {
     download,
     getFileText, getSortableDelay,
     parseJsonFile,
+    resetScrollHeight,
     stringFormat,
 } from "./utils.js";
 import { countTokensOpenAI } from "./tokenizers.js";
@@ -3139,6 +3140,10 @@ $(document).ready(async function () {
     $('#openrouter_use_fallback').on('input', function () {
         oai_settings.openrouter_use_fallback = !!$(this).prop('checked');
         saveSettingsDebounced();
+    });
+
+    $(document).on('input', '#openai_settings .autoSetHeight', function () {
+        resetScrollHeight($(this));
     });
 
     $("#api_button_openai").on("click", onConnectButtonClick);

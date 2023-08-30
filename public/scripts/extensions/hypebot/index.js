@@ -6,6 +6,7 @@ import { bufferToBase64, debounce } from "../../utils.js";
 import { decodeTextTokens, getTextTokens, tokenizers } from "../../tokenizers.js";
 
 const MODULE_NAME = 'hypebot';
+const WAITING_VERBS = ['thinking', 'typing', 'brainstorming', 'cooking', 'conjuring'];
 const MAX_PROMPT = 1024;
 const MAX_LENGTH = 50;
 const MAX_STRING_LENGTH = MAX_PROMPT * 4;
@@ -20,8 +21,7 @@ const settings = {
  * @returns {string} Random waiting verb
  */
 function getWaitingVerb() {
-    const waitingVerbs = ['thinking', 'typing', 'brainstorming', 'cooking', 'conjuring'];
-    return waitingVerbs[Math.floor(Math.random() * waitingVerbs.length)];
+    return WAITING_VERBS[Math.floor(Math.random() * WAITING_VERBS.length)];
 }
 
 /**
@@ -49,8 +49,7 @@ function getVerb(text) {
  * @returns {string} Formatted HTML text
  */
 function formatReply(text) {
-    const verb = getVerb(text);
-    return DOMPurify.sanitize(`<span class="hypebot_name">${settings.name} ${verb}:</span>&nbsp;<span class="hypebot_text">${text}</span>`);
+    return `<span class="hypebot_name">${settings.name} ${getVerb(text)}:</span>&nbsp;<span class="hypebot_text">${text}</span>`;
 }
 
 let hypeBotBar;
@@ -59,12 +58,24 @@ let abortController;
 const generateDebounced = debounce(() => generateHypeBot(), 500);
 
 /**
+ * Sets the HypeBot text. Preserves scroll position of the chat.
+ * @param {string} text Text to set
+ */
+function setHypeBotText(text) {
+    const blockA = $('#chat');
+    var originalScrollBottom = blockA[0].scrollHeight - (blockA.scrollTop() + blockA.outerHeight());
+    hypeBotBar.html(DOMPurify.sanitize(text));
+    var newScrollTop = blockA[0].scrollHeight - (blockA.outerHeight() + originalScrollBottom);
+    blockA.scrollTop(newScrollTop);
+}
+
+/**
  * Called when a chat event occurs to generate a HypeBot reply.
  * @param {boolean} clear Clear the hypebot bar.
  */
 function onChatEvent(clear) {
     if (clear) {
-        hypeBotBar.text('');
+        setHypeBotText('');
     }
 
     abortController?.abort();
@@ -80,12 +91,12 @@ async function generateHypeBot() {
     }
 
     if (!secret_state[SECRET_KEYS.NOVEL]) {
-        hypeBotBar.html('<span class="hypebot_nokey">No API key found. Please enter your API key in the NovelAI API Settings</span>');
+        setHypeBotText('<div class="hypebot_nokey">No API key found. Please enter your API key in the NovelAI API Settings to use the HypeBot.</div>');
         return;
     }
 
     console.debug('Generating HypeBot reply');
-    hypeBotBar.html(DOMPurify.sanitize(`<span class="hypebot_name">${settings.name}</span> is ${getWaitingVerb()}...`));
+    setHypeBotText(`<span class="hypebot_name">${settings.name}</span> is ${getWaitingVerb()}...`);
 
     const context = getContext();
     const chat = context.chat.slice();
@@ -160,7 +171,9 @@ async function generateHypeBot() {
         const ids = Array.from(new Uint16Array(Uint8Array.from(atob(data.output), c => c.charCodeAt(0)).buffer));
         const output = decodeTextTokens(tokenizers.GPT2, ids).replace(/�/g, '').trim();
 
-        hypeBotBar.html(formatReply(output));
+        setHypeBotText(formatReply(output));
+    } else {
+        setHypeBotText('<div class="hypebot_error">Something went wrong while generating a HypeBot reply. Please try again.</div>');
     }
 }
 
