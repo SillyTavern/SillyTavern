@@ -450,7 +450,7 @@ export function dragElement(elmnt) {
         topbar, topbarWidth, topBarFirstX, topBarLastX, topBarLastY, sheldWidth;
 
     var elmntName = elmnt.attr('id');
-
+    console.log(`dragElement called for ${elmntName}`);
     const elmntNameEscaped = $.escapeSelector(elmntName);
     const elmntHeader = $(`#${elmntNameEscaped}header`);
 

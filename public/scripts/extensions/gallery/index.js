@@ -134,7 +134,6 @@ async function showCharGallery() {
 
         const items = await getGalleryItems(url);
         makeMovable();
-        let close = callPopup('', "text");
         console.log("close", close);
         if ($("body").css("position") === "fixed") {
             $("body").css("position", "static");
@@ -145,7 +144,7 @@ async function showCharGallery() {
         }, 100);
 
         //next, we add `<div id="" class="fa-solid fa-grip drag-grabber"></div>` to zoomFor_test
-        document.getElementById(`zoomFor_test`).innerHTML += `<div id="" class="fa-solid fa-grip drag-grabber"></div>`;
+        //document.getElementById(`zoomFor_test`).innerHTML += `<div id="" class="fa-solid fa-grip drag-grabber"></div>`;
 
         // close.then(() => {
         //     $("#my-gallery").nanogallery2("destroy");
@@ -269,9 +268,67 @@ function makeMovable(){
     });
 }
 
+function makeDragImg(id, url) {
+    // Step 1: Clone the template content
+    const template = document.getElementById('generic_draggable_template');
+
+    if (!(template instanceof HTMLTemplateElement)) {
+        console.error('The element is not a <template> tag');
+        return;
+    }
+
+    const newElement = document.importNode(template.content, true);
+
+    // Step 2: Append the given image
+    const imgElem = document.createElement('img');
+    imgElem.src = url;
+
+    const draggableElem = newElement.querySelector('.draggable');
+    if (draggableElem) {
+        draggableElem.appendChild(imgElem);
+
+        // Set a unique id for the draggable element
+        draggableElem.id = `draggable_${id}`;
+
+        // Ensure that the newly added element is displayed as block
+        draggableElem.style.display = 'block';
+
+        // Find the .drag-grabber and set its ID
+        const dragGrabber = draggableElem.querySelector('.drag-grabber');
+        if (dragGrabber) {
+            dragGrabber.id = `zoomFor_${id}header`;
+        }
+    }
+
+    // Step 3: Attach it to the body
+    document.body.appendChild(newElement);
+
+    // Step 4: Call dragElement and loadMovingUIState
+    const appendedElement = document.getElementById(`draggable_${id}`);
+    if (appendedElement) {
+        var elmntName = $(appendedElement);
+        dragElement(elmntName);
+        loadMovingUIState();
+
+        // Prevent dragging the image
+        console.log(`#draggable_${id} img`);
+        $(`#draggable_${id} img`).on('dragstart', (e) => {
+            console.log('saw drag on avatar!');
+            e.preventDefault();
+            return false;
+        });
+    } else {
+        console.error("Failed to append the template content or retrieve the appended content.");
+    }
+}
+
+
 function viewWithFancybox(items) {
     if (items && items.length > 0) {
         var url = items[0].responsiveURL(); // Get the URL of the clicked image/video
-        window.open(url, '_blank'); // Open the URL in a new window/tab
+        // ID should just be the last part of the URL, removing the extension
+        var id = url.substring(url.lastIndexOf('/') + 1, url.lastIndexOf('.'));
+        makeDragImg(id, url);
     }
 }
+
