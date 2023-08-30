@@ -468,7 +468,7 @@ app.get("/notes/*", function (request, response) {
 app.get('/deviceinfo', function (request, response) {
     const userAgent = request.header('user-agent');
     const deviceDetector = new DeviceDetector();
-    const deviceInfo = deviceDetector.parse(userAgent);
+    const deviceInfo = deviceDetector.parse(userAgent || "");
     return response.send(deviceInfo);
 });
 app.get('/version', function (_, response) {
