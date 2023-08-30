@@ -1256,7 +1256,7 @@ async function charaWrite(img_url, data, target_img, response = undefined, mes =
 
         // Get the chunks
         const chunks = extract(image);
-        const tEXtChunks = chunks.filter(chunk => chunk.create_date === 'tEXt' || chunk.name === 'tEXt');
+        const tEXtChunks = chunks.filter(chunk => chunk.name === 'tEXt');
 
         // Remove all existing tEXt chunks
         for (let tEXtChunk of tEXtChunks) {
