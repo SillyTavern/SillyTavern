@@ -2871,7 +2871,7 @@ app.post('/deletegroup', jsonParser, async (request, response) => {
 
     try {
         // Delete group chats
-        const group = json5.parse(fs.readFileSync(pathToGroup));
+        const group = json5.parse(fs.readFileSync(pathToGroup, 'utf8'));
 
         if (group && Array.isArray(group.chats)) {
             for (const chat of group.chats) {
