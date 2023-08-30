@@ -1895,7 +1895,17 @@ export function extractMessageBias(message) {
     }
 }
 
+/**
+ * Removes impersonated group member lines from the group member messages.
+ * Doesn't do anything if group reply trimming is disabled.
+ * @param {string} getMessage Group message
+ * @returns Cleaned-up group message
+ */
 function cleanGroupMessage(getMessage) {
+    if (power_user.disable_group_trimming) {
+        return getMessage;
+    }
+
     const group = groups.find((x) => x.id == selected_group);
 
     if (group && Array.isArray(group.members) && group.members) {
