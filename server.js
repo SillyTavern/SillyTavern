@@ -1635,7 +1635,7 @@ function readAndParseFromDirectory(directoryPath, fileExtension = '.json') {
 }
 
 function sortByModifiedDate(directory) {
-    return (a, b) => new Date(fs.statSync(`${directory}/${b}`).mtime) - new Date(fs.statSync(`${directory}/${a}`).mtime);
+    return (a, b) => +(new Date(fs.statSync(`${directory}/${b}`).mtime)) - +(new Date(fs.statSync(`${directory}/${a}`).mtime));
 }
 
 function sortByName(_) {
