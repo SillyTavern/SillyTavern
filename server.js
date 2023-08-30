@@ -2662,7 +2662,7 @@ app.post('/uploadimage', jsonParser, async (request, response) => {
     }
 
     // Extracting the base64 data and the image format
-    const match = request.body.image.match(/^data:image\/(png|jpg|webp);base64,(.+)$/);
+    const match = request.body.image.match(/^data:image\/(png|jpg|webp|jpeg|gif);base64,(.+)$/);
     if (!match) {
         return response.status(400).send({ error: "Invalid image format" });
     }
