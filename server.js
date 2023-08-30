@@ -2985,6 +2985,8 @@ function getOriginalFolder(type) {
 
 function invalidateThumbnail(type, file) {
     const folder = getThumbnailFolder(type);
+    if (folder === undefined) throw new Error("Invalid thumbnail type")
+    
     const pathToThumbnail = path.join(folder, file);
 
     if (fs.existsSync(pathToThumbnail)) {
