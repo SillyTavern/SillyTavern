@@ -53,8 +53,8 @@ const cliArguments = yargs(hideBin(process.argv))
 
 // change all relative paths
 const path = require('path');
-const directory = process.pkg ? path.dirname(process.execPath) : __dirname;
-console.log(process.pkg ? 'Running from binary' : 'Running from source');
+const directory = process['pkg'] ? path.dirname(process.execPath) : __dirname;
+console.log(process['pkg'] ? 'Running from binary' : 'Running from source');
 process.chdir(directory);
 
 const express = require('express');
@@ -385,7 +385,7 @@ function getIpFromRequest(req) {
     let clientIp = req.connection.remoteAddress;
     let ip = ipaddr.parse(clientIp);
     // Check if the IP address is IPv4-mapped IPv6 address
-    if (ip.kind() === 'ipv6' && ip.isIPv4MappedAddress()) {
+    if (ip.kind() === 'ipv6' && ip instanceof ipaddr.IPv6 && ip.isIPv4MappedAddress()) {
         const ipv4 = ip.toIPv4Address().toString();
         clientIp = ipv4;
     } else {
@@ -422,7 +422,7 @@ app.use(function (req, res, next) {
 });
 
 
-app.use(express.static(process.cwd() + "/public", { refresh: true }));
+app.use(express.static(process.cwd() + "/public", {}));
 
 app.use('/backgrounds', (req, res) => {
     const filePath = decodeURIComponent(path.join(process.cwd(), 'public/backgrounds', req.url.replace(/%20/g, ' ')));
@@ -596,7 +596,7 @@ app.post("/generate", jsonParser, async function (request, response_generate = r
 });
 
 //************** Text generation web UI
-app.post("/generate_textgenerationwebui", jsonParser, async function (request, response_generate = response) {
+app.post("/generate_textgenerationwebui", jsonParser, async function (request, response_generate) {
     if (!request.body) return response_generate.sendStatus(400);
 
     console.log(request.body);
@@ -711,7 +711,7 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
             console.log("Endpoint response:", data);
             return response_generate.send(data);
         } catch (error) {
-            retval = { error: true, status: error.status, response: error.statusText };
+            let retval = { error: true, status: error.status, response: error.statusText };
             console.log("Endpoint error:", error);
             try {
                 retval.response = await error.json();
@@ -837,7 +837,7 @@ function getVersion() {
     try {
         const pkgJson = require('./package.json');
         pkgVersion = pkgJson.version;
-        if (!process.pkg && commandExistsSync('git')) {
+        if (!process['pkg'] && commandExistsSync('git')) {
             gitRevision = require('child_process')
                 .execSync('git rev-parse --short HEAD', { cwd: process.cwd(), stdio: ['ignore', 'pipe', 'ignore'] })
                 .toString().trim();
@@ -4227,7 +4227,7 @@ app.post('/readsecretstate', jsonParser, (_, response) => {
     }
 
     try {
-        const fileContents = fs.readFileSync(SECRETS_FILE);
+        const fileContents = fs.readFileSync(SECRETS_FILE, 'utf8');
         const secrets = JSON.parse(fileContents);
         const state = {};
 
@@ -4286,7 +4286,7 @@ app.post('/viewsecrets', jsonParser, async (_, response) => {
     }
 
     try {
-        const fileContents = fs.readFileSync(SECRETS_FILE);
+        const fileContents = fs.readFileSync(SECRETS_FILE, 'utf-8');
         const secrets = JSON.parse(fileContents);
         return response.send(secrets);
     } catch (error) {
@@ -4349,6 +4349,7 @@ app.post('/horde_generateimage', jsonParser, async (request, response) => {
                 {
                     sampler_name: request.body.sampler,
                     hires_fix: request.body.enable_hr,
+                    // @ts-ignore - use_gfpgan param is not in the type definition, need to update to new ai_horde @ https://github.com/ZeldaFan0225/ai_horde/blob/main/index.ts
                     use_gfpgan: request.body.restore_faces,
                     cfg_scale: request.body.scale,
                     steps: request.body.steps,
@@ -4375,6 +4376,7 @@ app.post('/horde_generateimage', jsonParser, async (request, response) => {
 
             if (check.done) {
                 const result = await ai_horde.getImageGenerationStatus(generation.id);
+                if (result.generations === undefined) return response.sendStatus(500);
                 return response.send(result.generations[0].img);
             }
 
@@ -4703,7 +4705,7 @@ app.post('/import_custom', jsonParser, async (request, response) => {
             return response.sendStatus(404);
         }
 
-        response.set('Content-Type', result.fileType);
+        if (result.fileType) response.set('Content-Type', result.fileType)
         response.set('Content-Disposition', `attachment; filename="${result.fileName}"`);
         response.set('X-Custom-Content-Type', chubParsed?.type);
         return response.send(result.buffer);
@@ -4761,6 +4763,11 @@ async function downloadChubCharacter(id) {
     return { buffer, fileName, fileType };
 }
 
+/**
+ * 
+ * @param {String} str 
+ * @returns { { id: string, type: "character" | "lorebook" } | null }
+ */
 function parseChubUrl(str) {
     const splitStr = str.split('/');
     const length = splitStr.length;
@@ -4865,7 +4872,7 @@ function writeSecret(key, value) {
         writeFileAtomicSync(SECRETS_FILE, emptyFile, "utf-8");
     }
 
-    const fileContents = fs.readFileSync(SECRETS_FILE);
+    const fileContents = fs.readFileSync(SECRETS_FILE, 'utf-8');
     const secrets = JSON.parse(fileContents);
     secrets[key] = value;
     writeFileAtomicSync(SECRETS_FILE, JSON.stringify(secrets), "utf-8");
@@ -4876,7 +4883,7 @@ function readSecret(key) {
         return undefined;
     }
 
-    const fileContents = fs.readFileSync(SECRETS_FILE);
+    const fileContents = fs.readFileSync(SECRETS_FILE, 'utf-8');
     const secrets = JSON.parse(fileContents);
     return secrets[key];
 }
@@ -4957,7 +4964,7 @@ async function getImageBuffers(zipFilePath) {
 /**
  * This function extracts the extension information from the manifest file.
  * @param {string} extensionPath - The path of the extension folder
- * @returns {Object} - Returns the manifest data as an object
+ * @returns {Promise<Object>} - Returns the manifest data as an object
  */
 async function getManifest(extensionPath) {
     const manifestPath = path.join(extensionPath, 'manifest.json');
@@ -4972,6 +4979,7 @@ async function getManifest(extensionPath) {
 }
 
 async function checkIfRepoIsUpToDate(extensionPath) {
+    // @ts-ignore - simple-git types are incorrect, this is apparently callable but no call signature
     const git = simpleGit();
     await git.cwd(extensionPath).fetch('origin');
     const currentBranch = await git.cwd(extensionPath).branch();
@@ -5002,6 +5010,7 @@ async function checkIfRepoIsUpToDate(extensionPath) {
  * @returns {void}
  */
 app.post('/get_extension', jsonParser, async (request, response) => {
+    // @ts-ignore - simple-git types are incorrect, this is apparently callable but no call signature
     const git = simpleGit();
     if (!request.body.url) {
         return response.status(400).send('Bad Request: URL is required in the request body.');
@@ -5047,6 +5056,7 @@ app.post('/get_extension', jsonParser, async (request, response) => {
  * @returns {void}
  */
 app.post('/update_extension', jsonParser, async (request, response) => {
+    // @ts-ignore - simple-git types are incorrect, this is apparently callable but no call signature
     const git = simpleGit();
     if (!request.body.extensionName) {
         return response.status(400).send('Bad Request: extensionName is required in the request body.');
@@ -5092,6 +5102,7 @@ app.post('/update_extension', jsonParser, async (request, response) => {
  * @returns {void}
  */
 app.post('/get_extension_version', jsonParser, async (request, response) => {
+    // @ts-ignore - simple-git types are incorrect, this is apparently callable but no call signature
     const git = simpleGit();
     if (!request.body.extensionName) {
         return response.status(400).send('Bad Request: extensionName is required in the request body.');
@@ -5240,10 +5251,11 @@ app.post('/asset_download', jsonParser, async (request, response) => {
     const inputCategory = request.body.category;
     const inputFilename = sanitize(request.body.filename);
     const validCategories = ["bgm", "ambient"];
+    const fetch = require('node-fetch').default;
 
     // Check category
     let category = null;
-    for (i of validCategories)
+    for (let i of validCategories)
         if (i == inputCategory)
             category = i;
 
@@ -5255,7 +5267,7 @@ app.post('/asset_download', jsonParser, async (request, response) => {
     // Sanitize filename
     const safe_input = checkAssetFileName(inputFilename);
     if (safe_input == '')
-        return response.sendFile(400);
+        return response.sendFile('400');
 
     const temp_path = path.join(directories.assets, "temp", safe_input)
     const file_path = path.join(directories.assets, category, safe_input)
@@ -5263,23 +5275,19 @@ app.post('/asset_download', jsonParser, async (request, response) => {
 
     try {
         // Download to temp
-        const downloadFile = (async (url, temp_path) => {
-            const res = await fetch(url);
-            if (!res.ok) {
-                throw new Error(`Unexpected response ${res.statusText}`);
-            }
-            const destination = path.resolve(temp_path);
-            // Delete if previous download failed
-            if (fs.existsSync(temp_path)) {
-                fs.unlink(temp_path, (err) => {
-                    if (err) throw err;
-                });
-            }
-            const fileStream = fs.createWriteStream(destination, { flags: 'wx' });
-            await finished(Readable.fromWeb(res.body).pipe(fileStream));
-        });
-
-        await downloadFile(url, temp_path);
+        const res = await fetch(url);
+        if (!res.ok || res.body === null) {
+            throw new Error(`Unexpected response ${res.statusText}`);
+        }
+        const destination = path.resolve(temp_path);
+        // Delete if previous download failed
+        if (fs.existsSync(temp_path)) {
+            fs.unlink(temp_path, (err) => {
+                if (err) throw err;
+            });
+        }
+        const fileStream = fs.createWriteStream(destination, { flags: 'wx' });
+        await finished(res.body.pipe(fileStream));
 
         // Move into asset place
         console.debug("Download finished, moving file from", temp_path, "to", file_path);
@@ -5309,7 +5317,7 @@ app.post('/asset_delete', jsonParser, async (request, response) => {
 
     // Check category
     let category = null;
-    for (i of validCategories)
+    for (let i of validCategories)
         if (i == inputCategory)
             category = i;
 
@@ -5321,7 +5329,7 @@ app.post('/asset_delete', jsonParser, async (request, response) => {
     // Sanitize filename
     const safe_input = checkAssetFileName(inputFilename);
     if (safe_input == '')
-        return response.sendFile(400);
+        return response.sendFile('400');
 
     const file_path = path.join(directories.assets, category, safe_input)
     console.debug("Request received to delete", category, file_path);
@@ -5358,13 +5366,14 @@ app.post('/asset_delete', jsonParser, async (request, response) => {
  * @returns {void}
  */
 app.post('/get_character_assets_list', jsonParser, async (request, response) => {
-    const name = sanitize(request.query.name);
+    if (request.query.name === undefined) return response.sendStatus(400);
+    const name = sanitize(request.query.name.toString());
     const inputCategory = request.query.category;
     const validCategories = ["bgm", "ambient"]
 
     // Check category
     let category = null
-    for (i of validCategories)
+    for (let i of validCategories)
         if (i == inputCategory)
             category = i
 
@@ -5383,7 +5392,7 @@ app.post('/get_character_assets_list', jsonParser, async (request, response) => 
                     return filename != ".placeholder";
                 });
 
-            for (i of files)
+            for (let i of files)
                 output.push(`/characters/${name}/${category}/${i}`);
 
         }
