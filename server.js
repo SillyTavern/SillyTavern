@@ -5365,7 +5365,8 @@ app.post('/asset_delete', jsonParser, async (request, response) => {
  * @returns {void}
  */
 app.post('/get_character_assets_list', jsonParser, async (request, response) => {
-    const name = sanitize(request.query.name);
+    if (request.query.name === undefined) return response.sendStatus(400);
+    const name = sanitize(request.query.name.toString());
     const inputCategory = request.query.category;
     const validCategories = ["bgm", "ambient"]
 
