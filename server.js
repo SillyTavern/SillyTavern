@@ -365,7 +365,7 @@ if (cliArguments.disableCsrf === false) {
 
     app.get("/csrf-token", (req, res) => {
         res.json({
-            "token": generateToken(res)
+            "token": generateToken(res, req)
         });
     });
 
