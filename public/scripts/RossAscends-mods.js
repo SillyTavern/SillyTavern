@@ -1008,9 +1008,9 @@ export function initRossMods() {
         }
 
         if (event.key == "Escape") { //closes various panels
+
             //dont override Escape hotkey functions from script.js
             //"close edit box" and "cancel stream generation".
-
             if ($("#curEditTextarea").is(":visible") || $("#mes_stop").is(":visible")) {
                 console.debug('escape key, but deferring to script.js routines')
                 return
@@ -1047,13 +1047,11 @@ export function initRossMods() {
                     .not('#left-nav-panel')
                     .not('#right-nav-panel')
                     .not('#floatingPrompt')
-                console.log(visibleDrawerContent)
                 $(visibleDrawerContent).parent().find('.drawer-icon').trigger('click');
                 return
             }
 
             if ($("#floatingPrompt").is(":visible")) {
-                console.log('saw AN visible, trying to close')
                 $("#ANClose").trigger('click');
                 return
             }
@@ -1077,7 +1075,7 @@ export function initRossMods() {
         }
 
         if (event.ctrlKey && /^[1-9]$/.test(event.key)) {
-            // Your code here
+            // This will eventually be to trigger quick replies
             event.preventDefault();
             console.log("Ctrl +" + event.key + " pressed!");
         }
