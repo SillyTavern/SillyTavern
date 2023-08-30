@@ -621,6 +621,10 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
     });
 
     if (request.header('X-Response-Streaming')) {
+        const streamingUrlHeader = request.header('X-Streaming-URL');
+        if (streamingUrlHeader === undefined) return response_generate.sendStatus(400);
+        const streamingUrl = streamingUrlHeader.replace("localhost", "127.0.0.1");
+
         response_generate.writeHead(200, {
             'Content-Type': 'text/plain;charset=utf-8',
             'Transfer-Encoding': 'chunked',
@@ -628,7 +632,6 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
         });
 
         async function* readWebsocket() {
-            const streamingUrl = request.header('X-Streaming-URL').replace("localhost", "127.0.0.1");
             const websocket = new WebSocket(streamingUrl);
 
             websocket.on('open', async function () {
