@@ -113,7 +113,7 @@ const cliArguments = yargs(hideBin(process.argv))
         type: 'string',
         default: 'certs/privkey.pem',
         describe: 'Path to your private key file.'
-    }).argv;
+    }).parseSync();
 
 // change all relative paths
 const directory = process['pkg'] ? path.dirname(process.execPath) : __dirname;
