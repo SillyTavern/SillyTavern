@@ -4871,7 +4871,7 @@ function writeSecret(key, value) {
     }
 
     const fileContents = fs.readFileSync(SECRETS_FILE);
-    const secrets = JSON.parse(fileContents);
+    const secrets = JSON.parse(fileContents.toString());
     secrets[key] = value;
     writeFileAtomicSync(SECRETS_FILE, JSON.stringify(secrets), "utf-8");
 }
@@ -4882,7 +4882,7 @@ function readSecret(key) {
     }
 
     const fileContents = fs.readFileSync(SECRETS_FILE);
-    const secrets = JSON.parse(fileContents);
+    const secrets = JSON.parse(fileContents.toString());
     return secrets[key];
 }
 
