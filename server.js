@@ -1267,7 +1267,7 @@ async function charaWrite(img_url, data, target_img, response = undefined, mes =
         chunks.splice(-1, 0, PNGtext.encode('chara', base64EncodedData));
         //chunks.splice(-1, 0, text.encode('lorem', 'ipsum'));
 
-        writeFileAtomicSync(charactersPath + target_img + '.png', new Buffer.from(encode(chunks)));
+        writeFileAtomicSync(charactersPath + target_img + '.png', Buffer.from(encode(chunks)));
         if (response !== undefined) response.send(mes);
         return true;
     } catch (err) {
