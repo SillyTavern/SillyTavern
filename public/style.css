@@ -882,6 +882,13 @@ textarea {
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
     padding: 5px 10px;
     scrollbar-width: thin;
+    max-height: 90vh;
+    max-height: 90svh;
+}
+
+textarea.autoSetHeight {
+    max-height: 50vh;
+    max-height: 50svh;
 }
 
 input,
@@ -3503,6 +3510,17 @@ a {
     padding: 5px;
     font-size: calc(var(--mainFontSize) * .8);
     font-weight: bold;
+}
+
+.onboarding {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    text-align: left;
+}
+
+.onboarding > h3 {
+    align-self: center;
 }
 
 #select_chat_search {

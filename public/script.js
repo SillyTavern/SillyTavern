@@ -71,6 +71,8 @@ import {
     renderStoryString,
     sortEntitiesList,
     registerDebugFunction,
+    ui_mode,
+    switchSimpleMode,
 } from "./scripts/power-user.js";
 
 import {
@@ -290,6 +292,7 @@ export const eventSource = new EventEmitter();
 // Check for override warnings every 5 seconds...
 setInterval(displayOverrideWarnings, 5000);
 // ...or when the chat changes
+eventSource.on(event_types.SETTINGS_LOADED, () => { settingsReady = true; });
 eventSource.on(event_types.CHAT_CHANGED, displayOverrideWarnings);
 eventSource.on(event_types.MESSAGE_RECEIVED, processExtensionHelpers);
 eventSource.on(event_types.MESSAGE_SENT, processExtensionHelpers);
@@ -325,6 +328,7 @@ let importFlashTimeout;
 export let isChatSaving = false;
 let chat_create_date = 0;
 let firstRun = false;
+let settingsReady = false;
 
 const default_ch_mes = "Hello";
 let count_view_mes = 0;
@@ -1912,7 +1916,7 @@ function cleanGroupMessage(getMessage) {
             const regex = new RegExp(`(^|\n)${escapeRegex(name)}:`);
             const nameMatch = getMessage.match(regex);
             if (nameMatch) {
-                getMessage = getMessage.substring(nameMatch.index + nameMatch[0].length);
+                getMessage = getMessage.substring(0, nameMatch.index);
             }
         }
     }
@@ -2797,11 +2801,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         return;
                     }
 
-                    const anchorDepth = Math.abs(index - finalMesSend.length + 1);
+                    const anchorDepth = Math.abs(index - finalMesSend.length);
                     // NOTE: Depth injected here!
                     const extensionAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, anchorDepth);
 
-                    if (anchorDepth > 0 && extensionAnchor && extensionAnchor.length) {
+                    if (anchorDepth >= 0 && extensionAnchor && extensionAnchor.length) {
                         mesItem.extensionPrompts.push(extensionAnchor);
                     }
                 });
@@ -4715,7 +4719,11 @@ async function uploadUserAvatar(e) {
 
 
 async function doOnboarding(avatarId) {
+    let simpleUiMode = false;
     const template = $('#onboarding_template .onboarding');
+    template.find('input[name="enable_simple_mode"]').on('input', function () {
+        simpleUiMode = $(this).is(':checked');
+    });
     const userName = await callPopup(template, 'input', name1);
 
     if (userName) {
@@ -4726,6 +4734,12 @@ async function doOnboarding(avatarId) {
             description: '',
             position: persona_description_positions.IN_PROMPT,
         };
+    }
+
+    if (simpleUiMode) {
+        power_user.ui_mode = ui_mode.SIMPLE;
+        $('#ui_mode_select').val(power_user.ui_mode);
+        switchSimpleMode();
     }
 }
 
@@ -4915,6 +4929,10 @@ function selectKoboldGuiPreset() {
 }
 
 async function saveSettings(type) {
+    if (!settingsReady) {
+        console.warn('Settings not ready, aborting save');
+        return;
+    }
     //console.log('Entering settings with name1 = '+name1);
 
     return jQuery.ajax({

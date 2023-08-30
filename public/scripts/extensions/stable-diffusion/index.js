@@ -539,8 +539,21 @@ function processReply(str) {
 
 
 function getRawLastMessage() {
+    const getLastUsableMessage = () => {
+        for (const message of context.chat.slice().reverse()) {
+            if (message.is_system) {
+                continue;
+            }
+
+            return message.mes;
+        }
+
+        toastr.warning('No usable messages found.', 'Stable Diffusion');
+        throw new Error('No usable messages found.');
+    }
+
     const context = getContext();
-    const lastMessage = context.chat.slice(-1)[0].mes,
+    const lastMessage = getLastUsableMessage(),
         characterDescription = context.characters[context.characterId].description,
         situation = context.characters[context.characterId].scenario;
     return `((${processReply(lastMessage)})), (${processReply(situation)}:0.7), (${processReply(characterDescription)}:0.5)`

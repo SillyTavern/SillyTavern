@@ -51,6 +51,11 @@ const defaultStoryString = "{{#if system}}{{system}}\n{{/if}}{{#if description}}
 const defaultExampleSeparator = '***';
 const defaultChatStart = '***';
 
+export const ui_mode = {
+    SIMPLE: 0,
+    POWER: 1,
+}
+
 const avatar_styles = {
     ROUND: 0,
     RECTANGULAR: 1,
@@ -101,6 +106,7 @@ let power_user = {
     multigen_next_chunks: 30,
     markdown_escape_strings: '',
 
+    ui_mode: ui_mode.POWER,
     fast_ui_mode: true,
     avatar_style: avatar_styles.ROUND,
     chat_display: chat_styles.DEFAULT,
@@ -237,6 +243,12 @@ const storage_keys = {
 
 let browser_has_focus = true;
 const debug_functions = [];
+
+export function switchSimpleMode() {
+    $('[data-newbie-hidden]').each(function () {
+        $(this).toggleClass('displayNone', power_user.ui_mode === ui_mode.SIMPLE);
+    });
+}
 
 function playMessageSound() {
     if (!power_user.play_message_sound) {
@@ -824,6 +836,7 @@ function loadPowerUserSettings(settings, data) {
     $("#user-mes-blur-tint-color-picker").attr('color', power_user.user_mes_blur_tint_color);
     $("#bot-mes-blur-tint-color-picker").attr('color', power_user.bot_mes_blur_tint_color);
     $("#shadow-color-picker").attr('color', power_user.shadow_color);
+    $("#ui_mode_select").val(power_user.ui_mode).find(`option[value="${power_user.ui_mode}"]`).attr('selected', true);
 
     for (const theme of themes) {
         const option = document.createElement('option');
@@ -851,6 +864,7 @@ function loadPowerUserSettings(settings, data) {
     switchSpoilerMode();
     loadMovingUIState();
     loadCharListState();
+    switchSimpleMode();
 }
 
 async function loadCharListState() {
@@ -2148,6 +2162,13 @@ $(document).ready(() => {
 
     $('#debug_menu').on('click', function () {
         showDebugMenu();
+    });
+
+    $("#ui_mode_select").on('change', function () {
+        const value = $(this).find(':selected').val();
+        power_user.ui_mode = Number(value);
+        saveSettingsDebounced();
+        switchSimpleMode();
     });
 
     $(document).on('click', '#debug_table [data-debug-function]', function () {

@@ -156,6 +156,11 @@ async function moduleWorker() {
         return;
     }
 
+    // Don't generate if message is a user message and user message narration is disabled
+    if (message.is_user && !extension_settings.tts.narrate_user) {
+        return;
+    }
+
     // New messages, add new chat to history
     lastMessageHash = hashNew
     currentMessageNumber = lastMessageNumber
@@ -211,7 +216,7 @@ function isTtsProcessing() {
     let processing = false
 
     // Check job queues
-    if (ttsJobQueue.length > 0 || audioJobQueue > 0) {
+    if (ttsJobQueue.length > 0 || audioJobQueue.length > 0) {
         processing = true
     }
     // Check current jobs
@@ -501,6 +506,7 @@ function loadSettings() {
     $('#tts_narrate_quoted').prop('checked', extension_settings.tts.narrate_quoted_only)
     $('#tts_auto_generation').prop('checked', extension_settings.tts.auto_generation)
     $('#tts_narrate_translated_only').prop('checked', extension_settings.tts.narrate_translated_only);
+    $('#tts_narrate_user').prop('checked', extension_settings.tts.narrate_user);
     $('body').toggleClass('tts', extension_settings.tts.enabled);
 }
 
@@ -508,7 +514,8 @@ const defaultSettings = {
     voiceMap: '',
     ttsEnabled: false,
     currentProvider: "ElevenLabs",
-    auto_generation: true
+    auto_generation: true,
+    narrate_user: false,
 }
 
 function setTtsStatus(status, success) {
@@ -547,25 +554,29 @@ function onEnableClick() {
 
 
 function onAutoGenerationClick() {
-    extension_settings.tts.auto_generation = $('#tts_auto_generation').prop('checked');
+    extension_settings.tts.auto_generation = !!$('#tts_auto_generation').prop('checked');
     saveSettingsDebounced()
 }
 
 
 function onNarrateDialoguesClick() {
-    extension_settings.tts.narrate_dialogues_only = $('#tts_narrate_dialogues').prop('checked');
+    extension_settings.tts.narrate_dialogues_only = !!$('#tts_narrate_dialogues').prop('checked');
     saveSettingsDebounced()
 }
 
+function onNarrateUserClick() {
+    extension_settings.tts.narrate_user = !!$('#tts_narrate_user').prop('checked');
+    saveSettingsDebounced();
+}
 
 function onNarrateQuotedClick() {
-    extension_settings.tts.narrate_quoted_only = $('#tts_narrate_quoted').prop('checked');
+    extension_settings.tts.narrate_quoted_only = !!$('#tts_narrate_quoted').prop('checked');
     saveSettingsDebounced()
 }
 
 
 function onNarrateTranslatedOnlyClick() {
-    extension_settings.tts.narrate_translated_only = $('#tts_narrate_translated_only').prop('checked');
+    extension_settings.tts.narrate_translated_only = !!$('#tts_narrate_translated_only').prop('checked');
     saveSettingsDebounced();
 }
 
@@ -820,6 +831,10 @@ $(document).ready(function () {
                             <input type="checkbox" id="tts_enabled" name="tts_enabled">
                             <small>Enabled</small>
                         </label>
+                        <label class="checkbox_label" for="tts_narrate_user">
+                            <input type="checkbox" id="tts_narrate_user">
+                            <small>Narrate user messages</small>
+                        </label>
                         <label class="checkbox_label" for="tts_auto_generation">
                             <input type="checkbox" id="tts_auto_generation">
                             <small>Auto Generation</small>
@@ -857,6 +872,7 @@ $(document).ready(function () {
         $('#tts_narrate_quoted').on('click', onNarrateQuotedClick);
         $('#tts_narrate_translated_only').on('click', onNarrateTranslatedOnlyClick);
         $('#tts_auto_generation').on('click', onAutoGenerationClick);
+        $('#tts_narrate_user').on('click', onNarrateUserClick);
         $('#tts_voices').on('click', onTtsVoicesClick)
         for (const provider in ttsProviders) {
             $('#tts_provider').append($("<option />").val(provider).text(provider))
