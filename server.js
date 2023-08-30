@@ -5273,23 +5273,19 @@ app.post('/asset_download', jsonParser, async (request, response) => {
 
     try {
         // Download to temp
-        const downloadFile = (async (url, temp_path) => {
-            const res = await fetch(url);
-            if (!res.ok) {
-                throw new Error(`Unexpected response ${res.statusText}`);
-            }
-            const destination = path.resolve(temp_path);
-            // Delete if previous download failed
-            if (fs.existsSync(temp_path)) {
-                fs.unlink(temp_path, (err) => {
-                    if (err) throw err;
-                });
-            }
-            const fileStream = fs.createWriteStream(destination, { flags: 'wx' });
-            await finished(Readable.fromWeb(res.body).pipe(fileStream));
-        });
-
-        await downloadFile(url, temp_path);
+        const res = await fetch(url);
+        if (!res.ok) {
+            throw new Error(`Unexpected response ${res.statusText}`);
+        }
+        const destination = path.resolve(temp_path);
+        // Delete if previous download failed
+        if (fs.existsSync(temp_path)) {
+            fs.unlink(temp_path, (err) => {
+                if (err) throw err;
+            });
+        }
+        const fileStream = fs.createWriteStream(destination, { flags: 'wx' });
+        await finished(Readable.fromWeb(res.body).pipe(fileStream));
 
         // Move into asset place
         console.debug("Download finished, moving file from", temp_path, "to", file_path);
