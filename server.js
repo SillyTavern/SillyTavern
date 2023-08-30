@@ -91,10 +91,8 @@ function createDefaultFiles() {
 }
 
 const net = require("net");
-// work around a node v20 bug: https://github.com/nodejs/node/issues/47822#issuecomment-1564708870
-if (net.setDefaultAutoSelectFamily) {
-    net.setDefaultAutoSelectFamily(false);
-}
+// @ts-ignore work around a node v20 bug: https://github.com/nodejs/node/issues/47822#issuecomment-1564708870
+if (net.setDefaultAutoSelectFamily) net.setDefaultAutoSelectFamily(false);
 
 const cliArguments = yargs(hideBin(process.argv))
     .option('disableCsrf', {
