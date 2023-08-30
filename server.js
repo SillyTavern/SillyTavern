@@ -2093,7 +2093,7 @@ function getPngName(file) {
 
 app.post("/importcharacter", urlencodedParser, async function (request, response) {
 
-    if (!request.body) return response.sendStatus(400);
+    if (!request.body || request.file === undefined) return response.sendStatus(400);
 
     let png_name = '';
     let filedata = request.file;
