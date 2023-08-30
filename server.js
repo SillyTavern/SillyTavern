@@ -1309,7 +1309,7 @@ async function charaRead(img_url, input_format) {
  * calculateChatSize - Calculates the total chat size for a given character.
  *
  * @param  {string} charDir The directory where the chats are stored.
- * @return {number}         The total chat size.
+ * @return { {chatSize: number, dateLastChat: number} }         The total chat size.
  */
 const calculateChatSize = (charDir) => {
     let chatSize = 0;
@@ -1345,7 +1345,7 @@ const processCharacter = async (item, i) => {
     try {
         const img_data = await charaRead(charactersPath + item);
         if (img_data === false || img_data === undefined) throw new Error("Failed to read character file");
-        
+
         let jsonObject = getCharaCardV2(json5.parse(img_data));
         jsonObject.avatar = item;
         characters[i] = jsonObject;
