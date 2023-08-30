@@ -1189,26 +1189,22 @@ app.post("/editcharacterattribute", jsonParser, async function (request, respons
 
     try {
         const avatarPath = path.join(charactersPath, request.body.avatar_url);
-        charaRead(avatarPath).then((char) => {
-            char = JSON.parse(char);
-            //check if the field exists
-            if (char[request.body.field] === undefined && char.data[request.body.field] === undefined) {
-                console.error('Error: invalid field.');
-                response.status(400).send('Error: invalid field.');
-                return;
-            }
-            char[request.body.field] = request.body.value;
-            char.data[request.body.field] = request.body.value;
-            char = JSON.stringify(char);
-            return { char };
-        }).then(({ char }) => {
-            charaWrite(avatarPath, char, (request.body.avatar_url).replace('.png', ''), response, 'Character saved');
-        }).catch((err) => {
-            console.error('An error occured, character edit invalidated.', err);
-        });
-    }
-    catch {
-        console.error('An error occured, character edit invalidated.');
+        let charJSON = await charaRead(avatarPath);
+        if (typeof charJSON !== 'string') throw new Error("Failed to read character file");
+
+        let char = JSON.parse(charJSON)
+        //check if the field exists
+        if (char[request.body.field] === undefined && char.data[request.body.field] === undefined) {
+            console.error('Error: invalid field.');
+            response.status(400).send('Error: invalid field.');
+            return;
+        }
+        char[request.body.field] = request.body.value;
+        char.data[request.body.field] = request.body.value;
+        let newCharJSON = JSON.stringify(char);
+        await charaWrite(avatarPath, newCharJSON, (request.body.avatar_url).replace('.png', ''), response, 'Character saved');
+    } catch (err) {
+        console.error('An error occured, character edit invalidated.', err);
     }
 });
 
