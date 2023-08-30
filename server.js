@@ -550,7 +550,7 @@ app.post("/generate", jsonParser, async function (request, response_generate = r
 
     const MAX_RETRIES = 50;
     const delayAmount = 2500;
-    let fetch, url, response;
+    let url, response;
     for (let i = 0; i < MAX_RETRIES; i++) {
         try {
             url = request.body.streaming ? `${api_server}/extra/generate/stream` : `${api_server}/v1/generate`;
