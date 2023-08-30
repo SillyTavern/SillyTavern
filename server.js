@@ -385,7 +385,7 @@ function getIpFromRequest(req) {
     let clientIp = req.connection.remoteAddress;
     let ip = ipaddr.parse(clientIp);
     // Check if the IP address is IPv4-mapped IPv6 address
-    if (ip.kind() === 'ipv6' && ip.isIPv4MappedAddress()) {
+    if (ip.kind() === 'ipv6' && ip instanceof ipaddr.IPv6 && ip.isIPv4MappedAddress()) {
         const ipv4 = ip.toIPv4Address().toString();
         clientIp = ipv4;
     } else {
