@@ -4,7 +4,7 @@ import { callPopup, event_types, eventSource, is_send_press, main_api, substitut
 import { is_group_generating } from "./group-chats.js";
 import { TokenHandler } from "./openai.js";
 import { power_user } from "./power-user.js";
-import { debounce, waitUntilCondition } from "./utils.js";
+import { debounce, waitUntilCondition, escapeHtml } from "./utils.js";
 
 function debouncePromise(func, delay) {
     let timeoutId;
@@ -1291,7 +1291,7 @@ PromptManagerModule.prototype.renderPromptManager = function () {
         const prompts = [...this.serviceSettings.prompts]
             .filter(prompt => prompt && !prompt?.system_prompt)
             .sort((promptA, promptB) => promptA.name.localeCompare(promptB.name))
-            .reduce((acc, prompt) => acc + `<option value="${prompt.identifier}">${prompt.name}</option>`, '');
+            .reduce((acc, prompt) => acc + `<option value="${prompt.identifier}">${escapeHtml(prompt.name)}</option>`, '');
 
         const footerHtml = `
             <div class="${this.configuration.prefix}prompt_manager_footer">
@@ -1440,13 +1440,14 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
             toggleSpanHtml = `<span class="fa-solid"></span>`;
         }
 
+        const encodedName = escapeHtml(prompt.name);
         listItemHtml += `
             <li class="${prefix}prompt_manager_prompt ${draggableClass} ${enabledClass} ${markerClass}" data-pm-identifier="${prompt.identifier}">
-                <span class="${prefix}prompt_manager_prompt_name" data-pm-name="${prompt.name}">
+                <span class="${prefix}prompt_manager_prompt_name" data-pm-name="${encodedName}">
                     ${prompt.marker ? '<span class="fa-solid fa-thumb-tack" title="Marker"></span>' : ''}
                     ${!prompt.marker && prompt.system_prompt ? '<span class="fa-solid fa-square-poll-horizontal" title="Global Prompt"></span>' : ''}
                     ${!prompt.marker && !prompt.system_prompt ? '<span class="fa-solid fa-user" title="User Prompt"></span>' : ''}
-                    ${this.isPromptInspectionAllowed(prompt) ? `<a class="prompt-manager-inspect-action">${prompt.name}</a>` : prompt.name}
+                    ${this.isPromptInspectionAllowed(prompt) ? `<a class="prompt-manager-inspect-action">${encodedName}</a>` : encodedName}
                 </span>
                 <span>
                         <span class="prompt_manager_prompt_controls">

@@ -14,6 +14,10 @@ export const PAGINATION_TEMPLATE = '<%= rangeStart %>-<%= rangeEnd %> of <%= tot
  */
 export const navigation_option = { none: 0, previous: 1, last: 2, };
 
+export function escapeHtml(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 /**
  * Determines if a value is unique in an array.
  * @param {any} value Current value.
