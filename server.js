@@ -4761,6 +4761,11 @@ async function downloadChubCharacter(id) {
     return { buffer, fileName, fileType };
 }
 
+/**
+ * 
+ * @param {String} str 
+ * @returns { { id: string, type: "character" | "lorebook" } | null }
+ */
 function parseChubUrl(str) {
     const splitStr = str.split('/');
     const length = splitStr.length;
