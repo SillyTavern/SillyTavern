@@ -962,13 +962,12 @@ function charaFormatData(data) {
     // This is supposed to save all the foreign keys that ST doesn't care about
     const char = tryParse(data.json_data) || {};
 
-    // This function uses _.cond() to create a series of conditional checks that return the desired output based on the input data.
-    // It checks if data.alternate_greetings is an array, a string, or neither, and acts accordingly.
-    const getAlternateGreetings = data => _.cond([
-        [d => Array.isArray(d.alternate_greetings), d => d.alternate_greetings],
-        [d => typeof d.alternate_greetings === 'string', d => [d.alternate_greetings]],
-        [_.stubTrue, _.constant([])]
-    ])(data);
+    // Checks if data.alternate_greetings is an array, a string, or neither, and acts accordingly. (expected to be an array of strings)
+    const getAlternateGreetings = data => data.map(d => {
+        if (Array.isArray(d.alternate_greetings)) return d.alternate_greetings
+        if (typeof d.alternate_greetings === 'string') return [d.alternate_greetings]
+        return []
+    })
 
     // Spec V1 fields
     _.set(char, 'name', data.ch_name);
