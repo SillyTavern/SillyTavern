@@ -5254,7 +5254,7 @@ app.post('/asset_download', jsonParser, async (request, response) => {
 
     // Check category
     let category = null;
-    for (i of validCategories)
+    for (let i of validCategories)
         if (i == inputCategory)
             category = i;
 
@@ -5316,7 +5316,7 @@ app.post('/asset_delete', jsonParser, async (request, response) => {
 
     // Check category
     let category = null;
-    for (i of validCategories)
+    for (let i of validCategories)
         if (i == inputCategory)
             category = i;
 
@@ -5371,7 +5371,7 @@ app.post('/get_character_assets_list', jsonParser, async (request, response) => 
 
     // Check category
     let category = null
-    for (i of validCategories)
+    for (let i of validCategories)
         if (i == inputCategory)
             category = i
 
@@ -5390,7 +5390,7 @@ app.post('/get_character_assets_list', jsonParser, async (request, response) => 
                     return filename != ".placeholder";
                 });
 
-            for (i of files)
+            for (let i of files)
                 output.push(`/characters/${name}/${category}/${i}`);
 
         }
