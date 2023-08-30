@@ -60,6 +60,9 @@ const { Tokenizer } = require('@agnai/web-tokenizers');
 const _ = require('lodash');
 const { generateRequestUrl, normaliseResponse } = require('google-translate-api-browser');
 
+// Create files before running anything else
+createDefaultFiles();
+
 // local library imports
 const AIHorde = require("./src/horde");
 const basicAuthMiddleware = require('./src/middleware/basicAuthMiddleware');
@@ -67,8 +70,6 @@ const characterCardParser = require('./src/character-card-parser.js');
 const contentManager = require('./src/content-manager');
 const novelai = require('./src/novelai');
 const statsHelpers = require('./statsHelpers.js');
-
-createDefaultFiles();
 
 function createDefaultFiles() {
     const files = {
