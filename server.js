@@ -1669,11 +1669,7 @@ function readPresetsFromDirectory(directoryPath, options = {}) {
 
 // Wintermute's code
 app.post('/getsettings', jsonParser, (request, response) => {
-    const settings = fs.readFileSync('public/settings.json', 'utf8', (err, data) => {
-        if (err) return response.sendStatus(500);
-
-        return data;
-    });
+    const settings = fs.readFileSync('public/settings.json', 'utf8');
 
     // NovelAI Settings
     const { fileContents: novelai_settings, fileNames: novelai_setting_names }
