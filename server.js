@@ -1850,8 +1850,7 @@ function getImages(path) {
 
 //***********Novel.ai API
 
-app.post("/getstatus_novelai", jsonParser, function (request, response_getstatus_novel = response) {
-
+app.post("/getstatus_novelai", jsonParser, async function (request, response_getstatus_novel) {
     if (!request.body) return response_getstatus_novel.sendStatus(400);
     const api_key_novel = readSecret(SECRET_KEYS.NOVEL);
 
@@ -1859,28 +1858,30 @@ app.post("/getstatus_novelai", jsonParser, function (request, response_getstatus
         return response_getstatus_novel.sendStatus(401);
     }
 
-    var data = {};
-    var args = {
-        data: data,
-        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + api_key_novel }
-    };
+    try {
+        const response = await fetch(api_novelai + "/user/subscription", {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': "Bearer " + api_key_novel,
+            },
+        });
 
-    restClient.get(api_novelai + "/user/subscription", args, function (data, response) {
-        if (response.statusCode == 200) {
-            //console.log(data);
-            response_getstatus_novel.send(data);//data);
+        if (response.ok) {
+            const data = await response.json();
+            return response_getstatus_novel.send(data);
+        } else if (response.status == 401) {
+            console.log('NovelAI Access Token is incorrect.');
+            return response_getstatus_novel.send({ error: true });
         }
         else {
-            if (response.statusCode == 401) {
-                console.log('Access Token is incorrect.');
-            }
-
-            console.log(data);
-            response_getstatus_novel.send({ error: true });
+            console.log('NovelAI returned an error:', response.statusText);
+            return response_getstatus_novel.send({ error: true });
         }
-    }).on('error', function () {
-        response_getstatus_novel.send({ error: true });
-    });
+    } catch (error) {
+        console.log(error);
+        return response_getstatus_novel.send({ error: true });
+    }
 });
 
 app.post("/generate_novelai", jsonParser, async function (request, response_generate_novel = response) {
