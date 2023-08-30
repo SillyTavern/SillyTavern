@@ -662,7 +662,7 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
                         websocket.once('error', reject);
                         websocket.once('message', (data, isBinary) => {
                             websocket.removeListener('error', reject);
-                            resolve(data, isBinary);
+                            resolve(data);
                         });
                     });
                 } catch (err) {
