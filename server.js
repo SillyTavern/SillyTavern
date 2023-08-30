@@ -4053,23 +4053,24 @@ if (listen && !config.whitelistMode && !config.basicAuthMode) {
     }
 }
 
-if (true === cliArguments.ssl)
+if (true === cliArguments.ssl) {
     https.createServer(
         {
             cert: fs.readFileSync(cliArguments.certPath),
             key: fs.readFileSync(cliArguments.keyPath)
         }, app)
         .listen(
-            tavernUrl.port || 443,
+            Number(tavernUrl.port) || 443,
             tavernUrl.hostname,
             setupTasks
         );
-else
+} else {
     http.createServer(app).listen(
-        tavernUrl.port || 80,
+        Number(tavernUrl.port) || 80,
         tavernUrl.hostname,
         setupTasks
     );
+}
 
 async function convertWebp() {
     const files = fs.readdirSync(directories.characters).filter(e => e.endsWith(".webp"));
