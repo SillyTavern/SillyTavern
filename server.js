@@ -24,7 +24,6 @@ function createDefaultFiles() {
     }
 }
 
-const process = require('process')
 const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers');
 const net = require("net");
@@ -149,11 +148,8 @@ let api_openai = "https://api.openai.com/v1";
 let api_claude = "https://api.anthropic.com/v1";
 let main_api = "kobold";
 
-let response_generate_novel;
 let characters = {};
 let response_dw_bg;
-let first_run = true;
-
 
 let color = {
     byNum: (mess, fgNum) => {
@@ -4134,7 +4130,7 @@ function backupSettings() {
         const backupFile = path.join(directories.backups, `settings_${generateTimestamp()}.json`);
         fs.copyFileSync(SETTINGS_FILE, backupFile);
 
-        let files = fs.readdirSync(directories.backups);
+        let files = fs.readdirSync(directories.backups).filter(f => f.startsWith('settings_'));
         if (files.length > MAX_BACKUPS) {
             files = files.map(f => path.join(directories.backups, f));
             files.sort((a, b) => fs.statSync(a).mtimeMs - fs.statSync(b).mtimeMs);

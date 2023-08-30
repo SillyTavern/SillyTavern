@@ -394,6 +394,11 @@ function onExpressionsShowDefaultInput() {
 }
 
 async function unloadLiveChar() {
+    if (!modules.includes('talkinghead')) {
+        console.debug('talkinghead module is disabled');
+        return;
+    }
+
     try {
         const url = new URL(getApiUrl());
         url.pathname = '/api/talkinghead/unload';

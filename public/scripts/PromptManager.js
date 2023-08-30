@@ -607,10 +607,6 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     eventSource.on(event_types.OAI_PRESET_CHANGED, settings => {
         // Save configuration and wrap everything up.
         this.saveServiceSettings().then(() => {
-            this.hidePopup();
-            this.clearEditForm();
-            this.renderDebounced();
-
             const mainPrompt = this.getPromptById('main');
             this.updateQuickEdit('main', mainPrompt);
 
@@ -619,6 +615,10 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
 
             const jailbreakPrompt = this.getPromptById('jailbreak');
             this.updateQuickEdit('jailbreak', jailbreakPrompt);
+
+            this.hidePopup();
+            this.clearEditForm();
+            this.renderDebounced();
         });
     });
 
