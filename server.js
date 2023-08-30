@@ -1344,6 +1344,8 @@ const calculateDataSize = (data) => {
 const processCharacter = async (item, i) => {
     try {
         const img_data = await charaRead(charactersPath + item);
+        if (img_data === false || img_data === undefined) throw new Error("Failed to read character file");
+        
         let jsonObject = getCharaCardV2(json5.parse(img_data));
         jsonObject.avatar = item;
         characters[i] = jsonObject;
