@@ -5265,7 +5265,7 @@ app.post('/asset_download', jsonParser, async (request, response) => {
     // Sanitize filename
     const safe_input = checkAssetFileName(inputFilename);
     if (safe_input == '')
-        return response.sendFile(400);
+        return response.sendFile('400');
 
     const temp_path = path.join(directories.assets, "temp", safe_input)
     const file_path = path.join(directories.assets, category, safe_input)
