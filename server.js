@@ -4349,6 +4349,7 @@ app.post('/horde_generateimage', jsonParser, async (request, response) => {
                 {
                     sampler_name: request.body.sampler,
                     hires_fix: request.body.enable_hr,
+                    // @ts-ignore - use_gfpgan param is not in the type definition, need to update to new ai_horde @ https://github.com/ZeldaFan0225/ai_horde/blob/main/index.ts
                     use_gfpgan: request.body.restore_faces,
                     cfg_scale: request.body.scale,
                     steps: request.body.steps,
