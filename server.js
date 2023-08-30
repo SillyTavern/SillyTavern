@@ -53,8 +53,8 @@ const cliArguments = yargs(hideBin(process.argv))
 
 // change all relative paths
 const path = require('path');
-const directory = process.pkg ? path.dirname(process.execPath) : __dirname;
-console.log(process.pkg ? 'Running from binary' : 'Running from source');
+const directory = process['pkg'] ? path.dirname(process.execPath) : __dirname;
+console.log(process['pkg'] ? 'Running from binary' : 'Running from source');
 process.chdir(directory);
 
 const express = require('express');
@@ -837,7 +837,7 @@ function getVersion() {
     try {
         const pkgJson = require('./package.json');
         pkgVersion = pkgJson.version;
-        if (!process.pkg && commandExistsSync('git')) {
+        if (!process['pkg'] && commandExistsSync('git')) {
             gitRevision = require('child_process')
                 .execSync('git rev-parse --short HEAD', { cwd: process.cwd(), stdio: ['ignore', 'pipe', 'ignore'] })
                 .toString().trim();
