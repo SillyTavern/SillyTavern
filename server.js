@@ -2986,7 +2986,7 @@ function getOriginalFolder(type) {
 function invalidateThumbnail(type, file) {
     const folder = getThumbnailFolder(type);
     if (folder === undefined) throw new Error("Invalid thumbnail type")
-    
+
     const pathToThumbnail = path.join(folder, file);
 
     if (fs.existsSync(pathToThumbnail)) {
@@ -3036,8 +3036,12 @@ async function ensureThumbnailCache() {
 }
 
 async function generateThumbnail(type, file) {
-    const pathToCachedFile = path.join(getThumbnailFolder(type), file);
-    const pathToOriginalFile = path.join(getOriginalFolder(type), file);
+    let thumbnailFolder = getThumbnailFolder(type)
+    let originalFolder = getOriginalFolder(type)
+    if (thumbnailFolder === undefined || originalFolder === undefined) throw new Error("Invalid thumbnail type")
+
+    const pathToCachedFile = path.join(thumbnailFolder, file);
+    const pathToOriginalFile = path.join(originalFolder, file);
 
     const cachedFileExists = fs.existsSync(pathToCachedFile);
     const originalFileExists = fs.existsSync(pathToOriginalFile);
