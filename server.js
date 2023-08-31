@@ -3413,6 +3413,10 @@ app.post("/generate_altscale", jsonParser, function (request, response_generate_
 
 });
 
+/**
+ * @param {express.Request} request 
+ * @param {express.Response} response 
+ */
 async function sendClaudeRequest(request, response) {
 
     const api_url = new URL(request.body.reverse_proxy || api_claude).toString();
