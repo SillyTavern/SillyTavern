@@ -479,12 +479,32 @@ REM Create a backup using 7zip
     "public\settings.json" ^
     "secrets.json"
 
-REM Rename the backup file with current date and time
-for /f "tokens=1-5 delims=/ " %%d in ("%date%") do (
-    for /f "tokens=1-2 delims=:." %%h in ("%time%") do (
-        rename "backups\backup_.7z" backup_%%e-%%f-%%g_%%h%%i.7z
-    )
+REM Get current date and time components
+for /f "tokens=1-3 delims=/- " %%d in ("%date%") do (
+    set "day=%%d"
+    set "month=%%e"
+    set "year=%%f"
 )
+
+for /f "tokens=1-2 delims=:." %%h in ("%time%") do (
+    set "hour=%%h"
+    set "minute=%%i"
+)
+
+REM Pad single digits with leading zeros
+setlocal enabledelayedexpansion
+set "day=0!day!"
+set "month=0!month!"
+set "hour=0!hour!"
+set "minute=0!minute!"
+
+set "formatted_date=%month:~-2%-%day:~-2%-%year%_%hour:~-2%%minute:~-2%"
+
+REM Rename the backup file with the formatted date and time
+rename "backups\backup_.7z" "backup_%formatted_date%.7z"
+
+endlocal
+
 
 echo %green_fg_strong%Backup created successfully!%reset%
 pause
@@ -514,7 +534,10 @@ if "%restore_choice%" geq "1" (
     if "%restore_choice%" leq "%backup_count%" (
         set "selected_backup=!backup_files[%restore_choice%]!"
         echo Restoring backup !selected_backup!...
-        7z x "backups\!selected_backup!.7z" -o"SillyTavern\public"
+        REM Extract the contents of the "public" folder directly into the existing "public" folder
+        7z x "backups\!selected_backup!.7z" -o"temp" -aoa
+        xcopy /y /e "temp\public\*" "public\"
+        rmdir /s /q "temp"
         echo %green_fg_strong%!selected_backup! restored successfully.%reset%
     ) else (
         color 6
