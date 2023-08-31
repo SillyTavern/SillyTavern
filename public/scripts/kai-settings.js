@@ -25,14 +25,14 @@ export const kai_settings = {
     mirostat: 0,
     mirostat_tau: 5.0,
     mirostat_eta: 0.1,
-    use_default_badwordids: true,
+    use_default_badwordsids: true,
 };
 
 export const kai_flags = {
     can_use_tokenization: false,
     can_use_stop_sequence: false,
     can_use_streaming: false,
-    can_use_default_badwordids: false,
+    can_use_default_badwordsids: false,
     can_use_mirostat: false,
 };
 
@@ -118,7 +118,7 @@ export function getKoboldGenerationData(finalPrompt, this_settings, this_amount_
         mirostat: kai_flags.can_use_mirostat ?  kai_settings.mirostat : undefined,
         mirostat_tau: kai_flags.can_use_mirostat ? kai_settings.mirostat_tau : undefined,
         mirostat_eta: kai_flags.can_use_mirostat ? kai_settings.mirostat_eta : undefined,
-        use_default_badwordids: kai_flags.can_use_default_badwordids ? kai_settings.use_default_badwordids : undefined,
+        use_default_badwordsids: kai_flags.can_use_default_badwordsids ? kai_settings.use_default_badwordsids : undefined,
     };
     return generate_data;
 }
@@ -263,7 +263,7 @@ export function setKoboldFlags(version, koboldVersion) {
     kai_flags.can_use_stop_sequence = canUseKoboldStopSequence(version);
     kai_flags.can_use_streaming = canUseKoboldStreaming(koboldVersion);
     kai_flags.can_use_tokenization = canUseKoboldTokenization(koboldVersion);
-    kai_flags.can_use_default_badwordids = canUseDefaultBadwordIds(version);
+    kai_flags.can_use_default_badwordsids = canUseDefaultBadwordIds(version);
     kai_flags.can_use_mirostat = canUseMirostat(koboldVersion);
 }
 
