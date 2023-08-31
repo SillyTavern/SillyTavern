@@ -160,10 +160,12 @@ restClient.on('error', (err) => {
     console.error('An error occurred:', err);
 });
 
+const API_NOVELAI = "https://api.novelai.net";
+const API_OPENAI = "https://api.openai.com/v1";
+const API_CLAUDE = "https://api.anthropic.com/v1";
+
+// These should be gone and come from the frontend. But for now, they're here.
 let api_server = "http://0.0.0.0:5000";
-let api_novelai = "https://api.novelai.net";
-let api_openai = "https://api.openai.com/v1";
-let api_claude = "https://api.anthropic.com/v1";
 let main_api = "kobold";
 
 let characters = {};
@@ -311,7 +313,6 @@ function humanizedISO8601DateTime() {
     return HumanizedDateTime;
 };
 
-var is_colab = process.env.colaburl !== undefined;
 var charactersPath = 'public/characters/';
 var chatsPath = 'public/chats/';
 const UPLOADS_PATH = './uploads';
@@ -319,7 +320,6 @@ const AVATAR_WIDTH = 400;
 const AVATAR_HEIGHT = 600;
 const jsonParser = express.json({ limit: '100mb' });
 const urlencodedParser = express.urlencoded({ extended: true, limit: '100mb' });
-const baseRequestArgs = { headers: { "Content-Type": "application/json" } };
 const directories = {
     worlds: 'public/worlds/',
     avatars: 'public/User Avatars',
@@ -1257,7 +1257,7 @@ async function charaWrite(img_url, data, target_img, response = undefined, mes =
 
         // Get the chunks
         const chunks = extract(image);
-        const tEXtChunks = chunks.filter(chunk => chunk.create_date === 'tEXt' || chunk.name === 'tEXt');
+        const tEXtChunks = chunks.filter(chunk => chunk.name === 'tEXt');
 
         // Remove all existing tEXt chunks
         for (let tEXtChunk of tEXtChunks) {
@@ -1268,7 +1268,7 @@ async function charaWrite(img_url, data, target_img, response = undefined, mes =
         chunks.splice(-1, 0, PNGtext.encode('chara', base64EncodedData));
         //chunks.splice(-1, 0, text.encode('lorem', 'ipsum'));
 
-        writeFileAtomicSync(charactersPath + target_img + '.png', new Buffer.from(encode(chunks)));
+        writeFileAtomicSync(charactersPath + target_img + '.png', Buffer.from(encode(chunks)));
         if (response !== undefined) response.send(mes);
         return true;
     } catch (err) {
@@ -1310,7 +1310,7 @@ async function charaRead(img_url, input_format) {
  * calculateChatSize - Calculates the total chat size for a given character.
  *
  * @param  {string} charDir The directory where the chats are stored.
- * @return {number}         The total chat size.
+ * @return { {chatSize: number, dateLastChat: number} }         The total chat size.
  */
 const calculateChatSize = (charDir) => {
     let chatSize = 0;
@@ -1345,6 +1345,8 @@ const calculateDataSize = (data) => {
 const processCharacter = async (item, i) => {
     try {
         const img_data = await charaRead(charactersPath + item);
+        if (img_data === false || img_data === undefined) throw new Error("Failed to read character file");
+
         let jsonObject = getCharaCardV2(json5.parse(img_data));
         jsonObject.avatar = item;
         characters[i] = jsonObject;
@@ -1459,14 +1461,7 @@ app.post("/getbackgrounds", jsonParser, function (request, response) {
     response.send(JSON.stringify(images));
 
 });
-app.post("/iscolab", jsonParser, function (request, response) {
-    let send_data = false;
-    if (is_colab) {
-        send_data = String(process.env.colaburl).trim();
-    }
-    response.send({ colaburl: send_data });
 
-});
 app.post("/getuseravatars", jsonParser, function (request, response) {
     var images = getImages("public/User Avatars");
     response.send(JSON.stringify(images));
@@ -1633,7 +1628,7 @@ function readAndParseFromDirectory(directoryPath, fileExtension = '.json') {
 }
 
 function sortByModifiedDate(directory) {
-    return (a, b) => new Date(fs.statSync(`${directory}/${b}`).mtime) - new Date(fs.statSync(`${directory}/${a}`).mtime);
+    return (a, b) => +(new Date(fs.statSync(`${directory}/${b}`).mtime)) - +(new Date(fs.statSync(`${directory}/${a}`).mtime));
 }
 
 function sortByName(_) {
@@ -1667,11 +1662,12 @@ function readPresetsFromDirectory(directoryPath, options = {}) {
 
 // Wintermute's code
 app.post('/getsettings', jsonParser, (request, response) => {
-    const settings = fs.readFileSync('public/settings.json', 'utf8', (err, data) => {
-        if (err) return response.sendStatus(500);
-
-        return data;
-    });
+    let settings
+    try {
+        settings = fs.readFileSync('public/settings.json', 'utf8');
+    } catch (e) {
+        return response.sendStatus(500);
+    }
 
     // NovelAI Settings
     const { fileContents: novelai_settings, fileNames: novelai_setting_names }
@@ -1701,7 +1697,7 @@ app.post('/getsettings', jsonParser, (request, response) => {
     const worldFiles = fs
         .readdirSync(directories.worlds)
         .filter(file => path.extname(file).toLowerCase() === '.json')
-        .sort((a, b) => a < b);
+        .sort((a, b) => a.localeCompare(b));
     const world_names = worldFiles.map(item => path.parse(item).name);
 
     const themes = readAndParseFromDirectory(directories.themes);
@@ -1863,7 +1859,7 @@ app.post("/getstatus_novelai", jsonParser, async function (request, response_get
     }
 
     try {
-        const response = await fetch(api_novelai + "/user/subscription", {
+        const response = await fetch(API_NOVELAI + "/user/subscription", {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -1888,7 +1884,7 @@ app.post("/getstatus_novelai", jsonParser, async function (request, response_get
     }
 });
 
-app.post("/generate_novelai", jsonParser, async function (request, response_generate_novel = response) {
+app.post("/generate_novelai", jsonParser, async function (request, response_generate_novel) {
     if (!request.body) return response_generate_novel.sendStatus(400);
 
     const api_key_novel = readSecret(SECRET_KEYS.NOVEL);
@@ -1926,7 +1922,7 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
         "input": request.body.input,
         "model": request.body.model,
         "parameters": {
-            "use_string": request.body.use_string,
+            "use_string": request.body.use_string ?? true,
             "temperature": request.body.temperature,
             "max_length": request.body.max_length,
             "min_length": request.body.min_length,
@@ -1951,7 +1947,6 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
             "logit_bias_exp": logit_bias_exp,
             "generate_until_sentence": request.body.generate_until_sentence,
             "use_cache": request.body.use_cache,
-            "use_string": request.body.use_string ?? true,
             "return_full_text": request.body.return_full_text,
             "prefix": request.body.prefix,
             "order": request.body.order
@@ -1967,7 +1962,7 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
     };
 
     try {
-        const url = request.body.streaming ? `${api_novelai}/ai/generate-stream` : `${api_novelai}/ai/generate`;
+        const url = request.body.streaming ? `${API_NOVELAI}/ai/generate-stream` : `${API_NOVELAI}/ai/generate`;
         const response = await fetch(url, { method: 'POST', timeout: 0, ...args });
 
         if (request.body.streaming) {
@@ -2095,7 +2090,7 @@ function getPngName(file) {
 
 app.post("/importcharacter", urlencodedParser, async function (request, response) {
 
-    if (!request.body) return response.sendStatus(400);
+    if (!request.body || request.file === undefined) return response.sendStatus(400);
 
     let png_name = '';
     let filedata = request.file;
@@ -2146,8 +2141,8 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                         "tags": jsonData.tags ?? '',
                     };
                     char = convertToV2(char);
-                    char = JSON.stringify(char);
-                    charaWrite(defaultAvatarPath, char, png_name, response, { file_name: png_name });
+                    let charJSON = JSON.stringify(char);
+                    charaWrite(defaultAvatarPath, charJSON, png_name, response, { file_name: png_name });
                 } else if (jsonData.char_name !== undefined) {//json Pygmalion notepad
                     console.log('importing from gradio json');
                     jsonData.char_name = sanitize(jsonData.char_name);
@@ -2171,8 +2166,8 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                         "tags": jsonData.tags ?? '',
                     };
                     char = convertToV2(char);
-                    char = JSON.stringify(char);
-                    charaWrite(defaultAvatarPath, char, png_name, response, { file_name: png_name });
+                    let charJSON = JSON.stringify(char);
+                    charaWrite(defaultAvatarPath, charJSON, png_name, response, { file_name: png_name });
                 } else {
                     console.log('Incorrect character format .json');
                     response.send({ error: true });
@@ -2181,6 +2176,8 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
         } else {
             try {
                 var img_data = await charaRead(uploadPath, format);
+                if (img_data === false || img_data === undefined) throw new Error('Failed to read character data');
+
                 let jsonData = json5.parse(img_data);
 
                 jsonData.name = sanitize(jsonData.data?.name || jsonData.name);
@@ -2872,7 +2869,7 @@ app.post('/deletegroup', jsonParser, async (request, response) => {
 
     try {
         // Delete group chats
-        const group = json5.parse(fs.readFileSync(pathToGroup));
+        const group = json5.parse(fs.readFileSync(pathToGroup, 'utf8'));
 
         if (group && Array.isArray(group.chats)) {
             for (const chat of group.chats) {
@@ -2986,6 +2983,8 @@ function getOriginalFolder(type) {
 
 function invalidateThumbnail(type, file) {
     const folder = getThumbnailFolder(type);
+    if (folder === undefined) throw new Error("Invalid thumbnail type")
+
     const pathToThumbnail = path.join(folder, file);
 
     if (fs.existsSync(pathToThumbnail)) {
@@ -3035,8 +3034,12 @@ async function ensureThumbnailCache() {
 }
 
 async function generateThumbnail(type, file) {
-    const pathToCachedFile = path.join(getThumbnailFolder(type), file);
-    const pathToOriginalFile = path.join(getOriginalFolder(type), file);
+    let thumbnailFolder = getThumbnailFolder(type)
+    let originalFolder = getOriginalFolder(type)
+    if (thumbnailFolder === undefined || originalFolder === undefined) throw new Error("Invalid thumbnail type")
+
+    const pathToCachedFile = path.join(thumbnailFolder, file);
+    const pathToOriginalFile = path.join(originalFolder, file);
 
     const cachedFileExists = fs.existsSync(pathToCachedFile);
     const originalFileExists = fs.existsSync(pathToOriginalFile);
@@ -3126,7 +3129,7 @@ app.post("/getstatus_openai", jsonParser, function (request, response_getstatus_
     let headers;
 
     if (request.body.use_openrouter == false) {
-        api_url = new URL(request.body.reverse_proxy || api_openai).toString();
+        api_url = new URL(request.body.reverse_proxy || API_OPENAI).toString();
         api_key_openai = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.OPENAI);
         headers = {};
     } else {
@@ -3408,9 +3411,13 @@ app.post("/generate_altscale", jsonParser, function (request, response_generate_
 
 });
 
+/**
+ * @param {express.Request} request
+ * @param {express.Response} response
+ */
 async function sendClaudeRequest(request, response) {
 
-    const api_url = new URL(request.body.reverse_proxy || api_claude).toString();
+    const api_url = new URL(request.body.reverse_proxy || API_CLAUDE).toString();
     const api_key_claude = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.CLAUDE);
 
     if (!api_key_claude) {
@@ -3464,7 +3471,7 @@ async function sendClaudeRequest(request, response) {
             generateResponse.body.pipe(response);
 
             request.socket.on('close', function () {
-                generateResponse.body.destroy(); // Close the remote stream
+                if (generateResponse.body instanceof Readable) generateResponse.body.destroy(); // Close the remote stream
                 response.end(); // End the Express response
             });
 
@@ -3515,7 +3522,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
     let bodyParams;
 
     if (!request.body.use_openrouter) {
-        api_url = new URL(request.body.reverse_proxy || api_openai).toString();
+        api_url = new URL(request.body.reverse_proxy || API_OPENAI).toString();
         api_key_openai = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.OPENAI);
         headers = {};
         bodyParams = {};
@@ -3584,6 +3591,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
 
     async function makeRequest(config, response_generate_openai, request, retries = 5, timeout = 5000) {
         try {
+            // @ts-ignore - axios typings are wrong, this is actually callable https://github.com/axios/axios/issues/5213
             const response = await axios(config);
 
             if (response.status <= 299) {
@@ -4030,8 +4038,7 @@ const setupTasks = async function () {
     contentManager.checkForNewContent();
     cleanUploads();
 
-    // Colab users could run the embedded tool
-    if (!is_colab) await convertWebp();
+    await convertWebp();
 
     [spp_llama, spp_nerd, spp_nerd_v2, claude_tokenizer] = await Promise.all([
         loadSentencepieceTokenizer('src/sentencepiece/tokenizer.model'),
@@ -4555,7 +4562,7 @@ app.post('/novel_tts', jsonParser, async (request, response) => {
     }
 
     try {
-        const url = `${api_novelai}/ai/generate-voice?text=${encodeURIComponent(text)}&voice=-1&seed=${encodeURIComponent(voice)}&opus=false&version=v2`;
+        const url = `${API_NOVELAI}/ai/generate-voice?text=${encodeURIComponent(text)}&voice=-1&seed=${encodeURIComponent(voice)}&opus=false&version=v2`;
         const result = await fetch(url, {
             method: 'GET',
             headers: {
