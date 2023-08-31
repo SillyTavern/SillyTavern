@@ -580,6 +580,7 @@ export function dragElement(elmnt) {
             }
 
             //prevent underlap with topbar div
+            /*
             if (top < topBarLastY
                 && (maxX >= topBarFirstX && left <= topBarFirstX //elmnt is hitting topbar from left side
                     || left <= topBarLastX && maxX >= topBarLastX //elmnt is hitting topbar from right side
@@ -588,6 +589,7 @@ export function dragElement(elmnt) {
                 console.debug('topbar hit')
                 elmnt.css('top', top + 1 + "px");
             }
+            */
         }
 
         // Check if the element header exists and set the listener on the grabber
