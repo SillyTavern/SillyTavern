@@ -2673,7 +2673,7 @@ app.post('/uploadimage', jsonParser, async (request, response) => {
     }
 
     // Extracting the base64 data and the image format
-    const match = request.body.image.match(/^data:image\/(png|jpg|webp);base64,(.+)$/);
+    const match = request.body.image.match(/^data:image\/(png|jpg|webp|jpeg|gif);base64,(.+)$/);
     if (!match) {
         return response.status(400).send({ error: "Invalid image format" });
     }
@@ -2702,6 +2702,22 @@ app.post('/uploadimage', jsonParser, async (request, response) => {
     } catch (error) {
         console.log(error);
         response.status(500).send({ error: "Failed to save the image" });
+    }
+});
+
+app.post('/listimgfiles/:folder', (req, res) => {
+    const directoryPath = path.join(process.cwd(), 'public/user/images/', sanitize(req.params.folder));
+
+    if (!fs.existsSync(directoryPath)) {
+        fs.mkdirSync(directoryPath, { recursive: true });
+    }
+
+    try {
+        const images = getImages(directoryPath);
+        return res.send(images);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).send({ error: "Unable to retrieve files" });
     }
 });
 

@@ -347,6 +347,7 @@ body.movingUI #sheld,
 body.movingUI .drawer-content,
 body.movingUI #expression-holder,
 body.movingUI .zoomed_avatar,
+body.movingUI .draggable,
 body.movingUI #floatingPrompt,
 body.movingUI #groupMemberListPopout {
     resize: both;
