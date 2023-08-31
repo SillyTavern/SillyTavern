@@ -954,6 +954,7 @@ function readFromV2(char) {
     });
 
     char['chat'] = char['chat'] ?? humanizedISO8601DateTime();
+    char['create_date'] = char['create_date'] || humanizedISO8601DateTime();
 
     return char;
 }
