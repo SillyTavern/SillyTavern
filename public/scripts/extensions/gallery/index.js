@@ -2,7 +2,6 @@ import {
     eventSource,
     this_chid,
     characters,
-    callPopup,
     getRequestHeaders,
 } from "../../../script.js";
 import { selected_group } from "../../group-chats.js";
@@ -14,8 +13,11 @@ const extensionName = "gallery";
 const extensionFolderPath = `scripts/extensions/${extensionName}/`;
 let firstTime = true;
 
-// TODO:Some user wanted the gallery to be detachable / movable.For hmm, good chatting experience.I think it's easy to make any block movable with Ross's function, you need to check this out.
-// TODO:Haven't seen any guidance on how to populate the gallery in-app still.
+// Exposed defaults for future tweaking
+let thumbnailHeight = 150;
+let paginationVisiblePages = 10;
+let paginationMaxLinesPerPage = 2;
+let galleryMaxRows = 3;
 
 
 /**
@@ -54,10 +56,10 @@ async function initGallery(items, url) {
     $("#dragGallery").nanogallery2({
         "items": items,
         thumbnailWidth: 'auto',
-        thumbnailHeight: 150,
-        paginationVisiblePages: 5,
-        paginationMaxLinesPerPage: 2,
-        galleryMaxRows : 3,
+        thumbnailHeight: thumbnailHeight,
+        paginationVisiblePages: paginationVisiblePages,
+        paginationMaxLinesPerPage: paginationMaxLinesPerPage,
+        galleryMaxRows: galleryMaxRows,
         galleryPaginationTopButtons: false,
         galleryNavigationOverlayButtons: true,
         galleryTheme: {
@@ -142,6 +144,7 @@ async function showCharGallery() {
             "js"
         );
         firstTime = false;
+        toastr.info("Images can also be found in the folder `user/images`", "Drag and drop images onto the gallery to upload them");
     }
 
     try {
