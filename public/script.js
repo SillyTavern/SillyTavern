@@ -6,9 +6,8 @@ import {
     loadKoboldSettings,
     formatKoboldUrl,
     getKoboldGenerationData,
-    canUseKoboldStopSequence,
-    canUseKoboldStreaming,
-    canUseKoboldTokenization,
+    kai_flags,
+    setKoboldFlags,
 } from "./scripts/kai-settings.js";
 
 import {
@@ -808,9 +807,7 @@ async function getStatus() {
 
                 // determine if we can use stop sequence and streaming
                 if (main_api === "kobold" || main_api === "koboldhorde") {
-                    kai_settings.use_stop_sequence = canUseKoboldStopSequence(data.version);
-                    kai_settings.can_use_streaming = canUseKoboldStreaming(data.koboldVersion);
-                    kai_settings.can_use_tokenization = canUseKoboldTokenization(data.koboldVersion);
+                    setKoboldFlags(data.version, data.koboldVersion);
                 }
 
                 // We didn't get a 200 status code, but the endpoint has an explanation. Which means it DID connect, but I digress.
@@ -2026,7 +2023,7 @@ function baseChatReplace(value, name1, name2) {
 
 function isStreamingEnabled() {
     return ((main_api == 'openai' && oai_settings.stream_openai && oai_settings.chat_completion_source !== chat_completion_sources.SCALE && oai_settings.chat_completion_source !== chat_completion_sources.AI21)
-        || (main_api == 'kobold' && kai_settings.streaming_kobold && kai_settings.can_use_streaming)
+        || (main_api == 'kobold' && kai_settings.streaming_kobold && kai_flags.can_use_streaming)
         || (main_api == 'novel' && nai_settings.streaming_novel)
         || (main_api == 'textgenerationwebui' && textgenerationwebui_settings.streaming))
         && !isMultigenEnabled(); // Multigen has a quasi-streaming mode which breaks the real streaming
@@ -2318,7 +2315,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         return;
     }
 
-    if (main_api == 'kobold' && kai_settings.streaming_kobold && !kai_settings.can_use_streaming) {
+    if (main_api == 'kobold' && kai_settings.streaming_kobold && !kai_flags.can_use_streaming) {
         toastr.error('Streaming is enabled, but the version of Kobold used does not support token streaming.', undefined, { timeOut: 10000, preventDuplicates: true, });
         is_send_press = false;
         return;
