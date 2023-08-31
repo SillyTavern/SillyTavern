@@ -3083,6 +3083,8 @@ async function generateThumbnail(type, file) {
 }
 
 app.get('/thumbnail', jsonParser, async function (request, response) {
+    if (typeof request.query.file !== 'string' || typeof request.query.type !== 'string') return response.sendStatus(400);
+
     const type = request.query.type;
     const file = sanitize(request.query.file);
 
@@ -3100,7 +3102,9 @@ app.get('/thumbnail', jsonParser, async function (request, response) {
     }
 
     if (config.disableThumbnails == true) {
-        const pathToOriginalFile = path.join(getOriginalFolder(type), file);
+        let folder = getOriginalFolder(file)
+        if (folder === undefined) return response.sendStatus(400);
+        const pathToOriginalFile = path.join(folder, file);
         return response.sendFile(pathToOriginalFile, { root: process.cwd() });
     }
 
