@@ -4279,10 +4279,10 @@ app.post('/generate_horde', jsonParser, async (request, response) => {
         "body": JSON.stringify(request.body),
         "headers": {
             "Content-Type": "application/json",
-            "Client-Agent": request.header('Client-Agent'),
             "apikey": api_key_horde,
         }
     };
+    if (request.header('Client-Agent') !== undefined) args.headers['Client-Agent'] = request.header('Client-Agent');
 
     console.log(args.body);
     try {
