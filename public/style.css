@@ -399,9 +399,10 @@ hr {
 #sheld {
     display: grid;
     grid-template-rows: auto min-content;
-    height: calc(100vh - var(--topBarBlockSize));
-    height: calc(100svh - var(--topBarBlockSize));
-    max-height: calc(100svh - var(--topBarBlockSize));
+    /* -1px to give sheld some wiggle room to bounce off tobar when moving*/
+    height: calc(100vh - var(--topBarBlockSize) - 1px);
+    height: calc(100svh - var(--topBarBlockSize) - 1px);
+    max-height: calc(100svh - var(--topBarBlockSize) - 1px);
     overflow-x: hidden;
     /* max-width: 50vw; */
     position: absolute;
@@ -3436,8 +3437,10 @@ a {
 
 /* Hide scrollbar for IE, Edge, and Firefox */
 .no-scrollbar {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;     /* Firefox */
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
 }
 
 #groupMemberListPopoutClose {
@@ -3560,7 +3563,7 @@ a {
     text-align: left;
 }
 
-.onboarding > h3 {
+.onboarding>h3 {
     align-self: center;
 }
 
