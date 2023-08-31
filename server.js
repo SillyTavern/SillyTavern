@@ -38,7 +38,6 @@ const fetch = require('node-fetch').default;
 const ipaddr = require('ipaddr.js');
 const ipMatching = require('ip-matching');
 const json5 = require('json5');
-const RESTClient = require('node-rest-client').Client;
 const WebSocket = require('ws');
 
 // image processing related library imports
@@ -153,12 +152,6 @@ function getHordeClient() {
     });
     return ai_horde;
 }
-
-const restClient = new RESTClient();
-
-restClient.on('error', (err) => {
-    console.error('An error occurred:', err);
-});
 
 const API_NOVELAI = "https://api.novelai.net";
 const API_OPENAI = "https://api.openai.com/v1";
@@ -812,13 +805,13 @@ app.post("/getstatus", jsonParser, async function (request, response) {
 
     if (main_api == "kobold") {
         try {
-            version = (await getAsync(api_server + "/v1/info/version")).result;
+            version = (await fetchJSON(api_server + "/v1/info/version")).result
         }
         catch {
             version = '0.0.0';
         }
         try {
-            koboldVersion = (await getAsync(api_server + "/extra/version"));
+            koboldVersion = (await fetchJSON(api_server + "/extra/version"));
         }
         catch {
             koboldVersion = {
@@ -829,7 +822,7 @@ app.post("/getstatus", jsonParser, async function (request, response) {
     }
 
     try {
-        let data = await getAsync(url, args);
+        let data = await fetchJSON(url, args);
 
         if (!data || typeof data !== 'object') {
             data = {};
@@ -3094,6 +3087,8 @@ async function generateThumbnail(type, file) {
 }
 
 app.get('/thumbnail', jsonParser, async function (request, response) {
+    if (typeof request.query.file !== 'string' || typeof request.query.type !== 'string') return response.sendStatus(400);
+
     const type = request.query.type;
     const file = sanitize(request.query.file);
 
@@ -3111,7 +3106,9 @@ app.get('/thumbnail', jsonParser, async function (request, response) {
     }
 
     if (config.disableThumbnails == true) {
-        const pathToOriginalFile = path.join(getOriginalFolder(type), file);
+        let folder = getOriginalFolder(file)
+        if (folder === undefined) return response.sendStatus(400);
+        const pathToOriginalFile = path.join(folder, file);
         return response.sendFile(pathToOriginalFile, { root: process.cwd() });
     }
 
@@ -3848,10 +3845,9 @@ app.post("/delete_preset", jsonParser, function (request, response) {
 });
 
 app.post("/savepreset_openai", jsonParser, function (request, response) {
+    if (!request.body || typeof request.query.name !== 'string') return response.sendStatus(400);
     const name = sanitize(request.query.name);
-    if (!request.body || !name) {
-        return response.sendStatus(400);
-    }
+    if (!name) return response.sendStatus(400);
 
     const filename = `${name}.settings`;
     const fullpath = path.join(directories.openAI_Settings, filename);
@@ -3994,8 +3990,14 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
 
 // ** REST CLIENT ASYNC WRAPPERS **
 
-async function postAsync(url, args) {
-    const response = await fetch(url, { method: 'POST', timeout: 0, ...args });
+/**
+ * Convenience function for fetch requests (default GET) returning as JSON.
+ * @param {string} url
+ * @param {import('node-fetch').RequestInit} args
+ */
+async function fetchJSON(url, args = {}) {
+    if (args.method === undefined) args.method = 'GET';
+    const response = await fetch(url, args);
 
     if (response.ok) {
         const data = await response.json();
@@ -4004,17 +4006,13 @@ async function postAsync(url, args) {
 
     throw response;
 }
+/**
+ * Convenience function for fetch requests (default POST with no timeout) returning as JSON.
+ * @param {string} url
+ * @param {import('node-fetch').RequestInit} args
+ */
+async function postAsync(url, args) { return fetchJSON(url, { method: 'POST', timeout: 0, ...args }) }
 
-function getAsync(url, args) {
-    return new Promise((resolve, reject) => {
-        restClient.get(url, args, (data, response) => {
-            if (response.statusCode >= 400) {
-                reject(data);
-            }
-            resolve(data);
-        }).on('error', e => reject(e));
-    })
-}
 // ** END **
 
 const tavernUrl = new URL(
@@ -4288,10 +4286,10 @@ app.post('/generate_horde', jsonParser, async (request, response) => {
         "body": JSON.stringify(request.body),
         "headers": {
             "Content-Type": "application/json",
-            "Client-Agent": request.header('Client-Agent'),
             "apikey": api_key_horde,
         }
     };
+    if (request.header('Client-Agent') !== undefined) args.headers['Client-Agent'] = request.header('Client-Agent');
 
     console.log(args.body);
     try {
