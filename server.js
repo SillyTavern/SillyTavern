@@ -32,7 +32,6 @@ const multer = require("multer");
 const responseTime = require('response-time');
 
 // net related library imports
-const axios = require('axios');
 const DeviceDetector = require("device-detector-js");
 const fetch = require('node-fetch').default;
 const ipaddr = require('ipaddr.js');
@@ -3557,15 +3556,15 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
         controller.abort();
     });
 
+    /** @type {import('node-fetch').RequestInit} */
     const config = {
         method: 'post',
-        url: endpointUrl,
         headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + api_key_openai,
             ...headers,
         },
-        data: {
+        body: JSON.stringify({
             "messages": isTextCompletion === false ? request.body.messages : undefined,
             "prompt": isTextCompletion === true ? textPrompt : undefined,
             "model": request.body.model,
@@ -3579,33 +3578,37 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
             "stop": request.body.stop,
             "logit_bias": request.body.logit_bias,
             ...bodyParams,
-        },
+        }),
         signal: controller.signal,
     };
 
-    console.log(config.data);
+    console.log(config.body);
 
-    if (request.body.stream) {
-        config.responseType = 'stream';
-    }
-
+    /**
+     * 
+     * @param {*} config 
+     * @param {express.Response} response_generate_openai 
+     * @param {express.Request} request 
+     * @param {Number} retries 
+     * @param {Number} timeout 
+     */
     async function makeRequest(config, response_generate_openai, request, retries = 5, timeout = 5000) {
         try {
-            // @ts-ignore - axios typings are wrong, this is actually callable https://github.com/axios/axios/issues/5213
-            const response = await axios(config);
+            const response = await fetch(endpointUrl, config)
 
             if (response.status <= 299) {
                 if (request.body.stream) {
                     console.log('Streaming request in progress');
-                    response.data.pipe(response_generate_openai);
-                    response.data.on('end', () => {
+                    response.body.pipe(response_generate_openai);
+                    response.body.on('end', () => {
                         console.log('Streaming request finished');
                         response_generate_openai.end();
                     });
                 } else {
-                    response_generate_openai.send(response.data);
-                    console.log(response.data);
-                    console.log(response.data?.choices[0]?.message);
+                    let json = await response.json()
+                    response_generate_openai.send(json);
+                    console.log(json);
+                    console.log(json?.choices[0]?.message);
                 }
             } else {
                 handleErrorResponse(response, response_generate_openai, request);
