@@ -3121,7 +3121,7 @@ app.get('/thumbnail', jsonParser, async function (request, response) {
 });
 
 /* OpenAI */
-app.post("/getstatus_openai", jsonParser, function (request, response_getstatus_openai) {
+app.post("/getstatus_openai", jsonParser, async function (request, response_getstatus_openai) {
     if (!request.body) return response_getstatus_openai.sendStatus(400);
 
     let api_url;
@@ -3143,17 +3143,22 @@ app.post("/getstatus_openai", jsonParser, function (request, response_getstatus_
         return response_getstatus_openai.status(401).send({ error: true });
     }
 
-    const args = {
-        headers: {
-            "Authorization": "Bearer " + api_key_openai,
-            ...headers,
-        },
-    };
-    restClient.get(api_url + "/models", args, function (data, response) {
-        if (response.statusCode == 200) {
+    try {
+        const response = await fetch(api_url + "/models", {
+            method: 'GET',
+            headers: {
+                "Authorization": "Bearer " + api_key_openai,
+                ...headers,
+            },
+        });
+
+        if (response.ok) {
+            const data = await response.json();
             response_getstatus_openai.send(data);
+
             if (request.body.use_openrouter) {
                 let models = [];
+
                 data.data.forEach(model => {
                     const context_length = model.context_length;
                     const tokens_dollar = Number(1 / (1000 * model.pricing.prompt));
@@ -3163,27 +3168,21 @@ app.post("/getstatus_openai", jsonParser, function (request, response_getstatus_
                         context_length: context_length,
                     };
                 });
+
                 console.log('Available OpenRouter models:', models);
             } else {
                 const modelIds = data?.data?.map(x => x.id)?.sort();
                 console.log('Available OpenAI models:', modelIds);
             }
         }
-        if (response.statusCode == 401) {
+        else {
             console.log('Access Token is incorrect.');
             response_getstatus_openai.send({ error: true });
         }
-        if (response.statusCode == 404) {
-            console.log('Endpoint not found.');
-            response_getstatus_openai.send({ error: true });
-        }
-        if (response.statusCode == 500 || response.statusCode == 501 || response.statusCode == 501 || response.statusCode == 503 || response.statusCode == 507) {
-            console.log(data);
-            response_getstatus_openai.send({ error: true });
-        }
-    }).on('error', function () {
+    } catch (e) {
+        console.error(e);
         response_getstatus_openai.send({ error: true });
-    });
+    }
 });
 
 app.post("/openai_bias", jsonParser, async function (request, response) {
