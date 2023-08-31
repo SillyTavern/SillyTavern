@@ -3984,7 +3984,7 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
 // ** REST CLIENT ASYNC WRAPPERS **
 
 /**
- * Convenience function for fetch requests returning as JSON.
+ * Convenience function for fetch requests (default GET) returning as JSON.
  * @param {string} url 
  * @param {import('node-fetch').RequestInit} args 
  */
@@ -3999,7 +3999,12 @@ async function fetchJSON(url, args = {}) {
 
     throw response;
 }
-const postAsync = (url, args) => fetchJSON(url, { method: 'POST', timeout: 0, ...args });
+/**
+ * Convenience function for fetch requests (default POST with no timeout) returning as JSON.
+ * @param {string} url 
+ * @param {import('node-fetch').RequestInit} args 
+ */
+async function postAsync (url, args) {return fetchJSON(url, { method: 'POST', timeout: 0, ...args })}
 
 // ** END **
 
