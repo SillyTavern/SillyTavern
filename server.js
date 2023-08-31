@@ -3984,8 +3984,8 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
 
 /**
  * Convenience function for fetch requests (default GET) returning as JSON.
- * @param {string} url 
- * @param {import('node-fetch').RequestInit} args 
+ * @param {string} url
+ * @param {import('node-fetch').RequestInit} args
  */
 async function fetchJSON(url, args = {}) {
     if (args.method === undefined) args.method = 'GET';
@@ -4000,10 +4000,10 @@ async function fetchJSON(url, args = {}) {
 }
 /**
  * Convenience function for fetch requests (default POST with no timeout) returning as JSON.
- * @param {string} url 
- * @param {import('node-fetch').RequestInit} args 
+ * @param {string} url
+ * @param {import('node-fetch').RequestInit} args
  */
-async function postAsync (url, args) {return fetchJSON(url, { method: 'POST', timeout: 0, ...args })}
+async function postAsync(url, args) { return fetchJSON(url, { method: 'POST', timeout: 0, ...args }) }
 
 // ** END **
 
