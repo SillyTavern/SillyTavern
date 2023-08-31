@@ -3,7 +3,7 @@ import { power_user, registerDebugFunction } from "./power-user.js";
 import { chat_completion_sources, oai_settings } from "./openai.js";
 import { groups, selected_group } from "./group-chats.js";
 import { getStringHash } from "./utils.js";
-import { kai_settings } from "./kai-settings.js";
+import { kai_flags } from "./kai-settings.js";
 
 export const CHARACTERS_PER_TOKEN_RATIO = 3.35;
 const TOKENIZER_WARNING_KEY = 'tokenizationWarningShown';
@@ -82,7 +82,7 @@ function getTokenizerBestMatch() {
         // - API must be connected
         // - Kobold must pass a version check
         // - Tokenizer haven't reported an error previously
-        if (kai_settings.can_use_tokenization && !sessionStorage.getItem(TOKENIZER_WARNING_KEY) && online_status !== 'no_connection') {
+        if (kai_flags.can_use_tokenization && !sessionStorage.getItem(TOKENIZER_WARNING_KEY) && online_status !== 'no_connection') {
             return tokenizers.API;
         }
 
