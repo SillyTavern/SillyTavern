@@ -534,6 +534,10 @@ app.post("/generate", jsonParser, async function (request, response_generate) {
             typical: request.body.typical,
             sampler_order: sampler_order,
             singleline: !!request.body.singleline,
+            use_default_badwordids: request.body.use_default_badwordids,
+            mirostat: request.body.mirostat,
+            mirostat_eta: request.body.mirostat_eta,
+            mirostat_tau: request.body.mirostat_tau,
         };
         if (!!request.body.stop_sequence) {
             this_settings['stop_sequence'] = request.body.stop_sequence;
