@@ -514,7 +514,10 @@ if "%restore_choice%" geq "1" (
     if "%restore_choice%" leq "%backup_count%" (
         set "selected_backup=!backup_files[%restore_choice%]!"
         echo Restoring backup !selected_backup!...
-        7z x "backups\!selected_backup!.7z" -o"SillyTavern\public"
+        REM Extract the contents of the "public" folder directly into the existing "public" folder
+        7z x "backups\!selected_backup!.7z" -o"temp" -aoa
+        xcopy /y /e "temp\public\*" "public\"
+        rmdir /s /q "temp"
         echo %green_fg_strong%!selected_backup! restored successfully.%reset%
     ) else (
         color 6
