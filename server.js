@@ -3837,10 +3837,9 @@ app.post("/delete_preset", jsonParser, function (request, response) {
 });
 
 app.post("/savepreset_openai", jsonParser, function (request, response) {
+    if (!request.body || typeof request.query.name !== 'string') return response.sendStatus(400);
     const name = sanitize(request.query.name);
-    if (!request.body || !name) {
-        return response.sendStatus(400);
-    }
+    if (!name) return response.sendStatus(400);
 
     const filename = `${name}.settings`;
     const fullpath = path.join(directories.openAI_Settings, filename);
