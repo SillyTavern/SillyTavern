@@ -60,8 +60,17 @@ async function initGallery(items, url) {
         galleryMaxRows : 3,
         galleryPaginationTopButtons: false,
         galleryNavigationOverlayButtons: true,
-        "galleryDisplayMode": "pagination",
-        "fnThumbnailOpen": viewWithDragbox,
+        galleryTheme: {
+            navigationBar: { background: 'none', borderTop: '', borderBottom: '', borderRight: '', borderLeft: '' },
+            navigationBreadcrumb: { background: '#111', color: '#fff', colorHover: '#ccc', borderRadius: '4px' },
+            navigationFilter: { color: '#ddd', background: '#111', colorSelected: '#fff', backgroundSelected: '#111', borderRadius: '4px' },
+            navigationPagination: { background: '#111', color: '#fff', colorHover: '#ccc', borderRadius: '4px' },
+            thumbnail: { background: '#444', backgroundImage: 'linear-gradient(315deg, #111 0%, #445 90%)', borderColor: '#000', borderRadius: '0px', labelOpacity: 1, labelBackground: 'rgba(34, 34, 34, 0)', titleColor: '#fff', titleBgColor: 'transparent', titleShadow: '', descriptionColor: '#ccc', descriptionBgColor: 'transparent', descriptionShadow: '', stackBackground: '#aaa' },
+            thumbnailIcon: { padding: '5px', color: '#fff', shadow: '' },
+            pagination: { background: '#181818', backgroundSelected: '#666', color: '#fff', borderRadius: '2px', shapeBorder: '3px solid var(--SmartThemeQuoteColor)', shapeColor: '#444', shapeSelectedColor: '#aaa' }
+        },
+        galleryDisplayMode: "pagination",
+        fnThumbnailOpen: viewWithDragbox,
     });
 
     $(document).ready(function () {
@@ -155,6 +164,7 @@ async function showCharGallery() {
         }
 
     } catch (err) {
+        console.trace();
         console.error(err);
     }
 }
@@ -256,6 +266,10 @@ function makeMovable(id="gallery"){
     // add no-scrollbar class to this element
     newElement.addClass('no-scrollbar');
 
+    // get the close button and set its id and data-related-id
+    const closeButton = newElement.find('.dragClose');
+    closeButton.attr('id', `${id}close`);
+    closeButton.attr('data-related-id', `${id}`);
 
     $(`#dragGallery`).css('display', 'block');
 
@@ -269,6 +283,11 @@ function makeMovable(id="gallery"){
         console.log('saw drag on avatar!');
         e.preventDefault();
         return false;
+    });
+
+    $('body').on('click', '.dragClose', function () {
+        const relatedId = $(this).data('related-id');  // Get the ID of the related draggable
+        $(`#${relatedId}`).remove();  // Remove the associated draggable
     });
 }
 
@@ -314,6 +333,14 @@ function makeDragImg(id, url) {
         // Ensure that the newly added element is displayed as block
         draggableElem.style.display = 'block';
 
+        // Add an id to the close button
+        // If the close button exists, set related-id
+        const closeButton = draggableElem.querySelector('.dragClose');
+        if (closeButton) {
+            closeButton.id = `${uniqueId}close`;
+            closeButton.dataset.relatedId = uniqueId;
+        }
+
         // Find the .drag-grabber and set its matching unique ID
         const dragGrabber = draggableElem.querySelector('.drag-grabber');
         if (dragGrabber) {
@@ -340,6 +367,11 @@ function makeDragImg(id, url) {
     } else {
         console.error("Failed to append the template content or retrieve the appended content.");
     }
+
+    $('body').on('click', '.dragClose', function () {
+        const relatedId = $(this).data('related-id');  // Get the ID of the related draggable
+        $(`#${relatedId}`).remove();  // Remove the associated draggable
+    });
 }
 
 

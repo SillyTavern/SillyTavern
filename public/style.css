@@ -1239,6 +1239,19 @@ input[type="file"] {
     opacity: 1;
 }
 
+.dragClose {
+    height: 15px;
+    aspect-ratio: 1 / 1;
+    font-size: 20px;
+    opacity: 0.5;
+    transition: all 250ms;
+}
+
+.dragClose:hover {
+    cursor: pointer;
+    opacity: 1;
+}
+
 #floatingPrompt .drag-grabber {
     position: unset;
 }
