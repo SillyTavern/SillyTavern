@@ -849,6 +849,38 @@ export async function saveBase64AsFile(base64Data, characterName, filename = "",
 }
 
 /**
+ * Loads either a CSS or JS file and appends it to the appropriate document section.
+ * 
+ * @param {string} url - The URL of the file to be loaded.
+ * @param {string} type - The type of file to load: "css" or "js".
+ * @returns {Promise} - Resolves when the file has loaded, rejects if there's an error or invalid type.
+ */
+export function loadFileToDocument(url, type) {
+    return new Promise((resolve, reject) => {
+        let element;
+
+        if (type === "css") {
+            element = document.createElement("link");
+            element.rel = "stylesheet";
+            element.href = url;
+        } else if (type === "js") {
+            element = document.createElement("script");
+            element.src = url;
+        } else {
+            reject("Invalid type specified");
+            return;
+        }
+
+        element.onload = resolve;
+        element.onerror = reject;
+
+        type === "css"
+            ? document.head.appendChild(element)
+            : document.body.appendChild(element);
+    });
+}
+
+/**
  * Creates a thumbnail from a data URL.
  * @param {string} dataUrl The data URL encoded data of the image.
  * @param {number} maxWidth The maximum width of the thumbnail.
