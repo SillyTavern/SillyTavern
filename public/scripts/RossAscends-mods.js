@@ -17,6 +17,7 @@ import {
     getEntitiesList,
     getThumbnailUrl,
     selectCharacterById,
+    eventSource,
 } from "../script.js";
 
 import {
@@ -33,6 +34,7 @@ import {
 import { debounce, delay, getStringHash, waitUntilCondition } from "./utils.js";
 import { chat_completion_sources, oai_settings } from "./openai.js";
 import { getTokenCount } from "./tokenizers.js";
+
 
 var RPanelPin = document.getElementById("rm_button_panel_pin");
 var LPanelPin = document.getElementById("lm_button_panel_pin");
@@ -448,8 +450,9 @@ export function dragElement(elmnt) {
         topbar, topbarWidth, topBarFirstX, topBarLastX, topBarLastY, sheldWidth;
 
     var elmntName = elmnt.attr('id');
-
+    console.log(`dragElement called for ${elmntName}`);
     const elmntNameEscaped = $.escapeSelector(elmntName);
+    console.log(`dragElement escaped name: ${elmntNameEscaped}`);
     const elmntHeader = $(`#${elmntNameEscaped}header`);
 
     if (elmntHeader.length) {
@@ -556,6 +559,7 @@ export function dragElement(elmnt) {
                 console.debug(`Saving ${elmntName} Height/Width`)
                 power_user.movingUIState[elmntName].width = width;
                 power_user.movingUIState[elmntName].height = height;
+                eventSource.emit('resizeUI', elmntName);
                 saveSettingsDebounced();
             })
         }
@@ -950,8 +954,15 @@ export function initRossMods() {
             CheckLocal();
         }
 
+        // Helper function to check if nanogallery2's lightbox is active
+        function isNanogallery2LightboxActive() {
+            // Check if the body has the 'nGY2On' class, adjust this based on actual behavior
+            return $('body').hasClass('nGY2_body_scrollbar');
+        }
+
         if (event.key == "ArrowLeft") {        //swipes left
             if (
+                !isNanogallery2LightboxActive() &&  // Check if lightbox is NOT active
                 $(".swipe_left:last").css('display') === 'flex' &&
                 $("#send_textarea").val() === '' &&
                 $("#character_popup").css("display") === "none" &&
@@ -963,6 +974,7 @@ export function initRossMods() {
         }
         if (event.key == "ArrowRight") { //swipes right
             if (
+                !isNanogallery2LightboxActive() &&  // Check if lightbox is NOT active
                 $(".swipe_right:last").css('display') === 'flex' &&
                 $("#send_textarea").val() === '' &&
                 $("#character_popup").css("display") === "none" &&
@@ -972,6 +984,7 @@ export function initRossMods() {
                 $('.swipe_right:last').click();
             }
         }
+
 
         if (event.ctrlKey && event.key == "ArrowUp") { //edits last USER message if chatbar is empty and focused
             if (
@@ -1008,9 +1021,9 @@ export function initRossMods() {
         }
 
         if (event.key == "Escape") { //closes various panels
+
             //dont override Escape hotkey functions from script.js
             //"close edit box" and "cancel stream generation".
-
             if ($("#curEditTextarea").is(":visible") || $("#mes_stop").is(":visible")) {
                 console.debug('escape key, but deferring to script.js routines')
                 return
@@ -1047,13 +1060,11 @@ export function initRossMods() {
                     .not('#left-nav-panel')
                     .not('#right-nav-panel')
                     .not('#floatingPrompt')
-                console.log(visibleDrawerContent)
                 $(visibleDrawerContent).parent().find('.drawer-icon').trigger('click');
                 return
             }
 
             if ($("#floatingPrompt").is(":visible")) {
-                console.log('saw AN visible, trying to close')
                 $("#ANClose").trigger('click');
                 return
             }
@@ -1076,8 +1087,15 @@ export function initRossMods() {
             }
         }
 
+        if ($(".draggable").is(":visible")) {
+            // Remove the first matched element
+            $('.draggable:first').remove();
+            return;
+        }
+
+
         if (event.ctrlKey && /^[1-9]$/.test(event.key)) {
-            // Your code here
+            // This will eventually be to trigger quick replies
             event.preventDefault();
             console.log("Ctrl +" + event.key + " pressed!");
         }

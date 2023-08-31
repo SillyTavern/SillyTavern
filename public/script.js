@@ -1895,7 +1895,17 @@ export function extractMessageBias(message) {
     }
 }
 
+/**
+ * Removes impersonated group member lines from the group member messages.
+ * Doesn't do anything if group reply trimming is disabled.
+ * @param {string} getMessage Group message
+ * @returns Cleaned-up group message
+ */
 function cleanGroupMessage(getMessage) {
+    if (power_user.disable_group_trimming) {
+        return getMessage;
+    }
+
     const group = groups.find((x) => x.id == selected_group);
 
     if (group && Array.isArray(group.members) && group.members) {
@@ -2535,6 +2545,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
         let examplesString = '';
         let chatString = '';
+        let cyclePrompt = '';
+
         function getMessagesTokenCount() {
             const encodeString = [
                 storyString,
@@ -2542,6 +2554,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 chatString,
                 allAnchors,
                 quiet_prompt,
+                cyclePrompt,
             ].join('').replace(/\r/gm, '');
             return getTokenCount(encodeString, power_user.token_padding);
         }
@@ -2552,7 +2565,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             pinExmString = examplesString = mesExamplesArray.join('');
         }
 
-        let cyclePrompt = '';
         if (isContinue) {
             cyclePrompt = chat2.shift();
         }
