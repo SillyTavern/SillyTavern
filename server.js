@@ -160,10 +160,12 @@ restClient.on('error', (err) => {
     console.error('An error occurred:', err);
 });
 
+const API_NOVELAI = "https://api.novelai.net";
+const API_OPENAI = "https://api.openai.com/v1";
+const API_CLAUDE = "https://api.anthropic.com/v1";
+
+// These should be gone and come from the frontend. But for now, they're here.
 let api_server = "http://0.0.0.0:5000";
-let api_novelai = "https://api.novelai.net";
-let api_openai = "https://api.openai.com/v1";
-let api_claude = "https://api.anthropic.com/v1";
 let main_api = "kobold";
 
 let characters = {};
@@ -311,7 +313,6 @@ function humanizedISO8601DateTime() {
     return HumanizedDateTime;
 };
 
-var is_colab = process.env.colaburl !== undefined;
 var charactersPath = 'public/characters/';
 var chatsPath = 'public/chats/';
 const UPLOADS_PATH = './uploads';
@@ -319,7 +320,6 @@ const AVATAR_WIDTH = 400;
 const AVATAR_HEIGHT = 600;
 const jsonParser = express.json({ limit: '100mb' });
 const urlencodedParser = express.urlencoded({ extended: true, limit: '100mb' });
-const baseRequestArgs = { headers: { "Content-Type": "application/json" } };
 const directories = {
     worlds: 'public/worlds/',
     avatars: 'public/User Avatars',
@@ -1460,15 +1460,7 @@ app.post("/getbackgrounds", jsonParser, function (request, response) {
     response.send(JSON.stringify(images));
 
 });
-app.post("/iscolab", jsonParser, function (request, response) {
-    /** @type {false | string} */
-    let send_data = false;
-    if (is_colab) {
-        send_data = String(process.env.colaburl).trim();
-    }
-    response.send({ colaburl: send_data });
 
-});
 app.post("/getuseravatars", jsonParser, function (request, response) {
     var images = getImages("public/User Avatars");
     response.send(JSON.stringify(images));
@@ -1866,7 +1858,7 @@ app.post("/getstatus_novelai", jsonParser, async function (request, response_get
     }
 
     try {
-        const response = await fetch(api_novelai + "/user/subscription", {
+        const response = await fetch(API_NOVELAI + "/user/subscription", {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -1969,7 +1961,7 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
     };
 
     try {
-        const url = request.body.streaming ? `${api_novelai}/ai/generate-stream` : `${api_novelai}/ai/generate`;
+        const url = request.body.streaming ? `${API_NOVELAI}/ai/generate-stream` : `${API_NOVELAI}/ai/generate`;
         const response = await fetch(url, { method: 'POST', timeout: 0, ...args });
 
         if (request.body.streaming) {
@@ -3136,7 +3128,7 @@ app.post("/getstatus_openai", jsonParser, function (request, response_getstatus_
     let headers;
 
     if (request.body.use_openrouter == false) {
-        api_url = new URL(request.body.reverse_proxy || api_openai).toString();
+        api_url = new URL(request.body.reverse_proxy || API_OPENAI).toString();
         api_key_openai = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.OPENAI);
         headers = {};
     } else {
@@ -3419,12 +3411,12 @@ app.post("/generate_altscale", jsonParser, function (request, response_generate_
 });
 
 /**
- * @param {express.Request} request 
- * @param {express.Response} response 
+ * @param {express.Request} request
+ * @param {express.Response} response
  */
 async function sendClaudeRequest(request, response) {
 
-    const api_url = new URL(request.body.reverse_proxy || api_claude).toString();
+    const api_url = new URL(request.body.reverse_proxy || API_CLAUDE).toString();
     const api_key_claude = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.CLAUDE);
 
     if (!api_key_claude) {
@@ -3529,7 +3521,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
     let bodyParams;
 
     if (!request.body.use_openrouter) {
-        api_url = new URL(request.body.reverse_proxy || api_openai).toString();
+        api_url = new URL(request.body.reverse_proxy || API_OPENAI).toString();
         api_key_openai = request.body.reverse_proxy ? request.body.proxy_password : readSecret(SECRET_KEYS.OPENAI);
         headers = {};
         bodyParams = {};
@@ -4045,8 +4037,7 @@ const setupTasks = async function () {
     contentManager.checkForNewContent();
     cleanUploads();
 
-    // Colab users could run the embedded tool
-    if (!is_colab) await convertWebp();
+    await convertWebp();
 
     [spp_llama, spp_nerd, spp_nerd_v2, claude_tokenizer] = await Promise.all([
         loadSentencepieceTokenizer('src/sentencepiece/tokenizer.model'),
@@ -4570,7 +4561,7 @@ app.post('/novel_tts', jsonParser, async (request, response) => {
     }
 
     try {
-        const url = `${api_novelai}/ai/generate-voice?text=${encodeURIComponent(text)}&voice=-1&seed=${encodeURIComponent(voice)}&opus=false&version=v2`;
+        const url = `${API_NOVELAI}/ai/generate-voice?text=${encodeURIComponent(text)}&voice=-1&seed=${encodeURIComponent(voice)}&opus=false&version=v2`;
         const result = await fetch(url, {
             method: 'GET',
             headers: {
