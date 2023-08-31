@@ -159,6 +159,7 @@ let power_user = {
     timestamp_model_icon: false,
     mesIDDisplay_enabled: false,
     max_context_unlocked: false,
+    message_token_count_enabled: false,
     prefer_character_prompt: true,
     prefer_character_jailbreak: true,
     quick_continue: false,
@@ -240,6 +241,7 @@ const storage_keys = {
     timestamps_enabled: 'TimestampsEnabled',
     timestamp_model_icon: 'TimestampModelIcon',
     mesIDDisplay_enabled: 'mesIDDisplayEnabled',
+    message_token_count_enabled: 'MessageTokenCountEnabled',
 };
 
 let browser_has_focus = true;
@@ -364,6 +366,13 @@ function switchIcons() {
     power_user.timestamp_model_icon = value === null ? true : value == "true";
     $("body").toggleClass("no-modelIcons", !power_user.timestamp_model_icon);
     $("#messageModelIconEnabled").prop("checked", power_user.timestamp_model_icon);
+}
+
+function switchTokenCount() {
+    const value = localStorage.getItem(storage_keys.message_token_count_enabled);
+    power_user.message_token_count_enabled = value === null ? false : value == "true";
+    $("body").toggleClass("no-tokenCount", !power_user.message_token_count_enabled);
+    $("#messageTokensEnabled").prop("checked", power_user.message_token_count_enabled);
 }
 
 function switchMesIDDisplay() {
@@ -621,42 +630,49 @@ async function applyTheme(name) {
                     power_user.chat_width = 50;
                 }
 
-                localStorage.setItem(storage_keys.chat_width, power_user.chat_width);
+                localStorage.setItem(storage_keys.chat_width, String(power_user.chat_width));
                 applyChatWidth();
             }
         },
         {
             key: 'timer_enabled',
             action: async () => {
-                localStorage.setItem(storage_keys.timer_enabled, power_user.timer_enabled);
+                localStorage.setItem(storage_keys.timer_enabled, String(power_user.timer_enabled));
                 switchTimer();
             }
         },
         {
             key: 'timestamps_enabled',
             action: async () => {
-                localStorage.setItem(storage_keys.timestamps_enabled, power_user.timestamps_enabled);
+                localStorage.setItem(storage_keys.timestamps_enabled, String(power_user.timestamps_enabled));
                 switchTimestamps();
             }
         },
         {
             key: 'timestamp_model_icon',
             action: async () => {
-                localStorage.setItem(storage_keys.timestamp_model_icon, power_user.timestamp_model_icon);
+                localStorage.setItem(storage_keys.timestamp_model_icon, String(power_user.timestamp_model_icon));
                 switchIcons();
+            }
+        },
+        {
+            key: 'message_token_count',
+            action: async () => {
+                localStorage.setItem(storage_keys.message_token_count_enabled, String(power_user.message_token_count_enabled));
+                switchTokenCount();
             }
         },
         {
             key: 'mesIDDisplay_enabled',
             action: async () => {
-                localStorage.setItem(storage_keys.mesIDDisplay_enabled, power_user.mesIDDisplay_enabled);
+                localStorage.setItem(storage_keys.mesIDDisplay_enabled, String(power_user.mesIDDisplay_enabled));
                 switchMesIDDisplay();
             }
         },
         {
             key: 'hotswap_enabled',
             action: async () => {
-                localStorage.setItem(storage_keys.hotswap_enabled, power_user.hotswap_enabled);
+                localStorage.setItem(storage_keys.hotswap_enabled, String(power_user.hotswap_enabled));
                 switchHotswap();
             }
         }
@@ -723,6 +739,7 @@ switchTimer();
 switchTimestamps();
 switchIcons();
 switchMesIDDisplay();
+switchTokenCount();
 
 function loadPowerUserSettings(settings, data) {
     // Load from settings.json
@@ -2089,6 +2106,13 @@ $(document).ready(() => {
         power_user.timestamp_model_icon = value;
         localStorage.setItem(storage_keys.timestamp_model_icon, String(power_user.timestamp_model_icon));
         switchIcons();
+    });
+
+    $("#messageTokensEnabled").on("input", function () {
+        const value = !!$(this).prop('checked');
+        power_user.message_token_count_enabled = value;
+        localStorage.setItem(storage_keys.message_token_count_enabled, String(power_user.message_token_count_enabled));
+        switchTokenCount();
     });
 
     $("#mesIDDisplayEnabled").on("input", function () {

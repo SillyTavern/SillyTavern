@@ -287,7 +287,8 @@ table.responsiveTable {
 }
 
 .mes .mes_timer,
-.mes .mesIDDisplay {
+.mes .mesIDDisplay,
+.mes .tokenCounterDisplay {
     cursor: default;
     opacity: 0.7;
     font-size: calc(var(--mainFontSize) * 0.9);

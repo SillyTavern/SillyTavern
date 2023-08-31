@@ -1299,7 +1299,7 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
  * the function fetches the "claude.svg". Otherwise, it fetches the SVG named after
  * the value in `extra.api`.
  *
- * @param {jQuery} mes - The message element containing the timestamp where the icon should be inserted or replaced.
+ * @param {JQuery<HTMLElement>} mes - The message element containing the timestamp where the icon should be inserted or replaced.
  * @param {Object} extra - Contains the API and model details.
  * @param {string} extra.api - The name of the API, used to determine which SVG to fetch.
  * @param {string} extra.model - The model name, used to check for the substring "claude".
@@ -1361,6 +1361,7 @@ function getMessageFromTemplate({
     bookmarkLink,
     forceAvatar,
     timestamp,
+    tokenCount,
     extra,
 } = {}) {
     const mes = $('#message_template .mes').clone();
@@ -1378,6 +1379,7 @@ function getMessageFromTemplate({
     mes.find('.mes_bias').html(bias);
     mes.find('.timestamp').text(timestamp).attr('title', `${extra?.api ? extra.api + ' - ' : ''}${extra?.model ?? ''}`);
     mes.find('.mesIDDisplay').text(`#${mesId}`);
+    tokenCount && mes.find('.tokenCounterDisplay').text(`${tokenCount}t`);
     title && mes.attr('title', title);
     timerValue && mes.find('.mes_timer').attr('title', timerTitle).text(timerValue);
 
@@ -1508,7 +1510,8 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         forceAvatar: mes.force_avatar,
         timestamp: timestamp,
         extra: mes.extra,
-        ...formatGenerationTimer(mes.gen_started, mes.gen_finished),
+        tokenCount: mes.extra?.token_count,
+        ...formatGenerationTimer(mes.gen_started, mes.gen_finished, mes.extra?.token_count),
     };
 
     const HTMLForEachMes = getMessageFromTemplate(params);
@@ -1581,20 +1584,23 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     });
 
     if (type === 'swipe') {
-        $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.mes_text').html('');
-        $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.mes_text').append(messageText);
-        appendImageToMessage(mes, $("#chat").find(`[mesid="${count_view_mes - 1}"]`));
-        $("#chat").find(`[mesid="${count_view_mes - 1}"]`).attr('title', title);
-        $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.timestamp').text(timestamp).attr('title', `${params.extra.api} - ${params.extra.model}`);
+        const swipeMessage = $("#chat").find(`[mesid="${count_view_mes - 1}"]`);
+        swipeMessage.find('.mes_text').html('');
+        swipeMessage.find('.mes_text').append(messageText);
+        appendImageToMessage(mes, swipeMessage);
+        swipeMessage.attr('title', title);
+        swipeMessage.find('.timestamp').text(timestamp).attr('title', `${params.extra.api} - ${params.extra.model}`);
         if (power_user.timestamp_model_icon && params.extra?.api) {
-            insertSVGIcon($("#chat").find(`[mesid="${count_view_mes - 1}"]`), params.extra);
+            insertSVGIcon(swipeMessage, params.extra);
         }
 
         if (mes.swipe_id == mes.swipes.length - 1) {
-            $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.mes_timer').text(params.timerValue);
-            $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.mes_timer').attr('title', params.timerTitle);
+            swipeMessage.find('.mes_timer').text(params.timerValue);
+            swipeMessage.find('.mes_timer').attr('title', params.timerTitle);
+            swipeMessage.find('.tokenCounterDisplay').text(`${params.tokenCount}t`);
         } else {
-            $("#chat").find(`[mesid="${count_view_mes - 1}"]`).find('.mes_timer').html('');
+            swipeMessage.find('.mes_timer').html('');
+            swipeMessage.find('.tokenCounterDisplay').html('');
         }
     } else {
         $("#chat").find(`[mesid="${count_view_mes}"]`).find('.mes_text').append(messageText);
@@ -1620,7 +1626,18 @@ function getUserAvatar(avatarImg) {
     return `User Avatars/${avatarImg}`;
 }
 
-function formatGenerationTimer(gen_started, gen_finished) {
+/**
+ * Formats the title for the generation timer.
+ * @param {Date} gen_started Date when generation was started
+ * @param {Date} gen_finished Date when generation was finished
+ * @param {number} tokenCount Number of tokens generated (0 if not available)
+ * @returns {Object} Object containing the formatted timer value and title
+ * @example
+ * const { timerValue, timerTitle } = formatGenerationTimer(gen_started, gen_finished, tokenCount);
+ * console.log(timerValue); // 1.2s
+ * console.log(timerTitle); // Generation queued: 12:34:56 7 Jan 2021\nReply received: 12:34:57 7 Jan 2021\nTime to generate: 1.2 seconds\nToken rate: 5 t/s
+ */
+function formatGenerationTimer(gen_started, gen_finished, tokenCount) {
     if (!gen_started || !gen_finished) {
         return {};
     }
@@ -1634,6 +1651,7 @@ function formatGenerationTimer(gen_started, gen_finished) {
         `Generation queued: ${start.format(dateFormat)}`,
         `Reply received: ${finish.format(dateFormat)}`,
         `Time to generate: ${seconds} seconds`,
+        tokenCount > 0 ? `Token rate: ${Number(tokenCount / seconds).toFixed(1)} t/s` : '',
     ].join('\n');
 
     return { timerValue, timerTitle };
@@ -2086,11 +2104,23 @@ class StreamingProcessor {
         }
         else {
             let currentTime = new Date();
-            const timePassed = formatGenerationTimer(this.timeStarted, currentTime);
+            // Don't waste time calculating token count for streaming
+            let currentTokenCount = isFinal && power_user.message_token_count_enabled ? getTokenCount(processedText, 0) : 0;
+            const timePassed = formatGenerationTimer(this.timeStarted, currentTime, currentTokenCount);
             chat[messageId]['is_name'] = isName;
             chat[messageId]['mes'] = processedText;
             chat[messageId]['gen_started'] = this.timeStarted;
             chat[messageId]['gen_finished'] = currentTime;
+
+            if (currentTokenCount) {
+                if (!chat[messageId]['extra']) {
+                    chat[messageId]['extra'] = {};
+                }
+
+                chat[messageId]['extra']['token_count'] = currentTokenCount;
+                const tokenCounter = $(`#chat .mes[mesid="${messageId}"] .tokenCounterDisplay`);
+                tokenCounter.text(`${currentTokenCount}t`);
+            }
 
             if ((this.type == 'swipe' || this.type === 'continue') && Array.isArray(chat[messageId]['swipes'])) {
                 chat[messageId]['swipes'][chat[messageId]['swipe_id']] = processedText;
@@ -3327,6 +3357,10 @@ export async function sendMessageAsUser(textareaText, messageBias) {
     chat[chat.length - 1]['mes'] = substituteParams(textareaText);
     chat[chat.length - 1]['extra'] = {};
 
+    if (power_user.message_token_count_enabled) {
+        chat[chat.length - 1]['extra']['token_count'] = getTokenCount(chat[chat.length - 1]['mes'], 0);
+    }
+
     // Lock user avatar to a persona.
     if (user_avatar in power_user.personas) {
         chat[chat.length - 1]['force_avatar'] = getUserAvatar(user_avatar);
@@ -3892,6 +3926,9 @@ async function saveReply(type, getMessage, this_mes_is_name, title) {
             chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
             chat[chat.length - 1]['extra']['api'] = getGeneratingApi();
             chat[chat.length - 1]['extra']['model'] = getGeneratingModel();
+            if (power_user.message_token_count_enabled) {
+                chat[chat.length - 1]['extra']['token_count'] = getTokenCount(chat[chat.length - 1]['mes'], 0);
+            }
             await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
             addOneMessage(chat[chat.length - 1], { type: 'swipe' });
             await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, (chat.length - 1));
@@ -3908,6 +3945,9 @@ async function saveReply(type, getMessage, this_mes_is_name, title) {
         chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
         chat[chat.length - 1]["extra"]["api"] = getGeneratingApi();
         chat[chat.length - 1]["extra"]["model"] = getGeneratingModel();
+        if (power_user.message_token_count_enabled) {
+            chat[chat.length - 1]['extra']['token_count'] = getTokenCount(chat[chat.length - 1]['mes'], 0);
+        }
         await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
         addOneMessage(chat[chat.length - 1], { type: 'swipe' });
         await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, (chat.length - 1));
@@ -3921,6 +3961,9 @@ async function saveReply(type, getMessage, this_mes_is_name, title) {
         chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
         chat[chat.length - 1]["extra"]["api"] = getGeneratingApi();
         chat[chat.length - 1]["extra"]["model"] = getGeneratingModel();
+        if (power_user.message_token_count_enabled) {
+            chat[chat.length - 1]['extra']['token_count'] = getTokenCount(chat[chat.length - 1]['mes'], 0);
+        }
         await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
         addOneMessage(chat[chat.length - 1], { type: 'swipe' });
         await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, (chat.length - 1));
@@ -3942,6 +3985,10 @@ async function saveReply(type, getMessage, this_mes_is_name, title) {
         chat[chat.length - 1]['title'] = title;
         chat[chat.length - 1]['gen_started'] = generation_started;
         chat[chat.length - 1]['gen_finished'] = generationFinished;
+
+        if (power_user.message_token_count_enabled) {
+            chat[chat.length - 1]['extra']['token_count'] = getTokenCount(chat[chat.length - 1]['mes'], 0);
+        }
 
         if (selected_group) {
             console.debug('entering chat update for groups');
@@ -6390,6 +6437,18 @@ function swipe_left() {      // when we swipe left..but no generation.
                 const is_animation_scroll = ($('#chat').scrollTop() >= ($('#chat').prop("scrollHeight") - $('#chat').outerHeight()) - 10);
                 //console.log('on left swipe click calling addOneMessage');
                 addOneMessage(chat[chat.length - 1], { type: 'swipe' });
+
+                if (power_user.message_token_count_enabled) {
+                    if (!chat[chat.length - 1].extra) {
+                        chat[chat.length - 1].extra = {};
+                    }
+
+                    const swipeMessage = $("#chat").find(`[mesid="${count_view_mes - 1}"]`);
+                    const tokenCount = getTokenCount(chat[chat.length - 1].mes, 0);
+                    chat[chat.length -1]['extra']['token_count'] = tokenCount;
+                    swipeMessage.find('.tokenCounterDisplay').text(`${tokenCount}t`);
+                }
+
                 let new_height = this_mes_div_height - (this_mes_block_height - this_mes_block[0].scrollHeight);
                 if (new_height < 103) new_height = 103;
                 this_mes_div.animate({ height: new_height + 'px' }, {
@@ -6545,23 +6604,27 @@ const swipe_right = () => {
                 const is_animation_scroll = ($('#chat').scrollTop() >= ($('#chat').prop("scrollHeight") - $('#chat').outerHeight()) - 10);
                 //console.log(parseInt(chat[chat.length-1]['swipe_id']));
                 //console.log(chat[chat.length-1]['swipes'].length);
+                const swipeMessage = $("#chat").find('[mesid="' + (count_view_mes - 1) + '"]');
                 if (run_generate && parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) {
-                    //console.log('showing ""..."');
-                    /* if (!selected_group) {
-                    } else { */
-                    $("#chat")
-                        .find('[mesid="' + (count_view_mes - 1) + '"]')
-                        .find('.mes_text')
-                        .html('...');  //shows "..." while generating
-                    $("#chat")
-                        .find('[mesid="' + (count_view_mes - 1) + '"]')
-                        .find('.mes_timer')
-                        .html('');     // resets the timer
-                    /* } */
+                    //shows "..." while generating
+                    swipeMessage.find('.mes_text').html('...');
+                    // resets the timer
+                    swipeMessage.find('.mes_timer').html('');
+                    swipeMessage.find('.tokenCounterDisplay').text('');
                 } else {
                     //console.log('showing previously generated swipe candidate, or "..."');
                     //console.log('onclick right swipe calling addOneMessage');
                     addOneMessage(chat[chat.length - 1], { type: 'swipe' });
+
+                    if (power_user.message_token_count_enabled) {
+                        if (!chat[chat.length - 1].extra) {
+                            chat[chat.length - 1].extra = {};
+                        }
+
+                        const tokenCount = getTokenCount(chat[chat.length - 1].mes, 0);
+                        chat[chat.length -1]['extra']['token_count'] = tokenCount;
+                        swipeMessage.find('.tokenCounterDisplay').text(`${tokenCount}t`);
+                    }
                 }
                 let new_height = this_mes_div_height - (this_mes_block_height - this_mes_block[0].scrollHeight);
                 if (new_height < 103) new_height = 103;
@@ -8785,4 +8848,25 @@ $(document).ready(function () {
     initAuthorsNote();
     initRossMods();
     initPersonas();
+
+    registerDebugFunction('backfillTokenCounts', 'Backfill token counters',
+        `Recalculates token counts of all messages in the current chat to refresh the counters.
+        Useful when you switch between models that have different tokenizers.
+        This is a visual change only. Your chat will be reloaded.`, async () => {
+        for (const message of chat) {
+            // System messages are not counted
+            if (message.is_system) {
+                continue;
+            }
+
+            if (!message.extra) {
+                message.extra = {};
+            }
+
+            message.extra.token_count = getTokenCount(message.mes, 0);
+        }
+
+        await saveChatConditional();
+        await reloadCurrentChat();
+    });
 });
