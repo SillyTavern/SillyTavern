@@ -906,7 +906,7 @@ export function initRossMods() {
         //Enter to send when send_textarea in focus
         if ($(':focus').attr('id') === 'send_textarea') {
             const sendOnEnter = shouldSendOnEnter();
-            if (!event.shiftKey && !event.ctrlKey && event.key == "Enter" && is_send_press == false && sendOnEnter) {
+            if (!event.shiftKey && !event.ctrlKey && !event.altKey && event.key == "Enter" && is_send_press == false && sendOnEnter) {
                 event.preventDefault();
                 Generate();
             }
@@ -949,9 +949,13 @@ export function initRossMods() {
                 console.debug("Ctrl+Enter ignored");
             }
         }
-        //ctrl+left to show all local stored vars (debug)
-        if (event.ctrlKey && event.key == "ArrowLeft") {
-            CheckLocal();
+
+        // Alt+Enter to Continue
+        if (event.altKey && event.key == "Enter") {
+            if (is_send_press == false) {
+                console.debug("Continuing with Alt+Enter");
+                $('#option_continue').trigger('click');
+            }
         }
 
         // Helper function to check if nanogallery2's lightbox is active

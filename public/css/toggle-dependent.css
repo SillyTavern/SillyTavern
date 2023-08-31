@@ -8,15 +8,10 @@ body.tts .mes_narrate {
     display: inline-block;
 }
 
-body.no-hotswap .hotswap {
-    display: none !important;
-}
-
-body.no-timer .mes_timer {
-    display: none !important;
-}
-
+body.no-hotswap .hotswap,
+body.no-timer .mes_timer,
 body.no-timestamps .timestamp,
+body.no-tokenCount .tokenCounterDisplay,
 body.no-mesIDDisplay .mesIDDisplay,
 body.no-modelIcons .icon-svg {
     display: none !important;
