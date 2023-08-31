@@ -30,7 +30,7 @@ import {
 import { registerSlashCommand } from "./slash-commands.js";
 import { tokenizers } from "./tokenizers.js";
 
-import { countOccurrences, delay, isOdd, resetScrollHeight } from "./utils.js";
+import { countOccurrences, delay, isOdd, resetScrollHeight, sortMoments, timestampToMoment } from "./utils.js";
 
 export {
     loadPowerUserSettings,
@@ -1165,6 +1165,11 @@ const compareFunc = (first, second) => {
         case 'boolean':
             const a = first[power_user.sort_field];
             const b = second[power_user.sort_field];
+
+            if (power_user.sort_field === 'create_date') {
+                return sortMoments(timestampToMoment(a), timestampToMoment(b));
+            }
+
             if (a === true || a === 'true') return 1;  // Prioritize 'true' or true
             if (b === true || b === 'true') return -1; // Prioritize 'true' or true
             if (a && !b) return -1;        // Move truthy values to the end
