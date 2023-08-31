@@ -3589,6 +3589,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
 
     async function makeRequest(config, response_generate_openai, request, retries = 5, timeout = 5000) {
         try {
+            // @ts-ignore - axios typings are wrong, this is actually callable https://github.com/axios/axios/issues/5213
             const response = await axios(config);
 
             if (response.status <= 299) {
