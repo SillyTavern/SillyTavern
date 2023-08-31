@@ -1236,7 +1236,7 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
     }
 
     if (power_user.auto_fix_generated_markdown) {
-        mes = fixMarkdown(mes);
+        mes = fixMarkdown(mes, true);
     }
 
     if (!isSystem && power_user.encode_tags) {
@@ -3862,7 +3862,7 @@ function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete
         }
     }
     if (power_user.auto_fix_generated_markdown) {
-        getMessage = fixMarkdown(getMessage);
+        getMessage = fixMarkdown(getMessage, false);
     }
     return getMessage;
 }

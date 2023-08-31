@@ -30,7 +30,7 @@ import {
 import { registerSlashCommand } from "./slash-commands.js";
 import { tokenizers } from "./tokenizers.js";
 
-import { delay, resetScrollHeight } from "./utils.js";
+import { countOccurrences, delay, isOdd, resetScrollHeight } from "./utils.js";
 
 export {
     loadPowerUserSettings,
@@ -283,6 +283,7 @@ function collapseNewlines(x) {
 /**
  * Fix formatting problems in markdown.
  * @param {string} text Text to be processed.
+ * @param {boolean} forDisplay Whether the text is being processed for display.
  * @returns {string} Processed text.
  * @example
  * "^example * text*\n" // "^example *text*\n"
@@ -296,7 +297,7 @@ function collapseNewlines(x) {
  * // and you HAVE to handle the cases where multiple pairs of asterisks exist in the same line
  * "^example * text* * harder problem *\n" // "^example *text* *harder problem*\n"
  */
-function fixMarkdown(text) {
+function fixMarkdown(text, forDisplay) {
     // Find pairs of formatting characters and capture the text in between them
     const format = /([\*_]{1,2})([\s\S]*?)\1/gm;
     let matches = [];
@@ -312,6 +313,27 @@ function fixMarkdown(text) {
         let replacementText = matchText.replace(/(\*|_)([\t \u00a0\u1680\u2000-\u200a\u202f\u205f\u3000\ufeff]+)|([\t \u00a0\u1680\u2000-\u200a\u202f\u205f\u3000\ufeff]+)(\*|_)/g, '$1$4');
         newText = newText.slice(0, matches[i].index) + replacementText + newText.slice(matches[i].index + matchText.length);
     }
+
+    // Don't auto-fix asterisks if this is a message clean-up procedure.
+    // It botches the continue function. Apply this to display only.
+    if (!forDisplay) {
+        return newText;
+    }
+
+    const splitText = newText.split('\n');
+
+    // Fix asterisks, and quotes that are not paired
+    for (let index = 0; index < splitText.length; index++) {
+        const line = splitText[index];
+        const charsToCheck = ['*', '"'];
+        for (const char of charsToCheck) {
+            if (line.includes(char) && isOdd(countOccurrences(line, char))) {
+                splitText[index] = line.trimEnd() + char;
+            }
+        }
+    }
+
+    newText = splitText.join('\n');
 
     return newText;
 }
