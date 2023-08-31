@@ -144,7 +144,7 @@ async function showCharGallery() {
             "js"
         );
         firstTime = false;
-        toastr.info("Images can also be found in the folder `user/images`", "Drag and drop images onto the gallery to upload them");
+        toastr.info("Images can also be found in the folder `user/images`", "Drag and drop images onto the gallery to upload them", { timeOut: 6000 });
     }
 
     try {
