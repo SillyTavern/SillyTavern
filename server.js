@@ -3473,7 +3473,7 @@ async function sendClaudeRequest(request, response) {
             generateResponse.body.pipe(response);
 
             request.socket.on('close', function () {
-                generateResponse.body.destroy(); // Close the remote stream
+                if (generateResponse.body instanceof Readable) generateResponse.body.destroy(); // Close the remote stream
                 response.end(); // End the Express response
             });
 
