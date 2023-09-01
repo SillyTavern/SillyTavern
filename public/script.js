@@ -2801,11 +2801,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         return;
                     }
 
-                    const anchorDepth = Math.abs(index - finalMesSend.length + 1);
+                    const anchorDepth = Math.abs(index - finalMesSend.length);
                     // NOTE: Depth injected here!
                     const extensionAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, anchorDepth);
 
-                    if (anchorDepth > 0 && extensionAnchor && extensionAnchor.length) {
+                    if (anchorDepth >= 0 && extensionAnchor && extensionAnchor.length) {
                         mesItem.extensionPrompts.push(extensionAnchor);
                     }
                 });
