@@ -3987,7 +3987,7 @@ function getAsync(url, args) {
 
 const tavernUrl = new URL(
     (cliArguments.ssl ? 'https://' : 'http://') +
-    (listen ? '[::]' : '127.0.0.1') +
+    (listen ? process.env.password ? '0.0.0.0' : '[::]' : '127.0.0.1') +
     (':' + server_port)
 );
 
