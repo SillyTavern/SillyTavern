@@ -2120,9 +2120,9 @@
                         </form>
 
                         <div class="flex-container flex">
-                            <div id="api_button_openai" class="menu_button" type="submit" data-i18n="Connect">Connect</div>
-                            <input data-source="openrouter" id="openrouter_authorize" class="menu_button" type="button" value="Authorize" title="Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai" data-i18n="[title]Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai">
-                            <input id="test_api_button" class="menu_button" type="button" value="Test Message" title="Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!" data-i18n="[title]Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!">
+                            <div id="api_button_openai" class="menu_button menu_button_icon" type="submit" data-i18n="Connect">Connect</div>
+                            <div data-source="openrouter" id="openrouter_authorize" class="menu_button menu_button_icon" title="Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai" data-i18n="[title]Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai">Authorize</div>
+                            <div id="test_api_button" class="menu_button menu_button_icon" title="Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!" data-i18n="[title]Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!">Test Message</div>
                         </div>
                         <div id="api_loading_openai" class=" api-load-icon fa-solid fa-hourglass fa-spin"></div>
                         <div class="online_status4">
@@ -2303,7 +2303,7 @@
                                                 <small data-i18n="Input Sequence">Input Sequence</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_input_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="500" placeholder="&mdash;" rows="1"></textarea>
+                                                <textarea id="instruct_input_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
                                             </div>
                                         </div>
                                         <div class="flex1">
@@ -2311,7 +2311,7 @@
                                                 <small data-i18n="Output Sequence">Output Sequence</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_output_sequence" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="500" placeholder="&mdash;" rows="1"></textarea>
+                                                <textarea id="instruct_output_sequence" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
                                             </div>
                                         </div>
                                     </div>
@@ -2321,7 +2321,7 @@
                                                 <small data-i18n="First Output Sequence">First Output Sequence</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_first_output_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="500" placeholder="&mdash;" rows="1"></textarea>
+                                                <textarea id="instruct_first_output_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
                                             </div>
                                         </div>
                                         <div class="flex1">
@@ -2329,7 +2329,7 @@
                                                 <small data-i18n="Last Output Sequence">Last Output Sequence</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_last_output_sequence" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="500" placeholder="&mdash;" rows="1"></textarea>
+                                                <textarea id="instruct_last_output_sequence" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
                                             </div>
                                         </div>
                                     </div>
@@ -2339,7 +2339,7 @@
                                                 <small data-i18n="System Sequence Prefix">System Sequence Prefix</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_system_sequence_prefix" class="text_pole textarea_compact autoSetHeight" maxlength="500" placeholder="&mdash;" rows="1"></textarea>
+                                                <textarea id="instruct_system_sequence_prefix" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
                                             </div>
                                         </div>
                                         <div class="flex1">
@@ -2347,7 +2347,7 @@
                                                 <small data-i18n="System Sequence Suffix">System Sequence Suffix</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_system_sequence_suffix" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="500" placeholder="&mdash;" rows="1"></textarea>
+                                                <textarea id="instruct_system_sequence_suffix" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
                                             </div>
                                         </div>
                                     </div>
@@ -2357,7 +2357,7 @@
                                                 <small data-i18n="Stop Sequence">Stop Sequence</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_stop_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="500" placeholder="&mdash;" rows="1"></textarea>
+                                                <textarea id="instruct_stop_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="200k0" placeholder="&mdash;" rows="1"></textarea>
                                             </div>
                                         </div>
                                         <div class="flex1">
@@ -2365,7 +2365,7 @@
                                                 <small data-i18n="Separator">Separator</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_separator_sequence" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="500" placeholder="&mdash;" rows="1"></textarea>
+                                                <textarea id="instruct_separator_sequence" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
                                             </div>
                                         </div>
                                     </div>

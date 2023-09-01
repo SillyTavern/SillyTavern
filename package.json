@@ -3,7 +3,6 @@
         "@agnai/sentencepiece-js": "^1.1.1",
         "@agnai/web-tokenizers": "^0.1.3",
         "@dqbd/tiktoken": "^1.0.2",
-        "axios": "^1.4.0",
         "command-exists": "^1.2.9",
         "compression": "^1",
         "cookie-parser": "^1.4.6",

@@ -32,7 +32,6 @@ const multer = require("multer");
 const responseTime = require('response-time');
 
 // net related library imports
-const axios = require('axios');
 const DeviceDetector = require("device-detector-js");
 const fetch = require('node-fetch').default;
 const ipaddr = require('ipaddr.js');
@@ -3580,15 +3579,15 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
         controller.abort();
     });
 
+    /** @type {import('node-fetch').RequestInit} */
     const config = {
         method: 'post',
-        url: endpointUrl,
         headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + api_key_openai,
             ...headers,
         },
-        data: {
+        body: JSON.stringify({
             "messages": isTextCompletion === false ? request.body.messages : undefined,
             "prompt": isTextCompletion === true ? textPrompt : undefined,
             "model": request.body.model,
@@ -3602,75 +3601,62 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
             "stop": request.body.stop,
             "logit_bias": request.body.logit_bias,
             ...bodyParams,
-        },
+        }),
         signal: controller.signal,
+        timeout: 0,
     };
 
-    console.log(config.data);
+    console.log(JSON.parse(String(config.body)));
 
-    if (request.body.stream) {
-        config.responseType = 'stream';
-    }
+    makeRequest(config, response_generate_openai, request);
 
+    /**
+     *
+     * @param {*} config
+     * @param {express.Response} response_generate_openai
+     * @param {express.Request} request
+     * @param {Number} retries
+     * @param {Number} timeout
+     */
     async function makeRequest(config, response_generate_openai, request, retries = 5, timeout = 5000) {
         try {
-            // @ts-ignore - axios typings are wrong, this is actually callable https://github.com/axios/axios/issues/5213
-            const response = await axios(config);
+            const fetchResponse = await fetch(endpointUrl, config)
 
-            if (response.status <= 299) {
+            if (fetchResponse.ok) {
                 if (request.body.stream) {
                     console.log('Streaming request in progress');
-                    response.data.pipe(response_generate_openai);
-                    response.data.on('end', () => {
+                    fetchResponse.body.pipe(response_generate_openai);
+                    fetchResponse.body.on('end', () => {
                         console.log('Streaming request finished');
                         response_generate_openai.end();
                     });
                 } else {
-                    response_generate_openai.send(response.data);
-                    console.log(response.data);
-                    console.log(response.data?.choices[0]?.message);
+                    let json = await fetchResponse.json()
+                    response_generate_openai.send(json);
+                    console.log(json);
+                    console.log(json?.choices[0]?.message);
                 }
-            } else {
-                handleErrorResponse(response, response_generate_openai, request);
-            }
-        } catch (error) {
-            if (error.response && error.response.status === 429 && retries > 0) {
+            } else if (fetchResponse.status === 429 && retries > 0) {
                 console.log(`Out of quota, retrying in ${Math.round(timeout / 1000)}s`);
                 setTimeout(() => {
                     makeRequest(config, response_generate_openai, request, retries - 1);
                 }, timeout);
             } else {
-                let errorData = error?.response?.data;
-
-                if (request.body.stream) {
-                    try {
-                        const chunks = await readAllChunks(errorData);
-                        const blob = new Blob(chunks, { type: 'application/json' });
-                        const text = await blob.text();
-                        errorData = JSON.parse(text);
-                    } catch {
-                        console.warn('Error parsing streaming response');
-                    }
-                } else {
-                    errorData = typeof errorData === 'string' ? tryParse(errorData) : errorData;
-                }
-
-                handleError(error, response_generate_openai, errorData);
+                await handleErrorResponse(fetchResponse);
+            }
+        } catch (error) {
+            console.log('Generation failed', error);
+            if (!response_generate_openai.headersSent) {
+                response_generate_openai.send({ error: true });
+            } else {
+                response_generate_openai.end();
             }
         }
     }
 
-    function handleErrorResponse(response, response_generate_openai, request) {
-        if (response.status >= 400 && response.status <= 504) {
-            console.log('Error occurred:', response.status, response.data);
-            response_generate_openai.send({ error: true });
-        }
-    }
-
-    function handleError(error, response_generate_openai, errorData) {
-        console.error('Error:', error?.message);
-
-        let message = error?.response?.statusText;
+    async function handleErrorResponse(response) {
+        const responseText = await response.text();
+        const errorData = tryParse(responseText);
 
         const statusMessages = {
             400: 'Bad request',
@@ -3680,24 +3666,21 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
             404: 'Not found',
             429: 'Too many requests',
             451: 'Unavailable for legal reasons',
+            502: 'Bad gateway',
         };
 
-        const status = error?.response?.status;
-        if (statusMessages.hasOwnProperty(status)) {
-            message = errorData?.error?.message || statusMessages[status];
-            console.log(message);
-        }
+        const message = errorData?.error?.message || statusMessages[response.status] || 'Unknown error occurred';
+        const quota_error = response.status === 429 && errorData?.error?.type === 'insufficient_quota';
+        console.log(message);
 
-        const quota_error = error?.response?.status === 429 && errorData?.error?.type === 'insufficient_quota';
-        const response = { error: { message }, quota_error: quota_error }
         if (!response_generate_openai.headersSent) {
-            response_generate_openai.send(response);
+            response_generate_openai.send({ error: { message }, quota_error: quota_error });
         } else if (!response_generate_openai.writableEnded) {
             response_generate_openai.write(response);
+        } else {
+            response_generate_openai.end();
         }
     }
-
-    makeRequest(config, response_generate_openai, request);
 });
 
 app.post("/tokenize_openai", jsonParser, function (request, response_tokenize_openai) {
