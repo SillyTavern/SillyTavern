@@ -6,9 +6,8 @@ import {
     loadKoboldSettings,
     formatKoboldUrl,
     getKoboldGenerationData,
-    canUseKoboldStopSequence,
-    canUseKoboldStreaming,
-    canUseKoboldTokenization,
+    kai_flags,
+    setKoboldFlags,
 } from "./scripts/kai-settings.js";
 
 import {
@@ -280,7 +279,8 @@ export const event_types = {
     CHATCOMPLETION_SOURCE_CHANGED: 'chatcompletion_source_changed',
     CHATCOMPLETION_MODEL_CHANGED: 'chatcompletion_model_changed',
     OAI_BEFORE_CHATCOMPLETION: 'oai_before_chatcompletion',
-    OAI_PRESET_CHANGED: 'oai_preset_changed',
+    OAI_PRESET_CHANGED_BEFORE: 'oai_preset_changed_before',
+    OAI_PRESET_CHANGED_AFTER: 'oai_preset_changed_after',
     WORLDINFO_SETTINGS_UPDATED: 'worldinfo_settings_updated',
     CHARACTER_EDITED: 'character_edited',
     USER_MESSAGE_RENDERED: 'user_message_rendered',
@@ -702,9 +702,16 @@ $.ajaxPrefilter((options, originalOptions, xhr) => {
     xhr.setRequestHeader("X-CSRF-Token", token);
 });
 
-///// initialization protocol ////////
-$.get("/csrf-token").then(async (data) => {
-    token = data.token;
+async function firstLoadInit() {
+    try {
+        const tokenResponse = await fetch('/csrf-token');
+        const tokenData = await tokenResponse.json();
+        token = tokenData.token;
+    } catch {
+        toastr.error("Couldn't get CSRF token. Please refresh the page.", "Error", { timeOut: 0, extendedTimeOut: 0, preventDuplicates: true });
+        throw new Error("Initialization failed");
+    }
+
     getSystemMessages();
     sendSystemMessage(system_message_types.WELCOME);
     await readSecretState();
@@ -713,7 +720,10 @@ $.get("/csrf-token").then(async (data) => {
     await getUserAvatars();
     await getCharacters();
     await getBackgrounds();
-});
+    initAuthorsNote();
+    initPersonas();
+    initRossMods();
+}
 
 function checkOnlineStatus() {
     ///////// REMOVED LINES THAT DUPLICATE RA_CHeckOnlineStatus FEATURES
@@ -798,9 +808,7 @@ async function getStatus() {
 
                 // determine if we can use stop sequence and streaming
                 if (main_api === "kobold" || main_api === "koboldhorde") {
-                    kai_settings.use_stop_sequence = canUseKoboldStopSequence(data.version);
-                    kai_settings.can_use_streaming = canUseKoboldStreaming(data.koboldVersion);
-                    kai_settings.can_use_tokenization = canUseKoboldTokenization(data.koboldVersion);
+                    setKoboldFlags(data.version, data.koboldVersion);
                 }
 
                 // We didn't get a 200 status code, but the endpoint has an explanation. Which means it DID connect, but I digress.
@@ -2016,7 +2024,7 @@ function baseChatReplace(value, name1, name2) {
 
 function isStreamingEnabled() {
     return ((main_api == 'openai' && oai_settings.stream_openai && oai_settings.chat_completion_source !== chat_completion_sources.SCALE && oai_settings.chat_completion_source !== chat_completion_sources.AI21)
-        || (main_api == 'kobold' && kai_settings.streaming_kobold && kai_settings.can_use_streaming)
+        || (main_api == 'kobold' && kai_settings.streaming_kobold && kai_flags.can_use_streaming)
         || (main_api == 'novel' && nai_settings.streaming_novel)
         || (main_api == 'textgenerationwebui' && textgenerationwebui_settings.streaming))
         && !isMultigenEnabled(); // Multigen has a quasi-streaming mode which breaks the real streaming
@@ -2308,7 +2316,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         return;
     }
 
-    if (main_api == 'kobold' && kai_settings.streaming_kobold && !kai_settings.can_use_streaming) {
+    if (main_api == 'kobold' && kai_settings.streaming_kobold && !kai_flags.can_use_streaming) {
         toastr.error('Streaming is enabled, but the version of Kobold used does not support token streaming.', undefined, { timeOut: 10000, preventDuplicates: true, });
         is_send_press = false;
         return;
@@ -4661,9 +4669,6 @@ export async function getUserAvatars() {
     }
 }
 
-
-
-
 function highlightSelectedAvatar() {
     $("#user_avatar_block").find(".avatar").removeClass("selected");
     $("#user_avatar_block")
@@ -4710,7 +4715,6 @@ export function setUserName(value) {
     }
     saveSettings("change_name");
 }
-
 
 function setUserAvatar() {
     user_avatar = $(this).attr("imgfile");
@@ -4774,8 +4778,6 @@ async function uploadUserAvatar(e) {
     // Will allow to select the same file twice in a row
     $("#form_upload_avatar").trigger("reset");
 }
-
-
 
 async function doOnboarding(avatarId) {
     let simpleUiMode = false;
@@ -5067,18 +5069,6 @@ export function setGenerationParamsFromPreset(preset) {
         $("#max_context").val(max_context);
         $("#max_context_counter").text(`${max_context}`);
     }
-}
-
-function setCharacterBlockHeight() {
-    const $children = $("#rm_print_characters_block").children();
-    const originalHeight = $children.length * $children.find(':visible').first().outerHeight();
-    $("#rm_print_characters_block").css('height', originalHeight);
-    //show and hide charlist divs on pageload (causes load lag)
-    //$children.each(function () { setCharListVisible($(this)) });
-
-
-    //delay timer to allow for charlist to populate,
-    //should be set to an onload for rm_print_characters or windows?
 }
 
 // Common code for message editor done and auto-save
@@ -6918,7 +6908,6 @@ export async function handleDeleteCharacter(popup_type, this_chid, delete_chats)
     }
 }
 
-
 /**
  * Function to delete a character from UI after character deletion API success.
  * It manages necessary UI changes such as closing advanced editing popup, unsetting
@@ -6952,8 +6941,7 @@ function doTogglePanels() {
     $("#option_settings").trigger('click')
 }
 
-
-$(document).ready(function () {
+jQuery(async function () {
 
     if (isMobile() === true) {
         console.debug('hiding movingUI and sheldWidth toggles for mobile')
@@ -7241,6 +7229,7 @@ $(document).ready(function () {
             $("#character_popup").css("display", "none");
         }
     });
+
     $("#character_cross").click(function () {
         is_advanced_char_open = false;
         $("#character_popup").transition({
@@ -7250,10 +7239,12 @@ $(document).ready(function () {
         });
         setTimeout(function () { $("#character_popup").css("display", "none"); }, 200);
     });
+
     $("#character_popup_ok").click(function () {
         is_advanced_char_open = false;
         $("#character_popup").css("display", "none");
     });
+
     $("#dialogue_popup_ok").click(async function (e) {
         $("#shadow_popup").transition({
             opacity: 0,
@@ -7348,6 +7339,7 @@ $(document).ready(function () {
             dialogueResolve = null;
         }
     });
+
     $("#dialogue_popup_cancel").click(function (e) {
         $("#shadow_popup").transition({
             opacity: 0,
@@ -7880,8 +7872,6 @@ $(document).ready(function () {
         }
     });
 
-
-
     const sliders = [
         {
             sliderId: "#amount_gen",
@@ -7970,7 +7960,6 @@ $(document).ready(function () {
         rawPromptPopper.update();
         $('#rawPromptPopup').toggle();
     })
-
 
     //********************
     //***Message Editor***
@@ -8218,7 +8207,6 @@ $(document).ready(function () {
         setUserName($('#your_name').val());
     });
 
-
     $('#sync_name_button').on('click', async function () {
         const confirmation = await callPopup(`<h3>Are you sure?</h3>All user-sent messages in this chat will be attributed to ${name1}.`, 'confirm');
 
@@ -8263,6 +8251,7 @@ $(document).ready(function () {
     $("#character_import_button").click(function () {
         $("#character_import_file").click();
     });
+
     $("#character_import_file").on("change", function (e) {
         $("#rm_info_avatar").html("");
         if (!e.target.files.length) {
@@ -8273,10 +8262,12 @@ $(document).ready(function () {
             importCharacter(file);
         }
     });
+
     $("#export_button").on('click', function (e) {
         $('#export_format_popup').toggle();
         exportPopper.update();
     });
+
     $(document).on('click', '.export_format', async function () {
         const format = $(this).data('format');
 
@@ -8642,7 +8633,6 @@ $(document).ready(function () {
         $("#char-management-dropdown").prop('selectedIndex', 0);
     });
 
-
     $(document).on('click', '.mes_img_enlarge', enlargeMessageImage);
     $(document).on('click', '.mes_img_delete', deleteMessageImage);
 
@@ -8845,9 +8835,7 @@ $(document).ready(function () {
     });
 
     // Added here to prevent execution before script.js is loaded and get rid of quirky timeouts
-    initAuthorsNote();
-    initRossMods();
-    initPersonas();
+    await firstLoadInit();
 
     registerDebugFunction('backfillTokenCounts', 'Backfill token counters',
         `Recalculates token counts of all messages in the current chat to refresh the counters.

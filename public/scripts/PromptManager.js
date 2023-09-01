@@ -53,7 +53,7 @@ const registerPromptManagerMigration = () => {
     };
 
     eventSource.on(event_types.SETTINGS_LOADED_BEFORE, settings => migrate(settings));
-    eventSource.on(event_types.OAI_PRESET_CHANGED, event => migrate(event.preset, event.savePreset, event.presetName));
+    eventSource.on(event_types.OAI_PRESET_CHANGED_BEFORE, event => migrate(event.preset, event.savePreset, event.presetName));
 }
 
 /**
@@ -604,22 +604,20 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     document.getElementById(this.configuration.prefix + 'prompt_manager_popup_close_button').addEventListener('click', closeAndClearPopup);
 
     // Re-render prompt manager on openai preset change
-    eventSource.on(event_types.OAI_PRESET_CHANGED, settings => {
-        // Save configuration and wrap everything up.
-        this.saveServiceSettings().then(() => {
-            const mainPrompt = this.getPromptById('main');
-            this.updateQuickEdit('main', mainPrompt);
+    eventSource.on(event_types.OAI_PRESET_CHANGED_AFTER, () => {
+        this.sanitizeServiceSettings();
+        const mainPrompt = this.getPromptById('main');
+        this.updateQuickEdit('main', mainPrompt);
 
-            const nsfwPrompt = this.getPromptById('nsfw');
-            this.updateQuickEdit('nsfw', nsfwPrompt);
+        const nsfwPrompt = this.getPromptById('nsfw');
+        this.updateQuickEdit('nsfw', nsfwPrompt);
 
-            const jailbreakPrompt = this.getPromptById('jailbreak');
-            this.updateQuickEdit('jailbreak', jailbreakPrompt);
+        const jailbreakPrompt = this.getPromptById('jailbreak');
+        this.updateQuickEdit('jailbreak', jailbreakPrompt);
 
-            this.hidePopup();
-            this.clearEditForm();
-            this.renderDebounced();
-        });
+        this.hidePopup();
+        this.clearEditForm();
+        this.renderDebounced();
     });
 
     // Re-render prompt manager on world settings update
@@ -643,19 +641,13 @@ PromptManagerModule.prototype.render = function (afterTryGenerate = true) {
         if (true === afterTryGenerate) {
             // Executed during dry-run for determining context composition
             this.profileStart('filling context');
-            this.tryGenerate().then(() => {
+            this.tryGenerate().finally(() => {
                 this.profileEnd('filling context');
                 this.profileStart('render');
                 this.renderPromptManager();
                 this.renderPromptManagerListItems()
                 this.makeDraggable();
                 this.profileEnd('render');
-            }).catch(error => {
-                this.profileEnd('filling context');
-                this.log('Error caught during render: ' + error);
-                this.renderPromptManager();
-                this.renderPromptManagerListItems()
-                this.makeDraggable();
             });
         } else {
             // Executed during live communication
@@ -1383,6 +1375,9 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
         </li>
     `;
 
+    console.log(this.activeCharacter)
+    console.log(this.serviceSettings)
+console.log(this.getPromptsForCharacter(this.activeCharacter))
     this.getPromptsForCharacter(this.activeCharacter).forEach(prompt => {
         if (!prompt) return;
 

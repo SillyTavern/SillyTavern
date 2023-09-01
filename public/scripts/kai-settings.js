@@ -20,15 +20,29 @@ export const kai_settings = {
     tfs: 1,
     rep_pen_slope: 0.9,
     single_line: false,
-    use_stop_sequence: false,
-    can_use_tokenization: false,
     streaming_kobold: false,
     sampler_order: [0, 1, 2, 3, 4, 5, 6],
+    mirostat: 0,
+    mirostat_tau: 5.0,
+    mirostat_eta: 0.1,
+    use_default_badwordsids: true,
 };
 
+export const kai_flags = {
+    can_use_tokenization: false,
+    can_use_stop_sequence: false,
+    can_use_streaming: false,
+    can_use_default_badwordsids: false,
+    can_use_mirostat: false,
+};
+
+const defaultValues = Object.freeze(structuredClone(kai_settings));
+
 const MIN_STOP_SEQUENCE_VERSION = '1.2.2';
+const MIN_UNBAN_VERSION = '1.2.4';
 const MIN_STREAMING_KCPPVERSION = '1.30';
 const MIN_TOKENIZATION_KCPPVERSION = '1.41';
+const MIN_MIROSTAT_KCPPVERSION = '1.35';
 const KOBOLDCPP_ORDER = [6, 0, 1, 3, 4, 2, 5];
 
 export function formatKoboldUrl(value) {
@@ -44,16 +58,16 @@ export function formatKoboldUrl(value) {
 
 export function loadKoboldSettings(preset) {
     for (const name of Object.keys(kai_settings)) {
-        const value = preset[name];
+        const value = preset[name] ?? defaultValues[name];
         const slider = sliders.find(x => x.name === name);
 
-        if (value === undefined || !slider) {
+        if (!slider) {
             continue;
         }
 
         const formattedValue = slider.format(value);
-        slider.setValue(preset[name]);
-        $(slider.sliderId).val(preset[name]);
+        slider.setValue(value);
+        $(slider.sliderId).val(value);
         $(slider.counterId).text(formattedValue);
     }
 
@@ -65,6 +79,10 @@ export function loadKoboldSettings(preset) {
     if (preset.hasOwnProperty('streaming_kobold')) {
         kai_settings.streaming_kobold = preset.streaming_kobold;
         $('#streaming_kobold').prop('checked', kai_settings.streaming_kobold);
+    }
+    if (preset.hasOwnProperty('use_default_badwordids')) {
+        kai_settings.use_default_badwordids = preset.use_default_badwordids;
+        $('#use_default_badwordids').prop('checked', kai_settings.use_default_badwordids);
     }
 }
 
@@ -94,9 +112,13 @@ export function getKoboldGenerationData(finalPrompt, this_settings, this_amount_
         s7: sampler_order[6],
         use_world_info: false,
         singleline: kai_settings.single_line,
-        stop_sequence: kai_settings.use_stop_sequence ? getStoppingStrings(isImpersonate, false) : undefined,
-        streaming: kai_settings.streaming_kobold && kai_settings.can_use_streaming && type !== 'quiet',
-        can_abort: kai_settings.can_use_streaming,
+        stop_sequence: kai_flags.can_use_stop_sequence ? getStoppingStrings(isImpersonate, false) : undefined,
+        streaming: kai_settings.streaming_kobold && kai_flags.can_use_streaming && type !== 'quiet',
+        can_abort: kai_flags.can_use_streaming,
+        mirostat: kai_flags.can_use_mirostat ?  kai_settings.mirostat : undefined,
+        mirostat_tau: kai_flags.can_use_mirostat ? kai_settings.mirostat_tau : undefined,
+        mirostat_eta: kai_flags.can_use_mirostat ? kai_settings.mirostat_eta : undefined,
+        use_default_badwordsids: kai_flags.can_use_default_badwordsids ? kai_settings.use_default_badwordsids : undefined,
     };
     return generate_data;
 }
@@ -213,16 +235,54 @@ const sliders = [
         counterId: "#no_op_selector",
         format: (val) => val,
         setValue: (val) => { sortItemsByOrder(val); kai_settings.sampler_order = val; },
-    }
+    },
+    {
+        name: "mirostat",
+        sliderId: "#mirostat_mode_kobold",
+        counterId: "#mirostat_mode_counter_kobold",
+        format: (val) => val,
+        setValue: (val) => { kai_settings.mirostat = Number(val); },
+    },
+    {
+        name: "mirostat_tau",
+        sliderId: "#mirostat_tau_kobold",
+        counterId: "#mirostat_tau_counter_kobold",
+        format: (val) => val,
+        setValue: (val) => { kai_settings.mirostat_tau = Number(val); },
+    },
+    {
+        name: "mirostat_eta",
+        sliderId: "#mirostat_eta_kobold",
+        counterId: "#mirostat_eta_counter_kobold",
+        format: (val) => val,
+        setValue: (val) => { kai_settings.mirostat_eta = Number(val); },
+    },
 ];
+
+export function setKoboldFlags(version, koboldVersion) {
+    kai_flags.can_use_stop_sequence = canUseKoboldStopSequence(version);
+    kai_flags.can_use_streaming = canUseKoboldStreaming(koboldVersion);
+    kai_flags.can_use_tokenization = canUseKoboldTokenization(koboldVersion);
+    kai_flags.can_use_default_badwordsids = canUseDefaultBadwordIds(version);
+    kai_flags.can_use_mirostat = canUseMirostat(koboldVersion);
+}
 
 /**
  * Determines if the Kobold stop sequence can be used with the given version.
  * @param {string} version KoboldAI version to check.
  * @returns {boolean} True if the Kobold stop sequence can be used, false otherwise.
  */
-export function canUseKoboldStopSequence(version) {
+function canUseKoboldStopSequence(version) {
     return (version || '0.0.0').localeCompare(MIN_STOP_SEQUENCE_VERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
+}
+
+/**
+ * Determines if the Kobold default badword ids can be used with the given version.
+ * @param {string} version KoboldAI version to check.
+ * @returns {boolean} True if the Kobold default badword ids can be used, false otherwise.
+ */
+function canUseDefaultBadwordIds(version) {
+    return (version || '0.0.0').localeCompare(MIN_UNBAN_VERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
 }
 
 /**
@@ -230,7 +290,7 @@ export function canUseKoboldStopSequence(version) {
  * @param {{ result: string; version: string; }} koboldVersion KoboldAI version object.
  * @returns {boolean} True if the Kobold streaming API can be used, false otherwise.
  */
-export function canUseKoboldStreaming(koboldVersion) {
+function canUseKoboldStreaming(koboldVersion) {
     if (koboldVersion && koboldVersion.result == 'KoboldCpp') {
         return (koboldVersion.version || '0.0').localeCompare(MIN_STREAMING_KCPPVERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
     } else return false;
@@ -241,9 +301,15 @@ export function canUseKoboldStreaming(koboldVersion) {
  * @param {{ result: string; version: string; }} koboldVersion KoboldAI version object.
  * @returns {boolean} True if the Kobold tokenization API can be used, false otherwise.
  */
-export function canUseKoboldTokenization(koboldVersion) {
+function canUseKoboldTokenization(koboldVersion) {
     if (koboldVersion && koboldVersion.result == 'KoboldCpp') {
         return (koboldVersion.version || '0.0').localeCompare(MIN_TOKENIZATION_KCPPVERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
+    } else return false;
+}
+
+function canUseMirostat(koboldVersion) {
+    if (koboldVersion && koboldVersion.result == 'KoboldCpp') {
+        return (koboldVersion.version || '0.0').localeCompare(MIN_MIROSTAT_KCPPVERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
     } else return false;
 }
 
@@ -274,14 +340,20 @@ jQuery(function () {
     });
 
     $('#single_line').on("input", function () {
-        const value = $(this).prop('checked');
+        const value = !!$(this).prop('checked');
         kai_settings.single_line = value;
         saveSettingsDebounced();
     });
 
     $('#streaming_kobold').on("input", function () {
-        const value = $(this).prop('checked');
+        const value = !!$(this).prop('checked');
         kai_settings.streaming_kobold = value;
+        saveSettingsDebounced();
+    });
+
+    $('#use_default_badwordids').on("input", function () {
+        const value = !!$(this).prop('checked');
+        kai_settings.use_default_badwordids = value;
         saveSettingsDebounced();
     });
 

@@ -1018,11 +1018,67 @@
                                                 Single-line mode</span>
                                         </label>
                                     </div>
+                                    <div class="range-block">
+                                        <label class="checkbox_label" for="use_default_badwordids">
+                                            <input id="use_default_badwordids" type="checkbox" />
+                                            <span data-i18n="Ban EOS Token">
+                                                Ban EOS Token
+                                            </span>
+                                        </label>
+                                    </div>
+                                    <hr>
+                                    <h4 data-i18n="Mirostat">Mirostat</h4>
+                                    <div class="range-block">
+                                        <div class="range-block-title" data-i18n="Mirostat Mode">
+                                            Mirostat Mode
+                                        </div>
+                                        <div class="range-block-range-and-counter">
+                                            <div class="range-block-range">
+                                                <input type="range" id="mirostat_mode_kobold" name="volume" min="0" max="2" step="1" />
+                                            </div>
+                                            <div class="range-block-counter">
+                                                <div contenteditable="true" data-for="mirostat_mode_kobold" id="mirostat_mode_counter_kobold">
+                                                    select
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="range-block">
+                                        <div class="range-block-title" data-i18n="Mirostat Tau">
+                                            Mirostat Tau
+                                        </div>
+                                        <div class="range-block-range-and-counter">
+                                            <div class="range-block-range">
+                                                <input type="range" id="mirostat_tau_kobold" name="volume" min="0" max="10" step="0.01" />
+                                            </div>
+                                            <div class="range-block-counter">
+                                                <div contenteditable="true" data-for="mirostat_tau_kobold" id="mirostat_tau_counter_kobold">
+                                                    select
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="range-block">
+                                        <div class="range-block-title" data-i18n="Mirostat Eta">
+                                            Mirostat Eta
+                                        </div>
+                                        <div class="range-block-range-and-counter">
+                                            <div class="range-block-range">
+                                                <input type="range" id="mirostat_eta_kobold" name="volume" min="0" max="1" step="0.01" />
+                                            </div>
+                                            <div class="range-block-counter">
+                                                <div contenteditable="true" data-for="mirostat_eta_kobold" id="mirostat_eta_counter_kobold">
+                                                    select
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <hr>
                                     <div class="range-block flexFlowColumn">
                                         <div class="range-block-title">
                                             <span data-i18n="Samplers Order">Samplers Order</span>
                                         </div>
-                                        <div class="toggle-description" data-i18n="Samplers will be applied in a top-down order. Use with caution.">
+                                        <div class="toggle-description widthUnset" data-i18n="Samplers will be applied in a top-down order. Use with caution.">
                                             Samplers will be applied in a top-down order.
                                             Use with caution.
                                         </div>
@@ -1240,7 +1296,7 @@
                                     <div class="range-block-title">
                                         <span data-i18n="Samplers Order">Samplers Order</span>
                                     </div>
-                                    <div class="toggle-description" data-i18n="Samplers will be applied in a top-down order. Use with caution.">
+                                    <div class="toggle-description widthUnset" data-i18n="Samplers will be applied in a top-down order. Use with caution.">
                                         Samplers will be applied in a top-down order. Use with caution.
                                     </div>
                                     <div id="novel_order" class="prompt_order">
@@ -2064,9 +2120,9 @@
                         </form>
 
                         <div class="flex-container flex">
-                            <div id="api_button_openai" class="menu_button" type="submit" data-i18n="Connect">Connect</div>
-                            <input data-source="openrouter" id="openrouter_authorize" class="menu_button" type="button" value="Authorize" title="Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai" data-i18n="[title]Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai">
-                            <input id="test_api_button" class="menu_button" type="button" value="Test Message" title="Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!" data-i18n="[title]Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!">
+                            <div id="api_button_openai" class="menu_button menu_button_icon" type="submit" data-i18n="Connect">Connect</div>
+                            <div data-source="openrouter" id="openrouter_authorize" class="menu_button menu_button_icon" title="Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai" data-i18n="[title]Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai">Authorize</div>
+                            <div id="test_api_button" class="menu_button menu_button_icon" title="Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!" data-i18n="[title]Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!">Test Message</div>
                         </div>
                         <div id="api_loading_openai" class=" api-load-icon fa-solid fa-hourglass fa-spin"></div>
                         <div class="online_status4">
@@ -2134,7 +2190,45 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <div data-newbie-hidden class="inline-drawer wide100p flexFlowColumn margin-bot-10px" style="display:none;">
+                                <div class="inline-drawer-toggle inline-drawer-header">
+                                    <b><span data-i18n="Context Order">Context Order</span></b>
+                                    <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                                </div>
+                                <div class="inline-drawer-content">
+                                    <div id="context_order" class="prompt_order">
+                                        <div data-id="0">
+                                            <span data-i18n="Story String">Story String</span>
+                                            <small>0</small>
+                                        </div>
+                                        <div data-id="1">
+                                            <span data-i18n="Summary">Summary</span>
+                                            <small>1</small>
+                                        </div>
+                                        <div data-id="2">
+                                            <span data-i18n="Author's Note">Author's Note</span>
+                                            <small>2</small>
+                                        </div>
+                                        <div data-id="3">
+                                            <span data-i18n="Example Dialogues">Example Dialogues</span>
+                                            <small>3</small>
+                                        </div>
+                                        <div data-id="4">
+                                            <span data-i18n="Chat Start">Chat History</span>
+                                            <small>4</small>
+                                        </div>
+                                    </div>
+                                    <small>
+                                        <b data-i18n="Hint">Hint:</b>
+                                        <span data-i18n="In-Chat Position not affected">
+                                            Summary and Author's Note orders are only affected when they don't have an In-Chat position set.
+                                        </span>
+                                    </small>
+                                </div>
+                            </div>
                         </div>
+
                         <div>
                             <h4 data-i18n="Instruct Mode">Instruct Mode
                                 <a href="https://docs.sillytavern.app/usage/core-concepts/instructmode/" class="notes-link" target="_blank">
@@ -2209,7 +2303,7 @@
                                                 <small data-i18n="Input Sequence">Input Sequence</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_input_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="500" placeholder="&mdash;" rows="1"></textarea>
+                                                <textarea id="instruct_input_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
                                             </div>
                                         </div>
                                         <div class="flex1">
@@ -2217,7 +2311,7 @@
                                                 <small data-i18n="Output Sequence">Output Sequence</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_output_sequence" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="500" placeholder="&mdash;" rows="1"></textarea>
+                                                <textarea id="instruct_output_sequence" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
                                             </div>
                                         </div>
                                     </div>
@@ -2227,7 +2321,7 @@
                                                 <small data-i18n="First Output Sequence">First Output Sequence</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_first_output_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="500" placeholder="&mdash;" rows="1"></textarea>
+                                                <textarea id="instruct_first_output_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
                                             </div>
                                         </div>
                                         <div class="flex1">
@@ -2235,7 +2329,7 @@
                                                 <small data-i18n="Last Output Sequence">Last Output Sequence</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_last_output_sequence" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="500" placeholder="&mdash;" rows="1"></textarea>
+                                                <textarea id="instruct_last_output_sequence" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
                                             </div>
                                         </div>
                                     </div>
@@ -2245,7 +2339,7 @@
                                                 <small data-i18n="System Sequence Prefix">System Sequence Prefix</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_system_sequence_prefix" class="text_pole textarea_compact autoSetHeight" maxlength="500" placeholder="&mdash;" rows="1"></textarea>
+                                                <textarea id="instruct_system_sequence_prefix" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
                                             </div>
                                         </div>
                                         <div class="flex1">
@@ -2253,7 +2347,7 @@
                                                 <small data-i18n="System Sequence Suffix">System Sequence Suffix</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_system_sequence_suffix" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="500" placeholder="&mdash;" rows="1"></textarea>
+                                                <textarea id="instruct_system_sequence_suffix" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
                                             </div>
                                         </div>
                                     </div>
@@ -2263,7 +2357,7 @@
                                                 <small data-i18n="Stop Sequence">Stop Sequence</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_stop_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="500" placeholder="&mdash;" rows="1"></textarea>
+                                                <textarea id="instruct_stop_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="200k0" placeholder="&mdash;" rows="1"></textarea>
                                             </div>
                                         </div>
                                         <div class="flex1">
@@ -2271,7 +2365,7 @@
                                                 <small data-i18n="Separator">Separator</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_separator_sequence" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="500" placeholder="&mdash;" rows="1"></textarea>
+                                                <textarea id="instruct_separator_sequence" class="text_pole wide100p textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
                                             </div>
                                         </div>
                                     </div>
