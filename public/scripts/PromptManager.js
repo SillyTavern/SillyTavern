@@ -643,19 +643,13 @@ PromptManagerModule.prototype.render = function (afterTryGenerate = true) {
         if (true === afterTryGenerate) {
             // Executed during dry-run for determining context composition
             this.profileStart('filling context');
-            this.tryGenerate().then(() => {
+            this.tryGenerate().finally(() => {
                 this.profileEnd('filling context');
                 this.profileStart('render');
                 this.renderPromptManager();
                 this.renderPromptManagerListItems()
                 this.makeDraggable();
                 this.profileEnd('render');
-            }).catch(error => {
-                this.profileEnd('filling context');
-                this.log('Error caught during render: ' + error);
-                this.renderPromptManager();
-                this.renderPromptManagerListItems()
-                this.makeDraggable();
             });
         } else {
             // Executed during live communication

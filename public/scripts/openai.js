@@ -354,7 +354,11 @@ function setupChatCompletionPromptManager(openAiSettings) {
     }
 
     promptManager.tryGenerate = () => {
-        return Generate('normal', {}, true);
+        if (characters[this_chid]) {
+            return Generate('normal', {}, true);
+        } else{
+            return Promise.resolve();
+        }
     }
 
     promptManager.tokenHandler = tokenHandler;
