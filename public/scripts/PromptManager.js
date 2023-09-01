@@ -605,21 +605,19 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
 
     // Re-render prompt manager on openai preset change
     eventSource.on(event_types.OAI_PRESET_CHANGED_AFTER, () => {
-        // Save configuration and wrap everything up.
-        this.saveServiceSettings().then(() => {
-            const mainPrompt = this.getPromptById('main');
-            this.updateQuickEdit('main', mainPrompt);
+        this.sanitizeServiceSettings();
+        const mainPrompt = this.getPromptById('main');
+        this.updateQuickEdit('main', mainPrompt);
 
-            const nsfwPrompt = this.getPromptById('nsfw');
-            this.updateQuickEdit('nsfw', nsfwPrompt);
+        const nsfwPrompt = this.getPromptById('nsfw');
+        this.updateQuickEdit('nsfw', nsfwPrompt);
 
-            const jailbreakPrompt = this.getPromptById('jailbreak');
-            this.updateQuickEdit('jailbreak', jailbreakPrompt);
+        const jailbreakPrompt = this.getPromptById('jailbreak');
+        this.updateQuickEdit('jailbreak', jailbreakPrompt);
 
-            this.hidePopup();
-            this.clearEditForm();
-            this.renderDebounced();
-        });
+        this.hidePopup();
+        this.clearEditForm();
+        this.renderDebounced();
     });
 
     // Re-render prompt manager on world settings update
@@ -1377,6 +1375,9 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
         </li>
     `;
 
+    console.log(this.activeCharacter)
+    console.log(this.serviceSettings)
+console.log(this.getPromptsForCharacter(this.activeCharacter))
     this.getPromptsForCharacter(this.activeCharacter).forEach(prompt => {
         if (!prompt) return;
 
