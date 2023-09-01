@@ -1,0 +1,46 @@
+#dealStatusBar {
+    outline: none;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--black30a);
+    margin: 0;
+    transition: 0.3s;
+    opacity: 0.7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    display: none;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+#dealStatuses {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 5px;
+    width: 100%;
+}
+
+#dealStatuses div {
+    color: var(--SmartThemeBodyColor);
+    background-color: var(--black50a);
+    border: 1px solid var(--white30a);
+    border-radius: 10px;
+    padding: 3px 5px;
+    width: min-content;
+    cursor: pointer;
+    transition: 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+#dealStatuses div:hover {
+    opacity: 1;
+    filter: brightness(1.2);
+    cursor: pointer;
+}

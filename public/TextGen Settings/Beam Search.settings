@@ -8,7 +8,6 @@
     "epsilon_cutoff": 0,
     "eta_cutoff": 0,
     "rep_pen": 4.5,
-    "rep_pen_range": 0,
     "no_repeat_ngram_size": 2,
     "penalty_alpha": 0,
     "num_beams": 10,
