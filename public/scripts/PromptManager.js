@@ -53,7 +53,7 @@ const registerPromptManagerMigration = () => {
     };
 
     eventSource.on(event_types.SETTINGS_LOADED_BEFORE, settings => migrate(settings));
-    eventSource.on(event_types.OAI_PRESET_CHANGED, event => migrate(event.preset, event.savePreset, event.presetName));
+    eventSource.on(event_types.OAI_PRESET_CHANGED_BEFORE, event => migrate(event.preset, event.savePreset, event.presetName));
 }
 
 /**
@@ -604,7 +604,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     document.getElementById(this.configuration.prefix + 'prompt_manager_popup_close_button').addEventListener('click', closeAndClearPopup);
 
     // Re-render prompt manager on openai preset change
-    eventSource.on(event_types.OAI_PRESET_CHANGED, settings => {
+    eventSource.on(event_types.OAI_PRESET_CHANGED_AFTER, () => {
         // Save configuration and wrap everything up.
         this.saveServiceSettings().then(() => {
             const mainPrompt = this.getPromptById('main');
