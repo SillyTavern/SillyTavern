@@ -184,7 +184,14 @@ function get_mancer_headers() {
     return api_key_mancer ? { "X-API-KEY": api_key_mancer } : {};
 }
 
-
+function getOverrideHeaders(urlHost) {
+    const overrideHeaders = config.requestOverrides?.find((e) => e.hosts?.includes(urlHost))?.headers;
+    if (overrideHeaders && urlHost) {
+        return overrideHeaders;
+    } else {
+        return {};
+    }
+}
 
 //RossAscends: Added function to format dates used in files and chat timestamps to a humanized format.
 //Mostly I wanted this to be for file names, but couldn't figure out exactly where the filename save code was as everything seemed to be connected.
@@ -539,7 +546,10 @@ app.post("/generate", jsonParser, async function (request, response_generate) {
     console.log(this_settings);
     const args = {
         body: JSON.stringify(this_settings),
-        headers: { "Content-Type": "application/json" },
+        headers: Object.assign(
+            { "Content-Type": "application/json" },
+            getOverrideHeaders((new URL(api_server))?.host)
+        ),
         signal: controller.signal,
     };
 
@@ -629,11 +639,19 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
         });
 
         async function* readWebsocket() {
+            const streamingUrlString = request.header('X-Streaming-URL').replace("localhost", "127.0.0.1");
+            const streamingUrl = new URL(streamingUrlString);
             const websocket = new WebSocket(streamingUrl);
 
             websocket.on('open', async function () {
                 console.log('WebSocket opened');
-                const combined_args = Object.assign(request.body.use_mancer ? get_mancer_headers() : {}, request.body);
+                const combined_args = Object.assign(
+                    {},
+                    request.body.use_mancer ? get_mancer_headers() : getOverrideHeaders(streamingUrl?.host),
+                    request.body
+                );
+                console.log(combined_args);
+
                 websocket.send(JSON.stringify(combined_args));
             });
 
@@ -715,6 +733,8 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
 
         if (request.body.use_mancer) {
             args.headers = Object.assign(args.headers, get_mancer_headers());
+        } else {
+            args.headers = Object.assign(args.headers, getOverrideHeaders((new URL(api_server))?.host));
         }
 
         try {
@@ -782,6 +802,7 @@ app.post("/getchat", jsonParser, function (request, response) {
     }
 });
 
+// Only called for kobold and ooba/mancer
 app.post("/getstatus", jsonParser, async function (request, response) {
     if (!request.body) return response.sendStatus(400);
     api_server = request.body.api_server;
@@ -796,6 +817,8 @@ app.post("/getstatus", jsonParser, async function (request, response) {
 
     if (main_api == 'textgenerationwebui' && request.body.use_mancer) {
         args.headers = Object.assign(args.headers, get_mancer_headers());
+    } else {
+        args.headers = Object.assign(args.headers, getOverrideHeaders((new URL(api_server))?.host));
     }
 
     const url = api_server + "/v1/model";
