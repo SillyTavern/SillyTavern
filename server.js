@@ -3129,7 +3129,7 @@ app.get('/thumbnail', jsonParser, async function (request, response) {
     }
 
     if (config.disableThumbnails == true) {
-        let folder = getOriginalFolder(file)
+        let folder = getOriginalFolder(type);
         if (folder === undefined) return response.sendStatus(400);
         const pathToOriginalFile = path.join(folder, file);
         return response.sendFile(pathToOriginalFile, { root: process.cwd() });
