@@ -617,7 +617,7 @@ function populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, ty
 
     // Insert nsfw avoidance prompt into main, if no nsfw prompt is present
     if (false === chatCompletion.has('nsfw') && oai_settings.nsfw_avoidance_prompt)
-        if (prompts.has('nsfwAvoidance')) chatCompletion.insert(Message.fromPrompt(prompts.get('nsfwAvoidance')), 'main');
+        if (prompts.has('nsfwAvoidance') && prompts.has('main')) chatCompletion.insert(Message.fromPrompt(prompts.get('nsfwAvoidance')), 'main');
 
     // Bias
     if (bias && bias.trim().length) addToChatCompletion('bias');
@@ -2467,7 +2467,7 @@ function onSettingsPresetChange() {
     const updateCheckbox = (selector, value) => $(selector).prop('checked', value).trigger('input');
 
     // Allow subscribers to alter the preset before applying deltas
-    eventSource.emit(event_types.OAI_PRESET_CHANGED, {
+    eventSource.emit(event_types.OAI_PRESET_CHANGED_BEFORE, {
         preset: preset,
         presetName: presetName,
         settingsToUpdate: settingsToUpdate,
@@ -2489,6 +2489,7 @@ function onSettingsPresetChange() {
         $(`#openai_logit_bias_preset`).trigger('change');
 
         saveSettingsDebounced();
+        eventSource.emit(event_types.OAI_PRESET_CHANGED_AFTER);
     });
 }
 
