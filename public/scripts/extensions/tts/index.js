@@ -22,6 +22,8 @@ let lastGroupId = null
 let lastChatId = null
 let lastMessageHash = null
 
+const DEFAULT_VOICE_MARKER = '[Default Voice]';
+
 export function getPreviewString(lang) {
     const previewStrings = {
         'en-US': 'The quick brown fox jumps over the lazy dog',
@@ -460,10 +462,12 @@ async function processTtsQueue() {
             return;
         }
 
-        if (!voiceMap[char]) {
+        const voiceMapEntry = voiceMap[char] || voiceMap[DEFAULT_VOICE_MARKER]
+
+        if (!voiceMapEntry) {
             throw `${char} not in voicemap. Configure character in extension settings voice map`
         }
-        const voice = await ttsProvider.getVoice((voiceMap[char]))
+        const voice = await ttsProvider.getVoice(voiceMapEntry)
         const voiceId = voice.voice_id
         if (voiceId == null) {
             toastr.error(`Specified voice for ${char} was not found. Check the TTS extension settings.`)
@@ -636,10 +640,12 @@ function getCharacters(){
     let characters = []
     if (context.groupId === null){
         // Single char chat
+        characters.push(DEFAULT_VOICE_MARKER)
         characters.push(context.name1)
         characters.push(context.name2)
     } else {
         // Group chat
+        characters.push(DEFAULT_VOICE_MARKER)
         characters.push(context.name1)
         const group = context.groups.find(group => context.groupId == group.id)
         for (let member of group.members) {
