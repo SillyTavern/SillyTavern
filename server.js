@@ -3983,7 +3983,7 @@ function getAsync(url, args) {
 
 const tavernUrl = new URL(
     (cliArguments.ssl ? 'https://' : 'http://') +
-    (listen ? '[::0]' : '127.0.0.1') +
+    (listen ? '[::]' : '127.0.0.1') +
     (':' + server_port)
 );
 
@@ -4034,7 +4034,7 @@ const setupTasks = async function () {
     console.log(color.green('SillyTavern is listening on: ' + tavernUrl));
 
     if (listen) {
-        console.log('\n[::0] means SillyTavern is listening on all network interfaces (Wi-Fi, LAN, localhost). If you want to limit it only to internal localhost (127.0.0.1), change the setting in config.conf to “listen=false”\n');
+        console.log('\n0.0.0.0 means SillyTavern is listening on all network interfaces (Wi-Fi, LAN, localhost). If you want to limit it only to internal localhost (127.0.0.1), change the setting in config.conf to “listen=false”\n');
     }
 }
 
