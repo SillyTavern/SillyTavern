@@ -193,6 +193,16 @@ function getOverrideHeaders(urlHost) {
     }
 }
 
+/**
+ * Encodes the Basic Auth header value for the given user and password.
+ * @param {string} auth username:password
+ * @returns {string} Basic Auth header value
+ */
+function getBasicAuthHeader(auth) {
+    const encoded = Buffer.from(`${auth}`).toString('base64');
+    return `Basic ${encoded}`;
+}
+
 //RossAscends: Added function to format dates used in files and chat timestamps to a humanized format.
 //Mostly I wanted this to be for file names, but couldn't figure out exactly where the filename save code was as everything seemed to be connected.
 //During testing, this performs the same as previous date.now() structure.
@@ -4532,7 +4542,12 @@ app.post('/api/sd/ping', jsonParser, async (request, response) => {
         const url = new URL(request.body.url);
         url.pathname = '/internal/ping';
 
-        const result = await fetch(url);
+        const result = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': getBasicAuthHeader(request.body.auth),
+            }
+        });
 
         if (!result.ok) {
             throw new Error('SD WebUI returned an error.');
@@ -4550,7 +4565,12 @@ app.post('/api/sd/samplers', jsonParser, async (request, response) => {
         const url = new URL(request.body.url);
         url.pathname = '/sdapi/v1/samplers';
 
-        const result = await fetch(url);
+        const result = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': getBasicAuthHeader(request.body.auth),
+            },
+        });
 
         if (!result.ok) {
             throw new Error('SD WebUI returned an error.');
@@ -4571,7 +4591,12 @@ app.post('/api/sd/models', jsonParser, async (request, response) => {
         const url = new URL(request.body.url);
         url.pathname = '/sdapi/v1/sd-models';
 
-        const result = await fetch(url);
+        const result = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': getBasicAuthHeader(request.body.auth),
+            },
+        });
 
         if (!result.ok) {
             throw new Error('SD WebUI returned an error.');
@@ -4591,7 +4616,12 @@ app.post('/api/sd/get-model', jsonParser, async (request, response) => {
         const url = new URL(request.body.url);
         url.pathname = '/sdapi/v1/options';
 
-        const result = await fetch(url);
+        const result = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': getBasicAuthHeader(request.body.auth),
+            },
+        });
         const data = await result.json();
         return response.send(data['sd_model_checkpoint']);
     } catch (error) {
@@ -4606,7 +4636,12 @@ app.post('/api/sd/set-model', jsonParser, async (request, response) => {
             const url = new URL(request.body.url);
             url.pathname = '/sdapi/v1/progress';
 
-            const result = await fetch(url);
+            const result = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': getBasicAuthHeader(request.body.auth),
+                },
+            });
             const data = await result.json();
             return data;
         }
@@ -4621,7 +4656,10 @@ app.post('/api/sd/set-model', jsonParser, async (request, response) => {
         const result = await fetch(url, {
             method: 'POST',
             body: JSON.stringify(options),
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': getBasicAuthHeader(request.body.auth),
+            },
         });
 
         if (!result.ok) {
@@ -4659,7 +4697,10 @@ app.post('/api/sd/generate', jsonParser, async (request, response) => {
         const result = await fetch(url, {
             method: 'POST',
             body: JSON.stringify(request.body),
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': getBasicAuthHeader(request.body.auth),
+            },
         });
 
         if (!result.ok) {

@@ -22,7 +22,7 @@
             <div data-sd-source="auto">
                 <label for="sd_auto_url">SD Web UI URL</label>
                 <div class="flex-container flexnowrap">
-                    <input id="sd_auto_url" type="text" class="text_pole" placeholder="{{auto_url}}" value="{{auto_url}}" />
+                    <input id="sd_auto_url" type="text" class="text_pole" placeholder="Example: {{auto_url}}" value="{{auto_url}}" />
                     <div id="sd_auto_validate" class="menu_button menu_button_icon">
                         <i class="fa-solid fa-check"></i>
                         <span data-i18n="Connect">
@@ -30,6 +30,8 @@
                         </span>
                     </div>
                 </div>
+                <label for="sd_auto_auth">Authentication (optional)</label>
+                <input id="sd_auto_auth" type="text" class="text_pole" placeholder="Example: username:password" value="" />
                 <i><b>Important:</b> run SD Web UI with the <tt>--api</tt> flag! The server must be accessible from the SillyTavern host machine.</i>
             </div>
             <div data-sd-source="horde">

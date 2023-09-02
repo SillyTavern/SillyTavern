@@ -162,7 +162,10 @@ const defaultSettings = {
 
     // AUTOMATIC1111 settings
     auto_url: 'http://localhost:7860',
+    auto_auth: '',
 }
+
+const getAutoRequestBody = () => ({ url: extension_settings.sd.auto_url, auth: extension_settings.sd.auto_auth });
 
 function toggleSourceControls() {
     $('.sd_settings [data-sd-source]').each(function () {
@@ -213,6 +216,7 @@ async function loadSettings() {
     $('#sd_enable_hr').prop('checked', extension_settings.sd.enable_hr);
     $('#sd_refine_mode').prop('checked', extension_settings.sd.refine_mode);
     $('#sd_auto_url').val(extension_settings.sd.auto_url);
+    $('#sd_auto_auth').val(extension_settings.sd.auto_auth);
 
     toggleSourceControls();
     addPromptTemplates();
@@ -393,6 +397,11 @@ function onAutoUrlInput() {
     saveSettingsDebounced();
 }
 
+function onAutoAuthInput() {
+    extension_settings.sd.auto_auth = $('#sd_auto_auth').val();
+    saveSettingsDebounced();
+}
+
 async function validateAutoUrl() {
     try {
         if (!extension_settings.sd.auto_url) {
@@ -402,7 +411,7 @@ async function validateAutoUrl() {
         const result = await fetch('/api/sd/ping', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify({ url: extension_settings.sd.auto_url }),
+            body: JSON.stringify(getAutoRequestBody()),
         });
 
         if (!result.ok) {
@@ -442,7 +451,7 @@ async function getAutoRemoteModel() {
         const result = await fetch('/api/sd/get-model', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify({ url: extension_settings.sd.auto_url }),
+            body: JSON.stringify(getAutoRequestBody()),
         });
 
         if (!result.ok) {
@@ -462,7 +471,7 @@ async function updateAutoRemoteModel() {
         const result = await fetch('/api/sd/set-model', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify({ url: extension_settings.sd.auto_url, model: extension_settings.sd.model }),
+            body: JSON.stringify({ ...getAutoRequestBody(), model: extension_settings.sd.model }),
         });
 
         if (!result.ok) {
@@ -557,7 +566,7 @@ async function loadAutoSamplers() {
         const result = await fetch('/api/sd/samplers', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify({ url: extension_settings.sd.auto_url }),
+            body: JSON.stringify(getAutoRequestBody()),
         });
 
         if (!result.ok) {
@@ -674,7 +683,7 @@ async function loadAutoModels() {
         const result = await fetch('/api/sd/models', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify({ url: extension_settings.sd.auto_url }),
+            body: JSON.stringify(getAutoRequestBody()),
         });
 
         if (!result.ok) {
@@ -1000,7 +1009,7 @@ async function generateAutoImage(prompt) {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
-            url: extension_settings.sd.auto_url,
+            ...getAutoRequestBody(),
             prompt: prompt,
             negative_prompt: extension_settings.sd.negative_prompt,
             sampler_name: extension_settings.sd.sampler,
@@ -1262,6 +1271,7 @@ jQuery(async () => {
     $('#sd_character_prompt').on('input', onCharacterPromptInput);
     $('#sd_auto_validate').on('click', validateAutoUrl);
     $('#sd_auto_url').on('input', onAutoUrlInput);
+    $('#sd_auto_auth').on('input', onAutoAuthInput);
     $('#sd_character_prompt_block').hide();
 
     $('.sd_settings .inline-drawer-toggle').on('click', function () {
