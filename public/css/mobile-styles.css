@@ -271,7 +271,11 @@
 }
 
 @media screen and (min-width: 1001px) {
-    #PygOverrides, #ContextFormatting {
+    #PygOverrides,
+    #ContextFormatting,
+    #UI-Theme-Block,
+    #UI-Customization,
+    #power-user-options-block {
         flex: 1;
     }
 }
