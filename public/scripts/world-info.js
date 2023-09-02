@@ -1103,7 +1103,7 @@ async function checkWorldInfo(chat, maxContext) {
                 console.debug(`WI budget reached, stopping`);
                 if (world_info_overflow_alert) {
                     console.log("Alerting");
-                    toastr.warning(`World info budget reached after ${count} entries.`, 'World Info');
+                    toastr.warning(`World info budget reached after ${allActivatedEntries.size} entries.`, 'World Info');
                 }
                 needsToScan = false;
                 break;

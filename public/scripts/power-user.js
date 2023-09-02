@@ -30,7 +30,7 @@ import {
 import { registerSlashCommand } from "./slash-commands.js";
 import { tokenizers } from "./tokenizers.js";
 
-import { delay, resetScrollHeight } from "./utils.js";
+import { countOccurrences, delay, isOdd, resetScrollHeight, sortMoments, timestampToMoment } from "./utils.js";
 
 export {
     loadPowerUserSettings,
@@ -159,6 +159,7 @@ let power_user = {
     timestamp_model_icon: false,
     mesIDDisplay_enabled: false,
     max_context_unlocked: false,
+    message_token_count_enabled: false,
     prefer_character_prompt: true,
     prefer_character_jailbreak: true,
     quick_continue: false,
@@ -240,6 +241,7 @@ const storage_keys = {
     timestamps_enabled: 'TimestampsEnabled',
     timestamp_model_icon: 'TimestampModelIcon',
     mesIDDisplay_enabled: 'mesIDDisplayEnabled',
+    message_token_count_enabled: 'MessageTokenCountEnabled',
 };
 
 let browser_has_focus = true;
@@ -283,6 +285,7 @@ function collapseNewlines(x) {
 /**
  * Fix formatting problems in markdown.
  * @param {string} text Text to be processed.
+ * @param {boolean} forDisplay Whether the text is being processed for display.
  * @returns {string} Processed text.
  * @example
  * "^example * text*\n" // "^example *text*\n"
@@ -296,7 +299,7 @@ function collapseNewlines(x) {
  * // and you HAVE to handle the cases where multiple pairs of asterisks exist in the same line
  * "^example * text* * harder problem *\n" // "^example *text* *harder problem*\n"
  */
-function fixMarkdown(text) {
+function fixMarkdown(text, forDisplay) {
     // Find pairs of formatting characters and capture the text in between them
     const format = /([\*_]{1,2})([\s\S]*?)\1/gm;
     let matches = [];
@@ -312,6 +315,27 @@ function fixMarkdown(text) {
         let replacementText = matchText.replace(/(\*|_)([\t \u00a0\u1680\u2000-\u200a\u202f\u205f\u3000\ufeff]+)|([\t \u00a0\u1680\u2000-\u200a\u202f\u205f\u3000\ufeff]+)(\*|_)/g, '$1$4');
         newText = newText.slice(0, matches[i].index) + replacementText + newText.slice(matches[i].index + matchText.length);
     }
+
+    // Don't auto-fix asterisks if this is a message clean-up procedure.
+    // It botches the continue function. Apply this to display only.
+    if (!forDisplay) {
+        return newText;
+    }
+
+    const splitText = newText.split('\n');
+
+    // Fix asterisks, and quotes that are not paired
+    for (let index = 0; index < splitText.length; index++) {
+        const line = splitText[index];
+        const charsToCheck = ['*', '"'];
+        for (const char of charsToCheck) {
+            if (line.includes(char) && isOdd(countOccurrences(line, char))) {
+                splitText[index] = line.trimEnd() + char;
+            }
+        }
+    }
+
+    newText = splitText.join('\n');
 
     return newText;
 }
@@ -342,6 +366,13 @@ function switchIcons() {
     power_user.timestamp_model_icon = value === null ? true : value == "true";
     $("body").toggleClass("no-modelIcons", !power_user.timestamp_model_icon);
     $("#messageModelIconEnabled").prop("checked", power_user.timestamp_model_icon);
+}
+
+function switchTokenCount() {
+    const value = localStorage.getItem(storage_keys.message_token_count_enabled);
+    power_user.message_token_count_enabled = value === null ? false : value == "true";
+    $("body").toggleClass("no-tokenCount", !power_user.message_token_count_enabled);
+    $("#messageTokensEnabled").prop("checked", power_user.message_token_count_enabled);
 }
 
 function switchMesIDDisplay() {
@@ -599,42 +630,49 @@ async function applyTheme(name) {
                     power_user.chat_width = 50;
                 }
 
-                localStorage.setItem(storage_keys.chat_width, power_user.chat_width);
+                localStorage.setItem(storage_keys.chat_width, String(power_user.chat_width));
                 applyChatWidth();
             }
         },
         {
             key: 'timer_enabled',
             action: async () => {
-                localStorage.setItem(storage_keys.timer_enabled, power_user.timer_enabled);
+                localStorage.setItem(storage_keys.timer_enabled, String(power_user.timer_enabled));
                 switchTimer();
             }
         },
         {
             key: 'timestamps_enabled',
             action: async () => {
-                localStorage.setItem(storage_keys.timestamps_enabled, power_user.timestamps_enabled);
+                localStorage.setItem(storage_keys.timestamps_enabled, String(power_user.timestamps_enabled));
                 switchTimestamps();
             }
         },
         {
             key: 'timestamp_model_icon',
             action: async () => {
-                localStorage.setItem(storage_keys.timestamp_model_icon, power_user.timestamp_model_icon);
+                localStorage.setItem(storage_keys.timestamp_model_icon, String(power_user.timestamp_model_icon));
                 switchIcons();
+            }
+        },
+        {
+            key: 'message_token_count',
+            action: async () => {
+                localStorage.setItem(storage_keys.message_token_count_enabled, String(power_user.message_token_count_enabled));
+                switchTokenCount();
             }
         },
         {
             key: 'mesIDDisplay_enabled',
             action: async () => {
-                localStorage.setItem(storage_keys.mesIDDisplay_enabled, power_user.mesIDDisplay_enabled);
+                localStorage.setItem(storage_keys.mesIDDisplay_enabled, String(power_user.mesIDDisplay_enabled));
                 switchMesIDDisplay();
             }
         },
         {
             key: 'hotswap_enabled',
             action: async () => {
-                localStorage.setItem(storage_keys.hotswap_enabled, power_user.hotswap_enabled);
+                localStorage.setItem(storage_keys.hotswap_enabled, String(power_user.hotswap_enabled));
                 switchHotswap();
             }
         }
@@ -701,6 +739,7 @@ switchTimer();
 switchTimestamps();
 switchIcons();
 switchMesIDDisplay();
+switchTokenCount();
 
 function loadPowerUserSettings(settings, data) {
     // Load from settings.json
@@ -1126,6 +1165,11 @@ const compareFunc = (first, second) => {
         case 'boolean':
             const a = first[power_user.sort_field];
             const b = second[power_user.sort_field];
+
+            if (power_user.sort_field === 'create_date') {
+                return sortMoments(timestampToMoment(a), timestampToMoment(b));
+            }
+
             if (a === true || a === 'true') return 1;  // Prioritize 'true' or true
             if (b === true || b === 'true') return -1; // Prioritize 'true' or true
             if (a && !b) return -1;        // Move truthy values to the end
@@ -2067,6 +2111,13 @@ $(document).ready(() => {
         power_user.timestamp_model_icon = value;
         localStorage.setItem(storage_keys.timestamp_model_icon, String(power_user.timestamp_model_icon));
         switchIcons();
+    });
+
+    $("#messageTokensEnabled").on("input", function () {
+        const value = !!$(this).prop('checked');
+        power_user.message_token_count_enabled = value;
+        localStorage.setItem(storage_keys.message_token_count_enabled, String(power_user.message_token_count_enabled));
+        switchTokenCount();
     });
 
     $("#mesIDDisplayEnabled").on("input", function () {
