@@ -2357,7 +2357,7 @@
                                                 <small data-i18n="Stop Sequence">Stop Sequence</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_stop_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="200k0" placeholder="&mdash;" rows="1"></textarea>
+                                                <textarea id="instruct_stop_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
                                             </div>
                                         </div>
                                         <div class="flex1">
@@ -3146,12 +3146,12 @@
                     </div>
                     <div class="alignitemsflexstart flex-container wide100p">
                         <input id="extensions_url" type="text" class="flex1 heightFitContent text_pole widthNatural" maxlength="250" data-i18n="[placeholder]Extensions URL" placeholder="Extensions URL">
-                        <input id="extensions_api_key" type="text" class="flex1 heightFitContent text_pole widthNatural" maxlength="250" data-i18n="[placeholder]API key" placeholder="API key">
-                        <div class="alignitemsflexstart extensions_url_block">
-                            <div class="" style="text-align: center">
-                                <input id="extensions_connect" class="menu_button" type="submit" data-i18n="Connect">Connect</input>
+                        <input id="extensions_api_key" type="text" class="flex1 heightFitContent text_pole widthNatural" maxlength="250" data-i18n="[placeholder]API key" placeholder="Extras API key">
+                        <div class="extensions_url_block">
+                            <div id="extensions_connect" class="menu_button" data-i18n="Connect">Connect</div>
+                            <div id="extensions_details" class="menu_button_icon menu_button">
+                                Manage extensions
                             </div>
-                            <input id="extensions_details" class="alignitemsflexstart menu_button" type="button" value="Manage extensions">
                             <div id="third_party_extension_button" title="Import Extension From Git Repo" class="menu_button fa-solid fa-cloud-arrow-down faSmallFontSquareFix"></div>
                         </div>
                     </div>
@@ -4536,6 +4536,7 @@
         toastr.options.extendedTimeOut = 10000; // How long the toast will display after a user hovers over it
         toastr.options.progressBar = true; // Visually indicate how long before a toast expires.
         toastr.options.closeButton = true; // enable a close button
+        toastr.options.positionClass = "toast-top-center"; // Where to position the toast container
     </script>
 
     <script>
