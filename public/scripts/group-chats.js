@@ -558,7 +558,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         }
 
         if (activatedMembers.length === 0) {
-            toastr.warning('All group members are disabled. Enable at least one to get a reply.');
+            //toastr.warning('All group members are disabled. Enable at least one to get a reply.');
 
             // Send user message as is
             const bias = getBiasStrings(userInput, type);
