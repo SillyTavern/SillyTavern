@@ -2066,6 +2066,10 @@ grammarly-extension {
 }
 
 /* Override toastr default styles */
+body #toast-container {
+    top: var(--topBarBlockSize);
+}
+
 body #toast-container>div {
     opacity: 0.95;
 }
