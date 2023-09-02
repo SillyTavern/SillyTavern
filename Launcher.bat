@@ -38,11 +38,14 @@ set "node_installer_path=%temp%\NodejsInstaller.msi"
 REM Environment Variables (winget)
 set "winget_path=%userprofile%\AppData\Local\Microsoft\WindowsApps"
 
+REM Environment Variables (TOOLBOX Install Extras)
+set "miniconda_path=%userprofile%\miniconda"
+
 
 REM Check if Winget is installed; if not, then install it
 winget --version > nul 2>&1
 if %errorlevel% neq 0 (
-    echo %blue_fg_strong%[INFO]%reset% Winget is not installed on this system.
+    echo %yellow_fg_strong%[WARN] Winget is not installed on this system.
     echo %blue_fg_strong%[INFO]%reset% Installing Winget...
     bitsadmin /transfer "Microsoft.DesktopAppInstaller_8wekyb3d8bbwe" /download /priority FOREGROUND "https://github.com/microsoft/winget-cli/releases/download/v1.5.2201/Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle" "%temp%\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle"
     start "" "%temp%\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle"
@@ -106,33 +109,37 @@ echo %blue_fg_strong%/ Home%reset%
 echo -------------------------------------
 echo What would you like to do?
 echo 1. Start SillyTavern
-echo 2. Update
-echo 3. Switch to release branch
-echo 4. Switch to staging branch
-echo 5. Backup
+echo 2. Start SillyTavern + Extras
+echo 3. Update
+echo 4. Backup
+echo 5. Switch branch
 echo 6. Toolbox
 echo 7. Exit
 
 REM Get the current Git branch
 for /f %%i in ('git branch --show-current') do set current_branch=%%i
 echo ======== VERSION STATUS =========
-echo Current branch: %cyan_fg_strong%%current_branch%%reset%
+echo SillyTavern branch: %cyan_fg_strong%%current_branch%%reset%
 echo Update Status: %update_status%
 echo =================================
-set /p choice=Choose Your Destiny: 
 
+set "choice="
+set /p "choice=Choose Your Destiny (default is 1): "
+
+REM Default to choice 1 if no input is provided
+if not defined choice set "choice=1"
 
 REM Home - backend
 if "%choice%"=="1" (
     call :start
 ) else if "%choice%"=="2" (
-    call :update
+    call :start_extras
 ) else if "%choice%"=="3" (
-    call :switch_release
+    call :update
 ) else if "%choice%"=="4" (
-    call :switch_staging
-) else if "%choice%"=="5" (
     call :backup_menu
+) else if "%choice%"=="5" (
+    call :switchbrance_menu
 ) else if "%choice%"=="6" (
     call :toolbox
 ) else if "%choice%"=="7" (
@@ -144,6 +151,7 @@ if "%choice%"=="1" (
     goto :home
 )
 
+
 :start
 REM Check if Node.js is installed
 node --version > nul 2>&1
@@ -154,20 +162,26 @@ if %errorlevel% neq 0 (
     pause
     goto :home
 )
-
-echo Launching SillyTavern...
-cls
-pushd %~dp0
-call npm install --no-audit
-node server.js
-pause
-popd
+echo %blue_fg_strong%[INFO]%reset% A new window has been launched.
+start /wait cmd /c start.bat
 goto :home
+
+
+:start_extras
+REM Run conda activate from the Miniconda installation
+call "%miniconda_path%\Scripts\activate.bat"
+
+REM Activate the sillytavernextras environment
+call conda activate sillytavernextras
+
+REM Start SillyTavern Extras with desired configurations
+python server.py --coqui-gpu --rvc-save-file --cuda-device=0 --max-content-length=1000 --enable-modules=caption,summarize,classify,rvc,coqui-tts --classification-model=joeddav/distilbert-base-uncased-go-emotions-student --share
+goto :home
+
 
 :update
 echo Updating...
 pushd %~dp0
-
 REM Check if git is installed
 git --version > nul 2>&1
 if %errorlevel% neq 0 (
@@ -185,39 +199,76 @@ pause
 goto :home
 
 
-:switch_release
-REM Check if git is installed
-git --version > nul 2>&1
-if %errorlevel% neq 0 (
-    echo %red_fg_strong%[ERROR] git command not found in PATH%reset%
-    echo %red_bg%Please make sure Git is installed and added to your PATH.%reset%
-    echo %blue_bg%To install Git go to Toolbox%reset%
-    pause
+REM Switch Brance - frontend
+:switchbrance_menu
+cls
+echo %blue_fg_strong%/ Home / Switch Branch%reset%
+echo -------------------------------------
+echo What would you like to do?
+echo 1. Switch to Release - SillyTavern
+echo 2. Switch to Staging - SillyTavern
+echo 3. Switch to Main - Extras
+echo 4. Switch to Neo - Extras
+echo 5. Back to Home
+
+REM Get the current Git branch
+for /f %%i in ('git branch --show-current') do set current_branch=%%i
+echo ======== VERSION STATUS =========
+echo SillyTavern branch: %cyan_fg_strong%%current_branch%%reset%
+echo Extras branch: %cyan_fg_strong%%current_branch%%reset%
+echo =================================
+set /p brance_choice=Choose Your Destiny: 
+
+REM Switch Brance - backend
+if "%brance_choice%"=="1" (
+    call :switch_release_st
+) else if "%brance_choice%"=="2" (
+    call :switch_staging_st
+) else if "%brance_choice%"=="3" (
+    call :switch_main_ste
+) else if "%brance_choice%"=="4" (
+    call :switch_neo_ste
+) else if "%brance_choice%"=="5" (
     goto :home
+) else (
+    color 6
+    echo WARNING: Invalid number. Please insert a valid number.
+    pause
+    goto :switchbrance_menu
 )
-echo Switching to release branch...
+
+
+:switch_release_st
+echo %blue_fg_strong%[INFO]%reset% Switching to release branch...
 git switch release
 pause
-goto :home
+goto :switchbrance_menu
 
 
-:switch_staging
-REM Check if git is installed
-git --version > nul 2>&1
-if %errorlevel% neq 0 (
-    echo %red_fg_strong%[ERROR] git command not found in PATH%reset%
-    echo %red_bg%Please make sure git is installed and added to your PATH.%reset%
-    pause
-    goto :home
-)
-echo Switching to staging branch...
+:switch_staging_st
+echo %blue_fg_strong%[INFO]%reset% Switching to staging branch...
 git switch staging
 pause
-goto :home
+goto :switchbrance_menu
 
 
+:switch_main_ste
+echo %blue_fg_strong%[INFO]%reset% Switching to main branch...
+cd SillyTavern-extras
+git switch main
+pause
+goto :switchbrance_menu
 
-REM backup - frontend
+
+:switch_neo_ste
+echo %blue_fg_strong%[INFO]%reset% Switching to neo branch...
+cd SillyTavern-extras
+git switch neo
+pause
+goto :switchbrance_menu
+
+
+REM Backup - Frontend
 :backup_menu
 REM Check if 7-Zip is installed
 7z > nul 2>&1
@@ -228,7 +279,6 @@ if %errorlevel% neq 0 (
     pause
     goto :home
 )
-
 cls
 echo %blue_fg_strong%/ Home / Backup%reset%
 echo -------------------------------------
@@ -240,7 +290,7 @@ echo 3. Back to Home
 
 set /p backup_choice=Choose Your Destiny: 
 
-REM backup - backend
+REM Backup - Backend
 if "%backup_choice%"=="1" (
     call :create_backup
 ) else if "%backup_choice%"=="2" (
@@ -253,207 +303,6 @@ if "%backup_choice%"=="1" (
     pause
     goto :backup_menu
 )
-
-
-REM toolbox - frontend
-:toolbox
-cls
-echo %blue_fg_strong%/ Home / Toolbox%reset%
-echo -------------------------------------
-echo What would you like to do?
-REM color 7
-echo 1. Install 7-Zip
-echo 2. Install FFmpeg
-echo 3. Install Node.js
-echo 4. Edit Environment - Power Users only!
-echo 5. Reinstall SillyTavern
-echo 6. Back to Home
-
-set /p toolbox_choice=Choose Your Destiny: 
-
-REM toolbox - backend
-if "%toolbox_choice%"=="1" (
-    call :install7zip
-) else if "%toolbox_choice%"=="2" (
-    call :installffmpeg
-) else if "%toolbox_choice%"=="3" (
-    call :installnodejs
-) else if "%toolbox_choice%"=="4" (
-    call :editenvironment
-) else if "%toolbox_choice%"=="5" (
-    call :reinstallsillytavern
-) else if "%toolbox_choice%"=="6" (
-    goto :home
-) else (
-    color 6
-    echo WARNING: Invalid number. Please insert a valid number.
-    pause
-    goto :toolbox
-)
-
-
-:install7zip
-echo %blue_fg_strong%[INFO] Installing 7-Zip...%reset%
-winget install -e --id 7zip.7zip
-
-
-rem Get the current PATH value from the registry
-for /f "tokens=2*" %%A in ('reg query "HKCU\Environment" /v PATH') do set "current_path=%%B"
-
-rem Check if the paths are already in the current PATH
-echo %current_path% | find /i "%zip7_install_path%" > nul
-set "zip7_path_exists=%errorlevel%"
-
-rem Append the new paths to the current PATH only if they don't exist
-if %zip7_path_exists% neq 0 (
-    set "new_path=%current_path%;%zip7_install_path%"
-    echo %green_fg_strong%7-Zip added to PATH.%reset%
-) else (
-    set "new_path=%current_path%"
-    echo %blue_fg_strong%[INFO] 7-Zip already exists in PATH.%reset%
-)
-
-rem Update the PATH value in the registry
-reg add "HKCU\Environment" /v PATH /t REG_EXPAND_SZ /d "%new_path%" /f
-
-rem Update the PATH value for the current session
-setx PATH "%new_path%"
-
-echo %green_fg_strong%7-Zip is installed. Please restart the Launcher.%reset%
-pause
-exit
-
-
-:installffmpeg
-REM Check if 7-Zip is installed
-7z > nul 2>&1
-if %errorlevel% neq 0 (
-    echo %red_fg_strong%[ERROR] 7z command not found in PATH%reset%
-    echo %red_bg%Please make sure 7-Zip is installed and added to your PATH.%reset%
-    echo %blue_bg%To install 7-Zip go to Toolbox%reset%
-    pause
-    goto :toolbox
-)
-
-echo %blue_fg_strong%[INFO]%reset% Downloading FFmpeg archive...
-rem bitsadmin /transfer "ffmpeg" /download /priority FOREGROUND "%ffmpeg_url%" "%ffdownload_path%"
-curl -o "%ffdownload_path%" "%ffmpeg_url%"
-
-echo %blue_fg_strong%[INFO]%reset% Creating ffmpeg directory if it doesn't exist...
-if not exist "%ffextract_path%" (
-    mkdir "%ffextract_path%"
-)
-
-echo %blue_fg_strong%[INFO]%reset% Extracting FFmpeg archive...
-7z x "%ffdownload_path%" -o"%ffextract_path%"
-
-
-echo %blue_fg_strong%[INFO]%reset% Moving FFmpeg contents to C:\ffmpeg...
-for /d %%i in ("%ffextract_path%\ffmpeg-*-full_build") do (
-    xcopy "%%i\bin" "%ffextract_path%\bin" /E /I /Y
-    xcopy "%%i\doc" "%ffextract_path%\doc" /E /I /Y
-    xcopy "%%i\presets" "%ffextract_path%\presets" /E /I /Y
-    rd "%%i" /S /Q
-)
-
-rem Get the current PATH value from the registry
-for /f "tokens=2*" %%A in ('reg query "HKCU\Environment" /v PATH') do set "current_path=%%B"
-
-rem Check if the paths are already in the current PATH
-echo %current_path% | find /i "%bin_path%" > nul
-set "ff_path_exists=%errorlevel%"
-
-rem Append the new paths to the current PATH only if they don't exist
-if %ff_path_exists% neq 0 (
-    set "new_path=%current_path%;%bin_path%"
-    echo %green_fg_strong%ffmpeg added to PATH.%reset%
-) else (
-    set "new_path=%current_path%"
-    echo %blue_fg_strong%[INFO] ffmpeg already exists in PATH.%reset%
-)
-
-rem Update the PATH value in the registry
-reg add "HKCU\Environment" /v PATH /t REG_EXPAND_SZ /d "%new_path%" /f
-
-rem Update the PATH value for the current session
-setx PATH "%new_path%" > nul
-
-del "%ffdownload_path%"
-echo %green_fg_strong%FFmpeg is installed. Please restart the Launcher.%reset%
-pause
-exit
-
-
-:installnodejs
-echo %blue_fg_strong%[INFO]%reset% Installing Node.js...
-winget install -e --id OpenJS.NodeJS
-echo %green_fg_strong%Node.js is installed. Please restart the Launcher.%reset%
-pause
-exit
-
-
-:editenvironment
-rundll32.exe sysdm.cpl,EditEnvironmentVariables
-goto :toolbox
-
-
-:reinstallsillytavern
-setlocal enabledelayedexpansion
-chcp 65001 > nul
-REM Define the names of items to be excluded
-set "script_name=%~nx0"
-set "excluded_folders=backups"
-set "excluded_files=!script_name!"
-
-REM Confirm with the user before proceeding
-echo.
-echo %red_bg%╔════ DANGER ZONE ══════════════════════════════════════════════════════════════════════════════╗%reset%
-echo %red_bg%║ WARNING: This will delete all data in the current branch except the Backups.                  ║%reset%
-echo %red_bg%║ If you want to keep any data, make sure to create a backup before proceeding.                 ║%reset%
-echo %red_bg%╚═══════════════════════════════════════════════════════════════════════════════════════════════╝%reset%
-echo.
-echo Are you sure you want to proceed? (Y/N)
-set /p "confirmation="
-if /i "!confirmation!"=="Y" (
-    REM Remove non-excluded folders
-    for /d %%D in (*) do (
-        set "exclude_folder="
-        for %%E in (!excluded_folders!) do (
-            if "%%D"=="%%E" set "exclude_folder=true"
-        )
-        if not defined exclude_folder (
-            rmdir /s /q "%%D" 2>nul
-        )
-    )
-
-    REM Remove non-excluded files
-    for %%F in (*) do (
-        set "exclude_file="
-        for %%E in (!excluded_files!) do (
-            if "%%F"=="%%E" set "exclude_file=true"
-        )
-        if not defined exclude_file (
-            del /f /q "%%F" 2>nul
-        )
-    )
-
-    REM Clone repo into %temp% folder
-    git clone https://github.com/SillyTavern/SillyTavern.git "%temp%\SillyTavernTemp"
-
-    REM Move the contents of the temporary folder to the current directory
-    xcopy /e /y "%temp%\SillyTavernTemp\*" .
-
-    REM Clean up the temporary folder
-    rmdir /s /q "%temp%\SillyTavernTemp"
-
-    echo %green_fg_strong%SillyTavern reinstalled successfully!%reset%
-) else (
-    echo Reinstall canceled.
-)
-endlocal
-pause
-goto :toolbox
-
 
 :create_backup
 REM Create a backup using 7zip
@@ -549,3 +398,244 @@ if "%restore_choice%" geq "1" (
 )
 pause
 goto :backup_menu
+
+
+REM Toolbox - Frontend
+:toolbox
+cls
+echo %blue_fg_strong%/ Home / Toolbox%reset%
+echo -------------------------------------
+echo What would you like to do?
+REM color 7
+echo 1. Install 7-Zip
+echo 2. Install FFmpeg
+echo 3. Install Node.js
+echo 4. Edit Environment
+echo 5. Reinstall SillyTavern
+echo 6. Reinstall Extras
+echo 7. Back to Home
+
+set /p toolbox_choice=Choose Your Destiny: 
+
+REM Toolbox - Backend
+if "%toolbox_choice%"=="1" (
+    call :install7zip
+) else if "%toolbox_choice%"=="2" (
+    call :installffmpeg
+) else if "%toolbox_choice%"=="3" (
+    call :installnodejs
+) else if "%toolbox_choice%"=="4" (
+    call :editenvironment
+) else if "%toolbox_choice%"=="5" (
+    call :reinstallsillytavern
+) else if "%toolbox_choice%"=="6" (
+    call :reinstallextras
+) else if "%toolbox_choice%"=="7" (
+    goto :home
+) else (
+    color 6
+    echo WARNING: Invalid number. Please insert a valid number.
+    pause
+    goto :toolbox
+)
+
+
+:install7zip
+echo %blue_fg_strong%[INFO]%reset% Installing 7-Zip...
+winget install -e --id 7zip.7zip
+
+rem Get the current PATH value from the registry
+for /f "tokens=2*" %%A in ('reg query "HKCU\Environment" /v PATH') do set "current_path=%%B"
+
+rem Check if the paths are already in the current PATH
+echo %current_path% | find /i "%zip7_install_path%" > nul
+set "zip7_path_exists=%errorlevel%"
+
+rem Append the new paths to the current PATH only if they don't exist
+if %zip7_path_exists% neq 0 (
+    set "new_path=%current_path%;%zip7_install_path%"
+    echo %green_fg_strong%7-Zip added to PATH.%reset%
+) else (
+    set "new_path=%current_path%"
+    echo %blue_fg_strong%[INFO] 7-Zip already exists in PATH.%reset%
+)
+
+rem Update the PATH value in the registry
+reg add "HKCU\Environment" /v PATH /t REG_EXPAND_SZ /d "%new_path%" /f
+
+rem Update the PATH value for the current session
+setx PATH "%new_path%"
+
+echo %green_fg_strong%7-Zip is installed. Please restart the Launcher.%reset%
+pause
+exit
+
+
+:installffmpeg
+REM Check if 7-Zip is installed
+7z > nul 2>&1
+if %errorlevel% neq 0 (
+    echo %red_fg_strong%[ERROR] 7z command not found in PATH%reset%
+    echo %red_bg%Please make sure 7-Zip is installed and added to your PATH.%reset%
+    echo %blue_bg%To install 7-Zip go to Toolbox%reset%
+    pause
+    goto :toolbox
+)
+
+echo %blue_fg_strong%[INFO]%reset% Downloading FFmpeg archive...
+rem bitsadmin /transfer "ffmpeg" /download /priority FOREGROUND "%ffmpeg_url%" "%ffdownload_path%"
+curl -o "%ffdownload_path%" "%ffmpeg_url%"
+
+echo %blue_fg_strong%[INFO]%reset% Creating ffmpeg directory if it doesn't exist...
+if not exist "%ffextract_path%" (
+    mkdir "%ffextract_path%"
+)
+
+echo %blue_fg_strong%[INFO]%reset% Extracting FFmpeg archive...
+7z x "%ffdownload_path%" -o"%ffextract_path%"
+
+
+echo %blue_fg_strong%[INFO]%reset% Moving FFmpeg contents to C:\ffmpeg...
+for /d %%i in ("%ffextract_path%\ffmpeg-*-full_build") do (
+    xcopy "%%i\bin" "%ffextract_path%\bin" /E /I /Y
+    xcopy "%%i\doc" "%ffextract_path%\doc" /E /I /Y
+    xcopy "%%i\presets" "%ffextract_path%\presets" /E /I /Y
+    rd "%%i" /S /Q
+)
+
+rem Get the current PATH value from the registry
+for /f "tokens=2*" %%A in ('reg query "HKCU\Environment" /v PATH') do set "current_path=%%B"
+
+rem Check if the paths are already in the current PATH
+echo %current_path% | find /i "%bin_path%" > nul
+set "ff_path_exists=%errorlevel%"
+
+rem Append the new paths to the current PATH only if they don't exist
+if %ff_path_exists% neq 0 (
+    set "new_path=%current_path%;%bin_path%"
+    echo %green_fg_strong%ffmpeg added to PATH.%reset%
+) else (
+    set "new_path=%current_path%"
+    echo %blue_fg_strong%[INFO] ffmpeg already exists in PATH.%reset%
+)
+
+rem Update the PATH value in the registry
+reg add "HKCU\Environment" /v PATH /t REG_EXPAND_SZ /d "%new_path%" /f
+
+rem Update the PATH value for the current session
+setx PATH "%new_path%" > nul
+
+del "%ffdownload_path%"
+echo %green_fg_strong%FFmpeg is installed. Please restart the Launcher.%reset%
+pause
+exit
+
+
+:installnodejs
+echo %blue_fg_strong%[INFO]%reset% Installing Node.js...
+winget install -e --id OpenJS.NodeJS
+echo %green_fg_strong%Node.js is installed. Please restart the Launcher.%reset%
+pause
+exit
+
+:editenvironment
+rundll32.exe sysdm.cpl,EditEnvironmentVariables
+goto :toolbox
+
+:reinstallsillytavern
+setlocal enabledelayedexpansion
+chcp 65001 > nul
+REM Define the names of items to be excluded
+set "script_name=%~nx0"
+set "excluded_folders=backups"
+set "excluded_files=!script_name!"
+
+REM Confirm with the user before proceeding
+echo.
+echo %red_bg%╔════ DANGER ZONE ══════════════════════════════════════════════════════════════════════════════╗%reset%
+echo %red_bg%║ WARNING: This will delete all data in the current branch except the Backups.                  ║%reset%
+echo %red_bg%║ If you want to keep any data, make sure to create a backup before proceeding.                 ║%reset%
+echo %red_bg%╚═══════════════════════════════════════════════════════════════════════════════════════════════╝%reset%
+echo.
+echo Are you sure you want to proceed? [Y/N] 
+set /p "confirmation="
+if /i "!confirmation!"=="Y" (
+    REM Remove non-excluded folders
+    for /d %%D in (*) do (
+        set "exclude_folder="
+        for %%E in (!excluded_folders!) do (
+            if "%%D"=="%%E" set "exclude_folder=true"
+        )
+        if not defined exclude_folder (
+            rmdir /s /q "%%D" 2>nul
+        )
+    )
+
+    REM Remove non-excluded files
+    for %%F in (*) do (
+        set "exclude_file="
+        for %%E in (!excluded_files!) do (
+            if "%%F"=="%%E" set "exclude_file=true"
+        )
+        if not defined exclude_file (
+            del /f /q "%%F" 2>nul
+        )
+    )
+
+    REM Clone repo into %temp% folder
+    git clone https://github.com/SillyTavern/SillyTavern.git "%temp%\SillyTavernTemp"
+
+    REM Move the contents of the temporary folder to the current directory
+    xcopy /e /y "%temp%\SillyTavernTemp\*" .
+
+    REM Clean up the temporary folder
+    rmdir /s /q "%temp%\SillyTavernTemp"
+
+    echo %green_fg_strong%SillyTavern reinstalled successfully!%reset%
+) else (
+    echo Reinstall canceled.
+)
+endlocal
+pause
+goto :toolbox
+
+
+:reinstallextras
+cls
+echo %blue_fg_strong%SillyTavern Extras%reset%
+echo ---------------------------------------------------------------
+echo %blue_fg_strong%[INFO]%reset% Installing SillyTavern Extras...
+echo --------------------------------
+echo %cyan_fg_strong%This may take a while. Please be patient.%reset%
+
+winget install -e --id Anaconda.Miniconda3
+
+REM Run conda activate from the Miniconda installation
+call "%miniconda_path%\Scripts\activate.bat"
+
+REM Create a Conda environment named sillytavernextras
+call conda create -n sillytavernextras -y
+
+REM Activate the sillytavernextras environment
+call conda activate sillytavernextras
+
+REM Install Python 3.11 and Git in the sillytavernextras environment
+call conda install python=3.11 git -y
+
+REM Clone the SillyTavern Extras repository
+git clone https://github.com/SillyTavern/SillyTavern-extras
+
+REM Navigate to the SillyTavern-extras directory
+cd SillyTavern-extras
+
+REM Install Python dependencies from requirements files
+pip install -r requirements-complete.txt
+pip install -r requirements-rvc.txt
+
+REM Start SillyTavern Extras with desired configurations
+python server.py --coqui-gpu --rvc-save-file --cuda-device=0 --max-content-length=1000 --enable-modules=caption,summarize,classify,rvc,coqui-tts --classification-model=joeddav/distilbert-base-uncased-go-emotions-student --share
+
+echo.
+echo %green_fg_strong%SillyTavern Extras have been successfully installed.%reset%
+pause
+goto :toolbox
