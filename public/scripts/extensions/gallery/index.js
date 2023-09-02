@@ -75,20 +75,8 @@ async function initGallery(items, url) {
         fnThumbnailOpen: viewWithDragbox,
     });
 
-    $(document).ready(function () {
-        $('.nGY2GThumbnailImage').on('click', function () {
-            let imageUrl = $(this).find('.nGY2GThumbnailImg').attr('src');
-            // Do what you want with the imageUrl, for example:
-            // Display it in a full-size view or replace the gallery grid content with this image
-            console.log(imageUrl);
-        });
-    });
 
     eventSource.on('resizeUI', function (elmntName) {
-        console.log('resizeUI saw', elmntName);
-        // Your logic here
-
-        // If you want to resize the nanogallery2 instance when this event is triggered:
         jQuery("#dragGallery").nanogallery2('resize');
     });
 
@@ -98,6 +86,8 @@ async function initGallery(items, url) {
     dropZone.off('dragleave');
     dropZone.off('drop');
 
+    // Set dropzone height to be the same as the parent
+    dropZone.css('height', dropZone.parent().css('height'));
 
     // Initialize dropzone handlers
     dropZone.on('dragover', function (e) {
