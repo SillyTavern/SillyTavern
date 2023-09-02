@@ -4388,7 +4388,7 @@ app.post('/horde_generateimage', jsonParser, async (request, response) => {
         const ai_horde = getHordeClient();
         const generation = await ai_horde.postAsyncImageGenerate(
             {
-                prompt: `${request.body.prompt_prefix} ${request.body.prompt} ### ${request.body.negative_prompt}`,
+                prompt: `${request.body.prompt} ### ${request.body.negative_prompt}`,
                 params:
                 {
                     sampler_name: request.body.sampler,
@@ -4438,6 +4438,238 @@ app.post('/horde_generateimage', jsonParser, async (request, response) => {
         return response.sendStatus(504);
     } catch (error) {
         console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+app.post('/api/novelai/generate-image', jsonParser, async (request, response) => {
+    if (!request.body) {
+        return response.sendStatus(400);
+    }
+
+    const key = readSecret(SECRET_KEYS.NOVEL);
+
+    if (!key) {
+        return response.sendStatus(401);
+    }
+
+    try {
+        console.log('NAI Diffusion request:', request.body);
+        const url = `${API_NOVELAI}/ai/generate-image`;
+        const result = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${key}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: 'generate',
+                input: request.body.prompt,
+                model: request.body.model ?? 'nai-diffusion',
+                parameters: {
+                    negative_prompt: request.body.negative_prompt ?? '',
+                    height: request.body.height ?? 512,
+                    width: request.body.width ?? 512,
+                    scale: request.body.scale ?? 9,
+                    seed: Math.floor(Math.random() * 9999999999),
+                    sampler: request.body.sampler ?? 'k_dpmpp_2m',
+                    steps: request.body.steps ?? 28,
+                    n_samples: 1,
+                    // NAI handholding for prompts
+                    ucPreset: 0,
+                    qualityToggle: false,
+                },
+            }),
+        });
+
+        if (!result.ok) {
+            return response.sendStatus(500);
+        }
+
+        const archiveBuffer = await result.arrayBuffer();
+
+        const imageBuffer = await new Promise((resolve, reject) => yauzl.fromBuffer(Buffer.from(archiveBuffer), { lazyEntries: true }, (err, zipfile) => {
+            if (err) {
+                reject(err);
+            }
+
+            zipfile.readEntry();
+            zipfile.on('entry', (entry) => {
+                if (entry.fileName.endsWith('.png')) {
+                    console.log(`Extracting ${entry.fileName}`);
+                    zipfile.openReadStream(entry, (err, readStream) => {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            const chunks = [];
+                            readStream.on('data', (chunk) => {
+                                chunks.push(chunk);
+                            });
+
+                            readStream.on('end', () => {
+                                const buffer = Buffer.concat(chunks);
+                                resolve(buffer);
+                                zipfile.readEntry(); // Continue to the next entry
+                            });
+                        }
+                    });
+                } else {
+                    zipfile.readEntry(); // Continue to the next entry
+                }
+            });
+        }));
+
+        const base64 = imageBuffer.toString('base64');
+        return response.send(base64);
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
+app.post('/api/sd/ping', jsonParser, async (request, response) => {
+    try {
+        const url = new URL(request.body.url);
+        url.pathname = '/internal/ping';
+
+        const result = await fetch(url);
+
+        if (!result.ok) {
+            throw new Error('SD WebUI returned an error.');
+        }
+
+        return response.sendStatus(200);
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
+app.post('/api/sd/samplers', jsonParser, async (request, response) => {
+    try {
+        const url = new URL(request.body.url);
+        url.pathname = '/sdapi/v1/samplers';
+
+        const result = await fetch(url);
+
+        if (!result.ok) {
+            throw new Error('SD WebUI returned an error.');
+        }
+
+        const data = await result.json();
+        const names = data.map(x => x.name);
+        return response.send(names);
+
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
+app.post('/api/sd/models', jsonParser, async (request, response) => {
+    try {
+        const url = new URL(request.body.url);
+        url.pathname = '/sdapi/v1/sd-models';
+
+        const result = await fetch(url);
+
+        if (!result.ok) {
+            throw new Error('SD WebUI returned an error.');
+        }
+
+        const data = await result.json();
+        const models = data.map(x => ({ value: x.title, text: x.title }));
+        return response.send(models);
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
+app.post('/api/sd/get-model', jsonParser, async (request, response) => {
+    try {
+        const url = new URL(request.body.url);
+        url.pathname = '/sdapi/v1/options';
+
+        const result = await fetch(url);
+        const data = await result.json();
+        return response.send(data['sd_model_checkpoint']);
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
+app.post('/api/sd/set-model', jsonParser, async (request, response) => {
+    try {
+        async function getProgress() {
+            const url = new URL(request.body.url);
+            url.pathname = '/sdapi/v1/progress';
+
+            const result = await fetch(url);
+            const data = await result.json();
+            return data;
+        }
+
+        const url = new URL(request.body.url);
+        url.pathname = '/sdapi/v1/options';
+
+        const options = {
+            sd_model_checkpoint: request.body.model,
+        };
+
+        const result = await fetch(url, {
+            method: 'POST',
+            body: JSON.stringify(options),
+            headers: { 'Content-Type': 'application/json' },
+        });
+
+        if (!result.ok) {
+            throw new Error('SD WebUI returned an error.');
+        }
+
+        const MAX_ATTEMPTS = 10;
+        const CHECK_INTERVAL = 2000;
+
+        for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+            const progressState = await getProgress();
+
+            const progress = progressState["progress"]
+            const jobCount = progressState["state"]["job_count"];
+            if (progress == 0.0 && jobCount === 0) {
+                break;
+            }
+
+            console.log(`Waiting for SD WebUI to finish model loading... Progress: ${progress}; Job count: ${jobCount}`);
+            await delay(CHECK_INTERVAL);
+        }
+
+        return response.sendStatus(200);
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
+app.post('/api/sd/generate', jsonParser, async (request, response) => {
+    try {
+        const url = new URL(request.body.url);
+        url.pathname = '/sdapi/v1/txt2img';
+
+        const result = await fetch(url, {
+            method: 'POST',
+            body: JSON.stringify(request.body),
+            headers: { 'Content-Type': 'application/json' },
+        });
+
+        if (!result.ok) {
+            throw new Error('SD WebUI returned an error.');
+        }
+
+        const data = await result.json();
+        return response.send(data);
+    } catch (error) {
+        console.log(error);
         return response.sendStatus(500);
     }
 });
