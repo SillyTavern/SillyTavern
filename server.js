@@ -1319,6 +1319,9 @@ async function tryReadImage(img_url, crop) {
             if (crop.want_resize) {
                 final_width = AVATAR_WIDTH
                 final_height = AVATAR_HEIGHT
+            } else {
+                final_width = crop.width;
+                final_height = crop.height;
             }
         }
 
