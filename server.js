@@ -309,8 +309,8 @@ function getTiktokenTokenizer(model) {
     return tokenizer;
 }
 
-function humanizedISO8601DateTime() {
-    let baseDate = new Date(Date.now());
+function humanizedISO8601DateTime(date = Date.now()) {
+    let baseDate = new Date(date);
     let humanYear = baseDate.getFullYear();
     let humanMonth = (baseDate.getMonth() + 1);
     let humanDate = baseDate.getDate();
@@ -923,7 +923,7 @@ function convertToV2(char) {
     });
 
     result.chat = char.chat ?? humanizedISO8601DateTime();
-    result.create_date = char.create_date || humanizedISO8601DateTime();
+    result.create_date = char.create_date ?? humanizedISO8601DateTime();
     return result;
 }
 
@@ -981,7 +981,7 @@ function readFromV2(char) {
     });
 
     char['chat'] = char['chat'] ?? humanizedISO8601DateTime();
-    char['create_date'] = char['create_date'] || humanizedISO8601DateTime();
+    char['create_date'] = char['create_date'] ?? humanizedISO8601DateTime();
 
     return char;
 }
@@ -1383,6 +1383,7 @@ const processCharacter = async (item, i) => {
         characters[i]['json_data'] = img_data;
         const charStat = fs.statSync(path.join(charactersPath, item));
         characters[i]['date_added'] = charStat.birthtimeMs;
+        characters[i]['create_date'] = jsonObject['create_date'] || humanizedISO8601DateTime(charStat.birthtimeMs);
         const char_dir = path.join(chatsPath, item.replace('.png', ''));
 
         const { chatSize, dateLastChat } = calculateChatSize(char_dir);
