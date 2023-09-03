@@ -943,6 +943,9 @@ async function generateExtrasImage(prompt) {
     url.pathname = '/api/image';
     const result = await doExtrasFetch(url, {
         method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
             prompt: prompt,
             sampler: extension_settings.sd.sampler,
