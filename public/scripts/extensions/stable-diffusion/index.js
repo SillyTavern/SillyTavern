@@ -163,6 +163,20 @@ const defaultSettings = {
     // AUTOMATIC1111 settings
     auto_url: 'http://localhost:7860',
     auto_auth: '',
+
+    hr_upscaler: 'Latent',
+    hr_scale: 2.0,
+    hr_scale_min: 1.0,
+    hr_scale_max: 4.0,
+    hr_scale_step: 0.1,
+    denoising_strength: 0.7,
+    denoising_strength_min: 0.0,
+    denoising_strength_max: 1.0,
+    denoising_strength_step: 0.01,
+    hr_second_pass_steps: 0,
+    hr_second_pass_steps_min: 0,
+    hr_second_pass_steps_max: 150,
+    hr_second_pass_steps_step: 1,
 }
 
 const getAutoRequestBody = () => ({ url: extension_settings.sd.auto_url, auth: extension_settings.sd.auto_auth });
@@ -209,6 +223,9 @@ async function loadSettings() {
     $('#sd_negative_prompt').val(extension_settings.sd.negative_prompt).trigger('input');
     $('#sd_width').val(extension_settings.sd.width).trigger('input');
     $('#sd_height').val(extension_settings.sd.height).trigger('input');
+    $('#sd_hr_scale').val(extension_settings.sd.hr_scale).trigger('input');
+    $('#sd_denoising_strength').val(extension_settings.sd.denoising_strength).trigger('input');
+    $('#sd_hr_second_pass_steps').val(extension_settings.sd.hr_second_pass_steps).trigger('input');
     $('#sd_horde').prop('checked', extension_settings.sd.horde);
     $('#sd_horde_nsfw').prop('checked', extension_settings.sd.horde_nsfw);
     $('#sd_horde_karras').prop('checked', extension_settings.sd.horde_karras);
@@ -402,6 +419,29 @@ function onAutoAuthInput() {
     saveSettingsDebounced();
 }
 
+function onHrUpscalerChange() {
+    extension_settings.sd.hr_upscaler = $('#sd_hr_upscaler').find(':selected').val();
+    saveSettingsDebounced();
+}
+
+function onHrScaleInput() {
+    extension_settings.sd.hr_scale = Number($('#sd_hr_scale').val());
+    $('#sd_hr_scale_value').text(extension_settings.sd.hr_scale.toFixed(1));
+    saveSettingsDebounced();
+}
+
+function onDenoisingStrengthInput() {
+    extension_settings.sd.denoising_strength = Number($('#sd_denoising_strength').val());
+    $('#sd_denoising_strength_value').text(extension_settings.sd.denoising_strength.toFixed(2));
+    saveSettingsDebounced();
+}
+
+function onHrSecondPassStepsInput() {
+    extension_settings.sd.hr_second_pass_steps = Number($('#sd_hr_second_pass_steps').val());
+    $('#sd_hr_second_pass_steps_value').text(extension_settings.sd.hr_second_pass_steps);
+    saveSettingsDebounced();
+}
+
 async function validateAutoUrl() {
     try {
         if (!extension_settings.sd.auto_url) {
@@ -463,6 +503,26 @@ async function getAutoRemoteModel() {
     } catch (error) {
         console.error(error);
         return null;
+    }
+}
+
+async function getAutoRemoteUpscalers() {
+    try {
+        const result = await fetch('/api/sd/upscalers', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify(getAutoRequestBody()),
+        });
+
+        if (!result.ok) {
+            throw new Error('SD WebUI returned an error.');
+        }
+
+        const data = await result.json();
+        return data;
+    } catch (error) {
+        console.error(error);
+        return [extension_settings.sd.hr_upscaler];
     }
 }
 
@@ -688,6 +748,20 @@ async function loadAutoModels() {
 
         if (!result.ok) {
             throw new Error('SD WebUI returned an error.');
+        }
+
+        const upscalers = await getAutoRemoteUpscalers();
+
+        if (Array.isArray(upscalers) && upscalers.length > 0) {
+            $('#sd_hr_upscaler').empty();
+
+            for (const upscaler of upscalers) {
+                const option = document.createElement('option');
+                option.innerText = upscaler;
+                option.value = upscaler;
+                option.selected = upscaler === extension_settings.sd.hr_upscaler;
+                $('#sd_hr_upscaler').append(option);
+            }
         }
 
         const data = await result.json();
@@ -957,6 +1031,10 @@ async function generateExtrasImage(prompt) {
             restore_faces: !!extension_settings.sd.restore_faces,
             enable_hr: !!extension_settings.sd.enable_hr,
             karras: !!extension_settings.sd.horde_karras,
+            hr_upscaler: extension_settings.sd.hr_upscaler,
+            hr_scale: extension_settings.sd.hr_scale,
+            denoising_strength: extension_settings.sd.denoising_strength,
+            hr_second_pass_steps: extension_settings.sd.hr_second_pass_steps,
         }),
     });
 
@@ -1020,8 +1098,12 @@ async function generateAutoImage(prompt) {
             cfg_scale: extension_settings.sd.scale,
             width: extension_settings.sd.width,
             height: extension_settings.sd.height,
-            enable_hr: !!extension_settings.sd.enable_hr,
             restore_faces: !!extension_settings.sd.restore_faces,
+            enable_hr: !!extension_settings.sd.enable_hr,
+            hr_upscaler: extension_settings.sd.hr_upscaler,
+            hr_scale: extension_settings.sd.hr_scale,
+            denoising_strength: extension_settings.sd.denoising_strength,
+            hr_second_pass_steps: extension_settings.sd.hr_second_pass_steps,
             // Ensure generated img is saved to disk
             save_images: true,
             send_images: true,
@@ -1275,6 +1357,10 @@ jQuery(async () => {
     $('#sd_auto_validate').on('click', validateAutoUrl);
     $('#sd_auto_url').on('input', onAutoUrlInput);
     $('#sd_auto_auth').on('input', onAutoAuthInput);
+    $('#sd_hr_upscaler').on('change', onHrUpscalerChange);
+    $('#sd_hr_scale').on('input', onHrScaleInput);
+    $('#sd_denoising_strength').on('input', onDenoisingStrengthInput);
+    $('#sd_hr_second_pass_steps').on('input', onHrSecondPassStepsInput);
     $('#sd_character_prompt_block').hide();
 
     $('.sd_settings .inline-drawer-toggle').on('click', function () {

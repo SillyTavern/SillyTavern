@@ -60,6 +60,10 @@
             <input id="sd_width" type="range" max="{{dimension_max}}" min="{{dimension_min}}" step="{{dimension_step}}" value="{{width}}" />
             <label for="sd_height">Height (<span id="sd_height_value"></span>)</label>
             <input id="sd_height" type="range" max="{{dimension_max}}" min="{{dimension_min}}" step="{{dimension_step}}" value="{{height}}" />
+            <label for="sd_model">Stable Diffusion model</label>
+            <select id="sd_model"></select>
+            <label for="sd_sampler">Sampling method</label>
+            <select id="sd_sampler"></select>
             <div class="flex-container marginTop10 margin-bot-10px">
                 <label class="flex1 checkbox_label">
                     <input id="sd_restore_faces" type="checkbox" />
@@ -70,10 +74,16 @@
                     Hires. Fix
                 </label>
             </div>
-            <label for="sd_model">Stable Diffusion model</label>
-            <select id="sd_model"></select>
-            <label for="sd_sampler">Sampling method</label>
-            <select id="sd_sampler"></select>
+            <div data-sd-source="auto">
+                <label for="sd_hr_upscaler">Upscaler</label>
+                <select id="sd_hr_upscaler"></select>
+                <label for="sd_hr_scale">Upscale by (<span id="sd_hr_scale_value"></span>)</label>
+                <input id="sd_hr_scale" type="range" min="{{hr_scale_min}}" max="{{hr_scale_max}}" step="{{hr_scale_step}}" value="{{hr_scale}}" />
+                <label for="sd_denoising_strength">Denoising strength (<span id="sd_denoising_strength_value"></span>)</label>
+                <input id="sd_denoising_strength" type="range" min="{{denoising_strength_min}}" max="{{denoising_strength_max}}" step="{{denoising_strength_step}}" value="{{denoising_strength}}" />
+                <label for="sd_hr_second_pass_steps">Hires steps (2nd pass) (<span id="sd_hr_second_pass_steps_value"></span>)</label>
+                <input id="sd_hr_second_pass_steps" type="range" min="{{hr_second_pass_steps_min}}" max="{{hr_second_pass_steps_max}}" step="{{hr_second_pass_steps_max}}" value="{{hr_second_pass_steps}}" />
+            </div>
             <label for="sd_prompt_prefix">Common prompt prefix</label>
             <textarea id="sd_prompt_prefix" class="text_pole textarea_compact" rows="3"></textarea>
             <div id="sd_character_prompt_block">

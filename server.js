@@ -4563,6 +4563,60 @@ app.post('/api/sd/ping', jsonParser, async (request, response) => {
     }
 });
 
+app.post('/api/sd/upscalers', jsonParser, async (request, response) => {
+    try {
+        async function getUpscalerModels() {
+            const url = new URL(request.body.url);
+            url.pathname = '/sdapi/v1/upscalers';
+
+            const result = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': getBasicAuthHeader(request.body.auth),
+                },
+            });
+
+            if (!result.ok) {
+                throw new Error('SD WebUI returned an error.');
+            }
+
+            const data = await result.json();
+            const names = data.map(x => x.name);
+            return names;
+        }
+
+        async function getLatentUpscalers() {
+            const url = new URL(request.body.url);
+            url.pathname = '/sdapi/v1/latent-upscale-modes';
+
+            const result = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': getBasicAuthHeader(request.body.auth),
+                },
+            });
+
+            if (!result.ok) {
+                throw new Error('SD WebUI returned an error.');
+            }
+
+            const data = await result.json();
+            const names = data.map(x => x.name);
+            return names;
+        }
+
+        const [upscalers, latentUpscalers] = await Promise.all([getUpscalerModels(), getLatentUpscalers()]);
+
+        // 0 = None, then Latent Upscalers, then Upscalers
+        upscalers.splice(1, 0, ...latentUpscalers);
+
+        return response.send(upscalers);
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
 app.post('/api/sd/samplers', jsonParser, async (request, response) => {
     try {
         const url = new URL(request.body.url);
