@@ -705,7 +705,7 @@ function preparePromptsForChatCompletion({Scenario, charPersonality, name2, worl
     });
 
     // Persona Description
-    if (power_user.persona_description) {
+    if (power_user.persona_description && power_user.persona_description_position === persona_description_positions.IN_PROMPT) {
         systemPrompts.push({ role: 'system', content: power_user.persona_description, identifier: 'personaDescription' });
     }
 
