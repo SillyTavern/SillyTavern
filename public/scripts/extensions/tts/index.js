@@ -716,12 +716,14 @@ class VoiceMapEntry {
 
     addUI(voiceIds){
         let sanitizedName = sanitizeId(this.name)
+        let defaultOption = this.name === DEFAULT_VOICE_MARKER ?
+            '<option>disabled</option>' :
+            `<option>${DEFAULT_VOICE_MARKER}</option><option>disabled</option>`
         let template = `
             <div class='tts_voicemap_block_char flex-container flexGap5'>
                 <span id='tts_voicemap_char_${sanitizedName}'>${this.name}</span>
                 <select id='tts_voicemap_char_${sanitizedName}_voice'>
-                    <option>${DEFAULT_VOICE_MARKER}</option>
-                    <option>disabled</option>
+                    ${defaultOption}
                 </select>
             </div>
         `
@@ -808,7 +810,7 @@ export async function initVoiceMap(){
         } else if (character === DEFAULT_VOICE_MARKER) {
             voiceId = 'disabled'
         } else {
-            voiceId = '[Default Voice]'
+            voiceId = DEFAULT_VOICE_MARKER
         }
         const voiceMapEntry = new VoiceMapEntry(character, voiceId)
         voiceMapEntry.addUI(voiceIdsFromProvider)
