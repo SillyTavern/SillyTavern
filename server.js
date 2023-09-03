@@ -2289,17 +2289,31 @@ app.post("/dupecharacter", jsonParser, async function (request, response) {
         }
         let suffix = 1;
         let newFilename = filename;
+
+        // If filename ends with a _number, increment the number
+        const nameParts = path.basename(filename, path.extname(filename)).split('_');
+        const lastPart = nameParts[nameParts.length - 1];
+
+        let baseName;
+
+        if (!isNaN(Number(lastPart)) && nameParts.length > 1) {
+            suffix = parseInt(lastPart) + 1;
+            baseName = nameParts.slice(0, -1).join("_"); // construct baseName without suffix
+        } else {
+            baseName = nameParts.join("_"); // original filename is completely the baseName
+        }
+
+        newFilename = path.join(directories.characters, `${baseName}_${suffix}${path.extname(filename)}`);
+
         while (fs.existsSync(newFilename)) {
             let suffixStr = "_" + suffix;
-            let ext = path.extname(filename);
-            newFilename = filename.slice(0, -ext.length) + suffixStr + ext;
+            newFilename = path.join(directories.characters, `${baseName}${suffixStr}${path.extname(filename)}`);
             suffix++;
         }
-        fs.copyFile(filename, newFilename, (err) => {
-            if (err) throw err;
-            console.log(`${filename} was copied to ${newFilename}`);
-            response.sendStatus(200);
-        });
+
+        fs.copyFileSync(filename, newFilename);
+        console.log(`${filename} was copied to ${newFilename}`);
+        response.sendStatus(200);
     }
     catch (error) {
         console.error(error);
