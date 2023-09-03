@@ -897,7 +897,7 @@ async function generatePicture(_, trigger, message, callback) {
         const callbackOriginal = callback;
         callback = async function (prompt, base64Image) {
             const imagePath = base64Image;
-            const imgUrl = `url('${encodeURIComponent(base64Image)}')`;
+            const imgUrl = `url("${encodeURI(base64Image)}")`;
 
             if (typeof window['forceSetBackground'] === 'function') {
                 window['forceSetBackground'](imgUrl);
