@@ -6753,6 +6753,22 @@ function connectAPISlash(_, text) {
     toastr.info(`API set to ${text}, trying to connect..`);
 }
 
+export function processDroppedFiles(files) {
+    const allowedMimeTypes = [
+        'application/json',
+        'image/png',
+        'image/webp',
+    ];
+
+    for (const file of files) {
+        if (allowedMimeTypes.includes(file.type)) {
+            importCharacter(file);
+        } else {
+            toastr.warning('Unsupported file type: ' + file.name);
+        }
+    }
+}
+
 function importCharacter(file) {
     const ext = file.name.match(/\.(\w+)$/);
     if (
@@ -8798,21 +8814,6 @@ jQuery(async function () {
         processDroppedFiles(files);
     });
 
-    function processDroppedFiles(files) {
-        const allowedMimeTypes = [
-            'application/json',
-            'image/png',
-            'image/webp',
-        ];
-
-        for (const file of files) {
-            if (allowedMimeTypes.includes(file.type)) {
-                importCharacter(file);
-            } else {
-                toastr.warning('Unsupported file type: ' + file.name);
-            }
-        }
-    }
 
     $("#charListGridToggle").on('click', async () => {
         doCharListDisplaySwitch();
