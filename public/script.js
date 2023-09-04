@@ -285,6 +285,7 @@ export const event_types = {
     CHARACTER_EDITED: 'character_edited',
     USER_MESSAGE_RENDERED: 'user_message_rendered',
     CHARACTER_MESSAGE_RENDERED: 'character_message_rendered',
+    FORCE_SET_BACKGROUND: 'force_set_background,'
 }
 
 export const eventSource = new EventEmitter();

@@ -890,21 +890,17 @@ async function generatePicture(_, trigger, message, callback) {
         extension_settings.sd.height = Math.round(extension_settings.sd.width * 1.5 / 64) * 64;
     }
 
-    // Background images are always landscape
-    if (generationType == generationMode.BACKGROUND && aspectRatio <= 1) {
-        // Round to nearest multiple of 64
-        extension_settings.sd.width = Math.round(extension_settings.sd.height * 1.8 / 64) * 64;
+    if (generationType == generationMode.BACKGROUND) {
+        // Background images are always landscape
+        if (aspectRatio <= 1) {
+            // Round to nearest multiple of 64
+            extension_settings.sd.width = Math.round(extension_settings.sd.height * 1.8 / 64) * 64;
+        }
         const callbackOriginal = callback;
         callback = async function (prompt, base64Image) {
             const imagePath = base64Image;
             const imgUrl = `url("${encodeURI(base64Image)}")`;
-
-            if (typeof window['forceSetBackground'] === 'function') {
-                window['forceSetBackground'](imgUrl);
-            } else {
-                toastr.info('Background image will not be preserved.', '"Chat backgrounds" extension is disabled.');
-                $('#bg_custom').css('background-image', imgUrl);
-            }
+            eventSource.emit(event_types.FORCE_SET_BACKGROUND, imgUrl);
 
             if (typeof callbackOriginal === 'function') {
                 callbackOriginal(prompt, imagePath);
