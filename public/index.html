@@ -2065,8 +2065,8 @@
 
                         <div class="flex-container flex">
                             <div id="api_button_openai" class="menu_button" type="submit" data-i18n="Connect">Connect </div>
-                            <input data-source="openrouter" id="openrouter_authorize" class="menu_button" type="button" value="Authorize" title="Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai" data-i18n="[title]Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai">
-                            <input id="test_api_button" class="menu_button" type="button" value="Test Message" title="Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!" data-i18n="[title]Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!"> 
+                            <div data-source="openrouter" id="openrouter_authorize" class="menu_button" type="button" title="Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai" data-i18n="[title]Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai"><span data-i18n="Authorize">Authorize</span></div>
+                            <div id="test_api_button" class="menu_button" type="button"  title="Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!" data-i18n="[title]Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!" ><span data-i18n="Test Message">Test Message></span></div>
                         </div>
                         <div id="api_loading_openai" class=" api-load-icon fa-solid fa-hourglass fa-spin"></div>
                         <div class="online_status4">
@@ -2103,7 +2103,7 @@
                             <div class="preset_buttons">
                                 <select id="context_presets" data-preset-manager-for="context" class="flex1"></select>
                                 <input type="file" hidden data-preset-manager-file="context" accept=".json, .settings">
-                                <i id="context_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this preset for Instruct Mode."></i>
+                                <i id="context_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this preset for Instruct Mode." data-i18n="[title]Auto-select this preset for Instruct Mode."></i>
                                 <i data-newbie-hidden data-preset-manager-update="context" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
                                 <i data-newbie-hidden data-preset-manager-new="context" class="menu_button fa-solid fa-plus" title="Create new preset" data-i18n="[title]Create new preset"></i>
                                 <i data-newbie-hidden data-preset-manager-import="context" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
@@ -2153,7 +2153,7 @@
                             <div class="preset_buttons">
                                 <select id="instruct_presets" data-preset-manager-for="instruct" class="flex1"></select>
                                 <input type="file" hidden data-preset-manager-file="instruct" accept=".json, .settings">
-                                <i id="instruct_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this preset on API connection."></i>
+                                <i id="instruct_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this preset on API connection." data-i18n="[title]Auto-select this preset on API connection."></i>
                                 <i data-newbie-hidden data-preset-manager-update="instruct" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
                                 <i data-newbie-hidden data-preset-manager-new="instruct" class="menu_button fa-solid fa-plus" title="Create new preset" data-i18n="[title]Create new preset"></i>
                                 <i data-newbie-hidden data-preset-manager-import="instruct" class="menu_button fa-solid fa-file-import" title="Import preset" data-i18n="[title]Import preset"></i>
@@ -3083,9 +3083,9 @@
                             </div>
                             <div>
                                 <h4 data-i18n="Persona Description">Persona Description</h4>
-                                <textarea id="persona_description" name="persona_description" placeholder="Example:&#10;[{{user}} is a 28-year-old Romanian cat girl.]" class="text_pole textarea_compact" maxlength="5000" value="" autocomplete="off" rows="8"></textarea>
+                                <textarea id="persona_description" name="persona_description"  data-i18n="[placeholder]Example: [{{user}} is a 28-year-old Romanian cat girl.]" placeholder="Example:&#10;[{{user}} is a 28-year-old Romanian cat girl.]" class="text_pole textarea_compact" maxlength="5000" value="" autocomplete="off" rows="8"  placeholder=""></textarea>
                                 <div class="extension_token_counter">
-                                    Tokens: <span id="persona_description_token_count">0</span>
+                                    <span data-i18n="Tokens:">Tokens:</span> <span id="persona_description_token_count">0</span>
                                 </div>
                                 <div data-newbie-hidden>
                                     <label for="persona_description_position" data-i18n="Position:">Position:</label>
@@ -3108,7 +3108,7 @@
                         <div class="flex1">
                             <h4 class="title_restorable">
                                 <span data-i18n="Your Persona">Your Persona</span>
-                                <div class="menu_button menu_button_icon user_stats_button" title="Click for stats!">
+                                <div class="menu_button menu_button_icon user_stats_button" title="Click for stats!" data-i18n="[title]Click for stats!">
                                     <i class="fa-solid fa-ranking-star"></i><span data-i18n="Usage Stats">Usage Stats</span>
                                 </div>
                                 <div id="create_dummy_persona" class="menu_button menu_button_icon" title="Create a dummy persona" data-i18n="[title]Create a dummy persona">
@@ -3165,11 +3165,11 @@
                         </div>
                         <div id="result_info" class="flex-container" style="display: none;">
                             <span id="result_info_text" title="Token counts may be inaccurate and provided just for reference." data-i18n="[title]Token counts may be inaccurate and provided just for reference.">
-                                <strong id="result_info_total_tokens">Calculating...</strong> Total Tokens
+                                <strong id="result_info_total_tokens">Calculating...</strong> <span data-i18n="Total Tokens">Total Tokens</span>
                             </span>
-                            <a id="chartokenwarning" class="right_menu_button fa-solid fa-triangle-exclamation" href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-tokens" target="_blank" title="About Token 'Limits'"></a>
-                            <i title="Click for stats!" class="fa-solid fa-ranking-star right_menu_button rm_stats_button"></i>
-                            <i title="Toggle character info panel" id="hideCharPanelAvatarButton" class="fa-solid fa-eye right_menu_button"></i>
+                            <a id="chartokenwarning" class="right_menu_button fa-solid fa-triangle-exclamation" href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-tokens" target="_blank" title="About Token 'Limits'" data-i18n="[title]About Token 'Limits'"></a>
+                            <i title="Click for stats!" class="fa-solid fa-ranking-star right_menu_button rm_stats_button" data-i18n="[title]Click for stats!"></i>
+                            <i title="Toggle character info panel" id="hideCharPanelAvatarButton" class="fa-solid fa-eye right_menu_button" data-i18n="[title]Toggle character info panel"></i>
                         </div>
                     </div>
                 </div>
@@ -3182,7 +3182,7 @@
                             <div id="name_div">
                                 <input id="character_name_pole" name="ch_name" class="text_pole" data-i18n="[placeholder]Name this character" placeholder="Name this character" maxlength="50" value="" autocomplete="off">
                                 <div class="extension_token_counter">
-                                    Tokens: <span data-token-counter="character_name_pole">counting...</span>
+                                    <span data-i18n="Tokens:">Tokens:</span> <span data-token-counter="character_name_pole">counting...</span>
                                 </div>
                             </div>
 
@@ -3264,7 +3264,7 @@
 
                         <textarea id="description_textarea" data-i18n="[placeholder]Describe your character's physical and mental traits here." placeholder="Describe your character's physical and mental traits here." class="marginBot5" name="description" placeholder=""></textarea>
                         <div class="extension_token_counter">
-                            Tokens: <span data-token-counter="description_textarea">counting...</span>
+                            <span data-i18n="Tokens:">Tokens:</span> <span data-token-counter="description_textarea">counting...</span>
                         </div>
 
                         <div id="first_message_div" class="marginBot5 title_restorable">
@@ -3280,7 +3280,7 @@
                         </div>
                         <textarea id="firstmessage_textarea" data-i18n="[placeholder]This will be the first message from the character that starts every chat." placeholder="This will be the first message from the character that starts every chat." class="marginBot5" name="first_mes" placeholder=""></textarea>
                         <div class="extension_token_counter">
-                            Tokens: <span data-token-counter="firstmessage_textarea">counting...</span>
+                            <span data-i18n="Tokens:">Tokens:</span> <span data-token-counter="firstmessage_textarea">counting...</span>
                         </div>
 
                         <div id="spoiler_free_desc">
@@ -3448,7 +3448,7 @@
                     </div>
 
                     <div id="rm_print_characters_pagination">
-                        <i id="charListGridToggle" class="fa-solid fa-table-cells-large menu_button" title="Toggle character grid view"></i>
+                        <i id="charListGridToggle" class="fa-solid fa-table-cells-large menu_button" title="Toggle character grid view" data-i18n="[title]Toggle character grid view"></i>
                     </div>
                     <div id="rm_print_characters_block" class="flexFlowColumn"></div>
                 </div>
@@ -3495,14 +3495,14 @@
                     <h4 data-i18n="Main Prompt">Main Prompt</h4>
                     <textarea id="system_prompt_textarea" name="system_prompt" data-i18n="[placeholder]Any contents here will replace the default Main Prompt used for this character. (v2 spec: system_prompt)" placeholder="Any contents here will replace the default Main Prompt used for this character.&#10;(v2 spec: system_prompt)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="20000"></textarea>
                     <div class="extension_token_counter">
-                        Tokens: <span data-token-counter="system_prompt_textarea">counting...</span>
+                        <span data-i18n="Tokens:">Tokens:</span> <span data-token-counter="system_prompt_textarea">counting...</span>
                     </div>
                 </div>
                 <div>
                     <h4 data-i18n="Jailbreak">Jailbreak</h4>
                     <textarea id="post_history_instructions_textarea" name="post_history_instructions" data-i18n="[placeholder]Any contents here will replace the default Jailbreak Prompt used for this character. (v2 spec: post_history_instructions)" placeholder="Any contents here will replace the default Jailbreak Prompt used for this character.&#10;(v2 spec: post_history_instructions)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="20000"></textarea>
                     <div class="extension_token_counter">
-                        Tokens: <span data-token-counter="post_history_instructions_textarea">counting...</span>
+                        <span data-i18n="Tokens:">Tokens:</span> <span data-token-counter="post_history_instructions_textarea">counting...</span>
                     </div>
                 </div>
             </div>
@@ -3548,7 +3548,7 @@
             </h4>
             <textarea id="personality_textarea" name="personality" data-i18n="[placeholder](A brief description of the personality)" placeholder="(A brief description of the personality)" form="form_create" class="text_pole" autocomplete="off" rows="1" maxlength="20000"></textarea>
             <div class="extension_token_counter">
-                Tokens: <span data-token-counter="personality_textarea">counting...</span>
+                <span data-i18n="Tokens:">Tokens:</span> <span data-token-counter="personality_textarea">counting...</span>
             </div>
         </div>
 
@@ -3561,7 +3561,7 @@
             </h4>
             <textarea id="scenario_pole" name="scenario" data-i18n="[placeholder](Circumstances and context of the interaction)" placeholder="(Circumstances and context of the interaction)" class="text_pole" maxlength="20000" value="" autocomplete="off" form="form_create" rows="1"></textarea>
             <div class="extension_token_counter">
-                Tokens: <span data-token-counter="scenario_pole">counting...</span>
+                <span data-i18n="Tokens:">Tokens:</span> <span data-token-counter="scenario_pole">counting...</span>
             </div>
         </div>
 
@@ -3584,7 +3584,7 @@
             </div>
             <textarea id="mes_example_textarea" class="flexGrow" name="mes_example" data-i18n="[placeholder](Examples of chat dialog. Begin each example with START on a new line.)" placeholder="(Examples of chat dialog. Begin each example with &lt;START&gt; on a new line.)" form="form_create" maxlength="20000" rows="6"></textarea>
             <div class="extension_token_counter">
-                Tokens: <span data-token-counter="mes_example_textarea">counting...</span>
+                <span data-i18n="Tokens:">Tokens:</span> <span data-token-counter="mes_example_textarea">counting...</span>
             </div>
         </div>
         <div id="character_popup_ok" class="menu_button" data-i18n="Save">Save</div>
@@ -3781,7 +3781,7 @@
                                         <small>
                                             <span data-i18n="Content">
                                                 Content
-                                                <span>(Tokens:&nbsp; <span class="world_entry_form_token_counter" data-first-run="true">counting...</span>)
+                                                <span>(<span data-i18n="Tokens:">Tokens:</span>&nbsp; <span class="world_entry_form_token_counter" data-first-run="true">counting...</span>)
                                                 </span>
                                             </span>
                                         </small>
@@ -4142,7 +4142,7 @@
     </div>
 
     <div id="hotswap_template" class="template_element">
-        <div class="hotswapAvatar" title="Add a character/group to favorites to display it here!">
+        <div class="hotswapAvatar" title="Add a character/group to favorites to display it here!" data-i18n="[title]Add a character/group to favorites to display it here!">
             <img src="/img/ai4.png">
         </div>
     </div>
@@ -4199,7 +4199,7 @@
                         </small>
                         <textarea id="extension_floating_prompt" class="text_pole" rows="8" maxlength="10000"></textarea>
                         <div class="extension_token_counter">
-                            Tokens: <span id="extension_floating_prompt_token_counter">0</span>
+                            <span data-i18n="Tokens:">Tokens:</span> <span id="extension_floating_prompt_token_counter">0</span>
                         </div>
 
                         <div class="floating_prompt_radio_group">
@@ -4234,7 +4234,7 @@
 
                         <textarea id="extension_floating_chara" class="text_pole" rows="8" maxlength="10000" placeholder="Example:&#10;[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
                         <div class="extension_token_counter">
-                            Tokens: <span id="extension_floating_chara_token_counter">0</span>
+                            <span data-i18n="Tokens:">Tokens:</span> <span id="extension_floating_chara_token_counter">0</span>
                         </div>
 
                         <label class="checkbox_label" for="extension_use_floating_chara">
@@ -4268,7 +4268,7 @@
 
                         <textarea id="extension_floating_default" class="text_pole" rows="8" maxlength="10000" placeholder="Example:&#10;[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
                         <div class="extension_token_counter">
-                            Tokens: <span id="extension_floating_default_token_counter">0</span>
+                            <span data-i18n="Tokens:">Tokens:</span> <span id="extension_floating_default_token_counter">0</span>
                         </div>
                         <div class="floating_prompt_radio_group">
                             <label>
