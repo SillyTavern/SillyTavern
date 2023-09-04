@@ -14,9 +14,10 @@ import {
 } from "../../../script.js";
 import { getApiUrl, getContext, extension_settings, doExtrasFetch, modules, renderExtensionTemplate } from "../../extensions.js";
 import { selected_group } from "../../group-chats.js";
-import { stringFormat, initScrollHeight, resetScrollHeight, timestampToMoment, getCharaFilename, saveBase64AsFile } from "../../utils.js";
+import { stringFormat, initScrollHeight, resetScrollHeight, getCharaFilename, saveBase64AsFile } from "../../utils.js";
 import { getMessageTimeStamp, humanizedDateTime } from "../../RossAscends-mods.js";
 import { SECRET_KEYS, secret_state } from "../../secrets.js";
+import { getNovelUnlimitedImageGeneration, getNovelAnlas, loadNovelSubscriptionData } from "../../nai-settings.js";
 export { MODULE_NAME };
 
 // Wraps a string into monospace font-face span
@@ -177,6 +178,13 @@ const defaultSettings = {
     hr_second_pass_steps_min: 0,
     hr_second_pass_steps_max: 150,
     hr_second_pass_steps_step: 1,
+
+    // NovelAI settings
+    novel_upscale_ratio_min: 1.0,
+    novel_upscale_ratio_max: 4.0,
+    novel_upscale_ratio_step: 0.1,
+    novel_upscale_ratio: 1.0,
+    novel_anlas_guard: false,
 }
 
 const getAutoRequestBody = () => ({ url: extension_settings.sd.auto_url, auth: extension_settings.sd.auto_auth });
@@ -226,6 +234,8 @@ async function loadSettings() {
     $('#sd_hr_scale').val(extension_settings.sd.hr_scale).trigger('input');
     $('#sd_denoising_strength').val(extension_settings.sd.denoising_strength).trigger('input');
     $('#sd_hr_second_pass_steps').val(extension_settings.sd.hr_second_pass_steps).trigger('input');
+    $('#sd_novel_upscale_ratio').val(extension_settings.sd.novel_upscale_ratio).trigger('input');
+    $('#sd_novel_anlas_guard').prop('checked', extension_settings.sd.novel_anlas_guard);
     $('#sd_horde').prop('checked', extension_settings.sd.horde);
     $('#sd_horde_nsfw').prop('checked', extension_settings.sd.horde_nsfw);
     $('#sd_horde_karras').prop('checked', extension_settings.sd.horde_karras);
@@ -387,6 +397,31 @@ async function onSourceChange() {
     toggleSourceControls();
     saveSettingsDebounced();
     await Promise.all([loadModels(), loadSamplers()]);
+}
+
+async function onViewAnlasClick() {
+    const result = await loadNovelSubscriptionData();
+
+    if (!result) {
+        toastr.warning('Are you subscribed?', 'Could not load NovelAI subscription data');
+        return;
+    }
+
+    const anlas = getNovelAnlas();
+    const unlimitedGeneration = getNovelUnlimitedImageGeneration();
+
+    toastr.info(`Free image generation: ${unlimitedGeneration ? 'Yes' : 'No'}`, `Anlas: ${anlas}`);
+}
+
+function onNovelUpscaleRatioInput() {
+    extension_settings.sd.novel_upscale_ratio = Number($('#sd_novel_upscale_ratio').val());
+    $('#sd_novel_upscale_ratio_value').text(extension_settings.sd.novel_upscale_ratio.toFixed(1));
+    saveSettingsDebounced();
+}
+
+function onNovelAnlasGuardInput() {
+    extension_settings.sd.novel_anlas_guard = !!$('#sd_novel_anlas_guard').prop('checked');
+    saveSettingsDebounced();
 }
 
 async function onHordeNsfwInput() {
@@ -642,7 +677,7 @@ async function loadAutoSamplers() {
 
 async function loadNovelSamplers() {
     if (!secret_state[SECRET_KEYS.NOVEL]) {
-        toastr.warning('NovelAI API key is not set.');
+        console.debug('NovelAI API key is not set.');
         return [];
     }
 
@@ -773,7 +808,7 @@ async function loadAutoModels() {
 
 async function loadNovelModels() {
     if (!secret_state[SECRET_KEYS.NOVEL]) {
-        toastr.warning('NovelAI API key is not set.');
+        console.debug('NovelAI API key is not set.');
         return [];
     }
 
@@ -1123,6 +1158,8 @@ async function generateAutoImage(prompt) {
  * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
  */
 async function generateNovelImage(prompt) {
+    const { steps, width, height } = getNovelParams();
+
     const result = await fetch('/api/novelai/generate-image', {
         method: 'POST',
         headers: getRequestHeaders(),
@@ -1130,11 +1167,12 @@ async function generateNovelImage(prompt) {
             prompt: prompt,
             model: extension_settings.sd.model,
             sampler: extension_settings.sd.sampler,
-            steps: extension_settings.sd.steps,
+            steps: steps,
             scale: extension_settings.sd.scale,
-            width: extension_settings.sd.width,
-            height: extension_settings.sd.height,
+            width: width,
+            height: height,
             negative_prompt: extension_settings.sd.negative_prompt,
+            upscale_ratio: extension_settings.sd.novel_upscale_ratio,
         }),
     });
 
@@ -1144,6 +1182,61 @@ async function generateNovelImage(prompt) {
     } else {
         throw new Error();
     }
+}
+
+/**
+ * Adjusts extension parameters for NovelAI. Applies Anlas guard if needed.
+ * @returns {{steps: number, width: number, height: number}} - A tuple of parameters for NovelAI API.
+ */
+function getNovelParams() {
+    let steps = extension_settings.sd.steps;
+    let width = extension_settings.sd.width;
+    let height = extension_settings.sd.height;
+
+    // Don't apply Anlas guard if it's disabled.d
+    if (!extension_settings.sd.novel_anlas_guard) {
+        return { steps, width, height };
+    }
+
+    const MAX_STEPS = 28;
+    const MAX_PIXELS = 409600;
+
+    if (width * height > MAX_PIXELS) {
+        const ratio = Math.sqrt(MAX_PIXELS / (width * height));
+
+        // Calculate new width and height while maintaining aspect ratio.
+        var newWidth = Math.round(width * ratio);
+        var newHeight = Math.round(height * ratio);
+
+        // Ensure new dimensions are multiples of 64. If not, reduce accordingly.
+        if (newWidth % 64 !== 0) {
+            newWidth = newWidth - newWidth % 64;
+        }
+
+        if (newHeight % 64 !== 0) {
+            newHeight = newHeight - newHeight % 64;
+        }
+
+        // If total pixel count after rounding still exceeds MAX_PIXELS, decrease dimension size by 64 accordingly.
+        while (newWidth * newHeight > MAX_PIXELS) {
+            if (newWidth > newHeight) {
+                newWidth -= 64;
+            } else {
+                newHeight -= 64;
+            }
+        }
+
+        console.log(`Anlas Guard: Image size (${width}x${height}) > ${MAX_PIXELS}, reducing size to ${newWidth}x${newHeight}`);
+        width = newWidth;
+        height = newHeight;
+    }
+
+    if (steps > MAX_STEPS) {
+        console.log(`Anlas Guard: Steps (${steps}) > ${MAX_STEPS}, reducing steps to ${MAX_STEPS}`);
+        steps = MAX_STEPS;
+    }
+
+    return { steps, width, height };
 }
 
 async function sendMessage(prompt, image) {
@@ -1357,6 +1450,9 @@ jQuery(async () => {
     $('#sd_hr_scale').on('input', onHrScaleInput);
     $('#sd_denoising_strength').on('input', onDenoisingStrengthInput);
     $('#sd_hr_second_pass_steps').on('input', onHrSecondPassStepsInput);
+    $('#sd_novel_upscale_ratio').on('input', onNovelUpscaleRatioInput);
+    $('#sd_novel_anlas_guard').on('input', onNovelAnlasGuardInput);
+    $('#sd_novel_view_anlas').on('click', onViewAnlasClick);
     $('#sd_character_prompt_block').hide();
 
     $('.sd_settings .inline-drawer-toggle').on('click', function () {

@@ -98,8 +98,8 @@ import {
     loadNovelPreset,
     loadNovelSettings,
     nai_settings,
-    setNovelData,
     adjustNovelInstructionPrompt,
+    loadNovelSubscriptionData,
 } from "./scripts/nai-settings.js";
 
 import {
@@ -635,7 +635,7 @@ let online_status = "no_connection";
 let api_server = "";
 let api_server_textgenerationwebui = "";
 //var interval_timer = setInterval(getStatus, 2000);
-let interval_timer_novel = setInterval(getStatusNovel, 90000);
+//let interval_timer_novel = setInterval(getStatusNovel, 90000);
 let is_get_status = false;
 let is_get_status_novel = false;
 let is_api_button_press = false;
@@ -5343,32 +5343,19 @@ export async function displayPastChats() {
 //************************************************************
 async function getStatusNovel() {
     if (is_get_status_novel) {
-        const data = {};
+        try {
+            const result = await loadNovelSubscriptionData();
 
-        jQuery.ajax({
-            type: "POST", //
-            url: "/getstatus_novelai", //
-            data: JSON.stringify(data),
-            beforeSend: function () {
+            if (!result) {
+                throw new Error('Could not load subscription data');
+            }
 
-            },
-            cache: false,
-            dataType: "json",
-            contentType: "application/json",
-            success: function (data) {
-                if (data.error != true) {
-                    setNovelData(data);
-                    online_status = `${getNovelTier(data.tier)}`;
-                }
-                resultCheckStatusNovel();
-            },
-            error: function (jqXHR, exception) {
-                online_status = "no_connection";
-                console.log(exception);
-                console.log(jqXHR);
-                resultCheckStatusNovel();
-            },
-        });
+            online_status = getNovelTier();
+        } catch {
+            online_status = "no_connection";
+        }
+
+        resultCheckStatusNovel();
     } else {
         if (is_get_status != true && is_get_status_openai != true) {
             online_status = "no_connection";

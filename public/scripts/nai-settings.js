@@ -1,7 +1,6 @@
 import {
     getRequestHeaders,
     getStoppingStrings,
-    max_context,
     novelai_setting_names,
     saveSettingsDebounced,
     setGenerationParamsFromPreset
@@ -15,13 +14,6 @@ import {
     uuidv4,
 } from "./utils.js";
 
-export {
-    nai_settings,
-    loadNovelPreset,
-    loadNovelSettings,
-    getNovelTier,
-};
-
 const default_preamble = "[ Style: chat, complex, sensory, visceral ]";
 const default_order = [1, 5, 0, 2, 3, 4];
 const maximum_output_length = 150;
@@ -32,7 +24,7 @@ const default_presets = {
     "kayra-v1": "Carefree-Kayra"
 }
 
-const nai_settings = {
+export const nai_settings = {
     temperature: 1.5,
     repetition_penalty: 2.25,
     repetition_penalty_range: 2048,
@@ -84,11 +76,33 @@ export function getKayraMaxContextTokens() {
     return null;
 }
 
-function getNovelTier(tier) {
-    return nai_tiers[tier] ?? 'no_connection';
+export function getNovelTier() {
+    return nai_tiers[novel_data?.tier] ?? 'no_connection';
 }
 
-function loadNovelPreset(preset) {
+export function getNovelAnlas() {
+    return novel_data?.trainingStepsLeft?.fixedTrainingStepsLeft ?? 0;
+}
+
+export function getNovelUnlimitedImageGeneration() {
+    return novel_data?.perks?.unlimitedImageGeneration ?? false;
+}
+
+export async function loadNovelSubscriptionData() {
+    const result = await fetch('/getstatus_novelai', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+    });
+
+    if (result.ok) {
+        const data = await result.json();
+        setNovelData(data);
+    }
+
+    return result.ok;
+}
+
+export function loadNovelPreset(preset) {
     if (preset.genamt === undefined) {
         const needsUnlock = preset.max_context > MAX_CONTEXT_DEFAULT;
         $("#amount_gen").val(preset.max_length).trigger('input');
@@ -124,7 +138,7 @@ function loadNovelPreset(preset) {
     loadNovelSettingsUi(nai_settings);
 }
 
-function loadNovelSettings(settings) {
+export function loadNovelSettings(settings) {
     //load the rest of the Novel settings without any checks
     nai_settings.model_novel = settings.model_novel;
     $('#model_novel_select').val(nai_settings.model_novel);

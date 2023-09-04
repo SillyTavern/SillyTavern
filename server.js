@@ -4484,8 +4484,8 @@ app.post('/api/novelai/generate-image', jsonParser, async (request, response) =>
 
     try {
         console.log('NAI Diffusion request:', request.body);
-        const url = `${API_NOVELAI}/ai/generate-image`;
-        const result = await fetch(url, {
+        const generateUrl = `${API_NOVELAI}/ai/generate-image`;
+        const generateResult = await fetch(generateUrl, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${key}`,
@@ -4511,45 +4511,50 @@ app.post('/api/novelai/generate-image', jsonParser, async (request, response) =>
             }),
         });
 
-        if (!result.ok) {
+        if (!generateResult.ok) {
+            console.log('NovelAI returned an error.', generateResult.statusText);
             return response.sendStatus(500);
         }
 
-        const archiveBuffer = await result.arrayBuffer();
+        const archiveBuffer = await generateResult.arrayBuffer();
+        const imageBuffer = await extractFileFromZipBuffer(archiveBuffer, '.png');
+        const originalBase64 = imageBuffer.toString('base64');
 
-        const imageBuffer = await new Promise((resolve, reject) => yauzl.fromBuffer(Buffer.from(archiveBuffer), { lazyEntries: true }, (err, zipfile) => {
-            if (err) {
-                reject(err);
+        // No upscaling
+        if (isNaN(request.body.upscale_ratio) || request.body.upscale_ratio <= 1) {
+            return response.send(originalBase64);
+        }
+
+        try {
+            console.debug('Upscaling image...');
+            const upscaleUrl = `${API_NOVELAI}/ai/upscale`;
+            const upscaleResult = await fetch(upscaleUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${key}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    image: originalBase64,
+                    height: request.body.height,
+                    width: request.body.width,
+                    scale: request.body.upscale_ratio,
+                }),
+            });
+
+            if (!upscaleResult.ok) {
+                throw new Error('NovelAI returned an error.');
             }
 
-            zipfile.readEntry();
-            zipfile.on('entry', (entry) => {
-                if (entry.fileName.endsWith('.png')) {
-                    console.log(`Extracting ${entry.fileName}`);
-                    zipfile.openReadStream(entry, (err, readStream) => {
-                        if (err) {
-                            reject(err);
-                        } else {
-                            const chunks = [];
-                            readStream.on('data', (chunk) => {
-                                chunks.push(chunk);
-                            });
+            const upscaledArchiveBuffer = await upscaleResult.arrayBuffer();
+            const upscaledImageBuffer = await extractFileFromZipBuffer(upscaledArchiveBuffer, '.png');
+            const upscaledBase64 = upscaledImageBuffer.toString('base64');
 
-                            readStream.on('end', () => {
-                                const buffer = Buffer.concat(chunks);
-                                resolve(buffer);
-                                zipfile.readEntry(); // Continue to the next entry
-                            });
-                        }
-                    });
-                } else {
-                    zipfile.readEntry(); // Continue to the next entry
-                }
-            });
-        }));
-
-        const base64 = imageBuffer.toString('base64');
-        return response.send(base64);
+            return response.send(upscaledBase64);
+        } catch (error) {
+            console.warn('NovelAI generated an image, but upscaling failed. Returning original image.');
+            return response.send(originalBase64)
+        }
     } catch (error) {
         console.log(error);
         return response.sendStatus(500);
@@ -5102,6 +5107,45 @@ app.post('/import_custom', jsonParser, async (request, response) => {
         return response.sendStatus(500);
     }
 });
+
+/**
+ * Extracts a file with given extension from an ArrayBuffer containing a ZIP archive.
+ * @param {ArrayBuffer} archiveBuffer Buffer containing a ZIP archive
+ * @param {string} fileExtension File extension to look for
+ * @returns {Promise<Buffer>} Buffer containing the extracted file
+ */
+async function extractFileFromZipBuffer(archiveBuffer, fileExtension) {
+    return await new Promise((resolve, reject) => yauzl.fromBuffer(Buffer.from(archiveBuffer), { lazyEntries: true }, (err, zipfile) => {
+        if (err) {
+            reject(err);
+        }
+
+        zipfile.readEntry();
+        zipfile.on('entry', (entry) => {
+            if (entry.fileName.endsWith(fileExtension)) {
+                console.log(`Extracting ${entry.fileName}`);
+                zipfile.openReadStream(entry, (err, readStream) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        const chunks = [];
+                        readStream.on('data', (chunk) => {
+                            chunks.push(chunk);
+                        });
+
+                        readStream.on('end', () => {
+                            const buffer = Buffer.concat(chunks);
+                            resolve(buffer);
+                            zipfile.readEntry(); // Continue to the next entry
+                        });
+                    }
+                });
+            } else {
+                zipfile.readEntry();
+            }
+        });
+    }));
+}
 
 async function downloadChubLorebook(id) {
     const result = await fetch('https://api.chub.ai/api/lorebooks/download', {

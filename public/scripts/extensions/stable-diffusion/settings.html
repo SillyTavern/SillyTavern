@@ -50,6 +50,18 @@
                 </label>
             </div>
             <div data-sd-source="novel">
+                <div class="flex-container">
+                    <label for="sd_novel_anlas_guard" class="checkbox_label flex1" title="Automatically adjust generation parameters to ensure free image generations.">
+                        <input id="sd_novel_anlas_guard" type="checkbox" />
+                        <span data-i18n="Avoid spending Anlas">
+                            Avoid spending Anlas
+                        </span>
+                        <span data-i18n="Opus tier" class="toggle-description">(Opus tier)</span>
+                    </label>
+                    <div id="sd_novel_view_anlas" class="menu_button menu_button_icon">
+                        View my Anlas
+                    </div>
+                </div>
                 <i>Hint: Save an API key in the NovelAI API settings to use it here.</i>
             </div>
             <label for="sd_scale">CFG Scale (<span id="sd_scale_value"></span>)</label>
@@ -83,6 +95,10 @@
                 <input id="sd_denoising_strength" type="range" min="{{denoising_strength_min}}" max="{{denoising_strength_max}}" step="{{denoising_strength_step}}" value="{{denoising_strength}}" />
                 <label for="sd_hr_second_pass_steps">Hires steps (2nd pass) (<span id="sd_hr_second_pass_steps_value"></span>)</label>
                 <input id="sd_hr_second_pass_steps" type="range" min="{{hr_second_pass_steps_min}}" max="{{hr_second_pass_steps_max}}" step="{{hr_second_pass_steps_max}}" value="{{hr_second_pass_steps}}" />
+            </div>
+            <div data-sd-source="novel">
+                <label for="sd_novel_upscale_ratio">Upscale by (<span id="sd_novel_upscale_ratio_value"></span>)</label>
+                <input id="sd_novel_upscale_ratio" type="range" min="{{novel_upscale_ratio_min}}" max="{{novel_upscale_ratio_max}}" step="{{novel_upscale_ratio_step}}" value="{{novel_upscale_ratio}}" />
             </div>
             <label for="sd_prompt_prefix">Common prompt prefix</label>
             <textarea id="sd_prompt_prefix" class="text_pole textarea_compact" rows="3"></textarea>
