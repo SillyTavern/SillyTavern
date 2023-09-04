@@ -69,10 +69,10 @@ async function onDeleteButtonClick() {
  */
 function addButtons() {
     const editButton = $(
-        "<i id='bulkEditButton' class='fa-solid fa-edit menu_button bulkEditButton' title='Bulk edit characters'></i>"
+        "<i id='bulkEditButton' class='fa-solid fa-edit menu_button bulkEditButton' data-i18n='[title]Bulk edit characters' title='Bulk edit characters'></i>"
     );
     const deleteButton = $(
-        "<i id='bulkDeleteButton' class='fa-solid fa-trash menu_button bulkDeleteButton' title='Bulk delete characters' style='display: none;'></i>"
+        "<i id='bulkDeleteButton' class='fa-solid fa-trash menu_button bulkDeleteButton' data-i18n='[title]Bulk delete characters' title='Bulk delete characters' style='display: none;'></i>"
     );
 
     $("#charListGridToggle").after(editButton, deleteButton);
