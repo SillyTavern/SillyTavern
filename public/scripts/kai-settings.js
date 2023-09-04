@@ -80,9 +80,9 @@ export function loadKoboldSettings(preset) {
         kai_settings.streaming_kobold = preset.streaming_kobold;
         $('#streaming_kobold').prop('checked', kai_settings.streaming_kobold);
     }
-    if (preset.hasOwnProperty('use_default_badwordids')) {
-        kai_settings.use_default_badwordids = preset.use_default_badwordids;
-        $('#use_default_badwordids').prop('checked', kai_settings.use_default_badwordids);
+    if (preset.hasOwnProperty('use_default_badwordsids')) {
+        kai_settings.use_default_badwordsids = preset.use_default_badwordsids;
+        $('#use_default_badwordsids').prop('checked', kai_settings.use_default_badwordsids);
     }
 }
 
@@ -351,9 +351,9 @@ jQuery(function () {
         saveSettingsDebounced();
     });
 
-    $('#use_default_badwordids').on("input", function () {
+    $('#use_default_badwordsids').on("input", function () {
         const value = !!$(this).prop('checked');
-        kai_settings.use_default_badwordids = value;
+        kai_settings.use_default_badwordsids = value;
         saveSettingsDebounced();
     });
 

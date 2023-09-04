@@ -2066,6 +2066,10 @@ grammarly-extension {
 }
 
 /* Override toastr default styles */
+body #toast-container {
+    top: var(--topBarBlockSize);
+}
+
 body #toast-container>div {
     opacity: 0.95;
 }
@@ -3588,4 +3592,20 @@ a {
     width: 100%;
     height: 100%;
     object-fit: cover;
+}
+
+/* Jank mobile support for gallery and future draggables */
+@media screen and (max-width: 1000px) {
+    #gallery {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+        z-index: 9999;
+    }
+    .draggable {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+        z-index: 9999;        
+    }
 }

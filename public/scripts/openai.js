@@ -705,7 +705,7 @@ function preparePromptsForChatCompletion({Scenario, charPersonality, name2, worl
     });
 
     // Persona Description
-    if (power_user.persona_description) {
+    if (power_user.persona_description && power_user.persona_description_position === persona_description_positions.IN_PROMPT) {
         systemPrompts.push({ role: 'system', content: power_user.persona_description, identifier: 'personaDescription' });
     }
 
@@ -1417,7 +1417,7 @@ class Message {
         this.role = role;
         this.content = content;
 
-        if (typeof this.content === 'string') {
+        if (typeof this.content === 'string' && this.content.length > 0) {
             this.tokens = tokenHandler.count({ role: this.role, content: this.content });
         } else {
             this.tokens = 0;

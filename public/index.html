@@ -1019,8 +1019,8 @@
                                         </label>
                                     </div>
                                     <div class="range-block">
-                                        <label class="checkbox_label" for="use_default_badwordids">
-                                            <input id="use_default_badwordids" type="checkbox" />
+                                        <label class="checkbox_label" for="use_default_badwordsids">
+                                            <input id="use_default_badwordsids" type="checkbox" />
                                             <span data-i18n="Ban EOS Token">
                                                 Ban EOS Token
                                             </span>
@@ -1049,7 +1049,7 @@
                                         </div>
                                         <div class="range-block-range-and-counter">
                                             <div class="range-block-range">
-                                                <input type="range" id="mirostat_tau_kobold" name="volume" min="0" max="10" step="0.01" />
+                                                <input type="range" id="mirostat_tau_kobold" name="volume" min="0" max="20" step="0.01" />
                                             </div>
                                             <div class="range-block-counter">
                                                 <div contenteditable="true" data-for="mirostat_tau_kobold" id="mirostat_tau_counter_kobold">
@@ -1587,7 +1587,7 @@
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
-                                            <input type="range" id="mirostat_tau_textgenerationwebui" name="volume" min="0" max="10" step="0.01" />
+                                            <input type="range" id="mirostat_tau_textgenerationwebui" name="volume" min="0" max="20" step="0.01" />
                                         </div>
                                         <div class="range-block-counter">
                                             <div contenteditable="true" data-for="mirostat_tau_textgenerationwebui" id="mirostat_tau_counter_textgenerationwebui">
@@ -2151,13 +2151,13 @@
                     </a>
                 </h3>
                 <div class="flex-container">
-                    <div name="PygOverrides" class="flex1">
+                    <div id="PygOverrides">
                         <div>
                             <h4 data-i18n="Context Template">
                                 Context Template
                             </h4>
                             <div class="preset_buttons flex-container">
-                                <select id="context_presets" data-preset-manager-for="context" class="flex1 widthFitContent"></select>
+                                <select id="context_presets" data-preset-manager-for="context" class="flex1"></select>
                                 <input type="file" hidden data-preset-manager-file="context" accept=".json, .settings">
                                 <i id="context_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this preset for Instruct Mode."></i>
                                 <i data-newbie-hidden data-preset-manager-update="context" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
@@ -2357,7 +2357,7 @@
                                                 <small data-i18n="Stop Sequence">Stop Sequence</small>
                                             </label>
                                             <div>
-                                                <textarea id="instruct_stop_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="200k0" placeholder="&mdash;" rows="1"></textarea>
+                                                <textarea id="instruct_stop_sequence" class="text_pole textarea_compact autoSetHeight" maxlength="2000" placeholder="&mdash;" rows="1"></textarea>
                                             </div>
                                         </div>
                                         <div class="flex1">
@@ -2374,7 +2374,7 @@
 
                         </div>
                     </div>
-                    <div name="ContextFormatting" class="flex1">
+                    <div id="ContextFormatting">
                         <div data-newbie-hidden>
                             <h4><span data-i18n="Tokenizer">Tokenizer</span>
                                 <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/#tokenizer" class="notes-link" target="_blank">
@@ -2701,7 +2701,7 @@
                     <div id="version_display"></div>
                 </div>
                 <div class="flex-container spaceEvenly">
-                    <div id="UI-Theme-Block" class="flex-container flexFlowColumn drawer33pWidth">
+                    <div id="UI-Theme-Block" class="flex-container flexFlowColumn wide100p">
                         <div id="color-picker-block" class="flex-container flexFlowColumn flexNoGap">
                             <div id="UI-Mode-Block">
                                 <h4 data-i18n="UI Mode">
@@ -2837,7 +2837,7 @@
                         </div>
 
                     </div>
-                    <div name="UI Customization" class="flex-container drawer33pWidth">
+                    <div id="UI-Customization" class="flex-container wide100p">
                         <div class="ui-settings">
                             <h4><span data-i18n="UI Customization">UI Customization</span></h4>
                             <div data-newbie-hidden class="range-block">
@@ -2966,14 +2966,13 @@
                                         <option value="-1" data-i18n="Always disabled">Always disabled</option>
                                         <option value="0" data-i18n="Automatic (desktop)">Automatic (desktop)</option>
                                         <option value="1" data-i18n="Always enabled">Always enabled</option>
-                                    </select>♦
+                                    </select>
                                 </div>
                             </div>
                         </div>
 
                     </div>
-
-                    <div id="power-user-options-block" class="flex-container drawer33pWidth">
+                    <div id="power-user-options-block" class="flex-container wide100p">
                         <div id="power-user-option-checkboxes">
                             <h4 data-i18n="Power User Options">Power User Options</h4>
                             <label data-newbie-hidden class="checkbox_label" for="swipes-checkbox">
@@ -3146,12 +3145,12 @@
                     </div>
                     <div class="alignitemsflexstart flex-container wide100p">
                         <input id="extensions_url" type="text" class="flex1 heightFitContent text_pole widthNatural" maxlength="250" data-i18n="[placeholder]Extensions URL" placeholder="Extensions URL">
-                        <input id="extensions_api_key" type="text" class="flex1 heightFitContent text_pole widthNatural" maxlength="250" data-i18n="[placeholder]API key" placeholder="API key">
-                        <div class="alignitemsflexstart extensions_url_block">
-                            <div class="" style="text-align: center">
-                                <input id="extensions_connect" class="menu_button" type="submit" data-i18n="Connect">Connect</input>
+                        <input id="extensions_api_key" type="text" class="flex1 heightFitContent text_pole widthNatural" maxlength="250" data-i18n="[placeholder]API key" placeholder="Extras API key">
+                        <div class="extensions_url_block">
+                            <div id="extensions_connect" class="menu_button" data-i18n="Connect">Connect</div>
+                            <div id="extensions_details" class="menu_button_icon menu_button">
+                                Manage extensions
                             </div>
-                            <input id="extensions_details" class="alignitemsflexstart menu_button" type="button" value="Manage extensions">
                             <div id="third_party_extension_button" title="Import Extension From Git Repo" class="menu_button fa-solid fa-cloud-arrow-down faSmallFontSquareFix"></div>
                         </div>
                     </div>
@@ -3533,8 +3532,8 @@
                             <select id="character_sort_order" title="Characters sorting order" data-i18n="[title]Characters sorting order">
                                 <option data-field="name" data-order="asc" data-i18n="A-Z">A-Z</option>
                                 <option data-field="name" data-order="desc" data-i18n="Z-A">Z-A</option>
-                                <option data-field="date_added" data-order="desc" data-i18n="Newest">Newest</option>
-                                <option data-field="date_added" data-order="asc" data-i18n="Oldest">Oldest</option>
+                                <option data-field="create_date" data-order="desc" data-i18n="Newest">Newest</option>
+                                <option data-field="create_date" data-order="asc" data-i18n="Oldest">Oldest</option>
                                 <option data-field="fav" data-order="desc" data-rule="boolean" data-i18n="Favorites">Favorites</option>
                                 <option data-field="date_last_chat" data-order="desc" data-i18n="Recent">Recent</option>
                                 <option data-field="chat_size" data-order="desc" data-i18n="Most chats">Most chats</option>
@@ -4536,6 +4535,7 @@
         toastr.options.extendedTimeOut = 10000; // How long the toast will display after a user hovers over it
         toastr.options.progressBar = true; // Visually indicate how long before a toast expires.
         toastr.options.closeButton = true; // enable a close button
+        toastr.options.positionClass = "toast-top-center"; // Where to position the toast container
     </script>
 
     <script>

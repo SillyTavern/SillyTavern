@@ -270,6 +270,16 @@
     }
 }
 
+@media screen and (min-width: 1001px) {
+    #PygOverrides,
+    #ContextFormatting,
+    #UI-Theme-Block,
+    #UI-Customization,
+    #power-user-options-block {
+        flex: 1;
+    }
+}
+
 /*landscape mode phones and ipads*/
 @media screen and (max-width: 1000px) and (orientation: landscape) {
     body.waifuMode img.expression {

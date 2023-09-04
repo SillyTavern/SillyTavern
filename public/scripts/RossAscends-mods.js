@@ -557,6 +557,12 @@ export function dragElement(elmnt) {
             //set a listener for mouseup to save new width/height
             elmnt.off('mouseup').on('mouseup', () => {
                 console.debug(`Saving ${elmntName} Height/Width`)
+                // check if the height or width actually changed
+                if (power_user.movingUIState[elmntName].width === width && power_user.movingUIState[elmntName].height === height) {
+                    console.debug('no change detected, aborting save')
+                    return
+                }
+
                 power_user.movingUIState[elmntName].width = width;
                 power_user.movingUIState[elmntName].height = height;
                 eventSource.emit('resizeUI', elmntName);
