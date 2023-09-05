@@ -4723,6 +4723,7 @@ function setUserAvatar() {
     saveSettingsDebounced();
     highlightSelectedAvatar();
     selectCurrentPersona();
+    $('.zoomed_avatar[forchar]').remove();
 }
 
 async function uploadUserAvatar(e) {
@@ -6423,7 +6424,7 @@ function swipe_left() {      // when we swipe left..but no generation.
 
                     const swipeMessage = $("#chat").find(`[mesid="${count_view_mes - 1}"]`);
                     const tokenCount = getTokenCount(chat[chat.length - 1].mes, 0);
-                    chat[chat.length -1]['extra']['token_count'] = tokenCount;
+                    chat[chat.length - 1]['extra']['token_count'] = tokenCount;
                     swipeMessage.find('.tokenCounterDisplay').text(`${tokenCount}t`);
                 }
 
@@ -6600,7 +6601,7 @@ const swipe_right = () => {
                         }
 
                         const tokenCount = getTokenCount(chat[chat.length - 1].mes, 0);
-                        chat[chat.length -1]['extra']['token_count'] = tokenCount;
+                        chat[chat.length - 1]['extra']['token_count'] = tokenCount;
                         swipeMessage.find('.tokenCounterDisplay').text(`${tokenCount}t`);
                     }
                 }
