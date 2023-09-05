@@ -3050,7 +3050,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             //console.log(thisPromptBits);
 
             itemizedPrompts.push(thisPromptBits);
-            console.log(`pushed prompt bits to itemizedPrompts array. Length is now: ${itemizedPrompts.length}`);
+            console.debug(`pushed prompt bits to itemizedPrompts array. Length is now: ${itemizedPrompts.length}`);
 
             if (main_api == 'openai') {
                 if (isStreamingEnabled() && type !== 'quiet') {
