@@ -604,7 +604,6 @@
         "proxy_password": "",
         "assistant_prefill": "",
         "use_ai21_tokenizer": false,
-        "exclude_assistant": false,
-        "nsfw_avoidance_prompt": "Avoid writing a NSFW/Smut reply. Creatively write around it NSFW/Smut scenarios in character."
+        "exclude_assistant": false
     }
 }
