@@ -3800,6 +3800,13 @@ function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete
             getMessage = getMessage.substring(0, getMessage.indexOf(power_user.instruct.stop_sequence));
         }
     }
+    // Hana: Only use the first sequence (should be <|model|>)
+    // of the prompt before <|user|> (as KoboldAI Lite does it).
+    if (isInstruct && power_user.instruct.input_sequence) {
+        if (getMessage.indexOf(power_user.instruct.input_sequence) != -1) {
+            getMessage = getMessage.substring(0, getMessage.indexOf(power_user.instruct.input_sequence));
+        }
+    }
     if (isInstruct && power_user.instruct.input_sequence && isImpersonate) {
         //getMessage = getMessage.replaceAll(power_user.instruct.input_sequence, '');
         power_user.instruct.input_sequence.split('\n')
