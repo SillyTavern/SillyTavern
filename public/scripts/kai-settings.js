@@ -80,9 +80,9 @@ export function loadKoboldSettings(preset) {
         kai_settings.streaming_kobold = preset.streaming_kobold;
         $('#streaming_kobold').prop('checked', kai_settings.streaming_kobold);
     }
-    if (preset.hasOwnProperty('use_default_badwordids')) {
-        kai_settings.use_default_badwordids = preset.use_default_badwordids;
-        $('#use_default_badwordids').prop('checked', kai_settings.use_default_badwordids);
+    if (preset.hasOwnProperty('use_default_badwordsids')) {
+        kai_settings.use_default_badwordsids = preset.use_default_badwordsids;
+        $('#use_default_badwordsids').prop('checked', kai_settings.use_default_badwordsids);
     }
 }
 
@@ -112,7 +112,7 @@ export function getKoboldGenerationData(finalPrompt, this_settings, this_amount_
         s7: sampler_order[6],
         use_world_info: false,
         singleline: kai_settings.single_line,
-        stop_sequence: kai_flags.can_use_stop_sequence ? getStoppingStrings(isImpersonate, false) : undefined,
+        stop_sequence: kai_flags.can_use_stop_sequence ? getStoppingStrings(isImpersonate) : undefined,
         streaming: kai_settings.streaming_kobold && kai_flags.can_use_streaming && type !== 'quiet',
         can_abort: kai_flags.can_use_streaming,
         mirostat: kai_flags.can_use_mirostat ?  kai_settings.mirostat : undefined,
@@ -351,9 +351,9 @@ jQuery(function () {
         saveSettingsDebounced();
     });
 
-    $('#use_default_badwordids').on("input", function () {
+    $('#use_default_badwordsids').on("input", function () {
         const value = !!$(this).prop('checked');
-        kai_settings.use_default_badwordids = value;
+        kai_settings.use_default_badwordsids = value;
         saveSettingsDebounced();
     });
 

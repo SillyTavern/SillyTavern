@@ -255,7 +255,7 @@ export function getTextGenGenerationData(finalPrompt, this_amount_gen, isImperso
         'negative_prompt': cfgValues?.negativePrompt ?? textgenerationwebui_settings.negative_prompt ?? '',
         'seed': textgenerationwebui_settings.seed,
         'add_bos_token': textgenerationwebui_settings.add_bos_token,
-        'stopping_strings': getStoppingStrings(isImpersonate, false),
+        'stopping_strings': getStoppingStrings(isImpersonate),
         'truncation_length': max_context,
         'ban_eos_token': textgenerationwebui_settings.ban_eos_token,
         'skip_special_tokens': textgenerationwebui_settings.skip_special_tokens,

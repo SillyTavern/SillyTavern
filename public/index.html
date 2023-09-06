@@ -769,22 +769,6 @@
                                             </div>
                                         </div>
                                         <div class="range-block m-t-1">
-                                            <div class="range-block">
-                                                <div class="range-block-title openai_restorable">
-                                                    <span>NSFW avoidance prompt</span>
-                                                    <div id="nsfw_avoidance_prompt_restore" title="Restore default prompt" data-i18n="[title]Restore default prompt" class="right_menu_button">
-                                                        <div class="fa-solid fa-clock-rotate-left"></div>
-                                                    </div>
-                                                </div>
-                                                <div class="toggle-description justifyLeft" data-i18n="Prompt that is used when the NSFW toggle is O">
-                                                    Prompt that is used when the NSFW toggle is OFF
-                                                </div>
-                                                <div class="wide100p">
-                                                    <textarea id="nsfw_avoidance_prompt_textarea" class="text_pole textarea_compact autoSetHeight" name="nsfw_prompt" rows="3" placeholder="&mdash;"></textarea>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="range-block m-t-1">
                                             <div class="range-block-title openai_restorable">
                                                 <span>New Chat</span>
                                                 <div id="newchat_prompt_restore" title="Restore new chat prompt" class="right_menu_button">
@@ -1019,8 +1003,8 @@
                                         </label>
                                     </div>
                                     <div class="range-block">
-                                        <label class="checkbox_label" for="use_default_badwordids">
-                                            <input id="use_default_badwordids" type="checkbox" />
+                                        <label class="checkbox_label" for="use_default_badwordsids">
+                                            <input id="use_default_badwordsids" type="checkbox" />
                                             <span data-i18n="Ban EOS Token">
                                                 Ban EOS Token
                                             </span>
@@ -1049,7 +1033,7 @@
                                         </div>
                                         <div class="range-block-range-and-counter">
                                             <div class="range-block-range">
-                                                <input type="range" id="mirostat_tau_kobold" name="volume" min="0" max="10" step="0.01" />
+                                                <input type="range" id="mirostat_tau_kobold" name="volume" min="0" max="20" step="0.01" />
                                             </div>
                                             <div class="range-block-counter">
                                                 <div contenteditable="true" data-for="mirostat_tau_kobold" id="mirostat_tau_counter_kobold">
@@ -1587,7 +1571,7 @@
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
-                                            <input type="range" id="mirostat_tau_textgenerationwebui" name="volume" min="0" max="10" step="0.01" />
+                                            <input type="range" id="mirostat_tau_textgenerationwebui" name="volume" min="0" max="20" step="0.01" />
                                         </div>
                                         <div class="range-block-counter">
                                             <div contenteditable="true" data-for="mirostat_tau_textgenerationwebui" id="mirostat_tau_counter_textgenerationwebui">
@@ -1821,8 +1805,6 @@
                                 </a>
                             </h4>
                             <select id="model_novel_select">
-                                <option value="euterpe-v2">Euterpe</option>
-                                <option value="krake-v2">Krake</option>
                                 <option value="clio-v1">Clio</option>
                                 <option value="kayra-v1">Kayra</option>
                             </select>
@@ -2151,13 +2133,13 @@
                     </a>
                 </h3>
                 <div class="flex-container">
-                    <div name="PygOverrides" class="flex1">
+                    <div id="PygOverrides">
                         <div>
                             <h4 data-i18n="Context Template">
                                 Context Template
                             </h4>
                             <div class="preset_buttons flex-container">
-                                <select id="context_presets" data-preset-manager-for="context" class="flex1 widthFitContent"></select>
+                                <select id="context_presets" data-preset-manager-for="context" class="flex1"></select>
                                 <input type="file" hidden data-preset-manager-file="context" accept=".json, .settings">
                                 <i id="context_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this preset for Instruct Mode."></i>
                                 <i data-newbie-hidden data-preset-manager-update="context" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
@@ -2374,7 +2356,7 @@
 
                         </div>
                     </div>
-                    <div name="ContextFormatting" class="flex1">
+                    <div id="ContextFormatting">
                         <div data-newbie-hidden>
                             <h4><span data-i18n="Tokenizer">Tokenizer</span>
                                 <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/#tokenizer" class="notes-link" target="_blank">
@@ -2484,22 +2466,6 @@
                                     Replace Macro in Custom Stopping Strings
                                 </span>
                             </label>
-                            <h4>
-                                <span data-i18n="Pygmalion Formatting">
-                                    Pygmalion Formatting
-                                </span>
-                            </h4>
-                            <select id="pygmalion_formatting">
-                                <option value="-1" data-i18n="Disabled for all models">
-                                    Disabled for all models
-                                </option>
-                                <option value="0" data-i18n="Automatic (based on model name)">
-                                    Automatic (based on model name)
-                                </option>
-                                <option value="1" data-i18n="Enabled for all models">
-                                    Enabled for all models
-                                </option>
-                            </select>
                         </div>
                         <div data-newbie-hidden>
                             <h4>
@@ -2701,7 +2667,7 @@
                     <div id="version_display"></div>
                 </div>
                 <div class="flex-container spaceEvenly">
-                    <div id="UI-Theme-Block" class="flex-container flexFlowColumn drawer33pWidth">
+                    <div id="UI-Theme-Block" class="flex-container flexFlowColumn wide100p">
                         <div id="color-picker-block" class="flex-container flexFlowColumn flexNoGap">
                             <div id="UI-Mode-Block">
                                 <h4 data-i18n="UI Mode">
@@ -2837,7 +2803,7 @@
                         </div>
 
                     </div>
-                    <div name="UI Customization" class="flex-container drawer33pWidth">
+                    <div id="UI-Customization" class="flex-container wide100p">
                         <div class="ui-settings">
                             <h4><span data-i18n="UI Customization">UI Customization</span></h4>
                             <div data-newbie-hidden class="range-block">
@@ -2966,14 +2932,13 @@
                                         <option value="-1" data-i18n="Always disabled">Always disabled</option>
                                         <option value="0" data-i18n="Automatic (desktop)">Automatic (desktop)</option>
                                         <option value="1" data-i18n="Always enabled">Always enabled</option>
-                                    </select>♦
+                                    </select>
                                 </div>
                             </div>
                         </div>
 
                     </div>
-
-                    <div id="power-user-options-block" class="flex-container drawer33pWidth">
+                    <div id="power-user-options-block" class="flex-container wide100p">
                         <div id="power-user-option-checkboxes">
                             <h4 data-i18n="Power User Options">Power User Options</h4>
                             <label data-newbie-hidden class="checkbox_label" for="swipes-checkbox">
@@ -3533,8 +3498,8 @@
                             <select id="character_sort_order" title="Characters sorting order" data-i18n="[title]Characters sorting order">
                                 <option data-field="name" data-order="asc" data-i18n="A-Z">A-Z</option>
                                 <option data-field="name" data-order="desc" data-i18n="Z-A">Z-A</option>
-                                <option data-field="date_added" data-order="desc" data-i18n="Newest">Newest</option>
-                                <option data-field="date_added" data-order="asc" data-i18n="Oldest">Oldest</option>
+                                <option data-field="create_date" data-order="desc" data-i18n="Newest">Newest</option>
+                                <option data-field="create_date" data-order="asc" data-i18n="Oldest">Oldest</option>
                                 <option data-field="fav" data-order="desc" data-rule="boolean" data-i18n="Favorites">Favorites</option>
                                 <option data-field="date_last_chat" data-order="desc" data-i18n="Recent">Recent</option>
                                 <option data-field="chat_size" data-order="desc" data-i18n="Most chats">Most chats</option>

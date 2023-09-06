@@ -193,6 +193,16 @@ function getOverrideHeaders(urlHost) {
     }
 }
 
+/**
+ * Encodes the Basic Auth header value for the given user and password.
+ * @param {string} auth username:password
+ * @returns {string} Basic Auth header value
+ */
+function getBasicAuthHeader(auth) {
+    const encoded = Buffer.from(`${auth}`).toString('base64');
+    return `Basic ${encoded}`;
+}
+
 //RossAscends: Added function to format dates used in files and chat timestamps to a humanized format.
 //Mostly I wanted this to be for file names, but couldn't figure out exactly where the filename save code was as everything seemed to be connected.
 //During testing, this performs the same as previous date.now() structure.
@@ -299,8 +309,8 @@ function getTiktokenTokenizer(model) {
     return tokenizer;
 }
 
-function humanizedISO8601DateTime() {
-    let baseDate = new Date(Date.now());
+function humanizedISO8601DateTime(date = Date.now()) {
+    let baseDate = new Date(date);
     let humanYear = baseDate.getFullYear();
     let humanMonth = (baseDate.getMonth() + 1);
     let humanDate = baseDate.getDate();
@@ -555,15 +565,14 @@ app.post("/generate", jsonParser, async function (request, response_generate) {
 
     const MAX_RETRIES = 50;
     const delayAmount = 2500;
-    let url, response;
     for (let i = 0; i < MAX_RETRIES; i++) {
         try {
-            url = request.body.streaming ? `${api_server}/extra/generate/stream` : `${api_server}/v1/generate`;
-            response = await fetch(url, { method: 'POST', timeout: 0, ...args });
+            const url = request.body.streaming ? `${api_server}/extra/generate/stream` : `${api_server}/v1/generate`;
+            const response = await fetch(url, { method: 'POST', timeout: 0, ...args });
 
             if (request.body.streaming) {
                 request.socket.on('close', function () {
-                    response.body.destroy(); // Close the remote stream
+                    if (response.body instanceof Readable) response.body.destroy(); // Close the remote stream
                     response_generate.end(); // End the Express response
                 });
 
@@ -630,7 +639,7 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
     if (request.header('X-Response-Streaming')) {
         const streamingUrlHeader = request.header('X-Streaming-URL');
         if (streamingUrlHeader === undefined) return response_generate.sendStatus(400);
-        const streamingUrl = streamingUrlHeader.replace("localhost", "127.0.0.1");
+        const streamingUrlString = streamingUrlHeader.replace("localhost", "127.0.0.1");
 
         response_generate.writeHead(200, {
             'Content-Type': 'text/plain;charset=utf-8',
@@ -639,7 +648,6 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
         });
 
         async function* readWebsocket() {
-            const streamingUrlString = request.header('X-Streaming-URL').replace("localhost", "127.0.0.1");
             const streamingUrl = new URL(streamingUrlString);
             const websocket = new WebSocket(streamingUrl);
 
@@ -915,7 +923,7 @@ function convertToV2(char) {
     });
 
     result.chat = char.chat ?? humanizedISO8601DateTime();
-    result.create_date = char.create_date;
+    result.create_date = char.create_date ?? humanizedISO8601DateTime();
     return result;
 }
 
@@ -973,7 +981,7 @@ function readFromV2(char) {
     });
 
     char['chat'] = char['chat'] ?? humanizedISO8601DateTime();
-    char['create_date'] = char['create_date'] || humanizedISO8601DateTime();
+    char['create_date'] = char['create_date'] ?? humanizedISO8601DateTime();
 
     return char;
 }
@@ -1309,6 +1317,9 @@ async function tryReadImage(img_url, crop) {
             if (crop.want_resize) {
                 final_width = AVATAR_WIDTH
                 final_height = AVATAR_HEIGHT
+            } else {
+                final_width = crop.width;
+                final_height = crop.height;
             }
         }
 
@@ -1372,6 +1383,7 @@ const processCharacter = async (item, i) => {
         characters[i]['json_data'] = img_data;
         const charStat = fs.statSync(path.join(charactersPath, item));
         characters[i]['date_added'] = charStat.birthtimeMs;
+        characters[i]['create_date'] = jsonObject['create_date'] || humanizedISO8601DateTime(charStat.birthtimeMs);
         const char_dir = path.join(chatsPath, item.replace('.png', ''));
 
         const { chatSize, dateLastChat } = calculateChatSize(char_dir);
@@ -1807,7 +1819,12 @@ app.post('/savequickreply', jsonParser, (request, response) => {
     return response.sendStatus(200);
 });
 
+/**
+ * @param {string} name Name of World Info file
+ * @param {object} entries Entries object
+ */
 function convertWorldInfoToCharacterBook(name, entries) {
+    /** @type {{ entries: object[]; name: string }} */
     const result = { entries: [], name };
 
     for (const index in entries) {
@@ -1989,7 +2006,7 @@ app.post("/generate_novelai", jsonParser, async function (request, response_gene
             response.body.pipe(response_generate_novel);
 
             request.socket.on('close', function () {
-                response.body.destroy(); // Close the remote stream
+                if (response.body instanceof Readable) response.body.destroy(); // Close the remote stream
                 response_generate_novel.end(); // End the Express response
             });
 
@@ -2220,7 +2237,8 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     importRisuSprites(jsonData);
                     unsetFavFlag(jsonData);
                     jsonData = readFromV2(jsonData);
-                    let char = JSON.stringify(jsonData);
+                    jsonData["create_date"] = humanizedISO8601DateTime();
+                    const char = JSON.stringify(jsonData);
                     await charaWrite(uploadPath, char, png_name, response, { file_name: png_name });
                     fs.unlinkSync(uploadPath);
                 } else if (jsonData.name !== undefined) {
@@ -2246,8 +2264,8 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                         "tags": jsonData.tags ?? '',
                     };
                     char = convertToV2(char);
-                    char = JSON.stringify(char);
-                    await charaWrite(uploadPath, char, png_name, response, { file_name: png_name });
+                    const charJSON = JSON.stringify(char);
+                    await charaWrite(uploadPath, charJSON, png_name, response, { file_name: png_name });
                     fs.unlinkSync(uploadPath);
                 } else {
                     console.log('Unknown character card format');
@@ -2276,17 +2294,31 @@ app.post("/dupecharacter", jsonParser, async function (request, response) {
         }
         let suffix = 1;
         let newFilename = filename;
+
+        // If filename ends with a _number, increment the number
+        const nameParts = path.basename(filename, path.extname(filename)).split('_');
+        const lastPart = nameParts[nameParts.length - 1];
+
+        let baseName;
+
+        if (!isNaN(Number(lastPart)) && nameParts.length > 1) {
+            suffix = parseInt(lastPart) + 1;
+            baseName = nameParts.slice(0, -1).join("_"); // construct baseName without suffix
+        } else {
+            baseName = nameParts.join("_"); // original filename is completely the baseName
+        }
+
+        newFilename = path.join(directories.characters, `${baseName}_${suffix}${path.extname(filename)}`);
+
         while (fs.existsSync(newFilename)) {
             let suffixStr = "_" + suffix;
-            let ext = path.extname(filename);
-            newFilename = filename.slice(0, -ext.length) + suffixStr + ext;
+            newFilename = path.join(directories.characters, `${baseName}${suffixStr}${path.extname(filename)}`);
             suffix++;
         }
-        fs.copyFile(filename, newFilename, (err) => {
-            if (err) throw err;
-            console.log(`${filename} was copied to ${newFilename}`);
-            response.sendStatus(200);
-        });
+
+        fs.copyFileSync(filename, newFilename);
+        console.log(`${filename} was copied to ${newFilename}`);
+        response.sendStatus(200);
     }
     catch (error) {
         console.error(error);
@@ -2379,6 +2411,7 @@ app.post("/exportcharacter", jsonParser, async function (request, response) {
         case 'json': {
             try {
                 let json = await charaRead(filename);
+                if (json === false || json === undefined) return response.sendStatus(400);
                 let jsonObject = getCharaCardV2(json5.parse(json));
                 return response.type('json').send(jsonObject)
             }
@@ -2389,6 +2422,7 @@ app.post("/exportcharacter", jsonParser, async function (request, response) {
         case 'webp': {
             try {
                 let json = await charaRead(filename);
+                if (json === false || json === undefined) return response.sendStatus(400);
                 let stringByteArray = utf8Encode.encode(json).toString();
                 let inputWebpPath = path.join(UPLOADS_PATH, `${Date.now()}_input.webp`);
                 let outputWebpPath = path.join(UPLOADS_PATH, `${Date.now()}_output.webp`);
@@ -2426,6 +2460,11 @@ app.post("/exportcharacter", jsonParser, async function (request, response) {
 app.post("/importgroupchat", urlencodedParser, function (request, response) {
     try {
         const filedata = request.file;
+
+        if (!filedata) {
+            return response.sendStatus(400);
+        }
+
         const chatname = humanizedISO8601DateTime();
         const pathToUpload = path.join(UPLOADS_PATH, filedata.filename);
         const pathToNewFile = path.join(directories.groupChats, `${chatname}.jsonl`);
@@ -2447,128 +2486,118 @@ app.post("/importchat", urlencodedParser, function (request, response) {
     let ch_name = request.body.character_name;
     let user_name = request.body.user_name || 'You';
 
-    if (filedata) {
+    if (!filedata) {
+        return response.sendStatus(400);
+    }
+
+    try {
+        const data = fs.readFileSync(path.join(UPLOADS_PATH, filedata.filename), 'utf8');
+
         if (format === 'json') {
-            fs.readFile(path.join(UPLOADS_PATH, filedata.filename), 'utf8', (err, data) => {
-
-                if (err) {
-                    console.log(err);
-                    response.send({ error: true });
+            const jsonData = json5.parse(data);
+            if (jsonData.histories !== undefined) {
+                //console.log('/importchat confirms JSON histories are defined');
+                const chat = {
+                    from(history) {
+                        return [
+                            {
+                                user_name: user_name,
+                                character_name: ch_name,
+                                create_date: humanizedISO8601DateTime(),
+                            },
+                            ...history.msgs.map(
+                                (message) => ({
+                                    name: message.src.is_human ? user_name : ch_name,
+                                    is_user: message.src.is_human,
+                                    is_name: true,
+                                    send_date: humanizedISO8601DateTime(),
+                                    mes: message.text,
+                                })
+                            )];
+                    }
                 }
 
-                const jsonData = json5.parse(data);
-                if (jsonData.histories !== undefined) {
-                    //console.log('/importchat confirms JSON histories are defined');
-                    const chat = {
-                        from(history) {
-                            return [
-                                {
-                                    user_name: user_name,
-                                    character_name: ch_name,
-                                    create_date: humanizedISO8601DateTime(),
-                                },
-                                ...history.msgs.map(
-                                    (message) => ({
-                                        name: message.src.is_human ? user_name : ch_name,
-                                        is_user: message.src.is_human,
-                                        is_name: true,
-                                        send_date: humanizedISO8601DateTime(),
-                                        mes: message.text,
-                                    })
-                                )];
-                        }
+                const newChats = [];
+                (jsonData.histories.histories ?? []).forEach((history) => {
+                    newChats.push(chat.from(history));
+                });
+
+                const errors = [];
+
+                for (const chat of newChats) {
+                    const filePath = `${chatsPath + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()} imported.jsonl`;
+                    const fileContent = chat.map(tryParse).filter(x => x).join('\n');
+
+                    try {
+                        writeFileAtomicSync(filePath, fileContent, 'utf8');
+                    } catch (err) {
+                        errors.push(err);
                     }
-
-                    const newChats = [];
-                    (jsonData.histories.histories ?? []).forEach((history) => {
-                        newChats.push(chat.from(history));
-                    });
-
-                    const errors = [];
-
-                    for (const chat of newChats) {
-                        const filePath = `${chatsPath + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()} imported.jsonl`;
-                        const fileContent = chat.map(tryParse).filter(x => x).join('\n');
-
-                        try {
-                            writeFileAtomicSync(filePath, fileContent, 'utf8');
-                        } catch (err) {
-                            errors.push(err);
-                        }
-                    }
-
-                    if (0 < errors.length) {
-                        response.send('Errors occurred while writing character files. Errors: ' + JSON.stringify(errors));
-                    }
-
-                    response.send({ res: true });
-                } else if (Array.isArray(jsonData.data_visible)) {
-                    // oobabooga's format
-                    const chat = [{
-                        user_name: user_name,
-                        character_name: ch_name,
-                        create_date: humanizedISO8601DateTime(),
-                    }];
-
-                    for (const arr of jsonData.data_visible) {
-                        if (arr[0]) {
-                            const userMessage = {
-                                name: user_name,
-                                is_user: true,
-                                is_name: true,
-                                send_date: humanizedISO8601DateTime(),
-                                mes: arr[0],
-                            };
-                            chat.push(userMessage);
-                        }
-                        if (arr[1]) {
-                            const charMessage = {
-                                name: ch_name,
-                                is_user: false,
-                                is_name: true,
-                                send_date: humanizedISO8601DateTime(),
-                                mes: arr[1],
-                            };
-                            chat.push(charMessage);
-                        }
-                    }
-
-                    writeFileAtomicSync(`${chatsPath + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()} imported.jsonl`, chat.map(JSON.stringify).join('\n'), 'utf8');
-
-                    response.send({ res: true });
-                } else {
-                    response.send({ error: true });
                 }
-            });
+
+                if (0 < errors.length) {
+                    response.send('Errors occurred while writing character files. Errors: ' + JSON.stringify(errors));
+                }
+
+                response.send({ res: true });
+            } else if (Array.isArray(jsonData.data_visible)) {
+                // oobabooga's format
+                /** @type {object[]} */
+                const chat = [{
+                    user_name: user_name,
+                    character_name: ch_name,
+                    create_date: humanizedISO8601DateTime(),
+                }];
+
+                for (const arr of jsonData.data_visible) {
+                    if (arr[0]) {
+                        const userMessage = {
+                            name: user_name,
+                            is_user: true,
+                            is_name: true,
+                            send_date: humanizedISO8601DateTime(),
+                            mes: arr[0],
+                        };
+                        chat.push(userMessage);
+                    }
+                    if (arr[1]) {
+                        const charMessage = {
+                            name: ch_name,
+                            is_user: false,
+                            is_name: true,
+                            send_date: humanizedISO8601DateTime(),
+                            mes: arr[1],
+                        };
+                        chat.push(charMessage);
+                    }
+                }
+
+                const chatContent = chat.map(obj => JSON.stringify(obj)).join('\n');
+                writeFileAtomicSync(`${chatsPath + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()} imported.jsonl`, chatContent, 'utf8');
+
+                response.send({ res: true });
+            } else {
+                console.log('Incorrect chat format .json');
+                return response.send({ error: true });
+            }
         }
+
         if (format === 'jsonl') {
-            //console.log(humanizedISO8601DateTime()+':imported chat format is JSONL');
-            const fileStream = fs.createReadStream(path.join(UPLOADS_PATH, filedata.filename));
-            const rl = readline.createInterface({
-                input: fileStream,
-                crlfDelay: Infinity
-            });
+            const line = data.split('\n')[0];
 
-            rl.once('line', (line) => {
-                let jsonData = json5.parse(line);
+            let jsonData = json5.parse(line);
 
-                if (jsonData.user_name !== undefined || jsonData.name !== undefined) {
-                    fs.copyFile(path.join(UPLOADS_PATH, filedata.filename), (`${chatsPath + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()}.jsonl`), (err) => {
-                        if (err) {
-                            response.send({ error: true });
-                            return console.log(err);
-                        } else {
-                            response.send({ res: true });
-                            return;
-                        }
-                    });
-                } else {
-                    response.send({ error: true });
-                    return;
-                }
-                rl.close();
-            });
+            if (jsonData.user_name !== undefined || jsonData.name !== undefined) {
+                fs.copyFileSync(path.join(UPLOADS_PATH, filedata.filename), (`${chatsPath + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()}.jsonl`));
+                response.send({ res: true });
+            } else {
+                console.log('Incorrect chat format .jsonl');
+                return response.send({ error: true });
+            }
         }
+    } catch (error) {
+        console.error(error);
+        return response.send({ error: true });
     }
 });
 
@@ -2837,7 +2866,7 @@ app.post('/getgroupchat', jsonParser, (request, response) => {
         const lines = data.split('\n');
 
         // Iterate through the array of strings and parse each line as JSON
-        const jsonData = lines.map(json5.parse);
+        const jsonData = lines.map(line => tryParse(line)).filter(x => x);
         return response.send(jsonData);
     } else {
         return response.send([]);
@@ -2942,7 +2971,7 @@ app.get('/discover_extensions', jsonParser, function (_, response) {
 });
 
 app.get('/get_sprites', jsonParser, function (request, response) {
-    const name = request.query.name;
+    const name = String(request.query.name);
     const spritesPath = path.join(directories.characters, name);
     let sprites = [];
 
@@ -3092,7 +3121,7 @@ async function generateThumbnail(type, file) {
 
         try {
             const image = await jimp.read(pathToOriginalFile);
-            buffer = await image.cover(mySize[0], mySize[1]).quality(95).getBufferAsync(mime.lookup('jpg'));
+            buffer = await image.cover(mySize[0], mySize[1]).quality(95).getBufferAsync('image/jpeg');
         }
         catch (inner) {
             console.warn(`Thumbnailer can not process the image: ${pathToOriginalFile}. Using original size`);
@@ -4388,7 +4417,7 @@ app.post('/horde_generateimage', jsonParser, async (request, response) => {
         const ai_horde = getHordeClient();
         const generation = await ai_horde.postAsyncImageGenerate(
             {
-                prompt: `${request.body.prompt_prefix} ${request.body.prompt} ### ${request.body.negative_prompt}`,
+                prompt: `${request.body.prompt} ### ${request.body.negative_prompt}`,
                 params:
                 {
                     sampler_name: request.body.sampler,
@@ -4438,6 +4467,330 @@ app.post('/horde_generateimage', jsonParser, async (request, response) => {
         return response.sendStatus(504);
     } catch (error) {
         console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+app.post('/api/novelai/generate-image', jsonParser, async (request, response) => {
+    if (!request.body) {
+        return response.sendStatus(400);
+    }
+
+    const key = readSecret(SECRET_KEYS.NOVEL);
+
+    if (!key) {
+        return response.sendStatus(401);
+    }
+
+    try {
+        console.log('NAI Diffusion request:', request.body);
+        const generateUrl = `${API_NOVELAI}/ai/generate-image`;
+        const generateResult = await fetch(generateUrl, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${key}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: 'generate',
+                input: request.body.prompt,
+                model: request.body.model ?? 'nai-diffusion',
+                parameters: {
+                    negative_prompt: request.body.negative_prompt ?? '',
+                    height: request.body.height ?? 512,
+                    width: request.body.width ?? 512,
+                    scale: request.body.scale ?? 9,
+                    seed: Math.floor(Math.random() * 9999999999),
+                    sampler: request.body.sampler ?? 'k_dpmpp_2m',
+                    steps: request.body.steps ?? 28,
+                    n_samples: 1,
+                    // NAI handholding for prompts
+                    ucPreset: 0,
+                    qualityToggle: false,
+                },
+            }),
+        });
+
+        if (!generateResult.ok) {
+            console.log('NovelAI returned an error.', generateResult.statusText);
+            return response.sendStatus(500);
+        }
+
+        const archiveBuffer = await generateResult.arrayBuffer();
+        const imageBuffer = await extractFileFromZipBuffer(archiveBuffer, '.png');
+        const originalBase64 = imageBuffer.toString('base64');
+
+        // No upscaling
+        if (isNaN(request.body.upscale_ratio) || request.body.upscale_ratio <= 1) {
+            return response.send(originalBase64);
+        }
+
+        try {
+            console.debug('Upscaling image...');
+            const upscaleUrl = `${API_NOVELAI}/ai/upscale`;
+            const upscaleResult = await fetch(upscaleUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${key}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    image: originalBase64,
+                    height: request.body.height,
+                    width: request.body.width,
+                    scale: request.body.upscale_ratio,
+                }),
+            });
+
+            if (!upscaleResult.ok) {
+                throw new Error('NovelAI returned an error.');
+            }
+
+            const upscaledArchiveBuffer = await upscaleResult.arrayBuffer();
+            const upscaledImageBuffer = await extractFileFromZipBuffer(upscaledArchiveBuffer, '.png');
+            const upscaledBase64 = upscaledImageBuffer.toString('base64');
+
+            return response.send(upscaledBase64);
+        } catch (error) {
+            console.warn('NovelAI generated an image, but upscaling failed. Returning original image.');
+            return response.send(originalBase64)
+        }
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
+app.post('/api/sd/ping', jsonParser, async (request, response) => {
+    try {
+        const url = new URL(request.body.url);
+        url.pathname = '/internal/ping';
+
+        const result = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': getBasicAuthHeader(request.body.auth),
+            }
+        });
+
+        if (!result.ok) {
+            throw new Error('SD WebUI returned an error.');
+        }
+
+        return response.sendStatus(200);
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
+app.post('/api/sd/upscalers', jsonParser, async (request, response) => {
+    try {
+        async function getUpscalerModels() {
+            const url = new URL(request.body.url);
+            url.pathname = '/sdapi/v1/upscalers';
+
+            const result = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': getBasicAuthHeader(request.body.auth),
+                },
+            });
+
+            if (!result.ok) {
+                throw new Error('SD WebUI returned an error.');
+            }
+
+            const data = await result.json();
+            const names = data.map(x => x.name);
+            return names;
+        }
+
+        async function getLatentUpscalers() {
+            const url = new URL(request.body.url);
+            url.pathname = '/sdapi/v1/latent-upscale-modes';
+
+            const result = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': getBasicAuthHeader(request.body.auth),
+                },
+            });
+
+            if (!result.ok) {
+                throw new Error('SD WebUI returned an error.');
+            }
+
+            const data = await result.json();
+            const names = data.map(x => x.name);
+            return names;
+        }
+
+        const [upscalers, latentUpscalers] = await Promise.all([getUpscalerModels(), getLatentUpscalers()]);
+
+        // 0 = None, then Latent Upscalers, then Upscalers
+        upscalers.splice(1, 0, ...latentUpscalers);
+
+        return response.send(upscalers);
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
+app.post('/api/sd/samplers', jsonParser, async (request, response) => {
+    try {
+        const url = new URL(request.body.url);
+        url.pathname = '/sdapi/v1/samplers';
+
+        const result = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': getBasicAuthHeader(request.body.auth),
+            },
+        });
+
+        if (!result.ok) {
+            throw new Error('SD WebUI returned an error.');
+        }
+
+        const data = await result.json();
+        const names = data.map(x => x.name);
+        return response.send(names);
+
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
+app.post('/api/sd/models', jsonParser, async (request, response) => {
+    try {
+        const url = new URL(request.body.url);
+        url.pathname = '/sdapi/v1/sd-models';
+
+        const result = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': getBasicAuthHeader(request.body.auth),
+            },
+        });
+
+        if (!result.ok) {
+            throw new Error('SD WebUI returned an error.');
+        }
+
+        const data = await result.json();
+        const models = data.map(x => ({ value: x.title, text: x.title }));
+        return response.send(models);
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
+app.post('/api/sd/get-model', jsonParser, async (request, response) => {
+    try {
+        const url = new URL(request.body.url);
+        url.pathname = '/sdapi/v1/options';
+
+        const result = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': getBasicAuthHeader(request.body.auth),
+            },
+        });
+        const data = await result.json();
+        return response.send(data['sd_model_checkpoint']);
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
+app.post('/api/sd/set-model', jsonParser, async (request, response) => {
+    try {
+        async function getProgress() {
+            const url = new URL(request.body.url);
+            url.pathname = '/sdapi/v1/progress';
+
+            const result = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': getBasicAuthHeader(request.body.auth),
+                },
+            });
+            const data = await result.json();
+            return data;
+        }
+
+        const url = new URL(request.body.url);
+        url.pathname = '/sdapi/v1/options';
+
+        const options = {
+            sd_model_checkpoint: request.body.model,
+        };
+
+        const result = await fetch(url, {
+            method: 'POST',
+            body: JSON.stringify(options),
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': getBasicAuthHeader(request.body.auth),
+            },
+        });
+
+        if (!result.ok) {
+            throw new Error('SD WebUI returned an error.');
+        }
+
+        const MAX_ATTEMPTS = 10;
+        const CHECK_INTERVAL = 2000;
+
+        for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+            const progressState = await getProgress();
+
+            const progress = progressState["progress"]
+            const jobCount = progressState["state"]["job_count"];
+            if (progress == 0.0 && jobCount === 0) {
+                break;
+            }
+
+            console.log(`Waiting for SD WebUI to finish model loading... Progress: ${progress}; Job count: ${jobCount}`);
+            await delay(CHECK_INTERVAL);
+        }
+
+        return response.sendStatus(200);
+    } catch (error) {
+        console.log(error);
+        return response.sendStatus(500);
+    }
+});
+
+app.post('/api/sd/generate', jsonParser, async (request, response) => {
+    try {
+        console.log('SD WebUI request:', request.body);
+
+        const url = new URL(request.body.url);
+        url.pathname = '/sdapi/v1/txt2img';
+
+        const result = await fetch(url, {
+            method: 'POST',
+            body: JSON.stringify(request.body),
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': getBasicAuthHeader(request.body.auth),
+            },
+        });
+
+        if (!result.ok) {
+            throw new Error('SD WebUI returned an error.');
+        }
+
+        const data = await result.json();
+        return response.send(data);
+    } catch (error) {
+        console.log(error);
         return response.sendStatus(500);
     }
 });
@@ -4754,6 +5107,45 @@ app.post('/import_custom', jsonParser, async (request, response) => {
         return response.sendStatus(500);
     }
 });
+
+/**
+ * Extracts a file with given extension from an ArrayBuffer containing a ZIP archive.
+ * @param {ArrayBuffer} archiveBuffer Buffer containing a ZIP archive
+ * @param {string} fileExtension File extension to look for
+ * @returns {Promise<Buffer>} Buffer containing the extracted file
+ */
+async function extractFileFromZipBuffer(archiveBuffer, fileExtension) {
+    return await new Promise((resolve, reject) => yauzl.fromBuffer(Buffer.from(archiveBuffer), { lazyEntries: true }, (err, zipfile) => {
+        if (err) {
+            reject(err);
+        }
+
+        zipfile.readEntry();
+        zipfile.on('entry', (entry) => {
+            if (entry.fileName.endsWith(fileExtension)) {
+                console.log(`Extracting ${entry.fileName}`);
+                zipfile.openReadStream(entry, (err, readStream) => {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        const chunks = [];
+                        readStream.on('data', (chunk) => {
+                            chunks.push(chunk);
+                        });
+
+                        readStream.on('end', () => {
+                            const buffer = Buffer.concat(chunks);
+                            resolve(buffer);
+                            zipfile.readEntry(); // Continue to the next entry
+                        });
+                    }
+                });
+            } else {
+                zipfile.readEntry();
+            }
+        });
+    }));
+}
 
 async function downloadChubLorebook(id) {
     const result = await fetch('https://api.chub.ai/api/lorebooks/download', {

@@ -450,9 +450,9 @@ export function dragElement(elmnt) {
         topbar, topbarWidth, topBarFirstX, topBarLastX, topBarLastY, sheldWidth;
 
     var elmntName = elmnt.attr('id');
-    console.log(`dragElement called for ${elmntName}`);
+    console.debug(`dragElement called for ${elmntName}`);
     const elmntNameEscaped = $.escapeSelector(elmntName);
-    console.log(`dragElement escaped name: ${elmntNameEscaped}`);
+    console.debug(`dragElement escaped name: ${elmntNameEscaped}`);
     const elmntHeader = $(`#${elmntNameEscaped}header`);
 
     if (elmntHeader.length) {
@@ -557,6 +557,12 @@ export function dragElement(elmnt) {
             //set a listener for mouseup to save new width/height
             elmnt.off('mouseup').on('mouseup', () => {
                 console.debug(`Saving ${elmntName} Height/Width`)
+                // check if the height or width actually changed
+                if (power_user.movingUIState[elmntName].width === width && power_user.movingUIState[elmntName].height === height) {
+                    console.debug('no change detected, aborting save')
+                    return
+                }
+
                 power_user.movingUIState[elmntName].width = width;
                 power_user.movingUIState[elmntName].height = height;
                 eventSource.emit('resizeUI', elmntName);

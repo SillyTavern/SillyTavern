@@ -199,7 +199,6 @@ async function translateProviderLibre(text, lang) {
     throw new Error(response.statusText);
 }
 
-
 async function translateProviderGoogle(text, lang) {
     const response = await fetch('/google_translate', {
         method: 'POST',
@@ -447,7 +446,9 @@ jQuery(() => {
     });
     $('#translate_url_button').on('click', async () => {
         const optionText = $('#translation_provider option:selected').text();
-        const url = await callPopup(`<h3>${optionText} API URL</h3>`, 'input');
+        const exampleURLs = {};
+        exampleURLs['libre'] = 'http://127.0.0.1:5000/translate';
+        const url = await callPopup(`<h3>${optionText} API URL</h3><i>Example: <tt>` + exampleURLs[extension_settings.translate.provider] + `</tt></i>`, 'input');
 
         if (url == false) {
             return;

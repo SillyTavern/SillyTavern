@@ -718,6 +718,10 @@ async function deleteWorldInfoEntry(data, uid) {
         return;
     }
 
+    if (!confirm(`Delete the entry with UID: ${uid}? This action is irreversible!`)) {
+        throw new Error("User cancelled deletion");
+    }
+
     delete data.entries[uid];
 }
 
