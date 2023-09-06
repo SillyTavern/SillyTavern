@@ -5820,7 +5820,7 @@ function showSwipeButtons() {
     const swipeId = chat[chat.length - 1].swipe_id;
     var swipesCounterHTML = (`${(swipeId + 1)}/${(chat[chat.length - 1].swipes.length)}`);
 
-    if (swipeId !== undefined && swipeId != 0) {
+    if (swipeId !== undefined && chat[chat.length - 1].swipes.length > 1) {
         currentMessage.children('.swipe_left').css('display', 'flex');
     }
     //only show right when generate is off, or when next right swipe would not make a generate happen
@@ -6380,6 +6380,11 @@ function swipe_left() {      // when we swipe left..but no generation.
     const swipe_duration = 120;
     const swipe_range = '700px';
     chat[chat.length - 1]['swipe_id']--;
+
+    if (chat[chat.length - 1]['swipe_id'] < 0) {
+        chat[chat.length - 1]['swipe_id'] = chat[chat.length - 1]['swipes'].length - 1;
+    }
+
     if (chat[chat.length - 1]['swipe_id'] >= 0) {
         /*$(this).parent().children('swipe_right').css('display', 'flex');
         if (chat[chat.length - 1]['swipe_id'] === 0) {
