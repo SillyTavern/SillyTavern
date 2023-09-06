@@ -417,7 +417,7 @@ export function getNovelGenerationData(finalPrompt, this_settings, this_amount_g
 
     const tokenizerType = kayra ? tokenizers.NERD2 : (clio ? tokenizers.NERD : tokenizers.NONE);
     const stopSequences = (tokenizerType !== tokenizers.NONE)
-        ? getStoppingStrings(isImpersonate, false)
+        ? getStoppingStrings(isImpersonate)
             .map(t => getTextTokens(tokenizerType, t))
         : undefined;
 

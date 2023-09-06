@@ -62,7 +62,6 @@ import {
     playMessageSound,
     fixMarkdown,
     power_user,
-    pygmalion_options,
     persona_description_positions,
     loadMovingUIState,
     getCustomStoppingStrings,
@@ -135,6 +134,7 @@ import {
     waitUntilCondition,
     escapeRegex,
     resetScrollHeight,
+    onlyUnique,
 } from "./scripts/utils.js";
 
 import { extension_settings, getContext, loadExtensionSettings, processExtensionHelpers, registerExtensionHelper, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
@@ -1794,7 +1794,7 @@ function diceRollReplace(input, invalidRollPlaceholder = '') {
     });
 }
 
-function getStoppingStrings(isImpersonate, addSpace) {
+function getStoppingStrings(isImpersonate) {
     const charString = `\n${name2}:`;
     const userString = `\n${name1}:`;
     const result = isImpersonate ? [charString] : [userString];
@@ -1821,7 +1821,7 @@ function getStoppingStrings(isImpersonate, addSpace) {
         result.push(...customStoppingStrings);
     }
 
-    return addSpace ? result.map(x => `${x} `) : result;
+    return result.filter(onlyUnique);
 }
 
 
@@ -3097,7 +3097,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     let title = extractTitleFromData(data);
                     kobold_horde_model = title;
 
-                    //Pygmalion run again
                     // to make it continue generating so long as it's under max_amount and hasn't signaled
                     // an end to the character's response via typing "You:" or adding "<endoftext>"
                     if (isMultigenEnabled() && type !== 'quiet') {
@@ -3870,7 +3869,7 @@ function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete
         getMessage = getMessage.trim();
     }
 
-    const stoppingStrings = getStoppingStrings(isImpersonate, false);
+    const stoppingStrings = getStoppingStrings(isImpersonate);
 
     for (const stoppingString of stoppingStrings) {
         if (stoppingString.length) {
