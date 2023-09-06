@@ -662,7 +662,6 @@ export let user_avatar = "you.png";
 export var amount_gen = 80; //default max length of AI generated responses
 var max_context = 2048;
 
-var is_pygmalion = false;
 var tokens_already_generated = 0;
 var message_already_generated = "";
 var cycle_count_generation = 0;
@@ -798,14 +797,6 @@ async function getStatus() {
 
                 // Determine instruct mode preset
                 autoSelectInstructPreset(online_status);
-
-                if ((online_status.toLowerCase().indexOf("pygmalion") != -1 && power_user.pygmalion_formatting == pygmalion_options.AUTO)
-                    || (online_status !== "no_connection" && power_user.pygmalion_formatting == pygmalion_options.ENABLED)) {
-                    is_pygmalion = true;
-                    online_status += " (Pyg. formatting on)";
-                } else {
-                    is_pygmalion = false;
-                }
 
                 // determine if we can use stop sequence and streaming
                 if (main_api === "kobold" || main_api === "koboldhorde") {
@@ -1805,15 +1796,10 @@ function diceRollReplace(input, invalidRollPlaceholder = '') {
 
 function getStoppingStrings(isImpersonate, addSpace) {
     const charString = `\n${name2}:`;
-    const youString = `\nYou:`;
     const userString = `\n${name1}:`;
-    const result = isImpersonate ? [charString] : [youString];
+    const result = isImpersonate ? [charString] : [userString];
 
     result.push(userString);
-
-    if (!is_pygmalion && result.includes(youString)) {
-        result.splice(result.indexOf(youString), 1);
-    }
 
     // Add other group members as the stopping strings
     if (selected_group) {
@@ -2007,11 +1993,6 @@ function getExtensionPrompt(position = 0, depth = undefined, separator = "\n") {
 
 function baseChatReplace(value, name1, name2) {
     if (value !== undefined && value.length > 0) {
-        if (is_pygmalion) {
-            value = value.replace(/{{user}}:/gi, 'You:');
-            value = value.replace(/<USER>:/gi, 'You:');
-        }
-
         value = substituteParams(value, name1, name2);
 
         if (power_user.collapse_newlines) {
@@ -2292,7 +2273,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
     message_already_generated = isImpersonate ? `${name1}: ` : `${name2}: `;
     // Name for the multigen prefix
-    const magName = isImpersonate ? (is_pygmalion ? 'You' : name1) : name2;
+    const magName = isImpersonate ? name1 : name2;
 
     if (isInstruct) {
         message_already_generated = formatInstructModePrompt(magName, isImpersonate, '', name1, name2);
@@ -2490,7 +2471,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         console.log(`Core/all messages: ${coreChat.length}/${chat.length}`);
 
         // kingbri MARK: - Make sure the prompt bias isn't the same as the user bias
-        if ((promptBias && !isUserPromptBias) || power_user.always_force_name2 || is_pygmalion) {
+        if ((promptBias && !isUserPromptBias) || power_user.always_force_name2) {
             force_name2 = true;
         }
 
@@ -2697,11 +2678,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     if (i === arrMes.length - 1 && type !== 'continue') {
                         item = item.replace(/\n?$/, '');
                     }
-                    if (is_pygmalion && !isInstruct) {
-                        if (item.trim().startsWith(name1)) {
-                            item = item.replace(name1 + ':', 'You:');
-                        }
-                    }
 
                     mesSend[mesSend.length] = { message: item, extensionPrompts: [] };
                 });
@@ -2725,7 +2701,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             function modifyLastPromptLine(lastMesString) {
                 // Add quiet generation prompt at depth 0
                 if (quiet_prompt && quiet_prompt.length) {
-                    const name = is_pygmalion ? 'You' : name1;
+                    const name = name1;
                     const quietAppend = isInstruct ? formatInstructModeChat(name, quiet_prompt, false, true, '', name1, name2, false) : `\n${name}: ${quiet_prompt}`;
                     lastMesString += quietAppend;
                     // Bail out early
@@ -2734,13 +2710,13 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
                 // Get instruct mode line
                 if (isInstruct && tokens_already_generated === 0) {
-                    const name = isImpersonate ? (is_pygmalion ? 'You' : name1) : name2;
+                    const name = isImpersonate ? name1 : name2;
                     lastMesString += formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2);
                 }
 
                 // Get non-instruct impersonation line
                 if (!isInstruct && isImpersonate && tokens_already_generated === 0) {
-                    const name = is_pygmalion ? 'You' : name1;
+                    const name = name1;
                     if (!lastMesString.endsWith('\n')) {
                         lastMesString += '\n';
                     }
@@ -3459,7 +3435,7 @@ function addChatsSeparator(mesSendString) {
 }
 
 function appendZeroDepthAnchor(force_name2, zeroDepthAnchor, finalPrompt) {
-    const trimBothEnds = !force_name2 && !is_pygmalion;
+    const trimBothEnds = !force_name2;
     let trimmedPrompt = (trimBothEnds ? zeroDepthAnchor.trim() : zeroDepthAnchor.trimEnd());
 
     if (trimBothEnds && !finalPrompt.endsWith('\n')) {
@@ -3468,7 +3444,7 @@ function appendZeroDepthAnchor(force_name2, zeroDepthAnchor, finalPrompt) {
 
     finalPrompt += trimmedPrompt;
 
-    if (force_name2 || is_pygmalion) {
+    if (force_name2) {
         finalPrompt += ' ';
     }
 
@@ -3729,13 +3705,13 @@ function shouldContinueMultigen(getMessage, isImpersonate, isInstruct) {
     }
 
     // stopping name string
-    const nameString = isImpersonate ? `${name2}:` : (is_pygmalion ? 'You:' : `${name1}:`);
+    const nameString = isImpersonate ? `${name2}:` : `${name1}:`;
     // if there is no 'You:' in the response msg
     const doesNotContainName = message_already_generated.indexOf(nameString) === -1;
     //if there is no <endoftext> stamp in the response msg
     const isNotEndOfText = message_already_generated.indexOf('<|endoftext|>') === -1;
     //if the gen'd msg is less than the max response length..
-    const notReachedMax = tokens_already_generated < parseInt(amount_gen);
+    const notReachedMax = tokens_already_generated < Number(amount_gen);
     //if we actually have gen'd text at all...
     const msgHasText = getMessage.length > 0;
     return doesNotContainName && isNotEndOfText && notReachedMax && msgHasText;
@@ -3825,11 +3801,6 @@ function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete
     // "trailing whitespace on newlines       \nevery line of the string    \n?sample text" ->
     // "trailing whitespace on newlines\nevery line of the string\nsample text"
     getMessage = getMessage.replace(/[^\S\r\n]+$/gm, "");
-    if (is_pygmalion) {
-        getMessage = getMessage.replace(/<USER>/g, name1);
-        getMessage = getMessage.replace(/<BOT>/g, name2);
-        getMessage = getMessage.replace(/You:/g, name1 + ':');
-    }
 
     let nameToTrim = isImpersonate ? name2 : name1;
 
@@ -7849,7 +7820,6 @@ jQuery(async function () {
     });
 
     $("#main_api").change(function () {
-        is_pygmalion = false;
         is_get_status = false;
         is_get_status_novel = false;
         setOpenAIOnlineStatus(false);
