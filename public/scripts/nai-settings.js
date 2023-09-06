@@ -18,8 +18,6 @@ const default_preamble = "[ Style: chat, complex, sensory, visceral ]";
 const default_order = [1, 5, 0, 2, 3, 4];
 const maximum_output_length = 150;
 const default_presets = {
-    "euterpe-v2": "Classic-Euterpe",
-    "krake-v2": "Classic-Krake",
     "clio-v1": "Talker-Chat-Clio",
     "kayra-v1": "Carefree-Kayra"
 }

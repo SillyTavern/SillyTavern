@@ -67,9 +67,6 @@ async function resetTokenCache() {
 
 function getTokenizerBestMatch() {
     if (main_api === 'novel') {
-        if (nai_settings.model_novel.includes('krake') || nai_settings.model_novel.includes('euterpe')) {
-            return tokenizers.GPT2;
-        }
         if (nai_settings.model_novel.includes('clio')) {
             return tokenizers.NERD;
         }
