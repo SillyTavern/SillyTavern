@@ -8504,6 +8504,17 @@ jQuery(async function () {
         let targetAvatarImg = thumbURL.substring(thumbURL.lastIndexOf("=") + 1);
         let charname = targetAvatarImg.replace('.png', '');
 
+        // Remove existing zoomed avatars for characters that are not the clicked character when moving UI is not enabled
+        if (!power_user.movingUI) {
+            $('.zoomed_avatar').each(function () {
+                const currentForChar = $(this).attr('forChar');
+                if (currentForChar !== charname && typeof currentForChar !== 'undefined') {
+                    console.debug(`Removing zoomed avatar for character: ${currentForChar}`);
+                    $(this).remove();
+                }
+            });
+        }
+
         let avatarSrc = isDataURL(thumbURL) ? thumbURL : charsPath + targetAvatarImg;
         if ($(`.zoomed_avatar[forChar="${charname}"]`).length) {
             console.debug('removing container as it already existed')
