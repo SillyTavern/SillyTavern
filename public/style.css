@@ -1815,9 +1815,8 @@ grammarly-extension {
 }
 
 .wide_dialogue_popup {
-    max-width: 90vh !important;
-    max-width: 90svh !important;
-    width: fit-content !important;
+    aspect-ratio: 1 / 1;
+    width: unset !important;
 }
 
 #dialogue_popup_holder {
@@ -3602,10 +3601,11 @@ a {
         height: 100vh;
         z-index: 9999;
     }
+
     .draggable {
         display: block;
         width: 100vw;
         height: 100vh;
-        z-index: 9999;        
+        z-index: 9999;
     }
 }

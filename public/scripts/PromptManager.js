@@ -1375,9 +1375,6 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
         </li>
     `;
 
-    console.log(this.activeCharacter)
-    console.log(this.serviceSettings)
-console.log(this.getPromptsForCharacter(this.activeCharacter))
     this.getPromptsForCharacter(this.activeCharacter).forEach(prompt => {
         if (!prompt) return;
 
