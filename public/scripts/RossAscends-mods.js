@@ -17,6 +17,7 @@ import {
     getEntitiesList,
     getThumbnailUrl,
     selectCharacterById,
+    eventSource,
 } from "../script.js";
 
 import {
@@ -33,6 +34,7 @@ import {
 import { debounce, delay, getStringHash, waitUntilCondition } from "./utils.js";
 import { chat_completion_sources, oai_settings } from "./openai.js";
 import { getTokenCount } from "./tokenizers.js";
+
 
 var RPanelPin = document.getElementById("rm_button_panel_pin");
 var LPanelPin = document.getElementById("lm_button_panel_pin");
@@ -448,8 +450,9 @@ export function dragElement(elmnt) {
         topbar, topbarWidth, topBarFirstX, topBarLastX, topBarLastY, sheldWidth;
 
     var elmntName = elmnt.attr('id');
-
+    console.debug(`dragElement called for ${elmntName}`);
     const elmntNameEscaped = $.escapeSelector(elmntName);
+    console.debug(`dragElement escaped name: ${elmntNameEscaped}`);
     const elmntHeader = $(`#${elmntNameEscaped}header`);
 
     if (elmntHeader.length) {
@@ -554,8 +557,15 @@ export function dragElement(elmnt) {
             //set a listener for mouseup to save new width/height
             elmnt.off('mouseup').on('mouseup', () => {
                 console.debug(`Saving ${elmntName} Height/Width`)
+                // check if the height or width actually changed
+                if (power_user.movingUIState[elmntName].width === width && power_user.movingUIState[elmntName].height === height) {
+                    console.debug('no change detected, aborting save')
+                    return
+                }
+
                 power_user.movingUIState[elmntName].width = width;
                 power_user.movingUIState[elmntName].height = height;
+                eventSource.emit('resizeUI', elmntName);
                 saveSettingsDebounced();
             })
         }
@@ -576,6 +586,7 @@ export function dragElement(elmnt) {
             }
 
             //prevent underlap with topbar div
+            /*
             if (top < topBarLastY
                 && (maxX >= topBarFirstX && left <= topBarFirstX //elmnt is hitting topbar from left side
                     || left <= topBarLastX && maxX >= topBarLastX //elmnt is hitting topbar from right side
@@ -584,6 +595,7 @@ export function dragElement(elmnt) {
                 console.debug('topbar hit')
                 elmnt.css('top', top + 1 + "px");
             }
+            */
         }
 
         // Check if the element header exists and set the listener on the grabber
@@ -902,7 +914,7 @@ export function initRossMods() {
         //Enter to send when send_textarea in focus
         if ($(':focus').attr('id') === 'send_textarea') {
             const sendOnEnter = shouldSendOnEnter();
-            if (!event.shiftKey && !event.ctrlKey && event.key == "Enter" && is_send_press == false && sendOnEnter) {
+            if (!event.shiftKey && !event.ctrlKey && !event.altKey && event.key == "Enter" && is_send_press == false && sendOnEnter) {
                 event.preventDefault();
                 Generate();
             }
@@ -945,13 +957,24 @@ export function initRossMods() {
                 console.debug("Ctrl+Enter ignored");
             }
         }
-        //ctrl+left to show all local stored vars (debug)
-        if (event.ctrlKey && event.key == "ArrowLeft") {
-            CheckLocal();
+
+        // Alt+Enter to Continue
+        if (event.altKey && event.key == "Enter") {
+            if (is_send_press == false) {
+                console.debug("Continuing with Alt+Enter");
+                $('#option_continue').trigger('click');
+            }
+        }
+
+        // Helper function to check if nanogallery2's lightbox is active
+        function isNanogallery2LightboxActive() {
+            // Check if the body has the 'nGY2On' class, adjust this based on actual behavior
+            return $('body').hasClass('nGY2_body_scrollbar');
         }
 
         if (event.key == "ArrowLeft") {        //swipes left
             if (
+                !isNanogallery2LightboxActive() &&  // Check if lightbox is NOT active
                 $(".swipe_left:last").css('display') === 'flex' &&
                 $("#send_textarea").val() === '' &&
                 $("#character_popup").css("display") === "none" &&
@@ -963,6 +986,7 @@ export function initRossMods() {
         }
         if (event.key == "ArrowRight") { //swipes right
             if (
+                !isNanogallery2LightboxActive() &&  // Check if lightbox is NOT active
                 $(".swipe_right:last").css('display') === 'flex' &&
                 $("#send_textarea").val() === '' &&
                 $("#character_popup").css("display") === "none" &&
@@ -972,6 +996,7 @@ export function initRossMods() {
                 $('.swipe_right:last').click();
             }
         }
+
 
         if (event.ctrlKey && event.key == "ArrowUp") { //edits last USER message if chatbar is empty and focused
             if (
@@ -1008,9 +1033,9 @@ export function initRossMods() {
         }
 
         if (event.key == "Escape") { //closes various panels
+
             //dont override Escape hotkey functions from script.js
             //"close edit box" and "cancel stream generation".
-
             if ($("#curEditTextarea").is(":visible") || $("#mes_stop").is(":visible")) {
                 console.debug('escape key, but deferring to script.js routines')
                 return
@@ -1047,13 +1072,11 @@ export function initRossMods() {
                     .not('#left-nav-panel')
                     .not('#right-nav-panel')
                     .not('#floatingPrompt')
-                console.log(visibleDrawerContent)
                 $(visibleDrawerContent).parent().find('.drawer-icon').trigger('click');
                 return
             }
 
             if ($("#floatingPrompt").is(":visible")) {
-                console.log('saw AN visible, trying to close')
                 $("#ANClose").trigger('click');
                 return
             }
@@ -1076,8 +1099,15 @@ export function initRossMods() {
             }
         }
 
+        if ($(".draggable").is(":visible")) {
+            // Remove the first matched element
+            $('.draggable:first').remove();
+            return;
+        }
+
+
         if (event.ctrlKey && /^[1-9]$/.test(event.key)) {
-            // Your code here
+            // This will eventually be to trigger quick replies
             event.preventDefault();
             console.log("Ctrl +" + event.key + " pressed!");
         }

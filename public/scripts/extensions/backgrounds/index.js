@@ -1,4 +1,4 @@
-import { generateQuietPrompt } from "../../../script.js";
+import { eventSource, event_types, generateQuietPrompt } from "../../../script.js";
 import { getContext, saveMetadataDebounced } from "../../extensions.js";
 import { registerSlashCommand } from "../../slash-commands.js";
 import { stringFormat } from "../../utils.js";
@@ -6,8 +6,10 @@ export { MODULE_NAME };
 
 const MODULE_NAME = 'backgrounds';
 const METADATA_KEY = 'custom_background';
-const UPDATE_INTERVAL = 1000;
 
+/**
+ * @param {string} background
+ */
 function forceSetBackground(background) {
     saveBackgroundMetadata(background);
     setCustomBackground();
@@ -168,9 +170,9 @@ $(document).ready(function () {
     }
 
     addSettings();
-    setInterval(moduleWorker, UPDATE_INTERVAL);
     registerSlashCommand('lockbg', onLockBackgroundClick, ['bglock'], " – locks a background for the currently selected chat", true, true);
     registerSlashCommand('unlockbg', onUnlockBackgroundClick, ['bgunlock'], ' – unlocks a background for the currently selected chat', true, true);
     registerSlashCommand('autobg', autoBackgroundCommand, ['bgauto'], ' – automatically changes the background based on the chat context using the AI request prompt', true, true);
-    window['forceSetBackground'] = forceSetBackground;
+    eventSource.on(event_types.FORCE_SET_BACKGROUND, forceSetBackground);
+    eventSource.on(event_types.CHAT_CHANGED, moduleWorker);
 });

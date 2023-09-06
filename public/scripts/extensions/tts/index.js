@@ -22,6 +22,9 @@ let lastGroupId = null
 let lastChatId = null
 let lastMessageHash = null
 
+const DEFAULT_VOICE_MARKER = '[Default Voice]';
+const DISABLED_VOICE_MARKER = 'disabled';
+
 export function getPreviewString(lang) {
     const previewStrings = {
         'en-US': 'The quick brown fox jumps over the lazy dog',
@@ -460,10 +463,12 @@ async function processTtsQueue() {
             return;
         }
 
-        if (!voiceMap[char]) {
+        const voiceMapEntry = voiceMap[char] === DEFAULT_VOICE_MARKER ? voiceMap[DEFAULT_VOICE_MARKER] : voiceMap[char]
+
+        if (!voiceMapEntry || voiceMapEntry === DISABLED_VOICE_MARKER) {
             throw `${char} not in voicemap. Configure character in extension settings voice map`
         }
-        const voice = await ttsProvider.getVoice((voiceMap[char]))
+        const voice = await ttsProvider.getVoice(voiceMapEntry)
         const voiceId = voice.voice_id
         if (voiceId == null) {
             toastr.error(`Specified voice for ${char} was not found. Check the TTS extension settings.`)
@@ -636,10 +641,12 @@ function getCharacters(){
     let characters = []
     if (context.groupId === null){
         // Single char chat
+        characters.push(DEFAULT_VOICE_MARKER)
         characters.push(context.name1)
         characters.push(context.name2)
     } else {
         // Group chat
+        characters.push(DEFAULT_VOICE_MARKER)
         characters.push(context.name1)
         const group = context.groups.find(group => context.groupId == group.id)
         for (let member of group.members) {
@@ -702,7 +709,7 @@ class VoiceMapEntry {
     name
     voiceId
     selectElement
-    constructor (name, voiceId='disabled') {
+    constructor (name, voiceId=DEFAULT_VOICE_MARKER) {
         this.name = name
         this.voiceId = voiceId
         this.selectElement = null
@@ -710,11 +717,14 @@ class VoiceMapEntry {
 
     addUI(voiceIds){
         let sanitizedName = sanitizeId(this.name)
+        let defaultOption = this.name === DEFAULT_VOICE_MARKER ?
+            `<option>${DISABLED_VOICE_MARKER}</option>` :
+            `<option>${DEFAULT_VOICE_MARKER}</option><option>${DISABLED_VOICE_MARKER}</option>`
         let template = `
             <div class='tts_voicemap_block_char flex-container flexGap5'>
                 <span id='tts_voicemap_char_${sanitizedName}'>${this.name}</span>
                 <select id='tts_voicemap_char_${sanitizedName}_voice'>
-                    <option>disabled</option>
+                    ${defaultOption}
                 </select>
             </div>
         `
@@ -798,8 +808,10 @@ export async function initVoiceMap(){
         let voiceId
         if (character in voiceMapFromSettings){
             voiceId = voiceMapFromSettings[character]
+        } else if (character === DEFAULT_VOICE_MARKER) {
+            voiceId = DISABLED_VOICE_MARKER
         } else {
-            voiceId = 'disabled'
+            voiceId = DEFAULT_VOICE_MARKER
         }
         const voiceMapEntry = new VoiceMapEntry(character, voiceId)
         voiceMapEntry.addUI(voiceIdsFromProvider)

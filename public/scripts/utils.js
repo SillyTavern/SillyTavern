@@ -14,6 +14,10 @@ export const PAGINATION_TEMPLATE = '<%= rangeStart %>-<%= rangeEnd %> of <%= tot
  */
 export const navigation_option = { none: 0, previous: 1, last: 2, };
 
+export function escapeHtml(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 /**
  * Determines if a value is unique in an array.
  * @param {any} value Current value.
@@ -842,6 +846,38 @@ export async function saveBase64AsFile(base64Data, characterName, filename = "",
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to upload the image to the server');
     }
+}
+
+/**
+ * Loads either a CSS or JS file and appends it to the appropriate document section.
+ * 
+ * @param {string} url - The URL of the file to be loaded.
+ * @param {string} type - The type of file to load: "css" or "js".
+ * @returns {Promise} - Resolves when the file has loaded, rejects if there's an error or invalid type.
+ */
+export function loadFileToDocument(url, type) {
+    return new Promise((resolve, reject) => {
+        let element;
+
+        if (type === "css") {
+            element = document.createElement("link");
+            element.rel = "stylesheet";
+            element.href = url;
+        } else if (type === "js") {
+            element = document.createElement("script");
+            element.src = url;
+        } else {
+            reject("Invalid type specified");
+            return;
+        }
+
+        element.onload = resolve;
+        element.onerror = reject;
+
+        type === "css"
+            ? document.head.appendChild(element)
+            : document.body.appendChild(element);
+    });
 }
 
 /**
