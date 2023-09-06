@@ -309,8 +309,8 @@ function getTiktokenTokenizer(model) {
     return tokenizer;
 }
 
-function humanizedISO8601DateTime(date = Date.now()) {
-    let baseDate = new Date(date);
+function humanizedISO8601DateTime(date) {
+    let baseDate = typeof date === 'number' ? new Date(date) : new Date();
     let humanYear = baseDate.getFullYear();
     let humanMonth = (baseDate.getMonth() + 1);
     let humanDate = baseDate.getDate();
@@ -981,7 +981,6 @@ function readFromV2(char) {
     });
 
     char['chat'] = char['chat'] ?? humanizedISO8601DateTime();
-    char['create_date'] = char['create_date'] ?? humanizedISO8601DateTime();
 
     return char;
 }
@@ -1012,7 +1011,6 @@ function charaFormatData(data) {
     _.set(char, 'chat', data.ch_name + ' - ' + humanizedISO8601DateTime());
     _.set(char, 'talkativeness', data.talkativeness);
     _.set(char, 'fav', data.fav == 'true');
-    _.set(char, 'create_date', humanizedISO8601DateTime());
 
     // Spec V2 fields
     _.set(char, 'spec', 'chara_card_v2');
