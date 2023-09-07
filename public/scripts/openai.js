@@ -696,6 +696,14 @@ function preparePromptsForChatCompletion({Scenario, charPersonality, name2, worl
         identifier: 'authorsNote'
     });
 
+    // Vectors Memory
+    const vectorsMemory = extensionPrompts['3_vectors'];
+    if (vectorsMemory && vectorsMemory.value) systemPrompts.push({
+        role: 'system',
+        content: vectorsMemory.value,
+        identifier: 'vectorsMemory',
+    });
+
     // Persona Description
     if (power_user.persona_description && power_user.persona_description_position === persona_description_positions.IN_PROMPT) {
         systemPrompts.push({ role: 'system', content: power_user.persona_description, identifier: 'personaDescription' });

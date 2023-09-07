@@ -23,10 +23,6 @@ class EmbeddingModel {
     }
 }
 
-/**
- * Hard limit on the number of results to return from the vector search.
- */
-const TOP_K = 100;
 const model = new EmbeddingModel();
 
 /**
@@ -100,17 +96,18 @@ async function deleteVectorItems(collectionId, hashes) {
 
 /**
  * Gets the hashes of the items in the vector collection that match the search text
- * @param {string} collectionId
- * @param {string} searchText
+ * @param {string} collectionId - The collection ID
+ * @param {string} searchText - The text to search for
+ * @param {number} topK - The number of results to return
  * @returns {Promise<number[]>} - The hashes of the items that match the search text
  */
-async function queryCollection(collectionId, searchText) {
+async function queryCollection(collectionId, searchText, topK) {
     const index = await getIndex(collectionId);
     const use = await model.get();
     const tensor = await use.embed(searchText);
     const vector = Array.from(await tensor.data());
 
-    const result = await index.queryItems(vector, TOP_K);
+    const result = await index.queryItems(vector, topK);
     const hashes = result.map(x => Number(x.item.metadata.hash));
     return hashes;
 }
@@ -129,8 +126,9 @@ async function registerEndpoints(app, jsonParser) {
 
             const collectionId = String(req.body.collectionId);
             const searchText = String(req.body.searchText);
+            const topK = Number(req.body.topK) || 10;
 
-            const results = await queryCollection(collectionId, searchText);
+            const results = await queryCollection(collectionId, searchText, topK);
             return res.json(results);
         } catch (error) {
             console.error(error);

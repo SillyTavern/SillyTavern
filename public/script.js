@@ -382,10 +382,7 @@ const system_message_types = {
 };
 
 const extension_prompt_types = {
-    /**
-     * @deprecated Outdated term. In reality it's "after main prompt or story string"
-     */
-    AFTER_SCENARIO: 0,
+    IN_PROMPT: 0,
     IN_CHAT: 1
 };
 
@@ -2533,7 +2530,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         addPersonaDescriptionExtensionPrompt();
         // Call combined AN into Generate
         let allAnchors = getAllExtensionPrompts();
-        const afterScenarioAnchor = getExtensionPrompt(extension_prompt_types.AFTER_SCENARIO);
+        const afterScenarioAnchor = getExtensionPrompt(extension_prompt_types.IN_PROMPT);
         let zeroDepthAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, 0, ' ');
 
         const storyStringParams = {
@@ -5591,7 +5588,7 @@ function select_rm_characters() {
  * @param {number} position Insertion position. 0 is after story string, 1 is in-chat with custom depth.
  * @param {number} depth Insertion depth. 0 represets the last message in context. Expected values up to 100.
  */
-function setExtensionPrompt(key, value, position, depth) {
+export function setExtensionPrompt(key, value, position, depth) {
     extension_prompts[key] = { value: String(value), position: Number(position), depth: Number(depth) };
 }
 
