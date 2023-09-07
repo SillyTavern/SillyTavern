@@ -12,14 +12,14 @@ class EmbeddingModel {
     /**
      * @type {encoder.UniversalSentenceEncoder} - The embedding model
      */
-    #model;
+    model;
 
     async get() {
-        if (!this.#model) {
+        if (!this.model) {
             this.model = await encoder.load();
         }
 
-        return this.#model;
+        return this.model;
     }
 }
 
