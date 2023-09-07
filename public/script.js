@@ -6511,12 +6511,12 @@ const swipe_right = () => {
         return;
     }
 
-    if (chat.length == 1) {
-        if (chat[0]['swipe_id'] !== undefined && chat[0]['swipe_id'] == chat[0]['swipes'].length - 1) {
-            toastr.info('Add more alternative greetings to swipe through', 'That\'s all for now');
-            return;
-        }
-    }
+    // if (chat.length == 1) {
+    //     if (chat[0]['swipe_id'] !== undefined && chat[0]['swipe_id'] == chat[0]['swipes'].length - 1) {
+            // toastr.info('Add more alternative greetings to swipe through', 'That\'s all for now');
+            // return;
+    //     }
+    // }
 
     const swipe_duration = 200;
     const swipe_range = 700;
@@ -6531,7 +6531,11 @@ const swipe_right = () => {
         chat[chat.length - 1]['swipe_info'][0] = { 'send_date': chat[chat.length - 1]['send_date'], 'gen_started': chat[chat.length - 1]['gen_started'], 'gen_finished': chat[chat.length - 1]['gen_finished'], 'extra': JSON.parse(JSON.stringify(chat[chat.length - 1]['extra'])) };
         //assign swipe info array with last message from chat
     }
-    chat[chat.length - 1]['swipe_id']++;                                      //make new slot in array
+    if (chat.length === 1 && chat[0]['swipe_id'] !== undefined && chat[0]['swipe_id'] === chat[0]['swipes'].length - 1) {    // if swipe_right is called on the last alternate greeting, loop back around
+        chat[0]['swipe_id'] = 0;
+    } else {
+        chat[chat.length - 1]['swipe_id']++;                                // make new slot in array
+    }
     if (chat[chat.length - 1].extra) {
         // if message has memory attached - remove it to allow regen
         if (chat[chat.length - 1].extra.memory) {
@@ -6546,7 +6550,7 @@ const swipe_right = () => {
         chat[chat.length - 1]['swipe_info'] = [];
     }
     //console.log(chat[chat.length-1]['swipes']);
-    if (parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) { //if swipe id of last message is the same as the length of the 'swipes' array
+    if (parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length && chat.length !== 1) { //if swipe id of last message is the same as the length of the 'swipes' array and not the greeting
         delete chat[chat.length - 1].gen_started;
         delete chat[chat.length - 1].gen_finished;
         run_generate = true;
