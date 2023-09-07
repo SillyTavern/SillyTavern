@@ -6462,7 +6462,7 @@ function swipe_left() {      // when we swipe left..but no generation.
                             queue: false,
                             complete: async function () {
                                 await eventSource.emit(event_types.MESSAGE_SWIPED, (chat.length - 1));
-                                await saveChatConditional();
+                                saveChatDebounced();
                             }
                         });
                     }
@@ -6651,7 +6651,7 @@ const swipe_right = () => {
                                     await Generate('swipe');
                                 } else {
                                     if (parseInt(chat[chat.length - 1]['swipe_id']) !== chat[chat.length - 1]['swipes'].length) {
-                                        await saveChatConditional();
+                                        saveChatDebounced();
                                     }
                                 }
                             }
