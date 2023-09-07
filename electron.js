@@ -13,7 +13,7 @@ let mainWindow = null
 function main() {
   require('./server');
   mainWindow = new BrowserWindow({
-    icon: path.resolve(__dirname, './public/favicon.ico')
+    icon: path.resolve(__dirname, './public/st-launcher.ico')
   });
   mainWindow.loadURL(`http://localhost:8000/`)
   mainWindow.on('close', event => {
