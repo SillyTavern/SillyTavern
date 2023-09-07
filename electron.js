@@ -1,6 +1,9 @@
 const path = require('path');
 const { app, BrowserWindow, shell } = require('electron');
 
+// In electron, process.cwd() returns "/", so we need to change the working directory
+process.chdir(__dirname);
+
 // Overwrite config with some electron-specific settings
 const conf = require(path.join(process.cwd(), './config.conf'));
 conf.autorun = false;
