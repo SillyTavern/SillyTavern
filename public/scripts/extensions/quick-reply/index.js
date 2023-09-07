@@ -120,7 +120,7 @@ async function sendQuickReply(index) {
         // If existing text, add space after prompt
         newText = existingText + ' ' + prompt + ' ';
     } else {
-        // If no existing text, add prompt only
+        // If no existing text, add prompt only (with a trailing space)
         newText = prompt + ' ';
     }
 
@@ -129,11 +129,13 @@ async function sendQuickReply(index) {
     // Set the focus back to the textarea
     $("#send_textarea").focus();
 
-    // Only trigger send button if quickActionEnabled is not checked
-    if (!$("#quickActionEnabled").prop('checked')) {
+    // Only trigger send button if quickActionEnabled is not checked or 
+    // the prompt starts with '/'
+    if (!$("#quickActionEnabled").prop('checked') || prompt.startsWith('/')) {
         $("#send_but").trigger('click');
     }
 }
+
 
 function addQuickReplyBar() {
     $('#quickReplyBar').remove();
