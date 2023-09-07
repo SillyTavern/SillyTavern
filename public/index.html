@@ -729,13 +729,13 @@
                                         </div>
                                         <div id="claude_assistant_prefill_block" data-source="claude" class="range-block">
                                             <span id="claude_assistant_prefill_text" data-i18n="Assistant Prefill">Assistant Prefill</span>
-                                            <textarea id="claude_assistant_prefill" class="text_pole textarea_compact" name="assistant_prefill autoSetHeight" rows="3" maxlength="5000" placeholder="Start Claude's answer with..."></textarea>
+                                            <textarea id="claude_assistant_prefill" class="text_pole textarea_compact" name="assistant_prefill autoSetHeight" rows="3" maxlength="5000" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
                                         </div>
                                     </div>
                                 </div>
                                 <div data-newbie-hidden class="inline-drawer wide100p">
                                     <div class="inline-drawer-toggle inline-drawer-header">
-                                        <b>Utility Prompts</b>
+                                        <b data-i18n="Utility Prompts">Utility Prompts</b>
                                         <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                                     </div>
                                     <div class="inline-drawer-content">
@@ -754,13 +754,13 @@
                                             </div>
                                         </div>
                                         <div class="range-block m-t-1">
-                                            <div class="range-block-title openai_restorable">
+                                            <div class="range-block-title openai_restorable" data-i18n="World Info Format Template">
                                                 <span>World Info format template</span>
                                                 <div id="wi_format_restore" title="Restore default format" class="right_menu_button">
                                                     <div class="fa-solid fa-clock-rotate-left"></div>
                                                 </div>
                                             </div>
-                                            <div class="toggle-description justifyLeft">
+                                            <div class="toggle-description justifyLeft" data-i18n="Wraps activated World Info entries before inserting into the prompt.">
                                                 Wraps activated World Info entries before inserting into the prompt. Use
                                                 <tt>{0}</tt> to mark a place where the content is inserted.
                                             </div>
@@ -769,23 +769,7 @@
                                             </div>
                                         </div>
                                         <div class="range-block m-t-1">
-                                            <div class="range-block">
-                                                <div class="range-block-title openai_restorable">
-                                                    <span>NSFW avoidance prompt</span>
-                                                    <div id="nsfw_avoidance_prompt_restore" title="Restore default prompt" data-i18n="[title]Restore default prompt" class="right_menu_button">
-                                                        <div class="fa-solid fa-clock-rotate-left"></div>
-                                                    </div>
-                                                </div>
-                                                <div class="toggle-description justifyLeft" data-i18n="Prompt that is used when the NSFW toggle is O">
-                                                    Prompt that is used when the NSFW toggle is OFF
-                                                </div>
-                                                <div class="wide100p">
-                                                    <textarea id="nsfw_avoidance_prompt_textarea" class="text_pole textarea_compact autoSetHeight" name="nsfw_prompt" rows="3" placeholder="&mdash;"></textarea>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="range-block m-t-1">
-                                            <div class="range-block-title openai_restorable">
+                                            <div class="range-block-title openai_restorable" data-i18n="New Chat">
                                                 <span>New Chat</span>
                                                 <div id="newchat_prompt_restore" title="Restore new chat prompt" class="right_menu_button">
                                                     <div class="fa-solid fa-clock-rotate-left"></div>
@@ -802,7 +786,7 @@
                                         </div>
                                         <div class="range-block m-t-1">
                                             <div class="range-block-title openai_restorable">
-                                                <span>New Group Chat</span>
+                                                <span data-i18n="New Group Chat">New Group Chat</span>
                                                 <div id="newgroupchat_prompt_restore" title="Restore default prompt" data-i18n="[title]Restore new group chat prompt" class="right_menu_button">
                                                     <div class="fa-solid fa-clock-rotate-left"></div>
                                                 </div>
@@ -818,7 +802,7 @@
                                         </div>
                                         <div class="range-block m-t-1">
                                             <div class="range-block-title openai_restorable">
-                                                <span>New Example Chat</span>
+                                                <span data-i18n="New Example Chat">New Example Chat</span>
                                                 <div id="newexamplechat_prompt_restore" title="Restore new example chat prompt" data-i18n="[title]Restore default prompt" class="right_menu_button">
                                                     <div class="fa-solid fa-clock-rotate-left"></div>
                                                 </div>
@@ -833,9 +817,9 @@
                                             </div>
                                         </div>
                                         <div class="range-block m-t-1">
-                                            <div class="range-block-title openai_restorable">
+                                            <div class="range-block-title openai_restorable" data-i18n="Continue nudge">
                                                 <span>Continue nudge</span>
-                                                <div id="continue_nudge_prompt_restore" title="Restore new chat prompt" class="right_menu_button">
+                                                <div id="continue_nudge_prompt_restore" title="Restore new chat prompt" class="right_menu_button" >
                                                     <div class="fa-solid fa-clock-rotate-left"></div>
                                                 </div>
                                             </div>
@@ -849,7 +833,7 @@
                                             </div>
                                         </div>
                                         <div class="range-block m-t-1">
-                                            <div class="range-block-title justifyLeft">
+                                            <div class="range-block-title justifyLeft" data-i18n="Replace empty message">
                                                 Replace empty message
                                             </div>
                                             <div class="toggle-description justifyLeft">
@@ -1726,7 +1710,7 @@
                                             account for faster queue times</a>
                                     </li>
                                     <li>
-                                        <a target="_blank" href="https://github.com/db0/AI-Horde-Worker#readme" data-i18n="Learn how to contribute your idel GPU cycles to the Horde">Learn
+                                        <a target="_blank" href="https://github.com/db0/AI-Horde-Worker#readme" data-i18n="Learn how to contribute your idle GPU cycles to the Horde">Learn
                                             how to contribute your idle GPU cycles to the Horde</a>
                                     </li>
                                 </ul>
@@ -1821,8 +1805,6 @@
                                 </a>
                             </h4>
                             <select id="model_novel_select">
-                                <option value="euterpe-v2">Euterpe</option>
-                                <option value="krake-v2">Krake</option>
                                 <option value="clio-v1">Clio</option>
                                 <option value="kayra-v1">Kayra</option>
                             </select>
@@ -2484,22 +2466,6 @@
                                     Replace Macro in Custom Stopping Strings
                                 </span>
                             </label>
-                            <h4>
-                                <span data-i18n="Pygmalion Formatting">
-                                    Pygmalion Formatting
-                                </span>
-                            </h4>
-                            <select id="pygmalion_formatting">
-                                <option value="-1" data-i18n="Disabled for all models">
-                                    Disabled for all models
-                                </option>
-                                <option value="0" data-i18n="Automatic (based on model name)">
-                                    Automatic (based on model name)
-                                </option>
-                                <option value="1" data-i18n="Enabled for all models">
-                                    Enabled for all models
-                                </option>
-                            </select>
                         </div>
                         <div data-newbie-hidden>
                             <h4>

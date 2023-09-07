@@ -28,7 +28,7 @@ const CHARACTER_FILTER_SELECTOR = '#rm_characters_block .rm_tag_filter';
 const GROUP_FILTER_SELECTOR = '#rm_group_chats_block .rm_tag_filter';
 
 function getFilterHelper(listSelector) {
-    return $(listSelector).is(GROUP_FILTER_SELECTOR) ?  groupCandidatesFilter : entitiesFilter;
+    return $(listSelector).is(GROUP_FILTER_SELECTOR) ? groupCandidatesFilter : entitiesFilter;
 }
 
 export const tag_filter_types = {
@@ -170,7 +170,7 @@ function removeTagFromMap(tagId) {
 
 function findTag(request, resolve, listSelector) {
     const skipIds = [...($(listSelector).find(".tag").map((_, el) => $(el).attr("id")))];
-    const haystack = tags.filter(t => !skipIds.includes(t.id)).map(t => t.name).sort();
+    const haystack = tags.filter(t => !skipIds.includes(t.id)).map(t => t.name).sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
     const needle = request.term.toLowerCase();
     const hasExactMatch = haystack.findIndex(x => x.toLowerCase() == needle) !== -1;
     const result = haystack.filter(x => x.toLowerCase().includes(needle));

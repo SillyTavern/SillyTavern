@@ -112,7 +112,7 @@ export function getKoboldGenerationData(finalPrompt, this_settings, this_amount_
         s7: sampler_order[6],
         use_world_info: false,
         singleline: kai_settings.single_line,
-        stop_sequence: kai_flags.can_use_stop_sequence ? getStoppingStrings(isImpersonate, false) : undefined,
+        stop_sequence: kai_flags.can_use_stop_sequence ? getStoppingStrings(isImpersonate) : undefined,
         streaming: kai_settings.streaming_kobold && kai_flags.can_use_streaming && type !== 'quiet',
         can_abort: kai_flags.can_use_streaming,
         mirostat: kai_flags.can_use_mirostat ?  kai_settings.mirostat : undefined,

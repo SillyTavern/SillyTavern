@@ -56,7 +56,7 @@ class EdgeTtsProvider {
         $('#edge_tts_rate').on("input", () => {this.onSettingsChange()})
         await this.checkReady()
 
-        console.info("Settings loaded")
+        console.debug("EdgeTTS: Settings loaded")
     }
 
 
