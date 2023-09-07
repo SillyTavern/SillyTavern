@@ -4,7 +4,7 @@ import { callPopup, event_types, eventSource, is_send_press, main_api, substitut
 import { is_group_generating } from "./group-chats.js";
 import { TokenHandler } from "./openai.js";
 import { power_user } from "./power-user.js";
-import { debounce, waitUntilCondition } from "./utils.js";
+import { debounce, waitUntilCondition, escapeHtml } from "./utils.js";
 
 function debouncePromise(func, delay) {
     let timeoutId;
@@ -53,7 +53,7 @@ const registerPromptManagerMigration = () => {
     };
 
     eventSource.on(event_types.SETTINGS_LOADED_BEFORE, settings => migrate(settings));
-    eventSource.on(event_types.OAI_PRESET_CHANGED, event => migrate(event.preset, event.savePreset, event.presetName));
+    eventSource.on(event_types.OAI_PRESET_CHANGED_BEFORE, event => migrate(event.preset, event.savePreset, event.presetName));
 }
 
 /**
@@ -604,22 +604,20 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     document.getElementById(this.configuration.prefix + 'prompt_manager_popup_close_button').addEventListener('click', closeAndClearPopup);
 
     // Re-render prompt manager on openai preset change
-    eventSource.on(event_types.OAI_PRESET_CHANGED, settings => {
-        // Save configuration and wrap everything up.
-        this.saveServiceSettings().then(() => {
-            const mainPrompt = this.getPromptById('main');
-            this.updateQuickEdit('main', mainPrompt);
+    eventSource.on(event_types.OAI_PRESET_CHANGED_AFTER, () => {
+        this.sanitizeServiceSettings();
+        const mainPrompt = this.getPromptById('main');
+        this.updateQuickEdit('main', mainPrompt);
 
-            const nsfwPrompt = this.getPromptById('nsfw');
-            this.updateQuickEdit('nsfw', nsfwPrompt);
+        const nsfwPrompt = this.getPromptById('nsfw');
+        this.updateQuickEdit('nsfw', nsfwPrompt);
 
-            const jailbreakPrompt = this.getPromptById('jailbreak');
-            this.updateQuickEdit('jailbreak', jailbreakPrompt);
+        const jailbreakPrompt = this.getPromptById('jailbreak');
+        this.updateQuickEdit('jailbreak', jailbreakPrompt);
 
-            this.hidePopup();
-            this.clearEditForm();
-            this.renderDebounced();
-        });
+        this.hidePopup();
+        this.clearEditForm();
+        this.renderDebounced();
     });
 
     // Re-render prompt manager on world settings update
@@ -643,19 +641,13 @@ PromptManagerModule.prototype.render = function (afterTryGenerate = true) {
         if (true === afterTryGenerate) {
             // Executed during dry-run for determining context composition
             this.profileStart('filling context');
-            this.tryGenerate().then(() => {
+            this.tryGenerate().finally(() => {
                 this.profileEnd('filling context');
                 this.profileStart('render');
                 this.renderPromptManager();
                 this.renderPromptManagerListItems()
                 this.makeDraggable();
                 this.profileEnd('render');
-            }).catch(error => {
-                this.profileEnd('filling context');
-                this.log('Error caught during render: ' + error);
-                this.renderPromptManager();
-                this.renderPromptManagerListItems()
-                this.makeDraggable();
             });
         } else {
             // Executed during live communication
@@ -1291,7 +1283,7 @@ PromptManagerModule.prototype.renderPromptManager = function () {
         const prompts = [...this.serviceSettings.prompts]
             .filter(prompt => prompt && !prompt?.system_prompt)
             .sort((promptA, promptB) => promptA.name.localeCompare(promptB.name))
-            .reduce((acc, prompt) => acc + `<option value="${prompt.identifier}">${prompt.name}</option>`, '');
+            .reduce((acc, prompt) => acc + `<option value="${prompt.identifier}">${escapeHtml(prompt.name)}</option>`, '');
 
         const footerHtml = `
             <div class="${this.configuration.prefix}prompt_manager_footer">
@@ -1440,13 +1432,14 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
             toggleSpanHtml = `<span class="fa-solid"></span>`;
         }
 
+        const encodedName = escapeHtml(prompt.name);
         listItemHtml += `
             <li class="${prefix}prompt_manager_prompt ${draggableClass} ${enabledClass} ${markerClass}" data-pm-identifier="${prompt.identifier}">
-                <span class="${prefix}prompt_manager_prompt_name" data-pm-name="${prompt.name}">
+                <span class="${prefix}prompt_manager_prompt_name" data-pm-name="${encodedName}">
                     ${prompt.marker ? '<span class="fa-solid fa-thumb-tack" title="Marker"></span>' : ''}
                     ${!prompt.marker && prompt.system_prompt ? '<span class="fa-solid fa-square-poll-horizontal" title="Global Prompt"></span>' : ''}
                     ${!prompt.marker && !prompt.system_prompt ? '<span class="fa-solid fa-user" title="User Prompt"></span>' : ''}
-                    ${this.isPromptInspectionAllowed(prompt) ? `<a class="prompt-manager-inspect-action">${prompt.name}</a>` : prompt.name}
+                    ${this.isPromptInspectionAllowed(prompt) ? `<a class="prompt-manager-inspect-action">${encodedName}</a>` : encodedName}
                 </span>
                 <span>
                         <span class="prompt_manager_prompt_controls">

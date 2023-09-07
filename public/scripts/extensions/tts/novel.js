@@ -92,7 +92,7 @@ class NovelTtsProvider {
 
         this.populateCustomVoices()
         await this.checkReady()
-        console.info("Settings loaded")
+        console.debug("NovelTTS: Settings loaded")
     }
 
     // Perform a simple readiness check by trying to fetch voiceIds

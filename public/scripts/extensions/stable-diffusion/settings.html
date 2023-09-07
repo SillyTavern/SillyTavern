@@ -1,0 +1,122 @@
+
+<div class="sd_settings">
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <b>Stable Diffusion</b>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            <small><i>Use slash commands or the bottom Paintbrush button to generate images. Type <span class="monospace">/help</span> in chat for more details</i></small>
+            <br>
+            <label for="sd_refine_mode" class="checkbox_label" title="Allow to edit prompts manually before sending them to generation API">
+                <input id="sd_refine_mode" type="checkbox" />
+                Edit prompts before generation
+            </label>
+            <label for="sd_source">Source</label>
+            <select id="sd_source">
+                <option value="extras">Extras API (local / remote)</option>
+                <option value="horde">Stable Horde</option>
+                <option value="auto">Stable Diffusion Web UI (AUTOMATIC1111)</option>
+                <option value="novel">NovelAI Diffusion</option>
+            </select>
+            <div data-sd-source="auto">
+                <label for="sd_auto_url">SD Web UI URL</label>
+                <div class="flex-container flexnowrap">
+                    <input id="sd_auto_url" type="text" class="text_pole" placeholder="Example: {{auto_url}}" value="{{auto_url}}" />
+                    <div id="sd_auto_validate" class="menu_button menu_button_icon">
+                        <i class="fa-solid fa-check"></i>
+                        <span data-i18n="Connect">
+                            Connect
+                        </span>
+                    </div>
+                </div>
+                <label for="sd_auto_auth">Authentication (optional)</label>
+                <input id="sd_auto_auth" type="text" class="text_pole" placeholder="Example: username:password" value="" />
+                <i><b>Important:</b> run SD Web UI with the <tt>--api</tt> flag! The server must be accessible from the SillyTavern host machine.</i>
+            </div>
+            <div data-sd-source="horde">
+                <i>Hint: Save an API key in Horde KoboldAI API settings to use it here.</i>
+                <label for="sd_horde_nsfw" class="checkbox_label">
+                    <input id="sd_horde_nsfw" type="checkbox" />
+                    <span data-i18n="Allow NSFW images from Horde">
+                        Allow NSFW images from Horde
+                    </span>
+                </label>
+                <label for="sd_horde_karras" class="checkbox_label">
+                    <input id="sd_horde_karras" type="checkbox" />
+                    <span data-i18n="Karras (not all samplers supported)">
+                        Karras (not all samplers supported)
+                    </span>
+                </label>
+            </div>
+            <div data-sd-source="novel">
+                <div class="flex-container">
+                    <label for="sd_novel_anlas_guard" class="checkbox_label flex1" title="Automatically adjust generation parameters to ensure free image generations.">
+                        <input id="sd_novel_anlas_guard" type="checkbox" />
+                        <span data-i18n="Avoid spending Anlas">
+                            Avoid spending Anlas
+                        </span>
+                        <span data-i18n="Opus tier" class="toggle-description">(Opus tier)</span>
+                    </label>
+                    <div id="sd_novel_view_anlas" class="menu_button menu_button_icon">
+                        View my Anlas
+                    </div>
+                </div>
+                <i>Hint: Save an API key in the NovelAI API settings to use it here.</i>
+            </div>
+            <label for="sd_scale">CFG Scale (<span id="sd_scale_value"></span>)</label>
+            <input id="sd_scale" type="range" min="{{scale_min}}" max="{{scale_max}}" step="{{scale_step}}" value="{{scale}}" />
+            <label for="sd_steps">Sampling steps (<span id="sd_steps_value"></span>)</label>
+            <input id="sd_steps" type="range" min="{{steps_min}}" max="{{steps_max}}" step="{{steps_step}}" value="{{steps}}" />
+            <label for="sd_width">Width (<span id="sd_width_value"></span>)</label>
+            <input id="sd_width" type="range" max="{{dimension_max}}" min="{{dimension_min}}" step="{{dimension_step}}" value="{{width}}" />
+            <label for="sd_height">Height (<span id="sd_height_value"></span>)</label>
+            <input id="sd_height" type="range" max="{{dimension_max}}" min="{{dimension_min}}" step="{{dimension_step}}" value="{{height}}" />
+            <label for="sd_model">Stable Diffusion model</label>
+            <select id="sd_model"></select>
+            <label for="sd_sampler">Sampling method</label>
+            <select id="sd_sampler"></select>
+            <div class="flex-container marginTop10 margin-bot-10px">
+                <label class="flex1 checkbox_label">
+                    <input id="sd_restore_faces" type="checkbox" />
+                    Restore Faces
+                </label>
+                <label class="flex1 checkbox_label">
+                    <input id="sd_enable_hr" type="checkbox" />
+                    Hires. Fix
+                </label>
+            </div>
+            <div data-sd-source="auto">
+                <label for="sd_hr_upscaler">Upscaler</label>
+                <select id="sd_hr_upscaler"></select>
+                <label for="sd_hr_scale">Upscale by (<span id="sd_hr_scale_value"></span>)</label>
+                <input id="sd_hr_scale" type="range" min="{{hr_scale_min}}" max="{{hr_scale_max}}" step="{{hr_scale_step}}" value="{{hr_scale}}" />
+                <label for="sd_denoising_strength">Denoising strength (<span id="sd_denoising_strength_value"></span>)</label>
+                <input id="sd_denoising_strength" type="range" min="{{denoising_strength_min}}" max="{{denoising_strength_max}}" step="{{denoising_strength_step}}" value="{{denoising_strength}}" />
+                <label for="sd_hr_second_pass_steps">Hires steps (2nd pass) (<span id="sd_hr_second_pass_steps_value"></span>)</label>
+                <input id="sd_hr_second_pass_steps" type="range" min="{{hr_second_pass_steps_min}}" max="{{hr_second_pass_steps_max}}" step="{{hr_second_pass_steps_max}}" value="{{hr_second_pass_steps}}" />
+            </div>
+            <div data-sd-source="novel">
+                <label for="sd_novel_upscale_ratio">Upscale by (<span id="sd_novel_upscale_ratio_value"></span>)</label>
+                <input id="sd_novel_upscale_ratio" type="range" min="{{novel_upscale_ratio_min}}" max="{{novel_upscale_ratio_max}}" step="{{novel_upscale_ratio_step}}" value="{{novel_upscale_ratio}}" />
+            </div>
+            <label for="sd_prompt_prefix">Common prompt prefix</label>
+            <textarea id="sd_prompt_prefix" class="text_pole textarea_compact" rows="3"></textarea>
+            <div id="sd_character_prompt_block">
+                <label for="sd_character_prompt">Character-specific prompt prefix</label>
+                <small>Won't be used in groups.</small>
+                <textarea id="sd_character_prompt" class="text_pole textarea_compact" rows="3" placeholder="Any characteristics that describe the currently selected character. Will be added after a common prefix.&#10;Example: female, green eyes, brown hair, pink shirt"></textarea>
+            </div>
+            <label for="sd_negative_prompt">Negative prompt</label>
+            <textarea id="sd_negative_prompt" class="text_pole textarea_compact" rows="3"></textarea>
+        </div>
+    </div>
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <b>SD Prompt Templates</b>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+        </div>
+        <div id="sd_prompt_templates" class="inline-drawer-content">
+        </div>
+    </div>
+</div>
