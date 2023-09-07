@@ -35,3 +35,4 @@ content.log
 cloudflared.exe
 public/assets/
 access.log
+/vectors/

@@ -5825,3 +5825,6 @@ app.post('/get_character_assets_list', jsonParser, async (request, response) => 
         return response.sendStatus(500);
     }
 });
+
+// Vector storage DB
+require('./src/vectors').registerEndpoints(app, jsonParser);
