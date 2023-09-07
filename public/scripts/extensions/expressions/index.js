@@ -263,7 +263,7 @@ async function setLastMessageSprite(img, avatar, labels) {
 
     if (lastMessage) {
         const text = lastMessage.mes || '';
-        const spriteFolderName = getSpriteFolderName(lastMessage);
+        const spriteFolderName = getSpriteFolderName(lastMessage, lastMessage.name);
         const sprites = spriteCache[spriteFolderName] || [];
         const label = await getExpressionLabel(text);
         const path = labels.includes(label) ? sprites.find(x => x.label === label)?.path : '';
