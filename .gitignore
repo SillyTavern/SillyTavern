@@ -17,6 +17,7 @@ public/instruct/
 public/context/
 public/scripts/extensions/third-party/
 public/stats.json
+public/stats.json.*
 /uploads/
 *.jsonl
 /config.conf
@@ -35,3 +36,4 @@ content.log
 cloudflared.exe
 public/assets/
 access.log
+out/
