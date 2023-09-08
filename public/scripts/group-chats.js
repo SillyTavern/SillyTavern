@@ -166,7 +166,7 @@ export async function getGroupChat(groupId) {
         for (let key of data) {
             chat.push(key);
         }
-        printMessages();
+        await printMessages();
     } else {
         sendSystemMessage(system_message_types.GROUP, '', { isSmallSys: true });
         if (group && Array.isArray(group.members)) {
@@ -832,7 +832,7 @@ async function deleteGroup(id) {
         delete tag_map[id];
         resetChatState();
         clearChat();
-        printMessages();
+        await printMessages();
         await getCharacters();
 
         select_rm_info("group_delete", id);

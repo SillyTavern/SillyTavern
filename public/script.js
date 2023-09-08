@@ -1144,10 +1144,11 @@ async function replaceCurrentChat() {
     }
 }
 
-function printMessages() {
-    chat.forEach(function (item, i, arr) {
-        addOneMessage(item, { scroll: i === arr.length - 1 });
-    });
+async function printMessages() {
+    for (let i = 0; i < chat.length; i++) {
+        const item = chat[i];
+        addOneMessage(item, { scroll: i === chat.length - 1 });
+    }
 
     if (power_user.lazy_load > 0) {
         const height = $('#chat').height();
@@ -1190,7 +1191,7 @@ export async function reloadCurrentChat() {
     }
     else {
         resetChatState();
-        printMessages();
+        await printMessages();
     }
 
     await eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
@@ -4448,7 +4449,7 @@ async function getChatResult() {
         chat.push(message);
         await saveChatConditional();
     }
-    printMessages();
+    await printMessages();
     select_selected_character(this_chid);
 
     await eventSource.emit(event_types.CHAT_CHANGED, (getCurrentChatId()));
@@ -5010,12 +5011,12 @@ async function saveSettings(type) {
         dataType: "json",
         contentType: "application/json",
         //processData: false,
-        success: function (data) {
+        success: async function (data) {
             //online_status = data.result;
             eventSource.emit(event_types.SETTINGS_UPDATED);
             if (type == "change_name") {
                 clearChat();
-                printMessages();
+                await printMessages();
             }
         },
         error: function (jqXHR, exception) {
@@ -6289,7 +6290,7 @@ async function createOrEditCharacter(e) {
 
                     await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
                     clearChat();
-                    printMessages();
+                    await printMessages();
                     await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, (chat.length - 1));
                     await saveChatConditional();
                 }
@@ -6918,7 +6919,7 @@ export async function deleteCharacter(name, avatar) {
     delete tag_map[avatar];
     await getCharacters();
     select_rm_info("char_delete", name);
-    printMessages();
+    await printMessages();
     saveSettingsDebounced();
 }
 
