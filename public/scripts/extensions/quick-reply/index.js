@@ -1,4 +1,4 @@
-import { saveSettingsDebounced, callPopup, getRequestHeaders } from "../../../script.js";
+import { saveSettingsDebounced, callPopup, getRequestHeaders, substituteParams } from "../../../script.js";
 import { getContext, extension_settings } from "../../extensions.js";
 import { initScrollHeight, resetScrollHeight } from "../../utils.js";
 import { executeSlashCommands, getSlashCommandsHelp, registerSlashCommand } from "../../slash-commands.js";
@@ -137,11 +137,7 @@ async function sendQuickReply(index) {
         newText = prompt + ' ';
     }
 
-    const context = getContext();
-    const username = context.name1;
-    const charname = context.name2;
-
-    newText = newText.replace('{{char}}', charname).replace('{{user}}', username);
+    newText = substituteParams(newText);
 
     $("#send_textarea").val(newText);
 
