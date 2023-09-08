@@ -17,6 +17,48 @@ const settings = {
 
 const moduleWorker = new ModuleWorkerWrapper(synchronizeChat);
 
+async function onVectorizeAllClick() {
+    try {
+        if (!settings.enabled) {
+            return;
+        }
+
+        const chatId = getCurrentChatId();
+        const batchSize = 5;
+        const elapsedLog = [];
+        let finished = false;
+        $('#vectorize_progress').show();
+        $('#vectorize_progress_percent').text('0');
+        $('#vectorize_progress_eta').text('...');
+
+        while (!finished) {
+            const startTime = Date.now();
+            const remaining = await synchronizeChat(batchSize);
+            const elapsed = Date.now() - startTime;
+            elapsedLog.push(elapsed);
+            finished = remaining <= 0;
+
+            const total = getContext().chat.length;
+            const processed = total - remaining;
+            const processedPercent = Math.round((processed / total) * 100); // percentage of the work done
+            const averageElapsed = elapsedLog.slice(-5).reduce((a, b) => a + b, 0) / elapsedLog.length; // average time needed to process one item
+            const pace = averageElapsed / batchSize; // time needed to process one item
+            const remainingTime = Math.round(pace * remaining / 1000);
+
+            $('#vectorize_progress_percent').text(processedPercent);
+            $('#vectorize_progress_eta').text(remainingTime);
+
+            if (chatId !== getCurrentChatId()) {
+                throw new Error('Chat changed');
+            }
+        }
+    } catch (error) {
+        console.error('Vectors: Failed to vectorize all', error);
+    } finally {
+        $('#vectorize_progress').hide();
+    }
+}
+
 async function synchronizeChat(batchSize = 10) {
     try {
         if (!settings.enabled) {
@@ -283,6 +325,7 @@ jQuery(async () => {
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
+    $('#vectors_vectorize_all').on('click', onVectorizeAllClick);
 
     eventSource.on(event_types.CHAT_CHANGED, onChatEvent);
     eventSource.on(event_types.MESSAGE_DELETED, onChatEvent);

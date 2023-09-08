@@ -16,6 +16,19 @@
                 <option value="local">Local</option>
                 <option value="openai">OpenAI</option>
             </select>
+            <div>
+                Old messages are vectorized gradually as you chat.
+                To process all previous messages, click the button below.
+            </div>
+            <div id="vectors_vectorize_all" class="menu_button menu_button_icon">
+                Vectorize All
+            </div>
+            <div id="vectorize_progress" style="display: none;">
+                <small>
+                    Processed <span id="vectorize_progress_percent">0</span>% of messages.
+                    ETA: <span id="vectorize_progress_eta">...</span> seconds.
+                </small>
+            </div>
         </div>
     </div>
 </div>
