@@ -15,6 +15,8 @@ const defaultSettings = {
     quickReplyEnabled: false,
     numberOfSlots: 5,
     quickReplySlots: [],
+    placeBeforePromptEnabled: false,
+    quickActionEnabled: false,
 }
 
 //method from worldinfo
@@ -75,6 +77,8 @@ async function loadSettings(type) {
 
     $('#quickReplyEnabled').prop('checked', extension_settings.quickReply.quickReplyEnabled);
     $('#quickReplyNumberOfSlots').val(extension_settings.quickReply.numberOfSlots);
+    $('#placeBeforePromptEnabled').prop('checked', extension_settings.quickReply.placeBeforePromptEnabled);
+    $('#quickActionEnabled').prop('checked', extension_settings.quickReply.quickActionEnabled);
 }
 
 function onQuickReplyInput(id) {
@@ -105,6 +109,11 @@ async function onQuickActionEnabledInput() {
     saveSettingsDebounced();
 }
 
+async function onplaceBeforePromptEnabledInput() {
+    extension_settings.quickReply.placeBeforePromptEnabled = $(this).prop('checked');
+    saveSettingsDebounced();
+}
+
 async function sendQuickReply(index) {
     const existingText = $("#send_textarea").val();
     const prompt = extension_settings.quickReply.quickReplySlots[index]?.mes || '';
@@ -118,11 +127,21 @@ async function sendQuickReply(index) {
 
     if (existingText) {
         // If existing text, add space after prompt
-        newText = existingText + ' ' + prompt + ' ';
+        if($("#placeBeforePromptEnabled").prop('checked')){
+            newText = prompt + ' ' + existingText + ' ';
+        }else{
+            newText = existingText + ' ' + prompt + ' ';
+        }
     } else {
         // If no existing text, add prompt only (with a trailing space)
         newText = prompt + ' ';
     }
+
+    const context = getContext();
+    const username = context.name1;
+    const charname = context.name2;
+
+    newText = newText.replace('{{char}}', charname).replace('{{user}}', username);
 
     $("#send_textarea").val(newText);
 
@@ -339,6 +358,10 @@ jQuery(async () => {
                     <input id="quickActionEnabled" type="checkbox" />
                         Disable Send / Insert In User Input
                 </label>
+                <label class="checkbox_label marginBot10 wide100p flexnowrap">
+                    <input id="placeBeforePromptEnabled" type="checkbox" />
+                        Place Quick-reply before the Prompt
+                </label>
                 <div class="flex-container flexnowrap wide100p">
                     <select id="quickReplyPresets" name="quickreply-preset">
                     </select>
@@ -363,6 +386,7 @@ jQuery(async () => {
     
     // Add event handler for quickActionEnabled
     $('#quickActionEnabled').on('input', onQuickActionEnabledInput);
+    $('#placeBeforePromptEnabled').on('input', onplaceBeforePromptEnabledInput);
     $('#quickReplyEnabled').on('input', onQuickReplyEnabledInput);
     $('#quickReplyNumberOfSlotsApply').on('click', onQuickReplyNumberOfSlotsInput);
     $("#quickReplyPresetSaveButton").on('click', saveQuickReplyPreset);
