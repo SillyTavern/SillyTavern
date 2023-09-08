@@ -2768,6 +2768,7 @@ body .ui-widget-content li:hover {
     margin: 10px;
     opacity: 0.85;
     text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
+    order: 9999;
 }
 
 .typing_indicator:after {
