@@ -2440,7 +2440,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             mesExamples = formatInstructModeExamples(mesExamples, name1, name2)
         }
 
-        const exampleSeparator = power_user.context.example_separator ? `${power_user.context.example_separator}\n` : '';
+        const exampleSeparator = power_user.context.example_separator ? `${substituteParams(power_user.context.example_separator)}\n` : '';
         const blockHeading = main_api === 'openai' ? '<START>\n' : exampleSeparator;
         let mesExamplesArray = mesExamples.split(/<START>/gi).slice(1).map(block => `${blockHeading}${block.trim()}\n`);
 
@@ -3422,7 +3422,7 @@ function addChatsPreamble(mesSendString) {
 
 function addChatsSeparator(mesSendString) {
     if (power_user.context.chat_start) {
-        return power_user.context.chat_start + '\n' + mesSendString;
+        return substituteParams(power_user.context.chat_start) + '\n' + mesSendString;
     }
 
     else {
