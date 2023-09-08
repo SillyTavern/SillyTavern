@@ -6,20 +6,21 @@ import { debounce, getStringHash as calculateHash } from "../../utils.js";
 const MODULE_NAME = 'vectors';
 const AMOUNT_TO_LEAVE = 5;
 const INSERT_AMOUNT = 3;
-const QUERY_TEXT_AMOUNT = 3;
+const QUERY_TEXT_AMOUNT = 2;
 
 export const EXTENSION_PROMPT_TAG = '3_vectors';
 
 const settings = {
     enabled: false,
+    source: 'local',
 };
 
 const moduleWorker = new ModuleWorkerWrapper(synchronizeChat);
 
-async function synchronizeChat() {
+async function synchronizeChat(batchSize = 10) {
     try {
         if (!settings.enabled) {
-            return;
+            return -1;
         }
 
         const context = getContext();
@@ -37,7 +38,7 @@ async function synchronizeChat() {
         const deletedHashes = hashesInCollection.filter(x => !hashedMessages.some(y => y.hash === x));
 
         if (newVectorItems.length > 0) {
-            await insertVectorItems(chatId, newVectorItems);
+            await insertVectorItems(chatId, newVectorItems.slice(0, batchSize));
             console.log(`Vectors: Inserted ${newVectorItems.length} new items`);
         }
 
@@ -45,6 +46,8 @@ async function synchronizeChat() {
             await deleteVectorItems(chatId, deletedHashes);
             console.log(`Vectors: Deleted ${deletedHashes.length} old hashes`);
         }
+
+        return newVectorItems.length - batchSize;
     } catch (error) {
         console.error('Vectors: Failed to synchronize chat', error);
     }
@@ -59,18 +62,18 @@ const hashCache = {};
  * @returns {number} Hash value
  */
 function getStringHash(str) {
-  // Check if the hash is already in the cache
-  if (hashCache.hasOwnProperty(str)) {
-    return hashCache[str];
-  }
+    // Check if the hash is already in the cache
+    if (hashCache.hasOwnProperty(str)) {
+        return hashCache[str];
+    }
 
-  // Calculate the hash value
-  const hash = calculateHash(str);
+    // Calculate the hash value
+    const hash = calculateHash(str);
 
-  // Store the hash in the cache
-  hashCache[str] = hash;
+    // Store the hash in the cache
+    hashCache[str] = hash;
 
-  return hash;
+    return hash;
 }
 
 /**
@@ -79,6 +82,9 @@ function getStringHash(str) {
  */
 async function rearrangeChat(chat) {
     try {
+        // Clear the extension prompt
+        setExtensionPrompt(EXTENSION_PROMPT_TAG, '', extension_prompt_types.IN_PROMPT, 0);
+
         if (!settings.enabled) {
             return;
         }
@@ -127,6 +133,11 @@ async function rearrangeChat(chat) {
             }
         }
 
+        if (queriedMessages.length === 0) {
+            console.debug('Vectors: No relevant messages found');
+            return;
+        }
+
         // Format queried messages into a single string
         const queriedText = 'Past events: ' + queriedMessages.map(x => collapseNewlines(`${x.name}: ${x.mes}`).trim()).join('\n\n');
         setExtensionPrompt(EXTENSION_PROMPT_TAG, queriedText, extension_prompt_types.IN_PROMPT, 0);
@@ -171,7 +182,10 @@ async function getSavedHashes(collectionId) {
     const response = await fetch('/api/vector/list', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify({ collectionId }),
+        body: JSON.stringify({
+            collectionId: collectionId,
+            source: settings.source,
+        }),
     });
 
     if (!response.ok) {
@@ -192,7 +206,11 @@ async function insertVectorItems(collectionId, items) {
     const response = await fetch('/api/vector/insert', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify({ collectionId, items }),
+        body: JSON.stringify({
+            collectionId: collectionId,
+            items: items,
+            source: settings.source,
+        }),
     });
 
     if (!response.ok) {
@@ -210,7 +228,11 @@ async function deleteVectorItems(collectionId, hashes) {
     const response = await fetch('/api/vector/delete', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify({ collectionId, hashes }),
+        body: JSON.stringify({
+            collectionId: collectionId,
+            hashes: hashes,
+            source: settings.source,
+        }),
     });
 
     if (!response.ok) {
@@ -228,7 +250,12 @@ async function queryCollection(collectionId, searchText, topK) {
     const response = await fetch('/api/vector/query', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify({ collectionId, searchText, topK }),
+        body: JSON.stringify({
+            collectionId: collectionId,
+            searchText: searchText,
+            topK: topK,
+            source: settings.source,
+        }),
     });
 
     if (!response.ok) {
@@ -248,6 +275,11 @@ jQuery(async () => {
     $('#extensions_settings2').append(renderExtensionTemplate(MODULE_NAME, 'settings'));
     $('#vectors_enabled').prop('checked', settings.enabled).on('input', () => {
         settings.enabled = $('#vectors_enabled').prop('checked');
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+    $('#vectors_source').val(settings.source).on('change', () => {
+        settings.source = String($('#vectors_source').val());
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
