@@ -2783,6 +2783,7 @@ app.post('/getgroups', jsonParser, (_, response) => {
             const group = json5.parse(fileContents);
             const groupStat = fs.statSync(filePath);
             group['date_added'] = groupStat.birthtimeMs;
+            group['create_date'] = humanizedISO8601DateTime(groupStat.birthtimeMs);
 
             let chat_size = 0;
             let date_last_chat = 0;
