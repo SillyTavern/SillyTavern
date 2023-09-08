@@ -2438,7 +2438,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             mesExamples = formatInstructModeExamples(mesExamples, name1, name2)
         }
 
-        const exampleSeparator = power_user.context.example_separator ? `${power_user.context.example_separator}\n` : '';
+        const exampleSeparator = power_user.context.example_separator ? `${substituteParams(power_user.context.example_separator)}\n` : '';
         const blockHeading = main_api === 'openai' ? '<START>\n' : exampleSeparator;
         let mesExamplesArray = mesExamples.split(/<START>/gi).slice(1).map(block => `${blockHeading}${block.trim()}\n`);
 
@@ -3420,7 +3420,7 @@ function addChatsPreamble(mesSendString) {
 
 function addChatsSeparator(mesSendString) {
     if (power_user.context.chat_start) {
-        return power_user.context.chat_start + '\n' + mesSendString;
+        return substituteParams(power_user.context.chat_start) + '\n' + mesSendString;
     }
 
     else {
@@ -7533,7 +7533,6 @@ jQuery(async function () {
     ///////////////////////////////////////////////////////////////////////////////////
 
     $("#api_button").click(function (e) {
-        e.stopPropagation();
         if ($("#api_url_text").val() != "") {
             let value = formatKoboldUrl(String($("#api_url_text").val()).trim());
 
@@ -7566,7 +7565,6 @@ jQuery(async function () {
     });
 
     $("#api_button_textgenerationwebui").click(async function (e) {
-        e.stopPropagation();
         const url_source = api_use_mancer_webui ? "#mancer_api_url_text" : "#textgenerationwebui_api_url_text";
         if ($(url_source).val() != "") {
             let value = formatTextGenURL(String($(url_source).val()).trim(), api_use_mancer_webui);

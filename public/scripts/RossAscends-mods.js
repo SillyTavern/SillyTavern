@@ -31,7 +31,7 @@ import {
     SECRET_KEYS,
     secret_state,
 } from "./secrets.js";
-import { debounce, delay, getStringHash, waitUntilCondition } from "./utils.js";
+import { debounce, delay, getStringHash, isUrlOrAPIKey, waitUntilCondition } from "./utils.js";
 import { chat_completion_sources, oai_settings } from "./openai.js";
 import { getTokenCount } from "./tokenizers.js";
 
@@ -400,15 +400,6 @@ function RA_autoconnect(PrevApi) {
             //console.log('connection attempts: ' + RA_AC_retries + ' delay: ' + (retry_delay / 1000) + 's');
             setTimeout(RA_autoconnect, retry_delay);
         }
-    }
-}
-
-function isUrlOrAPIKey(string) {
-    try {
-        new URL(string);
-        return true;
-    } catch (_) {
-        //          return pattern.test(string);
     }
 }
 
@@ -906,10 +897,13 @@ export function initRossMods() {
     }
 
     $(document).on('keydown', function (event) {
-        processHotkeys(event);
+        processHotkeys(event.originalEvent);
     });
 
     //Additional hotkeys CTRL+ENTER and CTRL+UPARROW
+    /**
+     * @param {KeyboardEvent} event
+     */
     function processHotkeys(event) {
         //Enter to send when send_textarea in focus
         if ($(':focus').attr('id') === 'send_textarea') {
@@ -943,6 +937,14 @@ export function initRossMods() {
             }, 300);
         }
 
+        // Alt+Enter or AltGr+Enter to Continue
+        if ((event.altKey || (event.altKey && event.ctrlKey)) && event.key == "Enter") {
+            if (is_send_press == false) {
+                console.debug("Continuing with Alt+Enter");
+                $('#option_continue').trigger('click');
+            }
+        }
+
         // Ctrl+Enter for Regeneration Last Response. If editing, accept the edits instead
         if (event.ctrlKey && event.key == "Enter") {
             const editMesDone = $(".mes_edit_done:visible");
@@ -955,14 +957,6 @@ export function initRossMods() {
                 $('#options').hide();
             } else {
                 console.debug("Ctrl+Enter ignored");
-            }
-        }
-
-        // Alt+Enter to Continue
-        if (event.altKey && event.key == "Enter") {
-            if (is_send_press == false) {
-                console.debug("Continuing with Alt+Enter");
-                $('#option_continue').trigger('click');
             }
         }
 

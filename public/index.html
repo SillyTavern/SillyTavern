@@ -83,6 +83,7 @@
     <script type="module" src="scripts/preset-manager.js"></script>
     <script type="module" src="scripts/filters.js"></script>
     <script type="module" src="scripts/personas.js"></script>
+    <script type="module" src="scripts/server-history.js"></script>
 
     <title>SillyTavern</title>
 </head>
@@ -1766,8 +1767,8 @@
                             <div id="kobold_api_block">
                                 <h4 data-i18n="API url">API url</h4>
                                 <small data-i18n="Example: http://127.0.0.1:5000/api ">Example: http://127.0.0.1:5000/api </small>
-                                <input id="api_url_text" name="api_url" class="text_pole" placeholder="http://127.0.0.1:5000/api" maxlength="500" value="" autocomplete="off">
-                                <div id="api_button" class="menu_button" type="submit" data-i18n="Connect">Connect</div>
+                                <input id="api_url_text" name="api_url" class="text_pole" placeholder="http://127.0.0.1:5000/api" maxlength="500" value="" autocomplete="off" data-server-history="kobold">
+                                <div id="api_button" class="menu_button" type="submit" data-i18n="Connect" data-server-connect="kobold">Connect</div>
                                 <div id="api_loading" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
                             </div>
                             <div id="online_status2">
@@ -1857,15 +1858,15 @@
                                     <div class="flex1">
                                         <h4 data-i18n="Blocking API url">Blocking API url</h4>
                                         <small data-i18n="Example: http://127.0.0.1:5000/api ">Example: http://127.0.0.1:5000/api </small>
-                                        <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url" class="text_pole wide100p" maxlength="500" value="" autocomplete="off">
+                                        <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="ooba_blocking">
                                     </div>
                                     <div class="flex1">
                                         <h4 data-i18n="Streaming API url">Streaming API url</h4>
                                         <small data-i18n="Example: ws://127.0.0.1:5005/api/v1/stream">Example: ws://127.0.0.1:5005/api/v1/stream </small>
-                                        <input id="streaming_url_textgenerationwebui" type="text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off">
+                                        <input id="streaming_url_textgenerationwebui" type="text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="ooba_streaming">
                                     </div>
                                 </div>
-                                <div id="api_button_textgenerationwebui" class="menu_button" type="submit" data-i18n="Connect">Connect</div>
+                                <div id="api_button_textgenerationwebui" class="menu_button" type="submit" data-i18n="Connect" data-server-connect="ooba_blocking,ooba_streaming">Connect</div>
                                 <div id="api_loading_textgenerationwebui" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
                             </div>
                         </form>
