@@ -7,7 +7,8 @@ import {
 import { selected_group } from "../../group-chats.js";
 import { loadFileToDocument } from "../../utils.js";
 import { loadMovingUIState } from '../../power-user.js';
-import { dragElement } from '../../RossAscends-mods.js'
+import { dragElement } from '../../RossAscends-mods.js';
+import { registerSlashCommand } from "../../slash-commands.js";
 
 const extensionName = "gallery";
 const extensionFolderPath = `scripts/extensions/${extensionName}/`;
@@ -386,3 +387,10 @@ function viewWithDragbox(items) {
     }
 }
 
+
+// Registers a simple command for opening the char gallery.
+registerSlashCommand("show-gallery", showGalleryCommand, ["sg"], "Shows the gallery", true, true);
+
+function showGalleryCommand(args) {
+    showCharGallery();
+}

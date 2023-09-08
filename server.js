@@ -2785,6 +2785,7 @@ app.post('/getgroups', jsonParser, (_, response) => {
             const group = json5.parse(fileContents);
             const groupStat = fs.statSync(filePath);
             group['date_added'] = groupStat.birthtimeMs;
+            group['create_date'] = humanizedISO8601DateTime(groupStat.birthtimeMs);
 
             let chat_size = 0;
             let date_last_chat = 0;
@@ -4005,8 +4006,10 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
             headers: { "Content-Type": "application/json" }
         };
 
-        if (main_api == 'textgenerationwebui' && request.body.use_mancer) {
-            args.headers = Object.assign(args.headers, get_mancer_headers());
+        if (main_api == 'textgenerationwebui') {
+            if (request.body.use_mancer) {
+                args.headers = Object.assign(args.headers, get_mancer_headers());
+            }
             const data = await postAsync(api_server + "/v1/token-count", args);
             return response.send({ count: data['results'][0]['tokens'] });
         }
