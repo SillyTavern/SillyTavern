@@ -4005,8 +4005,10 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
             headers: { "Content-Type": "application/json" }
         };
 
-        if (main_api == 'textgenerationwebui' && request.body.use_mancer) {
-            args.headers = Object.assign(args.headers, get_mancer_headers());
+        if (main_api == 'textgenerationwebui') {
+            if (request.body.use_mancer) {
+                args.headers = Object.assign(args.headers, get_mancer_headers());
+            }
             const data = await postAsync(api_server + "/v1/token-count", args);
             return response.send({ count: data['results'][0]['tokens'] });
         }
