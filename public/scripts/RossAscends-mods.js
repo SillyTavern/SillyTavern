@@ -906,10 +906,13 @@ export function initRossMods() {
     }
 
     $(document).on('keydown', function (event) {
-        processHotkeys(event);
+        processHotkeys(event.originalEvent);
     });
 
     //Additional hotkeys CTRL+ENTER and CTRL+UPARROW
+    /**
+     * @param {KeyboardEvent} event
+     */
     function processHotkeys(event) {
         //Enter to send when send_textarea in focus
         if ($(':focus').attr('id') === 'send_textarea') {
@@ -943,6 +946,14 @@ export function initRossMods() {
             }, 300);
         }
 
+        // Alt+Enter or AltGr+Enter to Continue
+        if ((event.altKey || (event.altKey && event.ctrlKey)) && event.key == "Enter") {
+            if (is_send_press == false) {
+                console.debug("Continuing with Alt+Enter");
+                $('#option_continue').trigger('click');
+            }
+        }
+
         // Ctrl+Enter for Regeneration Last Response. If editing, accept the edits instead
         if (event.ctrlKey && event.key == "Enter") {
             const editMesDone = $(".mes_edit_done:visible");
@@ -955,14 +966,6 @@ export function initRossMods() {
                 $('#options').hide();
             } else {
                 console.debug("Ctrl+Enter ignored");
-            }
-        }
-
-        // Alt+Enter to Continue
-        if (event.altKey && event.key == "Enter") {
-            if (is_send_press == false) {
-                console.debug("Continuing with Alt+Enter");
-                $('#option_continue').trigger('click');
             }
         }
 
