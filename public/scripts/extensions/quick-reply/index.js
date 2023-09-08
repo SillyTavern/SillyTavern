@@ -105,12 +105,12 @@ async function onQuickReplyEnabledInput() {
 
 // New function to handle input on quickActionEnabled
 async function onQuickActionEnabledInput() {
-    extension_settings.quickReply.quickActionEnabled = $(this).prop('checked');
+    extension_settings.quickReply.quickActionEnabled = !!$(this).prop('checked');
     saveSettingsDebounced();
 }
 
-async function onplaceBeforePromptEnabledInput() {
-    extension_settings.quickReply.placeBeforePromptEnabled = $(this).prop('checked');
+async function onPlaceBeforePromptEnabledInput() {
+    extension_settings.quickReply.placeBeforePromptEnabled = !!$(this).prop('checked');
     saveSettingsDebounced();
 }
 
@@ -127,10 +127,10 @@ async function sendQuickReply(index) {
 
     if (existingText) {
         // If existing text, add space after prompt
-        if($("#placeBeforePromptEnabled").prop('checked')){
-            newText = prompt + ' ' + existingText + ' ';
-        }else{
-            newText = existingText + ' ' + prompt + ' ';
+        if (extension_settings.quickReply.placeBeforePromptEnabled) {
+            newText = `${prompt} ${existingText} `;
+        } else {
+            newText = `${existingText} ${prompt} `;
         }
     } else {
         // If no existing text, add prompt only (with a trailing space)
@@ -146,7 +146,7 @@ async function sendQuickReply(index) {
 
     // Only trigger send button if quickActionEnabled is not checked or 
     // the prompt starts with '/'
-    if (!$("#quickActionEnabled").prop('checked') || prompt.startsWith('/')) {
+    if (!extension_settings.quickReply.quickActionEnabled || prompt.startsWith('/')) {
         $("#send_but").trigger('click');
     }
 }
@@ -382,7 +382,7 @@ jQuery(async () => {
     
     // Add event handler for quickActionEnabled
     $('#quickActionEnabled').on('input', onQuickActionEnabledInput);
-    $('#placeBeforePromptEnabled').on('input', onplaceBeforePromptEnabledInput);
+    $('#placeBeforePromptEnabled').on('input', onPlaceBeforePromptEnabledInput);
     $('#quickReplyEnabled').on('input', onQuickReplyEnabledInput);
     $('#quickReplyNumberOfSlotsApply').on('click', onQuickReplyNumberOfSlotsInput);
     $("#quickReplyPresetSaveButton").on('click', saveQuickReplyPreset);
