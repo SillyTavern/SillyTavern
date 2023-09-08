@@ -7535,7 +7535,6 @@ jQuery(async function () {
     ///////////////////////////////////////////////////////////////////////////////////
 
     $("#api_button").click(function (e) {
-        e.stopPropagation();
         if ($("#api_url_text").val() != "") {
             let value = formatKoboldUrl(String($("#api_url_text").val()).trim());
 
@@ -7568,7 +7567,6 @@ jQuery(async function () {
     });
 
     $("#api_button_textgenerationwebui").click(async function (e) {
-        e.stopPropagation();
         const url_source = api_use_mancer_webui ? "#mancer_api_url_text" : "#textgenerationwebui_api_url_text";
         if ($(url_source).val() != "") {
             let value = formatTextGenURL(String($(url_source).val()).trim(), api_use_mancer_webui);

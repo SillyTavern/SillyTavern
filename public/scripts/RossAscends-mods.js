@@ -31,7 +31,7 @@ import {
     SECRET_KEYS,
     secret_state,
 } from "./secrets.js";
-import { debounce, delay, getStringHash, waitUntilCondition } from "./utils.js";
+import { debounce, delay, getStringHash, isUrlOrAPIKey, waitUntilCondition } from "./utils.js";
 import { chat_completion_sources, oai_settings } from "./openai.js";
 import { getTokenCount } from "./tokenizers.js";
 
@@ -400,15 +400,6 @@ function RA_autoconnect(PrevApi) {
             //console.log('connection attempts: ' + RA_AC_retries + ' delay: ' + (retry_delay / 1000) + 's');
             setTimeout(RA_autoconnect, retry_delay);
         }
-    }
-}
-
-function isUrlOrAPIKey(string) {
-    try {
-        new URL(string);
-        return true;
-    } catch (_) {
-        //          return pattern.test(string);
     }
 }
 
