@@ -99,7 +99,14 @@ async function onQuickReplyEnabledInput() {
     saveSettingsDebounced();
 }
 
+// New function to handle input on quickActionEnabled
+async function onQuickActionEnabledInput() {
+    extension_settings.quickReply.quickActionEnabled = $(this).prop('checked');
+    saveSettingsDebounced();
+}
+
 async function sendQuickReply(index) {
+    const existingText = $("#send_textarea").val();
     const prompt = extension_settings.quickReply.quickReplySlots[index]?.mes || '';
 
     if (!prompt) {
@@ -107,9 +114,28 @@ async function sendQuickReply(index) {
         return;
     }
 
-    $("#send_textarea").val(prompt);
-    $("#send_but").trigger('click');
+    let newText;
+
+    if (existingText) {
+        // If existing text, add space after prompt
+        newText = existingText + ' ' + prompt + ' ';
+    } else {
+        // If no existing text, add prompt only (with a trailing space)
+        newText = prompt + ' ';
+    }
+
+    $("#send_textarea").val(newText);
+
+    // Set the focus back to the textarea
+    $("#send_textarea").focus();
+
+    // Only trigger send button if quickActionEnabled is not checked or 
+    // the prompt starts with '/'
+    if (!$("#quickActionEnabled").prop('checked') || prompt.startsWith('/')) {
+        $("#send_but").trigger('click');
+    }
 }
+
 
 function addQuickReplyBar() {
     $('#quickReplyBar').remove();
@@ -309,6 +335,10 @@ jQuery(async () => {
                     <input id="quickReplyEnabled" type="checkbox" />
                         Enable Quick Replies
                 </label>
+                <label class="checkbox_label marginBot10 wide100p flexnowrap">
+                    <input id="quickActionEnabled" type="checkbox" />
+                        Disable Send / Insert In User Input
+                </label>
                 <div class="flex-container flexnowrap wide100p">
                     <select id="quickReplyPresets" name="quickreply-preset">
                     </select>
@@ -330,7 +360,9 @@ jQuery(async () => {
     </div>`;
 
     $('#extensions_settings2').append(settingsHtml);
-
+    
+    // Add event handler for quickActionEnabled
+    $('#quickActionEnabled').on('input', onQuickActionEnabledInput);
     $('#quickReplyEnabled').on('input', onQuickReplyEnabledInput);
     $('#quickReplyNumberOfSlotsApply').on('click', onQuickReplyNumberOfSlotsInput);
     $("#quickReplyPresetSaveButton").on('click', saveQuickReplyPreset);

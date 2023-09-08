@@ -5794,7 +5794,7 @@ function showSwipeButtons() {
     const swipeId = chat[chat.length - 1].swipe_id;
     var swipesCounterHTML = (`${(swipeId + 1)}/${(chat[chat.length - 1].swipes.length)}`);
 
-    if (swipeId !== undefined && swipeId != 0) {
+    if (swipeId !== undefined && chat[chat.length - 1].swipes.length > 1) {
         currentMessage.children('.swipe_left').css('display', 'flex');
     }
     //only show right when generate is off, or when next right swipe would not make a generate happen
@@ -6354,6 +6354,11 @@ function swipe_left() {      // when we swipe left..but no generation.
     const swipe_duration = 120;
     const swipe_range = '700px';
     chat[chat.length - 1]['swipe_id']--;
+
+    if (chat[chat.length - 1]['swipe_id'] < 0) {
+        chat[chat.length - 1]['swipe_id'] = chat[chat.length - 1]['swipes'].length - 1;
+    }
+
     if (chat[chat.length - 1]['swipe_id'] >= 0) {
         /*$(this).parent().children('swipe_right').css('display', 'flex');
         if (chat[chat.length - 1]['swipe_id'] === 0) {
@@ -6431,7 +6436,7 @@ function swipe_left() {      // when we swipe left..but no generation.
                             queue: false,
                             complete: async function () {
                                 await eventSource.emit(event_types.MESSAGE_SWIPED, (chat.length - 1));
-                                await saveChatConditional();
+                                saveChatDebounced();
                             }
                         });
                     }
@@ -6480,12 +6485,12 @@ const swipe_right = () => {
         return;
     }
 
-    if (chat.length == 1) {
-        if (chat[0]['swipe_id'] !== undefined && chat[0]['swipe_id'] == chat[0]['swipes'].length - 1) {
-            toastr.info('Add more alternative greetings to swipe through', 'That\'s all for now');
-            return;
-        }
-    }
+    // if (chat.length == 1) {
+    //     if (chat[0]['swipe_id'] !== undefined && chat[0]['swipe_id'] == chat[0]['swipes'].length - 1) {
+            // toastr.info('Add more alternative greetings to swipe through', 'That\'s all for now');
+            // return;
+    //     }
+    // }
 
     const swipe_duration = 200;
     const swipe_range = 700;
@@ -6500,7 +6505,11 @@ const swipe_right = () => {
         chat[chat.length - 1]['swipe_info'][0] = { 'send_date': chat[chat.length - 1]['send_date'], 'gen_started': chat[chat.length - 1]['gen_started'], 'gen_finished': chat[chat.length - 1]['gen_finished'], 'extra': JSON.parse(JSON.stringify(chat[chat.length - 1]['extra'])) };
         //assign swipe info array with last message from chat
     }
-    chat[chat.length - 1]['swipe_id']++;                                      //make new slot in array
+    if (chat.length === 1 && chat[0]['swipe_id'] !== undefined && chat[0]['swipe_id'] === chat[0]['swipes'].length - 1) {    // if swipe_right is called on the last alternate greeting, loop back around
+        chat[0]['swipe_id'] = 0;
+    } else {
+        chat[chat.length - 1]['swipe_id']++;                                // make new slot in array
+    }
     if (chat[chat.length - 1].extra) {
         // if message has memory attached - remove it to allow regen
         if (chat[chat.length - 1].extra.memory) {
@@ -6515,7 +6524,7 @@ const swipe_right = () => {
         chat[chat.length - 1]['swipe_info'] = [];
     }
     //console.log(chat[chat.length-1]['swipes']);
-    if (parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length) { //if swipe id of last message is the same as the length of the 'swipes' array
+    if (parseInt(chat[chat.length - 1]['swipe_id']) === chat[chat.length - 1]['swipes'].length && chat.length !== 1) { //if swipe id of last message is the same as the length of the 'swipes' array and not the greeting
         delete chat[chat.length - 1].gen_started;
         delete chat[chat.length - 1].gen_finished;
         run_generate = true;
@@ -6616,7 +6625,7 @@ const swipe_right = () => {
                                     await Generate('swipe');
                                 } else {
                                     if (parseInt(chat[chat.length - 1]['swipe_id']) !== chat[chat.length - 1]['swipes'].length) {
-                                        await saveChatConditional();
+                                        saveChatDebounced();
                                     }
                                 }
                             }

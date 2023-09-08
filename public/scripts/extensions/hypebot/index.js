@@ -191,11 +191,13 @@ jQuery(() => {
         settings.enabled = $('#hypebot_enabled').prop('checked');
         hypeBotBar.toggle(settings.enabled);
         abortController?.abort();
+        Object.assign(extension_settings.hypebot, settings);
         saveSettingsDebounced();
     });
 
     $('#hypebot_name').val(settings.name).on('input', () => {
         settings.name = String($('#hypebot_name').val());
+        Object.assign(extension_settings.hypebot, settings);
         saveSettingsDebounced();
     });
 

@@ -309,8 +309,8 @@ function getTiktokenTokenizer(model) {
     return tokenizer;
 }
 
-function humanizedISO8601DateTime(date = Date.now()) {
-    let baseDate = new Date(date);
+function humanizedISO8601DateTime(date) {
+    let baseDate = typeof date === 'number' ? new Date(date) : new Date();
     let humanYear = baseDate.getFullYear();
     let humanMonth = (baseDate.getMonth() + 1);
     let humanDate = baseDate.getDate();
@@ -981,7 +981,6 @@ function readFromV2(char) {
     });
 
     char['chat'] = char['chat'] ?? humanizedISO8601DateTime();
-    char['create_date'] = char['create_date'] ?? humanizedISO8601DateTime();
 
     return char;
 }
@@ -1012,7 +1011,6 @@ function charaFormatData(data) {
     _.set(char, 'chat', data.ch_name + ' - ' + humanizedISO8601DateTime());
     _.set(char, 'talkativeness', data.talkativeness);
     _.set(char, 'fav', data.fav == 'true');
-    _.set(char, 'create_date', humanizedISO8601DateTime());
 
     // Spec V2 fields
     _.set(char, 'spec', 'chara_card_v2');
@@ -2785,6 +2783,7 @@ app.post('/getgroups', jsonParser, (_, response) => {
             const group = json5.parse(fileContents);
             const groupStat = fs.statSync(filePath);
             group['date_added'] = groupStat.birthtimeMs;
+            group['create_date'] = humanizedISO8601DateTime(groupStat.birthtimeMs);
 
             let chat_size = 0;
             let date_last_chat = 0;
@@ -4005,8 +4004,10 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
             headers: { "Content-Type": "application/json" }
         };
 
-        if (main_api == 'textgenerationwebui' && request.body.use_mancer) {
-            args.headers = Object.assign(args.headers, get_mancer_headers());
+        if (main_api == 'textgenerationwebui') {
+            if (request.body.use_mancer) {
+                args.headers = Object.assign(args.headers, get_mancer_headers());
+            }
             const data = await postAsync(api_server + "/v1/token-count", args);
             return response.send({ count: data['results'][0]['tokens'] });
         }
