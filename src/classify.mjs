@@ -1,5 +1,7 @@
-import { pipeline, TextClassificationPipeline } from 'sillytavern-transformers';
+import { pipeline, TextClassificationPipeline, env } from 'sillytavern-transformers';
 import path from 'path';
+
+env.backends.onnx = 'onnxruntime-web';
 
 class PipelineAccessor {
     /**
