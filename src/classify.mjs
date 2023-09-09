@@ -1,4 +1,4 @@
-import { pipeline, TextClassificationPipeline } from '@xenova/transformers';
+import { pipeline, TextClassificationPipeline } from 'sillytavern-transformers';
 import path from 'path';
 
 class PipelineAccessor {
