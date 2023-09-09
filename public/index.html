@@ -3233,9 +3233,16 @@
                             <h2></h2>
                         </div>
                         <div id="result_info" class="flex-container" style="display: none;">
-                            <span id="result_info_text" title="Token counts may be inaccurate and provided just for reference." data-i18n="[title]Token counts may be inaccurate and provided just for reference.">
-                                <strong id="result_info_total_tokens">Calculating...</strong> Total Tokens
-                            </span>
+                            <div id="result_info_text" title="Token counts may be inaccurate and provided just for reference." data-i18n="[title]Token counts may be inaccurate and provided just for reference.">
+                                <div>
+                                    <strong id="result_info_total_tokens" title="Total tokens">Calculating...</strong>&nbsp;<span data-i18n="Tokens">Tokens</span>
+                                </div>
+                                <div>
+                                    <small title="Permanent tokens">
+                                        (<span id="result_info_permanent_tokens"></span>&nbsp;<span data-i18n="Permanent">Permanent</span>)
+                                    </small>
+                                </div>
+                            </div>
                             <a id="chartokenwarning" class="right_menu_button fa-solid fa-triangle-exclamation" href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-tokens" target="_blank" title="About Token 'Limits'"></a>
                             <i title="Click for stats!" class="fa-solid fa-ranking-star right_menu_button rm_stats_button"></i>
                             <i title="Toggle character info panel" id="hideCharPanelAvatarButton" class="fa-solid fa-eye right_menu_button"></i>
@@ -3251,7 +3258,7 @@
                             <div id="name_div">
                                 <input id="character_name_pole" name="ch_name" class="text_pole" data-i18n="[placeholder]Name this character" placeholder="Name this character" maxlength="50" value="" autocomplete="off">
                                 <div class="extension_token_counter">
-                                    Tokens: <span data-token-counter="character_name_pole">counting...</span>
+                                    Tokens: <span data-token-counter="character_name_pole" data-token-permanent="true">counting...</span>
                                 </div>
                             </div>
 
@@ -3333,7 +3340,7 @@
 
                         <textarea id="description_textarea" data-i18n="[placeholder]Describe your character's physical and mental traits here." placeholder="Describe your character's physical and mental traits here." class="marginBot5" name="description" placeholder=""></textarea>
                         <div class="extension_token_counter">
-                            Tokens: <span data-token-counter="description_textarea">counting...</span>
+                            Tokens: <span data-token-counter="description_textarea" data-token-permanent="true">counting...</span>
                         </div>
 
                         <div id="first_message_div" class="marginBot5 title_restorable">
@@ -3617,7 +3624,7 @@
             </h4>
             <textarea id="personality_textarea" name="personality" data-i18n="[placeholder](A brief description of the personality)" placeholder="(A brief description of the personality)" form="form_create" class="text_pole" autocomplete="off" rows="1" maxlength="20000"></textarea>
             <div class="extension_token_counter">
-                Tokens: <span data-token-counter="personality_textarea">counting...</span>
+                Tokens: <span data-token-counter="personality_textarea" data-token-permanent="true">counting...</span>
             </div>
         </div>
 
@@ -3630,7 +3637,7 @@
             </h4>
             <textarea id="scenario_pole" name="scenario" data-i18n="[placeholder](Circumstances and context of the interaction)" placeholder="(Circumstances and context of the interaction)" class="text_pole" maxlength="20000" value="" autocomplete="off" form="form_create" rows="1"></textarea>
             <div class="extension_token_counter">
-                Tokens: <span data-token-counter="scenario_pole">counting...</span>
+                Tokens: <span data-token-counter="scenario_pole" data-token-permanent="true">counting...</span>
             </div>
         </div>
 

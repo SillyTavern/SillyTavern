@@ -210,10 +210,12 @@ $("#character_popup").on("input", function () { countTokensDebounced(); });
 //function:
 export function RA_CountCharTokens() {
     let total_tokens = 0;
+    let permanent_tokens = 0;
 
     $('[data-token-counter]').each(function () {
         const counter = $(this);
         const input = $(document.getElementById(counter.data('token-counter')));
+        const isPermanent = counter.data('token-permanent') === true;
         const value = String(input.val());
 
         if (input.length === 0) {
@@ -230,10 +232,12 @@ export function RA_CountCharTokens() {
 
         if (input.data('last-value-hash') === valueHash) {
             total_tokens += Number(counter.text());
+            permanent_tokens += isPermanent ? Number(counter.text()) : 0;
         } else {
             const tokens = getTokenCount(value);
             counter.text(tokens);
             total_tokens += tokens;
+            permanent_tokens += isPermanent ? tokens : 0;
             input.data('last-value-hash', valueHash);
         }
     });
@@ -242,6 +246,7 @@ export function RA_CountCharTokens() {
     const tokenLimit = Math.max(((main_api !== 'openai' ? max_context : oai_settings.openai_max_context) / 2), 1024);
     const showWarning = (total_tokens > tokenLimit);
     $('#result_info_total_tokens').text(total_tokens);
+    $('#result_info_permanent_tokens').text(permanent_tokens);
     $('#result_info_text').toggleClass('neutral_warning', showWarning);
     $('#chartokenwarning').toggle(showWarning);
 }
