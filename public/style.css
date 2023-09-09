@@ -1209,6 +1209,7 @@ input[type="file"] {
 .radio_group {
     display: flex;
     flex-direction: column;
+    margin-top: 5px;
 }
 
 #extension_floating_counter {

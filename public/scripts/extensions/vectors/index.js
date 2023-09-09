@@ -1,18 +1,21 @@
-import { eventSource, event_types, extension_prompt_types, getCurrentChatId, getRequestHeaders, saveSettingsDebounced, setExtensionPrompt } from "../../../script.js";
+import { eventSource, event_types, extension_prompt_types, getCurrentChatId, getRequestHeaders, saveSettingsDebounced, setExtensionPrompt, substituteParams } from "../../../script.js";
 import { ModuleWorkerWrapper, extension_settings, getContext, renderExtensionTemplate } from "../../extensions.js";
-import { collapseNewlines } from "../../power-user.js";
+import { collapseNewlines, power_user, ui_mode } from "../../power-user.js";
 import { debounce, getStringHash as calculateHash } from "../../utils.js";
 
 const MODULE_NAME = 'vectors';
-const AMOUNT_TO_LEAVE = 5;
-const INSERT_AMOUNT = 3;
-const QUERY_TEXT_AMOUNT = 2;
 
 export const EXTENSION_PROMPT_TAG = '3_vectors';
 
 const settings = {
     enabled: false,
     source: 'local',
+    template: `Past events: {{text}}`,
+    depth: 2,
+    position: extension_prompt_types.IN_PROMPT,
+    protect: 5,
+    insert: 3,
+    query: 2,
 };
 
 const moduleWorker = new ModuleWorkerWrapper(synchronizeChat);
@@ -138,8 +141,8 @@ async function rearrangeChat(chat) {
             return;
         }
 
-        if (chat.length < AMOUNT_TO_LEAVE) {
-            console.debug(`Vectors: Not enough messages to rearrange (less than ${AMOUNT_TO_LEAVE})`);
+        if (chat.length < settings.protect) {
+            console.debug(`Vectors: Not enough messages to rearrange (less than ${settings.protect})`);
             return;
         }
 
@@ -151,9 +154,9 @@ async function rearrangeChat(chat) {
         }
 
         // Get the most relevant messages, excluding the last few
-        const queryHashes = await queryCollection(chatId, queryText, INSERT_AMOUNT);
+        const queryHashes = await queryCollection(chatId, queryText, settings.insert);
         const queriedMessages = [];
-        const retainMessages = chat.slice(-AMOUNT_TO_LEAVE);
+        const retainMessages = chat.slice(-settings.protect);
 
         for (const message of chat) {
             if (retainMessages.includes(message)) {
@@ -181,13 +184,21 @@ async function rearrangeChat(chat) {
         }
 
         // Format queried messages into a single string
-        const queriedText = queriedMessages.map(x => collapseNewlines(`${x.name}: ${x.mes}`).trim()).join('\n\n');
-        console.log('Vectors: relevant past messages found.\n', queriedText);
-        const insertedText = `Past events: ${queriedText}`;
-        setExtensionPrompt(EXTENSION_PROMPT_TAG, insertedText, extension_prompt_types.IN_PROMPT, 0);
+        const insertedText = getPromptText(queriedMessages);
+        setExtensionPrompt(EXTENSION_PROMPT_TAG, insertedText, settings.position, settings.depth);
     } catch (error) {
         console.error('Vectors: Failed to rearrange chat', error);
     }
+}
+
+/**
+ * @param {any[]} queriedMessages
+ * @returns {string}
+ */
+function getPromptText(queriedMessages) {
+    const queriedText = queriedMessages.map(x => collapseNewlines(`${x.name}: ${x.mes}`).trim()).join('\n\n');
+    console.log('Vectors: relevant past messages found.\n', queriedText);
+    return substituteParams(settings.template.replace(/{{text}}/i, queriedText));
 }
 
 window['vectors_rearrangeChat'] = rearrangeChat;
@@ -209,7 +220,7 @@ function getQueryText(chat) {
             i++;
         }
 
-        if (i === QUERY_TEXT_AMOUNT) {
+        if (i === settings.query) {
             break;
         }
     }
@@ -327,6 +338,39 @@ jQuery(async () => {
         Object.assign(extension_settings.vectors, settings);
         saveSettingsDebounced();
     });
+    $('#vectors_template').val(settings.template).on('input', () => {
+        settings.template = String($('#vectors_template').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+    $('#vectors_depth').val(settings.depth).on('input', () => {
+        settings.depth = Number($('#vectors_depth').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+    $('#vectors_protect').val(settings.protect).on('input', () => {
+        settings.protect = Number($('#vectors_protect').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+    $('#vectors_insert').val(settings.insert).on('input', () => {
+        settings.insert = Number($('#vectors_insert').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+    $('#vectors_query').val(settings.query).on('input', () => {
+        settings.query = Number($('#vectors_query').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+    $(`input[name="vectors_position"][value="${settings.position}"]`).prop('checked', true);
+    $('input[name="vectors_position"]').on('change', () => {
+        settings.position = Number($('input[name="vectors_position"]:checked').val());
+        Object.assign(extension_settings.vectors, settings);
+        saveSettingsDebounced();
+    });
+    $('#vectors_advanced_settings').toggleClass('displayNone', power_user.ui_mode === ui_mode.SIMPLE);
+
     $('#vectors_vectorize_all').on('click', onVectorizeAllClick);
 
     eventSource.on(event_types.CHAT_CHANGED, onChatEvent);
