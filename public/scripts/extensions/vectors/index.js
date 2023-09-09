@@ -59,7 +59,7 @@ async function onVectorizeAllClick() {
     }
 }
 
-async function synchronizeChat(batchSize = 10) {
+async function synchronizeChat(batchSize = 5) {
     try {
         if (!settings.enabled) {
             return -1;
@@ -181,8 +181,10 @@ async function rearrangeChat(chat) {
         }
 
         // Format queried messages into a single string
-        const queriedText = 'Past events: ' + queriedMessages.map(x => collapseNewlines(`${x.name}: ${x.mes}`).trim()).join('\n\n');
-        setExtensionPrompt(EXTENSION_PROMPT_TAG, queriedText, extension_prompt_types.IN_PROMPT, 0);
+        const queriedText = queriedMessages.map(x => collapseNewlines(`${x.name}: ${x.mes}`).trim()).join('\n\n');
+        console.log('Vectors: relevant past messages found.\n', queriedText);
+        const insertedText = `Past events: ${queriedText}`;
+        setExtensionPrompt(EXTENSION_PROMPT_TAG, insertedText, extension_prompt_types.IN_PROMPT, 0);
     } catch (error) {
         console.error('Vectors: Failed to rearrange chat', error);
     }
