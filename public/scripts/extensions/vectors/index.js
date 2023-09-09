@@ -323,6 +323,31 @@ async function queryCollection(collectionId, searchText, topK) {
     return results;
 }
 
+async function purgeVectorIndex(collectionId) {
+    try {
+        if (!settings.enabled) {
+            return;
+        }
+
+        const response = await fetch('/api/vector/purge', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                collectionId: collectionId,
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Could not delete vector index for collection ${collectionId}`);
+        }
+
+        console.log(`Vectors: Purged vector index for collection ${collectionId}`);
+
+    } catch (error) {
+        console.error('Vectors: Failed to purge', error);
+    }
+}
+
 jQuery(async () => {
     if (!extension_settings.vectors) {
         extension_settings.vectors = settings;
@@ -381,4 +406,6 @@ jQuery(async () => {
     eventSource.on(event_types.MESSAGE_SENT, onChatEvent);
     eventSource.on(event_types.MESSAGE_RECEIVED, onChatEvent);
     eventSource.on(event_types.MESSAGE_SWIPED, onChatEvent);
+    eventSource.on(event_types.CHAT_DELETED, purgeVectorIndex);
+    eventSource.on(event_types.GROUP_CHAT_DELETED, purgeVectorIndex);
 });

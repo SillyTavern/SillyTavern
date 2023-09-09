@@ -24,12 +24,13 @@ async function getVector(source, text) {
  * Gets the index for the vector collection
  * @param {string} collectionId - The collection ID
  * @param {string} source - The source of the vector
+ * @param {boolean} create - Whether to create the index if it doesn't exist
  * @returns {Promise<vectra.LocalIndex>} - The index for the collection
  */
-async function getIndex(collectionId, source) {
+async function getIndex(collectionId, source, create = true) {
     const index = new vectra.LocalIndex(path.join(process.cwd(), 'vectors', sanitize(source), sanitize(collectionId)));
 
-    if (!await index.isIndexCreated()) {
+    if (create && !await index.isIndexCreated()) {
         await index.createIndex();
     }
 
@@ -179,6 +180,36 @@ async function registerEndpoints(app, jsonParser) {
             const source = String(req.body.source) || 'local';
 
             await deleteVectorItems(collectionId, source, hashes);
+            return res.sendStatus(200);
+        } catch (error) {
+            console.error(error);
+            return res.sendStatus(500);
+        }
+    });
+
+    app.post('/api/vector/purge', jsonParser, async (req, res) => {
+        try {
+            if (!req.body.collectionId) {
+                return res.sendStatus(400);
+            }
+
+            const collectionId = String(req.body.collectionId);
+
+            const sources = ['local', 'openai'];
+            for (const source of sources) {
+                const index = await getIndex(collectionId, source, false);
+
+                const exists = await index.isIndexCreated();
+
+                if (!exists) {
+                    continue;
+                }
+
+                const path = index.folderPath;
+                await index.deleteIndex();
+                console.log(`Deleted vector index at ${path}`);
+            }
+
             return res.sendStatus(200);
         } catch (error) {
             console.error(error);

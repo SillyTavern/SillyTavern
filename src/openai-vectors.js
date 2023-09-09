@@ -27,7 +27,8 @@ async function getOpenAIVector(text) {
     });
 
     if (!response.ok) {
-        console.log('OpenAI request failed');
+        const text = await response.text();
+        console.log('OpenAI request failed', response.statusText, text);
         throw new Error('OpenAI request failed');
     }
 
