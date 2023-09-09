@@ -530,7 +530,7 @@ async function moduleWorker() {
     }
 
     const offlineMode = $('.expression_settings .offline_mode');
-    if (!modules.includes('classify')) {
+    if (!modules.includes('classify') && !extension_settings.expressions.local) {
         $('.expression_settings').show();
         offlineMode.css('display', 'block');
         lastCharacter = context.groupId || context.characterId;
@@ -711,25 +711,45 @@ async function setSpriteSlashCommand(_, spriteId) {
 
 async function getExpressionLabel(text) {
     // Return if text is undefined, saving a costly fetch request
-    if (!modules.includes('classify') || !text) {
+    if ((!modules.includes('classify') && !extension_settings.expressions.local) || !text) {
         return FALLBACK_EXPRESSION;
     }
 
-    const url = new URL(getApiUrl());
-    url.pathname = '/api/classify';
+    try {
+        if (extension_settings.expressions.local) {
+            // Local transformers pipeline
+            const apiResult = await fetch('/api/extra/classify', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify({ text: text }),
+            });
 
-    const apiResult = await doExtrasFetch(url, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Bypass-Tunnel-Reminder': 'bypass',
-        },
-        body: JSON.stringify({ text: text }),
-    });
+            if (apiResult.ok) {
+                const data = await apiResult.json();
+                return data.classification[0].label;
+            }
+        } else {
+            // Extras
+            const url = new URL(getApiUrl());
+            url.pathname = '/api/classify';
 
-    if (apiResult.ok) {
-        const data = await apiResult.json();
-        return data.classification[0].label;
+            const apiResult = await doExtrasFetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Bypass-Tunnel-Reminder': 'bypass',
+                },
+                body: JSON.stringify({ text: text }),
+            });
+
+            if (apiResult.ok) {
+                const data = await apiResult.json();
+                return data.classification[0].label;
+            }
+        }
+    } catch (error) {
+        console.log(error);
+        return FALLBACK_EXPRESSION;
     }
 }
 
@@ -821,7 +841,7 @@ async function getSpritesList(name) {
 
 async function getExpressionsList() {
     // get something for offline mode (default images)
-    if (!modules.includes('classify')) {
+    if (!modules.includes('classify') && !extension_settings.expressions.local) {
         return DEFAULT_EXPRESSIONS;
     }
 
@@ -829,20 +849,34 @@ async function getExpressionsList() {
         return expressionsList;
     }
 
-    const url = new URL(getApiUrl());
-    url.pathname = '/api/classify/labels';
 
     try {
-        const apiResult = await doExtrasFetch(url, {
-            method: 'GET',
-            headers: { 'Bypass-Tunnel-Reminder': 'bypass' },
-        });
+        if (extension_settings.expressions.local) {
+            const apiResult = await fetch('/api/extra/classify/labels', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+            });
 
-        if (apiResult.ok) {
+            if (apiResult.ok) {
+                const data = await apiResult.json();
+                expressionsList = data.labels;
+                return expressionsList;
+            }
+        } else {
+            const url = new URL(getApiUrl());
+            url.pathname = '/api/classify/labels';
 
-            const data = await apiResult.json();
-            expressionsList = data.labels;
-            return expressionsList;
+            const apiResult = await doExtrasFetch(url, {
+                method: 'GET',
+                headers: { 'Bypass-Tunnel-Reminder': 'bypass' },
+            });
+
+            if (apiResult.ok) {
+
+                const data = await apiResult.json();
+                expressionsList = data.labels;
+                return expressionsList;
+            }
         }
     }
     catch (error) {
@@ -1226,6 +1260,10 @@ function setExpressionOverrideHtml(forceClear = false) {
         $('#expressions_show_default').on('input', onExpressionsShowDefaultInput);
         $('#expression_upload_pack_button').on('click', onClickExpressionUploadPackButton);
         $('#expressions_show_default').prop('checked', extension_settings.expressions.showDefault).trigger('input');
+        $('#expression_local').prop('checked', extension_settings.expressions.local).on('input', function () {
+            extension_settings.expressions.local = !!$(this).prop('checked');
+            saveSettingsDebounced();
+        });
         $('#expression_override_cleanup_button').on('click', onClickExpressionOverrideRemoveAllButton);
         $(document).on('dragstart', '.expression', (e) => {
             e.preventDefault()

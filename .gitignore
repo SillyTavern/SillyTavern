@@ -36,3 +36,4 @@ cloudflared.exe
 public/assets/
 access.log
 /vectors/
+/cache/
