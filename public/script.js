@@ -8468,6 +8468,7 @@ jQuery(async function () {
             '#world_popup',
             '.ui-widget',
             '.text_pole',
+            '#toast-container',
         ];
         for (const id of forbiddenTargets) {
             if (clickTarget.closest(id).length > 0) {
