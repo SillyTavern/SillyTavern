@@ -1,7 +1,7 @@
-import { eventSource, event_types, extension_prompt_types, getCurrentChatId, getRequestHeaders, saveSettingsDebounced, setExtensionPrompt, substituteParams } from "../../../script.js";
+import { eventSource, event_types, extension_prompt_types, getCurrentChatId, getRequestHeaders, is_send_press, saveSettingsDebounced, setExtensionPrompt, substituteParams } from "../../../script.js";
 import { ModuleWorkerWrapper, extension_settings, getContext, renderExtensionTemplate } from "../../extensions.js";
 import { collapseNewlines, power_user, ui_mode } from "../../power-user.js";
-import { debounce, getStringHash as calculateHash } from "../../utils.js";
+import { debounce, getStringHash as calculateHash, waitUntilCondition } from "../../utils.js";
 
 const MODULE_NAME = 'vectors';
 
@@ -35,6 +35,11 @@ async function onVectorizeAllClick() {
         $('#vectorize_progress_eta').text('...');
 
         while (!finished) {
+            if (is_send_press) {
+                toastr.info('Message generation is in progress.', 'Vectorization aborted');
+                throw new Error('Message generation is in progress.');
+            }
+
             const startTime = Date.now();
             const remaining = await synchronizeChat(batchSize);
             const elapsed = Date.now() - startTime;
@@ -44,7 +49,8 @@ async function onVectorizeAllClick() {
             const total = getContext().chat.length;
             const processed = total - remaining;
             const processedPercent = Math.round((processed / total) * 100); // percentage of the work done
-            const averageElapsed = elapsedLog.slice(-5).reduce((a, b) => a + b, 0) / elapsedLog.length; // average time needed to process one item
+            const lastElapsed = elapsedLog.slice(-5); // last 5 elapsed times
+            const averageElapsed = lastElapsed.reduce((a, b) => a + b, 0) / lastElapsed.length; // average time needed to process one item
             const pace = averageElapsed / batchSize; // time needed to process one item
             const remainingTime = Math.round(pace * remaining / 1000);
 
@@ -62,12 +68,22 @@ async function onVectorizeAllClick() {
     }
 }
 
+let syncBlocked = false;
+
 async function synchronizeChat(batchSize = 5) {
+    try {
+        await waitUntilCondition(() => !syncBlocked, 500);
+    } catch {
+        console.log('Vectors: Synchronization blocked by another process');
+        return -1;
+    }
+
     try {
         if (!settings.enabled) {
             return -1;
         }
 
+        syncBlocked = true;
         const context = getContext();
         const chatId = getCurrentChatId();
 
@@ -83,8 +99,8 @@ async function synchronizeChat(batchSize = 5) {
         const deletedHashes = hashesInCollection.filter(x => !hashedMessages.some(y => y.hash === x));
 
         if (newVectorItems.length > 0) {
+            console.log(`Vectors: Found ${newVectorItems.length} new items. Processing ${batchSize}...`);
             await insertVectorItems(chatId, newVectorItems.slice(0, batchSize));
-            console.log(`Vectors: Inserted ${newVectorItems.length} new items`);
         }
 
         if (deletedHashes.length > 0) {
@@ -97,6 +113,8 @@ async function synchronizeChat(batchSize = 5) {
         toastr.error('Check server console for more details', 'Vectorization failed');
         console.error('Vectors: Failed to synchronize chat', error);
         return -1;
+    } finally {
+        syncBlocked = false;
     }
 }
 
