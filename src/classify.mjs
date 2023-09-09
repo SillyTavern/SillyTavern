@@ -24,6 +24,7 @@ class PipelineAccessor {
  * @param {any} jsonParser
  */
 function registerEndpoints(app, jsonParser) {
+    const cacheObject = {};
     const pipelineAccessor = new PipelineAccessor();
 
     app.post('/api/extra/classify/labels', jsonParser, async (req, res) => {
@@ -35,10 +36,19 @@ function registerEndpoints(app, jsonParser) {
     app.post('/api/extra/classify', jsonParser, async (req, res) => {
         const { text } = req.body;
 
-        const pipe = await pipelineAccessor.get();
-        const result = await pipe(text);
+        async function getResult(text) {
+            if (cacheObject.hasOwnProperty(text)) {
+                return cacheObject[text];
+            } else {
+                const pipe = await pipelineAccessor.get();
+                const result = await pipe(text);
+                cacheObject[text] = result;
+                return result;
+            }
+        }
 
         console.log('Classify input:', text);
+        const result = await getResult(text);
         console.log('Classify output:', result);
 
         return res.json({ classification: result });

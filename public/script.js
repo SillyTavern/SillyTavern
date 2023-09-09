@@ -121,7 +121,7 @@ import {
     delay,
     restoreCaretPosition,
     saveCaretPosition,
-    end_trim_to_sentence,
+    trimToEndSentence,
     countOccurrences,
     isOdd,
     sortMoments,
@@ -3781,7 +3781,7 @@ function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete
     getMessage = getRegexedString(getMessage, isImpersonate ? regex_placement.USER_INPUT : regex_placement.AI_OUTPUT);
 
     if (!displayIncompleteSentences && power_user.trim_sentences) {
-        getMessage = end_trim_to_sentence(getMessage, power_user.include_newline);
+        getMessage = trimToEndSentence(getMessage, power_user.include_newline);
     }
 
     if (power_user.collapse_newlines) {

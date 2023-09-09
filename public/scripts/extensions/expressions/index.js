@@ -3,7 +3,7 @@ import { dragElement, isMobile } from "../../RossAscends-mods.js";
 import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch, renderExtensionTemplate } from "../../extensions.js";
 import { loadMovingUIState, power_user } from "../../power-user.js";
 import { registerSlashCommand } from "../../slash-commands.js";
-import { onlyUnique, debounce, getCharaFilename } from "../../utils.js";
+import { onlyUnique, debounce, getCharaFilename, trimToEndSentence, trimToStartSentence } from "../../utils.js";
 export { MODULE_NAME };
 
 const MODULE_NAME = 'expressions';
@@ -709,11 +709,41 @@ async function setSpriteSlashCommand(_, spriteId) {
     await sendExpressionCall(spriteFolderName, spriteItem.label, true, vnMode);
 }
 
+/**
+ * Processes the classification text to reduce the amount of text sent to the API.
+ * Quotes and asterisks are to be removed. If the text is less than 300 characters, it is returned as is.
+ * If the text is more than 300 characters, the first and last 150 characters are returned.
+ * The result is trimmed to the end of sentence.
+ * @param {string} text The text to process.
+ * @returns {string}
+ */
+function sampleClassifyText(text) {
+    if (!text) {
+        return text;
+    }
+
+    // Remove asterisks and quotes
+    let result = text.replace(/[\*\"]/g, '');
+
+    const SAMPLE_THRESHOLD = 300;
+    const HALF_SAMPLE_THRESHOLD = SAMPLE_THRESHOLD / 2;
+
+    if (text.length < SAMPLE_THRESHOLD) {
+        result = trimToEndSentence(result);
+    } else {
+        result = trimToEndSentence(result.slice(0, HALF_SAMPLE_THRESHOLD)) + ' ' + trimToStartSentence(result.slice(-HALF_SAMPLE_THRESHOLD));
+    }
+
+    return result.trim();
+}
+
 async function getExpressionLabel(text) {
     // Return if text is undefined, saving a costly fetch request
     if ((!modules.includes('classify') && !extension_settings.expressions.local) || !text) {
         return FALLBACK_EXPRESSION;
     }
+
+    text = sampleClassifyText(text);
 
     try {
         if (extension_settings.expressions.local) {
