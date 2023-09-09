@@ -94,7 +94,9 @@ async function synchronizeChat(batchSize = 5) {
 
         return newVectorItems.length - batchSize;
     } catch (error) {
+        toastr.error('Check server console for more details', 'Vectorization failed');
         console.error('Vectors: Failed to synchronize chat', error);
+        return -1;
     }
 }
 
