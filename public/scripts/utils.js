@@ -18,6 +18,15 @@ export function escapeHtml(str) {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+export function isUrlOrAPIKey(value) {
+    try {
+        new URL(value);
+        return true;
+    } catch (_) {
+        return false;
+    }
+}
+
 /**
  * Determines if a value is unique in an array.
  * @param {any} value Current value.
@@ -850,7 +859,7 @@ export async function saveBase64AsFile(base64Data, characterName, filename = "",
 
 /**
  * Loads either a CSS or JS file and appends it to the appropriate document section.
- * 
+ *
  * @param {string} url - The URL of the file to be loaded.
  * @param {string} type - The type of file to load: "css" or "js".
  * @returns {Promise} - Resolves when the file has loaded, rejects if there's an error or invalid type.

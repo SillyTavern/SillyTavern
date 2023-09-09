@@ -2440,7 +2440,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             mesExamples = formatInstructModeExamples(mesExamples, name1, name2)
         }
 
-        const exampleSeparator = power_user.context.example_separator ? `${power_user.context.example_separator}\n` : '';
+        const exampleSeparator = power_user.context.example_separator ? `${substituteParams(power_user.context.example_separator)}\n` : '';
         const blockHeading = main_api === 'openai' ? '<START>\n' : exampleSeparator;
         let mesExamplesArray = mesExamples.split(/<START>/gi).slice(1).map(block => `${blockHeading}${block.trim()}\n`);
 
@@ -3416,13 +3416,13 @@ function parseTokenCounts(counts, thisPromptBits) {
 
 function addChatsPreamble(mesSendString) {
     return main_api === 'novel'
-        ? nai_settings.preamble + '\n' + mesSendString
+        ? substituteParams(nai_settings.preamble) + '\n' + mesSendString
         : mesSendString;
 }
 
 function addChatsSeparator(mesSendString) {
     if (power_user.context.chat_start) {
-        return power_user.context.chat_start + '\n' + mesSendString;
+        return substituteParams(power_user.context.chat_start) + '\n' + mesSendString;
     }
 
     else {
@@ -5410,17 +5410,18 @@ function select_rm_info(type, charId, previousCharId = null) {
                 $('#rm_print_characters_pagination').pagination('go', page);
 
                 waitUntilCondition(() => document.querySelector(selector) !== null).then(() => {
-                    const element = $(selector).parent().get(0);
+                    const parent = $('#rm_print_characters_block');
+                    const element = $(selector).parent();
 
-                    if (!element) {
+                    if (element.length === 0) {
                         console.log(`Could not find element for character ${charId}`);
                         return;
                     }
 
-                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    $(element).addClass('flash animated');
+                    parent.scrollTop(element.position().top + parent.scrollTop());
+                    element.addClass('flash animated');
                     setTimeout(function () {
-                        $(element).removeClass('flash animated');
+                        element.removeClass('flash animated');
                     }, 5000);
                 });
             } catch (e) {
@@ -5429,16 +5430,29 @@ function select_rm_info(type, charId, previousCharId = null) {
         }
 
         if (type === 'group_create') {
-            //for groups, ${charId} = data.id from group-chats.js createGroup()
-            const element = $(`#rm_characters_block [grid="${charId}"]`).get(0);
-            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // Find the page at which the character is located
+            const charData = getEntitiesList({ doFilter: true });
+            const charIndex = charData.findIndex((x) => String(x?.item?.id) === String(charId));
+
+            if (charIndex === -1) {
+                console.log(`Could not find group ${charId} in the list`);
+                return;
+            }
+
+            const perPage = Number(localStorage.getItem('Characters_PerPage'));
+            const page = Math.floor(charIndex / perPage) + 1;
+            $('#rm_print_characters_pagination').pagination('go', page);
+            const parent = $('#rm_print_characters_block');
+            const selector = `#rm_print_characters_block [grid="${charId}"]`;
             try {
-                if (element !== undefined || element !== null) {
+                waitUntilCondition(() => document.querySelector(selector) !== null).then(() => {
+                    const element = $(selector);
+                    parent.scrollTop(element.position().top + parent.scrollTop());
                     $(element).addClass('flash animated');
                     setTimeout(function () {
                         $(element).removeClass('flash animated');
                     }, 5000);
-                } else { console.log('didnt find the element'); }
+                });
             } catch (e) {
                 console.error(e);
             }
@@ -7521,7 +7535,6 @@ jQuery(async function () {
     ///////////////////////////////////////////////////////////////////////////////////
 
     $("#api_button").click(function (e) {
-        e.stopPropagation();
         if ($("#api_url_text").val() != "") {
             let value = formatKoboldUrl(String($("#api_url_text").val()).trim());
 
@@ -7554,7 +7567,6 @@ jQuery(async function () {
     });
 
     $("#api_button_textgenerationwebui").click(async function (e) {
-        e.stopPropagation();
         const url_source = api_use_mancer_webui ? "#mancer_api_url_text" : "#textgenerationwebui_api_url_text";
         if ($(url_source).val() != "") {
             let value = formatTextGenURL(String($(url_source).val()).trim(), api_use_mancer_webui);

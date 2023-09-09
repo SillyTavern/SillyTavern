@@ -201,6 +201,7 @@ let power_user = {
     fuzzy_search: false,
     encode_tags: false,
     lazy_load: 0,
+    servers: [],
 };
 
 let themes = [];
