@@ -3418,7 +3418,7 @@ function parseTokenCounts(counts, thisPromptBits) {
 
 function addChatsPreamble(mesSendString) {
     return main_api === 'novel'
-        ? nai_settings.preamble + '\n' + mesSendString
+        ? substituteParams(nai_settings.preamble) + '\n' + mesSendString
         : mesSendString;
 }
 
@@ -8478,6 +8478,7 @@ jQuery(async function () {
             '#world_popup',
             '.ui-widget',
             '.text_pole',
+            '#toast-container',
         ];
         for (const id of forbiddenTargets) {
             if (clickTarget.closest(id).length > 0) {
