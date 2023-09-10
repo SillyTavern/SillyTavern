@@ -77,18 +77,18 @@ async function onVectorizeAllClick() {
 let syncBlocked = false;
 
 async function synchronizeChat(batchSize = 5) {
+    if (!settings.enabled) {
+        return -1;
+    }
+
     try {
-        await waitUntilCondition(() => !syncBlocked, 500);
+        await waitUntilCondition(() => !syncBlocked && !is_send_press, 1000);
     } catch {
         console.log('Vectors: Synchronization blocked by another process');
         return -1;
     }
 
     try {
-        if (!settings.enabled) {
-            return -1;
-        }
-
         syncBlocked = true;
         const context = getContext();
         const chatId = getCurrentChatId();
