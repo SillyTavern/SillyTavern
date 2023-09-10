@@ -810,6 +810,31 @@ app.post("/getchat", jsonParser, function (request, response) {
     }
 });
 
+app.post("/api/mancer/models", jsonParser, async function (_req, res) {
+    try {
+        const response = await fetch('https://mancer.tech/internal/api/models');
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.log('Mancer models endpoint is offline.');
+            return res.json([]);
+        }
+
+        if (!Array.isArray(data.models)) {
+            console.log('Mancer models response is not an array.')
+            return res.json([]);
+        }
+
+        const modelIds = data.models.map(x => x.id);
+        console.log('Mancer models available:', modelIds);
+
+        return res.json(data.models);
+    } catch (error) {
+        console.error(error);
+        return res.json([]);
+    }
+});
+
 // Only called for kobold and ooba/mancer
 app.post("/getstatus", jsonParser, async function (request, response) {
     if (!request.body) return response.sendStatus(400);
@@ -4331,7 +4356,7 @@ app.post('/generate_horde', jsonParser, async (request, response) => {
     };
     if (request.header('Client-Agent') !== undefined) args.headers['Client-Agent'] = request.header('Client-Agent');
 
-    console.log(args.body);
+    console.log(request.body);
     try {
         const data = await postAsync(url, args);
         return response.send(data);

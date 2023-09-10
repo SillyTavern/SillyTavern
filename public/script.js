@@ -177,6 +177,7 @@ import {
 import { applyLocale } from "./scripts/i18n.js";
 import { getTokenCount, getTokenizerModel, saveTokenCache } from "./scripts/tokenizers.js";
 import { initPersonas, selectCurrentPersona, setPersonaDescription } from "./scripts/personas.js";
+import { loadMancerModels } from "./scripts/mancer-settings.js";
 
 //exporting functions and vars for mods
 export {
@@ -5037,10 +5038,9 @@ export function setGenerationParamsFromPreset(preset) {
     }
 
     if (preset.max_length !== undefined) {
-        max_context = preset.max_length;
-
-        const needsUnlock = max_context > MAX_CONTEXT_DEFAULT;
+        const needsUnlock = preset.max_length > MAX_CONTEXT_DEFAULT;
         $('#max_context_unlocked').prop('checked', needsUnlock).trigger('change');
+        max_context = preset.max_length;
 
         $("#max_context").val(max_context);
         $("#max_context_counter").text(`${max_context}`);
@@ -7564,6 +7564,10 @@ jQuery(async function () {
         api_use_mancer_webui = enabled;
         saveSettingsDebounced();
         getStatus();
+
+        if (enabled) {
+            loadMancerModels();
+        }
     });
 
     $("#api_button_textgenerationwebui").click(async function (e) {
