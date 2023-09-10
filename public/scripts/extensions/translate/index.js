@@ -185,7 +185,7 @@ async function translateIncomingMessage(messageId) {
 }
 
 async function translateProviderLibre(text, lang) {
-    const response = await fetch('/libre_translate', {
+    const response = await fetch('/api/translate/libre', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({ text: text, lang: lang }),
@@ -200,7 +200,7 @@ async function translateProviderLibre(text, lang) {
 }
 
 async function translateProviderGoogle(text, lang) {
-    const response = await fetch('/google_translate', {
+    const response = await fetch('/api/translate/google', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({ text: text, lang: lang }),
@@ -219,7 +219,7 @@ async function translateProviderDeepl(text, lang) {
         throw new Error('No DeepL API key');
     }
 
-    const response = await fetch('/deepl_translate', {
+    const response = await fetch('/api/translate/deepl', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({ text: text, lang: lang }),
