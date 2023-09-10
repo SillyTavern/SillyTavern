@@ -2178,6 +2178,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     importRisuSprites(jsonData);
                     unsetFavFlag(jsonData);
                     jsonData = readFromV2(jsonData);
+                    jsonData["create_date"] = humanizedISO8601DateTime();
                     png_name = getPngName(jsonData.data?.name || jsonData.name);
                     let char = JSON.stringify(jsonData);
                     charaWrite(defaultAvatarPath, char, png_name, response, { file_name: png_name });
