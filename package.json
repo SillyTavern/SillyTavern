@@ -53,7 +53,7 @@
         "type": "git",
         "url": "https://github.com/SillyTavern/SillyTavern.git"
     },
-    "version": "1.10.2",
+    "version": "1.10.3",
     "scripts": {
         "start": "node server.js",
         "start-multi": "node server.js --disableCsrf",
