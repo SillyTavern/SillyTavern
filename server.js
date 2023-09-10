@@ -58,6 +58,10 @@ const { Tokenizer } = require('@agnai/web-tokenizers');
 const _ = require('lodash');
 const { generateRequestUrl, normaliseResponse } = require('google-translate-api-browser');
 
+// Unrestrict console logs display limit
+util.inspect.defaultOptions.maxArrayLength = null;
+util.inspect.defaultOptions.maxStringLength = null;
+
 // Create files before running anything else
 createDefaultFiles();
 
