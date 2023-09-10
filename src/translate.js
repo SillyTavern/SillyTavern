@@ -132,6 +132,54 @@ function registerEndpoints(app, jsonParser) {
             return response.sendStatus(500);
         }
     });
+
+    app.post('/api/translate/onering', jsonParser, async (request, response) => {
+        const url = readSecret(SECRET_KEYS.ONERING_URL);
+
+        if (!url) {
+            console.log('OneRing URL is not configured.');
+            return response.sendStatus(401);
+        }
+
+        const text = request.body.text;
+        const from_lang = request.body.from_lang;
+        const to_lang = request.body.to_lang;
+
+        if (!text || !from_lang || !to_lang) {
+            return response.sendStatus(400);
+        }
+
+        const params = new URLSearchParams();
+        params.append('text', text);
+        params.append('from_lang', from_lang);
+        params.append('to_lang', to_lang);
+
+        console.log('Input text: ' + text);
+
+        try {
+            const fetchUrl = new URL(url);
+            fetchUrl.search = params.toString();
+
+            const result = await fetch(fetchUrl, {
+                method: 'GET',
+                timeout: 0,
+            });
+
+            if (!result.ok) {
+                const error = await result.text();
+                console.log('OneRing error: ', result.statusText, error);
+                return response.sendStatus(result.status);
+            }
+
+            const data = await result.json();
+            console.log('Translated text: ' + data.result);
+
+            return response.send(data.result);
+        } catch (error) {
+            console.log("Translation error: " + error.message);
+            return response.sendStatus(500);
+        }
+    });
 }
 
 module.exports = {

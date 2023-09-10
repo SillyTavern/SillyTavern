@@ -136,7 +136,7 @@ const languageCodes = {
 };
 
 const KEY_REQUIRED = ['deepl','libre'];
-const LOCAL_URL = ['libre'];
+const LOCAL_URL = ['libre', 'oneringtranslator'];
 
 function showKeysButton() {
     const providerRequiresKey = KEY_REQUIRED.includes(extension_settings.translate.provider);
@@ -144,6 +144,7 @@ function showKeysButton() {
     $("#translate_key_button").toggle(providerRequiresKey);
     $("#translate_key_button").toggleClass('success', Boolean(secret_state[extension_settings.translate.provider]));
     $("#translate_url_button").toggle(providerOptionalUrl);
+    $("#translate_url_button").toggleClass('success', Boolean(secret_state[extension_settings.translate.provider + "_url"]));
 }
 
 function loadSettings() {
@@ -184,6 +185,31 @@ async function translateIncomingMessage(messageId) {
     updateMessageBlock(messageId, message);
 }
 
+async function translateProviderOneRing(text, lang) {
+    let from_lang = lang == extension_settings.translate.internal_language
+        ? extension_settings.translate.target_language
+        : extension_settings.translate.internal_language;
+
+    const response = await fetch('/api/translate/onering', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ text: text, from_lang: from_lang, to_lang: lang }),
+    });
+
+    if (response.ok) {
+        const result = await response.text();
+        return result;
+    }
+
+    throw new Error(response.statusText);
+}
+
+/**
+ * Translates text using the LibreTranslate API
+ * @param {string} text Text to translate
+ * @param {string} lang Target language code
+ * @returns {Promise<string>} Translated text
+ */
 async function translateProviderLibre(text, lang) {
     const response = await fetch('/api/translate/libre', {
         method: 'POST',
@@ -199,6 +225,12 @@ async function translateProviderLibre(text, lang) {
     throw new Error(response.statusText);
 }
 
+/**
+ * Translates text using the Google Translate API
+ * @param {string} text Text to translate
+ * @param {string} lang Target language code
+ * @returns {Promise<string>} Translated text
+ */
 async function translateProviderGoogle(text, lang) {
     const response = await fetch('/api/translate/google', {
         method: 'POST',
@@ -214,6 +246,12 @@ async function translateProviderGoogle(text, lang) {
     throw new Error(response.statusText);
 }
 
+/**
+ * Translates text using the DeepL API
+ * @param {string} text Text to translate
+ * @param {string} lang Target language code
+ * @returns {Promise<string>} Translated text
+ */
 async function translateProviderDeepl(text, lang) {
     if (!secret_state.deepl) {
         throw new Error('No DeepL API key');
@@ -233,6 +271,12 @@ async function translateProviderDeepl(text, lang) {
     throw new Error(response.statusText);
 }
 
+/**
+ * Translates text using the selected translation provider
+ * @param {string} text Text to translate
+ * @param {string} lang Target language code
+ * @returns {Promise<string>} Translated text
+ */
 async function translate(text, lang) {
     try {
         if (text == '') {
@@ -246,6 +290,8 @@ async function translate(text, lang) {
                 return await translateProviderGoogle(text, lang);
             case 'deepl':
                 return await translateProviderDeepl(text, lang);
+            case 'oneringtranslator':
+                return await translateProviderOneRing(text, lang);
             default:
                 console.error('Unknown translation provider', extension_settings.translate.provider);
                 return text;
@@ -391,6 +437,7 @@ jQuery(() => {
                         <option value="libre">Libre</option>
                         <option value="google">Google</option>
                         <option value="deepl">DeepL</option>
+                        <option value="oneringtranslator">OneRingTranslator</option>
                     <select>
                     <div id="translate_key_button" class="menu_button fa-solid fa-key margin0"></div>
                     <div id="translate_url_button" class="menu_button fa-solid fa-link margin0"></div>
@@ -448,6 +495,7 @@ jQuery(() => {
         const optionText = $('#translation_provider option:selected').text();
         const exampleURLs = {};
         exampleURLs['libre'] = 'http://127.0.0.1:5000/translate';
+        exampleURLs['oneringtranslator'] = 'http://127.0.0.1:4990/translate';
         const url = await callPopup(`<h3>${optionText} API URL</h3><i>Example: <tt>` + exampleURLs[extension_settings.translate.provider] + `</tt></i>`, 'input');
 
         if (url == false) {

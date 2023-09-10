@@ -16,6 +16,7 @@ const SECRET_KEYS = {
     SCALE: 'api_key_scale',
     AI21: 'api_key_ai21',
     SCALE_COOKIE: 'scale_cookie',
+    ONERING_URL: 'oneringtranslator_url',
 }
 
 /**
