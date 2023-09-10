@@ -3580,6 +3580,15 @@ a {
     align-self: center;
 }
 
+#show_more_messages {
+    text-align: center;
+    margin: 10px 0;
+    font-weight: 500;
+    text-decoration: underline;
+    order: -1;
+    cursor: pointer;
+}
+
 #select_chat_search {
     background-color: transparent;
     border: none;

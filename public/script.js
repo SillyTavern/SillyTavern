@@ -1149,8 +1149,39 @@ async function replaceCurrentChat() {
     }
 }
 
+const TRUNCATION_THRESHOLD = 100;
+
+function showMoreMessages() {
+    let messageId = Number($('#chat').children('.mes').first().attr('mesid'));
+    let count = TRUNCATION_THRESHOLD;
+
+    console.debug('Inserting messages before', messageId, 'count', count, 'chat length', chat.length);
+    const prevHeight = $('#chat').prop('scrollHeight');
+
+    while(messageId > 0 && count > 0) {
+        count--;
+        messageId--;
+        addOneMessage(chat[messageId], { insertBefore: messageId + 1, scroll: false, forceId: messageId });
+    }
+
+    if (messageId == 0) {
+        $('#show_more_messages').remove();
+    }
+
+    const newHeight = $('#chat').prop('scrollHeight');
+    $('#chat').scrollTop(newHeight - prevHeight);
+}
+
 async function printMessages() {
-    for (let i = 0; i < chat.length; i++) {
+    let startIndex = 0;
+
+    if (chat.length > TRUNCATION_THRESHOLD) {
+        count_view_mes = chat.length - TRUNCATION_THRESHOLD;
+        startIndex = count_view_mes;
+        $('#chat').append('<div id="show_more_messages">Show more messages</div>');
+    }
+
+    for (let i = startIndex; i < chat.length; i++) {
         const item = chat[i];
         addOneMessage(item, { scroll: i === chat.length - 1 });
     }
@@ -1432,7 +1463,7 @@ export function addCopyToCodeBlocks(messageElement) {
 }
 
 
-function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true } = {}) {
+function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true, insertBefore = null, forceId = null } = {}) {
     var messageText = mes["mes"];
     const momentDate = timestampToMoment(mes.send_date);
     const timestamp = momentDate.isValid() ? momentDate.format('LL LT') : '';
@@ -1502,7 +1533,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         }
     }*/
     let params = {
-        mesId: count_view_mes,
+        mesId: forceId ?? count_view_mes,
         characterName: characterName,
         isUser: mes.is_user,
         avatarImg: avatarImg,
@@ -1520,18 +1551,31 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     const HTMLForEachMes = getMessageFromTemplate(params);
 
     if (type !== 'swipe') {
-        if (!insertAfter) {
+        if (!insertAfter && !insertBefore) {
             $("#chat").append(HTMLForEachMes);
         }
-        else {
+        else if (insertAfter) {
             const target = $("#chat").find(`.mes[mesid="${insertAfter}"]`);
             $(HTMLForEachMes).insertAfter(target);
+            $(HTMLForEachMes).find('.swipe_left').css('display', 'none');
+            $(HTMLForEachMes).find('.swipe_right').css('display', 'none');
+        } else {
+            const target = $("#chat").find(`.mes[mesid="${insertBefore}"]`);
+            $(HTMLForEachMes).insertBefore(target);
             $(HTMLForEachMes).find('.swipe_left').css('display', 'none');
             $(HTMLForEachMes).find('.swipe_right').css('display', 'none');
         }
     }
 
-    const newMessageId = type == 'swipe' ? count_view_mes - 1 : count_view_mes;
+    function getMessageId() {
+        if (typeof forceId == 'number') {
+            return forceId;
+        }
+
+        return type == 'swipe' ? count_view_mes - 1 : count_view_mes;
+    }
+
+    const newMessageId = getMessageId();
     const newMessage = $(`#chat [mesid="${newMessageId}"]`);
     const isSmallSys = mes?.extra?.isSmallSys;
     newMessage.data("isSystem", isSystem);
@@ -1605,6 +1649,11 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
             swipeMessage.find('.mes_timer').html('');
             swipeMessage.find('.tokenCounterDisplay').html('');
         }
+    } else if (typeof forceId == 'number') {
+        $("#chat").find(`[mesid="${forceId}"]`).find('.mes_text').append(messageText);
+        appendImageToMessage(mes, newMessage);
+        hideSwipeButtons();
+        showSwipeButtons();
     } else {
         $("#chat").find(`[mesid="${count_view_mes}"]`).find('.mes_text').append(messageText);
         appendImageToMessage(mes, newMessage);
@@ -1615,7 +1664,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     addCopyToCodeBlocks(newMessage);
 
     // Don't scroll if not inserting last
-    if (!insertAfter && scroll) {
+    if (!insertAfter && !insertBefore && scroll) {
         $('#chat .mes').last().addClass('last_mes');
         $('#chat .mes').eq(-2).removeClass('last_mes');
 
@@ -3681,7 +3730,13 @@ function setInContextMessages(lastmsg, type) {
         lastmsg++;
     }
 
-    $('#chat .mes:not([is_system="true"])').eq(-lastmsg).addClass('lastInContext');
+    const lastMessageBlock = $('#chat .mes:not([is_system="true"])').eq(-lastmsg);
+    lastMessageBlock.addClass('lastInContext');
+
+    if (lastMessageBlock.length === 0) {
+        const firstMessageId = getFirstDisplayedMessageId();
+        $(`#chat .mes[mesid="${firstMessageId}"`).addClass('lastInContext');
+    }
 }
 
 function getGenerateUrl() {
@@ -5895,15 +5950,23 @@ async function importCharacterChat(formData) {
 }
 
 function updateViewMessageIds() {
+    const minId = getFirstDisplayedMessageId();
+
     $('#chat').find(".mes").each(function (index, element) {
-        $(element).attr("mesid", index);
-        $(element).find('.mesIDDisplay').text(`#${index}`);
+        $(element).attr("mesid", minId + index);
+        $(element).find('.mesIDDisplay').text(`#${minId + index}`);
     });
 
     $('#chat .mes').removeClass('last_mes');
     $('#chat .mes').last().addClass('last_mes');
 
     updateEditArrowClasses();
+}
+
+function getFirstDisplayedMessageId() {
+    const allIds = Array.from(document.querySelectorAll('#chat .mes')).map(el => Number(el.getAttribute('mesid'))).filter(x => !isNaN(x));
+    const minId = Math.min(...allIds);
+    return minId;
 }
 
 function updateEditArrowClasses() {
@@ -8843,6 +8906,10 @@ jQuery(async function () {
 
     $("#hideCharPanelAvatarButton").on('click', () => {
         $('#avatar-and-name-block').slideToggle()
+    });
+
+    $(document).on('mouseup touchend', '#show_more_messages', () => {
+        showMoreMessages();
     });
 
     // Added here to prevent execution before script.js is loaded and get rid of quirky timeouts
