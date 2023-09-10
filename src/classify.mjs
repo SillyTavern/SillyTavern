@@ -1,5 +1,6 @@
 import { pipeline, env } from 'sillytavern-transformers';
 import path from 'path';
+import { getConfig } from './util.js';
 
 // Limit the number of threads to 1 to avoid issues on Android
 env.backends.onnx.wasm.numThreads = 1;
@@ -24,10 +25,10 @@ class PipelineAccessor {
         const DEFAULT_MODEL = 'Cohee/distilbert-base-uncased-go-emotions-onnx';
 
         try {
-            const config = require(path.join(process.cwd(), './config.conf'));
+            const config = getConfig();
             const model = config?.extras?.classificationModel;
             return model || DEFAULT_MODEL;
-        } catch {
+        } catch (error) {
             console.warn('Failed to read config.conf, using default classification model.');
             return DEFAULT_MODEL;
         }
@@ -62,7 +63,8 @@ function registerEndpoints(app, jsonParser) {
                     return cacheObject[text];
                 } else {
                     const pipe = await pipelineAccessor.get();
-                    const result = await pipe(text);
+                    const result = await pipe(text, { topk: 5 });
+                    result.sort((a, b) => b.score - a.score);
                     cacheObject[text] = result;
                     return result;
                 }
