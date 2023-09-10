@@ -27,6 +27,12 @@ async function onVectorizeAllClick() {
         }
 
         const chatId = getCurrentChatId();
+
+        if (!chatId) {
+            toastr.info('No chat selected', 'Vectorization aborted');
+            return;
+        }
+
         const batchSize = 5;
         const elapsedLog = [];
         let finished = false;
@@ -89,7 +95,7 @@ async function synchronizeChat(batchSize = 5) {
 
         if (!chatId || !Array.isArray(context.chat)) {
             console.debug('Vectors: No chat selected');
-            return;
+            return -1;
         }
 
         const hashedMessages = context.chat.filter(x => !x.is_system).map(x => ({ text: String(x.mes), hash: getStringHash(x.mes) }));
