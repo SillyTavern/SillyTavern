@@ -1,4 +1,5 @@
 import { api_server_textgenerationwebui, getRequestHeaders, setGenerationParamsFromPreset } from "../script.js";
+import { getDeviceInfo } from "./RossAscends-mods.js";
 
 let models = [];
 
@@ -63,11 +64,16 @@ function getMancerModelTemplate(option) {
 }
 
 jQuery(function () {
-    $('#mancer_model').on('change', onMancerModelSelect).select2({
-        placeholder: 'Select a model',
-        searchInputPlaceholder: 'Search models...',
-        searchInputCssClass: 'text_pole',
-        width: '100%',
-        templateResult: getMancerModelTemplate,
-    });
+    $('#mancer_model').on('change', onMancerModelSelect);
+
+    const deviceInfo = getDeviceInfo();
+    if (deviceInfo && deviceInfo.device.type === 'desktop') {
+        $('#mancer_model').select2({
+            placeholder: 'Select a model',
+            searchInputPlaceholder: 'Search models...',
+            searchInputCssClass: 'text_pole',
+            width: '100%',
+            templateResult: getMancerModelTemplate,
+        });
+    }
 });

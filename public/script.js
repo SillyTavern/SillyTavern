@@ -8473,6 +8473,7 @@ jQuery(async function () {
             '.ui-widget',
             '.text_pole',
             '#toast-container',
+            '.select2-results',
         ];
         for (const id of forbiddenTargets) {
             if (clickTarget.closest(id).length > 0) {
