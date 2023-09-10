@@ -58,6 +58,10 @@ const { Tokenizer } = require('@agnai/web-tokenizers');
 const _ = require('lodash');
 const { generateRequestUrl, normaliseResponse } = require('google-translate-api-browser');
 
+// Unrestrict console logs display limit
+util.inspect.defaultOptions.maxArrayLength = null;
+util.inspect.defaultOptions.maxStringLength = null;
+
 // Create files before running anything else
 createDefaultFiles();
 
@@ -809,6 +813,31 @@ app.post("/getchat", jsonParser, function (request, response) {
     } catch (error) {
         console.error(error);
         return response.send({});
+    }
+});
+
+app.post("/api/mancer/models", jsonParser, async function (_req, res) {
+    try {
+        const response = await fetch('https://mancer.tech/internal/api/models');
+        const data = await response.json();
+
+        if (!response.ok) {
+            console.log('Mancer models endpoint is offline.');
+            return res.json([]);
+        }
+
+        if (!Array.isArray(data.models)) {
+            console.log('Mancer models response is not an array.')
+            return res.json([]);
+        }
+
+        const modelIds = data.models.map(x => x.id);
+        console.log('Mancer models available:', modelIds);
+
+        return res.json(data.models);
+    } catch (error) {
+        console.error(error);
+        return res.json([]);
     }
 });
 
@@ -2151,6 +2180,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
                     importRisuSprites(jsonData);
                     unsetFavFlag(jsonData);
                     jsonData = readFromV2(jsonData);
+                    jsonData["create_date"] = humanizedISO8601DateTime();
                     png_name = getPngName(jsonData.data?.name || jsonData.name);
                     let char = JSON.stringify(jsonData);
                     charaWrite(defaultAvatarPath, char, png_name, response, { file_name: png_name });
@@ -4260,7 +4290,7 @@ app.post('/generate_horde', jsonParser, async (request, response) => {
     };
     if (request.header('Client-Agent') !== undefined) args.headers['Client-Agent'] = request.header('Client-Agent');
 
-    console.log(args.body);
+    console.log(request.body);
     try {
         const data = await postAsync(url, args);
         return response.send(data);
