@@ -1153,15 +1153,15 @@ const compareFunc = (first, second) => {
         return Math.random() > 0.5 ? 1 : -1;
     }
 
+    const a = first[power_user.sort_field];
+    const b = second[power_user.sort_field];
+
+    if (power_user.sort_field === 'create_date') {
+        return sortMoments(timestampToMoment(b), timestampToMoment(a));
+    }
+
     switch (power_user.sort_rule) {
         case 'boolean':
-            const a = first[power_user.sort_field];
-            const b = second[power_user.sort_field];
-
-            if (power_user.sort_field === 'create_date') {
-                return sortMoments(timestampToMoment(a), timestampToMoment(b));
-            }
-
             if (a === true || a === 'true') return 1;  // Prioritize 'true' or true
             if (b === true || b === 'true') return -1; // Prioritize 'true' or true
             if (a && !b) return -1;        // Move truthy values to the end
@@ -1169,9 +1169,9 @@ const compareFunc = (first, second) => {
             if (a === b) return 0;         // Sort equal values normally
             return a < b ? -1 : 1;         // Sort non-boolean values normally
         default:
-            return typeof first[power_user.sort_field] == "string"
-                ? first[power_user.sort_field].localeCompare(second[power_user.sort_field])
-                : first[power_user.sort_field] - second[power_user.sort_field];
+            return typeof a == "string"
+                ? a.localeCompare(b)
+                : a - b;
     }
 };
 

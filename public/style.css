@@ -1172,7 +1172,7 @@ input[type="file"] {
 #rm_ch_create_block {
     display: none;
     overflow-y: auto;
-    padding: 0 5px;
+    padding: 5px;
     height: 100%;
 }
 
@@ -1767,8 +1767,15 @@ grammarly-extension {
 #result_info {
     font-size: calc(var(--mainFontSize) * 0.9);
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: 10px;
+}
+
+#result_info_text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1;
+    text-align: right;
 }
 
 .rm_stats_button {
