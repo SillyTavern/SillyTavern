@@ -32,6 +32,8 @@ const multer = require("multer");
 const responseTime = require('response-time');
 
 // net related library imports
+const net = require("net");
+const dns = require('dns');
 const DeviceDetector = require("device-detector-js");
 const fetch = require('node-fetch').default;
 const ipaddr = require('ipaddr.js');
@@ -89,7 +91,6 @@ function createDefaultFiles() {
     }
 }
 
-const net = require("net");
 // Work around a node v20.0.0, v20.1.0, and v20.2.0 bug. The issue was fixed in v20.3.0.
 // https://github.com/nodejs/node/issues/47822#issuecomment-1564708870
 // Safe to remove once support for Node v20 is dropped.
@@ -97,6 +98,9 @@ if (process.versions && process.versions.node && process.versions.node.match(/20
     // @ts-ignore
     if (net.setDefaultAutoSelectFamily) net.setDefaultAutoSelectFamily(false);
 }
+
+// Set default DNS resolution order to IPv4 first
+dns.setDefaultResultOrder('ipv4first');
 
 const cliArguments = yargs(hideBin(process.argv))
     .option('disableCsrf', {
