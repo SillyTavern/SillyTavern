@@ -8,6 +8,7 @@ export { MODULE_NAME };
 
 const MODULE_NAME = 'expressions';
 const UPDATE_INTERVAL = 2000;
+const STREAMING_UPDATE_INTERVAL = 6000;
 const FALLBACK_EXPRESSION = 'joy';
 const DEFAULT_EXPRESSIONS = [
     "talkinghead",
@@ -46,6 +47,7 @@ let lastCharacter = undefined;
 let lastMessage = null;
 let spriteCache = {};
 let inApiCall = false;
+let lastServerResponseTime = 0;
 
 function isVisualNovelMode() {
     return Boolean(!isMobile() && power_user.waifuMode && getContext().groupId);
@@ -566,6 +568,17 @@ async function moduleWorker() {
         return;
     }
 
+    // Throttle classification requests during streaming
+    if (context.streamingProcessor && !context.streamingProcessor.isFinished) {
+        const now = Date.now();
+        const timeSinceLastServerResponse = now - lastServerResponseTime;
+
+        if (timeSinceLastServerResponse < STREAMING_UPDATE_INTERVAL) {
+            console.log('Streaming in progress: throttling expression update. Next update at ' + new Date(lastServerResponseTime + STREAMING_UPDATE_INTERVAL));
+            return;
+        }
+    }
+
     try {
         inApiCall = true;
         let expression = await getExpressionLabel(currentLastMessage.mes);
@@ -583,7 +596,6 @@ async function moduleWorker() {
         }
 
         await sendExpressionCall(spriteFolderName, expression, force, vnMode);
-
     }
     catch (error) {
         console.log(error);
@@ -592,6 +604,7 @@ async function moduleWorker() {
         inApiCall = false;
         lastCharacter = context.groupId || context.characterId;
         lastMessage = currentLastMessage.mes;
+        lastServerResponseTime = Date.now();
     }
 }
 
