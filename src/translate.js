@@ -3,6 +3,9 @@ const https = require('https');
 const { readSecret, SECRET_KEYS } = require('./secrets');
 const { generateRequestUrl, normaliseResponse } = require('google-translate-api-browser');
 
+const DEEPLX_URL_DEFAULT = 'http://127.0.0.1:1188/translate';
+const ONERING_URL_DEFAULT = 'http://127.0.0.1:4990/translate';
+
 /**
  * @param {import("express").Express} app
  * @param {any} jsonParser
@@ -134,11 +137,16 @@ function registerEndpoints(app, jsonParser) {
     });
 
     app.post('/api/translate/onering', jsonParser, async (request, response) => {
-        const url = readSecret(SECRET_KEYS.ONERING_URL);
+        const secretUrl = readSecret(SECRET_KEYS.ONERING_URL);
+        const url = secretUrl || ONERING_URL_DEFAULT;
 
         if (!url) {
             console.log('OneRing URL is not configured.');
             return response.sendStatus(401);
+        }
+
+        if (!secretUrl && url === ONERING_URL_DEFAULT) {
+            console.log('OneRing URL is using default value.', ONERING_URL_DEFAULT);
         }
 
         const text = request.body.text;
@@ -177,6 +185,59 @@ function registerEndpoints(app, jsonParser) {
             return response.send(data.result);
         } catch (error) {
             console.log("Translation error: " + error.message);
+            return response.sendStatus(500);
+        }
+    });
+
+    app.post('/api/translate/deeplx', jsonParser, async (request, response) => {
+        const secretUrl = readSecret(SECRET_KEYS.DEEPLX_URL);
+        const url = secretUrl || DEEPLX_URL_DEFAULT;
+
+        if (!url) {
+            console.log('DeepLX URL is not configured.');
+            return response.sendStatus(401);
+        }
+
+        if (!secretUrl && url === DEEPLX_URL_DEFAULT) {
+            console.log('DeepLX URL is using default value.', DEEPLX_URL_DEFAULT);
+        }
+
+        const text = request.body.text;
+        const lang = request.body.lang;
+
+        if (!text || !lang) {
+            return response.sendStatus(400);
+        }
+
+        console.log('Input text: ' + text);
+
+        try {
+            const result = await fetch(url, {
+                method: 'POST',
+                body: JSON.stringify({
+                    text: text,
+                    source_lang: 'auto',
+                    target_lang: lang,
+                }),
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                },
+                timeout: 0,
+            });
+
+            if (!result.ok) {
+                const error = await result.text();
+                console.log('DeepLX error: ', result.statusText, error);
+                return response.sendStatus(result.status);
+            }
+
+            const json = await result.json();
+            console.log('Translated text: ' + json.data);
+
+            return response.send(json.data);
+        } catch (error) {
+            console.log("DeepLX translation error: " + error.message);
             return response.sendStatus(500);
         }
     });

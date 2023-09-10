@@ -17,6 +17,7 @@ const SECRET_KEYS = {
     AI21: 'api_key_ai21',
     SCALE_COOKIE: 'scale_cookie',
     ONERING_URL: 'oneringtranslator_url',
+    DEEPLX_URL: 'deeplx_url',
 }
 
 /**
