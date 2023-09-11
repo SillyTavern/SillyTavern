@@ -424,7 +424,6 @@ jQuery(async () => {
 
     $('#vectors_vectorize_all').on('click', onVectorizeAllClick);
 
-    eventSource.on(event_types.CHAT_CHANGED, onChatEvent);
     eventSource.on(event_types.MESSAGE_DELETED, onChatEvent);
     eventSource.on(event_types.MESSAGE_EDITED, onChatEvent);
     eventSource.on(event_types.MESSAGE_SENT, onChatEvent);
