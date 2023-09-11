@@ -449,7 +449,7 @@ function handleImageChange() {
         return;
     }
 
-    if (extension_settings.expressions.talkinghead) {
+    if (extension_settings.expressions.talkinghead && !extension_settings.expressions.local) {
         // Method get IP of endpoint
         const talkingheadResultFeedSrc = `${getApiUrl()}/api/talkinghead/result_feed`;
         $('#expression-holder').css({ display: '' });
@@ -478,6 +478,14 @@ function handleImageChange() {
 
 async function moduleWorker() {
     const context = getContext();
+
+    // Hide and disable talkinghead while in local mode
+    $('#image_type_block').toggle(!extension_settings.expressions.local);
+
+    if (extension_settings.expressions.local && extension_settings.expressions.talkinghead) {
+        $('#image_type_toggle').prop('checked', false);
+        setTalkingHeadState(false);
+    }
 
     // non-characters not supported
     if (!context.groupId && (context.characterId === undefined || context.characterId === 'invalid-safety-id')) {
@@ -647,6 +655,10 @@ function getSpriteFolderName(characterMessage = null, characterName = null) {
 function setTalkingHeadState(switch_var) {
     extension_settings.expressions.talkinghead = switch_var; // Store setting
     saveSettingsDebounced();
+
+    if (extension_settings.expressions.local) {
+        return;
+    }
 
     talkingHeadCheck().then(result => {
         if (result) {
@@ -929,7 +941,7 @@ async function getExpressionsList() {
 }
 
 async function setExpression(character, expression, force) {
-    if (!extension_settings.expressions.talkinghead) {
+    if (extension_settings.expressions.local || !extension_settings.expressions.talkinghead) {
         console.debug('entered setExpressions');
         await validateImages(character);
         const img = $('img.expression');
@@ -1305,6 +1317,7 @@ function setExpressionOverrideHtml(forceClear = false) {
         $('#expressions_show_default').prop('checked', extension_settings.expressions.showDefault).trigger('input');
         $('#expression_local').prop('checked', extension_settings.expressions.local).on('input', function () {
             extension_settings.expressions.local = !!$(this).prop('checked');
+            moduleWorker();
             saveSettingsDebounced();
         });
         $('#expression_override_cleanup_button').on('click', onClickExpressionOverrideRemoveAllButton);
