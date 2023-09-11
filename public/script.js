@@ -5170,9 +5170,9 @@ async function messageEditDone(div) {
 export async function getChatsFromFiles(data, isGroupChat) {
     const context = getContext();
     let chat_dict = {};
-    let chat_list = Object.values(data).sort((a, b) => a["file_name"].localeCompare(b["file_name"])).reverse();
+    const chat_list = Object.values(data).sort((a, b) => a["file_name"].localeCompare(b["file_name"])).reverse();
 
-    for (const { file_name } of chat_list) {
+    const promises = chat_list.map(async ({ file_name }) => {
         try {
             const endpoint = isGroupChat ? '/getgroupchat' : '/getchat';
             const requestBody = isGroupChat
@@ -5191,7 +5191,7 @@ export async function getChatsFromFiles(data, isGroupChat) {
             });
 
             if (!chatResponse.ok) {
-                continue;
+                return;
             }
 
             const currentChat = await chatResponse.json();
@@ -5204,8 +5204,9 @@ export async function getChatsFromFiles(data, isGroupChat) {
         } catch (error) {
             console.error(error);
         }
-    }
+    });
 
+    await Promise.all(promises);
     return chat_dict;
 }
 
