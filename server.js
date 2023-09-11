@@ -5666,3 +5666,9 @@ import('./src/classify.mjs').then(module => {
 }).catch(err => {
     console.error(err);
 });
+// Image captioning
+import('./src/caption.mjs').then(module => {
+    module.default.registerEndpoints(app, jsonParser);
+}).catch(err => {
+    console.error(err);
+});
