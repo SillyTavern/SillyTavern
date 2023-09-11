@@ -3413,7 +3413,8 @@ a {
     min-height: 100px;
     max-height: 90vh;
     max-width: 90vh;
-    width: calc((100vw - var(--sheldWidth)) /2);
+    width: clamp(100px, 400px, calc((100vw - var(--sheldWidth)) /2));
+    /* width: calc((100vw - var(--sheldWidth)) /2); */
     position: absolute;
     padding: 0;
     filter: drop-shadow(2px 2px 2px var(--grey7070a));
