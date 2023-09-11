@@ -53,7 +53,12 @@
     "scripts": {
         "start": "node server.js",
         "start-multi": "node server.js --disableCsrf",
-        "pkg": "pkg --compress Gzip --no-bytecode --public ."
+        "pkg": "pkg --compress Gzip --no-bytecode --public .",
+        "electron:dev": "electron .",
+        "electron:buildx": "electron-packager . SillyTavern --overwrite --out out",
+        "electron:build:mac": "npm run electron:buildx -- --platform darwin --icon ./public/electron/icon.icns",
+        "electron:build:windows": "npm run electron:buildx -- --platform win32 --icon ./public/st-launcher.ico",
+        "electron:build:linux": "npm run electron:buildx -- --platform linux --icon ./public/icon.png"
     },
     "bin": {
         "sillytavern": "./server.js"
@@ -62,7 +67,7 @@
         "no-path-concat": "off",
         "no-var": "off"
     },
-    "main": "server.js",
+    "main": "main.js",
     "pkg": {
         "targets": [
             "node18-linux-x64",
@@ -78,6 +83,8 @@
         ]
     },
     "devDependencies": {
+        "electron": "^26.1.0",
+        "electron-packager": "^17.1.2",
         "pkg": "^5.8.1",
         "pkg-fetch": "^3.5.2"
     }
