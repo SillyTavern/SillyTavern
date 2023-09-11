@@ -576,6 +576,7 @@ function populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, ty
         chatCompletion.add(collection, index);
     };
 
+    chatCompletion.reserveBudget(3); // every reply is primed with <|start|>assistant<|message|>
     // Character and world information
     addToChatCompletion('worldInfoBefore');
     addToChatCompletion('main');
@@ -1775,9 +1776,12 @@ class ChatCompletion {
     /**
      * Reserves the tokens required by the given message from the token budget.
      *
-     * @param {Message|MessageCollection} message - The message whose tokens to reserve.
+     * @param {Message|MessageCollection|number} message - The message whose tokens to reserve.
      */
-    reserveBudget(message) { this.decreaseTokenBudgetBy(message.getTokens()) };
+    reserveBudget(message) {
+        const tokens = typeof message === 'number' ? message : message.getTokens();
+        this.decreaseTokenBudgetBy(tokens);
+    };
 
     /**
      * Frees up the tokens used by the given message from the token budget.
