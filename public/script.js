@@ -5319,7 +5319,7 @@ export async function displayPastChats() {
             const fileName = chat['file_name'];
             const chatContent = rawChats[fileName];
 
-            return chatContent && Object.values(chatContent).some(message => message.mes.toLowerCase().includes(searchQuery.toLowerCase()));
+            return chatContent && Object.values(chatContent).some(message => message?.mes?.toLowerCase()?.includes(searchQuery.toLowerCase()));
         });
 
         console.log(filteredData);
