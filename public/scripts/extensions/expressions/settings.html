@@ -6,14 +6,14 @@
         </div>
 
         <div class="inline-drawer-content">
-            <!-- Toggle button for aituber/static images -->
-            <div class="toggle_button">
-                <label class="switch">
-                    <input id="image_type_toggle" type="checkbox">
-                    <span class="slider round"></span>
-                    <label for="image_type_toggle">Image Type - talkinghead (extras)</label>
-                </label>
-            </div>
+            <label class="checkbox_label" for="expression_local" title="Use classification model without the Extras server.">
+                <input id="expression_local" type="checkbox" />
+                <span data-i18n="Local server classification">Local server classification</span>
+            </label>
+            <label id="image_type_block" class="checkbox_label" for="image_type_toggle">
+                <input id="image_type_toggle" type="checkbox">
+                <span>Image Type - talkinghead (extras)</span>
+            </label>
             <div class="offline_mode">
                 <small>You are in offline mode. Click on the image below to set the expression.</small>
             </div>
