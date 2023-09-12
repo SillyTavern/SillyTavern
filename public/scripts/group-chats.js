@@ -166,7 +166,7 @@ export async function getGroupChat(groupId) {
         for (let key of data) {
             chat.push(key);
         }
-        printMessages();
+        await printMessages();
     } else {
         sendSystemMessage(system_message_types.GROUP, '', { isSmallSys: true });
         if (group && Array.isArray(group.members)) {
@@ -816,18 +816,26 @@ function activateNaturalOrder(members, input, lastMessage, allowSelfResponses, i
 }
 
 async function deleteGroup(id) {
+    const group = groups.find((x) => x.id === id);
+
     const response = await fetch("/deletegroup", {
         method: "POST",
         headers: getRequestHeaders(),
         body: JSON.stringify({ id: id }),
     });
 
+    if (group && Array.isArray(group.chats)) {
+        for (const chatId of group.chats) {
+            await eventSource.emit(event_types.GROUP_CHAT_DELETED, chatId);
+        }
+    }
+
     if (response.ok) {
         selected_group = null;
         delete tag_map[id];
         resetChatState();
         clearChat();
-        printMessages();
+        await printMessages();
         await getCharacters();
 
         select_rm_info("group_delete", id);
@@ -1493,6 +1501,8 @@ export async function deleteGroupChat(groupId, chatId) {
         } else {
             await createNewGroupChat(groupId);
         }
+
+        await eventSource.emit(event_types.GROUP_CHAT_DELETED, chatId);
     }
 }
 

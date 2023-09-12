@@ -121,7 +121,7 @@ import {
     delay,
     restoreCaretPosition,
     saveCaretPosition,
-    end_trim_to_sentence,
+    trimToEndSentence,
     countOccurrences,
     isOdd,
     sortMoments,
@@ -286,7 +286,9 @@ export const event_types = {
     CHARACTER_EDITED: 'character_edited',
     USER_MESSAGE_RENDERED: 'user_message_rendered',
     CHARACTER_MESSAGE_RENDERED: 'character_message_rendered',
-    FORCE_SET_BACKGROUND: 'force_set_background,'
+    FORCE_SET_BACKGROUND: 'force_set_background',
+    CHAT_DELETED : 'chat_deleted',
+    GROUP_CHAT_DELETED: 'group_chat_deleted',
 }
 
 export const eventSource = new EventEmitter();
@@ -383,10 +385,7 @@ const system_message_types = {
 };
 
 const extension_prompt_types = {
-    /**
-     * @deprecated Outdated term. In reality it's "after main prompt or story string"
-     */
-    AFTER_SCENARIO: 0,
+    IN_PROMPT: 0,
     IN_CHAT: 1
 };
 
@@ -1110,10 +1109,12 @@ async function delChat(chatfile) {
     });
     if (response.ok === true) {
         // choose another chat if current was deleted
-        if (chatfile.replace('.jsonl', '') === characters[this_chid].chat) {
+        const name = chatfile.replace('.jsonl', '');
+        if (name === characters[this_chid].chat) {
             chat_metadata = {};
             await replaceCurrentChat();
         }
+        await eventSource.emit(event_types.CHAT_DELETED, name);
     }
 }
 
@@ -1148,10 +1149,42 @@ async function replaceCurrentChat() {
     }
 }
 
-function printMessages() {
-    chat.forEach(function (item, i, arr) {
-        addOneMessage(item, { scroll: i === arr.length - 1 });
-    });
+const TRUNCATION_THRESHOLD = 100;
+
+function showMoreMessages() {
+    let messageId = Number($('#chat').children('.mes').first().attr('mesid'));
+    let count = TRUNCATION_THRESHOLD;
+
+    console.debug('Inserting messages before', messageId, 'count', count, 'chat length', chat.length);
+    const prevHeight = $('#chat').prop('scrollHeight');
+
+    while(messageId > 0 && count > 0) {
+        count--;
+        messageId--;
+        addOneMessage(chat[messageId], { insertBefore: messageId + 1, scroll: false, forceId: messageId });
+    }
+
+    if (messageId == 0) {
+        $('#show_more_messages').remove();
+    }
+
+    const newHeight = $('#chat').prop('scrollHeight');
+    $('#chat').scrollTop(newHeight - prevHeight);
+}
+
+async function printMessages() {
+    let startIndex = 0;
+
+    if (chat.length > TRUNCATION_THRESHOLD) {
+        count_view_mes = chat.length - TRUNCATION_THRESHOLD;
+        startIndex = count_view_mes;
+        $('#chat').append('<div id="show_more_messages">Show more messages</div>');
+    }
+
+    for (let i = startIndex; i < chat.length; i++) {
+        const item = chat[i];
+        addOneMessage(item, { scroll: i === chat.length - 1 });
+    }
 
     if (power_user.lazy_load > 0) {
         const height = $('#chat').height();
@@ -1194,7 +1227,7 @@ export async function reloadCurrentChat() {
     }
     else {
         resetChatState();
-        printMessages();
+        await printMessages();
     }
 
     await eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
@@ -1430,7 +1463,7 @@ export function addCopyToCodeBlocks(messageElement) {
 }
 
 
-function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true } = {}) {
+function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true, insertBefore = null, forceId = null } = {}) {
     var messageText = mes["mes"];
     const momentDate = timestampToMoment(mes.send_date);
     const timestamp = momentDate.isValid() ? momentDate.format('LL LT') : '';
@@ -1500,7 +1533,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         }
     }*/
     let params = {
-        mesId: count_view_mes,
+        mesId: forceId ?? count_view_mes,
         characterName: characterName,
         isUser: mes.is_user,
         avatarImg: avatarImg,
@@ -1518,18 +1551,31 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     const HTMLForEachMes = getMessageFromTemplate(params);
 
     if (type !== 'swipe') {
-        if (!insertAfter) {
+        if (!insertAfter && !insertBefore) {
             $("#chat").append(HTMLForEachMes);
         }
-        else {
+        else if (insertAfter) {
             const target = $("#chat").find(`.mes[mesid="${insertAfter}"]`);
             $(HTMLForEachMes).insertAfter(target);
+            $(HTMLForEachMes).find('.swipe_left').css('display', 'none');
+            $(HTMLForEachMes).find('.swipe_right').css('display', 'none');
+        } else {
+            const target = $("#chat").find(`.mes[mesid="${insertBefore}"]`);
+            $(HTMLForEachMes).insertBefore(target);
             $(HTMLForEachMes).find('.swipe_left').css('display', 'none');
             $(HTMLForEachMes).find('.swipe_right').css('display', 'none');
         }
     }
 
-    const newMessageId = type == 'swipe' ? count_view_mes - 1 : count_view_mes;
+    function getMessageId() {
+        if (typeof forceId == 'number') {
+            return forceId;
+        }
+
+        return type == 'swipe' ? count_view_mes - 1 : count_view_mes;
+    }
+
+    const newMessageId = getMessageId();
     const newMessage = $(`#chat [mesid="${newMessageId}"]`);
     const isSmallSys = mes?.extra?.isSmallSys;
     newMessage.data("isSystem", isSystem);
@@ -1603,6 +1649,11 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
             swipeMessage.find('.mes_timer').html('');
             swipeMessage.find('.tokenCounterDisplay').html('');
         }
+    } else if (typeof forceId == 'number') {
+        $("#chat").find(`[mesid="${forceId}"]`).find('.mes_text').append(messageText);
+        appendImageToMessage(mes, newMessage);
+        hideSwipeButtons();
+        showSwipeButtons();
     } else {
         $("#chat").find(`[mesid="${count_view_mes}"]`).find('.mes_text').append(messageText);
         appendImageToMessage(mes, newMessage);
@@ -1613,7 +1664,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     addCopyToCodeBlocks(newMessage);
 
     // Don't scroll if not inserting last
-    if (!insertAfter && scroll) {
+    if (!insertAfter && !insertBefore && scroll) {
         $('#chat .mes').last().addClass('last_mes');
         $('#chat .mes').eq(-2).removeClass('last_mes');
 
@@ -2534,7 +2585,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         addPersonaDescriptionExtensionPrompt();
         // Call combined AN into Generate
         let allAnchors = getAllExtensionPrompts();
-        const afterScenarioAnchor = getExtensionPrompt(extension_prompt_types.AFTER_SCENARIO);
+        const afterScenarioAnchor = getExtensionPrompt(extension_prompt_types.IN_PROMPT);
         let zeroDepthAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, 0, ' ');
 
         const storyStringParams = {
@@ -3679,7 +3730,13 @@ function setInContextMessages(lastmsg, type) {
         lastmsg++;
     }
 
-    $('#chat .mes:not([is_system="true"])').eq(-lastmsg).addClass('lastInContext');
+    const lastMessageBlock = $('#chat .mes:not([is_system="true"])').eq(-lastmsg);
+    lastMessageBlock.addClass('lastInContext');
+
+    if (lastMessageBlock.length === 0) {
+        const firstMessageId = getFirstDisplayedMessageId();
+        $(`#chat .mes[mesid="${firstMessageId}"`).addClass('lastInContext');
+    }
 }
 
 function getGenerateUrl() {
@@ -3784,7 +3841,7 @@ function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete
     getMessage = getRegexedString(getMessage, isImpersonate ? regex_placement.USER_INPUT : regex_placement.AI_OUTPUT);
 
     if (!displayIncompleteSentences && power_user.trim_sentences) {
-        getMessage = end_trim_to_sentence(getMessage, power_user.include_newline);
+        getMessage = trimToEndSentence(getMessage, power_user.include_newline);
     }
 
     if (power_user.collapse_newlines) {
@@ -4452,7 +4509,7 @@ async function getChatResult() {
         chat.push(message);
         await saveChatConditional();
     }
-    printMessages();
+    await printMessages();
     select_selected_character(this_chid);
 
     await eventSource.emit(event_types.CHAT_CHANGED, (getCurrentChatId()));
@@ -5014,12 +5071,12 @@ async function saveSettings(type) {
         dataType: "json",
         contentType: "application/json",
         //processData: false,
-        success: function (data) {
+        success: async function (data) {
             //online_status = data.result;
             eventSource.emit(event_types.SETTINGS_UPDATED);
             if (type == "change_name") {
                 clearChat();
-                printMessages();
+                await printMessages();
             }
         },
         error: function (jqXHR, exception) {
@@ -5605,7 +5662,7 @@ function select_rm_characters() {
  * @param {number} position Insertion position. 0 is after story string, 1 is in-chat with custom depth.
  * @param {number} depth Insertion depth. 0 represets the last message in context. Expected values up to 100.
  */
-function setExtensionPrompt(key, value, position, depth) {
+export function setExtensionPrompt(key, value, position, depth) {
     extension_prompts[key] = { value: String(value), position: Number(position), depth: Number(depth) };
 }
 
@@ -5893,15 +5950,23 @@ async function importCharacterChat(formData) {
 }
 
 function updateViewMessageIds() {
+    const minId = getFirstDisplayedMessageId();
+
     $('#chat').find(".mes").each(function (index, element) {
-        $(element).attr("mesid", index);
-        $(element).find('.mesIDDisplay').text(`#${index}`);
+        $(element).attr("mesid", minId + index);
+        $(element).find('.mesIDDisplay').text(`#${minId + index}`);
     });
 
     $('#chat .mes').removeClass('last_mes');
     $('#chat .mes').last().addClass('last_mes');
 
     updateEditArrowClasses();
+}
+
+function getFirstDisplayedMessageId() {
+    const allIds = Array.from(document.querySelectorAll('#chat .mes')).map(el => Number(el.getAttribute('mesid'))).filter(x => !isNaN(x));
+    const minId = Math.min(...allIds);
+    return minId;
 }
 
 function updateEditArrowClasses() {
@@ -6306,7 +6371,7 @@ async function createOrEditCharacter(e) {
 
                     await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
                     clearChat();
-                    printMessages();
+                    await printMessages();
                     await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, (chat.length - 1));
                     await saveChatConditional();
                 }
@@ -6893,6 +6958,7 @@ export async function handleDeleteCharacter(popup_type, this_chid, delete_chats)
 
     const avatar = characters[this_chid].avatar;
     const name = characters[this_chid].name;
+    const pastChats = await getPastCharacterChats();
 
     const msg = { avatar_url: avatar, delete_chats: delete_chats };
 
@@ -6905,6 +6971,13 @@ export async function handleDeleteCharacter(popup_type, this_chid, delete_chats)
 
     if (response.ok) {
         await deleteCharacter(name, avatar);
+
+        if (delete_chats) {
+            for (const chat of pastChats) {
+                const name = chat.file_name.replace('.jsonl', '');
+                await eventSource.emit(event_types.CHAT_DELETED, name);
+            }
+        }
     } else {
         console.error('Failed to delete character: ', response.status, response.statusText);
     }
@@ -6935,7 +7008,7 @@ export async function deleteCharacter(name, avatar) {
     delete tag_map[avatar];
     await getCharacters();
     select_rm_info("char_delete", name);
-    printMessages();
+    await printMessages();
     saveSettingsDebounced();
 }
 
@@ -8833,6 +8906,10 @@ jQuery(async function () {
 
     $("#hideCharPanelAvatarButton").on('click', () => {
         $('#avatar-and-name-block').slideToggle()
+    });
+
+    $(document).on('mouseup touchend', '#show_more_messages', () => {
+        showMoreMessages();
     });
 
     // Added here to prevent execution before script.js is loaded and get rid of quirky timeouts

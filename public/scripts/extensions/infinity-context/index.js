@@ -739,7 +739,7 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
             // No memories? No prompt.
             const promptBlob = (tokenApprox == 0) ? "" : wrapperMsg.replace('{{memories}}', allMemoryBlob);
             console.debug("CHROMADB: prompt blob: %o", promptBlob);
-            context.setExtensionPrompt(MODULE_NAME, promptBlob, extension_prompt_types.AFTER_SCENARIO);
+            context.setExtensionPrompt(MODULE_NAME, promptBlob, extension_prompt_types.IN_PROMPT);
         }
         if (selectedStrategy === 'custom') {
             const context = getContext();
