@@ -4436,13 +4436,14 @@ async function read_avatar_load(input) {
         });
 
         $(".mes").each(async function () {
-            if ($(this).attr("is_system") == 'true') {
+            const nameMatch = $(this).attr("ch_name") == formData.get('ch_name');
+            if ($(this).attr("is_system") == 'true' && !nameMatch) {
                 return;
             }
             if ($(this).attr("is_user") == 'true') {
                 return;
             }
-            if ($(this).attr("ch_name") == formData.get('ch_name')) {
+            if (nameMatch) {
                 const previewSrc = $("#avatar_load_preview").attr("src");
                 const avatar = $(this).find(".avatar img");
                 avatar.attr('src', default_avatar);

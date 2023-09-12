@@ -863,8 +863,12 @@ export function initRossMods() {
 
     //this makes the chat input text area resize vertically to match the text size (limited by CSS at 50% window height)
     $('#send_textarea').on('input', function () {
+        const chatBlock = $('#chat');
+        const originalScrollBottom = chatBlock[0].scrollHeight - (chatBlock.scrollTop() + chatBlock.outerHeight());
         this.style.height = window.getComputedStyle(this).getPropertyValue('min-height');
         this.style.height = (this.scrollHeight) + 'px';
+        const newScrollTop = chatBlock[0].scrollHeight - (chatBlock.outerHeight() + originalScrollBottom);
+        chatBlock.scrollTop(newScrollTop);
     });
 
     //Regenerate if user swipes on the last mesage in chat
