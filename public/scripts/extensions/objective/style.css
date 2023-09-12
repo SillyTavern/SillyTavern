@@ -50,3 +50,7 @@
     margin: unset;
     margin-bottom: 5px !important;
 }
+
+#objective-task-manual-check-menu-item {
+    order: 3;
+}

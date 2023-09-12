@@ -6053,8 +6053,7 @@ function enlargeMessageImage() {
     const img = document.createElement('img');
     img.classList.add('img_enlarged');
     img.src = imgSrc;
-    $('#dialogue_popup').addClass('wide_dialogue_popup');
-    callPopup(img.outerHTML, 'text');
+    callPopup(img.outerHTML, 'text', '', { wide: true, large: true });
 }
 
 function updateAlternateGreetingsHintVisibility(root) {
