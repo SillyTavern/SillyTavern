@@ -85,8 +85,7 @@ body:
     attributes:
       value: |-
         ## Thanks 🙏
-        Thank you for your feature suggestion,
-        Please note that there is no guarantee that your idea will be implemented
-        If you haven't already done so, please Star the our repository on GitHub, to help other users discover it
+        Thank you for your feature suggestion.
+        Please note that there is no guarantee that your idea will be implemented.
     validations:
       required: false
