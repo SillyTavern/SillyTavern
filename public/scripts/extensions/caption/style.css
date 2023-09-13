@@ -1,3 +1,7 @@
 #img_form {
     display: none;
 }
+
+#send_picture {
+    order: 4;
+}

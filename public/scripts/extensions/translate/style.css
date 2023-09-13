@@ -4,3 +4,7 @@
     gap: 10px;
     flex-direction: row;
 }
+
+#translate_chat {
+    order: 7;
+}

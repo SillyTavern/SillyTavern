@@ -15,6 +15,7 @@
     opacity: 0.7;
     display: flex;
     align-items: center;
+    order: 6;
     /* justify-content: center; */
 }
 
