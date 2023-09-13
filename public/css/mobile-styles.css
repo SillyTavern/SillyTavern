@@ -179,7 +179,7 @@
         border-right: 1px solid var(--grey30);
         border-bottom: 1px solid var(--grey30);
         border-radius: 0 0 20px 20px;
-        top: 36px !important;
+        top: var(--topBarBlockSize) !important;
         left: 0 !important;
         backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
     }
