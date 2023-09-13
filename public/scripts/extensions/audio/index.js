@@ -324,15 +324,15 @@ async function moduleWorker() {
             .remove();
 
             if(extension_settings.audio.bgm_selected !== null) {
-                let label = extension_settings.audio.bgm_selected;
-                if (label.includes("assets"))
-                    label = "asset: " + label.replace(/^.*[\\\/]/, '').replace(/\.[^/.]+$/, "");
+                let bgm_label = extension_settings.audio.bgm_selected;
+                if (bgm_label.includes("assets"))
+                    bgm_label = "asset: " + bgm_label.replace(/^.*[\\\/]/, '').replace(/\.[^/.]+$/, "");
                 else {
-                    label = label.substring("/characters/".length);
-                    label = label.substring(0,label.indexOf("/")) + ": " + label.substring(label.indexOf("/")+"/bgm/".length);
-                    label = label.replace(/\.[^/.]+$/, "");
+                    bgm_label = bgm_label.substring("/characters/".length);
+                    bgm_label = bgm_label.substring(0,bgm_label.indexOf("/")) + ": " + bgm_label.substring(bgm_label.indexOf("/")+"/bgm/".length);
+                    bgm_label = bgm_label.replace(/\.[^/.]+$/, "");
                 }
-                $('#audio_bgm_select').append(new Option(label, extension_settings.audio.bgm_selected));
+                $('#audio_bgm_select').append(new Option(bgm_label, extension_settings.audio.bgm_selected));
             }
     
             for (const file of fallback_BGMS) {
@@ -352,8 +352,17 @@ async function moduleWorker() {
             .find('option')
             .remove();
 
-            if(extension_settings.audio.ambient_selected !== null)
-                $('#audio_ambient_select').append(new Option(extension_settings.audio.ambient_selected, extension_settings.audio.ambient_selected));
+            if(extension_settings.audio.ambient_selected !== null) {
+                let ambient_label = extension_settings.audio.ambient_selected;
+                if (ambient_label.includes("assets"))
+                ambient_label = "asset: " + ambient_label.replace(/^.*[\\\/]/, '').replace(/\.[^/.]+$/, "");
+                else {
+                    ambient_label = ambient_label.substring("/characters/".length);
+                    ambient_label = ambient_label.substring(0,ambient_label.indexOf("/")) + ": " + ambient_label.substring(ambient_label.indexOf("/")+"/bgm/".length);
+                    ambient_label = ambient_label.replace(/\.[^/.]+$/, "");
+                }
+                $('#audio_ambient_select').append(new Option(ambient_label, extension_settings.audio.ambient_selected));
+            }
     
             for (const file of ambients) {
                 if(file !== extension_settings.audio.ambient_selected)
