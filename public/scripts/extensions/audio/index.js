@@ -329,9 +329,9 @@ async function moduleWorker() {
                 }
 
                 try {
+                    currentExpressionBGM = newExpression;
                     await updateBGM();
                     cooldownBGM = extension_settings.audio.bgm_cooldown * 1000;
-                    currentExpressionBGM = newExpression;
                     console.debug(DEBUG_PREFIX, "(SOLO) Updated current character expression to", currentExpressionBGM, "cooldown", cooldownBGM);
                 }
                 catch (error) {
