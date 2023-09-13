@@ -6357,6 +6357,7 @@ async function createOrEditCharacter(e) {
                 $("#create_button").removeAttr("disabled");
 
                 await getOneCharacter(formData.get('avatar_url'));
+                favsToHotswap(); // Update fav state
 
                 $("#add_avatar_button").replaceWith(
                     $("#add_avatar_button").val("").clone(true)
