@@ -7889,13 +7889,11 @@ jQuery(async function () {
             //$('.button').disableSelection();
             preset_settings = "gui";
             $("#range_block").find('input').prop("disabled", true);
+            $("#range_block").css("opacity", 0.5);
+
             $("#kobold-advanced-config").find('input').prop("disabled", true);
             $("#kobold-advanced-config").css('opacity', 0.5);
 
-            $("#range_block").css("opacity", 0.5);
-            $("#amount_gen_block").find('input').prop("disabled", true);
-
-            $("#amount_gen_block").css("opacity", 0.45);
             $("#kobold_order").sortable("disable");
         }
         saveSettingsDebounced();
