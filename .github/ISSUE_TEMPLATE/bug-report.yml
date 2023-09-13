@@ -2,8 +2,6 @@ name: Bug Report 🐛
 description: Report something that's not working the way it's (probably) intended to. PAY ATTENTION, Support requests for external programs (reverse proxies, 3rd party servers, other peoples' forks) will be refused!"
 title: '[BUG] <title>'
 labels: ['bug']
-assignees:
-  - lissy93
 body:
   - type: dropdown
     id: environment
@@ -46,7 +44,6 @@ body:
       description: Please provide details about your desktop environment.
       placeholder: |
         - Node.js version (if applicable): [run `node --version` in cmd]
-        - Browser [e.g. chrome, safari]
         - Generation API [e.g. KoboldAI, OpenAI]
         - Branch [staging, release]
         - Model [e.g. Pygmalion 6b, LLaMa 13b]
@@ -83,15 +80,11 @@ body:
           required: true
         - label: You've checked the [docs](https://docs.sillytavern.app/) ![important](https://img.shields.io/badge/Important!-F6094E)
           required: true
-        - label: You agree to the [code of conduct](https://github.com/SillyTavern/SillyTavern/blob/master/.github/CODE_OF_CONDUCT.md#contributor-covenant-code-of-conduct)
-          required: true
 
   - type: markdown
     attributes:
       value: |-
         ## Thanks 🙏
-        <img align="left" width="160" src="https://i.ibb.co/S5vCnhL/gh-thanks.gif" alt="🐙" />
-        Thank you for raising this ticket - in doing so you are helping to make SillyTavern better for everyone 💪<br>
-        ⭐️ Consider dropping the repo a star if you're enjoying Sillytavern!<br>
+        Thank you for raising this ticket - in doing so you are helping to make SillyTavern better for everyone.
     validations:
       required: false
