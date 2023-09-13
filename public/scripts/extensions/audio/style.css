@@ -1,15 +1,56 @@
-.mixer-div {
+.audio-mixer-div {
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: center;
     padding: 5px;
+    background-color: rgba(38, 38, 38, 0.3);
+    border-radius: 10px;
+}
+
+.audio-mixer-element {
+    height: 60px;
+    float: left;
+    margin-right: 10px;
+    label {
+        text-align: top;
+    }
+    input {
+        margin-top: 15px;
+    }
+    select {
+        margin-top: 5px;
+        width: 175px;
+    }
+}
+
+.audio-label {
+    display: block;
+    text-align: center;
+}
+
+.audio-volume-div {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+
+.audio-lock-button {
+    padding: 5px;
+    width: 50px;
+    height: 30px;
 }
 
 .audio-mute-button {
     padding: 5px;
     width: 50px;
     height: 30px;
+}
+
+.audio-slider {
+    width: 75px !important;
+    margin-left: 5px !important;
 }
 
 .audio-mute-button-muted {
