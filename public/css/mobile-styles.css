@@ -91,7 +91,6 @@
     #top-settings-holder,
     #top-bar {
         position: fixed;
-        padding-top: 3px;
         width: 100vw;
         width: 100svw;
     }
@@ -114,14 +113,14 @@
     /* ,
     #world_popup  */
         {
-        max-height: calc(100vh - 36px);
-        max-height: calc(100svh - 36px);
+        /*max-height: calc(100vh - 36px);
+        max-height: calc(100svh - 36px);*/
         width: 100% !important;
         margin: 0 auto;
         max-width: 100%;
         left: 0 !important;
         resize: none !important;
-        top: 36px;
+        top: var(--topBarBlockSize);
     }
 
     .wi-settings {
@@ -272,6 +271,7 @@
 }
 
 @media screen and (min-width: 1001px) {
+
     #PygOverrides,
     #ContextFormatting,
     #UI-Theme-Block,
