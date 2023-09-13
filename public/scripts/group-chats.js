@@ -582,10 +582,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
                 typingIndicator
                     .find(".typing_indicator_name")
                     .text(characters[chId].name);
-                $("#chat").append(typingIndicator);
-                typingIndicator.show(200, function () {
-                    typingIndicator.get(0).scrollIntoView({ behavior: "smooth" });
-                });
+                typingIndicator.show();
             }
 
             // TODO: This is awful. Refactor this
@@ -681,9 +678,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             }
         }
     } finally {
-        // hide and reapply the indicator to the bottom of the list
-        typingIndicator.hide(200);
-        $("#chat").append(typingIndicator);
+        typingIndicator.hide();
 
         is_group_generating = false;
         $("#send_textarea").attr("disabled", false);
@@ -1109,6 +1104,7 @@ function select_group_chats(groupId, skipAnimation) {
     $("#rm_group_restore_avatar").toggle(!!group && isValidImageUrl(group.avatar_url));
     $("#rm_group_filter").val("").trigger("input");
     $(`input[name="rm_group_activation_strategy"][value="${replyStrategy}"]`).prop('checked', true);
+    $("#rm_group_chat_name").val(groupName);
 
     if (!skipAnimation) {
         selectRightMenuWithAnimation('rm_group_chats_block');

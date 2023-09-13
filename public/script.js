@@ -5410,17 +5410,18 @@ function select_rm_info(type, charId, previousCharId = null) {
                 $('#rm_print_characters_pagination').pagination('go', page);
 
                 waitUntilCondition(() => document.querySelector(selector) !== null).then(() => {
-                    const element = $(selector).parent().get(0);
+                    const parent = $('#rm_print_characters_block');
+                    const element = $(selector).parent();
 
-                    if (!element) {
+                    if (element.length === 0) {
                         console.log(`Could not find element for character ${charId}`);
                         return;
                     }
 
-                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    $(element).addClass('flash animated');
+                    parent.scrollTop(element.position().top + parent.scrollTop());
+                    element.addClass('flash animated');
                     setTimeout(function () {
-                        $(element).removeClass('flash animated');
+                        element.removeClass('flash animated');
                     }, 5000);
                 });
             } catch (e) {
@@ -5429,16 +5430,29 @@ function select_rm_info(type, charId, previousCharId = null) {
         }
 
         if (type === 'group_create') {
-            //for groups, ${charId} = data.id from group-chats.js createGroup()
-            const element = $(`#rm_characters_block [grid="${charId}"]`).get(0);
-            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // Find the page at which the character is located
+            const charData = getEntitiesList({ doFilter: true });
+            const charIndex = charData.findIndex((x) => String(x?.item?.id) === String(charId));
+
+            if (charIndex === -1) {
+                console.log(`Could not find group ${charId} in the list`);
+                return;
+            }
+
+            const perPage = Number(localStorage.getItem('Characters_PerPage'));
+            const page = Math.floor(charIndex / perPage) + 1;
+            $('#rm_print_characters_pagination').pagination('go', page);
+            const parent = $('#rm_print_characters_block');
+            const selector = `#rm_print_characters_block [grid="${charId}"]`;
             try {
-                if (element !== undefined || element !== null) {
+                waitUntilCondition(() => document.querySelector(selector) !== null).then(() => {
+                    const element = $(selector);
+                    parent.scrollTop(element.position().top + parent.scrollTop());
                     $(element).addClass('flash animated');
                     setTimeout(function () {
                         $(element).removeClass('flash animated');
                     }, 5000);
-                } else { console.log('didnt find the element'); }
+                });
             } catch (e) {
                 console.error(e);
             }
