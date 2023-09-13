@@ -636,6 +636,11 @@ function populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, ty
         chatCompletion.insert(vectorsMemory, 'main');
     }
 
+    // Smart Context (ChromaDB)
+    if (prompts.has('smartContext')) {
+        chatCompletion.insert(Message.fromPrompt(prompts.get('smartContext')), 'main');
+    }
+
     // Decide whether dialogue examples should always be added
     if (power_user.pin_examples) {
         populateDialogueExamples(prompts, chatCompletion);
@@ -709,6 +714,14 @@ function preparePromptsForChatCompletion({Scenario, charPersonality, name2, worl
         role: 'system',
         content: vectorsMemory.value,
         identifier: 'vectorsMemory',
+    });
+
+    // Smart Context (ChromaDB)
+    const smartContext = extensionPrompts['chromadb'];
+    if (smartContext && smartContext.value) systemPrompts.push({
+        role: 'system',
+        content: smartContext.value,
+        identifier: 'smartContext'
     });
 
     // Persona Description
