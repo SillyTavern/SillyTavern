@@ -737,7 +737,8 @@ async function setSpriteSlashCommand(_, spriteId) {
 
     spriteId = spriteId.trim().toLowerCase();
 
-    const spriteFolderName = getSpriteFolderName();
+    const currentLastMessage = getLastCharacterMessage();
+    const spriteFolderName = getSpriteFolderName(currentLastMessage, currentLastMessage.name);
     await validateImages(spriteFolderName);
 
     // Fuzzy search for sprite
