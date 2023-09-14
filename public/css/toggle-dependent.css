@@ -360,3 +360,11 @@ body.movingUI #groupMemberListPopout {
 body.noShadows * {
     text-shadow: none !important;
 }
+
+body.expandMessageActions .mes .mes_buttons .extraMesButtons {
+    display: inherit !important;
+}
+
+body.expandMessageActions .mes .mes_buttons .extraMesButtonsHint {
+    display: none !important;
+}

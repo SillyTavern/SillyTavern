@@ -789,6 +789,10 @@ hr {
     cursor: pointer;
 }
 
+#HotSwapWrapper .hotswap {
+    justify-content: space-evenly;
+}
+
 .hotswapAvatar,
 .hotswapAvatar .avatar {
     width: 50px !important;

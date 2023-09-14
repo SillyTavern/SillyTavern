@@ -25,7 +25,7 @@ function findServers(request, resolve, serverLabel) {
 
 function selectServer(event, ui, serverLabel) {
     // unfocus the input
-    $(event.target).val(ui.item.value).trigger('blur');
+    $(event.target).val(ui.item.value).trigger('input').trigger('blur');
 
     $('[data-server-connect]').each(function () {
         const serverLabels = String($(this).data('server-connect')).split(',');

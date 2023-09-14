@@ -622,7 +622,7 @@ async function loadSamplers() {
 }
 
 async function loadHordeSamplers() {
-    const result = await fetch('/horde_samplers', {
+    const result = await fetch('/api/horde/sd-samplers', {
         method: 'POST',
         headers: getRequestHeaders(),
     });
@@ -721,7 +721,7 @@ async function loadModels() {
 }
 
 async function loadHordeModels() {
-    const result = await fetch('/horde_models', {
+    const result = await fetch('/api/horde/sd-models', {
         method: 'POST',
         headers: getRequestHeaders(),
     });
@@ -1084,7 +1084,7 @@ async function generateExtrasImage(prompt) {
  * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
  */
 async function generateHordeImage(prompt) {
-    const result = await fetch('/horde_generateimage', {
+    const result = await fetch('/api/horde/generate-image', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({

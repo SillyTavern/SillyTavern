@@ -279,9 +279,15 @@ export async function favsToHotswap() {
     const entities = getEntitiesList({ doFilter: false });
     const container = $('#right-nav-panel .hotswap');
     const template = $('#hotswap_template .hotswapAvatar');
-    container.empty();
-    const maxCount = 6;
+    const DEFAULT_COUNT = 6;
+    const WIDTH_PER_ITEM = 60; // 50px + 5px gap + 5px padding
+    const containerWidth = container.outerWidth();
+    const maxCount = containerWidth > 0 ? Math.floor(containerWidth / WIDTH_PER_ITEM) : DEFAULT_COUNT;
     let count = 0;
+
+    const promises = [];
+    const newContainer = container.clone();
+    newContainer.empty();
 
     for (const entity of entities) {
         if (count >= maxCount) {
@@ -315,13 +321,18 @@ export async function favsToHotswap() {
         }
 
         if (isCharacter) {
-            const avatarUrl = getThumbnailUrl('avatar', entity.item.avatar);
-            $(slot).find('img').attr('src', avatarUrl);
-            $(slot).attr('title', entity.item.avatar);
+            const imgLoadPromise = new Promise((resolve) => {
+                const avatarUrl = getThumbnailUrl('avatar', entity.item.avatar);
+                $(slot).find('img').attr('src', avatarUrl).on('load', resolve);
+                $(slot).attr('title', entity.item.avatar);
+            });
+
+            // if the image doesn't load in 500ms, resolve the promise anyway
+            promises.push(Promise.race([imgLoadPromise, delay(500)]));
         }
 
         $(slot).css('cursor', 'pointer');
-        container.append(slot);
+        newContainer.append(slot);
         count++;
     }
 
@@ -329,9 +340,12 @@ export async function favsToHotswap() {
     if (count < maxCount) { //if any are left over
         let leftOverSlots = maxCount - count;
         for (let i = 1; i <= leftOverSlots; i++) {
-            container.append(template.clone());
+            newContainer.append(template.clone());
         }
     }
+
+    await Promise.allSettled(promises);
+    container.replaceWith(newContainer);
 }
 
 //changes input bar and send button display depending on connection status
@@ -863,8 +877,12 @@ export function initRossMods() {
 
     //this makes the chat input text area resize vertically to match the text size (limited by CSS at 50% window height)
     $('#send_textarea').on('input', function () {
+        const chatBlock = $('#chat');
+        const originalScrollBottom = chatBlock[0].scrollHeight - (chatBlock.scrollTop() + chatBlock.outerHeight());
         this.style.height = window.getComputedStyle(this).getPropertyValue('min-height');
         this.style.height = (this.scrollHeight) + 'px';
+        const newScrollTop = chatBlock[0].scrollHeight - (chatBlock.outerHeight() + originalScrollBottom);
+        chatBlock.scrollTop(newScrollTop);
     });
 
     //Regenerate if user swipes on the last mesage in chat

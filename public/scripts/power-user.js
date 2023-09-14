@@ -16,7 +16,7 @@ import {
     setEditedMessageId,
     renderTemplate,
 } from "../script.js";
-import { isMobile, initMovingUI } from "./RossAscends-mods.js";
+import { isMobile, initMovingUI, favsToHotswap } from "./RossAscends-mods.js";
 import {
     groups,
     resetSelectedGroup,
@@ -30,7 +30,7 @@ import {
 import { registerSlashCommand } from "./slash-commands.js";
 import { tokenizers } from "./tokenizers.js";
 
-import { countOccurrences, delay, isOdd, resetScrollHeight, sortMoments, timestampToMoment } from "./utils.js";
+import { countOccurrences, debounce, delay, isOdd, resetScrollHeight, sortMoments, timestampToMoment } from "./utils.js";
 
 export {
     loadPowerUserSettings,
@@ -152,6 +152,7 @@ let power_user = {
     mesIDDisplay_enabled: false,
     max_context_unlocked: false,
     message_token_count_enabled: false,
+    expand_message_actions: false,
     prefer_character_prompt: true,
     prefer_character_jailbreak: true,
     quick_continue: false,
@@ -235,10 +236,13 @@ const storage_keys = {
     timestamp_model_icon: 'TimestampModelIcon',
     mesIDDisplay_enabled: 'mesIDDisplayEnabled',
     message_token_count_enabled: 'MessageTokenCountEnabled',
+    expand_message_actions: 'ExpandMessageActions',
 };
 
 let browser_has_focus = true;
 const debug_functions = [];
+
+const setHotswapsDebounced = debounce(favsToHotswap, 500);
 
 export function switchSimpleMode() {
     $('[data-newbie-hidden]').each(function () {
@@ -366,6 +370,13 @@ function switchTokenCount() {
     power_user.message_token_count_enabled = value === null ? false : value == "true";
     $("body").toggleClass("no-tokenCount", !power_user.message_token_count_enabled);
     $("#messageTokensEnabled").prop("checked", power_user.message_token_count_enabled);
+}
+
+function switchMessageActions() {
+    const value = localStorage.getItem(storage_keys.expand_message_actions);
+    power_user.expand_message_actions = value === null ? false : value == "true";
+    $("body").toggleClass("expandMessageActions", power_user.expand_message_actions);
+    $("#expandMessageActions").prop("checked", power_user.expand_message_actions);
 }
 
 function switchMesIDDisplay() {
@@ -663,6 +674,13 @@ async function applyTheme(name) {
             }
         },
         {
+            key: 'expand_message_actions',
+            action: async () => {
+                localStorage.setItem(storage_keys.expand_message_actions, String(power_user.expand_message_actions));
+                switchMessageActions();
+            }
+        },
+        {
             key: 'hotswap_enabled',
             action: async () => {
                 localStorage.setItem(storage_keys.hotswap_enabled, String(power_user.hotswap_enabled));
@@ -733,6 +751,7 @@ switchTimestamps();
 switchIcons();
 switchMesIDDisplay();
 switchTokenCount();
+switchMessageActions();
 
 function loadPowerUserSettings(settings, data) {
     // Load from settings.json
@@ -1723,6 +1742,7 @@ $(document).ready(() => {
             resetMovablePanels('resize');
         }
         // Adjust layout and styling here
+        setHotswapsDebounced();
     });
 
     // Settings that go to settings.json
@@ -1847,6 +1867,7 @@ $(document).ready(() => {
         power_user.chat_width = Number(e.target.value);
         localStorage.setItem(storage_keys.chat_width, power_user.chat_width);
         applyChatWidth();
+        setHotswapsDebounced();
     });
 
     $(`input[name="font_scale"]`).on('input', async function (e) {
@@ -2104,6 +2125,13 @@ $(document).ready(() => {
         power_user.message_token_count_enabled = value;
         localStorage.setItem(storage_keys.message_token_count_enabled, String(power_user.message_token_count_enabled));
         switchTokenCount();
+    });
+
+    $("#expandMessageActions").on("input", function () {
+        const value = !!$(this).prop('checked');
+        power_user.expand_message_actions = value;
+        localStorage.setItem(storage_keys.expand_message_actions, String(power_user.expand_message_actions));
+        switchMessageActions();
     });
 
     $("#mesIDDisplayEnabled").on("input", function () {

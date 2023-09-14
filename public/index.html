@@ -249,7 +249,7 @@
                                         <input id="max_context_unlocked" type="checkbox" />
                                         <span data-i18n="unlocked">Unlocked</span>
                                     </label>
-                                    <div id="max_context_unlocked_warning">
+                                    <div id="max_context_unlocked_warning" class="toggle-description justifyLeft widthUnset">
                                         <span data-i18n="only select modls support context sizes greater than 2048 tokens. proceed only is you know you're doing">
                                             Only select models support context sizes greater than 2048 tokens.
                                             Increase only if you know what you're doing.
@@ -2889,6 +2889,11 @@
                                     <span data-i18n="Waifu Mode">Visual Novel Mode</span>
                                 </label>
 
+                                <label for="expandMessageActions" class="checkbox_label">
+                                    <input id="expandMessageActions" type="checkbox" />
+                                    <span data-i18n="Auto-Expand Message Actions">Auto-Expand Message Actions</span>
+                                </label>
+
                                 <label for="messageTimerEnabled" class="checkbox_label">
                                     <input id="messageTimerEnabled" type="checkbox" />
                                     <span data-i18n="Message Timer">Message Timer</span>
@@ -3224,7 +3229,7 @@
                         </div>
                         <div class="right_menu_button fa-solid fa-list-ul" id="rm_button_characters" title="Select/Create Characters" data-i18n="[title]Select/Create Characters"></div>
                     </div>
-                    <div name="HotSwapWrapper" class="alignitemscenter flex-container margin0auto">
+                    <div id="HotSwapWrapper" class="alignitemscenter flex-container margin0auto width100p">
                         <div class="hotswap flex-container flex1"></div>
                     </div>
 

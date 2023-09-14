@@ -541,7 +541,8 @@ async function moduleWorker() {
 
     const offlineMode = $('.expression_settings .offline_mode');
     if (!modules.includes('classify') && !extension_settings.expressions.local) {
-        $('.expression_settings').show();
+        $('#open_chat_expressions').show();
+        $('#no_chat_expressions').hide();
         offlineMode.css('display', 'block');
         lastCharacter = context.groupId || context.characterId;
 
@@ -828,7 +829,8 @@ function removeExpression() {
     $('img.expression').off('error');
     $('img.expression').prop('src', '');
     $('img.expression').removeClass('default');
-    $('.expression_settings').hide();
+    $('#open_chat_expressions').hide();
+    $('#no_chat_expressions').show();
 }
 
 async function validateImages(character, forceRedrawCached) {
@@ -854,9 +856,11 @@ async function validateImages(character, forceRedrawCached) {
 
 function drawSpritesList(character, labels, sprites) {
     let validExpressions = [];
-    $('.expression_settings').show();
+    $('#no_chat_expressions').hide();
+    $('#open_chat_expressions').show();
     $('#image_list').empty();
     $('#image_list').data('name', character);
+    $('#image_list_header_name').text(character);
 
     if (!Array.isArray(labels)) {
         return [];
@@ -1329,7 +1333,7 @@ function setExpressionOverrideHtml(forceClear = false) {
         $(document).on('click', '.expression_list_upload', onClickExpressionUpload);
         $(document).on('click', '.expression_list_delete', onClickExpressionDelete);
         $(window).on("resize", updateVisualNovelModeDebounced);
-        $('.expression_settings').hide();
+        $("#open_chat_expressions").hide();
 
         $('#image_type_toggle').on('click', function () {
             if (this instanceof HTMLInputElement) {

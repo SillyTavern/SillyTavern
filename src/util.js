@@ -1,10 +1,73 @@
 const path = require('path');
+const child_process = require('child_process');
+const commandExistsSync = require('command-exists').sync;
 
+/**
+ * Returns the config object from the config.conf file.
+ * @returns {object} Config object
+ */
 function getConfig() {
-    const config = require(path.join(process.cwd(), './config.conf'));
-    return config;
+    try {
+        const config = require(path.join(process.cwd(), './config.conf'));
+        return config;
+    } catch (error) {
+        console.warn('Failed to read config.conf');
+        return {};
+    }
+}
+
+/**
+ * Encodes the Basic Auth header value for the given user and password.
+ * @param {string} auth username:password
+ * @returns {string} Basic Auth header value
+ */
+function getBasicAuthHeader(auth) {
+    const encoded = Buffer.from(`${auth}`).toString('base64');
+    return `Basic ${encoded}`;
+}
+
+/**
+ * Returns the version of the running instance. Get the version from the package.json file and the git revision.
+ * Also returns the agent string for the Horde API.
+ * @returns {{agent: string, pkgVersion: string, gitRevision: string | null, gitBranch: string | null}} Version info object
+ */
+function getVersion() {
+    let pkgVersion = 'UNKNOWN';
+    let gitRevision = null;
+    let gitBranch = null;
+    try {
+        const pkgJson = require(path.join(process.cwd(), './package.json'));
+        pkgVersion = pkgJson.version;
+        if (!process['pkg'] && commandExistsSync('git')) {
+            gitRevision = child_process
+                .execSync('git rev-parse --short HEAD', { cwd: process.cwd(), stdio: ['ignore', 'pipe', 'ignore'] })
+                .toString().trim();
+
+            gitBranch = child_process
+                .execSync('git rev-parse --abbrev-ref HEAD', { cwd: process.cwd(), stdio: ['ignore', 'pipe', 'ignore'] })
+                .toString().trim();
+        }
+    }
+    catch {
+        // suppress exception
+    }
+
+    const agent = `SillyTavern:${pkgVersion}:Cohee#1207`;
+    return { agent, pkgVersion, gitRevision, gitBranch };
+}
+
+/**
+ * Delays the current async function by the given amount of milliseconds.
+ * @param {number} ms Milliseconds to wait
+ * @returns {Promise<void>} Promise that resolves after the given amount of milliseconds
+ */
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 module.exports = {
     getConfig,
+    getVersion,
+    getBasicAuthHeader,
+    delay,
 };

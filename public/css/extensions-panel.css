@@ -94,3 +94,82 @@ input.extension_missing[type="checkbox"] {
     margin-right: 10px;
     display: inline-flex;
 }
+
+/* Fixes order of settings for extensions */
+#extensions_settings,
+#extensions_settings2 {
+    display: flex;
+    flex-direction: column;
+}
+
+#extensions_settings>.expression_settings {
+    order: 1;
+}
+
+#extensions_settings>.background_settings {
+    order: 2;
+}
+
+#extensions_settings>.sd_settings {
+    order: 3;
+}
+
+#extensions_settings>#tts_settings {
+    order: 4;
+}
+
+#extensions_settings>#rvc_settings {
+    order: 5;
+}
+
+#extensions_settings>.objective-settings {
+    order: 6;
+}
+
+#extensions_settings>#speech_recognition_settings {
+    order: 7;
+}
+
+#extensions_settings>#audio_settings {
+    order: 8;
+}
+
+#extensions_settings>#assets_ui {
+    order: 9;
+}
+
+#extensions_settings2>.translation_settings {
+    order: 1;
+}
+
+#extensions_settings2>.caption_settings {
+    order: 2;
+}
+
+#extensions_settings2>.quickReplySettings {
+    order: 3;
+}
+
+#extensions_settings2>#memory_settings {
+    order: 4;
+}
+
+#extensions_settings2>.hypebot_settings {
+    order: 5;
+}
+
+#extensions_settings2>.regex_settings {
+    order: 6;
+}
+
+#extensions_settings2>.vectors_settings {
+    order: 7;
+}
+
+#extensions_settings2>.chromadb_settings {
+    order: 8;
+}
+
+#extensions_settings2>.randomizer_settings {
+    order: 9;
+}

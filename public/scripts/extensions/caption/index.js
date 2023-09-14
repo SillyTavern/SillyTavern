@@ -144,7 +144,7 @@ jQuery(function () {
         const sendButton = $(`
         <div id="send_picture" class="list-group-item flex-container flexGap5">
             <div class="fa-solid fa-image extensionsMenuExtensionButton"></div>
-            Send a picture
+            Send a Picture
         </div>`);
 
         $('#extensionsMenu').prepend(sendButton);
@@ -171,7 +171,7 @@ jQuery(function () {
     }
     function addSettings() {
         const html = `
-        <div class="background_settings">
+        <div class="caption_settings">
             <div class="inline-drawer">
                 <div class="inline-drawer-toggle inline-drawer-header">
                     <b>Image Captioning</b>
