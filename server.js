@@ -2941,13 +2941,42 @@ app.get('/discover_extensions', jsonParser, function (_, response) {
     return response.send(extensions);
 });
 
+/**
+ * Gets the path to the sprites folder for the provided character name
+ * @param {string} name - The name of the character
+ * @param {boolean} isSubfolder - Whether the name contains a subfolder
+ * @returns {string | null} The path to the sprites folder. Null if the name is invalid.
+ */
+function getSpritesPath(name, isSubfolder) {
+    if (isSubfolder) {
+        const nameParts = name.split('/');
+        const characterName = sanitize(nameParts[0]);
+        const subfolderName = sanitize(nameParts[1]);
+
+        if (!characterName || !subfolderName) {
+            return null;
+        }
+
+        return path.join(directories.characters, characterName, subfolderName);
+    }
+
+    name = sanitize(name);
+
+    if (!name) {
+        return null;
+    }
+
+    return path.join(directories.characters, name);
+}
+
 app.get('/get_sprites', jsonParser, function (request, response) {
     const name = String(request.query.name);
-    const spritesPath = path.join(directories.characters, name);
+    const isSubfolder = name.includes('/');
+    const spritesPath = getSpritesPath(name, isSubfolder);
     let sprites = [];
 
     try {
-        if (fs.existsSync(spritesPath) && fs.statSync(spritesPath).isDirectory()) {
+        if (spritesPath && fs.existsSync(spritesPath) && fs.statSync(spritesPath).isDirectory()) {
             sprites = fs.readdirSync(spritesPath)
                 .filter(file => {
                     const mimeType = mime.lookup(file);
