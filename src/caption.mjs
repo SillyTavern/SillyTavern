@@ -4,6 +4,8 @@ import { getConfig } from './util.js';
 
 // Limit the number of threads to 1 to avoid issues on Android
 env.backends.onnx.wasm.numThreads = 1;
+// Use WASM from a local folder to avoid CDN connections
+env.backends.onnx.wasm.wasmPaths = path.join(process.cwd(), 'dist') +  path.sep;
 
 class PipelineAccessor {
     /**

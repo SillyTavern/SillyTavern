@@ -57,7 +57,8 @@
     "scripts": {
         "start": "node server.js",
         "start-multi": "node server.js --disableCsrf",
-        "pkg": "pkg --compress Gzip --no-bytecode --public ."
+        "pkg": "pkg --compress Gzip --no-bytecode --public .",
+        "postinstall": "node post-install.js"
     },
     "bin": {
         "sillytavern": "./server.js"
