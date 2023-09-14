@@ -5250,21 +5250,18 @@ app.post('/get_character_assets_list', jsonParser, async (request, response) => 
 
 // Stable Diffusion generation
 require('./src/stable-diffusion').registerEndpoints(app, jsonParser);
+
 // LLM and SD Horde generation
 require('./src/horde').registerEndpoints(app, jsonParser);
+
 // Vector storage DB
 require('./src/vectors').registerEndpoints(app, jsonParser);
+
 // Chat translation
 require('./src/translate').registerEndpoints(app, jsonParser);
+
 // Emotion classification
-import('./src/classify.mjs').then(module => {
-    module.default.registerEndpoints(app, jsonParser);
-}).catch(err => {
-    console.error(err);
-});
+require('./src/classify').registerEndpoints(app, jsonParser);
+
 // Image captioning
-import('./src/caption.mjs').then(module => {
-    module.default.registerEndpoints(app, jsonParser);
-}).catch(err => {
-    console.error(err);
-});
+require('./src/caption').registerEndpoints(app, jsonParser);
