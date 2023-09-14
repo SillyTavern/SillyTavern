@@ -16,7 +16,7 @@ import {
     setEditedMessageId,
     renderTemplate,
 } from "../script.js";
-import { isMobile, initMovingUI } from "./RossAscends-mods.js";
+import { isMobile, initMovingUI, favsToHotswap } from "./RossAscends-mods.js";
 import {
     groups,
     resetSelectedGroup,
@@ -30,7 +30,7 @@ import {
 import { registerSlashCommand } from "./slash-commands.js";
 import { tokenizers } from "./tokenizers.js";
 
-import { countOccurrences, delay, isOdd, resetScrollHeight, sortMoments, timestampToMoment } from "./utils.js";
+import { countOccurrences, debounce, delay, isOdd, resetScrollHeight, sortMoments, timestampToMoment } from "./utils.js";
 
 export {
     loadPowerUserSettings,
@@ -241,6 +241,8 @@ const storage_keys = {
 
 let browser_has_focus = true;
 const debug_functions = [];
+
+const setHotswapsDebounced = debounce(favsToHotswap, 500);
 
 export function switchSimpleMode() {
     $('[data-newbie-hidden]').each(function () {
@@ -1740,6 +1742,7 @@ $(document).ready(() => {
             resetMovablePanels('resize');
         }
         // Adjust layout and styling here
+        setHotswapsDebounced();
     });
 
     // Settings that go to settings.json
@@ -1864,6 +1867,7 @@ $(document).ready(() => {
         power_user.chat_width = Number(e.target.value);
         localStorage.setItem(storage_keys.chat_width, power_user.chat_width);
         applyChatWidth();
+        setHotswapsDebounced();
     });
 
     $(`input[name="font_scale"]`).on('input', async function (e) {

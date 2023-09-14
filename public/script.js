@@ -8506,6 +8506,7 @@ jQuery(async function () {
                         jQuery(this).css('display', 'flex'); //flex needed to make charlist scroll
                     },
                     complete: async function () {
+                        favsToHotswap();
                         await delay(50);
                         $(this).closest('.drawer-content').removeClass('resizing');
                         $("#rm_print_characters_block").trigger("scroll");
