@@ -11,7 +11,7 @@ import { loadFileToDocument } from "../../utils.js";
 import { loadMovingUIState } from '../../power-user.js';
 import { dragElement } from '../../RossAscends-mods.js';
 import { sendMessageAsQuiet } from "../../slash-commands.js";
-import { extension_settings } from "../../extensions.js";
+import { extension_settings, getContext } from "../../extensions.js";
 
 const extensionName = "idle";
 const extensionFolderPath = `scripts/extensions/${extensionName}/`;
@@ -67,7 +67,11 @@ async function loadSettings() {
 
 // Function to reset the timer
 function resetIdleTimer() {
+    console.log("Resetting idle timer");
     if (idleTimer) clearTimeout(idleTimer);
+    let context = getContext();
+    console.debug(context);
+    if (!context.characterId && !context.groupID) return;
     idleTimer = setTimeout(sendIdlePrompt, extension_settings.idle.timer);
 }
 

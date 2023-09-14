@@ -386,6 +386,7 @@ export async function sendMessageAsQuiet(_, text) {
     console.log(character_id);
     console.log(characters[character_id]);
 
+    //TODO: Less janky way to do this if possible
     let reply = await generateQuietPrompt(text + '\n' + characters[character_id].name + ":");
     console.log(reply);
     text = await getRegexedString(reply, regex_placement.SLASH_COMMAND);
