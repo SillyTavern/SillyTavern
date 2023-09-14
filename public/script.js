@@ -2987,9 +2987,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     prompt: finalPrompt,
                     gui_settings: true,
                     max_length: amount_gen,
-                    temperature: kai_settings.temp,
                     max_context_length: max_context,
-                    singleline: kai_settings.single_line,
                 };
 
                 if (preset_settings != 'gui') {
@@ -7877,13 +7875,11 @@ jQuery(async function () {
             setGenerationParamsFromPreset(preset);
 
             $("#range_block").find('input').prop("disabled", false);
+            $("#range_block").css("opacity", 1.0);
+
             $("#kobold-advanced-config").find('input').prop("disabled", false);
             $("#kobold-advanced-config").css('opacity', 1.0);
 
-            $("#range_block").css("opacity", 1.0);
-            $("#amount_gen_block").find('input').prop("disabled", false);
-
-            $("#amount_gen_block").css("opacity", 1.0);
             $("#kobold_order").sortable("enable");
         } else {
             //$('.button').disableSelection();

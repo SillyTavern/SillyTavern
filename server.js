@@ -489,7 +489,7 @@ app.post("/generate", jsonParser, async function (request, response_generate) {
         use_authors_note: false,
         use_world_info: false,
         max_context_length: request.body.max_context_length,
-        singleline: !!request.body.singleline,
+        max_length: request.body.max_length,
     };
 
     if (request.body.gui_settings == false) {
