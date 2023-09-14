@@ -710,6 +710,18 @@ async function sendExpressionCall(name, expression, force, vnMode) {
     }
 }
 
+async function setSpriteSetCommand(_, folder) {
+    if (!folder) {
+        console.log('Clearing sprite set');
+        folder = '';
+    }
+
+    $("#expression_override").val(folder.trim());
+    onClickExpressionOverrideButton();
+    removeExpression();
+    moduleWorker();
+}
+
 async function setSpriteSlashCommand(_, spriteId) {
     if (!spriteId) {
         console.log('No sprite id provided');
@@ -1360,4 +1372,5 @@ function setExpressionOverrideHtml(forceClear = false) {
     eventSource.on(event_types.MOVABLE_PANELS_RESET, updateVisualNovelModeDebounced);
     eventSource.on(event_types.GROUP_UPDATED, updateVisualNovelModeDebounced);
     registerSlashCommand('sprite', setSpriteSlashCommand, ['emote'], '<span class="monospace">spriteId</span> – force sets the sprite for the current character', true, true);
+    registerSlashCommand('spriteoverride', setSpriteSetCommand, ['costume'], '<span class="monospace">folder</span>  – sets an override sprite folder for the current character. Empty value to reset to default.', true, true);
 })();
