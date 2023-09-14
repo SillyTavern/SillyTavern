@@ -940,6 +940,10 @@ function renderCustomExpressions() {
         option.text = expression;
         $('#expression_custom').append(option);
     }
+
+    if (customExpressions.length === 0) {
+        $('#expression_custom').append('<option value="" disabled selected>[ No custom expressions ]</option>');
+    }
 }
 
 async function getExpressionsList() {
