@@ -61,9 +61,6 @@ const _ = require('lodash');
 util.inspect.defaultOptions.maxArrayLength = null;
 util.inspect.defaultOptions.maxStringLength = null;
 
-// Create files before running anything else
-createDefaultFiles();
-
 // local library imports
 const basicAuthMiddleware = require('./src/middleware/basicAuthMiddleware');
 const characterCardParser = require('./src/character-card-parser.js');
@@ -72,26 +69,6 @@ const novelai = require('./src/novelai');
 const statsHelpers = require('./statsHelpers.js');
 const { writeSecret, readSecret, readSecretState, migrateSecrets, SECRET_KEYS, getAllSecrets } = require('./src/secrets');
 const { delay, getVersion } = require('./src/util');
-
-function createDefaultFiles() {
-    const files = {
-        settings: 'public/settings.json',
-        bg_load: 'public/css/bg_load.css',
-        config: 'config.conf',
-    };
-
-    for (const file of Object.values(files)) {
-        try {
-            if (!fs.existsSync(file)) {
-                const defaultFilePath = path.join('default', path.parse(file).base);
-                fs.copyFileSync(defaultFilePath, file);
-                console.log(`Created default file: ${file}`);
-            }
-        } catch (error) {
-            console.error(`FATAL: Could not write default file: ${file}`, error);
-        }
-    }
-}
 
 // Work around a node v20.0.0, v20.1.0, and v20.2.0 bug. The issue was fixed in v20.3.0.
 // https://github.com/nodejs/node/issues/47822#issuecomment-1564708870

@@ -2,7 +2,31 @@
  * Scripts to be done before starting the server for the first time.
  */
 const fs = require('fs');
+const path = require('path');
 const crypto = require('crypto');
+
+/**
+ * Creates the default config files if they don't exist yet.
+ */
+function createDefaultFiles() {
+    const files = {
+        settings: './public/settings.json',
+        bg_load: './public/css/bg_load.css',
+        config: './config.conf',
+    };
+
+    for (const file of Object.values(files)) {
+        try {
+            if (!fs.existsSync(file)) {
+                const defaultFilePath = path.join('./default', path.parse(file).base);
+                fs.copyFileSync(defaultFilePath, file);
+                console.log(`Created default file: ${file}`);
+            }
+        } catch (error) {
+            console.error(`FATAL: Could not write default file: ${file}`, error);
+        }
+    }
+}
 
 /**
  * Returns the MD5 hash of the given data.
@@ -48,7 +72,9 @@ function copyWasmFiles() {
 }
 
 try {
-    // 1. Copy transformers WASM binaries from node_modules
+    // 1. Create default config files
+    createDefaultFiles();
+    // 2. Copy transformers WASM binaries from node_modules
     copyWasmFiles();
 } catch (error) {
     console.error(error);
