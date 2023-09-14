@@ -7,6 +7,7 @@
     background-color: rgba(38, 38, 38, 0.5);
     border: 1px rgb(75, 75, 75) solid;
     border-radius: 10px;
+    margin-bottom: 1em;
 }
 
 .audio-mixer-element {
