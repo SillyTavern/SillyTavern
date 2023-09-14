@@ -649,7 +649,6 @@ async function updateAmbient(isUserInput) {
 
     if (isUserInput || extension_settings.audio.ambient_locked) {
         audio_file_path = extension_settings.audio.ambient_selected;
-        saveSettingsDebounced();
 
         if (isUserInput)
             console.debug(DEBUG_PREFIX, "User selected Ambient", audio_file_path);

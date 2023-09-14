@@ -4,7 +4,8 @@
     align-items: center;
     justify-content: center;
     padding: 5px;
-    background-color: rgba(38, 38, 38, 0.3);
+    background-color: rgba(38, 38, 38, 0.5);
+    border: 1px rgb(75, 75, 75) solid;
     border-radius: 10px;
 }
 
@@ -20,8 +21,8 @@
     }
     select {
         margin-top: 5px;
-        width: 175px;
         padding: 5px;
+        width: 100%;
     }
 }
 
@@ -38,20 +39,20 @@
 }
 
 .audio-lock-button {
-    padding: 5px;
-    width: 50px;
-    height: 30px;
+    padding: 1rem;
+    width: 100%;
+    height: 2em;
 }
 
 .audio-mute-button {
-    padding: 5px;
-    width: 50px;
-    height: 30px;
+    padding: 1rem;
+    width: 100%;
+    height: 2em;
 }
 
 .audio-slider {
-    width: 75px !important;
-    margin-left: 5px !important;
+    width: 100% !important;
+    vertical-align: center;
 }
 
 .audio-mute-button-muted {
@@ -61,4 +62,20 @@
 #audio_refresh_assets {
     width: 50px;
     height: 30px;
+}
+
+.audio-mixer-lock {
+    width: 10%;
+}
+
+.audio-mixer-mute {
+    width: 10%;
+}
+
+.audio-mixer-volume {
+    width: 25%;
+}
+
+.audio-mixer-playlist {
+    width: 45%;
 }
