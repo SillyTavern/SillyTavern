@@ -26,6 +26,7 @@ import { resetSelectedGroup } from "./group-chats.js";
 import { getRegexedString, regex_placement } from "./extensions/regex/engine.js";
 import { chat_styles, power_user } from "./power-user.js";
 import { autoSelectPersona } from "./personas.js";
+import { getContext } from "./extensions.js";
 export {
     executeSlashCommands,
     registerSlashCommand,
@@ -374,6 +375,40 @@ async function sendNarratorMessage(_, text) {
     addOneMessage(message);
     await eventSource.emit(event_types.USER_MESSAGE_RENDERED, (chat.length - 1));
     await saveChatConditional();
+}
+
+export async function sendMessageAsQuiet(_, text) {
+    if (!text) {
+        return;
+    }
+    console.log(getContext());
+    let character_id = getContext().characterId;
+    console.log(character_id);
+    console.log(characters[character_id]);
+
+    let reply = await generateQuietPrompt(text + '\n' + characters[character_id].name + ":");
+    console.log(reply);
+    text = await getRegexedString(reply, regex_placement.SLASH_COMMAND);
+
+    const message = {
+        name: characters[character_id].name,
+        is_user: false,
+        is_name: true,
+        is_system: false,
+        send_date: getMessageTimeStamp(),
+        mes: substituteParams(text.trim()),
+        extra: {
+            type: system_message_types.COMMENT,
+            gen_id: Date.now(),
+        },
+    };
+
+    chat.push(message);
+    await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
+    addOneMessage(message);
+    await eventSource.emit(event_types.USER_MESSAGE_RENDERED, (chat.length - 1));
+    await saveChatConditional();
+    
 }
 
 async function sendCommentMessage(_, text) {

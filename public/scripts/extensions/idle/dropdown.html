@@ -1,0 +1,40 @@
+<div class="idle-settings">
+  <div class="inline-drawer">
+    <div class="inline-drawer-toggle inline-drawer-header">
+      <b>Idle</b>
+      <div
+        class="inline-drawer-icon fa-solid fa-circle-chevron-down down"
+      ></div>
+    </div>
+
+    <div class="inline-drawer-content">
+
+      <div class="idle_block flex-container">
+        <input id="idle_enabled" type="checkbox" />
+        <label for="idle_enabled">Enabled</label>
+      </div>
+            <div class="idle_block flex-container">
+        <input id="idle_repeats" class="text_pole widthUnset" type="number" min="0" max="100" step="1" />
+        <label for="idle_repeats">Idle Repeats</label>
+      </div>
+      <div class="idle_block flex-container">
+        <input id="idle_timer" class="text_pole widthUnset" type="number" min="0" max="60000" step="1" />
+        <label for="idle_timer">Idle Timer</label>
+      </div>
+      <div class="idle_block flex-container">
+        <label for="idle_Prompts">Idle Prompts</label>
+        <textarea
+          id="idle_Prompts"
+          class="text_pole textarea_compact"
+          rows="6"
+        ></textarea>
+
+      </div>
+      <div class="idle_block flex-container">
+        <input id="idle_use_continuation" type="checkbox" />
+        <label for="idle_use_continuation">Use Continuation</label>
+      </div>
+      <hr class="sysHR" />
+    </div>
+  </div>
+</div>
