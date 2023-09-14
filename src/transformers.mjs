@@ -1,5 +1,5 @@
 import { pipeline, env, RawImage } from 'sillytavern-transformers';
-import { getConfig } from './util.js';
+import { getConfigValue } from './util.js';
 import path from 'path';
 import _ from 'lodash';
 
@@ -43,18 +43,12 @@ function getModelForTask(task) {
     const defaultModel = tasks[task].defaultModel;
 
     try {
-        const config = getConfig();
-        const model = _.get(config, tasks[task].configField, null);
+        const model = getConfigValue(tasks[task].configField, null);
         return model || defaultModel;
     } catch (error) {
         console.warn('Failed to read config.conf, using default classification model.');
         return defaultModel;
     }
-}
-
-function progressCallback() {
-    // TODO: Implement progress callback
-    // console.log(arguments);
 }
 
 async function getPipeline(task) {
@@ -64,8 +58,9 @@ async function getPipeline(task) {
 
     const cache_dir = path.join(process.cwd(), 'cache');
     const model = getModelForTask(task);
+    const localOnly = getConfigValue('extras.disableAutoDownload', false);
     console.log('Initializing transformers.js pipeline for task', task, 'with model', model);
-    const instance = await pipeline(task, model, { cache_dir, quantized: true, progress_callback: progressCallback });
+    const instance = await pipeline(task, model, { cache_dir, quantized: true, local_files_only: localOnly });
     tasks[task].pipeline = instance;
     return instance;
 }

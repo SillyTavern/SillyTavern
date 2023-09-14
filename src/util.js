@@ -1,6 +1,7 @@
 const path = require('path');
 const child_process = require('child_process');
 const commandExistsSync = require('command-exists').sync;
+const _ = require('lodash');
 
 /**
  * Returns the config object from the config.conf file.
@@ -14,6 +15,17 @@ function getConfig() {
         console.warn('Failed to read config.conf');
         return {};
     }
+}
+
+/**
+ * Returns the value for the given key from the config object.
+ * @param {string} key - Key to get from the config object
+ * @param {any} defaultValue - Default value to return if the key is not found
+ * @returns {any} Value for the given key
+ */
+function getConfigValue(key, defaultValue = null) {
+    const config = getConfig();
+    return _.get(config, key, defaultValue);
 }
 
 /**
@@ -67,6 +79,7 @@ function delay(ms) {
 
 module.exports = {
     getConfig,
+    getConfigValue,
     getVersion,
     getBasicAuthHeader,
     delay,
