@@ -336,16 +336,24 @@ export async function favsToHotswap() {
         count++;
     }
 
-    // there are 6 slots in total,
-    if (count < maxCount) { //if any are left over
+    // don't fill leftover spaces with avatar placeholders
+    // just evenly space the selected avatars instead
+    /*  
+   if (count < maxCount) { //if any space is left over
         let leftOverSlots = maxCount - count;
         for (let i = 1; i <= leftOverSlots; i++) {
             newContainer.append(template.clone());
         }
     }
+    */
 
     await Promise.allSettled(promises);
-    container.replaceWith(newContainer);
+    //helpful instruction message if no characters are favorited
+    if (count === 0) { container.html(`<small><span><i class="fa-solid fa-star"></i> Favorite characters to add them to HotSwaps</span></small>`) }
+    //otherwise replace with fav'd characters
+    if (count > 0) {
+        container.replaceWith(newContainer);
+    }
 }
 
 //changes input bar and send button display depending on connection status
