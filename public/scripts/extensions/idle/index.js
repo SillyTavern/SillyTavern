@@ -119,6 +119,11 @@ async function sendIdlePrompt() {
 }
 
 
+/**
+ * Add our prompt to the chat and then send the chat to the backend.
+ * @param {string} sendAs - The type of message to send. "user", "char", or "sys".
+ * @param {string} prompt - The prompt text to send to the AI.
+ */
 function sendLoud(sendAs, prompt) {
     if(sendAs === "user") {
         prompt = substituteParams(prompt);
@@ -135,6 +140,9 @@ function sendLoud(sendAs, prompt) {
     } else if( sendAs === "sys") {
         sendNarratorMessage("", prompt);
         promptQuietForLoudResponse(sendAs, "");
+    }
+    else {
+        console.error(`Unknown sendAs value: ${sendAs}`);
     }
 } 
 
