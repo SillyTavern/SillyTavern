@@ -280,7 +280,6 @@ async function convertSoloToGroupChat() {
         message.name = character.name;
         message.original_avatar = character.avatar;
         message.force_avatar = getThumbnailUrl('avatar', character.avatar);
-        message.is_name = true;
 
         // Allow regens of a single message in group
         if (typeof message.extra !== 'object') {

@@ -322,7 +322,6 @@ let safetychat = [
     {
         name: systemUserName,
         is_user: false,
-        is_name: true,
         create_date: 0,
         mes: "You deleted a character/chat and arrived back here for safety reasons! Pick another character!",
     },
@@ -398,7 +397,6 @@ function getSystemMessages() {
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            is_name: true,
             mes: renderTemplate("help"),
         },
         slash_commands: {
@@ -406,7 +404,6 @@ function getSystemMessages() {
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            is_name: true,
             mes: '',
         },
         hotkeys: {
@@ -414,7 +411,6 @@ function getSystemMessages() {
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            is_name: true,
             mes: renderTemplate("hotkeys"),
         },
         formatting: {
@@ -422,7 +418,6 @@ function getSystemMessages() {
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            is_name: true,
             mes: renderTemplate("formatting"),
         },
         macros: {
@@ -430,7 +425,6 @@ function getSystemMessages() {
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            is_name: true,
             mes: renderTemplate("macros"),
         },
         welcome:
@@ -439,7 +433,6 @@ function getSystemMessages() {
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            is_name: true,
             mes: renderTemplate("welcome"),
         },
         group: {
@@ -447,7 +440,6 @@ function getSystemMessages() {
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            is_name: true,
             is_group: true,
             mes: "Group chat created. Say 'Hi' to lovely people!",
         },
@@ -456,7 +448,6 @@ function getSystemMessages() {
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            is_name: true,
             mes: "No one hears you. <b>Hint&#58;</b> add more members to the group!",
         },
         generic: {
@@ -464,7 +455,6 @@ function getSystemMessages() {
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            is_name: true,
             mes: "Generic system message. User `text` parameter to override the contents",
         },
         bookmark_created: {
@@ -472,7 +462,6 @@ function getSystemMessages() {
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            is_name: true,
             mes: `Bookmark created! Click here to open the bookmark chat: <a class="bookmark_link" file_name="{0}" href="javascript:void(null);">{1}</a>`,
         },
         bookmark_back: {
@@ -480,7 +469,6 @@ function getSystemMessages() {
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            is_name: true,
             mes: `Click here to return to the previous chat: <a class="bookmark_link" file_name="{0}" href="javascript:void(null);">Return</a>`,
         },
     };
@@ -2125,9 +2113,6 @@ class StreamingProcessor {
         const isContinue = this.type == "continue";
         text = this.removePrefix(text);
         let processedText = cleanUpMessage(text, isImpersonate, isContinue, !isFinal);
-        let result = extractNameFromMessage(processedText, this.force_name2, isImpersonate);
-        let isName = result.this_mes_is_name;
-        processedText = result.getMessage;
 
         // Predict unbalanced asterisks / quotes during streaming
         const charsToBalance = ['*', '"'];
@@ -2146,7 +2131,6 @@ class StreamingProcessor {
             // Don't waste time calculating token count for streaming
             let currentTokenCount = isFinal && power_user.message_token_count_enabled ? getTokenCount(processedText, 0) : 0;
             const timePassed = formatGenerationTimer(this.timeStarted, currentTime, currentTokenCount);
-            chat[messageId]['is_name'] = isName;
             chat[messageId]['mes'] = processedText;
             chat[messageId]['gen_started'] = this.timeStarted;
             chat[messageId]['gen_finished'] = currentTime;
@@ -2502,7 +2486,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         console.log(`Core/all messages: ${coreChat.length}/${chat.length}`);
 
         // kingbri MARK: - Make sure the prompt bias isn't the same as the user bias
-        if ((promptBias && !isUserPromptBias) || power_user.always_force_name2) {
+        if ((promptBias && !isUserPromptBias) || power_user.always_force_name2 || main_api == 'novel') {
             force_name2 = true;
         }
 
@@ -3093,7 +3077,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             if (isStreamingEnabled() && type !== 'quiet') {
                 hideSwipeButtons();
                 let getMessage = await streamingProcessor.generate();
-                let messageChunk = extractNameFromMessage(cleanUpMessage(getMessage, isImpersonate, isContinue, false), force_name2, isImpersonate).getMessage;
+                let messageChunk = cleanUpMessage(getMessage, isImpersonate, isContinue, false);
 
                 if (isContinue) {
                     getMessage = continue_mag + getMessage;
@@ -3121,6 +3105,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     let title = extractTitleFromData(data);
                     kobold_horde_model = title;
 
+                    messageChunk = cleanUpMessage(getMessage, isImpersonate, isContinue, false);
+
                     if (isContinue) {
                         getMessage = continue_mag + getMessage;
                     }
@@ -3129,8 +3115,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     const displayIncomplete = type == 'quiet';
                     getMessage = cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete);
 
-                    let this_mes_is_name;
-                    ({ this_mes_is_name, getMessage } = extractNameFromMessage(getMessage, force_name2, isImpersonate));
                     if (getMessage.length > 0) {
                         if (isImpersonate) {
                             $('#send_textarea').val(getMessage).trigger('input');
@@ -3143,10 +3127,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         else {
                             // Without streaming we'll be having a full message on continuation. Treat it as a last chunk.
                             if (originalType !== 'continue') {
-                                ({ type, getMessage } = await saveReply(type, getMessage, this_mes_is_name, title));
+                                ({ type, getMessage } = await saveReply(type, getMessage, true, title));
                             }
                             else {
-                                ({ type, getMessage } = await saveReply('appendFinal', getMessage, this_mes_is_name, title));
+                                ({ type, getMessage } = await saveReply('appendFinal', getMessage, true, title));
                             }
                         }
                         activateSendButtons();
@@ -3196,8 +3180,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                             return
                         }
                     }
-
-                    messageChunk = getMessage;
                 } else {
                     generatedPromptCache = '';
                     activateSendButtons();
@@ -3352,7 +3334,7 @@ function formatMessageHistoryItem(chatItem, isInstruct, forceOutputSequence) {
     const isNarratorType = chatItem?.extra?.type === system_message_types.NARRATOR;
     const characterName = (selected_group || chatItem.force_avatar) ? chatItem.name : name2;
     const itemName = chatItem.is_user ? chatItem['name'] : characterName;
-    const shouldPrependName = (chatItem.is_name || chatItem.force_avatar || selected_group) && !isNarratorType;
+    const shouldPrependName = !isNarratorType;
 
     let textResult = shouldPrependName ? `${itemName}: ${chatItem.mes}\n` : `${chatItem.mes}\n`;
 
@@ -3375,7 +3357,6 @@ export async function sendMessageAsUser(textareaText, messageBias) {
     chat[chat.length] = {};
     chat[chat.length - 1]['name'] = name1;
     chat[chat.length - 1]['is_user'] = true;
-    chat[chat.length - 1]['is_name'] = true;
     chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
     chat[chat.length - 1]['mes'] = substituteParams(textareaText);
     chat[chat.length - 1]['extra'] = {};
@@ -3709,25 +3690,6 @@ function getGenerateUrl() {
     return generate_url;
 }
 
-function extractNameFromMessage(getMessage, force_name2, isImpersonate) {
-    const nameToTrim = isImpersonate ? name1 : name2;
-    let this_mes_is_name = true;
-    if (getMessage.startsWith(nameToTrim + ":")) {
-        getMessage = getMessage.replace(nameToTrim + ':', '');
-        getMessage = getMessage.trimStart();
-    } else {
-        this_mes_is_name = false;
-    }
-    if (force_name2 || power_user.instruct.enabled)
-        this_mes_is_name = true;
-
-    if (isImpersonate) {
-        getMessage = getMessage.trim();
-    }
-
-    return { this_mes_is_name, getMessage };
-}
-
 function throwCircuitBreakerError() {
     callPopup(`Could not extract reply in ${MAX_GENERATION_LOOPS} attempts. Try generating again`, 'text');
     generate_loop_counter = 0;
@@ -3877,10 +3839,22 @@ function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete
     if (power_user.auto_fix_generated_markdown) {
         getMessage = fixMarkdown(getMessage, false);
     }
+
+    const nameToTrim2 = isImpersonate ? name1 : name2;
+
+    if (getMessage.startsWith(nameToTrim2 + ":")) {
+        getMessage = getMessage.replace(nameToTrim2 + ':', '');
+        getMessage = getMessage.trimStart();
+    }
+
+    if (isImpersonate) {
+        getMessage = getMessage.trim();
+    }
+
     return getMessage;
 }
 
-async function saveReply(type, getMessage, this_mes_is_name, title) {
+async function saveReply(type, getMessage, _, title) {
     if (type != 'append' && type != 'continue' && type != 'appendFinal' && chat.length && (chat[chat.length - 1]['swipe_id'] === undefined ||
         chat[chat.length - 1]['is_user'])) {
         type = 'normal';
@@ -3953,7 +3927,6 @@ async function saveReply(type, getMessage, this_mes_is_name, title) {
         chat[chat.length - 1]['extra'] = {};
         chat[chat.length - 1]['name'] = name2;
         chat[chat.length - 1]['is_user'] = false;
-        chat[chat.length - 1]['is_name'] = this_mes_is_name;
         chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
         chat[chat.length - 1]["extra"]["api"] = getGeneratingApi();
         chat[chat.length - 1]["extra"]["model"] = getGeneratingModel();
@@ -3975,7 +3948,6 @@ async function saveReply(type, getMessage, this_mes_is_name, title) {
             if (characters[this_chid].avatar != 'none') {
                 avatarImg = getThumbnailUrl('avatar', characters[this_chid].avatar);
             }
-            chat[chat.length - 1]['is_name'] = true;
             chat[chat.length - 1]['force_avatar'] = avatarImg;
             chat[chat.length - 1]['original_avatar'] = characters[this_chid].avatar;
             chat[chat.length - 1]['extra']['gen_id'] = group_generation_id;
@@ -4463,7 +4435,6 @@ function getFirstMessage() {
         name: name2,
         is_user: false,
         is_system: false,
-        is_name: true,
         send_date: getMessageTimeStamp(),
         mes: getRegexedString(firstMes, regex_placement.AI_OUTPUT),
         extra: {},
@@ -5046,11 +5017,11 @@ function updateMessage(div) {
     const mes = chat[this_edit_mes_id];
 
     let regexPlacement;
-    if (mes.is_name && mes.is_user) {
+    if (mes.is_user) {
         regexPlacement = regex_placement.USER_INPUT;
-    } else if (mes.is_name && mes.name === name2) {
+    } else if (mes.name === name2) {
         regexPlacement = regex_placement.AI_OUTPUT;
-    } else if (mes.is_name && mes.name !== name2 || mes.extra?.type === "narrator") {
+    } else if (mes.name !== name2 || mes.extra?.type === "narrator") {
         regexPlacement = regex_placement.SLASH_COMMAND;
     }
 

@@ -2299,7 +2299,6 @@ app.post("/importchat", urlencodedParser, function (request, response) {
                                 (message) => ({
                                     name: message.src.is_human ? user_name : ch_name,
                                     is_user: message.src.is_human,
-                                    is_name: true,
                                     send_date: humanizedISO8601DateTime(),
                                     mes: message.text,
                                 })
@@ -2344,7 +2343,6 @@ app.post("/importchat", urlencodedParser, function (request, response) {
                         const userMessage = {
                             name: user_name,
                             is_user: true,
-                            is_name: true,
                             send_date: humanizedISO8601DateTime(),
                             mes: arr[0],
                         };
@@ -2354,7 +2352,6 @@ app.post("/importchat", urlencodedParser, function (request, response) {
                         const charMessage = {
                             name: ch_name,
                             is_user: false,
-                            is_name: true,
                             send_date: humanizedISO8601DateTime(),
                             mes: arr[1],
                         };

@@ -205,7 +205,6 @@ function getFirstCharacterMessage(character) {
     mes["is_user"] = false;
     mes["is_system"] = false;
     mes["name"] = character.name;
-    mes["is_name"] = true;
     mes["send_date"] = getMessageTimeStamp();
     mes["original_avatar"] = character.avatar;
     mes["extra"] = { "gen_id": Date.now() * Math.random() * 1000000 };
