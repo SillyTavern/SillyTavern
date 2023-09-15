@@ -227,7 +227,7 @@ function continueChatCallback() {
     $('#option_continue').trigger('click', { fromSlashCommand: true });
 }
 
-async function generateSystemMessage(_, prompt) {
+export async function generateSystemMessage(_, prompt) {
     $('#send_textarea').val('');
 
     if (!prompt) {
@@ -346,7 +346,7 @@ export async function sendMessageAs(_, text) {
     await saveChatConditional();
 }
 
-async function sendNarratorMessage(_, text) {
+export async function sendNarratorMessage(_, text) {
     if (!text) {
         return;
     }
@@ -379,9 +379,6 @@ async function sendNarratorMessage(_, text) {
 }
 
 export async function promptQuietForLoudResponse(who, text) {
-    if (!text) {
-        return;
-    }
 
     let character_id = getContext().characterId;
     if (who === 'sys') {

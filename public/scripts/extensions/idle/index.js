@@ -5,9 +5,8 @@ import {
     substituteParams
 } from "../../../script.js";
 import { debounce } from "../../utils.js";
-import { promptQuietForLoudResponse} from "../../slash-commands.js";
+import { promptQuietForLoudResponse, sendMessageAs, sendNarratorMessage } from "../../slash-commands.js";
 import { extension_settings, getContext } from "../../extensions.js";
-
 const extensionName = "idle";
 const extensionFolderPath = `scripts/extensions/${extensionName}/`;
 
@@ -119,16 +118,25 @@ async function sendIdlePrompt() {
     resetIdleTimer();
 }
 
-function sendLoud(prompt) {
-    prompt = substituteParams(prompt);
 
-    $("#send_textarea").val(prompt);
+function sendLoud(sendAs, prompt) {
+    if(sendAs === "user") {
+        prompt = substituteParams(prompt);
 
-    // Set the focus back to the textarea
-    $("#send_textarea").focus();
+        $("#send_textarea").val(prompt);
 
-    $("#send_but").trigger('click');
-}
+        // Set the focus back to the textarea
+        $("#send_textarea").focus();
+
+        $("#send_but").trigger('click');
+    } else if( sendAs === "char") {
+        sendMessageAs("", `${getContext().name2}\n${prompt}`);
+        promptQuietForLoudResponse(sendAs, "");
+    } else if( sendAs === "sys") {
+        sendNarratorMessage("", prompt);
+        promptQuietForLoudResponse(sendAs, "");
+    }
+} 
 
 /**
  * Send the provided prompt to the AI. Determines method based on continuation setting.
@@ -145,7 +153,7 @@ function sendPrompt(prompt) {
         console.debug("Sending idle prompt");
         console.log(extension_settings.idle);
         if (extension_settings.idle.includePrompt) {
-            sendLoud(prompt);
+            sendLoud(extension_settings.idle.sendAs, prompt);
         }
         else {
             promptQuietForLoudResponse(extension_settings.idle.sendAs, prompt);
@@ -246,6 +254,15 @@ function setupListeners() {
         $('#idle_timer').trigger('input');
     });
 
+    // if we're including the prompt, hide raw from the sendAs dropdown
+    $('#idle_include_prompt').on('input', function() {
+        if ($(this).prop('checked')) {
+            $('#idle_sendAs option[value="raw"]').hide();
+        } else {
+            $('#idle_sendAs option[value="raw"]').show();
+        }
+    });
+
     //make sure timer min is less than timer
     $('#idle_timer').on('input', function() {
         if ($('#idle_random_time').prop('checked')) {
@@ -260,25 +277,22 @@ function setupListeners() {
 
 // Define the unified debounced function
 const debouncedActivityHandler = debounce(() => {
+    console.debug("Activity detected, resetting idle timer");
     resetIdleTimer();
     repeatCount = 0;
 }, 250);
 
 function attachIdleListeners() {
-    $("#send_textarea, #send_but").on("input click", debouncedActivityHandler);
     $(document).on("click keypress", debouncedActivityHandler);
     document.addEventListener('keydown', debouncedActivityHandler);
-    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, debouncedActivityHandler);
 }
 
 /**
  * Remove idle-specific listeners.
  */
 function removeIdleListeners() {
-    $("#send_textarea, #send_but").off("input click", debouncedActivityHandler);
     $(document).off("click keypress", debouncedActivityHandler);
     document.removeEventListener('keydown', debouncedActivityHandler);
-    eventSource.removeListener(event_types.CHARACTER_MESSAGE_RENDERED, debouncedActivityHandler);
 }
 
 
@@ -289,5 +303,9 @@ jQuery(async () => {
     setupListeners();
     if (extension_settings.idle.enabled) {
         resetIdleTimer();
+    }
+    // once the doc is ready, check if random time is checked and hide/show timer min
+    if ($('#idle_random_time').prop('checked')) {
+        $('#idle_timer_min').parent().show();
     }
 });
