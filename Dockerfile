@@ -13,7 +13,7 @@ ENTRYPOINT [ "tini", "--" ]
 WORKDIR ${APP_HOME}
 
 # Install app dependencies
-COPY package*.json ./
+COPY package*.json post-install.js ./
 RUN \
   echo "*** Install npm packages ***" && \
   npm install && npm cache clean --force
