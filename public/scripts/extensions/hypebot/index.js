@@ -159,7 +159,7 @@ async function generateHypeBot() {
 
     abortController = new AbortController();
 
-    const response = await fetch('/generate_novelai', {
+    const response = await fetch('/api/novelai/generate', {
         headers: getRequestHeaders(),
         body: JSON.stringify(parameters),
         method: 'POST',

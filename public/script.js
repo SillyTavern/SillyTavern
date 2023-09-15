@@ -3744,7 +3744,7 @@ function getGenerateUrl() {
     } else if (main_api == 'textgenerationwebui') {
         generate_url = '/generate_textgenerationwebui';
     } else if (main_api == 'novel') {
-        generate_url = '/generate_novelai';
+        generate_url = '/api/novelai/generate';
     }
     return generate_url;
 }
