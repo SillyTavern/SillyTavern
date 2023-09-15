@@ -29,7 +29,7 @@ let horde_settings = {
     trusted_workers_only: false,
 };
 
-const MAX_RETRIES = 200;
+const MAX_RETRIES = 240;
 const CHECK_INTERVAL = 5000;
 const MIN_AMOUNT_GEN = 16;
 const getRequestArgs = () => ({

@@ -7,6 +7,11 @@
             <i class="fa-solid fa-trash"></i>
         </div>
     </div>
-    <span class="expression_list_title {{textClass}}">{{item}}</span>
+    <div class="expression_list_title {{textClass}}">
+        <span>{{item}}</span>
+        {{#if isCustom}}
+            <small class="expression_list_custom">(custom)</small>
+        {{/if}}
+    </div>
     <img class="expression_list_image" src="{{imageSrc}}" />
 </div>
