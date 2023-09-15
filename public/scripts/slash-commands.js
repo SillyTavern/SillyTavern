@@ -291,7 +291,7 @@ async function setNarratorName(_, text) {
     await saveChatConditional();
 }
 
-async function sendMessageAs(_, text) {
+export async function sendMessageAs(_, text) {
     if (!text) {
         return;
     }
@@ -378,7 +378,7 @@ async function sendNarratorMessage(_, text) {
     await saveChatConditional();
 }
 
-export async function sendMessageAsQuiet(who, text) {
+export async function promptQuietForLoudResponse(who, text) {
     if (!text) {
         return;
     }

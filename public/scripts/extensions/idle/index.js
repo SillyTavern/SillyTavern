@@ -1,10 +1,11 @@
 import {
     eventSource,
     event_types,
-    saveSettingsDebounced
+    saveSettingsDebounced,
+    substituteParams
 } from "../../../script.js";
 import { debounce } from "../../utils.js";
-import { sendMessageAsQuiet } from "../../slash-commands.js";
+import { promptQuietForLoudResponse} from "../../slash-commands.js";
 import { extension_settings, getContext } from "../../extensions.js";
 
 const extensionName = "idle";
@@ -33,6 +34,7 @@ let defaultSettings = {
     sendAs : "user",
     randomTime: false,
     timeMin: 60,
+    includePrompt: false,
 };
 
 
@@ -65,8 +67,9 @@ function populateUIWithSettings() {
     $("#idle_enabled").prop("checked", extension_settings.idle.enabled).trigger("input");
     $("#idle_repeats").val(extension_settings.idle.repeats).trigger("input");
     $("#idle_sendAs").val(extension_settings.idle.sendAs).trigger("input");
-    $("#idle_random_time").val(extension_settings.idle.randomTime).trigger("input");
+    $("#idle_random_time").prop("checked", extension_settings.idle.randomTime).trigger("input");
     $("#idle_timer_min").val(extension_settings.idle.timerMin).trigger("input");
+    $("#idle_include_prompt").prop("checked", extension_settings.idle.includePrompt).trigger("input");
 }
 
 
@@ -116,6 +119,17 @@ async function sendIdlePrompt() {
     resetIdleTimer();
 }
 
+function sendLoud(prompt) {
+    prompt = substituteParams(prompt);
+
+    $("#send_textarea").val(prompt);
+
+    // Set the focus back to the textarea
+    $("#send_textarea").focus();
+
+    $("#send_but").trigger('click');
+}
+
 /**
  * Send the provided prompt to the AI. Determines method based on continuation setting.
  * @param {string} prompt - The prompt text to send to the AI.
@@ -129,7 +143,13 @@ function sendPrompt(prompt) {
         console.debug("Sending idle prompt with continuation");
     } else {
         console.debug("Sending idle prompt");
-        sendMessageAsQuiet(extension_settings.idle.sendAs, prompt);
+        console.log(extension_settings.idle);
+        if (extension_settings.idle.includePrompt) {
+            sendLoud(prompt);
+        }
+        else {
+            promptQuietForLoudResponse(extension_settings.idle.sendAs, prompt);
+        }
     }
 }
 
@@ -200,7 +220,8 @@ function setupListeners() {
         ['idle_repeats', 'repeats'],
         ['idle_sendAs', 'sendAs'],
         ['idle_random_time', 'randomTime', true],
-        ['idle_timer_min', 'timerMin']
+        ['idle_timer_min', 'timerMin'],
+        ['idle_include_prompt', 'includePrompt', true]
     ];
     settingsToWatch.forEach(setting => {
         attachUpdateListener(...setting);
@@ -212,18 +233,6 @@ function setupListeners() {
     // Add the idle listeners initially if the idle feature is enabled
     if (extension_settings.idle.enabled) {
         attachIdleListeners();
-    }
-
-    // if enabled, add listeners to reset idle timer
-    if(extension_settings.idle.enabled) {
-        $("#send_textarea, #send_but").on("input click", debounce(resetIdleTimer, 250));
-        $(document).on("click keypress", debounce(resetIdleTimer, 250));
-        document.addEventListener('keydown', debounce(resetIdleTimer, 250));
-        eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, debounce(e => {
-            resetIdleTimer();
-            repeatCount = 0;
-            console.debug("Resetting idle repeat count");
-        }, 250));
     }
 
     //show/hide timer min parent div
@@ -249,30 +258,27 @@ function setupListeners() {
 
 }
 
-/**
- * Attach idle-specific listeners to reset the idle timer.
- */
+// Define the unified debounced function
+const debouncedActivityHandler = debounce(() => {
+    resetIdleTimer();
+    repeatCount = 0;
+}, 250);
+
 function attachIdleListeners() {
-    $("#send_textarea, #send_but").on("input click", debounce(resetIdleTimer, 250));
-    $(document).on("click keypress", debounce(resetIdleTimer, 250));
-    document.addEventListener('keydown', debounce(resetIdleTimer, 250));
-    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, debounce(e => {
-        resetIdleTimer();
-        repeatCount = 0;
-    }, 250));
+    $("#send_textarea, #send_but").on("input click", debouncedActivityHandler);
+    $(document).on("click keypress", debouncedActivityHandler);
+    document.addEventListener('keydown', debouncedActivityHandler);
+    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, debouncedActivityHandler);
 }
 
 /**
  * Remove idle-specific listeners.
  */
 function removeIdleListeners() {
-    $("#send_textarea, #send_but").off("input click", debounce(resetIdleTimer, 250));
-    $(document).off("click keypress", debounce(resetIdleTimer, 250));
-    document.removeEventListener('keydown', debounce(resetIdleTimer, 250));
-    eventSource.removeListener(event_types.CHARACTER_MESSAGE_RENDERED, debounce(e => {
-        resetIdleTimer();
-        repeatCount = 0;
-    }, 250));
+    $("#send_textarea, #send_but").off("input click", debouncedActivityHandler);
+    $(document).off("click keypress", debouncedActivityHandler);
+    document.removeEventListener('keydown', debouncedActivityHandler);
+    eventSource.removeListener(event_types.CHARACTER_MESSAGE_RENDERED, debouncedActivityHandler);
 }
 
 
