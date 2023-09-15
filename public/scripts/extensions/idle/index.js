@@ -1,13 +1,10 @@
 import {
     eventSource,
-    this_chid,
-    characters,
-    getRequestHeaders,
-    settings,
-    saveSettingsDebounced,
+    event_types,
+    saveSettingsDebounced
 } from "../../../script.js";
 import { selected_group } from "../../group-chats.js";
-import { loadFileToDocument } from "../../utils.js";
+import { debounce } from "../../utils.js";
 import { loadMovingUIState } from '../../power-user.js';
 import { dragElement } from '../../RossAscends-mods.js';
 import { sendMessageAsQuiet } from "../../slash-commands.js";
@@ -82,6 +79,13 @@ async function sendIdlePrompt() {
 
     if(extension_settings.idle.repeats > 0 && repeatCount >= extension_settings.idle.repeats) return;
 
+    //If we are waiting for a response, don't send an idle prompt
+    if ($('#mes_stop').is(':visible')) {
+        console.log("Not sending idle prompt, waiting for response");
+        resetIdleTimer();
+        return;
+    }
+
     const prompts = extension_settings.idle.prompts;
     const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
     //pause the timer
@@ -101,7 +105,6 @@ async function sendIdlePrompt() {
     // Re-register the event listener
     $("#send_textarea").on("input", function () {
         console.log("send_textarea input");
-        repeatCount = 0;
         resetIdleTimer();
     }
     );
@@ -116,12 +119,10 @@ jQuery(async () => {
     //listen for send_textarea input
     $("#send_textarea").on("input", function () {
         console.log("send_textarea input");
-        repeatCount = 0;
         resetIdleTimer();
     });
     // listen for clicks or keypresses anywhere on the page
     $(document).on("click keypress", function () {
-        repeatCount = 0;
         resetIdleTimer();
     });
     
@@ -139,18 +140,31 @@ jQuery(async () => {
     });
     $('#idle_enabled').on('input', function () {
         extension_settings.idle.enabled = $(this).prop('checked');
+        // disable the timer if the extension is disabled
+        if (!extension_settings.idle.enabled) {
+            clearTimeout(idleTimer);
+        }
+        else {
+            resetIdleTimer();
+        }
         saveSettingsDebounced();
     });
     $('#idle_repeats').on('input', function () {
         extension_settings.idle.repeats = $(this).val();
         saveSettingsDebounced();
     });
+    $("#send_but").on('click', function () {
+        resetIdleTimer();
+    });
 
+    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, function (e) {
+        debounce(resetIdleTimer, 1000)();
+        repeatCount = 0;
+    });
 
 
 
     document.addEventListener('keydown', function (e) {
-        repeatCount = 0;
         resetIdleTimer();
     });
 
