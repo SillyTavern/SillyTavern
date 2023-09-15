@@ -3221,10 +3221,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 setGenerationProgress(0);
 
                 if (type !== 'quiet') {
+                    triggerAutoContinue(messageChunk, isImpersonate);
                     resolve();
                 }
-
-                triggerAutoContinue(messageChunk, isImpersonate);
             };
 
             function onError(exception) {
