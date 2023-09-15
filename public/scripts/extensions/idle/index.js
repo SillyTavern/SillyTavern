@@ -179,13 +179,15 @@ function attachUpdateListener(elementId, property, isCheckbox = false) {
 
 /**
  * Handle the enabling or disabling of the idle extension.
- * Clears or resets the timer based on the extension's enabled status.
+ * Adds or removes the idle listeners based on the checkbox's state.
  */
 function handleIdleEnabled() {
     if (!extension_settings.idle.enabled) {
         clearTimeout(idleTimer);
+        removeIdleListeners();
     } else {
         resetIdleTimer();
+        attachIdleListeners();
     }
 }
 
@@ -210,6 +212,11 @@ function setupListeners() {
 
     // Idleness listeners, could be made better
     $('#idle_enabled').on('input', debounce(handleIdleEnabled, 250));
+
+    // Add the idle listeners initially if the idle feature is enabled
+    if (extension_settings.idle.enabled) {
+        attachIdleListeners();
+    }
 
     // if enabled, add listeners to reset idle timer
     if(extension_settings.idle.enabled) {
@@ -244,6 +251,34 @@ function setupListeners() {
     });
 
 }
+
+/**
+ * Attach idle-specific listeners to reset the idle timer.
+ */
+function attachIdleListeners() {
+    $("#send_textarea, #send_but").on("input click", debounce(resetIdleTimer, 250));
+    $(document).on("click keypress", debounce(resetIdleTimer, 250));
+    document.addEventListener('keydown', debounce(resetIdleTimer, 250));
+    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, debounce(e => {
+        resetIdleTimer();
+        repeatCount = 0;
+    }, 250));
+}
+
+/**
+ * Remove idle-specific listeners.
+ */
+function removeIdleListeners() {
+    $("#send_textarea, #send_but").off("input click", debounce(resetIdleTimer, 250));
+    $(document).off("click keypress", debounce(resetIdleTimer, 250));
+    document.removeEventListener('keydown', debounce(resetIdleTimer, 250));
+    eventSource.removeListener(event_types.CHARACTER_MESSAGE_RENDERED, debounce(e => {
+        resetIdleTimer();
+        repeatCount = 0;
+    }, 250));
+}
+
+
 
 jQuery(async () => {
     await loadSettingsHTML();
