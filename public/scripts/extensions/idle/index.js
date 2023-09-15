@@ -30,7 +30,9 @@ let defaultSettings = {
     ],
     useContinuation: true,
     repeats: 2, // 0 = infinite
-    sendAs : "user"
+    sendAs : "user",
+    randomTime: false,
+    timeMin: 60,
 };
 
 
@@ -63,6 +65,8 @@ function populateUIWithSettings() {
     $("#idle_enabled").prop("checked", extension_settings.idle.enabled).trigger("input");
     $("#idle_repeats").val(extension_settings.idle.repeats).trigger("input");
     $("#idle_sendAs").val(extension_settings.idle.sendAs).trigger("input");
+    $("#idle_random_time").val(extension_settings.idle.randomTime).trigger("input");
+    $("#idle_timer_min").val(extension_settings.idle.timerMin).trigger("input");
 }
 
 
@@ -75,7 +79,21 @@ function resetIdleTimer() {
     let context = getContext();
     console.debug(context);
     if (!context.characterId && !context.groupID) return;
-    idleTimer = setTimeout(sendIdlePrompt, 1000*extension_settings.idle.timer);
+    if (!extension_settings.idle.enabled) return;
+    if (extension_settings.idle.randomTime) {
+        // ensure these are ints
+        let min = extension_settings.idle.timerMin;
+        let max = extension_settings.idle.timer;
+        min = parseInt(min);
+        max = parseInt(max);
+        let randomTime = (Math.random() * (max - min + 1)) + min;
+        console.log((max - min + 1));
+        console.debug(`Min: ${min}, Max: ${max}`);
+        console.debug(`Random idle time: ${randomTime}`);
+        idleTimer = setTimeout(sendIdlePrompt, 1000*randomTime);
+    } else {
+        idleTimer = setTimeout(sendIdlePrompt, 1000*extension_settings.idle.timer);
+    }
 }
 
 /**
@@ -181,7 +199,10 @@ function setupListeners() {
         ['idle_Prompts', 'prompts'],
         ['idle_use_continuation', 'useContinuation', true],
         ['idle_enabled', 'enabled', true],
-        ['idle_repeats', 'repeats']
+        ['idle_repeats', 'repeats'],
+        ['idle_sendAs', 'sendAs'],
+        ['idle_random_time', 'randomTime', true],
+        ['idle_timer_min', 'timerMin']
     ];
     settingsToWatch.forEach(setting => {
         attachUpdateListener(...setting);
@@ -189,13 +210,38 @@ function setupListeners() {
 
     // Idleness listeners, could be made better
     $('#idle_enabled').on('input', debounce(handleIdleEnabled, 250));
-    $("#send_textarea, #send_but").on("input click", debounce(resetIdleTimer, 250));
-    $(document).on("click keypress", debounce(resetIdleTimer, 250));
-    document.addEventListener('keydown', debounce(resetIdleTimer, 250));
-    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, debounce(e => {
-        resetIdleTimer();
-        repeatCount = 0;
-    }, 250));
+
+    // if enabled, add listeners to reset idle timer
+    if(extension_settings.idle.enabled) {
+        $("#send_textarea, #send_but").on("input click", debounce(resetIdleTimer, 250));
+        $(document).on("click keypress", debounce(resetIdleTimer, 250));
+        document.addEventListener('keydown', debounce(resetIdleTimer, 250));
+        eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, debounce(e => {
+            resetIdleTimer();
+            repeatCount = 0;
+        }, 250));
+    }
+
+    //show/hide timer min, don't debounce
+    $('#idle_random_time').on('input', function() {
+        if ($(this).prop('checked')) {
+            $('#idle_timer_min').show();
+        } else {
+            $('#idle_timer_min').hide();
+        }
+        $('#idle_timer').trigger('input');
+    });
+
+    //make sure timer min is less than timer
+    $('#idle_timer').on('input', function() {
+        if ($('#idle_random_time').prop('checked')) {
+            if ($(this).val() < $('#idle_timer_min').val()) {
+                $('#idle_timer_min').val($(this).val());
+                $('#idle_timer_min').trigger('input');
+            }
+        }
+    });
+
 }
 
 jQuery(async () => {

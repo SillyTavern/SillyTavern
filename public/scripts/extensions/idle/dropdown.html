@@ -22,6 +22,10 @@
         <label for="idle_timer">Idle Timer</label>
       </div>
       <div class="idle_block flex-container">
+        <input id="idle_timer_min" class="text_pole widthUnset" type="number" min="0" max="60000" step="1" style="display: none;" />
+        <label for="idle_timer_min">Idle Timer Minimum</label>
+      </div>
+      <div class="idle_block flex-container">
         <label for="idle_Prompts">Idle Prompts</label>
         <textarea
           id="idle_Prompts"
@@ -33,6 +37,10 @@
       <div class="idle_block flex-container">
         <input id="idle_use_continuation" type="checkbox" />
         <label for="idle_use_continuation">Use Continuation</label>
+      </div>
+      <div class="idle_block flex-container">
+        <input id="idle_random_time" type="checkbox" />
+        <label for="idle_random_time">Randomize Time</label>
       </div>
       <div class = "idle_block flex-container">
         <!-- dropdown for idle_sendAs with user, char, sys, and raw -->
