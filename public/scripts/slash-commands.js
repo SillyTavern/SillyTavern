@@ -20,6 +20,7 @@ import {
     generateQuietPrompt,
     reloadCurrentChat,
     sendMessageAsUser,
+    name1,
 } from "../script.js";
 import { getMessageTimeStamp } from "./RossAscends-mods.js";
 import { resetSelectedGroup } from "./group-chats.js";
@@ -377,14 +378,22 @@ async function sendNarratorMessage(_, text) {
     await saveChatConditional();
 }
 
-export async function sendMessageAsQuiet(_, text) {
+export async function sendMessageAsQuiet(who, text) {
     if (!text) {
         return;
     }
-    console.log(getContext());
+
     let character_id = getContext().characterId;
-    console.log(character_id);
-    console.log(characters[character_id]);
+    if (who === 'sys') {
+        text = "System: " + text;
+    } else if (who === 'user') {
+        text = name1 + ": " + text;
+    } else if (who === 'char') {
+        text = characters[character_id].name + ": " + text;
+    } else if (who === 'raw') {
+        text = text;
+    }
+
 
     //TODO: Less janky way to do this if possible
     let reply = await generateQuietPrompt(text + '\n' + characters[character_id].name + ":");
