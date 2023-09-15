@@ -60,7 +60,7 @@ async function loadSettings() {
  */
 function populateUIWithSettings() {
     $("#idle_timer").val(extension_settings.idle.timer).trigger("input");
-    $("#idle_Prompts").val(extension_settings.idle.prompts.join("\n")).trigger("input");
+    $("#idle_prompts").val(extension_settings.idle.prompts.join("\n")).trigger("input");
     $("#idle_use_continuation").prop("checked", extension_settings.idle.useContinuation).trigger("input");
     $("#idle_enabled").prop("checked", extension_settings.idle.enabled).trigger("input");
     $("#idle_repeats").val(extension_settings.idle.repeats).trigger("input");
@@ -196,7 +196,7 @@ function handleIdleEnabled() {
 function setupListeners() {
     const settingsToWatch = [
         ['idle_timer', 'timer'],
-        ['idle_Prompts', 'prompts'],
+        ['idle_prompts', 'prompts'],
         ['idle_use_continuation', 'useContinuation', true],
         ['idle_enabled', 'enabled', true],
         ['idle_repeats', 'repeats'],
@@ -222,13 +222,14 @@ function setupListeners() {
         }, 250));
     }
 
-    //show/hide timer min, don't debounce
+    //show/hide timer min parent div
     $('#idle_random_time').on('input', function() {
         if ($(this).prop('checked')) {
-            $('#idle_timer_min').show();
+            $('#idle_timer_min').parent().show();
         } else {
-            $('#idle_timer_min').hide();
+            $('#idle_timer_min').parent().hide();
         }
+    
         $('#idle_timer').trigger('input');
     });
 
