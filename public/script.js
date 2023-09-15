@@ -5373,7 +5373,6 @@ function select_rm_info(type, charId, previousCharId = null) {
                 $('#rm_print_characters_pagination').pagination('go', page);
 
                 waitUntilCondition(() => document.querySelector(selector) !== null).then(() => {
-                    const parent = $('#rm_print_characters_block');
                     const element = $(selector).parent();
 
                     if (element.length === 0) {
@@ -5381,7 +5380,8 @@ function select_rm_info(type, charId, previousCharId = null) {
                         return;
                     }
 
-                    parent.scrollTop(element.position().top + parent.scrollTop());
+                    const scrollOffset = element.offset().top - element.parent().offset().top;
+                    element.parent().scrollTop(scrollOffset);
                     element.addClass('flash animated');
                     setTimeout(function () {
                         element.removeClass('flash animated');
@@ -5405,12 +5405,12 @@ function select_rm_info(type, charId, previousCharId = null) {
             const perPage = Number(localStorage.getItem('Characters_PerPage'));
             const page = Math.floor(charIndex / perPage) + 1;
             $('#rm_print_characters_pagination').pagination('go', page);
-            const parent = $('#rm_print_characters_block');
             const selector = `#rm_print_characters_block [grid="${charId}"]`;
             try {
                 waitUntilCondition(() => document.querySelector(selector) !== null).then(() => {
                     const element = $(selector);
-                    parent.scrollTop(element.position().top + parent.scrollTop());
+                    const scrollOffset = element.offset().top - element.parent().offset().top;
+                    element.parent().scrollTop(scrollOffset);
                     $(element).addClass('flash animated');
                     setTimeout(function () {
                         $(element).removeClass('flash animated');
