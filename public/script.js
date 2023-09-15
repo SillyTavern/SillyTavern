@@ -3262,27 +3262,33 @@ function getNextMessageId(type) {
  */
 export function triggerAutoContinue(messageChunk, isImpersonate) {
     if (selected_group) {
-        console.debug('Auto-continue is disabled for group chat');
+        console.log('Auto-continue is disabled for group chat');
         return;
     }
 
     if (power_user.auto_continue.enabled && !is_send_press) {
         if (power_user.auto_continue.target_length <= 0) {
-            console.debug('Auto-continue target length is 0, not triggering auto-continue');
+            console.log('Auto-continue target length is 0, not triggering auto-continue');
             return;
         }
 
         if (main_api === 'openai' && !power_user.auto_continue.allow_chat_completions){
-            console.debug('Auto-continue for OpenAI is disabled by user.');
+            console.log('Auto-continue for OpenAI is disabled by user.');
             return;
         }
 
         if (isImpersonate) {
-            console.debug('Continue for impersonation is not implemented yet');
+            console.log('Continue for impersonation is not implemented yet');
             return;
         }
 
+        const textareaText = String($('#send_textarea').val());
         const USABLE_LENGTH = 5;
+
+        if (textareaText.length > 0) {
+            console.log('Not triggering auto-continue because user input is not empty');
+            return;
+        }
 
         if (messageChunk.trim().length > USABLE_LENGTH && chat.length) {
             const lastMessage = chat[chat.length - 1];
@@ -3290,14 +3296,14 @@ export function triggerAutoContinue(messageChunk, isImpersonate) {
             const shouldAutoContinue = messageLength < power_user.auto_continue.target_length;
 
             if (shouldAutoContinue) {
-                console.debug(`Triggering auto-continue. Message tokens: ${messageLength}. Target tokens: ${power_user.auto_continue.target_length}`);
+                console.log(`Triggering auto-continue. Message tokens: ${messageLength}. Target tokens: ${power_user.auto_continue.target_length}. Message chunk: ${messageChunk}`);
                 $("#option_continue").trigger('click');
             } else {
-                console.debug(`Not triggering auto-continue. Message tokens: ${messageLength}. Target tokens: ${power_user.auto_continue.target_length}`);
+                console.log(`Not triggering auto-continue. Message tokens: ${messageLength}. Target tokens: ${power_user.auto_continue.target_length}`);
                 return;
             }
         } else {
-            console.debug('Last generated chunk was empty, not triggering auto-continue');
+            console.log('Last generated chunk was empty, not triggering auto-continue');
             return;
         }
     }
