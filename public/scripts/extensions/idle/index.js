@@ -74,10 +74,9 @@ function populateUIWithSettings() {
  * Reset the idle timer based on the extension settings and context.
  */
 function resetIdleTimer() {
-    console.log("Resetting idle timer");
+    console.debug("Resetting idle timer");
     if (idleTimer) clearTimeout(idleTimer);
     let context = getContext();
-    console.debug(context);
     if (!context.characterId && !context.groupID) return;
     if (!extension_settings.idle.enabled) return;
     if (extension_settings.idle.randomTime) {
@@ -87,9 +86,6 @@ function resetIdleTimer() {
         min = parseInt(min);
         max = parseInt(max);
         let randomTime = (Math.random() * (max - min + 1)) + min;
-        console.log((max - min + 1));
-        console.debug(`Min: ${min}, Max: ${max}`);
-        console.debug(`Random idle time: ${randomTime}`);
         idleTimer = setTimeout(sendIdlePrompt, 1000*randomTime);
     } else {
         idleTimer = setTimeout(sendIdlePrompt, 1000*extension_settings.idle.timer);
@@ -106,7 +102,7 @@ async function sendIdlePrompt() {
     // Check repeat conditions and waiting for a response
     if ((extension_settings.idle.repeats > 0 && repeatCount >= extension_settings.idle.repeats)
         || $('#mes_stop').is(':visible')) {
-        console.debug("Not sending idle prompt due to repeat conditions or waiting for a response.");
+        //console.debug("Not sending idle prompt due to repeat conditions or waiting for a response.");
         resetIdleTimer();
         return;
     }
@@ -130,7 +126,7 @@ function sendPrompt(prompt) {
 
     if (extension_settings.idle.useContinuation) {
         $('#option_continue').trigger('click');
-        console.log("Sending idle prompt with continuation");
+        console.debug("Sending idle prompt with continuation");
     } else {
         console.debug("Sending idle prompt");
         sendMessageAsQuiet(extension_settings.idle.sendAs, prompt);
@@ -226,6 +222,7 @@ function setupListeners() {
         eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, debounce(e => {
             resetIdleTimer();
             repeatCount = 0;
+            console.debug("Resetting idle repeat count");
         }, 250));
     }
 
