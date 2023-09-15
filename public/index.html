@@ -2474,25 +2474,27 @@
                         </div>
                         <div data-newbie-hidden>
                             <h4>
-                                <span data-i18n="Multigen">Multigen</span>
-                                <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/#multigen" class="notes-link" target="_blank">
-                                    <span class="note-link-span">?</span>
-                                </a>
+                                <span data-i18n="Auto-Continue">Auto-Continue</span>
                             </h4>
-                            <label class="checkbox_label" for="multigen">
-                                <input id="multigen" type="checkbox" />
-                                <span data-i18n="Enabled">
-                                    Enabled
-                                </span>
-                            </label>
-                            <div class="multigen_settings_block">
-                                <label for="multigen_1st_chunk">
-                                    <small><span data-i18n="First chunk (tokens)">First chunk (tokens)</span></small>
-                                    <input id="multigen_first_chunk" type="number" class="text_pole textarea_compact" min="1" max="512" />
+                            <div class="flex-container">
+                                <label class="checkbox_label" for="auto_continue_enabled">
+                                    <input id="auto_continue_enabled" type="checkbox" />
+                                    <span data-i18n="Enabled">
+                                        Enabled
+                                    </span>
                                 </label>
-                                <label for="multigen_next_chunk">
-                                    <small><span data-i18n="Next chunks (tokens)">Next chunks (tokens)</span></small>
-                                    <input id="multigen_next_chunks" type="number" class="text_pole textarea_compact" min="1" max="512" />
+                                <label class="checkbox_label" for="auto_continue_allow_chat_completions">
+                                    <input id="auto_continue_allow_chat_completions" type="checkbox" />
+                                    <span data-i18n="Allow for Chat Completion APIs">
+                                        Allow for Chat Completion APIs
+                                    </span>
+                                </label>
+                            </div>
+
+                            <div class="auto_continue_settings_block">
+                                <label for="auto_continue_target_length">
+                                    <span data-i18n="Target length (tokens)">Target length (tokens)</span>
+                                    <input id="auto_continue_target_length" type="number" class="text_pole textarea_compact" min="0" max="1024" />
                                 </label>
                             </div>
                         </div>
