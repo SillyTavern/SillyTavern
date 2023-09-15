@@ -6819,7 +6819,6 @@ export function processDroppedFiles(files) {
     const allowedMimeTypes = [
         'application/json',
         'image/png',
-        'image/webp',
     ];
 
     for (const file of files) {
@@ -6835,7 +6834,7 @@ function importCharacter(file) {
     const ext = file.name.match(/\.(\w+)$/);
     if (
         !ext ||
-        (ext[1].toLowerCase() != "json" && ext[1].toLowerCase() != "png" && ext[1] != "webp")
+        (ext[1].toLowerCase() != "json" && ext[1].toLowerCase() != "png")
     ) {
         return;
     }
