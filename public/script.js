@@ -8538,6 +8538,7 @@ jQuery(async function () {
             const newElement = $(template);
             newElement.attr('forChar', charname);
             newElement.attr('id', `zoomFor_${charname}`);
+            newElement.addClass('draggable');
             newElement.find('.drag-grabber').attr('id', `zoomFor_${charname}header`);
 
             $('body').append(newElement);
