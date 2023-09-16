@@ -42,13 +42,11 @@ const json5 = require('json5');
 const WebSocket = require('ws');
 
 // image processing related library imports
-const exif = require('piexifjs');
 const encode = require('png-chunks-encode');
 const extract = require('png-chunks-extract');
 const jimp = require('jimp');
 const mime = require('mime-types');
 const PNGtext = require('png-chunk-text');
-const webp = require('webp-converter');
 const yauzl = require('yauzl');
 
 // tokenizing related library imports
@@ -1137,7 +1135,7 @@ app.post("/renamecharacter", jsonParser, async function (request, response) {
     try {
         // Read old file, replace name int it
         const rawOldData = await charaRead(oldAvatarPath);
-        if (rawOldData === false || rawOldData === undefined) throw new Error("Failed to read character file");
+        if (rawOldData === undefined) throw new Error("Failed to read character file");
 
         const oldData = getCharaCardV2(json5.parse(rawOldData));
         _.set(oldData, 'data.name', newName);
@@ -1384,7 +1382,7 @@ const calculateDataSize = (data) => {
 const processCharacter = async (item, i) => {
     try {
         const img_data = await charaRead(charactersPath + item);
-        if (img_data === false || img_data === undefined) throw new Error("Failed to read character file");
+        if (img_data === undefined) throw new Error("Failed to read character file");
 
         let jsonObject = getCharaCardV2(json5.parse(img_data));
         jsonObject.avatar = item;
@@ -2221,25 +2219,12 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
         } else {
             try {
                 var img_data = await charaRead(uploadPath, format);
-                if (img_data === false || img_data === undefined) throw new Error('Failed to read character data');
+                if (img_data === undefined) throw new Error('Failed to read character data');
 
                 let jsonData = json5.parse(img_data);
 
                 jsonData.name = sanitize(jsonData.data?.name || jsonData.name);
                 png_name = getPngName(jsonData.name);
-
-                if (format == 'webp') {
-                    try {
-                        let convertedPath = path.join(UPLOADS_PATH, path.basename(uploadPath, ".webp") + ".png")
-                        await webp.dwebp(uploadPath, convertedPath, "-o");
-                        fs.unlinkSync(uploadPath);
-                        uploadPath = convertedPath;
-                    }
-                    catch {
-                        console.error('WEBP image conversion failed. Using the default character image.');
-                        uploadPath = defaultAvatarPath;
-                    }
-                }
 
                 if (jsonData.spec !== undefined) {
                     console.log('Found a v2 character file.');
@@ -2420,44 +2405,11 @@ app.post("/exportcharacter", jsonParser, async function (request, response) {
         case 'json': {
             try {
                 let json = await charaRead(filename);
-                if (json === false || json === undefined) return response.sendStatus(400);
+                if (json === undefined) return response.sendStatus(400);
                 let jsonObject = getCharaCardV2(json5.parse(json));
                 return response.type('json').send(jsonObject)
             }
             catch {
-                return response.sendStatus(400);
-            }
-        }
-        case 'webp': {
-            try {
-                let json = await charaRead(filename);
-                if (json === false || json === undefined) return response.sendStatus(400);
-                let stringByteArray = utf8Encode.encode(json).toString();
-                let inputWebpPath = path.join(UPLOADS_PATH, `${Date.now()}_input.webp`);
-                let outputWebpPath = path.join(UPLOADS_PATH, `${Date.now()}_output.webp`);
-                let metadataPath = path.join(UPLOADS_PATH, `${Date.now()}_metadata.exif`);
-                let metadata =
-                {
-                    "Exif": {
-                        [exif.ExifIFD.UserComment]: stringByteArray,
-                    },
-                };
-                const exifString = exif.dump(metadata);
-                writeFileAtomicSync(metadataPath, exifString, 'binary');
-
-                await webp.cwebp(filename, inputWebpPath, '-q 95');
-                await webp.webpmux_add(inputWebpPath, outputWebpPath, metadataPath, 'exif');
-
-                response.sendFile(outputWebpPath, { root: process.cwd() }, () => {
-                    fs.rmSync(inputWebpPath);
-                    fs.rmSync(metadataPath);
-                    fs.rmSync(outputWebpPath);
-                });
-
-                return;
-            }
-            catch (err) {
-                console.log(err);
                 return response.sendStatus(400);
             }
         }
@@ -4089,8 +4041,6 @@ const setupTasks = async function () {
     contentManager.checkForNewContent();
     cleanUploads();
 
-    await convertWebp();
-
     [spp_llama, spp_nerd, spp_nerd_v2, claude_tokenizer] = await Promise.all([
         loadSentencepieceTokenizer('src/sentencepiece/tokenizer.model'),
         loadSentencepieceTokenizer('src/sentencepiece/nerdstash.model'),
@@ -4148,47 +4098,6 @@ if (true === cliArguments.ssl) {
         tavernUrl.hostname,
         setupTasks
     );
-}
-
-async function convertWebp() {
-    const files = fs.readdirSync(directories.characters).filter(e => e.endsWith(".webp"));
-
-    if (!files.length) {
-        return;
-    }
-
-    console.log(`${files.length} WEBP files will be automatically converted.`);
-
-    for (const file of files) {
-        try {
-            const source = path.join(directories.characters, file);
-            const dest = path.join(directories.characters, path.basename(file, ".webp") + ".png");
-
-            if (fs.existsSync(dest)) {
-                console.log(`${dest} already exists. Delete ${source} manually`);
-                continue;
-            }
-
-            console.log(`Read... ${source}`);
-            const data = await charaRead(source);
-
-            console.log(`Convert... ${source} -> ${dest}`);
-            await webp.dwebp(source, dest, "-o");
-
-            console.log(`Write... ${dest}`);
-            const success = await charaWrite(dest, data, path.parse(dest).name);
-
-            if (!success) {
-                console.log(`Failure on ${source} -> ${dest}`);
-                continue;
-            }
-
-            console.log(`Remove... ${source}`);
-            fs.rmSync(source);
-        } catch (err) {
-            console.log(err);
-        }
-    }
 }
 
 function backupSettings() {
