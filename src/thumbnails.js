@@ -107,8 +107,9 @@ async function generateThumbnail(type, file) {
         let buffer;
 
         try {
+            const quality = getConfigValue('thumbnailsQuality', 95);
             const image = await jimp.read(pathToOriginalFile);
-            buffer = await image.cover(mySize[0], mySize[1]).quality(95).getBufferAsync('image/jpeg');
+            buffer = await image.cover(mySize[0], mySize[1]).quality(quality).getBufferAsync('image/jpeg');
         }
         catch (inner) {
             console.warn(`Thumbnailer can not process the image: ${pathToOriginalFile}. Using original size`);
