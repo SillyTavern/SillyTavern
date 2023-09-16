@@ -191,7 +191,7 @@ async function getAssetsList(type) {
     console.debug(DEBUG_PREFIX, "getting assets of type", type);
 
     try {
-        const result = await fetch(`/get_assets`, {
+        const result = await fetch(`/api/assets/get`, {
             method: 'POST',
             headers: getRequestHeaders(),
         });
@@ -209,7 +209,7 @@ async function getCharacterBgmList(name) {
     console.debug(DEBUG_PREFIX, "getting bgm list for", name);
 
     try {
-        const result = await fetch(`/get_character_assets_list?name=${encodeURIComponent(name)}&category=${CHARACTER_BGM_FOLDER}`, {
+        const result = await fetch(`/api/assets/character?name=${encodeURIComponent(name)}&category=${CHARACTER_BGM_FOLDER}`, {
             method: 'POST',
             headers: getRequestHeaders(),
         });
