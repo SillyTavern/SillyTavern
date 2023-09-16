@@ -2,7 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const simpleGit = require('simple-git');
 const sanitize = require('sanitize-filename');
-const { directories } = require('./constants');
+const { DIRECTORIES } = require('./constants');
 
 /**
  * This function extracts the extension information from the manifest file.
@@ -70,12 +70,12 @@ function registerEndpoints(app, jsonParser) {
 
         try {
             // make sure the third-party directory exists
-            if (!fs.existsSync(path.join(directories.extensions, 'third-party'))) {
-                fs.mkdirSync(path.join(directories.extensions, 'third-party'));
+            if (!fs.existsSync(path.join(DIRECTORIES.extensions, 'third-party'))) {
+                fs.mkdirSync(path.join(DIRECTORIES.extensions, 'third-party'));
             }
 
             const url = request.body.url;
-            const extensionPath = path.join(directories.extensions, 'third-party', path.basename(url, '.git'));
+            const extensionPath = path.join(DIRECTORIES.extensions, 'third-party', path.basename(url, '.git'));
 
             if (fs.existsSync(extensionPath)) {
                 return response.status(409).send(`Directory already exists at ${extensionPath}`);
@@ -116,7 +116,7 @@ function registerEndpoints(app, jsonParser) {
 
         try {
             const extensionName = request.body.extensionName;
-            const extensionPath = path.join(directories.extensions, 'third-party', extensionName);
+            const extensionPath = path.join(DIRECTORIES.extensions, 'third-party', extensionName);
 
             if (!fs.existsSync(extensionPath)) {
                 return response.status(404).send(`Directory does not exist at ${extensionPath}`);
@@ -162,7 +162,7 @@ function registerEndpoints(app, jsonParser) {
 
         try {
             const extensionName = request.body.extensionName;
-            const extensionPath = path.join(directories.extensions, 'third-party', extensionName);
+            const extensionPath = path.join(DIRECTORIES.extensions, 'third-party', extensionName);
 
             if (!fs.existsSync(extensionPath)) {
                 return response.status(404).send(`Directory does not exist at ${extensionPath}`);
@@ -201,7 +201,7 @@ function registerEndpoints(app, jsonParser) {
         const extensionName = sanitize(request.body.extensionName);
 
         try {
-            const extensionPath = path.join(directories.extensions, 'third-party', extensionName);
+            const extensionPath = path.join(DIRECTORIES.extensions, 'third-party', extensionName);
 
             if (!fs.existsSync(extensionPath)) {
                 return response.status(404).send(`Directory does not exist at ${extensionPath}`);
@@ -226,19 +226,19 @@ function registerEndpoints(app, jsonParser) {
 
         // get all folders in the extensions folder, except third-party
         const extensions = fs
-            .readdirSync(directories.extensions)
-            .filter(f => fs.statSync(path.join(directories.extensions, f)).isDirectory())
+            .readdirSync(DIRECTORIES.extensions)
+            .filter(f => fs.statSync(path.join(DIRECTORIES.extensions, f)).isDirectory())
             .filter(f => f !== 'third-party');
 
         // get all folders in the third-party folder, if it exists
 
-        if (!fs.existsSync(path.join(directories.extensions, 'third-party'))) {
+        if (!fs.existsSync(path.join(DIRECTORIES.extensions, 'third-party'))) {
             return response.send(extensions);
         }
 
         const thirdPartyExtensions = fs
-            .readdirSync(path.join(directories.extensions, 'third-party'))
-            .filter(f => fs.statSync(path.join(directories.extensions, 'third-party', f)).isDirectory());
+            .readdirSync(path.join(DIRECTORIES.extensions, 'third-party'))
+            .filter(f => fs.statSync(path.join(DIRECTORIES.extensions, 'third-party', f)).isDirectory());
 
         // add the third-party extensions to the extensions array
         extensions.push(...thirdPartyExtensions.map(f => `third-party/${f}`));

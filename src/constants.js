@@ -1,4 +1,4 @@
-const directories = {
+const DIRECTORIES = {
     worlds: 'public/worlds/',
     avatars: 'public/User Avatars',
     images: 'public/img/',
@@ -102,7 +102,10 @@ const UNSAFE_EXTENSIONS = [
     ".ws",
 ];
 
+const UPLOADS_PATH = './uploads';
+
 module.exports = {
-    directories,
+    DIRECTORIES,
     UNSAFE_EXTENSIONS,
+    UPLOADS_PATH,
 }

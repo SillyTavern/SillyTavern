@@ -8713,7 +8713,7 @@ jQuery(async function () {
         const url = input.trim();
         console.debug('Custom content import started', url);
 
-        const request = await fetch('/import_custom', {
+        const request = await fetch('/api/content/import', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({ url }),

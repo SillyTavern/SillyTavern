@@ -3,7 +3,7 @@ const fs = require('fs');
 const sanitize = require('sanitize-filename');
 const fetch = require('node-fetch').default;
 const { finished } = require('stream/promises');
-const { directories, UNSAFE_EXTENSIONS } = require('./constants');
+const { DIRECTORIES, UNSAFE_EXTENSIONS } = require('./constants');
 
 const VALID_CATEGORIES = ["bgm", "ambient"];
 
@@ -52,7 +52,7 @@ function registerEndpoints(app, jsonParser) {
      * @returns {void}
      */
     app.post('/api/assets/get', jsonParser, async (_, response) => {
-        const folderPath = path.join(directories.assets);
+        const folderPath = path.join(DIRECTORIES.assets);
         let output = {}
         //console.info("Checking files into",folderPath);
 
@@ -114,8 +114,8 @@ function registerEndpoints(app, jsonParser) {
         if (safe_input == '')
             return response.sendStatus(400);
 
-        const temp_path = path.join(directories.assets, "temp", safe_input)
-        const file_path = path.join(directories.assets, category, safe_input)
+        const temp_path = path.join(DIRECTORIES.assets, "temp", safe_input)
+        const file_path = path.join(DIRECTORIES.assets, category, safe_input)
         console.debug("Request received to download", url, "to", file_path);
 
         try {
@@ -173,7 +173,7 @@ function registerEndpoints(app, jsonParser) {
         if (safe_input == '')
             return response.sendStatus(400);
 
-        const file_path = path.join(directories.assets, category, safe_input)
+        const file_path = path.join(DIRECTORIES.assets, category, safe_input)
         console.debug("Request received to delete", category, file_path);
 
         try {
@@ -222,7 +222,7 @@ function registerEndpoints(app, jsonParser) {
             return response.sendStatus(400);
         }
 
-        const folderPath = path.join(directories.characters, name, category);
+        const folderPath = path.join(DIRECTORIES.characters, name, category);
 
         let output = [];
         try {

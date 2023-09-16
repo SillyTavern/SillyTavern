@@ -62,7 +62,7 @@ const characterCardParser = require('./src/character-card-parser.js');
 const contentManager = require('./src/content-manager');
 const statsHelpers = require('./statsHelpers.js');
 const { readSecret, migrateSecrets, SECRET_KEYS } = require('./src/secrets');
-const { delay, getVersion, getImageBuffers } = require('./src/util');
+const { delay, getVersion } = require('./src/util');
 const { invalidateThumbnail, ensureThumbnailCache } = require('./src/thumbnails');
 
 // Work around a node v20.0.0, v20.1.0, and v20.2.0 bug. The issue was fixed in v20.3.0.
@@ -313,13 +313,12 @@ function humanizedISO8601DateTime(date) {
 
 var charactersPath = 'public/characters/';
 var chatsPath = 'public/chats/';
-const UPLOADS_PATH = './uploads';
 const SETTINGS_FILE = './public/settings.json';
 const AVATAR_WIDTH = 400;
 const AVATAR_HEIGHT = 600;
 const jsonParser = express.json({ limit: '100mb' });
 const urlencodedParser = express.urlencoded({ extended: true, limit: '100mb' });
-const { directories } = require('./src/constants');
+const { DIRECTORIES, UPLOADS_PATH } = require('./src/constants');
 
 // CSRF Protection //
 if (cliArguments.disableCsrf === false) {
@@ -1036,7 +1035,7 @@ app.post("/createcharacter", urlencodedParser, async function (request, response
     const internalName = getPngName(request.body.ch_name);
     const avatarName = `${internalName}.png`;
     const defaultAvatar = './public/img/ai4.png';
-    const chatsPath = directories.chats + internalName; //path.join(chatsPath, internalName);
+    const chatsPath = DIRECTORIES.chats + internalName; //path.join(chatsPath, internalName);
 
     if (!fs.existsSync(chatsPath)) fs.mkdirSync(chatsPath);
 
@@ -1056,8 +1055,8 @@ app.post('/renamechat', jsonParser, async function (request, response) {
     }
 
     const pathToFolder = request.body.is_group
-        ? directories.groupChats
-        : path.join(directories.chats, String(request.body.avatar_url).replace('.png', ''));
+        ? DIRECTORIES.groupChats
+        : path.join(DIRECTORIES.chats, String(request.body.avatar_url).replace('.png', ''));
     const pathToOriginalFile = path.join(pathToFolder, request.body.original_file);
     const pathToRenamedFile = path.join(pathToFolder, request.body.renamed_file);
     console.log('Old chat name', pathToOriginalFile);
@@ -1471,7 +1470,7 @@ app.post('/deleteuseravatar', jsonParser, function (request, response) {
         return response.sendStatus(403);
     }
 
-    const fileName = path.join(directories.avatars, sanitize(request.body.avatar));
+    const fileName = path.join(DIRECTORIES.avatars, sanitize(request.body.avatar));
 
     if (fs.existsSync(fileName)) {
         fs.rmSync(fileName);
@@ -1666,41 +1665,41 @@ app.post('/getsettings', jsonParser, (request, response) => {
 
     // NovelAI Settings
     const { fileContents: novelai_settings, fileNames: novelai_setting_names }
-        = readPresetsFromDirectory(directories.novelAI_Settings, {
-            sortFunction: sortByName(directories.novelAI_Settings),
+        = readPresetsFromDirectory(DIRECTORIES.novelAI_Settings, {
+            sortFunction: sortByName(DIRECTORIES.novelAI_Settings),
             removeFileExtension: true
         });
 
     // OpenAI Settings
     const { fileContents: openai_settings, fileNames: openai_setting_names }
-        = readPresetsFromDirectory(directories.openAI_Settings, {
-            sortFunction: sortByModifiedDate(directories.openAI_Settings), removeFileExtension: true
+        = readPresetsFromDirectory(DIRECTORIES.openAI_Settings, {
+            sortFunction: sortByModifiedDate(DIRECTORIES.openAI_Settings), removeFileExtension: true
         });
 
     // TextGenerationWebUI Settings
     const { fileContents: textgenerationwebui_presets, fileNames: textgenerationwebui_preset_names }
-        = readPresetsFromDirectory(directories.textGen_Settings, {
-            sortFunction: sortByName(directories.textGen_Settings), removeFileExtension: true
+        = readPresetsFromDirectory(DIRECTORIES.textGen_Settings, {
+            sortFunction: sortByName(DIRECTORIES.textGen_Settings), removeFileExtension: true
         });
 
     //Kobold
     const { fileContents: koboldai_settings, fileNames: koboldai_setting_names }
-        = readPresetsFromDirectory(directories.koboldAI_Settings, {
-            sortFunction: sortByName(directories.koboldAI_Settings), removeFileExtension: true
+        = readPresetsFromDirectory(DIRECTORIES.koboldAI_Settings, {
+            sortFunction: sortByName(DIRECTORIES.koboldAI_Settings), removeFileExtension: true
         })
 
     const worldFiles = fs
-        .readdirSync(directories.worlds)
+        .readdirSync(DIRECTORIES.worlds)
         .filter(file => path.extname(file).toLowerCase() === '.json')
         .sort((a, b) => a.localeCompare(b));
     const world_names = worldFiles.map(item => path.parse(item).name);
 
-    const themes = readAndParseFromDirectory(directories.themes);
-    const movingUIPresets = readAndParseFromDirectory(directories.movingUI);
-    const quickReplyPresets = readAndParseFromDirectory(directories.quickreplies);
+    const themes = readAndParseFromDirectory(DIRECTORIES.themes);
+    const movingUIPresets = readAndParseFromDirectory(DIRECTORIES.movingUI);
+    const quickReplyPresets = readAndParseFromDirectory(DIRECTORIES.quickreplies);
 
-    const instruct = readAndParseFromDirectory(directories.instruct);
-    const context = readAndParseFromDirectory(directories.context);
+    const instruct = readAndParseFromDirectory(DIRECTORIES.instruct);
+    const context = readAndParseFromDirectory(DIRECTORIES.context);
 
     response.send({
         settings,
@@ -1739,7 +1738,7 @@ app.post('/deleteworldinfo', jsonParser, (request, response) => {
 
     const worldInfoName = request.body.name;
     const filename = sanitize(`${worldInfoName}.json`);
-    const pathToWorldInfo = path.join(directories.worlds, filename);
+    const pathToWorldInfo = path.join(DIRECTORIES.worlds, filename);
 
     if (!fs.existsSync(pathToWorldInfo)) {
         throw new Error(`World info file ${filename} doesn't exist.`);
@@ -1755,7 +1754,7 @@ app.post('/savetheme', jsonParser, (request, response) => {
         return response.sendStatus(400);
     }
 
-    const filename = path.join(directories.themes, sanitize(request.body.name) + '.json');
+    const filename = path.join(DIRECTORIES.themes, sanitize(request.body.name) + '.json');
     writeFileAtomicSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
 
     return response.sendStatus(200);
@@ -1766,7 +1765,7 @@ app.post('/savemovingui', jsonParser, (request, response) => {
         return response.sendStatus(400);
     }
 
-    const filename = path.join(directories.movingUI, sanitize(request.body.name) + '.json');
+    const filename = path.join(DIRECTORIES.movingUI, sanitize(request.body.name) + '.json');
     writeFileAtomicSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
 
     return response.sendStatus(200);
@@ -1777,7 +1776,7 @@ app.post('/savequickreply', jsonParser, (request, response) => {
         return response.sendStatus(400);
     }
 
-    const filename = path.join(directories.quickreplies, sanitize(request.body.name) + '.json');
+    const filename = path.join(DIRECTORIES.quickreplies, sanitize(request.body.name) + '.json');
     writeFileAtomicSync(filename, JSON.stringify(request.body, null, 4), 'utf8');
 
     return response.sendStatus(200);
@@ -1826,7 +1825,7 @@ function readWorldInfoFile(worldInfoName) {
     }
 
     const filename = `${worldInfoName}.json`;
-    const pathToWorldInfo = path.join(directories.worlds, filename);
+    const pathToWorldInfo = path.join(DIRECTORIES.worlds, filename);
 
     if (!fs.existsSync(pathToWorldInfo)) {
         throw new Error(`World info file ${filename} doesn't exist.`);
@@ -1941,6 +1940,7 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
     let uploadPath = path.join(UPLOADS_PATH, filedata.filename);
     var format = request.body.file_type;
     const defaultAvatarPath = './public/img/ai4.png';
+    const { importRisuSprites } = require('./src/sprites');
     //console.log(format);
     if (filedata) {
         if (format == 'json') {
@@ -2082,7 +2082,7 @@ app.post("/dupecharacter", jsonParser, async function (request, response) {
             console.log(request.body);
             return response.sendStatus(400);
         }
-        let filename = path.join(directories.characters, sanitize(request.body.avatar_url));
+        let filename = path.join(DIRECTORIES.characters, sanitize(request.body.avatar_url));
         if (!fs.existsSync(filename)) {
             console.log('file for dupe not found');
             console.log(filename);
@@ -2104,11 +2104,11 @@ app.post("/dupecharacter", jsonParser, async function (request, response) {
             baseName = nameParts.join("_"); // original filename is completely the baseName
         }
 
-        newFilename = path.join(directories.characters, `${baseName}_${suffix}${path.extname(filename)}`);
+        newFilename = path.join(DIRECTORIES.characters, `${baseName}_${suffix}${path.extname(filename)}`);
 
         while (fs.existsSync(newFilename)) {
             let suffixStr = "_" + suffix;
-            newFilename = path.join(directories.characters, `${baseName}${suffixStr}${path.extname(filename)}`);
+            newFilename = path.join(DIRECTORIES.characters, `${baseName}${suffixStr}${path.extname(filename)}`);
             suffix++;
         }
 
@@ -2127,8 +2127,8 @@ app.post("/exportchat", jsonParser, async function (request, response) {
         return response.sendStatus(400);
     }
     const pathToFolder = request.body.is_group
-        ? directories.groupChats
-        : path.join(directories.chats, String(request.body.avatar_url).replace('.png', ''));
+        ? DIRECTORIES.groupChats
+        : path.join(DIRECTORIES.chats, String(request.body.avatar_url).replace('.png', ''));
     let filename = path.join(pathToFolder, request.body.file);
     let exportfilename = request.body.exportfilename
     if (!fs.existsSync(filename)) {
@@ -2195,7 +2195,7 @@ app.post("/exportcharacter", jsonParser, async function (request, response) {
         return response.sendStatus(400);
     }
 
-    let filename = path.join(directories.characters, sanitize(request.body.avatar_url));
+    let filename = path.join(DIRECTORIES.characters, sanitize(request.body.avatar_url));
 
     if (!fs.existsSync(filename)) {
         return response.sendStatus(404);
@@ -2230,7 +2230,7 @@ app.post("/importgroupchat", urlencodedParser, function (request, response) {
 
         const chatname = humanizedISO8601DateTime();
         const pathToUpload = path.join(UPLOADS_PATH, filedata.filename);
-        const pathToNewFile = path.join(directories.groupChats, `${chatname}.jsonl`);
+        const pathToNewFile = path.join(DIRECTORIES.groupChats, `${chatname}.jsonl`);
         fs.copyFileSync(pathToUpload, pathToNewFile);
         fs.unlinkSync(pathToUpload);
         return response.send({ res: chatname });
@@ -2385,7 +2385,7 @@ app.post('/importworldinfo', urlencodedParser, (request, response) => {
         return response.status(400).send('Is not a valid world info file');
     }
 
-    const pathToNewFile = path.join(directories.worlds, filename);
+    const pathToNewFile = path.join(DIRECTORIES.worlds, filename);
     const worldName = path.parse(pathToNewFile).name;
 
     if (!worldName) {
@@ -2414,7 +2414,7 @@ app.post('/editworldinfo', jsonParser, (request, response) => {
     }
 
     const filename = `${sanitize(request.body.name)}.json`;
-    const pathToFile = path.join(directories.worlds, filename);
+    const pathToFile = path.join(DIRECTORIES.worlds, filename);
 
     writeFileAtomicSync(pathToFile, JSON.stringify(request.body.data, null, 4));
 
@@ -2436,7 +2436,7 @@ app.post('/uploaduseravatar', urlencodedParser, async (request, response) => {
         const image = await rawImg.cover(AVATAR_WIDTH, AVATAR_HEIGHT).getBufferAsync(jimp.MIME_PNG);
 
         const filename = request.body.overwrite_name || `${Date.now()}.png`;
-        const pathToNewFile = path.join(directories.avatars, filename);
+        const pathToNewFile = path.join(DIRECTORIES.avatars, filename);
         writeFileAtomicSync(pathToNewFile, image);
         fs.rmSync(pathToUpload);
         return response.send({ path: filename });
@@ -2493,9 +2493,9 @@ app.post('/uploadimage', jsonParser, async (request, response) => {
     }
 
     // if character is defined, save to a sub folder for that character
-    let pathToNewFile = path.join(directories.userImages, filename);
+    let pathToNewFile = path.join(DIRECTORIES.userImages, filename);
     if (request.body.ch_name) {
-        pathToNewFile = path.join(directories.userImages, request.body.ch_name, filename);
+        pathToNewFile = path.join(DIRECTORIES.userImages, request.body.ch_name, filename);
     }
 
     try {
@@ -2531,16 +2531,16 @@ app.post('/listimgfiles/:folder', (req, res) => {
 app.post('/getgroups', jsonParser, (_, response) => {
     const groups = [];
 
-    if (!fs.existsSync(directories.groups)) {
-        fs.mkdirSync(directories.groups);
+    if (!fs.existsSync(DIRECTORIES.groups)) {
+        fs.mkdirSync(DIRECTORIES.groups);
     }
 
-    const files = fs.readdirSync(directories.groups).filter(x => path.extname(x) === '.json');
-    const chats = fs.readdirSync(directories.groupChats).filter(x => path.extname(x) === '.jsonl');
+    const files = fs.readdirSync(DIRECTORIES.groups).filter(x => path.extname(x) === '.json');
+    const chats = fs.readdirSync(DIRECTORIES.groupChats).filter(x => path.extname(x) === '.jsonl');
 
     files.forEach(function (file) {
         try {
-            const filePath = path.join(directories.groups, file);
+            const filePath = path.join(DIRECTORIES.groups, file);
             const fileContents = fs.readFileSync(filePath, 'utf8');
             const group = json5.parse(fileContents);
             const groupStat = fs.statSync(filePath);
@@ -2553,7 +2553,7 @@ app.post('/getgroups', jsonParser, (_, response) => {
             if (Array.isArray(group.chats) && Array.isArray(chats)) {
                 for (const chat of chats) {
                     if (group.chats.includes(path.parse(chat).name)) {
-                        const chatStat = fs.statSync(path.join(directories.groupChats, chat));
+                        const chatStat = fs.statSync(path.join(DIRECTORIES.groupChats, chat));
                         chat_size += chatStat.size;
                         date_last_chat = Math.max(date_last_chat, chatStat.mtimeMs);
                     }
@@ -2591,11 +2591,11 @@ app.post('/creategroup', jsonParser, (request, response) => {
         chat_id: request.body.chat_id ?? id,
         chats: request.body.chats ?? [id],
     };
-    const pathToFile = path.join(directories.groups, `${id}.json`);
+    const pathToFile = path.join(DIRECTORIES.groups, `${id}.json`);
     const fileData = JSON.stringify(groupMetadata);
 
-    if (!fs.existsSync(directories.groups)) {
-        fs.mkdirSync(directories.groups);
+    if (!fs.existsSync(DIRECTORIES.groups)) {
+        fs.mkdirSync(DIRECTORIES.groups);
     }
 
     writeFileAtomicSync(pathToFile, fileData);
@@ -2607,7 +2607,7 @@ app.post('/editgroup', jsonParser, (request, response) => {
         return response.sendStatus(400);
     }
     const id = request.body.id;
-    const pathToFile = path.join(directories.groups, `${id}.json`);
+    const pathToFile = path.join(DIRECTORIES.groups, `${id}.json`);
     const fileData = JSON.stringify(request.body);
 
     writeFileAtomicSync(pathToFile, fileData);
@@ -2620,7 +2620,7 @@ app.post('/getgroupchat', jsonParser, (request, response) => {
     }
 
     const id = request.body.id;
-    const pathToFile = path.join(directories.groupChats, `${id}.jsonl`);
+    const pathToFile = path.join(DIRECTORIES.groupChats, `${id}.jsonl`);
 
     if (fs.existsSync(pathToFile)) {
         const data = fs.readFileSync(pathToFile, 'utf8');
@@ -2640,7 +2640,7 @@ app.post('/deletegroupchat', jsonParser, (request, response) => {
     }
 
     const id = request.body.id;
-    const pathToFile = path.join(directories.groupChats, `${id}.jsonl`);
+    const pathToFile = path.join(DIRECTORIES.groupChats, `${id}.jsonl`);
 
     if (fs.existsSync(pathToFile)) {
         fs.rmSync(pathToFile);
@@ -2656,10 +2656,10 @@ app.post('/savegroupchat', jsonParser, (request, response) => {
     }
 
     const id = request.body.id;
-    const pathToFile = path.join(directories.groupChats, `${id}.jsonl`);
+    const pathToFile = path.join(DIRECTORIES.groupChats, `${id}.jsonl`);
 
-    if (!fs.existsSync(directories.groupChats)) {
-        fs.mkdirSync(directories.groupChats);
+    if (!fs.existsSync(DIRECTORIES.groupChats)) {
+        fs.mkdirSync(DIRECTORIES.groupChats);
     }
 
     let chat_data = request.body.chat;
@@ -2674,7 +2674,7 @@ app.post('/deletegroup', jsonParser, async (request, response) => {
     }
 
     const id = request.body.id;
-    const pathToGroup = path.join(directories.groups, sanitize(`${id}.json`));
+    const pathToGroup = path.join(DIRECTORIES.groups, sanitize(`${id}.json`));
 
     try {
         // Delete group chats
@@ -2683,7 +2683,7 @@ app.post('/deletegroup', jsonParser, async (request, response) => {
         if (group && Array.isArray(group.chats)) {
             for (const chat of group.chats) {
                 console.log('Deleting group chat', chat);
-                const pathToFile = path.join(directories.groupChats, `${id}.jsonl`);
+                const pathToFile = path.join(DIRECTORIES.groupChats, `${id}.jsonl`);
 
                 if (fs.existsSync(pathToFile)) {
                     fs.rmSync(pathToFile);
@@ -2717,7 +2717,7 @@ function getSpritesPath(name, isSubfolder) {
             return null;
         }
 
-        return path.join(directories.characters, characterName, subfolderName);
+        return path.join(DIRECTORIES.characters, characterName, subfolderName);
     }
 
     name = sanitize(name);
@@ -2726,7 +2726,7 @@ function getSpritesPath(name, isSubfolder) {
         return null;
     }
 
-    return path.join(directories.characters, name);
+    return path.join(DIRECTORIES.characters, name);
 }
 
 app.get('/get_sprites', jsonParser, function (request, response) {
@@ -2886,7 +2886,7 @@ app.post("/deletepreset_openai", jsonParser, function (request, response) {
     }
 
     const name = request.body.name;
-    const pathToFile = path.join(directories.openAI_Settings, `${name}.settings`);
+    const pathToFile = path.join(DIRECTORIES.openAI_Settings, `${name}.settings`);
 
     if (fs.existsSync(pathToFile)) {
         fs.rmSync(pathToFile);
@@ -3496,7 +3496,7 @@ app.post("/savepreset_openai", jsonParser, function (request, response) {
     if (!name) return response.sendStatus(400);
 
     const filename = `${name}.settings`;
-    const fullpath = path.join(directories.openAI_Settings, filename);
+    const fullpath = path.join(DIRECTORIES.openAI_Settings, filename);
     writeFileAtomicSync(fullpath, JSON.stringify(request.body, null, 4), 'utf-8');
     return response.send({ name });
 });
@@ -3505,15 +3505,15 @@ function getPresetSettingsByAPI(apiId) {
     switch (apiId) {
         case 'kobold':
         case 'koboldhorde':
-            return { folder: directories.koboldAI_Settings, extension: '.settings' };
+            return { folder: DIRECTORIES.koboldAI_Settings, extension: '.settings' };
         case 'novel':
-            return { folder: directories.novelAI_Settings, extension: '.settings' };
+            return { folder: DIRECTORIES.novelAI_Settings, extension: '.settings' };
         case 'textgenerationwebui':
-            return { folder: directories.textGen_Settings, extension: '.settings' };
+            return { folder: DIRECTORIES.textGen_Settings, extension: '.settings' };
         case 'instruct':
-            return { folder: directories.instruct, extension: '.json' };
+            return { folder: DIRECTORIES.instruct, extension: '.json' };
         case 'context':
-            return { folder: directories.context, extension: '.json' };
+            return { folder: DIRECTORIES.context, extension: '.json' };
         default:
             return { folder: null, extension: null };
     }
@@ -3663,6 +3663,45 @@ async function postAsync(url, args) { return fetchJSON(url, { method: 'POST', ti
 
 // ** END **
 
+// Secrets managemenet
+require('./src/secrets').registerEndpoints(app, jsonParser);
+
+// Thumbnail generation
+require('./src/thumbnails').registerEndpoints(app, jsonParser);
+
+// NovelAI generation
+require('./src/novelai').registerEndpoints(app, jsonParser);
+
+// Third-party extensions
+require('./src/extensions').registerEndpoints(app, jsonParser);
+
+// Asset management
+require('./src/assets').registerEndpoints(app, jsonParser);
+
+// Character sprite management
+require('./src/sprites').registerEndpoints(app, jsonParser, urlencodedParser);
+
+// Custom content management
+require('./src/content-manager').registerEndpoints(app, jsonParser);
+
+// Stable Diffusion generation
+require('./src/stable-diffusion').registerEndpoints(app, jsonParser);
+
+// LLM and SD Horde generation
+require('./src/horde').registerEndpoints(app, jsonParser);
+
+// Vector storage DB
+require('./src/vectors').registerEndpoints(app, jsonParser);
+
+// Chat translation
+require('./src/translate').registerEndpoints(app, jsonParser);
+
+// Emotion classification
+require('./src/classify').registerEndpoints(app, jsonParser);
+
+// Image captioning
+require('./src/caption').registerEndpoints(app, jsonParser);
+
 const tavernUrl = new URL(
     (cliArguments.ssl ? 'https://' : 'http://') +
     (listen ? '0.0.0.0' : '127.0.0.1') +
@@ -3694,7 +3733,7 @@ const setupTasks = async function () {
         loadClaudeTokenizer('src/claude.json'),
     ]);
 
-    await statsHelpers.loadStatsFile(directories.chats, directories.characters);
+    await statsHelpers.loadStatsFile(DIRECTORIES.chats, DIRECTORIES.characters);
 
     // Set up event listeners for a graceful shutdown
     process.on('SIGINT', statsHelpers.writeStatsToFileAndExit);
@@ -3762,16 +3801,16 @@ function backupSettings() {
     }
 
     try {
-        if (!fs.existsSync(directories.backups)) {
-            fs.mkdirSync(directories.backups);
+        if (!fs.existsSync(DIRECTORIES.backups)) {
+            fs.mkdirSync(DIRECTORIES.backups);
         }
 
-        const backupFile = path.join(directories.backups, `settings_${generateTimestamp()}.json`);
+        const backupFile = path.join(DIRECTORIES.backups, `settings_${generateTimestamp()}.json`);
         fs.copyFileSync(SETTINGS_FILE, backupFile);
 
-        let files = fs.readdirSync(directories.backups).filter(f => f.startsWith('settings_'));
+        let files = fs.readdirSync(DIRECTORIES.backups).filter(f => f.startsWith('settings_'));
         if (files.length > MAX_BACKUPS) {
-            files = files.map(f => path.join(directories.backups, f));
+            files = files.map(f => path.join(DIRECTORIES.backups, f));
             files.sort((a, b) => fs.statSync(a).mtimeMs - fs.statSync(b).mtimeMs);
 
             fs.rmSync(files[0]);
@@ -3782,347 +3821,9 @@ function backupSettings() {
 }
 
 function ensurePublicDirectoriesExist() {
-    for (const dir of Object.values(directories)) {
+    for (const dir of Object.values(DIRECTORIES)) {
         if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, { recursive: true });
         }
     }
 }
-
-app.post('/delete_sprite', jsonParser, async (request, response) => {
-    const label = request.body.label;
-    const name = request.body.name;
-
-    if (!label || !name) {
-        return response.sendStatus(400);
-    }
-
-    try {
-        const spritesPath = path.join(directories.characters, name);
-
-        // No sprites folder exists, or not a directory
-        if (!fs.existsSync(spritesPath) || !fs.statSync(spritesPath).isDirectory()) {
-            return response.sendStatus(404);
-        }
-
-        const files = fs.readdirSync(spritesPath);
-
-        // Remove existing sprite with the same label
-        for (const file of files) {
-            if (path.parse(file).name === label) {
-                fs.rmSync(path.join(spritesPath, file));
-            }
-        }
-
-        return response.sendStatus(200);
-    } catch (error) {
-        console.error(error);
-        return response.sendStatus(500);
-    }
-});
-
-app.post('/upload_sprite_pack', urlencodedParser, async (request, response) => {
-    const file = request.file;
-    const name = request.body.name;
-
-    if (!file || !name) {
-        return response.sendStatus(400);
-    }
-
-    try {
-        const spritesPath = path.join(directories.characters, name);
-
-        // Create sprites folder if it doesn't exist
-        if (!fs.existsSync(spritesPath)) {
-            fs.mkdirSync(spritesPath);
-        }
-
-        // Path to sprites is not a directory. This should never happen.
-        if (!fs.statSync(spritesPath).isDirectory()) {
-            return response.sendStatus(404);
-        }
-
-        const spritePackPath = path.join(UPLOADS_PATH, file.filename);
-        const sprites = await getImageBuffers(spritePackPath);
-        const files = fs.readdirSync(spritesPath);
-
-        for (const [filename, buffer] of sprites) {
-            // Remove existing sprite with the same label
-            const existingFile = files.find(file => path.parse(file).name === path.parse(filename).name);
-
-            if (existingFile) {
-                fs.rmSync(path.join(spritesPath, existingFile));
-            }
-
-            // Write sprite buffer to disk
-            const pathToSprite = path.join(spritesPath, filename);
-            writeFileAtomicSync(pathToSprite, buffer);
-        }
-
-        // Remove uploaded ZIP file
-        fs.rmSync(spritePackPath);
-        return response.send({ count: sprites.length });
-    } catch (error) {
-        console.error(error);
-        return response.sendStatus(500);
-    }
-});
-
-app.post('/upload_sprite', urlencodedParser, async (request, response) => {
-    const file = request.file;
-    const label = request.body.label;
-    const name = request.body.name;
-
-    if (!file || !label || !name) {
-        return response.sendStatus(400);
-    }
-
-    try {
-        const spritesPath = path.join(directories.characters, name);
-
-        // Create sprites folder if it doesn't exist
-        if (!fs.existsSync(spritesPath)) {
-            fs.mkdirSync(spritesPath);
-        }
-
-        // Path to sprites is not a directory. This should never happen.
-        if (!fs.statSync(spritesPath).isDirectory()) {
-            return response.sendStatus(404);
-        }
-
-        const files = fs.readdirSync(spritesPath);
-
-        // Remove existing sprite with the same label
-        for (const file of files) {
-            if (path.parse(file).name === label) {
-                fs.rmSync(path.join(spritesPath, file));
-            }
-        }
-
-        const filename = label + path.parse(file.originalname).ext;
-        const spritePath = path.join(UPLOADS_PATH, file.filename);
-        const pathToFile = path.join(spritesPath, filename);
-        // Copy uploaded file to sprites folder
-        fs.cpSync(spritePath, pathToFile);
-        // Remove uploaded file
-        fs.rmSync(spritePath);
-        return response.sendStatus(200);
-    } catch (error) {
-        console.error(error);
-        return response.sendStatus(500);
-    }
-});
-
-app.post('/import_custom', jsonParser, async (request, response) => {
-    if (!request.body.url) {
-        return response.sendStatus(400);
-    }
-
-    try {
-        const url = request.body.url;
-        let result;
-
-        const chubParsed = parseChubUrl(url);
-
-        if (chubParsed?.type === 'character') {
-            console.log('Downloading chub character:', chubParsed.id);
-            result = await downloadChubCharacter(chubParsed.id);
-        }
-        else if (chubParsed?.type === 'lorebook') {
-            console.log('Downloading chub lorebook:', chubParsed.id);
-            result = await downloadChubLorebook(chubParsed.id);
-        }
-        else {
-            return response.sendStatus(404);
-        }
-
-        if (result.fileType) response.set('Content-Type', result.fileType)
-        response.set('Content-Disposition', `attachment; filename="${result.fileName}"`);
-        response.set('X-Custom-Content-Type', chubParsed?.type);
-        return response.send(result.buffer);
-    } catch (error) {
-        console.log('Importing custom content failed', error);
-        return response.sendStatus(500);
-    }
-});
-
-async function downloadChubLorebook(id) {
-    const result = await fetch('https://api.chub.ai/api/lorebooks/download', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            "fullPath": id,
-            "format": "SILLYTAVERN",
-        }),
-    });
-
-    if (!result.ok) {
-        console.log(await result.text());
-        throw new Error('Failed to download lorebook');
-    }
-
-    const name = id.split('/').pop();
-    const buffer = await result.buffer();
-    const fileName = `${sanitize(name)}.json`;
-    const fileType = result.headers.get('content-type');
-
-    return { buffer, fileName, fileType };
-}
-
-async function downloadChubCharacter(id) {
-    const result = await fetch('https://api.chub.ai/api/characters/download', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            "format": "tavern",
-            "fullPath": id,
-        })
-    });
-
-    if (!result.ok) {
-        throw new Error('Failed to download character');
-    }
-
-    const buffer = await result.buffer();
-    const fileName = result.headers.get('content-disposition')?.split('filename=')[1] || `${sanitize(id)}.png`;
-    const fileType = result.headers.get('content-type');
-
-    return { buffer, fileName, fileType };
-}
-
-/**
- *
- * @param {String} str
- * @returns { { id: string, type: "character" | "lorebook" } | null }
- */
-function parseChubUrl(str) {
-    const splitStr = str.split('/');
-    const length = splitStr.length;
-
-    if (length < 2) {
-        return null;
-    }
-
-    let domainIndex = -1;
-
-    splitStr.forEach((part, index) => {
-        if (part === 'www.chub.ai' || part === 'chub.ai') {
-            domainIndex = index;
-        }
-    })
-
-    const lastTwo = domainIndex !== -1 ? splitStr.slice(domainIndex + 1) : splitStr;
-
-    const firstPart = lastTwo[0].toLowerCase();
-
-    if (firstPart === 'characters' || firstPart === 'lorebooks') {
-        const type = firstPart === 'characters' ? 'character' : 'lorebook';
-        const id = type === 'character' ? lastTwo.slice(1).join('/') : lastTwo.join('/');
-        return {
-            id: id,
-            type: type
-        };
-    } else if (length === 2) {
-        return {
-            id: lastTwo.join('/'),
-            type: 'character'
-        };
-    }
-
-    return null;
-}
-
-function importRisuSprites(data) {
-    try {
-        const name = data?.data?.name;
-        const risuData = data?.data?.extensions?.risuai;
-
-        // Not a Risu AI character
-        if (!risuData || !name) {
-            return;
-        }
-
-        let images = [];
-
-        if (Array.isArray(risuData.additionalAssets)) {
-            images = images.concat(risuData.additionalAssets);
-        }
-
-        if (Array.isArray(risuData.emotions)) {
-            images = images.concat(risuData.emotions);
-        }
-
-        // No sprites to import
-        if (images.length === 0) {
-            return;
-        }
-
-        // Create sprites folder if it doesn't exist
-        const spritesPath = path.join(directories.characters, name);
-        if (!fs.existsSync(spritesPath)) {
-            fs.mkdirSync(spritesPath);
-        }
-
-        // Path to sprites is not a directory. This should never happen.
-        if (!fs.statSync(spritesPath).isDirectory()) {
-            return;
-        }
-
-        console.log(`RisuAI: Found ${images.length} sprites for ${name}. Writing to disk.`);
-        const files = fs.readdirSync(spritesPath);
-
-        outer: for (const [label, fileBase64] of images) {
-            // Remove existing sprite with the same label
-            for (const file of files) {
-                if (path.parse(file).name === label) {
-                    console.log(`RisuAI: The sprite ${label} for ${name} already exists. Skipping.`);
-                    continue outer;
-                }
-            }
-
-            const filename = label + '.png';
-            const pathToFile = path.join(spritesPath, filename);
-            writeFileAtomicSync(pathToFile, fileBase64, { encoding: 'base64' });
-        }
-
-        // Remove additionalAssets and emotions from data (they are now in the sprites folder)
-        delete data.data.extensions.risuai.additionalAssets;
-        delete data.data.extensions.risuai.emotions;
-    } catch (error) {
-        console.error(error);
-    }
-}
-
-
-// Secrets managemenet
-require('./src/secrets').registerEndpoints(app, jsonParser);
-
-// Thumbnail generation
-require('./src/thumbnails').registerEndpoints(app, jsonParser);
-
-// NovelAI generation
-require('./src/novelai').registerEndpoints(app, jsonParser);
-
-// Third-party extensions
-require('./src/extensions').registerEndpoints(app, jsonParser);
-
-// Asset management
-require('./src/assets').registerEndpoints(app, jsonParser);
-
-// Stable Diffusion generation
-require('./src/stable-diffusion').registerEndpoints(app, jsonParser);
-
-// LLM and SD Horde generation
-require('./src/horde').registerEndpoints(app, jsonParser);
-
-// Vector storage DB
-require('./src/vectors').registerEndpoints(app, jsonParser);
-
-// Chat translation
-require('./src/translate').registerEndpoints(app, jsonParser);
-
-// Emotion classification
-require('./src/classify').registerEndpoints(app, jsonParser);
-
-// Image captioning
-require('./src/caption').registerEndpoints(app, jsonParser);

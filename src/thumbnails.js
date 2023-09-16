@@ -3,7 +3,7 @@ const path = require('path');
 const sanitize = require('sanitize-filename');
 const jimp = require('jimp');
 const writeFileAtomicSync = require('write-file-atomic').sync;
-const { directories } = require('./constants');
+const { DIRECTORIES } = require('./constants');
 const { getConfigValue } = require('./util');
 
 /**
@@ -16,10 +16,10 @@ function getThumbnailFolder(type) {
 
     switch (type) {
         case 'bg':
-            thumbnailFolder = directories.thumbnailsBg;
+            thumbnailFolder = DIRECTORIES.thumbnailsBg;
             break;
         case 'avatar':
-            thumbnailFolder = directories.thumbnailsAvatar;
+            thumbnailFolder = DIRECTORIES.thumbnailsAvatar;
             break;
     }
 
@@ -36,10 +36,10 @@ function getOriginalFolder(type) {
 
     switch (type) {
         case 'bg':
-            originalFolder = directories.backgrounds;
+            originalFolder = DIRECTORIES.backgrounds;
             break;
         case 'avatar':
-            originalFolder = directories.characters;
+            originalFolder = DIRECTORIES.characters;
             break;
     }
 
@@ -129,7 +129,7 @@ async function generateThumbnail(type, file) {
  * @returns {Promise<void>} Promise that resolves when the cache is validated
  */
 async function ensureThumbnailCache() {
-    const cacheFiles = fs.readdirSync(directories.thumbnailsBg);
+    const cacheFiles = fs.readdirSync(DIRECTORIES.thumbnailsBg);
 
     // files exist, all ok
     if (cacheFiles.length) {
@@ -138,7 +138,7 @@ async function ensureThumbnailCache() {
 
     console.log('Generating thumbnails cache. Please wait...');
 
-    const bgFiles = fs.readdirSync(directories.backgrounds);
+    const bgFiles = fs.readdirSync(DIRECTORIES.backgrounds);
     const tasks = [];
 
     for (const file of bgFiles) {
