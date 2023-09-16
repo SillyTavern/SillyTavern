@@ -93,9 +93,11 @@ let power_user = {
     always_force_name2: false,
     user_prompt_bias: '',
     show_user_prompt_bias: true,
-    multigen: false,
-    multigen_first_chunk: 50,
-    multigen_next_chunks: 30,
+    auto_continue: {
+        enabled: false,
+        allow_chat_completions: false,
+        target_length: 400,
+    },
     markdown_escape_strings: '',
 
     ui_mode: ui_mode.POWER,
@@ -848,9 +850,9 @@ function loadPowerUserSettings(settings, data) {
     $("#noShadowsmode").prop("checked", power_user.noShadows);
     $("#start_reply_with").val(power_user.user_prompt_bias);
     $("#chat-show-reply-prefix-checkbox").prop("checked", power_user.show_user_prompt_bias);
-    $("#multigen").prop("checked", power_user.multigen);
-    $("#multigen_first_chunk").val(power_user.multigen_first_chunk);
-    $("#multigen_next_chunks").val(power_user.multigen_next_chunks);
+    $("#auto_continue_enabled").prop("checked", power_user.auto_continue.enabled);
+    $("#auto_continue_allow_chat_completions").prop("checked", power_user.auto_continue.allow_chat_completions);
+    $("#auto_continue_target_length").val(power_user.auto_continue.target_length);
     $("#play_message_sound").prop("checked", power_user.play_message_sound);
     $("#play_sound_unfocused").prop("checked", power_user.play_sound_unfocused);
     $("#never_resize_avatars").prop("checked", power_user.never_resize_avatars);
@@ -1816,8 +1818,18 @@ $(document).ready(() => {
         saveSettingsDebounced();
     })
 
-    $("#multigen").change(function () {
-        power_user.multigen = $(this).prop("checked");
+    $("#auto_continue_enabled").on('change', function () {
+        power_user.auto_continue.enabled = $(this).prop("checked");
+        saveSettingsDebounced();
+    });
+
+    $("#auto_continue_allow_chat_completions").on('change', function () {
+        power_user.auto_continue.allow_chat_completions = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $("#auto_continue_target_length").on('input', function () {
+        power_user.auto_continue.target_length = Number($(this).val());
         saveSettingsDebounced();
     });
 
@@ -1983,16 +1995,6 @@ $(document).ready(() => {
         power_user.sort_order = $(this).find(":selected").data('order');
         power_user.sort_rule = $(this).find(":selected").data('rule');
         printCharacters();
-        saveSettingsDebounced();
-    });
-
-    $("#multigen_first_chunk").on('input', function () {
-        power_user.multigen_first_chunk = Number($(this).val());
-        saveSettingsDebounced();
-    });
-
-    $("#multigen_next_chunks").on('input', function () {
-        power_user.multigen_next_chunks = Number($(this).val());
         saveSettingsDebounced();
     });
 

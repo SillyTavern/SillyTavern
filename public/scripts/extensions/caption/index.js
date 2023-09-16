@@ -53,7 +53,6 @@ async function sendCaptionedMessage(caption, image) {
     const message = {
         name: context.name1,
         is_user: true,
-        is_name: true,
         send_date: getMessageTimeStamp(),
         mes: messageText,
         extra: {

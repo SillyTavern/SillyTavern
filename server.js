@@ -235,6 +235,35 @@ function countClaudeTokens(tokenizer, messages) {
 
 const tokenizersCache = {};
 
+/**
+ * @type {import('@dqbd/tiktoken').TiktokenModel[]}
+ */
+const textCompletionModels = [
+    "text-davinci-003",
+    "text-davinci-002",
+    "text-davinci-001",
+    "text-curie-001",
+    "text-babbage-001",
+    "text-ada-001",
+    "code-davinci-002",
+    "code-davinci-001",
+    "code-cushman-002",
+    "code-cushman-001",
+    "text-davinci-edit-001",
+    "code-davinci-edit-001",
+    "text-embedding-ada-002",
+    "text-similarity-davinci-001",
+    "text-similarity-curie-001",
+    "text-similarity-babbage-001",
+    "text-similarity-ada-001",
+    "text-search-davinci-doc-001",
+    "text-search-curie-doc-001",
+    "text-search-babbage-doc-001",
+    "text-search-ada-doc-001",
+    "code-search-babbage-code-001",
+    "code-search-ada-code-001",
+];
+
 function getTokenizerModel(requestModel) {
     if (requestModel.includes('claude')) {
         return 'claude';
@@ -252,7 +281,7 @@ function getTokenizerModel(requestModel) {
         return 'gpt-3.5-turbo';
     }
 
-    if (requestModel.startsWith('text-') || requestModel.startsWith('code-')) {
+    if (textCompletionModels.includes(requestModel)) {
         return requestModel;
     }
 
@@ -2270,7 +2299,6 @@ app.post("/importchat", urlencodedParser, function (request, response) {
                                 (message) => ({
                                     name: message.src.is_human ? user_name : ch_name,
                                     is_user: message.src.is_human,
-                                    is_name: true,
                                     send_date: humanizedISO8601DateTime(),
                                     mes: message.text,
                                 })
@@ -2315,7 +2343,6 @@ app.post("/importchat", urlencodedParser, function (request, response) {
                         const userMessage = {
                             name: user_name,
                             is_user: true,
-                            is_name: true,
                             send_date: humanizedISO8601DateTime(),
                             mes: arr[0],
                         };
@@ -2325,7 +2352,6 @@ app.post("/importchat", urlencodedParser, function (request, response) {
                         const charMessage = {
                             name: ch_name,
                             is_user: false,
-                            is_name: true,
                             send_date: humanizedISO8601DateTime(),
                             mes: arr[1],
                         };
@@ -3389,7 +3415,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
         bodyParams['stop'] = request.body.stop;
     }
 
-    const isTextCompletion = Boolean(request.body.model && (request.body.model.startsWith('text-') || request.body.model.startsWith('code-')));
+    const isTextCompletion = Boolean(request.body.model && textCompletionModels.includes(request.body.model));
     const textPrompt = isTextCompletion ? convertChatMLPrompt(request.body.messages) : '';
     const endpointUrl = isTextCompletion ? `${api_url}/completions` : `${api_url}/chat/completions`;
 
@@ -3418,7 +3444,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
             "frequency_penalty": request.body.frequency_penalty,
             "top_p": request.body.top_p,
             "top_k": request.body.top_k,
-            "stop": request.body.stop,
+            "stop": isTextCompletion === false ? request.body.stop : undefined,
             "logit_bias": request.body.logit_bias,
             ...bodyParams,
         }),
