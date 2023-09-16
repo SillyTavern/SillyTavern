@@ -287,7 +287,7 @@ export const event_types = {
     USER_MESSAGE_RENDERED: 'user_message_rendered',
     CHARACTER_MESSAGE_RENDERED: 'character_message_rendered',
     FORCE_SET_BACKGROUND: 'force_set_background',
-    CHAT_DELETED : 'chat_deleted',
+    CHAT_DELETED: 'chat_deleted',
     GROUP_CHAT_DELETED: 'group_chat_deleted',
 }
 
@@ -1158,7 +1158,7 @@ function showMoreMessages() {
     console.debug('Inserting messages before', messageId, 'count', count, 'chat length', chat.length);
     const prevHeight = $('#chat').prop('scrollHeight');
 
-    while(messageId > 0 && count > 0) {
+    while (messageId > 0 && count > 0) {
         count--;
         messageId--;
         addOneMessage(chat[messageId], { insertBefore: messageId + 1, scroll: false, forceId: messageId });
@@ -2755,7 +2755,17 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 if (quiet_prompt && quiet_prompt.length) {
                     const name = name1;
                     const quietAppend = isInstruct ? formatInstructModeChat(name, quiet_prompt, false, true, '', name1, name2, false) : `\n${quiet_prompt}`;
-                    lastMesString += quietAppend;
+
+                    //This begins to fix quietPrompts (particularly /sysgen) for instruct
+                    //previously instruct input sequence was being appended to the last chat message w/o '\n'
+                    //and no output sequence was added after the input's content.
+                    //TODO: respect output_sequence vs last_output_sequence settings
+                    //TODO: decide how to prompt this to clarify who is talking 'Narrator', 'System', etc.
+                    if (isInstruct) {
+                        lastMesString += '\n' + quietAppend + power_user.instruct.output_sequence + '\n';
+                    } else {
+                        lastMesString += quietAppend;
+                    }
                     // Bail out early
                     return lastMesString;
                 }
@@ -6565,8 +6575,8 @@ const swipe_right = () => {
 
     // if (chat.length == 1) {
     //     if (chat[0]['swipe_id'] !== undefined && chat[0]['swipe_id'] == chat[0]['swipes'].length - 1) {
-            // toastr.info('Add more alternative greetings to swipe through', 'That\'s all for now');
-            // return;
+    // toastr.info('Add more alternative greetings to swipe through', 'That\'s all for now');
+    // return;
     //     }
     // }
 
