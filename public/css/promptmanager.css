@@ -13,7 +13,7 @@
     grid-column-end: 4;
     width: 100%;
     margin: 0.5em 0;
-    background-image: linear-gradient(90deg, var(--transparent), var(--white30a), var(--transparent));
+    background-image: linear-gradient(90deg, var(--transparent), var(--SmartThemeBorderColor), var(--transparent));
     min-height: 1px;
 }
 
