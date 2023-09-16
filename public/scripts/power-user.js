@@ -126,6 +126,8 @@ let power_user = {
     user_mes_blur_tint_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeUserMesBlurTintColor').trim()}`,
     bot_mes_blur_tint_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBotMesBlurTintColor').trim()}`,
     shadow_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeShadowColor').trim()}`,
+    border_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBorderColor').trim()}`,
+
 
     waifuMode: false,
     movingUI: false,
@@ -227,6 +229,7 @@ const storage_keys = {
     blur_strength: "TavernAI_blur_strength",
     shadow_color: "TavernAI_shadow_color",
     shadow_width: "TavernAI_shadow_width",
+    border_color: "TavernAI_border_color",
 
     waifuMode: "TavernAI_waifuMode",
     movingUI: "TavernAI_movingUI",
@@ -522,6 +525,9 @@ async function applyThemeColor(type) {
     if (type === 'shadow') {
         document.documentElement.style.setProperty('--SmartThemeShadowColor', power_user.shadow_color);
     }
+    if (type === 'border') {
+        document.documentElement.style.setProperty('--SmartThemeBorderColor', power_user.border_color);
+    }
 }
 
 async function applyBlurStrength() {
@@ -572,6 +578,7 @@ async function applyTheme(name) {
         { key: 'user_mes_blur_tint_color', selector: '#user-mes-blur-tint-color-picker', type: 'userMesBlurTint' },
         { key: 'bot_mes_blur_tint_color', selector: '#bot-mes-blur-tint-color-picker', type: 'botMesBlurTint' },
         { key: 'shadow_color', selector: '#shadow-color-picker', type: 'shadow' },
+        { key: 'border_color', selector: '#border-color-picker', type: 'border' },
         {
             key: 'blur_strength',
             action: async () => {
@@ -890,6 +897,7 @@ function loadPowerUserSettings(settings, data) {
     $("#user-mes-blur-tint-color-picker").attr('color', power_user.user_mes_blur_tint_color);
     $("#bot-mes-blur-tint-color-picker").attr('color', power_user.bot_mes_blur_tint_color);
     $("#shadow-color-picker").attr('color', power_user.shadow_color);
+    $("#border-color-picker").attr('color', power_user.border_color);
     $("#ui_mode_select").val(power_user.ui_mode).find(`option[value="${power_user.ui_mode}"]`).attr('selected', true);
 
     for (const theme of themes) {
@@ -1227,6 +1235,7 @@ async function saveTheme() {
         bot_mes_blur_tint_color: power_user.bot_mes_blur_tint_color,
         shadow_color: power_user.shadow_color,
         shadow_width: power_user.shadow_width,
+        border_color: power_user.border_color,
         font_scale: power_user.font_scale,
         fast_ui_mode: power_user.fast_ui_mode,
         waifuMode: power_user.waifuMode,
@@ -1942,6 +1951,12 @@ $(document).ready(() => {
     $("#shadow-color-picker").on('change', (evt) => {
         power_user.shadow_color = evt.detail.rgba;
         applyThemeColor('shadow');
+        saveSettingsDebounced();
+    });
+
+    $("#border-color-picker").on('change', (evt) => {
+        power_user.border_color = evt.detail.rgba;
+        applyThemeColor('border');
         saveSettingsDebounced();
     });
 
