@@ -283,8 +283,12 @@ function setupListeners() {
 
 }
 
-// Define the unified debounced function
-const debouncedActivityHandler = debounce(() => {
+const debouncedActivityHandler = debounce((event) => {
+    // Check if the event target (or any of its parents) has the id "option_continue"
+    if ($(event.target).closest('#option_continue').length) {
+        return; // Do not proceed if the click was on (or inside) an element with id "option_continue"
+    }
+
     console.debug("Activity detected, resetting idle timer");
     resetIdleTimer();
     repeatCount = 0;
@@ -302,6 +306,7 @@ function removeIdleListeners() {
     $(document).off("click keypress", debouncedActivityHandler);
     document.removeEventListener('keydown', debouncedActivityHandler);
 }
+
 
 
 
