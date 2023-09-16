@@ -1,9 +1,39 @@
 
 const fs = require('fs');
 const path = require('path');
+const mime = require('mime-types');
+const sanitize = require('sanitize-filename');
 const writeFileAtomicSync = require('write-file-atomic').sync;
 const { DIRECTORIES, UPLOADS_PATH } = require('./constants');
 const { getImageBuffers } = require('./util');
+
+/**
+ * Gets the path to the sprites folder for the provided character name
+ * @param {string} name - The name of the character
+ * @param {boolean} isSubfolder - Whether the name contains a subfolder
+ * @returns {string | null} The path to the sprites folder. Null if the name is invalid.
+ */
+function getSpritesPath(name, isSubfolder) {
+    if (isSubfolder) {
+        const nameParts = name.split('/');
+        const characterName = sanitize(nameParts[0]);
+        const subfolderName = sanitize(nameParts[1]);
+
+        if (!characterName || !subfolderName) {
+            return null;
+        }
+
+        return path.join(DIRECTORIES.characters, characterName, subfolderName);
+    }
+
+    name = sanitize(name);
+
+    if (!name) {
+        return null;
+    }
+
+    return path.join(DIRECTORIES.characters, name);
+}
 
 /**
  * Imports base64 encoded sprites from RisuAI character data.
@@ -78,6 +108,36 @@ function importRisuSprites(data) {
  * @param {any} urlencodedParser URL encoded parser middleware
  */
 function registerEndpoints(app, jsonParser, urlencodedParser) {
+    app.get('/api/sprites/get', jsonParser, function (request, response) {
+        const name = String(request.query.name);
+        const isSubfolder = name.includes('/');
+        const spritesPath = getSpritesPath(name, isSubfolder);
+        let sprites = [];
+
+        try {
+            if (spritesPath && fs.existsSync(spritesPath) && fs.statSync(spritesPath).isDirectory()) {
+                sprites = fs.readdirSync(spritesPath)
+                    .filter(file => {
+                        const mimeType = mime.lookup(file);
+                        return mimeType && mimeType.startsWith('image/');
+                    })
+                    .map((file) => {
+                        const pathToSprite = path.join(spritesPath, file);
+                        return {
+                            label: path.parse(pathToSprite).name.toLowerCase(),
+                            path: `/characters/${name}/${file}`,
+                        };
+                    });
+            }
+        }
+        catch (err) {
+            console.log(err);
+        }
+        finally {
+            return response.send(sprites);
+        }
+    });
+
     app.post('/api/sprites/delete', jsonParser, async (request, response) => {
         const label = request.body.label;
         const name = request.body.name;

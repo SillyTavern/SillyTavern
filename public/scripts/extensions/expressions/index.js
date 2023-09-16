@@ -917,7 +917,7 @@ async function getSpritesList(name) {
     console.debug('getting sprites list');
 
     try {
-        const result = await fetch(`/get_sprites?name=${encodeURIComponent(name)}`);
+        const result = await fetch(`/api/sprites/get?name=${encodeURIComponent(name)}`);
         let sprites = result.ok ? (await result.json()) : [];
         return sprites;
     }

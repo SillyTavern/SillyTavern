@@ -2425,14 +2425,16 @@ async function onDeletePresetClick() {
         $('#settings_perset_openai').trigger('change');
     }
 
-    const response = await fetch('/deletepreset_openai', {
+    const response = await fetch('/api/presets/delete-openai', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({ name: nameToDelete }),
     });
 
     if (!response.ok) {
-        console.warn('Preset was not deleted from server');
+        toastr.warning('Preset was not deleted from server');
+    } else {
+        toastr.success('Preset deleted');
     }
 
     saveSettingsDebounced();

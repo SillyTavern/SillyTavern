@@ -87,6 +87,23 @@ function registerEndpoints(app, jsonParser) {
         writeFileAtomicSync(fullpath, JSON.stringify(request.body, null, 4), 'utf-8');
         return response.send({ name });
     });
+
+    // TODO: Merge with /api/presets/delete
+    app.post("/api/presets/delete-openai", jsonParser, function (request, response) {
+        if (!request.body || !request.body.name) {
+            return response.sendStatus(400);
+        }
+
+        const name = request.body.name;
+        const pathToFile = path.join(DIRECTORIES.openAI_Settings, `${name}.settings`);
+
+        if (fs.existsSync(pathToFile)) {
+            fs.rmSync(pathToFile);
+            return response.send({ ok: true });
+        }
+
+        return response.send({ error: true });
+    });
 }
 
 module.exports = {
