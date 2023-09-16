@@ -15,7 +15,6 @@ const { TextDecoder } = require('util');
 // cli/fs related library imports
 const open = require('open');
 const sanitize = require('sanitize-filename');
-const simpleGit = require('simple-git');
 const writeFileAtomicSync = require('write-file-atomic').sync;
 const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers');
@@ -65,6 +64,7 @@ const contentManager = require('./src/content-manager');
 const statsHelpers = require('./statsHelpers.js');
 const { writeSecret, readSecret, readSecretState, migrateSecrets, SECRET_KEYS, getAllSecrets } = require('./src/secrets');
 const { delay, getVersion, getImageBuffers } = require('./src/util');
+const { invalidateThumbnail, ensureThumbnailCache } = require('./src/thumbnails');
 
 // Work around a node v20.0.0, v20.1.0, and v20.2.0 bug. The issue was fixed in v20.3.0.
 // https://github.com/nodejs/node/issues/47822#issuecomment-1564708870
@@ -321,32 +321,7 @@ const AVATAR_WIDTH = 400;
 const AVATAR_HEIGHT = 600;
 const jsonParser = express.json({ limit: '100mb' });
 const urlencodedParser = express.urlencoded({ extended: true, limit: '100mb' });
-const directories = {
-    worlds: 'public/worlds/',
-    avatars: 'public/User Avatars',
-    images: 'public/img/',
-    userImages: 'public/user/images/',
-    groups: 'public/groups/',
-    groupChats: 'public/group chats',
-    chats: 'public/chats/',
-    characters: 'public/characters/',
-    backgrounds: 'public/backgrounds',
-    novelAI_Settings: 'public/NovelAI Settings',
-    koboldAI_Settings: 'public/KoboldAI Settings',
-    openAI_Settings: 'public/OpenAI Settings',
-    textGen_Settings: 'public/TextGen Settings',
-    thumbnails: 'thumbnails/',
-    thumbnailsBg: 'thumbnails/bg/',
-    thumbnailsAvatar: 'thumbnails/avatar/',
-    themes: 'public/themes',
-    movingUI: 'public/movingUI',
-    extensions: 'public/scripts/extensions',
-    instruct: 'public/instruct',
-    context: 'public/context',
-    backups: 'backups/',
-    quickreplies: 'public/QuickReplies',
-    assets: 'public/assets',
-};
+const { directories } = require('./src/constants');
 
 // CSRF Protection //
 if (cliArguments.disableCsrf === false) {
@@ -2729,36 +2704,6 @@ app.post('/deletegroup', jsonParser, async (request, response) => {
 });
 
 /**
- * Discover the extension folders
- * If the folder is called third-party, search for subfolders instead
- */
-app.get('/discover_extensions', jsonParser, function (_, response) {
-
-    // get all folders in the extensions folder, except third-party
-    const extensions = fs
-        .readdirSync(directories.extensions)
-        .filter(f => fs.statSync(path.join(directories.extensions, f)).isDirectory())
-        .filter(f => f !== 'third-party');
-
-    // get all folders in the third-party folder, if it exists
-
-    if (!fs.existsSync(path.join(directories.extensions, 'third-party'))) {
-        return response.send(extensions);
-    }
-
-    const thirdPartyExtensions = fs
-        .readdirSync(path.join(directories.extensions, 'third-party'))
-        .filter(f => fs.statSync(path.join(directories.extensions, 'third-party', f)).isDirectory());
-
-    // add the third-party extensions to the extensions array
-    extensions.push(...thirdPartyExtensions.map(f => `third-party/${f}`));
-    console.log(extensions);
-
-
-    return response.send(extensions);
-});
-
-/**
  * Gets the path to the sprites folder for the provided character name
  * @param {string} name - The name of the character
  * @param {boolean} isSubfolder - Whether the name contains a subfolder
@@ -2816,47 +2761,6 @@ app.get('/get_sprites', jsonParser, function (request, response) {
     }
 });
 
-function getThumbnailFolder(type) {
-    let thumbnailFolder;
-
-    switch (type) {
-        case 'bg':
-            thumbnailFolder = directories.thumbnailsBg;
-            break;
-        case 'avatar':
-            thumbnailFolder = directories.thumbnailsAvatar;
-            break;
-    }
-
-    return thumbnailFolder;
-}
-
-function getOriginalFolder(type) {
-    let originalFolder;
-
-    switch (type) {
-        case 'bg':
-            originalFolder = directories.backgrounds;
-            break;
-        case 'avatar':
-            originalFolder = directories.characters;
-            break;
-    }
-
-    return originalFolder;
-}
-
-function invalidateThumbnail(type, file) {
-    const folder = getThumbnailFolder(type);
-    if (folder === undefined) throw new Error("Invalid thumbnail type")
-
-    const pathToThumbnail = path.join(folder, file);
-
-    if (fs.existsSync(pathToThumbnail)) {
-        fs.rmSync(pathToThumbnail);
-    }
-}
-
 function cleanUploads() {
     try {
         if (fs.existsSync(UPLOADS_PATH)) {
@@ -2876,118 +2780,6 @@ function cleanUploads() {
         console.error(err);
     }
 }
-
-async function ensureThumbnailCache() {
-    const cacheFiles = fs.readdirSync(directories.thumbnailsBg);
-
-    // files exist, all ok
-    if (cacheFiles.length) {
-        return;
-    }
-
-    console.log('Generating thumbnails cache. Please wait...');
-
-    const bgFiles = fs.readdirSync(directories.backgrounds);
-    const tasks = [];
-
-    for (const file of bgFiles) {
-        tasks.push(generateThumbnail('bg', file));
-    }
-
-    await Promise.all(tasks);
-    console.log(`Done! Generated: ${bgFiles.length} preview images`);
-}
-
-async function generateThumbnail(type, file) {
-    let thumbnailFolder = getThumbnailFolder(type)
-    let originalFolder = getOriginalFolder(type)
-    if (thumbnailFolder === undefined || originalFolder === undefined) throw new Error("Invalid thumbnail type")
-
-    const pathToCachedFile = path.join(thumbnailFolder, file);
-    const pathToOriginalFile = path.join(originalFolder, file);
-
-    const cachedFileExists = fs.existsSync(pathToCachedFile);
-    const originalFileExists = fs.existsSync(pathToOriginalFile);
-
-    // to handle cases when original image was updated after thumb creation
-    let shouldRegenerate = false;
-
-    if (cachedFileExists && originalFileExists) {
-        const originalStat = fs.statSync(pathToOriginalFile);
-        const cachedStat = fs.statSync(pathToCachedFile);
-
-        if (originalStat.mtimeMs > cachedStat.ctimeMs) {
-            //console.log('Original file changed. Regenerating thumbnail...');
-            shouldRegenerate = true;
-        }
-    }
-
-    if (cachedFileExists && !shouldRegenerate) {
-        return pathToCachedFile;
-    }
-
-    if (!originalFileExists) {
-        return null;
-    }
-
-    const imageSizes = { 'bg': [160, 90], 'avatar': [96, 144] };
-    const mySize = imageSizes[type];
-
-    try {
-        let buffer;
-
-        try {
-            const image = await jimp.read(pathToOriginalFile);
-            buffer = await image.cover(mySize[0], mySize[1]).quality(95).getBufferAsync('image/jpeg');
-        }
-        catch (inner) {
-            console.warn(`Thumbnailer can not process the image: ${pathToOriginalFile}. Using original size`);
-            buffer = fs.readFileSync(pathToOriginalFile);
-        }
-
-        writeFileAtomicSync(pathToCachedFile, buffer);
-    }
-    catch (outer) {
-        return null;
-    }
-
-    return pathToCachedFile;
-}
-
-app.get('/thumbnail', jsonParser, async function (request, response) {
-    if (typeof request.query.file !== 'string' || typeof request.query.type !== 'string') return response.sendStatus(400);
-
-    const type = request.query.type;
-    const file = sanitize(request.query.file);
-
-    if (!type || !file) {
-        return response.sendStatus(400);
-    }
-
-    if (!(type == 'bg' || type == 'avatar')) {
-        return response.sendStatus(400);
-    }
-
-    if (sanitize(file) !== file) {
-        console.error('Malicious filename prevented');
-        return response.sendStatus(403);
-    }
-
-    if (config.disableThumbnails == true) {
-        let folder = getOriginalFolder(type);
-        if (folder === undefined) return response.sendStatus(400);
-        const pathToOriginalFile = path.join(folder, file);
-        return response.sendFile(pathToOriginalFile, { root: process.cwd() });
-    }
-
-    const pathToCachedFile = await generateThumbnail(type, file);
-
-    if (!pathToCachedFile) {
-        return response.sendStatus(404);
-    }
-
-    return response.sendFile(pathToCachedFile, { root: process.cwd() });
-});
 
 /* OpenAI */
 app.post("/getstatus_openai", jsonParser, async function (request, response_getstatus_openai) {
@@ -4343,213 +4135,6 @@ function importRisuSprites(data) {
 }
 
 /**
- * This function extracts the extension information from the manifest file.
- * @param {string} extensionPath - The path of the extension folder
- * @returns {Promise<Object>} - Returns the manifest data as an object
- */
-async function getManifest(extensionPath) {
-    const manifestPath = path.join(extensionPath, 'manifest.json');
-
-    // Check if manifest.json exists
-    if (!fs.existsSync(manifestPath)) {
-        throw new Error(`Manifest file not found at ${manifestPath}`);
-    }
-
-    const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
-    return manifest;
-}
-
-async function checkIfRepoIsUpToDate(extensionPath) {
-    // @ts-ignore - simple-git types are incorrect, this is apparently callable but no call signature
-    const git = simpleGit();
-    await git.cwd(extensionPath).fetch('origin');
-    const currentBranch = await git.cwd(extensionPath).branch();
-    const currentCommitHash = await git.cwd(extensionPath).revparse(['HEAD']);
-    const log = await git.cwd(extensionPath).log({
-        from: currentCommitHash,
-        to: `origin/${currentBranch.current}`,
-    });
-
-    // Fetch remote repository information
-    const remotes = await git.cwd(extensionPath).getRemotes(true);
-
-    return {
-        isUpToDate: log.total === 0,
-        remoteUrl: remotes[0].refs.fetch, // URL of the remote repository
-    };
-}
-
-
-
-/**
- * HTTP POST handler function to clone a git repository from a provided URL, read the extension manifest,
- * and return extension information and path.
- *
- * @param {Object} request - HTTP Request object, expects a JSON body with a 'url' property.
- * @param {Object} response - HTTP Response object used to respond to the HTTP request.
- *
- * @returns {void}
- */
-app.post('/get_extension', jsonParser, async (request, response) => {
-    // @ts-ignore - simple-git types are incorrect, this is apparently callable but no call signature
-    const git = simpleGit();
-    if (!request.body.url) {
-        return response.status(400).send('Bad Request: URL is required in the request body.');
-    }
-
-    try {
-        // make sure the third-party directory exists
-        if (!fs.existsSync(directories.extensions + '/third-party')) {
-            fs.mkdirSync(directories.extensions + '/third-party');
-        }
-
-        const url = request.body.url;
-        const extensionPath = path.join(directories.extensions, 'third-party', path.basename(url, '.git'));
-
-        if (fs.existsSync(extensionPath)) {
-            return response.status(409).send(`Directory already exists at ${extensionPath}`);
-        }
-
-        await git.clone(url, extensionPath);
-        console.log(`Extension has been cloned at ${extensionPath}`);
-
-
-        const { version, author, display_name } = await getManifest(extensionPath);
-
-
-        return response.send({ version, author, display_name, extensionPath });
-
-    } catch (error) {
-        console.log('Importing custom content failed', error);
-        return response.status(500).send(`Server Error: ${error.message}`);
-    }
-});
-
-/**
- * HTTP POST handler function to pull the latest updates from a git repository
- * based on the extension name provided in the request body. It returns the latest commit hash,
- * the path of the extension, the status of the repository (whether it's up-to-date or not),
- * and the remote URL of the repository.
- *
- * @param {Object} request - HTTP Request object, expects a JSON body with an 'extensionName' property.
- * @param {Object} response - HTTP Response object used to respond to the HTTP request.
- *
- * @returns {void}
- */
-app.post('/update_extension', jsonParser, async (request, response) => {
-    // @ts-ignore - simple-git types are incorrect, this is apparently callable but no call signature
-    const git = simpleGit();
-    if (!request.body.extensionName) {
-        return response.status(400).send('Bad Request: extensionName is required in the request body.');
-    }
-
-    try {
-        const extensionName = request.body.extensionName;
-        const extensionPath = path.join(directories.extensions, 'third-party', extensionName);
-
-        if (!fs.existsSync(extensionPath)) {
-            return response.status(404).send(`Directory does not exist at ${extensionPath}`);
-        }
-
-        const { isUpToDate, remoteUrl } = await checkIfRepoIsUpToDate(extensionPath);
-        const currentBranch = await git.cwd(extensionPath).branch();
-        if (!isUpToDate) {
-
-            await git.cwd(extensionPath).pull('origin', currentBranch.current);
-            console.log(`Extension has been updated at ${extensionPath}`);
-        } else {
-            console.log(`Extension is up to date at ${extensionPath}`);
-        }
-        await git.cwd(extensionPath).fetch('origin');
-        const fullCommitHash = await git.cwd(extensionPath).revparse(['HEAD']);
-        const shortCommitHash = fullCommitHash.slice(0, 7);
-
-        return response.send({ shortCommitHash, extensionPath, isUpToDate, remoteUrl });
-
-    } catch (error) {
-        console.log('Updating custom content failed', error);
-        return response.status(500).send(`Server Error: ${error.message}`);
-    }
-});
-
-/**
- * HTTP POST handler function to get the current git commit hash and branch name for a given extension.
- * It checks whether the repository is up-to-date with the remote, and returns the status along with
- * the remote URL of the repository.
- *
- * @param {Object} request - HTTP Request object, expects a JSON body with an 'extensionName' property.
- * @param {Object} response - HTTP Response object used to respond to the HTTP request.
- *
- * @returns {void}
- */
-app.post('/get_extension_version', jsonParser, async (request, response) => {
-    // @ts-ignore - simple-git types are incorrect, this is apparently callable but no call signature
-    const git = simpleGit();
-    if (!request.body.extensionName) {
-        return response.status(400).send('Bad Request: extensionName is required in the request body.');
-    }
-
-    try {
-        const extensionName = request.body.extensionName;
-        const extensionPath = path.join(directories.extensions, 'third-party', extensionName);
-
-        if (!fs.existsSync(extensionPath)) {
-            return response.status(404).send(`Directory does not exist at ${extensionPath}`);
-        }
-
-        const currentBranch = await git.cwd(extensionPath).branch();
-        // get only the working branch
-        const currentBranchName = currentBranch.current;
-        await git.cwd(extensionPath).fetch('origin');
-        const currentCommitHash = await git.cwd(extensionPath).revparse(['HEAD']);
-        console.log(currentBranch, currentCommitHash);
-        const { isUpToDate, remoteUrl } = await checkIfRepoIsUpToDate(extensionPath);
-
-        return response.send({ currentBranchName, currentCommitHash, isUpToDate, remoteUrl });
-
-    } catch (error) {
-        console.log('Getting extension version failed', error);
-        return response.status(500).send(`Server Error: ${error.message}`);
-    }
-}
-);
-
-/**
- * HTTP POST handler function to delete a git repository based on the extension name provided in the request body.
- *
- * @param {Object} request - HTTP Request object, expects a JSON body with a 'url' property.
- * @param {Object} response - HTTP Response object used to respond to the HTTP request.
- *
- * @returns {void}
- */
-app.post('/delete_extension', jsonParser, async (request, response) => {
-    if (!request.body.extensionName) {
-        return response.status(400).send('Bad Request: extensionName is required in the request body.');
-    }
-
-    // Sanatize the extension name to prevent directory traversal
-    const extensionName = sanitize(request.body.extensionName);
-
-    try {
-        const extensionPath = path.join(directories.extensions, 'third-party', extensionName);
-
-        if (!fs.existsSync(extensionPath)) {
-            return response.status(404).send(`Directory does not exist at ${extensionPath}`);
-        }
-
-        await fs.promises.rmdir(extensionPath, { recursive: true });
-        console.log(`Extension has been deleted at ${extensionPath}`);
-
-        return response.send(`Extension has been deleted at ${extensionPath}`);
-
-    } catch (error) {
-        console.log('Deleting custom content failed', error);
-        return response.status(500).send(`Server Error: ${error.message}`);
-    }
-});
-
-
-/**
  * HTTP POST handler function to retrieve name of all files of a given folder path.
  *
  * @param {Object} request - HTTP Request object. Require folder path in query
@@ -4781,8 +4366,14 @@ app.post('/get_character_assets_list', jsonParser, async (request, response) => 
     }
 });
 
+// Thumbnail generation
+require('./src/thumbnails').registerEndpoints(app, jsonParser);
+
 // NovelAI generation
 require('./src/novelai').registerEndpoints(app, jsonParser);
+
+// Third-party extensions
+require('./src/extensions').registerEndpoints(app, jsonParser);
 
 // Stable Diffusion generation
 require('./src/stable-diffusion').registerEndpoints(app, jsonParser);

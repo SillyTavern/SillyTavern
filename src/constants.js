@@ -1,0 +1,30 @@
+const directories = {
+    worlds: 'public/worlds/',
+    avatars: 'public/User Avatars',
+    images: 'public/img/',
+    userImages: 'public/user/images/',
+    groups: 'public/groups/',
+    groupChats: 'public/group chats',
+    chats: 'public/chats/',
+    characters: 'public/characters/',
+    backgrounds: 'public/backgrounds',
+    novelAI_Settings: 'public/NovelAI Settings',
+    koboldAI_Settings: 'public/KoboldAI Settings',
+    openAI_Settings: 'public/OpenAI Settings',
+    textGen_Settings: 'public/TextGen Settings',
+    thumbnails: 'thumbnails/',
+    thumbnailsBg: 'thumbnails/bg/',
+    thumbnailsAvatar: 'thumbnails/avatar/',
+    themes: 'public/themes',
+    movingUI: 'public/movingUI',
+    extensions: 'public/scripts/extensions',
+    instruct: 'public/instruct',
+    context: 'public/context',
+    backups: 'backups/',
+    quickreplies: 'public/QuickReplies',
+    assets: 'public/assets',
+};
+
+module.exports = {
+    directories,
+}
