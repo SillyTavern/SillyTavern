@@ -3449,76 +3449,6 @@ app.post("/tokenize_ai21", jsonParser, async function (request, response_tokeniz
     }
 });
 
-app.post("/save_preset", jsonParser, function (request, response) {
-    const name = sanitize(request.body.name);
-    if (!request.body.preset || !name) {
-        return response.sendStatus(400);
-    }
-
-    const settings = getPresetSettingsByAPI(request.body.apiId);
-    const filename = name + settings.extension;
-
-    if (!settings.folder) {
-        return response.sendStatus(400);
-    }
-
-    const fullpath = path.join(settings.folder, filename);
-    writeFileAtomicSync(fullpath, JSON.stringify(request.body.preset, null, 4), 'utf-8');
-    return response.send({ name });
-});
-
-app.post("/delete_preset", jsonParser, function (request, response) {
-    const name = sanitize(request.body.name);
-    if (!name) {
-        return response.sendStatus(400);
-    }
-
-    const settings = getPresetSettingsByAPI(request.body.apiId);
-    const filename = name + settings.extension;
-
-    if (!settings.folder) {
-        return response.sendStatus(400);
-    }
-
-    const fullpath = path.join(settings.folder, filename);
-
-    if (fs.existsSync(fullpath)) {
-        fs.unlinkSync(fullpath);
-        return response.sendStatus(200);
-    } else {
-        return response.sendStatus(404);
-    }
-});
-
-app.post("/savepreset_openai", jsonParser, function (request, response) {
-    if (!request.body || typeof request.query.name !== 'string') return response.sendStatus(400);
-    const name = sanitize(request.query.name);
-    if (!name) return response.sendStatus(400);
-
-    const filename = `${name}.settings`;
-    const fullpath = path.join(DIRECTORIES.openAI_Settings, filename);
-    writeFileAtomicSync(fullpath, JSON.stringify(request.body, null, 4), 'utf-8');
-    return response.send({ name });
-});
-
-function getPresetSettingsByAPI(apiId) {
-    switch (apiId) {
-        case 'kobold':
-        case 'koboldhorde':
-            return { folder: DIRECTORIES.koboldAI_Settings, extension: '.settings' };
-        case 'novel':
-            return { folder: DIRECTORIES.novelAI_Settings, extension: '.settings' };
-        case 'textgenerationwebui':
-            return { folder: DIRECTORIES.textGen_Settings, extension: '.settings' };
-        case 'instruct':
-            return { folder: DIRECTORIES.instruct, extension: '.json' };
-        case 'context':
-            return { folder: DIRECTORIES.context, extension: '.json' };
-        default:
-            return { folder: null, extension: null };
-    }
-}
-
 function createSentencepieceEncodingHandler(getTokenizerFn) {
     return async function (request, response) {
         try {
@@ -3662,6 +3592,9 @@ async function fetchJSON(url, args = {}) {
 async function postAsync(url, args) { return fetchJSON(url, { method: 'POST', timeout: 0, ...args }) }
 
 // ** END **
+
+// Preset management
+require('./src/presets').registerEndpoints(app, jsonParser);
 
 // Secrets managemenet
 require('./src/secrets').registerEndpoints(app, jsonParser);

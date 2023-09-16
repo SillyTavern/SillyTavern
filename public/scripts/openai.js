@@ -2153,7 +2153,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         use_alt_scale: settings.use_alt_scale,
     };
 
-    const savePresetSettings = await fetch(`/savepreset_openai?name=${name}`, {
+    const savePresetSettings = await fetch(`/api/presets/save-openai?name=${name}`, {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify(presetBody),
@@ -2313,7 +2313,7 @@ async function onPresetImportFileChange(e) {
         }
     }
 
-    const savePresetSettings = await fetch(`/savepreset_openai?name=${name}`, {
+    const savePresetSettings = await fetch(`/api/presets/save-openai?name=${name}`, {
         method: 'POST',
         headers: getRequestHeaders(),
         body: importedFile,
