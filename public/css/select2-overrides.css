@@ -6,7 +6,7 @@
 /* Customize the dropdown */
 .select2-dropdown {
     background-color: var(--SmartThemeBlurTintColor);
-    border: 1px solid var(--white30a) !important;
+    border: 1px solid var(--SmartThemeBorderColor) !important;
     border-radius: 10px;
     box-shadow: 0 0 5px black;
     text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
@@ -35,7 +35,7 @@
 
 .select2-container .select2-selection--multiple .select2-selection__choice__remove {
     padding: revert;
-    border-right: 1px solid var(--white30a);
+    border-right: 1px solid var(--SmartThemeBorderColor);
     font-size: 1.1em;
 }
 
@@ -47,7 +47,7 @@
 .select2-search__field {
     background-color: var(--black30a);
     color: var(--SmartThemeBodyColor);
-    border: 1px solid var(--white30a);
+    border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 7px;
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
     padding: 3px 5px;
@@ -75,7 +75,7 @@
 .select2-container .select2-selection--single {
     background-color: var(--black30a);
     color: var(--SmartThemeBodyColor);
-    border: 1px solid var(--white30a);
+    border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 7px;
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
     padding: 3px 5px;
@@ -83,7 +83,7 @@
 
 .select2-container.select2-container--focus .select2-selection--multiple,
 .select2-container.select2-container--focus .select2-selection--single {
-    border: 1px solid var(--white30a);
+    border: 1px solid var(--SmartThemeBorderColor);
 }
 
 .select2-container .select2-selection--multiple .select2-selection__choice,
@@ -94,7 +94,7 @@
     box-sizing: border-box;
     color: var(--SmartThemeBodyColor);
     background-color: var(--black30a);
-    border-color: var(--white30a);
+    border-color: var(--SmartThemeBorderColor);
     font-size: calc(var(--mainFontSize) - 5%);
     text-shadow: none !important;
 }
@@ -130,7 +130,7 @@
     margin-top: -7px;
     width: 14px;
     height: 14px;
-    border: 1px solid var(--white30a);
+    border: 1px solid var(--SmartThemeBorderColor);
     background-color: var(--SmartThemeBlurTintColor);
     border-radius: 2px;
 }

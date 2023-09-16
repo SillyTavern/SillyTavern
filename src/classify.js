@@ -1,39 +1,4 @@
-import { pipeline, env } from 'sillytavern-transformers';
-import path from 'path';
-import { getConfig } from './util.js';
-
-// Limit the number of threads to 1 to avoid issues on Android
-env.backends.onnx.wasm.numThreads = 1;
-
-class PipelineAccessor {
-    /**
-     * @type {import("sillytavern-transformers").TextClassificationPipeline}
-     */
-    pipe;
-
-    async get() {
-        if (!this.pipe) {
-            const cache_dir = path.join(process.cwd(), 'cache');
-            const model = this.getClassificationModel();
-            this.pipe = await pipeline('text-classification', model, { cache_dir, quantized: true });
-        }
-
-        return this.pipe;
-    }
-
-    getClassificationModel() {
-        const DEFAULT_MODEL = 'Cohee/distilbert-base-uncased-go-emotions-onnx';
-
-        try {
-            const config = getConfig();
-            const model = config?.extras?.classificationModel;
-            return model || DEFAULT_MODEL;
-        } catch (error) {
-            console.warn('Failed to read config.conf, using default classification model.');
-            return DEFAULT_MODEL;
-        }
-    }
-}
+const TASK = 'text-classification';
 
 /**
  * @param {import("express").Express} app
@@ -41,11 +6,11 @@ class PipelineAccessor {
  */
 function registerEndpoints(app, jsonParser) {
     const cacheObject = {};
-    const pipelineAccessor = new PipelineAccessor();
 
     app.post('/api/extra/classify/labels', jsonParser, async (req, res) => {
         try {
-            const pipe = await pipelineAccessor.get();
+            const module = await import('./transformers.mjs');
+            const pipe = await module.default.getPipeline(TASK);
             const result = Object.keys(pipe.model.config.label2id);
             return res.json({ labels: result });
         } catch (error) {
@@ -62,7 +27,8 @@ function registerEndpoints(app, jsonParser) {
                 if (cacheObject.hasOwnProperty(text)) {
                     return cacheObject[text];
                 } else {
-                    const pipe = await pipelineAccessor.get();
+                    const module = await import('./transformers.mjs');
+                    const pipe = await module.default.getPipeline(TASK);
                     const result = await pipe(text, { topk: 5 });
                     result.sort((a, b) => b.score - a.score);
                     cacheObject[text] = result;
@@ -82,6 +48,6 @@ function registerEndpoints(app, jsonParser) {
     });
 }
 
-export default {
+module.exports = {
     registerEndpoints,
 };

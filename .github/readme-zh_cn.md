@@ -41,8 +41,6 @@ SillyTavern 本身并无用处，因为它只是一个用户聊天界面。你�
 
 <https://rentry.org/STAI-Termux>
 
-Termux 不支持**.Webp 字符卡的导入/导出。请使用 JSON 或 PNG 格式**。
-
 ## 有问题或建议？
 
 ### 我们现在有了 Discord 社区

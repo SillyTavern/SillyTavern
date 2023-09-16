@@ -1,7 +1,7 @@
 #quickReplyBar {
     outline: none;
     padding: 5px 0;
-    border-bottom: 1px solid var(--black30a);
+    border-bottom: 1px solid var(--SmartThemeBorderColor);
     margin: 0;
     transition: 0.3s;
     opacity: 0.7;
@@ -28,7 +28,7 @@
 #quickReplies div {
     color: var(--SmartThemeBodyColor);
     background-color: var(--black50a);
-    border: 1px solid var(--white30a);
+    border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 10px;
     padding: 3px 5px;
     width: min-content;

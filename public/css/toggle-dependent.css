@@ -117,7 +117,7 @@ body.big-avatars .avatar img {
     height: 90px;
     object-fit: cover;
     object-position: center;
-    border: 1px solid var(--black30a);
+    border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 10px;
 }
 
@@ -191,7 +191,7 @@ body.bubblechat .mes {
     border-radius: 10px;
     background-color: var(--SmartThemeBotMesBlurTintColor);
     margin-bottom: 5px;
-    border: 1px solid var(--white30a);
+    border: 1px solid var(--SmartThemeBorderColor);
 }
 
 body.bubblechat .mes[is_user="true"] {
@@ -281,7 +281,7 @@ body.no-blur .select2-results__options {
 
 body.waifuMode #top-bar {
     border-radius: 0 0 20px 20px;
-    border: 1px solid var(--grey30a);
+    border: 1px solid var(--SmartThemeBorderColor);
 }
 
 body.waifuMode #sheld {
@@ -292,7 +292,7 @@ body.waifuMode #sheld {
 }
 
 body.waifuMode #chat {
-    border-top: 1px solid var(--grey30a);
+    border-top: 1px solid var(--SmartThemeBorderColor);
     border-radius: 20px 20px 0 0;
 }
 
@@ -359,4 +359,12 @@ body.movingUI #groupMemberListPopout {
 
 body.noShadows * {
     text-shadow: none !important;
+}
+
+body.expandMessageActions .mes .mes_buttons .extraMesButtons {
+    display: inherit !important;
+}
+
+body.expandMessageActions .mes .mes_buttons .extraMesButtonsHint {
+    display: none !important;
 }
