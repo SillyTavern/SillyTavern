@@ -1246,7 +1246,6 @@ async function sendMessage(prompt, image) {
         name: context.groupId ? systemUserName : context.name2,
         is_user: false,
         is_system: true,
-        is_name: true,
         send_date: getMessageTimeStamp(),
         mes: context.groupId ? p(messageText) : messageText,
         extra: {

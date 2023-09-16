@@ -2436,18 +2436,18 @@ input[type="range"]::-webkit-slider-thumb {
 #anchor_checkbox label,
 #power-user-option-checkboxes label,
 .checkbox_label,
-.multigen_settings_block {
+.auto_continue_settings_block {
     display: flex;
     flex-direction: row;
     column-gap: 5px;
     align-items: center;
 }
 
-.multigen_settings_block {
+.auto_continue_settings_block {
     margin-top: 10px;
 }
 
-.multigen_settings_block label {
+.auto_continue_settings_block label {
     flex: 1;
     display: flex;
     flex-direction: column;

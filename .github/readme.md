@@ -41,8 +41,6 @@ Since Tavern is only a user interface, it has tiny hardware requirements, it wil
 
 <https://rentry.org/STAI-Termux>
 
-**.webp character cards import/export is not supported in Termux. Use either JSON or PNG formats instead.**
-
 ## Questions or suggestions?
 
 ### We now have a community Discord server
@@ -71,7 +69,6 @@ Get in touch with the developers directly:
 * [Oobabooga's TextGen WebUI](https://github.com/oobabooga/text-generation-webui) API connection
 * [AI Horde](https://horde.koboldai.net/) connection
 * Prompt generation formatting tweaking
-* webp character card interoperability (PNG is still an internal format)
 
 ## Extensions
 

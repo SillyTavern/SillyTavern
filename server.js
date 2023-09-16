@@ -10,7 +10,7 @@ const readline = require('readline');
 const util = require('util');
 const { Readable } = require('stream');
 const { finished } = require('stream/promises');
-const { TextEncoder, TextDecoder } = require('util');
+const { TextDecoder } = require('util');
 
 // cli/fs related library imports
 const open = require('open');
@@ -40,14 +40,11 @@ const json5 = require('json5');
 const WebSocket = require('ws');
 
 // image processing related library imports
-const exif = require('piexifjs');
 const encode = require('png-chunks-encode');
 const extract = require('png-chunks-extract');
 const jimp = require('jimp');
 const mime = require('mime-types');
 const PNGtext = require('png-chunk-text');
-const webp = require('webp-converter');
-const yauzl = require('yauzl');
 
 // tokenizing related library imports
 const { SentencePieceProcessor } = require("@agnai/sentencepiece-js");
@@ -65,10 +62,9 @@ util.inspect.defaultOptions.maxStringLength = null;
 const basicAuthMiddleware = require('./src/middleware/basicAuthMiddleware');
 const characterCardParser = require('./src/character-card-parser.js');
 const contentManager = require('./src/content-manager');
-const novelai = require('./src/novelai');
 const statsHelpers = require('./statsHelpers.js');
 const { writeSecret, readSecret, readSecretState, migrateSecrets, SECRET_KEYS, getAllSecrets } = require('./src/secrets');
-const { delay, getVersion } = require('./src/util');
+const { delay, getVersion, getImageBuffers } = require('./src/util');
 
 // Work around a node v20.0.0, v20.1.0, and v20.2.0 bug. The issue was fixed in v20.3.0.
 // https://github.com/nodejs/node/issues/47822#issuecomment-1564708870
@@ -109,8 +105,6 @@ const app = express();
 app.use(compression());
 app.use(responseTime());
 
-const utf8Encode = new TextEncoder();
-
 // impoort from statsHelpers.js
 
 const config = require(path.join(process.cwd(), './config.conf'));
@@ -133,7 +127,6 @@ const enableExtensions = config.enableExtensions;
 const listen = config.listen;
 const allowKeysExposure = config.allowKeysExposure;
 
-const API_NOVELAI = "https://api.novelai.net";
 const API_OPENAI = "https://api.openai.com/v1";
 const API_CLAUDE = "https://api.anthropic.com/v1";
 
@@ -242,6 +235,35 @@ function countClaudeTokens(tokenizer, messages) {
 
 const tokenizersCache = {};
 
+/**
+ * @type {import('@dqbd/tiktoken').TiktokenModel[]}
+ */
+const textCompletionModels = [
+    "text-davinci-003",
+    "text-davinci-002",
+    "text-davinci-001",
+    "text-curie-001",
+    "text-babbage-001",
+    "text-ada-001",
+    "code-davinci-002",
+    "code-davinci-001",
+    "code-cushman-002",
+    "code-cushman-001",
+    "text-davinci-edit-001",
+    "code-davinci-edit-001",
+    "text-embedding-ada-002",
+    "text-similarity-davinci-001",
+    "text-similarity-curie-001",
+    "text-similarity-babbage-001",
+    "text-similarity-ada-001",
+    "text-search-davinci-doc-001",
+    "text-search-curie-doc-001",
+    "text-search-babbage-doc-001",
+    "text-search-ada-doc-001",
+    "code-search-babbage-code-001",
+    "code-search-ada-code-001",
+];
+
 function getTokenizerModel(requestModel) {
     if (requestModel.includes('claude')) {
         return 'claude';
@@ -259,7 +281,7 @@ function getTokenizerModel(requestModel) {
         return 'gpt-3.5-turbo';
     }
 
-    if (requestModel.startsWith('text-') || requestModel.startsWith('code-')) {
+    if (textCompletionModels.includes(requestModel)) {
         return requestModel;
     }
 
@@ -1097,7 +1119,7 @@ app.post("/renamecharacter", jsonParser, async function (request, response) {
     try {
         // Read old file, replace name int it
         const rawOldData = await charaRead(oldAvatarPath);
-        if (rawOldData === false || rawOldData === undefined) throw new Error("Failed to read character file");
+        if (rawOldData === undefined) throw new Error("Failed to read character file");
 
         const oldData = getCharaCardV2(json5.parse(rawOldData));
         _.set(oldData, 'data.name', newName);
@@ -1344,7 +1366,7 @@ const calculateDataSize = (data) => {
 const processCharacter = async (item, i) => {
     try {
         const img_data = await charaRead(charactersPath + item);
-        if (img_data === false || img_data === undefined) throw new Error("Failed to read character file");
+        if (img_data === undefined) throw new Error("Failed to read character file");
 
         let jsonObject = getCharaCardV2(json5.parse(img_data));
         jsonObject.avatar = item;
@@ -1853,162 +1875,6 @@ function getImages(path) {
         .sort(Intl.Collator().compare);
 }
 
-//***********Novel.ai API
-
-app.post("/getstatus_novelai", jsonParser, async function (request, response_getstatus_novel) {
-    if (!request.body) return response_getstatus_novel.sendStatus(400);
-    const api_key_novel = readSecret(SECRET_KEYS.NOVEL);
-
-    if (!api_key_novel) {
-        return response_getstatus_novel.sendStatus(401);
-    }
-
-    try {
-        const response = await fetch(API_NOVELAI + "/user/subscription", {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': "Bearer " + api_key_novel,
-            },
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            return response_getstatus_novel.send(data);
-        } else if (response.status == 401) {
-            console.log('NovelAI Access Token is incorrect.');
-            return response_getstatus_novel.send({ error: true });
-        }
-        else {
-            console.log('NovelAI returned an error:', response.statusText);
-            return response_getstatus_novel.send({ error: true });
-        }
-    } catch (error) {
-        console.log(error);
-        return response_getstatus_novel.send({ error: true });
-    }
-});
-
-app.post("/generate_novelai", jsonParser, async function (request, response_generate_novel) {
-    if (!request.body) return response_generate_novel.sendStatus(400);
-
-    const api_key_novel = readSecret(SECRET_KEYS.NOVEL);
-
-    if (!api_key_novel) {
-        return response_generate_novel.sendStatus(401);
-    }
-
-    const controller = new AbortController();
-    request.socket.removeAllListeners('close');
-    request.socket.on('close', function () {
-        controller.abort();
-    });
-
-    const isNewModel = (request.body.model.includes('clio') || request.body.model.includes('kayra'));
-    const badWordsList = novelai.getBadWordsList(request.body.model);
-
-    // Add customized bad words for Clio and Kayra
-    if (isNewModel && Array.isArray(request.body.bad_words_ids)) {
-        for (const badWord of request.body.bad_words_ids) {
-            if (Array.isArray(badWord) && badWord.every(x => Number.isInteger(x))) {
-                badWordsList.push(badWord);
-            }
-        }
-    }
-
-    // Add default biases for dinkus and asterism
-    const logit_bias_exp = isNewModel ? novelai.logitBiasExp.slice() : [];
-
-    if (Array.isArray(logit_bias_exp) && Array.isArray(request.body.logit_bias_exp)) {
-        logit_bias_exp.push(...request.body.logit_bias_exp);
-    }
-
-    const data = {
-        "input": request.body.input,
-        "model": request.body.model,
-        "parameters": {
-            "use_string": request.body.use_string ?? true,
-            "temperature": request.body.temperature,
-            "max_length": request.body.max_length,
-            "min_length": request.body.min_length,
-            "tail_free_sampling": request.body.tail_free_sampling,
-            "repetition_penalty": request.body.repetition_penalty,
-            "repetition_penalty_range": request.body.repetition_penalty_range,
-            "repetition_penalty_slope": request.body.repetition_penalty_slope,
-            "repetition_penalty_frequency": request.body.repetition_penalty_frequency,
-            "repetition_penalty_presence": request.body.repetition_penalty_presence,
-            "repetition_penalty_whitelist": isNewModel ? novelai.repPenaltyAllowList : null,
-            "top_a": request.body.top_a,
-            "top_p": request.body.top_p,
-            "top_k": request.body.top_k,
-            "typical_p": request.body.typical_p,
-            "mirostat_lr": request.body.mirostat_lr,
-            "mirostat_tau": request.body.mirostat_tau,
-            "cfg_scale": request.body.cfg_scale,
-            "cfg_uc": request.body.cfg_uc,
-            "phrase_rep_pen": request.body.phrase_rep_pen,
-            "stop_sequences": request.body.stop_sequences,
-            "bad_words_ids": badWordsList,
-            "logit_bias_exp": logit_bias_exp,
-            "generate_until_sentence": request.body.generate_until_sentence,
-            "use_cache": request.body.use_cache,
-            "return_full_text": request.body.return_full_text,
-            "prefix": request.body.prefix,
-            "order": request.body.order
-        }
-    };
-
-    console.log(util.inspect(data, { depth: 4 }))
-
-    const args = {
-        body: JSON.stringify(data),
-        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + api_key_novel },
-        signal: controller.signal,
-    };
-
-    try {
-        const url = request.body.streaming ? `${API_NOVELAI}/ai/generate-stream` : `${API_NOVELAI}/ai/generate`;
-        const response = await fetch(url, { method: 'POST', timeout: 0, ...args });
-
-        if (request.body.streaming) {
-            // Pipe remote SSE stream to Express response
-            response.body.pipe(response_generate_novel);
-
-            request.socket.on('close', function () {
-                if (response.body instanceof Readable) response.body.destroy(); // Close the remote stream
-                response_generate_novel.end(); // End the Express response
-            });
-
-            response.body.on('end', function () {
-                console.log("Streaming request finished");
-                response_generate_novel.end();
-            });
-        } else {
-            if (!response.ok) {
-                const text = await response.text();
-                let message = text;
-                console.log(`Novel API returned error: ${response.status} ${response.statusText} ${text}`);
-
-                try {
-                    const data = JSON.parse(text);
-                    message = data.message;
-                }
-                catch {
-                    // ignore
-                }
-
-                return response_generate_novel.status(response.status).send({ error: { message } });
-            }
-
-            const data = await response.json();
-            console.log(data);
-            return response_generate_novel.send(data);
-        }
-    } catch (error) {
-        return response_generate_novel.send({ error: true });
-    }
-});
-
 app.post("/getallchatsofcharacter", jsonParser, function (request, response) {
     if (!request.body) return response.sendStatus(400);
 
@@ -2182,25 +2048,12 @@ app.post("/importcharacter", urlencodedParser, async function (request, response
         } else {
             try {
                 var img_data = await charaRead(uploadPath, format);
-                if (img_data === false || img_data === undefined) throw new Error('Failed to read character data');
+                if (img_data === undefined) throw new Error('Failed to read character data');
 
                 let jsonData = json5.parse(img_data);
 
                 jsonData.name = sanitize(jsonData.data?.name || jsonData.name);
                 png_name = getPngName(jsonData.name);
-
-                if (format == 'webp') {
-                    try {
-                        let convertedPath = path.join(UPLOADS_PATH, path.basename(uploadPath, ".webp") + ".png")
-                        await webp.dwebp(uploadPath, convertedPath, "-o");
-                        fs.unlinkSync(uploadPath);
-                        uploadPath = convertedPath;
-                    }
-                    catch {
-                        console.error('WEBP image conversion failed. Using the default character image.');
-                        uploadPath = defaultAvatarPath;
-                    }
-                }
 
                 if (jsonData.spec !== undefined) {
                     console.log('Found a v2 character file.');
@@ -2381,44 +2234,11 @@ app.post("/exportcharacter", jsonParser, async function (request, response) {
         case 'json': {
             try {
                 let json = await charaRead(filename);
-                if (json === false || json === undefined) return response.sendStatus(400);
+                if (json === undefined) return response.sendStatus(400);
                 let jsonObject = getCharaCardV2(json5.parse(json));
                 return response.type('json').send(jsonObject)
             }
             catch {
-                return response.sendStatus(400);
-            }
-        }
-        case 'webp': {
-            try {
-                let json = await charaRead(filename);
-                if (json === false || json === undefined) return response.sendStatus(400);
-                let stringByteArray = utf8Encode.encode(json).toString();
-                let inputWebpPath = path.join(UPLOADS_PATH, `${Date.now()}_input.webp`);
-                let outputWebpPath = path.join(UPLOADS_PATH, `${Date.now()}_output.webp`);
-                let metadataPath = path.join(UPLOADS_PATH, `${Date.now()}_metadata.exif`);
-                let metadata =
-                {
-                    "Exif": {
-                        [exif.ExifIFD.UserComment]: stringByteArray,
-                    },
-                };
-                const exifString = exif.dump(metadata);
-                writeFileAtomicSync(metadataPath, exifString, 'binary');
-
-                await webp.cwebp(filename, inputWebpPath, '-q 95');
-                await webp.webpmux_add(inputWebpPath, outputWebpPath, metadataPath, 'exif');
-
-                response.sendFile(outputWebpPath, { root: process.cwd() }, () => {
-                    fs.rmSync(inputWebpPath);
-                    fs.rmSync(metadataPath);
-                    fs.rmSync(outputWebpPath);
-                });
-
-                return;
-            }
-            catch (err) {
-                console.log(err);
                 return response.sendStatus(400);
             }
         }
@@ -2479,7 +2299,6 @@ app.post("/importchat", urlencodedParser, function (request, response) {
                                 (message) => ({
                                     name: message.src.is_human ? user_name : ch_name,
                                     is_user: message.src.is_human,
-                                    is_name: true,
                                     send_date: humanizedISO8601DateTime(),
                                     mes: message.text,
                                 })
@@ -2524,7 +2343,6 @@ app.post("/importchat", urlencodedParser, function (request, response) {
                         const userMessage = {
                             name: user_name,
                             is_user: true,
-                            is_name: true,
                             send_date: humanizedISO8601DateTime(),
                             mes: arr[0],
                         };
@@ -2534,7 +2352,6 @@ app.post("/importchat", urlencodedParser, function (request, response) {
                         const charMessage = {
                             name: ch_name,
                             is_user: false,
-                            is_name: true,
                             send_date: humanizedISO8601DateTime(),
                             mes: arr[1],
                         };
@@ -3598,7 +3415,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
         bodyParams['stop'] = request.body.stop;
     }
 
-    const isTextCompletion = Boolean(request.body.model && (request.body.model.startsWith('text-') || request.body.model.startsWith('code-')));
+    const isTextCompletion = Boolean(request.body.model && textCompletionModels.includes(request.body.model));
     const textPrompt = isTextCompletion ? convertChatMLPrompt(request.body.messages) : '';
     const endpointUrl = isTextCompletion ? `${api_url}/completions` : `${api_url}/chat/completions`;
 
@@ -3627,7 +3444,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
             "frequency_penalty": request.body.frequency_penalty,
             "top_p": request.body.top_p,
             "top_k": request.body.top_k,
-            "stop": request.body.stop,
+            "stop": isTextCompletion === false ? request.body.stop : undefined,
             "logit_bias": request.body.logit_bias,
             ...bodyParams,
         }),
@@ -4080,8 +3897,6 @@ const setupTasks = async function () {
     contentManager.checkForNewContent();
     cleanUploads();
 
-    await convertWebp();
-
     [spp_llama, spp_nerd, spp_nerd_v2, claude_tokenizer] = await Promise.all([
         loadSentencepieceTokenizer('src/sentencepiece/tokenizer.model'),
         loadSentencepieceTokenizer('src/sentencepiece/nerdstash.model'),
@@ -4139,47 +3954,6 @@ if (true === cliArguments.ssl) {
         tavernUrl.hostname,
         setupTasks
     );
-}
-
-async function convertWebp() {
-    const files = fs.readdirSync(directories.characters).filter(e => e.endsWith(".webp"));
-
-    if (!files.length) {
-        return;
-    }
-
-    console.log(`${files.length} WEBP files will be automatically converted.`);
-
-    for (const file of files) {
-        try {
-            const source = path.join(directories.characters, file);
-            const dest = path.join(directories.characters, path.basename(file, ".webp") + ".png");
-
-            if (fs.existsSync(dest)) {
-                console.log(`${dest} already exists. Delete ${source} manually`);
-                continue;
-            }
-
-            console.log(`Read... ${source}`);
-            const data = await charaRead(source);
-
-            console.log(`Convert... ${source} -> ${dest}`);
-            await webp.dwebp(source, dest, "-o");
-
-            console.log(`Write... ${dest}`);
-            const success = await charaWrite(dest, data, path.parse(dest).name);
-
-            if (!success) {
-                console.log(`Failure on ${source} -> ${dest}`);
-                continue;
-            }
-
-            console.log(`Remove... ${source}`);
-            fs.rmSync(source);
-        } catch (err) {
-            console.log(err);
-        }
-    }
 }
 
 function backupSettings() {
@@ -4259,136 +4033,6 @@ app.post('/viewsecrets', jsonParser, async (_, response) => {
 
         return response.send(secrets);
     } catch (error) {
-        console.error(error);
-        return response.sendStatus(500);
-    }
-});
-
-app.post('/api/novelai/generate-image', jsonParser, async (request, response) => {
-    if (!request.body) {
-        return response.sendStatus(400);
-    }
-
-    const key = readSecret(SECRET_KEYS.NOVEL);
-
-    if (!key) {
-        return response.sendStatus(401);
-    }
-
-    try {
-        console.log('NAI Diffusion request:', request.body);
-        const generateUrl = `${API_NOVELAI}/ai/generate-image`;
-        const generateResult = await fetch(generateUrl, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${key}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                action: 'generate',
-                input: request.body.prompt,
-                model: request.body.model ?? 'nai-diffusion',
-                parameters: {
-                    negative_prompt: request.body.negative_prompt ?? '',
-                    height: request.body.height ?? 512,
-                    width: request.body.width ?? 512,
-                    scale: request.body.scale ?? 9,
-                    seed: Math.floor(Math.random() * 9999999999),
-                    sampler: request.body.sampler ?? 'k_dpmpp_2m',
-                    steps: request.body.steps ?? 28,
-                    n_samples: 1,
-                    // NAI handholding for prompts
-                    ucPreset: 0,
-                    qualityToggle: false,
-                },
-            }),
-        });
-
-        if (!generateResult.ok) {
-            console.log('NovelAI returned an error.', generateResult.statusText);
-            return response.sendStatus(500);
-        }
-
-        const archiveBuffer = await generateResult.arrayBuffer();
-        const imageBuffer = await extractFileFromZipBuffer(archiveBuffer, '.png');
-        const originalBase64 = imageBuffer.toString('base64');
-
-        // No upscaling
-        if (isNaN(request.body.upscale_ratio) || request.body.upscale_ratio <= 1) {
-            return response.send(originalBase64);
-        }
-
-        try {
-            console.debug('Upscaling image...');
-            const upscaleUrl = `${API_NOVELAI}/ai/upscale`;
-            const upscaleResult = await fetch(upscaleUrl, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${key}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    image: originalBase64,
-                    height: request.body.height,
-                    width: request.body.width,
-                    scale: request.body.upscale_ratio,
-                }),
-            });
-
-            if (!upscaleResult.ok) {
-                throw new Error('NovelAI returned an error.');
-            }
-
-            const upscaledArchiveBuffer = await upscaleResult.arrayBuffer();
-            const upscaledImageBuffer = await extractFileFromZipBuffer(upscaledArchiveBuffer, '.png');
-            const upscaledBase64 = upscaledImageBuffer.toString('base64');
-
-            return response.send(upscaledBase64);
-        } catch (error) {
-            console.warn('NovelAI generated an image, but upscaling failed. Returning original image.');
-            return response.send(originalBase64)
-        }
-    } catch (error) {
-        console.log(error);
-        return response.sendStatus(500);
-    }
-});
-
-app.post('/novel_tts', jsonParser, async (request, response) => {
-    const token = readSecret(SECRET_KEYS.NOVEL);
-
-    if (!token) {
-        return response.sendStatus(401);
-    }
-
-    const text = request.body.text;
-    const voice = request.body.voice;
-
-    if (!text || !voice) {
-        return response.sendStatus(400);
-    }
-
-    try {
-        const url = `${API_NOVELAI}/ai/generate-voice?text=${encodeURIComponent(text)}&voice=-1&seed=${encodeURIComponent(voice)}&opus=false&version=v2`;
-        const result = await fetch(url, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Accept': 'audio/mpeg',
-            },
-            timeout: 0,
-        });
-
-        if (!result.ok) {
-            return response.sendStatus(result.status);
-        }
-
-        const chunks = await readAllChunks(result.body);
-        const buffer = Buffer.concat(chunks);
-        response.setHeader('Content-Type', 'audio/mpeg');
-        return response.send(buffer);
-    }
-    catch (error) {
         console.error(error);
         return response.sendStatus(500);
     }
@@ -4551,45 +4195,6 @@ app.post('/import_custom', jsonParser, async (request, response) => {
     }
 });
 
-/**
- * Extracts a file with given extension from an ArrayBuffer containing a ZIP archive.
- * @param {ArrayBuffer} archiveBuffer Buffer containing a ZIP archive
- * @param {string} fileExtension File extension to look for
- * @returns {Promise<Buffer>} Buffer containing the extracted file
- */
-async function extractFileFromZipBuffer(archiveBuffer, fileExtension) {
-    return await new Promise((resolve, reject) => yauzl.fromBuffer(Buffer.from(archiveBuffer), { lazyEntries: true }, (err, zipfile) => {
-        if (err) {
-            reject(err);
-        }
-
-        zipfile.readEntry();
-        zipfile.on('entry', (entry) => {
-            if (entry.fileName.endsWith(fileExtension)) {
-                console.log(`Extracting ${entry.fileName}`);
-                zipfile.openReadStream(entry, (err, readStream) => {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        const chunks = [];
-                        readStream.on('data', (chunk) => {
-                            chunks.push(chunk);
-                        });
-
-                        readStream.on('end', () => {
-                            const buffer = Buffer.concat(chunks);
-                            resolve(buffer);
-                            zipfile.readEntry(); // Continue to the next entry
-                        });
-                    }
-                });
-            } else {
-                zipfile.readEntry();
-            }
-        });
-    }));
-}
-
 async function downloadChubLorebook(id) {
     const result = await fetch('https://api.chub.ai/api/lorebooks/download', {
         method: 'POST',
@@ -4735,78 +4340,6 @@ function importRisuSprites(data) {
     } catch (error) {
         console.error(error);
     }
-}
-
-
-async function readAllChunks(readableStream) {
-    return new Promise((resolve, reject) => {
-        // Consume the readable stream
-        const chunks = [];
-        readableStream.on('data', (chunk) => {
-            chunks.push(chunk);
-        });
-
-        readableStream.on('end', () => {
-            //console.log('Finished reading the stream.');
-            resolve(chunks);
-        });
-
-        readableStream.on('error', (error) => {
-            console.error('Error while reading the stream:', error);
-            reject();
-        });
-    });
-}
-
-async function getImageBuffers(zipFilePath) {
-    return new Promise((resolve, reject) => {
-        // Check if the zip file exists
-        if (!fs.existsSync(zipFilePath)) {
-            reject(new Error('File not found'));
-            return;
-        }
-
-        const imageBuffers = [];
-
-        yauzl.open(zipFilePath, { lazyEntries: true }, (err, zipfile) => {
-            if (err) {
-                reject(err);
-            } else {
-                zipfile.readEntry();
-                zipfile.on('entry', (entry) => {
-                    const mimeType = mime.lookup(entry.fileName);
-                    if (mimeType && mimeType.startsWith('image/') && !entry.fileName.startsWith('__MACOSX')) {
-                        console.log(`Extracting ${entry.fileName}`);
-                        zipfile.openReadStream(entry, (err, readStream) => {
-                            if (err) {
-                                reject(err);
-                            } else {
-                                const chunks = [];
-                                readStream.on('data', (chunk) => {
-                                    chunks.push(chunk);
-                                });
-
-                                readStream.on('end', () => {
-                                    imageBuffers.push([path.parse(entry.fileName).base, Buffer.concat(chunks)]);
-                                    zipfile.readEntry(); // Continue to the next entry
-                                });
-                            }
-                        });
-                    } else {
-                        zipfile.readEntry(); // Continue to the next entry
-                    }
-                });
-
-                zipfile.on('end', () => {
-                    resolve(imageBuffers);
-                });
-
-                zipfile.on('error', (err) => {
-                    reject(err);
-                });
-            }
-        });
-    });
 }
 
 /**
@@ -5247,6 +4780,9 @@ app.post('/get_character_assets_list', jsonParser, async (request, response) => 
         return response.sendStatus(500);
     }
 });
+
+// NovelAI generation
+require('./src/novelai').registerEndpoints(app, jsonParser);
 
 // Stable Diffusion generation
 require('./src/stable-diffusion').registerEndpoints(app, jsonParser);

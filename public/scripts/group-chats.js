@@ -51,7 +51,6 @@ import {
     menu_type,
     select_selected_character,
     cancelTtsPlay,
-    isMultigenEnabled,
     displayPastChats,
     sendMessageAsUser,
     getBiasStrings,
@@ -206,7 +205,6 @@ function getFirstCharacterMessage(character) {
     mes["is_user"] = false;
     mes["is_system"] = false;
     mes["name"] = character.name;
-    mes["is_name"] = true;
     mes["send_date"] = getMessageTimeStamp();
     mes["original_avatar"] = character.avatar;
     mes["extra"] = { "gen_id": Date.now() * Math.random() * 1000000 };
@@ -577,7 +575,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
 
             await Generate(generateType, { automatic_trigger: by_auto_mode, ...(params || {}) });
 
-            if (type !== "swipe" && type !== "impersonate" && !isMultigenEnabled() && !isStreamingEnabled()) {
+            if (type !== "swipe" && type !== "impersonate" && !isStreamingEnabled()) {
                 // update indicator and scroll down
                 typingIndicator
                     .find(".typing_indicator_name")
@@ -593,7 +591,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
                 }
 
                 // if not swipe - check if message generated already
-                if (generateType === "group_chat" && !isMultigenEnabled() && chat.length == messagesBefore) {
+                if (generateType === "group_chat" && chat.length == messagesBefore) {
                     await delay(100);
                 }
                 // if swipe - see if message changed
@@ -604,13 +602,6 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
                         }
                         else {
                             break;
-                        }
-                    }
-                    else if (isMultigenEnabled()) {
-                        if (isGenerationDone) {
-                            break;
-                        } else {
-                            await delay(100);
                         }
                     }
                     else {
@@ -631,13 +622,6 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
                             break;
                         }
                     }
-                    else if (isMultigenEnabled()) {
-                        if (isGenerationDone) {
-                            break;
-                        } else {
-                            await delay(100);
-                        }
-                    }
                     else {
                         if (!$("#send_textarea").val() || $("#send_textarea").val() == userInput) {
                             await delay(100);
@@ -649,14 +633,6 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
                 }
                 else if (type === 'quiet') {
                     if (isGenerationDone) {
-                        break;
-                    } else {
-                        await delay(100);
-                    }
-                }
-                else if (isMultigenEnabled()) {
-                    if (isGenerationDone) {
-                        messagesBefore++;
                         break;
                     } else {
                         await delay(100);
