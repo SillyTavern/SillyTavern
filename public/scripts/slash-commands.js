@@ -388,11 +388,12 @@ export async function promptQuietForLoudResponse(who, text) {
     } else if (who === 'raw') {
         text = text;
     }
-
+    console.log(`text before instruct considerations:
+${text}`)
     //TODO: Less janky way to do this if possible
-    text = `${text}${power_user.instruct.enabled ? '' : '\n'}${(power_user.always_force_name2 && who != 'raw') ? characters[character_id].name + ":" : ""}`
+    //text = `${text}${power_user.instruct.enabled ? '' : '\n'}${(power_user.always_force_name2 && who != 'raw') ? characters[character_id].name + ":" : ""}`
     console.log(text);
-    let reply = await generateQuietPrompt(text);
+    let reply = await generateQuietPrompt(text, true);
     text = await getRegexedString(reply, regex_placement.SLASH_COMMAND);
 
     const message = {
@@ -413,7 +414,7 @@ export async function promptQuietForLoudResponse(who, text) {
     addOneMessage(message);
     await eventSource.emit(event_types.USER_MESSAGE_RENDERED, (chat.length - 1));
     await saveChatConditional();
-    
+
 }
 
 async function sendCommentMessage(_, text) {
