@@ -71,7 +71,9 @@ if (process.versions && process.versions.node && process.versions.node.match(/20
 dns.setDefaultResultOrder('ipv4first');
 
 // We use minimist instead of yargs since it's compatible with yargs
-const cliArguments = require('minimist')(process.argv);
+const cliArguments = require('minimist')(process.argv.slice(2));
+
+console.log(cliArguments)
 
 // change all relative paths
 const directory = process['pkg'] ? path.dirname(process.execPath) : __dirname;
