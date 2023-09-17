@@ -4,6 +4,8 @@ import {
     setGenerationProgress,
     CLIENT_VERSION,
     getRequestHeaders,
+    max_context,
+    amount_gen
 } from "../script.js";
 import { SECRET_KEYS, writeSecret } from "./secrets.js";
 import { delay } from "./utils.js";
@@ -57,6 +59,7 @@ function validateHordeModel() {
 }
 
 async function adjustHordeGenerationParams(max_context_length, max_length) {
+    console.log(max_context_length, max_length)
     const workers = await getWorkers();
     let maxContextLength = max_context_length;
     let maxLength = max_length;
@@ -84,7 +87,8 @@ async function adjustHordeGenerationParams(max_context_length, max_length) {
             maxLength = Math.min(worker.max_length, maxLength);
         }
     }
-
+    console.log(maxContextLength, maxLength)
+    $("#adjustedHordeParams").text(`Context: ${maxContextLength}, Response: ${maxLength}`)
     return { maxContextLength, maxLength };
 }
 
@@ -184,11 +188,13 @@ async function getHordeModels() {
     $('#horde_model').empty();
     const response = await fetch('https://horde.koboldai.net/api/v2/status/models?type=text', getRequestArgs());
     models = await response.json();
-
+    models.sort((a, b) => {
+        return b.performance - a.performance;
+    });
     for (const model of models) {
         const option = document.createElement('option');
         option.value = model.name;
-        option.innerText = `${model.name} (ETA: ${model.eta}s, Queue: ${model.queued}, Workers: ${model.count})`;
+        option.innerText = `${model.name} (ETA: ${model.eta}s, Speed: ${model.performance}, Queue: ${model.queued}, Workers: ${model.count})`;
         option.selected = horde_settings.models.includes(model.name);
         $('#horde_model').append(option);
     }
@@ -238,15 +244,30 @@ jQuery(function () {
 
         // Try select instruct preset
         autoSelectInstructPreset(horde_settings.models.join(' '));
+        if (horde_settings.models.length) {
+            adjustHordeGenerationParams(max_context, amount_gen)
+        } else {
+            $("#adjustedHordeParams").text(`Context: --, Response: --`)
+        }
     });
 
     $("#horde_auto_adjust_response_length").on("input", function () {
         horde_settings.auto_adjust_response_length = !!$(this).prop("checked");
+        if (horde_settings.models.length) {
+            adjustHordeGenerationParams(max_context, amount_gen)
+        } else {
+            $("#adjustedHordeParams").text(`Context: --, Response: --`)
+        }
         saveSettingsDebounced();
     });
 
     $("#horde_auto_adjust_context_length").on("input", function () {
         horde_settings.auto_adjust_context_length = !!$(this).prop("checked");
+        if (horde_settings.models.length) {
+            adjustHordeGenerationParams(max_context, amount_gen);
+        } else {
+            $("#adjustedHordeParams").text(`Context: --, Response: --`)
+        }
         saveSettingsDebounced();
     });
 
@@ -271,11 +292,11 @@ jQuery(function () {
             placeholder: 'Select Horde models',
             allowClear: true,
             closeOnSelect: false,
-            templateSelection: function(data) {
+            templateSelection: function (data) {
                 // Customize the pillbox text by shortening the full text
                 return data.id;
             },
-            templateResult: function(data) {
+            templateResult: function (data) {
                 // Return the full text for the dropdown
                 return data.text;
             },
