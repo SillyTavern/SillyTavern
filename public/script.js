@@ -2384,12 +2384,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     //#########QUIET PROMPT STUFF##############
     //this function just gives special care to novel quiet instruction prompts
     if (quiet_prompt) {
-        console.log('saw quiet prompt, substituting params')
-        console.log(quiet_prompt)
         quiet_prompt = substituteParams(quiet_prompt);
-        console.log('substituted quiet prompt params')
         quiet_prompt = main_api == 'novel' && !quietToLoud ? adjustNovelInstructionPrompt(quiet_prompt) : quiet_prompt;
-        console.log(quiet_prompt)
     }
 
     if (true === dryRun ||
@@ -2779,9 +2775,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
                 // Add character's name
                 // Force name append on continue
-
-                console.log(`force name2 = ${force_name2}`)
-
                 if (!isInstruct && force_name2) {
                     if (!lastMesString.endsWith('\n')) {
                         lastMesString += '\n';
