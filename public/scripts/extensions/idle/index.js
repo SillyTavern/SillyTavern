@@ -99,7 +99,7 @@ async function sendIdlePrompt() {
     if (!extension_settings.idle.enabled) return;
 
     // Check repeat conditions and waiting for a response
-    if (repeatCount > extension_settings.idle.repeats || $('#mes_stop').is(':visible')) {
+    if (repeatCount >= extension_settings.idle.repeats || $('#mes_stop').is(':visible')) {
         //console.debug("Not sending idle prompt due to repeat conditions or waiting for a response.");
         resetIdleTimer();
         return;
