@@ -355,6 +355,7 @@ body.movingUI #groupMemberListPopout {
     height: 120px;
     margin-top: 0;
     top: 50px;
+    justify-content: center;
 }
 
 /*No Text Shadows Mode*/
