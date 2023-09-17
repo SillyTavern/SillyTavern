@@ -2748,11 +2748,11 @@ ${quietAppend}`)
                     //and no output sequence was added after the input's content.
                     //TODO: respect output_sequence vs last_output_sequence settings
                     //TODO: decide how to prompt this to clarify who is talking 'Narrator', 'System', etc.
-                    //if (isInstruct) {
-                    //    lastMesString += '\n' + quietAppend; // + power_user.instruct.output_sequence + '\n';
-                    //} else {
-                    lastMesString += quietAppend;
-                    //}
+                    if (isInstruct) {
+                       lastMesString += '\n' + quietAppend; // + power_user.instruct.output_sequence + '\n';
+                    } else {
+                        lastMesString += quietAppend;
+                    }
                     console.log(`lastMesString after modifying last prompt line: 
                     ${lastMesString}`)
 
