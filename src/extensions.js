@@ -1,6 +1,6 @@
 const path = require('path');
 const fs = require('fs');
-const simpleGit = require('simple-git');
+const { default: simpleGit } = require('simple-git');
 const sanitize = require('sanitize-filename');
 const { DIRECTORIES } = require('./constants');
 
@@ -27,7 +27,6 @@ async function getManifest(extensionPath) {
  * @returns {Promise<Object>} - Returns the extension information as an object
  */
 async function checkIfRepoIsUpToDate(extensionPath) {
-    // @ts-ignore - simple-git types are incorrect, this is apparently callable but no call signature
     const git = simpleGit();
     await git.cwd(extensionPath).fetch('origin');
     const currentBranch = await git.cwd(extensionPath).branch();
@@ -62,7 +61,6 @@ function registerEndpoints(app, jsonParser) {
      * @returns {void}
      */
     app.post('/api/extensions/install', jsonParser, async (request, response) => {
-        // @ts-ignore - simple-git types are incorrect, this is apparently callable but no call signature
         const git = simpleGit();
         if (!request.body.url) {
             return response.status(400).send('Bad Request: URL is required in the request body.');
@@ -108,7 +106,6 @@ function registerEndpoints(app, jsonParser) {
      * @returns {void}
      */
     app.post('/api/extensions/update', jsonParser, async (request, response) => {
-        // @ts-ignore - simple-git types are incorrect, this is apparently callable but no call signature
         const git = simpleGit();
         if (!request.body.extensionName) {
             return response.status(400).send('Bad Request: extensionName is required in the request body.');
@@ -154,7 +151,6 @@ function registerEndpoints(app, jsonParser) {
      * @returns {void}
      */
     app.post('/api/extensions/version', jsonParser, async (request, response) => {
-        // @ts-ignore - simple-git types are incorrect, this is apparently callable but no call signature
         const git = simpleGit();
         if (!request.body.extensionName) {
             return response.status(400).send('Bad Request: extensionName is required in the request body.');

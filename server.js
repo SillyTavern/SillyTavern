@@ -309,8 +309,8 @@ app.get('/deviceinfo', function (request, response) {
     const deviceInfo = deviceDetector.parse(userAgent || "");
     return response.send(deviceInfo);
 });
-app.get('/version', function (_, response) {
-    const data = getVersion();
+app.get('/version', async function (_, response) {
+    const data = await getVersion();
     response.send(data);
 })
 
@@ -3255,7 +3255,7 @@ const autorunUrl = new URL(
 );
 
 const setupTasks = async function () {
-    const version = getVersion();
+    const version = await getVersion();
 
     console.log(`SillyTavern ${version.pkgVersion}` + (version.gitBranch ? ` '${version.gitBranch}' (${version.gitRevision})` : ''));
 

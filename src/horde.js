@@ -5,9 +5,14 @@ const { readSecret, SECRET_KEYS } = require("./secrets");
 
 const ANONYMOUS_KEY = "0000000000";
 
-function getHordeClient() {
+/**
+ * Returns the AIHorde client.
+ * @returns {Promise<AIHorde>} AIHorde client
+ */
+async function getHordeClient() {
+    const version = await getVersion();
     const ai_horde = new AIHorde({
-        client_agent: getVersion()?.agent || 'SillyTavern:UNKNOWN:Cohee#1207',
+        client_agent: version?.agent || 'SillyTavern:UNKNOWN:Cohee#1207',
     });
     return ai_horde;
 }
@@ -50,7 +55,7 @@ function registerEndpoints(app, jsonParser) {
 
     app.post('/api/horde/sd-samplers', jsonParser, async (_, response) => {
         try {
-            const ai_horde = getHordeClient();
+            const ai_horde = await getHordeClient();
             const samplers = Object.values(ai_horde.ModelGenerationInputStableSamplers);
             response.send(samplers);
         } catch (error) {
@@ -61,7 +66,7 @@ function registerEndpoints(app, jsonParser) {
 
     app.post('/api/horde/sd-models', jsonParser, async (_, response) => {
         try {
-            const ai_horde = getHordeClient();
+            const ai_horde = await getHordeClient();
             const models = await ai_horde.getModels();
             response.send(models);
         } catch (error) {
@@ -78,7 +83,7 @@ function registerEndpoints(app, jsonParser) {
         }
 
         try {
-            const ai_horde = getHordeClient();
+            const ai_horde = await getHordeClient();
             const user = await ai_horde.findUser({ token: api_key_horde });
             return response.send(user);
         } catch (error) {
@@ -106,7 +111,7 @@ function registerEndpoints(app, jsonParser) {
             const api_key_horde = readSecret(SECRET_KEYS.HORDE) || ANONYMOUS_KEY;
             console.log('Stable Horde request:', request.body);
 
-            const ai_horde = getHordeClient();
+            const ai_horde = await getHordeClient();
             const generation = await ai_horde.postAsyncImageGenerate(
                 {
                     prompt: `${request.body.prompt} ### ${request.body.negative_prompt}`,
