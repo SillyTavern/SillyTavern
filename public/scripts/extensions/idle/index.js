@@ -1,14 +1,11 @@
 import {
-    eventSource,
-    event_types,
     saveSettingsDebounced,
     substituteParams
 } from "../../../script.js";
 import { debounce } from "../../utils.js";
 import { promptQuietForLoudResponse, sendMessageAs, sendNarratorMessage } from "../../slash-commands.js";
-import { extension_settings, getContext } from "../../extensions.js";
+import { extension_settings, getContext, renderExtensionTemplate } from "../../extensions.js";
 const extensionName = "idle";
-const extensionFolderPath = `scripts/extensions/${extensionName}/`;
 
 let idleTimer = null;
 let repeatCount = 0;
@@ -173,7 +170,7 @@ function sendPrompt(prompt) {
  * Load the settings HTML and append to the designated area.
  */
 async function loadSettingsHTML() {
-    const settingsHtml = await $.get(`${extensionFolderPath}dropdown.html`);
+    const settingsHtml = renderExtensionTemplate(extensionName, "dropdown");
     $("#extensions_settings2").append(settingsHtml);
 }
 
