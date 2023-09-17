@@ -1865,11 +1865,9 @@ function getStoppingStrings(isImpersonate) {
 
 // Background prompt generation
 export async function generateQuietPrompt(quiet_prompt, quietToLoud) {
-    console.log(`QtL: ${quietToLoud}`)
     return await new Promise(
         async function promptPromise(resolve, reject) {
-            if (quietToLoud === true) {
-                console.log('QtL true')
+            if (quietToLoud === true ) {
                 try {
                     await Generate('quiet', { resolve, reject, quiet_prompt, quietToLoud: true, force_name2: true, });
                 }
@@ -1878,7 +1876,6 @@ export async function generateQuietPrompt(quiet_prompt, quietToLoud) {
                 }
             }
             else {
-                console.log('QtL false')
                 try {
                     await Generate('quiet', { resolve, reject, quiet_prompt, quietToLoud: false, force_name2: true, });
                 }
@@ -2391,7 +2388,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         console.log(quiet_prompt)
         quiet_prompt = substituteParams(quiet_prompt);
         console.log('substituted quiet prompt params')
-        quiet_prompt = main_api == 'novel' ? adjustNovelInstructionPrompt(quiet_prompt) : quiet_prompt;
+        quiet_prompt = main_api == 'novel' && !quietToLoud ? adjustNovelInstructionPrompt(quiet_prompt) : quiet_prompt;
         console.log(quiet_prompt)
     }
 
@@ -2763,9 +2760,8 @@ ${quietAppend}`)
 
                     // Bail out early?
                     if (quietToLoud !== true) {
-                        console.log('bailing out early, not quietToLoud')
                         return lastMesString;
-                    } else { console.log('saw QtL prompt, continuing...') }
+                    }
                 }
 
 

@@ -288,7 +288,7 @@ const debouncedActivityHandler = debounce((event) => {
     if ($(event.target).closest('#option_continue').length) {
         return; // Do not proceed if the click was on (or inside) an element with id "option_continue"
     }
-
+    
     console.debug("Activity detected, resetting idle timer");
     resetIdleTimer();
     repeatCount = 0;
