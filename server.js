@@ -15,9 +15,6 @@ const { TextDecoder } = require('util');
 const open = require('open');
 const sanitize = require('sanitize-filename');
 const writeFileAtomicSync = require('write-file-atomic').sync;
-const yargs = require('yargs/yargs');
-const { hideBin } = require('yargs/helpers');
-
 // express/server related library imports
 const cors = require('cors');
 const doubleCsrf = require('csrf-csrf').doubleCsrf;
@@ -73,24 +70,8 @@ if (process.versions && process.versions.node && process.versions.node.match(/20
 // Set default DNS resolution order to IPv4 first
 dns.setDefaultResultOrder('ipv4first');
 
-const cliArguments = yargs(hideBin(process.argv))
-    .option('disableCsrf', {
-        type: 'boolean',
-        default: false,
-        describe: 'Disables CSRF protection'
-    }).option('ssl', {
-        type: 'boolean',
-        default: false,
-        describe: 'Enables SSL'
-    }).option('certPath', {
-        type: 'string',
-        default: 'certs/cert.pem',
-        describe: 'Path to your certificate file.'
-    }).option('keyPath', {
-        type: 'string',
-        default: 'certs/privkey.pem',
-        describe: 'Path to your private key file.'
-    }).parseSync();
+// We use minimist instead of yargs since it's compatible with yargs
+const cliArguments = require('minimist')(process.argv);
 
 // change all relative paths
 const directory = process['pkg'] ? path.dirname(process.execPath) : __dirname;
@@ -3242,17 +3223,9 @@ require('./src/classify').registerEndpoints(app, jsonParser);
 // Image captioning
 require('./src/caption').registerEndpoints(app, jsonParser);
 
-const tavernUrl = new URL(
-    (cliArguments.ssl ? 'https://' : 'http://') +
-    (listen ? '0.0.0.0' : '127.0.0.1') +
-    (':' + server_port)
-);
+const tavernUrl = (cliArguments.ssl ? 'https://' : 'http://') + (listen ? '0.0.0.0' : '127.0.0.1') + (':' + server_port)
 
-const autorunUrl = new URL(
-    (cliArguments.ssl ? 'https://' : 'http://') +
-    ('127.0.0.1') +
-    (':' + server_port)
-);
+const autorunUrl = (cliArguments.ssl ? 'https://' : 'http://') + ('127.0.0.1') + (':' + server_port)
 
 const setupTasks = async function () {
     const version = getVersion();
@@ -3307,14 +3280,14 @@ if (true === cliArguments.ssl) {
             key: fs.readFileSync(cliArguments.keyPath)
         }, app)
         .listen(
-            Number(tavernUrl.port) || 443,
-            tavernUrl.hostname,
+            Number(config.port) || 443,
+            config.hostname,
             setupTasks
         );
 } else {
     http.createServer(app).listen(
-        Number(tavernUrl.port) || 80,
-        tavernUrl.hostname,
+        Number(config.port) || 8000,
+        config.hostname,
         setupTasks
     );
 }
