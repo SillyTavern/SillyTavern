@@ -2260,7 +2260,7 @@ class StreamingProcessor {
         throw new Error('Generation function for streaming is not hooked up');
     }
 
-    constructor(type, force_name2) {
+    constructor(type, force_name2, timeStarted) {
         this.result = "";
         this.messageId = -1;
         this.type = type;
@@ -2270,7 +2270,7 @@ class StreamingProcessor {
         this.generator = this.nullStreamingGeneration;
         this.abortController = new AbortController();
         this.firstMessageText = '...';
-        this.timeStarted = new Date();
+        this.timeStarted = timeStarted;
     }
 
     async generate() {
@@ -2419,6 +2419,18 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         }
 
         const isContinue = type == 'continue';
+
+        // Rewrite the generation timer to account for the time passed for all the continuations.
+        if (isContinue && chat.length) {
+            const prevFinished = chat[chat.length - 1]['gen_finished'];
+            const prevStarted = chat[chat.length - 1]['gen_started'];
+
+            if (prevFinished && prevStarted) {
+                const timePassed = prevFinished - prevStarted;
+                generation_started = new Date(Date.now() - timePassed);
+                chat[chat.length - 1]['gen_started'] = generation_started;
+            }
+        }
 
         if (!dryRun) {
             deactivateSendButtons();
@@ -2665,7 +2677,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         console.debug('calling runGenerate');
 
         if (!dryRun) {
-            streamingProcessor = isStreamingEnabled() ? new StreamingProcessor(type, force_name2) : false;
+            streamingProcessor = isStreamingEnabled() ? new StreamingProcessor(type, force_name2, generation_started) : false;
         }
 
         if (isContinue) {
