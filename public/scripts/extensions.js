@@ -192,7 +192,9 @@ async function doExtrasFetch(endpoint, args) {
     }
     Object.assign(args.headers, {
         'Authorization': `Bearer ${extension_settings.apiKey}`,
-        'Bypass-Tunnel-Reminder': 'bypass'
+        'Bypass-Tunnel-Reminder': 'bypass',
+        'Access-Control-Allow-Origin': '*', //Should this be set to specifically the HOST header on the sillytavern page request?
+        'Access-Control-Request-Headers': 'access-control-allow-origin,authorization,bypass-tunnel-reminder'
     });
 
     const response = await fetch(endpoint, args);
