@@ -22,7 +22,5 @@
     "mirostat": 2,
     "mirostat_tau": 9.61,
     "mirostat_eta": 1,
-    "use_default_badwordsids": true,
-    "genamt": 512,
-    "max_length": 8192
+    "use_default_badwordsids": true
 }
