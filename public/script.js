@@ -1864,14 +1864,27 @@ function getStoppingStrings(isImpersonate) {
 
 
 // Background prompt generation
-export async function generateQuietPrompt(quiet_prompt) {
+export async function generateQuietPrompt(quiet_prompt, quietToLoud) {
+    console.log(`QtL: ${quietToLoud}`)
     return await new Promise(
         async function promptPromise(resolve, reject) {
-            try {
-                await Generate('quiet', { resolve, reject, quiet_prompt, force_name2: true, });
+            if (quietToLoud === true) {
+                console.log('QtL true')
+                try {
+                    await Generate('quiet', { resolve, reject, quiet_prompt, quietToLoud: true, force_name2: true, });
+                }
+                catch {
+                    reject();
+                }
             }
-            catch {
-                reject();
+            else {
+                console.log('QtL false')
+                try {
+                    await Generate('quiet', { resolve, reject, quiet_prompt, quietToLoud: false, force_name2: true, });
+                }
+                catch {
+                    reject();
+                }
             }
         });
 }
@@ -2289,7 +2302,7 @@ class StreamingProcessor {
     }
 }
 
-async function Generate(type, { automatic_trigger, force_name2, resolve, reject, quiet_prompt, force_chid, signal } = {}, dryRun = false) {
+async function Generate(type, { automatic_trigger, force_name2, resolve, reject, quiet_prompt, quietToLoud, force_chid, signal } = {}, dryRun = false) {
     //console.log('Generate entered');
     setGenerationProgress(0);
     generation_started = new Date();
@@ -2371,9 +2384,15 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         }
     }
 
+    //#########QUIET PROMPT STUFF##############
+    //this function just gives special care to novel quiet instruction prompts
     if (quiet_prompt) {
+        console.log('saw quiet prompt, substituting params')
+        console.log(quiet_prompt)
         quiet_prompt = substituteParams(quiet_prompt);
+        console.log('substituted quiet prompt params')
         quiet_prompt = main_api == 'novel' ? adjustNovelInstructionPrompt(quiet_prompt) : quiet_prompt;
+        console.log(quiet_prompt)
     }
 
     if (true === dryRun ||
@@ -2712,29 +2731,52 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
 
             function modifyLastPromptLine(lastMesString) {
+                //#########QUIET PROMPT STUFF PT2##############
+
                 // Add quiet generation prompt at depth 0
                 if (quiet_prompt && quiet_prompt.length) {
+                    console.log('saw quiet prompt for lastLine modification')
+                    // here name1 is forced for all quiet prompts..why?
                     const name = name1;
+                    console.log(`name1: ${name1}`)
+                    //checks if we are in instruct, if so, formats the chat as such, otherwise just adds the quiet prompt
                     const quietAppend = isInstruct ? formatInstructModeChat(name, quiet_prompt, false, true, '', name1, name2, false) : `\n${quiet_prompt}`;
-
+                    console.log(`quietAppend:
+${quietAppend}`)
                     //This begins to fix quietPrompts (particularly /sysgen) for instruct
                     //previously instruct input sequence was being appended to the last chat message w/o '\n'
                     //and no output sequence was added after the input's content.
                     //TODO: respect output_sequence vs last_output_sequence settings
                     //TODO: decide how to prompt this to clarify who is talking 'Narrator', 'System', etc.
-                    if (isInstruct) {
-                        lastMesString += '\n' + quietAppend + power_user.instruct.output_sequence + '\n';
-                    } else {
-                        lastMesString += quietAppend;
-                    }
-                    // Bail out early
-                    return lastMesString;
+                    //if (isInstruct) {
+                    //    lastMesString += '\n' + quietAppend; // + power_user.instruct.output_sequence + '\n';
+                    //} else {
+                    lastMesString += quietAppend;
+                    //}
+                    console.log(`lastMesString after modifying last prompt line: 
+                    ${lastMesString}`)
+
+                    // Ross: bailing out early prevents quiet prompts from respecting other instruct prompt toggles
+                    // for sysgen, SD, and summary this is desireable as it prevents the AI from responding as char..
+                    // but for idle prompting, we want the flexibility of the other prompt toggles, and to respect them as per settings in the extension
+                    // need a detection for what the quiet prompt is being asked for...
+
+                    // Bail out early?
+                    if (quietToLoud !== true) {
+                        console.log('bailing out early, not quietToLoud')
+                        return lastMesString;
+                    } else { console.log('saw QtL prompt, continuing...') }
                 }
+
 
                 // Get instruct mode line
                 if (isInstruct && !isContinue) {
+                    console.log('saw non-continue instruct')
                     const name = isImpersonate ? name1 : name2;
+                    console.log(`name to add: ${name}`)
                     lastMesString += formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2);
+                    console.log(`lastMesString post-formatInstructModePrompt:
+${lastMesString}`)
                 }
 
                 // Get non-instruct impersonation line
@@ -2748,11 +2790,16 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
                 // Add character's name
                 // Force name append on continue
+
+                console.log(`force name2 = ${force_name2}`)
+
                 if (!isInstruct && force_name2) {
+                    console.log('saw non-isntruct and force name2')
                     if (!lastMesString.endsWith('\n')) {
+                        console.log('adding a new line to last mes string')
                         lastMesString += '\n';
                     }
-
+                    console.log('adding name2 to last mes string')
                     lastMesString += `${name2}:`;
                 }
 
