@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { getConfigValue } = require('./util');
 const writeFileAtomicSync = require('write-file-atomic').sync;
 
 const SECRETS_FILE = path.join(process.cwd(), './secrets.json');
@@ -34,7 +35,7 @@ function writeSecret(key, value) {
     const fileContents = fs.readFileSync(SECRETS_FILE, 'utf-8');
     const secrets = JSON.parse(fileContents);
     secrets[key] = value;
-    writeFileAtomicSync(SECRETS_FILE, JSON.stringify(secrets), "utf-8");
+    writeFileAtomicSync(SECRETS_FILE, JSON.stringify(secrets, null, 4), "utf-8");
 }
 
 /**
@@ -114,7 +115,7 @@ function migrateSecrets(settingsFile) {
 
         if (modified) {
             console.log('Writing updated settings.json...');
-            const settingsContent = JSON.stringify(settings);
+            const settingsContent = JSON.stringify(settings, null, 4);
             writeFileAtomicSync(settingsFile, settingsContent, "utf-8");
         }
     }
@@ -138,11 +139,61 @@ function getAllSecrets() {
     return secrets;
 }
 
+/**
+ * Registers endpoints for the secret management API
+ * @param {import('express').Express} app Express app
+ * @param {any} jsonParser JSON parser middleware
+ */
+function registerEndpoints(app, jsonParser) {
+
+    app.post('/api/secrets/write', jsonParser, (request, response) => {
+        const key = request.body.key;
+        const value = request.body.value;
+
+        writeSecret(key, value);
+        return response.send('ok');
+    });
+
+    app.post('/api/secrets/read', jsonParser, (_, response) => {
+
+        try {
+            const state = readSecretState();
+            return response.send(state);
+        } catch (error) {
+            console.error(error);
+            return response.send({});
+        }
+    });
+
+    app.post('/viewsecrets', jsonParser, async (_, response) => {
+        const allowKeysExposure = getConfigValue('allowKeysExposure', false);
+
+        if (!allowKeysExposure) {
+            console.error('secrets.json could not be viewed unless the value of allowKeysExposure in config.conf is set to true');
+            return response.sendStatus(403);
+        }
+
+        try {
+            const secrets = getAllSecrets();
+
+            if (!secrets) {
+                return response.sendStatus(404);
+            }
+
+            return response.send(secrets);
+        } catch (error) {
+            console.error(error);
+            return response.sendStatus(500);
+        }
+    });
+}
+
 module.exports = {
     writeSecret,
     readSecret,
     readSecretState,
     migrateSecrets,
     getAllSecrets,
+    registerEndpoints,
     SECRET_KEYS,
 };

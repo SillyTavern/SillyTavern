@@ -117,7 +117,7 @@ body.big-avatars .avatar img {
     height: 90px;
     object-fit: cover;
     object-position: center;
-    border: 1px solid var(--black30a);
+    border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 10px;
 }
 
@@ -191,7 +191,7 @@ body.bubblechat .mes {
     border-radius: 10px;
     background-color: var(--SmartThemeBotMesBlurTintColor);
     margin-bottom: 5px;
-    border: 1px solid var(--white30a);
+    border: 1px solid var(--SmartThemeBorderColor);
 }
 
 body.bubblechat .mes[is_user="true"] {
@@ -263,7 +263,8 @@ body.no-blur #send_form {
     background-color: var(--SmartThemeBlurTintColor) !important;
 }
 
-body.no-blur #options,
+
+/* body.no-blur #options,
 body.no-blur .ui-widget-content,
 body.no-blur #floatingPrompt,
 body.no-blur #extensionsMenu,
@@ -276,12 +277,13 @@ body.no-blur .drawer-content,
 body.no-blur .select2-results__options {
     background-color: black !important;
 }
+ */
 
 /* wAIfu mode*/
 
 body.waifuMode #top-bar {
     border-radius: 0 0 20px 20px;
-    border: 1px solid var(--grey30a);
+    border: 1px solid var(--SmartThemeBorderColor);
 }
 
 body.waifuMode #sheld {
@@ -292,7 +294,7 @@ body.waifuMode #sheld {
 }
 
 body.waifuMode #chat {
-    border-top: 1px solid var(--grey30a);
+    border-top: 1px solid var(--SmartThemeBorderColor);
     border-radius: 20px 20px 0 0;
 }
 
@@ -353,10 +355,19 @@ body.movingUI #groupMemberListPopout {
     height: 120px;
     margin-top: 0;
     top: 50px;
+    justify-content: center;
 }
 
 /*No Text Shadows Mode*/
 
 body.noShadows * {
     text-shadow: none !important;
+}
+
+body.expandMessageActions .mes .mes_buttons .extraMesButtons {
+    display: inherit !important;
+}
+
+body.expandMessageActions .mes .mes_buttons .extraMesButtonsHint {
+    display: none !important;
 }

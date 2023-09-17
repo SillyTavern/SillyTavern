@@ -134,7 +134,10 @@ const extension_settings = {
     caption: {
         refine_mode: false,
     },
-    expressions: {},
+    expressions: {
+        /** @type {string[]} */
+        custom: [],
+    },
     dice: {},
     regex: [],
     tts: {},
@@ -194,7 +197,6 @@ async function doExtrasFetch(endpoint, args) {
     }
     Object.assign(args.headers, {
         'Authorization': `Bearer ${extension_settings.apiKey}`,
-        'Bypass-Tunnel-Reminder': 'bypass'
     });
 
     const response = await fetch(endpoint, args);
@@ -203,7 +205,7 @@ async function doExtrasFetch(endpoint, args) {
 
 async function discoverExtensions() {
     try {
-        const response = await fetch('/discover_extensions');
+        const response = await fetch('/api/extensions/discover');
 
         if (response.ok) {
             const extensions = await response.json();
@@ -628,7 +630,7 @@ async function onUpdateClick() {
 
 /**
  * Handles the click event for the delete button of an extension.
- * This function makes a POST request to '/delete_extension' with the extension's name.
+ * This function makes a POST request to '/api/extensions/delete' with the extension's name.
  * If the extension is deleted, it displays a success message.
  * Creates a popup for the user to confirm before delete.
  */
@@ -638,7 +640,7 @@ async function onDeleteClick() {
     const confirmation = await callPopup(`Are you sure you want to delete ${extensionName}?`, 'delete_extension');
     if (confirmation) {
         try {
-            const response = await fetch('/delete_extension', {
+            const response = await fetch('/api/extensions/delete', {
                 method: 'POST',
                 headers: getRequestHeaders(),
                 body: JSON.stringify({ extensionName })
@@ -665,7 +667,7 @@ async function onDeleteClick() {
  */
 async function getExtensionVersion(extensionName) {
     try {
-        const response = await fetch('/get_extension_version', {
+        const response = await fetch('/api/extensions/version', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({ extensionName })

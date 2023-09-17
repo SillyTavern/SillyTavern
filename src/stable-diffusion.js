@@ -165,6 +165,7 @@ function registerEndpoints(app, jsonParser) {
                     headers: {
                         'Authorization': getBasicAuthHeader(request.body.auth),
                     },
+                    timeout: 0,
                 });
                 const data = await result.json();
                 return data;
@@ -184,6 +185,7 @@ function registerEndpoints(app, jsonParser) {
                     'Content-Type': 'application/json',
                     'Authorization': getBasicAuthHeader(request.body.auth),
                 },
+                timeout: 0,
             });
 
             if (!result.ok) {
@@ -227,6 +229,7 @@ function registerEndpoints(app, jsonParser) {
                     'Content-Type': 'application/json',
                     'Authorization': getBasicAuthHeader(request.body.auth),
                 },
+                timeout: 0,
             });
 
             if (!result.ok) {

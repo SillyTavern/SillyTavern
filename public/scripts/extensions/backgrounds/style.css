@@ -6,7 +6,7 @@
     background-attachment: fixed;
     background-size: cover;
     border-radius: 20px;
-    border: 1px solid var(--black50a);
+    border: 1px solid var(--SmartThemeBorderColor);
     box-shadow: 0 0 7px var(--black50a);
     margin: 5px;
 }

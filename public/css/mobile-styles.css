@@ -78,7 +78,7 @@
         position: fixed;
         left: 0;
         top: 5px;
-        border: 1px solid var(--grey30);
+        border: 1px solid var(--SmartThemeBorderColor);
     }
 
     #select_chat_popup {
@@ -134,15 +134,15 @@
 
     #character_popup,
     #send_form {
-        border: 1px solid var(--grey30);
+        border: 1px solid var(--SmartThemeBorderColor);
         backdrop-filter: blur(calc(var(--SmartThemeBlurStrength) * 2));
         max-width: 100dvw;
     }
 
     #chat {
-        border-left: 1px solid var(--grey30);
-        border-right: 1px solid var(--grey30);
-        border-bottom: 1px solid var(--grey30);
+        border-left: 1px solid var(--SmartThemeBorderColor);
+        border-right: 1px solid var(--SmartThemeBorderColor);
+        border-bottom: 1px solid var(--SmartThemeBorderColor);
         align-items: start;
         align-content: start;
         overflow-y: auto;
@@ -175,9 +175,9 @@
         width: 100% !important;
         max-width: 100% !important;
         overflow-y: hidden;
-        border-left: 1px solid var(--grey30);
-        border-right: 1px solid var(--grey30);
-        border-bottom: 1px solid var(--grey30);
+        border-left: 1px solid var(--SmartThemeBorderColor);
+        border-right: 1px solid var(--SmartThemeBorderColor);
+        border-bottom: 1px solid var(--SmartThemeBorderColor);
         border-radius: 0 0 20px 20px;
         top: var(--topBarBlockSize) !important;
         left: 0 !important;

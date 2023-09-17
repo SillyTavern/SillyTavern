@@ -12,7 +12,7 @@
 
 .regex-script-label {
     align-items: center;
-    border: 1px solid rgba(128, 128, 128, 0.5);
+    border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 10px;
     padding: 0 5px;
     margin-top: 1px;

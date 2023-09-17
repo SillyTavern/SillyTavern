@@ -1,7 +1,7 @@
 import { eventSource, event_types, extension_prompt_types, getCurrentChatId, getRequestHeaders, is_send_press, saveSettingsDebounced, setExtensionPrompt, substituteParams } from "../../../script.js";
 import { ModuleWorkerWrapper, extension_settings, getContext, renderExtensionTemplate } from "../../extensions.js";
 import { collapseNewlines, power_user, ui_mode } from "../../power-user.js";
-import { debounce, getStringHash as calculateHash, waitUntilCondition } from "../../utils.js";
+import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique } from "../../utils.js";
 
 const MODULE_NAME = 'vectors';
 
@@ -9,7 +9,7 @@ export const EXTENSION_PROMPT_TAG = '3_vectors';
 
 const settings = {
     enabled: false,
-    source: 'local',
+    source: 'transformers',
     template: `Past events: {{text}}`,
     depth: 2,
     position: extension_prompt_types.IN_PROMPT,
@@ -180,7 +180,7 @@ async function rearrangeChat(chat) {
         }
 
         // Get the most relevant messages, excluding the last few
-        const queryHashes = await queryCollection(chatId, queryText, settings.insert);
+        const queryHashes = (await queryCollection(chatId, queryText, settings.insert)).filter(onlyUnique);
         const queriedMessages = [];
         const retainMessages = chat.slice(-settings.protect);
 
@@ -378,6 +378,8 @@ jQuery(async () => {
     }
 
     Object.assign(settings, extension_settings.vectors);
+    // Migrate from TensorFlow to Transformers
+    settings.source = settings.source !== 'local' ? settings.source : 'transformers';
     $('#extensions_settings2').append(renderExtensionTemplate(MODULE_NAME, 'settings'));
     $('#vectors_enabled').prop('checked', settings.enabled).on('input', () => {
         settings.enabled = $('#vectors_enabled').prop('checked');

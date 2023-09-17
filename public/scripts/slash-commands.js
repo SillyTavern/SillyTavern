@@ -325,7 +325,6 @@ async function sendMessageAs(_, text) {
     const message = {
         name: name,
         is_user: false,
-        is_name: true,
         is_system: isSystem,
         send_date: getMessageTimeStamp(),
         mes: substituteParams(mesText),
@@ -357,7 +356,6 @@ async function sendNarratorMessage(_, text) {
     const message = {
         name: name,
         is_user: false,
-        is_name: false,
         is_system: isSystem,
         send_date: getMessageTimeStamp(),
         mes: substituteParams(text.trim()),
@@ -384,7 +382,6 @@ async function sendCommentMessage(_, text) {
     const message = {
         name: COMMENT_NAME_DEFAULT,
         is_user: false,
-        is_name: true,
         is_system: true,
         send_date: getMessageTimeStamp(),
         mes: substituteParams(text.trim()),

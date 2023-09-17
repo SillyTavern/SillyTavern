@@ -101,13 +101,13 @@ function callTokenizer(type, str, padding) {
         case tokenizers.NONE:
             return guesstimate(str) + padding;
         case tokenizers.GPT2:
-            return countTokensRemote('/tokenize_gpt2', str, padding);
+            return countTokensRemote('/api/tokenize/gpt2', str, padding);
         case tokenizers.LLAMA:
-            return countTokensRemote('/tokenize_llama', str, padding);
+            return countTokensRemote('/api/tokenize/llama', str, padding);
         case tokenizers.NERD:
-            return countTokensRemote('/tokenize_nerdstash', str, padding);
+            return countTokensRemote('/api/tokenize/nerdstash', str, padding);
         case tokenizers.NERD2:
-            return countTokensRemote('/tokenize_nerdstash_v2', str, padding);
+            return countTokensRemote('/api/tokenize/nerdstash_v2', str, padding);
         case tokenizers.API:
             return countTokensRemote('/tokenize_via_api', str, padding);
         default:
@@ -264,7 +264,7 @@ export function countTokensOpenAI(messages, full = false) {
             jQuery.ajax({
                 async: false,
                 type: 'POST', //
-                url: shouldTokenizeAI21 ? '/tokenize_ai21' : `/tokenize_openai?model=${model}`,
+                url: shouldTokenizeAI21 ? '/api/tokenize/ai21' : `/api/tokenize/openai?model=${model}`,
                 data: JSON.stringify([message]),
                 dataType: "json",
                 contentType: "application/json",
@@ -398,13 +398,13 @@ function decodeTextTokensRemote(endpoint, ids) {
 export function getTextTokens(tokenizerType, str) {
     switch (tokenizerType) {
         case tokenizers.GPT2:
-            return getTextTokensRemote('/tokenize_gpt2', str);
+            return getTextTokensRemote('/api/tokenize/gpt2', str);
         case tokenizers.LLAMA:
-            return getTextTokensRemote('/tokenize_llama', str);
+            return getTextTokensRemote('/api/tokenize/llama', str);
         case tokenizers.NERD:
-            return getTextTokensRemote('/tokenize_nerdstash', str);
+            return getTextTokensRemote('/api/tokenize/nerdstash', str);
         case tokenizers.NERD2:
-            return getTextTokensRemote('/tokenize_nerdstash_v2', str);
+            return getTextTokensRemote('/api/tokenize/nerdstash_v2', str);
         default:
             console.warn("Calling getTextTokens with unsupported tokenizer type", tokenizerType);
             return [];
@@ -413,19 +413,19 @@ export function getTextTokens(tokenizerType, str) {
 
 /**
  * Decodes token ids to text using the remote server API.
- * @param {any} tokenizerType Tokenizer type.
+ * @param {number} tokenizerType Tokenizer type.
  * @param {number[]} ids Array of token ids
  */
 export function decodeTextTokens(tokenizerType, ids) {
     switch (tokenizerType) {
         case tokenizers.GPT2:
-            return decodeTextTokensRemote('/decode_gpt2', ids);
+            return decodeTextTokensRemote('/api/decode/gpt2', ids);
         case tokenizers.LLAMA:
-            return decodeTextTokensRemote('/decode_llama', ids);
+            return decodeTextTokensRemote('/api/decode/llama', ids);
         case tokenizers.NERD:
-            return decodeTextTokensRemote('/decode_nerdstash', ids);
+            return decodeTextTokensRemote('/api/decode/nerdstash', ids);
         case tokenizers.NERD2:
-            return decodeTextTokensRemote('/decode_nerdstash_v2', ids);
+            return decodeTextTokensRemote('/api/decode/nerdstash_v2', ids);
         default:
             console.warn("Calling decodeTextTokens with unsupported tokenizer type", tokenizerType);
             return '';
