@@ -8538,6 +8538,7 @@ jQuery(async function () {
             const newElement = $(template);
             newElement.attr('forChar', charname);
             newElement.attr('id', `zoomFor_${charname}`);
+            newElement.addClass('draggable');
             newElement.find('.drag-grabber').attr('id', `zoomFor_${charname}header`);
 
             $('body').append(newElement);
@@ -8713,7 +8714,7 @@ jQuery(async function () {
         const url = input.trim();
         console.debug('Custom content import started', url);
 
-        const request = await fetch('/import_custom', {
+        const request = await fetch('/api/content/import', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({ url }),
@@ -8747,7 +8748,7 @@ jQuery(async function () {
     /**
      * Handles the click event for the third-party extension import button.
      * Prompts the user to enter the Git URL of the extension to import.
-     * After obtaining the Git URL, makes a POST request to '/get_extension' to import the extension.
+     * After obtaining the Git URL, makes a POST request to '/api/extensions/install' to import the extension.
      * If the extension is imported successfully, a success message is displayed.
      * If the extension import fails, an error message is displayed and the error is logged to the console.
      * After successfully importing the extension, the extension settings are reloaded and a 'EXTENSION_SETTINGS_LOADED' event is emitted.
@@ -8770,7 +8771,7 @@ jQuery(async function () {
         const url = input.trim();
         console.debug('Extension import started', url);
 
-        const request = await fetch('/get_extension', {
+        const request = await fetch('/api/extensions/install', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({ url }),
