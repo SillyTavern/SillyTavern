@@ -2732,14 +2732,12 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
                 // Add quiet generation prompt at depth 0
                 if (quiet_prompt && quiet_prompt.length) {
-                    console.log('saw quiet prompt for lastLine modification')
+
                     // here name1 is forced for all quiet prompts..why?
                     const name = name1;
-                    console.log(`name1: ${name1}`)
                     //checks if we are in instruct, if so, formats the chat as such, otherwise just adds the quiet prompt
                     const quietAppend = isInstruct ? formatInstructModeChat(name, quiet_prompt, false, true, '', name1, name2, false) : `\n${quiet_prompt}`;
-                    console.log(`quietAppend:
-${quietAppend}`)
+
                     //This begins to fix quietPrompts (particularly /sysgen) for instruct
                     //previously instruct input sequence was being appended to the last chat message w/o '\n'
                     //and no output sequence was added after the input's content.
@@ -2750,8 +2748,7 @@ ${quietAppend}`)
                     } else {
                         lastMesString += quietAppend;
                     }
-                    console.log(`lastMesString after modifying last prompt line: 
-                    ${lastMesString}`)
+
 
                     // Ross: bailing out early prevents quiet prompts from respecting other instruct prompt toggles
                     // for sysgen, SD, and summary this is desireable as it prevents the AI from responding as char..
@@ -2767,12 +2764,8 @@ ${quietAppend}`)
 
                 // Get instruct mode line
                 if (isInstruct && !isContinue) {
-                    console.log('saw non-continue instruct')
                     const name = isImpersonate ? name1 : name2;
-                    console.log(`name to add: ${name}`)
                     lastMesString += formatInstructModePrompt(name, isImpersonate, promptBias, name1, name2);
-                    console.log(`lastMesString post-formatInstructModePrompt:
-${lastMesString}`)
                 }
 
                 // Get non-instruct impersonation line
@@ -2790,12 +2783,9 @@ ${lastMesString}`)
                 console.log(`force name2 = ${force_name2}`)
 
                 if (!isInstruct && force_name2) {
-                    console.log('saw non-isntruct and force name2')
                     if (!lastMesString.endsWith('\n')) {
-                        console.log('adding a new line to last mes string')
                         lastMesString += '\n';
                     }
-                    console.log('adding name2 to last mes string')
                     lastMesString += `${name2}:`;
                 }
 

@@ -388,11 +388,9 @@ export async function promptQuietForLoudResponse(who, text) {
     } else if (who === 'raw') {
         text = text;
     }
-    console.log(`text before instruct considerations:
-${text}`)
-    //TODO: Less janky way to do this if possible
+
     //text = `${text}${power_user.instruct.enabled ? '' : '\n'}${(power_user.always_force_name2 && who != 'raw') ? characters[character_id].name + ":" : ""}`
-    console.log(text);
+
     let reply = await generateQuietPrompt(text, true);
     text = await getRegexedString(reply, regex_placement.SLASH_COMMAND);
 
