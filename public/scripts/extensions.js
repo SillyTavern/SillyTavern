@@ -197,7 +197,6 @@ async function doExtrasFetch(endpoint, args) {
     }
     Object.assign(args.headers, {
         'Authorization': `Bearer ${extension_settings.apiKey}`,
-        'Bypass-Tunnel-Reminder': 'bypass'
     });
 
     const response = await fetch(endpoint, args);
