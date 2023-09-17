@@ -30,7 +30,7 @@ let defaultSettings = {
     ],
     useContinuation: true,
     repeats: 2, // 0 = infinite
-    sendAs : "user",
+    sendAs: "user",
     randomTime: false,
     timeMin: 60,
     includePrompt: false,
@@ -88,9 +88,9 @@ function resetIdleTimer() {
         min = parseInt(min);
         max = parseInt(max);
         let randomTime = (Math.random() * (max - min + 1)) + min;
-        idleTimer = setTimeout(sendIdlePrompt, 1000*randomTime);
+        idleTimer = setTimeout(sendIdlePrompt, 1000 * randomTime);
     } else {
-        idleTimer = setTimeout(sendIdlePrompt, 1000*extension_settings.idle.timer);
+        idleTimer = setTimeout(sendIdlePrompt, 1000 * extension_settings.idle.timer);
     }
 }
 
@@ -125,7 +125,7 @@ async function sendIdlePrompt() {
  * @param {string} prompt - The prompt text to send to the AI.
  */
 function sendLoud(sendAs, prompt) {
-    if(sendAs === "user") {
+    if (sendAs === "user") {
         prompt = substituteParams(prompt);
 
         $("#send_textarea").val(prompt);
@@ -134,17 +134,17 @@ function sendLoud(sendAs, prompt) {
         $("#send_textarea").focus();
 
         $("#send_but").trigger('click');
-    } else if( sendAs === "char") {
+    } else if (sendAs === "char") {
         sendMessageAs("", `${getContext().name2}\n${prompt}`);
         promptQuietForLoudResponse(sendAs, "");
-    } else if( sendAs === "sys") {
+    } else if (sendAs === "sys") {
         sendNarratorMessage("", prompt);
         promptQuietForLoudResponse(sendAs, "");
     }
     else {
         console.error(`Unknown sendAs value: ${sendAs}`);
     }
-} 
+}
 
 /**
  * Send the provided prompt to the AI. Determines method based on continuation setting.
@@ -252,18 +252,18 @@ function setupListeners() {
     }
 
     //show/hide timer min parent div
-    $('#idle_random_time').on('input', function() {
+    $('#idle_random_time').on('input', function () {
         if ($(this).prop('checked')) {
             $('#idle_timer_min').parent().show();
         } else {
             $('#idle_timer_min').parent().hide();
         }
-    
+
         $('#idle_timer').trigger('input');
     });
 
     // if we're including the prompt, hide raw from the sendAs dropdown
-    $('#idle_include_prompt').on('input', function() {
+    $('#idle_include_prompt').on('input', function () {
         if ($(this).prop('checked')) {
             $('#idle_sendAs option[value="raw"]').hide();
         } else {
@@ -272,7 +272,7 @@ function setupListeners() {
     });
 
     //make sure timer min is less than timer
-    $('#idle_timer').on('input', function() {
+    $('#idle_timer').on('input', function () {
         if ($('#idle_random_time').prop('checked')) {
             if ($(this).val() < $('#idle_timer_min').val()) {
                 $('#idle_timer_min').val($(this).val());
@@ -288,7 +288,7 @@ const debouncedActivityHandler = debounce((event) => {
     if ($(event.target).closest('#option_continue').length) {
         return; // Do not proceed if the click was on (or inside) an element with id "option_continue"
     }
-    
+
     console.debug("Activity detected, resetting idle timer");
     resetIdleTimer();
     repeatCount = 0;

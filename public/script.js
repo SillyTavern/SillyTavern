@@ -1862,12 +1862,16 @@ function getStoppingStrings(isImpersonate) {
     return result.filter(onlyUnique);
 }
 
-
-// Background prompt generation
+/**
+ * Background generation based on the provided prompt.
+ * @param {string} quiet_prompt Instruction prompt for the AI
+ * @param {boolean} quietToLoud Whether a message should be sent in a foreground (loud) or background (quiet) mode
+ * @returns
+ */
 export async function generateQuietPrompt(quiet_prompt, quietToLoud) {
     return await new Promise(
         async function promptPromise(resolve, reject) {
-            if (quietToLoud === true ) {
+            if (quietToLoud === true) {
                 try {
                     await Generate('quiet', { resolve, reject, quiet_prompt, quietToLoud: true, force_name2: true, });
                 }
@@ -2740,7 +2744,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     //TODO: respect output_sequence vs last_output_sequence settings
                     //TODO: decide how to prompt this to clarify who is talking 'Narrator', 'System', etc.
                     if (isInstruct) {
-                       lastMesString += '\n' + quietAppend; // + power_user.instruct.output_sequence + '\n';
+                        lastMesString += '\n' + quietAppend; // + power_user.instruct.output_sequence + '\n';
                     } else {
                         lastMesString += quietAppend;
                     }
