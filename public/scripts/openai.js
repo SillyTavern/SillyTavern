@@ -2153,7 +2153,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         use_alt_scale: settings.use_alt_scale,
     };
 
-    const savePresetSettings = await fetch(`/savepreset_openai?name=${name}`, {
+    const savePresetSettings = await fetch(`/api/presets/save-openai?name=${name}`, {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify(presetBody),
@@ -2313,7 +2313,7 @@ async function onPresetImportFileChange(e) {
         }
     }
 
-    const savePresetSettings = await fetch(`/savepreset_openai?name=${name}`, {
+    const savePresetSettings = await fetch(`/api/presets/save-openai?name=${name}`, {
         method: 'POST',
         headers: getRequestHeaders(),
         body: importedFile,
@@ -2425,14 +2425,16 @@ async function onDeletePresetClick() {
         $('#settings_perset_openai').trigger('change');
     }
 
-    const response = await fetch('/deletepreset_openai', {
+    const response = await fetch('/api/presets/delete-openai', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({ name: nameToDelete }),
     });
 
     if (!response.ok) {
-        console.warn('Preset was not deleted from server');
+        toastr.warning('Preset was not deleted from server');
+    } else {
+        toastr.success('Preset deleted');
     }
 
     saveSettingsDebounced();

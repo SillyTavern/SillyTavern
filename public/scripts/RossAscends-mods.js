@@ -338,7 +338,7 @@ export async function favsToHotswap() {
 
     // don't fill leftover spaces with avatar placeholders
     // just evenly space the selected avatars instead
-    /*  
+    /*
    if (count < maxCount) { //if any space is left over
         let leftOverSlots = maxCount - count;
         for (let i = 1; i <= leftOverSlots; i++) {
@@ -1122,13 +1122,14 @@ export function initRossMods() {
                 $("#rightNavDrawerIcon").trigger('click');
                 return
             }
+            if ($(".draggable").is(":visible")) {
+                // Remove the first matched element
+                $('.draggable:first').remove();
+                return;
+            }
         }
 
-        if ($(".draggable").is(":visible")) {
-            // Remove the first matched element
-            $('.draggable:first').remove();
-            return;
-        }
+
 
 
         if (event.ctrlKey && /^[1-9]$/.test(event.key)) {

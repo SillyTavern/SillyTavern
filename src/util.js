@@ -1,10 +1,10 @@
 const path = require('path');
 const fs = require('fs');
-const child_process = require('child_process');
 const commandExistsSync = require('command-exists').sync;
 const _ = require('lodash');
 const yauzl = require('yauzl');
 const mime = require('mime-types');
+const { default: simpleGit } = require('simple-git');
 
 /**
  * Returns the config object from the config.conf file.
@@ -44,9 +44,9 @@ function getBasicAuthHeader(auth) {
 /**
  * Returns the version of the running instance. Get the version from the package.json file and the git revision.
  * Also returns the agent string for the Horde API.
- * @returns {{agent: string, pkgVersion: string, gitRevision: string | null, gitBranch: string | null}} Version info object
+ * @returns {Promise<{agent: string, pkgVersion: string, gitRevision: string | null, gitBranch: string | null}>} Version info object
  */
-function getVersion() {
+async function getVersion() {
     let pkgVersion = 'UNKNOWN';
     let gitRevision = null;
     let gitBranch = null;
@@ -54,13 +54,9 @@ function getVersion() {
         const pkgJson = require(path.join(process.cwd(), './package.json'));
         pkgVersion = pkgJson.version;
         if (!process['pkg'] && commandExistsSync('git')) {
-            gitRevision = child_process
-                .execSync('git rev-parse --short HEAD', { cwd: process.cwd(), stdio: ['ignore', 'pipe', 'ignore'] })
-                .toString().trim();
-
-            gitBranch = child_process
-                .execSync('git rev-parse --abbrev-ref HEAD', { cwd: process.cwd(), stdio: ['ignore', 'pipe', 'ignore'] })
-                .toString().trim();
+            const git = simpleGit();
+            gitRevision = await git.cwd(process.cwd()).revparse(['--short', 'HEAD']);
+            gitBranch = await git.cwd(process.cwd()).revparse(['--abbrev-ref', 'HEAD']);
         }
     }
     catch {

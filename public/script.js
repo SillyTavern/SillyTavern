@@ -5145,39 +5145,46 @@ export async function getChatsFromFiles(data, isGroupChat) {
     let chat_dict = {};
     let chat_list = Object.values(data).sort((a, b) => a["file_name"].localeCompare(b["file_name"])).reverse();
 
-    for (const { file_name } of chat_list) {
-        try {
-            const endpoint = isGroupChat ? '/getgroupchat' : '/getchat';
-            const requestBody = isGroupChat
-                ? JSON.stringify({ id: file_name })
-                : JSON.stringify({
-                    ch_name: characters[context.characterId].name,
-                    file_name: file_name.replace('.jsonl', ''),
-                    avatar_url: characters[context.characterId].avatar
+    let chat_promise = chat_list.map(({ file_name}) => {
+        return new Promise(async (res, rej) => {
+            try {
+                const endpoint = isGroupChat ? '/getgroupchat' : '/getchat';
+                const requestBody = isGroupChat
+                    ? JSON.stringify({ id: file_name })
+                    : JSON.stringify({
+                        ch_name: characters[context.characterId].name,
+                        file_name: file_name.replace('.jsonl', ''),
+                        avatar_url: characters[context.characterId].avatar
+                    });
+
+                const chatResponse = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: getRequestHeaders(),
+                    body: requestBody,
+                    cache: 'no-cache',
                 });
 
-            const chatResponse = await fetch(endpoint, {
-                method: 'POST',
-                headers: getRequestHeaders(),
-                body: requestBody,
-                cache: 'no-cache',
-            });
+                if (!chatResponse.ok) {
+                    return res();
+                    // continue;
+                }
 
-            if (!chatResponse.ok) {
-                continue;
+                const currentChat = await chatResponse.json();
+                if (!isGroupChat) {
+                    // remove the first message, which is metadata, only for individual chats
+                    currentChat.shift();
+                }
+                chat_dict[file_name] = currentChat;
+
+            } catch (error) {
+                console.error(error);
             }
 
-            const currentChat = await chatResponse.json();
-            if (!isGroupChat) {
-                // remove the first message, which is metadata, only for individual chats
-                currentChat.shift();
-            }
-            chat_dict[file_name] = currentChat;
+            return res();
+        })
+    })
 
-        } catch (error) {
-            console.error(error);
-        }
-    }
+    await Promise.all(chat_promise)
 
     return chat_dict;
 }
@@ -8538,6 +8545,7 @@ jQuery(async function () {
             const newElement = $(template);
             newElement.attr('forChar', charname);
             newElement.attr('id', `zoomFor_${charname}`);
+            newElement.addClass('draggable');
             newElement.find('.drag-grabber').attr('id', `zoomFor_${charname}header`);
 
             $('body').append(newElement);
@@ -8713,7 +8721,7 @@ jQuery(async function () {
         const url = input.trim();
         console.debug('Custom content import started', url);
 
-        const request = await fetch('/import_custom', {
+        const request = await fetch('/api/content/import', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({ url }),
@@ -8747,7 +8755,7 @@ jQuery(async function () {
     /**
      * Handles the click event for the third-party extension import button.
      * Prompts the user to enter the Git URL of the extension to import.
-     * After obtaining the Git URL, makes a POST request to '/get_extension' to import the extension.
+     * After obtaining the Git URL, makes a POST request to '/api/extensions/install' to import the extension.
      * If the extension is imported successfully, a success message is displayed.
      * If the extension import fails, an error message is displayed and the error is logged to the console.
      * After successfully importing the extension, the extension settings are reloaded and a 'EXTENSION_SETTINGS_LOADED' event is emitted.
@@ -8770,7 +8778,7 @@ jQuery(async function () {
         const url = input.trim();
         console.debug('Extension import started', url);
 
-        const request = await fetch('/get_extension', {
+        const request = await fetch('/api/extensions/install', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({ url }),
