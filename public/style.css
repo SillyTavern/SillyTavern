@@ -546,6 +546,7 @@ hr {
     cursor: pointer;
     transition: 0.3s;
     opacity: 0.7;
+    display: flex;
     align-items: center;
     justify-content: center;
 }
@@ -564,7 +565,7 @@ hr {
     order: 99998;
 }
 
-.mes_stop {
+#send_but_sheld .mes_stop {
     display: none;
     order: 99997;
 }
