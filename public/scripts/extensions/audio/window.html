@@ -10,6 +10,18 @@
                     <input type="checkbox" id="audio_enabled" name="audio_enabled">
                     <small>Enabled</small>
                 </label>
+                <div id="audio_bgm_dynamic_enable_div">
+                    <label class="checkbox_label" for="audio_dynamic_bgm_enabled">
+                        <input type="checkbox" id="audio_dynamic_bgm_enabled" name="audio_dynamic_bgm_enabled">
+                        <small>Enable expression BGM switch (req. character expression)</small>
+                    </label>
+                </div>
+                <div id="audio_ambient_dynamic_enable_div">
+                    <label class="checkbox_label" for="audio_dynamic_ambient_enabled">
+                        <input type="checkbox" id="audio_dynamic_ambient_enabled" name="audio_dynamic_ambient_enabled">
+                        <small>Enable ambient background switch (req. chat background)</small>
+                    </label>
+                </div>
                 <div id="audio_debug_div">
                     <label class="checkbox_label" for="audio_debug">
                         <input type="checkbox" id="audio_debug" name="audio_debug">
@@ -24,7 +36,7 @@
                 </div>
             </div>
             <div>
-                <div>
+                <div class="audio-ui-block">
                     <label for="audio_bgm_volume_slider">Music</label>
                     <div class="audio-mixer-div">
                         <div class="audio-mixer-element audio-mixer-lock">

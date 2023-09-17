@@ -77,13 +77,15 @@ let cooldownBGM = 0;
 
 const defaultSettings = {
     enabled: false,
+    dynamic_bgm_enabled: false,
+    dynamic_ambient_enabled: false,
 
-    bgm_locked: false,
+    bgm_locked: true,
     bgm_muted: true,
     bgm_volume: 50,
     bgm_selected: null,
 
-    ambient_locked: false,
+    ambient_locked: true,
     ambient_muted: true,
     ambient_volume: 50,
     ambient_selected: null,
@@ -99,6 +101,8 @@ function loadSettings() {
         Object.assign(extension_settings.audio, defaultSettings)
     }
     $("#audio_enabled").prop('checked', extension_settings.audio.enabled);
+    $("#audio_dynamic_bgm_enabled").prop('checked', extension_settings.audio.dynamic_bgm_enabled);
+    $("#audio_dynamic_ambient_enabled").prop('checked', extension_settings.audio.dynamic_ambient_enabled);
 
     $("#audio_bgm_volume").text(extension_settings.audio.bgm_volume);
     $("#audio_ambient_volume").text(extension_settings.audio.ambient_volume);
@@ -183,8 +187,29 @@ async function onEnabledClick() {
     saveSettingsDebounced();
 }
 
+async function onDynamicBGMEnabledClick() {
+    extension_settings.audio.dynamic_bgm_enabled = $('#audio_dynamic_bgm_enabled').is(':checked');
+    currentCharacterBGM = null;
+    currentExpressionBGM = null;
+    cooldownBGM = 0;
+    saveSettingsDebounced();
+}
+
+async function onDynamicAmbientEnabledClick() {
+    extension_settings.audio.dynamic_ambient_enabled = $('#audio_dynamic_ambient_enabled').is(':checked');
+    currentBackground= null;
+    saveSettingsDebounced();
+}
+
 async function onBGMLockClick() {
     extension_settings.audio.bgm_locked = !extension_settings.audio.bgm_locked;
+    if (extension_settings.audio.bgm_locked)
+        extension_settings.audio.bgm_selected = $("#audio_bgm_select").val();
+    else {
+        extension_settings.audio.bgm_selected = null;
+        currentCharacterBGM = null;
+        currentExpressionBGM = null;
+    }
     $("#audio_bgm_lock_icon").toggleClass("fa-lock");
     $("#audio_bgm_lock_icon").toggleClass("fa-lock-open");
     $("#audio_bgm_lock").toggleClass("redOverlayGlow");
@@ -372,22 +397,24 @@ async function moduleWorker() {
 
         // 1) Update ambient audio
         // ---------------------------
-        let newBackground = $("#bg1").css("background-image");
-        const custom_background = getContext()["chatMetadata"]["custom_background"];
+        if (extension_settings.audio.dynamic_ambient_enabled) {
+            let newBackground = $("#bg1").css("background-image");
+            const custom_background = getContext()["chatMetadata"]["custom_background"];
 
-        if (custom_background !== undefined)
-            newBackground = custom_background
+            if (custom_background !== undefined)
+                newBackground = custom_background
 
-        if (!isDataURL(newBackground)) {
-            newBackground = newBackground.substring(newBackground.lastIndexOf("/") + 1).replace(/\.[^/.]+$/, "").replaceAll("%20", "-").replaceAll(" ", "-"); // remove path and spaces
+            if (!isDataURL(newBackground)) {
+                newBackground = newBackground.substring(newBackground.lastIndexOf("/") + 1).replace(/\.[^/.]+$/, "").replaceAll("%20", "-").replaceAll(" ", "-"); // remove path and spaces
 
-            //console.debug(DEBUG_PREFIX,"Current backgroung:",newBackground);
+                //console.debug(DEBUG_PREFIX,"Current backgroung:",newBackground);
 
-            if (currentBackground !== newBackground) {
-                currentBackground = newBackground;
+                if (currentBackground !== newBackground) {
+                    currentBackground = newBackground;
 
-                console.debug(DEBUG_PREFIX, "Changing ambient audio for", currentBackground);
-                updateAmbient();
+                    console.debug(DEBUG_PREFIX, "Changing ambient audio for", currentBackground);
+                    updateAmbient();
+                }
             }
         }
 
@@ -582,6 +609,11 @@ function getNewExpression() {
 }
 
 async function updateBGM(isUserInput=false) {
+    if (!isUserInput && !extension_settings.audio.dynamic_bgm_enabled && $("#audio_bgm").attr("src") != "") {
+        console.debug(DEBUG_PREFIX, "BGM already playing and dynamic switch disabled, no update done");
+        return;
+    }
+
     let audio_file_path = ""
     if (isUserInput || extension_settings.audio.bgm_locked) {
         audio_file_path = extension_settings.audio.bgm_selected;
@@ -631,11 +663,15 @@ async function updateBGM(isUserInput=false) {
                 return;
             }
 
-            audio.animate({ volume: 0.0 }, 2000, function () {
+            let fade_time = 2000;
+            if(isUserInput)
+                fade_time = 0;
+
+            audio.animate({ volume: 0.0 }, fade_time, function () {
                 audio.attr("src", audio_file_path);
                 audio[0].play();
                 audio.volume = extension_settings.audio.bgm_volume * 0.01;
-                audio.animate({ volume: extension_settings.audio.bgm_volume * 0.01 }, 2000);
+                audio.animate({ volume: extension_settings.audio.bgm_volume * 0.01 }, fade_time);
             })
         }
 
@@ -700,6 +736,8 @@ jQuery(async () => {
     loadSettings();
 
     $("#audio_enabled").on("click", onEnabledClick);
+    $("#audio_dynamic_bgm_enabled").on("click", onDynamicBGMEnabledClick);
+    $("#audio_dynamic_ambient_enabled").on("click", onDynamicAmbientEnabledClick);
 
     $("#audio_bgm").attr("loop", true);
     $("#audio_ambient").attr("loop", true);
