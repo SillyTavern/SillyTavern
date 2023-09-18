@@ -71,6 +71,8 @@ let currentBackground = null;
 
 let cooldownBGM = 0;
 
+let bgmEnded = true;
+
 //#############################//
 //  Extension UI and Settings  //
 //#############################//
@@ -124,13 +126,14 @@ function loadSettings() {
     }
 
     if (extension_settings.audio.bgm_locked) {
-        $("#audio_bgm_lock_icon").removeClass("fa-lock-open");
-        $("#audio_bgm_lock_icon").addClass("fa-lock");
+        //$("#audio_bgm_lock_icon").removeClass("fa-lock-open");
+        //$("#audio_bgm_lock_icon").addClass("fa-lock");
         $("#audio_bgm_lock").addClass("redOverlayGlow");
     }
     else {
-        $("#audio_bgm_lock_icon").removeClass("fa-lock");
-        $("#audio_bgm_lock_icon").addClass("fa-lock-open");
+        //$("#audio_bgm_lock_icon").removeClass("fa-lock");
+        //$("#audio_bgm_lock_icon").addClass("fa-lock-open");
+        $("#audio_bgm_lock").removeClass("redOverlayGlow");
     }
 
     /*
@@ -203,17 +206,28 @@ async function onDynamicAmbientEnabledClick() {
 
 async function onBGMLockClick() {
     extension_settings.audio.bgm_locked = !extension_settings.audio.bgm_locked;
-    if (extension_settings.audio.bgm_locked)
+    if (extension_settings.audio.bgm_locked) {
         extension_settings.audio.bgm_selected = $("#audio_bgm_select").val();
+        $("#audio_bgm").attr("loop", true);
+    }
     else {
         extension_settings.audio.bgm_selected = null;
         currentCharacterBGM = null;
         currentExpressionBGM = null;
+        $("#audio_bgm").attr("loop", false);
     }
-    $("#audio_bgm_lock_icon").toggleClass("fa-lock");
-    $("#audio_bgm_lock_icon").toggleClass("fa-lock-open");
+    //$("#audio_bgm_lock_icon").toggleClass("fa-lock");
+    //$("#audio_bgm_lock_icon").toggleClass("fa-lock-open");
     $("#audio_bgm_lock").toggleClass("redOverlayGlow");
     saveSettingsDebounced();
+}
+
+async function onBGMRandomClick() {
+    var select = document.getElementById('audio_bgm_select');
+    var items = select.getElementsByTagName('option');
+    var index = Math.floor(Math.random() * items.length);
+    select.selectedIndex = index;
+    onBGMSelectChange();
 }
 
 async function onBGMMuteClick() {
@@ -664,7 +678,7 @@ async function updateBGM(isUserInput = false) {
             $("#audio_bgm_select").val(audio_file_path);
             const audio = $("#audio_bgm");
 
-            if (audio.attr("src") == audio_file_path) {
+            if (audio.attr("src") == audio_file_path && !bgmEnded) {
                 console.log(DEBUG_PREFIX, "Already playing, ignored");
                 return;
             }
@@ -673,12 +687,13 @@ async function updateBGM(isUserInput = false) {
             if (isUserInput)
                 fade_time = 0;
 
+            bgmEnded = false;
             audio.animate({ volume: 0.0 }, fade_time, function () {
                 audio.attr("src", audio_file_path);
                 audio[0].play();
                 audio.volume = extension_settings.audio.bgm_volume * 0.01;
                 audio.animate({ volume: extension_settings.audio.bgm_volume * 0.01 }, fade_time);
-            })
+            });
         }
 
     } catch (error) {
@@ -709,7 +724,7 @@ async function updateAmbient(isUserInput = false) {
     }
 
     if (audio_file_path === null) {
-        console.debug(DEBUG_PREFIX, "No ambient file found for background", currentBackground);
+        console.debug(DEBUG_PREFIX, "No bgm file found for background", currentBackground);
         const audio = $("#audio_ambient");
         audio.attr("src", "");
         audio[0].pause();
@@ -731,7 +746,7 @@ async function updateAmbient(isUserInput = false) {
         console.log(DEBUG_PREFIX, "Already playing, ignored");
         return;
     }
-
+    
     audio.animate({ volume: 0.0 }, fade_time, function () {
         audio.attr("src", audio_file_path);
         audio[0].play();
@@ -755,13 +770,14 @@ jQuery(async () => {
     $("#audio_dynamic_bgm_enabled").on("click", onDynamicBGMEnabledClick);
     $("#audio_dynamic_ambient_enabled").on("click", onDynamicAmbientEnabledClick);
 
-    $("#audio_bgm").attr("loop", true);
+    $("#audio_bgm").attr("loop", false);
     $("#audio_ambient").attr("loop", true);
 
     $("#audio_bgm").hide();
     $("#audio_bgm_lock").on("click", onBGMLockClick);
     $("#audio_bgm_mute").on("click", onBGMMuteClick);
     $("#audio_bgm_volume_slider").on("input", onBGMVolumeChange);
+    $("#audio_bgm_random").on("click", onBGMRandomClick);
 
     $("#audio_ambient").hide();
     $("#audio_ambient_lock").on("click", onAmbientLockClick);
@@ -796,6 +812,12 @@ jQuery(async () => {
         }
     });
     //
+
+    $("#audio_bgm").on("ended", function() {
+        console.debug(DEBUG_PREFIX,"END OF BGM")
+        bgmEnded = true;
+        updateBGM();
+    });
 
     const wrapper = new ModuleWorkerWrapper(moduleWorker);
     setInterval(wrapper.update.bind(wrapper), UPDATE_INTERVAL);
