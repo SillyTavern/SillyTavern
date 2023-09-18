@@ -268,10 +268,9 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
     const storageKey = 'WI_PerPage';
     $("#world_info_pagination").pagination({
         dataSource: getDataArray,
-        pageSize: 25,
-        //pageSize: Number(localStorage.getItem(storageKey)) || 25,
-        //sizeChangerOptions: [10, 25, 50, 100],
-        //showSizeChanger: true,
+        pageSize: Number(localStorage.getItem(storageKey)) || 25,
+        sizeChangerOptions: [10, 25, 50, 100],
+        showSizeChanger: true,
         pageRange: 1,
         pageNumber: startPage,
         position: 'top',

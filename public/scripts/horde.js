@@ -153,6 +153,16 @@ async function generateHorde(prompt, params, signal) {
         const statusCheckJson = await statusCheckResponse.json();
         console.log(statusCheckJson);
 
+        if (statusCheckJson.faulted === true) {
+            toastr.error('Horde request faulted. Please try again.');
+            throw new Error(`Horde generation failed: Faulted`);
+        }
+
+        if (statusCheckJson.is_possible === false) {
+            toastr.error('There are no Horde workers that are able to generate text with your request. Please change the parameters or try again later.');
+            throw new Error(`Horde generation failed: Unsatisfiable request`);
+        }
+
         if (statusCheckJson.done && Array.isArray(statusCheckJson.generations) && statusCheckJson.generations.length) {
             setGenerationProgress(100);
             const generatedText = statusCheckJson.generations[0].text;

@@ -1862,16 +1862,30 @@ function getStoppingStrings(isImpersonate) {
     return result.filter(onlyUnique);
 }
 
-
-// Background prompt generation
-export async function generateQuietPrompt(quiet_prompt) {
+/**
+ * Background generation based on the provided prompt.
+ * @param {string} quiet_prompt Instruction prompt for the AI
+ * @param {boolean} quietToLoud Whether a message should be sent in a foreground (loud) or background (quiet) mode
+ * @returns
+ */
+export async function generateQuietPrompt(quiet_prompt, quietToLoud) {
     return await new Promise(
         async function promptPromise(resolve, reject) {
-            try {
-                await Generate('quiet', { resolve, reject, quiet_prompt, force_name2: true, });
+            if (quietToLoud === true) {
+                try {
+                    await Generate('quiet', { resolve, reject, quiet_prompt, quietToLoud: true, force_name2: true, });
+                }
+                catch {
+                    reject();
+                }
             }
-            catch {
-                reject();
+            else {
+                try {
+                    await Generate('quiet', { resolve, reject, quiet_prompt, quietToLoud: false, force_name2: true, });
+                }
+                catch {
+                    reject();
+                }
             }
         });
 }
@@ -2246,7 +2260,7 @@ class StreamingProcessor {
         throw new Error('Generation function for streaming is not hooked up');
     }
 
-    constructor(type, force_name2) {
+    constructor(type, force_name2, timeStarted) {
         this.result = "";
         this.messageId = -1;
         this.type = type;
@@ -2256,7 +2270,7 @@ class StreamingProcessor {
         this.generator = this.nullStreamingGeneration;
         this.abortController = new AbortController();
         this.firstMessageText = '...';
-        this.timeStarted = new Date();
+        this.timeStarted = timeStarted;
     }
 
     async generate() {
@@ -2289,7 +2303,7 @@ class StreamingProcessor {
     }
 }
 
-async function Generate(type, { automatic_trigger, force_name2, resolve, reject, quiet_prompt, force_chid, signal } = {}, dryRun = false) {
+async function Generate(type, { automatic_trigger, force_name2, resolve, reject, quiet_prompt, quietToLoud, force_chid, signal } = {}, dryRun = false) {
     //console.log('Generate entered');
     setGenerationProgress(0);
     generation_started = new Date();
@@ -2371,9 +2385,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         }
     }
 
+    //#########QUIET PROMPT STUFF##############
+    //this function just gives special care to novel quiet instruction prompts
     if (quiet_prompt) {
         quiet_prompt = substituteParams(quiet_prompt);
-        quiet_prompt = main_api == 'novel' ? adjustNovelInstructionPrompt(quiet_prompt) : quiet_prompt;
+        quiet_prompt = main_api == 'novel' && !quietToLoud ? adjustNovelInstructionPrompt(quiet_prompt) : quiet_prompt;
     }
 
     if (true === dryRun ||
@@ -2403,6 +2419,18 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         }
 
         const isContinue = type == 'continue';
+
+        // Rewrite the generation timer to account for the time passed for all the continuations.
+        if (isContinue && chat.length) {
+            const prevFinished = chat[chat.length - 1]['gen_finished'];
+            const prevStarted = chat[chat.length - 1]['gen_started'];
+
+            if (prevFinished && prevStarted) {
+                const timePassed = prevFinished - prevStarted;
+                generation_started = new Date(Date.now() - timePassed);
+                chat[chat.length - 1]['gen_started'] = generation_started;
+            }
+        }
 
         if (!dryRun) {
             deactivateSendButtons();
@@ -2649,7 +2677,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         console.debug('calling runGenerate');
 
         if (!dryRun) {
-            streamingProcessor = isStreamingEnabled() ? new StreamingProcessor(type, force_name2) : false;
+            streamingProcessor = isStreamingEnabled() ? new StreamingProcessor(type, force_name2, generation_started) : false;
         }
 
         if (isContinue) {
@@ -2712,9 +2740,14 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             }
 
             function modifyLastPromptLine(lastMesString) {
+                //#########QUIET PROMPT STUFF PT2##############
+
                 // Add quiet generation prompt at depth 0
                 if (quiet_prompt && quiet_prompt.length) {
+
+                    // here name1 is forced for all quiet prompts..why?
                     const name = name1;
+                    //checks if we are in instruct, if so, formats the chat as such, otherwise just adds the quiet prompt
                     const quietAppend = isInstruct ? formatInstructModeChat(name, quiet_prompt, false, true, '', name1, name2, false) : `\n${quiet_prompt}`;
 
                     //This begins to fix quietPrompts (particularly /sysgen) for instruct
@@ -2723,13 +2756,23 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     //TODO: respect output_sequence vs last_output_sequence settings
                     //TODO: decide how to prompt this to clarify who is talking 'Narrator', 'System', etc.
                     if (isInstruct) {
-                        lastMesString += '\n' + quietAppend + power_user.instruct.output_sequence + '\n';
+                        lastMesString += '\n' + quietAppend; // + power_user.instruct.output_sequence + '\n';
                     } else {
                         lastMesString += quietAppend;
                     }
-                    // Bail out early
-                    return lastMesString;
+
+
+                    // Ross: bailing out early prevents quiet prompts from respecting other instruct prompt toggles
+                    // for sysgen, SD, and summary this is desireable as it prevents the AI from responding as char..
+                    // but for idle prompting, we want the flexibility of the other prompt toggles, and to respect them as per settings in the extension
+                    // need a detection for what the quiet prompt is being asked for...
+
+                    // Bail out early?
+                    if (quietToLoud !== true) {
+                        return lastMesString;
+                    }
                 }
+
 
                 // Get instruct mode line
                 if (isInstruct && !isContinue) {
@@ -2752,7 +2795,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     if (!lastMesString.endsWith('\n')) {
                         lastMesString += '\n';
                     }
-
                     lastMesString += `${name2}:`;
                 }
 

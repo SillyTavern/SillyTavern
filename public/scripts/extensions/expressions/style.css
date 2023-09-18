@@ -49,6 +49,7 @@
     overflow: hidden;
     resize: both;
     display: flex;
+    justify-content: center;
 }
 
 #no_chat_expressions {

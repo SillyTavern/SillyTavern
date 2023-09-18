@@ -102,6 +102,7 @@ input.extension_missing[type="checkbox"] {
     flex-direction: column;
 }
 
+/** LEFT COLUMN **/
 #extensions_settings>.expression_settings {
     order: 1;
 }
@@ -138,6 +139,7 @@ input.extension_missing[type="checkbox"] {
     order: 9;
 }
 
+/** RIGHT COLUMN **/
 #extensions_settings2>.translation_settings {
     order: 1;
 }
@@ -150,26 +152,59 @@ input.extension_missing[type="checkbox"] {
     order: 3;
 }
 
-#extensions_settings2>#memory_settings {
+#extensions_settings2>.idle-settings {
     order: 4;
 }
 
-#extensions_settings2>.hypebot_settings {
+#extensions_settings2>#memory_settings {
     order: 5;
 }
 
-#extensions_settings2>.regex_settings {
+#extensions_settings2>.hypebot_settings {
     order: 6;
 }
 
-#extensions_settings2>.vectors_settings {
+#extensions_settings2>.regex_settings {
     order: 7;
 }
 
-#extensions_settings2>.chromadb_settings {
+#extensions_settings2>.vectors_settings {
     order: 8;
 }
 
-#extensions_settings2>.randomizer_settings {
+#extensions_settings2>.chromadb_settings {
     order: 9;
+}
+
+#extensions_settings2>.randomizer_settings {
+    order: 10;
+}
+
+/** WAND MENU **/
+#extensionsMenu>#ttsExtensionMenuItem {
+    order: 1;
+}
+
+#extensionsMenu>#sd_gen {
+    order: 2;
+}
+
+#extensionsMenu>#send_picture {
+    order: 3;
+}
+
+#extensionsMenu>#token_counter {
+    order: 4;
+}
+
+#extensionsMenu>#objective-task-manual-check-menu-item {
+    order: 5;
+}
+
+#extensionsMenu>#roll_dice {
+    order: 6;
+}
+
+#extensionsMenu>#translate_chat {
+    order: 7;
 }
