@@ -686,7 +686,7 @@ async function updateBGM(isUserInput=false) {
     }
 }
 
-async function updateAmbient(isUserInput) {
+async function updateAmbient(isUserInput=false) {
     let audio_file_path = null;
 
     if (isUserInput || extension_settings.audio.ambient_locked) {
