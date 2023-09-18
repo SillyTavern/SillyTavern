@@ -5,6 +5,7 @@ import {
 import { debounce } from "../../utils.js";
 import { promptQuietForLoudResponse, sendMessageAs, sendNarratorMessage } from "../../slash-commands.js";
 import { extension_settings, getContext, renderExtensionTemplate } from "../../extensions.js";
+import { registerSlashCommand } from "../../slash-commands.js";
 const extensionName = "idle";
 
 let idleTimer = null;
@@ -303,6 +304,13 @@ function removeIdleListeners() {
     document.removeEventListener('keydown', debouncedActivityHandler);
 }
 
+function toggleIdle() {
+    extension_settings.idle.enabled = !extension_settings.idle.enabled;
+    $('#idle_enabled').prop('checked', extension_settings.idle.enabled);
+    $('#idle_enabled').trigger('input');
+    toastr.info(`Idle mode ${extension_settings.idle.enabled ? "enabled" : "disabled"}.`);
+    resetIdleTimer();
+}
 
 
 
@@ -317,4 +325,5 @@ jQuery(async () => {
     if ($('#idle_random_time').prop('checked')) {
         $('#idle_timer_min').parent().show();
     }
+    registerSlashCommand('idle', toggleIdle, [], ' – toggles idle mode', true, true);
 });
