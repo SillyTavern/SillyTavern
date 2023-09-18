@@ -715,12 +715,22 @@ async function updateAmbient(isUserInput) {
     console.log(DEBUG_PREFIX, "Checking file", audio_file_path);
     $("#audio_ambient_select").val(audio_file_path);
 
+    let fade_time = 2000;
+        if(isUserInput)
+            fade_time = 0;
+
     const audio = $("#audio_ambient");
-    audio.animate({ volume: 0.0 }, 2000, function () {
+
+    if (audio.attr("src") == audio_file_path) {
+        console.log(DEBUG_PREFIX, "Already playing, ignored");
+        return;
+    }
+
+    audio.animate({ volume: 0.0 }, fade_time, function () {
         audio.attr("src", audio_file_path);
         audio[0].play();
         audio.volume = extension_settings.audio.ambient_volume * 0.01;
-        audio.animate({ volume: extension_settings.audio.ambient_volume * 0.01 }, 2000);
+        audio.animate({ volume: extension_settings.audio.ambient_volume * 0.01 }, fade_time);
     });
 }
 
