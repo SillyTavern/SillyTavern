@@ -746,13 +746,35 @@ async function updateAmbient(isUserInput = false) {
         console.log(DEBUG_PREFIX, "Already playing, ignored");
         return;
     }
-    
+
     audio.animate({ volume: 0.0 }, fade_time, function () {
         audio.attr("src", audio_file_path);
         audio[0].play();
         audio.volume = extension_settings.audio.ambient_volume * 0.01;
         audio.animate({ volume: extension_settings.audio.ambient_volume * 0.01 }, fade_time);
     });
+}
+
+/**
+ * Handles wheel events on volume sliders.
+ * @param {WheelEvent} e Event
+ */
+function onVolumeSliderWheelEvent(e) {
+    const slider = $(this);
+    e.preventDefault();
+    e.stopPropagation();
+
+    const delta = e.deltaY / 20;
+    const sliderVal = Number(slider.val());
+
+    let newVal = sliderVal - delta;
+    if (newVal < 0) {
+        newVal = 0;
+    } else if (newVal > 100) {
+        newVal = 100;
+    }
+
+    slider.val(newVal).trigger('input');
 }
 
 //#############################//
@@ -784,6 +806,9 @@ jQuery(async () => {
     $("#audio_ambient_mute").on("click", onAmbientMuteClick);
     $("#audio_ambient_volume_slider").on("input", onAmbientVolumeChange);
 
+    document.getElementById('audio_ambient_volume_slider').addEventListener('wheel', onVolumeSliderWheelEvent, { passive: false });
+    document.getElementById('audio_bgm_volume_slider').addEventListener('wheel', onVolumeSliderWheelEvent, { passive: false });
+
     $("#audio_bgm_cooldown").on("input", onBGMCooldownInput);
 
     // Reset assets container, will be redected like if ST restarted
@@ -813,8 +838,8 @@ jQuery(async () => {
     });
     //
 
-    $("#audio_bgm").on("ended", function() {
-        console.debug(DEBUG_PREFIX,"END OF BGM")
+    $("#audio_bgm").on("ended", function () {
+        console.debug(DEBUG_PREFIX, "END OF BGM")
         bgmEnded = true;
         updateBGM();
     });
