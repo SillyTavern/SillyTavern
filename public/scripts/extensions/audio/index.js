@@ -227,6 +227,12 @@ async function onBGMMuteClick() {
 
 async function onAmbientLockClick() {
     extension_settings.audio.ambient_locked = !extension_settings.audio.ambient_locked;
+    if (extension_settings.audio.ambient_locked)
+        extension_settings.audio.ambient_selected = $("#audio_ambient_select").val();
+    else {
+        extension_settings.audio.ambient_selected = null;
+        currentBackground = null;
+    }
     $("#audio_ambient_lock_icon").toggleClass("fa-lock");
     $("#audio_ambient_lock_icon").toggleClass("fa-lock-open");
     $("#audio_ambient_lock").toggleClass("redOverlayGlow");
