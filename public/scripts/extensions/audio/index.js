@@ -89,7 +89,7 @@ const defaultSettings = {
     ambient_muted: true,
     ambient_volume: 50,
     ambient_selected: null,
-    
+
     bgm_cooldown: 30
 }
 
@@ -116,7 +116,7 @@ function loadSettings() {
         $("#audio_bgm_mute").addClass("redOverlayGlow");
         $("#audio_bgm").prop("muted", true);
     }
-    else{
+    else {
         $("#audio_bgm_mute_icon").addClass("fa-volume-high");
         $("#audio_bgm_mute_icon").removeClass("fa-volume-mute");
         $("#audio_bgm_mute").removeClass("redOverlayGlow");
@@ -128,7 +128,7 @@ function loadSettings() {
         $("#audio_bgm_lock_icon").addClass("fa-lock");
         $("#audio_bgm_lock").addClass("redOverlayGlow");
     }
-    else{
+    else {
         $("#audio_bgm_lock_icon").removeClass("fa-lock");
         $("#audio_bgm_lock_icon").addClass("fa-lock-open");
     }
@@ -144,7 +144,7 @@ function loadSettings() {
         $("#audio_ambient_lock_icon").addClass("fa-lock");
         $("#audio_ambient_lock").addClass("redOverlayGlow");
     }
-    else{
+    else {
         $("#audio_ambient_lock_icon").removeClass("fa-lock");
         $("#audio_ambient_lock_icon").addClass("fa-lock-open");
     }
@@ -161,7 +161,7 @@ function loadSettings() {
         $("#audio_ambient_mute").addClass("redOverlayGlow");
         $("#audio_ambient").prop("muted", true);
     }
-    else{
+    else {
         $("#audio_ambient_mute_icon").addClass("fa-volume-high");
         $("#audio_ambient_mute_icon").removeClass("fa-volume-mute");
         $("#audio_ambient_mute").removeClass("redOverlayGlow");
@@ -197,7 +197,7 @@ async function onDynamicBGMEnabledClick() {
 
 async function onDynamicAmbientEnabledClick() {
     extension_settings.audio.dynamic_ambient_enabled = $('#audio_dynamic_ambient_enabled').is(':checked');
-    currentBackground= null;
+    currentBackground = null;
     saveSettingsDebounced();
 }
 
@@ -351,24 +351,24 @@ async function moduleWorker() {
 
             // Update bgm list in UI
             $("#audio_bgm_select")
-            .find('option')
-            .remove();
+                .find('option')
+                .remove();
 
-            if(extension_settings.audio.bgm_selected !== null) {
+            if (extension_settings.audio.bgm_selected) {
                 let bgm_label = extension_settings.audio.bgm_selected;
                 if (bgm_label.includes("assets"))
                     bgm_label = "asset: " + bgm_label.replace(/^.*[\\\/]/, '').replace(/\.[^/.]+$/, "");
                 else {
                     bgm_label = bgm_label.substring("/characters/".length);
-                    bgm_label = bgm_label.substring(0,bgm_label.indexOf("/")) + ": " + bgm_label.substring(bgm_label.indexOf("/")+"/bgm/".length);
+                    bgm_label = bgm_label.substring(0, bgm_label.indexOf("/")) + ": " + bgm_label.substring(bgm_label.indexOf("/") + "/bgm/".length);
                     bgm_label = bgm_label.replace(/\.[^/.]+$/, "");
                 }
                 $('#audio_bgm_select').append(new Option(bgm_label, extension_settings.audio.bgm_selected));
             }
-    
+
             for (const file of fallback_BGMS) {
-                if(file !== extension_settings.audio.bgm_selected)
-                    $('#audio_bgm_select').append(new Option("asset: "+file.replace(/^.*[\\\/]/, '').replace(/\.[^/.]+$/, ""), file));
+                if (file !== extension_settings.audio.bgm_selected)
+                    $('#audio_bgm_select').append(new Option("asset: " + file.replace(/^.*[\\\/]/, '').replace(/\.[^/.]+$/, ""), file));
             }
         }
 
@@ -380,24 +380,24 @@ async function moduleWorker() {
 
             // Update bgm list in UI
             $("#audio_ambient_select")
-            .find('option')
-            .remove();
+                .find('option')
+                .remove();
 
-            if(extension_settings.audio.ambient_selected !== null) {
+            if (extension_settings.audio.ambient_selected !== null) {
                 let ambient_label = extension_settings.audio.ambient_selected;
                 if (ambient_label.includes("assets"))
-                ambient_label = "asset: " + ambient_label.replace(/^.*[\\\/]/, '').replace(/\.[^/.]+$/, "");
+                    ambient_label = "asset: " + ambient_label.replace(/^.*[\\\/]/, '').replace(/\.[^/.]+$/, "");
                 else {
                     ambient_label = ambient_label.substring("/characters/".length);
-                    ambient_label = ambient_label.substring(0,ambient_label.indexOf("/")) + ": " + ambient_label.substring(ambient_label.indexOf("/")+"/bgm/".length);
+                    ambient_label = ambient_label.substring(0, ambient_label.indexOf("/")) + ": " + ambient_label.substring(ambient_label.indexOf("/") + "/bgm/".length);
                     ambient_label = ambient_label.replace(/\.[^/.]+$/, "");
                 }
                 $('#audio_ambient_select').append(new Option(ambient_label, extension_settings.audio.ambient_selected));
             }
-    
+
             for (const file of ambients) {
-                if(file !== extension_settings.audio.ambient_selected)
-                    $("#audio_ambient_select").append(new Option("asset: "+file.replace(/^.*[\\\/]/, '').replace(/\.[^/.]+$/, ""), file));
+                if (file !== extension_settings.audio.ambient_selected)
+                    $("#audio_ambient_select").append(new Option("asset: " + file.replace(/^.*[\\\/]/, '').replace(/\.[^/.]+$/, ""), file));
             }
         }
 
@@ -581,8 +581,8 @@ async function loadCharacterBGM(newCharacter) {
     // Update bgm list in UI
     for (const e in characterMusics[newCharacter])
         for (const file of characterMusics[newCharacter][e]) {
-            if(file !== extension_settings.audio.bgm_selected) {
-                $('#audio_bgm_select').append(new Option(newCharacter+": "+file.replace(/^.*[\\\/]/, '').replace(/\.[^/.]+$/, ""), file));
+            if (file !== extension_settings.audio.bgm_selected) {
+                $('#audio_bgm_select').append(new Option(newCharacter + ": " + file.replace(/^.*[\\\/]/, '').replace(/\.[^/.]+$/, ""), file));
             }
         }
 }
@@ -614,7 +614,7 @@ function getNewExpression() {
     return newExpression;
 }
 
-async function updateBGM(isUserInput=false) {
+async function updateBGM(isUserInput = false) {
     if (!isUserInput && !extension_settings.audio.dynamic_bgm_enabled && $("#audio_bgm").attr("src") != "") {
         console.debug(DEBUG_PREFIX, "BGM already playing and dynamic switch disabled, no update done");
         return;
@@ -650,7 +650,7 @@ async function updateBGM(isUserInput=false) {
 
         audio_file_path = audio_files[Math.floor(Math.random() * audio_files.length)];
     }
-    
+
     console.log(DEBUG_PREFIX, "Updating BGM");
     console.log(DEBUG_PREFIX, "Checking file", audio_file_path);
     try {
@@ -670,7 +670,7 @@ async function updateBGM(isUserInput=false) {
             }
 
             let fade_time = 2000;
-            if(isUserInput)
+            if (isUserInput)
                 fade_time = 0;
 
             audio.animate({ volume: 0.0 }, fade_time, function () {
@@ -686,7 +686,7 @@ async function updateBGM(isUserInput=false) {
     }
 }
 
-async function updateAmbient(isUserInput=false) {
+async function updateAmbient(isUserInput = false) {
     let audio_file_path = null;
 
     if (isUserInput || extension_settings.audio.ambient_locked) {
@@ -722,8 +722,8 @@ async function updateAmbient(isUserInput=false) {
     $("#audio_ambient_select").val(audio_file_path);
 
     let fade_time = 2000;
-        if(isUserInput)
-            fade_time = 0;
+    if (isUserInput)
+        fade_time = 0;
 
     const audio = $("#audio_ambient");
 
@@ -762,7 +762,7 @@ jQuery(async () => {
     $("#audio_bgm_lock").on("click", onBGMLockClick);
     $("#audio_bgm_mute").on("click", onBGMMuteClick);
     $("#audio_bgm_volume_slider").on("input", onBGMVolumeChange);
-    
+
     $("#audio_ambient").hide();
     $("#audio_ambient_lock").on("click", onAmbientLockClick);
     $("#audio_ambient_mute").on("click", onAmbientMuteClick);
@@ -771,8 +771,8 @@ jQuery(async () => {
     $("#audio_bgm_cooldown").on("input", onBGMCooldownInput);
 
     // Reset assets container, will be redected like if ST restarted
-    $("#audio_refresh_assets").on("click", function(){
-        console.debug(DEBUG_PREFIX,"Refreshing audio assets");
+    $("#audio_refresh_assets").on("click", function () {
+        console.debug(DEBUG_PREFIX, "Refreshing audio assets");
         fallback_BGMS = null;
         ambients = null;
         characterMusics = {};
