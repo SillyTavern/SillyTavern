@@ -124,6 +124,8 @@ const openrouter_website_model = 'OR_Website';
 const openai_max_stop_strings = 4;
 
 const textCompletionModels = [
+    "gpt-3.5-turbo-instruct",
+    "gpt-3.5-turbo-instruct-0914",
     "text-davinci-003",
     "text-davinci-002",
     "text-davinci-001",
