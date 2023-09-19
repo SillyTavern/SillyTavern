@@ -61,6 +61,8 @@ const DEFAULT_EXPRESSIONS = [
 ];
 const SPRITE_DOM_ID = "#expression-image";
 
+let current_chat_id = null
+
 let fallback_BGMS = null; // Initialized only once with module workers
 let ambients = null; // Initialized only once with module workers
 let characterMusics = {}; // Updated with module workers
@@ -80,7 +82,7 @@ let bgmEnded = true;
 const defaultSettings = {
     enabled: false,
     dynamic_bgm_enabled: false,
-    dynamic_ambient_enabled: false,
+    //dynamic_ambient_enabled: false,
 
     bgm_locked: true,
     bgm_muted: true,
@@ -104,7 +106,7 @@ function loadSettings() {
     }
     $("#audio_enabled").prop('checked', extension_settings.audio.enabled);
     $("#audio_dynamic_bgm_enabled").prop('checked', extension_settings.audio.dynamic_bgm_enabled);
-    $("#audio_dynamic_ambient_enabled").prop('checked', extension_settings.audio.dynamic_ambient_enabled);
+    //$("#audio_dynamic_ambient_enabled").prop('checked', extension_settings.audio.dynamic_ambient_enabled);
 
     $("#audio_bgm_volume").text(extension_settings.audio.bgm_volume);
     $("#audio_ambient_volume").text(extension_settings.audio.ambient_volume);
@@ -173,7 +175,7 @@ function loadSettings() {
 
     $("#audio_bgm_cooldown").val(extension_settings.audio.bgm_cooldown);
 
-    $("#audio_debug_div").hide(); // DBG
+    $("#audio_debug_div").hide(); // DBG: comment to see debug mode
 }
 
 async function onEnabledClick() {
@@ -197,13 +199,13 @@ async function onDynamicBGMEnabledClick() {
     cooldownBGM = 0;
     saveSettingsDebounced();
 }
-
+/*
 async function onDynamicAmbientEnabledClick() {
     extension_settings.audio.dynamic_ambient_enabled = $('#audio_dynamic_ambient_enabled').is(':checked');
     currentBackground = null;
     saveSettingsDebounced();
 }
-
+*/
 async function onBGMLockClick() {
     extension_settings.audio.bgm_locked = !extension_settings.audio.bgm_locked;
     if (extension_settings.audio.bgm_locked) {
@@ -338,10 +340,41 @@ async function getCharacterBgmList(name) {
     }
 }
 
-
 //#############################//
 //  Module Worker              //
 //#############################//
+
+function fillBGMSelect() {
+    let found_last_selected_bgm = false;
+    // Update bgm list in UI
+    $("#audio_bgm_select")
+    .find('option')
+    .remove();
+
+    for (const file of fallback_BGMS) {
+        $('#audio_bgm_select').append(new Option("asset: " + file.replace(/^.*[\\\/]/, '').replace(/\.[^/.]+$/, ""), file));
+        if (file === extension_settings.audio.bgm_selected) {
+            $('#audio_bgm_select').val(extension_settings.audio.bgm_selected);
+            found_last_selected_bgm = true;
+        }
+    }
+
+    // Update bgm list in UI
+    for (const char in characterMusics)
+        for (const e in characterMusics[char])
+            for (const file of characterMusics[char][e]) {
+                $('#audio_bgm_select').append(new Option(char + ": " + file.replace(/^.*[\\\/]/, '').replace(/\.[^/.]+$/, ""), file));
+                if (file === extension_settings.audio.bgm_selected) {
+                    $('#audio_bgm_select').val(extension_settings.audio.bgm_selected);
+                    found_last_selected_bgm = true;
+                }
+            }
+
+    if (!found_last_selected_bgm) {
+        $('#audio_bgm_select').val($("#audio_bgm_select option:first").val());
+        extension_settings.audio.bgm_selected = null;
+    }
+}
 
 /*
     - Update ambient sound
@@ -363,27 +396,7 @@ async function moduleWorker() {
             fallback_BGMS = fallback_BGMS.filter((filename) => filename != ".placeholder")
             console.debug(DEBUG_PREFIX, "Detected assets:", fallback_BGMS);
 
-            // Update bgm list in UI
-            $("#audio_bgm_select")
-                .find('option')
-                .remove();
-
-            if (extension_settings.audio.bgm_selected) {
-                let bgm_label = extension_settings.audio.bgm_selected;
-                if (bgm_label.includes("assets"))
-                    bgm_label = "asset: " + bgm_label.replace(/^.*[\\\/]/, '').replace(/\.[^/.]+$/, "");
-                else {
-                    bgm_label = bgm_label.substring("/characters/".length);
-                    bgm_label = bgm_label.substring(0, bgm_label.indexOf("/")) + ": " + bgm_label.substring(bgm_label.indexOf("/") + "/bgm/".length);
-                    bgm_label = bgm_label.replace(/\.[^/.]+$/, "");
-                }
-                $('#audio_bgm_select').append(new Option(bgm_label, extension_settings.audio.bgm_selected));
-            }
-
-            for (const file of fallback_BGMS) {
-                if (file !== extension_settings.audio.bgm_selected)
-                    $('#audio_bgm_select').append(new Option("asset: " + file.replace(/^.*[\\\/]/, '').replace(/\.[^/.]+$/, ""), file));
-            }
+            fillBGMSelect();
         }
 
         if (ambients == null) {
@@ -417,7 +430,7 @@ async function moduleWorker() {
 
         // 1) Update ambient audio
         // ---------------------------
-        if (extension_settings.audio.dynamic_ambient_enabled) {
+        //if (extension_settings.audio.dynamic_ambient_enabled) {
             let newBackground = $("#bg1").css("background-image");
             const custom_background = getContext()["chatMetadata"]["custom_background"];
 
@@ -436,7 +449,7 @@ async function moduleWorker() {
                     updateAmbient();
                 }
             }
-        }
+        //}
 
         const context = getContext();
         //console.debug(DEBUG_PREFIX,context);
@@ -450,6 +463,14 @@ async function moduleWorker() {
         // 1) Update BGM (single chat)
         // -----------------------------
         if (!chatIsGroup) {
+            
+            // Reset bgm list on new chat
+            if (context.chatId != current_chat_id) {
+                current_chat_id = context.chatId;
+                characterMusics = {};
+                cooldownBGM = 0;
+            }
+
             newCharacter = context.name2;
 
             //console.log(DEBUG_PREFIX,"SOLO CHAT MODE"); // DBG
@@ -469,7 +490,7 @@ async function moduleWorker() {
             if (currentCharacterBGM !== newCharacter) {
                 currentCharacterBGM = newCharacter;
                 try {
-                    await updateBGM();
+                    await updateBGM(false, true);
                     cooldownBGM = extension_settings.audio.bgm_cooldown * 1000;
                 }
                 catch (error) {
@@ -508,6 +529,34 @@ async function moduleWorker() {
 
         // 2) Update BGM (group chat)
         // -----------------------------
+
+        // Load current chat character bgms
+        // Reset bgm list on new chat
+        if (context.chatId != current_chat_id) {
+            current_chat_id = context.chatId;
+            characterMusics = {};
+            cooldownBGM = 0;
+            for(const message of context.chat) {
+                if (characterMusics[message.name] === undefined)
+                    await loadCharacterBGM(message.name);
+            }
+
+            try {
+                newCharacter = context.chat[context.chat.length - 1].name;
+                currentCharacterBGM = newCharacter;
+                await updateBGM(false, true);
+                cooldownBGM = extension_settings.audio.bgm_cooldown * 1000;
+                currentCharacterBGM = newCharacter;
+                currentExpressionBGM = FALLBACK_EXPRESSION;
+                console.debug(DEBUG_PREFIX, "(GROUP) Updated current character BGM to", currentExpressionBGM, "cooldown", cooldownBGM);
+            }
+            catch (error) {
+                console.debug(DEBUG_PREFIX, "Error while trying to update BGM group, will try again");
+                currentCharacterBGM = null
+            }
+            return;
+        }
+
         newCharacter = context.chat[context.chat.length - 1].name;
         const userName = context.name1;
 
@@ -515,17 +564,17 @@ async function moduleWorker() {
 
             //console.log(DEBUG_PREFIX,"GROUP CHAT MODE"); // DBG
 
-            // 2.1) First time character appear
+            // 2.1) New character appear
             if (characterMusics[newCharacter] === undefined) {
                 await loadCharacterBGM(newCharacter);
                 return;
             }
 
-            // 2.2) Switched chat
+            // 2.2) Switched char
             if (currentCharacterBGM !== newCharacter) {
                 // Check cooldown
                 if (cooldownBGM > 0) {
-                    //console.debug(DEBUG_PREFIX,"(GROUP) BGM switch on cooldown:",cooldownBGM);
+                    console.debug(DEBUG_PREFIX,"(GROUP) BGM switch on cooldown:",cooldownBGM);
                     return;
                 }
 
@@ -592,13 +641,7 @@ async function loadCharacterBGM(newCharacter) {
     }
     console.debug(DEBUG_PREFIX, "Updated BGM map of", newCharacter, "to", characterMusics[newCharacter]);
 
-    // Update bgm list in UI
-    for (const e in characterMusics[newCharacter])
-        for (const file of characterMusics[newCharacter][e]) {
-            if (file !== extension_settings.audio.bgm_selected) {
-                $('#audio_bgm_select').append(new Option(newCharacter + ": " + file.replace(/^.*[\\\/]/, '').replace(/\.[^/.]+$/, ""), file));
-            }
-        }
+    fillBGMSelect();
 }
 
 function getNewExpression() {
@@ -628,14 +671,14 @@ function getNewExpression() {
     return newExpression;
 }
 
-async function updateBGM(isUserInput = false) {
-    if (!isUserInput && !extension_settings.audio.dynamic_bgm_enabled && $("#audio_bgm").attr("src") != "") {
+async function updateBGM(isUserInput = false, newChat = false) {
+    if (!isUserInput && !extension_settings.audio.dynamic_bgm_enabled && $("#audio_bgm").attr("src") != "" && !bgmEnded && !newChat) {
         console.debug(DEBUG_PREFIX, "BGM already playing and dynamic switch disabled, no update done");
         return;
     }
 
     let audio_file_path = ""
-    if (isUserInput || extension_settings.audio.bgm_locked) {
+    if (isUserInput || extension_settings.audio.bgm_locked && extension_settings.audio.bgm_selected !== null) {
         audio_file_path = extension_settings.audio.bgm_selected;
 
         if (isUserInput)
@@ -644,22 +687,31 @@ async function updateBGM(isUserInput = false) {
             console.debug(DEBUG_PREFIX, "BGM locked keeping current audio", audio_file_path);
     }
     else {
-        extension_settings.audio.bgm_selected = null;
-        saveSettingsDebounced();
-        let audio_files = characterMusics[currentCharacterBGM][currentExpressionBGM];// Try char expression BGM
 
-        if (audio_files === undefined || audio_files.length == 0) {
-            console.debug(DEBUG_PREFIX, "No BGM for", currentCharacterBGM, currentExpressionBGM);
-            audio_files = characterMusics[currentCharacterBGM][FALLBACK_EXPRESSION]; // Try char FALLBACK BGM
+        let audio_files = null;
+
+        if (extension_settings.audio.dynamic_bgm_enabled) {
+            extension_settings.audio.bgm_selected = null;
+            saveSettingsDebounced();
+            audio_files = characterMusics[currentCharacterBGM][currentExpressionBGM];// Try char expression BGM
+
             if (audio_files === undefined || audio_files.length == 0) {
-                console.debug(DEBUG_PREFIX, "No default BGM for", currentCharacterBGM, FALLBACK_EXPRESSION, "switch to ST BGM");
-                audio_files = fallback_BGMS; // ST FALLBACK BGM
+                console.debug(DEBUG_PREFIX, "No BGM for", currentCharacterBGM, currentExpressionBGM);
+                audio_files = characterMusics[currentCharacterBGM][FALLBACK_EXPRESSION]; // Try char FALLBACK BGM
+                if (audio_files === undefined || audio_files.length == 0) {
+                    console.debug(DEBUG_PREFIX, "No default BGM for", currentCharacterBGM, FALLBACK_EXPRESSION, "switch to ST BGM");
+                    audio_files = fallback_BGMS; // ST FALLBACK BGM
 
-                if (audio_files.length == 0) {
-                    console.debug(DEBUG_PREFIX, "No default BGM file found, bgm folder may be empty.");
-                    return;
+                    if (audio_files.length == 0) {
+                        console.debug(DEBUG_PREFIX, "No default BGM file found, bgm folder may be empty.");
+                        return;
+                    }
                 }
             }
+        }
+        else {
+            audio_files = [];
+            $("#audio_bgm_select option").each(function(){audio_files.push($(this).val());});
         }
 
         audio_file_path = audio_files[Math.floor(Math.random() * audio_files.length)];
@@ -790,7 +842,7 @@ jQuery(async () => {
 
     $("#audio_enabled").on("click", onEnabledClick);
     $("#audio_dynamic_bgm_enabled").on("click", onDynamicBGMEnabledClick);
-    $("#audio_dynamic_ambient_enabled").on("click", onDynamicAmbientEnabledClick);
+    //$("#audio_dynamic_ambient_enabled").on("click", onDynamicAmbientEnabledClick);
 
     $("#audio_bgm").attr("loop", false);
     $("#audio_ambient").attr("loop", true);
@@ -814,6 +866,7 @@ jQuery(async () => {
     // Reset assets container, will be redected like if ST restarted
     $("#audio_refresh_assets").on("click", function () {
         console.debug(DEBUG_PREFIX, "Refreshing audio assets");
+        current_chat_id = null
         fallback_BGMS = null;
         ambients = null;
         characterMusics = {};
