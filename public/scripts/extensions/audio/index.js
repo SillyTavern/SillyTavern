@@ -3,6 +3,7 @@ Ideas:
  - Clean design of new ui
  - change select text versus options for playing: audio
  - cross fading between bgm / start a different time
+ - fading should appear before end when switching randomly
  - Background based ambient sounds
     - import option on background UI ?
  - Allow background music edition using background menu
@@ -130,11 +131,13 @@ function loadSettings() {
     if (extension_settings.audio.bgm_locked) {
         //$("#audio_bgm_lock_icon").removeClass("fa-lock-open");
         //$("#audio_bgm_lock_icon").addClass("fa-lock");
+        $("#audio_bgm").attr("loop", true);
         $("#audio_bgm_lock").addClass("redOverlayGlow");
     }
     else {
         //$("#audio_bgm_lock_icon").removeClass("fa-lock");
         //$("#audio_bgm_lock_icon").addClass("fa-lock-open");
+        $("#audio_bgm").attr("loop", false);
         $("#audio_bgm_lock").removeClass("redOverlayGlow");
     }
 
@@ -213,9 +216,6 @@ async function onBGMLockClick() {
         $("#audio_bgm").attr("loop", true);
     }
     else {
-        extension_settings.audio.bgm_selected = null;
-        currentCharacterBGM = null;
-        currentExpressionBGM = null;
         $("#audio_bgm").attr("loop", false);
     }
     //$("#audio_bgm_lock_icon").toggleClass("fa-lock");
@@ -227,7 +227,15 @@ async function onBGMLockClick() {
 async function onBGMRandomClick() {
     var select = document.getElementById('audio_bgm_select');
     var items = select.getElementsByTagName('option');
-    var index = Math.floor(Math.random() * items.length);
+
+    if(items.length < 2)
+        return;
+
+    var index;
+    do {
+        index = Math.floor(Math.random() * items.length);
+    } while(index == select.selectedIndex);
+    
     select.selectedIndex = index;
     onBGMSelectChange();
 }
@@ -678,7 +686,7 @@ async function updateBGM(isUserInput = false, newChat = false) {
     }
 
     let audio_file_path = ""
-    if (isUserInput || extension_settings.audio.bgm_locked && extension_settings.audio.bgm_selected !== null) {
+    if (isUserInput || (extension_settings.audio.bgm_locked && extension_settings.audio.bgm_selected !== null)) {
         audio_file_path = extension_settings.audio.bgm_selected;
 
         if (isUserInput)
@@ -736,16 +744,20 @@ async function updateBGM(isUserInput = false, newChat = false) {
             }
 
             let fade_time = 2000;
-            if (isUserInput)
-                fade_time = 0;
-
             bgmEnded = false;
-            audio.animate({ volume: 0.0 }, fade_time, function () {
+
+            if (isUserInput || extension_settings.audio.bgm_locked) {
                 audio.attr("src", audio_file_path);
                 audio[0].play();
-                audio.volume = extension_settings.audio.bgm_volume * 0.01;
-                audio.animate({ volume: extension_settings.audio.bgm_volume * 0.01 }, fade_time);
-            });
+            }
+            else {
+                audio.animate({ volume: 0.0 }, fade_time, function () {
+                    audio.attr("src", audio_file_path);
+                    audio[0].play();
+                    audio.volume = extension_settings.audio.bgm_volume * 0.01;
+                    audio.animate({ volume: extension_settings.audio.bgm_volume * 0.01 }, fade_time);
+                });
+            }
         }
 
     } catch (error) {
@@ -844,7 +856,7 @@ jQuery(async () => {
     $("#audio_dynamic_bgm_enabled").on("click", onDynamicBGMEnabledClick);
     //$("#audio_dynamic_ambient_enabled").on("click", onDynamicAmbientEnabledClick);
 
-    $("#audio_bgm").attr("loop", false);
+    //$("#audio_bgm").attr("loop", false);
     $("#audio_ambient").attr("loop", true);
 
     $("#audio_bgm").hide();
@@ -893,8 +905,10 @@ jQuery(async () => {
 
     $("#audio_bgm").on("ended", function () {
         console.debug(DEBUG_PREFIX, "END OF BGM")
-        bgmEnded = true;
-        updateBGM();
+        if (!extension_settings.audio.bgm_locked) {
+            bgmEnded = true;
+            updateBGM();
+        }
     });
 
     const wrapper = new ModuleWorkerWrapper(moduleWorker);
