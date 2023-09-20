@@ -182,14 +182,17 @@ async function rearrangeChat(chat) {
         // Get the most relevant messages, excluding the last few
         const queryHashes = (await queryCollection(chatId, queryText, settings.insert)).filter(onlyUnique);
         const queriedMessages = [];
+        const insertedHashes = new Set();
         const retainMessages = chat.slice(-settings.protect);
 
         for (const message of chat) {
-            if (retainMessages.includes(message)) {
+            if (retainMessages.includes(message) || !message.mes) {
                 continue;
             }
-            if (message.mes && queryHashes.includes(getStringHash(message.mes))) {
+            const hash = getStringHash(message.mes);
+            if (queryHashes.includes(hash) && !insertedHashes.has(hash)) {
                 queriedMessages.push(message);
+                insertedHashes.add(hash);
             }
         }
 

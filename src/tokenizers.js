@@ -14,6 +14,8 @@ const tokenizersCache = {};
  * @type {string[]}
  */
 const TEXT_COMPLETION_MODELS = [
+    "gpt-3.5-turbo-instruct",
+    "gpt-3.5-turbo-instruct-0914",
     "text-davinci-003",
     "text-davinci-002",
     "text-davinci-001",
