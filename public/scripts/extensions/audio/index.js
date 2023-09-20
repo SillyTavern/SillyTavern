@@ -228,14 +228,14 @@ async function onBGMRandomClick() {
     var select = document.getElementById('audio_bgm_select');
     var items = select.getElementsByTagName('option');
 
-    if(items.length < 2)
+    if (items.length < 2)
         return;
 
     var index;
     do {
         index = Math.floor(Math.random() * items.length);
-    } while(index == select.selectedIndex);
-    
+    } while (index == select.selectedIndex);
+
     select.selectedIndex = index;
     onBGMSelectChange();
 }
@@ -356,8 +356,8 @@ function fillBGMSelect() {
     let found_last_selected_bgm = false;
     // Update bgm list in UI
     $("#audio_bgm_select")
-    .find('option')
-    .remove();
+        .find('option')
+        .remove();
 
     for (const file of fallback_BGMS) {
         $('#audio_bgm_select').append(new Option("asset: " + file.replace(/^.*[\\\/]/, '').replace(/\.[^/.]+$/, ""), file));
@@ -439,24 +439,24 @@ async function moduleWorker() {
         // 1) Update ambient audio
         // ---------------------------
         //if (extension_settings.audio.dynamic_ambient_enabled) {
-            let newBackground = $("#bg1").css("background-image");
-            const custom_background = getContext()["chatMetadata"]["custom_background"];
+        let newBackground = $("#bg1").css("background-image");
+        const custom_background = getContext()["chatMetadata"]["custom_background"];
 
-            if (custom_background !== undefined)
-                newBackground = custom_background
+        if (custom_background !== undefined)
+            newBackground = custom_background
 
-            if (!isDataURL(newBackground)) {
-                newBackground = newBackground.substring(newBackground.lastIndexOf("/") + 1).replace(/\.[^/.]+$/, "").replaceAll("%20", "-").replaceAll(" ", "-"); // remove path and spaces
+        if (!isDataURL(newBackground)) {
+            newBackground = newBackground.substring(newBackground.lastIndexOf("/") + 1).replace(/\.[^/.]+$/, "").replaceAll("%20", "-").replaceAll(" ", "-"); // remove path and spaces
 
-                //console.debug(DEBUG_PREFIX,"Current backgroung:",newBackground);
+            //console.debug(DEBUG_PREFIX,"Current backgroung:",newBackground);
 
-                if (currentBackground !== newBackground) {
-                    currentBackground = newBackground;
+            if (currentBackground !== newBackground) {
+                currentBackground = newBackground;
 
-                    console.debug(DEBUG_PREFIX, "Changing ambient audio for", currentBackground);
-                    updateAmbient();
-                }
+                console.debug(DEBUG_PREFIX, "Changing ambient audio for", currentBackground);
+                updateAmbient();
             }
+        }
         //}
 
         const context = getContext();
@@ -471,7 +471,7 @@ async function moduleWorker() {
         // 1) Update BGM (single chat)
         // -----------------------------
         if (!chatIsGroup) {
-            
+
             // Reset bgm list on new chat
             if (context.chatId != current_chat_id) {
                 current_chat_id = context.chatId;
@@ -544,7 +544,7 @@ async function moduleWorker() {
             current_chat_id = context.chatId;
             characterMusics = {};
             cooldownBGM = 0;
-            for(const message of context.chat) {
+            for (const message of context.chat) {
                 if (characterMusics[message.name] === undefined)
                     await loadCharacterBGM(message.name);
             }
@@ -582,7 +582,7 @@ async function moduleWorker() {
             if (currentCharacterBGM !== newCharacter) {
                 // Check cooldown
                 if (cooldownBGM > 0) {
-                    console.debug(DEBUG_PREFIX,"(GROUP) BGM switch on cooldown:",cooldownBGM);
+                    console.debug(DEBUG_PREFIX, "(GROUP) BGM switch on cooldown:", cooldownBGM);
                     return;
                 }
 
@@ -719,7 +719,7 @@ async function updateBGM(isUserInput = false, newChat = false) {
         }
         else {
             audio_files = [];
-            $("#audio_bgm_select option").each(function(){audio_files.push($(this).val());});
+            $("#audio_bgm_select option").each(function () { audio_files.push($(this).val()); });
         }
 
         audio_file_path = audio_files[Math.floor(Math.random() * audio_files.length)];
