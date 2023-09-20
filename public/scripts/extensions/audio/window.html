@@ -10,6 +10,20 @@
                     <input type="checkbox" id="audio_enabled" name="audio_enabled">
                     <small>Enabled</small>
                 </label>
+                <div id="audio_bgm_dynamic_enable_div">
+                    <label class="checkbox_label" for="audio_dynamic_bgm_enabled">
+                        <input type="checkbox" id="audio_dynamic_bgm_enabled" name="audio_dynamic_bgm_enabled">
+                        <small>Enable expression BGM switch (req. character expression)</small>
+                    </label>
+                </div>
+                <!--
+                <div id="audio_ambient_dynamic_enable_div">
+                    <label class="checkbox_label" for="audio_dynamic_ambient_enabled">
+                        <input type="checkbox" id="audio_dynamic_ambient_enabled" name="audio_dynamic_ambient_enabled">
+                        <small>Enable ambient background switch (req. chat background)</small>
+                    </label>
+                </div>
+                -->
                 <div id="audio_debug_div">
                     <label class="checkbox_label" for="audio_debug">
                         <input type="checkbox" id="audio_debug" name="audio_debug">
@@ -24,23 +38,63 @@
                 </div>
             </div>
             <div>
-                <div>
-                    <label for="audio_bgm_volume_slider">Music <span id="audio_bgm_volume"></span></label>
-                    <div class="mixer-div">
-                        <div id="audio_bgm_mute" class="menu_button audio-mute-button">
-                            <i class="fa-solid fa-volume-high fa-lg" id="audio_bgm_mute_icon"></i>
+                <div class="audio-ui-block">
+                    <label for="audio_bgm_volume_slider">Music</label>
+                    <div class="audio-mixer-div">
+                        <div class="audio-mixer-element audio-mixer-mute">
+                            <label for="audio_bgm_lock" class="audio-label">Mute</label>
+                            <div id="audio_bgm_mute" class="menu_button audio-mute-button">
+                                <i class="fa-solid fa-volume-high fa-lg" id="audio_bgm_mute_icon"></i>
+                            </div>
                         </div>
-                        <input type="range" class ="slider" id ="audio_bgm_volume_slider" value = "0" maxlength ="100">
+                        <div class="audio-mixer-element audio-mixer-volume">
+                            <label for="audio_bgm_lock" class="audio-label">Vol <span id="audio_bgm_volume"></span></label>
+                            <input type="range" class ="audio-slider" id ="audio_bgm_volume_slider" value = "0" maxlength ="100">
+                        </div>
+                        <div class="audio-mixer-element audio-mixer-playlist">
+                            <label for="audio_bgm_lock" class="audio-label">Playlist</label>
+                            <select id="audio_bgm_select">
+                            </select>
+                        </div>
+                        <div class="audio-mixer-element audio-mixer-lock">
+                            <label for="audio_bgm_lock" class="audio-label">Loop</label>
+                            <div id="audio_bgm_lock" class="menu_button audio-lock-button">
+                                <i class="fa-solid fa-repeat fa-lg" id="audio_bgm_lock_icon"></i>
+                            </div>
+                        </div>
+                        <div class="audio-mixer-element audio-mixer-random">
+                            <label for="audio_bgm_random" class="audio-label">Roll</label>
+                            <div id="audio_bgm_random" class="menu_button audio-random-button">
+                                <i class="fa-solid fa-random fa-lg" id="audio_bgm_random_icon"></i>
+                            </div>
+                        </div>
                     </div>
                     <audio id="audio_bgm" controls src="">
                 </div>
                 <div>
-                    <label for="audio_ambient_volume_slider">Ambient <span id="audio_ambient_volume"></span></label>
-                    <div class="mixer-div">
-                        <div id="audio_ambient_mute" class="menu_button audio-mute-button">
-                            <i class="fa-solid fa-volume-high fa-lg" id="audio_ambient_mute_icon"></i>
+                    <label for="audio_ambient_volume_slider">Ambient</label>
+                    <div class="audio-mixer-div">
+                        <div class="audio-mixer-element audio-mixer-mute">
+                            <label for="audio_ambient_lock" class="audio-label">Mute</label>
+                            <div id="audio_ambient_mute" class="menu_button audio-mute-button">
+                                <i class="fa-solid fa-volume-high fa-lg" id="audio_ambient_mute_icon"></i>
+                            </div>
                         </div>
-                        <input type="range" class ="slider" id ="audio_ambient_volume_slider" value = "0" maxlength ="100">
+                        <div class="audio-mixer-element audio-mixer-volume">
+                            <label for="audio_ambient_lock" class="audio-label">Vol <span id="audio_ambient_volume"></span></label>
+                            <input type="range" class ="audio-slider" id ="audio_ambient_volume_slider" value = "0" maxlength ="100">
+                        </div>
+                        <div class="audio-mixer-element audio-mixer-playlist">
+                            <label for="audio_ambient_lock" class="audio-label">Playlist</label>
+                            <select id="audio_ambient_select">
+                            </select>
+                        </div>
+                        <div class="audio-mixer-element">
+                            <label for="audio_ambient_lock audio-mixer-lock" class="audio-label">Lock</label>
+                            <div id="audio_ambient_lock" class="menu_button audio-lock-button">
+                                <i class="fa-solid fa-lock-open fa-lg" id="audio_ambient_lock_icon"></i>
+                            </div>
+                        </div>
                     </div>
                     <audio id="audio_ambient" controls src="">
                 </div>
