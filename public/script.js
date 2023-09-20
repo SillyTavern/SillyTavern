@@ -385,7 +385,8 @@ const system_message_types = {
 
 const extension_prompt_types = {
     IN_PROMPT: 0,
-    IN_CHAT: 1
+    IN_CHAT: 1,
+    BEFORE_PROMPT: 2
 };
 
 let system_messages = {};
@@ -2576,6 +2577,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         addPersonaDescriptionExtensionPrompt();
         // Call combined AN into Generate
         let allAnchors = getAllExtensionPrompts();
+        const beforeScenarioAnchor = getExtensionPrompt(extension_prompt_types.BEFORE_PROMPT)
         const afterScenarioAnchor = getExtensionPrompt(extension_prompt_types.IN_PROMPT);
         let zeroDepthAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, 0, ' ');
 
@@ -2954,6 +2956,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 mesSendString = addChatsSeparator(mesSendString);
 
                 let combinedPrompt =
+                    beforeScenarioAnchor +
                     storyString +
                     afterScenarioAnchor +
                     mesExmString +
@@ -3061,6 +3064,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 smartContextString: (extension_prompts['chromadb']?.value || ''),
                 worldInfoString: worldInfoString,
                 storyString: storyString,
+                beforeScenarioAnchor: beforeScenarioAnchor,
                 afterScenarioAnchor: afterScenarioAnchor,
                 examplesString: examplesString,
                 mesSendString: mesSendString,
@@ -3581,6 +3585,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
     var summarizeStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].summarizeString);
     var authorsNoteStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].authorsNoteString);
     var smartContextStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].smartContextString);
+    var beforeScenarioAnchorTokens = getTokenCount(itemizedPrompts[thisPromptSet].beforeScenarioAnchor);
     var afterScenarioAnchorTokens = getTokenCount(itemizedPrompts[thisPromptSet].afterScenarioAnchor);
     var zeroDepthAnchorTokens = getTokenCount(itemizedPrompts[thisPromptSet].zeroDepthAnchor);
     var thisPrompt_max_context = itemizedPrompts[thisPromptSet].this_max_context;
@@ -3596,7 +3601,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         var oaiStartTokens = itemizedPrompts[thisPromptSet].oaiStartTokens;
         var ActualChatHistoryTokens = itemizedPrompts[thisPromptSet].oaiConversationTokens;
         var examplesStringTokens = itemizedPrompts[thisPromptSet].oaiExamplesTokens;
-        var oaiPromptTokens = itemizedPrompts[thisPromptSet].oaiPromptTokens - afterScenarioAnchorTokens + examplesStringTokens;
+        var oaiPromptTokens = itemizedPrompts[thisPromptSet].oaiPromptTokens - (afterScenarioAnchorTokens + beforeScenarioAnchorTokens) + examplesStringTokens;
         var oaiBiasTokens = itemizedPrompts[thisPromptSet].oaiBiasTokens;
         var oaiJailbreakTokens = itemizedPrompts[thisPromptSet].oaiJailbreakTokens;
         var oaiNudgeTokens = itemizedPrompts[thisPromptSet].oaiNudgeTokens;
@@ -3616,6 +3621,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
             //charPersonalityTokens +
             //allAnchorsTokens +
             worldInfoStringTokens +
+            beforeScenarioAnchorTokens +
             afterScenarioAnchorTokens;
         // OAI doesn't use padding
         thisPrompt_padding = 0;
@@ -3628,7 +3634,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         var storyStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].storyString) - worldInfoStringTokens;
         var examplesStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].examplesString);
         var mesSendStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].mesSendString)
-        var ActualChatHistoryTokens = mesSendStringTokens - (allAnchorsTokens - afterScenarioAnchorTokens) + power_user.token_padding;
+        var ActualChatHistoryTokens = mesSendStringTokens - (allAnchorsTokens - (beforeScenarioAnchorTokens + afterScenarioAnchorTokens)) + power_user.token_padding;
         var instructionTokens = getTokenCount(itemizedPrompts[thisPromptSet].instruction);
         var promptBiasTokens = getTokenCount(itemizedPrompts[thisPromptSet].promptBias);
 
@@ -3647,7 +3653,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
     if (this_main_api == 'openai') {
         //console.log('-- applying % on OAI tokens');
         var oaiStartTokensPercentage = ((oaiStartTokens / (finalPromptTokens)) * 100).toFixed(2);
-        var storyStringTokensPercentage = (((afterScenarioAnchorTokens + oaiPromptTokens) / (finalPromptTokens)) * 100).toFixed(2);
+        var storyStringTokensPercentage = (((afterScenarioAnchorTokens + beforeScenarioAnchorTokens + oaiPromptTokens) / (finalPromptTokens)) * 100).toFixed(2);
         var ActualChatHistoryTokensPercentage = ((ActualChatHistoryTokens / (finalPromptTokens)) * 100).toFixed(2);
         var promptBiasTokensPercentage = ((oaiBiasTokens / (finalPromptTokens)) * 100).toFixed(2);
         var worldInfoStringTokensPercentage = ((worldInfoStringTokens / (finalPromptTokens)) * 100).toFixed(2);
