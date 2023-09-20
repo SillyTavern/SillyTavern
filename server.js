@@ -2699,7 +2699,7 @@ function convertChatMLPrompt(messages) {
             messageStrings.push(m.role + ": " + m.content);
         }
     });
-    return messageStrings.join("\n");
+    return messageStrings.join("\n") + '\nassistant:';
 }
 
 async function sendScaleRequest(request, response) {
