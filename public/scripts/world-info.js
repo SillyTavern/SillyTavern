@@ -71,6 +71,7 @@ const world_info_position = {
     after: 1,
     ANTop: 2,
     ANBottom: 3,
+    atDepth: 4,
 
 };
 
@@ -268,10 +269,9 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
     const storageKey = 'WI_PerPage';
     $("#world_info_pagination").pagination({
         dataSource: getDataArray,
-        pageSize: 25,
-        //pageSize: Number(localStorage.getItem(storageKey)) || 25,
-        //sizeChangerOptions: [10, 25, 50, 100],
-        //showSizeChanger: true,
+        pageSize: Number(localStorage.getItem(storageKey)) || 25,
+        sizeChangerOptions: [10, 25, 50, 100],
+        showSizeChanger: true,
         pageRange: 1,
         pageNumber: startPage,
         position: 'top',
@@ -659,6 +659,9 @@ function getWorldEntry(name, data, entry) {
         const uid = $(this).data("uid");
         const value = Number($(this).val());
         data.entries[uid].position = !isNaN(value) ? value : 0;
+        if (value === 4) {
+            template.find('label[for="order"').text('Depth:')
+        } else { template.find('label[for="order"').text('Order:') }
         // Spec v2 only supports before_char and after_char
         setOriginalDataValue(data, uid, "position", data.entries[uid].position == 0 ? 'before_char' : 'after_char');
         // Write the original value as extensions field
@@ -1154,6 +1157,13 @@ async function checkWorldInfo(chat, maxContext) {
                 break;
             case world_info_position.ANBottom:
                 ANBottomEntries.unshift(entry.content);
+                break;
+            case world_info_position.atDepth:
+                //inserted one by one, unrelated to any array of items
+                //must have a unique value for 'key' argument
+                //uses the order input to specify depth
+                var randomNumber = Math.floor(Math.random() * 99999) + 1;
+                context.setExtensionPrompt(`customDepthWI-${entry.keywords}-${entry.uid}-${randomNumber}`, entry.content, 1, entry.order);
                 break;
             default:
                 break;

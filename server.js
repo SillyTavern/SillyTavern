@@ -375,6 +375,7 @@ app.post("/generate", jsonParser, async function (request, response_generate) {
             mirostat: request.body.mirostat,
             mirostat_eta: request.body.mirostat_eta,
             mirostat_tau: request.body.mirostat_tau,
+            grammar: request.body.grammar,
         };
         if (!!request.body.stop_sequence) {
             this_settings['stop_sequence'] = request.body.stop_sequence;
@@ -2699,7 +2700,7 @@ function convertChatMLPrompt(messages) {
             messageStrings.push(m.role + ": " + m.content);
         }
     });
-    return messageStrings.join("\n");
+    return messageStrings.join("\n") + '\nassistant:';
 }
 
 async function sendScaleRequest(request, response) {

@@ -205,7 +205,6 @@ let power_user = {
     custom_stopping_strings_macro: true,
     fuzzy_search: false,
     encode_tags: false,
-    lazy_load: 0,
     servers: [],
 };
 
@@ -832,7 +831,6 @@ function loadPowerUserSettings(settings, data) {
     $('#fuzzy_search_checkbox').prop("checked", power_user.fuzzy_search);
     $('#persona_show_notifications').prop("checked", power_user.persona_show_notifications);
     $('#encode_tags').prop("checked", power_user.encode_tags);
-    $('#lazy_load').val(Number(power_user.lazy_load));
 
     $("#console_log_prompts").prop("checked", power_user.console_log_prompts);
     $('#auto_fix_generated_markdown').prop("checked", power_user.auto_fix_generated_markdown);
@@ -1716,8 +1714,8 @@ export function getCustomStoppingStrings(limit = undefined) {
             return [];
         }
 
-        // Make sure all the elements are strings.
-        strings = strings.filter((s) => typeof s === 'string');
+        // Make sure all the elements are strings and non-empty.
+        strings = strings.filter(s => typeof s === 'string' && s.length > 0);
 
         // Substitute params if necessary
         if (power_user.custom_stopping_strings_macro) {
@@ -2236,11 +2234,6 @@ $(document).ready(() => {
     $('#encode_tags').on('input', async function () {
         power_user.encode_tags = !!$(this).prop('checked');
         await reloadCurrentChat();
-        saveSettingsDebounced();
-    });
-
-    $('#lazy_load').on('input', function () {
-        power_user.lazy_load = Number($(this).val());
         saveSettingsDebounced();
     });
 

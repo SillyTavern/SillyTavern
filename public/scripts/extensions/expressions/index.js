@@ -566,6 +566,11 @@ async function moduleWorker() {
         offlineMode.css('display', 'none');
     }
 
+    // Don't bother classifying if current char has no sprites and no default expressions are enabled
+    if ((!Array.isArray(spriteCache[spriteFolderName]) || spriteCache[spriteFolderName].length === 0) && !extension_settings.expressions.showDefault) {
+        return;
+    }
+
     // check if last message changed
     if ((lastCharacter === context.characterId || lastCharacter === context.groupId)
         && lastMessage === currentLastMessage.mes) {
@@ -574,6 +579,7 @@ async function moduleWorker() {
 
     // API is busy
     if (inApiCall) {
+        console.debug('Classification API is busy');
         return;
     }
 

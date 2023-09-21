@@ -124,6 +124,8 @@ const openrouter_website_model = 'OR_Website';
 const openai_max_stop_strings = 4;
 
 const textCompletionModels = [
+    "gpt-3.5-turbo-instruct",
+    "gpt-3.5-turbo-instruct-0914",
     "text-davinci-003",
     "text-davinci-002",
     "text-davinci-001",
@@ -580,6 +582,22 @@ function populateDialogueExamples(prompts, chatCompletion) {
 }
 
 /**
+ * @param {number} position - Prompt position in the extensions object.
+ * @returns {string|false} - The prompt position for prompt collection.
+ */
+function getPromptPosition(position) {
+    if (position == extension_prompt_types.BEFORE_PROMPT) {
+        return 'start';
+    }
+
+    if (position == extension_prompt_types.IN_PROMPT) {
+        return 'end';
+    }
+
+    return false;
+}
+
+/**
  * Populate a chat conversation by adding prompts to the conversation and managing system and user prompts.
  *
  * @param {PromptCollection} prompts - PromptCollection containing all prompts where the key is the prompt identifier and the value is the prompt object.
@@ -643,28 +661,39 @@ function populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, ty
     if (bias && bias.trim().length) addToChatCompletion('bias');
 
     // Tavern Extras - Summary
-    if (prompts.has('summary')) chatCompletion.insert(Message.fromPrompt(prompts.get('summary')), 'main');
+    if (prompts.has('summary')) {
+        const summary = prompts.get('summary');
+
+        if (summary.position) {
+            chatCompletion.insert(Message.fromPrompt(summary), 'main', summary.position);
+        }
+    }
 
     // Authors Note
     if (prompts.has('authorsNote')) {
-        const authorsNote = Message.fromPrompt(prompts.get('authorsNote'));
+        const authorsNote = prompts.get('authorsNote') ;
 
-        // ToDo: Ideally this should not be retrieved here but already be referenced in some configuration object
-        const afterScenario = document.querySelector('input[name="extension_floating_position"]').checked;
-
-        // Add authors notes
-        if (true === afterScenario) chatCompletion.insert(authorsNote, 'scenario');
+        if (authorsNote.position) {
+            chatCompletion.insert(Message.fromPrompt(authorsNote), 'main', authorsNote.position);
+        }
     }
 
     // Vectors Memory
     if (prompts.has('vectorsMemory')) {
-        const vectorsMemory = Message.fromPrompt(prompts.get('vectorsMemory'));
-        chatCompletion.insert(vectorsMemory, 'main');
+        const vectorsMemory = prompts.get('vectorsMemory');
+
+        if (vectorsMemory.position) {
+            chatCompletion.insert(Message.fromPrompt(vectorsMemory), 'main', vectorsMemory.position);
+        }
     }
 
     // Smart Context (ChromaDB)
     if (prompts.has('smartContext')) {
-        chatCompletion.insert(Message.fromPrompt(prompts.get('smartContext')), 'main');
+        const smartContext = prompts.get('smartContext');
+
+        if (smartContext.position) {
+            chatCompletion.insert(Message.fromPrompt(smartContext), 'main', smartContext.position);
+        }
     }
 
     // Decide whether dialogue examples should always be added
@@ -723,7 +752,8 @@ function preparePromptsForChatCompletion({Scenario, charPersonality, name2, worl
     if (summary && summary.value) systemPrompts.push({
         role: 'system',
         content: summary.value,
-        identifier: 'summary'
+        identifier: 'summary',
+        position: getPromptPosition(summary.position),
     });
 
     // Authors Note
@@ -731,7 +761,8 @@ function preparePromptsForChatCompletion({Scenario, charPersonality, name2, worl
     if (authorsNote && authorsNote.value) systemPrompts.push({
         role: 'system',
         content: authorsNote.value,
-        identifier: 'authorsNote'
+        identifier: 'authorsNote',
+        position: getPromptPosition(authorsNote.position),
     });
 
     // Vectors Memory
@@ -740,6 +771,7 @@ function preparePromptsForChatCompletion({Scenario, charPersonality, name2, worl
         role: 'system',
         content: vectorsMemory.value,
         identifier: 'vectorsMemory',
+        position: getPromptPosition(vectorsMemory.position),
     });
 
     // Smart Context (ChromaDB)
@@ -747,7 +779,8 @@ function preparePromptsForChatCompletion({Scenario, charPersonality, name2, worl
     if (smartContext && smartContext.value) systemPrompts.push({
         role: 'system',
         content: smartContext.value,
-        identifier: 'smartContext'
+        identifier: 'smartContext',
+        position: getPromptPosition(smartContext.position),
     });
 
     // Persona Description

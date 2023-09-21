@@ -610,7 +610,7 @@ async function showExtensionsDetails() {
 async function onUpdateClick() {
     const extensionName = $(this).data('name');
     try {
-        const response = await fetch('/update_extension', {
+        const response = await fetch('/api/extensions/update', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({ extensionName })

@@ -2,6 +2,7 @@ import { getStringHash, debounce, waitUntilCondition, extractAllWords } from "..
 import { getContext, getApiUrl, extension_settings, doExtrasFetch, modules } from "../../extensions.js";
 import { eventSource, event_types, extension_prompt_types, generateQuietPrompt, is_send_press, saveSettingsDebounced, substituteParams } from "../../../script.js";
 import { is_group_generating, selected_group } from "../../group-chats.js";
+import { registerSlashCommand } from "../../slash-commands.js";
 export { MODULE_NAME };
 
 const MODULE_NAME = '1_memory';
@@ -190,18 +191,21 @@ function onMemoryPromptInput() {
 function onMemoryTemplateInput() {
     const value = $(this).val();
     extension_settings.memory.template = value;
+    reinsertMemory();
     saveSettingsDebounced();
 }
 
 function onMemoryDepthInput() {
     const value = $(this).val();
     extension_settings.memory.depth = Number(value);
+    reinsertMemory();
     saveSettingsDebounced();
 }
 
 function onMemoryPositionChange(e) {
     const value = e.target.value;
     extension_settings.memory.position = value;
+    reinsertMemory();
     saveSettingsDebounced();
 }
 
@@ -392,7 +396,7 @@ async function summarizeChatMain(context, force) {
         return;
     }
 
-    const summary = await generateQuietPrompt(prompt);
+    const summary = await generateQuietPrompt(prompt, false);
     const newContext = getContext();
 
     // something changed during summarization request
@@ -517,6 +521,11 @@ function onMemoryContentInput() {
     setMemoryContext(value, true);
 }
 
+function reinsertMemory() {
+    const existingValue = $('#memory_contents').val();
+    setMemoryContext(existingValue, false);
+}
+
 function setMemoryContext(value, saveToMessage) {
     const context = getContext();
     context.setExtensionPrompt(MODULE_NAME, formatMemoryValue(value), extension_settings.memory.position, extension_settings.memory.depth);
@@ -565,6 +574,10 @@ jQuery(function () {
                     </div>
                     <label for="memory_position">Injection position:</label>
                     <div class="radio_group">
+                        <label>
+                            <input type="radio" name="memory_position" value="2" />
+                            Before Main Prompt / Story String
+                        </label>
                         <label>
                             <input type="radio" name="memory_position" value="0" />
                             After Main Prompt / Story String
@@ -637,4 +650,5 @@ jQuery(function () {
     eventSource.on(event_types.MESSAGE_EDITED, onChatEvent);
     eventSource.on(event_types.MESSAGE_SWIPED, onChatEvent);
     eventSource.on(event_types.CHAT_CHANGED, onChatEvent);
+    registerSlashCommand('summarize', forceSummarizeChat, [], ' – forces the summarization of the current chat using the Main API', true, true);
 });

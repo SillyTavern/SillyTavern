@@ -274,6 +274,7 @@
                                         </div>
                                     </div>
                                 </div>
+
                                 <div class="range-block">
                                     <div class="range-block-title" data-i18n="temperature">
                                         Temperature
@@ -1070,6 +1071,18 @@
                                                 <div contenteditable="true" data-for="mirostat_eta_kobold" id="mirostat_eta_counter_kobold">
                                                     select
                                                 </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <div id="grammar_block">
+                                        <h4 data-i18n="Grammar">Grammar</h4>
+                                        <div class="range-block">
+                                            <textarea id="grammar" rows="2" class="text_pole textarea_compact monospace"></textarea>
+                                            <div class="toggle-description justifyLeft">
+                                                <span data-i18n="Type in the desired custom grammar (GBNF).">
+                                                    Type in the desired custom grammar (<a href="https://github.com/ggerganov/llama.cpp/blob/master/grammars/README.md" target="_blank">GBNF</a>).
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -1945,6 +1958,10 @@
                                         <option value="gpt-3.5-turbo-0613">gpt-3.5-turbo-0613</option>
                                         <option value="gpt-3.5-turbo-0301">gpt-3.5-turbo-0301</option>
                                     </optgroup>
+                                    <optgroup label="GPT-3.5 Turbo Instruct">
+                                        <option value="gpt-3.5-turbo-instruct">gpt-3.5-turbo-instruct</option>
+                                        <option value="gpt-3.5-turbo-instruct-0914">gpt-3.5-turbo-instruct-0914</option>
+                                    </optgroup>
                                     <optgroup label="GPT-4">
                                         <option value="gpt-4">gpt-4</option>
                                         <option value="gpt-4-0613">gpt-4-0613</option>
@@ -2700,7 +2717,7 @@
                     <h3><span data-i18n="User Settings">User Settings</span></h3>
                     <div id="version_display"></div>
                 </div>
-                <div class="flex-container spaceEvenly">
+                <div id="user-settings-block-content" class="flex-container spaceEvenly">
                     <div id="UI-Theme-Block" class="flex-container flexFlowColumn wide100p">
                         <div id="color-picker-block" class="flex-container flexFlowColumn flexNoGap">
                             <div id="UI-Mode-Block">
@@ -2747,7 +2764,7 @@
                                     <span data-i18n="AI Message Blur Tint">AI Message</span>
                                 </div>
                             </div>
-                            <div data-newbie-hidden id="font-blur-UIpresets-block" class="flex-container flexFlowColumn">
+                            <div data-newbie-hidden id="font-blur-UIpresets-block" class="flex-container flexFlowColumn flexNoGap">
                                 <div id="font-scale-block" class="range-block">
                                     <div class="range-block-title" data-i18n="Font Scale">
                                         Font Scale
@@ -2851,22 +2868,6 @@
                                             <span>25%</span>
                                             <span>50%</span>
                                             <span>75%</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div data-newbie-hidden class="range-block">
-                                <div class="range-block-title">
-                                    <span data-i18n="Lazy Chat Loading">Lazy Chat Loading</span><br>
-                                    <small data-i18n="# of messages (0 = disabled)"># of messages (0 = disabled)</small>
-                                </div>
-                                <div class="range-block-range-and-counter">
-                                    <div class="range-block-range">
-                                        <input id="lazy_load" class="wide100p" type="range" min="0" max="100" step="10" value="0">
-                                        <div class="slider_hint">
-                                            <span>0</span>
-                                            <span>50</span>
-                                            <span>100</span>
                                         </div>
                                     </div>
                                 </div>
@@ -3965,6 +3966,7 @@
                                         <option value="1" data-i18n="After Char Defs">After Char Defs</option>
                                         <option value="2" data-i18n="Before AN">Before AN</option>
                                         <option value="3" data-i18n="After AN">After AN</option>
+                                        <option value="4" data-i18n="at Depth">at Depth</option>
                                     </select>
                                 </small>
                             </div>
@@ -3972,7 +3974,7 @@
 
                             <div class="world_entry_form_control wi-enter-footer-text  flex-container flexNoGap ">
                                 <label for="order" data-i18n="Order:">Order:</label>
-                                <input class="text_pole wideMax100px margin0" type="number" name="order" placeholder="" />
+                                <input class="text_pole wideMax100px margin0" type="number" name="order" placeholder="" min="0" max="10000" />
                             </div>
 
 
@@ -4128,7 +4130,8 @@
                             <div title="Generate Image" class="sd_message_gen fa-solid fa-paintbrush" data-i18n="[title]Generate Image"></div>
                             <div title="Narrate" class="mes_narrate fa-solid fa-bullhorn" data-i18n="[title]Narrate"></div>
                             <div title="Prompt" class="mes_prompt fa-solid fa-square-poll-horizontal " data-i18n="[title]Prompt"></div>
-                            <div title="Create bookmark" class="mes_create_bookmark fa-regular fa-code-branch" data-i18n="[title]Create Bookmark"></div>
+                            <div title="Create bookmark" class="mes_create_bookmark fa-regular fa-solid fa-book-bookmark" data-i18n="[title]Create Bookmark"></div>
+                            <div title="Create branch" class="mes_create_branch fa-regular fa-code-branch" data-i18n="[title]Create Branch"></div>
                             <div title="Copy" class="mes_copy fa-solid fa-copy " data-i18n="[title]Copy"></div>
                         </div>
                         <div title="Open bookmark chat" class="mes_bookmark fa-solid fa-bookmark" data-i18n="[title]Open bookmark chat"></div>
@@ -4306,6 +4309,10 @@
                         </div>
 
                         <div class="floating_prompt_radio_group">
+                            <label>
+                                <input type="radio" name="extension_floating_position" value="2" />
+                                Before Main Prompt / Story String
+                            </label>
                             <label>
                                 <input type="radio" name="extension_floating_position" value="0" />
                                 After Main Prompt / Story String
