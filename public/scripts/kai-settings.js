@@ -26,7 +26,7 @@ export const kai_settings = {
     mirostat_tau: 5.0,
     mirostat_eta: 0.1,
     use_default_badwordsids: true,
-    grammar: "hardcoded",
+    grammar: "",
 };
 
 export const kai_flags = {
