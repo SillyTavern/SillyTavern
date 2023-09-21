@@ -375,6 +375,7 @@ app.post("/generate", jsonParser, async function (request, response_generate) {
             mirostat: request.body.mirostat,
             mirostat_eta: request.body.mirostat_eta,
             mirostat_tau: request.body.mirostat_tau,
+            grammar: request.body.grammar,
         };
         if (!!request.body.stop_sequence) {
             this_settings['stop_sequence'] = request.body.stop_sequence;

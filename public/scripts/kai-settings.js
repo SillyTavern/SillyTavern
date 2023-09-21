@@ -26,6 +26,7 @@ export const kai_settings = {
     mirostat_tau: 5.0,
     mirostat_eta: 0.1,
     use_default_badwordsids: true,
+    grammar: "hardcoded",
 };
 
 export const kai_flags = {
@@ -84,10 +85,16 @@ export function loadKoboldSettings(preset) {
         kai_settings.use_default_badwordsids = preset.use_default_badwordsids;
         $('#use_default_badwordsids').prop('checked', kai_settings.use_default_badwordsids);
     }
+    if (preset.hasOwnProperty('grammar')) {
+        kai_settings.grammar = preset.grammar;
+        $('#grammar').val(kai_settings.grammar);
+    }
+
 }
 
 export function getKoboldGenerationData(finalPrompt, this_settings, this_amount_gen, this_max_context, isImpersonate, type) {
     const sampler_order = kai_settings.sampler_order || this_settings.sampler_order;
+
     let generate_data = {
         prompt: finalPrompt,
         gui_settings: false,
@@ -119,6 +126,7 @@ export function getKoboldGenerationData(finalPrompt, this_settings, this_amount_
         mirostat_tau: kai_flags.can_use_mirostat ? kai_settings.mirostat_tau : undefined,
         mirostat_eta: kai_flags.can_use_mirostat ? kai_settings.mirostat_eta : undefined,
         use_default_badwordsids: kai_flags.can_use_default_badwordsids ? kai_settings.use_default_badwordsids : undefined,
+        grammar: kai_settings.grammar,
     };
     return generate_data;
 }
@@ -257,6 +265,7 @@ const sliders = [
         format: (val) => val,
         setValue: (val) => { kai_settings.mirostat_eta = Number(val); },
     },
+    
 ];
 
 export function setKoboldFlags(version, koboldVersion) {
@@ -348,6 +357,12 @@ jQuery(function () {
     $('#streaming_kobold').on("input", function () {
         const value = !!$(this).prop('checked');
         kai_settings.streaming_kobold = value;
+        saveSettingsDebounced();
+    });
+
+    $('#grammar').on("input", function () {
+        const value = $(this).val().toString(); // Even though it's redundant, this ensures the value is a string.
+        kai_settings.grammar = value;
         saveSettingsDebounced();
     });
 
