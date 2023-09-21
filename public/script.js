@@ -3286,6 +3286,14 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         }
         is_send_press = false;
     }
+
+    //prevent custom depth WI entries (which have unique random key names) from duplicating
+    for (let key in extension_prompts) {
+        if (key.includes('customDepthWI')) {
+            let keyname = extension_prompts[key]
+            delete extension_prompts[key];
+        }
+    }
     //console.log('generate ending');
 } //generate ends
 
@@ -5194,7 +5202,7 @@ export async function getChatsFromFiles(data, isGroupChat) {
     let chat_dict = {};
     let chat_list = Object.values(data).sort((a, b) => a["file_name"].localeCompare(b["file_name"])).reverse();
 
-    let chat_promise = chat_list.map(({ file_name}) => {
+    let chat_promise = chat_list.map(({ file_name }) => {
         return new Promise(async (res, rej) => {
             try {
                 const endpoint = isGroupChat ? '/getgroupchat' : '/getchat';
