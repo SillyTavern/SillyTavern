@@ -1716,8 +1716,8 @@ export function getCustomStoppingStrings(limit = undefined) {
             return [];
         }
 
-        // Make sure all the elements are strings.
-        strings = strings.filter((s) => typeof s === 'string');
+        // Make sure all the elements are strings and non-empty.
+        strings = strings.filter(s => typeof s === 'string' && s.length > 0);
 
         // Substitute params if necessary
         if (power_user.custom_stopping_strings_macro) {

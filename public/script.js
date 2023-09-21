@@ -1848,7 +1848,7 @@ function getStoppingStrings(isImpersonate) {
         if (group && Array.isArray(group.members)) {
             const names = group.members
                 .map(x => characters.find(y => y.avatar == x))
-                .filter(x => x && x.name !== name2)
+                .filter(x => x && x.name && x.name !== name2)
                 .map(x => `\n${x.name}:`);
             result.push(...names);
         }
