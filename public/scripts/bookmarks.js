@@ -135,12 +135,12 @@ async function saveBookmarkMenu() {
 
 export async function createBranch(mesId) {
     if (!chat.length) {
-        toastr.warning('The chat is empty.', 'Bookmark creation failed');
+        toastr.warning('The chat is empty.', 'Branch creation failed');
         return;
     }
 
     if (mesId < 0 || mesId >= chat.length) {
-        toastr.warning('Invalid message ID.', 'Bookmark creation failed');
+        toastr.warning('Invalid message ID.', 'Branch creation failed');
         return;
     }
 
