@@ -636,7 +636,7 @@ let is_send_press = false; //Send generation
 
 let this_del_mes = 0;
 
-//message editing and chat scroll posistion persistence
+//message editing and chat scroll position persistence
 var this_edit_mes_text = "";
 var this_edit_mes_chname = "";
 var this_edit_mes_id;
@@ -2578,7 +2578,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         addPersonaDescriptionExtensionPrompt();
         // Call combined AN into Generate
         let allAnchors = getAllExtensionPrompts();
-        const beforeScenarioAnchor = getExtensionPrompt(extension_prompt_types.BEFORE_PROMPT)
+        const beforeScenarioAnchor = getExtensionPrompt(extension_prompt_types.BEFORE_PROMPT).trimStart();
         const afterScenarioAnchor = getExtensionPrompt(extension_prompt_types.IN_PROMPT);
         let zeroDepthAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, 0, ' ');
 
