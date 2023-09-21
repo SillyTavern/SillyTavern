@@ -103,7 +103,8 @@ import {
 
 import {
     createNewBookmark,
-    showBookmarksButtons
+    showBookmarksButtons,
+    createBranch,
 } from "./scripts/bookmarks.js";
 
 import {
@@ -6525,6 +6526,11 @@ function swipe_left() {      // when we swipe left..but no generation.
     }
 }
 
+async function branchChat(mesID) {
+    let name = await createBranch(mesID);
+    await openCharacterChat(name);
+}
+
 // when we click swipe right button
 const swipe_right = () => {
     if (chat.length - 1 === Number(this_edit_mes_id)) {
@@ -6704,6 +6710,8 @@ const swipe_right = () => {
         });
     }
 }
+
+
 
 function displayOverrideWarnings() {
     if (!this_chid || !selected_group) {
@@ -8423,6 +8431,13 @@ jQuery(async function () {
         var selected_mes_id = $(this).closest(".mes").attr("mesid");
         if (selected_mes_id !== undefined) {
             createNewBookmark(selected_mes_id);
+        }
+    });
+
+    $(document).on("click", ".mes_create_branch", async function () {
+        var selected_mes_id = $(this).closest(".mes").attr("mesid");
+        if (selected_mes_id !== undefined) {
+            branchChat(selected_mes_id);
         }
     });
 
