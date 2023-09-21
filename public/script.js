@@ -1173,16 +1173,6 @@ async function printMessages() {
         const item = chat[i];
         addOneMessage(item, { scroll: i === chat.length - 1 });
     }
-
-    if (power_user.lazy_load > 0) {
-        const height = $('#chat').height();
-        const scrollHeight = $('#chat').prop('scrollHeight');
-
-        // Only hide if oveflowing the scroll
-        if (scrollHeight > height) {
-            $('#chat').children('.mes').slice(0, -power_user.lazy_load).hide();
-        }
-    }
 }
 
 function clearChat() {
@@ -7015,17 +7005,6 @@ jQuery(async function () {
         $("#groupControlsToggle").trigger('click');
         $("#groupCurrentMemberListToggle .inline-drawer-icon").trigger('click');
     }, 200);
-
-    $('#chat').on('scroll', async () => {
-        // if on the start of the chat and has hidden messages
-        if ($('#chat').scrollTop() === 0 && $('#chat').children('.mes').not(':visible').length > 0) {
-            // show next hidden messages
-            const prevHeight = $('#chat').prop('scrollHeight');
-            $('#chat').children('.mes').not(':visible').slice(-power_user.lazy_load).show();
-            const newHeight = $('#chat').prop('scrollHeight');
-            $('#chat').scrollTop(newHeight - prevHeight);
-        }
-    });
 
     $("#chat").on('mousewheel touchstart', () => {
         scrollLock = true;
