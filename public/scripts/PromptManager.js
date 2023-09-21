@@ -60,7 +60,7 @@ const registerPromptManagerMigration = () => {
  * Represents a prompt.
  */
 class Prompt {
-    identifier; role; content; name; system_prompt;
+    identifier; role; content; name; system_prompt; position;
 
     /**
      * Create a new Prompt instance.
@@ -71,13 +71,15 @@ class Prompt {
      * @param {string} param0.content - The content of the prompt.
      * @param {string} param0.name - The name of the prompt.
      * @param {boolean} param0.system_prompt - Indicates if the prompt is a system prompt.
+     * @param {string} param0.position - The position of the prompt in the prompt list.
      */
-    constructor({ identifier, role, content, name, system_prompt } = {}) {
+    constructor({ identifier, role, content, name, system_prompt, position } = {}) {
         this.identifier = identifier;
         this.role = role;
         this.content = content;
         this.name = name;
         this.system_prompt = system_prompt;
+        this.position = position;
     }
 }
 
