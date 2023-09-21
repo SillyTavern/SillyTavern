@@ -103,7 +103,8 @@ import {
 
 import {
     createNewBookmark,
-    showBookmarksButtons
+    showBookmarksButtons,
+    createBranch,
 } from "./scripts/bookmarks.js";
 
 import {
@@ -3285,6 +3286,14 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         }
         is_send_press = false;
     }
+
+    //prevent custom depth WI entries (which have unique random key names) from duplicating
+    for (let key in extension_prompts) {
+        if (key.includes('customDepthWI')) {
+            let keyname = extension_prompts[key]
+            delete extension_prompts[key];
+        }
+    }
     //console.log('generate ending');
 } //generate ends
 
@@ -5193,7 +5202,7 @@ export async function getChatsFromFiles(data, isGroupChat) {
     let chat_dict = {};
     let chat_list = Object.values(data).sort((a, b) => a["file_name"].localeCompare(b["file_name"])).reverse();
 
-    let chat_promise = chat_list.map(({ file_name}) => {
+    let chat_promise = chat_list.map(({ file_name }) => {
         return new Promise(async (res, rej) => {
             try {
                 const endpoint = isGroupChat ? '/getgroupchat' : '/getchat';
@@ -6525,6 +6534,11 @@ function swipe_left() {      // when we swipe left..but no generation.
     }
 }
 
+async function branchChat(mesID) {
+    let name = await createBranch(mesID);
+    await openCharacterChat(name);
+}
+
 // when we click swipe right button
 const swipe_right = () => {
     if (chat.length - 1 === Number(this_edit_mes_id)) {
@@ -6704,6 +6718,8 @@ const swipe_right = () => {
         });
     }
 }
+
+
 
 function displayOverrideWarnings() {
     if (!this_chid || !selected_group) {
@@ -8423,6 +8439,13 @@ jQuery(async function () {
         var selected_mes_id = $(this).closest(".mes").attr("mesid");
         if (selected_mes_id !== undefined) {
             createNewBookmark(selected_mes_id);
+        }
+    });
+
+    $(document).on("click", ".mes_create_branch", async function () {
+        var selected_mes_id = $(this).closest(".mes").attr("mesid");
+        if (selected_mes_id !== undefined) {
+            branchChat(selected_mes_id);
         }
     });
 
