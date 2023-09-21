@@ -567,6 +567,10 @@ jQuery(function () {
                     <label for="memory_position">Injection position:</label>
                     <div class="radio_group">
                         <label>
+                            <input type="radio" name="memory_position" value="2" />
+                            Before Main Prompt / Story String
+                        </label>
+                        <label>
                             <input type="radio" name="memory_position" value="0" />
                             After Main Prompt / Story String
                         </label>
