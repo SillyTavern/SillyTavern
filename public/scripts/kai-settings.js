@@ -35,6 +35,7 @@ export const kai_flags = {
     can_use_streaming: false,
     can_use_default_badwordsids: false,
     can_use_mirostat: false,
+    can_use_grammar: false,
 };
 
 const defaultValues = Object.freeze(structuredClone(kai_settings));
@@ -44,6 +45,7 @@ const MIN_UNBAN_VERSION = '1.2.4';
 const MIN_STREAMING_KCPPVERSION = '1.30';
 const MIN_TOKENIZATION_KCPPVERSION = '1.41';
 const MIN_MIROSTAT_KCPPVERSION = '1.35';
+const MIN_GRAMMAR_KCPPVERSION = '1.44';
 const KOBOLDCPP_ORDER = [6, 0, 1, 3, 4, 2, 5];
 
 export function formatKoboldUrl(value) {
@@ -85,11 +87,6 @@ export function loadKoboldSettings(preset) {
         kai_settings.use_default_badwordsids = preset.use_default_badwordsids;
         $('#use_default_badwordsids').prop('checked', kai_settings.use_default_badwordsids);
     }
-    if (preset.hasOwnProperty('grammar')) {
-        kai_settings.grammar = preset.grammar;
-        $('#grammar').val(kai_settings.grammar);
-    }
-
 }
 
 export function getKoboldGenerationData(finalPrompt, this_settings, this_amount_gen, this_max_context, isImpersonate, type) {
@@ -122,11 +119,11 @@ export function getKoboldGenerationData(finalPrompt, this_settings, this_amount_
         stop_sequence: kai_flags.can_use_stop_sequence ? getStoppingStrings(isImpersonate) : undefined,
         streaming: kai_settings.streaming_kobold && kai_flags.can_use_streaming && type !== 'quiet',
         can_abort: kai_flags.can_use_streaming,
-        mirostat: kai_flags.can_use_mirostat ?  kai_settings.mirostat : undefined,
+        mirostat: kai_flags.can_use_mirostat ? kai_settings.mirostat : undefined,
         mirostat_tau: kai_flags.can_use_mirostat ? kai_settings.mirostat_tau : undefined,
         mirostat_eta: kai_flags.can_use_mirostat ? kai_settings.mirostat_eta : undefined,
         use_default_badwordsids: kai_flags.can_use_default_badwordsids ? kai_settings.use_default_badwordsids : undefined,
-        grammar: kai_settings.grammar,
+        grammar: kai_flags.can_use_grammar ? kai_settings.grammar : undefined,
     };
     return generate_data;
 }
@@ -265,7 +262,13 @@ const sliders = [
         format: (val) => val,
         setValue: (val) => { kai_settings.mirostat_eta = Number(val); },
     },
-    
+    {
+        name: "grammar",
+        sliderId: "#grammar",
+        counterId: "#grammar_counter_kobold",
+        format: (val) => val,
+        setValue: (val) => { kai_settings.grammar = val; },
+    },
 ];
 
 export function setKoboldFlags(version, koboldVersion) {
@@ -274,6 +277,7 @@ export function setKoboldFlags(version, koboldVersion) {
     kai_flags.can_use_tokenization = canUseKoboldTokenization(koboldVersion);
     kai_flags.can_use_default_badwordsids = canUseDefaultBadwordIds(version);
     kai_flags.can_use_mirostat = canUseMirostat(koboldVersion);
+    kai_flags.can_use_grammar = canUseGrammar(koboldVersion);
 }
 
 /**
@@ -316,9 +320,25 @@ function canUseKoboldTokenization(koboldVersion) {
     } else return false;
 }
 
+/**
+ * Determines if the Kobold mirostat can be used with the given version.
+ * @param {{result: string; version: string;}} koboldVersion KoboldAI version object.
+ * @returns {boolean} True if the Kobold mirostat API can be used, false otherwise.
+ */
 function canUseMirostat(koboldVersion) {
     if (koboldVersion && koboldVersion.result == 'KoboldCpp') {
         return (koboldVersion.version || '0.0').localeCompare(MIN_MIROSTAT_KCPPVERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
+    } else return false;
+}
+
+/**
+ * Determines if the Kobold grammar can be used with the given version.
+ * @param {{result: string; version:string;}} koboldVersion KoboldAI version object.
+ * @returns {boolean} True if the Kobold grammar can be used, false otherwise.
+ */
+function canUseGrammar(koboldVersion) {
+    if (koboldVersion && koboldVersion.result == 'KoboldCpp') {
+        return (koboldVersion.version || '0.0').localeCompare(MIN_GRAMMAR_KCPPVERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
     } else return false;
 }
 
@@ -343,7 +363,7 @@ jQuery(function () {
             const value = $(this).val();
             const formattedValue = slider.format(value);
             slider.setValue(value);
-            $(slider.counterId).html(formattedValue);
+            $(slider.counterId).text(formattedValue);
             saveSettingsDebounced();
         });
     });
@@ -357,12 +377,6 @@ jQuery(function () {
     $('#streaming_kobold').on("input", function () {
         const value = !!$(this).prop('checked');
         kai_settings.streaming_kobold = value;
-        saveSettingsDebounced();
-    });
-
-    $('#grammar').on("input", function () {
-        const value = $(this).val().toString(); // Even though it's redundant, this ensures the value is a string.
-        kai_settings.grammar = value;
         saveSettingsDebounced();
     });
 
