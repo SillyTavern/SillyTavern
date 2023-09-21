@@ -192,7 +192,7 @@ function selectTag(event, ui, listSelector) {
     }
 
     // unfocus and clear the input
-    $(event.target).val("").trigger('blur');
+    $(event.target).val("").trigger('input');
 
     // add tag to the UI and internal map
     appendTagToList(listSelector, tag, { removable: true });
