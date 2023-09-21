@@ -191,18 +191,21 @@ function onMemoryPromptInput() {
 function onMemoryTemplateInput() {
     const value = $(this).val();
     extension_settings.memory.template = value;
+    reinsertMemory();
     saveSettingsDebounced();
 }
 
 function onMemoryDepthInput() {
     const value = $(this).val();
     extension_settings.memory.depth = Number(value);
+    reinsertMemory();
     saveSettingsDebounced();
 }
 
 function onMemoryPositionChange(e) {
     const value = e.target.value;
     extension_settings.memory.position = value;
+    reinsertMemory();
     saveSettingsDebounced();
 }
 
@@ -393,7 +396,7 @@ async function summarizeChatMain(context, force) {
         return;
     }
 
-    const summary = await generateQuietPrompt(prompt);
+    const summary = await generateQuietPrompt(prompt, false);
     const newContext = getContext();
 
     // something changed during summarization request
@@ -516,6 +519,11 @@ function onMemoryRestoreClick() {
 function onMemoryContentInput() {
     const value = $(this).val();
     setMemoryContext(value, true);
+}
+
+function reinsertMemory() {
+    const existingValue = $('#memory_contents').val();
+    setMemoryContext(existingValue, false);
 }
 
 function setMemoryContext(value, saveToMessage) {
