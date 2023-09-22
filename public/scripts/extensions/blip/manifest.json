@@ -1,0 +1,11 @@
+{
+    "display_name": "Blip",
+    "loading_order": 14,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "css": "style.css",
+    "author": "Keij#6799, Deffcolony, Ikaridev",
+    "version": "0.1.0",
+    "homePage": "https://github.com/SillyTavern/SillyTavern"
+}
