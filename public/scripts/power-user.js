@@ -562,6 +562,17 @@ async function applyThemeColor(type) {
 async function applyCustomCSS()
 {
     power_user.custom_css = String(localStorage.getItem(storage_keys.custom_css) ?? "");
+
+    if (power_user.custom_css.includes("@import"))
+    {
+        var removeImport = /@import[^;]+;/gm
+        power_user.custom_css = power_user.custom_css.replace(removeImport, "");
+        toastr.warning(power_user.custom_css);
+        $('#customCSS').val(power_user.custom_css);
+        localStorage.setItem(storage_keys.custom_css, power_user.custom_css);
+        toastr.warning('@import not allowed in Custom CSS. @import lines removed.')
+    }
+
     $("#customCSS").val(power_user.custom_css);
     var styleId = "custom-style";
     var style = document.getElementById(styleId);
@@ -1922,14 +1933,7 @@ $(document).ready(() => {
 
     $("#customCSS").on('change', () =>
     {
-
         power_user.custom_css = $('#customCSS').val();
-        if (power_user.custom_css.includes("@import"))
-        {
-            var removeImport = /@import\s+[^;]+;/g;
-            power_user.custom_css = power_user.custom_css.replace(removeImport, "");
-            toastr.warning('@import not allowed in Custom CSS. @import lines removed.')
-        }
         localStorage.setItem(storage_keys.custom_css, power_user.custom_css);
         saveSettingsDebounced();
         applyCustomCSS();
