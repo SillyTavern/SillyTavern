@@ -8745,7 +8745,7 @@ jQuery(async function () {
         }
 
         console.debug('Label value OK, setting to the master input control', myText);
-        $(masterElement).val(myValue).trigger('input');
+        $(masterElement).val(myValue).trigger('input').trigger('mouseup');
         restoreCaretPosition($(this).get(0), caretPosition);
     });
 

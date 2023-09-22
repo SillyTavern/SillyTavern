@@ -382,8 +382,8 @@ function switchMesIDDisplay() {
     let before = power_user.mesIDDisplay_enabled;
     power_user.mesIDDisplay_enabled = value === null ? true : value == "true";
     /*     console.log(`
-        localstorage value:${value}, 
-        poweruser before:${before}, 
+        localstorage value:${value},
+        poweruser before:${before},
         poweruser after:${power_user.mesIDDisplay_enabled}`) */
     $("body").toggleClass("no-mesIDDisplay", !power_user.mesIDDisplay_enabled);
     $("#mesIDDisplayEnabled").prop("checked", power_user.mesIDDisplay_enabled);
@@ -520,6 +520,8 @@ function applyChatWidth(type) {
             document.documentElement.style.setProperty('--sheldWidth', `${power_user.chat_width}vw`);
         })
     }
+
+    $('#chat_width_slider_counter').text(power_user.chat_width);
 }
 
 async function applyThemeColor(type) {
