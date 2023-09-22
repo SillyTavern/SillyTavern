@@ -2206,7 +2206,8 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
 
 .range-block-counter {
     margin-left: 5px;
-    margin-right: 15px;
+    /*previously needed to avoid firefox scrollbar overlap, no longer necessary?*/
+    /* margin-right: 15px; */
     font-size: calc(var(--mainFontSize) * 0.95);
     color: var(--SmartThemeBodyColor);
     flex: 1;
@@ -2251,6 +2252,7 @@ input[type="range"] {
     background-size: 70% 100%;
     background-repeat: no-repeat;
     box-shadow: inset 0 0 2px black;
+    cursor: grab;
 }
 
 input[type="range"]::-webkit-slider-thumb {
@@ -3031,11 +3033,12 @@ a {
 }
 
 #extensions_settings .inline-drawer-toggle.inline-drawer-header,
-#extensions_settings2 .inline-drawer-toggle.inline-drawer-header {
+#extensions_settings2 .inline-drawer-toggle.inline-drawer-header,
+#user-settings-block h4 {
     background-image: linear-gradient(348deg, var(--white30a)2%, var(--grey30a)10%, var(--black70a)95%, var(--SmartThemeQuoteColor)100%);
     margin-bottom: 5px;
     border-radius: 10px;
-    padding: 5px;
+    padding: 2px 5px;
     border: 1px solid var(--SmartThemeBorderColor);
     transition: all 250ms;
 }
