@@ -47,6 +47,7 @@
     --SmartThemeQuoteColor: rgb(225, 138, 36);
     /* --SmartThemeFastUIBGColor: rgba(0, 0, 0, 0.9); */
     --SmartThemeBlurTintColor: rgba(23, 23, 23, 1);
+    --SmartThemeChatTintColor: rgba(23, 23, 23, 1);
     --SmartThemeUserMesBlurTintColor: rgba(0, 0, 0, 0.3);
     --SmartThemeBotMesBlurTintColor: rgba(60, 60, 60, 0.3);
     --SmartThemeBlurStrength: calc(var(--blurStrength) * 1px);
@@ -485,7 +486,7 @@ hr {
     border-left: 1px solid var(--SmartThemeBorderColor);
     border-right: 1px solid var(--SmartThemeBorderColor);
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
-    background-color: var(--SmartThemeBlurTintColor);
+    background-color: var(--SmartThemeChatTintColor);
     -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
     text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
     scrollbar-width: thin;
