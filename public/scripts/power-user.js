@@ -389,7 +389,7 @@ function switchMesIDDisplay() {
     const value = localStorage.getItem(storage_keys.mesIDDisplay_enabled);
     power_user.mesIDDisplay_enabled = value === null ? true : value == "true";
     $("body").toggleClass("no-mesIDDisplay", !power_user.mesIDDisplay_enabled);
-    $("#MesIDDisplayEnabled").prop("checked", power_user.mesIDDisplay_enabled);
+    $("#mesIDDisplayEnabled").prop("checked", power_user.mesIDDisplay_enabled);
 }
 
 function switchUiMode() {
@@ -674,7 +674,7 @@ async function applyTheme(name) {
             }
         },
         {
-            key: 'message_token_count',
+            key: 'message_token_count_enabled',
             action: async () => {
                 localStorage.setItem(storage_keys.message_token_count_enabled, String(power_user.message_token_count_enabled));
                 switchTokenCount();
@@ -1254,7 +1254,7 @@ async function saveTheme() {
         timestamp_model_icon: power_user.timestamp_model_icon,
         mesIDDisplay_enabled: power_user.mesIDDisplay_enabled,
         hotswap_enabled: power_user.hotswap_enabled,
-
+        message_token_count_enabled: power_user.message_token_count_enabled,
     };
 
     const response = await fetch('/savetheme', {
