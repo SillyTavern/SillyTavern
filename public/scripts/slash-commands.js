@@ -20,12 +20,14 @@ import {
     generateQuietPrompt,
     reloadCurrentChat,
     sendMessageAsUser,
+    name1,
 } from "../script.js";
 import { getMessageTimeStamp } from "./RossAscends-mods.js";
 import { resetSelectedGroup } from "./group-chats.js";
 import { getRegexedString, regex_placement } from "./extensions/regex/engine.js";
 import { chat_styles, power_user } from "./power-user.js";
 import { autoSelectPersona } from "./personas.js";
+import { getContext } from "./extensions.js";
 export {
     executeSlashCommands,
     registerSlashCommand,
@@ -225,7 +227,7 @@ function continueChatCallback() {
     $('#option_continue').trigger('click', { fromSlashCommand: true });
 }
 
-async function generateSystemMessage(_, prompt) {
+export async function generateSystemMessage(_, prompt) {
     $('#send_textarea').val('');
 
     if (!prompt) {
@@ -289,7 +291,7 @@ async function setNarratorName(_, text) {
     await saveChatConditional();
 }
 
-async function sendMessageAs(_, text) {
+export async function sendMessageAs(_, text) {
     if (!text) {
         return;
     }
@@ -325,7 +327,6 @@ async function sendMessageAs(_, text) {
     const message = {
         name: name,
         is_user: false,
-        is_name: true,
         is_system: isSystem,
         send_date: getMessageTimeStamp(),
         mes: substituteParams(mesText),
@@ -344,7 +345,7 @@ async function sendMessageAs(_, text) {
     await saveChatConditional();
 }
 
-async function sendNarratorMessage(_, text) {
+export async function sendNarratorMessage(_, text) {
     if (!text) {
         return;
     }
@@ -357,7 +358,6 @@ async function sendNarratorMessage(_, text) {
     const message = {
         name: name,
         is_user: false,
-        is_name: false,
         is_system: isSystem,
         send_date: getMessageTimeStamp(),
         mes: substituteParams(text.trim()),
@@ -376,6 +376,45 @@ async function sendNarratorMessage(_, text) {
     await saveChatConditional();
 }
 
+export async function promptQuietForLoudResponse(who, text) {
+
+    let character_id = getContext().characterId;
+    if (who === 'sys') {
+        text = "System: " + text;
+    } else if (who === 'user') {
+        text = name1 + ": " + text;
+    } else if (who === 'char') {
+        text = characters[character_id].name + ": " + text;
+    } else if (who === 'raw') {
+        text = text;
+    }
+
+    //text = `${text}${power_user.instruct.enabled ? '' : '\n'}${(power_user.always_force_name2 && who != 'raw') ? characters[character_id].name + ":" : ""}`
+
+    let reply = await generateQuietPrompt(text, true);
+    text = await getRegexedString(reply, regex_placement.SLASH_COMMAND);
+
+    const message = {
+        name: characters[character_id].name,
+        is_user: false,
+        is_name: true,
+        is_system: false,
+        send_date: getMessageTimeStamp(),
+        mes: substituteParams(text.trim()),
+        extra: {
+            type: system_message_types.COMMENT,
+            gen_id: Date.now(),
+        },
+    };
+
+    chat.push(message);
+    await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
+    addOneMessage(message);
+    await eventSource.emit(event_types.USER_MESSAGE_RENDERED, (chat.length - 1));
+    await saveChatConditional();
+
+}
+
 async function sendCommentMessage(_, text) {
     if (!text) {
         return;
@@ -384,7 +423,6 @@ async function sendCommentMessage(_, text) {
     const message = {
         name: COMMENT_NAME_DEFAULT,
         is_user: false,
-        is_name: true,
         is_system: true,
         send_date: getMessageTimeStamp(),
         mes: substituteParams(text.trim()),

@@ -508,7 +508,6 @@ async function onSelectInjectFile(e) {
             meta: JSON.stringify({
                 name: file.name,
                 is_user: false,
-                is_name: false,
                 is_system: false,
                 send_date: humanizedDateTime(),
                 mes: m,
@@ -686,7 +685,6 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
             const charname = context.name2;
             newChat.push(
                 {
-                    is_name: false,
                     is_user: false,
                     mes: `[Use these past chat exchanges to inform ${charname}'s next response:`,
                     name: "system",
@@ -696,7 +694,6 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
             newChat.push(...queriedMessages.map(m => m.meta).filter(onlyUnique).map(JSON.parse));
             newChat.push(
                 {
-                    is_name: false,
                     is_user: false,
                     mes: `]\n`,
                     name: "system",
@@ -739,7 +736,7 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
             // No memories? No prompt.
             const promptBlob = (tokenApprox == 0) ? "" : wrapperMsg.replace('{{memories}}', allMemoryBlob);
             console.debug("CHROMADB: prompt blob: %o", promptBlob);
-            context.setExtensionPrompt(MODULE_NAME, promptBlob, extension_prompt_types.AFTER_SCENARIO);
+            context.setExtensionPrompt(MODULE_NAME, promptBlob, extension_prompt_types.IN_PROMPT);
         }
         if (selectedStrategy === 'custom') {
             const context = getContext();
@@ -752,7 +749,6 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
 
             newChat.push(
                 {
-                    is_name: false,
                     is_user: false,
                     mes: recallStart,
                     name: "system",
@@ -762,7 +758,6 @@ window.chromadb_interceptGeneration = async (chat, maxContext) => {
             newChat.push(...queriedMessages.map(m => m.meta).filter(onlyUnique).map(JSON.parse));
             newChat.push(
                 {
-                    is_name: false,
                     is_user: false,
                     mes: recallEnd + `\n`,
                     name: "system",

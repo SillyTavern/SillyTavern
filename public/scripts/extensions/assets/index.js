@@ -150,7 +150,7 @@ async function installAsset(url, assetType, filename) {
     const category = assetType;
     try {
         const body = { url, category, filename };
-        const result = await fetch('/asset_download', {
+        const result = await fetch('/api/assets/download', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify(body),
@@ -171,7 +171,7 @@ async function deleteAsset(assetType, filename) {
     const category = assetType;
     try {
         const body = { category, filename };
-        const result = await fetch('/asset_delete', {
+        const result = await fetch('/api/assets/delete', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify(body),
@@ -194,7 +194,7 @@ async function deleteAsset(assetType, filename) {
 async function updateCurrentAssets() {
     console.debug(DEBUG_PREFIX, "Checking installed assets...")
     try {
-        const result = await fetch(`/get_assets`, {
+        const result = await fetch(`/api/assets/get`, {
             method: 'POST',
             headers: getRequestHeaders(),
         });

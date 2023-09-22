@@ -62,11 +62,11 @@ const generateDebounced = debounce(() => generateHypeBot(), 500);
  * @param {string} text Text to set
  */
 function setHypeBotText(text) {
-    const blockA = $('#chat');
-    var originalScrollBottom = blockA[0].scrollHeight - (blockA.scrollTop() + blockA.outerHeight());
+    const chatBlock = $('#chat');
+    const originalScrollBottom = chatBlock[0].scrollHeight - (chatBlock.scrollTop() + chatBlock.outerHeight());
     hypeBotBar.html(DOMPurify.sanitize(text));
-    var newScrollTop = blockA[0].scrollHeight - (blockA.outerHeight() + originalScrollBottom);
-    blockA.scrollTop(newScrollTop);
+    const newScrollTop = chatBlock[0].scrollHeight - (chatBlock.outerHeight() + originalScrollBottom);
+    chatBlock.scrollTop(newScrollTop);
 }
 
 /**
@@ -159,7 +159,7 @@ async function generateHypeBot() {
 
     abortController = new AbortController();
 
-    const response = await fetch('/generate_novelai', {
+    const response = await fetch('/api/novelai/generate', {
         headers: getRequestHeaders(),
         body: JSON.stringify(parameters),
         method: 'POST',
@@ -191,11 +191,13 @@ jQuery(() => {
         settings.enabled = $('#hypebot_enabled').prop('checked');
         hypeBotBar.toggle(settings.enabled);
         abortController?.abort();
+        Object.assign(extension_settings.hypebot, settings);
         saveSettingsDebounced();
     });
 
     $('#hypebot_name').val(settings.name).on('input', () => {
         settings.name = String($('#hypebot_name').val());
+        Object.assign(extension_settings.hypebot, settings);
         saveSettingsDebounced();
     });
 

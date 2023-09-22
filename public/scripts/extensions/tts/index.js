@@ -1,4 +1,4 @@
-import { callPopup, cancelTtsPlay, eventSource, event_types, isMultigenEnabled, is_send_press, saveSettingsDebounced } from '../../../script.js'
+import { callPopup, cancelTtsPlay, eventSource, event_types, saveSettingsDebounced } from '../../../script.js'
 import { ModuleWorkerWrapper, doExtrasFetch, extension_settings, getApiUrl, getContext, modules } from '../../extensions.js'
 import { escapeRegex, getStringHash } from '../../utils.js'
 import { EdgeTtsProvider } from './edge.js'
@@ -115,11 +115,6 @@ async function moduleWorker() {
     // no characters or group selected
     if (!context.groupId && context.characterId === undefined) {
         return
-    }
-
-    // Multigen message is currently being generated
-    if (is_send_press && isMultigenEnabled()) {
-        return;
     }
 
     // Chat changed

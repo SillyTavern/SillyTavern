@@ -170,7 +170,7 @@ class NovelTtsProvider {
 
     async fetchTtsGeneration(inputText, voiceId) {
         console.info(`Generating new TTS for voice_id ${voiceId}`)
-        const response = await fetch(`/novel_tts`,
+        const response = await fetch(`/api/novelai/generate-voice`,
             {
                 method: 'POST',
                 headers: getRequestHeaders(),

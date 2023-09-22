@@ -11,6 +11,7 @@ import { getTextTokens, tokenizers } from "./tokenizers.js";
 import {
     getSortableDelay,
     getStringHash,
+    onlyUnique,
     uuidv4,
 } from "./utils.js";
 
@@ -87,7 +88,7 @@ export function getNovelUnlimitedImageGeneration() {
 }
 
 export async function loadNovelSubscriptionData() {
-    const result = await fetch('/getstatus_novelai', {
+    const result = await fetch('/api/novelai/status', {
         method: 'POST',
         headers: getRequestHeaders(),
     });
@@ -402,7 +403,7 @@ function getBadWordPermutations(text) {
     // Ditto + leading space
     result.push(` ${text.toLowerCase()}`);
 
-    return result;
+    return result.filter(onlyUnique);
 }
 
 export function getNovelGenerationData(finalPrompt, this_settings, this_amount_gen, isImpersonate, cfgValues) {
@@ -679,7 +680,7 @@ function tryParseStreamingError(decoded) {
 export async function generateNovelWithStreaming(generate_data, signal) {
     generate_data.streaming = nai_settings.streaming_novel;
 
-    const response = await fetch('/generate_novelai', {
+    const response = await fetch('/api/novelai/generate', {
         headers: getRequestHeaders(),
         body: JSON.stringify(generate_data),
         method: 'POST',

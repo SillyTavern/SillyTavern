@@ -192,7 +192,7 @@ function selectTag(event, ui, listSelector) {
     }
 
     // unfocus and clear the input
-    $(event.target).val("").trigger('blur');
+    $(event.target).val("").trigger('input');
 
     // add tag to the UI and internal map
     appendTagToList(listSelector, tag, { removable: true });
@@ -263,6 +263,7 @@ function createNewTag(tagName) {
         id: uuidv4(),
         name: tagName,
         color: '',
+        color2: '',
     };
     tags.push(tag);
     return tag;
@@ -273,12 +274,12 @@ function appendTagToList(listElement, tag, { removable, selectable, action, isGe
         return;
     }
 
-
     let tagElement = $('#tag_template .tag').clone();
     tagElement.attr('id', tag.id);
 
-    tagElement.css('color', 'var(--SmartThemeBodyColor)');
+    //tagElement.css('color', 'var(--SmartThemeBodyColor)');
     tagElement.css('background-color', tag.color);
+    tagElement.css('color', tag.color2);
 
     tagElement.find('.tag_name').text(tag.name);
     const removeButton = tagElement.find(".tag_remove");
@@ -462,22 +463,40 @@ function onViewTagsListClick() {
         template.find('.tag_view_counter_value').text(count);
         template.find('.tag_view_name').text(tag.name);
         template.find('.tag_view_name').addClass('tag');
+
         template.find('.tag_view_name').css('background-color', tag.color);
+        template.find('.tag_view_name').css('color', tag.color2);
+
         const colorPickerId = tag.id + "-tag-color";
+        const colorPicker2Id = tag.id + "-tag-color2";
+
         template.find('.tagColorPickerHolder').html(
             `<toolcool-color-picker id="${colorPickerId}" color="${tag.color}" class="tag-color"></toolcool-color-picker>`
         );
+        template.find('.tagColorPicker2Holder').html(
+            `<toolcool-color-picker id="${colorPicker2Id}" color="${tag.color2}" class="tag-color2"></toolcool-color-picker>`
+        );
 
         template.find('.tag-color').attr('id', colorPickerId);
+        template.find('.tag-color2').attr('id', colorPicker2Id);
+
         list.appendChild(template.get(0));
 
         setTimeout(function () {
             document.querySelector(`.tag-color[id="${colorPickerId}"`).addEventListener('change', (evt) => {
                 onTagColorize(evt);
             });
+
+        }, 100);
+
+        setTimeout(function () {
+            document.querySelector(`.tag-color2[id="${colorPicker2Id}"`).addEventListener('change', (evt) => {
+                onTagColorize2(evt);
+            });
         }, 100);
 
         $(colorPickerId).color = tag.color;
+        $(colorPicker2Id).color = tag.color2;
 
     }
     callPopup(list.outerHTML, 'text');
@@ -516,6 +535,18 @@ function onTagColorize(evt) {
     $(`.tag[id="${id}"]`).css('background-color', newColor);
     const tag = tags.find(x => x.id === id);
     tag.color = newColor;
+    console.debug(tag);
+    saveSettingsDebounced();
+}
+
+function onTagColorize2(evt) {
+    console.debug(evt);
+    const id = $(evt.target).closest('.tag_view_item').attr('id');
+    const newColor = evt.detail.rgba;
+    $(evt.target).parent().parent().find('.tag_view_name').css('color', newColor);
+    $(`.tag[id="${id}"]`).css('color', newColor);
+    const tag = tags.find(x => x.id === id);
+    tag.color2 = newColor;
     console.debug(tag);
     saveSettingsDebounced();
 }
