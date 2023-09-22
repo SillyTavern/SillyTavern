@@ -561,16 +561,12 @@ async function applyThemeColor(type) {
     }
 }
 
-async function applyCustomCSS()
-{
+async function applyCustomCSS() {
     power_user.custom_css = String(localStorage.getItem(storage_keys.custom_css) ?? "");
 
-    if (power_user.custom_css.includes("@import"))
-    {
+    if (power_user.custom_css.includes("@import")) {
         var removeImport = /@import[^;]+;/gm
         power_user.custom_css = power_user.custom_css.replace(removeImport, "");
-        toastr.warning(power_user.custom_css);
-        $('#customCSS').val(power_user.custom_css);
         localStorage.setItem(storage_keys.custom_css, power_user.custom_css);
         toastr.warning('@import not allowed in Custom CSS. @import lines removed.')
     }
@@ -578,8 +574,7 @@ async function applyCustomCSS()
     $("#customCSS").val(power_user.custom_css);
     var styleId = "custom-style";
     var style = document.getElementById(styleId);
-    if (!style)
-    {
+    if (!style) {
         style = document.createElement("style");
         style.setAttribute("type", "text/css");
         style.setAttribute("id", styleId);
@@ -1933,8 +1928,7 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $("#customCSS").on('change', () =>
-    {
+    $("#customCSS").on('change', () => {
         power_user.custom_css = $('#customCSS').val();
         localStorage.setItem(storage_keys.custom_css, power_user.custom_css);
         saveSettingsDebounced();
