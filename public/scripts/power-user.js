@@ -128,6 +128,8 @@ let power_user = {
     shadow_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeShadowColor').trim()}`,
     border_color: `${getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBorderColor').trim()}`,
 
+    custom_css: '',
+
 
     waifuMode: false,
     movingUI: false,
@@ -229,6 +231,8 @@ const storage_keys = {
     shadow_color: "TavernAI_shadow_color",
     shadow_width: "TavernAI_shadow_width",
     border_color: "TavernAI_border_color",
+
+    custom_css: "TavernAI_custom_css",
 
     waifuMode: "TavernAI_waifuMode",
     movingUI: "TavernAI_movingUI",
@@ -529,6 +533,22 @@ async function applyThemeColor(type) {
     }
 }
 
+async function applyCustomCSS()
+{
+    power_user.custom_css = String(localStorage.getItem(storage_keys.custom_css) ?? "");
+    $("#customCSS").val(power_user.custom_css);
+    var styleId = "custom-style";
+    var style = document.getElementById(styleId);
+    if (!style)
+    {
+        style = document.createElement("style");
+        style.setAttribute("type", "text/css");
+        style.setAttribute("id", styleId);
+        document.head.appendChild(style);
+    }
+    style.innerHTML = power_user.custom_css;
+}
+
 async function applyBlurStrength() {
     power_user.blur_strength = Number(localStorage.getItem(storage_keys.blur_strength) ?? 1);
     document.documentElement.style.setProperty('--blurStrength', power_user.blur_strength);
@@ -583,6 +603,13 @@ async function applyTheme(name) {
             action: async () => {
                 localStorage.setItem(storage_keys.blur_strength, power_user.blur_strength);
                 await applyBlurStrength();
+            }
+        },
+        {
+            key: 'custom_css',
+            action: async () => {
+                localStorage.setItem(storage_keys.custom_css, power_user.custom_css);
+                await applyCustomCSS();
             }
         },
         {
@@ -751,6 +778,7 @@ applyChatWidth();
 applyAvatarStyle();
 applyBlurStrength();
 applyShadowWidth();
+applyCustomCSS();
 switchMovingUI();
 noShadows();
 switchHotswap();
@@ -1246,6 +1274,7 @@ async function saveTheme() {
         timestamp_model_icon: power_user.timestamp_model_icon,
         mesIDDisplay_enabled: power_user.mesIDDisplay_enabled,
         hotswap_enabled: power_user.hotswap_enabled,
+        custom_css: power_user.custom_css,
 
     };
 
@@ -1851,6 +1880,14 @@ $(document).ready(() => {
         power_user.waifuMode = $('#waifuMode').prop("checked");
         saveSettingsDebounced();
         switchWaifuMode();
+    });
+
+    $("#customCSS").on('change', () =>
+    {
+        power_user.custom_css = $('#customCSS').val();
+        localStorage.setItem(storage_keys.custom_css, power_user.custom_css);
+        saveSettingsDebounced();
+        applyCustomCSS();
     });
 
     $("#movingUImode").change(function () {
