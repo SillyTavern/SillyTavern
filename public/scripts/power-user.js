@@ -386,8 +386,8 @@ function switchMesIDDisplay() {
     let before = power_user.mesIDDisplay_enabled;
     power_user.mesIDDisplay_enabled = value === null ? true : value == "true";
     /*     console.log(`
-        localstorage value:${value}, 
-        poweruser before:${before}, 
+        localstorage value:${value},
+        poweruser before:${before},
         poweruser after:${power_user.mesIDDisplay_enabled}`) */
     $("body").toggleClass("no-mesIDDisplay", !power_user.mesIDDisplay_enabled);
     $("#mesIDDisplayEnabled").prop("checked", power_user.mesIDDisplay_enabled);
@@ -1922,7 +1922,14 @@ $(document).ready(() => {
 
     $("#customCSS").on('change', () =>
     {
+
         power_user.custom_css = $('#customCSS').val();
+        if (power_user.custom_css.includes("@import"))
+        {
+            var removeImport = /@import\s+[^;]+;/g;
+            power_user.custom_css = power_user.custom_css.replace(removeImport, "");
+            toastr.warning('@import not allowed in Custom CSS. @import lines removed.')
+        }
         localStorage.setItem(storage_keys.custom_css, power_user.custom_css);
         saveSettingsDebounced();
         applyCustomCSS();
