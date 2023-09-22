@@ -1298,6 +1298,26 @@ app.post("/getstats", jsonParser, function (request, response) {
 });
 
 /**
+ * Endpoint: POST /recreatestats
+ * 
+ * Triggers the recreation of statistics from chat files.
+ * - If successful: returns a 200 OK status.
+ * - On failure: returns a 500 Internal Server Error status.
+ * 
+ * @param {Object} request - Express request object.
+ * @param {Object} response - Express response object.
+ */
+app.post("/recreatestats", jsonParser, function (request, response) {
+    if (statsHelpers.loadStatsFile(DIRECTORIES.chats, DIRECTORIES.characters, true)) {
+        return response.sendStatus(200);
+    } else {
+        return response.sendStatus(500);
+    }
+});
+
+
+
+/**
  * Handle a POST request to update the stats object
  *
  * This function updates the stats object with the data from the request body.
