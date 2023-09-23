@@ -2252,7 +2252,7 @@ input[type="range"] {
     background-size: 70% 100%;
     background-repeat: no-repeat;
     box-shadow: inset 0 0 2px black;
-    cursor: grab;
+    cursor: ew-resize;
 }
 
 input[type="range"]::-webkit-slider-thumb {

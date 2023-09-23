@@ -408,7 +408,10 @@ function switchUiMode() {
     if (power_user.fast_ui_mode) {
         $("#blur-strength-block").css('opacity', '0.2')
         $("#blur_strength").prop('disabled', true)
-    } else { $("#blur-strength-block").css('opacity', '1') }
+    } else {
+        $("#blur-strength-block").css('opacity', '1')
+        $("#blur_strength").prop('disabled', false)
+    }
 }
 
 function toggleWaifu() {
@@ -467,7 +470,10 @@ function noShadows() {
     if (power_user.noShadows) {
         $("#shadow-width-block").css('opacity', '0.2')
         $("#shadow_width").prop('disabled', true)
-    } else { $("#shadow-width-block").css('opacity', '1') }
+    } else {
+        $("#shadow-width-block").css('opacity', '1')
+        $("#shadow_width").prop('disabled', false)
+    }
     scrollChatToBottom();
 }
 
