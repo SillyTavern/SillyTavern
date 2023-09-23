@@ -449,13 +449,45 @@ function getWorldEntry(name, data, entry) {
         .prop("selected", true)
         .trigger("input");
 
-    // Character lock
-    // TODO: Add ability to invert character lock (exclude instead of include)
-    const characterLock = template.find(`select[name="characterLock"]`);
-    characterLock.data("uid", entry.uid)
+    // Character filter
+    const characterFilterLabel = template.find(`label[for="characterFilter"] > small`);
+    characterFilterLabel.text(!!(entry.characterFilter?.isExclude) ? "Exclude Character(s)" : "Filter to Character(s)");
+
+    // exclude characters checkbox
+    const characterExclusionInput = template.find(`input[name="character_exclusion"]`);
+    characterExclusionInput.data("uid", entry.uid);
+    characterExclusionInput.on("input", function () {
+        const uid = $(this).data("uid");
+        const value = $(this).prop("checked");
+        characterFilterLabel.text(value ? "Exclude Character(s)" : "Filter to Character(s)");
+        if (data.entries[uid].characterFilter) {
+            if (!value && data.entries[uid].characterFilter.names.length === 0) {
+                delete data.entries[uid].characterFilter;
+            } else {
+                data.entries[uid].characterFilter.isExclude = value
+            }
+        } else if (value) {
+            Object.assign(
+                data.entries[uid],
+                { 
+                    characterFilter: {
+                        isExclude: true,
+                        names: []
+                    }
+                }
+            );
+        }
+
+        setOriginalDataValue(data, uid, "character_filter", data.entries[uid].characterFilter);
+        saveWorldInfo(name, data);
+    });
+    characterExclusionInput.prop("checked", entry.characterFilter?.isExclude ?? false).trigger("input");
+
+    const characterFilter = template.find(`select[name="characterFilter"]`);
+    characterFilter.data("uid", entry.uid)
     const deviceInfo = getDeviceInfo();
     if (deviceInfo && deviceInfo.device.type === 'desktop') {
-        $(characterLock).select2({
+        $(characterFilter).select2({
             width: '100%',
             placeholder: 'All characters will pull from this entry.',
             allowClear: true,
@@ -467,22 +499,33 @@ function getWorldEntry(name, data, entry) {
         const option = document.createElement('option');
         const name = character.avatar.replace(/\.[^/.]+$/, "") ?? character.name
         option.innerText = name
-        option.selected = entry.characterLock?.includes(name)
-        characterLock.append(option)
-    })
+        option.selected = entry.characterFilter?.names.includes(name)
+        characterFilter.append(option)
+    });
 
-    characterLock.on('mousedown change', async function (e) {
+    characterFilter.on('mousedown change', async function (e) {
         // If there's no world names, don't do anything
         if (world_names.length === 0) {
             e.preventDefault();
             return;
         }
 
-        // How do I delete the key/value pair if empty?
         const uid = $(this).data("uid");
         const value = $(this).val();
-        Object.assign(data.entries[uid], { characterLock: value });
-        setOriginalDataValue(data, uid, "character_lock", data.entries[uid].characterLock);
+        if ((!value || value?.length === 0) && !data.entries[uid].characterFilter?.isExclude) {
+            delete data.entries[uid].characterFilter;
+        } else {
+            Object.assign(
+                data.entries[uid],
+                { 
+                    characterFilter: {
+                        isExclude: data.entries[uid].characterFilter?.isExclude ?? false,
+                        names: value
+                    }
+                }
+            );
+        }
+        setOriginalDataValue(data, uid, "character_filter", data.entries[uid].characterFilter);
         saveWorldInfo(name, data);
     });
 
@@ -726,6 +769,7 @@ function getWorldEntry(name, data, entry) {
     });
     disableInput.prop("checked", entry.disable).trigger("input");
 
+    // exclude recursion
     const excludeRecursionInput = template.find('input[name="exclude_recursion"]');
     excludeRecursionInput.data("uid", entry.uid);
     excludeRecursionInput.on("input", function () {
@@ -1057,8 +1101,14 @@ async function checkWorldInfo(chat, maxContext) {
         let activatedNow = new Set();
 
         for (let entry of sortedEntries) {
-            if (entry.characterLock?.length > 0 && !entry.characterLock?.includes(getCharaFilename())) {
-                continue;
+            // Check if this entry applies to the character or if it's excluded
+            if (entry.characterFilter && entry.characterFilter?.names.length > 0) {
+                const nameIncluded = entry.characterFilter.names.includes(getCharaFilename());
+                const filtered = entry.characterFilter.isExclude ? nameIncluded : !nameIncluded
+
+                if (filtered) {
+                    continue;
+                }
             }
 
             if (failedProbabilityChecks.has(entry)) {

@@ -3917,11 +3917,11 @@
                             </div>
                         </div>
                         <div class="flex-container flexFlowColumn flexNoGap wide100p">
-                            <div class="range-block-title justifyLeft">
-                                <span data-i18n="Lock to Character(s)"><small>Lock to Character(s)</small></span>
-                            </div>
+                            <label for="characterFilter" class="range-block-title justifyLeft">
+                                <small data-i18n="Filter to Character(s)">Filter to Character(s)</small>
+                            </label>
                             <div class="range-block-range">
-                                <select name="characterLock" multiple>
+                                <select name="characterFilter" multiple>
                                     <option value="">
                                         <span data-i18n="-- Characters not found --">-- Characters not found --</span>
                                     </option>
@@ -3954,6 +3954,12 @@
                                     <input type="checkbox" name="exclude_recursion" />
                                     <span data-i18n="Exclude from recursion">
                                         Non-recursable
+                                    </span>
+                                </label>
+                                <label class="checkbox flex-container alignitemscenter">
+                                    <input type="checkbox" name="character_exclusion" />
+                                    <span data-i18n="Character Exclusion">
+                                        Character Exclusion
                                     </span>
                                 </label>
                             </div>
