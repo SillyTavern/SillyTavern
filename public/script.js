@@ -636,7 +636,7 @@ let is_send_press = false; //Send generation
 
 let this_del_mes = 0;
 
-//message editing and chat scroll posistion persistence
+//message editing and chat scroll position persistence
 var this_edit_mes_text = "";
 var this_edit_mes_chname = "";
 var this_edit_mes_id;
@@ -1172,16 +1172,6 @@ async function printMessages() {
     for (let i = startIndex; i < chat.length; i++) {
         const item = chat[i];
         addOneMessage(item, { scroll: i === chat.length - 1 });
-    }
-
-    if (power_user.lazy_load > 0) {
-        const height = $('#chat').height();
-        const scrollHeight = $('#chat').prop('scrollHeight');
-
-        // Only hide if oveflowing the scroll
-        if (scrollHeight > height) {
-            $('#chat').children('.mes').slice(0, -power_user.lazy_load).hide();
-        }
     }
 }
 
@@ -1848,7 +1838,7 @@ function getStoppingStrings(isImpersonate) {
         if (group && Array.isArray(group.members)) {
             const names = group.members
                 .map(x => characters.find(y => y.avatar == x))
-                .filter(x => x && x.name !== name2)
+                .filter(x => x && x.name && x.name !== name2)
                 .map(x => `\n${x.name}:`);
             result.push(...names);
         }
@@ -2578,7 +2568,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         addPersonaDescriptionExtensionPrompt();
         // Call combined AN into Generate
         let allAnchors = getAllExtensionPrompts();
-        const beforeScenarioAnchor = getExtensionPrompt(extension_prompt_types.BEFORE_PROMPT)
+        const beforeScenarioAnchor = getExtensionPrompt(extension_prompt_types.BEFORE_PROMPT).trimStart();
         const afterScenarioAnchor = getExtensionPrompt(extension_prompt_types.IN_PROMPT);
         let zeroDepthAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, 0, ' ');
 
@@ -7016,17 +7006,6 @@ jQuery(async function () {
         $("#groupCurrentMemberListToggle .inline-drawer-icon").trigger('click');
     }, 200);
 
-    $('#chat').on('scroll', async () => {
-        // if on the start of the chat and has hidden messages
-        if ($('#chat').scrollTop() === 0 && $('#chat').children('.mes').not(':visible').length > 0) {
-            // show next hidden messages
-            const prevHeight = $('#chat').prop('scrollHeight');
-            $('#chat').children('.mes').not(':visible').slice(-power_user.lazy_load).show();
-            const newHeight = $('#chat').prop('scrollHeight');
-            $('#chat').scrollTop(newHeight - prevHeight);
-        }
-    });
-
     $("#chat").on('mousewheel touchstart', () => {
         scrollLock = true;
     });
@@ -8766,7 +8745,7 @@ jQuery(async function () {
         }
 
         console.debug('Label value OK, setting to the master input control', myText);
-        $(masterElement).val(myValue).trigger('input');
+        $(masterElement).val(myValue).trigger('input').trigger('mouseup');
         restoreCaretPosition($(this).get(0), caretPosition);
     });
 

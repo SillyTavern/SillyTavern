@@ -164,7 +164,6 @@
         "custom_stopping_strings_macro": true,
         "fuzzy_search": true,
         "encode_tags": false,
-        "lazy_load": 100,
         "ui_mode": 1
     },
     "extension_settings": {

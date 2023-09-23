@@ -567,7 +567,7 @@ async function moduleWorker() {
     }
 
     // Don't bother classifying if current char has no sprites and no default expressions are enabled
-    if (spriteCache[spriteFolderName].length === 0 && !extension_settings.expressions.showDefault) {
+    if ((!Array.isArray(spriteCache[spriteFolderName]) || spriteCache[spriteFolderName].length === 0) && !extension_settings.expressions.showDefault) {
         return;
     }
 

@@ -375,6 +375,7 @@ app.post("/generate", jsonParser, async function (request, response_generate) {
             mirostat: request.body.mirostat,
             mirostat_eta: request.body.mirostat_eta,
             mirostat_tau: request.body.mirostat_tau,
+            grammar: request.body.grammar,
         };
         if (!!request.body.stop_sequence) {
             this_settings['stop_sequence'] = request.body.stop_sequence;
@@ -1295,6 +1296,26 @@ app.post("/getonecharacter", jsonParser, async function (request, response) {
 app.post("/getstats", jsonParser, function (request, response) {
     response.send(JSON.stringify(statsHelpers.getCharStats()));
 });
+
+/**
+ * Endpoint: POST /recreatestats
+ * 
+ * Triggers the recreation of statistics from chat files.
+ * - If successful: returns a 200 OK status.
+ * - On failure: returns a 500 Internal Server Error status.
+ * 
+ * @param {Object} request - Express request object.
+ * @param {Object} response - Express response object.
+ */
+app.post("/recreatestats", jsonParser, function (request, response) {
+    if (statsHelpers.loadStatsFile(DIRECTORIES.chats, DIRECTORIES.characters, true)) {
+        return response.sendStatus(200);
+    } else {
+        return response.sendStatus(500);
+    }
+});
+
+
 
 /**
  * Handle a POST request to update the stats object
