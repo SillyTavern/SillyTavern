@@ -449,6 +449,43 @@ function getWorldEntry(name, data, entry) {
         .prop("selected", true)
         .trigger("input");
 
+    // Character lock
+    // TODO: Add ability to invert character lock (exclude instead of include)
+    const characterLock = template.find(`select[name="characterLock"]`);
+    characterLock.data("uid", entry.uid)
+    const deviceInfo = getDeviceInfo();
+    if (deviceInfo && deviceInfo.device.type === 'desktop') {
+        $(characterLock).select2({
+            width: '100%',
+            placeholder: 'All characters will pull from this entry.',
+            allowClear: true,
+            closeOnSelect: false,
+        });
+    }
+    const characters = getContext().characters;
+    characters.forEach((character) => {
+        const option = document.createElement('option');
+        const name = character.avatar.replace(/\.[^/.]+$/, "") ?? character.name
+        option.innerText = name
+        option.selected = entry.characterLock?.includes(name)
+        characterLock.append(option)
+    })
+
+    characterLock.on('mousedown change', async function (e) {
+        // If there's no world names, don't do anything
+        if (world_names.length === 0) {
+            e.preventDefault();
+            return;
+        }
+
+        // How do I delete the key/value pair if empty?
+        const uid = $(this).data("uid");
+        const value = $(this).val();
+        Object.assign(data.entries[uid], { characterLock: value });
+        setOriginalDataValue(data, uid, "character_lock", data.entries[uid].characterLock);
+        saveWorldInfo(name, data);
+    });
+
     // keysecondary
     const keySecondaryInput = template.find('textarea[name="keysecondary"]');
     keySecondaryInput.data("uid", entry.uid);
@@ -1020,6 +1057,10 @@ async function checkWorldInfo(chat, maxContext) {
         let activatedNow = new Set();
 
         for (let entry of sortedEntries) {
+            if (entry.characterLock?.length > 0 && !entry.characterLock?.includes(getCharaFilename())) {
+                continue;
+            }
+
             if (failedProbabilityChecks.has(entry)) {
                 continue;
             }
