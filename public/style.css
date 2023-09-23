@@ -255,12 +255,10 @@ table.responsiveTable {
 .mes_text i,
 .mes_text em {
     color: var(--SmartThemeEmColor);
-    font-weight: 500;
 }
 
 .mes_text q {
     color: var(--SmartThemeQuoteColor);
-    font-weight: 500;
 }
 
 .mes_text rp {
