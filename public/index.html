@@ -39,6 +39,7 @@
     <script src="lib/toastr.min.js"></script>
     <script src="lib/fuse.js"></script>
     <script src="lib/select2.min.js"></script>
+    <script src="lib/select2-search-placeholder.js"></script>
     <script src="lib/seedrandom.min.js"></script>
     <script src="lib/droll.js"></script>
     <script src="lib/localforage.min.js"></script>
@@ -72,6 +73,7 @@
     <script type="module" src="scripts/group-chats.js"></script>
     <script type="module" src="scripts/kai-settings.js"></script>
     <script type="module" src="scripts/textgen-settings.js"></script>
+    <script type="module" src="scripts/mancer-settings.js"></script>
     <script type="module" src="scripts/bookmarks.js"></script>
     <script type="module" src="scripts/horde.js"></script>
     <script type="module" src="scripts/RossAscends-mods.js"></script>
@@ -83,6 +85,7 @@
     <script type="module" src="scripts/preset-manager.js"></script>
     <script type="module" src="scripts/filters.js"></script>
     <script type="module" src="scripts/personas.js"></script>
+    <script type="module" src="scripts/server-history.js"></script>
 
     <title>SillyTavern</title>
 </head>
@@ -246,7 +249,7 @@
                                         <input id="max_context_unlocked" type="checkbox" />
                                         <span data-i18n="unlocked">Unlocked</span>
                                     </label>
-                                    <div id="max_context_unlocked_warning">
+                                    <div id="max_context_unlocked_warning" class="toggle-description justifyLeft widthUnset">
                                         <span data-i18n="only select modls support context sizes greater than 2048 tokens. proceed only is you know you're doing">
                                             Only select models support context sizes greater than 2048 tokens.
                                             Increase only if you know what you're doing.
@@ -274,6 +277,7 @@
                                         </div>
                                     </div>
                                 </div>
+
                                 <div class="range-block">
                                     <div class="range-block-title" data-i18n="temperature">
                                         Temperature
@@ -729,13 +733,13 @@
                                         </div>
                                         <div id="claude_assistant_prefill_block" data-source="claude" class="range-block">
                                             <span id="claude_assistant_prefill_text" data-i18n="Assistant Prefill">Assistant Prefill</span>
-                                            <textarea id="claude_assistant_prefill" class="text_pole textarea_compact" name="assistant_prefill autoSetHeight" rows="3" maxlength="5000" placeholder="Start Claude's answer with..."></textarea>
+                                            <textarea id="claude_assistant_prefill" class="text_pole textarea_compact" name="assistant_prefill autoSetHeight" rows="3" maxlength="5000" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
                                         </div>
                                     </div>
                                 </div>
                                 <div data-newbie-hidden class="inline-drawer wide100p">
                                     <div class="inline-drawer-toggle inline-drawer-header">
-                                        <b>Utility Prompts</b>
+                                        <b data-i18n="Utility Prompts">Utility Prompts</b>
                                         <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                                     </div>
                                     <div class="inline-drawer-content">
@@ -754,13 +758,13 @@
                                             </div>
                                         </div>
                                         <div class="range-block m-t-1">
-                                            <div class="range-block-title openai_restorable">
+                                            <div class="range-block-title openai_restorable" data-i18n="World Info Format Template">
                                                 <span>World Info format template</span>
                                                 <div id="wi_format_restore" title="Restore default format" class="right_menu_button">
                                                     <div class="fa-solid fa-clock-rotate-left"></div>
                                                 </div>
                                             </div>
-                                            <div class="toggle-description justifyLeft">
+                                            <div class="toggle-description justifyLeft" data-i18n="Wraps activated World Info entries before inserting into the prompt.">
                                                 Wraps activated World Info entries before inserting into the prompt. Use
                                                 <tt>{0}</tt> to mark a place where the content is inserted.
                                             </div>
@@ -769,7 +773,7 @@
                                             </div>
                                         </div>
                                         <div class="range-block m-t-1">
-                                            <div class="range-block-title openai_restorable">
+                                            <div class="range-block-title openai_restorable" data-i18n="New Chat">
                                                 <span>New Chat</span>
                                                 <div id="newchat_prompt_restore" title="Restore new chat prompt" class="right_menu_button">
                                                     <div class="fa-solid fa-clock-rotate-left"></div>
@@ -786,7 +790,7 @@
                                         </div>
                                         <div class="range-block m-t-1">
                                             <div class="range-block-title openai_restorable">
-                                                <span>New Group Chat</span>
+                                                <span data-i18n="New Group Chat">New Group Chat</span>
                                                 <div id="newgroupchat_prompt_restore" title="Restore default prompt" data-i18n="[title]Restore new group chat prompt" class="right_menu_button">
                                                     <div class="fa-solid fa-clock-rotate-left"></div>
                                                 </div>
@@ -802,7 +806,7 @@
                                         </div>
                                         <div class="range-block m-t-1">
                                             <div class="range-block-title openai_restorable">
-                                                <span>New Example Chat</span>
+                                                <span data-i18n="New Example Chat">New Example Chat</span>
                                                 <div id="newexamplechat_prompt_restore" title="Restore new example chat prompt" data-i18n="[title]Restore default prompt" class="right_menu_button">
                                                     <div class="fa-solid fa-clock-rotate-left"></div>
                                                 </div>
@@ -817,7 +821,7 @@
                                             </div>
                                         </div>
                                         <div class="range-block m-t-1">
-                                            <div class="range-block-title openai_restorable">
+                                            <div class="range-block-title openai_restorable" data-i18n="Continue nudge">
                                                 <span>Continue nudge</span>
                                                 <div id="continue_nudge_prompt_restore" title="Restore new chat prompt" class="right_menu_button">
                                                     <div class="fa-solid fa-clock-rotate-left"></div>
@@ -833,7 +837,7 @@
                                             </div>
                                         </div>
                                         <div class="range-block m-t-1">
-                                            <div class="range-block-title justifyLeft">
+                                            <div class="range-block-title justifyLeft" data-i18n="Replace empty message">
                                                 Replace empty message
                                             </div>
                                             <div class="toggle-description justifyLeft">
@@ -1054,6 +1058,18 @@
                                                 <div contenteditable="true" data-for="mirostat_eta_kobold" id="mirostat_eta_counter_kobold">
                                                     select
                                                 </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <hr>
+                                    <div id="grammar_block">
+                                        <h4 data-i18n="Grammar">Grammar</h4>
+                                        <div class="range-block">
+                                            <textarea id="grammar" rows="2" class="text_pole textarea_compact monospace"></textarea>
+                                            <div class="toggle-description justifyLeft">
+                                                <span data-i18n="Type in the desired custom grammar (GBNF).">
+                                                    Type in the desired custom grammar (<a href="https://github.com/ggerganov/llama.cpp/blob/master/grammars/README.md" target="_blank">GBNF</a>).
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -1710,7 +1726,7 @@
                                             account for faster queue times</a>
                                     </li>
                                     <li>
-                                        <a target="_blank" href="https://github.com/db0/AI-Horde-Worker#readme" data-i18n="Learn how to contribute your idel GPU cycles to the Horde">Learn
+                                        <a target="_blank" href="https://github.com/db0/AI-Horde-Worker#readme" data-i18n="Learn how to contribute your idle GPU cycles to the Horde">Learn
                                             how to contribute your idle GPU cycles to the Horde</a>
                                     </li>
                                 </ul>
@@ -1729,10 +1745,11 @@
                                     <input id="horde_trusted_workers_only" type="checkbox" />
                                     <span data-i18n="Trusted workers only">Trusted workers only</span>
                                 </label>
+                                <small id="adjustedHordeParams">Context: --, Response: --</small>
 
                                 <h4 data-i18n="API key">API key</h4>
                                 <small>
-                                <span data-i18n="Get it here:">Get it here: </span> <a target="_blank" href="https://horde.koboldai.net/register" data-i18n="Register">Register</a> (<a id="horde_kudos" href="javascript:void(0);" data-i18n="View my Kudos">View my Kudos</a>)<br>
+                                    <span data-i18n="Get it here:">Get it here: </span> <a target="_blank" href="https://horde.koboldai.net/register" data-i18n="Register">Register</a> (<a id="horde_kudos" href="javascript:void(0);" data-i18n="View my Kudos">View my Kudos</a>)<br>
                                     <span data-i18n="Enter">Enter </span> <span class="monospace">0000000000</span> <span data-i18n="to use anonymous mode.">to use anonymous mode. </span>
                                 </small>
                                 <!-- <div>
@@ -1766,8 +1783,8 @@
                             <div id="kobold_api_block">
                                 <h4 data-i18n="API url">API url</h4>
                                 <small data-i18n="Example: http://127.0.0.1:5000/api ">Example: http://127.0.0.1:5000/api </small>
-                                <input id="api_url_text" name="api_url" class="text_pole" placeholder="http://127.0.0.1:5000/api" maxlength="500" value="" autocomplete="off">
-                                <div id="api_button" class="menu_button" type="submit" data-i18n="Connect">Connect</div>
+                                <input id="api_url_text" name="api_url" class="text_pole" placeholder="http://127.0.0.1:5000/api" maxlength="500" value="" autocomplete="off" data-server-history="kobold">
+                                <div id="api_button" class="menu_button" type="submit" data-i18n="Connect" data-server-connect="kobold">Connect</div>
                                 <div id="api_loading" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
                             </div>
                             <div id="online_status2">
@@ -1848,24 +1865,26 @@
                                         For privacy reasons, your API key will be hidden after you reload the page.
                                     </div>
                                     <div class="flex1">
-                                        <h4 data-i18n="Mancer API url">Mancer API url</h4>
-                                        <small data-i18n="Example: https://neuro.mancer.tech/webui/MODEL/api">Example: https://neuro.mancer.tech/webui/MODEL/api </small>
+                                        <h4>Mancer Model</h4>
+                                        <select id="mancer_model"></select>
+                                        <h4 data-i18n="Mancer API url">Mancer API URL</h4>
+                                        <small data-i18n="Example: https://neuro.mancer.tech/webui/MODEL/api">Example: https://neuro.mancer.tech/webui/MODEL/api</small>
                                         <input id="mancer_api_url_text" name="mancer_api_url" class="text_pole wide100p" maxlength="500" value="" autocomplete="off">
                                     </div>
                                 </div>
                                 <div id="tgwebui_api_subpanel" class="flex-container flexFlowColumn">
                                     <div class="flex1">
-                                        <h4 data-i18n="Blocking API url">Blocking API url</h4>
+                                        <h4 data-i18n="Blocking API url">Blocking API URL</h4>
                                         <small data-i18n="Example: http://127.0.0.1:5000/api ">Example: http://127.0.0.1:5000/api </small>
-                                        <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url" class="text_pole wide100p" maxlength="500" value="" autocomplete="off">
+                                        <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="ooba_blocking">
                                     </div>
                                     <div class="flex1">
-                                        <h4 data-i18n="Streaming API url">Streaming API url</h4>
+                                        <h4 data-i18n="Streaming API url">Streaming API URL</h4>
                                         <small data-i18n="Example: ws://127.0.0.1:5005/api/v1/stream">Example: ws://127.0.0.1:5005/api/v1/stream </small>
-                                        <input id="streaming_url_textgenerationwebui" type="text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off">
+                                        <input id="streaming_url_textgenerationwebui" type="text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="ooba_streaming">
                                     </div>
                                 </div>
-                                <div id="api_button_textgenerationwebui" class="menu_button" type="submit" data-i18n="Connect">Connect</div>
+                                <div id="api_button_textgenerationwebui" class="menu_button" type="submit" data-i18n="Connect" data-server-connect="ooba_blocking,ooba_streaming">Connect</div>
                                 <div id="api_loading_textgenerationwebui" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
                             </div>
                         </form>
@@ -1926,6 +1945,10 @@
                                         <option value="gpt-3.5-turbo-16k-0613">gpt-3.5-turbo-16k-0613</option>
                                         <option value="gpt-3.5-turbo-0613">gpt-3.5-turbo-0613</option>
                                         <option value="gpt-3.5-turbo-0301">gpt-3.5-turbo-0301</option>
+                                    </optgroup>
+                                    <optgroup label="GPT-3.5 Turbo Instruct">
+                                        <option value="gpt-3.5-turbo-instruct">gpt-3.5-turbo-instruct</option>
+                                        <option value="gpt-3.5-turbo-instruct-0914">gpt-3.5-turbo-instruct-0914</option>
                                     </optgroup>
                                     <optgroup label="GPT-4">
                                         <option value="gpt-4">gpt-4</option>
@@ -2469,25 +2492,27 @@
                         </div>
                         <div data-newbie-hidden>
                             <h4>
-                                <span data-i18n="Multigen">Multigen</span>
-                                <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/#multigen" class="notes-link" target="_blank">
-                                    <span class="note-link-span">?</span>
-                                </a>
+                                <span data-i18n="Auto-Continue">Auto-Continue</span>
                             </h4>
-                            <label class="checkbox_label" for="multigen">
-                                <input id="multigen" type="checkbox" />
-                                <span data-i18n="Enabled">
-                                    Enabled
-                                </span>
-                            </label>
-                            <div class="multigen_settings_block">
-                                <label for="multigen_1st_chunk">
-                                    <small><span data-i18n="First chunk (tokens)">First chunk (tokens)</span></small>
-                                    <input id="multigen_first_chunk" type="number" class="text_pole textarea_compact" min="1" max="512" />
+                            <div class="flex-container">
+                                <label class="checkbox_label" for="auto_continue_enabled">
+                                    <input id="auto_continue_enabled" type="checkbox" />
+                                    <span data-i18n="Enabled">
+                                        Enabled
+                                    </span>
                                 </label>
-                                <label for="multigen_next_chunk">
-                                    <small><span data-i18n="Next chunks (tokens)">Next chunks (tokens)</span></small>
-                                    <input id="multigen_next_chunks" type="number" class="text_pole textarea_compact" min="1" max="512" />
+                                <label class="checkbox_label" for="auto_continue_allow_chat_completions">
+                                    <input id="auto_continue_allow_chat_completions" type="checkbox" />
+                                    <span data-i18n="Allow for Chat Completion APIs">
+                                        Allow for Chat Completion APIs
+                                    </span>
+                                </label>
+                            </div>
+
+                            <div class="auto_continue_settings_block">
+                                <label for="auto_continue_target_length">
+                                    <span data-i18n="Target length (tokens)">Target length (tokens)</span>
+                                    <input id="auto_continue_target_length" type="number" class="text_pole textarea_compact" min="0" max="1024" />
                                 </label>
                             </div>
                         </div>
@@ -2662,24 +2687,66 @@
                 <div class="drawer-icon fa-solid fa-user-cog closedIcon" title="User Settings" data-i18n="[title]User Settings"></div>
             </div>
             <div id="user-settings-block" class="drawer-content closedDrawer">
-                <div class="flex-container wide100p alignitemscenter spaceBetween">
-                    <h3><span data-i18n="User Settings">User Settings</span></h3>
-                    <div id="version_display"></div>
-                </div>
-                <div class="flex-container spaceEvenly">
-                    <div id="UI-Theme-Block" class="flex-container flexFlowColumn wide100p">
-                        <div id="color-picker-block" class="flex-container flexFlowColumn flexNoGap">
-                            <div id="UI-Mode-Block">
-                                <h4 data-i18n="UI Mode">
-                                    UI Mode
-                                </h4>
-                                <select id="ui_mode_select" class="margin0 margin-r5">
+                <div class="flex-container flexFlowColumn">
+                    <div name="userSettingsRowOne" class="flex-container flexFlowRow alignitemscenter spaceBetween">
+                        <div class="flex-container">
+                            <div class="flex-container flexnowrap alignitemscenter">
+                                <h3><span data-i18n="User Settings">User Settings</span></h3>
+                                <select id="ui_mode_select" class="margin0 widthNatural">
                                     <option value="0" data-i18n="Simple">Simple</option>
                                     <option value="1" data-i18n="Advanced">Advanced</option>
                                 </select>
                             </div>
-                            <div data-newbie-hidden>
-                                <h4><span data-i18n="UI Colors">UI Colors</span></h4>
+                        </div>
+                        <div id="UI-language-block" class="flex-container alignitemscenter">
+                            <span data-i18n="UI Language">Language:</span>
+                            <select id="ui_language_select" class="widthNatural flex1 margin0">
+                                <option value="" data-i18n="Default">Default</option>
+                                <option value="en">en</option>
+                            </select>
+                        </div>
+                        <small id="version_display"></small>
+                    </div>
+                    <div name="UserSettingsRowTwo" class="flex-container flexFlowRow">
+
+                        <textarea id="settingsSearch" class="textarea_compact wide100p" rows="1" placeholder="Search Settings"></textarea>
+                    </div>
+                </div>
+                <div id="user-settings-block-content" class="flex-container spaceEvenly">
+                    <div name="UserSettingsFirstColumn" id="UI-Theme-Block" class="flex-container flexFlowColumn wide100p">
+                        <div id="UI-presets-block" class="flex-container flexFlowColumn">
+                            <h4>
+                                <span data-i18n="UI Theme Preset">Theme Preset</span>
+                            </h4>
+                            <div class="flex-container flexnowrap alignitemscenter">
+                                <select id="themes" class="margin0">
+                                </select>
+                                <div id="ui-preset-save-button" title="Save changes to a new theme file" data-i18n="[title]Save changes to a new theme file" class="menu_button margin0">
+                                    <i class="fa-solid fa-save"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div name="themeElements" data-newbie-hidden class="flex-container flexFlowColumn flexNoGap">
+                            <h4><span data-i18n="UI Colors">Theme Settings</span></h4>
+                            <div name="AvatarAndChatDisplay" class="flex-container flexFlowColumn">
+                                <div class="flex-container">
+                                    <span data-i18n="Avatar Style">Avatars:</span>
+                                    <select id="avatar_style" class="widthNatural flex1 margin0">
+                                        <option value="0" data-i18n="Circle">Circle</option>
+                                        <option value="1" data-i18n="Rectangle">Rectangle</option>
+                                    </select>
+                                </div>
+                                <div class="flex-container">
+                                    <span data-i18n="Chat Style:">Chat Style:</span><br>
+                                    <select id="chat_display" class="widthNatural flex1 margin0">
+                                        <option value="0" data-i18n="Default">Flat</span>
+                                        <option value="1" data-i18n="Bubbles">Bubbles</option>
+                                        <option value="2" data-i18n="Document">Document</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div id="color-picker-block" class="flex-container flexFlowColumn flexNoGap">
+
                                 <div class="flex-container">
                                     <toolcool-color-picker id="main-text-color-picker"></toolcool-color-picker>
                                     <span data-i18n="Main Text">Main Text</span>
@@ -2696,13 +2763,17 @@
                                     <toolcool-color-picker id="shadow-color-picker"></toolcool-color-picker>
                                     <span data-i18n="Shadow Color">Text Shadow</span>
                                 </div>
-                                <!--                             <div class="flex-container">
-                                    <toolcool-color-picker id="fastui-bg-color-picker"></toolcool-color-picker>
-                                    <span data-i18n="FastUI BG">FastUI BG</span>
-                                </div> -->
+                                <div class="flex-container">
+                                    <toolcool-color-picker id="chat-tint-color-picker"></toolcool-color-picker>
+                                    <span data-i18n="Chat Background">Chat Background</span>
+                                </div>
                                 <div class="flex-container">
                                     <toolcool-color-picker id="blur-tint-color-picker"></toolcool-color-picker>
-                                    <span data-i18n="Blur Tint">UI Background</span>
+                                    <span data-i18n="UI Background">UI Background</span>
+                                </div>
+                                <div class="flex-container">
+                                    <toolcool-color-picker id="border-color-picker"></toolcool-color-picker>
+                                    <span data-i18n="UI Border">UI Border</span>
                                 </div>
                                 <div class="flex-container">
                                     <toolcool-color-picker id="user-mes-blur-tint-color-picker"></toolcool-color-picker>
@@ -2713,7 +2784,23 @@
                                     <span data-i18n="AI Message Blur Tint">AI Message</span>
                                 </div>
                             </div>
-                            <div data-newbie-hidden id="font-blur-UIpresets-block" class="flex-container flexFlowColumn">
+
+                            <div data-newbie-hidden name="FontBlurChatWidthBlock" class="flex-container flexFlowColumn flexNoGap">
+                                <div data-newbie-hidden class="range-block">
+                                    <div class="range-block-title" data-i18n="Chat Width (PC)">
+                                        Chat Width (PC)
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input id="chat_width_slider" class="wide100p" type="range" min="25" max="100" step="1" value="50">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="chat_width_slider" id="chat_width_slider_counter">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div id="font-scale-block" class="range-block">
                                     <div class="range-block-title" data-i18n="Font Scale">
                                         Font Scale
@@ -2760,300 +2847,241 @@
                                     </div>
                                 </div>
                             </div>
-                            <div id="UI-language-block" class="flex-container flexFlowColumn">
-                                <h4>
-                                    <span data-i18n="UI Language">UI Language</span>
-                                </h4>
-                                <div class="flex-container flexnowrap alignitemscenter">
-                                    <select id="ui_language_select" class="margin0 margin-r5">
-                                        <option value="" data-i18n="Browser default">
-                                            Browser default
-                                        </option>
-                                        <option value="en">en</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div id="UI-presets-block" class="flex-container flexFlowColumn">
-                                <h4>
-                                    <span data-i18n="UI Theme Preset">UI Theme Preset</span>
-                                </h4>
-                                <div class="flex-container flexnowrap alignitemscenter">
-                                    <select id="themes" class="margin0 margin-r5">
-                                    </select>
-                                    <div id="ui-preset-save-button" title="Save changes to a new theme file" data-i18n="[title]Save changes to a new theme file" class="menu_button padding5 margin0">
-                                        <i class="fa-solid fa-save"></i>
-                                    </div>
-                                </div>
-                            </div>
-                            <div data-newbie-hidden id="MovingUI-presets-block" class="flex-container flexFlowColumn">
-                                <h4>
-                                    <span data-i18n="MovingUI Preset">MovingUI Preset</span>
-                                </h4>
-                                <div class="flex-container flexnowrap alignitemscenter">
-                                    <select id="movingUIPresets" class="margin0 margin-r5">
-                                    </select>
-                                    <div id="movingui-preset-save-button" title="Save changes to a new MovingUI preset file" data-i18n="[title]Save movingUI changes to a new file" class="menu_button padding5 margin0">
-                                        <i class="fa-solid fa-save"></i>
-                                    </div>
-                                </div>
-                                <div id="movingUIreset" class="menu_button whitespacenowrap" data-i18n="Reset Panels">
-                                    Reset MovingUI
-                                </div>
-                            </div>
                         </div>
 
                     </div>
-                    <div id="UI-Customization" class="flex-container wide100p">
-                        <div class="ui-settings">
-                            <h4><span data-i18n="UI Customization">UI Customization</span></h4>
-                            <div data-newbie-hidden class="range-block">
-                                <div class="range-block-title" data-i18n="Chat Width (PC)">
-                                    Chat Width (PC)
-                                </div>
-                                <div class="range-block-range-and-counter">
-                                    <div class="range-block-range">
-                                        <input id="chat_width_slider" class="wide100p" type="range" min="25" max="75" step="1" value="50">
-                                        <div class="slider_hint">
-                                            <span>25%</span>
-                                            <span>50%</span>
-                                            <span>75%</span>
+                    <div name="UserSettingsSecondColumn" id="UI-Customization" class="flex-container flexFlowColumn wide100p">
+                        <div name="themeToggles">
+                            <h4 data-i18n="Theme Toggles">Theme Toggles</h4>
+                            <label data-newbie-hidden for="fast_ui_mode" class="checkbox_label" title="removes blur from window backgrounds" data-i18n="[title]removes blur from window backgrounds">
+                                <input id="fast_ui_mode" type="checkbox" />
+                                <span data-i18n="No Blur Effect">No Blur Effect</span>
+                            </label>
+                            <label data-newbie-hidden for="noShadowsmode" class="checkbox_label">
+                                <input id="noShadowsmode" type="checkbox" />
+                                <span data-i18n="No Text Shadows">No Text Shadows</span>
+                            </label>
+                            <label for="waifuMode" class="checkbox_label">
+                                <input id="waifuMode" type="checkbox" />
+                                <span data-i18n="Waifu Mode">Visual Novel Mode</span>
+                            </label>
+
+                            <label data-newbie-hidden for="expandMessageActions" class="checkbox_label">
+                                <input id="expandMessageActions" type="checkbox" />
+                                <span data-i18n="Auto-Expand Message Actions">Expand Message Actions</span>
+                            </label>
+
+                            <label data-newbie-hidden for="messageTimerEnabled" class="checkbox_label">
+                                <input id="messageTimerEnabled" type="checkbox" />
+                                <span data-i18n="Message Timer">Message Timer</span>
+                            </label>
+
+                            <label data-newbie-hidden for="messageTimestampsEnabled" class="checkbox_label">
+                                <input id="messageTimestampsEnabled" type="checkbox" />
+                                <span data-i18n="Chat Timestamps">Chat Timestamps</span>
+                            </label>
+
+                            <label data-newbie-hidden for="messageModelIconEnabled" class="checkbox_label">
+                                <input id="messageModelIconEnabled" type="checkbox" />
+                                <span data-i18n="Model Icon">Model Icons</span>
+                            </label>
+
+                            <label data-newbie-hidden for="mesIDDisplayEnabled" class="checkbox_label">
+                                <input id="mesIDDisplayEnabled" type="checkbox" />
+                                <span data-i18n="Message IDs">Message IDs</span>
+                            </label>
+
+                            <label data-newbie-hidden for="messageTokensEnabled" class="checkbox_label">
+                                <input id="messageTokensEnabled" type="checkbox" />
+                                <span data-i18n="Show Message Token Count">Message Token Count</span>
+                            </label>
+                            <label data-newbie-hidden for="hotswapEnabled" class="checkbox_label">
+                                <input id="hotswapEnabled" type="checkbox" />
+                                <span data-i18n="Characters Hotswap">Characters Hotswap</span>
+                            </label>
+                        </div>
+                        <h4><span data-i18n="Miscellaneous">Miscellaneous</span></h4>
+                        <div>
+                            <label for="play_message_sound" class="checkbox_label">
+                                <input id="play_message_sound" type="checkbox" />
+                                <audio id="audio_message_sound" src="sounds/message.mp3" hidden></audio>
+                                <span>
+                                    <span data-i18n="Message Sound">Message Sound</span>
+                                    <a href="https://docs.sillytavern.app/usage/core-concepts/uicustomization/#message-sound" class="notes-link" target="_blank">
+                                        <span class="note-link-span">?</span>
+                                    </a>
+                                </span>
+                            </label>
+                            <label for="play_sound_unfocused" class="checkbox_label">
+                                <input id="play_sound_unfocused" type="checkbox" />
+                                <span data-i18n="Background Sound Only">Background Sound Only</span>
+                            </label>
+
+                            <label data-newbie-hidden class="checkbox_label" for="relaxed_api_urls" title="Reduce the formatting requirements on API URLS">
+                                <input id="relaxed_api_urls" type="checkbox" />
+                                <span data-i18n="Relaxed API URLS">Relaxed API URLs</span>
+                            </label>
+                            <label data-newbie-hidden id="movingUIModeCheckBlock" for="movingUImode" class="checkbox_label">
+                                <input id="movingUImode" type="checkbox" />
+                                <span data-i18n="Movable UI Panels">MovingUI</span>
+                            </label>
+                            <div data-newbie-hidden id="MovingUI-presets-block" class="flex-container alignitemscenter">
+                                <div class="flex-container alignitemscenter">
+                                    <span>MUI Preset:</span>
+                                    <div class="flex-container flexnowrap">
+                                        <select id="movingUIPresets" class="widthNatural flex1 margin0">
+                                        </select>
+                                        <div id="movingui-preset-save-button" title="Save changes to a new MovingUI preset file" data-i18n="[title]Save movingUI changes to a new file" class="menu_button margin0">
+                                            <i class="fa-solid fa-save"></i>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                            <div data-newbie-hidden class="range-block">
-                                <div class="range-block-title">
-                                    <span data-i18n="Lazy Chat Loading">Lazy Chat Loading</span><br>
-                                    <small data-i18n="# of messages (0 = disabled)"># of messages (0 = disabled)</small>
-                                </div>
-                                <div class="range-block-range-and-counter">
-                                    <div class="range-block-range">
-                                        <input id="lazy_load" class="wide100p" type="range" min="0" max="100" step="10" value="0">
-                                        <div class="slider_hint">
-                                            <span>0</span>
-                                            <span>50</span>
-                                            <span>100</span>
-                                        </div>
-                                    </div>
+                            <div id="movingUIreset" class="menu_button whitespacenowrap" data-i18n="Reset Panels">
+                                Reset MovingUI
+                            </div>
+                            <div data-newbie-hidden id="CustomCSS-block" class="flex-container flexFlowColumn">
+                                <h4>
+                                    <span data-i18n="Custom CSS">Custom CSS</span>
+                                </h4>
+                                <div class="flex-container flexnowrap alignitemscenter">
+                                    <textarea id="customCSS" class="text_pole margin0 margin-r5 textarea_compact monospace"></textarea>
                                 </div>
                             </div>
-                            <div>
-                                <span data-i18n="Avatar Style">Avatar Style:</span><br>
-                                <label>
-                                    <input name="avatar_style" type="radio" value="0" />
-                                    <span data-i18n="Circle">Circle</span>
+                        </div>
+                    </div>
+                    <div name="UserSettingsThirdColumn" id="power-user-options-block" class="flex-container wide100p">
+                        <div id="power-user-option-checkboxes">
+                            <div data-newbie-hidden name="CharacterHandlingToggles">
+                                <h4>Character Handling</h4>
+                                <label data-newbie-hidden class="checkbox_label" for="fuzzy_search_checkbox">
+                                    <input id="fuzzy_search_checkbox" type="checkbox" />
+                                    <span data-i18n="Advanced Character Search">Advanced Character Search</span>
                                 </label>
-                                <label>
-                                    <input name="avatar_style" type="radio" value="1" />
-                                    <span data-i18n="Rectangle">Rectangle</span>
+                                <label data-newbie-hidden for="prefer_character_prompt" title="If checked and the character card contains a prompt override (System Prompt), use that instead." data-i18n="[title]If checked and the character card contains a prompt override (System Prompt), use that instead." class="checkbox_label">
+                                    <input id="prefer_character_prompt" type="checkbox" />
+                                    <span data-i18n="Prefer Character Card Prompt">Prefer Char. Prompt</span>
+                                </label>
+                                <label data-newbie-hidden for="prefer_character_jailbreak" title="If checked and the character card contains a jailbreak override (Post History Instruction), use that instead." data-i18n="[title]If checked and the character card contains a jailbreak override (Post History Instruction), use that instead." class="checkbox_label">
+                                    <input id="prefer_character_jailbreak" type="checkbox" />
+                                    <span data-i18n="Prefer Character Card Jailbreak">Prefer Char. JB</span>
+                                </label>
+                                <label data-newbie-hidden class="checkbox_label" for="never_resize_avatars">
+                                    <input id="never_resize_avatars" type="checkbox" />
+                                    <span data-i18n="Never resize avatars">Never resize avatars</span>
+                                </label>
+                                <label data-newbie-hidden class="checkbox_label" for="show_card_avatar_urls">
+                                    <input id="show_card_avatar_urls" type="checkbox" />
+                                    <span data-i18n="Show avatar filenames">Show avatar filenames</span>
+                                </label>
+                                <label data-newbie-hidden class="checkbox_label" for="import_card_tags">
+                                    <input id="import_card_tags" type="checkbox" />
+                                    <span data-i18n="Import Card Tags">Import Card Tags</span>
+                                </label>
+                                <label data-newbie-hidden class="checkbox_label" for="spoiler_free_mode">
+                                    <input id="spoiler_free_mode" type="checkbox" />
+                                    <span data-i18n="Spoiler Free Mode">Spoiler Free Mode</span>
                                 </label>
                             </div>
-                            <div>
-                                <span data-i18n="Chat Style:">Message Style:</span><br>
-                                <select id="chat_display">
-                                    <option value="0" data-i18n="Default">Flat Chat</span>
-                                    <option value="1" data-i18n="Bubbles">Bubble Chat</option>
-                                    <option value="2" data-i18n="Document">Single Document</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label for="play_message_sound" class="checkbox_label">
-                                    <input id="play_message_sound" type="checkbox" />
-                                    <audio id="audio_message_sound" src="sounds/message.mp3" hidden></audio>
-                                    <span>
-                                        <span data-i18n="Message Sound">Message Sound</span>
-                                        <a href="https://docs.sillytavern.app/usage/core-concepts/uicustomization/#message-sound" class="notes-link" target="_blank">
-                                            <span class="note-link-span">?</span>
-                                        </a>
+
+                            <div name="ChatMessageHandlingToggles">
+                                <h4>Chat/Message Handling</h4>
+                                <div data-newbie-hidden class="flex-container alignitemscenter">
+                                    <span data-i18n="Send on Enter">
+                                        Enter to Send:
+                                    </span>
+                                    <select id="send_on_enter" class="widthNatural flex1 margin0">
+                                        <option value="-1" data-i18n="Disabled">Disabled</option>
+                                        <option value="0" data-i18n="Automatic (PC)">Automatic (PC)</option>
+                                        <option value="1" data-i18n="Enabled">Enabled</option>
+                                    </select>
+                                </div>
+                                <label data-newbie-hidden class="checkbox_label" for="continue_on_send">
+                                    <input id="continue_on_send" type="checkbox" />
+                                    <span data-i18n="Press Send to continue">
+                                        "Send" to Continue
                                     </span>
                                 </label>
-                                <label for="play_sound_unfocused" class="checkbox_label">
-                                    <input id="play_sound_unfocused" type="checkbox" />
-                                    <span data-i18n="Background Sound Only">Background Sound Only</span>
+                                <label class="checkbox_label" for="quick_continue">
+                                    <input id="quick_continue" type="checkbox" />
+                                    <span data-i18n="Press Send to continue">
+                                        Quick "Continue" button
+                                    </span>
                                 </label>
-                                <label data-newbie-hidden for="fast_ui_mode" class="checkbox_label" title="removes blur and uses alternative background color for divs" data-i18n="[title]removes blur and uses alternative background color for divs">
-                                    <input id="fast_ui_mode" type="checkbox" />
-                                    <span data-i18n="No Blur Effect">No Blur Effect</span>
+                                <label data-newbie-hidden class="checkbox_label" for="swipes-checkbox">
+                                    <input id="swipes-checkbox" type="checkbox" />
+                                    <span data-i18n="Swipes">Swipes</span>
                                 </label>
-                                <label data-newbie-hidden for="noShadowsmode" class="checkbox_label">
-                                    <input id="noShadowsmode" type="checkbox" />
-                                    <span data-i18n="No Text Shadows">No Text Shadows</span>
+                                <label class="checkbox_label" for="auto-load-chat-checkbox">
+                                    <input id="auto-load-chat-checkbox" type="checkbox" />
+                                    <span data-i18n="Auto-load Last Chat">Auto-load Last Chat</span>
                                 </label>
-                                <label for="waifuMode" class="checkbox_label">
-                                    <input id="waifuMode" type="checkbox" />
-                                    <span data-i18n="Waifu Mode">Visual Novel Mode</span>
-                                </label>
-
-                                <label for="messageTimerEnabled" class="checkbox_label">
-                                    <input id="messageTimerEnabled" type="checkbox" />
-                                    <span data-i18n="Message Timer">Message Timer</span>
-                                </label>
-
-                                <label data-newbie-hidden for="messageTimestampsEnabled" class="checkbox_label">
-                                    <input id="messageTimestampsEnabled" type="checkbox" />
-                                    <span data-i18n="Chat Timestamps">Chat Timestamps</span>
-                                </label>
-
-                                <label data-newbie-hidden for="messageModelIconEnabled" class="checkbox_label">
-                                    <input id="messageModelIconEnabled" type="checkbox" />
-                                    <span data-i18n="Model Icon">Show Model Icons</span>
-                                </label>
-
-                                <label data-newbie-hidden for="mesIDDisplayEnabled" class="checkbox_label">
-                                    <input id="mesIDDisplayEnabled" type="checkbox" />
-                                    <span data-i18n="Message IDs">Show Message IDs</span>
-                                </label>
-
-                                <label data-newbie-hidden for="messageTokensEnabled" class="checkbox_label">
-                                    <input id="messageTokensEnabled" type="checkbox" />
-                                    <span data-i18n="Show Message Token Count">Show Message Token Count</span>
-                                </label>
-
                                 <label data-newbie-hidden for="auto_scroll_chat_to_bottom" class="checkbox_label">
                                     <input id="auto_scroll_chat_to_bottom" type="checkbox" />
                                     <span data-i18n="Auto-scroll Chat">Auto-scroll Chat</span>
                                 </label>
 
-                                <label data-newbie-hidden for="hotswapEnabled" class="checkbox_label">
-                                    <input id="hotswapEnabled" type="checkbox" />
-                                    <span data-i18n="Characters Hotswap">Characters Hotswap</span>
+                                <label data-newbie-hidden class="checkbox_label" for="auto_save_msg_edits">
+                                    <input id="auto_save_msg_edits" type="checkbox" />
+                                    <span data-i18n="Auto-save Message Edits">Auto-save Message Edits</span>
+                                </label>
+                                <label data-newbie-hidden class="checkbox_label" for="confirm_message_delete">
+                                    <input id="confirm_message_delete" type="checkbox" />
+                                    <span data-i18n="Confirm message deletion">Confirm message deletion</span>
+                                </label>
+                                <label class="checkbox_label" for="auto_fix_generated_markdown">
+                                    <input id="auto_fix_generated_markdown" type="checkbox" />
+                                    <span data-i18n="Auto-fix Markdown">Auto-fix Markdown</span>
+                                </label>
+                                <label data-newbie-hidden class="checkbox_label" for="render_formulas">
+                                    <input id="render_formulas" type="checkbox" />
+                                    <span data-i18n="Render Formulas">Render Formulas</span>
+                                    <a href="https://docs.sillytavern.app/usage/core-concepts/uicustomization/#formulas-rendering" class="notes-link" target="_blank">
+                                        <span class="note-link-span">?</span>
+                                    </a>
+                                </label>
+                                <label data-newbie-hidden class="checkbox_label" for="allow_name2_display">
+                                    <input id="allow_name2_display" type="checkbox" />
+                                    <span data-i18n="Allow {{char}}: in bot messages">Show {{char}}: in responses</span>
+                                </label>
+                                <label data-newbie-hidden class="checkbox_label" for="allow_name1_display">
+                                    <input id="allow_name1_display" type="checkbox" />
+                                    <span data-i18n="Allow {{user}}: in bot messages">Show {{user}}: in responses</span>
+                                </label>
+                                <label class="checkbox_label" for="encode_tags">
+                                    <input id="encode_tags" type="checkbox" />
+                                    <span data-i18n="Show tags in responses">Show &lt;tags&gt; in responses</span>
+                                </label>
+                                <label data-newbie-hidden class="checkbox_label" for="disable_group_trimming" title="Allow AI messages in groups to contain lines spoken by other group members.">
+                                    <input id="disable_group_trimming" type="checkbox" />
+                                    <span data-i18n="Relax message trim in Groups">Relax message trim in Groups</span>
+                                </label>
+                                <label data-newbie-hidden class="checkbox_label" for="console_log_prompts">
+                                    <input id="console_log_prompts" type="checkbox" />
+                                    <span data-i18n="Log prompts to console">Log prompts to console</span>
                                 </label>
 
-                                <label data-newbie-hidden id="movingUIModeCheckBlock" for="movingUImode" class="checkbox_label">
-                                    <input id="movingUImode" type="checkbox" />
-                                    <span data-i18n="Movable UI Panels">Movable UI Panels</span>
-                                </label>
-
-                                <div data-newbie-hidden class="flex-container flexFlowColumn">
-                                    <h4 data-i18n="Send on Enter">
-                                        Send on Enter
-                                    </h4>
-                                    <select id="send_on_enter">
-                                        <option value="-1" data-i18n="Always disabled">Always disabled</option>
-                                        <option value="0" data-i18n="Automatic (desktop)">Automatic (desktop)</option>
-                                        <option value="1" data-i18n="Always enabled">Always enabled</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                    <div id="power-user-options-block" class="flex-container wide100p">
-                        <div id="power-user-option-checkboxes">
-                            <h4 data-i18n="Power User Options">Power User Options</h4>
-                            <label data-newbie-hidden class="checkbox_label" for="swipes-checkbox">
-                                <input id="swipes-checkbox" type="checkbox" />
-                                <span data-i18n="Swipes">Swipes</span>
-                            </label>
-                            <label data-newbie-hidden class="checkbox_label" for="fuzzy_search_checkbox">
-                                <input id="fuzzy_search_checkbox" type="checkbox" />
-                                <span data-i18n="Advanced Character Search">Advanced Character Search</span>
-                            </label>
-                            <label data-newbie-hidden for="prefer_character_prompt" title="If checked and the character card contains a prompt override (System Prompt), use that instead." data-i18n="[title]If checked and the character card contains a prompt override (System Prompt), use that instead." class="checkbox_label">
-                                <input id="prefer_character_prompt" type="checkbox" />
-                                <span data-i18n="Prefer Character Card Prompt">Prefer Char. Prompt</span>
-                            </label>
-                            <label data-newbie-hidden for="prefer_character_jailbreak" title="If checked and the character card contains a jailbreak override (Post History Instruction), use that instead." data-i18n="[title]If checked and the character card contains a jailbreak override (Post History Instruction), use that instead." class="checkbox_label">
-                                <input id="prefer_character_jailbreak" type="checkbox" />
-                                <span data-i18n="Prefer Character Card Jailbreak">Prefer Char. JB</span>
-                            </label>
-                            <label data-newbie-hidden class="checkbox_label" for="continue_on_send">
-                                <input id="continue_on_send" type="checkbox" />
-                                <span data-i18n="Press Send to continue">
-                                    Press "Send" to continue
-                                </span>
-                            </label>
-                            <label class="checkbox_label" for="quick_continue">
-                                <input id="quick_continue" type="checkbox" />
-                                <span data-i18n="Press Send to continue">
-                                    Show quick "Continue" button
-                                </span>
-                            </label>
-                            <label class="checkbox_label" for="auto-load-chat-checkbox">
-                                <input id="auto-load-chat-checkbox" type="checkbox" />
-                                <span data-i18n="Auto-load Last Chat">Auto-load Last Chat</span>
-                            </label>
-                            <label data-newbie-hidden class="checkbox_label" for="auto_save_msg_edits">
-                                <input id="auto_save_msg_edits" type="checkbox" />
-                                <span data-i18n="Auto-save Message Edits">Auto-save Message Edits</span>
-                            </label>
-                            <label class="checkbox_label" for="auto_fix_generated_markdown">
-                                <input id="auto_fix_generated_markdown" type="checkbox" />
-                                <span data-i18n="Auto-fix Markdown">Auto-fix Markdown</span>
-                            </label>
-                            <label data-newbie-hidden class="checkbox_label" for="allow_name2_display">
-                                <input id="allow_name2_display" type="checkbox" />
-                                <span data-i18n="Allow {{char}}: in bot messages">Show {{char}}: in responses</span>
-                            </label>
-                            <label data-newbie-hidden class="checkbox_label" for="allow_name1_display">
-                                <input id="allow_name1_display" type="checkbox" />
-                                <span data-i18n="Allow {{user}}: in bot messages">Show {{user}}: in responses</span>
-                            </label>
-                            <label class="checkbox_label" for="encode_tags">
-                                <input id="encode_tags" type="checkbox" />
-                                <span data-i18n="Show tags in responses">Show &lt;tags&gt; in responses</span>
-                            </label>
-                            <label data-newbie-hidden class="checkbox_label" for="disable_group_trimming" title="Allow AI messages in groups to contain lines spoken by other group members.">
-                                <input id="disable_group_trimming" type="checkbox" />
-                                <span data-i18n="Show impersonated replies in groups">Show impersonated replies in groups</span>
-                            </label>
-                            <label data-newbie-hidden class="checkbox_label" for="console_log_prompts">
-                                <input id="console_log_prompts" type="checkbox" />
-                                <span data-i18n="Log prompts to console">Log prompts to console</span>
-                            </label>
-                            <label data-newbie-hidden class="checkbox_label" for="render_formulas">
-                                <input id="render_formulas" type="checkbox" />
-                                <span data-i18n="Render Formulas">Render Formulas</span>
-                                <a href="https://docs.sillytavern.app/usage/core-concepts/uicustomization/#formulas-rendering" class="notes-link" target="_blank">
-                                    <span class="note-link-span">?</span>
-                                </a>
-                            </label>
-                            <label data-newbie-hidden class="checkbox_label" for="never_resize_avatars">
-                                <input id="never_resize_avatars" type="checkbox" />
-                                <span data-i18n="Never resize avatars">Never resize avatars</span>
-                            </label>
-                            <label data-newbie-hidden class="checkbox_label" for="show_card_avatar_urls">
-                                <input id="show_card_avatar_urls" type="checkbox" />
-                                <span data-i18n="Show avatar filenames">Show avatar filenames</span>
-                            </label>
-                            <label data-newbie-hidden class="checkbox_label" for="import_card_tags">
-                                <input id="import_card_tags" type="checkbox" />
-                                <span data-i18n="Import Card Tags">Import Card Tags</span>
-                            </label>
-                            <label data-newbie-hidden class="checkbox_label" for="confirm_message_delete">
-                                <input id="confirm_message_delete" type="checkbox" />
-                                <span data-i18n="Confirm message deletion">Confirm message deletion</span>
-                            </label>
-                            <label data-newbie-hidden class="checkbox_label" for="spoiler_free_mode">
-                                <input id="spoiler_free_mode" type="checkbox" />
-                                <span data-i18n="Spoiler Free Mode">Spoiler Free Mode</span>
-                            </label>
-                            <label data-newbie-hidden class="checkbox_label" for="relaxed_api_urls" title="Reduce the formatting requirements on API URLS">
-                                <input id="relaxed_api_urls" type="checkbox" />
-                                <span data-i18n="Relaxed API URLS">Relaxed API URLS</span>
-                            </label>
-
-                            <div data-newbie-hidden class="inline-drawer wide100p flexFlowColumn">
-                                <div class="inline-drawer-toggle inline-drawer-header">
-                                    <b><span data-i18n="Auto-swipe">Auto-swipe</span></b>
-                                    <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
-                                </div>
-                                <div class="inline-drawer-content">
-                                    <label class="checkbox_label" for="auto_swipe">
-                                        <input id="auto_swipe" type="checkbox" />
-                                        <span data-i18n="Enabled">Enabled</span>
-                                    </label>
-                                    <div data-i18n="Minimum generated message length">Minimum generated message length</div>
-                                    <input id="auto_swipe_minimum_length" name="auto_swipe_minimum_length" type="number" min="0" step="1" value="0" class="text_pole">
-                                    <div data-i18n="Blacklisted words">Blacklisted words</div>
-                                    <div class="auto_swipe">
-                                        <textarea id="auto_swipe_blacklist" name="auto_swipe_blacklist" data-i18n="[placeholder]words you dont want generated separated by comma ','" placeholder="words you dont want generated separated by comma ','" class="text_pole textarea_compact" maxlength="5000" value="" autocomplete="off" rows="3"></textarea>
-                                        <div data-i18n="Blacklisted word count to swipe">Blacklisted word count to swipe</div>
-                                        <input id="auto_swipe_blacklist_threshold" name="auto_swipe_blacklist_threshold" type="number" min="0" step="1" value="1" class="text_pole">
+                                <div data-newbie-hidden class="inline-drawer wide100p flexFlowColumn">
+                                    <div class="inline-drawer-toggle inline-drawer-header">
+                                        <b><span data-i18n="Auto-swipe">Auto-swipe</span></b>
+                                        <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                                    </div>
+                                    <div class="inline-drawer-content">
+                                        <label class="checkbox_label" for="auto_swipe">
+                                            <input id="auto_swipe" type="checkbox" />
+                                            <span data-i18n="Enabled">Enabled</span>
+                                        </label>
+                                        <div data-i18n="Minimum generated message length">Minimum generated message length</div>
+                                        <input id="auto_swipe_minimum_length" name="auto_swipe_minimum_length" type="number" min="0" step="1" value="0" class="text_pole">
+                                        <div data-i18n="Blacklisted words">Blacklisted words</div>
+                                        <div class="auto_swipe">
+                                            <textarea id="auto_swipe_blacklist" name="auto_swipe_blacklist" data-i18n="[placeholder]words you dont want generated separated by comma ','" placeholder="words you dont want generated separated by comma ','" class="text_pole textarea_compact" maxlength="5000" value="" autocomplete="off" rows="3"></textarea>
+                                            <div data-i18n="Blacklisted word count to swipe">Blacklisted word count to swipe</div>
+                                            <input id="auto_swipe_blacklist_threshold" name="auto_swipe_blacklist_threshold" type="number" min="0" step="1" value="1" class="text_pole">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-
                             <div data-newbie-hidden class="flex-container">
                                 <div id="reload_chat" class="menu_button whitespacenowrap" data-i18n="Reload Chat">
                                     Reload Chat
@@ -3219,7 +3247,7 @@
                         </div>
                         <div class="right_menu_button fa-solid fa-list-ul" id="rm_button_characters" title="Select/Create Characters" data-i18n="[title]Select/Create Characters"></div>
                     </div>
-                    <div name="HotSwapWrapper" class="alignitemscenter flex-container margin0auto">
+                    <div id="HotSwapWrapper" class="alignitemscenter flex-container margin0auto width100p">
                         <div class="hotswap flex-container flex1"></div>
                     </div>
 
@@ -3232,9 +3260,16 @@
                             <h2></h2>
                         </div>
                         <div id="result_info" class="flex-container" style="display: none;">
-                            <span id="result_info_text" title="Token counts may be inaccurate and provided just for reference." data-i18n="[title]Token counts may be inaccurate and provided just for reference.">
-                                <strong id="result_info_total_tokens">Calculating...</strong> Total Tokens
-                            </span>
+                            <div id="result_info_text" title="Token counts may be inaccurate and provided just for reference." data-i18n="[title]Token counts may be inaccurate and provided just for reference.">
+                                <div>
+                                    <strong id="result_info_total_tokens" title="Total tokens">Calculating...</strong>&nbsp;<span data-i18n="Tokens">Tokens</span>
+                                </div>
+                                <div>
+                                    <small title="Permanent tokens">
+                                        (<span id="result_info_permanent_tokens"></span>&nbsp;<span data-i18n="Permanent">Permanent</span>)
+                                    </small>
+                                </div>
+                            </div>
                             <a id="chartokenwarning" class="right_menu_button fa-solid fa-triangle-exclamation" href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-tokens" target="_blank" title="About Token 'Limits'"></a>
                             <i title="Click for stats!" class="fa-solid fa-ranking-star right_menu_button rm_stats_button"></i>
                             <i title="Toggle character info panel" id="hideCharPanelAvatarButton" class="fa-solid fa-eye right_menu_button"></i>
@@ -3250,7 +3285,7 @@
                             <div id="name_div">
                                 <input id="character_name_pole" name="ch_name" class="text_pole" data-i18n="[placeholder]Name this character" placeholder="Name this character" maxlength="50" value="" autocomplete="off">
                                 <div class="extension_token_counter">
-                                    Tokens: <span data-token-counter="character_name_pole">counting...</span>
+                                    Tokens: <span data-token-counter="character_name_pole" data-token-permanent="true">counting...</span>
                                 </div>
                             </div>
 
@@ -3332,7 +3367,7 @@
 
                         <textarea id="description_textarea" data-i18n="[placeholder]Describe your character's physical and mental traits here." placeholder="Describe your character's physical and mental traits here." class="marginBot5" name="description" placeholder=""></textarea>
                         <div class="extension_token_counter">
-                            Tokens: <span data-token-counter="description_textarea">counting...</span>
+                            Tokens: <span data-token-counter="description_textarea" data-token-permanent="true">counting...</span>
                         </div>
 
                         <div id="first_message_div" class="marginBot5 title_restorable">
@@ -3616,7 +3651,7 @@
             </h4>
             <textarea id="personality_textarea" name="personality" data-i18n="[placeholder](A brief description of the personality)" placeholder="(A brief description of the personality)" form="form_create" class="text_pole" autocomplete="off" rows="1" maxlength="20000"></textarea>
             <div class="extension_token_counter">
-                Tokens: <span data-token-counter="personality_textarea">counting...</span>
+                Tokens: <span data-token-counter="personality_textarea" data-token-permanent="true">counting...</span>
             </div>
         </div>
 
@@ -3629,7 +3664,7 @@
             </h4>
             <textarea id="scenario_pole" name="scenario" data-i18n="[placeholder](Circumstances and context of the interaction)" placeholder="(Circumstances and context of the interaction)" class="text_pole" maxlength="20000" value="" autocomplete="off" form="form_create" rows="1"></textarea>
             <div class="extension_token_counter">
-                Tokens: <span data-token-counter="scenario_pole">counting...</span>
+                Tokens: <span data-token-counter="scenario_pole" data-token-permanent="true">counting...</span>
             </div>
         </div>
 
@@ -3782,6 +3817,7 @@
     <div id="tag_view_template" class="template_element">
         <div class="tag_view_item">
             <div class="tagColorPickerHolder"></div>
+            <div class="tagColorPicker2Holder"></div>
             <div class="tag_view_name" contenteditable="true"></div>
             <div class="tag_view_counter"><span class="tag_view_counter_value"></span>&nbsp;entries</div>
             <div title="Delete tag" class="tag_delete fa-solid fa-trash-can right_menu_button" data-i18n="[title]Delete tag"></div>
@@ -3931,6 +3967,7 @@
                                         <option value="1" data-i18n="After Char Defs">After Char Defs</option>
                                         <option value="2" data-i18n="Before AN">Before AN</option>
                                         <option value="3" data-i18n="After AN">After AN</option>
+                                        <option value="4" data-i18n="at Depth">at Depth</option>
                                     </select>
                                 </small>
                             </div>
@@ -3938,7 +3975,7 @@
 
                             <div class="world_entry_form_control wi-enter-footer-text  flex-container flexNoGap ">
                                 <label for="order" data-i18n="Order:">Order:</label>
-                                <input class="text_pole wideMax100px margin0" type="number" name="order" placeholder="" />
+                                <input class="text_pole wideMax100px margin0" type="number" name="order" placeholder="" min="0" max="10000" />
                             </div>
 
 
@@ -4094,7 +4131,8 @@
                             <div title="Generate Image" class="sd_message_gen fa-solid fa-paintbrush" data-i18n="[title]Generate Image"></div>
                             <div title="Narrate" class="mes_narrate fa-solid fa-bullhorn" data-i18n="[title]Narrate"></div>
                             <div title="Prompt" class="mes_prompt fa-solid fa-square-poll-horizontal " data-i18n="[title]Prompt"></div>
-                            <div title="Create bookmark" class="mes_create_bookmark fa-regular fa-code-branch" data-i18n="[title]Create Bookmark"></div>
+                            <div title="Create bookmark" class="mes_create_bookmark fa-regular fa-solid fa-book-bookmark" data-i18n="[title]Create Bookmark"></div>
+                            <div title="Create branch" class="mes_create_branch fa-regular fa-code-branch" data-i18n="[title]Create Branch"></div>
                             <div title="Copy" class="mes_copy fa-solid fa-copy " data-i18n="[title]Copy"></div>
                         </div>
                         <div title="Open bookmark chat" class="mes_bookmark fa-solid fa-bookmark" data-i18n="[title]Open bookmark chat"></div>
@@ -4272,6 +4310,10 @@
                         </div>
 
                         <div class="floating_prompt_radio_group">
+                            <label>
+                                <input type="radio" name="extension_floating_position" value="2" />
+                                Before Main Prompt / Story String
+                            </label>
                             <label>
                                 <input type="radio" name="extension_floating_position" value="0" />
                                 After Main Prompt / Story String

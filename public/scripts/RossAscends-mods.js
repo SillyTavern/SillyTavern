@@ -31,7 +31,7 @@ import {
     SECRET_KEYS,
     secret_state,
 } from "./secrets.js";
-import { debounce, delay, getStringHash, waitUntilCondition } from "./utils.js";
+import { debounce, delay, getStringHash, isUrlOrAPIKey, waitUntilCondition } from "./utils.js";
 import { chat_completion_sources, oai_settings } from "./openai.js";
 import { getTokenCount } from "./tokenizers.js";
 
@@ -210,10 +210,12 @@ $("#character_popup").on("input", function () { countTokensDebounced(); });
 //function:
 export function RA_CountCharTokens() {
     let total_tokens = 0;
+    let permanent_tokens = 0;
 
     $('[data-token-counter]').each(function () {
         const counter = $(this);
         const input = $(document.getElementById(counter.data('token-counter')));
+        const isPermanent = counter.data('token-permanent') === true;
         const value = String(input.val());
 
         if (input.length === 0) {
@@ -230,10 +232,12 @@ export function RA_CountCharTokens() {
 
         if (input.data('last-value-hash') === valueHash) {
             total_tokens += Number(counter.text());
+            permanent_tokens += isPermanent ? Number(counter.text()) : 0;
         } else {
             const tokens = getTokenCount(value);
             counter.text(tokens);
             total_tokens += tokens;
+            permanent_tokens += isPermanent ? tokens : 0;
             input.data('last-value-hash', valueHash);
         }
     });
@@ -242,6 +246,7 @@ export function RA_CountCharTokens() {
     const tokenLimit = Math.max(((main_api !== 'openai' ? max_context : oai_settings.openai_max_context) / 2), 1024);
     const showWarning = (total_tokens > tokenLimit);
     $('#result_info_total_tokens').text(total_tokens);
+    $('#result_info_permanent_tokens').text(permanent_tokens);
     $('#result_info_text').toggleClass('neutral_warning', showWarning);
     $('#chartokenwarning').toggle(showWarning);
 }
@@ -274,9 +279,15 @@ export async function favsToHotswap() {
     const entities = getEntitiesList({ doFilter: false });
     const container = $('#right-nav-panel .hotswap');
     const template = $('#hotswap_template .hotswapAvatar');
-    container.empty();
-    const maxCount = 6;
+    const DEFAULT_COUNT = 6;
+    const WIDTH_PER_ITEM = 60; // 50px + 5px gap + 5px padding
+    const containerWidth = container.outerWidth();
+    const maxCount = containerWidth > 0 ? Math.floor(containerWidth / WIDTH_PER_ITEM) : DEFAULT_COUNT;
     let count = 0;
+
+    const promises = [];
+    const newContainer = container.clone();
+    newContainer.empty();
 
     for (const entity of entities) {
         if (count >= maxCount) {
@@ -310,22 +321,38 @@ export async function favsToHotswap() {
         }
 
         if (isCharacter) {
-            const avatarUrl = getThumbnailUrl('avatar', entity.item.avatar);
-            $(slot).find('img').attr('src', avatarUrl);
-            $(slot).attr('title', entity.item.avatar);
+            const imgLoadPromise = new Promise((resolve) => {
+                const avatarUrl = getThumbnailUrl('avatar', entity.item.avatar);
+                $(slot).find('img').attr('src', avatarUrl).on('load', resolve);
+                $(slot).attr('title', entity.item.avatar);
+            });
+
+            // if the image doesn't load in 500ms, resolve the promise anyway
+            promises.push(Promise.race([imgLoadPromise, delay(500)]));
         }
 
         $(slot).css('cursor', 'pointer');
-        container.append(slot);
+        newContainer.append(slot);
         count++;
     }
 
-    // there are 6 slots in total,
-    if (count < maxCount) { //if any are left over
+    // don't fill leftover spaces with avatar placeholders
+    // just evenly space the selected avatars instead
+    /*
+   if (count < maxCount) { //if any space is left over
         let leftOverSlots = maxCount - count;
         for (let i = 1; i <= leftOverSlots; i++) {
-            container.append(template.clone());
+            newContainer.append(template.clone());
         }
+    }
+    */
+
+    await Promise.allSettled(promises);
+    //helpful instruction message if no characters are favorited
+    if (count === 0) { container.html(`<small><span><i class="fa-solid fa-star"></i> Favorite characters to add them to HotSwaps</span></small>`) }
+    //otherwise replace with fav'd characters
+    if (count > 0) {
+        container.replaceWith(newContainer);
     }
 }
 
@@ -400,15 +427,6 @@ function RA_autoconnect(PrevApi) {
             //console.log('connection attempts: ' + RA_AC_retries + ' delay: ' + (retry_delay / 1000) + 's');
             setTimeout(RA_autoconnect, retry_delay);
         }
-    }
-}
-
-function isUrlOrAPIKey(string) {
-    try {
-        new URL(string);
-        return true;
-    } catch (_) {
-        //          return pattern.test(string);
     }
 }
 
@@ -867,8 +885,12 @@ export function initRossMods() {
 
     //this makes the chat input text area resize vertically to match the text size (limited by CSS at 50% window height)
     $('#send_textarea').on('input', function () {
+        const chatBlock = $('#chat');
+        const originalScrollBottom = chatBlock[0].scrollHeight - (chatBlock.scrollTop() + chatBlock.outerHeight());
         this.style.height = window.getComputedStyle(this).getPropertyValue('min-height');
         this.style.height = (this.scrollHeight) + 'px';
+        const newScrollTop = chatBlock[0].scrollHeight - (chatBlock.outerHeight() + originalScrollBottom);
+        chatBlock.scrollTop(newScrollTop);
     });
 
     //Regenerate if user swipes on the last mesage in chat
@@ -906,10 +928,13 @@ export function initRossMods() {
     }
 
     $(document).on('keydown', function (event) {
-        processHotkeys(event);
+        processHotkeys(event.originalEvent);
     });
 
     //Additional hotkeys CTRL+ENTER and CTRL+UPARROW
+    /**
+     * @param {KeyboardEvent} event
+     */
     function processHotkeys(event) {
         //Enter to send when send_textarea in focus
         if ($(':focus').attr('id') === 'send_textarea') {
@@ -943,6 +968,14 @@ export function initRossMods() {
             }, 300);
         }
 
+        // Alt+Enter or AltGr+Enter to Continue
+        if ((event.altKey || (event.altKey && event.ctrlKey)) && event.key == "Enter") {
+            if (is_send_press == false) {
+                console.debug("Continuing with Alt+Enter");
+                $('#option_continue').trigger('click');
+            }
+        }
+
         // Ctrl+Enter for Regeneration Last Response. If editing, accept the edits instead
         if (event.ctrlKey && event.key == "Enter") {
             const editMesDone = $(".mes_edit_done:visible");
@@ -955,14 +988,6 @@ export function initRossMods() {
                 $('#options').hide();
             } else {
                 console.debug("Ctrl+Enter ignored");
-            }
-        }
-
-        // Alt+Enter to Continue
-        if (event.altKey && event.key == "Enter") {
-            if (is_send_press == false) {
-                console.debug("Continuing with Alt+Enter");
-                $('#option_continue').trigger('click');
             }
         }
 
@@ -1097,13 +1122,14 @@ export function initRossMods() {
                 $("#rightNavDrawerIcon").trigger('click');
                 return
             }
+            if ($(".draggable").is(":visible")) {
+                // Remove the first matched element
+                $('.draggable:first').remove();
+                return;
+            }
         }
 
-        if ($(".draggable").is(":visible")) {
-            // Remove the first matched element
-            $('.draggable:first').remove();
-            return;
-        }
+
 
 
         if (event.ctrlKey && /^[1-9]$/.test(event.key)) {

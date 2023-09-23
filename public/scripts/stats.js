@@ -1,6 +1,7 @@
 // statsHelper.js
 import { getRequestHeaders, callPopup, characters, this_chid } from "../script.js";
 import { humanizeGenTime } from "./RossAscends-mods.js";
+import {registerDebugFunction,} from "./power-user.js";
 
 let charStats = {};
 
@@ -192,6 +193,32 @@ async function getStats() {
 }
 
 /**
+ * Asynchronously recreates the stats file from chat files.
+ * 
+ * Sends a POST request to the "/recreatestats" endpoint. If the request fails,
+ * it displays an error notification and throws an error.
+ * 
+ * @throws {Error} If the request to recreate stats is unsuccessful.
+ */
+async function recreateStats() {
+    const response = await fetch("/recreatestats", {
+        method: "POST",
+        headers: getRequestHeaders(),
+        body: JSON.stringify({}),
+        cache: "no-cache",
+    });
+
+    if (!response.ok) {
+        toastr.error("Stats could not be loaded. Try reloading the page.");
+        throw new Error("Error getting stats");
+    }
+    else {
+        toastr.success("Stats file recreated successfully!");
+    }
+}
+
+
+/**
  * Calculates the generation time based on start and finish times.
  *
  * @param {string} gen_started - The start time in ISO 8601 format.
@@ -304,9 +331,22 @@ async function statMesProcess(line, type, characters, this_chid, oldMesssage) {
 }
 
 jQuery(() => {
-    $(".rm_stats_button").on('click', function () {
-        characterStatsHandler(characters, this_chid);
-    });
-})
+    function init() {
+        $(".rm_stats_button").on('click', function () {
+            characterStatsHandler(characters, this_chid);
+        });
+        // Wait for debug functions to load, then add the refresh stats function
+        registerDebugFunction('refreshStats', 'Refresh Stat File', 'Recreates the stats file based on existing chat files', recreateStats);
+    }
+
+    // Check every 100ms if registerDebugFunction is defined (this is bad lmao)
+    const interval = setInterval(() => {
+        if (typeof registerDebugFunction !== 'undefined') {
+            clearInterval(interval); // Clear the interval once the function is found
+            init(); // Initialize your code
+        }
+    }, 100);
+});
+
 
 export { userStatsHandler, characterStatsHandler, getStats, statMesProcess, charStats };

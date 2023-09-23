@@ -26,6 +26,7 @@ public/settings.json
 /thumbnails
 whitelist.txt
 .vscode
+.idea/
 secrets.json
 /dist
 /backups/
@@ -35,3 +36,5 @@ content.log
 cloudflared.exe
 public/assets/
 access.log
+/vectors/
+/cache/

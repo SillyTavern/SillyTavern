@@ -1,0 +1,5 @@
+.highlighted {
+    color: black;
+    background-color: yellow;
+    text-shadow: none !important;
+}

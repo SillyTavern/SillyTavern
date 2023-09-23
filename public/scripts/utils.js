@@ -18,6 +18,15 @@ export function escapeHtml(str) {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+export function isUrlOrAPIKey(value) {
+    try {
+        new URL(value);
+        return true;
+    } catch (_) {
+        return false;
+    }
+}
+
 /**
  * Determines if a value is unique in an array.
  * @param {any} value Current value.
@@ -429,9 +438,9 @@ export function sortByCssOrder(a, b) {
  * @param {boolean} include_newline Whether to include a newline character in the trimmed string.
  * @returns {string} The trimmed string.
  * @example
- * end_trim_to_sentence('Hello, world! I am from'); // 'Hello, world!'
+ * trimToEndSentence('Hello, world! I am from'); // 'Hello, world!'
  */
-export function end_trim_to_sentence(input, include_newline = false) {
+export function trimToEndSentence(input, include_newline = false) {
     const punctuation = new Set(['.', '!', '?', '*', '"', ')', '}', '`', ']', '$', '。', '！', '？', '”', '）', '】', '】', '’', '」', '】']); // extend this as you see fit
     let last = -1;
 
@@ -454,6 +463,26 @@ export function end_trim_to_sentence(input, include_newline = false) {
     }
 
     return input.substring(0, last + 1).trimEnd();
+}
+
+export function trimToStartSentence(input) {
+    let p1 = input.indexOf(".");
+    let p2 = input.indexOf("!");
+    let p3 = input.indexOf("?");
+    let p4 = input.indexOf("\n");
+    let first = p1;
+    let skip1 = false;
+    if (p2 > 0 && p2 < first) { first = p2; }
+    if (p3 > 0 && p3 < first) { first = p3; }
+    if (p4 > 0 && p4 < first) { first = p4; skip1 = true; }
+    if (first > 0) {
+        if (skip1) {
+            return input.substring(first + 1);
+        } else {
+            return input.substring(first + 2);
+        }
+    }
+    return input;
 }
 
 /**
@@ -850,7 +879,7 @@ export async function saveBase64AsFile(base64Data, characterName, filename = "",
 
 /**
  * Loads either a CSS or JS file and appends it to the appropriate document section.
- * 
+ *
  * @param {string} url - The URL of the file to be loaded.
  * @param {string} type - The type of file to load: "css" or "js".
  * @returns {Promise} - Resolves when the file has loaded, rejects if there's an error or invalid type.

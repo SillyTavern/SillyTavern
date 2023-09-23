@@ -14,7 +14,8 @@
     margin-top: auto;
     margin-bottom: auto;
     color: rgb(188, 193, 200, 1);
-    border: 1px solid #333;
+    border: 1px solid var(--SmartThemeBorderColor);
+    ;
     background-color: rgba(0, 0, 0, 0.3);
     padding: 6px;
     border-radius: 10px;
@@ -61,7 +62,8 @@
 #rm_group_add_members {
     margin-top: 0.25rem;
     margin-bottom: 0.5rem;
-    border: 1px solid grey;
+    border: 1px solid var(--SmartThemeBorderColor);
+    ;
     border-radius: 10px;
     background-color: var(--black30a);
 }

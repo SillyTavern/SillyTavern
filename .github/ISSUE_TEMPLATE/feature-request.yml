@@ -1,0 +1,91 @@
+name: Feature Request ✨
+description: Suggest an idea for future development of this project
+title: '[FEATURE_REQUEST] <title>'
+labels: ['enhancement']
+
+body:
+
+  # Field 1 - Did the user searched for similar requests
+  - type: dropdown
+    id: similarRequest
+    attributes:
+      label: Have you searched for similar requests?
+      description:
+      options:
+        - 'No'
+        - 'Yes'
+    validations:
+      required: false
+
+  # Field 2 - Is it bug-related
+  - type: textarea
+    id: issue
+    attributes:
+      label: Is your feature request related to a problem? If so, please describe.
+      description:
+      placeholder: A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+    validations:
+      required: false
+
+  # Field 3 - Describe feature
+  - type: textarea
+    id: solution
+    attributes:
+      label: Describe the solution you'd like
+      placeholder: An outline of how you would like this to be implemented, include as much details as possible 
+    validations:
+      required: true
+
+  # Field 4 - Describe alternatives
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Describe alternatives you've considered
+      placeholder: A clear and concise description of any alternative solutions or features you've considered.
+    validations:
+      required: false
+
+  # Field 5 - Additional context
+  - type: textarea
+    id: addcontext
+    attributes:
+      label: Additional context
+      placeholder: Add any other context or screenshots about the feature request here.
+    validations:
+      required: false
+
+  # Field 6 - Priority
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How urgent is the development of this feature
+      options:
+        - Low (Nice-to-have)
+        - Medium (Would be very useful)
+        - High (The app does not function without it)
+    validations:
+      required: true
+
+  # Field 7 - Can the user implement
+  - type: dropdown
+    id: canImplement
+    attributes:
+      label: Is this something you would be keen to implement?
+      description: Are you raising this ticket in order to get an issue number for your PR?
+      options:
+        - 'No'
+        - 'Maybe'
+        - 'Yes!'
+    validations:
+      required: false
+
+  # Final text
+  - type: markdown
+    attributes:
+      value: |-
+        ## Thanks 🙏
+        Thank you for your feature suggestion.
+        Please note that there is no guarantee that your idea will be implemented.
+    validations:
+      required: false

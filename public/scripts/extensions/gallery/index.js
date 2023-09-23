@@ -7,7 +7,8 @@ import {
 import { selected_group } from "../../group-chats.js";
 import { loadFileToDocument } from "../../utils.js";
 import { loadMovingUIState } from '../../power-user.js';
-import { dragElement } from '../../RossAscends-mods.js'
+import { dragElement } from '../../RossAscends-mods.js';
+import { registerSlashCommand } from "../../slash-commands.js";
 
 const extensionName = "gallery";
 const extensionFolderPath = `scripts/extensions/${extensionName}/`;
@@ -367,6 +368,21 @@ function makeDragImg(id, url) {
     });
 }
 
+/**
+ * Sanitizes a given ID to ensure it can be used as an HTML ID.
+ * This function replaces spaces and non-word characters with dashes.
+ * It also removes any non-ASCII characters.
+ * @param {string} id - The ID to be sanitized.
+ * @returns {string} - The sanitized ID.
+ */
+function sanitizeHTMLId(id){
+    // Replace spaces and non-word characters
+    id = id.replace(/\s+/g, '-')
+           .replace(/[^\x00-\x7F]/g, '-')
+           .replace(/\W/g, '');
+
+    return id;
+}
 
 /**
  * Processes a list of items (containing URLs) and creates a draggable box for the first item.
@@ -379,10 +395,17 @@ function makeDragImg(id, url) {
  */
 function viewWithDragbox(items) {
     if (items && items.length > 0) {
-        var url = items[0].responsiveURL(); // Get the URL of the clicked image/video
+        const url = items[0].responsiveURL(); // Get the URL of the clicked image/video
         // ID should just be the last part of the URL, removing the extension
-        var id = url.substring(url.lastIndexOf('/') + 1, url.lastIndexOf('.'));
+        const id = sanitizeHTMLId(url.substring(url.lastIndexOf('/') + 1, url.lastIndexOf('.')));
         makeDragImg(id, url);
     }
 }
 
+
+// Registers a simple command for opening the char gallery.
+registerSlashCommand("show-gallery", showGalleryCommand, ["sg"], "Shows the gallery", true, true);
+
+function showGalleryCommand(args) {
+    showCharGallery();
+}
