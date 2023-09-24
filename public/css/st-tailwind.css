@@ -262,6 +262,10 @@
     flex-flow: column;
 }
 
+.flexFlowRow {
+    flex-flow: row;
+}
+
 .wideMinContent {
     width: min-content;
 }

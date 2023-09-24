@@ -2002,6 +2002,7 @@ function addPersonaDescriptionExtensionPrompt() {
         const ANWithDesc = power_user.persona_description_position === persona_description_positions.TOP_AN
             ? `${power_user.persona_description}\n${originalAN}`
             : `${originalAN}\n${power_user.persona_description}`;
+
         setExtensionPrompt(NOTE_MODULE_NAME, ANWithDesc, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth]);
     }
 }
@@ -2049,7 +2050,8 @@ function baseChatReplace(value, name1, name2) {
 }
 
 function isStreamingEnabled() {
-    return ((main_api == 'openai' && oai_settings.stream_openai && oai_settings.chat_completion_source !== chat_completion_sources.SCALE && oai_settings.chat_completion_source !== chat_completion_sources.AI21)
+    const noStreamSources = [chat_completion_sources.SCALE, chat_completion_sources.AI21, chat_completion_sources.PALM];
+    return ((main_api == 'openai' && oai_settings.stream_openai && !noStreamSources.includes(oai_settings.chat_completion_source))
         || (main_api == 'kobold' && kai_settings.streaming_kobold && kai_flags.can_use_streaming)
         || (main_api == 'novel' && nai_settings.streaming_novel)
         || (main_api == 'textgenerationwebui' && textgenerationwebui_settings.streaming));
@@ -2563,7 +2565,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         // Set non-WI AN
         setFloatingPrompt();
         // Add WI to prompt (and also inject WI to AN value via hijack)
-        let { worldInfoString, worldInfoBefore, worldInfoAfter } = await getWorldInfoPrompt(chat2, this_max_context);
+        let { worldInfoString, worldInfoBefore, worldInfoAfter, worldInfoDepth } = await getWorldInfoPrompt(chat2, this_max_context);
         // Add persona description to prompt
         addPersonaDescriptionExtensionPrompt();
         // Call combined AN into Generate
@@ -2587,6 +2589,14 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         };
 
         const storyString = renderStoryString(storyStringParams);
+
+        // Add all depth WI entries to prompt
+        if (Array.isArray(worldInfoDepth)) {
+            worldInfoDepth.forEach((e) => {
+                const joinedEntries = e.entries.join("\n");
+                setExtensionPrompt(`customDepthWI-${e.depth}`, joinedEntries, extension_prompt_types.IN_CHAT, e.depth)
+            });
+        }
 
         if (main_api === 'openai') {
             message_already_generated = '';
@@ -4633,6 +4643,7 @@ function changeMainAPI() {
         case chat_completion_sources.CLAUDE:
         case chat_completion_sources.OPENAI:
         case chat_completion_sources.AI21:
+        case chat_completion_sources.PALM:
         default:
             setupChatCompletionPromptManager(oai_settings);
             break;
@@ -6762,7 +6773,12 @@ function connectAPISlash(_, text) {
             selected: 'openai',
             source: 'ai21',
             button: '#api_button_openai',
-        }
+        },
+        'palm': {
+            selected: 'openai',
+            source: 'palm',
+            button: '#api_button_openai',
+        },
     };
 
     const apiConfig = apiMap[text];
@@ -6995,7 +7011,7 @@ jQuery(async function () {
     }
 
     registerSlashCommand('dupe', DupeChar, [], "– duplicates the currently selected character", true, true);
-    registerSlashCommand('api', connectAPISlash, [], "(kobold, horde, novel, ooba, oai, claude, windowai, ai21) – connect to an API", true, true);
+    registerSlashCommand('api', connectAPISlash, [], "(kobold, horde, novel, ooba, oai, claude, windowai, ai21, palm) – connect to an API", true, true);
     registerSlashCommand('impersonate', doImpersonate, ['imp'], "- calls an impersonation response", true, true);
     registerSlashCommand('delchat', doDeleteChat, [], "- deletes the current chat", true, true);
     registerSlashCommand('closechat', doCloseChat, [], "- closes the current chat", true, true);
@@ -8745,7 +8761,7 @@ jQuery(async function () {
         }
 
         console.debug('Label value OK, setting to the master input control', myText);
-        $(masterElement).val(myValue).trigger('input');
+        $(masterElement).val(myValue).trigger('input').trigger('mouseup');
         restoreCaretPosition($(this).get(0), caretPosition);
     });
 

@@ -31,12 +31,16 @@ const tasks = {
 }
 
 async function getRawImage(image) {
-    const buffer = Buffer.from(image, 'base64');
-    const byteArray = new Uint8Array(buffer);
-    const blob = new Blob([byteArray]);
+    try {
+        const buffer = Buffer.from(image, 'base64');
+        const byteArray = new Uint8Array(buffer);
+        const blob = new Blob([byteArray]);
 
-    const rawImage = await RawImage.fromBlob(blob);
-    return rawImage;
+        const rawImage = await RawImage.fromBlob(blob);
+        return rawImage;
+    } catch {
+        return null;
+    }
 }
 
 function getModelForTask(task) {

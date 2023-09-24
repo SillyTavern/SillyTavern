@@ -257,27 +257,10 @@ body.no-blur #bg_custom {
 
 }
 
-body:not(.bubblechat).no-blur #chat,
 body.no-blur #top-bar,
 body.no-blur #send_form {
     background-color: var(--SmartThemeBlurTintColor) !important;
 }
-
-
-/* body.no-blur #options,
-body.no-blur .ui-widget-content,
-body.no-blur #floatingPrompt,
-body.no-blur #extensionsMenu,
-body.no-blur .list-group,
-body.no-blur #character_popup,
-body.no-blur #world_popup,
-body.no-blur #dialogue_popup,
-body.no-blur #select_chat_popup,
-body.no-blur .drawer-content,
-body.no-blur .select2-results__options {
-    background-color: black !important;
-}
- */
 
 /* wAIfu mode*/
 

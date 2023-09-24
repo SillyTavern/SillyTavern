@@ -52,6 +52,8 @@ let updateEditor = (navigation) => { navigation; };
 // Do not optimize. updateEditor is a function that is updated by the displayWorldEntries with new data.
 const worldInfoFilter = new FilterHelper(() => updateEditor());
 
+const DEFAULT_DEPTH = 4;
+
 export function getWorldInfoSettings() {
     return {
         world_info,
@@ -72,7 +74,6 @@ const world_info_position = {
     ANTop: 2,
     ANBottom: 3,
     atDepth: 4,
-
 };
 
 const worldInfoCache = {};
@@ -85,7 +86,12 @@ async function getWorldInfoPrompt(chat2, maxContext) {
     worldInfoAfter = activatedWorldInfo.worldInfoAfter;
     worldInfoString = worldInfoBefore + worldInfoAfter;
 
-    return { worldInfoString, worldInfoBefore, worldInfoAfter };
+    return {
+        worldInfoString,
+        worldInfoBefore,
+        worldInfoAfter,
+        worldInfoDepth: activatedWorldInfo.WIDepthEntries
+    };
 }
 
 function setWorldInfoSettings(settings, data) {
@@ -449,6 +455,86 @@ function getWorldEntry(name, data, entry) {
         .prop("selected", true)
         .trigger("input");
 
+    // Character filter
+    const characterFilterLabel = template.find(`label[for="characterFilter"] > small`);
+    characterFilterLabel.text(!!(entry.characterFilter?.isExclude) ? "Exclude Character(s)" : "Filter to Character(s)");
+
+    // exclude characters checkbox
+    const characterExclusionInput = template.find(`input[name="character_exclusion"]`);
+    characterExclusionInput.data("uid", entry.uid);
+    characterExclusionInput.on("input", function () {
+        const uid = $(this).data("uid");
+        const value = $(this).prop("checked");
+        characterFilterLabel.text(value ? "Exclude Character(s)" : "Filter to Character(s)");
+        if (data.entries[uid].characterFilter) {
+            if (!value && data.entries[uid].characterFilter.names.length === 0) {
+                delete data.entries[uid].characterFilter;
+            } else {
+                data.entries[uid].characterFilter.isExclude = value
+            }
+        } else if (value) {
+            Object.assign(
+                data.entries[uid],
+                {
+                    characterFilter: {
+                        isExclude: true,
+                        names: []
+                    }
+                }
+            );
+        }
+
+        setOriginalDataValue(data, uid, "character_filter", data.entries[uid].characterFilter);
+        saveWorldInfo(name, data);
+    });
+    characterExclusionInput.prop("checked", entry.characterFilter?.isExclude ?? false).trigger("input");
+
+    const characterFilter = template.find(`select[name="characterFilter"]`);
+    characterFilter.data("uid", entry.uid)
+    const deviceInfo = getDeviceInfo();
+    if (deviceInfo && deviceInfo.device.type === 'desktop') {
+        $(characterFilter).select2({
+            width: '100%',
+            placeholder: 'All characters will pull from this entry.',
+            allowClear: true,
+            closeOnSelect: false,
+        });
+    }
+    const characters = getContext().characters;
+    characters.forEach((character) => {
+        const option = document.createElement('option');
+        const name = character.avatar.replace(/\.[^/.]+$/, "") ?? character.name
+        option.innerText = name
+        option.selected = entry.characterFilter?.names.includes(name)
+        characterFilter.append(option)
+    });
+
+    characterFilter.on('mousedown change', async function (e) {
+        // If there's no world names, don't do anything
+        if (world_names.length === 0) {
+            e.preventDefault();
+            return;
+        }
+
+        const uid = $(this).data("uid");
+        const value = $(this).val();
+        if ((!value || value?.length === 0) && !data.entries[uid].characterFilter?.isExclude) {
+            delete data.entries[uid].characterFilter;
+        } else {
+            Object.assign(
+                data.entries[uid],
+                {
+                    characterFilter: {
+                        isExclude: data.entries[uid].characterFilter?.isExclude ?? false,
+                        names: value
+                    }
+                }
+            );
+        }
+        setOriginalDataValue(data, uid, "character_filter", data.entries[uid].characterFilter);
+        saveWorldInfo(name, data);
+    });
+
     // keysecondary
     const keySecondaryInput = template.find('textarea[name="keysecondary"]');
     keySecondaryInput.data("uid", entry.uid);
@@ -595,6 +681,24 @@ function getWorldEntry(name, data, entry) {
         entry.probability = null;
     }
 
+    // depth
+    const depthInput = template.find('input[name="depth"]');
+    depthInput.data("uid", entry.uid);
+    depthInput.on("input", function () {
+        const uid = $(this).data("uid");
+        const value = Number($(this).val());
+
+        data.entries[uid].depth = !isNaN(value) ? value : 0;
+        setOriginalDataValue(data, uid, "depth", data.entries[uid].depth);
+        saveWorldInfo(name, data);
+    });
+    depthInput.val(entry.depth ?? DEFAULT_DEPTH).trigger("input");
+
+    // Hide by default unless depth is specified
+    if (entry.position === world_info_position.atDepth) {
+        depthInput.parent().hide();
+    }
+
     const probabilityInput = template.find('input[name="probability"]');
     probabilityInput.data("uid", entry.uid);
     probabilityInput.on("input", function () {
@@ -659,9 +763,11 @@ function getWorldEntry(name, data, entry) {
         const uid = $(this).data("uid");
         const value = Number($(this).val());
         data.entries[uid].position = !isNaN(value) ? value : 0;
-        if (value === 4) {
-            template.find('label[for="order"').text('Depth:')
-        } else { template.find('label[for="order"').text('Order:') }
+        if (value === world_info_position.atDepth) {
+            depthInput.parent().show();
+        } else {
+            depthInput.parent().hide();
+        }
         // Spec v2 only supports before_char and after_char
         setOriginalDataValue(data, uid, "position", data.entries[uid].position == 0 ? 'before_char' : 'after_char');
         // Write the original value as extensions field
@@ -689,6 +795,7 @@ function getWorldEntry(name, data, entry) {
     });
     disableInput.prop("checked", entry.disable).trigger("input");
 
+    // exclude recursion
     const excludeRecursionInput = template.find('input[name="exclude_recursion"]');
     excludeRecursionInput.data("uid", entry.uid);
     excludeRecursionInput.on("input", function () {
@@ -1020,6 +1127,16 @@ async function checkWorldInfo(chat, maxContext) {
         let activatedNow = new Set();
 
         for (let entry of sortedEntries) {
+            // Check if this entry applies to the character or if it's excluded
+            if (entry.characterFilter && entry.characterFilter?.names.length > 0) {
+                const nameIncluded = entry.characterFilter.names.includes(getCharaFilename());
+                const filtered = entry.characterFilter.isExclude ? nameIncluded : !nameIncluded
+
+                if (filtered) {
+                    continue;
+                }
+            }
+
             if (failedProbabilityChecks.has(entry)) {
                 continue;
             }
@@ -1142,6 +1259,7 @@ async function checkWorldInfo(chat, maxContext) {
     const WIAfterEntries = [];
     const ANTopEntries = [];
     const ANBottomEntries = [];
+    const WIDepthEntries = [];
 
     // Appends from insertion order 999 to 1. Use unshift for this purpose
     [...allActivatedEntries].sort(sortFn).forEach((entry) => {
@@ -1159,12 +1277,15 @@ async function checkWorldInfo(chat, maxContext) {
                 ANBottomEntries.unshift(entry.content);
                 break;
             case world_info_position.atDepth:
-                //inserted one by one, unrelated to any array of items
-                //must have a unique value for 'key' argument
-                //uses the order input to specify depth
-                var randomNumber = Math.floor(Math.random() * 99999) + 1;
-                context.setExtensionPrompt(`customDepthWI-${entry.keywords}-${entry.uid}-${randomNumber}`, entry.content, 1, entry.order);
-                break;
+                const existingDepthIndex = WIDepthEntries.findIndex((e) => e.depth === entry.depth ?? DEFAULT_DEPTH);
+                if (existingDepthIndex !== -1) {
+                    WIDepthEntries[existingDepthIndex].entries.unshift(entry.content);
+                } else {
+                    WIDepthEntries.push({
+                        depth: entry.depth,
+                        entries: [entry.content]
+                    });
+                }
             default:
                 break;
         }
@@ -1179,7 +1300,7 @@ async function checkWorldInfo(chat, maxContext) {
         context.setExtensionPrompt(NOTE_MODULE_NAME, ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth]);
     }
 
-    return { worldInfoBefore, worldInfoAfter };
+    return { worldInfoBefore, worldInfoAfter, WIDepthEntries };
 }
 
 function matchKeys(haystack, needle) {
