@@ -2591,10 +2591,12 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         const storyString = renderStoryString(storyStringParams);
 
         // Add all depth WI entries to prompt
-        worldInfoDepth.forEach((e) => {
-            const joinedEntries = e.entries.join("\n");
-            setExtensionPrompt(`customDepthWI-${e.depth}`, joinedEntries, extension_prompt_types.IN_CHAT, e.depth)
-        });
+        if (Array.isArray(worldInfoDepth)) {
+            worldInfoDepth.forEach((e) => {
+                const joinedEntries = e.entries.join("\n");
+                setExtensionPrompt(`customDepthWI-${e.depth}`, joinedEntries, extension_prompt_types.IN_CHAT, e.depth)
+            });
+        }
 
         if (main_api === 'openai') {
             message_already_generated = '';
