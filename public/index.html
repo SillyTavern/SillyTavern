@@ -1612,6 +1612,18 @@
                                     </div>
                                 </div>
                                 <hr>
+                                <div id="grammar_block_ooba">
+                                    <h4 data-i18n="Grammar">Grammar</h4>
+                                    <div class="range-block">
+                                        <textarea id="grammar_file_textgenerationwebui" rows="2" class="text_pole textarea_compact monospace"></textarea>
+                                        <div class="toggle-description justifyLeft">
+                                            <span data-i18n="Type in the desired custom grammar (GBNF).">
+                                                Type in the desired custom grammar (<a href="https://github.com/ggerganov/llama.cpp/blob/master/grammars/README.md" target="_blank">GBNF</a>).
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <hr>
                                 <div class="range-block">
                                     <div class="range-block-title" data-i18n="Seed">
                                         Seed
@@ -3930,6 +3942,18 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="flex-container flexFlowColumn flexNoGap wide100p">
+                            <label for="characterFilter" class="range-block-title justifyLeft">
+                                <small data-i18n="Filter to Character(s)">Filter to Character(s)</small>
+                            </label>
+                            <div class="range-block-range">
+                                <select name="characterFilter" multiple>
+                                    <option value="">
+                                        <span data-i18n="-- Characters not found --">-- Characters not found --</span>
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
                         <div name="WIEntryBottomControls" class="flex-container flex1 justifySpaceBetween world_entry_form_horizontal">
                             <div class="flex-container flexFlowColumn flexNoGap  wi-enter-footer-text  ">
                                 <label class="checkbox flex-container">
@@ -3956,6 +3980,12 @@
                                     <input type="checkbox" name="exclude_recursion" />
                                     <span data-i18n="Exclude from recursion">
                                         Non-recursable
+                                    </span>
+                                </label>
+                                <label class="checkbox flex-container alignitemscenter">
+                                    <input type="checkbox" name="character_exclusion" />
+                                    <span data-i18n="Character Exclusion">
+                                        Character Exclusion
                                     </span>
                                 </label>
                             </div>
@@ -3986,6 +4016,10 @@
                                 </small>
                             </div>
 
+                            <div class="world_entry_form_control wi-enter-footer-text  flex-container flexNoGap ">
+                                <label for="depth" data-i18n="Depth:">Depth:</label>
+                                <input class="text_pole wideMax100px margin0" type="number" name="depth" placeholder="" min="0" max="10000" />
+                            </div>
 
                             <div class="world_entry_form_control wi-enter-footer-text  flex-container flexNoGap ">
                                 <label for="order" data-i18n="Order:">Order:</label>
@@ -3997,11 +4031,6 @@
                             <div class="world_entry_form_control wi-enter-footer-text flex-container flexNoGap probabilityContainer">
                                 <label for="probability" data-i18n="Probability:"></label>Probability:</label>
                                 <input class="text_pole wideMax100px margin0" type="number" name="probability" placeholder="" min="0" max="100" />
-                            </div>
-
-                            <div class="flex-container flexFlowColumn flexNoGap wi-enter-footer-text ">
-
-
                             </div>
 
                             <input class="menu_button delete_entry_button" type="submit" data-i18n="Delete Entry" value="Delete Entry" />
