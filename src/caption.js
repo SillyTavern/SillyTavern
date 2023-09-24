@@ -10,7 +10,13 @@ function registerEndpoints(app, jsonParser) {
             const { image } = req.body;
 
             const module = await import('./transformers.mjs');
-            const rawImage = module.default.getRawImage(image);
+            const rawImage = await module.default.getRawImage(image);
+
+            if (!rawImage) {
+                console.log('Failed to parse captioned image');
+                return res.sendStatus(400);
+            }
+
             const pipe = await module.default.getPipeline(TASK);
             const result = await pipe(rawImage);
             const text = result[0].generated_text;
