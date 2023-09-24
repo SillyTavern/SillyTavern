@@ -85,7 +85,12 @@ async function getWorldInfoPrompt(chat2, maxContext) {
     worldInfoAfter = activatedWorldInfo.worldInfoAfter;
     worldInfoString = worldInfoBefore + worldInfoAfter;
 
-    return { worldInfoString, worldInfoBefore, worldInfoAfter };
+    return {
+        worldInfoString,
+        worldInfoBefore,
+        worldInfoAfter,
+        worldInfoDepth: activatedWorldInfo.WIDepthEntries
+    };
 }
 
 function setWorldInfoSettings(settings, data) {
@@ -675,6 +680,24 @@ function getWorldEntry(name, data, entry) {
         entry.probability = null;
     }
 
+    // depth
+    const depthInput = template.find('input[name="depth"]');
+    depthInput.data("uid", entry.uid);
+    depthInput.on("input", function() {
+        const uid = $(this).data("uid");
+        const value = Number($(this).val());
+
+        data.entries[uid].depth = !isNaN(value) ? value : 0;
+        setOriginalDataValue(data, uid, "depth", data.entries[uid].depth);
+        saveWorldInfo(name, data);
+    });
+    depthInput.val(entry.depth ?? 4).trigger("input");
+
+    // Hide by default unless depth is specified
+    if (entry.position === 4) {
+        depthInput.parent().hide();
+    }
+
     const probabilityInput = template.find('input[name="probability"]');
     probabilityInput.data("uid", entry.uid);
     probabilityInput.on("input", function () {
@@ -740,8 +763,10 @@ function getWorldEntry(name, data, entry) {
         const value = Number($(this).val());
         data.entries[uid].position = !isNaN(value) ? value : 0;
         if (value === 4) {
-            template.find('label[for="order"').text('Depth:')
-        } else { template.find('label[for="order"').text('Order:') }
+            depthInput.parent().show();
+        } else {
+            depthInput.parent().hide();
+        }
         // Spec v2 only supports before_char and after_char
         setOriginalDataValue(data, uid, "position", data.entries[uid].position == 0 ? 'before_char' : 'after_char');
         // Write the original value as extensions field
@@ -1233,6 +1258,7 @@ async function checkWorldInfo(chat, maxContext) {
     const WIAfterEntries = [];
     const ANTopEntries = [];
     const ANBottomEntries = [];
+    const WIDepthEntries = [];
 
     // Appends from insertion order 999 to 1. Use unshift for this purpose
     [...allActivatedEntries].sort(sortFn).forEach((entry) => {
@@ -1250,12 +1276,15 @@ async function checkWorldInfo(chat, maxContext) {
                 ANBottomEntries.unshift(entry.content);
                 break;
             case world_info_position.atDepth:
-                //inserted one by one, unrelated to any array of items
-                //must have a unique value for 'key' argument
-                //uses the order input to specify depth
-                var randomNumber = Math.floor(Math.random() * 99999) + 1;
-                context.setExtensionPrompt(`customDepthWI-${entry.keywords}-${entry.uid}-${randomNumber}`, entry.content, 1, entry.order);
-                break;
+                const existingDepthIndex = WIDepthEntries.findIndex((e) => e.depth === entry.depth ?? 4);
+                if (existingDepthIndex !== -1) {
+                    WIDepthEntries[existingDepthIndex].entries.unshift(entry.content);
+                } else {
+                    WIDepthEntries.push({
+                        depth: entry.depth,
+                        entries: [entry.content]
+                    });
+                }
             default:
                 break;
         }
@@ -1270,7 +1299,7 @@ async function checkWorldInfo(chat, maxContext) {
         context.setExtensionPrompt(NOTE_MODULE_NAME, ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth]);
     }
 
-    return { worldInfoBefore, worldInfoAfter };
+    return { worldInfoBefore, worldInfoAfter, WIDepthEntries };
 }
 
 function matchKeys(haystack, needle) {
