@@ -52,6 +52,8 @@ let updateEditor = (navigation) => { navigation; };
 // Do not optimize. updateEditor is a function that is updated by the displayWorldEntries with new data.
 const worldInfoFilter = new FilterHelper(() => updateEditor());
 
+const DEFAULT_DEPTH = 4;
+
 export function getWorldInfoSettings() {
     return {
         world_info,
@@ -72,7 +74,6 @@ const world_info_position = {
     ANTop: 2,
     ANBottom: 3,
     atDepth: 4,
-
 };
 
 const worldInfoCache = {};
@@ -474,7 +475,7 @@ function getWorldEntry(name, data, entry) {
         } else if (value) {
             Object.assign(
                 data.entries[uid],
-                { 
+                {
                     characterFilter: {
                         isExclude: true,
                         names: []
@@ -522,7 +523,7 @@ function getWorldEntry(name, data, entry) {
         } else {
             Object.assign(
                 data.entries[uid],
-                { 
+                {
                     characterFilter: {
                         isExclude: data.entries[uid].characterFilter?.isExclude ?? false,
                         names: value
@@ -683,7 +684,7 @@ function getWorldEntry(name, data, entry) {
     // depth
     const depthInput = template.find('input[name="depth"]');
     depthInput.data("uid", entry.uid);
-    depthInput.on("input", function() {
+    depthInput.on("input", function () {
         const uid = $(this).data("uid");
         const value = Number($(this).val());
 
@@ -691,10 +692,10 @@ function getWorldEntry(name, data, entry) {
         setOriginalDataValue(data, uid, "depth", data.entries[uid].depth);
         saveWorldInfo(name, data);
     });
-    depthInput.val(entry.depth ?? 4).trigger("input");
+    depthInput.val(entry.depth ?? DEFAULT_DEPTH).trigger("input");
 
     // Hide by default unless depth is specified
-    if (entry.position === 4) {
+    if (entry.position === world_info_position.atDepth) {
         depthInput.parent().hide();
     }
 
@@ -762,7 +763,7 @@ function getWorldEntry(name, data, entry) {
         const uid = $(this).data("uid");
         const value = Number($(this).val());
         data.entries[uid].position = !isNaN(value) ? value : 0;
-        if (value === 4) {
+        if (value === world_info_position.atDepth) {
             depthInput.parent().show();
         } else {
             depthInput.parent().hide();
@@ -1276,7 +1277,7 @@ async function checkWorldInfo(chat, maxContext) {
                 ANBottomEntries.unshift(entry.content);
                 break;
             case world_info_position.atDepth:
-                const existingDepthIndex = WIDepthEntries.findIndex((e) => e.depth === entry.depth ?? 4);
+                const existingDepthIndex = WIDepthEntries.findIndex((e) => e.depth === entry.depth ?? DEFAULT_DEPTH);
                 if (existingDepthIndex !== -1) {
                     WIDepthEntries[existingDepthIndex].entries.unshift(entry.content);
                 } else {

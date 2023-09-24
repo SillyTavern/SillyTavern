@@ -2593,7 +2593,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         // Add all depth WI entries to prompt
         worldInfoDepth.forEach((e) => {
             const joinedEntries = e.entries.join("\n");
-            setExtensionPrompt(`customDepthWI-${e.depth}`, joinedEntries, 1, e.depth)
+            setExtensionPrompt(`customDepthWI-${e.depth}`, joinedEntries, extension_prompt_types.IN_CHAT, e.depth)
         });
 
         if (main_api === 'openai') {
