@@ -86,7 +86,7 @@ const setting_names = [
     "mirostat_eta",
     "guidance_scale",
     "negative_prompt",
-    "grammar_file",
+    //"grammar_file",
 ];
 
 function selectPreset(name) {
@@ -268,6 +268,6 @@ export function getTextGenGenerationData(finalPrompt, this_amount_gen, isImperso
         'mirostat_mode': textgenerationwebui_settings.mirostat_mode,
         'mirostat_tau': textgenerationwebui_settings.mirostat_tau,
         'mirostat_eta': textgenerationwebui_settings.mirostat_eta,
-        'grammar_file': textgenerationwebui_settings.grammar_file,
+        //'grammar_file': textgenerationwebui_settings.grammar_file,
     };
 }
