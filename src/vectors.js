@@ -16,7 +16,7 @@ async function getVector(source, text) {
         case 'transformers':
             return require('./embedding').getTransformersVector(text);
         case 'palm':
-            return require('./embedding').getPaLMVector(text);
+            return require('./palm-vectors').getPaLMVector(text);
     }
 
     throw new Error(`Unknown vector source ${source}`);

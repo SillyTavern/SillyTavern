@@ -31,14 +31,13 @@ async function getPaLMVector(text) {
     }
 
     const data = await response.json();
-    const jsonifiedresp = JSON.parse(jsonString);
   
     // Access the "value" dictionary
-    const vector = jsonifiedresp.embedding.value;
+    const vector = data.embedding.value;
 
     return vector;
 }
 
 module.exports = {
-    getOpenAIVector,
+    getPaLMVector,
 };
