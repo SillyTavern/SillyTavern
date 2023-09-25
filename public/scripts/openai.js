@@ -1191,7 +1191,7 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
     const isTextCompletion = oai_settings.chat_completion_source == chat_completion_sources.OPENAI && textCompletionModels.includes(oai_settings.openai_model);
     const isQuiet = type === 'quiet';
     const isImpersonate = type === 'impersonate';
-    const stream = oai_settings.stream_openai && !isQuiet && !isScale && !isAI21;
+    const stream = oai_settings.stream_openai && !isQuiet && !isScale && !isAI21 && !isPalm;
 
     if (isAI21 || isPalm) {
         const joinedMsgs = openai_msgs_tosend.reduce((acc, obj) => {
