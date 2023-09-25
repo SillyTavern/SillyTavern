@@ -6,7 +6,7 @@ async function addSettingsSearchHTML() {
     const html = `
     <div class="wide100p">
         <div class="justifyLeft">
-            <textarea id="settingsSearch" class="wide100p textarea_compact margin-bot-10px" rows="1" placeholder="Search Settings"></textarea>
+            <textarea id="settingsSearch" class="wide100p textarea_compact" rows="1" placeholder="Search Settings"></textarea>
         </div>
     </div>`
 
@@ -45,7 +45,7 @@ function removeHighlighting() {
     $(".highlighted").removeClass("highlighted");  // Remove CSS class from previously highlighted elements
 }
 jQuery(() => {
-    addSettingsSearchHTML();
+    //addSettingsSearchHTML();
     $('#settingsSearch').on('input change', searchSettings);
 });
 

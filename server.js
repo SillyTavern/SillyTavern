@@ -182,7 +182,7 @@ const AVATAR_WIDTH = 400;
 const AVATAR_HEIGHT = 600;
 const jsonParser = express.json({ limit: '100mb' });
 const urlencodedParser = express.urlencoded({ extended: true, limit: '100mb' });
-const { DIRECTORIES, UPLOADS_PATH } = require('./src/constants');
+const { DIRECTORIES, UPLOADS_PATH, PALM_SAFETY } = require('./src/constants');
 
 // CSRF Protection //
 if (cliArguments.disableCsrf === false) {
@@ -375,6 +375,7 @@ app.post("/generate", jsonParser, async function (request, response_generate) {
             mirostat: request.body.mirostat,
             mirostat_eta: request.body.mirostat_eta,
             mirostat_tau: request.body.mirostat_tau,
+            grammar: request.body.grammar,
         };
         if (!!request.body.stop_sequence) {
             this_settings['stop_sequence'] = request.body.stop_sequence;
@@ -1295,6 +1296,26 @@ app.post("/getonecharacter", jsonParser, async function (request, response) {
 app.post("/getstats", jsonParser, function (request, response) {
     response.send(JSON.stringify(statsHelpers.getCharStats()));
 });
+
+/**
+ * Endpoint: POST /recreatestats
+ *
+ * Triggers the recreation of statistics from chat files.
+ * - If successful: returns a 200 OK status.
+ * - On failure: returns a 500 Internal Server Error status.
+ *
+ * @param {Object} request - Express request object.
+ * @param {Object} response - Express response object.
+ */
+app.post("/recreatestats", jsonParser, function (request, response) {
+    if (statsHelpers.loadStatsFile(DIRECTORIES.chats, DIRECTORIES.characters, true)) {
+        return response.sendStatus(200);
+    } else {
+        return response.sendStatus(500);
+    }
+});
+
+
 
 /**
  * Handle a POST request to update the stats object
@@ -2699,7 +2720,7 @@ function convertChatMLPrompt(messages) {
             messageStrings.push(m.role + ": " + m.content);
         }
     });
-    return messageStrings.join("\n");
+    return messageStrings.join("\n") + '\nassistant:';
 }
 
 async function sendScaleRequest(request, response) {
@@ -2905,6 +2926,69 @@ async function sendClaudeRequest(request, response) {
     }
 }
 
+/**
+ * @param {express.Request} request
+ * @param {express.Response} response
+ */
+async function sendPalmRequest(request, response) {
+    const api_key_palm = readSecret(SECRET_KEYS.PALM);
+
+    if (!api_key_palm) {
+        return response.status(401).send({ error: true });
+    }
+
+    const body = {
+        prompt: {
+            text: request.body.messages,
+        },
+        stopSequences: request.body.stop,
+        safetySettings: PALM_SAFETY,
+        temperature: request.body.temperature,
+        topP: request.body.top_p,
+        topK: request.body.top_k || undefined,
+        maxOutputTokens: request.body.max_tokens,
+        candidate_count: 1,
+    };
+
+    console.log('Palm request:', body);
+
+    try {
+        const controller = new AbortController();
+        request.socket.removeAllListeners('close');
+        request.socket.on('close', function () {
+            controller.abort();
+        });
+
+        const generateResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta2/models/text-bison-001:generateText?key=${api_key_palm}`, {
+            body: JSON.stringify(body),
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            signal: controller.signal,
+            timeout: 0,
+        });
+
+        if (!generateResponse.ok) {
+            console.log(`Palm API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
+            return response.status(generateResponse.status).send({ error: true });
+        }
+
+        const generateResponseJson = await generateResponse.json();
+        const responseText = generateResponseJson.candidates[0]?.output;
+        console.log('Palm response:', responseText);
+
+        // Wrap it back to OAI format
+        const reply = { choices: [{ "message": { "content": responseText, } }] };
+        return response.send(reply);
+    } catch (error) {
+        console.log('Error communicating with Palm API: ', error);
+        if (!response.headersSent) {
+            return response.status(500).send({ error: true });
+        }
+    }
+}
+
 app.post("/generate_openai", jsonParser, function (request, response_generate_openai) {
     if (!request.body) return response_generate_openai.status(400).send({ error: true });
 
@@ -2918,6 +3002,10 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
 
     if (request.body.use_ai21) {
         return sendAI21Request(request, response_generate_openai);
+    }
+
+    if (request.body.use_palm) {
+        return sendPalmRequest(request, response_generate_openai);
     }
 
     let api_url;
