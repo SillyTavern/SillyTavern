@@ -699,7 +699,7 @@ function getWorldEntry(name, data, entry) {
         const value = Number($(this).val());
 
         data.entries[uid].depth = !isNaN(value) ? value : 0;
-        setOriginalDataValue(data, uid, "depth", data.entries[uid].depth);
+        setOriginalDataValue(data, uid, "extensions.depth", data.entries[uid].depth);
         saveWorldInfo(name, data);
     });
     depthInput.val(entry.depth ?? DEFAULT_DEPTH).trigger("input");
@@ -1465,6 +1465,7 @@ function convertCharacterBook(characterBook) {
             displayIndex: entry.extensions?.display_index ?? index,
             probability: entry.extensions?.probability ?? null,
             useProbability: entry.extensions?.useProbability ?? false,
+            depth: entry.extensions?.depth ?? DEFAULT_DEPTH,
         };
     });
 
