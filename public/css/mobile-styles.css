@@ -70,6 +70,10 @@
 
     }
 
+    .world_entry_form_control {
+        width: 100%;
+    }
+
     .drawer-content {
         min-width: unset;
         width: 100%;

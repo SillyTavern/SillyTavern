@@ -147,6 +147,10 @@
     font-weight: 600;
 }
 
+.textAlignCenter {
+    text-align: center;
+}
+
 .margin-right-10px {
     margin-right: 10px;
 }
