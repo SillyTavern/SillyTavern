@@ -390,6 +390,8 @@ const extension_prompt_types = {
     BEFORE_PROMPT: 2
 };
 
+export const MAX_INJECTION_DEPTH = 1000;
+
 let system_messages = {};
 
 function getSystemMessages() {
@@ -2883,7 +2885,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 // TODO: Rewrite getExtensionPrompt to not require multiple for loops
                 // Set all extension prompts where insertion depth > mesSend length
                 if (finalMesSend.length) {
-                    for (let upperDepth = 100; upperDepth >= finalMesSend.length; upperDepth--) {
+                    for (let upperDepth = MAX_INJECTION_DEPTH; upperDepth >= finalMesSend.length; upperDepth--) {
                         const upperAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, upperDepth);
                         if (upperAnchor && upperAnchor.length) {
                             finalMesSend[0].extensionPrompts.push(upperAnchor);
@@ -5641,7 +5643,7 @@ function select_rm_characters() {
  * @param {string} key Prompt injection id.
  * @param {string} value Prompt injection value.
  * @param {number} position Insertion position. 0 is after story string, 1 is in-chat with custom depth.
- * @param {number} depth Insertion depth. 0 represets the last message in context. Expected values up to 100.
+ * @param {number} depth Insertion depth. 0 represets the last message in context. Expected values up to MAX_INJECTION_DEPTH.
  */
 export function setExtensionPrompt(key, value, position, depth) {
     extension_prompts[key] = { value: String(value), position: Number(position), depth: Number(depth) };

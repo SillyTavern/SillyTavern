@@ -24,6 +24,7 @@ import {
     eventSource,
     event_types,
     substituteParams,
+    MAX_INJECTION_DEPTH,
 } from "../script.js";
 import { groups, selected_group } from "./group-chats.js";
 
@@ -323,7 +324,7 @@ function setOpenAIMessages(chat) {
     }
 
     // Add chat injections, 100 = maximum depth of injection. (Why would you ever need more?)
-    for (let i = 100; i >= 0; i--) {
+    for (let i = MAX_INJECTION_DEPTH; i >= 0; i--) {
         const anchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, i);
 
         if (anchor && anchor.length) {
