@@ -2,7 +2,7 @@ const fetch = require('node-fetch').default;
 const { SECRET_KEYS, readSecret } = require('./secrets');
 
 /**
- * Gets the vector for the given text from OpenAI ada model
+ * Gets the vector for the given text from PaLM gecko model
  * @param {string} text - The text to get the vector for
  * @returns {Promise<number[]>} - The vector for the text
  */
@@ -31,7 +31,7 @@ async function getPaLMVector(text) {
     }
 
     const data = await response.json();
-  
+
     // Access the "value" dictionary
     const vector = data.embedding.value;
 
