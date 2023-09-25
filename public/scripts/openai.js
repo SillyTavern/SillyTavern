@@ -1265,9 +1265,10 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
 
     if (isPalm) {
         const nameStopString = isImpersonate ? `\n${name2}:` : `\n${name1}:`;
+        const stopStringsLimit = 3; // 5 - 2 (nameStopString and new_chat_prompt)
         generate_data['use_palm'] = true;
         generate_data['top_k'] = Number(oai_settings.top_k_openai);
-        generate_data['stop'] = [nameStopString, oai_settings.new_chat_prompt, ...getCustomStoppingStrings()];
+        generate_data['stop'] = [nameStopString, oai_settings.new_chat_prompt, ...getCustomStoppingStrings(stopStringsLimit)];
     }
 
     if (isAI21) {
