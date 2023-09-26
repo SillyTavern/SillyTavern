@@ -2568,6 +2568,15 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         setFloatingPrompt();
         // Add WI to prompt (and also inject WI to AN value via hijack)
         let { worldInfoString, worldInfoBefore, worldInfoAfter, worldInfoDepth } = await getWorldInfoPrompt(chat2, this_max_context);
+
+        // Add all depth WI entries to prompt
+        if (Array.isArray(worldInfoDepth)) {
+            worldInfoDepth.forEach((e) => {
+                const joinedEntries = e.entries.join("\n");
+                setExtensionPrompt(`customDepthWI-${e.depth}`, joinedEntries, extension_prompt_types.IN_CHAT, e.depth)
+            });
+        }
+
         // Add persona description to prompt
         addPersonaDescriptionExtensionPrompt();
         // Call combined AN into Generate
@@ -2591,14 +2600,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         };
 
         const storyString = renderStoryString(storyStringParams);
-
-        // Add all depth WI entries to prompt
-        if (Array.isArray(worldInfoDepth)) {
-            worldInfoDepth.forEach((e) => {
-                const joinedEntries = e.entries.join("\n");
-                setExtensionPrompt(`customDepthWI-${e.depth}`, joinedEntries, extension_prompt_types.IN_CHAT, e.depth)
-            });
-        }
 
         if (main_api === 'openai') {
             message_already_generated = '';

@@ -988,12 +988,3 @@ export function uuidv4() {
         return v.toString(16);
     });
 }
-
-/**
- * Clones an object using JSON serialization.
- * @param {any} obj The object to clone.
- * @returns {any} A deep clone of the object.
- */
-export function deepClone(obj) {
-    return JSON.parse(JSON.stringify(obj));
-}

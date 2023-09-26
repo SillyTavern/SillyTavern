@@ -1,5 +1,5 @@
 import { saveSettings, callPopup, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types } from "../script.js";
-import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, deepClone, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option } from "./utils.js";
+import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option } from "./utils.js";
 import { getContext } from "./extensions.js";
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from "./authors-note.js";
 import { registerSlashCommand } from "./slash-commands.js";
@@ -1119,7 +1119,7 @@ async function getSortedEntries() {
         console.debug(`Sorted ${entries.length} world lore entries using strategy ${world_info_character_strategy}`);
 
         // Need to deep clone the entries to avoid modifying the cached data
-        return deepClone(entries);
+        return structuredClone(entries);
     }
     catch (e) {
         console.error(e);
