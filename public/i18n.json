@@ -3795,11 +3795,13 @@
     "View my Kudos": "Ver mis Kudos",
     "Models": "Modelos IA",
     "Grammar": "Gramática",
-    "Type in the desired custom grammar": "Escribe la gramática personalizada deseada (GBNF)",
+    "Type in the desired custom grammar (GBNF).": "Escribe la gramática personalizada deseada (GBNF)",
     "forbiddenHeading": "Restringido",
     "Enter": "Introduce",
     "to use anonymous mode.": "para usar el modo anónimo.",
     "Negative Prompt": "Prompt negativo",
-    "Used if CFG Scale is unset globally, per chat or character.": "Se usa si CFG Scale no está definido globalmente, por chat o por personaje."
+    "Used if CFG Scale is unset globally, per chat or character.": "Se usa si CFG Scale no está definido globalmente, por chat o por personaje.",
+    "Mirostat Mode": "Modo Mirostat",
+    "Mirostat Mode Description": "Un valor de 0 desactiva el Modo Mirostat por completo. 1 es por Mirostat 1.0, y 2 y por Mirostat 2.0."
     }
 }
