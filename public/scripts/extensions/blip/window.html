@@ -15,11 +15,85 @@
                         <input type="checkbox" id="blip_debug" name="blip_debug">
                         <small>Debug</small>
                     </label>
+                    <div class="blip-ui-block">
+                        <audio id="blip_audio" controls src="">
+                    </div>
                 </div>
+            </div>  
+            <h4 class="center">Characters Voice Mapping</h4>
+            <div>
+                <label>Voice Map (debug infos)</label>
+                <textarea id="blip_voice_map" type="text" class="text_pole textarea_compact" rows="4"
+                    placeholder="Voice map will appear here for debug purpose"></textarea>
             </div>
             <div>
-                <div class="blip-ui-block">
-                    <audio id="blip_audio" controls src="">
+                <div class="background_controls">
+                    <label for="blip_character_select">Character:</label>
+                    <select id="blip_character_select">
+                        <!-- Populated by JS -->
+                    </select>
+                    <div class="blip_buttons">
+                        <input id="blip_apply" class="menu_button" type="submit" value="Apply" />
+                    </div>
+                    <div id="blip_delete" class="menu_button">
+                        Remove
+                    </div>
+                </div>
+                <div>
+                    <h4>Text Animation Settings</h4>
+                </div>
+                <div>
+                    <label for="blip_text_speed">
+                        Text speed (<span id="blip_text_speed_value"></span> ms)
+                    </label>
+                    <input id="blip_text_speed" type="range" min="0" max="100" step="5" value="10" />
+                    <small>
+                        Delay between each text display update.
+                    </small>
+                </div>
+                <div>
+                    <h4>Audio Settings</h4>
+                </div>
+                <div>
+                    <label for="blip_audio_origin">
+                        Blip sound origin
+                    </label>
+                    <select id="blip_audio_origin">
+                        <option value="file">file</option>
+                        <option value="generated">generated</option>
+                    </select>
+                    <small>
+                        Tips: blip file are in assets/blip/ folder.
+                    </small>
+                </div>
+                <div id="blip_file_settings">
+                    <div>
+                        <label for="blip_origin">
+                            Audio File Asset
+                        </label>
+                        <select id="blip_file_asset_select">
+                            <option value="none">Select file</option>
+                            <!-- Populated by JS -->
+                        </select>
+                    </div>
+                    <div>
+                        <label for="blip_audio_speed">
+                            Audio speed (<span id="blip_audio_speed_value"></span> ms)
+                        </label>
+                        <input id="blip_audio_speed" type="range" min="0" max="1000" step="10" value="10" />
+                        <small>
+                            Tips: put at 0 for special dynamic mode.
+                        </small>
+                    </div>
+                    <div>
+                        <label for="blip_audio_pitch">
+                            Pitch (<span id="blip_audio_pitch_value"></span>)
+                        </label>
+                        <input id="blip_audio_pitch" type="range" min="-10" max="10" step="0.5" value="0" />
+                        <small>
+                            blablabla
+                        </small>
+                    </div>
                 </div>
             </div>
         </div>
