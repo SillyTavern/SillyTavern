@@ -3804,6 +3804,24 @@
     "Mirostat Mode": "Modo Mirostat",
     "Mirostat Mode Description": "Un valor de 0 desactiva el Modo Mirostat por completo. 1 es por Mirostat 1.0, y 2 y por Mirostat 2.0.",
     "Mirostat Tau Description": "Controla la variabilidad del comportamiento del modelo en el Modo Mirostat. Un valor más alto resulta en más variabilidad.",
-    "Mirostat Eta Description": "Controla la fuerza del refuerzo positivo en el Modo Mirostat. Un valor más alto resulta en más refuerzo positivo."
+    "Mirostat Eta Description": "Controla la fuerza del refuerzo positivo en el Modo Mirostat. Un valor más alto resulta en más refuerzo positivo.",
+    "If you are using:": "Si estás utilizando:",
+    "Use API key (Only required for Mancer)": "Haz click en este campo (y añade tu clave API)",
+    "Mancer API key": "Clave API de Mancer",
+    "Mancer API url": "Link de la API de Mancer",
+    "Example: https://neuro.mancer.tech/webui/MODEL/api": "Ejemplo: https://neuro.mancer.tech/webui/MODEL/api",
+    "Context Template": "Plantilla contextual",
+    "Story String": "String de la historia",
+    "Example Separator": "Separador de ejemplos",
+    "Chat Start": "Inicio del chat",
+    "Instruct Mode": "Modo Instrucción",
+    "Enabled": "Habilitado",
+    "Presets": "Plantillas Predefinidas",
+    "Activation Regex": "Regex de Activación",
+    "Wrap Sequences with Newline": "Rodear Secuencias con Salto de Línea",
+    "Replace Macro in Sequences": "Reemplazar Macros en Secuencias",
+    "Include Names": "Incluír Nombres",
+    "Force for Groups and Personas": "Forzar por Grupos y Personas",
+    "System Prompt": "Prompt de Sistema"
     }
 }
