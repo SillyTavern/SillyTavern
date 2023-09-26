@@ -6,7 +6,7 @@
         "ru-ru",
         "it-it",
         "nl-nl",
-        "es-spa"
+        "es-mx"
     ],
     "zh-cn": {
         "clickslidertips": "点击滑块右侧数字可手动输入",
@@ -3554,7 +3554,7 @@
         "Change persona image": "persona afbeelding wijzigen",
         "Delete persona": "persona verwijderen"
 	},
-    "es-spa": {
+    "es-mx": {
     "clickslidertips": "Haz click en el número al lado de la barra \npara seleccionar un número manualmente.",
     "kobldpresets": "Configuraciones de KoboldAI",
     "guikoboldaisettings": "Configuración actual de la interfaz de KoboldAI",
