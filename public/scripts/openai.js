@@ -24,6 +24,7 @@ import {
     eventSource,
     event_types,
     substituteParams,
+    MAX_INJECTION_DEPTH,
 } from "../script.js";
 import { groups, selected_group } from "./group-chats.js";
 
@@ -323,7 +324,7 @@ function setOpenAIMessages(chat) {
     }
 
     // Add chat injections, 100 = maximum depth of injection. (Why would you ever need more?)
-    for (let i = 100; i >= 0; i--) {
+    for (let i = MAX_INJECTION_DEPTH; i >= 0; i--) {
         const anchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, i);
 
         if (anchor && anchor.length) {
@@ -1190,7 +1191,7 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
     const isTextCompletion = oai_settings.chat_completion_source == chat_completion_sources.OPENAI && textCompletionModels.includes(oai_settings.openai_model);
     const isQuiet = type === 'quiet';
     const isImpersonate = type === 'impersonate';
-    const stream = oai_settings.stream_openai && !isQuiet && !isScale && !isAI21;
+    const stream = oai_settings.stream_openai && !isQuiet && !isScale && !isAI21 && !isPalm;
 
     if (isAI21 || isPalm) {
         const joinedMsgs = openai_msgs_tosend.reduce((acc, obj) => {
@@ -1264,9 +1265,10 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
 
     if (isPalm) {
         const nameStopString = isImpersonate ? `\n${name2}:` : `\n${name1}:`;
+        const stopStringsLimit = 3; // 5 - 2 (nameStopString and new_chat_prompt)
         generate_data['use_palm'] = true;
         generate_data['top_k'] = Number(oai_settings.top_k_openai);
-        generate_data['stop'] = [nameStopString, oai_settings.new_chat_prompt, ...getCustomStoppingStrings()];
+        generate_data['stop'] = [nameStopString, oai_settings.new_chat_prompt, ...getCustomStoppingStrings(stopStringsLimit)];
     }
 
     if (isAI21) {

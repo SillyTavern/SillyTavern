@@ -1695,7 +1695,8 @@ function convertWorldInfoToCharacterBook(name, entries) {
                 display_index: entry.displayIndex,
                 probability: entry.probability ?? null,
                 useProbability: entry.useProbability ?? false,
-            }
+                depth: entry.depth ?? 4,
+            },
         };
 
         result.entries.push(originalEntry);
