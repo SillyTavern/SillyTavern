@@ -46,7 +46,6 @@ import {
 } from "./secrets.js";
 
 import {
-    deepClone,
     delay,
     download,
     getFileText, getSortableDelay,
@@ -2398,7 +2397,7 @@ async function onExportPresetClick() {
         return;
     }
 
-    const preset = deepClone(openai_settings[openai_setting_names[oai_settings.preset_settings_openai]]);
+    const preset = structuredClone(openai_settings[openai_setting_names[oai_settings.preset_settings_openai]]);
 
     delete preset.reverse_proxy;
     delete preset.proxy_password;
