@@ -1,5 +1,5 @@
 import { saveSettings, callPopup, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types } from "../script.js";
-import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, deepClone, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option } from "./utils.js";
+import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option } from "./utils.js";
 import { getContext } from "./extensions.js";
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from "./authors-note.js";
 import { registerSlashCommand } from "./slash-commands.js";
@@ -288,7 +288,17 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
         showNavigator: true,
         callback: function (page) {
             $("#world_popup_entries_list").empty();
+            const keywordHeaders = `
+            <div class="flex-container wide100p spaceBetween justifyCenter textAlignCenter">
+                <small class="flex1">
+                    Keywords
+                </small>
+                <small class="flex1">
+                    Optional Filter
+                </small>
+            </div>`
             const blocks = page.map(entry => getWorldEntry(name, data, entry));
+            $("#world_popup_entries_list").append(keywordHeaders);
             $("#world_popup_entries_list").append(blocks);
         },
         afterSizeSelectorChange: function (e) {
@@ -689,7 +699,7 @@ function getWorldEntry(name, data, entry) {
         const value = Number($(this).val());
 
         data.entries[uid].depth = !isNaN(value) ? value : 0;
-        setOriginalDataValue(data, uid, "depth", data.entries[uid].depth);
+        setOriginalDataValue(data, uid, "extensions.depth", data.entries[uid].depth);
         saveWorldInfo(name, data);
     });
     depthInput.val(entry.depth ?? DEFAULT_DEPTH).trigger("input");
@@ -780,8 +790,29 @@ function getWorldEntry(name, data, entry) {
         .prop("selected", true)
         .trigger("input");
 
-    // display uid
-    template.find(".world_entry_form_uid_value").text(entry.uid);
+    // display position/order info left of keyword box
+    let posText
+    switch (entry.position) {
+        case 0:
+            posText = '↑CD';
+            break
+        case 1:
+            posText = 'CD↓';
+            break
+        case 2:
+            posText = '↑AN';
+            break
+        case 3:
+            posText = 'AN↓';
+            break
+        case 4:
+            posText = `@D${entry.depth}`;
+            break
+    }
+
+    template.find(".world_entry_form_position_value").text(`(${posText} ${entry.order})`);
+    //add UID above content box (less important doesn't need to be always visible)
+    template.find(".world_entry_form_uid_value").text(`(UID: ${entry.uid})`);
 
     // disable
     const disableInput = template.find('input[name="disable"]');
@@ -808,7 +839,7 @@ function getWorldEntry(name, data, entry) {
     excludeRecursionInput.prop("checked", entry.excludeRecursion).trigger("input");
 
     // delete button
-    const deleteButton = template.find("input.delete_entry_button");
+    const deleteButton = template.find(".delete_entry_button");
     deleteButton.data("uid", entry.uid);
     deleteButton.on("click", function () {
         const uid = $(this).data("uid");
@@ -1088,7 +1119,7 @@ async function getSortedEntries() {
         console.debug(`Sorted ${entries.length} world lore entries using strategy ${world_info_character_strategy}`);
 
         // Need to deep clone the entries to avoid modifying the cached data
-        return deepClone(entries);
+        return structuredClone(entries);
     }
     catch (e) {
         console.error(e);
@@ -1434,6 +1465,7 @@ function convertCharacterBook(characterBook) {
             displayIndex: entry.extensions?.display_index ?? index,
             probability: entry.extensions?.probability ?? null,
             useProbability: entry.extensions?.useProbability ?? false,
+            depth: entry.extensions?.depth ?? DEFAULT_DEPTH,
         };
     });
 

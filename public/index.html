@@ -1020,6 +1020,10 @@
                                         <div class="range-block-title" data-i18n="Mirostat Mode">
                                             Mirostat Mode
                                         </div>
+                                        <div class="toggle-description width100p" data-i18n="Mirostat Mode">
+                                            A value of 0 disables Mirostat entirely.
+                                            <br>1 is for Mirostat 1.0, and 2 is for Mirostat 2.0
+                                        </div>
                                         <div class="range-block-range-and-counter">
                                             <div class="range-block-range">
                                                 <input type="range" id="mirostat_mode_kobold" name="volume" min="0" max="2" step="1" />
@@ -1035,6 +1039,9 @@
                                         <div class="range-block-title" data-i18n="Mirostat Tau">
                                             Mirostat Tau
                                         </div>
+                                        <div class="toggle-description width100p" data-i18n="Mirostat Tau">
+                                            Controls variability of Mirostat outputs
+                                        </div>
                                         <div class="range-block-range-and-counter">
                                             <div class="range-block-range">
                                                 <input type="range" id="mirostat_tau_kobold" name="volume" min="0" max="20" step="0.01" />
@@ -1049,6 +1056,9 @@
                                     <div class="range-block">
                                         <div class="range-block-title" data-i18n="Mirostat Eta">
                                             Mirostat Eta
+                                        </div>
+                                        <div class="toggle-description width100p" data-i18n="Mirostat Eta">
+                                            Controls learning rate of Mirostat
                                         </div>
                                         <div class="range-block-range-and-counter">
                                             <div class="range-block-range">
@@ -1612,7 +1622,7 @@
                                     </div>
                                 </div>
                                 <hr>
-                                <div id="grammar_block_ooba">
+                                <div class="displayNone" id="grammar_block_ooba">
                                     <h4 data-i18n="Grammar">Grammar</h4>
                                     <div class="range-block">
                                         <textarea id="grammar_file_textgenerationwebui" rows="2" class="text_pole textarea_compact monospace"></textarea>
@@ -2603,7 +2613,7 @@
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range paddingLeftRight5">
-                                            <input type="range" id="world_info_depth" name="volume" min="0" max="10" step="1">
+                                            <input type="range" id="world_info_depth" name="volume" min="0" max="100" step="1">
                                         </div>
                                         <div class="range-block-counter margin0">
                                             <div contenteditable="true" data-for="world_info_depth" id="world_info_depth_counter">
@@ -3852,30 +3862,23 @@
 
 
     <div id="entry_edit_template" class="template_element">
+
         <div class="world_entry">
             <form class="world_entry_form">
                 <div class="inline-drawer wide100p">
                     <div class="inline-drawer-toggle inline-drawer-header gap5px">
                         <span class="drag-handle">&#9776;</span>
-                        <div class="gap5px world_entry_thin_controls wide100p">
-
+                        <div class="gap5px world_entry_thin_controls wide100p alignitemscenter">
+                            <small>
+                                <span><span class="world_entry_form_position_value"></span>
+                                </span>
+                            </small>
                             <div class="world_entry_form_control flex1">
-                                <label for="key">
-                                    <small>
-                                        <span data-i18n="Keywords">
-                                            Keywords
-                                        </span>
-                                        <span>(UID:&nbsp;
-                                            <span class="world_entry_form_uid_value"></span>
-                                            )
-                                        </span>
-                                    </small>
-                                    <small class="displayNone">
-                                        <span data-i18n="Comma separated (required)">
-                                            Comma separated (required)
-                                        </span>
-                                    </small>
-                                </label>
+                                <small class="displayNone">
+                                    <span data-i18n="Comma separated (required)">
+                                        Comma separated (required)
+                                    </span>
+                                </small>
                                 <textarea class="text_pole keyprimarytextpole" name="key" rows="1" data-i18n="[placeholder]Comma separated (required)" placeholder="Comma separated (required)" maxlength="1000"></textarea>
                             </div>
                             <div class="flex-container widthFitContent alignItemsFlexEnd">
@@ -3886,19 +3889,15 @@
                             </div>
 
                             <div class="world_entry_form_control keysecondary flex1">
-                                <label for="keysecondary">
-                                    <small>
-                                        <span data-i18n="Secondary Required Keywords">
-                                            Optional Filter
-                                        </span>
-                                    </small>
-                                    <small class="displayNone">
-                                        <span data-i18n="Comma seperated (ignored if empty)">
-                                            Comma seperated (ignored if empty)
-                                        </span>
-                                    </small>
-                                </label>
-                                <textarea class="text_pole keysecondarytextpole" name="keysecondary" rows="1" data-i18n="[placeholder]Comma separated (ignored if empty)" placeholder="Comma separated (ignored if empty)" maxlength="1000"></textarea>
+                                <small class="displayNone">
+                                    <span data-i18n="(ignored if empty)">
+                                        (ignored if empty)
+                                    </span>
+                                </small>
+                                <div class="flex-container flexFlowRow">
+                                    <textarea class="text_pole keysecondarytextpole" name="keysecondary" rows="1" data-i18n="[placeholder]Comma separated (ignored if empty)" placeholder="Comma separated (ignored if empty)" maxlength="1000"></textarea>
+                                    <i class="menu_button delete_entry_button fa-solid fa-trash-can" type="submit" data-i18n="" value="" /></i>
+                                </div>
                             </div>
                         </div>
                         <div class="fa-fw fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
@@ -3912,6 +3911,7 @@
                                             <span data-i18n="Content">
                                                 Content
                                                 <span>(Tokens:&nbsp; <span class="world_entry_form_token_counter" data-first-run="true">counting...</span>)
+                                                    <span class="world_entry_form_uid_value" data-first-run="true"></span>
                                                 </span>
                                             </span>
                                         </small>
@@ -4018,7 +4018,7 @@
 
                             <div class="world_entry_form_control wi-enter-footer-text  flex-container flexNoGap ">
                                 <label for="depth" data-i18n="Depth:">Depth:</label>
-                                <input class="text_pole wideMax100px margin0" type="number" name="depth" placeholder="" min="0" max="10000" />
+                                <input class="text_pole wideMax100px margin0" type="number" name="depth" placeholder="" min="0" max="999" />
                             </div>
 
                             <div class="world_entry_form_control wi-enter-footer-text  flex-container flexNoGap ">
@@ -4033,7 +4033,6 @@
                                 <input class="text_pole wideMax100px margin0" type="number" name="probability" placeholder="" min="0" max="100" />
                             </div>
 
-                            <input class="menu_button delete_entry_button" type="submit" data-i18n="Delete Entry" value="Delete Entry" />
                         </div>
                         <div class="wide100p">
                             <hr>
@@ -4363,7 +4362,7 @@
                             </label>
                             <label>
                                 <input type="radio" name="extension_floating_position" value="1" />
-                                In-chat @ Depth <input id="extension_floating_depth" class="text_pole widthUnset" type="number" min="0" max="99" />
+                                In-chat @ Depth <input id="extension_floating_depth" class="text_pole widthUnset" type="number" min="0" max="999" />
                             </label>
                         </div>
                         <!--<label for="extension_floating_interval">In-Chat Insertion Depth</label>-->
@@ -4431,7 +4430,7 @@
                             </label>
                             <label>
                                 <input type="radio" name="extension_default_position" value="1" />
-                                In-chat @ Depth <input id="extension_default_depth" class="text_pole widthUnset" type="number" min="0" max="99" />
+                                In-chat @ Depth <input id="extension_default_depth" class="text_pole widthUnset" type="number" min="0" max="999" />
                             </label>
                         </div>
                         <label for="extension_default_interval">Insertion Frequency</label>
