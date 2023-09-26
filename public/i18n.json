@@ -3802,6 +3802,8 @@
     "Negative Prompt": "Prompt negativo",
     "Used if CFG Scale is unset globally, per chat or character.": "Se usa si CFG Scale no está definido globalmente, por chat o por personaje.",
     "Mirostat Mode": "Modo Mirostat",
-    "Mirostat Mode Description": "Un valor de 0 desactiva el Modo Mirostat por completo. 1 es por Mirostat 1.0, y 2 y por Mirostat 2.0."
+    "Mirostat Mode Description": "Un valor de 0 desactiva el Modo Mirostat por completo. 1 es por Mirostat 1.0, y 2 y por Mirostat 2.0.",
+    "Mirostat Tau Description": "Controla la variabilidad del comportamiento del modelo en el Modo Mirostat. Un valor más alto resulta en más variabilidad.",
+    "Mirostat Eta Description": "Controla la fuerza del refuerzo positivo en el Modo Mirostat. Un valor más alto resulta en más refuerzo positivo."
     }
 }
