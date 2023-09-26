@@ -3793,6 +3793,13 @@
     "API Key": "Clave API",
     "Get it here:": "Consíguela aquí:",
     "View my Kudos": "Ver mis Kudos",
-    "Models": "Modelos IA" 
+    "Models": "Modelos IA",
+    "Grammar": "Gramática",
+    "Type in the desired custom grammar": "Escribe la gramática personalizada deseada (GBNF)",
+    "forbiddenHeading": "Restringido",
+    "Enter": "Introduce",
+    "to use anonymous mode.": "para usar el modo anónimo.",
+    "Negative Prompt": "Prompt negativo",
+    "Used if CFG Scale is unset globally, per chat or character.": "Se usa si CFG Scale no está definido globalmente, por chat o por personaje."
     }
 }

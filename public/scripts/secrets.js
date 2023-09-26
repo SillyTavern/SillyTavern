@@ -26,6 +26,8 @@ const INPUT_MAP = {
     [SECRET_KEYS.PALM]: '#api_key_palm',
 }
 
+const forbiddenMessage = `<h3 data-i18n=\"forbiddenHeading\">Forbidden</h3><p>To view your API keys here, set the value of allowKeysExposure to true in config.conf file and restart the SillyTavern server.</p>`
+
 async function clearSecret() {
     const key = $(this).data('key');
     await writeSecret(key, '');
@@ -50,7 +52,7 @@ async function viewSecrets() {
     });
 
     if (response.status == 403) {
-        callPopup('<h3>Forbidden</h3><p>To view your API keys here, set the value of allowKeysExposure to true in config.conf file and restart the SillyTavern server.</p>', 'text');
+        callPopup(forbiddenMessage, 'text');
         return;
     }
 
