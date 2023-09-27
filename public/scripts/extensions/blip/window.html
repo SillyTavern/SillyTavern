@@ -40,7 +40,7 @@
                     </div>
                 </div>
                 <div>
-                    <h4>Text Animation Settings</h4>
+                    <h4>Animation Settings</h4>
                 </div>
                 <div>
                     <label for="blip_text_speed">
@@ -48,7 +48,43 @@
                     </label>
                     <input id="blip_text_speed" type="range" min="0" max="100" step="5" value="10" />
                     <small>
-                        Delay between each text display update.
+                        Delay between each character is printed.
+                    </small>
+                </div>
+                <div>
+                    <label for="blip_min_speed_multiplier">
+                        Min speed multiplier (<span id="blip_min_speed_multiplier_value"></span>x)
+                    </label>
+                    <input id="blip_min_speed_multiplier" type="range" min="0.5" max="1" step="0.1" value="1" />
+                    <small>
+                        Minimal multiplier that can be apply to text/audio speed (1 is no change).
+                    </small>
+                </div>
+                <div>
+                    <label for="blip_max_speed_multiplier">
+                        Max speed multiplier (<span id="blip_max_speed_multiplier_value"></span>x)
+                    </label>
+                    <input id="blip_max_speed_multiplier" type="range" min="1" max="1.5" step="0.1" value="1" />
+                    <small>
+                        Maximal multiplier that can be apply to text/audio speed (1 is no change).
+                    </small>
+                </div>
+                <div>
+                    <label for="blip_comma_delay">
+                        Comma delay (<span id="blip_comma_delay_value"></span> ms)
+                    </label>
+                    <input id="blip_comma_delay" type="range" min="0" max="1000" step="10" value="0" />
+                    <small>
+                        Delay to wait after printing "," or ";" (pause blip sound).
+                    </small>
+                </div>
+                <div>
+                    <label for="blip_phrase_delay">
+                        Phrase delay (<span id="blip_phrase_delay_value"></span> ms)
+                    </label>
+                    <input id="blip_phrase_delay" type="range" min="0" max="1000" step="10" value="0" />
+                    <small>
+                        Delay to wait after printing "!" or "?" or "." (pause blip sound).
                     </small>
                 </div>
                 <div>
@@ -82,7 +118,7 @@
                         </label>
                         <input id="blip_audio_speed" type="range" min="0" max="1000" step="10" value="10" />
                         <small>
-                            Tips: put at 0 for special dynamic mode.
+                            Delay between each blip play.
                         </small>
                     </div>
                     <div>
@@ -91,7 +127,7 @@
                         </label>
                         <input id="blip_audio_pitch" type="range" min="-10" max="10" step="0.5" value="0" />
                         <small>
-                            blablabla
+                            TODO
                         </small>
                     </div>
                 </div>

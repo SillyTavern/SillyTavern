@@ -1,13 +1,13 @@
 /*
 TODO:
 - Security
-    - Fix special case of first message
     - Prevent swipe during streaming
     - Handle special text styling while streaming
 - Features
     - apply pitch change
     - generate sound with JS
     - volume option
+    - change setting when selecting existing character voicemaps
 Ideas:
     - Add same option as TTS text
 */
@@ -23,12 +23,6 @@ const MODULE_NAME = 'BLip';
 const DEBUG_PREFIX = "<Blip extension> ";
 const UPDATE_INTERVAL = 1000;
 
-const BLIP_DURATION = 50;
-
-const SPEED_SLOW = 0.009;
-const SPEED_NORMAL = 0.006;
-const SPEED_FAST = 0.004;
-
 const COMMA_DELAY = 0.025;
 const PHRASE_DELAY = 0.25;
 
@@ -39,6 +33,9 @@ let characters_list = [] // Updated with module worker
 let blip_assets = null; // Initialized only once with module workers
 
 let is_in_text_animation = false;
+let is_animation_pause = false;
+
+let current_multiplier = 1.0;
 
 //#############################//
 //  Extension UI and Settings  //
@@ -46,6 +43,12 @@ let is_in_text_animation = false;
 
 const defaultSettings = {
     enabled: false,
+
+    minSpeedMultiplier: 1.0,
+    maxSpeedMultiplier: 1.0,
+    commaDelay: 0,
+    phraseDelay: 0,
+
     textSpeed: 10,
 
     audioSpeed: 10,
@@ -65,6 +68,18 @@ function loadSettings() {
 
     $("#blip_enabled").prop('checked', extension_settings.blip.enabled);
 
+    $('#blip_min_speed_multiplier').val(extension_settings.blip.minSpeedMultiplier);
+    $('#blip_min_speed_multiplier_value').text(extension_settings.blip.minSpeedMultiplier);
+
+    $('#blip_max_speed_multiplier').val(extension_settings.blip.maxSpeedMultiplier);
+    $('#blip_max_speed_multiplier_value').text(extension_settings.blip.maxSpeedMultiplier);
+
+    $('#blip_comma_delay').val(extension_settings.blip.commaDelay);
+    $('#blip_comma_delay_value').text(extension_settings.blip.commaDelay);
+
+    $('#blip_phrase_delay').val(extension_settings.blip.phraseDelay);
+    $('#blip_phrase_delay_value').text(extension_settings.blip.phraseDelay);
+
     $('#blip_text_speed').val(extension_settings.blip.textSpeed);
     $('#blip_text_speed_value').text(extension_settings.blip.textSpeed);
 
@@ -80,6 +95,30 @@ function loadSettings() {
 async function onEnabledClick() {
     extension_settings.blip.enabled = $('#blip_enabled').is(':checked');
     saveSettingsDebounced();
+}
+
+async function onMinSpeedChange() {
+    extension_settings.blip.minSpeedMultiplier = Number($('#blip_min_speed_multiplier').val());
+    $("#blip_min_speed_multiplier_value").text(extension_settings.blip.minSpeedMultiplier)
+    saveSettingsDebounced()
+}
+
+async function onMaxSpeedChange() {
+    extension_settings.blip.maxSpeedMultiplier = Number($('#blip_max_speed_multiplier').val());
+    $("#blip_max_speed_multiplier_value").text(extension_settings.blip.maxSpeedMultiplier)
+    saveSettingsDebounced()
+}
+
+async function onCommaDelayChange() {
+    extension_settings.blip.commaDelay = Number($('#blip_comma_delay').val());
+    $("#blip_comma_delay_value").text(extension_settings.blip.commaDelay)
+    saveSettingsDebounced()
+}
+
+async function onPhraseDelayChange() {
+    extension_settings.blip.phraseDelay = Number($('#blip_phrase_delay').val());
+    $("#blip_phrase_delay_value").text(extension_settings.blip.phraseDelay)
+    saveSettingsDebounced()
 }
 
 async function onTextSpeedChange() {
@@ -117,6 +156,10 @@ async function onAudioPitchChange() {
 async function onApplyClick() {
     let error = false;
     const character = $("#blip_character_select").val();
+    const min_speed_multiplier = $("#blip_min_speed_multiplier").val();
+    const max_speed_multiplier = $("#blip_max_speed_multiplier").val();
+    const comma_delay = $("#blip_comma_delay").val();
+    const phrase_delay = $("#blip_phrase_delay").val();
     const text_speed = $("#blip_text_speed").val();
     const audio_origin = $("#blip_audio_origin").val();
 
@@ -136,7 +179,11 @@ async function onApplyClick() {
         const audio_pitch = $("#blip_audio_pitch").val();
 
         extension_settings.blip.voiceMap[character] = {
-            "textSpeed": text_speed,
+            "minSpeedMultiplier": Number(min_speed_multiplier),
+            "maxSpeedMultiplier": Number(max_speed_multiplier),
+            "commaDelay": Number(comma_delay),
+            "phraseDelay": Number(phrase_delay),
+            "textSpeed": Number(text_speed),
             "audioOrigin": audio_origin,
             "audioSettings": {
                 "asset" : asset_path,
@@ -173,6 +220,10 @@ function updateVoiceMapText() {
     for (let i in extension_settings.blip.voiceMap) {
         const voice_settings = extension_settings.blip.voiceMap[i];
         voiceMapText += i + ": ("
+            + voice_settings["minSpeedMultiplier"] + ","
+            + voice_settings["maxSpeedMultiplier"] + ","
+            + voice_settings["commaDelay"] + ","
+            + voice_settings["phraseDelay"] + ","
             + voice_settings["textSpeed"] + ","
             + voice_settings["audioOrigin"] + ",";
 
@@ -216,12 +267,6 @@ function hyjackMessage(chat_id) {
     current_message = message;
 }
 
-function playSound() {
-    $("#blip_audio")[0].pause();
-    $("#blip_audio")[0].currentTime = 0;
-    $("#blip_audio")[0].play();
-}
-
 async function processMessage(chat_id) {
     if (!extension_settings.blip.enabled) {
         return;
@@ -254,51 +299,55 @@ async function processMessage(chat_id) {
     const last_message_dom = $( ".last_mes").children(".mes_block").children(".mes_text");
     console.debug(DEBUG_PREFIX,last_message_dom);
 
-    const text_speed = extension_settings.blip.voiceMap[character]["textSpeed"] / 1000;
+    let text_speed = extension_settings.blip.voiceMap[character]["textSpeed"] / 1000;
     is_in_text_animation = true;
 
     // TODO: manage different type of audio styles
+    const min_speed_multiplier = extension_settings.blip.voiceMap[character]["minSpeedMultiplier"];
+    const max_speed_multiplier = extension_settings.blip.voiceMap[character]["maxSpeedMultiplier"];
+    const comma_delay = extension_settings.blip.voiceMap[character]["commaDelay"] / 1000;
+    const phrase_delay = extension_settings.blip.voiceMap[character]["phraseDelay"] / 1000;
     const audio_asset = extension_settings.blip.voiceMap[character]["audioSettings"]["asset"];
     const audio_speed = extension_settings.blip.voiceMap[character]["audioSettings"]["speed"] / 1000;
     const audio_pitch = extension_settings.blip.voiceMap[character]["audioSettings"]["pitch"];
+
     
     $("#blip_audio").attr("src", audio_asset);
 
-    if (audio_speed > 0) {
-        playAudioFile(audio_asset, audio_speed, audio_pitch);
-        
-        for(const i in current_message) {
-            await delay(text_speed);
-            last_message_dom.text(last_message_dom.text()+current_message[i]);
+    console.debug(DEBUG_PREFIX, "Normal mode")
+
+    // Wait for audio to load
+    while (isNaN($("#blip_audio")[0].duration))
+        await delay(0.1);
+
+    playAudioFile(audio_speed, audio_pitch);
+    let previous_char = "";
+
+    for(const i in current_message) {
+        const next_char = current_message[i]
+
+        // Change speed multiplier on end of phrase
+        if (["!","?","."].includes(next_char) && previous_char != next_char) {
+            current_multiplier = Math.random() * (max_speed_multiplier - min_speed_multiplier) + min_speed_multiplier;
+            //console.debug(DEBUG_PREFIX,"New speed multiplier:",current_multiplier);
         }
-    }
-    else {
-        // Special dynamic style
-        let blipDuration = text_speed; //$("#audio_blip")[0].duration * 1000;
-        let previous_char = "";
-        for(const i in current_message) {
-            const next_char = current_message[i]
-    
-            if (next_char == ' ') {
-                playSound();
-            }
-            else if (next_char == ',') {
-                playSound();
-                await delay(COMMA_DELAY);
-            }
-            else if (["!","?","."].includes(next_char) && previous_char != next_char) {
-                playSound();
-                blipDuration = text_speed * [0.6,1,1.8][Math.floor(Math.random() * 3)];
-                await delay(PHRASE_DELAY);
-    
-            }
-            else {
-                //playSound();
-            }
-    
-            await delay(blipDuration);
-            last_message_dom.text(last_message_dom.text()+current_message[i]);
-            previous_char = next_char;
+
+        await delay(current_multiplier * text_speed);
+        last_message_dom.text(last_message_dom.text()+current_message[i]);
+        previous_char = next_char;
+
+        // comma pause
+        if ([",",";"].includes(previous_char)){
+            is_animation_pause = true;
+            await delay(comma_delay);
+            is_animation_pause = false;
+        }
+
+        // Phrase pause
+        if (["!","?","."].includes(previous_char)){
+            is_animation_pause = true;
+            await delay(phrase_delay);
+            is_animation_pause = false;
         }
     }
 
@@ -311,12 +360,23 @@ async function processMessage(chat_id) {
     //console.debug(DEBUG_PREFIX,getContext().chat);
 }
 
-async function playAudioFile(filePath, speed, pitch) {
+async function playAudioFile(speed, pitch) {
     while (is_in_text_animation) {
-        
+        if (is_animation_pause) {
+            console.debug(DEBUG_PREFIX,"Animation pause, waiting")
+            await delay(0.01);
+            continue;
+        }
         playSound();
-        await delay(speed);
+        //console.debug(DEBUG_PREFIX,"duration", $("#blip_audio")[0].duration, " + ", current_multiplier * speed);
+        await delay($("#blip_audio")[0].duration + current_multiplier * speed);
     }
+}
+
+function playSound() {
+    $("#blip_audio")[0].pause();
+    $("#blip_audio")[0].currentTime = 0;
+    $("#blip_audio")[0].play();
 }
 
 //#############################//
@@ -418,6 +478,12 @@ jQuery(async () => {
     $("#blip_text_speed").on("input", onTextSpeedChange);
 
     $("#blip_origin").on("change", onOriginChange);
+
+    $("#blip_min_speed_multiplier").on("input", onMinSpeedChange);
+    $("#blip_max_speed_multiplier").on("input", onMaxSpeedChange);
+
+    $("#blip_comma_delay").on("input", onCommaDelayChange);
+    $("#blip_phrase_delay").on("input", onPhraseDelayChange);
 
     $("#blip_audio_speed").on("input", onAudioSpeedChange);
     $("#blip_audio_pitch").on("input", onAudioPitchChange);
