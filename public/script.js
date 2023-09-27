@@ -763,7 +763,7 @@ async function getStatus() {
             return;
         }
 
-        if(api_server_textgenerationwebui.includes(','))
+        if(api_server_textgenerationwebui.includes(',')) {
             const arr_api_server_textgenerationwebui = api_server_textgenerationwebui.split(',');
             jQuery.ajax({
                 type: "POST", //
@@ -853,6 +853,52 @@ async function getStatus() {
                     resultCheckStatus();
                 },
             });
+        } else {
+            jQuery.ajax({
+                type: "POST", //
+                url: "/getstatus", //
+                data: JSON.stringify({
+                    api_server: main_api == "kobold" ? api_server : api_server_textgenerationwebui,
+                    main_api: main_api,
+                    use_mancer: main_api == "textgenerationwebui" ? api_use_mancer_webui : false,
+                }),
+                beforeSend: function () { },
+                cache: false,
+                dataType: "json",
+                crossDomain: true,
+                contentType: "application/json",
+                //processData: false,
+                success: function (data) {
+                    online_status = data.result;
+                    if (online_status == undefined) {
+                        online_status = "no_connection";
+                    }
+    
+                    // Determine instruct mode preset
+                    autoSelectInstructPreset(online_status);
+    
+                    // determine if we can use stop sequence and streaming
+                    if (main_api === "kobold" || main_api === "koboldhorde") {
+                        setKoboldFlags(data.version, data.koboldVersion);
+                    }
+    
+                    // We didn't get a 200 status code, but the endpoint has an explanation. Which means it DID connect, but I digress.
+                    if (online_status == "no_connection" && data.response) {
+                        toastr.error(data.response, "API Error", { timeOut: 5000, preventDuplicates: true })
+                    }
+    
+                    //console.log(online_status);
+                    resultCheckStatus();
+                },
+                error: function (jqXHR, exception) {
+                    console.log(exception);
+                    console.log(jqXHR);
+                    online_status = "no_connection";
+    
+                    resultCheckStatus();
+                },
+            });
+        }
     } else {
         if (is_get_status_novel != true && is_get_status_openai != true) {
             online_status = "no_connection";
