@@ -3192,24 +3192,68 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 streamingProcessor.generator = await generateKoboldWithStreaming(generate_data, streamingProcessor.abortController.signal);
             }
             else {
-                try {
-                    const response = await fetch(generate_url, {
-                        method: 'POST',
-                        headers: getRequestHeaders(),
-                        cache: 'no-cache',
-                        body: JSON.stringify(generate_data),
-                        signal: abortController.signal,
-                    });
-
-                    if (!response.ok) {
-                        const error = await response.json();
-                        throw error;
+                if(api_server.includes(','))) {
+                    const arr_api_server = arr_api_server.split(',');
+                    try {
+                        generate_data.api_server = arr_api_server[0];
+                        const response = await fetch(generate_url, {
+                            method: 'POST',
+                            headers: getRequestHeaders(),
+                            cache: 'no-cache',
+                            body: JSON.stringify(generate_data),
+                            signal: abortController.signal,
+                        });
+    
+                        if (!response.ok) {
+                            const error = await response.json();
+                            throw error;
+                        }
+    
+                        const data = await response.json();
+                        onSuccess(data);
+                    } catch (error) {
+                        onError(error);
                     }
-
-                    const data = await response.json();
-                    onSuccess(data);
-                } catch (error) {
-                    onError(error);
+                    try {
+                        generate_data.api_server = arr_api_server[1];
+                        const response = await fetch(generate_url, {
+                            method: 'POST',
+                            headers: getRequestHeaders(),
+                            cache: 'no-cache',
+                            body: JSON.stringify(generate_data),
+                            signal: abortController.signal,
+                        });
+    
+                        if (!response.ok) {
+                            const error = await response.json();
+                            throw error;
+                        }
+    
+                        const data = await response.json();
+                        onSuccess(data);
+                    } catch (error) {
+                        onError(error);
+                    }
+                } else {
+                    try {
+                        const response = await fetch(generate_url, {
+                            method: 'POST',
+                            headers: getRequestHeaders(),
+                            cache: 'no-cache',
+                            body: JSON.stringify(generate_data),
+                            signal: abortController.signal,
+                        });
+    
+                        if (!response.ok) {
+                            const error = await response.json();
+                            throw error;
+                        }
+    
+                        const data = await response.json();
+                        onSuccess(data);
+                    } catch (error) {
+                        onError(error);
+                    }
                 }
             }
 
