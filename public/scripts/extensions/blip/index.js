@@ -3,11 +3,13 @@ TODO:
 - Security
     - Prevent swipe during streaming
     - Handle special text styling while streaming
+    - group mode break, need to make generation wait or queue
 - Features
     - apply pitch change
     - generate sound with JS
     - volume option
     - change setting when selecting existing character voicemaps
+    - Add feedback to apply button
 Ideas:
     - Add same option as TTS text
 */
