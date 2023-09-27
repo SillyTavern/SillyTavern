@@ -454,7 +454,7 @@ app.post("/generate", jsonParser, async function (request, response_generate) {
 //************** Text generation web UI
 app.post("/generate_textgenerationwebui", jsonParser, async function (request, response_generate) {
     if (!request.body) return response_generate.sendStatus(400);
-    api_server = request.body.api_server;
+    if (request.body.api_server) api_server = request.body.api_server;
     console.log(request.body);
 
     const controller = new AbortController();

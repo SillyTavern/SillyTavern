@@ -3192,45 +3192,42 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 streamingProcessor.generator = await generateKoboldWithStreaming(generate_data, streamingProcessor.abortController.signal);
             }
             else {
-                if(api_server.includes(','))) {
-                    const arr_api_server = arr_api_server.split(',');
+                if(api_server_textgenerationwebui.includes(',')) {
+                    const arr_api_server_textgenerationwebui = api_server_textgenerationwebui.split(',');
                     try {
-                        generate_data.api_server = arr_api_server[0];
-                        const response = await fetch(generate_url, {
+                        generate_data.api_server = arr_api_server_textgenerationwebui[0];
+                        console.log(generate_data.api_server)
+                        fetch(generate_url, {
                             method: 'POST',
                             headers: getRequestHeaders(),
                             cache: 'no-cache',
                             body: JSON.stringify(generate_data),
                             signal: abortController.signal,
+                        }).then(response => {
+                            if (!response.ok) {
+                                const error = response.json();
+                                throw error;
+                            }
+        
+                            response.json().then(data => onSuccess(data));
                         });
     
-                        if (!response.ok) {
-                            const error = await response.json();
-                            throw error;
-                        }
-    
-                        const data = await response.json();
-                        onSuccess(data);
-                    } catch (error) {
-                        onError(error);
-                    }
-                    try {
-                        generate_data.api_server = arr_api_server[1];
-                        const response = await fetch(generate_url, {
+                        generate_data.api_server = arr_api_server_textgenerationwebui[1];
+                        console.log(generate_data.api_server)
+                        fetch(generate_url, {
                             method: 'POST',
                             headers: getRequestHeaders(),
                             cache: 'no-cache',
                             body: JSON.stringify(generate_data),
                             signal: abortController.signal,
+                        }).then(response => {
+                            if (!response.ok) {
+                                const error = response.json();
+                                throw error;
+                            }
+        
+                            response.json().then(data => onSuccess(data));
                         });
-    
-                        if (!response.ok) {
-                            const error = await response.json();
-                            throw error;
-                        }
-    
-                        const data = await response.json();
-                        onSuccess(data);
                     } catch (error) {
                         onError(error);
                     }
@@ -7740,11 +7737,12 @@ jQuery(async function () {
     $("#api_button_textgenerationwebui").click(async function (e) {
         const url_source = api_use_mancer_webui ? "#mancer_api_url_text" : "#textgenerationwebui_api_url_text";
         if ($(url_source).val() != "") {
-            let value = formatTextGenURL(String($(url_source).val()).trim(), api_use_mancer_webui);
-            if (!value) {
-                callPopup("Please enter a valid URL.<br/>WebUI URLs should end with <tt>/api</tt><br/>Enable 'Relaxed API URLs' to allow other paths.", 'text');
-                return;
-            }
+            let value = String($(url_source).val()).trim();
+            //let value = formatTextGenURL(String($(url_source).val()).trim(), api_use_mancer_webui);
+            //if (!value) {
+            //    callPopup("Please enter a valid URL.<br/>WebUI URLs should end with <tt>/api</tt><br/>Enable 'Relaxed API URLs' to allow other paths.", 'text');
+            //    return;
+            //}
 
             const mancer_key = String($("#api_key_mancer").val()).trim();
             if (mancer_key.length) {
