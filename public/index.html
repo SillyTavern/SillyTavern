@@ -1148,10 +1148,10 @@
                                         <span data-i18n="Banned Tokens">Banned Tokens</span>
                                     </div>
                                     <div class="toggle-description justifyLeft" data-i18n="Sequences you don't want to appear in the output. One per line.">
-                                        Sequences you don't want to appear in the output. One per line.
+                                        Sequences you don't want to appear in the output. One per line. Text or [token ids].
                                     </div>
                                     <div class="wide100p">
-                                        <textarea id="nai_banned_tokens" class="text_pole textarea_compact" name="nai_banned_tokens" rows="2" placeholder=""></textarea>
+                                        <textarea id="nai_banned_tokens" class="text_pole textarea_compact" name="nai_banned_tokens" rows="3" placeholder="Example:&#10;some text&#10;[42, 69, 1337]"></textarea>
                                     </div>
                                 </div>
                                 <div class="range-block">
@@ -1494,6 +1494,26 @@
                                 </div>
                                 <hr>
                                 <div class="range-block">
+                                    <h4 class="range-block-title justifyLeft">
+                                        <span data-i18n="Banned Tokens">Banned Tokens</span>
+                                        <span data-i18n="LLaMA models">(LLaMA models)</span>
+                                    </h4>
+                                    <div class="toggle-description justifyLeft" data-i18n="Sequences you don't want to appear in the output. One per line.">
+                                        Sequences you don't want to appear in the output. One per line. Text or [token ids].
+                                    </div>
+                                    <div class="wide100p">
+                                        <textarea id="banned_tokens_textgenerationwebui" class="text_pole textarea_compact" name="banned_tokens_textgenerationwebui" rows="3" placeholder="Example:&#10;some text&#10;[42, 69, 1337]"></textarea>
+                                    </div>
+                                    <small>
+                                        <i class="fa-solid fa-lightbulb"></i>
+                                        &nbsp;
+                                        <span data-i18n="Most tokens have a leading space.">
+                                            Most tokens have a leading space.
+                                        </span>
+                                    </small>
+                                </div>
+                                <hr>
+                                <div class="range-block">
                                     <h4 class="range-block-title justifyLeft" data-i18n="CFG Scale">
                                         CFG Scale
                                     </h4>
@@ -1513,12 +1533,12 @@
                                         <span data-i18n="Negative Prompt">Negative Prompt</span>
                                     </div>
                                     <div class="wide100p">
-                                        <textarea id="negative_prompt_textgenerationwebui" class="text_pole textarea_compact" name="negative_prompt" rows="2" data-i18n="[placeholder]Add text here that would make the AI generate things you don't want in your outputs." placeholder="Add text here that would make the AI generate things you don't want in your outputs."></textarea>
+                                        <textarea id="negative_prompt_textgenerationwebui" class="text_pole textarea_compact" name="negative_prompt" rows="3" data-i18n="[placeholder]Add text here that would make the AI generate things you don't want in your outputs." placeholder="Add text here that would make the AI generate things you don't want in your outputs."></textarea>
                                     </div>
+                                    <small data-i18n="Used if CFG Scale is unset globally, per chat or character">
+                                        Used if CFG Scale is unset globally, per chat or character
+                                    </small>
                                 </div>
-                                <small class="margin-bot-10px" data-i18n="Used if CFG Scale is unset globally, per chat or character">
-                                    Used if CFG Scale is unset globally, per chat or character
-                                </small>
                                 <hr>
                                 <h4><span data-i18n="Beam search">Beam search</span></h4>
                                 <div class="range-block">
@@ -1622,10 +1642,10 @@
                                     </div>
                                 </div>
                                 <hr>
-                                <div class="displayNone" id="grammar_block_ooba">
+                                <div id="grammar_block_ooba">
                                     <h4 data-i18n="Grammar">Grammar</h4>
                                     <div class="range-block">
-                                        <textarea id="grammar_file_textgenerationwebui" rows="2" class="text_pole textarea_compact monospace"></textarea>
+                                        <textarea id="grammar_string_textgenerationwebui" rows="2" class="text_pole textarea_compact monospace"></textarea>
                                         <div class="toggle-description justifyLeft">
                                             <span data-i18n="Type in the desired custom grammar (GBNF).">
                                                 Type in the desired custom grammar (<a href="https://github.com/ggerganov/llama.cpp/blob/master/grammars/README.md" target="_blank">GBNF</a>).
