@@ -681,6 +681,7 @@ function getWorldEntry(name, data, entry) {
         const value = Number($(this).val());
 
         data.entries[uid].order = !isNaN(value) ? value : 0;
+        updatePosOrdDisplay(uid)
         setOriginalDataValue(data, uid, "insertion_order", data.entries[uid].order);
         saveWorldInfo(name, data);
     });
@@ -699,6 +700,7 @@ function getWorldEntry(name, data, entry) {
         const value = Number($(this).val());
 
         data.entries[uid].depth = !isNaN(value) ? value : 0;
+        updatePosOrdDisplay(uid)
         setOriginalDataValue(data, uid, "extensions.depth", data.entries[uid].depth);
         saveWorldInfo(name, data);
     });
@@ -778,6 +780,7 @@ function getWorldEntry(name, data, entry) {
         } else {
             depthInput.parent().hide();
         }
+        updatePosOrdDisplay(uid)
         // Spec v2 only supports before_char and after_char
         setOriginalDataValue(data, uid, "position", data.entries[uid].position == 0 ? 'before_char' : 'after_char');
         // Write the original value as extensions field
@@ -790,27 +793,6 @@ function getWorldEntry(name, data, entry) {
         .prop("selected", true)
         .trigger("input");
 
-    // display position/order info left of keyword box
-    let posText
-    switch (entry.position) {
-        case 0:
-            posText = '↑CD';
-            break
-        case 1:
-            posText = 'CD↓';
-            break
-        case 2:
-            posText = '↑AN';
-            break
-        case 3:
-            posText = 'AN↓';
-            break
-        case 4:
-            posText = `@D${entry.depth}`;
-            break
-    }
-
-    template.find(".world_entry_form_position_value").text(`(${posText} ${entry.order})`);
     //add UID above content box (less important doesn't need to be always visible)
     template.find(".world_entry_form_uid_value").text(`(UID: ${entry.uid})`);
 
@@ -850,6 +832,31 @@ function getWorldEntry(name, data, entry) {
     });
 
     template.find('.inline-drawer-content').css('display', 'none'); //entries start collapsed
+
+    function updatePosOrdDisplay(uid) {
+        // display position/order info left of keyword box
+        let entry = data.entries[uid]
+        let posText = entry.position
+        console.log(posText)
+        switch (entry.position) {
+            case 0:
+                posText = '↑CD';
+                break
+            case 1:
+                posText = 'CD↓';
+                break
+            case 2:
+                posText = '↑AN';
+                break
+            case 3:
+                posText = 'AN↓';
+                break
+            case 4:
+                posText = `@D${entry.depth}`;
+                break
+        }
+        template.find(".world_entry_form_position_value").text(`(${posText} ${entry.order})`);
+    }
 
     return template;
 }
