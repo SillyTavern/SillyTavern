@@ -526,8 +526,10 @@ function applyChatWidth(type) {
         //document.documentElement.style.setProperty('--sheldWidth', power_user.chat_width);
     } else {
         //this is to prevent the slider from updating page in real time
-        $("#chat_width_slider").off('mouseup touchend').on('mouseup touchend', () => {
+        $("#chat_width_slider").off('mouseup touchend').on('mouseup touchend', async () => {
+            await delay(1);
             document.documentElement.style.setProperty('--sheldWidth', `${power_user.chat_width}vw`);
+            await delay(1);
         })
     }
 
