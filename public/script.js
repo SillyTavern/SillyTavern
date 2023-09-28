@@ -7712,6 +7712,7 @@ jQuery(async function () {
         }
 
         else if (id == "option_regenerate") {
+            closeMessageEditor();
             if (is_send_press == false) {
                 //hideSwipeButtons();
 
