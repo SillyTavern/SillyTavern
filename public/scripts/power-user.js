@@ -527,6 +527,8 @@ function applyChatWidth(type) {
     } else {
         //this is to prevent the slider from updating page in real time
         $("#chat_width_slider").off('mouseup touchend').on('mouseup touchend', async () => {
+            // This is a hack for Firefox to let it render before applying the block width.
+            // Otherwise it takes the incorrect slider position with the new value AFTER the resizing.
             await delay(1);
             document.documentElement.style.setProperty('--sheldWidth', `${power_user.chat_width}vw`);
             await delay(1);
