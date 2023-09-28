@@ -1,0 +1,30 @@
+.blip-mixer-div {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    padding: 5px;
+    background-color: rgba(38, 38, 38, 0.5);
+    border: 1px rgb(75, 75, 75) solid;
+    border-radius: 10px;
+}
+
+.blip-mixer-element {
+    height: 60px;
+    float: left;
+    margin-right: 10px;
+    label {
+        text-align: top;
+    }
+    input {
+        margin-top: 15px;
+    }
+}
+
+.blip-mixer-mute {
+    width: 20%;
+}
+
+.blip-mixer-volume {
+    width: 75%;
+}

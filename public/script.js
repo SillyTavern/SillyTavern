@@ -247,6 +247,8 @@ export {
     extension_prompt_types,
     mesForShowdownParse,
     printCharacters,
+    isOdd,
+    countOccurrences
 }
 
 // Allow target="_blank" in links

@@ -19,6 +19,18 @@
                         <audio id="blip_audio" controls src="">
                     </div>
                 </div>
+                <div class="blip-mixer-div">
+                    <div class="blip-mixer-element blip-mixer-mute">
+                        <label for="blip_audio_mute" class="audio-label">Mute</label>
+                        <div id="blip_audio_mute" class="menu_button audio-mute-button">
+                            <i class="fa-solid fa-volume-high fa-lg" id="blip_audio_mute_icon"></i>
+                        </div>
+                    </div>
+                    <div class="blip-mixer-element blip-mixer-volume">
+                        <label for="blip_audio_volume_slider" class="audio-label">Vol <span id="blip_audio_volume"></span></label>
+                        <input type="range" class ="audio-slider" id ="blip_audio_volume_slider" value ="0" maxlength ="100">
+                    </div>
+                </div>
             </div>  
             <h4 class="center">Characters Voice Mapping</h4>
             <div>
@@ -91,12 +103,30 @@
                     <h4>Audio Settings</h4>
                 </div>
                 <div>
+                    <label for="blip_audio_volume_multiplier">
+                        Volume multiplier (<span id="blip_audio_volume_multiplier_value"></span>%)
+                    </label>
+                    <input id="blip_audio_volume_multiplier" type="range" min="0" max="100" step="1" value="100" />
+                    <small>
+                        Percent multiplier to global volume.
+                    </small>
+                </div>
+                <div>
+                    <label for="blip_audio_speed">
+                        Audio speed (<span id="blip_audio_speed_value"></span> ms)
+                    </label>
+                    <input id="blip_audio_speed" type="range" min="0" max="1000" step="10" value="10" />
+                    <small>
+                        Delay between each blip play.
+                    </small>
+                </div>
+                <div>
                     <label for="blip_audio_origin">
                         Blip sound origin
                     </label>
                     <select id="blip_audio_origin">
-                        <option value="file">file</option>
                         <option value="generated">generated</option>
+                        <option value="file">file</option>
                     </select>
                     <small>
                         Tips: blip file are in assets/blip/ folder.
@@ -104,7 +134,7 @@
                 </div>
                 <div id="blip_file_settings">
                     <div>
-                        <label for="blip_origin">
+                        <label for="blip_file_asset_select">
                             Audio File Asset
                         </label>
                         <select id="blip_file_asset_select">
@@ -113,21 +143,29 @@
                         </select>
                     </div>
                     <div>
-                        <label for="blip_audio_speed">
-                            Audio speed (<span id="blip_audio_speed_value"></span> ms)
-                        </label>
-                        <input id="blip_audio_speed" type="range" min="0" max="1000" step="10" value="10" />
-                        <small>
-                            Delay between each blip play.
-                        </small>
-                    </div>
-                    <div>
                         <label for="blip_audio_pitch">
                             Pitch (<span id="blip_audio_pitch_value"></span>)
                         </label>
-                        <input id="blip_audio_pitch" type="range" min="-10" max="10" step="0.5" value="0" />
+                        <input id="blip_audio_pitch" type="range" min="0.3" max="4" step="0.1" value="1" />
                         <small>
-                            TODO
+                            Lower/increase sound rate for pitch change.
+                        </small>
+                    </div>
+                    <div>
+                        <label class="checkbox_label" for="blip_audio_play_full">
+                            <input type="checkbox" id="blip_audio_play_full" name="blip_audio_wait">
+                            <small>Play entire blip before starting another one</small>
+                        </label>
+                    </div>
+                </div>
+                <div id="blip_generated_settings">
+                    <div>
+                        <label for="blip_generated_frequency">
+                            Note Frequency (<span id="blip_generated_frequency_value"></span>)
+                        </label>
+                        <input id="blip_generated_frequency" type="range" min="17" max="7000" step="1" value="440" />
+                        <small>
+                            440 Hz is a standard middle-A note.
                         </small>
                     </div>
                 </div>
