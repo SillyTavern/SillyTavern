@@ -19,6 +19,7 @@ import {
     getTextGenUrlSourceId,
     isMancer,
     isAphrodite,
+    textgen_types,
 } from "./scripts/textgen-settings.js";
 
 import {
@@ -2325,7 +2326,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         return;
     }
 
-    if (main_api == 'textgenerationwebui' && textgenerationwebui_settings.streaming && !textgenerationwebui_settings.streaming_url) {
+    if (
+        main_api == 'textgenerationwebui' &&
+        textgenerationwebui_settings.streaming &&
+        textgenerationwebui_settings.type === textgen_types.OOBA &&
+        !textgenerationwebui_settings.streaming_url) {
         toastr.error('Streaming URL is not set. Look it up in the console window when starting TextGen Web UI');
         is_send_press = false;
         return;
