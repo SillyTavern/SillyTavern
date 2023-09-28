@@ -1875,60 +1875,80 @@
                     </div>
                     <div id="textgenerationwebui_api" style="display: none;position: relative;">
                         <form action="javascript:void(null);" method="post" enctype="multipart/form-data">
-                            <span data-i18n="If you are using:"> If you are using:</span>
-                            <div class="flex-container indent20p">
-                                <a href="https://github.com/oobabooga/text-generation-webui" target="_blank">
-                                    oobabooga/text-generation-webui
-                                </a>
-                                <span data-i18n="Make sure you run it with">
-                                    Make sure you run it with <tt>--api</tt> flag
-                                </span>
-                            </div>
-                            <div class="flex-container indent20p">
-                                <a href="https://mancer.tech/" target="_blank">
-                                    Mancer AI
-                                </a>
-                                <label class="checkbox_label" for="use-mancer-api-checkbox">
-                                    <span data-i18n="Use API key (Only required for Mancer)">
-                                        Click this box (and add your API key!):
-                                    </span>
-                                    <input id="use-mancer-api-checkbox" type="checkbox" />
-                                </label>
-                            </div>
                             <div>
-                                <div id="mancer_api_subpanel" class="flex-container flexFlowColumn" style="display:none;">
-                                    <h4 data-i18n="Mancer API key">Mancer API key</h4>
-                                    <div class="flex-container">
-                                        <input id="api_key_mancer" name="api_key_mancer" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
-                                        <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_mancer">
-                                        </div>
-                                    </div>
-                                    <div data-for="api_key_mancer" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
-                                        For privacy reasons, your API key will be hidden after you reload the page.
-                                    </div>
-                                    <div class="flex1">
-                                        <h4>Mancer Model</h4>
-                                        <select id="mancer_model"></select>
-                                        <h4 data-i18n="Mancer API url">Mancer API URL</h4>
-                                        <small data-i18n="Example: https://neuro.mancer.tech/webui/MODEL/api">Example: https://neuro.mancer.tech/webui/MODEL/api</small>
-                                        <input id="mancer_api_url_text" name="mancer_api_url" class="text_pole wide100p" maxlength="500" value="" autocomplete="off">
-                                    </div>
-                                </div>
-                                <div id="tgwebui_api_subpanel" class="flex-container flexFlowColumn">
-                                    <div class="flex1">
-                                        <h4 data-i18n="Blocking API url">Blocking API URL</h4>
-                                        <small data-i18n="Example: http://127.0.0.1:5000/api ">Example: http://127.0.0.1:5000/api </small>
-                                        <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="ooba_blocking">
-                                    </div>
-                                    <div class="flex1">
-                                        <h4 data-i18n="Streaming API url">Streaming API URL</h4>
-                                        <small data-i18n="Example: ws://127.0.0.1:5005/api/v1/stream">Example: ws://127.0.0.1:5005/api/v1/stream </small>
-                                        <input id="streaming_url_textgenerationwebui" type="text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="ooba_streaming">
-                                    </div>
-                                </div>
-                                <div id="api_button_textgenerationwebui" class="menu_button" type="submit" data-i18n="Connect" data-server-connect="ooba_blocking,ooba_streaming">Connect</div>
-                                <div id="api_loading_textgenerationwebui" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
+                                <h4>API Type</h4>
+                                <select id="textgen_type">
+                                    <option value="ooba">Default (oobabooga)</option>
+                                    <option value="mancer">Mancer</option>
+                                    <option value="aphrodite">Aphrodite</option>
+                                </select>
                             </div>
+                            <div data-tg-type="mancer" class="flex-container flexFlowColumn">
+                                <div class="flex-container flexFlowColumn">
+                                    <a href="https://mancer.tech/" target="_blank">
+                                        Mancer AI
+                                    </a>
+                                </div>
+                                <h4 data-i18n="Mancer API key">Mancer API key</h4>
+                                <div class="flex-container">
+                                    <input id="api_key_mancer" name="api_key_mancer" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
+                                    <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_mancer">
+                                    </div>
+                                </div>
+                                <div data-for="api_key_mancer" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
+                                    For privacy reasons, your API key will be hidden after you reload the page.
+                                </div>
+                                <div class="flex1">
+                                    <h4>Mancer Model</h4>
+                                    <select id="mancer_model"></select>
+                                    <h4 data-i18n="Mancer API url">Mancer API URL</h4>
+                                    <small data-i18n="Example: https://neuro.mancer.tech/webui/MODEL/api">Example: https://neuro.mancer.tech/webui/MODEL/api</small>
+                                    <input id="mancer_api_url_text" name="mancer_api_url" class="text_pole wide100p" maxlength="500" value="" autocomplete="off">
+                                </div>
+                            </div>
+                            <div data-tg-type="ooba" class="flex-container flexFlowColumn">
+                                <div class="flex-container flexFlowColumn">
+                                    <a href="https://github.com/oobabooga/text-generation-webui" target="_blank">
+                                        oobabooga/text-generation-webui
+                                    </a>
+                                    <span data-i18n="Make sure you run it with">
+                                        Make sure you run it with <tt>--api</tt> flag
+                                    </span>
+                                </div>
+                                <div class="flex1">
+                                    <h4 data-i18n="Blocking API url">Blocking API URL</h4>
+                                    <small data-i18n="Example: http://127.0.0.1:5000/api ">Example: http://127.0.0.1:5000/api </small>
+                                    <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="ooba_blocking">
+                                </div>
+                                <div class="flex1">
+                                    <h4 data-i18n="Streaming API url">Streaming API URL</h4>
+                                    <small data-i18n="Example: ws://127.0.0.1:5005/api/v1/stream">Example: ws://127.0.0.1:5005/api/v1/stream </small>
+                                    <input id="streaming_url_textgenerationwebui" type="text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="ooba_streaming">
+                                </div>
+                            </div>
+                            <div data-tg-type="aphrodite">
+                                <div class="flex-container flexFlowColumn">
+                                    <a href="https://github.com/oobabooga/text-generation-webui" target="_blank">
+                                        PygmalionAI/aphrodite-engine
+                                    </a>
+                                </div>
+                                <h4 data-i18n="Aphrodite API key">Aphrodite API key</h4>
+                                <div class="flex-container">
+                                    <input id="api_key_aphrodite" name="api_key_aphrodite" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
+                                    <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_aphrodite">
+                                    </div>
+                                </div>
+                                <div data-for="api_key_aphrodite" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
+                                    For privacy reasons, your API key will be hidden after you reload the page.
+                                </div>
+                                <div class="flex1">
+                                    <h4 data-i18n="API url">API URL</h4>
+                                    <small data-i18n="Example: http://127.0.0.1:5000/api ">Example: http://127.0.0.1:5000/api </small>
+                                    <input id="aphrodite_api_url_text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="aphrodite">
+                                </div>
+                            </div>
+                            <div id="api_button_textgenerationwebui" class="menu_button" type="submit" data-i18n="Connect" data-server-connect="ooba_blocking,ooba_streaming,aphrodite">Connect</div>
+                            <div id="api_loading_textgenerationwebui" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
                         </form>
                         <div class="online_status4">
                             <div class="online_status_indicator4"></div>
