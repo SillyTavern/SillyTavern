@@ -46,7 +46,7 @@ let abort_animation = false;
 // Define a context for the Web Audio API
 let audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
-
+let user_message_to_render = -1;
 
 //#############################//
 //  Extension UI and Settings  //
@@ -647,6 +647,11 @@ async function moduleWorker() {
     if (moduleEnabled) {
         updateCharactersList();
         updateBlipAssetsList();
+
+        if (user_message_to_render != -1) {
+            processMessage(user_message_to_render);
+            user_message_to_render = -1;
+        }
     }
 }
 
@@ -706,9 +711,8 @@ jQuery(async () => {
     eventSource.on(event_types.MESSAGE_RECEIVED, (chat_id) => hyjackMessage(chat_id));
     eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, (chat_id) => processMessage(chat_id));
 
-    
     eventSource.on(event_types.MESSAGE_SENT, (chat_id) => hyjackMessage(chat_id));
-    eventSource.on(event_types.USER_MESSAGE_RENDERED, (chat_id) => processMessage(chat_id));
+    eventSource.on(event_types.USER_MESSAGE_RENDERED, (chat_id) => {user_message_to_render = chat_id;});
 
     const wrapper = new ModuleWorkerWrapper(moduleWorker);
     setInterval(wrapper.update.bind(wrapper), UPDATE_INTERVAL);
