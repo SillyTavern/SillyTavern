@@ -13,7 +13,7 @@ TODO:
     - change setting when selecting existing character voicemaps OK
     - Auto-save on change OK
     - Add user message management OK
-    - Add same option as TTS text
+    - Add same option as TTS text OK
 */
 
 import { saveSettingsDebounced, event_types, eventSource, getRequestHeaders, hideSwipeButtons, showSwipeButtons, scrollChatToBottom, messageFormatting, isOdd, countOccurrences } from "../../../script.js";
