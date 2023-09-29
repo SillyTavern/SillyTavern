@@ -3,7 +3,7 @@ TODO:
 - Security
     - Prevent swipe during streaming OK
     - Handle special text styling while streaming OK
-    - group mode break, need to make generation wait or queue
+    - group mode break, need to make generation wait or queue OK
     - Detect regenerate call to stop animation
 - Features
     - apply pitch change OK
@@ -39,11 +39,14 @@ let is_animation_pause = false;
 let current_multiplier = 1.0;
 
 let chat_buffer = {};
+let chat_queue = [];
 
 let abort_animation = false;
 
 // Define a context for the Web Audio API
 let audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+
 
 //#############################//
 //  Extension UI and Settings  //
@@ -345,17 +348,29 @@ async function hyjackMessage(chat_id) {
         return;
     }
 
-    eventSource.emit(event_types.MESSAGE_RECEIVED, 0);
+    //eventSource.emit(event_types.MESSAGE_RECEIVED, 0);
 
     // Hyjack char message
     const message = getContext().chat[chat_id].mes;
     getContext().chat[chat_id].mes = "";
-    const char = getContext().chat[chat_id].name;
 
+    // Save message for rendering
+    chat_buffer[chat_id] = message;
+
+    const char = getContext().chat[chat_id].name;
     console.debug(DEBUG_PREFIX,"Hyjacked from",char,"message:", message);
 
-    current_chat_id = chat_id;
-    chat_buffer[chat_id] = message;
+    // Wait turn
+    chat_queue.push(chat_id);
+
+    while(is_in_text_animation || chat_queue[0] != chat_id) {
+        console.debug(DEBUG_PREFIX,"A character is talking, waiting for turn of", chat_id, "in",chat_queue);
+        await delay(1);
+    }
+    
+    is_in_text_animation = true;
+    console.debug(DEBUG_PREFIX,"Now turn of", chat_id, "in",chat_queue);
+    chat_queue.shift();
 }
 
 async function processMessage(chat_id) {
@@ -366,12 +381,6 @@ async function processMessage(chat_id) {
     // Ignore first message
     if (chat_id == 0)
         return;
-
-    // DBG
-    if (chat_id !== current_chat_id) {
-        console.error(DEBUG_PREFIX,"Message hyjacked chat id different from event one!");
-        return;
-    }
 
     const current_message = chat_buffer[chat_id];
     const chat = getContext().chat;
@@ -390,7 +399,7 @@ async function processMessage(chat_id) {
     console.debug(DEBUG_PREFIX,div_dom,message_dom);
 
     let text_speed = extension_settings.blip.voiceMap[character]["textSpeed"] / 1000;
-    is_in_text_animation = true;
+    //is_in_text_animation = true;
 
     // TODO: manage different type of audio styles
     const min_speed_multiplier = extension_settings.blip.voiceMap[character]["minSpeedMultiplier"];
@@ -420,6 +429,8 @@ async function processMessage(chat_id) {
     }
     let previous_char = "";
     let current_string = ""
+    
+    //scrollChatToBottom();
     for(const i in current_message) {
 
         // Finish animation by user abort click
@@ -468,16 +479,14 @@ async function processMessage(chat_id) {
             await delay(phrase_delay);
             is_animation_pause = false;
         }
-        
-        scrollChatToBottom();
     }
-
-    is_in_text_animation = false;
     abort_animation = false;
 
     message_dom.closest(".mes_block").find(".mes_buttons").css("display", "none");
     showSwipeButtons();
     scrollChatToBottom();
+    
+    is_in_text_animation = false;
 
     //$(".mes[mesid='" + chat_id + "']").remove();
     //messageEditDone(message_dom);
@@ -696,6 +705,10 @@ jQuery(async () => {
 
     eventSource.on(event_types.MESSAGE_RECEIVED, (chat_id) => hyjackMessage(chat_id));
     eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, (chat_id) => processMessage(chat_id));
+
+    
+    eventSource.on(event_types.MESSAGE_SENT, (chat_id) => hyjackMessage(chat_id));
+    eventSource.on(event_types.USER_MESSAGE_RENDERED, (chat_id) => processMessage(chat_id));
 
     const wrapper = new ModuleWorkerWrapper(moduleWorker);
     setInterval(wrapper.update.bind(wrapper), UPDATE_INTERVAL);
