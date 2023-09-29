@@ -338,6 +338,26 @@ export function formatInstructModePrompt(name, isImpersonate, promptBias, name1,
     return text.trimEnd() + (includeNames ? '' : separator);
 }
 
+/**
+ * Select context template matching instruct preset.
+ * @param {string} name Preset name.
+ */
+function selectMatchingContextTemplate(name) {
+    let foundMatch = false;
+    for (const context_preset of context_presets) {
+        // If context template matches the instruct preset
+        if (context_preset.name === name) {
+            foundMatch = true;
+            selectContextPreset(context_preset.name);
+            break;
+        }
+    }
+    if (!foundMatch) {
+        // If no match was found, select default context preset
+        selectContextPreset(power_user.default_context);
+    }
+}
+
 jQuery(() => {
     $('#instruct_set_default').on('click', function () {
         if (power_user.instruct.preset === power_user.default_instruct) {
@@ -356,7 +376,7 @@ jQuery(() => {
     $('#instruct_enabled').on('change', function () {
         // When instruct mode gets enabled, select context template matching selected instruct preset
         if (power_user.instruct.enabled) {
-            $('#instruct_presets').trigger('change');
+            selectMatchingContextTemplate(power_user.instruct.preset);
         // When instruct mode gets disabled, select default context preset
         } else {
             selectContextPreset(power_user.default_context);
@@ -364,7 +384,7 @@ jQuery(() => {
     });
 
     $('#instruct_presets').on('change', function () {
-        const name = $(this).find(':selected').val();
+        const name = String($(this).find(':selected').val());
         const preset = instruct_presets.find(x => x.name === name);
 
         if (!preset) {
@@ -386,19 +406,7 @@ jQuery(() => {
         });
 
         // Select matching context template
-        let foundMatch = false;
-        for (const context_preset of context_presets) {
-            // If context template matches the instruct preset
-            if (context_preset.name === name) {
-                foundMatch = true;
-                selectContextPreset(context_preset.name);
-                break;
-            }
-        }
-        if (!foundMatch) {
-            // If no match was found, select default context preset
-            selectContextPreset(power_user.default_context);
-        }
+        selectMatchingContextTemplate(name);
 
         highlightDefaultPreset();
     });

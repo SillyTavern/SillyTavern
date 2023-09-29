@@ -15,6 +15,8 @@ async function getVector(source, text) {
             return require('./openai-vectors').getOpenAIVector(text);
         case 'transformers':
             return require('./embedding').getTransformersVector(text);
+        case 'palm':
+            return require('./palm-vectors').getPaLMVector(text);
     }
 
     throw new Error(`Unknown vector source ${source}`);
