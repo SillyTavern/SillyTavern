@@ -4,6 +4,7 @@ TODO:
     - Prevent swipe during streaming OK
     - Handle special text styling while streaming OK
     - group mode break, need to make generation wait or queue
+    - Detect regenerate call to stop animation
 - Features
     - apply pitch change OK
     - generate sound with JS OK
@@ -11,6 +12,7 @@ TODO:
     - add wait for end of audio option OK
     - change setting when selecting existing character voicemaps
     - Add feedback to apply button
+    - Add user message management
 Ideas:
     - Add same option as TTS text
 */
