@@ -49,136 +49,182 @@
             <h4 class="center">Characters Voice Mapping</h4>
             <div>
                 <label>Voice Map (debug infos)</label>
-                <textarea id="blip_voice_map" type="text" class="text_pole textarea_compact" rows="4"
+                <textarea readonly id="blip_voice_map" type="text" class="text_pole textarea_compact" rows="4"
                     placeholder="Voice map will appear here for debug purpose"></textarea>
             </div>
             <div>
-                <div class="background_controls">
-                    <label for="blip_character_select">Character:</label>
-                    <select id="blip_character_select">
-                        <!-- Populated by JS -->
-                    </select>
-                    <!--
-                    <div class="blip_buttons">
-                        <input id="blip_apply" class="menu_button" type="submit" value="Apply" />
+                <div class="blip-parameter">
+                    <div class="blip-parameter-title">
+                        <label for="blip_character_select">Character:</label>
                     </div>
-                    -->
-                    <div id="blip_delete" class="menu_button">
-                        Remove
+                    <div class="blip-character-select-div">
+                        <select id="blip_character_select">
+                            <!-- Populated by JS -->
+                        </select>
+                        <!--
+                        <div class="blip_buttons">
+                            <input id="blip_apply" class="menu_button" type="submit" value="Apply" />
+                        </div>
+                        -->
+                        <div id="blip_delete" class="menu_button">
+                            Remove
+                        </div>
                     </div>
                 </div>
                 <div>
                     <h4>Animation Settings</h4>
                 </div>
-                <div>
-                    <label for="blip_text_speed">
-                        Text speed (<span id="blip_text_speed_value"></span> ms)
-                    </label>
-                    <input id="blip_text_speed" type="range" min="0" max="100" step="5" value="10" />
-                    <small>
-                        Delay between each character is printed.
-                    </small>
-                </div>
-                <div>
-                    <label for="blip_min_speed_multiplier">
-                        Min speed multiplier (<span id="blip_min_speed_multiplier_value"></span>x)
-                    </label>
-                    <input id="blip_min_speed_multiplier" type="range" min="0.5" max="1" step="0.1" value="1" />
-                    <small>
-                        Minimal multiplier that can be apply to text/audio speed (1 is no change).
-                    </small>
-                </div>
-                <div>
-                    <label for="blip_max_speed_multiplier">
-                        Max speed multiplier (<span id="blip_max_speed_multiplier_value"></span>x)
-                    </label>
-                    <input id="blip_max_speed_multiplier" type="range" min="1" max="1.5" step="0.1" value="1" />
-                    <small>
-                        Maximal multiplier that can be apply to text/audio speed (1 is no change).
-                    </small>
-                </div>
-                <div>
-                    <label for="blip_comma_delay">
-                        Comma delay (<span id="blip_comma_delay_value"></span> ms)
-                    </label>
-                    <input id="blip_comma_delay" type="range" min="0" max="1000" step="10" value="0" />
-                    <small>
-                        Delay to wait after printing "," or ";" (pause blip sound).
-                    </small>
-                </div>
-                <div>
-                    <label for="blip_phrase_delay">
-                        Phrase delay (<span id="blip_phrase_delay_value"></span> ms)
-                    </label>
-                    <input id="blip_phrase_delay" type="range" min="0" max="1000" step="10" value="0" />
-                    <small>
-                        Delay to wait after printing "!" or "?" or "." (pause blip sound).
-                    </small>
-                </div>
-                <div>
-                    <h4>Audio Settings</h4>
-                </div>
-                <div>
-                    <label for="blip_audio_volume_multiplier">
-                        Volume multiplier (<span id="blip_audio_volume_multiplier_value"></span>%)
-                    </label>
-                    <input id="blip_audio_volume_multiplier" type="range" min="0" max="100" step="1" value="100" />
-                    <small>
-                        Percent multiplier to global volume.
-                    </small>
-                </div>
-                <div>
-                    <label for="blip_audio_speed">
-                        Audio speed (<span id="blip_audio_speed_value"></span> ms)
-                    </label>
-                    <input id="blip_audio_speed" type="range" min="0" max="1000" step="10" value="10" />
-                    <small>
-                        Delay between each blip play.
-                    </small>
-                </div>
-                <div>
-                    <label for="blip_audio_origin">
-                        Blip sound origin
-                    </label>
-                    <select id="blip_audio_origin">
-                        <option value="generated">generated</option>
-                        <option value="file">file</option>
-                    </select>
-                    <small>
-                        Tips: blip file are in assets/blip/ folder.
-                    </small>
-                </div>
-                <div id="blip_file_settings">
-                    <div>
-                        <label for="blip_file_asset_select">
-                            Audio File Asset
+                <div class="blip-parameter">
+                    <div class="blip-parameter-title">
+                        <label for="blip_text_speed">
+                            Text speed <br/>(<span id="blip_text_speed_value"></span> ms)
                         </label>
-                        <select id="blip_file_asset_select">
-                            <option value="none">Select file</option>
-                            <!-- Populated by JS -->
-                        </select>
                     </div>
-                    <div>
-                        <label for="blip_audio_pitch">
-                            Pitch (<span id="blip_audio_pitch_value"></span>)
-                        </label>
-                        <input id="blip_audio_pitch" type="range" min="0.3" max="4" step="0.1" value="1" />
+                    <div class="blip-slider-div">
+                        <input id="blip_text_speed" type="range" min="0" max="100" step="5" value="10" />
                         <small>
-                            Lower/increase sound rate for pitch change.
+                            Delay between each character is printed.
                         </small>
                     </div>
-                    <div>
-                        <label class="checkbox_label" for="blip_audio_play_full">
-                            <input type="checkbox" id="blip_audio_play_full" name="blip_audio_wait">
-                            <small>Play entire blip before starting another one</small>
+                </div>
+                <div class="blip-parameter">
+                    <div class="blip-parameter-title">
+                        <label for="blip_min_speed_multiplier">
+                            Min speed multiplier <br/>(<span id="blip_min_speed_multiplier_value"></span>x)
                         </label>
                     </div>
+                    <div class="blip-slider-div">
+                        <input id="blip_min_speed_multiplier" type="range" min="0.5" max="1" step="0.1" value="1" />
+                        <small>
+                            Minimal multiplier that can be apply to text/audio speed (1 is no change).
+                        </small>
+                    </div>
                 </div>
-                <div id="blip_generated_settings">
-                    <div>
-                        <label for="blip_generated_frequency">
-                            Note Frequency (<span id="blip_generated_frequency_value"></span>)
+                <div class="blip-parameter">
+                    <div class="blip-parameter-title">
+                        <label for="blip_max_speed_multiplier">
+                            Max speed multiplier <br/>(<span id="blip_max_speed_multiplier_value"></span>x)
                         </label>
+                    </div>
+                    <div class="blip-slider-div">
+                        <input id="blip_max_speed_multiplier" type="range" min="1" max="1.5" step="0.1" value="1" />
+                        <small>
+                            Maximal multiplier that can be apply to text/audio speed (1 is no change).
+                        </small>
+                    </div>
+                </div>
+                <div class="blip-parameter">
+                    <div class="blip-parameter-title">
+                        <label for="blip_comma_delay">
+                            Comma delay <br/>(<span id="blip_comma_delay_value"></span> ms)
+                        </label>
+                    </div>
+                    <div class="blip-slider-div">
+                        <input id="blip_comma_delay" type="range" min="0" max="1000" step="10" value="0" />
+                        <small>
+                            Delay to wait after printing "," or ";" (pause blip sound).
+                        </small>
+                    </div>
+                </div>
+                <div class="blip-parameter">
+                    <div class="blip-parameter-title">
+                        <label for="blip_phrase_delay">
+                            Phrase delay <br/>(<span id="blip_phrase_delay_value"></span> ms)
+                        </label>
+                    </div>
+                    <div class="blip-slider-div">
+                        <input id="blip_phrase_delay" type="range" min="0" max="1000" step="10" value="0" />
+                        <small>
+                            Delay to wait after printing "!" or "?" or "." (pause blip sound).
+                        </small>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="blip-parameter-section">Audio Settings</h4>
+                </div>
+                <div class="blip-parameter">
+                    <div class="blip-parameter-title">
+                        <label for="blip_audio_volume_multiplier">
+                            Volume multiplier <br/>(<span id="blip_audio_volume_multiplier_value"></span>%)
+                        </label>
+                    </div>
+                    <div class="blip-slider-div">
+                        <input id="blip_audio_volume_multiplier" type="range" min="0" max="100" step="1" value="100" />
+                        <small>
+                            Percent multiplier to global volume.
+                        </small>
+                    </div>
+                </div>
+                <div class="blip-parameter">
+                    <div class="blip-parameter-title">
+                        <label for="blip_audio_speed">
+                            Audio speed <br/>(<span id="blip_audio_speed_value"></span> ms)
+                        </label>
+                    </div>
+                    <div class="blip-slider-div">
+                        <input id="blip_audio_speed" type="range" min="0" max="1000" step="10" value="10" />
+                        <small>
+                            Delay between each blip play.
+                        </small>
+                    </div>
+                </div>
+                <div class="blip-parameter">
+                    <div class="blip-parameter-title">
+                        <label for="blip_audio_origin">
+                            Blip sound origin
+                        </label>
+                    </div>
+                    <div class="blip-slider-div">
+                        <select id="blip_audio_origin">
+                            <option value="generated">generated</option>
+                            <option value="file">file</option>
+                        </select>
+                        <small>
+                            Tips: blip file are in assets/blip/ folder.
+                        </small>
+                    </div>
+                </div>
+                <div id="blip_file_settings">
+                    <div class="blip-parameter">
+                        <div class="blip-parameter-title">
+                            <label for="blip_file_asset_select">
+                                Audio File Asset
+                            </label>
+                        </div>
+                        <div class="blip-slider-div">
+                            <select id="blip_file_asset_select">
+                                <option value="none">Select file</option>
+                                <!-- Populated by JS -->
+                            </select>
+                            <div>
+                                <label class="checkbox_label" for="blip_audio_play_full">
+                                    <input type="checkbox" id="blip_audio_play_full" name="blip_audio_wait">
+                                    <small>Play entire blip before starting another one</small>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="blip_file_settings" class="blip-parameter">
+                        <div class="blip-parameter-title">
+                            <label for="blip_audio_pitch">
+                                Pitch <br/>(<span id="blip_audio_pitch_value"></span>)
+                            </label>
+                        </div>
+                        <div class="blip-slider-div">
+                            <input id="blip_audio_pitch" type="range" min="0.3" max="4" step="0.1" value="1" />
+                            <small>
+                                Lower/increase sound rate for pitch change.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                <div id="blip_generated_settings" class="blip-parameter">
+                    <div class="blip-parameter-title">
+                        <label for="blip_generated_frequency">
+                            Note Frequency <br/>(<span id="blip_generated_frequency_value"></span>)
+                        </label>
+                    </div>
+                    <div class="blip-slider-div">
                         <input id="blip_generated_frequency" type="range" min="17" max="7000" step="1" value="440" />
                         <small>
                             440 Hz is a standard middle-A note.

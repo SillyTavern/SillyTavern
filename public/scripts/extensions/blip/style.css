@@ -7,6 +7,7 @@
     background-color: rgba(38, 38, 38, 0.5);
     border: 1px rgb(75, 75, 75) solid;
     border-radius: 10px;
+    margin: 1em;
 }
 
 .blip-mixer-element {
@@ -27,4 +28,44 @@
 
 .blip-mixer-volume {
     width: 75%;
+}
+
+.blip-character-select-div {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    margin: 1em;
+}
+
+#blip_character_select {
+    margin-bottom: 0;
+    margin-right: 1em;
+}
+
+.blip-parameter {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #2a2a2a;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+}
+
+.blip-parameter-title {
+    width: 40%;
+    box-sizing: border-box;
+    padding: 1em;
+    margin: 0;
+    margin-right: 0px;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    color: white;
+}
+
+.blip-slider-div {
+    width: 60%;
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    color: white;
 }
