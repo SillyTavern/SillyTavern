@@ -498,7 +498,7 @@ function updateVoiceMapText() {
 
 const delay = s => new Promise(res => setTimeout(res, s*1000));
 
-async function hyjackMessage(chat_id) {
+async function hyjackMessage(chat_id, is_user=false) {
     if (!extension_settings.blip.enabled)
         return;
 
@@ -510,6 +510,11 @@ async function hyjackMessage(chat_id) {
 
     if (extension_settings.blip.voiceMap[character] === undefined) {
         console.debug(DEBUG_PREFIX, "Character",character,"has no blip voice assigned in voicemap");
+        return;
+    }
+
+    if (is_user && !extension_settings.blip.enableUser) {
+        console.debug(DEBUG_PREFIX, "User blip is disable, nothing to do");
         return;
     }
 
@@ -840,7 +845,8 @@ async function moduleWorker() {
         updateBlipAssetsList();
 
         if (user_message_to_render != -1) {
-            processMessage(user_message_to_render);
+            if (extension_settings.blip.enableUser)
+                processMessage(user_message_to_render);
             user_message_to_render = -1;
         }
     }
@@ -909,7 +915,7 @@ jQuery(async () => {
     eventSource.on(event_types.MESSAGE_RECEIVED, (chat_id) => hyjackMessage(chat_id));
     eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, (chat_id) => processMessage(chat_id));
 
-    eventSource.on(event_types.MESSAGE_SENT, (chat_id) => hyjackMessage(chat_id));
+    eventSource.on(event_types.MESSAGE_SENT, (chat_id) => hyjackMessage(chat_id, true));
     eventSource.on(event_types.USER_MESSAGE_RENDERED, (chat_id) => {user_message_to_render = chat_id;});
 
     const wrapper = new ModuleWorkerWrapper(moduleWorker);
