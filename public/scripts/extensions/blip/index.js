@@ -10,10 +10,9 @@ TODO:
     - generate sound with JS OK
     - volume option OK
     - add wait for end of audio option OK
-    - change setting when selecting existing character voicemaps
-    - Add feedback to apply button
-    - Add user message management
-Ideas:
+    - change setting when selecting existing character voicemaps OK
+    - Auto-save on change OK
+    - Add user message management OK
     - Add same option as TTS text
 */
 
@@ -48,12 +47,19 @@ let audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
 let user_message_to_render = -1;
 
+let is_text_to_blip = true;
+let is_inside_asterisk = false;
+
 //#############################//
 //  Extension UI and Settings  //
 //#############################//
 
 const defaultSettings = {
     enabled: false,
+    enableUser: false,
+    onlyQuote: false,
+    ignoreAsterisk: false,
+
     audioMuted: true,
     audioVolume: 50,
 
@@ -67,6 +73,7 @@ const defaultSettings = {
     audioVolumeMultiplier: 100,
     audioSpeed: 80,
     audioPitch: 0,
+    audioPlayFull: false,
 
     generatedFrequency: 440,
     
@@ -83,6 +90,9 @@ function loadSettings() {
     }
 
     $("#blip_enabled").prop('checked', extension_settings.blip.enabled);
+    $("#blip_enable_user").prop('checked', extension_settings.blip.enableUser);
+    $("#blip_only_quoted").prop('checked', extension_settings.blip.onlyQuote);
+    $("#blip_ignore_asterisks").prop('checked', extension_settings.blip.ignoreAsterisk);
 
     if (extension_settings.blip.audioMuted) {
         $("#blip_audio_mute_icon").removeClass("fa-volume-high");
@@ -124,16 +134,38 @@ function loadSettings() {
     $('#blip_audio_pitch').val(extension_settings.blip.audioPitch);
     $('#blip_audio_pitch_value').text(extension_settings.blip.audioPitch);
 
+    $("#blip_audio_play_full").prop('checked', extension_settings.blip.audioPlayFull);
+
     $('#blip_generated_frequency').val(extension_settings.blip.generatedFrequency);
     $('#blip_generated_frequency_value').text(extension_settings.blip.generatedFrequency);
 
     updateVoiceMapText();
 }
 
+function warningCharacterNotSelected() {
+    toastr.warning("Character not selected.", DEBUG_PREFIX + " cannot apply change", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
+}
+
 async function onEnabledClick() {
     extension_settings.blip.enabled = $('#blip_enabled').is(':checked');
     saveSettingsDebounced();
 }
+
+async function onEnableUserClick() {
+    extension_settings.blip.enableUser = $('#blip_enable_user').is(':checked');
+    saveSettingsDebounced();
+}
+
+async function onOnlyQuotedClick() {
+    extension_settings.blip.onlyQuote = $('#blip_only_quoted').is(':checked');
+    saveSettingsDebounced();
+}
+
+async function onIgnoreAsteriskClick() {
+    extension_settings.blip.ignoreAsterisk = $('#blip_ignore_asterisks').is(':checked');
+    saveSettingsDebounced();
+}
+
 
 async function onAudioMuteClick() {
     extension_settings.blip.audioMuted = !extension_settings.blip.audioMuted;
@@ -151,38 +183,132 @@ async function onAudioVolumeChange() {
     saveSettingsDebounced();
 }
 
+async function onCharacterChange() {
+    const character = $("#blip_character_select").val();
+
+    if (character == "none") {
+        loadSettings();
+        return;
+    }
+
+    if (extension_settings.blip.voiceMap[character] === undefined) {
+        applySetting();
+        return;
+    }
+
+    const character_settings = extension_settings.blip.voiceMap[character]
+    
+    $('#blip_text_speed').val(character_settings.textSpeed);
+    $('#blip_text_speed_value').text(character_settings.textSpeed);
+
+    $('#blip_min_speed_multiplier').val(character_settings.minSpeedMultiplier);
+    $('#blip_min_speed_multiplier_value').text(character_settings.minSpeedMultiplier);
+
+    $('#blip_max_speed_multiplier').val(character_settings.maxSpeedMultiplier);
+    $('#blip_max_speed_multiplier_value').text(character_settings.maxSpeedMultiplier);
+
+    $('#blip_comma_delay').val(character_settings.commaDelay);
+    $('#blip_comma_delay_value').text(character_settings.commaDelay);
+
+    $('#blip_phrase_delay').val(character_settings.phraseDelay);
+    $('#blip_phrase_delay_value').text(character_settings.phraseDelay);
+
+    $('#blip_audio_volume_multiplier').val(character_settings.audioVolume);
+    $('#blip_audio_volume_multiplier_value').text(character_settings.audioVolume);
+
+    $('#blip_audio_speed').val(character_settings.audioSpeed);
+    $('#blip_audio_speed_value').text(character_settings.audioSpeed);
+
+    if (character_settings.audioOrigin == "file") {
+        $("#blip_audio_origin").val("file");
+        $("#blip_file_settings").show();
+        $("#blip_generated_settings").hide();
+
+        $("#blip_asset_select").val(character_settings.audioSettings.asset);
+
+        $('#blip_audio_pitch').val(character_settings.audioSettings.pitch);
+        $('#blip_audio_pitch_value').text(character_settings.audioSettings.pitch);
+        $("#blip_audio_play_full").prop('checked', character_settings.audioSettings.wait);
+    }
+
+    if (character_settings.audioOrigin == "generated") {
+        $("#blip_audio_origin").val("generated");
+        $("#blip_file_settings").hide();
+        $("#blip_generated_settings").show();
+
+        $('#blip_generated_frequency').val(character_settings.generatedFrequency);
+        $('#blip_generated_frequency_value').text(character_settings.generatedFrequency);
+    }
+}
+
 async function onMinSpeedChange() {
     extension_settings.blip.minSpeedMultiplier = Number($('#blip_min_speed_multiplier').val());
-    $("#blip_min_speed_multiplier_value").text(extension_settings.blip.minSpeedMultiplier)
-    saveSettingsDebounced()
+    $("#blip_min_speed_multiplier_value").text(extension_settings.blip.minSpeedMultiplier);
+    saveSettingsDebounced();
+
+    const character = $('#blip_character_select').val();
+    if (character == "none")
+        warningCharacterNotSelected();
+    else
+        applySetting();
 }
 
 async function onMaxSpeedChange() {
     extension_settings.blip.maxSpeedMultiplier = Number($('#blip_max_speed_multiplier').val());
     $("#blip_max_speed_multiplier_value").text(extension_settings.blip.maxSpeedMultiplier)
-    saveSettingsDebounced()
+    saveSettingsDebounced();
+    
+    const character = $('#blip_character_select').val();
+    if (character == "none")
+        warningCharacterNotSelected();
+    else
+        applySetting();
 }
 
 async function onCommaDelayChange() {
     extension_settings.blip.commaDelay = Number($('#blip_comma_delay').val());
     $("#blip_comma_delay_value").text(extension_settings.blip.commaDelay)
-    saveSettingsDebounced()
+    saveSettingsDebounced();
+    
+    const character = $('#blip_character_select').val();
+    if (character == "none")
+        warningCharacterNotSelected();
+    else
+        applySetting();
 }
 
 async function onPhraseDelayChange() {
     extension_settings.blip.phraseDelay = Number($('#blip_phrase_delay').val());
     $("#blip_phrase_delay_value").text(extension_settings.blip.phraseDelay)
-    saveSettingsDebounced()
+    saveSettingsDebounced();
+    
+    const character = $('#blip_character_select').val();
+    if (character == "none")
+        warningCharacterNotSelected();
+    else
+        applySetting();
 }
 
 async function onTextSpeedChange() {
     extension_settings.blip.textSpeed = Number($('#blip_text_speed').val());
     $("#blip_text_speed_value").text(extension_settings.blip.textSpeed)
-    saveSettingsDebounced()
+    saveSettingsDebounced();
+    
+    const character = $('#blip_character_select').val();
+    if (character == "none")
+        warningCharacterNotSelected();
+    else
+        applySetting();
 }
 
 async function onOriginChange() {
     const origin = $("#blip_audio_origin").val();
+    
+    const character = $('#blip_character_select').val();
+    if (character == "none")
+        warningCharacterNotSelected();
+    else
+        applySetting();
 
     if (origin == "file") {
         $("#blip_file_settings").show();
@@ -200,28 +326,63 @@ async function onOriginChange() {
 async function onGeneratedFrequencyChange() {
     extension_settings.blip.generatedFrequency = Number($('#blip_generated_frequency').val());
     $("#blip_generated_frequency_value").text(extension_settings.blip.generatedFrequency)
-    saveSettingsDebounced()
+    saveSettingsDebounced();
+    
+    const character = $('#blip_character_select').val();
+    if (character == "none")
+        warningCharacterNotSelected();
+    else
+        applySetting();
 }
 
 async function onAudioVolumeMultiplierChange() {
     extension_settings.blip.audioVolumeMultiplier = Number($('#blip_audio_volume_multiplier').val());
     $("#blip_audio_volume_multiplier_value").text(extension_settings.blip.audioVolumeMultiplier)
-    saveSettingsDebounced()
+    saveSettingsDebounced();
+    
+    const character = $('#blip_character_select').val();
+    if (character == "none")
+        warningCharacterNotSelected();
+    else
+        applySetting();
 }
 
 async function onAudioSpeedChange() {
     extension_settings.blip.audioSpeed = Number($('#blip_audio_speed').val());
     $("#blip_audio_speed_value").text(extension_settings.blip.audioSpeed)
-    saveSettingsDebounced()
+    saveSettingsDebounced();
+    
+    const character = $('#blip_character_select').val();
+    if (character == "none")
+        warningCharacterNotSelected();
+    else
+        applySetting();
 }
 
 async function onAudioPitchChange() {
     extension_settings.blip.audioPitch = Number($('#blip_audio_pitch').val());
     $("#blip_audio_pitch_value").text(extension_settings.blip.audioPitch)
-    saveSettingsDebounced()
+    saveSettingsDebounced();
+    
+    const character = $('#blip_character_select').val();
+    if (character == "none")
+        warningCharacterNotSelected();
+    else
+        applySetting();
 }
 
-async function onApplyClick() {
+async function onPlayFullClick() {
+    extension_settings.blip.audioPlayFull = $('#blip_audio_play_full').is(':checked');
+    saveSettingsDebounced();
+    
+    const character = $('#blip_character_select').val();
+    if (character == "none")
+        warningCharacterNotSelected();
+    else
+        applySetting();
+}
+
+async function applySetting() {
     let error = false;
     const character = $("#blip_character_select").val();
     const min_speed_multiplier = $("#blip_min_speed_multiplier").val();
@@ -277,6 +438,7 @@ async function onApplyClick() {
     updateVoiceMapText();
     console.debug(DEBUG_PREFIX, "Updated settings of ", character, ":", extension_settings.blip.voiceMap[character])
     saveSettingsDebounced();
+    toastr.info("Saved Blip settings.", DEBUG_PREFIX + " saved setting for "+character, { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
 }
 
 async function onDeleteClick() {
@@ -287,10 +449,13 @@ async function onDeleteClick() {
         return;
     }
 
+    $("#blip_character_select").val("none");
+
     delete extension_settings.blip.voiceMap[character];
     console.debug(DEBUG_PREFIX, "Deleted settings of ", character);
     updateVoiceMapText();
     saveSettingsDebounced();
+    toastr.info("Deleted.", DEBUG_PREFIX + " delete "+character+" from voice map.", { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true });
 }
 
 function updateVoiceMapText() {
@@ -397,6 +562,16 @@ async function processMessage(chat_id) {
     const div_dom = $(".mes[mesid='"+chat_id+"'");
     const message_dom = $(div_dom).children(".mes_block").children(".mes_text"); //$( ".last_mes").children(".mes_block").children(".mes_text");
     console.debug(DEBUG_PREFIX,div_dom,message_dom);
+    
+    const only_quote = extension_settings.blip.onlyQuote;
+    const ignore_asterisk = extension_settings.blip.ignoreAsterisk;
+
+    console.debug(DEBUG_PREFIX, "Only quote:", only_quote, "Ignore asterisk:", ignore_asterisk)
+
+    if (only_quote)
+        is_text_to_blip = false;
+    else
+        is_text_to_blip = true;
 
     let text_speed = extension_settings.blip.voiceMap[character]["textSpeed"] / 1000;
     //is_in_text_animation = true;
@@ -431,6 +606,8 @@ async function processMessage(chat_id) {
     let current_string = ""
     
     //scrollChatToBottom();
+    is_animation_pause = false;
+    is_inside_asterisk = false;
     for(const i in current_message) {
 
         // Finish animation by user abort click
@@ -443,6 +620,20 @@ async function processMessage(chat_id) {
         hideSwipeButtons();
         message_dom.closest(".mes_block").find(".mes_buttons").css("display", "none");
         const next_char = current_message[i]
+
+        // Only quote mode
+        if (next_char == '"' && only_quote) {
+            if (!(is_inside_asterisk && ignore_asterisk))
+                is_text_to_blip = !is_text_to_blip;
+        }
+
+        // Ignore asterisk mode
+        if (next_char == "*")
+            is_inside_asterisk = !is_inside_asterisk;
+        
+        if (is_inside_asterisk && ignore_asterisk) {
+            is_text_to_blip = false;
+        }
 
         // Change speed multiplier on end of phrase
         if (["!","?","."].includes(next_char) && previous_char != next_char) {
@@ -499,7 +690,7 @@ async function processMessage(chat_id) {
 
 async function playAudioFile(volume, speed, pitch, wait) {
     while (is_in_text_animation) {
-        if (is_animation_pause) {
+        if (is_animation_pause || !is_text_to_blip) {
             //console.debug(DEBUG_PREFIX,"Animation pause, waiting")
             await delay(0.01);
             continue;
@@ -523,7 +714,7 @@ async function playAudioFile(volume, speed, pitch, wait) {
 
 async function playGeneratedBlip(volume, speed, frequency) {
     while (is_in_text_animation) {
-        if (is_animation_pause) {
+        if (is_animation_pause || !is_text_to_blip) {
             await delay(0.01);
             continue;
         }
@@ -667,10 +858,16 @@ jQuery(async () => {
     loadSettings();
 
     $("#blip_enabled").on("click", onEnabledClick);
+    $("#blip_enable_user").on("click", onEnableUserClick);
+    $("#blip_only_quoted").on("click", onOnlyQuotedClick);
+    $("#blip_ignore_asterisks").on("click", onIgnoreAsteriskClick);
+
     $("#blip_audio").hide();
     
     $("#blip_audio_mute").on("click", onAudioMuteClick);
     $("#blip_audio_volume_slider").on("input", onAudioVolumeChange);
+
+    $("#blip_character_select").on("change", onCharacterChange);
 
     $("#blip_text_speed").on("input", onTextSpeedChange);
 
@@ -683,13 +880,14 @@ jQuery(async () => {
     $("#blip_audio_volume_multiplier").on("input", onAudioVolumeMultiplierChange);
     $("#blip_audio_speed").on("input", onAudioSpeedChange);
     $("#blip_audio_pitch").on("input", onAudioPitchChange);
+    $("#blip_audio_play_full").on("click", onPlayFullClick);
     
     $("#blip_audio_origin").on("change", onOriginChange);
 
     $("#blip_file_settings").hide();
     $("#blip_generated_frequency").on("input", onGeneratedFrequencyChange);
     
-    $("#blip_apply").on("click", onApplyClick);
+    //$("#blip_apply").on("click", onApplyClick);
     $("#blip_delete").on("click", onDeleteClick);
 
     $("#blip_audio").attr("src", "assets/blip/sfx-blipfemale.wav"); // DBG

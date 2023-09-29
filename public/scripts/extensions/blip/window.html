@@ -10,11 +10,25 @@
                     <input type="checkbox" id="blip_enabled" name="blip_enabled">
                     <small>Enabled</small>
                 </label>
+                <label class="checkbox_label" for="blip_enable_user">
+                    <input type="checkbox" id="blip_enable_user">
+                    <small>Blip user messages</small>
+                </label>
+                <label class="checkbox_label" for="blip_only_quoted">
+                    <input type="checkbox" id="blip_only_quoted">
+                    <small>Only blip for "quotes"</small>
+                </label>
+                <label class="checkbox_label" for="blip_ignore_asterisks">
+                    <input type="checkbox" id="blip_ignore_asterisks">
+                    <small>Ignore *text, even "quotes", inside asterisks*</small>
+                </label>
                 <div id="blip_debug_div">
+                    <!--
                     <label class="checkbox_label" for="blip_debug">
                         <input type="checkbox" id="blip_debug" name="blip_debug">
                         <small>Debug</small>
                     </label>
+                    -->
                     <div class="blip-ui-block">
                         <audio id="blip_audio" controls src="">
                     </div>
@@ -44,9 +58,11 @@
                     <select id="blip_character_select">
                         <!-- Populated by JS -->
                     </select>
+                    <!--
                     <div class="blip_buttons">
                         <input id="blip_apply" class="menu_button" type="submit" value="Apply" />
                     </div>
+                    -->
                     <div id="blip_delete" class="menu_button">
                         Remove
                     </div>
