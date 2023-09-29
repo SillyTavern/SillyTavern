@@ -352,7 +352,6 @@ async function hyjackMessage(chat_id) {
 
     // Hyjack char message
     const message = getContext().chat[chat_id].mes;
-    getContext().chat[chat_id].mes = "";
 
     // Save message for rendering
     chat_buffer[chat_id] = message;
@@ -371,6 +370,7 @@ async function hyjackMessage(chat_id) {
     is_in_text_animation = true;
     console.debug(DEBUG_PREFIX,"Now turn of", chat_id, "in",chat_queue);
     chat_queue.shift();
+    getContext().chat[chat_id].mes = ""; // Start rendered message empty
 }
 
 async function processMessage(chat_id) {
