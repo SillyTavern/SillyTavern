@@ -62,7 +62,7 @@ const defaultSettings = {
     onlyQuote: false,
     ignoreAsterisk: false,
 
-    showCurrentCharactersOnly: false,
+    showAllCharacters: false,
 
     audioMuted: true,
     audioVolume: 50,
@@ -98,7 +98,7 @@ function loadSettings() {
     $("#blip_only_quoted").prop('checked', extension_settings.blip.onlyQuote);
     $("#blip_ignore_asterisks").prop('checked', extension_settings.blip.ignoreAsterisk);
 
-    $("#blip_character_current_only").prop('checked', extension_settings.blip.showCurrentCharactersOnly);
+    $("#blip_show_all_characters").prop('checked', extension_settings.blip.showAllCharacters);
 
     if (extension_settings.blip.audioMuted) {
         $("#blip_audio_mute_icon").removeClass("fa-volume-high");
@@ -251,8 +251,8 @@ async function onCharacterRefreshClick() {
     $("#blip_character_select").val("none");
 }
 
-async function onCharacterCurrentOnlyClick() {
-    extension_settings.blip.showCurrentCharactersOnly = $('#blip_character_current_only').is(':checked');
+async function onShowAllCharactersClick() {
+    extension_settings.blip.showAllCharacters = $('#blip_show_all_characters').is(':checked');
     saveSettingsDebounced();
     updateCharactersList();
 }
@@ -825,7 +825,7 @@ function updateCharactersList() {
     if (current_characters.length == 0)
         return;
 
-    if (extension_settings.blip.showCurrentCharactersOnly) {
+    if (!extension_settings.blip.showAllCharacters) {
         let chat_members = [];
 
         // group mode
@@ -833,7 +833,11 @@ function updateCharactersList() {
             for(const i of context.groups) {
                 if (i.id == context.groupId) {
                     for(const j of i.members) {
-                        chat_members.push(j.replace(/\.[^/.]+$/, ""));
+                        let char_name = j.replace(/\.[^/.]+$/, "")
+                        if (char_name.includes("default_"))
+                            char_name = char_name.substring("default_".length);
+                        
+                        chat_members.push(char_name);
                         console.debug(DEBUG_PREFIX,"New group member:",j.replace(/\.[^/.]+$/, ""))
                     }
                 }
@@ -939,7 +943,7 @@ jQuery(async () => {
 
     $("#blip_character_select").on("change", onCharacterChange);
     $("#blip_character_refresh_button").on("click", onCharacterRefreshClick);
-    $("#blip_character_current_only").on("click", onCharacterCurrentOnlyClick);
+    $("#blip_show_all_characters").on("click", onShowAllCharactersClick);
 
     $("#blip_text_speed").on("input", onTextSpeedChange);
 
@@ -983,6 +987,9 @@ jQuery(async () => {
 
     eventSource.on(event_types.MESSAGE_SENT, (chat_id) => hyjackMessage(chat_id, true));
     eventSource.on(event_types.USER_MESSAGE_RENDERED, (chat_id) => {user_message_to_render = chat_id;});
+    
+    eventSource.on(event_types.CHAT_CHANGED, updateCharactersList);
+    eventSource.on(event_types.GROUP_UPDATED, updateCharactersList);
 
     const wrapper = new ModuleWorkerWrapper(moduleWorker);
     setInterval(wrapper.update.bind(wrapper), UPDATE_INTERVAL);
