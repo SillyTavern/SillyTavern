@@ -15,7 +15,8 @@ TODO:
     - Add user message management OK
     - Add same option as TTS text OK
     - Add a default setting OK
-    - Pitch variation, curve choice etc.
+    - Pitch variation OK
+    - curve choice etc.
 */
 
 import { saveSettingsDebounced, event_types, eventSource, getRequestHeaders, hideSwipeButtons, showSwipeButtons, scrollChatToBottom, messageFormatting, isOdd, countOccurrences } from "../../../script.js";
@@ -76,10 +77,12 @@ const defaultSettings = {
 
     audioVolumeMultiplier: 100,
     audioSpeed: 80,
-    audioPitch: 0,
+    audioMinPitch: 1,
+    audioMaxPitch: 1,
     audioPlayFull: false,
 
-    generatedFrequency: 440,
+    generatedMinFrequency: 440,
+    generatedMaxFrequency: 440,
     
     voiceMap: {},
 }
@@ -137,13 +140,19 @@ function loadSettings() {
     $('#blip_audio_speed').val(extension_settings.blip.audioSpeed);
     $('#blip_audio_speed_value').text(extension_settings.blip.audioSpeed);
 
-    $('#blip_audio_pitch').val(extension_settings.blip.audioPitch);
-    $('#blip_audio_pitch_value').text(extension_settings.blip.audioPitch);
+    $('#blip_audio_min_pitch').val(extension_settings.blip.audioMinPitch);
+    $('#blip_audio_min_pitch_value').text(extension_settings.blip.audioMinPitch);
+
+    $('#blip_audio_max_pitch').val(extension_settings.blip.audioMaxPitch);
+    $('#blip_audio_max_pitch_value').text(extension_settings.blip.audioMaxPitch);
 
     $("#blip_audio_play_full").prop('checked', extension_settings.blip.audioPlayFull);
 
-    $('#blip_generated_frequency').val(extension_settings.blip.generatedFrequency);
-    $('#blip_generated_frequency_value').text(extension_settings.blip.generatedFrequency);
+    $('#blip_generated_min_frequency').val(extension_settings.blip.generatedMinFrequency);
+    $('#blip_generated_min_frequency_value').text(extension_settings.blip.generatedMinFrequency);
+
+    $('#blip_generated_max_frequency').val(extension_settings.blip.generatedMaxFrequency);
+    $('#blip_generated_max_frequency_value').text(extension_settings.blip.generatedMaxFrequency);
 
     updateVoiceMapText();
 }
@@ -229,10 +238,12 @@ async function onCharacterChange() {
         $("#blip_file_settings").show();
         $("#blip_generated_settings").hide();
 
-        $("#blip_asset_select").val(character_settings.audioSettings.asset);
+        $("#blip_file_asset_select").val(character_settings.audioSettings.asset);
 
-        $('#blip_audio_pitch').val(character_settings.audioSettings.pitch);
-        $('#blip_audio_pitch_value').text(character_settings.audioSettings.pitch);
+        $('#blip_audio_min_pitch').val(character_settings.audioSettings.minPitch);
+        $('#blip_audio_min_pitch_value').text(character_settings.audioSettings.minPitch);
+        $('#blip_audio_max_pitch').val(character_settings.audioSettings.maxPitch);
+        $('#blip_audio_max_pitch_value').text(character_settings.audioSettings.maxPitch);
         $("#blip_audio_play_full").prop('checked', character_settings.audioSettings.wait);
     }
 
@@ -241,8 +252,10 @@ async function onCharacterChange() {
         $("#blip_file_settings").hide();
         $("#blip_generated_settings").show();
 
-        $('#blip_generated_frequency').val(character_settings.audioSettings.frequency);
-        $('#blip_generated_frequency_value').text(character_settings.audioSettings.frequency);
+        $('#blip_generated_min_frequency').val(character_settings.audioSettings.minFrequency);
+        $('#blip_generated_min_frequency_value').text(character_settings.audioSettings.minFrequency);
+        $('#blip_generated_max_frequency').val(character_settings.audioSettings.maxFrequency);
+        $('#blip_generated_max_frequency_value').text(character_settings.audioSettings.maxFrequency);
     }
 }
 
@@ -343,9 +356,34 @@ async function onAssetRefreshClick() {
     updateBlipAssetsList();
 }
 
-async function onGeneratedFrequencyChange() {
-    extension_settings.blip.generatedFrequency = Number($('#blip_generated_frequency').val());
-    $("#blip_generated_frequency_value").text(extension_settings.blip.generatedFrequency)
+async function onGeneratedMinFrequencyChange() {
+    extension_settings.blip.generatedMinFrequency = Number($('#blip_generated_min_frequency').val());
+    $("#blip_generated_min_frequency_value").text(extension_settings.blip.generatedMinFrequency);
+
+    if (extension_settings.blip.generatedMinFrequency > extension_settings.blip.generatedMaxFrequency) {
+        extension_settings.blip.generatedMaxFrequency = extension_settings.blip.generatedMinFrequency;
+        $("#blip_generated_max_frequency").val(extension_settings.blip.generatedMaxFrequency);
+        $("#blip_generated_max_frequency_value").text(extension_settings.blip.generatedMaxFrequency);
+    }
+
+    saveSettingsDebounced();
+    
+    const character = $('#blip_character_select').val();
+    if (character == "none")
+        warningCharacterNotSelected();
+    else
+        applySetting();
+}
+
+async function onGeneratedMaxFrequencyChange() {
+    extension_settings.blip.generatedMaxFrequency = Number($('#blip_generated_max_frequency').val());
+    $("#blip_generated_max_frequency_value").text(extension_settings.blip.generatedMaxFrequency);
+
+    if (extension_settings.blip.generatedMaxFrequency < extension_settings.blip.generatedMinFrequency) {
+        extension_settings.blip.generatedMinFrequency = extension_settings.blip.generatedMaxFrequency;
+        $("#blip_generated_min_frequency").val(extension_settings.blip.generatedMinFrequency);
+        $("#blip_generated_min_frequency_value").text(extension_settings.blip.generatedMinFrequency);
+    }
     saveSettingsDebounced();
     
     const character = $('#blip_character_select').val();
@@ -379,9 +417,43 @@ async function onAudioSpeedChange() {
         applySetting();
 }
 
-async function onAudioPitchChange() {
-    extension_settings.blip.audioPitch = Number($('#blip_audio_pitch').val());
-    $("#blip_audio_pitch_value").text(extension_settings.blip.audioPitch)
+async function onAssetChange() {
+    const character = $('#blip_character_select').val();
+    if (character == "none")
+        warningCharacterNotSelected();
+    else
+        applySetting();
+}
+
+async function onAudioMinPitchChange() {
+    extension_settings.blip.audioMinPitch = Number($('#blip_audio_min_pitch').val());
+    $("#blip_audio_min_pitch_value").text(extension_settings.blip.audioMinPitch)
+
+    if (extension_settings.blip.audioMinPitch > extension_settings.blip.audioMaxPitch) {
+        extension_settings.blip.audioMaxPitch = extension_settings.blip.audioMinPitch;
+        $("#blip_audio_max_pitch").val(extension_settings.blip.audioMaxPitch);
+        $("#blip_audio_max_pitch_value").text(extension_settings.blip.audioMaxPitch);
+    }
+
+    saveSettingsDebounced();
+    
+    const character = $('#blip_character_select').val();
+    if (character == "none")
+        warningCharacterNotSelected();
+    else
+        applySetting();
+}
+
+async function onAudioMaxPitchChange() {
+    extension_settings.blip.audioMaxPitch = Number($('#blip_audio_max_pitch').val());
+    $("#blip_audio_max_pitch_value").text(extension_settings.blip.audioMaxPitch);
+
+    if (extension_settings.blip.audioMaxPitch < extension_settings.blip.audioMinPitch) {
+        extension_settings.blip.audioMinPitch = extension_settings.blip.audioMaxPitch;
+        $("#blip_audio_min_pitch").val(extension_settings.blip.audioMinPitch);
+        $("#blip_audio_min_pitch_value").text(extension_settings.blip.audioMinPitch);
+    }
+
     saveSettingsDebounced();
     
     const character = $('#blip_character_select').val();
@@ -437,21 +509,25 @@ async function applySetting() {
 
     if (audio_origin == "file") {
         const asset_path = $("#blip_file_asset_select").val();
-        const audio_pitch = $("#blip_audio_pitch").val();
+        const audio_min_pitch = Number($("#blip_audio_min_pitch").val());
+        const audio_max_pitch = Number($("#blip_audio_max_pitch").val());
         const audio_wait = $("#blip_audio_play_full").is(':checked');
 
         extension_settings.blip.voiceMap[character]["audioSettings"] = {
             "asset" : asset_path,
-            "pitch": audio_pitch,
+            "minPitch": audio_min_pitch,
+            "maxPitch": audio_max_pitch,
             "wait": audio_wait
         }
     }
     
     if (audio_origin == "generated") {
-        const audio_frequency = $("#blip_generated_frequency").val();
+        const audio_min_frequency = $("#blip_generated_min_frequency").val();
+        const audio_max_frequency = $("#blip_generated_max_frequency").val();
 
         extension_settings.blip.voiceMap[character]["audioSettings"] = {
-            "frequency" : Number(audio_frequency),
+            "minFrequency" : Number(audio_min_frequency),
+            "maxFrequency" : Number(audio_max_frequency),
         }
     }
     
@@ -483,24 +559,26 @@ function updateVoiceMapText() {
     for (let i in extension_settings.blip.voiceMap) {
         const voice_settings = extension_settings.blip.voiceMap[i];
         voiceMapText += i + ": ("
+            + voice_settings["textSpeed"] + ","
             + voice_settings["minSpeedMultiplier"] + ","
             + voice_settings["maxSpeedMultiplier"] + ","
             + voice_settings["commaDelay"] + ","
             + voice_settings["phraseDelay"] + ","
-            + voice_settings["textSpeed"] + ","
             + voice_settings["audioVolume"] + ","
             + voice_settings["audioSpeed"] + ","
             + voice_settings["audioOrigin"] + ",";
 
         if (voice_settings["audioOrigin"] == "file") {
             voiceMapText += voice_settings["audioSettings"]["asset"] + ","
-            + voice_settings["audioSettings"]["pitch"] + ","
+            + voice_settings["audioSettings"]["minPitch"] + ","
+            + voice_settings["audioSettings"]["maxPitch"] + ","
             + voice_settings["audioSettings"]["wait"]
             + "),\n"
         }
 
         if (voice_settings["audioOrigin"] == "generated") {
-            voiceMapText += voice_settings["audioSettings"]["frequency"]
+            voiceMapText += voice_settings["audioSettings"]["minFrequency"] + ","
+            voiceMapText += voice_settings["audioSettings"]["maxFrequency"]
             + "),\n"
         }
     }
@@ -618,7 +696,8 @@ async function processMessage(chat_id) {
     // Audio asset mode
     if (audio_origin == "file") {
         const audio_asset = character_settings["audioSettings"]["asset"];
-        const audio_pitch = character_settings["audioSettings"]["pitch"];
+        const audio_min_pitch = character_settings["audioSettings"]["minPitch"];
+        const audio_max_pitch = character_settings["audioSettings"]["maxPitch"];
         const audio_wait = character_settings["audioSettings"]["wait"];
         $("#blip_audio").attr("src", audio_asset);
         
@@ -626,11 +705,12 @@ async function processMessage(chat_id) {
         while (isNaN($("#blip_audio")[0].duration))
         await delay(0.1);
 
-        playAudioFile(audio_volume, audio_speed, audio_pitch, audio_wait);
+        playAudioFile(audio_volume, audio_speed, audio_min_pitch, audio_max_pitch, audio_wait);
     }
     else { // Generate blip mode
-        const audio_frequency = character_settings["audioSettings"]["frequency"];
-        playGeneratedBlip(audio_volume, audio_speed, audio_frequency);
+        const audio_min_frequency = character_settings["audioSettings"]["minFrequency"];
+        const audio_max_frequency = character_settings["audioSettings"]["maxFrequency"];
+        playGeneratedBlip(audio_volume, audio_speed, audio_min_frequency, audio_max_frequency);
     }
     let previous_char = "";
     let current_string = ""
@@ -718,20 +798,21 @@ async function processMessage(chat_id) {
     //console.debug(DEBUG_PREFIX,getContext().chat);
 }
 
-async function playAudioFile(volume, speed, pitch, wait) {
+async function playAudioFile(volume, speed, min_pitch, max_pitch, wait) {
     while (is_in_text_animation) {
         if (is_animation_pause || !is_text_to_blip) {
             //console.debug(DEBUG_PREFIX,"Animation pause, waiting")
             await delay(0.01);
             continue;
         }
+        const pitch = Math.random() * (max_pitch - min_pitch) + min_pitch;
         $("#blip_audio").prop("volume", extension_settings.blip.audioVolume * 0.01 * volume * 0.01);
         $("#blip_audio").prop("mozPreservesPitch ", false);
         $("#blip_audio").prop("playbackRate", pitch);
         $("#blip_audio")[0].pause();
         $("#blip_audio")[0].currentTime = 0;
         $("#blip_audio")[0].play();
-        console.debug(DEBUG_PREFIX,"PITCH",pitch);
+        //console.debug(DEBUG_PREFIX,"PITCH",pitch);
         let wait_time = current_multiplier * speed;
         if (wait)
             wait_time += $("#blip_audio")[0].duration;
@@ -742,27 +823,28 @@ async function playAudioFile(volume, speed, pitch, wait) {
     $("#blip_audio").prop("playbackRate", 1.0);
 }
 
-async function playGeneratedBlip(volume, speed, frequency) {
+async function playGeneratedBlip(volume, speed, min_frequency, max_frequency) {
     while (is_in_text_animation) {
         if (is_animation_pause || !is_text_to_blip) {
             await delay(0.01);
             continue;
         }
+        const frequency = Math.random() * (max_frequency - min_frequency) + min_frequency;
         playBlip(frequency);
         await delay(0.01 + current_multiplier * speed);
     }
 }
 
-// Function to play a sound with a certain pitch
-function playBlip(pitch) {
+// Function to play a sound with a certain frequency
+function playBlip(frequency) {
     // Create an oscillator node
     let oscillator = audioContext.createOscillator();
   
     // Set the oscillator wave type
     oscillator.type = 'sine';
   
-    // Set the frequency of the wave (controls the pitch)
-    oscillator.frequency.value = pitch;
+    // Set the frequency of the wave
+    oscillator.frequency.value = frequency;
   
     // Create a gain node to control the volume
     let gainNode = audioContext.createGain();
@@ -959,7 +1041,11 @@ jQuery(async () => {
 
     $("#blip_audio_volume_multiplier").on("input", onAudioVolumeMultiplierChange);
     $("#blip_audio_speed").on("input", onAudioSpeedChange);
-    $("#blip_audio_pitch").on("input", onAudioPitchChange);
+
+    $("#blip_file_asset_select").on("change", onAssetChange);
+
+    $("#blip_audio_min_pitch").on("input", onAudioMinPitchChange);
+    $("#blip_audio_max_pitch").on("input", onAudioMaxPitchChange);
     $("#blip_audio_play_full").on("click", onPlayFullClick);
     
     $("#blip_audio_origin").on("change", onOriginChange);
@@ -967,7 +1053,8 @@ jQuery(async () => {
     $("#blip_file_asset_refresh_button").on("click", onAssetRefreshClick);
 
     $("#blip_file_settings").hide();
-    $("#blip_generated_frequency").on("input", onGeneratedFrequencyChange);
+    $("#blip_generated_min_frequency").on("input", onGeneratedMinFrequencyChange);
+    $("#blip_generated_max_frequency").on("input", onGeneratedMaxFrequencyChange);
     
     //$("#blip_apply").on("click", onApplyClick);
     $("#blip_delete").on("click", onDeleteClick);

@@ -228,12 +228,25 @@
                     </div>
                     <div id="blip_file_settings" class="blip-parameter">
                         <div class="blip-parameter-title">
-                            <label for="blip_audio_pitch">
-                                Pitch <br/>(<span id="blip_audio_pitch_value"></span>)
+                            <label for="blip_audio_min_pitch">
+                                Min. pitch <br/>(<span id="blip_audio_min_pitch_value"></span>)
                             </label>
                         </div>
                         <div class="blip-slider-div">
-                            <input id="blip_audio_pitch" type="range" min="0.3" max="4" step="0.1" value="1" />
+                            <input id="blip_audio_min_pitch" type="range" min="0.3" max="4" step="0.1" value="1" />
+                            <small>
+                                Lower/increase sound rate for pitch change.
+                            </small>
+                        </div>
+                    </div>
+                    <div id="blip_file_settings" class="blip-parameter">
+                        <div class="blip-parameter-title">
+                            <label for="blip_audio_max_pitch">
+                                Max. pitch <br/>(<span id="blip_audio_max_pitch_value"></span>)
+                            </label>
+                        </div>
+                        <div class="blip-slider-div">
+                            <input id="blip_audio_max_pitch" type="range" min="0.3" max="4" step="0.1" value="1" />
                             <small>
                                 Lower/increase sound rate for pitch change.
                             </small>
@@ -242,14 +255,27 @@
                 </div>
                 <div id="blip_generated_settings" class="blip-parameter">
                     <div class="blip-parameter-title">
-                        <label for="blip_generated_frequency">
-                            Note Frequency <br/>(<span id="blip_generated_frequency_value"></span>)
+                        <label for="blip_generated_min_frequency">
+                            Note Frequency <br/>(<span id="blip_generated_min_frequency_value"></span>)
                         </label>
                     </div>
                     <div class="blip-slider-div">
-                        <input id="blip_generated_frequency" type="range" min="17" max="7000" step="1" value="440" />
+                        <input id="blip_generated_min_frequency" type="range" min="17" max="7000" step="1" value="440" />
                         <small>
-                            440 Hz is a standard middle-A note.
+                            Tips: 440 Hz is a standard middle-A note.
+                        </small>
+                    </div>
+                </div>
+                <div id="blip_generated_settings" class="blip-parameter">
+                    <div class="blip-parameter-title">
+                        <label for="blip_generated_max_frequency">
+                            Note Frequency <br/>(<span id="blip_generated_max_frequency_value"></span>)
+                        </label>
+                    </div>
+                    <div class="blip-slider-div">
+                        <input id="blip_generated_max_frequency" type="range" min="17" max="7000" step="1" value="440" />
+                        <small>
+                            Tips: 440 Hz is a standard middle-A note.
                         </small>
                     </div>
                 </div>
