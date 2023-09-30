@@ -14,6 +14,8 @@ TODO:
     - Auto-save on change OK
     - Add user message management OK
     - Add same option as TTS text OK
+    - Add a default setting OK
+    - Pitch variation, curve choice etc.
 */
 
 import { saveSettingsDebounced, event_types, eventSource, getRequestHeaders, hideSwipeButtons, showSwipeButtons, scrollChatToBottom, messageFormatting, isOdd, countOccurrences } from "../../../script.js";
@@ -26,8 +28,6 @@ const extensionFolderPath = `scripts/extensions/${extensionName}`;
 const MODULE_NAME = 'BLip';
 const DEBUG_PREFIX = "<Blip extension> ";
 const UPDATE_INTERVAL = 1000;
-
-let current_chat_id = 0;
 
 let characters_list = [] // Updated with module worker
 let blip_assets = null; // Initialized only once with module workers
@@ -50,6 +50,8 @@ let user_message_to_render = -1;
 let is_text_to_blip = true;
 let is_inside_asterisk = false;
 
+let current_chat_id = null;
+
 //#############################//
 //  Extension UI and Settings  //
 //#############################//
@@ -59,6 +61,8 @@ const defaultSettings = {
     enableUser: false,
     onlyQuote: false,
     ignoreAsterisk: false,
+
+    showCurrentCharactersOnly: false,
 
     audioMuted: true,
     audioVolume: 50,
@@ -93,6 +97,8 @@ function loadSettings() {
     $("#blip_enable_user").prop('checked', extension_settings.blip.enableUser);
     $("#blip_only_quoted").prop('checked', extension_settings.blip.onlyQuote);
     $("#blip_ignore_asterisks").prop('checked', extension_settings.blip.ignoreAsterisk);
+
+    $("#blip_character_current_only").prop('checked', extension_settings.blip.showCurrentCharactersOnly);
 
     if (extension_settings.blip.audioMuted) {
         $("#blip_audio_mute_icon").removeClass("fa-volume-high");
@@ -166,7 +172,6 @@ async function onIgnoreAsteriskClick() {
     saveSettingsDebounced();
 }
 
-
 async function onAudioMuteClick() {
     extension_settings.blip.audioMuted = !extension_settings.blip.audioMuted;
     $("#blip_audio_mute_icon").toggleClass("fa-volume-high");
@@ -236,9 +241,20 @@ async function onCharacterChange() {
         $("#blip_file_settings").hide();
         $("#blip_generated_settings").show();
 
-        $('#blip_generated_frequency').val(character_settings.generatedFrequency);
-        $('#blip_generated_frequency_value').text(character_settings.generatedFrequency);
+        $('#blip_generated_frequency').val(character_settings.audioSettings.frequency);
+        $('#blip_generated_frequency_value').text(character_settings.audioSettings.frequency);
     }
+}
+
+async function onCharacterRefreshClick() {
+    updateCharactersList();
+    $("#blip_character_select").val("none");
+}
+
+async function onCharacterCurrentOnlyClick() {
+    extension_settings.blip.showCurrentCharactersOnly = $('#blip_character_current_only').is(':checked');
+    saveSettingsDebounced();
+    updateCharactersList();
 }
 
 async function onMinSpeedChange() {
@@ -508,8 +524,8 @@ async function hyjackMessage(chat_id, is_user=false) {
 
     const character = getContext().chat[chat_id].name
 
-    if (extension_settings.blip.voiceMap[character] === undefined) {
-        console.debug(DEBUG_PREFIX, "Character",character,"has no blip voice assigned in voicemap");
+    if (extension_settings.blip.voiceMap[character] === undefined && extension_settings.blip.voiceMap["default"] === undefined) {
+        console.debug(DEBUG_PREFIX, "Character",character,"has no blip voice assigned in voicemap. And no default voice profile.");
         return;
     }
 
@@ -556,7 +572,7 @@ async function processMessage(chat_id) {
     const chat = getContext().chat;
     const character = chat[chat_id].name
 
-    if (extension_settings.blip.voiceMap[character] === undefined) {
+    if (extension_settings.blip.voiceMap[character] === undefined && extension_settings.blip.voiceMap["default"] === undefined) {
         console.debug(DEBUG_PREFIX, "Character",character,"has no blip voice assigned in voicemap");
         return;
     }
@@ -578,23 +594,28 @@ async function processMessage(chat_id) {
     else
         is_text_to_blip = true;
 
-    let text_speed = extension_settings.blip.voiceMap[character]["textSpeed"] / 1000;
+    let character_settings = extension_settings.blip.voiceMap["default"];
+
+    if (extension_settings.blip.voiceMap[character] !== undefined)
+        character_settings = extension_settings.blip.voiceMap[character]
+
+    let text_speed = character_settings["textSpeed"] / 1000;
     //is_in_text_animation = true;
 
     // TODO: manage different type of audio styles
-    const min_speed_multiplier = extension_settings.blip.voiceMap[character]["minSpeedMultiplier"];
-    const max_speed_multiplier = extension_settings.blip.voiceMap[character]["maxSpeedMultiplier"];
-    const comma_delay = extension_settings.blip.voiceMap[character]["commaDelay"] / 1000;
-    const phrase_delay = extension_settings.blip.voiceMap[character]["phraseDelay"] / 1000;
-    const audio_volume = extension_settings.blip.voiceMap[character]["audioVolume"];
-    const audio_speed = extension_settings.blip.voiceMap[character]["audioSpeed"] / 1000;
-    const audio_origin = extension_settings.blip.voiceMap[character]["audioOrigin"];
+    const min_speed_multiplier = character_settings["minSpeedMultiplier"];
+    const max_speed_multiplier = character_settings["maxSpeedMultiplier"];
+    const comma_delay = character_settings["commaDelay"] / 1000;
+    const phrase_delay = character_settings["phraseDelay"] / 1000;
+    const audio_volume = character_settings["audioVolume"];
+    const audio_speed = character_settings["audioSpeed"] / 1000;
+    const audio_origin = character_settings["audioOrigin"];
 
     // Audio asset mode
     if (audio_origin == "file") {
-        const audio_asset = extension_settings.blip.voiceMap[character]["audioSettings"]["asset"];
-        const audio_pitch = extension_settings.blip.voiceMap[character]["audioSettings"]["pitch"];
-        const audio_wait = extension_settings.blip.voiceMap[character]["audioSettings"]["wait"];
+        const audio_asset = character_settings["audioSettings"]["asset"];
+        const audio_pitch = character_settings["audioSettings"]["pitch"];
+        const audio_wait = character_settings["audioSettings"]["wait"];
         $("#blip_audio").attr("src", audio_asset);
         
         // Wait for audio to load
@@ -604,7 +625,7 @@ async function processMessage(chat_id) {
         playAudioFile(audio_volume, audio_speed, audio_pitch, audio_wait);
     }
     else { // Generate blip mode
-        const audio_frequency = extension_settings.blip.voiceMap[character]["audioSettings"]["frequency"];
+        const audio_frequency = character_settings["audioSettings"]["frequency"];
         playGeneratedBlip(audio_volume, audio_speed, audio_frequency);
     }
     let previous_char = "";
@@ -798,6 +819,46 @@ function updateCharactersList() {
     }
 
     current_characters = Array.from(current_characters);
+
+    console.debug(DEBUG_PREFIX,context)
+
+    if (current_characters.length == 0)
+        return;
+
+    if (extension_settings.blip.showCurrentCharactersOnly) {
+        let chat_members = [];
+
+        // group mode
+        if (context.name2 == "") {
+            for(const i of context.groups) {
+                if (i.id == context.groupId) {
+                    for(const j of i.members) {
+                        chat_members.push(j.replace(/\.[^/.]+$/, ""));
+                        console.debug(DEBUG_PREFIX,"New group member:",j.replace(/\.[^/.]+$/, ""))
+                    }
+                }
+            }
+        }
+        else
+            chat_members = [context.name2];
+        
+        chat_members.sort();
+
+        console.debug(DEBUG_PREFIX,"Chat members",chat_members)
+
+        // Sort group character on top
+        for (const i of chat_members) {
+            let index = current_characters.indexOf(i);
+            if (index != -1) {
+                console.debug(DEBUG_PREFIX,"Moving to top",i)
+                current_characters.splice(index, 1);
+            }
+        }
+        
+        current_characters = chat_members;
+    }
+
+    // Put user on top
     current_characters.unshift(context.name1);
 
     if (JSON.stringify(characters_list) !== JSON.stringify(current_characters)) {
@@ -810,11 +871,15 @@ function updateCharactersList() {
             .append('<option value="none">Select Character</option>')
             .val('none')
 
+        // Special default blip
+        $("#blip_character_select").append(new Option("default", "default"));
+
         for (const charName of characters_list) {
             $("#blip_character_select").append(new Option(charName, charName));
         }
 
         console.debug(DEBUG_PREFIX, "Updated character list to:", characters_list);
+        current_chat_id = context.chatId;
     }
 }
 
@@ -841,7 +906,6 @@ async function moduleWorker() {
     const moduleEnabled = extension_settings.blip.enabled;
 
     if (moduleEnabled) {
-        updateCharactersList();
         updateBlipAssetsList();
 
         if (user_message_to_render != -1) {
@@ -874,6 +938,8 @@ jQuery(async () => {
     $("#blip_audio_volume_slider").on("input", onAudioVolumeChange);
 
     $("#blip_character_select").on("change", onCharacterChange);
+    $("#blip_character_refresh_button").on("click", onCharacterRefreshClick);
+    $("#blip_character_current_only").on("click", onCharacterCurrentOnlyClick);
 
     $("#blip_text_speed").on("input", onTextSpeedChange);
 
@@ -922,5 +988,25 @@ jQuery(async () => {
     setInterval(wrapper.update.bind(wrapper), UPDATE_INTERVAL);
     moduleWorker();
 
+    updateCharactersListOnce();
+
     console.debug(DEBUG_PREFIX,"Finish loaded.");
 });
+
+async function updateCharactersListOnce() {
+    console.debug(DEBUG_PREFIX,"UDPATING char list", characters_list)
+    while (characters_list.length == 0) {
+        console.debug(DEBUG_PREFIX,"UDPATING char list")
+        updateCharactersList();
+        await delay(1);
+    }
+}
+
+async function updateAssetListOnce() {
+    console.debug(DEBUG_PREFIX,"UDPATING char list", blip_assets)
+    while (blip_assets.length == 0) {
+        console.debug(DEBUG_PREFIX,"UPDATING asset list")
+        updateBlipAssetsList();
+        await delay(1);
+    }
+}

@@ -51,23 +51,39 @@
                 <label>Voice Map (debug infos)</label>
                 <textarea readonly id="blip_voice_map" type="text" class="text_pole textarea_compact" rows="4"
                     placeholder="Voice map will appear here for debug purpose"></textarea>
+                <small>
+                    Tips: Use 'default' entry to set a fallback profile.
+                    Click refresh to update character list and put current chat participant in top.
+                </small>
             </div>
             <div>
                 <div class="blip-parameter">
                     <div class="blip-parameter-title">
                         <label for="blip_character_select">Character:</label>
                     </div>
-                    <div class="blip-character-select-div">
-                        <select id="blip_character_select">
-                            <!-- Populated by JS -->
-                        </select>
-                        <!--
-                        <div class="blip_buttons">
-                            <input id="blip_apply" class="menu_button" type="submit" value="Apply" />
+                    <div>
+                        <div class="blip-character-select-div">
+                            <div id="blip_character_refresh_button" class="menu_button">
+                                <i class="fa-solid fa-refresh"></i>
+                                <!-- Refresh -->
+                            </div>
+                            <select id="blip_character_select">
+                                <!-- Populated by JS -->
+                            </select>
+                            <!--
+                            <div class="blip_buttons">
+                                <input id="blip_apply" class="menu_button" type="submit" value="Apply" />
+                            </div>
+                            -->
+                            <div id="blip_delete" class="menu_button">
+                                Remove
+                            </div>
                         </div>
-                        -->
-                        <div id="blip_delete" class="menu_button">
-                            Remove
+                        <div>
+                            <label class="checkbox_label" for="blip_character_current_only">
+                                <input type="checkbox" id="blip_character_current_only" name="blip_character_current_only">
+                                <small>Only show current chat characters</small>
+                            </label>
                         </div>
                     </div>
                 </div>
