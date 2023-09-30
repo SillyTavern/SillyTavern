@@ -1,16 +1,18 @@
 import {
+    api_server_textgenerationwebui,
     getRequestHeaders,
     getStoppingStrings,
     max_context,
     saveSettingsDebounced,
     setGenerationParamsFromPreset,
 } from "../script.js";
+import { loadMancerModels } from "./mancer-settings.js";
 
 import {
     power_user,
 } from "./power-user.js";
 import { getTextTokens, tokenizers } from "./tokenizers.js";
-import { onlyUnique } from "./utils.js";
+import { delay, onlyUnique } from "./utils.js";
 
 export {
     textgenerationwebui_settings,
@@ -18,6 +20,12 @@ export {
     generateTextGenWithStreaming,
     formatTextGenURL,
 }
+
+export const textgen_types = {
+    OOBA: 'ooba',
+    MANCER: 'mancer',
+    APHRODITE: 'aphrodite',
+};
 
 const textgenerationwebui_settings = {
     temp: 0.7,
@@ -54,6 +62,7 @@ const textgenerationwebui_settings = {
     negative_prompt: '',
     grammar_string: '',
     banned_tokens: '',
+    type: textgen_types.OOBA,
 };
 
 export let textgenerationwebui_presets = [];
@@ -173,6 +182,10 @@ function loadTextGenSettings(data, settings) {
     textgenerationwebui_preset_names = data.textgenerationwebui_preset_names ?? [];
     Object.assign(textgenerationwebui_settings, settings.textgenerationwebui_settings ?? {});
 
+    if (settings.api_use_mancer_webui) {
+        textgenerationwebui_settings.type = textgen_types.MANCER;
+    }
+
     for (const name of textgenerationwebui_preset_names) {
         const option = document.createElement('option');
         option.value = name;
@@ -188,9 +201,51 @@ function loadTextGenSettings(data, settings) {
         const value = textgenerationwebui_settings[i];
         setSettingByName(i, value);
     }
+
+    $('#textgen_type').val(textgenerationwebui_settings.type).trigger('change');
 }
 
-$(document).ready(function () {
+export function isMancer() {
+    return textgenerationwebui_settings.type === textgen_types.MANCER;
+}
+
+export function isAphrodite() {
+    return textgenerationwebui_settings.type === textgen_types.APHRODITE;
+}
+
+export function getTextGenUrlSourceId() {
+    switch (textgenerationwebui_settings.type) {
+        case textgen_types.MANCER:
+            return "#mancer_api_url_text";
+        case textgen_types.OOBA:
+            return "#textgenerationwebui_api_url_text";
+        case textgen_types.APHRODITE:
+            return "#aphrodite_api_url_text";
+    }
+}
+
+jQuery(function () {
+    $('#textgen_type').on('change', function () {
+        const type = String($(this).val());
+        textgenerationwebui_settings.type = type;
+
+        $('[data-tg-type]').each(function () {
+            const tgType = $(this).attr('data-tg-type');
+            if (tgType == type) {
+                $(this).show();
+            } else {
+                $(this).hide();
+            }
+        });
+
+        if (isMancer()) {
+            loadMancerModels();
+        }
+
+        saveSettingsDebounced();
+        $('#api_button_textgenerationwebui').trigger('click');
+    });
+
     $('#settings_preset_textgenerationwebui').on('change', function () {
         const presetName = $(this).val();
         selectPreset(presetName);
@@ -248,11 +303,21 @@ function setSettingByName(i, value, trigger) {
 }
 
 async function generateTextGenWithStreaming(generate_data, signal) {
+    let streamingUrl = textgenerationwebui_settings.streaming_url;
+
+    if (isMancer()) {
+        streamingUrl = api_server_textgenerationwebui.replace("http", "ws") + "/v1/stream";
+    }
+
+    if (isAphrodite()){
+        streamingUrl = api_server_textgenerationwebui;
+    }
+
     const response = await fetch('/generate_textgenerationwebui', {
         headers: {
             ...getRequestHeaders(),
             'X-Response-Streaming': String(true),
-            'X-Streaming-URL': textgenerationwebui_settings.streaming_url,
+            'X-Streaming-URL': streamingUrl,
         },
         body: JSON.stringify(generate_data),
         method: 'POST',
@@ -266,13 +331,43 @@ async function generateTextGenWithStreaming(generate_data, signal) {
         while (true) {
             const { done, value } = await reader.read();
             let response = decoder.decode(value);
-            getMessage += response;
 
-            if (done) {
-                return;
+            if (isAphrodite()) {
+                const events = response.split('\n\n');
+
+                for (const event of events) {
+                    if (event.length == 0) {
+                        continue;
+                    }
+
+                    try {
+                        const { results } = JSON.parse(event);
+                        
+                        if (Array.isArray(results) && results.length > 0) {
+                            getMessage = results[0].text;
+                            yield getMessage;
+
+                            // unhang UI thread
+                            await delay(1);
+                        }
+                    } catch {
+                        // Ignore
+                    }
+                }
+
+                if (done) {
+                    return;
+                }
+            } else {
+
+                getMessage += response;
+    
+                if (done) {
+                    return;
+                }
+    
+                yield getMessage;
             }
-
-            yield getMessage;
         }
     }
 }
