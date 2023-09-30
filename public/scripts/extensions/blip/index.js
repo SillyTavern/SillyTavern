@@ -339,6 +339,10 @@ async function onOriginChange() {
     }
 }
 
+async function onAssetRefreshClick() {
+    updateBlipAssetsList();
+}
+
 async function onGeneratedFrequencyChange() {
     extension_settings.blip.generatedFrequency = Number($('#blip_generated_frequency').val());
     $("#blip_generated_frequency_value").text(extension_settings.blip.generatedFrequency)
@@ -888,8 +892,7 @@ function updateCharactersList() {
 }
 
 async function updateBlipAssetsList() {
-    if (blip_assets !== null)
-        return;
+
 
     blip_assets = await getBlipAssetsList();
 
@@ -910,7 +913,8 @@ async function moduleWorker() {
     const moduleEnabled = extension_settings.blip.enabled;
 
     if (moduleEnabled) {
-        updateBlipAssetsList();
+        if (blip_assets === null)
+            updateBlipAssetsList();
 
         if (user_message_to_render != -1) {
             if (extension_settings.blip.enableUser)
@@ -959,6 +963,8 @@ jQuery(async () => {
     $("#blip_audio_play_full").on("click", onPlayFullClick);
     
     $("#blip_audio_origin").on("change", onOriginChange);
+
+    $("#blip_file_asset_refresh_button").on("click", onAssetRefreshClick);
 
     $("#blip_file_settings").hide();
     $("#blip_generated_frequency").on("input", onGeneratedFrequencyChange);

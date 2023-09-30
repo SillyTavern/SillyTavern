@@ -208,10 +208,16 @@
                             </label>
                         </div>
                         <div class="blip-slider-div">
-                            <select id="blip_file_asset_select">
-                                <option value="none">Select file</option>
-                                <!-- Populated by JS -->
-                            </select>
+                            <div class="blip-file-asset-div">
+                                <div id="blip_file_asset_refresh_button" class="menu_button">
+                                    <i class="fa-solid fa-refresh"></i>
+                                    <!-- Refresh -->
+                                </div>
+                                <select id="blip_file_asset_select">
+                                    <option value="none">Select file</option>
+                                    <!-- Populated by JS -->
+                                </select>
+                            </div>
                             <div>
                                 <label class="checkbox_label" for="blip_audio_play_full">
                                     <input type="checkbox" id="blip_audio_play_full" name="blip_audio_wait">

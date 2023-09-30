@@ -70,3 +70,17 @@
     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
     color: white;
 }
+
+.blip-file-asset-div {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    margin: 1em;
+}
+
+#blip_file_asset_select {
+    margin-bottom: 0;
+    margin-left: 1em;
+    margin-right: 1em;
+}
