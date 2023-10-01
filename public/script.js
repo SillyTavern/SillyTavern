@@ -6777,6 +6777,11 @@ function connectAPISlash(_, text) {
             source: 'openrouter',
             button: '#api_button_openai',
         },
+        'scale': {
+            selected: 'openai',
+            source: 'scale',
+            button: '#api_button_openai',
+        },
         'ai21': {
             selected: 'openai',
             source: 'ai21',
