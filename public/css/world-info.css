@@ -160,3 +160,11 @@
 #world_info_search {
     width: 10em;
 }
+
+.wi-card-entry {
+    border: 1px groove;
+    border-color: var(--SmartThemeBorderColor); 
+    border-radius: 8px;
+    padding: 5px;
+    margin-bottom:3px;
+}
