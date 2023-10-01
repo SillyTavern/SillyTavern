@@ -3910,7 +3910,13 @@
                         <span class="drag-handle">&#9776;</span>
                         <div class="gap5px world_entry_thin_controls wide100p alignitemscenter">
                             <small>
-                                <span><span class="world_entry_form_position_value"></span>
+                                <span>
+                                    <span class="world_entry_form_position_value"></span>
+                                    <select name="entryStateSelector" class="widthNatural height32px margin0">
+                                        <option value="constant">!</option>
+                                        <option value="normal">O</option>
+                                        <option value="disabled">X</option>
+                                    </select>
                                 </span>
                             </small>
                             <div class="world_entry_form_control flex1">
@@ -3996,6 +4002,7 @@
                         </div>
                         <div name="WIEntryBottomControls" class="flex-container flex1 justifySpaceBetween world_entry_form_horizontal">
                             <div class="flex-container flexFlowColumn flexNoGap  wi-enter-footer-text  ">
+                                <!--
                                 <label class="checkbox flex-container">
                                     <input type="checkbox" name="constant" />
                                     <span data-i18n="Constant">Constant</span>
@@ -4004,6 +4011,7 @@
                                     <input type="checkbox" name="disable" />
                                     <span data-i18n="Disable">Disable</span>
                                 </label>
+                                -->
                                 <label class="checkbox flex-container">
                                     <input type="checkbox" name="selective" />
                                     <span data-i18n="Selective">Selective</span>

@@ -160,3 +160,12 @@
 #world_info_search {
     width: 10em;
 }
+
+.disabledWIEntry {
+    opacity: 0.2;
+    filter: grayscale(1);
+}
+
+.height32px {
+    height: 32px;
+}

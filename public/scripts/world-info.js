@@ -451,6 +451,10 @@ function getWorldEntry(name, data, entry) {
     const selectiveLogicDropdown = template.find('select[name="entryLogicType"]');
     selectiveLogicDropdown.data("uid", entry.uid);
 
+    selectiveLogicDropdown.on("click", function (event) {
+        event.stopPropagation();
+    })
+
     selectiveLogicDropdown.on("input", function () {
         const uid = $(this).data("uid");
         const value = Number($(this).val());
@@ -662,6 +666,7 @@ function getWorldEntry(name, data, entry) {
 
 
     // constant
+    /*
     const constantInput = template.find('input[name="constant"]');
     constantInput.data("uid", entry.uid);
     constantInput.on("input", function () {
@@ -672,6 +677,7 @@ function getWorldEntry(name, data, entry) {
         saveWorldInfo(name, data);
     });
     constantInput.prop("checked", entry.constant).trigger("input");
+    */
 
     // order
     const orderInput = template.find('input[name="order"]');
@@ -797,6 +803,7 @@ function getWorldEntry(name, data, entry) {
     template.find(".world_entry_form_uid_value").text(`(UID: ${entry.uid})`);
 
     // disable
+    /*     
     const disableInput = template.find('input[name="disable"]');
     disableInput.data("uid", entry.uid);
     disableInput.on("input", function () {
@@ -807,6 +814,70 @@ function getWorldEntry(name, data, entry) {
         saveWorldInfo(name, data);
     });
     disableInput.prop("checked", entry.disable).trigger("input");
+    */
+
+    //new tri-state selector for constant/normal/disabled
+    const entryStateSelector = template.find('select[name="entryStateSelector"]');
+    entryStateSelector.data("uid", entry.uid);
+    console.log(entry.uid)
+    entryStateSelector.on("click", function (event) {
+        // Prevent closing the drawer on clicking the input
+        event.stopPropagation();
+    });
+    entryStateSelector.on("input", function () {
+        const uid = entry.uid;
+        const value = $(this).val();
+        switch (value) {
+            case "constant":
+                data.entries[uid].constant = true;
+                data.entries[uid].disable = false;
+                setOriginalDataValue(data, uid, "enabled", true);
+                setOriginalDataValue(data, uid, "constant", true);
+                template.removeClass('disabledWIEntry');
+                console.debug("set to constant")
+                break
+            case "normal":
+                data.entries[uid].constant = false;
+                data.entries[uid].disable = false;
+                setOriginalDataValue(data, uid, "enabled", true);
+                setOriginalDataValue(data, uid, "constant", false);
+                template.removeClass('disabledWIEntry');
+                console.debug("set to normal")
+                break
+            case "disabled":
+                data.entries[uid].constant = false;
+                data.entries[uid].disable = true;
+                setOriginalDataValue(data, uid, "enabled", false);
+                setOriginalDataValue(data, uid, "constant", false);
+                template.addClass('disabledWIEntry');
+                console.debug("set to disabled")
+                break
+        }
+        saveWorldInfo(name, data);
+
+    })
+
+    const entryState = function () {
+
+        console.log(`constant: ${entry.constant},  disabled: ${entry.disable}`)
+        if (entry.constant === true) {
+            console.debug('found constant')
+            return "constant"
+        } else if (entry.disable === true) {
+            console.debug('found disabled')
+            return "disabled"
+        } else {
+            console.debug('found normal')
+            return "normal"
+        }
+
+    }
+    template
+        .find(`select[name="entryStateSelector"] option[value=${entryState()}]`)
+        .prop("selected", true)
+        .trigger("input");
+
+    saveWorldInfo(name, data);
 
     // exclude recursion
     const excludeRecursionInput = template.find('input[name="exclude_recursion"]');
@@ -837,7 +908,6 @@ function getWorldEntry(name, data, entry) {
         // display position/order info left of keyword box
         let entry = data.entries[uid]
         let posText = entry.position
-        console.log(posText)
         switch (entry.position) {
             case 0:
                 posText = '↑CD';
