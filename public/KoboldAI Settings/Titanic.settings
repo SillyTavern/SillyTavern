@@ -17,5 +17,10 @@
         4,
         2,
         5
-    ]
+    ],
+    "mirostat": 0,
+    "mirostat_tau": 5,
+    "mirostat_eta": 0.1,
+    "use_default_badwordsids": false,
+    "grammar": ""
 }

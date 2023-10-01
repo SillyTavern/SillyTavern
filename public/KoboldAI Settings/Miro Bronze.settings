@@ -21,5 +21,6 @@
     "mirostat": 2,
     "mirostat_tau": 9.61,
     "mirostat_eta": 1,
-    "use_default_badwordsids": true
+    "use_default_badwordsids": false,
+    "grammar": ""
 }
