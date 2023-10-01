@@ -1754,7 +1754,31 @@ function substituteParams(content, _name1, _name2, _original, _group) {
     });
     content = randomReplace(content);
     content = diceRollReplace(content);
+    content = bannedWordsReplace(content);
     return content;
+}
+
+function bannedWordsReplace(inText)
+{
+    if (!inText) {
+        return null;
+    }
+
+    if (!textgenerationwebui_settings.banned_tokens_in_macros) {
+        textgenerationwebui_settings.banned_tokens_in_macros = [];
+    }
+    
+    const banPattern = /{{banned "(.*)"}}/gi;
+    const bans = inText.matchAll(banPattern);
+    inText = inText.replaceAll(banPattern, "");
+    if (bans) {
+        for (const banCase of bans) {
+            //console.info("Found banned words in macros: " + banCase[1]);
+            textgenerationwebui_settings.banned_tokens_in_macros.push(banCase[1]);
+        }
+    }
+    
+    return inText;
 }
 
 function getTimeSinceLastMessage() {
