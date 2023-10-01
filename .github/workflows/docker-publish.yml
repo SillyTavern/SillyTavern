@@ -11,7 +11,7 @@ env:
   # This should allow creation of docker images even in forked repositories
   # Image name may not contain uppercase characters, so we can not use the repository name
   # Creates a string like: ghcr.io/SillyTavern/sillytavern
-  image_name: ghcr.io/${{ github.repository_owner }}/sillytavern
+  image_name: ghcr.io/sillytavern/sillytavern
 
 jobs:
 

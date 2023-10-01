@@ -2018,7 +2018,7 @@
                                         <option value="gpt-4-0613">gpt-4-0613</option>
                                         <option value="gpt-4-0314">gpt-4-0314</option>
                                         <option value="gpt-4-32k">gpt-4-32k</option>
-                                        <option value="gpt-4-32k-0301">gpt-4-32k-0301</option>
+                                        <option value="gpt-4-32k-0314">gpt-4-32k-0314</option>
                                         <option value="gpt-4-32k-0613">gpt-4-32k-0613</option>
                                     </optgroup>
                                     <optgroup label="Other">
@@ -3904,13 +3904,19 @@
     <div id="entry_edit_template" class="template_element">
 
         <div class="world_entry">
-            <form class="world_entry_form">
+            <form class="world_entry_form  wi-card-entry">
                 <div class="inline-drawer wide100p">
                     <div class="inline-drawer-toggle inline-drawer-header gap5px">
                         <span class="drag-handle">&#9776;</span>
                         <div class="gap5px world_entry_thin_controls wide100p alignitemscenter">
                             <small>
-                                <span><span class="world_entry_form_position_value"></span>
+                                <span>
+                                    <span class="world_entry_form_position_value"></span>
+                                    <select title="State of this entry:&#13;&#13; ! - Constant&#13; O - Normal&#13; X - Disabled" name="entryStateSelector" class="widthNatural height32px margin0">
+                                        <option value="constant">!</option>
+                                        <option value="normal">O</option>
+                                        <option value="disabled">X</option>
+                                    </select>
                                 </span>
                             </small>
                             <div class="world_entry_form_control flex1">
@@ -3934,7 +3940,7 @@
                                         (ignored if empty)
                                     </span>
                                 </small>
-                                <div class="flex-container flexFlowRow">
+                                <div class="flex-container flexFlowRow alignitemscenter">
                                     <textarea class="text_pole keysecondarytextpole" name="keysecondary" rows="1" data-i18n="[placeholder]Comma separated (ignored if empty)" placeholder="Comma separated (ignored if empty)" maxlength="1000"></textarea>
                                     <i class="menu_button delete_entry_button fa-solid fa-trash-can" type="submit" data-i18n="" value="" /></i>
                                 </div>
@@ -3996,6 +4002,7 @@
                         </div>
                         <div name="WIEntryBottomControls" class="flex-container flex1 justifySpaceBetween world_entry_form_horizontal">
                             <div class="flex-container flexFlowColumn flexNoGap  wi-enter-footer-text  ">
+                                <!--
                                 <label class="checkbox flex-container">
                                     <input type="checkbox" name="constant" />
                                     <span data-i18n="Constant">Constant</span>
@@ -4004,6 +4011,7 @@
                                     <input type="checkbox" name="disable" />
                                     <span data-i18n="Disable">Disable</span>
                                 </label>
+                                -->
                                 <label class="checkbox flex-container">
                                     <input type="checkbox" name="selective" />
                                     <span data-i18n="Selective">Selective</span>
@@ -4073,9 +4081,6 @@
                                 <input class="text_pole wideMax100px margin0" type="number" name="probability" placeholder="" min="0" max="100" />
                             </div>
 
-                        </div>
-                        <div class="wide100p">
-                            <hr>
                         </div>
 
                     </div>

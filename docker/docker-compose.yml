@@ -9,4 +9,5 @@ services:
       - "8000:8000"
     volumes:
       - "./config:/home/node/app/config"
+      - "./user:/home/node/app/public/user"
     restart: unless-stopped

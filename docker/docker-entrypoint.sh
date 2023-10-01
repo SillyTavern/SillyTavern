@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Initialize missing user files
-IFS="," RESOURCES="characters,groups,group chats,chats,User Avatars,worlds"
+IFS="," RESOURCES="characters,chats,groups,group chats,User Avatars,worlds,OpenAI Settings,NovelAI Settings,KoboldAI Settings,TextGen Settings"
 for R in $RESOURCES; do
   if [ ! -e "config/$R" ]; then
     echo "Resource not found, copying from defaults: $R"
