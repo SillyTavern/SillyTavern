@@ -16,12 +16,15 @@ TODO:
     - Add same option as TTS text OK
     - Add a default setting OK
     - Pitch variation OK
+    - Proper pitch shift OK
     - curve choice etc.
 */
 
 import { saveSettingsDebounced, event_types, eventSource, getRequestHeaders, hideSwipeButtons, showSwipeButtons, scrollChatToBottom, messageFormatting, isOdd, countOccurrences } from "../../../script.js";
 import { getContext, extension_settings, ModuleWorkerWrapper } from "../../extensions.js";
 export { MODULE_NAME };
+
+import { pitchShiftFile } from "./pitch_shift.js";
 
 const extensionName = "blip";
 const extensionFolderPath = `scripts/extensions/${extensionName}`;
@@ -107,13 +110,13 @@ function loadSettings() {
         $("#blip_audio_mute_icon").removeClass("fa-volume-high");
         $("#blip_audio_mute_icon").addClass("fa-volume-mute");
         $("#blip_audio_mute").addClass("redOverlayGlow");
-        $("#blip_audio").prop("muted", true);
+        //$("#blip_audio").prop("muted", true);
     }
     else {
         $("#blip_audio_mute_icon").addClass("fa-volume-high");
         $("#blip_audio_mute_icon").removeClass("fa-volume-mute");
         $("#blip_audio_mute").removeClass("redOverlayGlow");
-        $("#blip_audio").prop("muted", false);
+        //$("#blip_audio").prop("muted", false);
     }
 
     $("#blip_audio_volume").text(extension_settings.blip.audioVolume);
@@ -185,14 +188,14 @@ async function onAudioMuteClick() {
     extension_settings.blip.audioMuted = !extension_settings.blip.audioMuted;
     $("#blip_audio_mute_icon").toggleClass("fa-volume-high");
     $("#blip_audio_mute_icon").toggleClass("fa-volume-mute");
-    $("#blip_audio").prop("muted", !$("#blip_audio").prop("muted"));
+    //$("#blip_audio").prop("muted", !$("#blip_audio").prop("muted"));
     $("#blip_audio_mute").toggleClass("redOverlayGlow");
     saveSettingsDebounced();
 }
 
 async function onAudioVolumeChange() {
     extension_settings.blip.audioVolume = ~~($("#blip_audio_volume_slider").val());
-    $("#blip_audio").prop("volume", extension_settings.blip.audioVolume * 0.01);
+    //$("#blip_audio").prop("volume", extension_settings.blip.audioVolume * 0.01);
     $("#blip_audio_volume").text(extension_settings.blip.audioVolume);
     saveSettingsDebounced();
 }
@@ -689,7 +692,7 @@ async function processMessage(chat_id) {
     const max_speed_multiplier = character_settings["maxSpeedMultiplier"];
     const comma_delay = character_settings["commaDelay"] / 1000;
     const phrase_delay = character_settings["phraseDelay"] / 1000;
-    const audio_volume = character_settings["audioVolume"];
+    const audio_volume = character_settings["audioVolume"] / 100;
     const audio_speed = character_settings["audioSpeed"] / 1000;
     const audio_origin = character_settings["audioOrigin"];
 
@@ -699,13 +702,13 @@ async function processMessage(chat_id) {
         const audio_min_pitch = character_settings["audioSettings"]["minPitch"];
         const audio_max_pitch = character_settings["audioSettings"]["maxPitch"];
         const audio_wait = character_settings["audioSettings"]["wait"];
-        $("#blip_audio").attr("src", audio_asset);
+        //$("#blip_audio").attr("src", audio_asset);
         
         // Wait for audio to load
-        while (isNaN($("#blip_audio")[0].duration))
-        await delay(0.1);
-
-        playAudioFile(audio_volume, audio_speed, audio_min_pitch, audio_max_pitch, audio_wait);
+        //while (isNaN($("#blip_audio")[0].duration))
+        //await delay(0.1);
+        const decodedData = await loadAudioAsset(audio_asset);
+        playAudioFile(decodedData, audio_volume, audio_speed, audio_min_pitch, audio_max_pitch, audio_wait);
     }
     else { // Generate blip mode
         const audio_min_frequency = character_settings["audioSettings"]["minFrequency"];
@@ -798,7 +801,15 @@ async function processMessage(chat_id) {
     //console.debug(DEBUG_PREFIX,getContext().chat);
 }
 
-async function playAudioFile(volume, speed, min_pitch, max_pitch, wait) {
+async function loadAudioAsset(audio_asset) {
+    return fetch(audio_asset)
+	    .then(data => data.arrayBuffer())
+	    .then(arrayBuffer => audioContext.decodeAudioData(arrayBuffer))
+        .then((decodedData) => {return decodedData});
+}
+
+async function playAudioFile(decodedData, audio_volume, speed, min_pitch, max_pitch, wait) {
+    const volume = audio_volume * extension_settings.blip.audioVolume / 100;
     while (is_in_text_animation) {
         if (is_animation_pause || !is_text_to_blip) {
             //console.debug(DEBUG_PREFIX,"Animation pause, waiting")
@@ -806,6 +817,13 @@ async function playAudioFile(volume, speed, min_pitch, max_pitch, wait) {
             continue;
         }
         const pitch = Math.random() * (max_pitch - min_pitch) + min_pitch;
+
+        let audio = null;
+        if (!extension_settings.blip.audioMuted) {
+            audio = pitchShiftFile(decodedData, volume, pitch); // DBG
+        }
+
+        /*
         $("#blip_audio").prop("volume", extension_settings.blip.audioVolume * 0.01 * volume * 0.01);
         $("#blip_audio").prop("mozPreservesPitch ", false);
         $("#blip_audio").prop("playbackRate", pitch);
@@ -813,14 +831,18 @@ async function playAudioFile(volume, speed, min_pitch, max_pitch, wait) {
         $("#blip_audio")[0].currentTime = 0;
         $("#blip_audio")[0].play();
         //console.debug(DEBUG_PREFIX,"PITCH",pitch);
+        */
+       
         let wait_time = current_multiplier * speed;
         if (wait)
-            wait_time += $("#blip_audio")[0].duration;
+            wait_time += decodedData.duration;
         await delay(wait_time);
+        if (audio !== null)
+            audio.stop(0);
     }
     
-    $("#blip_audio").prop("volume", extension_settings.blip.audioVolume * 0.01);
-    $("#blip_audio").prop("playbackRate", 1.0);
+    //$("#blip_audio").prop("volume", extension_settings.blip.audioVolume * 0.01);
+    //$("#blip_audio").prop("playbackRate", 1.0);
 }
 
 async function playGeneratedBlip(volume, speed, min_frequency, max_frequency) {
@@ -1022,7 +1044,7 @@ jQuery(async () => {
     $("#blip_only_quoted").on("click", onOnlyQuotedClick);
     $("#blip_ignore_asterisks").on("click", onIgnoreAsteriskClick);
 
-    $("#blip_audio").hide();
+    //$("#blip_audio").hide();
     
     $("#blip_audio_mute").on("click", onAudioMuteClick);
     $("#blip_audio_volume_slider").on("input", onAudioVolumeChange);
@@ -1059,10 +1081,10 @@ jQuery(async () => {
     //$("#blip_apply").on("click", onApplyClick);
     $("#blip_delete").on("click", onDeleteClick);
 
-    $("#blip_audio").attr("src", "assets/blip/sfx-blipfemale.wav"); // DBG
-    $("#blip_audio").prop("volume",1); // DBG
+    //$("#blip_audio").attr("src", "assets/blip/sfx-blipfemale.wav"); // DBG
+    //$("#blip_audio").prop("volume",1); // DBG
 
-    // DBG
+    /*/ DBG
     $("#blip_debug").on("click", function () {
         if ($("#blip_debug").is(':checked')) {
             $("#blip_audio").show();
@@ -1071,7 +1093,7 @@ jQuery(async () => {
             $("#blip_audio").hide();
         }
     });
-    //
+    /*/
 
     $("#mes_stop").on("click", function() {abort_animation = true;});
 

@@ -28,6 +28,8 @@
         "sanitize-filename": "^1.6.3",
         "sillytavern-transformers": "^2.7.3",
         "simple-git": "^3.19.1",
+        "soundtouchjs": "^0.1.30",
+        "tone": "^14.7.77",
         "vectra": "^0.2.2",
         "write-file-atomic": "^5.0.1",
         "ws": "^8.13.0",
