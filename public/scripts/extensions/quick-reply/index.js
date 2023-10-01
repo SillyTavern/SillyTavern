@@ -345,16 +345,16 @@ jQuery(async () => {
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
-            <div class="flex-container ">
-                <label class="checkbox_label marginBot10 wide100p flexnowrap">
+            <div>
+                <label class="checkbox_label">
                     <input id="quickReplyEnabled" type="checkbox" />
                         Enable Quick Replies
                 </label>
-                <label class="checkbox_label marginBot10 wide100p flexnowrap">
+                <label class="checkbox_label">
                     <input id="quickActionEnabled" type="checkbox" />
                         Disable Send / Insert In User Input
                 </label>
-                <label class="checkbox_label marginBot10 wide100p flexnowrap">
+                <label class="checkbox_label marginBot10">
                     <input id="placeBeforePromptEnabled" type="checkbox" />
                         Place Quick-reply before the Prompt
                 </label>
