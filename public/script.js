@@ -20,6 +20,7 @@ import {
     isMancer,
     isAphrodite,
     textgen_types,
+    textgenerationwebui_banned_in_macros,
 } from "./scripts/textgen-settings.js";
 
 import {
@@ -1764,20 +1765,23 @@ function bannedWordsReplace(inText)
         return null;
     }
 
-    if (!textgenerationwebui_settings.banned_tokens_in_macros) {
-        textgenerationwebui_settings.banned_tokens_in_macros = [];
+    if (!textgenerationwebui_banned_in_macros) {
+        textgenerationwebui_banned_in_macros = [];
     }
     
     const banPattern = /{{banned "(.*)"}}/gi;
-    const bans = inText.matchAll(banPattern);
+    const bans = inText.matchAll(banPattern);    
     inText = inText.replaceAll(banPattern, "");
-    if (bans) {
-        for (const banCase of bans) {
-            //console.info("Found banned words in macros: " + banCase[1]);
-            textgenerationwebui_settings.banned_tokens_in_macros.push(banCase[1]);
+    
+    if (main_api == 'textgenerationwebui') {
+        if (bans) {
+            for (const banCase of bans) {
+                console.log("Found banned words in macros: " + banCase[1]);
+                textgenerationwebui_banned_in_macros.push(banCase[1]);
+            }
         }
     }
-    
+
     return inText;
 }
 
