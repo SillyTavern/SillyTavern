@@ -489,7 +489,7 @@ function populateChatHistory(prompts, chatCompletion, type = null, cyclePrompt =
     // Reserve budget for group nudge
     let groupNudgeMessage = null;
     if (selected_group) {
-        const groupNudgeMessage = Message.fromPrompt(prompts.get('groupNudge'));
+        groupNudgeMessage = Message.fromPrompt(prompts.get('groupNudge'));
         chatCompletion.reserveBudget(groupNudgeMessage);
     }
 
