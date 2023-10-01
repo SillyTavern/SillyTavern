@@ -146,9 +146,20 @@ function getCustomTokenBans() {
     if (!textgenerationwebui_settings.banned_tokens) {
         return '';
     }
-
-    const sequences = textgenerationwebui_settings.banned_tokens.split('\n');
+    
+    const sequences = textgenerationwebui_settings.banned_tokens.split('\n').concat(textgenerationwebui_settings.banned_tokens_in_macros);
     const result = [];
+
+    //debug
+    if (textgenerationwebui_settings.banned_tokens_in_macros.length > 0) {
+        console.log ("=== Found banned word sequences in the macros:");
+        console.log(textgenerationwebui_settings.banned_tokens_in_macros);
+        console.log ("Resulting array of banned sequencess (will be used this generation turn):");
+        console.log (sequences);
+    }
+
+    //clean old temporary bans found in macros before, for the next generation turn.
+    textgenerationwebui_settings.banned_tokens_in_macros = [];
 
     for (const line of sequences) {
         // Raw token ids, JSON serialized
