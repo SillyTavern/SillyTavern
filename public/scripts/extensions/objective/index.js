@@ -807,5 +807,5 @@ jQuery(() => {
         $('#objective-counter').text(checkCounter)
     });
 
-    registerSlashCommand('taskcheck', checkTaskCompleted, [], ' – checks if the current task is completed', true, true);
+    registerSlashCommand('taskcheck', checkTaskCompleted, [], '– checks if the current task is completed', true, true);
 });

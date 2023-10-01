@@ -401,7 +401,7 @@ jQuery(async () => {
 });
 
 $(document).ready(() => {
-    registerSlashCommand('qr', doQR, [], "- requires number argument, activates the specified QuickReply", true, true);
-    registerSlashCommand('qrset', doQRPresetSwitch, [], "- arg: QuickReply Preset Name, swaps to that QR preset", true, true);
+    registerSlashCommand('qr', doQR, [], '<span class="monospace">(number)</span> – activates the specified Quick Reply', true, true);
+    registerSlashCommand('qrset', doQRPresetSwitch, [], '<span class="monospace">(name)</span> – swaps to the specified Quick Reply Preset', true, true);
 
 })
