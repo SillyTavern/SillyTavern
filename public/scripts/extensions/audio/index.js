@@ -1,5 +1,3 @@
-// / <reference path=""/>
-
 /*
 Ideas:
  - Clean design of new ui
