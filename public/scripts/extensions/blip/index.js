@@ -52,7 +52,6 @@ let audioContext = new (window.AudioContext || window.webkitAudioContext)();
 let user_message_to_render = -1;
 
 let is_text_to_blip = true;
-let is_inside_asterisk = false;
 
 let current_chat_id = null;
 
@@ -644,7 +643,7 @@ async function hyjackMessage(chat_id, is_user=false) {
     getContext().chat[chat_id].mes = ""; // Start rendered message empty
 }
 
-async function processMessage(chat_id) {
+async function processMessage(chat_id, is_user=false) {
     if (!extension_settings.blip.enabled) {
         return;
     }
@@ -674,7 +673,7 @@ async function processMessage(chat_id) {
 
     console.debug(DEBUG_PREFIX, "Only quote:", only_quote, "Ignore asterisk:", ignore_asterisk)
 
-    if (only_quote)
+    if (only_quote || ignore_asterisk)
         is_text_to_blip = false;
     else
         is_text_to_blip = true;
@@ -720,33 +719,30 @@ async function processMessage(chat_id) {
     
     //scrollChatToBottom();
     is_animation_pause = false;
-    is_inside_asterisk = false;
+    let is_inside_asterisk = false;
+    let is_inside_quote = false
     for(const i in current_message) {
 
         // Finish animation by user abort click
         if (abort_animation)
         {
-            message_dom.html(messageFormatting(current_message,character,false,false));
+            message_dom.html(messageFormatting(current_message,character,false,is_user));
             break;
         }
         
         hideSwipeButtons();
-        message_dom.closest(".mes_block").find(".mes_buttons").css("display", "none");
+        message_dom.closest(".mes_block").find(".mes_buttons").hide();
         const next_char = current_message[i]
 
-        // Only quote mode
-        if (next_char == '"' && only_quote) {
-            if (!(is_inside_asterisk && ignore_asterisk))
-                is_text_to_blip = !is_text_to_blip;
-        }
-
-        // Ignore asterisk mode
+        
+        // Special characters detection
         if (next_char == "*")
             is_inside_asterisk = !is_inside_asterisk;
-        
-        if (is_inside_asterisk && ignore_asterisk) {
-            is_text_to_blip = false;
-        }
+        if (next_char == '"')
+            is_inside_quote = !is_inside_quote;
+
+        // Ignore everything in asterisk and only quote options
+        is_text_to_blip = !(is_inside_asterisk && ignore_asterisk) && (!only_quote || (is_inside_quote && only_quote));
 
         // Change speed multiplier on end of phrase
         if (["!","?","."].includes(next_char) && previous_char != next_char) {
@@ -767,7 +763,7 @@ async function processMessage(chat_id) {
             }
         }
 
-        message_dom.html(messageFormatting(predicted_string,character,false,false));
+        message_dom.html(messageFormatting(predicted_string,character,false,is_user));
         previous_char = next_char;
 
         // comma pause
@@ -786,7 +782,7 @@ async function processMessage(chat_id) {
     }
     abort_animation = false;
 
-    message_dom.closest(".mes_block").find(".mes_buttons").css("display", "none");
+    message_dom.closest(".mes_block").find(".mes_buttons").show();
     showSwipeButtons();
     scrollChatToBottom();
     
@@ -1022,7 +1018,7 @@ async function moduleWorker() {
 
         if (user_message_to_render != -1) {
             if (extension_settings.blip.enableUser)
-                processMessage(user_message_to_render);
+                processMessage(user_message_to_render, true);
             user_message_to_render = -1;
         }
     }
