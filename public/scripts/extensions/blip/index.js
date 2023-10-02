@@ -22,6 +22,7 @@ TODO:
 
 import { saveSettingsDebounced, event_types, eventSource, getRequestHeaders, hideSwipeButtons, showSwipeButtons, scrollChatToBottom, messageFormatting, isOdd, countOccurrences } from "../../../script.js";
 import { getContext, extension_settings, ModuleWorkerWrapper } from "../../extensions.js";
+import { autoModeOptions, translate } from "../translate/index.js";
 export { MODULE_NAME };
 
 import { pitchShiftFile } from "./pitch_shift.js";
@@ -608,15 +609,15 @@ async function hyjackMessage(chat_id, is_user=false) {
 
     const character = getContext().chat[chat_id].name
 
-    if (extension_settings.blip.voiceMap[character] === undefined && extension_settings.blip.voiceMap["default"] === undefined) {
+    /*if (extension_settings.blip.voiceMap[character] === undefined && extension_settings.blip.voiceMap["default"] === undefined) {
         console.debug(DEBUG_PREFIX, "Character",character,"has no blip voice assigned in voicemap. And no default voice profile.");
         return;
-    }
+    }*/
 
-    if (is_user && !extension_settings.blip.enableUser) {
+    /*if (is_user && !extension_settings.blip.enableUser) {
         console.debug(DEBUG_PREFIX, "User blip is disable, nothing to do");
         return;
-    }
+    }*/
 
     //eventSource.emit(event_types.MESSAGE_RECEIVED, 0);
 
@@ -652,20 +653,32 @@ async function processMessage(chat_id, is_user=false) {
     if (chat_id == 0)
         return;
 
-    const current_message = chat_buffer[chat_id];
     const chat = getContext().chat;
     const character = chat[chat_id].name
+    const div_dom = $(".mes[mesid='"+chat_id+"'");
+    const message_dom = $(div_dom).children(".mes_block").children(".mes_text"); //$( ".last_mes").children(".mes_block").children(".mes_text");
+    let current_message = chat_buffer[chat_id];
+    
+    getContext().chat[chat_id].mes = current_message;
 
-    if (extension_settings.blip.voiceMap[character] === undefined && extension_settings.blip.voiceMap["default"] === undefined) {
+    // Translation extension compatibility
+    if (extension_settings.translate.auto_mode == autoModeOptions.BOTH
+        || (extension_settings.translate.auto_mode == autoModeOptions.INPUT && is_user)
+        || (extension_settings.translate.auto_mode == autoModeOptions.RESPONSES && !is_user)) {
+        console.debug(DEBUG_PREFIX,"Translating...")
+        current_message = await translate(current_message, extension_settings.translate.target_language);
+        console.debug(DEBUG_PREFIX,"Translation:",current_message)
+    }
+
+    if ( (extension_settings.blip.voiceMap[character] === undefined && extension_settings.blip.voiceMap["default"] === undefined) 
+    || (is_user && !extension_settings.blip.enableUser) ) {
         console.debug(DEBUG_PREFIX, "Character",character,"has no blip voice assigned in voicemap");
+        message_dom.html(messageFormatting(current_message,character,false,is_user));
+        is_in_text_animation = false;
         return;
     }
 
-    getContext().chat[chat_id].mes = current_message;
     console.debug(DEBUG_PREFIX,"Streaming message:", chat_buffer[chat_id])
-
-    const div_dom = $(".mes[mesid='"+chat_id+"'");
-    const message_dom = $(div_dom).children(".mes_block").children(".mes_text"); //$( ".last_mes").children(".mes_block").children(".mes_text");
     console.debug(DEBUG_PREFIX,div_dom,message_dom);
     
     const only_quote = extension_settings.blip.onlyQuote;
@@ -1097,7 +1110,7 @@ jQuery(async () => {
     eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, (chat_id) => processMessage(chat_id));
 
     eventSource.on(event_types.MESSAGE_SENT, (chat_id) => hyjackMessage(chat_id, true));
-    eventSource.on(event_types.USER_MESSAGE_RENDERED, (chat_id) => {user_message_to_render = chat_id;});
+    eventSource.on(event_types.USER_MESSAGE_RENDERED, (chat_id) => processMessage(chat_id, true));// {user_message_to_render = chat_id;});
     
     eventSource.on(event_types.CHAT_CHANGED, updateCharactersList);
     eventSource.on(event_types.GROUP_UPDATED, updateCharactersList);

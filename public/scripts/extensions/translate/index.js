@@ -11,7 +11,7 @@ import {
 import { extension_settings, getContext } from "../../extensions.js";
 import { secret_state, writeSecret } from "../../secrets.js";
 
-const autoModeOptions = {
+export const autoModeOptions = {
     NONE: 'none',
     RESPONSES: 'responses',
     INPUT: 'inputs',
@@ -545,3 +545,5 @@ jQuery(() => {
 
     document.body.classList.add('translate');
 });
+
+export {translate};
