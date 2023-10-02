@@ -65,6 +65,7 @@ const defaultSettings = {
     enableUser: false,
     onlyQuote: false,
     ignoreAsterisk: false,
+    autoScrollChatToAnimation: false,
 
     showAllCharacters: false,
 
@@ -103,6 +104,7 @@ function loadSettings() {
     $("#blip_enable_user").prop('checked', extension_settings.blip.enableUser);
     $("#blip_only_quoted").prop('checked', extension_settings.blip.onlyQuote);
     $("#blip_ignore_asterisks").prop('checked', extension_settings.blip.ignoreAsterisk);
+    $("#blip_auto_scroll_to_animation").prop('checked', extension_settings.blip.autoScrollChatToAnimation);
 
     $("#blip_show_all_characters").prop('checked', extension_settings.blip.showAllCharacters);
 
@@ -181,6 +183,11 @@ async function onOnlyQuotedClick() {
 
 async function onIgnoreAsteriskClick() {
     extension_settings.blip.ignoreAsterisk = $('#blip_ignore_asterisks').is(':checked');
+    saveSettingsDebounced();
+}
+
+async function onAutoScrollChatToAnimationClick() {
+    extension_settings.blip.autoScrollChatToAnimation = $('#blip_auto_scroll_to_animation').is(':checked');
     saveSettingsDebounced();
 }
 
@@ -734,8 +741,10 @@ async function processMessage(chat_id, is_user=false) {
     is_animation_pause = false;
     let is_inside_asterisk = false;
     let is_inside_quote = false
+    abort_animation = false;
+    $("#send_but").hide();
     for(const i in current_message) {
-
+        $("#mes_stop").show();
         // Finish animation by user abort click
         if (abort_animation)
         {
@@ -792,12 +801,16 @@ async function processMessage(chat_id, is_user=false) {
             await delay(phrase_delay);
             is_animation_pause = false;
         }
+        
+        if (extension_settings.blip.autoScrollChatToAnimation)
+            scrollChatToBottom();
     }
     abort_animation = false;
 
     message_dom.closest(".mes_block").find(".mes_buttons").show();
     showSwipeButtons();
-    scrollChatToBottom();
+    $("#mes_stop").hide();
+    $("#send_but").show();
     
     is_in_text_animation = false;
 
@@ -1052,6 +1065,7 @@ jQuery(async () => {
     $("#blip_enable_user").on("click", onEnableUserClick);
     $("#blip_only_quoted").on("click", onOnlyQuotedClick);
     $("#blip_ignore_asterisks").on("click", onIgnoreAsteriskClick);
+    $("#blip_auto_scroll_to_animation").on("click", onAutoScrollChatToAnimationClick);
 
     //$("#blip_audio").hide();
     
