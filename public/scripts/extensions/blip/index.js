@@ -54,7 +54,8 @@ let user_message_to_render = -1;
 
 let is_text_to_blip = true;
 
-let current_chat_id = null;
+let is_continue = false;
+let last_message = null;
 
 //#############################//
 //  Extension UI and Settings  //
@@ -627,7 +628,7 @@ async function hyjackMessage(chat_id, is_user=false) {
     }*/
 
     //eventSource.emit(event_types.MESSAGE_RECEIVED, 0);
-
+        
     // Hyjack char message
     const message = getContext().chat[chat_id].mes;
 
@@ -665,6 +666,7 @@ async function processMessage(chat_id, is_user=false) {
     const div_dom = $(".mes[mesid='"+chat_id+"'");
     const message_dom = $(div_dom).children(".mes_block").children(".mes_text"); //$( ".last_mes").children(".mes_block").children(".mes_text");
     let current_message = chat_buffer[chat_id];
+    let starting_index = 0;
     
     getContext().chat[chat_id].mes = current_message;
 
@@ -683,6 +685,14 @@ async function processMessage(chat_id, is_user=false) {
         message_dom.html(messageFormatting(current_message,character,false,is_user));
         is_in_text_animation = false;
         return;
+    }
+
+    // Continue case
+    if (is_continue) {
+        is_continue = false;
+        message_dom.html(messageFormatting(last_message,character,false,is_user));
+        starting_index = last_message.length;
+        console.debug(DEBUG_PREFIX,"CONTINUE detected, streaming only new part from index",starting_index);
     }
 
     console.debug(DEBUG_PREFIX,"Streaming message:", chat_buffer[chat_id])
@@ -735,7 +745,7 @@ async function processMessage(chat_id, is_user=false) {
         playGeneratedBlip(audio_volume, audio_speed, audio_min_frequency, audio_max_frequency);
     }
     let previous_char = "";
-    let current_string = ""
+    let current_string = current_message.substring(0, starting_index);
     
     //scrollChatToBottom();
     is_animation_pause = false;
@@ -743,7 +753,7 @@ async function processMessage(chat_id, is_user=false) {
     let is_inside_quote = false
     abort_animation = false;
     $("#send_but").hide();
-    for(const i in current_message) {
+    for(let i = starting_index; i < current_message.length; i++) {
         $("#mes_stop").show();
         // Finish animation by user abort click
         if (abort_animation)
@@ -805,6 +815,8 @@ async function processMessage(chat_id, is_user=false) {
         if (extension_settings.blip.autoScrollChatToAnimation)
             scrollChatToBottom();
     }
+
+    message_dom.html(messageFormatting(current_message,character,false,is_user));
     abort_animation = false;
 
     message_dom.closest(".mes_block").find(".mes_buttons").show();
@@ -1013,7 +1025,6 @@ function updateCharactersList() {
         }
 
         console.debug(DEBUG_PREFIX, "Updated character list to:", characters_list);
-        current_chat_id = context.chatId;
     }
 }
 
@@ -1118,7 +1129,8 @@ jQuery(async () => {
     });
     /*/
 
-    $("#mes_stop").on("click", function() {abort_animation = true;});
+    $("#mes_stop").on("click", function() {abort_animation = true; is_continue = false;});
+    $("#option_continue").on("click", function() {is_continue = true; last_message = getContext().chat[getContext().chat.length-1].mes});
 
     eventSource.on(event_types.MESSAGE_RECEIVED, (chat_id) => hyjackMessage(chat_id));
     eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, (chat_id) => processMessage(chat_id));
