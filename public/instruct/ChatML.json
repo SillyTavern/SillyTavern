@@ -13,5 +13,5 @@
     "activation_regex": "",
     "first_output_sequence": "<|im_start|>assistant\n",
     "system_sequence_suffix": "",
-    "name": "Mistral-OpenOrca"
+    "name": "ChatML"
 }
