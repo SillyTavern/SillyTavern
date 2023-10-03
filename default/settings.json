@@ -406,7 +406,6 @@
         "tfs": 1,
         "rep_pen_slope": 0,
         "single_line": false,
-        "use_stop_sequence": false,
         "streaming_kobold": false,
         "sampler_order": [
             6,

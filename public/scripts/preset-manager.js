@@ -253,7 +253,6 @@ class PresetManager {
             'preset',
             'streaming_url',
             'stopping_strings',
-            'use_stop_sequence',
             'can_use_tokenization',
             'can_use_streaming',
             'preset_settings_novel',
