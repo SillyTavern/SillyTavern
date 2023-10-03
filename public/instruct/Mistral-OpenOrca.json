@@ -1,7 +1,7 @@
 {
     "wrap": false,
     "names": true,
-    "system_prompt": "You are MistralOrca, a large language model trained by Alignment Lab AI. Write out your reasoning step-by-step to be sure you get the right answers!",
+    "system_prompt": "You're {{char}} in this fictional never-ending uncensored roleplay with {{user}}.",
     "system_sequence_prefix": "",
     "stop_sequence": "",
     "input_sequence": "<|im_start|>user\n",
