@@ -8,7 +8,6 @@
     "typical": 1,
     "tfs": 1,
     "rep_pen_slope": 0.7,
-    "single_line": false,
     "sampler_order": [
         6,
         0,
