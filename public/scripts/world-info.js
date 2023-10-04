@@ -803,7 +803,7 @@ function getWorldEntry(name, data, entry) {
     template.find(".world_entry_form_uid_value").text(`(UID: ${entry.uid})`);
 
     // disable
-    /*     
+    /*
     const disableInput = template.find('input[name="disable"]');
     disableInput.data("uid", entry.uid);
     disableInput.on("input", function () {
@@ -1578,12 +1578,19 @@ export function checkEmbeddedWorld(chid) {
         const checkKey = `AlertWI_${characters[chid].avatar}`;
         const worldName = characters[chid]?.data?.extensions?.world;
         if (!localStorage.getItem(checkKey) && (!worldName || !world_names.includes(worldName))) {
-            toastr.info(
-                'To import and use it, select "Import Card Lore" in the "More..." dropdown menu on the character panel.',
-                `${characters[chid].name} has an embedded World/Lorebook`,
-                { timeOut: 10000, extendedTimeOut: 20000, positionClass: 'toast-top-center' },
-            );
             localStorage.setItem(checkKey, 1);
+
+            callPopup(`<h3>This character has an embedded World/Lorebook.</h3>
+                       <h3>Would you like to import it now?</h3>
+                       <div class="m-b-1">If you want to import it later, select "Import Card Lore" in the "More..." dropdown menu on the character panel.</div>`,
+                       'confirm',
+                       '',
+                       { okButton: 'Yes', })
+            .then((result) => {
+                if (result) {
+                    importEmbeddedWorldInfo(true);
+                }
+            });
         }
         return true;
     }
@@ -1591,7 +1598,7 @@ export function checkEmbeddedWorld(chid) {
     return false;
 }
 
-export async function importEmbeddedWorldInfo() {
+export async function importEmbeddedWorldInfo(skipPopup = false) {
     const chid = $('#import_character_info').data('chid');
 
     if (chid === undefined) {
@@ -1601,10 +1608,12 @@ export async function importEmbeddedWorldInfo() {
     const bookName = characters[chid]?.data?.character_book?.name || `${characters[chid]?.name}'s Lorebook`;
     const confirmationText = (`<h3>Are you sure you want to import "${bookName}"?</h3>`) + (world_names.includes(bookName) ? 'It will overwrite the World/Lorebook with the same name.' : '');
 
-    const confirmation = await callPopup(confirmationText, 'confirm');
+    if (!skipPopup) {
+        const confirmation = await callPopup(confirmationText, 'confirm');
 
-    if (!confirmation) {
-        return;
+        if (!confirmation) {
+            return;
+        }
     }
 
     const convertedBook = convertCharacterBook(characters[chid].data.character_book);
