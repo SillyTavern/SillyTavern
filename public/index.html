@@ -3744,6 +3744,28 @@
             </div>
         </div>
 
+        <div id="depth_prompt_div" class="flex-container">
+            <div class="flex1">
+                <h4>
+                    <span data-i18n="Character's Note">
+                        Character's Note
+                    </span>
+                </h4>
+                <textarea id="depth_prompt_prompt" name="depth_prompt_prompt" class="text_pole" rows="2" maxlength="20000" autocomplete="off" form="form_create" placeholder="(Text to be inserted in-chat @ designated depth)"></textarea>
+            </div>
+            <div>
+                <h4>
+                    <span data-i18n="@ Depth">
+                        @ Depth
+                    </span>
+                </h4>
+                <input id="depth_prompt_depth" name="depth_prompt_depth" class="text_pole widthUnset m-t-0" type="number" min="0" max="999" value="4" form="form_create" />
+                <div class="extension_token_counter">
+                    Tokens: <span data-token-counter="depth_prompt_prompt" data-token-permanent="true">counting...</span>
+                </div>
+            </div>
+        </div>
+
         <div id="talkativeness_div">
             <h4><span data-i18n="Talkativeness">Talkativeness</span></h4>
             <h5 data-i18n="How often the character speaks in group chats!">How often the character speaks in &nbsp;<span class="warning">group chats!</span>
@@ -4423,7 +4445,14 @@
                 <hr class="sysHR">
                 <div class="inline-drawer">
                     <div id="charaANBlockToggle" class="inline-drawer-toggle inline-drawer-header">
-                        <b>Character Author's Note</b>
+                        <div class="flex-container flexFlowColumn">
+                            <b data-i18n="Character Author's Note (Private)">
+                                Character Author's Note (Private)
+                            </b>
+                            <small data-i18n="Won't be shared with the character card on export.">
+                                Won't be shared with the character card on export.
+                            </small>
+                        </div>
                         <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                     </div>
                     <div class="inline-drawer-content">

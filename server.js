@@ -481,7 +481,7 @@ app.post("/generate", jsonParser, async function (request, response_generate) {
  * @param {import('express').Request} request Express request
  * @param {import('express').Response} response Express response
  * @param {AbortController} controller Abort controller
- * @returns 
+ * @returns
  */
 async function sendAphroditeStreamingRequest(streamingUrlString, request, response, controller) {
     request.body['stream'] = true;
@@ -828,6 +828,8 @@ function convertToV2(char) {
         fav: char.fav,
         creator: char.creator,
         tags: char.tags,
+        depth_prompt_prompt: char.depth_prompt_prompt,
+        depth_prompt_response: char.depth_prompt_response,
     });
 
     result.chat = char.chat ?? humanizedISO8601DateTime();
@@ -943,6 +945,12 @@ function charaFormatData(data) {
     _.set(char, 'data.extensions.talkativeness', data.talkativeness);
     _.set(char, 'data.extensions.fav', data.fav == 'true');
     _.set(char, 'data.extensions.world', data.world || '');
+
+    // Spec extension: depth prompt
+    const depth_default = 4;
+    const depth_value = !isNaN(Number(data.depth_prompt_depth)) ? Number(data.depth_prompt_depth) : depth_default;
+    _.set(char, 'data.extensions.depth_prompt.prompt', data.depth_prompt_prompt ?? '');
+    _.set(char, 'data.extensions.depth_prompt.depth', depth_value);
     //_.set(char, 'data.extensions.create_date', humanizedISO8601DateTime());
     //_.set(char, 'data.extensions.avatar', 'none');
     //_.set(char, 'data.extensions.chat', data.ch_name + ' - ' + humanizedISO8601DateTime());
