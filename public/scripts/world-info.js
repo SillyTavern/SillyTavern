@@ -339,6 +339,9 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
             $("#world_popup_entries_list").empty();
             const keywordHeaders = `
             <div class="flex-container wide100p spaceBetween justifyCenter textAlignCenter" style="padding:0 2.5em;">
+            <small class="flex1">
+            Title/Memo
+        </small>
                 <small style="width:${InputWidthReference.width() + 5 + 'px'}">
                     Status
                 </small>
@@ -354,9 +357,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
                 <small style="width:${InputWidthReference.width() + 15 + 'px'}">
                     Trigger %
                 </small>
-                <small class="flex1">
-                    Title/Memo
-                </small>
+
             </div>`
             const blocks = page.map(entry => getWorldEntry(name, data, entry));
             $("#world_popup_entries_list").append(keywordHeaders);

@@ -242,6 +242,10 @@
     overflow: hidden;
 }
 
+.padding0 {
+    padding: 0;
+}
+
 .padding5 {
     padding: 5px;
 }

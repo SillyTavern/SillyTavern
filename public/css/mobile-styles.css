@@ -35,7 +35,7 @@
         max-width: 90svw;
     }
 
-    .world_entry_thin_controls,
+    /* .world_entry_thin_controls, */
     #persona-management-block,
     #character_popup .flex-container {
         flex-direction: column;
@@ -63,6 +63,15 @@
         display: none;
     }
 
+    .world_entry .inline-drawer-toggle {
+        padding-bottom: 5px;
+    }
+
+    #worldInfoScanningCheckboxes {
+        flex-flow: row;
+        flex-wrap: wrap;
+    }
+
     body {
         touch-action: none;
         overflow: hidden;
@@ -71,7 +80,7 @@
     }
 
     .world_entry_form_control {
-        width: 100%;
+        /* width: 100%; */
     }
 
     .drawer-content {
@@ -129,6 +138,12 @@
 
     .wi-settings {
         flex-direction: column;
+        gap: 5px !important;
+    }
+
+    .WIEntryTitleAndStatus,
+    .WIEntryHeaderControls {
+        width: 100%;
     }
 
     #character_popup,
