@@ -596,6 +596,7 @@ function getCurrentChatId() {
 
 const talkativeness_default = 0.5;
 const depth_prompt_depth_default = 4;
+const per_page_default = 50;
 
 var is_advanced_char_open = false;
 
@@ -922,7 +923,7 @@ async function printCharacters(fullRefresh = false) {
     const storageKey = 'Characters_PerPage';
     $("#rm_print_characters_pagination").pagination({
         dataSource: getEntitiesList({ doFilter: true }),
-        pageSize: Number(localStorage.getItem(storageKey)) || 50,
+        pageSize: Number(localStorage.getItem(storageKey)) || per_page_default,
         sizeChangerOptions: [10, 25, 50, 100, 250, 500, 1000],
         pageRange: 1,
         pageNumber: saveCharactersPage || 1,
@@ -5487,7 +5488,7 @@ function select_rm_info(type, charId, previousCharId = null) {
             }
 
             try {
-                const perPage = Number(localStorage.getItem('Characters_PerPage'));
+                const perPage = Number(localStorage.getItem('Characters_PerPage')) || per_page_default;
                 const page = Math.floor(charIndex / perPage) + 1;
                 const selector = `#rm_print_characters_block [title^="${charId}"]`;
                 $('#rm_print_characters_pagination').pagination('go', page);
@@ -5522,7 +5523,7 @@ function select_rm_info(type, charId, previousCharId = null) {
                 return;
             }
 
-            const perPage = Number(localStorage.getItem('Characters_PerPage'));
+            const perPage = Number(localStorage.getItem('Characters_PerPage')) || per_page_default;
             const page = Math.floor(charIndex / perPage) + 1;
             $('#rm_print_characters_pagination').pagination('go', page);
             const selector = `#rm_print_characters_block [grid="${charId}"]`;

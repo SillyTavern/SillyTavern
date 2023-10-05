@@ -1,5 +1,5 @@
 import { saveSettings, callPopup, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types } from "../script.js";
-import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option } from "./utils.js";
+import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition } from "./utils.js";
 import { getContext } from "./extensions.js";
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from "./authors-note.js";
 import { registerSlashCommand } from "./slash-commands.js";
@@ -51,6 +51,7 @@ let updateEditor = (navigation) => { navigation; };
 
 // Do not optimize. updateEditor is a function that is updated by the displayWorldEntries with new data.
 const worldInfoFilter = new FilterHelper(() => updateEditor());
+const SORT_ORDER_KEY = 'world_info_sort_order';
 
 const InputWidthReference = $("#WIInputWidthReference");
 
@@ -163,6 +164,7 @@ function setWorldInfoSettings(settings, data) {
         $("#world_editor_select").append(`<option value='${i}'>${item}</option>`);
     });
 
+    $('#world_info_sort_order').val(localStorage.getItem(SORT_ORDER_KEY) || '0');
     $("#world_editor_select").trigger("change");
 }
 
@@ -234,6 +236,49 @@ function getWIElement(name) {
     return wiElement;
 }
 
+/**
+ * @param {any[]} data WI entries
+ * @returns {any[]} Sorted data
+ */
+function sortEntries(data) {
+    const option = $('#world_info_sort_order').find(":selected");
+    const sortField = option.data('field');
+    const sortOrder = option.data('order');
+    const sortRule = option.data('rule');
+    const orderSign = sortOrder === 'asc' ? 1 : -1;
+
+    if (sortRule === 'priority') {
+        // First constant, then normal, then disabled. Then sort by order
+        data.sort((a, b) => {
+            const aValue = a.constant ? 0 : a.disable ? 2 : 1;
+            const bValue = b.constant ? 0 : b.disable ? 2 : 1;
+
+            return (aValue - bValue || b.order - a.order);
+        });
+    } else {
+        data.sort((a, b) => {
+            const aValue = a[sortField];
+            const bValue = b[sortField];
+
+            // Sort strings
+            if (typeof aValue === 'string' && typeof bValue === 'string') {
+                if (sortRule === 'length') {
+                    // Sort by string length
+                    return orderSign * (aValue.length - bValue.length);
+                } else {
+                    // Sort by A-Z ordinal
+                    return orderSign * aValue.localeCompare(bValue);
+                }
+            }
+
+            // Sort numbers
+            return orderSign * (Number(aValue) - Number(bValue));
+        });
+    }
+
+    return data;
+}
+
 function nullWorldInfo() {
     toastr.info("Create or import a new World Info file first.", "World Info is not set", { timeOut: 10000, preventDuplicates: true });
 }
@@ -263,8 +308,9 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
 
         // Sort the entries array by displayIndex and uid
         entriesArray.sort((a, b) => a.displayIndex - b.displayIndex || a.uid - b.uid);
+        entriesArray = sortEntries(entriesArray);
         entriesArray = worldInfoFilter.applyFilters(entriesArray);
-        callback(entriesArray);
+        typeof callback === 'function' && callback(entriesArray);
         return entriesArray;
     }
 
@@ -275,9 +321,10 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
     }
 
     const storageKey = 'WI_PerPage';
+    const perPageDefault = 25;
     $("#world_info_pagination").pagination({
         dataSource: getDataArray,
-        pageSize: Number(localStorage.getItem(storageKey)) || 25,
+        pageSize: Number(localStorage.getItem(storageKey)) || perPageDefault,
         sizeChangerOptions: [10, 25, 50, 100],
         showSizeChanger: true,
         pageRange: 1,
@@ -321,8 +368,28 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
         }
     });
 
-    if (navigation === navigation_option.last) {
-        $("#world_info_pagination").pagination('go', $("#world_info_pagination").pagination('getTotalPage'));
+    if (typeof navigation === 'number' && Number(navigation) >= 0) {
+        const selector = `#world_popup_entries_list [uid="${navigation}"]`;
+        const data = getDataArray();
+        const uidIndex = data.findIndex(x => x.uid === navigation);
+        const perPage = Number(localStorage.getItem(storageKey)) || perPageDefault;
+        const page = Math.floor(uidIndex / perPage) + 1;
+        $("#world_info_pagination").pagination('go', page);
+        waitUntilCondition(() => document.querySelector(selector) !== null).finally(() => {
+            const element = $(selector);
+
+            if (element.length === 0) {
+                console.log(`Could not find element for uid ${navigation}`);
+                return;
+            }
+
+            const elementOffset = element.offset();
+            const parentOffset = element.parent().offset();
+            const scrollOffset = elementOffset.top - parentOffset.top;
+            $('#WorldInfo').scrollTop(scrollOffset);
+            element.addClass('flash animated');
+            setTimeout(() => element.removeClass('flash animated'), 2000);
+        });
     }
 
     $("#world_popup_new").off('click').on('click', () => {
@@ -438,6 +505,7 @@ function deleteOriginalDataValue(data, uid) {
 function getWorldEntry(name, data, entry) {
     const template = $("#entry_edit_template .world_entry").clone();
     template.data("uid", entry.uid);
+    template.attr("uid", entry.uid);
 
     // key
     const keyInput = template.find('textarea[name="key"]');
@@ -1005,7 +1073,7 @@ function createWorldInfoEntry(name, data) {
     const newEntry = { uid: newUid, ...newEntryTemplate };
     data.entries[newUid] = newEntry;
 
-    updateEditor(navigation_option.last);
+    updateEditor(newUid);
 }
 
 async function _save(name, data) {
@@ -1907,6 +1975,14 @@ jQuery(() => {
         const term = $(this).val();
         worldInfoFilter.setFilterData(FILTER_TYPES.WORLD_INFO_SEARCH, term);
     });
+
+    $('#world_info_sort_order').on('change', function(e) {
+        if (e.target instanceof HTMLOptionElement) {
+            localStorage.setItem(SORT_ORDER_KEY, e.target.value);
+        }
+
+        updateEditor(navigation_option.none);
+    })
 
     // Not needed on mobile
     const deviceInfo = getDeviceInfo();
