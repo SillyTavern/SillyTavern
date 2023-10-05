@@ -400,6 +400,23 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
         await renameWorldInfo(name, data);
     });
 
+    $("#world_backfill_memos").off('click').on('click', async () => {
+        let counter = 0;
+        for (const entry of Object.values(data.entries)) {
+            if (!entry.comment && Array.isArray(entry.key) && entry.key.length > 0) {
+                entry.comment = entry.key[0];
+                setOriginalDataValue(data, entry.uid, "comment", entry.comment);
+                counter++;
+            }
+        }
+
+        if (counter > 0) {
+            toastr.info(`Backfilled ${counter} titles`);
+            await saveWorldInfo(name, data, true);
+            updateEditor(navigation_option.previous);
+        }
+    });
+
     $("#world_popup_export").off('click').on('click', () => {
         if (name && data) {
             const jsonValue = JSON.stringify(data);
