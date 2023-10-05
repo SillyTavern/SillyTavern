@@ -291,7 +291,10 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
         callback: function (page) {
             $("#world_popup_entries_list").empty();
             const keywordHeaders = `
-            <div class="flex-container wide100p spaceBetween justifyCenter textAlignCenter" style="padding-left:25px; padding-right:45px;">
+            <div class="flex-container wide100p spaceBetween justifyCenter textAlignCenter" style="padding:0 2.5em;">
+                <small style="width:${InputWidthReference.width() + 5 + 'px'}">
+                    Status
+                </small>
                 <small style="width:${InputWidthReference.width() + 20 + 'px'}">
                     Position
                 </small>
@@ -301,17 +304,11 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
                 <small style="width:${InputWidthReference.width() + 15 + 'px'}">
                     Order
                 </small>
-                <small style="width:${InputWidthReference.width() + 5 + 'px'}">
-                    Status
-                </small>
-                <small class="flex1">
-                    Keywords
-                </small>
                 <small style="width:${InputWidthReference.width() + 15 + 'px'}">
-                    Logic
+                    Trigger %
                 </small>
                 <small class="flex1">
-                    Optional Filter
+                    Title/Memo
                 </small>
             </div>`
             const blocks = page.map(entry => getWorldEntry(name, data, entry));
@@ -462,7 +459,7 @@ function getWorldEntry(name, data, entry) {
         saveWorldInfo(name, data);
     });
     keyInput.val(entry.key.join(",")).trigger("input");
-    initScrollHeight(keyInput);
+    //initScrollHeight(keyInput);
 
     // logic AND/NOT
     const selectiveLogicDropdown = template.find('select[name="entryLogicType"]');
@@ -592,6 +589,7 @@ function getWorldEntry(name, data, entry) {
     commentInput.on("input", function () {
         const uid = $(this).data("uid");
         const value = $(this).val();
+        resetScrollHeight(this);
         data.entries[uid].comment = value;
 
         setOriginalDataValue(data, uid, "comment", data.entries[uid].comment);
@@ -611,6 +609,7 @@ function getWorldEntry(name, data, entry) {
     });
 
     commentInput.val(entry.comment).trigger("input");
+    initScrollHeight(commentInput);
     commentToggle.prop("checked", true /* entry.addMemo */).trigger("input");
     commentToggle.parent().hide()
 
@@ -719,6 +718,7 @@ function getWorldEntry(name, data, entry) {
     // depth
     const depthInput = template.find('input[name="depth"]');
     depthInput.data("uid", entry.uid);
+
     depthInput.on("input", function () {
         const uid = $(this).data("uid");
         const value = Number($(this).val());
@@ -757,6 +757,7 @@ function getWorldEntry(name, data, entry) {
         saveWorldInfo(name, data);
     });
     probabilityInput.val(entry.probability).trigger("input");
+    probabilityInput.width(InputWidthReference.width() + 15 + 'px')
 
     // probability toggle
     if (entry.useProbability === undefined) {
@@ -797,17 +798,21 @@ function getWorldEntry(name, data, entry) {
     const positionInput = template.find('select[name="position"]');
     initScrollHeight(positionInput);
     positionInput.data("uid", entry.uid);
+    positionInput.on("click", function (event) {
+        // Prevent closing the drawer on clicking the input
+        event.stopPropagation();
+    });
     positionInput.on("input", function () {
         const uid = $(this).data("uid");
         const value = Number($(this).val());
         data.entries[uid].position = !isNaN(value) ? value : 0;
         if (value === world_info_position.atDepth) {
             depthInput.prop('disabled', false);
-            depthInput.removeClass('disabledWIEntry')
+            depthInput.css('visibility', 'visible')
             //depthInput.parent().show();
         } else {
             depthInput.prop('disabled', true);
-            depthInput.addClass('disabledWIEntry')
+            depthInput.css('visibility', 'hidden')
             //depthInput.parent().hide();
         }
         updatePosOrdDisplay(uid)
@@ -851,6 +856,7 @@ function getWorldEntry(name, data, entry) {
     entryStateSelector.on("input", function () {
         const uid = entry.uid;
         const value = $(this).val();
+        const probabilityInput = template.find('input[name="probability"]')
         switch (value) {
             case "constant":
                 data.entries[uid].constant = true;
@@ -859,6 +865,8 @@ function getWorldEntry(name, data, entry) {
                 setOriginalDataValue(data, uid, "constant", true);
                 template.removeClass('disabledWIEntry');
                 console.debug("set to constant")
+                probabilityInput.css('visibility', 'hidden')
+                probabilityInput.prop('disabled', true)
                 break
             case "normal":
                 data.entries[uid].constant = false;
@@ -866,6 +874,8 @@ function getWorldEntry(name, data, entry) {
                 setOriginalDataValue(data, uid, "enabled", true);
                 setOriginalDataValue(data, uid, "constant", false);
                 template.removeClass('disabledWIEntry');
+                probabilityInput.css('visibility', 'visible')
+                probabilityInput.prop('disabled', false)
                 console.debug("set to normal")
                 break
             case "disabled":

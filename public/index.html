@@ -3945,41 +3945,46 @@
             <form class="world_entry_form  wi-card-entry">
                 <div class="inline-drawer wide100p">
                     <div class="inline-drawer-toggle inline-drawer-header gap5px">
-                        <span class="drag-handle">&#9776;</span>
+                        <!-- <span class="drag-handle">&#9776;</span> -->
                         <div class="gap5px world_entry_thin_controls wide100p alignitemscenter">
-                            <small>
-                                <span class="flex-container alignitemscenter">
-                                    <!-- <span class="world_entry_form_position_value"></span> -->
-                                    <div name="PositionBlock" class="world_entry_form_control world_entry_form_radios wi-enter-footer-text">
-                                        <!-- <label for="position" data-i18n="Position:">Position:</label> -->
-
-                                        <select name="position" class="widthNatural margin0" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;">
-                                            <option value="0" data-i18n="Before Char Defs" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;">↑Char</option>
-                                            <option value="1" data-i18n="After Char Defs" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;">↓Char</option>
-                                            <option value="2" data-i18n="Before AN" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;">↑AN</option>
-                                            <option value="3" data-i18n="After AN" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;">↓AN</option>
-                                            <option value="4" data-i18n="at Depth" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;">@D</option>
-                                        </select>
-
-                                    </div>
-
-                                    <div class="world_entry_form_control wi-enter-footer-text flex-container flexNoGap">
-                                        <!-- <label for="depth" data-i18n="Depth:">Depth:</label> -->
-                                        <input title="Depth" class="text_pole wideMax100px margin0" type="number" name="depth" placeholder="" min="0" max="999" />
-                                    </div>
-
-                                    <div class="world_entry_form_control wi-enter-footer-text  flex-container flexNoGap">
-                                        <!--  <label for="order" data-i18n="Order:">Order:</label> -->
-                                        <input title="Order" class="text_pole wideMax100px margin0" type="number" name="order" placeholder="" min="0" max="999" />
-                                    </div>
-                                    <select title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;❌ Disabled" name="entryStateSelector" class="widthNatural margin0">
-                                        <option title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;❌ Disabled" value="constant">🔵</option>
-                                        <option title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;❌ Disabled" value="normal">🟢</option>
-                                        <option title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;❌ Disabled" value="disabled">❌</option>
+                            <div class="fa-fw fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                            <span class="flex-container alignitemscenter wide100p">
+                                <!-- <span class="world_entry_form_position_value"></span> -->
+                                <select title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;❌ Disabled" name="entryStateSelector" class="widthNatural margin0">
+                                    <option title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;❌ Disabled" value="constant">🔵</option>
+                                    <option title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;❌ Disabled" value="normal">🟢</option>
+                                    <option title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;❌ Disabled" value="disabled">❌</option>
+                                </select>
+                                <div name="PositionBlock" class="world_entry_form_control world_entry_form_radios wi-enter-footer-text">
+                                    <!-- <label for="position" data-i18n="Position:">Position:</label> -->
+                                    <select name="position" class="widthNatural margin0" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;">
+                                        <option value="0" data-i18n="Before Char Defs" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;">↑Char</option>
+                                        <option value="1" data-i18n="After Char Defs" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;">↓Char</option>
+                                        <option value="2" data-i18n="Before AN" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;">↑AN</option>
+                                        <option value="3" data-i18n="After AN" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;">↓AN</option>
+                                        <option value="4" data-i18n="at Depth" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;">@D</option>
                                     </select>
-                                </span>
-                            </small>
-                            <div class="world_entry_form_control flex1">
+                                </div>
+
+                                <div class="world_entry_form_control wi-enter-footer-text flex-container flexNoGap">
+                                    <!-- <label for="depth" data-i18n="Depth:">Depth:</label> -->
+                                    <input title="Depth" class="text_pole wideMax100px margin0" type="number" name="depth" placeholder="" min="0" max="999" />
+                                </div>
+
+                                <div class="world_entry_form_control wi-enter-footer-text  flex-container flexNoGap">
+                                    <!--  <label for="order" data-i18n="Order:">Order:</label> -->
+                                    <input title="Order" class="text_pole wideMax100px margin0" type="number" name="order" placeholder="" min="0" max="999" />
+                                </div>
+                                <div class="world_entry_form_control wi-enter-footer-text flex-container flexNoGap probabilityContainer">
+                                    <input title="Probability" class="text_pole wideMax100px margin0" type="number" name="probability" placeholder="" min="0" max="100" />
+                                </div>
+                                <div class="flex-container flex1">
+                                    <textarea class="text_pole" name="comment" maxlength="2000" data-i18n="[placeholder]Entry Title/Memo" placeholder="Entry Title/Memo"></textarea>
+                                </div>
+
+                            </span>
+
+                            <!--                             <div class="world_entry_form_control flex1">
                                 <small class="displayNone">
                                     <span data-i18n="Comma separated (required)">
                                         Comma separated (required)
@@ -4004,21 +4009,67 @@
                                     <textarea class="text_pole keysecondarytextpole" name="keysecondary" rows="1" data-i18n="[placeholder]Comma separated (ignored if empty)" placeholder="Comma separated list" maxlength="1000"></textarea>
                                     <i class="menu_button delete_entry_button fa-solid fa-trash-can" type="submit" data-i18n="" value="" /></i>
                                 </div>
-                            </div>
+                            </div> -->
                         </div>
-                        <div class="fa-fw fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                        <i class="menu_button delete_entry_button fa-solid fa-trash-can" type="submit" data-i18n="" value="" /></i>
+
                     </div>
-                    <div class="inline-drawer-content flex-container paddingBottom5px">
-                        <div class="WIEntryContentAndMemo flex-container">
-                            <div class="world_entry_thin_controls flex2">
+                    <div class="inline-drawer-content flex-container paddingBottom5px wide100p">
+                        <div class="flex-container wide100p alignitemscenter">
+                            <div name="keywordsAndLogicBlock" class="flex-container wide100p alignitemscenter">
+                                <div class="world_entry_form_control flex1">
+                                    <small class="displayNone">
+                                        <span data-i18n="Comma separated (required)">
+                                            Comma separated (required)
+                                        </span>
+                                    </small>
+                                    <small class="textAlignCenter">Primary Keywords</small>
+                                    <textarea class="text_pole keyprimarytextpole" name="key" rows="1" data-i18n="[placeholder]Comma separated (required)" placeholder="Comma separated (required)" maxlength="1000"></textarea>
+                                </div>
+                                <div class="world_entry_form_control">
+                                    <small class="textAlignCenter">Logic</small>
+                                    <select name="entryLogicType" class="widthFitContent margin0">
+                                        <option value="0">AND</option>
+                                        <option value="1">NOT</option>
+                                    </select>
+                                </div>
+
+                                <div class="world_entry_form_control keysecondary flex1">
+                                    <small class="displayNone">
+                                        <span data-i18n="(ignored if empty)">
+                                            (ignored if empty)
+                                        </span>
+                                    </small>
+                                    <small class="textAlignCenter">Optional Filter Keywords</small>
+                                    <div class="flex-container flexFlowRow alignitemscenter">
+                                        <textarea class="text_pole keysecondarytextpole" name="keysecondary" rows="1" data-i18n="[placeholder]Comma separated (ignored if empty)" placeholder="Comma separated list" maxlength="1000"></textarea>
+
+                                    </div>
+                                </div>
+                            </div>
+                            <div name="contentAndCharFilterBlock" class="world_entry_thin_controls flex2">
                                 <div class="world_entry_form_control flex1">
                                     <label for="content ">
                                         <small>
-                                            <span data-i18n="Content">
-                                                Content
-                                                <span>(Tokens:&nbsp; <span class="world_entry_form_token_counter" data-first-run="true">counting...</span>)
+                                            <span data-i18n="Content" class="alignitemscenter flex-container flexnowrap wide100p justifySpaceBetween">
+
+                                                <span class="alignitemscenter flex-container flexNoGap">
+                                                    Content
+                                                </span>
+                                                <span>
+
+                                                    (Tokens:&nbsp; <span class="world_entry_form_token_counter" data-first-run="true">counting...</span>)&nbsp;
                                                     <span class="world_entry_form_uid_value" data-first-run="true"></span>
                                                 </span>
+                                                <div>
+                                                    <label class="checkbox flex-container alignitemscenter flexNoGap">
+                                                        <input type="checkbox" name="exclude_recursion" />
+                                                        <span data-i18n="Exclude from recursion">
+                                                            Non-recursable
+                                                        </span>
+                                                    </label>
+                                                </div>
+
                                             </span>
                                         </small>
                                         <small class="displayNone">
@@ -4029,9 +4080,10 @@
                                     </label>
                                     <textarea class="text_pole" name="content" rows="4" data-i18n="[placeholder]What this keyword should mean to the AI, sent verbatim" placeholder="What this keyword should mean to the AI, sent verbatim"></textarea>
                                 </div>
+
                             </div>
                             <div class="world_entry_thin_controls commentContainer">
-                                <div class="world_entry_form_control flex1">
+                                <!--                                 <div class="world_entry_form_control flex1">
                                     <label for="comment">
                                         <small>
                                             <span data-i18n="Memo/Note">
@@ -4045,13 +4097,37 @@
                                         </small>
                                     </label>
                                     <textarea class="text_pole" rows="4" name="comment" maxlength="2000" data-i18n="[placeholder]Not sent to the AI" placeholder="Not sent to AI"></textarea>
-                                </div>
+                                </div> -->
                             </div>
                         </div>
                         <div class="flex-container flexFlowColumn flexNoGap wide100p">
-                            <label for="characterFilter" class="range-block-title justifyLeft">
-                                <small data-i18n="Filter to Character(s)">Filter to Character(s)</small>
-                            </label>
+                            <div class="flex-container justifySpaceBetween">
+                                <label for="characterFilter" class="">
+                                    <small data-i18n="Filter to Character(s)">Filter to Character(s)</small>
+
+                                </label>
+                                <label class="checkbox flex-container alignitemscenter">
+                                    <input type="checkbox" name="character_exclusion" />
+                                    <span data-i18n="Character Exclusion">
+                                        <small>Character Exclusion</small>
+                                    </span>
+                                </label>
+                            </div>
+
+                            <!-- PLACEHOLDER HTML FOR CHAR FILTER EXCLUDE CONVERSION TO SELECT INSTEAD OF CHECKBOX-->
+                            <!--
+                                <div name="WICharFilterLabel" class="flex-container alignitemscenter marginBot5">
+                                    <small data-i18n="Filter Entry">Filter Entry</small>
+                                    <div>
+                                        <select name="character_exclusion" class="widthFitContent margin0">
+                                            <option value="only">to Only</option>
+                                            <option value="except">to Exclude</option>
+                                        </select>
+                                    </div>
+                                    <small>the following Characters:</small>
+                              </div>
+                            -->
+
                             <div class="range-block-range">
                                 <select name="characterFilter" multiple>
                                     <option value="">
@@ -4084,18 +4160,18 @@
                                     <input type="checkbox" name="addMemo">
                                     <span data-i18n="Add Memo">Add Memo</span>
                                 </label>
-                                <label class="checkbox flex-container alignitemscenter">
+                                <!--                                 <label class="checkbox flex-container alignitemscenter">
                                     <input type="checkbox" name="exclude_recursion" />
                                     <span data-i18n="Exclude from recursion">
                                         Non-recursable
                                     </span>
-                                </label>
-                                <label class="checkbox flex-container alignitemscenter">
+                                </label> -->
+                                <!--                                 <label class="checkbox flex-container alignitemscenter">
                                     <input type="checkbox" name="character_exclusion" />
                                     <span data-i18n="Character Exclusion">
                                         Character Exclusion
                                     </span>
-                                </label>
+                                </label> -->
                             </div>
 
                             <!--
@@ -4136,10 +4212,10 @@
 
 
 
-                            <div class="world_entry_form_control wi-enter-footer-text flex-container flexNoGap probabilityContainer">
+                            <!--                             <div class="world_entry_form_control wi-enter-footer-text flex-container flexNoGap probabilityContainer">
                                 <label for="probability" data-i18n="Probability:"></label>Probability:</label>
                                 <input class="text_pole wideMax100px margin0" type="number" name="probability" placeholder="" min="0" max="100" />
-                            </div>
+                            </div> -->
 
                         </div>
 
