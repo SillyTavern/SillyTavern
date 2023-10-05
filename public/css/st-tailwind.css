@@ -6,6 +6,10 @@
     color: var(--fullred);
 }
 
+.m-t-0 {
+    margin-top: 0;
+}
+
 .m-t-1 {
     margin-top: 1em;
 }

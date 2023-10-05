@@ -169,14 +169,18 @@
     margin-bottom: 3px;
 }
 
+.world_entry {
+    transition: all 500ms;
+}
+
 .disabledWIEntry {
     opacity: 0.4;
     filter: grayscale(1);
 }
 
 .disabledWIEntry:hover {
-    opacity: 1.0;
-    filter: grayscale(1);
+    opacity: 1;
+    filter: grayscale(0.5);
 }
 
 .height32px {
