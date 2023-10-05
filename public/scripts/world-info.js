@@ -291,7 +291,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
         callback: function (page) {
             $("#world_popup_entries_list").empty();
             const keywordHeaders = `
-            <div class="flex-container wide100p spaceBetween justifyCenter textAlignCenter" style="padding:0 2.5em;">
+            <div id="WIEntryHeaderTitlesPC" class="flex-container wide100p spaceBetween justifyCenter textAlignCenter" style="padding:0 2.5em;">
             <small class="flex1">
             Title/Memo
         </small>

@@ -186,3 +186,7 @@
 .height32px {
     height: 32px;
 }
+
+.WIEntryHeaderTitleMobile {
+    display: none;
+}

@@ -146,6 +146,14 @@
         width: 100%;
     }
 
+    #WIEntryHeaderTitlesPC {
+        display: none;
+    }
+
+    .WIEntryHeaderTitleMobile {
+        display: block !important;
+    }
+
     #character_popup,
     #world_popup {
         overflow-y: auto;
