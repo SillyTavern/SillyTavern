@@ -101,7 +101,7 @@
     height: auto;
     margin-top: 0;
     margin-bottom: 0;
-    min-height: var(--mainFontSize);
+    min-height: calc(var(--mainFontSize) + 13px);
 }
 
 .delete_entry_button {
@@ -178,7 +178,7 @@
     filter: grayscale(1);
 }
 
-.disabledWIEntry:hover {
+.disabledWIEntry:not(input):hover {
     opacity: 1;
     filter: grayscale(0.5);
 }
