@@ -52,6 +52,8 @@ let updateEditor = (navigation) => { navigation; };
 // Do not optimize. updateEditor is a function that is updated by the displayWorldEntries with new data.
 const worldInfoFilter = new FilterHelper(() => updateEditor());
 
+const InputWidthReference = $("#WIInputWidthReference");
+
 const DEFAULT_DEPTH = 4;
 
 export function getWorldInfoSettings() {
@@ -289,9 +291,24 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
         callback: function (page) {
             $("#world_popup_entries_list").empty();
             const keywordHeaders = `
-            <div class="flex-container wide100p spaceBetween justifyCenter textAlignCenter">
+            <div class="flex-container wide100p spaceBetween justifyCenter textAlignCenter" style="padding-left:25px; padding-right:45px;">
+                <small style="width:${InputWidthReference.width() + 20 + 'px'}">
+                    Position
+                </small>
+                <small style="width:${InputWidthReference.width() + 15 + 'px'}">
+                    Depth
+                </small>
+                <small style="width:${InputWidthReference.width() + 15 + 'px'}">
+                    Order
+                </small>
+                <small style="width:${InputWidthReference.width() + 5 + 'px'}">
+                    Status
+                </small>
                 <small class="flex1">
                     Keywords
+                </small>
+                <small style="width:${InputWidthReference.width() + 15 + 'px'}">
+                    Logic
                 </small>
                 <small class="flex1">
                     Optional Filter
@@ -692,6 +709,7 @@ function getWorldEntry(name, data, entry) {
         saveWorldInfo(name, data);
     });
     orderInput.val(entry.order).trigger("input");
+    orderInput.width(InputWidthReference.width() + 15 + 'px')
 
     // probability
     if (entry.probability === undefined) {
@@ -711,10 +729,11 @@ function getWorldEntry(name, data, entry) {
         saveWorldInfo(name, data);
     });
     depthInput.val(entry.depth ?? DEFAULT_DEPTH).trigger("input");
+    depthInput.width(InputWidthReference.width() + 15 + 'px');
 
     // Hide by default unless depth is specified
     if (entry.position === world_info_position.atDepth) {
-        depthInput.parent().hide();
+        //depthInput.parent().hide();
     }
 
     const probabilityInput = template.find('input[name="probability"]');
@@ -776,15 +795,20 @@ function getWorldEntry(name, data, entry) {
     }
 
     const positionInput = template.find('select[name="position"]');
+    initScrollHeight(positionInput);
     positionInput.data("uid", entry.uid);
     positionInput.on("input", function () {
         const uid = $(this).data("uid");
         const value = Number($(this).val());
         data.entries[uid].position = !isNaN(value) ? value : 0;
         if (value === world_info_position.atDepth) {
-            depthInput.parent().show();
+            depthInput.prop('disabled', false);
+            depthInput.removeClass('disabledWIEntry')
+            //depthInput.parent().show();
         } else {
-            depthInput.parent().hide();
+            depthInput.prop('disabled', true);
+            depthInput.addClass('disabledWIEntry')
+            //depthInput.parent().hide();
         }
         updatePosOrdDisplay(uid)
         // Spec v2 only supports before_char and after_char
@@ -1583,14 +1607,14 @@ export function checkEmbeddedWorld(chid) {
             callPopup(`<h3>This character has an embedded World/Lorebook.</h3>
                        <h3>Would you like to import it now?</h3>
                        <div class="m-b-1">If you want to import it later, select "Import Card Lore" in the "More..." dropdown menu on the character panel.</div>`,
-                       'confirm',
-                       '',
-                       { okButton: 'Yes', })
-            .then((result) => {
-                if (result) {
-                    importEmbeddedWorldInfo(true);
-                }
-            });
+                'confirm',
+                '',
+                { okButton: 'Yes', })
+                .then((result) => {
+                    if (result) {
+                        importEmbeddedWorldInfo(true);
+                    }
+                });
         }
         return true;
     }

@@ -101,7 +101,7 @@
     height: auto;
     margin-top: 0;
     margin-bottom: 0;
-    min-height: 32px;
+    min-height: var(--mainFontSize);
 }
 
 .delete_entry_button {
@@ -162,11 +162,11 @@
 }
 
 .wi-card-entry {
-    border: 1px groove;
+    border: 1px solid;
     border-color: var(--SmartThemeBorderColor);
-    border-radius: 8px;
-    padding: 5px;
-    margin-bottom: 3px;
+    border-radius: 10px;
+    padding: 0 5px;
+    margin-bottom: 1px;
 }
 
 .world_entry {

@@ -124,6 +124,10 @@
     max-width: 100px;
 }
 
+.width100px {
+    width: 100px;
+}
+
 .widthUnset {
     width: unset;
 }
@@ -374,6 +378,11 @@
     cursor: pointer;
 }
 
+input:disabled,
+textarea:disabled {
+    cursor: not-allowed;
+}
+
 .debug-red {
     border: 1px solid red !important;
 }
@@ -400,6 +409,11 @@
 
 .fontsize60p {
     font-size: calc(var(--mainFontSize) * 0.6) !important;
+}
+
+.paddingBottom5px {
+    padding: unset;
+    padding-bottom: 5px;
 }
 
 .paddingTopBot5 {
