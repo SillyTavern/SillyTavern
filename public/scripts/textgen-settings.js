@@ -65,6 +65,8 @@ const textgenerationwebui_settings = {
     type: textgen_types.OOBA,
 };
 
+export let textgenerationwebui_banned_in_macros = [];
+
 export let textgenerationwebui_presets = [];
 export let textgenerationwebui_preset_names = [];
 
@@ -136,19 +138,31 @@ function formatTextGenURL(value, use_mancer) {
 }
 
 function convertPresets(presets) {
-    return Array.isArray(presets) ? presets.map(JSON.parse) : [];
+    return Array.isArray(presets) ? presets.map((p) => JSON.parse(p)) : [];
 }
 
 /**
  * @returns {string} String with comma-separated banned token IDs
  */
 function getCustomTokenBans() {
-    if (!textgenerationwebui_settings.banned_tokens) {
+    if (!textgenerationwebui_settings.banned_tokens && !textgenerationwebui_banned_in_macros.length) {
         return '';
     }
 
-    const sequences = textgenerationwebui_settings.banned_tokens.split('\n');
     const result = [];
+    const sequences = textgenerationwebui_settings.banned_tokens
+        .split('\n')
+        .concat(textgenerationwebui_banned_in_macros)
+        .filter(x => x.length > 0)
+        .filter(onlyUnique);
+
+    //debug
+    if (textgenerationwebui_banned_in_macros.length) {
+        console.log("=== Found banned word sequences in the macros:", textgenerationwebui_banned_in_macros, "Resulting array of banned sequences (will be used this generation turn):", sequences);
+    }
+
+    //clean old temporary bans found in macros before, for the next generation turn.
+    textgenerationwebui_banned_in_macros = [];
 
     for (const line of sequences) {
         // Raw token ids, JSON serialized
@@ -309,7 +323,7 @@ async function generateTextGenWithStreaming(generate_data, signal) {
         streamingUrl = api_server_textgenerationwebui.replace("http", "ws") + "/v1/stream";
     }
 
-    if (isAphrodite()){
+    if (isAphrodite()) {
         streamingUrl = api_server_textgenerationwebui;
     }
 
@@ -342,7 +356,7 @@ async function generateTextGenWithStreaming(generate_data, signal) {
 
                     try {
                         const { results } = JSON.parse(event);
-                        
+
                         if (Array.isArray(results) && results.length > 0) {
                             getMessage = results[0].text;
                             yield getMessage;
@@ -361,11 +375,11 @@ async function generateTextGenWithStreaming(generate_data, signal) {
             } else {
 
                 getMessage += response;
-    
+
                 if (done) {
                     return;
                 }
-    
+
                 yield getMessage;
             }
         }

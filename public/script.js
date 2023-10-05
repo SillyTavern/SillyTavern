@@ -20,6 +20,7 @@ import {
     isMancer,
     isAphrodite,
     textgen_types,
+    textgenerationwebui_banned_in_macros,
 } from "./scripts/textgen-settings.js";
 
 import {
@@ -1757,7 +1758,35 @@ function substituteParams(content, _name1, _name2, _original, _group) {
     });
     content = randomReplace(content);
     content = diceRollReplace(content);
+    content = bannedWordsReplace(content);
     return content;
+}
+
+/**
+ * Replaces banned words in macros with an empty string.
+ * Adds them to textgenerationwebui ban list.
+ * @param {string} inText Text to replace banned words in
+ * @returns {string} Text without the "banned" macro
+ */
+function bannedWordsReplace(inText) {
+    if (!inText) {
+        return '';
+    }
+
+    const banPattern = /{{banned "(.*)"}}/gi;
+
+    if (main_api == 'textgenerationwebui') {
+        const bans = inText.matchAll(banPattern);
+        if (bans) {
+            for (const banCase of bans) {
+                console.log("Found banned words in macros: " + banCase[1]);
+                textgenerationwebui_banned_in_macros.push(banCase[1]);
+            }
+        }
+    }
+
+    inText = inText.replaceAll(banPattern, "");
+    return inText;
 }
 
 function getTimeSinceLastMessage() {
