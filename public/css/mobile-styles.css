@@ -315,8 +315,7 @@
         min-width: 100px;
         min-height: 100px;
         max-height: 50vh;
-        max-width: 50vh;
-        width: 50vw;
+        max-width: 90vw;
         position: absolute;
         padding: 0;
         filter: drop-shadow(2px 2px 2px #51515199);
