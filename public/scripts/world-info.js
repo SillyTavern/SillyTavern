@@ -256,7 +256,7 @@ function sortEntries(data) {
             return (aValue - bValue || b.order - a.order);
         });
     } else {
-        data.sort((a, b) => {
+        const primarySort = (a, b) => {
             const aValue = a[sortField];
             const bValue = b[sortField];
 
@@ -273,6 +273,24 @@ function sortEntries(data) {
 
             // Sort numbers
             return orderSign * (Number(aValue) - Number(bValue));
+        };
+        const secondarySort = (a, b) => b.order - a.order;
+        const tertiarySort = (a, b) => a.uid - b.uid;
+
+        data.sort((a, b) => {
+            const primary = primarySort(a, b);
+
+            if (primary !== 0) {
+                return primary;
+            }
+
+            const secondary = secondarySort(a, b);
+
+            if (secondary !== 0) {
+                return secondary;
+            }
+
+            return tertiarySort(a, b);
         });
     }
 
