@@ -171,7 +171,7 @@
 }
 
 .world_entry {
-    transition: all 500ms;
+    transition: opacity 500ms;
 }
 
 .disabledWIEntry {
