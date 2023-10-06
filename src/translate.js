@@ -1,8 +1,6 @@
 const fetch = require('node-fetch').default;
 const https = require('https');
 const { readSecret, SECRET_KEYS } = require('./secrets');
-const { generateRequestUrl, normaliseResponse } = require('google-translate-api-browser');
-const bingTranslateApi = require('bing-translate-api')
 
 const DEEPLX_URL_DEFAULT = 'http://127.0.0.1:1188/translate';
 const ONERING_URL_DEFAULT = 'http://127.0.0.1:4990/translate';
@@ -60,6 +58,7 @@ function registerEndpoints(app, jsonParser) {
     });
 
     app.post('/api/translate/google', jsonParser, async (request, response) => {
+        const { generateRequestUrl, normaliseResponse } = require('google-translate-api-browser');
         const text = request.body.text;
         const lang = request.body.lang;
 
@@ -244,8 +243,10 @@ function registerEndpoints(app, jsonParser) {
     });
 
     app.post('/api/translate/bing', jsonParser, async (request, response) => {
+        const bingTranslateApi = require('bing-translate-api');
         const text = request.body.text;
-        let lang = request.body.lang
+        let lang = request.body.lang;
+
         if (request.body.lang === 'zh-CN') {
             lang = 'zh-Hans'
         }
