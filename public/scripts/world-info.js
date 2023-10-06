@@ -960,7 +960,6 @@ function getWorldEntry(name, data, entry) {
     entryStateSelector.on("input", function () {
         const uid = entry.uid;
         const value = $(this).val();
-        const probabilityInput = template.find('input[name="probability"]')
         switch (value) {
             case "constant":
                 data.entries[uid].constant = true;
@@ -969,8 +968,6 @@ function getWorldEntry(name, data, entry) {
                 setOriginalDataValue(data, uid, "constant", true);
                 template.removeClass('disabledWIEntry');
                 console.debug("set to constant")
-                probabilityInput.css('visibility', 'hidden')
-                probabilityInput.prop('disabled', true)
                 break
             case "normal":
                 data.entries[uid].constant = false;
@@ -978,8 +975,6 @@ function getWorldEntry(name, data, entry) {
                 setOriginalDataValue(data, uid, "enabled", true);
                 setOriginalDataValue(data, uid, "constant", false);
                 template.removeClass('disabledWIEntry');
-                probabilityInput.css('visibility', 'visible')
-                probabilityInput.prop('disabled', false)
                 console.debug("set to normal")
                 break
             case "disabled":
