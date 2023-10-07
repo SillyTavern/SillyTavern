@@ -259,9 +259,7 @@ class PresetManager {
             'streaming_novel',
             'nai_preamble',
             'model_novel',
-            'single_line',
             'streaming_kobold',
-            'use_default_badwordsids',
             "enabled",
         ];
         const settings = Object.assign({}, getSettingsByApiId(this.apiId));

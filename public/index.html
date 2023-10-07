@@ -119,122 +119,7 @@
                     Click slider numbers to input manually.
                 </div>
                 <div class="scrollableInner">
-                    <h3>
-                        <span data-i18n="AI Response Configuration">AI Response Configuration</span>
-                    </h3>
                     <div class="flex-container" id="ai_response_configuration">
-                        <div data-newbie-hidden id="ai_module_block_novel" class="width100p">
-                            <div class="range-block">
-                                <div class="range-block-title justifyLeft" data-i18n="AI Module">
-                                    AI Module
-                                </div>
-                                <div class="toggle-description justifyLeft" data-i18n="Changes the style of the generated text.">
-                                    Changes the style of the generated text.
-                                </div>
-                                <select id="nai_prefix">
-                                    <option value="vanilla" data-i18n="No Module">No Module</option>
-                                    <option value="special_instruct" data-i18n="Instruct">Instruct</option>
-                                    <option value="special_proseaugmenter" data-i18n="Prose Augmenter">Prose Augmenter</option>
-                                    <option value="theme_textadventure" data-i18n="Text Adventure">Text Adventure</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div id="common-gen-settings-block" class="width100p">
-                            <div id="pro-settings-block">
-                                <div id="amount_gen_block" class="range-block">
-                                    <div class="range-block-title" data-i18n="response legth(tokens)">
-                                        Response Length (tokens)
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range-and-counter">
-                                            <div class="range-block-range">
-                                                <input type="range" id="amount_gen" name="volume" min="16" max="1024" step="1">
-                                            </div>
-                                            <div class="range-block-counter" data-randomization-disabled="true">
-                                                <div contenteditable="true" data-for="amount_gen" id="amount_gen_counter">
-                                                    select
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div id="max_context_block" class="range-block">
-                                    <div class="range-block-title" data-i18n="context size(tokens)">
-                                        Context Size (tokens)
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="max_context" name="volume" min="512" max="4096" step="1">
-                                        </div>
-                                        <div class="range-block-counter" data-randomization-disabled="true">
-                                            <div contenteditable="true" data-for="max_context" id="max_context_counter">
-                                                select
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="max_context_unlocked_block">
-                                    <label class="checkbox_label">
-                                        <input id="max_context_unlocked" type="checkbox" />
-                                        <span data-i18n="unlocked">Unlocked</span>
-                                    </label>
-                                    <div id="max_context_unlocked_warning" class="toggle-description justifyLeft widthUnset">
-                                        <span data-i18n="Only select models support context sizes greater than 4096 tokens. Increase only if you know what you're doing.">
-                                            Only select models support context sizes greater than 4096 tokens.
-                                            Increase only if you know what you're doing.
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <div id="range_block">
-                                    <div class="range-block">
-                                        <label class="checkbox_label widthFreeExpand">
-                                            <input id="streaming_kobold" type="checkbox" />
-                                            <span data-i18n="Streaming">Streaming</span>
-                                        </label>
-                                        <div class="toggle-description justifyLeft">
-                                            <span data-i18n="Display the response bit by bit as it is generated.">
-                                                Display the response bit by bit as it is generated.</span><br>
-                                            <span data-i18n="When this is off, responses will be displayed all at once when they are complete.">
-                                                When this is off, responses will be displayed all at once when they are complete.
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <div class="range-block">
-                                        <label class="checkbox_label" for="single_line">
-                                            <input id="single_line" type="checkbox" /><span data-i18n="Single-line mode">
-                                                Single-line mode</span>
-                                        </label>
-                                        <div class="toggle-description justifyLeft">
-                                            <span data-i18n="Generate only one line per request (KoboldAI only, ignored by KoboldCpp).">
-                                                Generate only one line per request (KoboldAI only, ignored by KoboldCpp).
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <div class="range-block">
-                                        <label class="checkbox_label" for="use_default_badwordsids">
-                                            <input id="use_default_badwordsids" type="checkbox" />
-                                            <span data-i18n="Ban EOS Token">
-                                                Ban EOS Token
-                                            </span>
-                                        </label>
-                                        <div class="toggle-description justifyLeft">
-                                            <span data-i18n="Ban the End-of-Sequence (EOS) token (with KoboldCpp, and possibly also other tokens with KoboldAI).">
-                                                Ban the End-of-Sequence (EOS) token (with KoboldCpp, and possibly also other tokens with KoboldAI).</span><br>
-                                            <span data-i18n="Good for story writing, but should not be used for chat and instruct mode.">
-                                                Good for story writing, but should not be used for chat and instruct mode.
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <hr>
-                        </div>
-
                         <div id="respective-presets-block" class="width100p">
                             <div id="kobold_api-presets">
                                 <h3><span data-i18n="kobldpresets">Kobold Presets</span>
@@ -242,7 +127,6 @@
                                         <span class="note-link-span">?</span>
                                     </a>
                                 </h3>
-
                                 <div class="preset_buttons">
                                     <select id="settings_perset" data-preset-manager-for="kobold">
                                         <option value="gui" data-i18n="guikoboldaisettings">GUI KoboldAI Settings</option>
@@ -307,8 +191,92 @@
                             <hr>
                         </div>
 
+                        <div data-newbie-hidden id="ai_module_block_novel" class="width100p">
+                            <div class="range-block">
+                                <div class="range-block-title justifyLeft" data-i18n="AI Module">
+                                    AI Module
+                                </div>
+                                <div class="toggle-description justifyLeft" data-i18n="Changes the style of the generated text.">
+                                    Changes the style of the generated text.
+                                </div>
+                                <select id="nai_prefix">
+                                    <option value="vanilla" data-i18n="No Module">No Module</option>
+                                    <option value="special_instruct" data-i18n="Instruct">Instruct</option>
+                                    <option value="special_proseaugmenter" data-i18n="Prose Augmenter">Prose Augmenter</option>
+                                    <option value="theme_textadventure" data-i18n="Text Adventure">Text Adventure</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="common-gen-settings-block" class="width100p">
+                            <div id="pro-settings-block">
+                                <div id="amount_gen_block" class="range-block">
+                                    <div class="range-block-title" data-i18n="response legth(tokens)">
+                                        Response Length (tokens)
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range-and-counter">
+                                            <div class="range-block-range">
+                                                <input type="range" id="amount_gen" name="volume" min="16" max="1024" step="1">
+                                            </div>
+                                            <div class="range-block-counter" data-randomization-disabled="true">
+                                                <div contenteditable="true" data-for="amount_gen" id="amount_gen_counter">
+                                                    select
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="max_context_block" class="range-block">
+                                    <div class="range-block-title" data-i18n="context size(tokens)">
+                                        Context Size (tokens)
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="max_context" name="volume" min="512" max="4096" step="1">
+                                        </div>
+                                        <div class="range-block-counter" data-randomization-disabled="true">
+                                            <div contenteditable="true" data-for="max_context" id="max_context_counter">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="max_context_unlocked_block">
+                                    <label class="checkbox_label">
+                                        <input id="max_context_unlocked" type="checkbox" />
+                                        <span data-i18n="unlocked">Unlocked</span>
+                                    </label>
+                                    <div id="max_context_unlocked_warning" class="toggle-description justifyLeft widthUnset">
+                                        <span data-i18n="Only select models support context sizes greater than 4096 tokens. Increase only if you know what you're doing.">
+                                            Only select models support context sizes greater than 4096 tokens.
+                                            Increase only if you know what you're doing.
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <hr>
+                        </div>
+
                         <div id="respective-ranges-and-temps" class="width100p">
                             <div id="range_block">
+                                <div id="range_block">
+                                    <div class="range-block">
+                                        <label class="checkbox_label widthFreeExpand">
+                                            <input id="streaming_kobold" type="checkbox" />
+                                            <span data-i18n="Streaming">Streaming</span>
+                                        </label>
+                                        <div class="toggle-description justifyLeft">
+                                            <span data-i18n="Display the response bit by bit as it is generated.">
+                                                Display the response bit by bit as it is generated.</span><br>
+                                            <span data-i18n="When this is off, responses will be displayed all at once when they are complete.">
+                                                When this is off, responses will be displayed all at once when they are complete.
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div class="range-block">
                                     <div class="range-block-title" data-i18n="temperature">
                                         Temperature
@@ -339,7 +307,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block">
+                                <div class="range-block">
                                     <div class="range-block-title" data-i18n="rep.pen range">
                                         Repetition Penalty Range
                                     </div>
@@ -349,6 +317,21 @@
                                         </div>
                                         <div class="range-block-counter">
                                             <div contenteditable="true" data-for="rep_pen_range" id="rep_pen_range_counter">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div data-newbie-hidden class="range-block">
+                                    <div class="range-block-title" data-i18n="Rep. Pen. Slope">
+                                        Repetition Penalty Slope
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="rep_pen_slope" name="volume" min="0" max="10" step="0.1">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="rep_pen_slope" id="rep_pen_slope_counter">
                                                 select
                                             </div>
                                         </div>
@@ -549,7 +532,7 @@
                                 </div>
                                 <div data-newbie-hidden class="range-block">
                                     <div class="range-block-title" data-i18n="Encoder Rep. Pen.">
-                                        Encoder Rep. Pen.
+                                        Encoder Repetition Penalty
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
@@ -1017,18 +1000,29 @@
                                         </div>
                                     </div>
                                     <div class="range-block">
-                                        <div class="range-block-title" data-i18n="Rep. Pen. Slope">
-                                            Rep. Pen. Slope
+                                        <label class="checkbox_label" for="single_line">
+                                            <input id="single_line" type="checkbox" /><span data-i18n="Single-line mode">
+                                                Single-line mode</span>
+                                        </label>
+                                        <div class="toggle-description justifyLeft">
+                                            <span data-i18n="Generate only one line per request (KoboldAI only, ignored by KoboldCpp).">
+                                                Generate only one line per request (KoboldAI only, ignored by KoboldCpp).
+                                            </span>
                                         </div>
-                                        <div class="range-block-range-and-counter">
-                                            <div class="range-block-range">
-                                                <input type="range" id="rep_pen_slope" name="volume" min="0" max="10" step="0.1">
-                                            </div>
-                                            <div class="range-block-counter">
-                                                <div contenteditable="true" data-for="rep_pen_slope" id="rep_pen_slope_counter">
-                                                    select
-                                                </div>
-                                            </div>
+                                    </div>
+                                    <div class="range-block">
+                                        <label class="checkbox_label" for="use_default_badwordsids">
+                                            <input id="use_default_badwordsids" type="checkbox" />
+                                            <span data-i18n="Ban EOS Token">
+                                                Ban EOS Token
+                                            </span>
+                                        </label>
+                                        <div class="toggle-description justifyLeft">
+                                            <span data-i18n="Ban the End-of-Sequence (EOS) token (with KoboldCpp, and possibly also other tokens with KoboldAI).">
+                                                Ban the End-of-Sequence (EOS) token (with KoboldCpp, and possibly also other tokens with KoboldAI).</span><br>
+                                            <span data-i18n="Good for story writing, but should not be used for chat and instruct mode.">
+                                                Good for story writing, but should not be used for chat and instruct mode.
+                                            </span>
                                         </div>
                                     </div>
                                     <hr>
