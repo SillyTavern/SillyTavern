@@ -20,6 +20,7 @@ import {
     isMancer,
     isAphrodite,
     textgen_types,
+    textgenerationwebui_banned_in_macros,
 } from "./scripts/textgen-settings.js";
 
 import {
@@ -594,6 +595,8 @@ function getCurrentChatId() {
 }
 
 const talkativeness_default = 0.5;
+const depth_prompt_depth_default = 4;
+const per_page_default = 50;
 
 var is_advanced_char_open = false;
 
@@ -616,7 +619,9 @@ let create_save = {
     mes_example: "",
     world: "",
     talkativeness: talkativeness_default,
-    alternate_greetings: []
+    alternate_greetings: [],
+    depth_prompt_prompt: '',
+    depth_prompt_depth: depth_prompt_depth_default,
 };
 
 //animation right menu
@@ -918,7 +923,7 @@ async function printCharacters(fullRefresh = false) {
     const storageKey = 'Characters_PerPage';
     $("#rm_print_characters_pagination").pagination({
         dataSource: getEntitiesList({ doFilter: true }),
-        pageSize: Number(localStorage.getItem(storageKey)) || 50,
+        pageSize: Number(localStorage.getItem(storageKey)) || per_page_default,
         sizeChangerOptions: [10, 25, 50, 100, 250, 500, 1000],
         pageRange: 1,
         pageNumber: saveCharactersPage || 1,
@@ -1761,7 +1766,35 @@ function substituteParams(content, _name1, _name2, _original, _group) {
     });
     content = randomReplace(content);
     content = diceRollReplace(content);
+    content = bannedWordsReplace(content);
     return content;
+}
+
+/**
+ * Replaces banned words in macros with an empty string.
+ * Adds them to textgenerationwebui ban list.
+ * @param {string} inText Text to replace banned words in
+ * @returns {string} Text without the "banned" macro
+ */
+function bannedWordsReplace(inText) {
+    if (!inText) {
+        return '';
+    }
+
+    const banPattern = /{{banned "(.*)"}}/gi;
+
+    if (main_api == 'textgenerationwebui') {
+        const bans = inText.matchAll(banPattern);
+        if (bans) {
+            for (const banCase of bans) {
+                console.log("Found banned words in macros: " + banCase[1]);
+                textgenerationwebui_banned_in_macros.push(banCase[1]);
+            }
+        }
+    }
+
+    inText = inText.replaceAll(banPattern, "");
+    return inText;
 }
 
 function getTimeSinceLastMessage() {
@@ -2481,6 +2514,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             systemPrompt = power_user.prefer_character_prompt && systemPrompt ? systemPrompt : baseChatReplace(power_user.instruct.system_prompt, name1, name2);
             systemPrompt = formatInstructModeSystemPrompt(substituteParams(systemPrompt, name1, name2, power_user.instruct.system_prompt));
         }
+
+        // Depth prompt (character-specific A/N)
+        const depthPromptText = baseChatReplace(characters[this_chid].data?.extensions?.depth_prompt?.prompt?.trim(), name1, name2) || '';
+        const depthPromptDepth = characters[this_chid].data?.extensions?.depth_prompt?.depth ?? depth_prompt_depth_default;
+        setExtensionPrompt('DEPTH_PROMPT', depthPromptText, extension_prompt_types.IN_CHAT, depthPromptDepth);
 
         // Parse example messages
         if (!mesExamples.startsWith('<START>')) {
@@ -5457,7 +5495,7 @@ function select_rm_info(type, charId, previousCharId = null) {
             }
 
             try {
-                const perPage = Number(localStorage.getItem('Characters_PerPage'));
+                const perPage = Number(localStorage.getItem('Characters_PerPage')) || per_page_default;
                 const page = Math.floor(charIndex / perPage) + 1;
                 const selector = `#rm_print_characters_block [title^="${charId}"]`;
                 $('#rm_print_characters_pagination').pagination('go', page);
@@ -5492,7 +5530,7 @@ function select_rm_info(type, charId, previousCharId = null) {
                 return;
             }
 
-            const perPage = Number(localStorage.getItem('Characters_PerPage'));
+            const perPage = Number(localStorage.getItem('Characters_PerPage')) || per_page_default;
             const page = Math.floor(charIndex / perPage) + 1;
             $('#rm_print_characters_pagination').pagination('go', page);
             const selector = `#rm_print_characters_block [grid="${charId}"]`;
@@ -5561,6 +5599,8 @@ export function select_selected_character(chid) {
     $("#personality_textarea").val(characters[chid].personality);
     $("#firstmessage_textarea").val(characters[chid].first_mes);
     $("#scenario_pole").val(characters[chid].scenario);
+    $("#depth_prompt_prompt").val(characters[chid].data?.extensions?.depth_prompt?.prompt ?? '');
+    $("#depth_prompt_depth").val(characters[chid].data?.extensions?.depth_prompt?.depth ?? depth_prompt_depth_default);
     $("#talkativeness_slider").val(characters[chid].talkativeness || talkativeness_default);
     $("#mes_example_textarea").val(characters[chid].mes_example);
     $("#selected_chat_pole").val(characters[chid].chat);
@@ -5628,6 +5668,8 @@ function select_rm_create() {
     $("#firstmessage_textarea").val(create_save.first_message);
     $("#talkativeness_slider").val(create_save.talkativeness);
     $("#scenario_pole").val(create_save.scenario);
+    $("#depth_prompt_prompt").val(create_save.depth_prompt_prompt);
+    $("#depth_prompt_depth").val(create_save.depth_prompt_depth);
     $("#mes_example_textarea").val(create_save.mes_example.trim().length === 0 ? '<START>' : create_save.mes_example);
     $('#character_json_data').val('');
     $("#avatar_div").css("display", "flex");
@@ -6280,6 +6322,8 @@ async function createOrEditCharacter(e) {
                         { id: '#firstmessage_textarea', callback: value => create_save.first_message = value },
                         { id: '#talkativeness_slider', callback: value => create_save.talkativeness = value, defaultValue: talkativeness_default },
                         { id: '#scenario_pole', callback: value => create_save.scenario = value },
+                        { id: '#depth_prompt_prompt', callback: value => create_save.depth_prompt_prompt = value },
+                        { id: '#depth_prompt_depth', callback: value => create_save.depth_prompt_depth = value, defaultValue: depth_prompt_depth_default },
                         { id: '#mes_example_textarea', callback: value => create_save.mes_example = value },
                         { id: '#character_json_data', callback: () => { } },
                         { id: '#alternate_greetings_template', callback: value => create_save.alternate_greetings = value, defaultValue: [] },
@@ -7456,23 +7500,25 @@ jQuery(async function () {
 
     $("#character_name_pole").on("input", function () {
         if (menu_type == "create") {
-            create_save.name = $("#character_name_pole").val();
+            create_save.name = String($("#character_name_pole").val());
         }
     });
 
     const elementsToUpdate = {
-        '#description_textarea': function () { create_save.description = $("#description_textarea").val(); },
-        '#creator_notes_textarea': function () { create_save.creator_notes = $("#creator_notes_textarea").val(); },
-        '#character_version_textarea': function () { create_save.character_version = $("#character_version_textarea").val(); },
-        '#system_prompt_textarea': function () { create_save.system_prompt = $("#system_prompt_textarea").val(); },
-        '#post_history_instructions_textarea': function () { create_save.post_history_instructions = $("#post_history_instructions_textarea").val(); },
-        '#creator_textarea': function () { create_save.creator = $("#creator_textarea").val(); },
-        '#tags_textarea': function () { create_save.tags = $("#tags_textarea").val(); },
-        '#personality_textarea': function () { create_save.personality = $("#personality_textarea").val(); },
-        '#scenario_pole': function () { create_save.scenario = $("#scenario_pole").val(); },
-        '#mes_example_textarea': function () { create_save.mes_example = $("#mes_example_textarea").val(); },
-        '#firstmessage_textarea': function () { create_save.first_message = $("#firstmessage_textarea").val(); },
-        '#talkativeness_slider': function () { create_save.talkativeness = $("#talkativeness_slider").val(); },
+        '#description_textarea': function () { create_save.description = String($("#description_textarea").val()); },
+        '#creator_notes_textarea': function () { create_save.creator_notes = String($("#creator_notes_textarea").val()); },
+        '#character_version_textarea': function () { create_save.character_version = String($("#character_version_textarea").val()); },
+        '#system_prompt_textarea': function () { create_save.system_prompt = String($("#system_prompt_textarea").val()); },
+        '#post_history_instructions_textarea': function () { create_save.post_history_instructions = String($("#post_history_instructions_textarea").val()); },
+        '#creator_textarea': function () { create_save.creator = String($("#creator_textarea").val()); },
+        '#tags_textarea': function () { create_save.tags = String($("#tags_textarea").val()); },
+        '#personality_textarea': function () { create_save.personality = String($("#personality_textarea").val()); },
+        '#scenario_pole': function () { create_save.scenario = String($("#scenario_pole").val()); },
+        '#mes_example_textarea': function () { create_save.mes_example = String($("#mes_example_textarea").val()); },
+        '#firstmessage_textarea': function () { create_save.first_message = String($("#firstmessage_textarea").val()); },
+        '#talkativeness_slider': function () { create_save.talkativeness = Number($("#talkativeness_slider").val()); },
+        '#depth_prompt_prompt': function () { create_save.depth_prompt_prompt = String($("#depth_prompt_prompt").val()); },
+        '#depth_prompt_depth': function () { create_save.depth_prompt_depth = Number($("#depth_prompt_depth").val()); },
     };
 
     Object.keys(elementsToUpdate).forEach(function (id) {
