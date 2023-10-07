@@ -26,7 +26,7 @@ export const kai_settings = {
     mirostat: 0,
     mirostat_tau: 5.0,
     mirostat_eta: 0.1,
-    use_default_badwordsids: true,
+    use_default_badwordsids: false,
     grammar: "",
 };
 

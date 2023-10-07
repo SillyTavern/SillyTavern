@@ -127,7 +127,6 @@
                                         <span class="note-link-span">?</span>
                                     </a>
                                 </h3>
-
                                 <div class="preset_buttons">
                                     <select id="settings_perset" data-preset-manager-for="kobold">
                                         <option value="gui" data-i18n="guikoboldaisettings">GUI KoboldAI Settings</option>
@@ -250,8 +249,8 @@
                                         <span data-i18n="unlocked">Unlocked</span>
                                     </label>
                                     <div id="max_context_unlocked_warning" class="toggle-description justifyLeft widthUnset">
-                                        <span data-i18n="only select modls support context sizes greater than 2048 tokens. proceed only is you know you're doing">
-                                            Only select models support context sizes greater than 2048 tokens.
+                                        <span data-i18n="Only select models support context sizes greater than 4096 tokens. Increase only if you know what you're doing.">
+                                            Only select models support context sizes greater than 4096 tokens.
                                             Increase only if you know what you're doing.
                                         </span>
                                     </div>
@@ -308,7 +307,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block">
+                                <div class="range-block">
                                     <div class="range-block-title" data-i18n="rep.pen range">
                                         Repetition Penalty Range
                                     </div>
@@ -318,6 +317,21 @@
                                         </div>
                                         <div class="range-block-counter">
                                             <div contenteditable="true" data-for="rep_pen_range" id="rep_pen_range_counter">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div data-newbie-hidden class="range-block">
+                                    <div class="range-block-title" data-i18n="Rep. Pen. Slope">
+                                        Repetition Penalty Slope
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="rep_pen_slope" name="volume" min="0" max="10" step="0.1">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="rep_pen_slope" id="rep_pen_slope_counter">
                                                 select
                                             </div>
                                         </div>
@@ -518,7 +532,7 @@
                                 </div>
                                 <div data-newbie-hidden class="range-block">
                                     <div class="range-block-title" data-i18n="Encoder Rep. Pen.">
-                                        Encoder Rep. Pen.
+                                        Encoder Repetition Penalty
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
@@ -986,25 +1000,15 @@
                                         </div>
                                     </div>
                                     <div class="range-block">
-                                        <div class="range-block-title" data-i18n="Rep. Pen. Slope">
-                                            Rep. Pen. Slope
-                                        </div>
-                                        <div class="range-block-range-and-counter">
-                                            <div class="range-block-range">
-                                                <input type="range" id="rep_pen_slope" name="volume" min="0" max="10" step="0.1">
-                                            </div>
-                                            <div class="range-block-counter">
-                                                <div contenteditable="true" data-for="rep_pen_slope" id="rep_pen_slope_counter">
-                                                    select
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="range-block">
                                         <label class="checkbox_label" for="single_line">
                                             <input id="single_line" type="checkbox" /><span data-i18n="Single-line mode">
                                                 Single-line mode</span>
                                         </label>
+                                        <div class="toggle-description justifyLeft">
+                                            <span data-i18n="Generate only one line per request (KoboldAI only, ignored by KoboldCpp).">
+                                                Generate only one line per request (KoboldAI only, ignored by KoboldCpp).
+                                            </span>
+                                        </div>
                                     </div>
                                     <div class="range-block">
                                         <label class="checkbox_label" for="use_default_badwordsids">
@@ -1013,6 +1017,13 @@
                                                 Ban EOS Token
                                             </span>
                                         </label>
+                                        <div class="toggle-description justifyLeft">
+                                            <span data-i18n="Ban the End-of-Sequence (EOS) token (with KoboldCpp, and possibly also other tokens with KoboldAI).">
+                                                Ban the End-of-Sequence (EOS) token (with KoboldCpp, and possibly also other tokens with KoboldAI).</span><br>
+                                            <span data-i18n="Good for story writing, but should not be used for chat and instruct mode.">
+                                                Good for story writing, but should not be used for chat and instruct mode.
+                                            </span>
+                                        </div>
                                     </div>
                                     <hr>
                                     <h4 data-i18n="Mirostat">Mirostat</h4>
@@ -3058,7 +3069,7 @@
                                 </label>
                                 <label data-newbie-hidden for="prefer_character_jailbreak" title="If checked and the character card contains a jailbreak override (Post History Instruction), use that instead." data-i18n="[title]If checked and the character card contains a jailbreak override (Post History Instruction), use that instead." class="checkbox_label">
                                     <input id="prefer_character_jailbreak" type="checkbox" />
-                                    <span data-i18n="Prefer Character Card Jailbreak">Prefer Char. JB</span>
+                                    <span data-i18n="Prefer Character Card Jailbreak">Prefer Char. Jailbreak</span>
                                 </label>
                                 <label data-newbie-hidden class="checkbox_label" for="never_resize_avatars">
                                     <input id="never_resize_avatars" type="checkbox" />

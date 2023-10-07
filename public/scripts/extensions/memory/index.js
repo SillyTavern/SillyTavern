@@ -650,5 +650,5 @@ jQuery(function () {
     eventSource.on(event_types.MESSAGE_EDITED, onChatEvent);
     eventSource.on(event_types.MESSAGE_SWIPED, onChatEvent);
     eventSource.on(event_types.CHAT_CHANGED, onChatEvent);
-    registerSlashCommand('summarize', forceSummarizeChat, [], ' – forces the summarization of the current chat using the Main API', true, true);
+    registerSlashCommand('summarize', forceSummarizeChat, [], '– forces the summarization of the current chat using the Main API', true, true);
 });

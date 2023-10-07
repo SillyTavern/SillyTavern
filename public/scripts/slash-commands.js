@@ -57,7 +57,7 @@ class SlashCommandParser {
 
         let stringBuilder = `<span class="monospace">/${command}</span> ${helpString} `;
         if (Array.isArray(aliases) && aliases.length) {
-            let aliasesString = `(aliases: ${aliases.map(x => `<span class="monospace">/${x}</span>`).join(', ')})`;
+            let aliasesString = `(alias: ${aliases.map(x => `<span class="monospace">/${x}</span>`).join(', ')})`;
             stringBuilder += aliasesString;
         }
         this.helpStrings.push(stringBuilder);
@@ -118,7 +118,7 @@ parser.addCommand('name', setNameCallback, ['persona'], '<span class="monospace"
 parser.addCommand('sync', syncCallback, [], ' – syncs user name in user-attributed messages in the current chat', true, true);
 parser.addCommand('lock', bindCallback, ['bind'], ' – locks/unlocks a persona (name and avatar) to the current chat', true, true);
 parser.addCommand('bg', setBackgroundCallback, ['background'], '<span class="monospace">(filename)</span> – sets a background according to filename, partial names allowed, will set the first one alphabetically if multiple files begin with the provided argument string', false, true);
-parser.addCommand('sendas', sendMessageAs, [], ` – sends message as a specific character.<br>Example:<br><pre><code>/sendas Chloe\nHello, guys!</code></pre>will send "Hello, guys!" from "Chloe".<br>Uses character avatar if it exists in the characters list.`, true, true);
+parser.addCommand('sendas', sendMessageAs, [], ` – sends message as a specific character. Uses character avatar if it exists in the characters list. Example that will send "Hello, guys!" from "Chloe": <pre><code>/sendas Chloe&#10;Hello, guys!</code></pre>`, true, true);
 parser.addCommand('sys', sendNarratorMessage, ['nar'], '<span class="monospace">(text)</span> – sends message as a system narrator', false, true);
 parser.addCommand('sysname', setNarratorName, [], '<span class="monospace">(name)</span> – sets a name for future system narrator messages in this chat (display only). Default: System. Leave empty to reset.', true, true);
 parser.addCommand('comment', sendCommentMessage, [], '<span class="monospace">(text)</span> – adds a note/comment message not part of the chat', false, true);

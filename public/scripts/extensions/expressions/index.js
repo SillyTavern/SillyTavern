@@ -1495,6 +1495,6 @@ function setExpressionOverrideHtml(forceClear = false) {
     });
     eventSource.on(event_types.MOVABLE_PANELS_RESET, updateVisualNovelModeDebounced);
     eventSource.on(event_types.GROUP_UPDATED, updateVisualNovelModeDebounced);
-    registerSlashCommand('sprite', setSpriteSlashCommand, ['emote'], '<span class="monospace">spriteId</span> – force sets the sprite for the current character', true, true);
-    registerSlashCommand('spriteoverride', setSpriteSetCommand, ['costume'], '<span class="monospace">folder</span>  – sets an override sprite folder for the current character. If the name starts with a slash or a backslash, selects a sub-folder in the character-named folder. Empty value to reset to default.', true, true);
+    registerSlashCommand('sprite', setSpriteSlashCommand, ['emote'], '<span class="monospace">(spriteId)</span> – force sets the sprite for the current character', true, true);
+    registerSlashCommand('spriteoverride', setSpriteSetCommand, ['costume'], '<span class="monospace">(optional folder)</span> – sets an override sprite folder for the current character. If the name starts with a slash or a backslash, selects a sub-folder in the character-named folder. Empty value to reset to default.', true, true);
 })();

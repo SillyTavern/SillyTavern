@@ -2378,11 +2378,11 @@ $(document).ready(() => {
         browser_has_focus = false;
     });
 
-    registerSlashCommand('vn', toggleWaifu, [], ' – swaps Visual Novel Mode On/Off', false, true);
-    registerSlashCommand('newchat', doNewChat, ['newchat'], ' – start a new chat with current character', true, true);
-    registerSlashCommand('random', doRandomChat, ['random'], ' – start a new chat with a random character', true, true);
+    registerSlashCommand('vn', toggleWaifu, [], '– swaps Visual Novel Mode On/Off', false, true);
+    registerSlashCommand('newchat', doNewChat, [], '– start a new chat with current character', true, true);
+    registerSlashCommand('random', doRandomChat, [], '– start a new chat with a random character', true, true);
     registerSlashCommand('delmode', doDelMode, ['del'], '<span class="monospace">(optional number)</span> – enter message deletion mode, and auto-deletes N messages if numeric argument is provided', true, true);
-    registerSlashCommand('cut', doMesCut, [], ' <span class="monospace">(requred number)</span> – cuts the specified message from the chat', true, true);
-    registerSlashCommand('resetpanels', doResetPanels, ['resetui'], ' – resets UI panels to original state.', true, true);
-    registerSlashCommand('bgcol', setAvgBG, [], ' – WIP test of auto-bg avg coloring', true, true);
+    registerSlashCommand('cut', doMesCut, [], '<span class="monospace">(number)</span> – cuts the specified message from the chat', true, true);
+    registerSlashCommand('resetpanels', doResetPanels, ['resetui'], '– resets UI panels to original state.', true, true);
+    registerSlashCommand('bgcol', setAvgBG, [], '– WIP test of auto-bg avg coloring', true, true);
 });

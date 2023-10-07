@@ -1751,6 +1751,13 @@ function substituteParams(content, _name1, _name2, _original, _group) {
 
     content = content.replace(/{{time}}/gi, moment().format('LT'));
     content = content.replace(/{{date}}/gi, moment().format('LL'));
+    content = content.replace(/{{weekday}}/gi, moment().format('dddd'));
+    content = content.replace(/{{isotime}}/gi, moment().format('HH:mm'));
+    content = content.replace(/{{isodate}}/gi, moment().format('YYYY-MM-DD'));
+    content = content.replace(/{{datetimeformat +([^}]*)}}/gi, (_, format) => {
+        const formattedTime = moment().format(format);
+        return formattedTime;
+    });
     content = content.replace(/{{idle_duration}}/gi, () => getTimeSinceLastMessage());
     content = content.replace(/{{time_UTC([-+]\d+)}}/gi, (_, offset) => {
         const utcOffset = parseInt(offset, 10);
@@ -6821,6 +6828,11 @@ function connectAPISlash(_, text) {
             source: 'openrouter',
             button: '#api_button_openai',
         },
+        'scale': {
+            selected: 'openai',
+            source: 'scale',
+            button: '#api_button_openai',
+        },
         'ai21': {
             selected: 'openai',
             source: 'ai21',
@@ -7063,11 +7075,11 @@ jQuery(async function () {
     }
 
     registerSlashCommand('dupe', DupeChar, [], "– duplicates the currently selected character", true, true);
-    registerSlashCommand('api', connectAPISlash, [], "(kobold, horde, novel, ooba, oai, claude, windowai, ai21, palm) – connect to an API", true, true);
-    registerSlashCommand('impersonate', doImpersonate, ['imp'], "- calls an impersonation response", true, true);
-    registerSlashCommand('delchat', doDeleteChat, [], "- deletes the current chat", true, true);
-    registerSlashCommand('closechat', doCloseChat, [], "- closes the current chat", true, true);
-    registerSlashCommand('panels', doTogglePanels, ['togglepanels'], "- toggle UI panels on/off", true, true);
+    registerSlashCommand('api', connectAPISlash, [], '<span class="monospace">(kobold, horde, novel, ooba, oai, claude, windowai, openrouter, scale, ai21, palm)</span> – connect to an API', true, true);
+    registerSlashCommand('impersonate', doImpersonate, ['imp'], "– calls an impersonation response", true, true);
+    registerSlashCommand('delchat', doDeleteChat, [], "– deletes the current chat", true, true);
+    registerSlashCommand('closechat', doCloseChat, [], "– closes the current chat", true, true);
+    registerSlashCommand('panels', doTogglePanels, ['togglepanels'], "– toggle UI panels on/off", true, true);
 
     setTimeout(function () {
         $("#groupControlsToggle").trigger('click');

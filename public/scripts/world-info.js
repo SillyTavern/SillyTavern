@@ -1881,7 +1881,7 @@ export async function importWorldInfo(file) {
 jQuery(() => {
 
     $(document).ready(function () {
-        registerSlashCommand('world', onWorldInfoChange, [], "– sets active World, or unsets if no args provided", true, true);
+        registerSlashCommand('world', onWorldInfoChange, [], '<span class="monospace">(optional name)</span> – sets active World, or unsets if no args provided', true, true);
     })
 
 
