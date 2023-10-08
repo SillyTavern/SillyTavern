@@ -143,7 +143,7 @@ import {
     onlyUnique,
 } from "./scripts/utils.js";
 
-import { extension_settings, getContext, loadExtensionSettings, processExtensionHelpers, registerExtensionHelper, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
+import { extension_settings, getContext, installExtension, loadExtensionSettings, processExtensionHelpers, registerExtensionHelper, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
 import { COMMENT_NAME_DEFAULT, executeSlashCommands, getSlashCommandsHelp, registerSlashCommand } from "./scripts/slash-commands.js";
 import {
     tag_map,
@@ -596,6 +596,7 @@ function getCurrentChatId() {
 
 const talkativeness_default = 0.5;
 const depth_prompt_depth_default = 4;
+const per_page_default = 50;
 
 var is_advanced_char_open = false;
 
@@ -922,7 +923,7 @@ async function printCharacters(fullRefresh = false) {
     const storageKey = 'Characters_PerPage';
     $("#rm_print_characters_pagination").pagination({
         dataSource: getEntitiesList({ doFilter: true }),
-        pageSize: Number(localStorage.getItem(storageKey)) || 50,
+        pageSize: Number(localStorage.getItem(storageKey)) || per_page_default,
         sizeChangerOptions: [10, 25, 50, 100, 250, 500, 1000],
         pageRange: 1,
         pageNumber: saveCharactersPage || 1,
@@ -1750,6 +1751,13 @@ function substituteParams(content, _name1, _name2, _original, _group) {
 
     content = content.replace(/{{time}}/gi, moment().format('LT'));
     content = content.replace(/{{date}}/gi, moment().format('LL'));
+    content = content.replace(/{{weekday}}/gi, moment().format('dddd'));
+    content = content.replace(/{{isotime}}/gi, moment().format('HH:mm'));
+    content = content.replace(/{{isodate}}/gi, moment().format('YYYY-MM-DD'));
+    content = content.replace(/{{datetimeformat +([^}]*)}}/gi, (_, format) => {
+        const formattedTime = moment().format(format);
+        return formattedTime;
+    });
     content = content.replace(/{{idle_duration}}/gi, () => getTimeSinceLastMessage());
     content = content.replace(/{{time_UTC([-+]\d+)}}/gi, (_, offset) => {
         const utcOffset = parseInt(offset, 10);
@@ -5487,7 +5495,7 @@ function select_rm_info(type, charId, previousCharId = null) {
             }
 
             try {
-                const perPage = Number(localStorage.getItem('Characters_PerPage'));
+                const perPage = Number(localStorage.getItem('Characters_PerPage')) || per_page_default;
                 const page = Math.floor(charIndex / perPage) + 1;
                 const selector = `#rm_print_characters_block [title^="${charId}"]`;
                 $('#rm_print_characters_pagination').pagination('go', page);
@@ -5522,7 +5530,7 @@ function select_rm_info(type, charId, previousCharId = null) {
                 return;
             }
 
-            const perPage = Number(localStorage.getItem('Characters_PerPage'));
+            const perPage = Number(localStorage.getItem('Characters_PerPage')) || per_page_default;
             const page = Math.floor(charIndex / perPage) + 1;
             $('#rm_print_characters_pagination').pagination('go', page);
             const selector = `#rm_print_characters_block [grid="${charId}"]`;
@@ -6820,6 +6828,11 @@ function connectAPISlash(_, text) {
             source: 'openrouter',
             button: '#api_button_openai',
         },
+        'scale': {
+            selected: 'openai',
+            source: 'scale',
+            button: '#api_button_openai',
+        },
         'ai21': {
             selected: 'openai',
             source: 'ai21',
@@ -7062,11 +7075,11 @@ jQuery(async function () {
     }
 
     registerSlashCommand('dupe', DupeChar, [], "– duplicates the currently selected character", true, true);
-    registerSlashCommand('api', connectAPISlash, [], "(kobold, horde, novel, ooba, oai, claude, windowai, ai21, palm) – connect to an API", true, true);
-    registerSlashCommand('impersonate', doImpersonate, ['imp'], "- calls an impersonation response", true, true);
-    registerSlashCommand('delchat', doDeleteChat, [], "- deletes the current chat", true, true);
-    registerSlashCommand('closechat', doCloseChat, [], "- closes the current chat", true, true);
-    registerSlashCommand('panels', doTogglePanels, ['togglepanels'], "- toggle UI panels on/off", true, true);
+    registerSlashCommand('api', connectAPISlash, [], '<span class="monospace">(kobold, horde, novel, ooba, oai, claude, windowai, openrouter, scale, ai21, palm)</span> – connect to an API', true, true);
+    registerSlashCommand('impersonate', doImpersonate, ['imp'], "– calls an impersonation response", true, true);
+    registerSlashCommand('delchat', doDeleteChat, [], "– deletes the current chat", true, true);
+    registerSlashCommand('closechat', doCloseChat, [], "– closes the current chat", true, true);
+    registerSlashCommand('panels', doTogglePanels, ['togglepanels'], "– toggle UI panels on/off", true, true);
 
     setTimeout(function () {
         $("#groupControlsToggle").trigger('click');
@@ -8885,25 +8898,7 @@ jQuery(async function () {
         }
 
         const url = input.trim();
-        console.debug('Extension import started', url);
-
-        const request = await fetch('/api/extensions/install', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            body: JSON.stringify({ url }),
-        });
-
-        if (!request.ok) {
-            toastr.info(request.statusText, 'Extension import failed');
-            console.error('Extension import failed', request.status, request.statusText);
-            return;
-        }
-
-        const response = await request.json();
-        toastr.success(`Extension "${response.display_name}" by ${response.author} (version ${response.version}) has been imported successfully!`, 'Extension import successful');
-        console.debug(`Extension "${response.display_name}" has been imported successfully at ${response.extensionPath}`);
-        await loadExtensionSettings(settings);
-        eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED);
+        await installExtension(url);
     });
 
 

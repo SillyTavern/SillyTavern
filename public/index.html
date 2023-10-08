@@ -127,7 +127,6 @@
                                         <span class="note-link-span">?</span>
                                     </a>
                                 </h3>
-
                                 <div class="preset_buttons">
                                     <select id="settings_perset" data-preset-manager-for="kobold">
                                         <option value="gui" data-i18n="guikoboldaisettings">GUI KoboldAI Settings</option>
@@ -250,8 +249,8 @@
                                         <span data-i18n="unlocked">Unlocked</span>
                                     </label>
                                     <div id="max_context_unlocked_warning" class="toggle-description justifyLeft widthUnset">
-                                        <span data-i18n="only select modls support context sizes greater than 2048 tokens. proceed only is you know you're doing">
-                                            Only select models support context sizes greater than 2048 tokens.
+                                        <span data-i18n="Only select models support context sizes greater than 4096 tokens. Increase only if you know what you're doing.">
+                                            Only select models support context sizes greater than 4096 tokens.
                                             Increase only if you know what you're doing.
                                         </span>
                                     </div>
@@ -308,7 +307,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div data-newbie-hidden class="range-block">
+                                <div class="range-block">
                                     <div class="range-block-title" data-i18n="rep.pen range">
                                         Repetition Penalty Range
                                     </div>
@@ -318,6 +317,21 @@
                                         </div>
                                         <div class="range-block-counter">
                                             <div contenteditable="true" data-for="rep_pen_range" id="rep_pen_range_counter">
+                                                select
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div data-newbie-hidden class="range-block">
+                                    <div class="range-block-title" data-i18n="Rep. Pen. Slope">
+                                        Repetition Penalty Slope
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="rep_pen_slope" name="volume" min="0" max="10" step="0.1">
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <div contenteditable="true" data-for="rep_pen_slope" id="rep_pen_slope_counter">
                                                 select
                                             </div>
                                         </div>
@@ -389,7 +403,7 @@
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
-                                            <input type="range" id="rep_pen_slope_novel" name="volume" min="0.01" max="10" step="0.01">
+                                            <input type="range" id="rep_pen_slope_novel" name="volume" min="0" max="10" step="0.01">
                                         </div>
                                         <div class="range-block-counter">
                                             <div contenteditable="true" data-for="rep_pen_slope_novel" id="rep_pen_slope_counter_novel">
@@ -518,7 +532,7 @@
                                 </div>
                                 <div data-newbie-hidden class="range-block">
                                     <div class="range-block-title" data-i18n="Encoder Rep. Pen.">
-                                        Encoder Rep. Pen.
+                                        Encoder Repetition Penalty
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
@@ -986,25 +1000,15 @@
                                         </div>
                                     </div>
                                     <div class="range-block">
-                                        <div class="range-block-title" data-i18n="Rep. Pen. Slope">
-                                            Rep. Pen. Slope
-                                        </div>
-                                        <div class="range-block-range-and-counter">
-                                            <div class="range-block-range">
-                                                <input type="range" id="rep_pen_slope" name="volume" min="0" max="10" step="0.1">
-                                            </div>
-                                            <div class="range-block-counter">
-                                                <div contenteditable="true" data-for="rep_pen_slope" id="rep_pen_slope_counter">
-                                                    select
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="range-block">
                                         <label class="checkbox_label" for="single_line">
                                             <input id="single_line" type="checkbox" /><span data-i18n="Single-line mode">
                                                 Single-line mode</span>
                                         </label>
+                                        <div class="toggle-description justifyLeft">
+                                            <span data-i18n="Generate only one line per request (KoboldAI only, ignored by KoboldCpp).">
+                                                Generate only one line per request (KoboldAI only, ignored by KoboldCpp).
+                                            </span>
+                                        </div>
                                     </div>
                                     <div class="range-block">
                                         <label class="checkbox_label" for="use_default_badwordsids">
@@ -1013,6 +1017,13 @@
                                                 Ban EOS Token
                                             </span>
                                         </label>
+                                        <div class="toggle-description justifyLeft">
+                                            <span data-i18n="Ban the End-of-Sequence (EOS) token (with KoboldCpp, and possibly also other tokens with KoboldAI).">
+                                                Ban the End-of-Sequence (EOS) token (with KoboldCpp, and possibly also other tokens with KoboldAI).</span><br>
+                                            <span data-i18n="Good for story writing, but should not be used for chat and instruct mode.">
+                                                Good for story writing, but should not be used for chat and instruct mode.
+                                            </span>
+                                        </div>
                                     </div>
                                     <hr>
                                     <h4 data-i18n="Mirostat">Mirostat</h4>
@@ -2700,41 +2711,43 @@
                             </div>
                         </div>
 
-                        <div data-newbie-hidden class="alignitemsflexstart flex1 range-block flex-container flexFlowColumn">
-                            <label title="Entries can activate other entries by mentioning their keywords" data-i18n="[title]Entries can activate other entries by mentioning their keywords" class="checkbox_label">
+                        <div id="worldInfoScanningCheckboxes" data-newbie-hidden class="alignitemsflexstart flex1 flex-container flexFlowColumn">
+                            <label title="Entries can activate other entries by mentioning their keywords" data-i18n="[title]Entries can activate other entries by mentioning their keywords" class="checkbox_label flex1">
                                 <input id="world_info_recursive" type="checkbox" />
-                                <small data-i18n="Recursive Scan">
+                                <small data-i18n="Recursive Scan" class="whitespacenowrap flex1">
                                     Recursive Scan
                                 </small>
                             </label>
-                            <label title="Lookup for the entry keys in the context will respect the case" data-i18n="[title]Lookup for the entry keys in the context will respect the case" class="checkbox_label">
+                            <label title="Lookup for the entry keys in the context will respect the case" data-i18n="[title]Lookup for the entry keys in the context will respect the case" class="checkbox_label flex1">
                                 <input id="world_info_case_sensitive" type="checkbox" />
-                                <small data-i18n="Case Sensitive">
+                                <small data-i18n="Case Sensitive" class="whitespacenowrap flex1">
                                     Case-sensitive
                                 </small>
                             </label>
-                            <label title="If the entry key consists of only one word, it would not be matched as part of other words" data-i18n="[title]If the entry key consists of only one word, it would not be matched as part of other words" class="checkbox_label">
+                            <label title="If the entry key consists of only one word, it would not be matched as part of other words" data-i18n="[title]If the entry key consists of only one word, it would not be matched as part of other words" class="checkbox_label flex1">
                                 <input id="world_info_match_whole_words" type="checkbox" />
-                                <small data-i18n="Match whole words">
+                                <small data-i18n="Match whole words" class="whitespacenowrap flex1">
                                     Match whole words
                                 </small>
                             </label>
-                            <label title="Alert if your world info is greater than the allocated budget." data-i18n="[title]Alert if your world info is greater than the allocated budget." class="checkbox_label">
+                            <label title="Alert if your world info is greater than the allocated budget." data-i18n="[title]Alert if your world info is greater than the allocated budget." class="checkbox_label flex1">
                                 <input id="world_info_overflow_alert" type="checkbox" />
-                                <small data-i18n="Alert On Overflow">
+                                <small data-i18n="Alert On Overflow" class="whitespacenowrap flex1">
                                     Alert On Overflow
                                 </small>
                             </label>
+                            <div id="WIInputWidthReference" style="display:none; height:1px;">10000</div>
                         </div>
+
                     </div>
 
                     <div id="world_popup">
                         <hr>
-                        <div class="flex-container alignitemscenter">
+                        <div class="flex-container alignitemscenter gap3px">
                             <input type="file" id="world_import_file" accept=".json,.lorebook,.png" name="avatar" hidden>
                             <div id="world_create_button" class="menu_button menu_button_icon">
                                 <i class="fa-solid fa-globe"></i>
-                                <span data-i18n="Create">Create</span>
+                                <span data-i18n="New">New</span>
                             </div>
                             <small data-i18n="or">or</small>
                             <select id="world_editor_select" class="margin0">
@@ -2744,10 +2757,27 @@
                             <div id="OpenAllWIEntries" class="menu_button fa-solid fa-expand" title="Open all Entries" data-i18n="[title]Open all Entries"></div>
                             <div id="CloseAllWIEntries" class="menu_button fa-solid fa-compress" title="Close all Entries" data-i18n="[title]Close all Entries"></div>
                             <div id="world_popup_new" class="menu_button fa-solid fa-plus" title="New Entry" data-i18n="[title]New Entry"></div>
+                            <div id="world_backfill_memos" class="menu_button fa-solid fa-notes-medical" title="Fill empty Memo/Titles with Keywords" data-i18n="[title]Fill empty Memo/Titles with Keywords"></div>
                             <div id="world_import_button" class="menu_button fa-solid fa-file-import" title="Import World Info" data-i18n="[title]Import World Info"></div>
                             <div id="world_popup_export" class="menu_button fa-solid fa-file-export" title="Export World Info" data-i18n="[title]Export World Info"></div>
                             <div id="world_popup_delete" class="menu_button fa-solid fa-trash-can redWarningBG" title="Delete World Info" data-i18n="[title]Delete World Info"></div>
                             <input type="search" class="text_pole textarea_compact" data-i18n="[placeholder]Search..." id="world_info_search" placeholder="Search...">
+                            <select id="world_info_sort_order" class="margin0">
+                                <option data-rule="priority" value="0">Priority</option>
+                                <option data-order="asc" data-field="comment" value="1">Title A-Z</option>
+                                <option data-order="desc" data-field="comment" value="2">Title Z-A</option>
+                                <option data-order="asc" data-field="content" data-rule="length" value="3">Tokens ↗</option>
+                                <option data-order="desc" data-field="content" data-rule="length" value="4">Tokens ↘</option>
+                                <option data-order="asc" data-field="depth" value="5">Depth ↗</option>
+                                <option data-order="desc" data-field="depth" value="6">Depth ↘</option>
+                                <option data-order="asc" data-field="order" value="7">Order ↗</option>
+                                <option data-order="desc" data-field="order" value="8">Order ↘</option>
+                                <option data-order="asc" data-field="uid" value="9">UID ↗</option>
+                                <option data-order="desc" data-field="uid" value="10">UID ↘</option>
+                                <option data-order="asc" data-field="probability" value="11">Trigger% ↗</option>
+                                <option data-order="desc" data-field="probability" value="12">Trigger% ↘</option>
+                            </select>
+                            <div id="world_refresh" class="menu_button fa-solid fa-arrows-rotate" title="Refresh" data-i18n="[title]Refresh"></div>
                             <div id="world_info_pagination"></div>
                         </div>
 
@@ -3040,7 +3070,7 @@
                                 </label>
                                 <label data-newbie-hidden for="prefer_character_jailbreak" title="If checked and the character card contains a jailbreak override (Post History Instruction), use that instead." data-i18n="[title]If checked and the character card contains a jailbreak override (Post History Instruction), use that instead." class="checkbox_label">
                                     <input id="prefer_character_jailbreak" type="checkbox" />
-                                    <span data-i18n="Prefer Character Card Jailbreak">Prefer Char. JB</span>
+                                    <span data-i18n="Prefer Character Card Jailbreak">Prefer Char. Jailbreak</span>
                                 </label>
                                 <label data-newbie-hidden class="checkbox_label" for="never_resize_avatars">
                                     <input id="never_resize_avatars" type="checkbox" />
@@ -3928,20 +3958,56 @@
         <div class="world_entry">
             <form class="world_entry_form  wi-card-entry">
                 <div class="inline-drawer wide100p">
-                    <div class="inline-drawer-toggle inline-drawer-header gap5px">
-                        <span class="drag-handle">&#9776;</span>
+                    <div class="inline-drawer-toggle inline-drawer-header gap5px padding0">
+                        <!-- <span class="drag-handle">&#9776;</span> -->
                         <div class="gap5px world_entry_thin_controls wide100p alignitemscenter">
-                            <small>
-                                <span>
-                                    <span class="world_entry_form_position_value"></span>
-                                    <select title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;❌ Disabled" name="entryStateSelector" class="widthNatural height32px margin0">
+                            <div class="fa-fw fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+
+                            <span class="flex-container alignitemscenter wide100p">
+                                <div class="WIEntryTitleAndStatus flex-container flex1 alignitemscenter">
+                                    <div class="flex-container flex1">
+                                        <textarea class="text_pole" name="comment" maxlength="2000" data-i18n="[placeholder]Entry Title/Memo" placeholder="Entry Title/Memo"></textarea>
+                                    </div>
+                                    <!-- <span class="world_entry_form_position_value"></span> -->
+                                    <select title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;❌ Disabled" name="entryStateSelector" class="widthNatural margin0">
                                         <option title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;❌ Disabled" value="constant">🔵</option>
                                         <option title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;❌ Disabled" value="normal">🟢</option>
                                         <option title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;❌ Disabled" value="disabled">❌</option>
                                     </select>
-                                </span>
-                            </small>
-                            <div class="world_entry_form_control flex1">
+                                </div>
+
+
+                                <div class="WIEnteryHeaderControls flex-container">
+                                    <div name="PositionBlock" class="world_entry_form_control world_entry_form_radios wi-enter-footer-text">
+                                        <label for="position" class="WIEntryHeaderTitleMobile" data-i18n="Position:">Position:</label>
+                                        <select name="position" class="widthNatural margin0" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;">
+                                            <option value="0" data-i18n="Before Char Defs" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;">↑Char</option>
+                                            <option value="1" data-i18n="After Char Defs" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;">↓Char</option>
+                                            <option value="2" data-i18n="Before AN" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;">↑AN</option>
+                                            <option value="3" data-i18n="After AN" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;">↓AN</option>
+                                            <option value="4" data-i18n="at Depth" title="↑Char: Before Character Definitions&#13;↓Char: After Character Definitions&#13;↑AN: Before Author's Note&#13;↓AN: After Author's Note&#13;@D: at Depth&#13;">@D</option>
+                                        </select>
+                                    </div>
+                                    <div class="world_entry_form_control wi-enter-footer-text flex-container flexNoGap">
+                                        <label for="depth" class="WIEntryHeaderTitleMobile" data-i18n="Depth:">Depth:</label>
+                                        <input title="Depth" class="text_pole wideMax100px margin0" type="number" name="depth" placeholder="" min="0" max="999" />
+                                    </div>
+
+                                    <div class="world_entry_form_control wi-enter-footer-text  flex-container flexNoGap">
+                                        <label for="order" class="WIEntryHeaderTitleMobile" data-i18n="Order:">Order:</label>
+                                        <input title="Order" class="text_pole wideMax100px margin0" type="number" name="order" placeholder="" min="0" max="999" />
+                                    </div>
+                                    <div class="world_entry_form_control wi-enter-footer-text flex-container flexNoGap probabilityContainer">
+                                        <label for="order" class="WIEntryHeaderTitleMobile" data-i18n="Order:">Trigger %:</label>
+                                        <input title="Probability" class="text_pole wideMax100px margin0" type="number" name="probability" placeholder="" min="0" max="100" />
+                                    </div>
+                                    <!--                                 <div class="flex-container flex1">
+                                        <textarea class="text_pole" name="comment" maxlength="2000" data-i18n="[placeholder]Entry Title/Memo" placeholder="Entry Title/Memo"></textarea>
+                                    </div> -->
+                                </div>
+                            </span>
+
+                            <!--                             <div class="world_entry_form_control flex1">
                                 <small class="displayNone">
                                     <span data-i18n="Comma separated (required)">
                                         Comma separated (required)
@@ -3950,7 +4016,7 @@
                                 <textarea class="text_pole keyprimarytextpole" name="key" rows="1" data-i18n="[placeholder]Comma separated (required)" placeholder="Comma separated (required)" maxlength="1000"></textarea>
                             </div>
                             <div class="flex-container widthFitContent alignItemsFlexEnd">
-                                <select name="entryLogicType" class="height32px widthFitContent margin0">
+                                <select name="entryLogicType" class="widthFitContent margin0">
                                     <option value="0">AND</option>
                                     <option value="1">NOT</option>
                                 </select>
@@ -3963,24 +4029,70 @@
                                     </span>
                                 </small>
                                 <div class="flex-container flexFlowRow alignitemscenter">
-                                    <textarea class="text_pole keysecondarytextpole" name="keysecondary" rows="1" data-i18n="[placeholder]Comma separated (ignored if empty)" placeholder="Comma separated (ignored if empty)" maxlength="1000"></textarea>
+                                    <textarea class="text_pole keysecondarytextpole" name="keysecondary" rows="1" data-i18n="[placeholder]Comma separated (ignored if empty)" placeholder="Comma separated list" maxlength="1000"></textarea>
                                     <i class="menu_button delete_entry_button fa-solid fa-trash-can" type="submit" data-i18n="" value="" /></i>
                                 </div>
-                            </div>
+                            </div> -->
                         </div>
-                        <div class="fa-fw fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                        <i class="menu_button delete_entry_button fa-solid fa-trash-can" type="submit" data-i18n="" value="" /></i>
+
                     </div>
-                    <div class="inline-drawer-content flex-container">
-                        <div class="WIEntryContentAndMemo flex-container">
-                            <div class="world_entry_thin_controls flex2">
+                    <div class="inline-drawer-content flex-container paddingBottom5px wide100p">
+                        <div class="flex-container wide100p alignitemscenter">
+                            <div name="keywordsAndLogicBlock" class="flex-container wide100p alignitemscenter">
+                                <div class="world_entry_form_control flex1">
+                                    <small class="displayNone">
+                                        <span data-i18n="Comma separated (required)">
+                                            Comma separated (required)
+                                        </span>
+                                    </small>
+                                    <small class="textAlignCenter">Primary Keywords</small>
+                                    <textarea class="text_pole keyprimarytextpole" name="key" rows="1" data-i18n="[placeholder]Comma separated (required)" placeholder="Comma separated (required)" maxlength="1000"></textarea>
+                                </div>
+                                <div class="world_entry_form_control">
+                                    <small class="textAlignCenter">Logic</small>
+                                    <select name="entryLogicType" class="widthFitContent margin0">
+                                        <option value="0">AND</option>
+                                        <option value="1">NOT</option>
+                                    </select>
+                                </div>
+
+                                <div class="world_entry_form_control keysecondary flex1">
+                                    <small class="displayNone">
+                                        <span data-i18n="(ignored if empty)">
+                                            (ignored if empty)
+                                        </span>
+                                    </small>
+                                    <small class="textAlignCenter">Optional Filter</small>
+                                    <div class="flex-container flexFlowRow alignitemscenter">
+                                        <textarea class="text_pole keysecondarytextpole" name="keysecondary" rows="1" data-i18n="[placeholder]Comma separated (ignored if empty)" placeholder="Comma separated list" maxlength="1000"></textarea>
+
+                                    </div>
+                                </div>
+                            </div>
+                            <div name="contentAndCharFilterBlock" class="world_entry_thin_controls flex2">
                                 <div class="world_entry_form_control flex1">
                                     <label for="content ">
                                         <small>
-                                            <span data-i18n="Content">
-                                                Content
-                                                <span>(Tokens:&nbsp; <span class="world_entry_form_token_counter" data-first-run="true">counting...</span>)
+                                            <span data-i18n="Content" class="alignitemscenter flex-container flexnowrap wide100p justifySpaceBetween">
+
+                                                <span class="alignitemscenter flex-container flexNoGap">
+                                                    Content
+                                                </span>
+                                                <span>
+
+                                                    (Tokens:&nbsp; <span class="world_entry_form_token_counter" data-first-run="true">counting...</span>)&nbsp;
                                                     <span class="world_entry_form_uid_value" data-first-run="true"></span>
                                                 </span>
+                                                <div>
+                                                    <label class="checkbox flex-container alignitemscenter flexNoGap">
+                                                        <input type="checkbox" name="exclude_recursion" />
+                                                        <span data-i18n="Exclude from recursion">
+                                                            Non-recursable
+                                                        </span>
+                                                    </label>
+                                                </div>
+
                                             </span>
                                         </small>
                                         <small class="displayNone">
@@ -3991,9 +4103,10 @@
                                     </label>
                                     <textarea class="text_pole" name="content" rows="4" data-i18n="[placeholder]What this keyword should mean to the AI, sent verbatim" placeholder="What this keyword should mean to the AI, sent verbatim"></textarea>
                                 </div>
+
                             </div>
                             <div class="world_entry_thin_controls commentContainer">
-                                <div class="world_entry_form_control flex1">
+                                <!--                                 <div class="world_entry_form_control flex1">
                                     <label for="comment">
                                         <small>
                                             <span data-i18n="Memo/Note">
@@ -4007,13 +4120,37 @@
                                         </small>
                                     </label>
                                     <textarea class="text_pole" rows="4" name="comment" maxlength="2000" data-i18n="[placeholder]Not sent to the AI" placeholder="Not sent to AI"></textarea>
-                                </div>
+                                </div> -->
                             </div>
                         </div>
                         <div class="flex-container flexFlowColumn flexNoGap wide100p">
-                            <label for="characterFilter" class="range-block-title justifyLeft">
-                                <small data-i18n="Filter to Character(s)">Filter to Character(s)</small>
-                            </label>
+                            <div class="flex-container justifySpaceBetween">
+                                <label for="characterFilter" class="">
+                                    <small data-i18n="Filter to Character(s)">Filter to Character(s)</small>
+
+                                </label>
+                                <label class="checkbox flex-container alignitemscenter">
+                                    <input type="checkbox" name="character_exclusion" />
+                                    <span data-i18n="Character Exclusion">
+                                        <small>Character Exclusion</small>
+                                    </span>
+                                </label>
+                            </div>
+
+                            <!-- PLACEHOLDER HTML FOR CHAR FILTER EXCLUDE CONVERSION TO SELECT INSTEAD OF CHECKBOX-->
+                            <!--
+                                <div name="WICharFilterLabel" class="flex-container alignitemscenter marginBot5">
+                                    <small data-i18n="Filter Entry">Filter Entry</small>
+                                    <div>
+                                        <select name="character_exclusion" class="widthFitContent margin0">
+                                            <option value="only">to Only</option>
+                                            <option value="except">to Exclude</option>
+                                        </select>
+                                    </div>
+                                    <small>the following Characters:</small>
+                              </div>
+                            -->
+
                             <div class="range-block-range">
                                 <select name="characterFilter" multiple>
                                     <option value="">
@@ -4046,18 +4183,18 @@
                                     <input type="checkbox" name="addMemo">
                                     <span data-i18n="Add Memo">Add Memo</span>
                                 </label>
-                                <label class="checkbox flex-container alignitemscenter">
+                                <!--                                 <label class="checkbox flex-container alignitemscenter">
                                     <input type="checkbox" name="exclude_recursion" />
                                     <span data-i18n="Exclude from recursion">
                                         Non-recursable
                                     </span>
-                                </label>
-                                <label class="checkbox flex-container alignitemscenter">
+                                </label> -->
+                                <!--                                 <label class="checkbox flex-container alignitemscenter">
                                     <input type="checkbox" name="character_exclusion" />
                                     <span data-i18n="Character Exclusion">
                                         Character Exclusion
                                     </span>
-                                </label>
+                                </label> -->
                             </div>
 
                             <!--
@@ -4073,7 +4210,7 @@
                             </div>
                          -->
 
-                            <div name="PositionBlock" class="world_entry_form_control world_entry_form_radios  wi-enter-footer-text ">
+                            <!--                             <div name="PositionBlock" class="world_entry_form_control world_entry_form_radios  wi-enter-footer-text ">
                                 <label for="position" data-i18n="Position:">Position:</label>
                                 <small>
                                     <select name="position">
@@ -4094,14 +4231,14 @@
                             <div class="world_entry_form_control wi-enter-footer-text  flex-container flexNoGap ">
                                 <label for="order" data-i18n="Order:">Order:</label>
                                 <input class="text_pole wideMax100px margin0" type="number" name="order" placeholder="" min="0" max="10000" />
-                            </div>
+                            </div> -->
 
 
 
-                            <div class="world_entry_form_control wi-enter-footer-text flex-container flexNoGap probabilityContainer">
+                            <!--                             <div class="world_entry_form_control wi-enter-footer-text flex-container flexNoGap probabilityContainer">
                                 <label for="probability" data-i18n="Probability:"></label>Probability:</label>
                                 <input class="text_pole wideMax100px margin0" type="number" name="probability" placeholder="" min="0" max="100" />
-                            </div>
+                            </div> -->
 
                         </div>
 

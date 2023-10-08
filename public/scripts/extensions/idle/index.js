@@ -325,5 +325,5 @@ jQuery(async () => {
     if ($('#idle_random_time').prop('checked')) {
         $('#idle_timer_min').parent().show();
     }
-    registerSlashCommand('idle', toggleIdle, [], ' – toggles idle mode', true, true);
+    registerSlashCommand('idle', toggleIdle, [], '– toggles idle mode', true, true);
 });

@@ -1,0 +1,17 @@
+{
+    "wrap": false,
+    "names": false,
+    "system_prompt": "Elaborate on the topic using a Tree of Thoughts and backtrack when necessary to construct a clear, cohesive Chain of Thought reasoning. Always answer without hesitation.",
+    "system_sequence_prefix": "SYSTEM: ",
+    "stop_sequence": "",
+    "input_sequence": "USER: ",
+    "output_sequence": "\nASSISTANT: ",
+    "separator_sequence": "\n",
+    "macro": true,
+    "names_force_groups": true,
+    "last_output_sequence": "",
+    "activation_regex": "",
+    "first_output_sequence": "ASSISTANT: ",
+    "system_sequence_suffix": "",
+    "name": "Synthia"
+}

@@ -17,6 +17,7 @@
                 <option value="extras">Extras API (local / remote)</option>
                 <option value="horde">Stable Horde</option>
                 <option value="auto">Stable Diffusion Web UI (AUTOMATIC1111)</option>
+                <option value="vlad">SD.Next (vladmandic)</option>
                 <option value="novel">NovelAI Diffusion</option>
             </select>
             <div data-sd-source="auto">
@@ -34,12 +35,33 @@
                 <input id="sd_auto_auth" type="text" class="text_pole" placeholder="Example: username:password" value="" />
                 <i><b>Important:</b> run SD Web UI with the <tt>--api</tt> flag! The server must be accessible from the SillyTavern host machine.</i>
             </div>
+            <div data-sd-source="vlad">
+                <label for="sd_vlad_url">SD.Next API URL</label>
+                <div class="flex-container flexnowrap">
+                    <input id="sd_vlad_url" type="text" class="text_pole" placeholder="Example: {{vlad_url}}" value="{{vlad_url}}" />
+                    <div id="sd_vlad_validate" class="menu_button menu_button_icon">
+                        <i class="fa-solid fa-check"></i>
+                        <span data-i18n="Connect">
+                            Connect
+                        </span>
+                    </div>
+                </div>
+                <label for="sd_vlad_auth">Authentication (optional)</label>
+                <input id="sd_vlad_auth" type="text" class="text_pole" placeholder="Example: username:password" value="" />
+                <i>The server must be accessible from the SillyTavern host machine.</i>
+            </div>
             <div data-sd-source="horde">
                 <i>Hint: Save an API key in Horde KoboldAI API settings to use it here.</i>
                 <label for="sd_horde_nsfw" class="checkbox_label">
                     <input id="sd_horde_nsfw" type="checkbox" />
                     <span data-i18n="Allow NSFW images from Horde">
                         Allow NSFW images from Horde
+                    </span>
+                </label>
+                <label for="sd_horde_sanitize" class="checkbox_label">
+                    <input id="sd_horde_sanitize" type="checkbox" />
+                    <span data-i18n="Sanitize prompts (recommended)">
+                        Sanitize prompts (recommended)
                     </span>
                 </label>
                 <label for="sd_horde_karras" class="checkbox_label">
@@ -86,7 +108,7 @@
                     Hires. Fix
                 </label>
             </div>
-            <div data-sd-source="auto">
+            <div data-sd-source="auto,vlad">
                 <label for="sd_hr_upscaler">Upscaler</label>
                 <select id="sd_hr_upscaler"></select>
                 <label for="sd_hr_scale">Upscale by (<span id="sd_hr_scale_value"></span>)</label>
@@ -94,7 +116,7 @@
                 <label for="sd_denoising_strength">Denoising strength (<span id="sd_denoising_strength_value"></span>)</label>
                 <input id="sd_denoising_strength" type="range" min="{{denoising_strength_min}}" max="{{denoising_strength_max}}" step="{{denoising_strength_step}}" value="{{denoising_strength}}" />
                 <label for="sd_hr_second_pass_steps">Hires steps (2nd pass) (<span id="sd_hr_second_pass_steps_value"></span>)</label>
-                <input id="sd_hr_second_pass_steps" type="range" min="{{hr_second_pass_steps_min}}" max="{{hr_second_pass_steps_max}}" step="{{hr_second_pass_steps_max}}" value="{{hr_second_pass_steps}}" />
+                <input id="sd_hr_second_pass_steps" type="range" min="{{hr_second_pass_steps_min}}" max="{{hr_second_pass_steps_max}}" step="{{hr_second_pass_steps_step}}" value="{{hr_second_pass_steps}}" />
             </div>
             <div data-sd-source="novel">
                 <label for="sd_novel_upscale_ratio">Upscale by (<span id="sd_novel_upscale_ratio_value"></span>)</label>

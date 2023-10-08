@@ -404,7 +404,7 @@ function viewWithDragbox(items) {
 
 
 // Registers a simple command for opening the char gallery.
-registerSlashCommand("show-gallery", showGalleryCommand, ["sg"], "Shows the gallery", true, true);
+registerSlashCommand("show-gallery", showGalleryCommand, ["sg"], "– shows the gallery", true, true);
 
 function showGalleryCommand(args) {
     showCharGallery();

@@ -9,6 +9,7 @@ import {
     saveBase64AsFile,
     PAGINATION_TEMPLATE,
     waitUntilCondition,
+    getBase64Async,
 } from './utils.js';
 import { RA_CountCharTokens, humanizedDateTime, dragElement, favsToHotswap, getMessageTimeStamp } from "./RossAscends-mods.js";
 import { loadMovingUIState, sortEntitiesList } from './power-user.js';
@@ -1146,35 +1147,28 @@ async function uploadGroupAvatar(event) {
         return;
     }
 
-    const e = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = resolve;
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
+    const result = await getBase64Async(file);
 
     $('#dialogue_popup').addClass('large_dialogue_popup wide_dialogue_popup');
 
-    const croppedImage = await callPopup(getCropPopup(e.target.result), 'avatarToCrop');
+    const croppedImage = await callPopup(getCropPopup(result), 'avatarToCrop');
 
     if (!croppedImage) {
         return;
     }
 
-    let thumbnail = await createThumbnail(croppedImage, 96, 144);
+    let thumbnail = await createThumbnail(croppedImage, 200, 300);
     //remove data:image/whatever;base64
     thumbnail = thumbnail.replace(/^data:image\/[a-z]+;base64,/, "");
     let _thisGroup = groups.find((x) => x.id == openGroupId);
     // filename should be group id + human readable timestamp
-    const filename = `${_thisGroup.id}_${humanizedDateTime()}`;
-    let thumbnailUrl = await saveBase64AsFile(thumbnail, openGroupId.toString(), filename, 'jpg');
+    const filename = _thisGroup ? `${_thisGroup.id}_${humanizedDateTime()}` : humanizedDateTime();
+    let thumbnailUrl = await saveBase64AsFile(thumbnail, String(openGroupId ?? ''), filename, 'jpg');
     if (!openGroupId) {
         $('#group_avatar_preview img').attr('src', thumbnailUrl);
         $('#rm_group_restore_avatar').show();
         return;
     }
-
-
 
     _thisGroup.avatar_url = thumbnailUrl;
     $("#group_avatar_preview").empty().append(getGroupAvatar(_thisGroup));

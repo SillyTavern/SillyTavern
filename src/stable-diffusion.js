@@ -10,7 +10,7 @@ function registerEndpoints(app, jsonParser) {
     app.post('/api/sd/ping', jsonParser, async (request, response) => {
         try {
             const url = new URL(request.body.url);
-            url.pathname = '/internal/ping';
+            url.pathname = '/sdapi/v1/options';
 
             const result = await fetch(url, {
                 method: 'GET',
@@ -238,6 +238,38 @@ function registerEndpoints(app, jsonParser) {
 
             const data = await result.json();
             return response.send(data);
+        } catch (error) {
+            console.log(error);
+            return response.sendStatus(500);
+        }
+    });
+
+    app.post('/api/sd-next/upscalers', jsonParser, async (request, response) => {
+        try {
+            const url = new URL(request.body.url);
+            url.pathname = '/sdapi/v1/upscalers';
+
+            const result = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': getBasicAuthHeader(request.body.auth),
+                },
+            });
+
+            if (!result.ok) {
+                throw new Error('SD WebUI returned an error.');
+            }
+
+            // Vlad doesn't provide Latent Upscalers in the API, so we have to hardcode them here
+            const latentUpscalers = ['Latent', 'Latent (antialiased)', 'Latent (bicubic)', 'Latent (bicubic antialiased)', 'Latent (nearest)', 'Latent (nearest-exact)'];
+
+            const data = await result.json();
+            const names = data.map(x => x.name);
+
+            // 0 = None, then Latent Upscalers, then Upscalers
+            names.splice(1, 0, ...latentUpscalers);
+
+            return response.send(names);
         } catch (error) {
             console.log(error);
             return response.sendStatus(500);
