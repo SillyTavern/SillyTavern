@@ -103,6 +103,10 @@
     align-self: start;
 }
 
+.gap3px {
+    gap: 3px !important;
+}
+
 .gap5px {
     gap: 5px !important;
 }

@@ -2006,6 +2006,10 @@ jQuery(() => {
         worldInfoFilter.setFilterData(FILTER_TYPES.WORLD_INFO_SEARCH, term);
     });
 
+    $('#world_refresh').on('click', () => {
+        updateEditor(navigation_option.previous);
+    });
+
     $('#world_info_sort_order').on('change', function(e) {
         if (e.target instanceof HTMLOptionElement) {
             localStorage.setItem(SORT_ORDER_KEY, e.target.value);
