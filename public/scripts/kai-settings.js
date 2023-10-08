@@ -2,6 +2,7 @@ import {
     getRequestHeaders,
     saveSettingsDebounced,
     getStoppingStrings,
+    substituteParams,
 } from "../script.js";
 
 import {
@@ -25,7 +26,7 @@ export const kai_settings = {
     mirostat: 0,
     mirostat_tau: 5.0,
     mirostat_eta: 0.1,
-    use_default_badwordsids: true,
+    use_default_badwordsids: false,
     grammar: "",
 };
 
@@ -123,7 +124,7 @@ export function getKoboldGenerationData(finalPrompt, this_settings, this_amount_
         mirostat_tau: kai_flags.can_use_mirostat ? kai_settings.mirostat_tau : undefined,
         mirostat_eta: kai_flags.can_use_mirostat ? kai_settings.mirostat_eta : undefined,
         use_default_badwordsids: kai_flags.can_use_default_badwordsids ? kai_settings.use_default_badwordsids : undefined,
-        grammar: kai_flags.can_use_grammar ? kai_settings.grammar : undefined,
+        grammar: kai_flags.can_use_grammar ? substituteParams(kai_settings.grammar) : undefined,
     };
     return generate_data;
 }

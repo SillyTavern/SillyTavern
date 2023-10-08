@@ -1,0 +1,17 @@
+{
+    "wrap": false,
+    "names": true,
+    "system_prompt": "Write {{char}}'s next reply in this fictional roleplay with {{user}}.",
+    "system_sequence_prefix": "",
+    "stop_sequence": "",
+    "input_sequence": "[INST] ",
+    "output_sequence": " [/INST]\n",
+    "separator_sequence": "\n",
+    "macro": true,
+    "names_force_groups": true,
+    "last_output_sequence": "",
+    "activation_regex": "",
+    "first_output_sequence": "\n",
+    "system_sequence_suffix": "",
+    "name": "Mistral"
+}

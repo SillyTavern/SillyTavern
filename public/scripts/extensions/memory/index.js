@@ -584,7 +584,7 @@ jQuery(function () {
                         </label>
                         <label>
                             <input type="radio" name="memory_position" value="1" />
-                            In-chat @ Depth <input id="memory_depth" class="text_pole widthUnset" type="number" min="0" max="99" />
+                            In-chat @ Depth <input id="memory_depth" class="text_pole widthUnset" type="number" min="0" max="999" />
                         </label>
                     </div>
                     <div data-source="main" class="memory_contents_controls">
@@ -650,5 +650,5 @@ jQuery(function () {
     eventSource.on(event_types.MESSAGE_EDITED, onChatEvent);
     eventSource.on(event_types.MESSAGE_SWIPED, onChatEvent);
     eventSource.on(event_types.CHAT_CHANGED, onChatEvent);
-    registerSlashCommand('summarize', forceSummarizeChat, [], ' – forces the summarization of the current chat using the Main API', true, true);
+    registerSlashCommand('summarize', forceSummarizeChat, [], '– forces the summarization of the current chat using the Main API', true, true);
 });

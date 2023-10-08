@@ -101,7 +101,7 @@
     height: auto;
     margin-top: 0;
     margin-bottom: 0;
-    min-height: 32px;
+    min-height: calc(var(--mainFontSize) + 13px);
 }
 
 .delete_entry_button {
@@ -157,6 +157,37 @@
     width: 10em;
 }
 
-#world_info_search {
-    width: 10em;
+#world_info_search,
+#world_info_sort_order {
+    width: 7em;
+}
+
+.wi-card-entry {
+    border: 1px solid;
+    border-color: var(--SmartThemeBorderColor);
+    border-radius: 10px;
+    padding: 0 5px;
+    margin-bottom: 1px;
+}
+
+.world_entry {
+    transition: opacity 500ms;
+}
+
+.disabledWIEntry {
+    opacity: 0.4;
+    filter: grayscale(1);
+}
+
+.disabledWIEntry:not(input):hover {
+    opacity: 1;
+    filter: grayscale(0.5);
+}
+
+.height32px {
+    height: 32px;
+}
+
+.WIEntryHeaderTitleMobile {
+    display: none;
 }

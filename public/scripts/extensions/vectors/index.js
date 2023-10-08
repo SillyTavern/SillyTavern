@@ -1,6 +1,7 @@
 import { eventSource, event_types, extension_prompt_types, getCurrentChatId, getRequestHeaders, is_send_press, saveSettingsDebounced, setExtensionPrompt, substituteParams } from "../../../script.js";
 import { ModuleWorkerWrapper, extension_settings, getContext, renderExtensionTemplate } from "../../extensions.js";
 import { collapseNewlines, power_user, ui_mode } from "../../power-user.js";
+import { SECRET_KEYS, secret_state } from "../../secrets.js";
 import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique } from "../../utils.js";
 
 const MODULE_NAME = 'vectors';
@@ -116,8 +117,9 @@ async function synchronizeChat(batchSize = 5) {
 
         return newVectorItems.length - batchSize;
     } catch (error) {
-        toastr.error('Check server console for more details', 'Vectorization failed');
         console.error('Vectors: Failed to synchronize chat', error);
+        const message = error.cause === 'api_key_missing' ? 'API key missing. Save it in the "API Connections" panel.' : 'Check server console for more details';
+        toastr.error(message, 'Vectorization failed');
         return -1;
     } finally {
         syncBlocked = false;
@@ -287,6 +289,11 @@ async function getSavedHashes(collectionId) {
  * @returns {Promise<void>}
  */
 async function insertVectorItems(collectionId, items) {
+    if (settings.source === 'openai' && !secret_state[SECRET_KEYS.OPENAI] ||
+        settings.source === 'palm' && !secret_state[SECRET_KEYS.PALM]) {
+        throw new Error('Vectors: API key missing', { cause: 'api_key_missing' });
+    }
+
     const response = await fetch('/api/vector/insert', {
         method: 'POST',
         headers: getRequestHeaders(),

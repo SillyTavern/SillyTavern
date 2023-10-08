@@ -5,29 +5,10 @@
 .audio-mixer-div {
     display: flex;
     flex-direction: row;
-    align-items: center;
-    justify-content: center;
     padding: 5px;
     background-color: rgba(38, 38, 38, 0.5);
     border: 1px rgb(75, 75, 75) solid;
     border-radius: 10px;
-}
-
-.audio-mixer-element {
-    height: 60px;
-    float: left;
-    margin-right: 10px;
-    label {
-        text-align: top;
-    }
-    input {
-        margin-top: 15px;
-    }
-    select {
-        margin-top: 5px;
-        padding: 5px;
-        width: 100%;
-    }
 }
 
 .audio-label {
@@ -43,19 +24,16 @@
 }
 
 .audio-lock-button {
-    padding: 1rem;
     width: 100%;
     height: 2em;
 }
 
 .audio-random-button {
-    padding: 1rem;
     width: 100%;
     height: 2em;
 }
 
 .audio-mute-button {
-    padding: 1rem;
     width: 100%;
     height: 2em;
 }
@@ -78,18 +56,37 @@
     width: 10%;
 }
 
-.audio-mixer-volume {
-    width: 25%;
-}
-
-.audio-mixer-playlist {
-    width: 45%;
-}
-
 .audio-mixer-lock {
     width: 10%;
 }
 
 .audio-mixer-random {
     width: 10%;
+}
+
+.audio-container {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.audio-container>.vol {
+    width: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.audio-container>.vol>input {
+    width: 100%;
+}
+
+.audio-container>.playlist {
+    flex-grow: 1;
+}
+
+.audio-container>.playlist>select {
+    height: 100%;
+    margin: 0 !important;
 }

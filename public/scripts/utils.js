@@ -12,7 +12,7 @@ export const PAGINATION_TEMPLATE = '<%= rangeStart %>-<%= rangeEnd %> of <%= tot
  * Navigation options for pagination.
  * @enum {number}
  */
-export const navigation_option = { none: 0, previous: 1, last: 2, };
+export const navigation_option = { none: -2000, previous: -1000, };
 
 export function escapeHtml(str) {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -987,13 +987,4 @@ export function uuidv4() {
         const v = c === 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
     });
-}
-
-/**
- * Clones an object using JSON serialization.
- * @param {any} obj The object to clone.
- * @returns {any} A deep clone of the object.
- */
-export function deepClone(obj) {
-    return JSON.parse(JSON.stringify(obj));
 }
