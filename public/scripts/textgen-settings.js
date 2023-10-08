@@ -227,6 +227,10 @@ export function isAphrodite() {
     return textgenerationwebui_settings.type === textgen_types.APHRODITE;
 }
 
+export function isOoba() {
+    return textgenerationwebui_settings.type === textgen_types.OOBA;
+}
+
 export function getTextGenUrlSourceId() {
     switch (textgenerationwebui_settings.type) {
         case textgen_types.MANCER:
@@ -325,6 +329,18 @@ async function generateTextGenWithStreaming(generate_data, signal) {
 
     if (isAphrodite()) {
         streamingUrl = api_server_textgenerationwebui;
+    }
+
+    if (isMancer() || isOoba()) {
+        try {
+            const parsedUrl = new URL(streamingUrl);
+            if (parsedUrl.protocol !== 'ws:' && parsedUrl.protocol !== 'wss:') {
+                throw new Error('Invalid protocol');
+            }
+        } catch {
+            toastr.error('Invalid URL for streaming. Make sure it starts with ws:// or wss://');
+            return async function* () { throw new Error('Invalid URL for streaming.'); }
+        }
     }
 
     const response = await fetch('/generate_textgenerationwebui', {

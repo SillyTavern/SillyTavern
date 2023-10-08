@@ -19,6 +19,7 @@
     align-items: center;
     justify-content: left;
     padding: 5px;
+    font-style: normal;
 }
 
 .assets-list-div i span{
@@ -34,7 +35,7 @@
     border-radius: 2px;
     cursor: pointer;
   }
-  
+
 .asset-download-button:active {
     background: #007a63;
 }
@@ -75,5 +76,3 @@ to {
     transform: rotate(1turn);
 }
 }
-  
-  

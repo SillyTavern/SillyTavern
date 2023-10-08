@@ -156,6 +156,7 @@ const defaultSettings = {
     horde: false,
     horde_nsfw: false,
     horde_karras: true,
+    horde_sanitize: true,
 
     // Refine mode
     refine_mode: false,
@@ -252,6 +253,7 @@ async function loadSettings() {
     $('#sd_horde').prop('checked', extension_settings.sd.horde);
     $('#sd_horde_nsfw').prop('checked', extension_settings.sd.horde_nsfw);
     $('#sd_horde_karras').prop('checked', extension_settings.sd.horde_karras);
+    $('#sd_horde_sanitize').prop('checked', extension_settings.sd.horde_sanitize);
     $('#sd_restore_faces').prop('checked', extension_settings.sd.restore_faces);
     $('#sd_enable_hr').prop('checked', extension_settings.sd.enable_hr);
     $('#sd_refine_mode').prop('checked', extension_settings.sd.refine_mode);
@@ -439,13 +441,18 @@ function onNovelAnlasGuardInput() {
     saveSettingsDebounced();
 }
 
-async function onHordeNsfwInput() {
+function onHordeNsfwInput() {
     extension_settings.sd.horde_nsfw = !!$(this).prop('checked');
     saveSettingsDebounced();
 }
 
-async function onHordeKarrasInput() {
+function onHordeKarrasInput() {
     extension_settings.sd.horde_karras = !!$(this).prop('checked');
+    saveSettingsDebounced();
+}
+
+function onHordeSanitizeInput() {
+    extension_settings.sd.horde_sanitize = !!$(this).prop('checked');
     saveSettingsDebounced();
 }
 
@@ -1243,6 +1250,7 @@ async function generateHordeImage(prompt) {
             nsfw: extension_settings.sd.horde_nsfw,
             restore_faces: !!extension_settings.sd.restore_faces,
             enable_hr: !!extension_settings.sd.enable_hr,
+            sanitize: !!extension_settings.sd.horde_sanitize,
         }),
     });
 
@@ -1584,6 +1592,7 @@ jQuery(async () => {
     $('#sd_height').on('input', onHeightInput);
     $('#sd_horde_nsfw').on('input', onHordeNsfwInput);
     $('#sd_horde_karras').on('input', onHordeKarrasInput);
+    $('#sd_horde_sanitize').on('input', onHordeSanitizeInput);
     $('#sd_restore_faces').on('input', onRestoreFacesInput);
     $('#sd_enable_hr').on('input', onHighResFixInput);
     $('#sd_refine_mode').on('input', onRefineModeInput);

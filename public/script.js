@@ -143,7 +143,7 @@ import {
     onlyUnique,
 } from "./scripts/utils.js";
 
-import { extension_settings, getContext, loadExtensionSettings, processExtensionHelpers, registerExtensionHelper, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
+import { extension_settings, getContext, installExtension, loadExtensionSettings, processExtensionHelpers, registerExtensionHelper, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
 import { COMMENT_NAME_DEFAULT, executeSlashCommands, getSlashCommandsHelp, registerSlashCommand } from "./scripts/slash-commands.js";
 import {
     tag_map,
@@ -8898,25 +8898,7 @@ jQuery(async function () {
         }
 
         const url = input.trim();
-        console.debug('Extension import started', url);
-
-        const request = await fetch('/api/extensions/install', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            body: JSON.stringify({ url }),
-        });
-
-        if (!request.ok) {
-            toastr.info(request.statusText, 'Extension import failed');
-            console.error('Extension import failed', request.status, request.statusText);
-            return;
-        }
-
-        const response = await request.json();
-        toastr.success(`Extension "${response.display_name}" by ${response.author} (version ${response.version}) has been imported successfully!`, 'Extension import successful');
-        console.debug(`Extension "${response.display_name}" has been imported successfully at ${response.extensionPath}`);
-        await loadExtensionSettings(settings);
-        eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED);
+        await installExtension(url);
     });
 
 

@@ -11,7 +11,7 @@ export {
     ModuleWorkerWrapper,
 };
 
-let extensionNames = [];
+export let extensionNames = [];
 let manifests = {};
 const defaultUrl = "http://localhost:5100";
 
@@ -639,23 +639,26 @@ async function onDeleteClick() {
     // use callPopup to create a popup for the user to confirm before delete
     const confirmation = await callPopup(`Are you sure you want to delete ${extensionName}?`, 'delete_extension');
     if (confirmation) {
-        try {
-            const response = await fetch('/api/extensions/delete', {
-                method: 'POST',
-                headers: getRequestHeaders(),
-                body: JSON.stringify({ extensionName })
-            });
-        } catch (error) {
-            console.error('Error:', error);
-        }
-        toastr.success(`Extension ${extensionName} deleted`);
-        showExtensionsDetails();
-        // reload the page to remove the extension from the list
-        location.reload();
+        await deleteExtension(extensionName);
     }
 };
 
+export async function deleteExtension(extensionName) {
+    try {
+        const response = await fetch('/api/extensions/delete', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ extensionName })
+        });
+    } catch (error) {
+        console.error('Error:', error);
+    }
 
+    toastr.success(`Extension ${extensionName} deleted`);
+    showExtensionsDetails();
+    // reload the page to remove the extension from the list
+    location.reload();
+}
 
 /**
  * Fetches the version details of a specific extension.
@@ -680,7 +683,32 @@ async function getExtensionVersion(extensionName) {
     }
 }
 
+/**
+ * Installs a third-party extension via the API.
+ * @param {string} url Extension repository URL
+ * @returns {Promise<void>}
+ */
+export async function installExtension(url) {
+    console.debug('Extension import started', url);
 
+    const request = await fetch('/api/extensions/install', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ url }),
+    });
+
+    if (!request.ok) {
+        toastr.info(request.statusText, 'Extension import failed');
+        console.error('Extension import failed', request.status, request.statusText);
+        return;
+    }
+
+    const response = await request.json();
+    toastr.success(`Extension "${response.display_name}" by ${response.author} (version ${response.version}) has been imported successfully!`, 'Extension import successful');
+    console.debug(`Extension "${response.display_name}" has been imported successfully at ${response.extensionPath}`);
+    await loadExtensionSettings({});
+    eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED);
+}
 
 async function loadExtensionSettings(settings) {
     if (settings.extension_settings) {
