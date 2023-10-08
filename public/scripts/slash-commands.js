@@ -105,7 +105,10 @@ class SlashCommandParser {
 
     getHelpString() {
         const listItems = this.helpStrings.map(x => `<li>${x}</li>`).join('\n');
-        return `<p>Slash commands:</p><ol>${listItems}</ol>`;
+        return `<p>Slash commands:</p><ol>${listItems}</ol>
+        <small>Slash commands can be batched into a single input by adding a pipe character | at the end, and then writing a new slash command.</small>
+        <ul><li><small>Example:</small><code>/cut 1 | /sys Hello, | /continue</code></li>
+        <li>This will remove the first message in chat, send a system message that starts with 'Hello,', and then ask the AI to continue the message.</li></ul>`;
     }
 }
 
