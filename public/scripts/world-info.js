@@ -274,7 +274,7 @@ function sortEntries(data) {
             // Sort numbers
             return orderSign * (Number(aValue) - Number(bValue));
         };
-        const secondarySort = (a, b) => b.order - a.order;
+        const secondarySort = (a, b) => a.order - b.order;
         const tertiarySort = (a, b) => a.uid - b.uid;
 
         data.sort((a, b) => {
@@ -2010,7 +2010,7 @@ jQuery(() => {
         updateEditor(navigation_option.previous);
     });
 
-    $('#world_info_sort_order').on('change', function(e) {
+    $('#world_info_sort_order').on('change', function (e) {
         if (e.target instanceof HTMLOptionElement) {
             localStorage.setItem(SORT_ORDER_KEY, e.target.value);
         }
