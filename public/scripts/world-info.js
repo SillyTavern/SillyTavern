@@ -1759,6 +1759,9 @@ export async function importEmbeddedWorldInfo(skipPopup = false) {
 
     const newIndex = world_names.indexOf(bookName);
     if (newIndex >= 0) {
+        //show&draw the WI panel before..
+        $("#WIDrawerIcon").trigger('click');
+        //..auto-opening the new imported WI
         $("#world_editor_select").val(newIndex).trigger('change');
     }
 
