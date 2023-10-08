@@ -563,6 +563,11 @@ async function moduleWorker() {
             await forceUpdateVisualNovelMode();
         }
 
+        if (context.groupId && !Array.isArray(spriteCache[spriteFolderName])) {
+            await validateImages(spriteFolderName, true);
+            await forceUpdateVisualNovelMode();
+        }
+
         offlineMode.css('display', 'none');
     }
 
@@ -584,7 +589,7 @@ async function moduleWorker() {
     }
 
     // Throttle classification requests during streaming
-    if (context.streamingProcessor && !context.streamingProcessor.isFinished) {
+    if (!context.groupId && context.streamingProcessor && !context.streamingProcessor.isFinished) {
         const now = Date.now();
         const timeSinceLastServerResponse = now - lastServerResponseTime;
 
