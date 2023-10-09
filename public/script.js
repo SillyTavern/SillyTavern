@@ -339,6 +339,7 @@ export let isChatSaving = false;
 let chat_create_date = 0;
 let firstRun = false;
 let settingsReady = false;
+let currentVersion = "0.0.0";
 
 const default_ch_mes = "Hello";
 let count_view_mes = 0;
@@ -537,6 +538,7 @@ async function getClientVersion() {
         const data = await response.json();
         CLIENT_VERSION = data.agent;
         let displayVersion = `SillyTavern ${data.pkgVersion}`;
+        currentVersion = data.pkgVersion;
 
         if (data.gitRevision && data.gitBranch) {
             displayVersion += ` '${data.gitBranch}' (${data.gitRevision})`;
@@ -5045,7 +5047,8 @@ async function getSettings(type) {
         selected_button = settings.selected_button;
 
         if (data.enable_extensions) {
-            await loadExtensionSettings(settings);
+            const isVersionChanged = settings.currentVersion !== currentVersion;
+            await loadExtensionSettings(settings, isVersionChanged);
             eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED);
         }
     }
@@ -5071,6 +5074,7 @@ async function saveSettings(type) {
         url: "/savesettings",
         data: JSON.stringify({
             firstRun: firstRun,
+            currentVersion: currentVersion,
             username: name1,
             active_character: active_character,
             active_group: active_group,
