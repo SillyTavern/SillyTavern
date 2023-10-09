@@ -3480,10 +3480,13 @@ a {
 #groupMemberListPopout,
 #summaryExtensionPopout {
     aspect-ratio: unset;
-    padding: 0;
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
     background-color: var(--SmartThemeBlurTintColor);
     overflow: auto;
+}
+
+#groupMemberListPopout {
+    padding: 0;
 }
 
 #groupMemberListPopout #rm_group_members {
