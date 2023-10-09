@@ -3477,7 +3477,8 @@ a {
     transition: all 250ms;
 }
 
-#groupMemberListPopout {
+#groupMemberListPopout,
+#summaryExtensionPopout {
     aspect-ratio: unset;
     padding: 0;
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
