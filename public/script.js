@@ -4554,7 +4554,6 @@ async function getChatResult() {
     if (chat.length === 1) {
         const chat_id = (chat.length - 1);
         await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id);
-        addOneMessage(chat[chat_id]);
         await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, chat_id);
     }
 }
