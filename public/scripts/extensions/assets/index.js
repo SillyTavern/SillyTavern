@@ -48,8 +48,10 @@ function downloadAssetsList(url) {
                 }
 
                 console.debug(DEBUG_PREFIX, "Updated available assets to", availableAssets);
+                // First extensions, then everything else
+                const assetTypes = Object.keys(availableAssets).sort((a, b) => (a === 'extension') ? -1 : (b === 'extension') ? 1 : 0);
 
-                for (const assetType in availableAssets) {
+                for (const assetType of assetTypes) {
                     let assetTypeMenu = $('<div />', { id: "assets_audio_ambient_div", class: "assets-list-div" });
                     assetTypeMenu.append(`<h3>${assetType}</h3>`)
                     for (const i in availableAssets[assetType]) {
