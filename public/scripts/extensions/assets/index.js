@@ -1,8 +1,7 @@
 /*
 TODO:
- - Check failed install file (0kb size ?)
 */
-//const DEBUG_TONY_SAMA_FORK_MODE = false
+//const DEBUG_TONY_SAMA_FORK_MODE = true
 
 import { getRequestHeaders, callPopup } from "../../../script.js";
 import { deleteExtension, extensionNames, installExtension } from "../../extensions.js";
@@ -60,7 +59,7 @@ function downloadAssetsList(url) {
                         element.append(label);
 
                         //if (DEBUG_TONY_SAMA_FORK_MODE)
-                        //    assetUrl = assetUrl.replace("https://github.com/SillyTavern/","https://github.com/Tony-sama/"); // DBG
+                        //    asset["url"] = asset["url"].replace("https://github.com/SillyTavern/","https://github.com/Tony-sama/"); // DBG
 
                         console.debug(DEBUG_PREFIX, "Checking asset", asset["id"], asset["url"]);
 
@@ -115,7 +114,7 @@ function downloadAssetsList(url) {
                             element.on("click", assetInstall);
                         }
 
-                        console.debug(DEBUG_PREFIX, "Created element for BGM", asset["id"])
+                        console.debug(DEBUG_PREFIX, "Created element for ", asset["id"])
 
                         const displayName = DOMPurify.sanitize(asset["name"] || asset["id"]);
                         const description = DOMPurify.sanitize(asset["description"] || "");
