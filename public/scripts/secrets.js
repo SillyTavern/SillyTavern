@@ -3,6 +3,7 @@ import { callPopup, getRequestHeaders } from "../script.js";
 export const SECRET_KEYS = {
     HORDE: 'api_key_horde',
     MANCER: 'api_key_mancer',
+    APHRODITE: 'api_key_aphrodite',
     OPENAI: 'api_key_openai',
     NOVEL: 'api_key_novel',
     CLAUDE: 'api_key_claude',
@@ -10,6 +11,7 @@ export const SECRET_KEYS = {
     SCALE: 'api_key_scale',
     AI21: 'api_key_ai21',
     SCALE_COOKIE: 'scale_cookie',
+    PALM: 'api_key_palm',
 }
 
 const INPUT_MAP = {
@@ -22,6 +24,8 @@ const INPUT_MAP = {
     [SECRET_KEYS.SCALE]: '#api_key_scale',
     [SECRET_KEYS.AI21]: '#api_key_ai21',
     [SECRET_KEYS.SCALE_COOKIE]: '#scale_cookie',
+    [SECRET_KEYS.PALM]: '#api_key_palm',
+    [SECRET_KEYS.APHRODITE]: '#api_key_aphrodite',
 }
 
 async function clearSecret() {

@@ -99,7 +99,7 @@ function registerEndpoints(app, jsonParser) {
 
         const MAX_ATTEMPTS = 200;
         const CHECK_INTERVAL = 3000;
-        const PROMPT_THRESHOLD = 1000;
+        const PROMPT_THRESHOLD = 5000;
 
         try {
             const maxLength = PROMPT_THRESHOLD - String(request.body.negative_prompt).length - 5;

@@ -1,7 +1,6 @@
 const fetch = require('node-fetch').default;
 const https = require('https');
 const { readSecret, SECRET_KEYS } = require('./secrets');
-const { generateRequestUrl, normaliseResponse } = require('google-translate-api-browser');
 
 const DEEPLX_URL_DEFAULT = 'http://127.0.0.1:1188/translate';
 const ONERING_URL_DEFAULT = 'http://127.0.0.1:4990/translate';
@@ -59,6 +58,7 @@ function registerEndpoints(app, jsonParser) {
     });
 
     app.post('/api/translate/google', jsonParser, async (request, response) => {
+        const { generateRequestUrl, normaliseResponse } = require('google-translate-api-browser');
         const text = request.body.text;
         const lang = request.body.lang;
 
@@ -240,6 +240,30 @@ function registerEndpoints(app, jsonParser) {
             console.log("DeepLX translation error: " + error.message);
             return response.sendStatus(500);
         }
+    });
+
+    app.post('/api/translate/bing', jsonParser, async (request, response) => {
+        const bingTranslateApi = require('bing-translate-api');
+        const text = request.body.text;
+        let lang = request.body.lang;
+
+        if (request.body.lang === 'zh-CN') {
+            lang = 'zh-Hans'
+        }
+
+        if (!text || !lang) {
+            return response.sendStatus(400);
+        }
+
+        console.log('Input text: ' + text);
+
+        bingTranslateApi.translate(text, null, lang).then(result => {
+            console.log('Translated text: ' + result.translation);
+            return response.send(result.translation);
+        }).catch(err => {
+            console.log("Translation error: " + err.message);
+            return response.sendStatus(500);
+        });
     });
 }
 

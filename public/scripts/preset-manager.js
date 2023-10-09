@@ -24,7 +24,7 @@ import {
     textgenerationwebui_presets,
     textgenerationwebui_settings,
 } from "./textgen-settings.js";
-import { deepClone, download, parseJsonFile, waitUntilCondition } from "./utils.js";
+import { download, parseJsonFile, waitUntilCondition } from "./utils.js";
 
 const presetManagers = {};
 
@@ -236,11 +236,11 @@ class PresetManager {
                 case "textgenerationwebui":
                     return textgenerationwebui_settings;
                 case "context":
-                    const context_preset = deepClone(power_user.context);
+                    const context_preset = structuredClone(power_user.context);
                     context_preset['name'] = name || power_user.context.preset;
                     return context_preset;
                 case "instruct":
-                    const instruct_preset = deepClone(power_user.instruct);
+                    const instruct_preset = structuredClone(power_user.instruct);
                     instruct_preset['name'] = name || power_user.instruct.preset;
                     return instruct_preset;
                 default:
@@ -253,13 +253,13 @@ class PresetManager {
             'preset',
             'streaming_url',
             'stopping_strings',
-            'use_stop_sequence',
             'can_use_tokenization',
             'can_use_streaming',
             'preset_settings_novel',
             'streaming_novel',
             'nai_preamble',
             'model_novel',
+            'streaming_kobold',
             "enabled",
         ];
         const settings = Object.assign({}, getSettingsByApiId(this.apiId));

@@ -35,7 +35,7 @@
         max-width: 90svw;
     }
 
-    .world_entry_thin_controls,
+    /* .world_entry_thin_controls, */
     #persona-management-block,
     #character_popup .flex-container {
         flex-direction: column;
@@ -63,11 +63,24 @@
         display: none;
     }
 
+    .world_entry .inline-drawer-toggle {
+        padding-bottom: 5px;
+    }
+
+    #worldInfoScanningCheckboxes {
+        flex-flow: row;
+        flex-wrap: wrap;
+    }
+
     body {
         touch-action: none;
         overflow: hidden;
         position: fixed;
 
+    }
+
+    .world_entry_form_control {
+        /* width: 100%; */
     }
 
     .drawer-content {
@@ -125,6 +138,20 @@
 
     .wi-settings {
         flex-direction: column;
+        gap: 5px !important;
+    }
+
+    .WIEntryTitleAndStatus,
+    .WIEntryHeaderControls {
+        width: 100%;
+    }
+
+    #WIEntryHeaderTitlesPC {
+        display: none;
+    }
+
+    .WIEntryHeaderTitleMobile {
+        display: block !important;
     }
 
     #character_popup,
@@ -311,8 +338,7 @@
         min-width: 100px;
         min-height: 100px;
         max-height: 50vh;
-        max-width: 50vh;
-        width: 50vw;
+        max-width: 90vw;
         position: absolute;
         padding: 0;
         filter: drop-shadow(2px 2px 2px #51515199);

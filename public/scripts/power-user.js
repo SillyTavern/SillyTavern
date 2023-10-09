@@ -408,7 +408,10 @@ function switchUiMode() {
     if (power_user.fast_ui_mode) {
         $("#blur-strength-block").css('opacity', '0.2')
         $("#blur_strength").prop('disabled', true)
-    } else { $("#blur-strength-block").css('opacity', '1') }
+    } else {
+        $("#blur-strength-block").css('opacity', '1')
+        $("#blur_strength").prop('disabled', false)
+    }
 }
 
 function toggleWaifu() {
@@ -467,7 +470,10 @@ function noShadows() {
     if (power_user.noShadows) {
         $("#shadow-width-block").css('opacity', '0.2')
         $("#shadow_width").prop('disabled', true)
-    } else { $("#shadow-width-block").css('opacity', '1') }
+    } else {
+        $("#shadow-width-block").css('opacity', '1')
+        $("#shadow_width").prop('disabled', false)
+    }
     scrollChatToBottom();
 }
 
@@ -520,8 +526,12 @@ function applyChatWidth(type) {
         //document.documentElement.style.setProperty('--sheldWidth', power_user.chat_width);
     } else {
         //this is to prevent the slider from updating page in real time
-        $("#chat_width_slider").off('mouseup touchend').on('mouseup touchend', () => {
+        $("#chat_width_slider").off('mouseup touchend').on('mouseup touchend', async () => {
+            // This is a hack for Firefox to let it render before applying the block width.
+            // Otherwise it takes the incorrect slider position with the new value AFTER the resizing.
+            await delay(1);
             document.documentElement.style.setProperty('--sheldWidth', `${power_user.chat_width}vw`);
+            await delay(1);
         })
     }
 
@@ -2368,11 +2378,11 @@ $(document).ready(() => {
         browser_has_focus = false;
     });
 
-    registerSlashCommand('vn', toggleWaifu, [], ' – swaps Visual Novel Mode On/Off', false, true);
-    registerSlashCommand('newchat', doNewChat, ['newchat'], ' – start a new chat with current character', true, true);
-    registerSlashCommand('random', doRandomChat, ['random'], ' – start a new chat with a random character', true, true);
+    registerSlashCommand('vn', toggleWaifu, [], '– swaps Visual Novel Mode On/Off', false, true);
+    registerSlashCommand('newchat', doNewChat, [], '– start a new chat with current character', true, true);
+    registerSlashCommand('random', doRandomChat, [], '– start a new chat with a random character', true, true);
     registerSlashCommand('delmode', doDelMode, ['del'], '<span class="monospace">(optional number)</span> – enter message deletion mode, and auto-deletes N messages if numeric argument is provided', true, true);
-    registerSlashCommand('cut', doMesCut, [], ' <span class="monospace">(requred number)</span> – cuts the specified message from the chat', true, true);
-    registerSlashCommand('resetpanels', doResetPanels, ['resetui'], ' – resets UI panels to original state.', true, true);
-    registerSlashCommand('bgcol', setAvgBG, [], ' – WIP test of auto-bg avg coloring', true, true);
+    registerSlashCommand('cut', doMesCut, [], '<span class="monospace">(number)</span> – cuts the specified message from the chat', true, true);
+    registerSlashCommand('resetpanels', doResetPanels, ['resetui'], '– resets UI panels to original state.', true, true);
+    registerSlashCommand('bgcol', setAvgBG, [], '– WIP test of auto-bg avg coloring', true, true);
 });

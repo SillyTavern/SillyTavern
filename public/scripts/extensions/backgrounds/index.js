@@ -170,9 +170,9 @@ $(document).ready(function () {
     }
 
     addSettings();
-    registerSlashCommand('lockbg', onLockBackgroundClick, ['bglock'], " – locks a background for the currently selected chat", true, true);
-    registerSlashCommand('unlockbg', onUnlockBackgroundClick, ['bgunlock'], ' – unlocks a background for the currently selected chat', true, true);
-    registerSlashCommand('autobg', autoBackgroundCommand, ['bgauto'], ' – automatically changes the background based on the chat context using the AI request prompt', true, true);
+    registerSlashCommand('lockbg', onLockBackgroundClick, ['bglock'], "– locks a background for the currently selected chat", true, true);
+    registerSlashCommand('unlockbg', onUnlockBackgroundClick, ['bgunlock'], '– unlocks a background for the currently selected chat', true, true);
+    registerSlashCommand('autobg', autoBackgroundCommand, ['bgauto'], '– automatically changes the background based on the chat context using the AI request prompt', true, true);
     eventSource.on(event_types.FORCE_SET_BACKGROUND, forceSetBackground);
     eventSource.on(event_types.CHAT_CHANGED, moduleWorker);
 });

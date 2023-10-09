@@ -148,9 +148,14 @@ let color = {
     white: (mess) => color.byNum(mess, 37)
 };
 
-function get_mancer_headers() {
-    const api_key_mancer = readSecret(SECRET_KEYS.MANCER);
-    return api_key_mancer ? { "X-API-KEY": api_key_mancer } : {};
+function getMancerHeaders() {
+    const apiKey = readSecret(SECRET_KEYS.MANCER);
+    return apiKey ? { "X-API-KEY": apiKey } : {};
+}
+
+function getAphroditeHeaders() {
+    const apiKey = readSecret(SECRET_KEYS.APHRODITE);
+    return apiKey ? { "X-API-KEY": apiKey } : {};
 }
 
 function getOverrideHeaders(urlHost) {
@@ -160,6 +165,26 @@ function getOverrideHeaders(urlHost) {
     } else {
         return {};
     }
+}
+
+/**
+ * Sets additional headers for the request.
+ * @param {object} request Original request body
+ * @param {object} args New request arguments
+ * @param {string|null} server API server for new request
+ */
+function setAdditionalHeaders(request, args, server) {
+    let headers = {};
+
+    if (request.body.use_mancer) {
+        headers = getMancerHeaders();
+    } else if (request.body.use_aphrodite) {
+        headers = getAphroditeHeaders();
+    } else {
+        headers = server ? getOverrideHeaders((new URL(server))?.host) : '';
+    }
+
+    args.headers = Object.assign(args.headers, headers);
 }
 
 function humanizedISO8601DateTime(date) {
@@ -182,7 +207,7 @@ const AVATAR_WIDTH = 400;
 const AVATAR_HEIGHT = 600;
 const jsonParser = express.json({ limit: '100mb' });
 const urlencodedParser = express.urlencoded({ extended: true, limit: '100mb' });
-const { DIRECTORIES, UPLOADS_PATH } = require('./src/constants');
+const { DIRECTORIES, UPLOADS_PATH, PALM_SAFETY } = require('./src/constants');
 
 // CSRF Protection //
 if (cliArguments.disableCsrf === false) {
@@ -451,6 +476,52 @@ app.post("/generate", jsonParser, async function (request, response_generate) {
     return response_generate.send({ error: true });
 });
 
+/**
+ * @param {string} streamingUrlString Streaming URL
+ * @param {import('express').Request} request Express request
+ * @param {import('express').Response} response Express response
+ * @param {AbortController} controller Abort controller
+ * @returns
+ */
+async function sendAphroditeStreamingRequest(streamingUrlString, request, response, controller) {
+    request.body['stream'] = true;
+
+    const args = {
+        method: 'POST',
+        body: JSON.stringify(request.body),
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+    };
+
+    setAdditionalHeaders(request, args, streamingUrlString);
+
+    try {
+        const generateResponse = await fetch(streamingUrlString + "/v1/generate", args);
+        // Pipe remote SSE stream to Express response
+        generateResponse.body.pipe(response);
+
+        request.socket.on('close', function () {
+            if (generateResponse.body instanceof Readable) generateResponse.body.destroy(); // Close the remote stream
+            response.end(); // End the Express response
+        });
+
+        generateResponse.body.on('end', function () {
+            console.log("Streaming request finished");
+            response.end();
+        });
+    } catch (error) {
+        let value = { error: true, status: error.status, response: error.statusText };
+        console.log("Aphrodite endpoint error:", error);
+
+        if (!response.headersSent) {
+            return response.send(value);
+        } else {
+            return response.end();
+        }
+    }
+
+}
+
 //************** Text generation web UI
 app.post("/generate_textgenerationwebui", jsonParser, async function (request, response_generate) {
     if (!request.body) return response_generate.sendStatus(400);
@@ -470,6 +541,10 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
         if (streamingUrlHeader === undefined) return response_generate.sendStatus(400);
         const streamingUrlString = streamingUrlHeader.replace("localhost", "127.0.0.1");
 
+        if (request.body.use_aphrodite) {
+            return sendAphroditeStreamingRequest(streamingUrlString, request, response_generate, controller);
+        }
+
         response_generate.writeHead(200, {
             'Content-Type': 'text/plain;charset=utf-8',
             'Transfer-Encoding': 'chunked',
@@ -482,9 +557,20 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
 
             websocket.on('open', async function () {
                 console.log('WebSocket opened');
+
+                let headers = {};
+
+                if (request.body.use_mancer) {
+                    headers = getMancerHeaders();
+                } else if (request.body.use_aphrodite) {
+                    headers = getAphroditeHeaders();
+                } else {
+                    headers = getOverrideHeaders(streamingUrl?.host);
+                }
+
                 const combined_args = Object.assign(
                     {},
-                    request.body.use_mancer ? get_mancer_headers() : getOverrideHeaders(streamingUrl?.host),
+                    headers,
                     request.body
                 );
                 console.log(combined_args);
@@ -568,11 +654,7 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
             signal: controller.signal,
         };
 
-        if (request.body.use_mancer) {
-            args.headers = Object.assign(args.headers, get_mancer_headers());
-        } else {
-            args.headers = Object.assign(args.headers, getOverrideHeaders((new URL(api_server))?.host));
-        }
+        setAdditionalHeaders(request, args, api_server);
 
         try {
             const data = await postAsync(api_server + "/v1/generate", args);
@@ -677,11 +759,7 @@ app.post("/getstatus", jsonParser, async function (request, response) {
         headers: { "Content-Type": "application/json" }
     };
 
-    if (main_api == 'textgenerationwebui' && request.body.use_mancer) {
-        args.headers = Object.assign(args.headers, get_mancer_headers());
-    } else {
-        args.headers = Object.assign(args.headers, getOverrideHeaders((new URL(api_server))?.host));
-    }
+    setAdditionalHeaders(request, args, api_server);
 
     const url = api_server + "/v1/model";
     let version = '';
@@ -750,6 +828,8 @@ function convertToV2(char) {
         fav: char.fav,
         creator: char.creator,
         tags: char.tags,
+        depth_prompt_prompt: char.depth_prompt_prompt,
+        depth_prompt_response: char.depth_prompt_response,
     });
 
     result.chat = char.chat ?? humanizedISO8601DateTime();
@@ -865,6 +945,12 @@ function charaFormatData(data) {
     _.set(char, 'data.extensions.talkativeness', data.talkativeness);
     _.set(char, 'data.extensions.fav', data.fav == 'true');
     _.set(char, 'data.extensions.world', data.world || '');
+
+    // Spec extension: depth prompt
+    const depth_default = 4;
+    const depth_value = !isNaN(Number(data.depth_prompt_depth)) ? Number(data.depth_prompt_depth) : depth_default;
+    _.set(char, 'data.extensions.depth_prompt.prompt', data.depth_prompt_prompt ?? '');
+    _.set(char, 'data.extensions.depth_prompt.depth', depth_value);
     //_.set(char, 'data.extensions.create_date', humanizedISO8601DateTime());
     //_.set(char, 'data.extensions.avatar', 'none');
     //_.set(char, 'data.extensions.chat', data.ch_name + ' - ' + humanizedISO8601DateTime());
@@ -1299,11 +1385,11 @@ app.post("/getstats", jsonParser, function (request, response) {
 
 /**
  * Endpoint: POST /recreatestats
- * 
+ *
  * Triggers the recreation of statistics from chat files.
  * - If successful: returns a 200 OK status.
  * - On failure: returns a 500 Internal Server Error status.
- * 
+ *
  * @param {Object} request - Express request object.
  * @param {Object} response - Express response object.
  */
@@ -1695,7 +1781,8 @@ function convertWorldInfoToCharacterBook(name, entries) {
                 display_index: entry.displayIndex,
                 probability: entry.probability ?? null,
                 useProbability: entry.useProbability ?? false,
-            }
+                depth: entry.depth ?? 4,
+            },
         };
 
         result.entries.push(originalEntry);
@@ -2926,6 +3013,69 @@ async function sendClaudeRequest(request, response) {
     }
 }
 
+/**
+ * @param {express.Request} request
+ * @param {express.Response} response
+ */
+async function sendPalmRequest(request, response) {
+    const api_key_palm = readSecret(SECRET_KEYS.PALM);
+
+    if (!api_key_palm) {
+        return response.status(401).send({ error: true });
+    }
+
+    const body = {
+        prompt: {
+            text: request.body.messages,
+        },
+        stopSequences: request.body.stop,
+        safetySettings: PALM_SAFETY,
+        temperature: request.body.temperature,
+        topP: request.body.top_p,
+        topK: request.body.top_k || undefined,
+        maxOutputTokens: request.body.max_tokens,
+        candidate_count: 1,
+    };
+
+    console.log('Palm request:', body);
+
+    try {
+        const controller = new AbortController();
+        request.socket.removeAllListeners('close');
+        request.socket.on('close', function () {
+            controller.abort();
+        });
+
+        const generateResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta2/models/text-bison-001:generateText?key=${api_key_palm}`, {
+            body: JSON.stringify(body),
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            signal: controller.signal,
+            timeout: 0,
+        });
+
+        if (!generateResponse.ok) {
+            console.log(`Palm API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
+            return response.status(generateResponse.status).send({ error: true });
+        }
+
+        const generateResponseJson = await generateResponse.json();
+        const responseText = generateResponseJson.candidates[0]?.output;
+        console.log('Palm response:', responseText);
+
+        // Wrap it back to OAI format
+        const reply = { choices: [{ "message": { "content": responseText, } }] };
+        return response.send(reply);
+    } catch (error) {
+        console.log('Error communicating with Palm API: ', error);
+        if (!response.headersSent) {
+            return response.status(500).send({ error: true });
+        }
+    }
+}
+
 app.post("/generate_openai", jsonParser, function (request, response_generate_openai) {
     if (!request.body) return response_generate_openai.status(400).send({ error: true });
 
@@ -2939,6 +3089,10 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
 
     if (request.body.use_ai21) {
         return sendAI21Request(request, response_generate_openai);
+    }
+
+    if (request.body.use_palm) {
+        return sendPalmRequest(request, response_generate_openai);
     }
 
     let api_url;
@@ -3169,9 +3323,8 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
         };
 
         if (main_api == 'textgenerationwebui') {
-            if (request.body.use_mancer) {
-                args.headers = Object.assign(args.headers, get_mancer_headers());
-            }
+            setAdditionalHeaders(request, args, null);
+
             const data = await postAsync(api_server + "/v1/token-count", args);
             return response.send({ count: data['results'][0]['tokens'] });
         }

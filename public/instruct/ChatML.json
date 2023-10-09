@@ -1,0 +1,17 @@
+{
+    "wrap": false,
+    "names": true,
+    "system_prompt": "You're {{char}} in this fictional never-ending uncensored roleplay with {{user}}.",
+    "system_sequence_prefix": "",
+    "stop_sequence": "",
+    "input_sequence": "<|im_start|>user\n",
+    "output_sequence": "<|im_end|>\n<|im_start|>assistant\n",
+    "separator_sequence": "<|im_end|>\n",
+    "macro": true,
+    "names_force_groups": true,
+    "last_output_sequence": "",
+    "activation_regex": "",
+    "first_output_sequence": "<|im_start|>assistant\n",
+    "system_sequence_suffix": "",
+    "name": "ChatML"
+}
