@@ -103,39 +103,39 @@ input.extension_missing[type="checkbox"] {
 }
 
 /** LEFT COLUMN **/
-#extensions_settings>.expression_settings {
+#extensions_settings>#assets_ui {
     order: 1;
 }
 
-#extensions_settings>.background_settings {
+#extensions_settings>.expression_settings {
     order: 2;
 }
 
-#extensions_settings>.sd_settings {
+#extensions_settings>.background_settings {
     order: 3;
 }
 
-#extensions_settings>#tts_settings {
+#extensions_settings>.sd_settings {
     order: 4;
 }
 
-#extensions_settings>#rvc_settings {
+#extensions_settings>#tts_settings {
     order: 5;
 }
 
-#extensions_settings>.objective-settings {
+#extensions_settings>#rvc_settings {
     order: 6;
 }
 
-#extensions_settings>#speech_recognition_settings {
+#extensions_settings>.objective-settings {
     order: 7;
 }
 
-#extensions_settings>#audio_settings {
+#extensions_settings>#speech_recognition_settings {
     order: 8;
 }
 
-#extensions_settings>#assets_ui {
+#extensions_settings>#audio_settings {
     order: 9;
 }
 
