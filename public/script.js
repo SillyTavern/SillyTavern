@@ -2691,7 +2691,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         }
 
         // Only add the chat in context if past the greeting message
-        if (isContinue && chat2.length > 1) {
+        if (isContinue && (chat2.length > 1 || main_api === 'openai')) {
             cyclePrompt = chat2.shift();
         }
 
