@@ -251,7 +251,7 @@ const CORS = cors({
 
 app.use(CORS);
 
-if (listen && config.basicAuthMode) app.use(basicAuthMiddleware);
+if (listen && (config.basicAuthMode || process.env.AUTH_PASSWORD)) app.use(basicAuthMiddleware);
 
 // IP Whitelist //
 let knownIPs = new Set();
