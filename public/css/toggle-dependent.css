@@ -329,7 +329,8 @@ body.movingUI #expression-holder,
 body.movingUI .zoomed_avatar,
 body.movingUI .draggable,
 body.movingUI #floatingPrompt,
-body.movingUI #groupMemberListPopout {
+body.movingUI #groupMemberListPopout,
+body.movingUI #summaryExtensionPopout {
     resize: both;
 }
 

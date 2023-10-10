@@ -1410,7 +1410,8 @@ async function resetMovablePanels(type) {
         'WorldInfo',
         'floatingPrompt',
         'expression-holder',
-        'groupMemberListPopout'
+        'groupMemberListPopout',
+        'summaryExtensionPopout'
     ];
 
     const panelStyles = ['top', 'left', 'right', 'bottom', 'height', 'width', 'margin',];

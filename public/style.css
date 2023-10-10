@@ -3200,6 +3200,12 @@ a {
     height: calc(100% - 30px);
 }
 
+.scrollableInnerFull {
+    height: 100%;
+    overflow-Y: auto;
+    overflow-X: hidden;
+}
+
 .fillLeft .scrollableInner {
     padding: 0.5em 1em 0.5em 0.5em
 }
@@ -3404,7 +3410,8 @@ a {
 }
 
 .zoomed_avatar,
-#groupMemberListPopout {
+#groupMemberListPopout,
+#summaryExtensionPopout {
     min-width: 100px;
     min-height: 100px;
     max-height: 90vh;
@@ -3413,13 +3420,23 @@ a {
     /* width: calc((100vw - var(--sheldWidth)) /2); */
     position: absolute;
     padding: 0;
-    filter: drop-shadow(2px 2px 2px var(--grey7070a));
+    /* filter: drop-shadow(2px 2px 2px var(--grey7070a)); */
+    box-shadow: 1px 2px 2px var(--black30a);
     z-index: 29;
     overflow: hidden;
     display: none;
     bottom: 0;
-    aspect-ratio: 2 / 3;
     border-radius: 10px;
+}
+
+.zoomed_avatar {
+    aspect-ratio: 2 / 3;
+}
+
+#groupMemberListPopout,
+#summaryExtensionPopout {
+    border: 1px solid var(--SmartThemeBorderColor);
+    padding: 5px;
 }
 
 .draggable {
@@ -3460,12 +3477,16 @@ a {
     transition: all 250ms;
 }
 
-#groupMemberListPopout {
+#groupMemberListPopout,
+#summaryExtensionPopout {
     aspect-ratio: unset;
-    padding: 0;
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
     background-color: var(--SmartThemeBlurTintColor);
     overflow: auto;
+}
+
+#groupMemberListPopout {
+    padding: 0;
 }
 
 #groupMemberListPopout #rm_group_members {
