@@ -3475,8 +3475,7 @@ if (listen && !config.whitelistMode && !config.basicAuthMode) {
         console.warn(color.red("Security has been overridden. If it's not a trusted network, change the settings."));
     }
     else {
-        console.error(color.red('Your SillyTavern is currently unsecurely open to the public. Enable whitelisting or basic authentication.'));
-        process.exit(1);
+        console.warn(color.red('Your SillyTavern is currently unsecurely open to the public. Enable whitelisting or basic authentication. But continuing!'));
     }
 }
 
