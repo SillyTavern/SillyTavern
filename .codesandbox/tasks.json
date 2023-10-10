@@ -1,0 +1,13 @@
+{
+  // These tasks can be run from CodeSandbox. Running one will open a log in the app.
+  "tasks": {
+    "start": {
+      "name": "start",
+      "command": "bash start.sh",
+      "runAtStart": true,
+      "preview": {
+        "port": 8000
+      }
+    }
+  }
+}
