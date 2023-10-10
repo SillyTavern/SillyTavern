@@ -2690,7 +2690,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             pinExmString = examplesString = mesExamplesArray.join('');
         }
 
-        if (isContinue) {
+        // Only add the chat in context if past the greeting message
+        if (isContinue && chat2.length > 1) {
             cyclePrompt = chat2.shift();
         }
 
