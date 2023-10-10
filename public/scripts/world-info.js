@@ -6,6 +6,7 @@ import { registerSlashCommand } from "./slash-commands.js";
 import { getDeviceInfo } from "./RossAscends-mods.js";
 import { FILTER_TYPES, FilterHelper } from "./filters.js";
 import { getTokenCount } from "./tokenizers.js";
+import { power_user } from "./power-user.js";
 
 export {
     world_info,
@@ -1713,17 +1714,26 @@ export function checkEmbeddedWorld(chid) {
         if (!localStorage.getItem(checkKey) && (!worldName || !world_names.includes(worldName))) {
             localStorage.setItem(checkKey, 1);
 
-            callPopup(`<h3>This character has an embedded World/Lorebook.</h3>
-                       <h3>Would you like to import it now?</h3>
-                       <div class="m-b-1">If you want to import it later, select "Import Card Lore" in the "More..." dropdown menu on the character panel.</div>`,
-                'confirm',
-                '',
-                { okButton: 'Yes', })
-                .then((result) => {
-                    if (result) {
-                        importEmbeddedWorldInfo(true);
-                    }
-                });
+            if(power_user.world_import_dialog) {
+                callPopup(`<h3>This character has an embedded World/Lorebook.</h3>
+                           <h3>Would you like to import it now?</h3>
+                           <div class="m-b-1">If you want to import it later, select "Import Card Lore" in the "More..." dropdown menu on the character panel.</div>`,
+                    'confirm',
+                    '',
+                    { okButton: 'Yes', })
+                    .then((result) => {
+                        if (result) {
+                            importEmbeddedWorldInfo(true);
+                        }
+                    });
+            }
+            else {
+                toastr.info(
+                    'To import and use it, select "Import Card Lore" in the "More..." dropdown menu on the character panel.',
+                    `${characters[chid].name} has an embedded World/Lorebook`,
+                    { timeOut: 5000, extendedTimeOut: 10000, positionClass: 'toast-top-center' },
+                );
+            }
         }
         return true;
     }
