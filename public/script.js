@@ -86,7 +86,6 @@ import {
     sendOpenAIRequest,
     loadOpenAISettings,
     setOpenAIOnlineStatus,
-    generateOpenAIPromptCache,
     oai_settings,
     is_get_status_openai,
     openai_messages_count,
@@ -2853,10 +2852,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
             generatedPromptCache += cycleGenerationPrompt;
             if (generatedPromptCache.length == 0 || type === 'continue') {
-                if (main_api === 'openai') {
-                    generateOpenAIPromptCache();
-                }
-
                 console.debug('generating prompt');
                 chatString = "";
                 arrMes = arrMes.reverse();

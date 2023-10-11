@@ -65,7 +65,6 @@ export {
     setOpenAIMessages,
     setOpenAIMessageExamples,
     setupChatCompletionPromptManager,
-    generateOpenAIPromptCache,
     prepareOpenAIMessages,
     sendOpenAIRequest,
     setOpenAIOnlineStatus,
@@ -387,15 +386,6 @@ function setupChatCompletionPromptManager(openAiSettings) {
     return promptManager;
 }
 
-function generateOpenAIPromptCache() {
-    openai_msgs = openai_msgs.reverse();
-    openai_msgs.forEach(function (msg, i, arr) {
-        let item = msg["content"];
-        msg["content"] = item;
-        openai_msgs[i] = msg;
-    });
-}
-
 function parseExampleIntoIndividual(messageExampleString) {
     let result = []; // array of msgs
     let tmp = messageExampleString.split("\n");
@@ -471,7 +461,8 @@ function populationInjectionPrompts(prompts) {
         const depthPrompts = prompts.filter(prompt => prompt.injection_depth === i && prompt.content);
 
         // Order of priority (most important go lower)
-        const roles = ['system', 'user', 'assistant'];
+        const roles = [ 'system', 'user', 'assistant'];
+        const roleMessages = [];
 
         for (const role of roles) {
             // Get prompts for current role
@@ -482,10 +473,16 @@ function populationInjectionPrompts(prompts) {
             const jointPrompt = [rolePrompts, extensionPrompt].filter(x => x).map(x => x.trim()).join('\n');
 
             if (jointPrompt && jointPrompt.length) {
-                openai_msgs.splice(i, 0, { "role": role, 'content': jointPrompt });
+                roleMessages.push({ "role": role, 'content': jointPrompt });
             }
         }
+
+        if (roleMessages.length) {
+            openai_msgs.splice(i, 0, ...roleMessages);
+        }
     }
+
+    openai_msgs = openai_msgs.reverse();
 }
 
 /**
