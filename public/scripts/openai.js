@@ -659,7 +659,7 @@ function populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, ty
     // Add quiet prompt to control prompts
     // This should always be last, even in control prompts. Add all further control prompts BEFORE this prompt
     const quietPromptMessage = Message.fromPrompt(prompts.get('quietPrompt')) ?? null;
-    if (quietPromptMessage) controlPrompts.add(quietPromptMessage);
+    if (quietPromptMessage && quietPromptMessage.content) controlPrompts.add(quietPromptMessage);
 
     chatCompletion.reserveBudget(controlPrompts);
 
