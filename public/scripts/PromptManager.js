@@ -21,6 +21,16 @@ function debouncePromise(func, delay) {
     };
 }
 
+const DEFAULT_DEPTH = 4;
+
+/**
+ * @enum {number}
+ */
+export const INJECTION_POSITION ={
+    RELATIVE: 0,
+    ABSOLUTE: 1,
+}
+
 /**
  * Register migrations for the prompt manager when settings are loaded or an Open AI preset is loaded.
  */
@@ -60,7 +70,7 @@ const registerPromptManagerMigration = () => {
  * Represents a prompt.
  */
 class Prompt {
-    identifier; role; content; name; system_prompt; position;
+    identifier; role; content; name; system_prompt; position; injection_position; injection_depth;
 
     /**
      * Create a new Prompt instance.
@@ -72,14 +82,18 @@ class Prompt {
      * @param {string} param0.name - The name of the prompt.
      * @param {boolean} param0.system_prompt - Indicates if the prompt is a system prompt.
      * @param {string} param0.position - The position of the prompt in the prompt list.
+     * @param {number} param0.injection_position - The insert position of the prompt.
+     * @param {number} param0.injection_depth - The depth of the prompt in the chat.
      */
-    constructor({ identifier, role, content, name, system_prompt, position } = {}) {
+    constructor({ identifier, role, content, name, system_prompt, position, injection_depth, injection_position } = {}) {
         this.identifier = identifier;
         this.role = role;
         this.content = content;
         this.name = name;
         this.system_prompt = system_prompt;
         this.position = position;
+        this.injection_depth = injection_depth;
+        this.injection_position = injection_position;
     }
 }
 
@@ -381,6 +395,8 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_name').value = prompt.name;
         document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_role').value = 'system';
         document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt').value = prompt.content;
+        document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_position').value = prompt.injection_position ?? 0;
+        document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_depth').value = prompt.injection_depth ?? DEFAULT_DEPTH;
     }
 
     // Append prompt to selected character
@@ -673,6 +689,8 @@ PromptManagerModule.prototype.updatePromptWithPromptEditForm = function (prompt)
     prompt.name = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_name').value;
     prompt.role = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_role').value;
     prompt.content = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt').value;
+    prompt.injection_position = Number(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_position').value);
+    prompt.injection_depth = Number(document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_depth').value);
 }
 
 /**
@@ -1085,10 +1103,14 @@ PromptManagerModule.prototype.loadPromptIntoEditForm = function (prompt) {
     const nameField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_name');
     const roleField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_role');
     const promptField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt');
+    const injectionPositionField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_position');
+    const injectionDepthField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_depth');
 
     nameField.value = prompt.name ?? '';
     roleField.value = prompt.role ?? '';
     promptField.value = prompt.content ?? '';
+    injectionPositionField.value = prompt.injection_position ?? INJECTION_POSITION.RELATIVE;
+    injectionDepthField.value = prompt.injection_depth ?? DEFAULT_DEPTH;
 
     const resetPromptButton = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_reset');
     if (true === prompt.system_prompt) {
@@ -1152,10 +1174,14 @@ PromptManagerModule.prototype.clearEditForm = function () {
     const nameField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_name');
     const roleField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_role');
     const promptField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt');
+    const injectionPositionField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_position');
+    const injectionDepthField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_depth');
 
     nameField.value = '';
     roleField.selectedIndex = 0;
     promptField.value = '';
+    injectionPositionField.selectedIndex = 0;
+    injectionDepthField.value = DEFAULT_DEPTH;
 
     roleField.disabled = false;
 }
@@ -1435,13 +1461,18 @@ PromptManagerModule.prototype.renderPromptManagerListItems = function () {
         }
 
         const encodedName = escapeHtml(prompt.name);
+        const isSystemPrompt = !prompt.marker && prompt.system_prompt && prompt.injection_position !== INJECTION_POSITION.ABSOLUTE;
+        const isUserPrompt = !prompt.marker && !prompt.system_prompt && prompt.injection_position !== INJECTION_POSITION.ABSOLUTE;
+        const isInjectionPrompt = !prompt.marker && prompt.injection_position === INJECTION_POSITION.ABSOLUTE;
         listItemHtml += `
             <li class="${prefix}prompt_manager_prompt ${draggableClass} ${enabledClass} ${markerClass}" data-pm-identifier="${prompt.identifier}">
                 <span class="${prefix}prompt_manager_prompt_name" data-pm-name="${encodedName}">
                     ${prompt.marker ? '<span class="fa-solid fa-thumb-tack" title="Marker"></span>' : ''}
-                    ${!prompt.marker && prompt.system_prompt ? '<span class="fa-solid fa-square-poll-horizontal" title="Global Prompt"></span>' : ''}
-                    ${!prompt.marker && !prompt.system_prompt ? '<span class="fa-solid fa-user" title="User Prompt"></span>' : ''}
+                    ${isSystemPrompt ? '<span class="fa-solid fa-square-poll-horizontal" title="Global Prompt"></span>' : ''}
+                    ${isUserPrompt ? '<span class="fa-solid fa-user" title="User Prompt"></span>' : ''}
+                    ${isInjectionPrompt ? `<span class="fa-solid fa-syringe" title="In-Chat Injection"></span>` : ''}
                     ${this.isPromptInspectionAllowed(prompt) ? `<a class="prompt-manager-inspect-action">${encodedName}</a>` : encodedName}
+                    ${isInjectionPrompt ? `<small class="prompt-manager-injection-depth">@ ${prompt.injection_depth}</small>` : ''}
                 </span>
                 <span>
                         <span class="prompt_manager_prompt_controls">

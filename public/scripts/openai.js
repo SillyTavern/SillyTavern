@@ -31,7 +31,8 @@ import { groups, selected_group } from "./group-chats.js";
 import {
     promptManagerDefaultPromptOrders,
     chatCompletionDefaultPrompts, Prompt,
-    PromptManagerModule as PromptManager
+    PromptManagerModule as PromptManager,
+    INJECTION_POSITION,
 } from "./PromptManager.js";
 
 import {
@@ -321,15 +322,6 @@ function setOpenAIMessages(chat) {
         openai_msgs[i] = { "role": role, "content": content, name: name };
         j++;
     }
-
-    // Add chat injections, 100 = maximum depth of injection. (Why would you ever need more?)
-    for (let i = MAX_INJECTION_DEPTH; i >= 0; i--) {
-        const anchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, i);
-
-        if (anchor && anchor.length) {
-            openai_msgs.splice(i, 0, { "role": 'system', 'content': anchor.trim() });
-        }
-    }
 }
 
 function setOpenAIMessageExamples(mesExamplesArray) {
@@ -469,6 +461,34 @@ function formatWorldInfo(value) {
 }
 
 /**
+ * This function populates the injections in the conversation.
+ *
+ * @param {Prompt[]} prompts - Array containing injection prompts.
+ */
+function populationInjectionPrompts(prompts) {
+    for (let i = MAX_INJECTION_DEPTH; i >= 0; i--) {
+        // Get prompts for current depth
+        const depthPrompts = prompts.filter(prompt => prompt.injection_depth === i && prompt.content);
+
+        // Order of priority (most important go lower)
+        const roles = ['system', 'user', 'assistant'];
+
+        for (const role of roles) {
+            // Get prompts for current role
+            const rolePrompts = depthPrompts.filter(prompt => prompt.role === role).map(x => x.content).join('\n');
+            // Get extension prompt (only for system role)
+            const extensionPrompt = role === 'system' ? getExtensionPrompt(extension_prompt_types.IN_CHAT, i) : '';
+
+            const jointPrompt = [rolePrompts, extensionPrompt].filter(x => x).map(x => x.trim()).join('\n');
+
+            if (jointPrompt && jointPrompt.length) {
+                openai_msgs.splice(i, 0, { "role": role, 'content': jointPrompt });
+            }
+        }
+    }
+}
+
+/**
  * Populates the chat history of the conversation.
  *
  * @param {PromptCollection} prompts - Map object containing all prompts where the key is the prompt identifier and the value is the prompt object.
@@ -477,7 +497,6 @@ function formatWorldInfo(value) {
  * @param cyclePrompt
  */
 function populateChatHistory(prompts, chatCompletion, type = null, cyclePrompt = null) {
-    // Chat History
     chatCompletion.add(new MessageCollection('chatHistory'), prompts.index('chatHistory'));
 
     let names = (selected_group && groups.find(x => x.id === selected_group)?.members.map(member => characters.find(c => c.avatar === member)?.name).filter(Boolean).join(', ')) || '';
@@ -646,14 +665,20 @@ function populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, ty
 
     // Add ordered system and user prompts
     const systemPrompts = ['nsfw', 'jailbreak'];
-    const userPrompts = prompts.collection
-        .filter((prompt) => false === prompt.system_prompt)
+    const userRelativePrompts = prompts.collection
+        .filter((prompt) => false === prompt.system_prompt && prompt.injection_position !== INJECTION_POSITION.ABSOLUTE)
         .reduce((acc, prompt) => {
             acc.push(prompt.identifier)
             return acc;
         }, []);
+    const userAbsolutePrompts = prompts.collection
+        .filter((prompt) => false === prompt.system_prompt && prompt.injection_position === INJECTION_POSITION.ABSOLUTE)
+        .reduce((acc, prompt) => {
+            acc.push(prompt)
+            return acc;
+        }, []);
 
-    [...systemPrompts, ...userPrompts].forEach(identifier => addToChatCompletion(identifier));
+    [...systemPrompts, ...userRelativePrompts].forEach(identifier => addToChatCompletion(identifier));
 
     // Add enhance definition instruction
     if (prompts.has('enhanceDefinitions')) addToChatCompletion('enhanceDefinitions');
@@ -696,6 +721,9 @@ function populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, ty
             chatCompletion.insert(Message.fromPrompt(smartContext), 'main', smartContext.position);
         }
     }
+
+    // Add in-chat injections
+    populationInjectionPrompts(userAbsolutePrompts);
 
     // Decide whether dialogue examples should always be added
     if (power_user.pin_examples) {
@@ -1714,7 +1742,7 @@ class ChatCompletion {
      *
      * @param {Message} message - The message to insert.
      * @param {string} identifier - The identifier of the collection where to insert the message.
-     * @param {string} position - The position at which to insert the message ('start' or 'end').
+     * @param {string|number} position - The position at which to insert the message ('start' or 'end').
      */
     insert(message, identifier, position = 'end') {
         this.validateMessage(message);
@@ -1723,14 +1751,14 @@ class ChatCompletion {
         const index = this.findMessageIndex(identifier);
         if (message.content) {
             if ('start' === position) this.messages.collection[index].collection.unshift(message);
-            else if ('end' === position) this.messages.collection[index].collection.push(message);
+            else if ('end' === position) this.messages.collection[index].collection.push(message)
+            else if (typeof position === 'number') this.messages.collection[index].collection.splice(position, 0, message);
 
             this.decreaseTokenBudgetBy(message.getTokens());
 
             this.log(`Inserted ${message.identifier} into ${identifier}. Remaining tokens: ${this.tokenBudget}`);
         }
     }
-
 
     /**
      * Remove the last item of the collection

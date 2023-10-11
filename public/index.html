@@ -4318,23 +4318,44 @@
             <h3>Edit</h3>
             <div class="completion_prompt_manager_popup_entry">
                 <form class="completion_prompt_manager_popup_entry_form">
-                    <div class="completion_prompt_manager_popup_entry_form_control">
-                        <label for="completion_prompt_manager_popup_entry_form_name">
-                            <span>Name</span>
-                        </label>
-                        <div class="text_muted">A name for this prompt.</div>
-                        <input id="completion_prompt_manager_popup_entry_form_name" class="text_pole" type="text" name="name" />
+                    <div class="flex-container gap10px">
+                        <div class="completion_prompt_manager_popup_entry_form_control flex1">
+                            <label for="completion_prompt_manager_popup_entry_form_name">
+                                <span>Name</span>
+                            </label>
+                            <div class="text_muted">A name for this prompt.</div>
+                            <input id="completion_prompt_manager_popup_entry_form_name" class="text_pole" type="text" name="name" />
+                        </div>
+                        <div class="completion_prompt_manager_popup_entry_form_control flex1">
+                            <label for="completion_prompt_manager_popup_entry_form_role">
+                                <span>Role</span>
+                            </label>
+                            <div class="text_muted">To whom this message will be attributed.</div>
+                            <select id="completion_prompt_manager_popup_entry_form_role" class="text_pole" name="role">
+                                <option value="system">System</option>
+                                <option value="user">User</option>
+                                <option value="assistant">AI Assistant</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="completion_prompt_manager_popup_entry_form_control">
-                        <label for="completion_prompt_manager_popup_entry_form_role">
-                            <span>Role</span>
-                        </label>
-                        <div class="text_muted">To whom this message will be attributed.</div>
-                        <select id="completion_prompt_manager_popup_entry_form_role" class="text_pole" name="role">
-                            <option value="system">System</option>
-                            <option value="user">User</option>
-                            <option value="assistant">AI Assistant</option>
-                        </select>
+                    <div class="flex-container gap10px">
+                        <div class="completion_prompt_manager_popup_entry_form_control flex1">
+                            <label for="completion_prompt_manager_popup_entry_form_injection_position">
+                                <span>Position</span>
+                            </label>
+                            <div class="text_muted">Injection position. Next to other prompts (relative) or in-chat (absolute).</div>
+                            <select id="completion_prompt_manager_popup_entry_form_injection_position" class="text_pole" name="injection_position">
+                                <option value="0">Relative</option>
+                                <option value="1">Absolute</option>
+                            </select>
+                        </div>
+                        <div class="completion_prompt_manager_popup_entry_form_control flex1">
+                            <label for="completion_prompt_manager_popup_entry_form_injection_depth">
+                                <span>Depth</span>
+                            </label>
+                            <div class="text_muted">Injection depth. 0 = after the last message, 1 = before the last message, etc.</div>
+                            <input id="completion_prompt_manager_popup_entry_form_injection_depth" class="text_pole" type="number" name="injection_depth" min="0" max="999" value="4" />
+                        </div>
                     </div>
                     <div class="completion_prompt_manager_popup_entry_form_control">
                         <label for="completion_prompt_manager_popup_entry_form_prompt">
