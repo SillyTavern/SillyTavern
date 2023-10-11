@@ -456,12 +456,14 @@ function formatWorldInfo(value) {
  * @param {Prompt[]} prompts - Array containing injection prompts.
  */
 function populationInjectionPrompts(prompts) {
-    for (let i = MAX_INJECTION_DEPTH; i >= 0; i--) {
+    let totalInsertedMessages = 0;
+
+    for (let i = 0; i <= MAX_INJECTION_DEPTH; i++) {
         // Get prompts for current depth
         const depthPrompts = prompts.filter(prompt => prompt.injection_depth === i && prompt.content);
 
         // Order of priority (most important go lower)
-        const roles = [ 'system', 'user', 'assistant'];
+        const roles = ['system', 'user', 'assistant'];
         const roleMessages = [];
 
         for (const role of roles) {
@@ -478,7 +480,9 @@ function populationInjectionPrompts(prompts) {
         }
 
         if (roleMessages.length) {
-            openai_msgs.splice(i, 0, ...roleMessages);
+            const injectIdx = i + totalInsertedMessages;
+            openai_msgs.splice(injectIdx, 0, ...roleMessages);
+            totalInsertedMessages += roleMessages.length;
         }
     }
 
