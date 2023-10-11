@@ -63,6 +63,7 @@ const defaultSettings = {
     maxLengthPenalty: 4,
     lengthPenaltyStep: 0.1,
     memoryFrozen: false,
+    SkipWIAN: false,
     source: summary_sources.extras,
     prompt: defaultPrompt,
     template: defaultTemplate,
@@ -100,6 +101,7 @@ function loadSettings() {
     $('#memory_temperature').val(extension_settings.memory.temperature).trigger('input');
     $('#memory_length_penalty').val(extension_settings.memory.lengthPenalty).trigger('input');
     $('#memory_frozen').prop('checked', extension_settings.memory.memoryFrozen).trigger('input');
+    $('#memory_skipWIAN').prop('checked', extension_settings.memory.SkipWIAN).trigger('input');
     $('#memory_prompt').val(extension_settings.memory.prompt).trigger('input');
     $('#memory_prompt_words').val(extension_settings.memory.promptWords).trigger('input');
     $('#memory_prompt_interval').val(extension_settings.memory.promptInterval).trigger('input');
@@ -167,6 +169,12 @@ function onMemoryLengthPenaltyInput() {
 function onMemoryFrozenInput() {
     const value = Boolean($(this).prop('checked'));
     extension_settings.memory.memoryFrozen = value;
+    saveSettingsDebounced();
+}
+
+function onMemorySkipWIANInput() {
+    const value = Boolean($(this).prop('checked'));
+    extension_settings.memory.SkipWIAN = value;
     saveSettingsDebounced();
 }
 
@@ -311,13 +319,15 @@ async function onChatEvent() {
 async function forceSummarizeChat() {
     const context = getContext();
 
+    const skipWIAN = extension_settings.memory.SkipWIAN
+    console.log(`Skipping WIAN? ${skipWIAN}`)
     if (!context.chatId) {
         toastr.warning('No chat selected');
         return;
     }
 
     toastr.info('Summarizing chat...', 'Please wait');
-    const value = await summarizeChatMain(context, true);
+    const value = await summarizeChatMain(context, true, skipWIAN);
 
     if (!value) {
         toastr.warning('Failed to summarize chat');
@@ -326,19 +336,21 @@ async function forceSummarizeChat() {
 }
 
 async function summarizeChat(context) {
+    const skipWIAN = extension_settings.memory.SkipWIAN
     switch (extension_settings.memory.source) {
         case summary_sources.extras:
             await summarizeChatExtras(context);
             break;
         case summary_sources.main:
-            await summarizeChatMain(context, false);
+            await summarizeChatMain(context, false, skipWIAN);
             break;
         default:
             break;
     }
 }
 
-async function summarizeChatMain(context, force) {
+async function summarizeChatMain(context, force, skipWIAN) {
+
     if (extension_settings.memory.promptInterval === 0 && !force) {
         console.debug('Prompt interval is set to 0, skipping summarization');
         return;
@@ -397,8 +409,8 @@ async function summarizeChatMain(context, force) {
         console.debug('Summarization prompt is empty. Skipping summarization.');
         return;
     }
-
-    const summary = await generateQuietPrompt(prompt, false);
+    console.log('sending summary prompt')
+    const summary = await generateQuietPrompt(prompt, false, skipWIAN);
     const newContext = getContext();
 
     // something changed during summarization request
@@ -606,6 +618,7 @@ function setupListeners() {
     $('#memory_temperature').off('click').on('input', onMemoryTemperatureInput);
     $('#memory_length_penalty').off('click').on('input', onMemoryLengthPenaltyInput);
     $('#memory_frozen').off('click').on('input', onMemoryFrozenInput);
+    $('#memory_skipWIAN').off('click').on('input', onMemorySkipWIANInput);
     $('#summary_source').off('click').on('change', onSummarySourceChange);
     $('#memory_prompt_words').off('click').on('input', onMemoryPromptWordsInput);
     $('#memory_prompt_interval').off('click').on('input', onMemoryPromptIntervalInput);
@@ -648,10 +661,11 @@ jQuery(function () {
                         <textarea id="memory_contents" class="text_pole textarea_compact" rows="6" placeholder="Summary will be generated here..."></textarea>
                         <div class="memory_contents_controls">
                             <div id="memory_force_summarize" class="menu_button menu_button_icon">
-                            <i class="fa-solid fa-database"></i>
-                            <span>Summarize now</span>
-                        </div>
+                                <i class="fa-solid fa-database"></i>
+                                <span>Summarize now</span>
+                            </div>
                             <label for="memory_frozen"><input id="memory_frozen" type="checkbox" />Pause</label>
+                            <label for="memory_skipWIAN"><input id="memory_skipWIAN" type="checkbox" />No WI/AN</label>
                         </div>
                         <div class="memory_contents_controls">
                             <div id="summarySettingsBlockToggle" class="menu_button">Settings</div>

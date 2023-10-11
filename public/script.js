@@ -1906,15 +1906,18 @@ function getStoppingStrings(isImpersonate) {
 /**
  * Background generation based on the provided prompt.
  * @param {string} quiet_prompt Instruction prompt for the AI
- * @param {boolean} quietToLoud Whether a message should be sent in a foreground (loud) or background (quiet) mode
+ * @param {boolean} quietToLoud Whether the message should be sent in a foreground (loud) or background (quiet) mode
+ * @param {boolean} skipWIAN whether to skip addition of World Info and Author's Note into the prompt
  * @returns
  */
-export async function generateQuietPrompt(quiet_prompt, quietToLoud) {
+export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN) {
+    console.log('got into genQuietPrompt')
+    const skipWIANvalue = skipWIAN
     return await new Promise(
         async function promptPromise(resolve, reject) {
             if (quietToLoud === true) {
                 try {
-                    await Generate('quiet', { resolve, reject, quiet_prompt, quietToLoud: true, force_name2: true, });
+                    await Generate('quiet', { resolve, reject, quiet_prompt, quietToLoud: true, skipWIAN: skipWIAN, force_name2: true, });
                 }
                 catch {
                     reject();
@@ -1922,7 +1925,8 @@ export async function generateQuietPrompt(quiet_prompt, quietToLoud) {
             }
             else {
                 try {
-                    await Generate('quiet', { resolve, reject, quiet_prompt, quietToLoud: false, force_name2: true, });
+                    console.log('going to generate non-QuietToLoud')
+                    await Generate('quiet', { resolve, reject, quiet_prompt, quietToLoud: false, skipWIAN: skipWIAN, force_name2: true, });
                 }
                 catch {
                     reject();
@@ -2346,8 +2350,8 @@ class StreamingProcessor {
     }
 }
 
-async function Generate(type, { automatic_trigger, force_name2, resolve, reject, quiet_prompt, quietToLoud, force_chid, signal } = {}, dryRun = false) {
-    //console.log('Generate entered');
+async function Generate(type, { automatic_trigger, force_name2, resolve, reject, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal } = {}, dryRun = false) {
+    console.log('Generate entered');
     setGenerationProgress(0);
     generation_started = new Date();
 
@@ -2623,14 +2627,20 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         // Set non-WI AN
         setFloatingPrompt();
         // Add WI to prompt (and also inject WI to AN value via hijack)
+
         let { worldInfoString, worldInfoBefore, worldInfoAfter, worldInfoDepth } = await getWorldInfoPrompt(chat2, this_max_context);
 
-        // Add all depth WI entries to prompt
-        if (Array.isArray(worldInfoDepth)) {
-            worldInfoDepth.forEach((e) => {
-                const joinedEntries = e.entries.join("\n");
-                setExtensionPrompt(`customDepthWI-${e.depth}`, joinedEntries, extension_prompt_types.IN_CHAT, e.depth)
-            });
+        if (skipWIAN !== true) {
+            console.log('skipWIAN not active, adding WIAN')
+            // Add all depth WI entries to prompt
+            if (Array.isArray(worldInfoDepth)) {
+                worldInfoDepth.forEach((e) => {
+                    const joinedEntries = e.entries.join("\n");
+                    setExtensionPrompt(`customDepthWI-${e.depth}`, joinedEntries, extension_prompt_types.IN_CHAT, e.depth)
+                });
+            }
+        } else {
+            console.log('skipping WIAN')
         }
 
         // Add persona description to prompt
@@ -2967,7 +2977,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
                 // TODO: Move zero-depth anchor append to work like CFG and bias appends
                 if (zeroDepthAnchor?.length && !isContinue) {
-                    console.log(/\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1)))
+                    console.debug(/\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1)))
                     finalMesSend[finalMesSend.length - 1].message +=
                         /\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1))
                             ? zeroDepthAnchor
@@ -3268,7 +3278,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         // regenerate with character speech reenforced
                         // to make sure we leave on swipe type while also adding the name2 appendage
                         setTimeout(() => {
-                            Generate(type, { automatic_trigger, force_name2: true, resolve, reject, quiet_prompt, force_chid });
+                            Generate(type, { automatic_trigger, force_name2: true, resolve, reject, quiet_prompt, skipWIAN, force_chid });
                         }, generate_loop_counter * 1000);
                     }
 
