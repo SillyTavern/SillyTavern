@@ -235,6 +235,7 @@ function loadSettings() {
     chat_metadata[metadata_keys.depth] = chat_metadata[metadata_keys.depth] ?? extension_settings.note.defaultDepth ?? DEFAULT_DEPTH;
     $('#extension_floating_prompt').val(chat_metadata[metadata_keys.prompt]);
     $('#extension_floating_interval').val(chat_metadata[metadata_keys.interval]);
+    $('#extension_floating_allow_wi_scan').prop('checked', extension_settings.note.allowWIScan ?? false);
     $('#extension_floating_depth').val(chat_metadata[metadata_keys.depth]);
     $(`input[name="extension_floating_position"][value="${chat_metadata[metadata_keys.position]}"]`).prop('checked', true);
 
@@ -389,6 +390,11 @@ function onChatChanged() {
     $('#extension_floating_default_token_counter').text(tokenCounter3);
 }
 
+function onAllowWIScanCheckboxChanged() {
+    extension_settings.note.allowWIScan = !!$(this).prop('checked');
+    updateSettings();
+}
+
 /**
  * Inject author's note options and setup event listeners.
  */
@@ -402,6 +408,7 @@ export function initAuthorsNote() {
     $('#extension_floating_default').on('input', onExtensionFloatingDefaultInput);
     $('#extension_default_depth').on('input', onDefaultDepthInput);
     $('#extension_default_interval').on('input', onDefaultIntervalInput);
+    $('#extension_floating_allow_wi_scan').on('input', onAllowWIScanCheckboxChanged);
     $('input[name="extension_floating_position"]').on('change', onExtensionFloatingPositionInput);
     $('input[name="extension_default_position"]').on('change', onDefaultPositionInput);
     $('input[name="extension_floating_char_position"]').on('change', onExtensionFloatingCharPositionInput);
