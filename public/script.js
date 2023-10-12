@@ -212,6 +212,7 @@ export {
     saveChat,
     messageFormatting,
     getExtensionPrompt,
+    getExtensionPromptByName,
     showSwipeButtons,
     hideSwipeButtons,
     changeMainAPI,
@@ -2067,6 +2068,15 @@ function getAllExtensionPrompts() {
         .join('\n');
 
     return value.length ? substituteParams(value) : '';
+}
+
+// Wrapper to fetch extension prompts by module name
+function getExtensionPromptByName(moduleName) {
+    if (moduleName) {
+        return substituteParams(extension_prompts[moduleName]?.value);
+    } else {
+        return;
+    }
 }
 
 function getExtensionPrompt(position = 0, depth = undefined, separator = "\n") {
