@@ -1,0 +1,8 @@
+/**
+ * Minified by jsDelivr using clean-css v5.2.4.
+ * Original file: /npm/cytoscape-context-menus@4.1.0/cytoscape-context-menus.css
+ *
+ * Do NOT use SRI with dynamically generated files! More information: https://www.jsdelivr.com/using-sri-with-dynamic-files
+ */
+.cy-context-menus-cxt-menu{display:none;z-index:1000;position:absolute;border:1px solid #a0a0a0;padding:0;margin:0;width:auto}.cy-context-menus-cxt-menuitem{display:block;width:100%;padding:3px 20px;position:relative;margin:0;background-color:#f8f8f8;font-weight:400;font-size:12px;white-space:nowrap;border:0;text-align:left}.cy-context-menus-cxt-menuitem:enabled{color:#000}.cy-context-menus-ctx-operation:focus{outline:0}.cy-context-menus-cxt-menuitem:hover{color:#fff;text-decoration:none;background-color:#0b9bcd;background-image:none;cursor:pointer}.cy-context-menus-cxt-menuitem[content]:before{content:attr(content)}.cy-context-menus-divider{border-bottom:1px solid #a0a0a0}.cy-context-menus-submenu-indicator{position:absolute;right:2px;top:50%;transform:translateY(-50%)}
+/*# sourceMappingURL=/sm/27173004d9ddff2a3932d3c17d48bbe75814ebfd4a4ca8a44fc6417c7366d2e0.map */

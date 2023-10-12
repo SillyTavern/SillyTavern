@@ -1,0 +1,7 @@
+/**
+ * Skipped minification because the original files appears to be already minified.
+ * Original file: /npm/tippy.js@6.3.7/themes/translucent.css
+ *
+ * Do NOT use SRI with dynamically generated files! More information: https://www.jsdelivr.com/using-sri-with-dynamic-files
+ */
+.tippy-box[data-theme~=translucent]{background-color:rgba(0,0,0,.7)}.tippy-box[data-theme~=translucent]>.tippy-arrow{width:14px;height:14px}.tippy-box[data-theme~=translucent][data-placement^=top]>.tippy-arrow:before{border-width:7px 7px 0;border-top-color:rgba(0,0,0,.7)}.tippy-box[data-theme~=translucent][data-placement^=bottom]>.tippy-arrow:before{border-width:0 7px 7px;border-bottom-color:rgba(0,0,0,.7)}.tippy-box[data-theme~=translucent][data-placement^=left]>.tippy-arrow:before{border-width:7px 0 7px 7px;border-left-color:rgba(0,0,0,.7)}.tippy-box[data-theme~=translucent][data-placement^=right]>.tippy-arrow:before{border-width:7px 7px 7px 0;border-right-color:rgba(0,0,0,.7)}.tippy-box[data-theme~=translucent]>.tippy-backdrop{background-color:rgba(0,0,0,.7)}.tippy-box[data-theme~=translucent]>.tippy-svg-arrow{fill:rgba(0,0,0,.7)}

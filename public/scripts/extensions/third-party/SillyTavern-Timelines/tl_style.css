@@ -1,0 +1,257 @@
+
+/* All style elements for your extension go here */
+#myOverviewDiv {
+    width: 200px;
+    height: 200px;
+    border: 1px solid black;
+    /* other styling as desired... */
+}
+/* The Modal */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    /* Increase this value as needed */
+    left: 0;
+    top: 0;
+    width: 100vw;
+    /* covers the entire width of the viewport */
+    height: 100vh;
+    /* covers the entire height of the viewport */
+}
+
+#networkContainer {
+    background-color: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(var(--SmartThemeBlurStrength));
+    background-color: var(--SmartThemeBlurTintColor);
+    -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
+    text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
+    padding: 20px;
+    border: 1px solid #888;
+    width: 90vw;
+    height: 90vh;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    overflow: hidden;
+}
+
+/* Modal Content */
+.modal-content {
+    background-color: rgba(255, 255, 255, 0.7);
+    /* Semi-transparent white background */
+    backdrop-filter: blur(var(--SmartThemeBlurStrength));
+    background-color: var(--SmartThemeBlurTintColor);
+    -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
+    text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
+    /* Apply blur to the background elements */
+    padding: 20px;
+    border: 1px solid #888;
+    width: 90vw;
+    /* 80% of the view width */
+    height: 90vh;
+    /* 80% of the view height */
+    position: absolute;
+    /* this is necessary for centering */
+    top: 50%;
+    /* center vertically */
+    left: 50%;
+    /* center horizontally */
+    transform: translate(-50%, -50%);
+    /* shift back by 50% of its width and height */
+    overflow: auto;
+    /* allows scrolling if the content is larger than the modal */
+}
+
+#myDiagramDiv {
+    /* Make the diagram take the full space of the modal content */
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.active-legend {
+    box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.1),
+        /* existing shadow */
+        inset 0 0 0 2px rgba(0, 0, 0, 0.3);
+    /* simulating the border */
+    border-radius: 5px;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* The Close Button */
+.close {
+    color: #aaaaaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    z-index: 3;
+    position: relative;
+    background: none;
+        border: none;
+        padding: 0;
+}
+/* The Close Button */
+.expand {
+    color: #aaaaaa;
+    float: right;
+    font-size: 20px;
+    font-weight: bold;
+    z-index: 3;
+    position: relative;
+    background: none;
+        border: none;
+        padding: 0;
+        padding-right: 10px;
+}
+/* The Close Button */
+.rotate {
+    color: #aaaaaa;
+    float: right;
+    font-size: 24px;
+    font-weight: bold;
+    z-index: 3;
+    position: relative;
+    background: none;
+        border: none;
+        padding: 0;
+        padding-right: 10px;
+}
+
+.rotate:hover,
+.rotate:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.expand:hover,
+.expand:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.timelineButton {color: #aaaaaa;
+position: absolute;
+    right: 10px;
+    bottom: 10px;
+    font-size: 28px;
+    font-weight: bold;
+    z-index: 3;
+    position: absolute;
+    background: none;
+    border: none;
+    padding: 0;
+}
+
+.close:hover,
+.close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.legend-container {
+    border: 1px solid #ccc;
+    padding: 10px;
+    max-width: 200px;
+    background-color: #f9f9f9;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin: 8px 0;
+}
+
+.legend-symbol {
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    /* Makes it a circle */
+    margin-right: 10px;
+}
+
+.legend-text {
+    flex: 1;
+}
+
+.graph-container {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+}
+
+.legend-bottom-right {
+    position: absolute;
+    bottom: 10px;
+    /* Offset from the bottom */
+    right: 10px;
+    /* Offset from the right */
+    z-index: 10;
+    /* Ensures it stays on top */
+}
+
+.hidden {
+    display: none;
+}
+
+#transparent-search {
+    background-color: transparent;
+    border: none;
+    outline: none;
+    color: white; 
+    position: absolute; 
+    top: 10px; 
+    left: 10px; 
+    width: 200px; 
+    font-size: 16px; 
+    z-index: 10;
+}
+
+.tippy-box {
+    background-color: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(var(--SmartThemeBlurStrength));
+    background-color: var(--SmartThemeBlurTintColor);
+    -webkit-backdrop-filter: blur(var(--SmartThemeBlurStrength));
+    text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
+    padding: 20px;
+    border: 1px solid var(--SmartThemeShadowColor);
+    max-width: 80vw;
+    width: auto;
+    /* To make it responsive */
+    max-height: 80vh;
+    height: auto;
+    /* overflow: auto; */
+    border-radius: 4px;
+    /* Optional: if you want rounded corners */
+}
+
+.tippy-box button:hover {
+    background-color: #0056b3;
+}
+
+.tippy-box .mes_text {
+    max-height: 70vh;
+    max-width: 70vw;
+    overflow-y: auto;
+}
+
+.tippy-box .menu_div {
+    overflow-y: auto;
+    max-height: 50vh;
+}
+
+.tippy-box .menu_button {
+    width: 100%;
+}
+
+.tap_tippy_content {
+    overflow: auto;
+    max-height: 75vh;
+    max-width: 80vw;
+}

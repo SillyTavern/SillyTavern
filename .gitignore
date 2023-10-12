@@ -15,7 +15,7 @@ public/NovelAI Settings/
 public/TextGen Settings/
 public/instruct/
 public/context/
-public/scripts/extensions/third-party/
+#public/scripts/extensions/third-party/
 public/stats.json
 /uploads/
 *.jsonl

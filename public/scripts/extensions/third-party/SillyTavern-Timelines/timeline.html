@@ -1,0 +1,168 @@
+<div class="timeline-view-settings">
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <b>Timeline</b>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            <div class="timeline-view-settings_block flex-container">
+                <label for="tl_lock_nodes">Lock Nodes</label>
+                <input id="tl_lock_nodes" type="checkbox" />
+            </div>
+            <div class="timeline-view-settings_block flex-container">
+                <label for="tl_tooltip_fixed">Fixed Tooltip</label>
+                <input id="tl_tooltip_fixed" type="checkbox" />
+            </div>
+            <div class="timeline-view-settings_block flex-container">
+                <input value="Style Settings" class="menu_button" type="submit" id="toggleStyleSettings">
+            </div>
+            <!-- The collapsible style settings section -->
+            <div id="styleSettingsArea" class="hidden">
+                <!-- Moved tl_avatar_as_root checkbox -->
+                <div class="timeline-view-settings_block flex-container">
+                    <label for="tl_avatar_as_root">Avatar As Root</label>
+                    <input id="tl_avatar_as_root" type="checkbox" />
+                </div>
+                <div class="timeline-view-settings_block flex-container">
+                    <label for="tl_show_legend">Show Legend</label>
+                    <input id="tl_show_legend" type="checkbox" />
+                </div>
+                <div class="timeline-view-settings_block flex-container">
+                    <label for="tl_swipe_scale">Scale nodes with swipes</label>
+                    <input id="tl_swipe_scale" type="checkbox" />
+                </div>
+                <div class="timeline-view-settings_block flex-container">
+                    <label for="tl_use_chat_colors">Use UI Theme</label>
+                    <input id="tl_use_chat_colors" type="checkbox" />
+                </div>
+                <div class="timeline-view-settings_block flex-container">
+                    <label for="tl_node_width">Node Width (<span id="tl_node_width_value"></span>)</label>
+                    <input id="tl_node_width" type="range" min="1" max="100" />
+                </div>
+                <div class="timeline-view-settings_block flex-container">
+                    <label for="tl_node_height">Node Height (<span id="tl_node_height_value"></span>)</label>
+                    <input id="tl_node_height" type="range" min="1" max="100" />
+                </div>
+                <div class="timeline-view-settings_block flex-container">
+                    <label for="tl_node_separation"
+                        >Node Separation (<span id="tl_node_separation_value"></span>)</label
+                    >
+                    <input id="tl_node_separation" type="range" min="1" max="100" />
+                </div>
+                <div class="timeline-view-settings_block flex-container">
+                    <label for="tl_edge_separation"
+                        >Edge Separation (<span id="tl_edge_separation_value"></span>)</label
+                    >
+                    <input id="tl_edge_separation" type="range" min="1" max="100" />
+                </div>
+                <div class="timeline-view-settings_block flex-container">
+                    <label for="tl_rank_separation"
+                        >Rank Separation (<span id="tl_rank_separation_value"></span>)</label
+                    >
+                    <input id="tl_rank_separation" type="range" min="1" max="100" />
+                </div>
+                <div class="timeline-view-settings_block flex-container">
+                    <label for="tl_spacing_factor">Spacing Factor (<span id="tl_spacing_factor_value"></span>)</label>
+                    <input id="tl_spacing_factor" type="range" min="1" max="100" />
+                </div>
+                <div class="timeline-view-settings_block flex-container">
+                    <label for="tl_node_shape">Node Shape</label>
+                    <select id="tl_node_shape">
+                        <option value="ellipse">Ellipse</option>
+                        <option value="triangle">Triangle</option>
+                        <option value="round-triangle">Round-Triangle</option>
+                        <option value="rectangle">Rectangle</option>
+                        <option value="round-rectangle">Round-Rectangle</option>
+                        <option value="bottom-round-rectangle">Bottom-Round-Rectangle</option>
+                        <option value="cut-rectangle">Cut-Rectangle</option>
+                        <option value="barrel">Barrel</option>
+                        <option value="rhomboid">Rhomboid</option>
+                        <option value="right-rhomboid">Right-Rhomboid</option>
+                        <option value="diamond">Diamond</option>
+                        <option value="round-diamond">Round-Diamond</option>
+                        <option value="pentagon">Pentagon</option>
+                        <option value="round-pentagon">Round-Pentagon</option>
+                        <option value="hexagon">Hexagon</option>
+                        <option value="round-hexagon">Round-Hexagon</option>
+                        <option value="concave-hexagon">Concave-Hexagon</option>
+                        <option value="heptagon">Heptagon</option>
+                        <option value="round-heptagon">Round-Heptagon</option>
+                        <option value="octagon">Octagon</option>
+                        <option value="round-octagon">Round-Octagon</option>
+                        <option value="star">Star</option>
+                        <option value="tag">Tag</option>
+                        <option value="round-tag">Round-Tag</option>
+                        <option value="vee">Vee</option>
+                    </select>
+                </div>
+
+                <div class="timeline-view-settings_block flex-container">
+                    <label for="tl_curve_style">Curve Style</label>
+                    <select id="tl_curve_style">
+                        <option value="haystack">Haystack</option>
+                        <option value="straight">Straight</option>
+                        <option value="straight-triangle">Straight-Triangle</option>
+                        <option value="bezier">Bezier</option>
+                        <option value="unbundled-bezier">Unbundled-Bezier</option>
+                        <option value="segments">Segments</option>
+                        <option value="taxi">Taxi</option>
+                    </select>
+                </div>
+                <div class="timeline-view-settings_block flex-container">
+                    <label for="tl_align">Alignment</label>
+                    <select id="tl_align">
+                        <option value="UL">Upper Left</option>
+                        <option value="UR">Upper Right</option>
+                        <option value="DL">Down Left</option>
+                        <option value="DR">Down Right</option>
+                    </select>
+                </div>
+                <div class="timeline-view-settings_block flex-container">
+                    <input value="Reset Settings" class="menu_button" type="submit" id="resetSettingsBtn">
+                </div>
+            </div>
+            <div class="timeline-view-settings_block flex-container">
+                <input value="Color Settings" class="menu_button" type="submit" id="toggleColorSettings">
+            </div>
+            <div id="colorSettingsArea" class="hidden">
+                <div class="timeline-view-settings_block flex-container">
+                    <toolcool-color-picker id="bookmark-color-picker" value="#ff0000"></toolcool-color-picker>
+                    <span data-i18n="Bookmark Color">Bookmark Color</span>
+                </div>
+                <div class="timeline-view-settings_block flex-container">
+                    <toolcool-color-picker id="char-node-color-picker" value="#FFFFFF"></toolcool-color-picker>
+                    <span data-i18n="Character Node Color">Character Node Color</span>
+                </div>
+                <div class="timeline-view-settings_block flex-container">
+                    <toolcool-color-picker id="user-node-color-picker" value="#ADD8E6"></toolcool-color-picker>
+                    <span data-i18n="User Node Color">User Node Color</span>
+                </div>
+                <div class="timeline-view-settings_block flex-container">
+                    <toolcool-color-picker id="edge-color-picker" value="#555"></toolcool-color-picker>
+                    <span data-i18n="Edge Color">Edge Color</span>
+                </div>
+            </div>
+            <div class="timeline-view-settings_block flex-container">
+                <input id="show_timeline_view" class="menu_button" type="submit" value="Show Timeline" />
+                <!-- New button for comparison -->
+            </div>
+            <!-- The Modal -->
+            <div id="myModal" class="modal">
+                <!-- Modal content -->
+                <div id="networkContainer">
+                    <button class="close" title="Close">&times;</button>
+                    <button class="rotate" title="Rotate Graph">&orarr;</button>
+                    <button class="expand" title="Toggle Expand Swipes">&#x26D5;</button>
+                    <input id="transparent-search" type="text" placeholder="Search..." />
+                    <div class="graph-container">
+                        <!-- Relative positioned container -->
+                        <div id="myDiagramDiv"></div>
+                        <div id="legendDiv" class="legend-bottom-right"></div>
+                        <div id="fixedReference" style="position: fixed; bottom: 0; left: 0; width: 0; height: 0;"></div>
+                        <!-- Legend with absolute positioning -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
