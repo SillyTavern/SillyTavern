@@ -1,0 +1,93 @@
+.list-and-search-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100%;  /* Adjust as needed. If this is a popup, it might be set to a fixed height. */
+}
+
+.character-list-popup {
+    flex-grow: 1;
+    overflow-y: auto;  /* This ensures that if the list grows too long, it becomes scrollable. */
+}
+
+
+.character-list-item {
+    display: flex;
+    align-items: center;  /* aligns items vertically in the middle */
+    margin: 10px 0;      /* space between each list item */
+    justify-content: space-between;  /* pushes content to the far edges */
+    max-width: 80vw;
+}
+
+.character-list-item img.thumbnail {
+    flex: 0 0 100px; /* this gives a fixed width of 100px to thumbnails, adjust as needed */
+    height: 100px;  /* adjust height as needed */
+    object-fit: cover;
+    margin-right: 10px; /* space between thumbnail and description */
+}
+
+body img.thumbnail {
+    width: 100px;  /* adjust width as needed */
+    height: 100px;  /* adjust height as needed */
+    object-fit: cover;
+    margin-right: 10px; /* space between thumbnail and description */
+}
+
+.character-list-item .info {
+    flex: 1;  /* allows the description to take up the rest of the space */
+    text-align: left;  /* aligns content to the left */
+    overflow: hidden;  /* in case of long text */
+}
+
+
+.character-list-item .info .name {
+    font-weight: bold;  /* Makes the name stand out */
+    margin-bottom: 5px;
+    text-align: left;  /* aligns content to the left */
+    /* don't change the color due to it being a link */
+    color: var(--SmartThemeBodyColor)
+}
+
+.character-list-item .info .name a{
+    color: var(--SmartThemeBodyColor)
+}
+
+.character-list-item .info .description {
+    color: #666;  /* Darkens the description text slightly */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;  /* Ensures that long descriptions end in an ellipsis */
+    text-align: left;  /* aligns content to the left */
+}
+
+.character-list-item .info .tags{
+    margin-top: 10px;
+}
+
+.character-list-item .info .author {
+    font-size: 0.8em; /* This makes the author text 80% of its original size. Adjust as needed. */
+    color: var(--SmartThemeEmColor)
+
+}
+
+.page-buttons {
+    align-content: center;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.list-and-search-wrapper .flex-container {
+    display: flex;
+}
+
+.list-and-search-wrapper .flex-align-center {
+    align-items: center;
+}
+
+/* Centering labels in relation to adjacent inputs or icons */
+.list-and-search-wrapper .flex-container label {
+    align-self: center;
+}
+/* Grey out the entire list when searching */
+.searching {
+    filter: grayscale(100%);
+}

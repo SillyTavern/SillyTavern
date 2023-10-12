@@ -1,0 +1,12 @@
+{
+    "display_name": "CHUB Search",
+    "loading_order": 6,
+    "requires": [],
+    "optional": [
+    ],
+    "js": "index.js",
+    "css": "style.css",
+    "author": "City-Unit",
+    "version": "1.0.0",
+    "homePage": "https://github.com/city-unit/SillyTavern-Chub-Search"
+}
