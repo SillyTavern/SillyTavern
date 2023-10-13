@@ -5,7 +5,7 @@ import {
     getRequestHeaders,
 } from "../../../script.js";
 import { selected_group } from "../../group-chats.js";
-import { loadFileToDocument } from "../../utils.js";
+import { loadFileToDocument, delay } from "../../utils.js";
 import { loadMovingUIState } from '../../power-user.js';
 import { dragElement } from '../../RossAscends-mods.js';
 import { registerSlashCommand } from "../../slash-commands.js";
@@ -109,6 +109,13 @@ async function initGallery(items, url) {
         let file = e.originalEvent.dataTransfer.files[0];
         uploadFile(file, url);  // Added url parameter to know where to upload
     });
+
+    //let images populate first
+    await delay(100)
+    //unset the height (which must be getting set by the gallery library at some point)
+    $("#dragGallery").css('height', 'unset');
+    //force a resize to make images display correctly
+    jQuery("#dragGallery").nanogallery2('resize');
 }
 
 /**
@@ -247,14 +254,16 @@ $(document).ready(function () {
  * The cloned element has its attributes set, a new child div appended, and is made visible on the body.
  * Additionally, it sets up the element to prevent dragging on its images.
  */
-function makeMovable(id="gallery"){
+function makeMovable(id = "gallery") {
 
     console.debug('making new container from template')
     const template = $('#generic_draggable_template').html();
     const newElement = $(template);
+    newElement.css('background-color', 'var(--SmartThemeBlurTintColor)');
     newElement.attr('forChar', id);
     newElement.attr('id', `${id}`);
     newElement.find('.drag-grabber').attr('id', `${id}header`);
+    newElement.find('.dragTitle').text('Image Gallery')
     //add a div for the gallery
     newElement.append(`<div id="dragGallery"></div>`);
     // add no-scrollbar class to this element
@@ -326,6 +335,8 @@ function makeDragImg(id, url) {
 
         // Ensure that the newly added element is displayed as block
         draggableElem.style.display = 'block';
+        //and has no padding unlike other non-zoomed-avatar draggables
+        draggableElem.style.padding = '0';
 
         // Add an id to the close button
         // If the close button exists, set related-id
@@ -375,11 +386,11 @@ function makeDragImg(id, url) {
  * @param {string} id - The ID to be sanitized.
  * @returns {string} - The sanitized ID.
  */
-function sanitizeHTMLId(id){
+function sanitizeHTMLId(id) {
     // Replace spaces and non-word characters
     id = id.replace(/\s+/g, '-')
-           .replace(/[^\x00-\x7F]/g, '-')
-           .replace(/\W/g, '');
+        .replace(/[^\x00-\x7F]/g, '-')
+        .replace(/\W/g, '');
 
     return id;
 }
