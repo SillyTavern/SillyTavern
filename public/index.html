@@ -122,11 +122,11 @@
                     <div class="flex-container" id="ai_response_configuration">
                         <div id="respective-presets-block" class="width100p">
                             <div id="kobold_api-presets">
-                                <h3><span data-i18n="kobldpresets">Kobold Presets</span>
+                                <h4 class="margin0"><span data-i18n="kobldpresets">Kobold Presets</span>
                                     <a href="https://docs.sillytavern.app/usage/api-connections/koboldai/" class="notes-link" target="_blank">
                                         <span class="note-link-span">?</span>
                                     </a>
-                                </h3>
+                                </h4>
                                 <div class="preset_buttons">
                                     <select id="settings_perset" data-preset-manager-for="kobold">
                                         <option value="gui" data-i18n="guikoboldaisettings">GUI KoboldAI Settings</option>
@@ -140,12 +140,12 @@
                                 </div>
                             </div>
                             <div id="novel_api-presets">
-                                <h3>
+                                <h4 class="margin0">
                                     <span data-i18n="novelaipreserts">NovelAI Presets</span>
                                     <a href="https://docs.sillytavern.app/usage/api-connections/novelai/" class="notes-link" target="_blank">
                                         <span class="note-link-span">?</span>
                                     </a>
-                                </h3>
+                                </h4>
                                 <div class="preset_buttons">
                                     <select id="settings_perset_novel" data-preset-manager-for="novel">
                                         <option value="gui" data-i18n="default">Default</option>
@@ -160,7 +160,7 @@
                             </div>
                             <div id="openai_api-presets">
                                 <div>
-                                    <h4><span data-i18n="openaipresets">Chat Completion Presets</span></h4>
+                                    <h4 class="margin0"><span data-i18n="openaipresets">Chat Completion Presets</span></h4>
                                     <div class="openai_preset_buttons">
                                         <select id="settings_perset_openai">
                                             <option value="gui" data-i18n="default">Default</option>
@@ -175,8 +175,7 @@
                                 </div>
                             </div>
                             <div id="textgenerationwebui_api-presets">
-                                <h3><span data-i18n="Text Gen WebUI (ooba/Mancer) presets">Text Gen WebUI (ooba/Mancer) presets</span>
-                                </h3>
+                                <h4 class="margin0"><span data-i18n="Text Gen WebUI (ooba/Mancer) presets">Text Gen WebUI (ooba/Mancer) presets</span></h4>
                                 <div class="preset_buttons">
                                     <select id="settings_preset_textgenerationwebui" data-preset-manager-for="textgenerationwebui">
                                     </select>
@@ -1755,7 +1754,7 @@
                 <div id="API-status-top" class="drawer-icon fa-solid fa-plug-circle-exclamation  closedIcon" title="API Connections" data-i18n="[title]API Connections"></div>
             </div>
             <div id="rm_api_block" class="drawer-content closedDrawer">
-                <h3 id="title_api">API</h3>
+                <h3 class="margin0" id="title_api">API</h3>
                 <div class="flex-container flexFlowColumn">
                     <div id="main-API-selector-block">
                         <select id="main_api">
@@ -1967,9 +1966,9 @@
                         </div>
                     </div>
                     <div id="openai_api" style="display: none;position: relative;">
-                        <h3 data-i18n="Chat Completion Source">
+                        <h4 class="margin0" data-i18n="Chat Completion Source">
                             Chat Completion Source
-                        </h3>
+                        </h4>
                         <select id="chat_completion_source">
                             <option value="openai">OpenAI</option>
                             <option value="windowai">Window AI</option>
@@ -2237,7 +2236,7 @@
                 <div class="drawer-icon fa-solid fa-font  closedIcon" title="AI Response Formatting" data-i18n="[title]AI Response Formatting"></div>
             </div>
             <div class="drawer-content">
-                <h3 data-i18n="Advanced Formatting">Advanced Formatting
+                <h3 class="margin0" data-i18n="Advanced Formatting">Advanced Formatting
                     <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/" class="notes-link" target="_blank">
                         <span class="note-link-span">?</span>
                     </a>
@@ -2620,7 +2619,7 @@
                         <div class="unchecked fa-solid fa-unlock "></div>
                         <div class="checked fa-solid fa-lock "></div>
                     </label>
-                    <h3>
+                    <h3 class="margin0">
                         <span data-i18n="Worlds/Lorebooks">Worlds/Lorebooks</span>
                         <a href="https://docs.sillytavern.app/usage/core-concepts/worldinfo/" class="notes-link" target="_blank">
                             <span class="note-link-span">?</span>
@@ -2797,7 +2796,7 @@
                     <div name="userSettingsRowOne" class="flex-container flexFlowRow alignitemscenter spaceBetween">
                         <div class="flex-container">
                             <div class="flex-container flexnowrap alignitemscenter">
-                                <h3><span data-i18n="User Settings">User Settings</span></h3>
+                                <h3 class="margin0"><span data-i18n="User Settings">User Settings</span></h3>
                                 <select id="ui_mode_select" class="margin0 widthNatural">
                                     <option value="0" data-i18n="Simple">Simple</option>
                                     <option value="1" data-i18n="Advanced">Advanced</option>
@@ -3273,7 +3272,7 @@
             </div>
             <div class="drawer-content closedDrawer">
                 <div class="flex-container wide100p alignitemscenter spaceBetween">
-                    <h3><span data-i18n="Persona Management">Persona Management</span></h3>
+                    <h3 class="margin0"><span data-i18n="Persona Management">Persona Management</span></h3>
                     <a href="https://docs.sillytavern.app/usage/core-concepts/personas/" target="_blank" data-i18n="How do I use this?">How do I use this?</a>
                     <div id="persona-management-block" class="flex-container wide100p">
                         <div class="flex1">
@@ -3674,7 +3673,7 @@
         <div id="dialogue_popup">
             <div id="dialogue_popup_holder">
                 <div id="dialogue_popup_text">
-                    <h3>text</h3>
+                    <h3 class="margin0">text</h3>
                 </div>
                 <textarea id="dialogue_popup_input" class="text_pole" rows="1"></textarea>
                 <div id="dialogue_popup_controls">
@@ -3687,7 +3686,7 @@
     <div id="character_popup" class="flex-container flexFlowColumn flexNoGap">
 
         <div id="character_popup_text">
-            <h3 id="character_popup_text_h3"></h3> <span data-i18n="Advanced Defininitions">- Advanced
+            <h3 id="character_popup_text_h3" class="margin0"></h3> <span data-i18n="Advanced Defininitions">- Advanced
                 Definitions</span>
         </div>
         <hr class="margin-bot-10px">
@@ -3868,7 +3867,7 @@
     <div id="scenario_override_template" class="template_element">
         <div class="scenario_override range-block flexFlowColumn flex-container">
             <div class="range-block-title title_restorable">
-                <h3><span data-i18n="Chat Scenario Override">Chat Scenario Override</span></h3>
+                <h3><span data-i18n="Chat Scenario Override" class="margin0">Chat Scenario Override</span></h3>
                 <div title="Remove" data-i18n="[title]Remove" class="menu_button fa-solid fa-trash-can remove_scenario_override"></div>
             </div>
             <div class="range-block-counter justifyLeft flex-container flexFlowColumn">
@@ -4580,6 +4579,11 @@
                             Tokens: <span id="extension_floating_prompt_token_counter">0</span>
                         </div>
 
+                        <label class="checkbox_label" for="extension_floating_allow_wi_scan">
+                            <input id="extension_floating_allow_wi_scan" type="checkbox" />
+                            <span data-i18n="Include in World Info Scanning">Include in World Info Scanning</span>
+                        </label>
+
                         <div class="floating_prompt_radio_group">
                             <label>
                                 <input type="radio" name="extension_floating_position" value="2" />
@@ -4776,6 +4780,7 @@
 
     <template id="generic_draggable_template">
         <div class="draggable">
+            <div class="dragTitle"></div>
             <div class="panelControlBar flex-container">
                 <div class="fa-solid fa-grip drag-grabber"></div>
                 <div class="fa-solid fa-circle-xmark dragClose"></div>
