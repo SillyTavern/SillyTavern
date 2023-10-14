@@ -5,7 +5,7 @@ const fetch = require('node-fetch').default;
 const { finished } = require('stream/promises');
 const { DIRECTORIES, UNSAFE_EXTENSIONS } = require('./constants');
 
-const VALID_CATEGORIES = ["bgm", "ambient", "blip"];
+const VALID_CATEGORIES = ["bgm", "ambient", "blip", "live2d"];
 
 /**
  * Sanitizes the input filename for theasset.
