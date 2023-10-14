@@ -2,7 +2,7 @@ English | [中文](readme-zh_cn.md)
 
 ![image](https://github.com/SillyTavern/SillyTavern/assets/18619528/8c41a061-7f72-4d2b-9d54-e6d058209e7b)
 
-Mobile-friendly, Multi-API (KoboldAI/CPP, Horde, NovelAI, Ooba, OpenAI, OpenRouter, Claude, Scale), VN-like Waifu Mode, Horde SD, System TTS, WorldInfo (lorebooks), customizable UI, auto-translate, and more prompt options than you'd ever want or need. Optional Extras server for more SD/TTS options + ChromaDB/Summarize.
+Mobile-friendly layout, Multi-API (KoboldAI/CPP, Horde, NovelAI, Ooba, OpenAI, OpenRouter, Claude, Scale), VN-like Waifu Mode, Stable Diffusion, TTS, WorldInfo (lorebooks), customizable UI, auto-translate, and more prompt options than you'd ever want or need + ability to install third-party extensions.
 
 Based on a fork of TavernAI 1.2.8
 
@@ -80,7 +80,6 @@ SillyTavern has extensibility support, with some additional AI modules hosted vi
 * Sending images to chat, and the AI interpreting the content
 * Stable Diffusion image generation (5 chat-related presets plus 'free mode')
 * Text-to-speech for AI response messages (via ElevenLabs, Silero, or the OS's System TTS)
-* ChromaDB vector storage for smarter chat prompt formatting
 
 A full list of included extensions and tutorials on how to use them can be found in the [Docs](https://docs.sillytavern.app/extras/extensions/).
 

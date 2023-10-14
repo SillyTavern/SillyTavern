@@ -627,6 +627,9 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
                         yield message.text;
                         break;
                     case 'stream_end':
+                        if (message.error) {
+                            yield `\n[API Error] ${message.error}\n`
+                        }
                         websocket.close();
                         return;
                 }

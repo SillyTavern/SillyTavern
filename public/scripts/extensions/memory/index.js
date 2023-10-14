@@ -571,12 +571,13 @@ function doPopout(e) {
         const template = $('#zoomed_avatar_template').html();
         const controlBarHtml = `<div class="panelControlBar flex-container">
         <div id="summaryExtensionPopoutheader" class="fa-solid fa-grip drag-grabber hoverglow"></div>
-        <div id="summaryExtensionPopoutClose" class="fa-solid fa-circle-xmark hoverglow"></div>
+        <div id="summaryExtensionPopoutClose" class="fa-solid fa-circle-xmark hoverglow dragClose"></div>
     </div>`
         const newElement = $(template);
-        newElement.attr('id', 'summaryExtensionPopout');
-        newElement.removeClass('zoomed_avatar')
-        newElement.empty()
+        newElement.attr('id', 'summaryExtensionPopout')
+            .removeClass('zoomed_avatar')
+            .addClass('draggable')
+            .empty()
         const prevSummaryBoxContents = $('#memory_contents').val(); //copy summary box before emptying
         originalElement.empty();
         originalElement.html(`<div class="flex-container alignitemscenter justifyCenter wide100p"><small>Currently popped out</small></div>`)
