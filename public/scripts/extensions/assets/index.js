@@ -5,6 +5,7 @@ TODO:
 
 import { getRequestHeaders, callPopup } from "../../../script.js";
 import { deleteExtension, extensionNames, installExtension } from "../../extensions.js";
+import { isValidUrl } from "../../utils.js";
 export { MODULE_NAME };
 
 const MODULE_NAME = 'Assets';
@@ -120,10 +121,19 @@ function downloadAssetsList(url) {
 
                         const displayName = DOMPurify.sanitize(asset["name"] || asset["id"]);
                         const description = DOMPurify.sanitize(asset["description"] || "");
+                        const url = isValidUrl(asset["url"]) ? asset["url"] : "";
 
                         $(`<i></i>`)
                             .append(element)
-                            .append(`<div class="flex-container flexFlowColumn"><span>${displayName}</span><span>${description}</span></div>`)
+                            .append(`<div class="flex-container flexFlowColumn">
+                                        <span class="flex-container alignitemscenter">
+                                            <b>${displayName}</b>
+                                            <a href="${url}" target="_blank" title="Open in browser">
+                                                <i class="fa-solid fa-sm fa-arrow-up-right-from-square"></i>
+                                            </a>
+                                        </span>
+                                        <span>${description}</span>
+                                     </div>`)
                             .appendTo(assetTypeMenu);
                     }
                     assetTypeMenu.appendTo("#assets_menu");
