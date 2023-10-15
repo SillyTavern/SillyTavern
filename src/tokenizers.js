@@ -317,10 +317,10 @@ function registerEndpoints(app, jsonParser) {
         }
         num_tokens += tokensPadding;
 
-        // NB: Since 2023-10-14, the GPT-3.5 Turbo 0301 model shoves in 7 extra tokens to every message.
+        // NB: Since 2023-10-14, the GPT-3.5 Turbo 0301 model shoves in 7-9 extra tokens to every message.
         // More details: https://community.openai.com/t/gpt-3-5-turbo-0301-showing-different-behavior-suddenly/431326/14
         if (queryModel.endsWith('-0301')) {
-            num_tokens += 7;
+            num_tokens += 9;
         }
 
         // not needed for cached tokenizers
