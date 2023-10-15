@@ -1,6 +1,6 @@
-import { saveSettings, callPopup, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types } from "../script.js";
+import { saveSettings, callPopup, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types, getExtensionPrompt, MAX_INJECTION_DEPTH, extension_prompt_types, getExtensionPromptByName } from "../script.js";
 import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition } from "./utils.js";
-import { getContext } from "./extensions.js";
+import { extension_settings, getContext } from "./extensions.js";
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from "./authors-note.js";
 import { registerSlashCommand } from "./slash-commands.js";
 import { getDeviceInfo } from "./RossAscends-mods.js";
@@ -581,8 +581,8 @@ function getWorldEntry(name, data, entry) {
         data.entries[uid].selectiveLogic = !isNaN(value) ? value : 0;
         setOriginalDataValue(data, uid, "selectiveLogic", data.entries[uid].selectiveLogic);
         saveWorldInfo(name, data);
-
     });
+
     template
         .find(`select[name="entryLogicType"] option[value=${entry.selectiveLogic}]`)
         .prop("selected", true)
@@ -1341,7 +1341,27 @@ async function getSortedEntries() {
 async function checkWorldInfo(chat, maxContext) {
     const context = getContext();
     const messagesToLookBack = world_info_depth * 2 || 1;
-    let textToScan = transformString(chat.slice(0, messagesToLookBack).join(""));
+
+    // Combine the chat
+    let textToScan = chat.slice(0, messagesToLookBack).join("");
+
+    // Add the depth or AN if enabled
+    // Put this code here since otherwise, the chat reference is modified
+    if (extension_settings.note.allowWIScan) {
+        let depthPrompt = getExtensionPromptByName("DEPTH_PROMPT")
+        if (depthPrompt) {
+            textToScan = `${depthPrompt}\n${textToScan}`
+        }
+
+        let anPrompt = getExtensionPromptByName(NOTE_MODULE_NAME);
+        if (anPrompt) {
+            textToScan = `${anPrompt}\n${textToScan}`
+        }
+    }
+
+    // Transform the resulting string
+    textToScan = transformString(textToScan);
+
     let needsToScan = true;
     let count = 0;
     let allActivatedEntries = new Set();

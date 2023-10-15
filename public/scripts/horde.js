@@ -92,7 +92,7 @@ async function adjustHordeGenerationParams(max_context_length, max_length) {
     return { maxContextLength, maxLength };
 }
 
-async function generateHorde(prompt, params, signal) {
+async function generateHorde(prompt, params, signal, reportProgress) {
     validateHordeModel();
     delete params.prompt;
 
@@ -164,7 +164,7 @@ async function generateHorde(prompt, params, signal) {
         }
 
         if (statusCheckJson.done && Array.isArray(statusCheckJson.generations) && statusCheckJson.generations.length) {
-            setGenerationProgress(100);
+            reportProgress && setGenerationProgress(100);
             const generatedText = statusCheckJson.generations[0].text;
             const WorkerName = statusCheckJson.generations[0].worker_name;
             const WorkerModel = statusCheckJson.generations[0].model;
@@ -174,12 +174,12 @@ async function generateHorde(prompt, params, signal) {
         }
         else if (!queue_position_first) {
             queue_position_first = statusCheckJson.queue_position;
-            setGenerationProgress(0);
+            reportProgress && setGenerationProgress(0);
         }
         else if (statusCheckJson.queue_position >= 0) {
             let queue_position = statusCheckJson.queue_position;
             const progress = Math.round(100 - (queue_position / queue_position_first * 100));
-            setGenerationProgress(progress);
+            reportProgress && setGenerationProgress(progress);
         }
 
         await delay(CHECK_INTERVAL);

@@ -437,5 +437,7 @@ export function getTextGenGenerationData(finalPrompt, this_amount_gen, isImperso
         'mirostat_eta': textgenerationwebui_settings.mirostat_eta,
         'grammar_string': textgenerationwebui_settings.grammar_string,
         'custom_token_bans': getCustomTokenBans(),
+        'use_mancer': isMancer(),
+        'use_aphrodite': isAphrodite(),
     };
 }

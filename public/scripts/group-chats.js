@@ -1555,11 +1555,14 @@ function doCurMemberListPopout() {
         <div id="groupMemberListPopoutClose" class="fa-solid fa-circle-xmark hoverglow"></div>
     </div>`
         const newElement = $(template);
-        newElement.attr('id', 'groupMemberListPopout');
-        newElement.removeClass('zoomed_avatar')
-        newElement.empty()
 
-        newElement.append(controlBarHtml).append(memberListClone)
+        newElement.attr('id', 'groupMemberListPopout')
+            .removeClass('zoomed_avatar')
+            .addClass('draggable')
+            .empty()
+            .append(controlBarHtml)
+            .append(memberListClone)
+
         $('body').append(newElement);
         loadMovingUIState();
         $("#groupMemberListPopout").fadeIn(250)

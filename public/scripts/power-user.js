@@ -1413,12 +1413,14 @@ async function resetMovablePanels(type) {
         'floatingPrompt',
         'expression-holder',
         'groupMemberListPopout',
-        'summaryExtensionPopout'
+        'summaryExtensionPopout',
+        'gallery'
     ];
 
     const panelStyles = ['top', 'left', 'right', 'bottom', 'height', 'width', 'margin',];
 
     panelIds.forEach((id) => {
+        console.log(id)
         const panel = document.getElementById(id);
 
         if (panel) {

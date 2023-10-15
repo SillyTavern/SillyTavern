@@ -29,7 +29,7 @@ const defaultSettings = {
 
 function downloadAssetsList(url) {
     updateCurrentAssets().then(function () {
-        fetch(url)
+        fetch(url, { cache: "no-cache" })
             .then(response => response.json())
             .then(json => {
 
@@ -123,8 +123,7 @@ function downloadAssetsList(url) {
 
                         $(`<i></i>`)
                             .append(element)
-                            .append(`<span>${displayName}</span>`)
-                            .append(`<span>${description}</span>`)
+                            .append(`<div class="flex-container flexFlowColumn"><span>${displayName}</span><span>${description}</span></div>`)
                             .appendTo(assetTypeMenu);
                     }
                     assetTypeMenu.appendTo("#assets_menu");
