@@ -10,6 +10,7 @@ export { MODULE_NAME };
 
 const MODULE_NAME = 'Assets';
 const DEBUG_PREFIX = "<Assets module> ";
+let previewAudio = null;
 let ASSETS_JSON_URL = "https://raw.githubusercontent.com/SillyTavern/SillyTavern-Content/main/index.json"
 
 const extensionName = "assets";
@@ -122,14 +123,15 @@ function downloadAssetsList(url) {
                         const displayName = DOMPurify.sanitize(asset["name"] || asset["id"]);
                         const description = DOMPurify.sanitize(asset["description"] || "");
                         const url = isValidUrl(asset["url"]) ? asset["url"] : "";
+                        const previewIcon = assetType == 'extension' ? 'fa-arrow-up-right-from-square' : 'fa-headphones-simple';
 
                         $(`<i></i>`)
                             .append(element)
                             .append(`<div class="flex-container flexFlowColumn">
                                         <span class="flex-container alignitemscenter">
                                             <b>${displayName}</b>
-                                            <a href="${url}" target="_blank" title="Open in browser">
-                                                <i class="fa-solid fa-sm fa-arrow-up-right-from-square"></i>
+                                            <a class="asset_preview" href="${url}" target="_blank" title="Preview in browser">
+                                                <i class="fa-solid fa-sm ${previewIcon}"></i>
                                             </a>
                                         </span>
                                         <span>${description}</span>
@@ -137,6 +139,7 @@ function downloadAssetsList(url) {
                             .appendTo(assetTypeMenu);
                     }
                     assetTypeMenu.appendTo("#assets_menu");
+                    assetTypeMenu.on('click', 'a.asset_preview', previewAsset);
                 }
 
                 $("#assets_menu").show();
@@ -148,6 +151,28 @@ function downloadAssetsList(url) {
                 $('#assets-connect-button').addClass("redOverlayGlow");
             });
     });
+}
+
+function previewAsset(e) {
+    const href = $(this).attr('href');
+    const audioExtensions = ['.mp3', '.ogg', '.wav'];
+
+    if (audioExtensions.some(ext => href.endsWith(ext))) {
+        e.preventDefault();
+
+        if (previewAudio) {
+            previewAudio.pause();
+
+            if (previewAudio.src === href) {
+                previewAudio = null;
+                return;
+            }
+        }
+
+        previewAudio = new Audio(href);
+        previewAudio.play();
+        return;
+    }
 }
 
 function isAssetInstalled(assetType, filename) {
