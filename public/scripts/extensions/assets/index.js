@@ -29,7 +29,7 @@ const defaultSettings = {
 
 function downloadAssetsList(url) {
     updateCurrentAssets().then(function () {
-        fetch(url)
+        fetch(url, { cache: "no-cache" })
             .then(response => response.json())
             .then(json => {
 
