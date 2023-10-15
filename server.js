@@ -858,7 +858,7 @@ function unsetFavFlag(char) {
 
 function readFromV2(char) {
     if (_.isUndefined(char.data)) {
-        console.warn('Char ${char['name']} has Spec v2 data missing');
+        console.warn(`Char ${char['name']} has Spec v2 data missing`);
         return char;
     }
 
