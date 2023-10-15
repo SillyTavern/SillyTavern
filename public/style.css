@@ -3474,6 +3474,11 @@ a {
 
 #groupMemberListPopout {
     padding: 0;
+    height: 50%;
+}
+
+#groupMemberListPopout #currentGroupMembers {
+    height: 100%;
 }
 
 #groupMemberListPopout #rm_group_members {

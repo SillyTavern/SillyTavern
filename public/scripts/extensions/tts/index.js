@@ -8,7 +8,6 @@ import { CoquiTtsProvider } from './coqui.js'
 import { SystemTtsProvider } from './system.js'
 import { NovelTtsProvider } from './novel.js'
 import { power_user } from '../../power-user.js'
-import { rvcVoiceConversion } from "../rvc/index.js"
 export { talkingAnimation };
 
 const UPDATE_INTERVAL = 1000
@@ -415,8 +414,8 @@ async function tts(text, voiceId, char) {
     let response = await ttsProvider.generateTts(text, voiceId)
 
     // RVC injection
-    if (extension_settings.rvc.enabled)
-        response = await rvcVoiceConversion(response, char, text)
+    if (extension_settings.rvc.enabled && typeof window['rvcVoiceConversion'] === 'function')
+        response = await window['rvcVoiceConversion'](response, char, text)
 
     addAudioJob(response)
     completeTtsJob()
