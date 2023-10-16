@@ -1811,15 +1811,18 @@ function convertWorldInfoToCharacterBook(name, entries) {
 }
 
 function readWorldInfoFile(worldInfoName) {
+    const dummyObject = { entries: {} };
+
     if (!worldInfoName) {
-        return { entries: {} };
+        return dummyObject;
     }
 
     const filename = `${worldInfoName}.json`;
     const pathToWorldInfo = path.join(DIRECTORIES.worlds, filename);
 
     if (!fs.existsSync(pathToWorldInfo)) {
-        throw new Error(`World info file ${filename} doesn't exist.`);
+        console.log(`World info file ${filename} doesn't exist.`);
+        return dummyObject;
     }
 
     const worldInfoText = fs.readFileSync(pathToWorldInfo, 'utf8');

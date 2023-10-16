@@ -5729,6 +5729,7 @@ export function select_selected_character(chid) {
     checkEmbeddedWorld(chid);
 
     $("#form_create").attr("actiontype", "editcharacter");
+    $('.form_create_bottom_buttons_block .chat_lorebook_button').show();
     saveSettingsDebounced();
 }
 
@@ -5787,6 +5788,7 @@ function select_rm_create() {
     checkEmbeddedWorld();
 
     $("#form_create").attr("actiontype", "createcharacter");
+    $('.form_create_bottom_buttons_block .chat_lorebook_button').hide();
 }
 
 function select_rm_characters() {
