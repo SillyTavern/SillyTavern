@@ -6474,10 +6474,6 @@ function swipe_left() {      // when we swipe left..but no generation.
     const swipe_range = '700px';
     chat[chat.length - 1]['swipe_id']--;
 
-    if (chat[chat.length - 1]['swipe_id'] < 0) {
-        chat[chat.length - 1]['swipe_id'] = chat[chat.length - 1]['swipes'].length - 1;
-    }
-
     if (chat[chat.length - 1]['swipe_id'] >= 0) {
         /*$(this).parent().children('swipe_right').css('display', 'flex');
         if (chat[chat.length - 1]['swipe_id'] === 0) {
