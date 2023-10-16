@@ -1281,6 +1281,11 @@ async function getCharacterLore() {
             continue;
         }
 
+        if (chat_metadata[METADATA_KEY] === worldName) {
+            console.debug(`Character ${name}'s world ${worldName} is already activated in chat lore! Skipping...`);
+            continue;
+        }
+
         const data = await loadWorldInfoData(worldName);
         const newEntries = data ? Object.keys(data.entries).map((x) => data.entries[x]) : [];
         entries = entries.concat(newEntries);
@@ -1311,6 +1316,11 @@ async function getChatLore() {
     const chatWorld = chat_metadata[METADATA_KEY];
 
     if (!chatWorld) {
+        return [];
+    }
+
+    if (selected_world_info.includes(chatWorld)) {
+        console.debug(`Chat world ${chatWorld} is already activated in global world info! Skipping...`);
         return [];
     }
 
