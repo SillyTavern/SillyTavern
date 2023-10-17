@@ -2065,7 +2065,7 @@ jQuery(() => {
     });
 
     $('#world_info_character_strategy').on('change', function () {
-        world_info_character_strategy = $(this).val();
+        world_info_character_strategy = Number($(this).val());
         saveSettings();
     });
 
@@ -2080,19 +2080,19 @@ jQuery(() => {
         saveSettings();
     });
 
-    $('#world_button').on('click', async function () {
+    $('#world_button').on('click', async function (event) {
         const chid = $('#set_character_world').data('chid');
 
         if (chid) {
             const worldName = characters[chid]?.data?.extensions?.world;
             const hasEmbed = checkEmbeddedWorld(chid);
-            if (worldName && world_names.includes(worldName)) {
+            if (worldName && world_names.includes(worldName) && !event.shiftKey) {
                 if (!$('#WorldInfo').is(':visible')) {
                     $('#WIDrawerIcon').trigger('click');
                 }
                 const index = world_names.indexOf(worldName);
                 $("#world_editor_select").val(index).trigger('change');
-            } else if (hasEmbed) {
+            } else if (hasEmbed && !event.shiftKey) {
                 await importEmbeddedWorldInfo();
                 saveCharacterDebounced();
             }
