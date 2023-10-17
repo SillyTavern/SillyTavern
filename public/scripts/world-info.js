@@ -2065,7 +2065,7 @@ jQuery(() => {
     });
 
     $('#world_info_character_strategy').on('change', function () {
-        world_info_character_strategy = $(this).val();
+        world_info_character_strategy = Number($(this).val());
         saveSettings();
     });
 
@@ -2080,7 +2080,7 @@ jQuery(() => {
         saveSettings();
     });
 
-    $('#world_button').on('click', async function () {
+    $('#world_button').on('click', async function (event) {
         const chid = $('#set_character_world').data('chid');
 
         if (chid) {
