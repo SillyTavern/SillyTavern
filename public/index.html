@@ -1693,6 +1693,20 @@
                                             <span data-i18n="Send names in the ChatML objects.">Send names in the ChatML objects. Helps the model to associate messages with characters.</span>
                                         </div>
                                     </div>
+                                    <div class="range-block">
+                                        <label for="squash_system_messages" title="Squash system messages" class="checkbox_label widthFreeExpand">
+                                            <input id="squash_system_messages" type="checkbox" />
+                                            <span data-i18n="Squash system messages">
+                                                Squash system messages
+                                            </span>
+                                        </label>
+                                        <div class="toggle-description justifyLeft">
+                                            <span data-i18n="Combines consecutive system messages into one.">
+                                                Combines consecutive system messages into one (excluding example dialogues).
+                                                May improve coherence for some models.
+                                            </span>
+                                        </div>
+                                    </div>
                                     <div class="range-block" data-source="ai21">
                                         <label for="use_ai21_tokenizer" title="Use AI21 Tokenizer" class="checkbox_label widthFreeExpand">
                                             <input id="use_ai21_tokenizer" type="checkbox" /><span data-i18n="Use AI21 Tokenizer">Use AI21 Tokenizer</span>
@@ -2735,8 +2749,8 @@
                                     Alert On Overflow
                                 </small>
                             </label>
-                            <div id="WIInputWidthReference" style="display:none; height:1px;">10000</div>
                         </div>
+                        <div id="WIInputWidthReference" style="display:none; height:1px;">10000</div>
 
                     </div>
 
@@ -3414,6 +3428,7 @@
                                                 <input type="hidden" id="fav_checkbox" name="fav" />
                                                 <div id="advanced_div" class="menu_button fa-solid fa-book " title="Advanced Definitions" data-i18n="[title]Advanced Definition"></div>
                                                 <div id="world_button" class="menu_button fa-solid fa-globe" title="Character Lore" data-i18n="[title]Character Lore"></div>
+                                                <div class="chat_lorebook_button menu_button fa-solid fa-passport" title="Chat Lore" data-i18n="[title]Chat Lore"></div>
                                                 <div id="export_button" class="menu_button fa-solid fa-file-export " title="Export and Download" data-i18n="[title]Export and Download"></div>
                                                 <!-- <div id="set_chat_scenario" class="menu_button fa-solid fa-scroll" title="Set a chat scenario override"></div> -->
                                                 <!-- <div id="set_character_world" class="menu_button fa-solid fa-globe" title="Set a character World Info / Lorebook"></div> -->
@@ -3529,8 +3544,11 @@
                             <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                         </div>
                         <div class="inline-drawer-content">
-                            <div name="group-metadata-controls" class="marginTopBot5">
-                                <input id="rm_group_chat_name" class="text_pole wide100p" type="text" name="chat_name" data-i18n="[placeholder]Chat Name (Optional)" placeholder="Chat Name (Optional)" maxlength="100" />
+                            <div id="group-metadata-controls" class="marginTopBot5">
+                                <div class="flex-container wide100p">
+                                    <input id="rm_group_chat_name" class="text_pole flex1" type="text" name="chat_name" data-i18n="[placeholder]Chat Name (Optional)" placeholder="Chat Name (Optional)" maxlength="100" />
+                                    <div class="chat_lorebook_button menu_button fa-solid fa-passport" title="Chat Lore" data-i18n="[title]Chat Lore"></div>
+                                </div>
                                 <div id="group_tags_div" class="wide100p">
                                     <div class="tag_controls">
                                         <input id="groupTagInput" class="text_pole tag_input flex1 margin0" data-i18n="[placeholder]Search / Create Tags" placeholder="Search / Create tags" maxlength="25" />
@@ -3597,9 +3615,9 @@
                             <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                         </div>
                         <div class="inline-drawer-content">
-                            <div name="Current Group Members" class="flex-container flexFlowColumn overflowYAuto flex1">
-                                <div id="rm_group_members_pagination" class="group_pagination"></div>
-                                <div id="rm_group_members" class="overflowYAuto flex-container"></div>
+                            <div id="currentGroupMembers" name="Current Group Members" class="flex-container flexFlowColumn overflowYAuto flex1">
+                                <div id="rm_group_members_pagination" class="rm_group_members_pagination group_pagination"></div>
+                                <div id="rm_group_members" class="rm_group_members overflowYAuto flex-container"></div>
                             </div>
                         </div>
                     </div>
@@ -3878,6 +3896,25 @@
             </div>
             <div class="range-block-range wide100p">
                 <textarea class="wide100p chat_scenario" class="text_pole" rows="15" data-i18n="[placeholder]Type here..." placeholder="Type here..."></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div id="chat_world_template" class="template_element">
+        <div class="chat_world range-block flexFlowColumn flex-container">
+            <div class="range-block-title">
+                <h4 data-i18n="Chat Lorebook">Chat Lorebook for <span class="chat_name"></span></h4>
+            </div>
+            <div class="range-block-counter justifyLeft flex-container flexFlowColumn margin-bot-10px">
+                <span data-i18n="A selected World Info will be bound to this chat.">
+                    A selected World Info will be bound to this chat. When generating an AI reply,
+                    it will be combined with the entries from global and character lorebooks.
+                </span>
+            </div>
+            <div class="range-block-range wide100p">
+                <select class="chat_world_info_selector wide100p">
+                    <option value="">--- None ---</option>
+                </select>
             </div>
         </div>
     </div>

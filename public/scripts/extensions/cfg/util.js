@@ -21,6 +21,11 @@ export const metadataKeys = {
 // Gets the CFG guidance scale
 // If the guidance scale is 1, ignore the CFG prompt(s) since it won't be used anyways
 export function getGuidanceScale() {
+    if (!extension_settings.cfg) {
+        console.warn("CFG extension is not enabled. Skipping CFG guidance.");
+        return;
+    }
+
     const charaCfg = extension_settings.cfg.chara?.find((e) => e.name === getCharaFilename(this_chid));
     const chatGuidanceScale = chat_metadata[metadataKeys.guidance_scale];
     const groupchatCharOverride = chat_metadata[metadataKeys.groupchat_individual_chars] ?? false;

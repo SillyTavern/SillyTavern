@@ -1,4 +1,4 @@
-import { saveSettings, callPopup, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types, getExtensionPrompt, MAX_INJECTION_DEPTH, extension_prompt_types, getExtensionPromptByName } from "../script.js";
+import { saveSettings, callPopup, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types, getExtensionPrompt, MAX_INJECTION_DEPTH, extension_prompt_types, getExtensionPromptByName, saveMetadata, getCurrentChatId } from "../script.js";
 import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition } from "./utils.js";
 import { extension_settings, getContext } from "./extensions.js";
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from "./authors-note.js";
@@ -53,6 +53,7 @@ let updateEditor = (navigation) => { navigation; };
 // Do not optimize. updateEditor is a function that is updated by the displayWorldEntries with new data.
 const worldInfoFilter = new FilterHelper(() => updateEditor());
 const SORT_ORDER_KEY = 'world_info_sort_order';
+const METADATA_KEY = 'world_info';
 
 const InputWidthReference = $("#WIInputWidthReference");
 
@@ -167,6 +168,11 @@ function setWorldInfoSettings(settings, data) {
 
     $('#world_info_sort_order').val(localStorage.getItem(SORT_ORDER_KEY) || '0');
     $("#world_editor_select").trigger("change");
+
+    eventSource.on(event_types.CHAT_CHANGED, () => {
+        const hasWorldInfo = !!chat_metadata[METADATA_KEY] && world_names.includes(chat_metadata[METADATA_KEY]);
+        $('.chat_lorebook_button').toggleClass('world_set', hasWorldInfo);
+    });
 }
 
 // World Info Editor
@@ -1275,6 +1281,11 @@ async function getCharacterLore() {
             continue;
         }
 
+        if (chat_metadata[METADATA_KEY] === worldName) {
+            console.debug(`Character ${name}'s world ${worldName} is already activated in chat lore! Skipping...`);
+            continue;
+        }
+
         const data = await loadWorldInfoData(worldName);
         const newEntries = data ? Object.keys(data.entries).map((x) => data.entries[x]) : [];
         entries = entries.concat(newEntries);
@@ -1301,10 +1312,31 @@ async function getGlobalLore() {
     return entries;
 }
 
+async function getChatLore() {
+    const chatWorld = chat_metadata[METADATA_KEY];
+
+    if (!chatWorld) {
+        return [];
+    }
+
+    if (selected_world_info.includes(chatWorld)) {
+        console.debug(`Chat world ${chatWorld} is already activated in global world info! Skipping...`);
+        return [];
+    }
+
+    const data = await loadWorldInfoData(chatWorld);
+    const entries = data ? Object.keys(data.entries).map((x) => data.entries[x]) : [];
+
+    console.debug(`Chat lore has ${entries.length} entries`);
+
+    return entries;
+}
+
 async function getSortedEntries() {
     try {
         const globalLore = await getGlobalLore();
         const characterLore = await getCharacterLore();
+        const chatLore = await getChatLore();
 
         let entries;
 
@@ -1326,6 +1358,9 @@ async function getSortedEntries() {
                 entries = [...globalLore, ...characterLore].sort(sortFn);
                 break;
         }
+
+        // Chat lore always goes first
+        entries = [...chatLore.sort(sortFn), ...entries];
 
         console.debug(`Sorted ${entries.length} world lore entries using strategy ${world_info_character_strategy}`);
 
@@ -1911,6 +1946,39 @@ export async function importWorldInfo(file) {
     });
 }
 
+function assignLorebookToChat() {
+    const selectedName = chat_metadata[METADATA_KEY];
+    const template = $('#chat_world_template .chat_world').clone();
+
+    const worldSelect = template.find('select');
+    const chatName = template.find('.chat_name');
+    chatName.text(getCurrentChatId());
+
+    for (const worldName of world_names) {
+        const option = document.createElement('option');
+        option.value = worldName;
+        option.innerText = worldName;
+        option.selected = selectedName === worldName;
+        worldSelect.append(option);
+    }
+
+    worldSelect.on('change', function () {
+        const worldName = $(this).val();
+
+        if (worldName) {
+            chat_metadata[METADATA_KEY] = worldName;
+            $('.chat_lorebook_button').addClass('world_set');
+        } else {
+            delete chat_metadata[METADATA_KEY];
+            $('.chat_lorebook_button').removeClass('world_set');
+        }
+
+        saveMetadata();
+    });
+
+    callPopup(template, 'text');
+}
+
 jQuery(() => {
 
     $(document).ready(function () {
@@ -1997,7 +2065,7 @@ jQuery(() => {
     });
 
     $('#world_info_character_strategy').on('change', function () {
-        world_info_character_strategy = $(this).val();
+        world_info_character_strategy = Number($(this).val());
         saveSettings();
     });
 
@@ -2012,19 +2080,19 @@ jQuery(() => {
         saveSettings();
     });
 
-    $('#world_button').on('click', async function () {
+    $('#world_button').on('click', async function (event) {
         const chid = $('#set_character_world').data('chid');
 
         if (chid) {
             const worldName = characters[chid]?.data?.extensions?.world;
             const hasEmbed = checkEmbeddedWorld(chid);
-            if (worldName && world_names.includes(worldName)) {
+            if (worldName && world_names.includes(worldName) && !event.shiftKey) {
                 if (!$('#WorldInfo').is(':visible')) {
                     $('#WIDrawerIcon').trigger('click');
                 }
                 const index = world_names.indexOf(worldName);
                 $("#world_editor_select").val(index).trigger('change');
-            } else if (hasEmbed) {
+            } else if (hasEmbed && !event.shiftKey) {
                 await importEmbeddedWorldInfo();
                 saveCharacterDebounced();
             }
@@ -2050,6 +2118,8 @@ jQuery(() => {
 
         updateEditor(navigation_option.none);
     })
+
+    $(document).on('click', '.chat_lorebook_button', assignLorebookToChat);
 
     // Not needed on mobile
     const deviceInfo = getDeviceInfo();

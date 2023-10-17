@@ -226,4 +226,5 @@
 
 .group_member .avatar {
     flex-shrink: 0;
+    flex-basis: auto;
 }

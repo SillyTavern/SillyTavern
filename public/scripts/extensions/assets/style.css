@@ -17,6 +17,10 @@
     text-transform: capitalize;
 }
 
+.assets-list-div a {
+    color: inherit;
+}
+
 .assets-list-div i {
     display: flex;
     flex-direction: row;

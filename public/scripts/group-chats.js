@@ -993,27 +993,29 @@ function printGroupCandidates() {
 
 function printGroupMembers() {
     const storageKey = 'GroupMembers_PerPage';
-    $("#rm_group_members_pagination").pagination({
-        dataSource: getGroupCharacters({ doFilter: false, onlyMembers: true }),
-        pageRange: 1,
-        position: 'top',
-        showPageNumbers: false,
-        prevText: '<',
-        nextText: '>',
-        formatNavigator: PAGINATION_TEMPLATE,
-        showNavigator: true,
-        showSizeChanger: true,
-        pageSize: Number(localStorage.getItem(storageKey)) || 5,
-        sizeChangerOptions: [5, 10, 25, 50, 100, 200],
-        afterSizeSelectorChange: function (e) {
-            localStorage.setItem(storageKey, e.target.value);
-        },
-        callback: function (data) {
-            $("#rm_group_members").empty();
-            for (const i of data) {
-                $("#rm_group_members").append(getGroupCharacterBlock(i.item));
-            }
-        },
+    $(".rm_group_members_pagination").each(function() {
+        $(this).pagination({
+            dataSource: getGroupCharacters({ doFilter: false, onlyMembers: true }),
+            pageRange: 1,
+            position: 'top',
+            showPageNumbers: false,
+            prevText: '<',
+            nextText: '>',
+            formatNavigator: PAGINATION_TEMPLATE,
+            showNavigator: true,
+            showSizeChanger: true,
+            pageSize: Number(localStorage.getItem(storageKey)) || 5,
+            sizeChangerOptions: [5, 10, 25, 50, 100, 200],
+            afterSizeSelectorChange: function (e) {
+                localStorage.setItem(storageKey, e.target.value);
+            },
+            callback: function (data) {
+                $(".rm_group_members").empty();
+                for (const i of data) {
+                    $(".rm_group_members").append(getGroupCharacterBlock(i.item));
+                }
+            },
+        });
     });
 }
 
@@ -1108,6 +1110,7 @@ function select_group_chats(groupId, skipAnimation) {
         $("#rm_group_submit").hide();
         $("#rm_group_delete").show();
         $("#rm_group_scenario").show();
+        $('#group-metadata-controls .chat_lorebook_button').removeClass('disabled').prop('disabled', false);
     } else {
         $("#rm_group_submit").show();
         if ($("#groupAddMemberListToggle .inline-drawer-content").css('display') !== 'block') {
@@ -1115,6 +1118,7 @@ function select_group_chats(groupId, skipAnimation) {
         }
         $("#rm_group_delete").hide();
         $("#rm_group_scenario").hide();
+        $('#group-metadata-controls .chat_lorebook_button').addClass('disabled').prop('disabled', true);
     }
 
     updateFavButtonState(group?.fav ?? false);
@@ -1563,6 +1567,9 @@ function doCurMemberListPopout() {
             .append(controlBarHtml)
             .append(memberListClone)
 
+        // Remove pagination from popout
+        newElement.find('.group_pagination').empty();
+
         $('body').append(newElement);
         loadMovingUIState();
         $("#groupMemberListPopout").fadeIn(250)
@@ -1571,6 +1578,8 @@ function doCurMemberListPopout() {
             $("#groupMemberListPopout").fadeOut(250, () => { $("#groupMemberListPopout").remove() })
         })
 
+        // Re-add pagination not working in popout
+        printGroupMembers();
     } else {
         console.debug('saw existing popout, removing')
         $("#groupMemberListPopout").fadeOut(250, () => { $("#groupMemberListPopout").remove() });

@@ -382,8 +382,10 @@ jQuery(async () => {
             return;
         }
 
-        const name = file.name.replace('.json', '').replace('.settings', '');
+        const fileName = file.name.replace('.json', '').replace('.settings', '');
         const data = await parseJsonFile(file);
+        const name = data?.name ?? fileName;
+        data['name'] = name;
 
         await presetManager.savePreset(name, data);
         toastr.success('Preset imported');
