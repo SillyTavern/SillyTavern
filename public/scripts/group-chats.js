@@ -1110,6 +1110,7 @@ function select_group_chats(groupId, skipAnimation) {
         $("#rm_group_submit").hide();
         $("#rm_group_delete").show();
         $("#rm_group_scenario").show();
+        $('#group-metadata-controls .chat_lorebook_button').removeClass('disabled').prop('disabled', false);
     } else {
         $("#rm_group_submit").show();
         if ($("#groupAddMemberListToggle .inline-drawer-content").css('display') !== 'block') {
@@ -1117,6 +1118,7 @@ function select_group_chats(groupId, skipAnimation) {
         }
         $("#rm_group_delete").hide();
         $("#rm_group_scenario").hide();
+        $('#group-metadata-controls .chat_lorebook_button').addClass('disabled').prop('disabled', true);
     }
 
     updateFavButtonState(group?.fav ?? false);

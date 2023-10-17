@@ -1811,15 +1811,18 @@ function convertWorldInfoToCharacterBook(name, entries) {
 }
 
 function readWorldInfoFile(worldInfoName) {
+    const dummyObject = { entries: {} };
+
     if (!worldInfoName) {
-        return { entries: {} };
+        return dummyObject;
     }
 
     const filename = `${worldInfoName}.json`;
     const pathToWorldInfo = path.join(DIRECTORIES.worlds, filename);
 
     if (!fs.existsSync(pathToWorldInfo)) {
-        throw new Error(`World info file ${filename} doesn't exist.`);
+        console.log(`World info file ${filename} doesn't exist.`);
+        return dummyObject;
     }
 
     const worldInfoText = fs.readFileSync(pathToWorldInfo, 'utf8');
@@ -2748,7 +2751,7 @@ app.post("/getstatus_openai", jsonParser, async function (request, response_gets
             const data = await response.json();
             response_getstatus_openai.send(data);
 
-            if (request.body.use_openrouter) {
+            if (request.body.use_openrouter && Array.isArray(data?.data)) {
                 let models = [];
 
                 data.data.forEach(model => {
@@ -2763,8 +2766,14 @@ app.post("/getstatus_openai", jsonParser, async function (request, response_gets
 
                 console.log('Available OpenRouter models:', models);
             } else {
-                const modelIds = data?.data?.map(x => x.id)?.sort();
-                console.log('Available OpenAI models:', modelIds);
+                const models = data?.data;
+
+                if (Array.isArray(models)) {
+                    const modelIds = models.filter(x => x && typeof x === 'object').map(x => x.id).sort();
+                    console.log('Available OpenAI models:', modelIds);
+                } else {
+                    console.log('OpenAI endpoint did not return a list of models.')
+                }
             }
         }
         else {
@@ -2773,7 +2782,12 @@ app.post("/getstatus_openai", jsonParser, async function (request, response_gets
         }
     } catch (e) {
         console.error(e);
-        response_getstatus_openai.send({ error: true });
+
+        if (!response_getstatus_openai.headersSent) {
+            response_getstatus_openai.send({ error: true });
+        } else {
+            response_getstatus_openai.end();
+        }
     }
 });
 
