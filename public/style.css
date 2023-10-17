@@ -3569,6 +3569,7 @@ a {
     padding: 5px;
     font-size: calc(var(--mainFontSize) * .8);
     font-weight: bold;
+    width: max-content;
 }
 
 .onboarding {
