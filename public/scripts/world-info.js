@@ -1094,7 +1094,7 @@ function createWorldInfoEntry(name, data) {
         selectiveLogic: 0,
         addMemo: false,
         order: 100,
-        position: 0,
+        position: 1,
         disable: false,
         excludeRecursion: false,
         probability: 100,
@@ -2086,13 +2086,13 @@ jQuery(() => {
         if (chid) {
             const worldName = characters[chid]?.data?.extensions?.world;
             const hasEmbed = checkEmbeddedWorld(chid);
-            if (worldName && world_names.includes(worldName)) {
+            if (worldName && world_names.includes(worldName) && !event.shiftKey) {
                 if (!$('#WorldInfo').is(':visible')) {
                     $('#WIDrawerIcon').trigger('click');
                 }
                 const index = world_names.indexOf(worldName);
                 $("#world_editor_select").val(index).trigger('change');
-            } else if (hasEmbed) {
+            } else if (hasEmbed && !event.shiftKey) {
                 await importEmbeddedWorldInfo();
                 saveCharacterDebounced();
             }
