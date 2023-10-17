@@ -1094,7 +1094,7 @@ function createWorldInfoEntry(name, data) {
         selectiveLogic: 0,
         addMemo: false,
         order: 100,
-        position: 1,
+        position: 0,
         disable: false,
         excludeRecursion: false,
         probability: 100,
