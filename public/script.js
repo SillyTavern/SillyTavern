@@ -1770,40 +1770,34 @@ function substituteParams(content, _name1, _name2, _original, _group) {
         const utcTime = moment().utc().utcOffset(utcOffset).format('LT');
         return utcTime;
     });
-    content = content.replace(/\[\[var:\s*([^}]+)\]\]/gi, (_, variable) => {
-        variable = variableHandler(_, variable);
-        return variable;
-    });
     content = randomReplace(content);
     content = diceRollReplace(content);
     content = bannedWordsReplace(content);
+
+    // Variable substitute needs to always be directly on top of "return content;"
+    content = content.replace(/\[\[var:\s*([^}]+)\]\]/gi, (_, variable) => {
+        variable = getVariable(_, variable);
+        return variable;
+    });
     return content;
 }
+
 var variables = {};
-function variableHandler(_, variable){
-    variable = variable.replace(/\s/g, '_');
-    for (var key in variables) {
-        if (key === variable) {
-          return variables[key];
-        }
-      }
-      
-      // If the varname is not found in the object, you can provide a message or handle it accordingly
-      if (variables[variable] === undefined) {
-        toastr.warning(`${variable} not found!`);
+function getVariable(_, variable) {
+    const sanitizedVariable = variable.replace(/\s/g, '_');
+    const foundVariable = substituteParams(variables[sanitizedVariable]);
+    
+    if (foundVariable !== undefined) {
+        return foundVariable;
+    } else {
+        toastr.warning(`${sanitizedVariable} not found!`);
         return "none";
-      }
+    }
 }
 
-function registerVariable(name, variable_text){
-    name = name.replace(/\s/g, '_');
-    if (variables[name] !== undefined) {
-        // Entry already exists, update it
-        variables[name] = variable_text;
-    } else {
-        // Entry doesn't exist, add a new one
-        variables[name] = variable_text;
-    }
+function registerVariable(name, variable_text) {
+    const sanitizedName = name.replace(/\s/g, '_');
+    variables[sanitizedName] = variable_text;
 }
 
 /**

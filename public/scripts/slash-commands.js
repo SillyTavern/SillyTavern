@@ -165,20 +165,28 @@ export async function setVariable(_, text) {
     }
 
     const name = parts.shift().trim();
-    let variable_text = parts.join('\n').trim();
+    const variableText = parts.join('\n').trim();
 
-    registerVariable(name, variable_text);
+    try {
+        registerVariable(name, variableText);
+    } catch (error) {
+        toastr.error(`Failed to register variable: ${error.message}`);
+    }
 }
 
 export async function listVariables(_) {
-    if (variables.length === 0) {
+    if (Object.keys(variables).length === 0) {
         toastr.warning('No variables set yet!');
         return;
     }
-    var infoStr = "<small>Variables get reset on SillyTavern restart!</small>"
-    var outputString = "Registered variables:\n<ol>" + Object.keys(variables).map(key => `<li>"${key}": "${variables[key]}"</li>`).join("\n") + "</ol>\n" + infoStr;
 
-    //sendSystemMessage(system_message_types.GENERIC, '')
+    const variableList = Object.keys(variables)
+        .map(key => `<li><span class="monospace">"${key}"</span>: "${variables[key]}"</li>`)
+        .join('\n');
+
+    const infoStr = "<small>Variables get reset on SillyTavern restart!</small>";
+    const outputString = `Registered variables:\n<ol>${variableList}</ol>\n${infoStr}`;
+
     sendSystemMessage(system_message_types.GENERIC, outputString);
 }
 
