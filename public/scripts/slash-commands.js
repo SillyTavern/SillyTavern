@@ -21,9 +21,6 @@ import {
     reloadCurrentChat,
     sendMessageAsUser,
     name1,
-    variables,
-    registerVariable,
-    parseVariableCommand,
     Generate,
     this_chid,
     setCharacterName,
@@ -128,8 +125,6 @@ parser.addCommand('sync', syncCallback, [], ' – syncs user name in user-attrib
 parser.addCommand('lock', bindCallback, ['bind'], ' – locks/unlocks a persona (name and avatar) to the current chat', true, true);
 parser.addCommand('bg', setBackgroundCallback, ['background'], '<span class="monospace">(filename)</span> – sets a background according to filename, partial names allowed, will set the first one alphabetically if multiple files begin with the provided argument string', false, true);
 parser.addCommand('sendas', sendMessageAs, [], ` – sends message as a specific character. Uses character avatar if it exists in the characters list. Example that will send "Hello, guys!" from "Chloe": <pre><code>/sendas Chloe&#10;Hello, guys!</code></pre>`, true, true);
-parser.addCommand('setvar', setVariable, [], ` – test`, true, true);
-parser.addCommand('listvars', listVariables, [], ` – test`, true, true);
 parser.addCommand('sys', sendNarratorMessage, ['nar'], '<span class="monospace">(text)</span> – sends message as a system narrator', false, true);
 parser.addCommand('sysname', setNarratorName, [], '<span class="monospace">(name)</span> – sets a name for future system narrator messages in this chat (display only). Default: System. Leave empty to reset.', true, true);
 parser.addCommand('comment', sendCommentMessage, [], '<span class="monospace">(text)</span> – adds a note/comment message not part of the chat', false, true);
@@ -238,27 +233,6 @@ async function sendUserMessageCallback(_, text) {
     text = text.trim();
     const bias = extractMessageBias(text);
     sendMessageAsUser(text, bias);
-}
-
-export async function setVariable(_, text) {
-    var [varname, vartext] = parseVariableCommand(text);
-    registerVariable(varname, vartext);
-}
-
-export async function listVariables(_) {
-    if (Object.keys(variables).length === 0) {
-        toastr.warning('No variables set yet!');
-        return;
-    }
-
-    const variableList = Object.keys(variables)
-        .map(key => `<li><span class="monospace">"${key}"</span>: "${variables[key]}"</li>`)
-        .join('\n');
-
-    const infoStr = "<small>Variables get reset on SillyTavern restart!</small>";
-    const outputString = `Registered variables:\n<ol>${variableList}</ol>\n${infoStr}`;
-
-    sendSystemMessage(system_message_types.GENERIC, outputString);
 }
 
 async function deleteMessagesByNameCallback(_, name) {

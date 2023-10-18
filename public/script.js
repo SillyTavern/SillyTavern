@@ -182,6 +182,7 @@ import {
 import { applyLocale } from "./scripts/i18n.js";
 import { getTokenCount, getTokenizerModel, saveTokenCache } from "./scripts/tokenizers.js";
 import { initPersonas, selectCurrentPersona, setPersonaDescription } from "./scripts/personas.js";
+import { getVariable } from "./scripts/extensions/variables/index.js";
 
 //exporting functions and vars for mods
 export {
@@ -252,10 +253,7 @@ export {
     mesForShowdownParse,
     printCharacters,
     isOdd,
-    countOccurrences,
-    variables,
-    registerVariable,
-    parseVariableCommand
+    countOccurrences
 }
 
 // Allow target="_blank" in links
@@ -1781,45 +1779,6 @@ function substituteParams(content, _name1, _name2, _original, _group) {
         return variable;
     });
     return content;
-}
-
-var variables = {};
-function getVariable(_, variable) {
-    const sanitizedVariable = variable.replace(/\s/g, '_');
-    const foundVariable = substituteParams(variables[sanitizedVariable]);
-    
-    if (foundVariable !== undefined) {
-        return foundVariable;
-    } else {
-        toastr.warning(`${sanitizedVariable} not found!`);
-        return "none";
-    }
-}
-
-function registerVariable(name, variable_text) {
-    const sanitizedName = name.replace(/\s/g, '_');
-    variables[sanitizedName] = variable_text;
-}
-
-function parseVariableCommand(text) {
-    if (!text) {
-        return;
-    }
-
-    const parts = text.split('\n');
-    if (parts.length <= 1) {
-        toastr.warning('Both variable name and text are required. Separate them with a new line.');
-        return;
-    }
-
-    const name = parts.shift().trim();
-    const variableText = parts.join('\n').trim();
-
-    try {
-        return [name, variableText];
-    } catch (error) {
-        toastr.error(`Failed to register variable: ${error.message}`);
-    }
 }
 
 /**
