@@ -1242,7 +1242,7 @@ export function renderStoryString(params) {
         output = output.trimStart();
 
         // add a newline to the end of the story string if it doesn't have one
-        if (!output.endsWith('\n')) {
+        if (output.length > 0 && !output.endsWith('\n')) {
             output += '\n';
         }
 
