@@ -21,6 +21,8 @@ import {
     reloadCurrentChat,
     sendMessageAsUser,
     name1,
+    variables,
+    registerVariable,
 } from "../script.js";
 import { getMessageTimeStamp } from "./RossAscends-mods.js";
 import { resetSelectedGroup } from "./group-chats.js";
@@ -122,6 +124,8 @@ parser.addCommand('sync', syncCallback, [], ' – syncs user name in user-attrib
 parser.addCommand('lock', bindCallback, ['bind'], ' – locks/unlocks a persona (name and avatar) to the current chat', true, true);
 parser.addCommand('bg', setBackgroundCallback, ['background'], '<span class="monospace">(filename)</span> – sets a background according to filename, partial names allowed, will set the first one alphabetically if multiple files begin with the provided argument string', false, true);
 parser.addCommand('sendas', sendMessageAs, [], ` – sends message as a specific character. Uses character avatar if it exists in the characters list. Example that will send "Hello, guys!" from "Chloe": <pre><code>/sendas Chloe&#10;Hello, guys!</code></pre>`, true, true);
+parser.addCommand('setvar', setVariable, [], ` – test`, true, true);
+parser.addCommand('listvars', listVariables, [], ` – test`, true, true);
 parser.addCommand('sys', sendNarratorMessage, ['nar'], '<span class="monospace">(text)</span> – sends message as a system narrator', false, true);
 parser.addCommand('sysname', setNarratorName, [], '<span class="monospace">(name)</span> – sets a name for future system narrator messages in this chat (display only). Default: System. Leave empty to reset.', true, true);
 parser.addCommand('comment', sendCommentMessage, [], '<span class="monospace">(text)</span> – adds a note/comment message not part of the chat', false, true);
@@ -147,6 +151,35 @@ async function sendUserMessageCallback(_, text) {
     text = text.trim();
     const bias = extractMessageBias(text);
     sendMessageAsUser(text, bias);
+}
+
+export async function setVariable(_, text) {
+    if (!text) {
+        return;
+    }
+
+    const parts = text.split('\n');
+    if (parts.length <= 1) {
+        toastr.warning('Both variable name and text are required. Separate them with a new line.');
+        return;
+    }
+
+    const name = parts.shift().trim();
+    let variable_text = parts.join('\n').trim();
+
+    registerVariable(name, variable_text);
+}
+
+export async function listVariables(_) {
+    if (variables.length === 0) {
+        toastr.warning('No variables set yet!');
+        return;
+    }
+    var infoStr = "<small>Variables get reset on SillyTavern restart!</small>"
+    var outputString = "Registered variables:\n<ol>" + Object.keys(variables).map(key => `<li>"${key}": "${variables[key]}"</li>`).join("\n") + "</ol>\n" + infoStr;
+
+    //sendSystemMessage(system_message_types.GENERIC, '')
+    sendSystemMessage(system_message_types.GENERIC, outputString);
 }
 
 async function deleteMessagesByNameCallback(_, name) {

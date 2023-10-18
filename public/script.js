@@ -252,7 +252,9 @@ export {
     mesForShowdownParse,
     printCharacters,
     isOdd,
-    countOccurrences
+    countOccurrences,
+    variables,
+    registerVariable
 }
 
 // Allow target="_blank" in links
@@ -1768,10 +1770,40 @@ function substituteParams(content, _name1, _name2, _original, _group) {
         const utcTime = moment().utc().utcOffset(utcOffset).format('LT');
         return utcTime;
     });
+    content = content.replace(/\{\{var:\s*([^}]+)\}\}/gi, (_, variable) => {
+        variable = variableHandler(_, variable);
+        return variable;
+    });
     content = randomReplace(content);
     content = diceRollReplace(content);
     content = bannedWordsReplace(content);
     return content;
+}
+var variables = {};
+function variableHandler(_, variable){
+    variable = variable.replace(/\s/g, '_');
+    for (var key in variables) {
+        if (key === variable) {
+          return variables[key];
+        }
+      }
+      
+      // If the varname is not found in the object, you can provide a message or handle it accordingly
+      if (variables[variable] === undefined) {
+        toastr.warning(`${variable} not found!`);
+        return "none";
+      }
+}
+
+function registerVariable(name, variable_text){
+    name = name.replace(/\s/g, '_');
+    if (variables[name] !== undefined) {
+        // Entry already exists, update it
+        variables[name] = variable_text;
+    } else {
+        // Entry doesn't exist, add a new one
+        variables[name] = variable_text;
+    }
 }
 
 /**
