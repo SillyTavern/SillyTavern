@@ -132,19 +132,14 @@ async function sendQuickReply(index) {
 
     let newText;
 
-    if (existingText) {
-        // If existing text, add space after prompt
-        if (extension_settings.quickReply.AutoInputInject){
-            if (extension_settings.quickReply.placeBeforePromptEnabled) {
-                newText = `${prompt} ${existingText} `;
-            } else {
-                newText = `${existingText} ${prompt} `;
-            }
-        }else{
-            newText = `${prompt} `;
+    if (existingText && extension_settings.quickReply.AutoInputInject){
+        if (extension_settings.quickReply.placeBeforePromptEnabled) {
+            newText = `${prompt} ${existingText} `;
+        } else {
+            newText = `${existingText} ${prompt} `;
         }
     } else {
-        // If no existing text, add prompt only (with a trailing space)
+        // If no existing text and placeBeforePromptEnabled false, add prompt only (with a trailing space)
         newText = `${prompt} `;
     }
 
