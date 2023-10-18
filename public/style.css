@@ -1316,7 +1316,7 @@ select option:not(:checked) {
 }
 
 .menu_button.disabled {
-    filter: brightness(50%);
+    filter: brightness(75%) grayscale(1);
     cursor: not-allowed;
 }
 
@@ -1911,10 +1911,10 @@ grammarly-extension {
     font-weight: bold;
     padding: 5px;
     margin: 0;
-    height: 32px;
+    height: 26px;
     filter: grayscale(0.5);
     text-align: center;
-    font-size: 20px;
+    font-size: 17px;
     aspect-ratio: 1 / 1;
 }
 
@@ -2307,7 +2307,7 @@ input[type="range"]::-webkit-slider-thumb {
 
 #char-management-dropdown,
 #tagInput {
-    height: 32px;
+    height: 26px;
     margin-bottom: 0;
 }
 
@@ -3569,6 +3569,7 @@ a {
     padding: 5px;
     font-size: calc(var(--mainFontSize) * .8);
     font-weight: bold;
+    width: max-content;
 }
 
 .onboarding {

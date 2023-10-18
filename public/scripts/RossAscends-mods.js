@@ -31,7 +31,7 @@ import {
     SECRET_KEYS,
     secret_state,
 } from "./secrets.js";
-import { debounce, delay, getStringHash, isUrlOrAPIKey, waitUntilCondition } from "./utils.js";
+import { debounce, delay, getStringHash, isValidUrl, waitUntilCondition } from "./utils.js";
 import { chat_completion_sources, oai_settings } from "./openai.js";
 import { getTokenCount } from "./tokenizers.js";
 
@@ -394,7 +394,7 @@ function RA_autoconnect(PrevApi) {
     if (online_status === "no_connection" && LoadLocalBool('AutoConnectEnabled')) {
         switch (main_api) {
             case 'kobold':
-                if (api_server && isUrlOrAPIKey(api_server)) {
+                if (api_server && isValidUrl(api_server)) {
                     $("#api_button").click();
                 }
                 break;
@@ -404,7 +404,7 @@ function RA_autoconnect(PrevApi) {
                 }
                 break;
             case 'textgenerationwebui':
-                if (api_server_textgenerationwebui && isUrlOrAPIKey(api_server_textgenerationwebui)) {
+                if (api_server_textgenerationwebui && isValidUrl(api_server_textgenerationwebui)) {
                     $("#api_button_textgenerationwebui").click();
                 }
                 break;

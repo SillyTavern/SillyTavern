@@ -5729,6 +5729,7 @@ export function select_selected_character(chid) {
     checkEmbeddedWorld(chid);
 
     $("#form_create").attr("actiontype", "editcharacter");
+    $('.form_create_bottom_buttons_block .chat_lorebook_button').show();
     saveSettingsDebounced();
 }
 
@@ -5787,6 +5788,7 @@ function select_rm_create() {
     checkEmbeddedWorld();
 
     $("#form_create").attr("actiontype", "createcharacter");
+    $('.form_create_bottom_buttons_block .chat_lorebook_button').hide();
 }
 
 function select_rm_characters() {
@@ -6970,7 +6972,7 @@ function connectAPISlash(_, text) {
     toastr.info(`API set to ${text}, trying to connect..`);
 }
 
-export function processDroppedFiles(files) {
+export async function processDroppedFiles(files) {
     const allowedMimeTypes = [
         'application/json',
         'image/png',
@@ -6978,14 +6980,14 @@ export function processDroppedFiles(files) {
 
     for (const file of files) {
         if (allowedMimeTypes.includes(file.type)) {
-            importCharacter(file);
+            await importCharacter(file);
         } else {
             toastr.warning('Unsupported file type: ' + file.name);
         }
     }
 }
 
-function importCharacter(file) {
+async function importCharacter(file) {
     const ext = file.name.match(/\.(\w+)$/);
     if (
         !ext ||
@@ -7000,44 +7002,38 @@ function importCharacter(file) {
     formData.append('avatar', file);
     formData.append('file_type', format);
 
-    jQuery.ajax({
+    const data = await jQuery.ajax({
         type: "POST",
         url: "/importcharacter",
         data: formData,
-        async: false,
-        beforeSend: function () {
-        },
+        async: true,
         cache: false,
         contentType: false,
         processData: false,
-        success: async function (data) {
-            if (data.error) {
-                toastr.error('The file is likely invalid or corrupted.', 'Could not import character');
-                return;
-            }
-
-            if (data.file_name !== undefined) {
-                $('#character_search_bar').val('').trigger('input');
-
-                let oldSelectedChar = null;
-                if (this_chid != undefined && this_chid != "invalid-safety-id") {
-                    oldSelectedChar = characters[this_chid].avatar;
-                }
-
-                await getCharacters();
-                select_rm_info(`char_import`, data.file_name, oldSelectedChar);
-                if (power_user.import_card_tags) {
-                    let currentContext = getContext();
-                    let avatarFileName = `${data.file_name}.png`;
-                    let importedCharacter = currentContext.characters.find(character => character.avatar === avatarFileName);
-                    await importTags(importedCharacter);
-                }
-            }
-        },
-        error: function (jqXHR, exception) {
-            $("#create_button").removeAttr("disabled");
-        },
     });
+
+    if (data.error) {
+        toastr.error('The file is likely invalid or corrupted.', 'Could not import character');
+        return;
+    }
+
+    if (data.file_name !== undefined) {
+        $('#character_search_bar').val('').trigger('input');
+
+        let oldSelectedChar = null;
+        if (this_chid != undefined && this_chid != "invalid-safety-id") {
+            oldSelectedChar = characters[this_chid].avatar;
+        }
+
+        await getCharacters();
+        select_rm_info(`char_import`, data.file_name, oldSelectedChar);
+        if (power_user.import_card_tags) {
+            let currentContext = getContext();
+            let avatarFileName = `${data.file_name}.png`;
+            let importedCharacter = currentContext.characters.find(character => character.avatar === avatarFileName);
+            await importTags(importedCharacter);
+        }
+    }
 }
 
 async function importFromURL(items, files) {
@@ -8966,7 +8962,7 @@ jQuery(async function () {
 
         switch (customContentType) {
             case 'character':
-                processDroppedFiles([file]);
+                await processDroppedFiles([file]);
                 break;
             case 'lorebook':
                 await importWorldInfo(file);
@@ -9029,7 +9025,7 @@ jQuery(async function () {
         if (!files.length) {
             await importFromURL(event.originalEvent.dataTransfer.items, files);
         }
-        processDroppedFiles(files);
+        await processDroppedFiles(files);
     });
 
 
