@@ -3596,7 +3596,7 @@ export function getBiasStrings(textareaText, type) {
  */
 function formatMessageHistoryItem(chatItem, isInstruct, forceOutputSequence) {
     const isNarratorType = chatItem?.extra?.type === system_message_types.NARRATOR;
-    const characterName = (selected_group || chatItem.force_avatar) ? chatItem.name : name2;
+    const characterName = chatItem?.name ? chatItem.name : name2;
     const itemName = chatItem.is_user ? chatItem['name'] : characterName;
     const shouldPrependName = !isNarratorType;
 
