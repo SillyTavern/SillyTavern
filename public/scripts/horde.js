@@ -73,6 +73,11 @@ async function adjustHordeGenerationParams(max_context_length, max_length) {
     for (const model of selectedModels) {
         for (const worker of workers) {
             if (model.cluster == worker.cluster && worker.models.includes(model.name)) {
+                // Skip workers that are not trusted if the option is enabled
+                if (horde_settings.trusted_workers_only && !worker.trusted) {
+                    continue;
+                }
+
                 availableWorkers.push(worker);
             }
         }
@@ -90,6 +95,14 @@ async function adjustHordeGenerationParams(max_context_length, max_length) {
     console.log(maxContextLength, maxLength)
     $("#adjustedHordeParams").text(`Context: ${maxContextLength}, Response: ${maxLength}`)
     return { maxContextLength, maxLength };
+}
+
+function setContextSizePreview() {
+    if (horde_settings.models.length) {
+        adjustHordeGenerationParams(max_context, amount_gen);
+    } else {
+        $("#adjustedHordeParams").text(`Context: --, Response: --`);
+    }
 }
 
 async function generateHorde(prompt, params, signal, reportProgress) {
@@ -213,6 +226,8 @@ async function getHordeModels() {
     if (horde_settings.models.length && models.filter(m => horde_settings.models.includes(m.name)).length === 0) {
         horde_settings.models = [];
     }
+
+    setContextSizePreview();
 }
 
 function loadHordeSettings(settings) {
@@ -263,26 +278,19 @@ jQuery(function () {
 
     $("#horde_auto_adjust_response_length").on("input", function () {
         horde_settings.auto_adjust_response_length = !!$(this).prop("checked");
-        if (horde_settings.models.length) {
-            adjustHordeGenerationParams(max_context, amount_gen)
-        } else {
-            $("#adjustedHordeParams").text(`Context: --, Response: --`)
-        }
+        setContextSizePreview();
         saveSettingsDebounced();
     });
 
     $("#horde_auto_adjust_context_length").on("input", function () {
         horde_settings.auto_adjust_context_length = !!$(this).prop("checked");
-        if (horde_settings.models.length) {
-            adjustHordeGenerationParams(max_context, amount_gen);
-        } else {
-            $("#adjustedHordeParams").text(`Context: --, Response: --`)
-        }
+        setContextSizePreview();
         saveSettingsDebounced();
     });
 
     $("#horde_trusted_workers_only").on("input", function () {
         horde_settings.trusted_workers_only = !!$(this).prop("checked");
+        setContextSizePreview();
         saveSettingsDebounced();
     })
 
@@ -313,3 +321,4 @@ jQuery(function () {
         });
     }
 })
+
