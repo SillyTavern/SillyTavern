@@ -1770,7 +1770,7 @@ function substituteParams(content, _name1, _name2, _original, _group) {
         const utcTime = moment().utc().utcOffset(utcOffset).format('LT');
         return utcTime;
     });
-    content = content.replace(/\{\{var:\s*([^}]+)\}\}/gi, (_, variable) => {
+    content = content.replace(/\[\[var:\s*([^}]+)\]\]/gi, (_, variable) => {
         variable = variableHandler(_, variable);
         return variable;
     });
