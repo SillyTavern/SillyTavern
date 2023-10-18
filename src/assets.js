@@ -227,6 +227,24 @@ function registerEndpoints(app, jsonParser) {
         let output = [];
         try {
             if (fs.existsSync(folderPath) && fs.statSync(folderPath).isDirectory()) {
+
+                // Live2d assets
+                if (category == "live2d") {
+                    const folders = fs.readdirSync(folderPath)
+                    for (let modelFolder of folders) {
+                        const live2dModelPath = path.join(folderPath, modelFolder);
+                        if (fs.statSync(live2dModelPath).isDirectory()) {
+                            for (let file of fs.readdirSync(live2dModelPath)) {
+                                console.debug(file)
+                                if (file.includes("model"))
+                                    output.push([`${modelFolder}`,`/characters/${name}/${category}/${modelFolder}/${file}`]);
+                            }
+                        }
+                    }
+                    return response.send(output);
+                }
+
+                // Other assets
                 const files = fs.readdirSync(folderPath)
                     .filter(filename => {
                         return filename != ".placeholder";
@@ -234,7 +252,6 @@ function registerEndpoints(app, jsonParser) {
 
                 for (let i of files)
                     output.push(`/characters/${name}/${category}/${i}`);
-
             }
             return response.send(output);
         }
