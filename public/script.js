@@ -254,7 +254,8 @@ export {
     isOdd,
     countOccurrences,
     variables,
-    registerVariable
+    registerVariable,
+    parseVariableCommand
 }
 
 // Allow target="_blank" in links
@@ -1798,6 +1799,27 @@ function getVariable(_, variable) {
 function registerVariable(name, variable_text) {
     const sanitizedName = name.replace(/\s/g, '_');
     variables[sanitizedName] = variable_text;
+}
+
+function parseVariableCommand(text) {
+    if (!text) {
+        return;
+    }
+
+    const parts = text.split('\n');
+    if (parts.length <= 1) {
+        toastr.warning('Both variable name and text are required. Separate them with a new line.');
+        return;
+    }
+
+    const name = parts.shift().trim();
+    const variableText = parts.join('\n').trim();
+
+    try {
+        return [name, variableText];
+    } catch (error) {
+        toastr.error(`Failed to register variable: ${error.message}`);
+    }
 }
 
 /**

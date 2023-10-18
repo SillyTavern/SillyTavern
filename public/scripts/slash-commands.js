@@ -23,6 +23,7 @@ import {
     name1,
     variables,
     registerVariable,
+    parseVariableCommand,
 } from "../script.js";
 import { getMessageTimeStamp } from "./RossAscends-mods.js";
 import { resetSelectedGroup } from "./group-chats.js";
@@ -154,24 +155,8 @@ async function sendUserMessageCallback(_, text) {
 }
 
 export async function setVariable(_, text) {
-    if (!text) {
-        return;
-    }
-
-    const parts = text.split('\n');
-    if (parts.length <= 1) {
-        toastr.warning('Both variable name and text are required. Separate them with a new line.');
-        return;
-    }
-
-    const name = parts.shift().trim();
-    const variableText = parts.join('\n').trim();
-
-    try {
-        registerVariable(name, variableText);
-    } catch (error) {
-        toastr.error(`Failed to register variable: ${error.message}`);
-    }
+    var [varname, vartext] = parseVariableCommand(text);
+    registerVariable(varname, vartext);
 }
 
 export async function listVariables(_) {
