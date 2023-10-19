@@ -1772,8 +1772,13 @@ function substituteParams(content, _name1, _name2, _original, _group) {
     content = diceRollReplace(content);
     content = bannedWordsReplace(content);
 
+    content = content.replace(/\[\[setvar:\s+"([^"]+)"\s*\/\s*"([^"]+)"\]\]/gi, (_, variable) => {
+        variable = registerVariable(variable);
+        return "";
+    });
+
     // Variable substitute needs to always be directly on top of "return content;"
-    content = content.replace(/\[\[var:\s*([^}]+)\]\]/gi, (_, variable) => {
+    content = content.replace(/\[\[var:\s*"([^"]+)"\s*\]\]/gi, (_, variable) => {
         variable = getVariable(_, variable);
         return variable;
     });
@@ -1784,6 +1789,21 @@ function substituteParams(content, _name1, _name2, _original, _group) {
              Variable Extension related stuff
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
+function saveVariable(name){
+    extension_settings.variables_extension.saved_vars[name] = extension_settings.variables_extension.tmp_vars[name];
+    saveSettingsDebounced();
+}
+
+function registerVariable(text) {
+    var [name, variable_text] = parseVariableCommand(text);
+    const sanitizedName = name.replace(/\s/g, '_');
+    extension_settings.variables_extension.tmp_vars[sanitizedName] = variable_text;
+    if (extension_settings.variables_extension.saved_vars[name] !== undefined){
+        saveVariable(name);
+    }
+    saveSettingsDebounced();
+}
+
 function getVariable(_, variable) {
     const sanitizedVariable = variable.replace(/\s/g, '_');
     const foundVariable = substituteParams(extension_settings.variables_extension.tmp_vars[sanitizedVariable]);
@@ -1793,6 +1813,26 @@ function getVariable(_, variable) {
     } else {
         toastr.warning(`${sanitizedVariable} not found!`);
         return "none";
+    }
+}
+
+function parseVariableCommand(text) {
+    if (!text) {
+        return;
+    }
+
+    const parts = text.split('\n');
+    if (parts.length <= 1) {
+        return;
+    }
+
+    const name = parts.shift().trim();
+    const variableText = parts.join('\n').trim();
+
+    try {
+        return [name, variableText];
+    } catch (error) {
+        toastr.error(`Failed to parse: ${error.message}`);
     }
 }
 
