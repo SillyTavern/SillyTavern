@@ -182,6 +182,7 @@ import {
 import { applyLocale } from "./scripts/i18n.js";
 import { getTokenCount, getTokenizerModel, saveTokenCache } from "./scripts/tokenizers.js";
 import { initPersonas, selectCurrentPersona, setPersonaDescription } from "./scripts/personas.js";
+import { getVariable } from "./scripts/extensions/variables/index.js";
 
 //exporting functions and vars for mods
 export {
@@ -1771,6 +1772,12 @@ function substituteParams(content, _name1, _name2, _original, _group) {
     content = randomReplace(content);
     content = diceRollReplace(content);
     content = bannedWordsReplace(content);
+
+    // Variable substitute needs to always be directly on top of "return content;"
+    content = content.replace(/\[\[var:\s*([^}]+)\]\]/gi, (_, variable) => {
+        variable = getVariable(_, variable);
+        return variable;
+    });
     return content;
 }
 
