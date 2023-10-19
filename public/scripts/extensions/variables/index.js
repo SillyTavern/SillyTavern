@@ -15,7 +15,25 @@ const defaultSettings = {
 }
 
 const MODULE_NAME = "variables_extension";
+const DEBUG_PREFIX = "<Variables extension> ";
+//console.debug(DEBUG_PREFIX, "fdg");
 var variables = {};
+
+function loadSettings() {
+    //if (extension_settings.variables_extension === undefined){
+        //extension_settings.variables_extension = {};
+    //}
+
+    //if (Object.keys(extension_settings.variables_extension).length != Object.keys(defaultSettings).length) {
+    //    Object.assign(extension_settings.variables_extension, defaultSettings);
+    //}
+
+    for (var key of extension_settings.variables_extension.saved_vars) {
+        variables[key] = extension_settings.variables_extension.saved_vars[key];
+    }
+
+    console.debug(DEBUG_PREFIX, "Loaded saved variables: " + JSON.stringify(extension_settings.variables_extension));
+}
 
 function getVariable(_, variable) {
     const sanitizedVariable = variable.replace(/\s/g, '_');
@@ -32,7 +50,7 @@ function getVariable(_, variable) {
 function registerVariable(name, variable_text) {
     const sanitizedName = name.replace(/\s/g, '_');
     variables[sanitizedName] = variable_text;
-    if (extension_settings.variables_extension.saved_vars.includes(name)){
+    if (extension_settings.variables_extension.saved_vars[name] !== undefined){
         saveVariable(name);
     }
 }
@@ -117,16 +135,6 @@ function gen_raw_command(text) {
         });
 }
 
-jQuery(() => {
-    if (extension_settings.variables_extension === undefined){
-        extension_settings.variables_extension = {};
-    }
-
-    if (Object.keys(extension_settings.variables_extension).length != Object.keys(defaultSettings).length) {
-        Object.assign(extension_settings.variables_extension, defaultSettings);
-    }
-
-    for (var key of Object.keys(extension_settings.variables_extension.saved_vars)) {
-        variables[key] = extension_settings.variables_extension.saved_vars[key];
-    }
+jQuery(async () => {
+    loadSettings();
 });
