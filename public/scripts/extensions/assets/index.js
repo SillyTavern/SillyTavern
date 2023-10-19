@@ -4,11 +4,11 @@ TODO:
 //const DEBUG_TONY_SAMA_FORK_MODE = true
 
 import { getRequestHeaders, callPopup } from "../../../script.js";
-import { deleteExtension, extensionNames, installExtension } from "../../extensions.js";
-import { isValidUrl } from "../../utils.js";
+import { deleteExtension, extensionNames, installExtension, renderExtensionTemplate } from "../../extensions.js";
+import { getStringHash, isValidUrl } from "../../utils.js";
 export { MODULE_NAME };
 
-const MODULE_NAME = 'Assets';
+const MODULE_NAME = 'assets';
 const DEBUG_PREFIX = "<Assets module> ";
 let previewAudio = null;
 let ASSETS_JSON_URL = "https://raw.githubusercontent.com/SillyTavern/SillyTavern-Content/main/index.json"
@@ -75,18 +75,18 @@ function downloadAssetsList(url) {
                             label.addClass("fa-check");
                             this.classList.remove('asset-download-button-loading');
                             element.on("click", assetDelete);
-                            element.on("mouseenter", function(){
+                            element.on("mouseenter", function () {
                                 label.removeClass("fa-check");
                                 label.addClass("fa-trash");
                                 label.addClass("redOverlayGlow");
-                            }).on("mouseleave", function(){
+                            }).on("mouseleave", function () {
                                 label.addClass("fa-check");
                                 label.removeClass("fa-trash");
                                 label.removeClass("redOverlayGlow");
                             });
                         };
 
-                        const assetDelete = async function() {
+                        const assetDelete = async function () {
                             element.off("click");
                             await deleteAsset(assetType, asset["id"]);
                             label.removeClass("fa-check");
@@ -102,11 +102,11 @@ function downloadAssetsList(url) {
                             label.toggleClass("fa-download");
                             label.toggleClass("fa-check");
                             element.on("click", assetDelete);
-                            element.on("mouseenter", function(){
+                            element.on("mouseenter", function () {
                                 label.removeClass("fa-check");
                                 label.addClass("fa-trash");
                                 label.addClass("redOverlayGlow");
-                            }).on("mouseleave", function(){
+                            }).on("mouseleave", function () {
                                 label.addClass("fa-check");
                                 label.removeClass("fa-trash");
                                 label.removeClass("redOverlayGlow");
@@ -274,24 +274,35 @@ async function updateCurrentAssets() {
 // This function is called when the extension is loaded
 jQuery(async () => {
     // This is an example of loading HTML from a file
-    const windowHtml = $(await $.get(`${extensionFolderPath}/window.html`));
+    const windowHtml = $(renderExtensionTemplate(MODULE_NAME, 'window', {}));
 
     const assetsJsonUrl = windowHtml.find('#assets-json-url-field');
     assetsJsonUrl.val(ASSETS_JSON_URL);
 
     const connectButton = windowHtml.find('#assets-connect-button');
     connectButton.on("click", async function () {
-        const confirmation = await callPopup(`Are you sure you want to connect to '${assetsJsonUrl.val()}'?`, 'confirm')
+        const url = String(assetsJsonUrl.val());
+        const rememberKey = `Assets_SkipConfirm_${getStringHash(url)}`;
+        const skipConfirm = localStorage.getItem(rememberKey) === 'true';
+
+        const template = renderExtensionTemplate(MODULE_NAME, 'confirm', { url });
+        const confirmation = skipConfirm || await callPopup(template, 'confirm');
+
         if (confirmation) {
             try {
+                if (!skipConfirm) {
+                    const rememberValue = Boolean($('#assets-remember').prop('checked'));
+                    localStorage.setItem(rememberKey, String(rememberValue));
+                }
+
                 console.debug(DEBUG_PREFIX, "Confimation, loading assets...");
-                downloadAssetsList(assetsJsonUrl.val());
+                downloadAssetsList(url);
                 connectButton.removeClass("fa-plug-circle-exclamation");
                 connectButton.removeClass("redOverlayGlow");
                 connectButton.addClass("fa-plug-circle-check");
             } catch (error) {
                 console.error('Error:', error);
-                toastr.error(`Cannot get assets list from ${assetsJsonUrl.val()}`);
+                toastr.error(`Cannot get assets list from ${url}`);
                 connectButton.removeClass("fa-plug-circle-check");
                 connectButton.addClass("fa-plug-circle-exclamation");
                 connectButton.removeClass("redOverlayGlow");
