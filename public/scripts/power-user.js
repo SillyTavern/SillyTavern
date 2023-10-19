@@ -1164,7 +1164,7 @@ function highlightDefaultContext() {
 export function fuzzySearchCharacters(searchValue) {
     const fuse = new Fuse(characters, {
         keys: [
-            { name: 'data.name', weight: 5 },
+            { name: 'data.name', weight: 8 },
             { name: 'data.description', weight: 3 },
             { name: 'data.mes_example', weight: 3 },
             { name: 'data.scenario', weight: 2 },
