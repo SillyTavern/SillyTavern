@@ -1780,6 +1780,10 @@ function substituteParams(content, _name1, _name2, _original, _group) {
     return content;
 }
 
+/*+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+             Variable Extension related stuff
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
+
 function getVariable(_, variable) {
     const sanitizedVariable = variable.replace(/\s/g, '_');
     const foundVariable = substituteParams(extension_settings.variables_extension.tmp_vars[sanitizedVariable]);
@@ -1791,6 +1795,8 @@ function getVariable(_, variable) {
         return "none";
     }
 }
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 /**
  * Replaces banned words in macros with an empty string.
