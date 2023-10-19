@@ -122,7 +122,7 @@ async function listVariables(_) {
     }
 
     const variableList = Object.keys(extension_settings.variables_extension.tmp_vars)
-        .map(key => `<li>${extension_settings.variables_extension.saved_vars[key] !== undefined ? "(Saved) ~ " : ""}<span class="monospace">"${key}"</span>: "${variables[key]}"</li>`)
+        .map(key => `<li>${extension_settings.variables_extension.saved_vars[key] !== undefined ? "(Saved) ~ " : ""}<span class="monospace">"${key}"</span>: "${extension_settings.variables_extension.saved_vars[key]}"</li>`)
         .join('\n');
 
     const infoStr = "<small>Variables get reset on SillyTavern restart!</small>";
