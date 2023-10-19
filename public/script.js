@@ -182,7 +182,6 @@ import {
 import { applyLocale } from "./scripts/i18n.js";
 import { getTokenCount, getTokenizerModel, saveTokenCache } from "./scripts/tokenizers.js";
 import { initPersonas, selectCurrentPersona, setPersonaDescription } from "./scripts/personas.js";
-import { getVariable } from "./scripts/extensions/variables/index.js";
 
 //exporting functions and vars for mods
 export {
@@ -1779,6 +1778,18 @@ function substituteParams(content, _name1, _name2, _original, _group) {
         return variable;
     });
     return content;
+}
+
+function getVariable(_, variable) {
+    const sanitizedVariable = variable.replace(/\s/g, '_');
+    const foundVariable = substituteParams(extension_settings.variables_extension.tmp_vars[sanitizedVariable]);
+    
+    if (foundVariable !== undefined) {
+        return foundVariable;
+    } else {
+        toastr.warning(`${sanitizedVariable} not found!`);
+        return "none";
+    }
 }
 
 /**
