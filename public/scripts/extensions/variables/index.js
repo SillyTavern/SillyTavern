@@ -28,7 +28,7 @@ function loadSettings() {
     //    Object.assign(extension_settings.variables_extension, defaultSettings);
     //}
 
-    for (var key of extension_settings.variables_extension.saved_vars) {
+    for (var key of Object.keys(extension_settings.variables_extension.saved_vars)) {
         variables[key] = extension_settings.variables_extension.saved_vars[key];
     }
 
