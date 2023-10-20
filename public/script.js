@@ -1739,7 +1739,7 @@ function substituteParams(content, _name1, _name2, _original, _group) {
     //// register Variable extension macros: 
 
     // Variable substitute needs to always be directly on top!
-    content = content.replace(/\[\["([^"]+)"\s*\]\]/gi, (_, variable) => {
+    content = content.replace(/\[\[var:\s*"([^"]+)"\s*\]\]/gi, (_, variable) => {
         variable = getVariable(_, variable);
         return variable;
     });
