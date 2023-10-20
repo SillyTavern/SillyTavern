@@ -2521,18 +2521,6 @@
                                 Always add character's name to prompt
                             </span>
                         </label>
-                        <label data-newbie-hidden class="checkbox_label" for="pin-examples-checkbox">
-                            <input id="pin-examples-checkbox" type="checkbox" />
-                            <span data-i18n="Keep Example Messages in Prompt">
-                                Keep Example Messages in Prompt
-                            </span>
-                        </label>
-                        <label data-newbie-hidden class="checkbox_label" for="remove-examples-checkbox">
-                            <input id="remove-examples-checkbox" type="checkbox" />
-                            <span data-i18n="Strip Example Messages from Prompt">
-                                Strip Example Messages from Prompt
-                            </span>
-                        </label>
                         <label class="checkbox_label" for="collapse-newlines-checkbox"><input id="collapse-newlines-checkbox" type="checkbox" />
                             <span data-i18n="Remove Empty New Lines from Output">
                                 Remove Empty New Lines from Output
@@ -3085,7 +3073,19 @@
                     <div name="UserSettingsThirdColumn" id="power-user-options-block" class="flex-container wide100p">
                         <div id="power-user-option-checkboxes">
                             <div data-newbie-hidden name="CharacterHandlingToggles">
-                                <h4>Character Handling</h4>
+                                <h4 data-i18n="Character Handling">
+                                    Character Handling
+                                </h4>
+                                <div data-newbie-hidden id="examples-behavior-block">
+                                    <label data-i18n="Example Messages Behavior">
+                                        Example Messages Behavior:
+                                    </label>
+                                    <select id="example_messages_behavior">
+                                        <option value="normal">Gradual push-out</option>
+                                        <option value="keep">Always include examples</option>
+                                        <option value="strip">Never include examples</option>
+                                    </select>
+                                </div>
                                 <label data-newbie-hidden class="checkbox_label" for="fuzzy_search_checkbox">
                                     <input id="fuzzy_search_checkbox" type="checkbox" />
                                     <span data-i18n="Advanced Character Search">Advanced Character Search</span>
