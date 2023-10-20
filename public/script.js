@@ -1736,6 +1736,21 @@ function substituteParams(content, _name1, _name2, _original, _group) {
         return '';
     }
 
+    //// register Variable extension macros: 
+
+    // Variable substitute needs to always be directly on top!
+    content = content.replace(/\[\["([^"]+)"\s*\]\]/gi, (_, variable) => {
+        variable = getVariable(_, variable);
+        return variable;
+    });
+
+    content = content.replace(/\[\[setvar:\s*"([^"]+)"\s*\/\s*"([^"]+)"\]\]/gi, (_, varname, vartext) => {
+        registerVariable(varname, vartext);
+        return "";
+    });
+
+    /////
+
     // Replace {{original}} with the original message
     // Note: only replace the first instance of {{original}}
     // This will hopefully prevent the abuse
@@ -1771,17 +1786,6 @@ function substituteParams(content, _name1, _name2, _original, _group) {
     content = randomReplace(content);
     content = diceRollReplace(content);
     content = bannedWordsReplace(content);
-
-    content = content.replace(/\[\[setvar:\s+"([^"]+)"\s*\/\s*"([^"]+)"\]\]/gi, (_, variable) => {
-        variable = registerVariable(variable);
-        return "";
-    });
-
-    // Variable substitute needs to always be directly on top of "return content;"
-    content = content.replace(/\[\[var:\s*"([^"]+)"\s*\]\]/gi, (_, variable) => {
-        variable = getVariable(_, variable);
-        return variable;
-    });
     return content;
 }
 
@@ -1789,19 +1793,20 @@ function substituteParams(content, _name1, _name2, _original, _group) {
              Variable Extension related stuff
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
-function saveVariable(name){
-    extension_settings.variables_extension.saved_vars[name] = extension_settings.variables_extension.tmp_vars[name];
-    saveSettingsDebounced();
-}
+// For logging purposes:
+const VAR_DEBUG_PREFIX = "<Variables extension> ";
+function VAR_FUNC_PREFIX(f){ return `<script.js / ${f}>`; }
+const VAR_SEPARATOR = ": ";
 
-function registerVariable(text) {
-    var [name, variable_text] = parseVariableCommand(text);
-    const sanitizedName = name.replace(/\s/g, '_');
-    extension_settings.variables_extension.tmp_vars[sanitizedName] = variable_text;
-    if (extension_settings.variables_extension.saved_vars[name] !== undefined){
-        saveVariable(name);
+function registerVariable(varname, vartext) {
+    const sanitizedName = varname.replace(/\s/g, '_');
+    extension_settings.variables_extension.tmp_vars[sanitizedName] = vartext;
+    if (extension_settings.variables_extension.saved_vars[varname] !== undefined){
+        extension_settings.variables_extension.saved_vars[varname] = extension_settings.variables_extension.tmp_vars[varname];
+        console.debug(VAR_DEBUG_PREFIX, VAR_FUNC_PREFIX("registerVariable"), VAR_SEPARATOR, sanitizedName+" is saved, saved variable was updated in saved_vars");
     }
     saveSettingsDebounced();
+    console.debug(VAR_DEBUG_PREFIX, VAR_FUNC_PREFIX("registerVariable"), VAR_SEPARATOR, sanitizedName+" variable was registered into tmp_vars");
 }
 
 function getVariable(_, variable) {
@@ -1809,30 +1814,11 @@ function getVariable(_, variable) {
     const foundVariable = substituteParams(extension_settings.variables_extension.tmp_vars[sanitizedVariable]);
     
     if (foundVariable !== undefined) {
+        console.debug(VAR_DEBUG_PREFIX, VAR_FUNC_PREFIX("getVariable"), VAR_SEPARATOR, sanitizedVariable+" variable was found");
         return foundVariable;
     } else {
-        toastr.warning(`${sanitizedVariable} not found!`);
+        console.debug(VAR_DEBUG_PREFIX, VAR_FUNC_PREFIX("getVariable"), VAR_SEPARATOR, sanitizedVariable+" variable not found");
         return "none";
-    }
-}
-
-function parseVariableCommand(text) {
-    if (!text) {
-        return;
-    }
-
-    const parts = text.split('\n');
-    if (parts.length <= 1) {
-        return;
-    }
-
-    const name = parts.shift().trim();
-    const variableText = parts.join('\n').trim();
-
-    try {
-        return [name, variableText];
-    } catch (error) {
-        toastr.error(`Failed to parse: ${error.message}`);
     }
 }
 

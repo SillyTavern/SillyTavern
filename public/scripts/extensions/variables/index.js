@@ -8,17 +8,19 @@ import {
 import { registerSlashCommand } from "../../slash-commands.js"
 import { extension_settings } from "../../extensions.js";
 
-//export { MODULE_NAME, listVariables, getVariable, registerVariable, parseVariableCommand }
 export { MODULE_NAME }
+
+const MODULE_NAME = "variables_extension";
+
+const DEBUG_PREFIX = "<Variables extension> ";
+function FUNC_PREFIX(f){ return `<${f}>`; }
+const SEPARATOR = ": ";
 
 const defaultSettings = {
     saved_vars: {},
     tmp_vars: {}
 }
 
-const MODULE_NAME = "variables_extension";
-const DEBUG_PREFIX = "<Variables extension> ";
-//console.debug(DEBUG_PREFIX, "fdg");
 
 function loadSettings() {
     if (extension_settings.variables_extension === undefined){
@@ -31,13 +33,14 @@ function loadSettings() {
 
     extension_settings.variables_extension.tmp_vars = {};
     saveSettingsDebounced();
+    console.debug(DEBUG_PREFIX, FUNC_PREFIX("loadSettings"), SEPARATOR, "Cleared tmp_vars");
 
     for (var key of Object.keys(extension_settings.variables_extension.saved_vars)) {
         extension_settings.variables_extension.tmp_vars[key] = extension_settings.variables_extension.saved_vars[key];
     }
     saveSettingsDebounced();
     
-    console.debug(DEBUG_PREFIX, "Loaded saved variables: " + JSON.stringify(extension_settings.variables_extension.saved_vars));
+    console.debug(DEBUG_PREFIX, FUNC_PREFIX("loadSettings"), SEPARATOR, "Loaded saved variables: " + JSON.stringify(extension_settings.variables_extension.saved_vars));
 }
 
 function updateVariables(){
@@ -66,8 +69,10 @@ function registerVariable(name, variable_text) {
     extension_settings.variables_extension.tmp_vars[sanitizedName] = variable_text;
     if (extension_settings.variables_extension.saved_vars[name] !== undefined){
         saveVariable(name);
+        console.debug(DEBUG_PREFIX, FUNC_PREFIX("registerVariable"), SEPARATOR, sanitizedName+" is saved, saved variable was updated in saved_vars");
     }
     saveSettingsDebounced();
+    console.debug(DEBUG_PREFIX, FUNC_PREFIX("registerVariable"), SEPARATOR, sanitizedName+" variable was registered into tmp_vars");
 }
 
 function parseVariableCommand(text) {
@@ -91,29 +96,49 @@ function parseVariableCommand(text) {
     }
 }
 
-/// commands ///
+/// Commands (Directly related to variables system) ///
 
-registerSlashCommand("setvar", (_, text) => setVariable(_, text), ["setvariable"], ` – Creates/Edits a new variable.`, true, true);
+registerSlashCommand("setvar", (_, text) => setVariable(_, text), ["var.s"], ` – Creates/Edits a new variable.`, true, true);
 async function setVariable(_, text) {
     updateVariables();
     var [varname, vartext] = parseVariableCommand(text);
     registerVariable(varname, vartext);
+    console.debug(DEBUG_PREFIX, FUNC_PREFIX("setVariable"), SEPARATOR, varname+" variable was registered into tmp_vars, with text: " + vartext);
 }
 
-registerSlashCommand("savevar", (_, text) => saveVariable(text), ["savevariable"], ` – Saves a variable to file.`, true, true);
+registerSlashCommand("savevar", (_, text) => saveVariable(text), ["var.sa"], ` – Saves a variable to file.`, true, true);
 async function saveVariable(name){
+    updateVariables();
     extension_settings.variables_extension.saved_vars[name] = extension_settings.variables_extension.tmp_vars[name];
     saveSettingsDebounced();
+    console.debug(DEBUG_PREFIX, FUNC_PREFIX("saveVariable"), SEPARATOR, name+" variable was registered into saved_vars");
 }
 
-registerSlashCommand("deletevar", (_, text) => deleteVariable(text), ["deletevariable"], ` – Deletes a variable from file and tmp.`, true, true);
+registerSlashCommand("clonevar", (_, text) => cloneVariable(text), ["var.c"], ` – Clones/Duplicates a variable.`, true, true);
+async function cloneVariable(nameraw){
+    updateVariables();
+    const appendUniqueKey = (obj, nameraw) => {
+        let num = 0;
+        while (obj.hasOwnProperty(nameraw + (num > 0 ? `_${num}` : ''))) {
+          num++;
+        }
+        return nameraw + (num > 0 ? `_${num}` : '');
+    };
+    const name = appendUniqueKey(extension_settings.variables_extension.tmp_vars, nameraw);
+    extension_settings.variables_extension.tmp_vars[name] = extension_settings.variables_extension.tmp_vars[name];
+    saveSettingsDebounced();
+    console.debug(DEBUG_PREFIX, FUNC_PREFIX("cloneVariable"), SEPARATOR, name+" variable was cloned with name "+nameraw);
+}
+
+registerSlashCommand("deletevar", (_, text) => deleteVariable(text), ["var.d"], ` – Deletes a variable from file and tmp.`, true, true);
 async function deleteVariable(name) {
     delete extension_settings.variables_extension.tmp_vars[name];
     delete extension_settings.variables_extension.saved_vars[name];
     saveSettingsDebounced();
+    console.debug(DEBUG_PREFIX, FUNC_PREFIX("deleteVariable"), SEPARATOR, name+" variable was deleted from tmp_vars and saved_vars");
 }
 
-registerSlashCommand("listvars", (_, text) => listVariables(), ["listvariables"], ` – lists all currently saved variables.`, true, true);
+registerSlashCommand("listvars", (_, text) => listVariables(), ["var.l"], ` – lists all currently saved variables.`, true, true);
 async function listVariables(_) {
     updateVariables();
     if (Object.keys(extension_settings.variables_extension.tmp_vars).length === 0) {
@@ -131,27 +156,30 @@ async function listVariables(_) {
     sendSystemMessage(system_message_types.GENERIC, outputString);
 }
 
-registerSlashCommand("clearvars", (_, text) => clearTmpVariables(), ["cleartmpvariables"], ` – Deletes all Tmp variables.`, true, true);
+registerSlashCommand("cleartmpvars", (_, text) => clearTmpVariables(), ["var.c"], ` – Deletes all Tmp variables.`, true, true);
 async function clearTmpVariables(_) {
     updateVariables();
     extension_settings.variables_extension.tmp_vars = {};
     saveSettingsDebounced();
+    console.debug(DEBUG_PREFIX, FUNC_PREFIX("clearTmpVariables"), SEPARATOR, "All tmp_vars were deleted");
 }
 
 
-/// Unrelated commands ///
+/// Commands ///
 //Note: always place updateVariables(); in the first line of your command!
 
 registerSlashCommand("generate_raw", (_, text) => gen_raw_command(text), ["graw"], ` - Lets you generate things based on a prompt you input. Example: <pre><code>/generate_raw variable_name&#10;Once upon a time</code></pre>when done generating, it will be saved inside the variable.`, true, true);
 function gen_raw_command(text) {
     updateVariables();
-    const [varname, vartext] = parseVariableCommand(substituteParams(text));
-    toastr.info('Generating... please wait!');
+    const [varname, prompt] = parseVariableCommand(substituteParams(text));
+    console.debug(DEBUG_PREFIX, FUNC_PREFIX("gen_raw_command"), SEPARATOR, "Generating with main api...");
+    //toastr.info('Generating... please wait!');
 
-    generateRaw(vartext, undefined)
+    generateRaw(prompt, undefined)
         .then((generatedText) => {
-            registerVariable(varname, `${generatedText} ${vartext}`);
-            toastr.info('Done generating!');
+            registerVariable(varname, `${generatedText} ${prompt}`);
+            console.debug(DEBUG_PREFIX, FUNC_PREFIX("gen_raw_command"), SEPARATOR, `Done generating! Stored in ${varname} variable, with generatedText: ${generatedText}`);
+            //toastr.info('Done generating!');
         })
         .catch((error) => {
             toastr.error('An error occurred: ', error);
