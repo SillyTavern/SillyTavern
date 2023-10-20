@@ -41,6 +41,7 @@ export {
     fixMarkdown,
     power_user,
     send_on_enter_options,
+    getContextSettings,
 };
 
 export const MAX_CONTEXT_DEFAULT = 4096;
@@ -248,6 +249,24 @@ const storage_keys = {
     message_token_count_enabled: 'MessageTokenCountEnabled',
     expand_message_actions: 'ExpandMessageActions',
 };
+
+const contextControls = [
+    // Power user context scoped settings
+    { id: "context_story_string", property: "story_string", isCheckbox: false, isGlobalSetting: false },
+    { id: "context_example_separator", property: "example_separator", isCheckbox: false, isGlobalSetting: false },
+    { id: "context_chat_start", property: "chat_start", isCheckbox: false, isGlobalSetting: false },
+
+    // Existing power user settings
+    { id: "always-force-name2-checkbox", property: "always_force_name2", isCheckbox: true, isGlobalSetting: true },
+    { id: "pin-examples-checkbox", property: "pin_examples", isCheckbox: true, isGlobalSetting: true },
+    { id: "remove-examples-checkbox", property: "strip_examples", isCheckbox: true, isGlobalSetting: true },
+    { id: "collapse-newlines-checkbox", property: "collapse_newlines", isCheckbox: true, isGlobalSetting: true },
+    { id: "trim_spaces", property: "trim_spaces", isCheckbox: true, isGlobalSetting: true },
+    { id: "trim_sentences_checkbox", property: "trim_sentences", isCheckbox: true, isGlobalSetting: true },
+    { id: "include_newline_checkbox", property: "include_newline", isCheckbox: true, isGlobalSetting: true },
+    { id: "custom_stopping_strings", property: "custom_stopping_strings", isCheckbox: false, isGlobalSetting: true },
+    { id: "custom_stopping_strings_macro", property: "custom_stopping_strings_macro", isCheckbox: true, isGlobalSetting: true }
+];
 
 let browser_has_focus = true;
 const debug_functions = [];
@@ -1070,14 +1089,28 @@ function switchMaxContextSize() {
     }
 }
 
-function loadContextSettings() {
-    const controls = [
-        { id: "context_story_string", property: "story_string", isCheckbox: false },
-        { id: "context_example_separator", property: "example_separator", isCheckbox: false },
-        { id: "context_chat_start", property: "chat_start", isCheckbox: false },
-    ];
+// Fetch a compiled object of all preset settings
+function getContextSettings() {
+    let compiledSettings = {};
 
-    controls.forEach(control => {
+    contextControls.forEach((control) => {
+        let value = control.isGlobalSetting ? power_user[control.property] : power_user.context[control.property];
+
+        // Force to a boolean if the setting is a checkbox
+        if (control.isCheckbox) {
+            value = !!value;
+        }
+
+        compiledSettings[control.property] = value;
+    });
+
+    return compiledSettings;
+}
+
+// TODO: Maybe add a refresh button to reset settings to preset
+// TODO: Add "global state" if a preset doesn't set the power_user checkboxes
+function loadContextSettings() {
+    contextControls.forEach(control => {
         const $element = $(`#${control.id}`);
 
         if (control.isCheckbox) {
@@ -1086,8 +1119,16 @@ function loadContextSettings() {
             $element.val(power_user.context[control.property]);
         }
 
+        // If the setting already exists, no need to duplicate it
+        // TODO: Maybe check the power_user object for the setting instead of a flag?
         $element.on('input', function () {
-            power_user.context[control.property] = control.isCheckbox ? !!$(this).prop('checked') : $(this).val();
+            const value = control.isCheckbox ? !!$(this).prop('checked') : $(this).val();
+            if (control.isGlobalSetting) {
+                power_user[control.property] = value;
+            } else {
+                power_user.context[control.property] = value;
+            }
+
             saveSettingsDebounced();
             if (!control.isCheckbox) {
                 resetScrollHeight($element);
@@ -1113,9 +1154,14 @@ function loadContextSettings() {
         }
 
         power_user.context.preset = name;
-        controls.forEach(control => {
+        contextControls.forEach(control => {
             if (preset[control.property] !== undefined) {
-                power_user.context[control.property] = preset[control.property];
+                if (control.isGlobalSetting) {
+                    power_user[control.property] = preset[control.property];
+                } else {
+                    power_user.context[control.property] = preset[control.property];
+                }
+
                 const $element = $(`#${control.id}`);
 
                 if (control.isCheckbox) {
