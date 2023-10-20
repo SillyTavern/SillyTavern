@@ -168,7 +168,7 @@ async function clearTmpVariables(_) {
 /// Commands ///
 //Note: always place updateVariables(); in the first line of your command!
 
-registerSlashCommand("generate_raw", (_, text) => gen_raw_command(text), ["graw"], ` - Lets you generate things based on a prompt you input. Example: <pre><code>/generate_raw variable_name&#10;Once upon a time</code></pre>when done generating, it will be saved inside the variable.`, true, true);
+registerSlashCommand("graw", (_, text) => gen_raw_command(text), ["generate_raw"], ` - Lets you generate things based on a prompt you input. Example: <pre><code>/generate_raw variable_name&#10;Once upon a time</code></pre>when done generating, it will be saved inside the variable.`, true, true);
 function gen_raw_command(text) {
     updateVariables();
     const [varname, prompt] = parseVariableCommand(substituteParams(text));
