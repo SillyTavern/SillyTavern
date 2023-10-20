@@ -2812,7 +2812,7 @@ app.post("/openai_bias", jsonParser, async function (request, response) {
         }
 
         try {
-            const tokens = tokenizer.encode(entry.text);
+            const tokens = getEntryTokens(entry.text);
 
             for (const token of tokens) {
                 result[token] = entry.value;
@@ -2825,6 +2825,28 @@ app.post("/openai_bias", jsonParser, async function (request, response) {
     // not needed for cached tokenizers
     //tokenizer.free();
     return response.send(result);
+
+    /**
+     * Gets tokenids for a given entry
+     * @param {string} text Entry text
+     * @returns {Uint32Array} Array of token ids
+     */
+    function getEntryTokens(text) {
+        // Get raw token ids from JSON array
+        if (text.trim().startsWith('[') && text.trim().endsWith(']')) {
+            try {
+                const json = JSON.parse(text);
+                if (Array.isArray(json) && json.every(x => typeof x === 'number')) {
+                    return new Uint32Array(json);
+                }
+            } catch {
+                // ignore
+            }
+        }
+
+        // Otherwise, get token ids from tokenizer
+        return tokenizer.encode(text);
+    }
 });
 
 function convertChatMLPrompt(messages) {

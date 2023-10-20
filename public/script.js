@@ -2185,11 +2185,12 @@ class StreamingProcessor {
         let processedText = cleanUpMessage(text, isImpersonate, isContinue, !isFinal);
 
         // Predict unbalanced asterisks / quotes during streaming
-        const charsToBalance = ['*', '"'];
+        const charsToBalance = ['*', '"', '```'];
         for (const char of charsToBalance) {
             if (!isFinal && isOdd(countOccurrences(processedText, char))) {
                 // Add character at the end to balance it
-                processedText = processedText.trimEnd() + char;
+                const separator = char.length > 1 ? '\n' : '';
+                processedText = processedText.trimEnd() + separator + char;
             }
         }
 

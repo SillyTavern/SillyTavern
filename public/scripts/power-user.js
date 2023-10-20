@@ -836,6 +836,18 @@ switchMesIDDisplay();
 switchTokenCount();
 switchMessageActions();
 
+function getExampleMessagesBehavior() {
+    if (power_user.strip_examples) {
+        return 'strip';
+    }
+
+    if (power_user.pin_examples) {
+        return 'keep';
+    }
+
+    return 'normal';
+}
+
 function loadPowerUserSettings(settings, data) {
     // Load from settings.json
     if (settings.power_user !== undefined) {
@@ -911,6 +923,8 @@ function loadPowerUserSettings(settings, data) {
     $('#fuzzy_search_checkbox').prop("checked", power_user.fuzzy_search);
     $('#persona_show_notifications').prop("checked", power_user.persona_show_notifications);
     $('#encode_tags').prop("checked", power_user.encode_tags);
+    $('#example_messages_behavior').val(getExampleMessagesBehavior());
+    $(`#example_messages_behavior option[value="${getExampleMessagesBehavior()}"]`).prop("selected", true);
 
     $("#console_log_prompts").prop("checked", power_user.console_log_prompts);
     $('#auto_fix_generated_markdown').prop("checked", power_user.auto_fix_generated_markdown);
@@ -921,8 +935,6 @@ function loadPowerUserSettings(settings, data) {
     $("#confirm_message_delete").prop("checked", power_user.confirm_message_delete !== undefined ? !!power_user.confirm_message_delete : true);
     $("#spoiler_free_mode").prop("checked", power_user.spoiler_free_mode);
     $("#collapse-newlines-checkbox").prop("checked", power_user.collapse_newlines);
-    $("#pin-examples-checkbox").prop("checked", power_user.pin_examples);
-    $("#remove-examples-checkbox").prop("checked", power_user.strip_examples);
     $("#always-force-name2-checkbox").prop("checked", power_user.always_force_name2);
     $("#trim_sentences_checkbox").prop("checked", power_user.trim_sentences);
     $("#include_newline_checkbox").prop("checked", power_user.include_newline);
@@ -1164,7 +1176,7 @@ function highlightDefaultContext() {
 export function fuzzySearchCharacters(searchValue) {
     const fuse = new Fuse(characters, {
         keys: [
-            { name: 'data.name', weight: 5 },
+            { name: 'data.name', weight: 8 },
             { name: 'data.description', weight: 3 },
             { name: 'data.mes_example', weight: 3 },
             { name: 'data.scenario', weight: 2 },
@@ -1849,28 +1861,6 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $("#pin-examples-checkbox").change(function () {
-        if ($(this).prop("checked")) {
-            $("#remove-examples-checkbox").prop("checked", false).prop("disabled", true);
-            power_user.strip_examples = false;
-        } else {
-            $("#remove-examples-checkbox").prop("disabled", false);
-        }
-        power_user.pin_examples = !!$(this).prop("checked");
-        saveSettingsDebounced();
-    });
-
-    $("#remove-examples-checkbox").change(function () {
-        if ($(this).prop("checked")) {
-            $("#pin-examples-checkbox").prop("checked", false).prop("disabled", true);
-            power_user.pin_examples = false;
-        } else {
-            $("#pin-examples-checkbox").prop("disabled", false);
-        }
-        power_user.strip_examples = !!$(this).prop("checked");
-        saveSettingsDebounced();
-    });
-
     // include newline is the child of trim sentences
     // if include newline is checked, trim sentences must be checked
     // if trim sentences is unchecked, include newline must be unchecked
@@ -1926,6 +1916,31 @@ $(document).ready(() => {
 
     $("#auto_continue_target_length").on('input', function () {
         power_user.auto_continue.target_length = Number($(this).val());
+        saveSettingsDebounced();
+    });
+
+    $('#example_messages_behavior').on('change', function () {
+        const selectedOption = String($(this).find(':selected').val());
+        console.log('Setting example messages behavior to', selectedOption);
+
+        switch (selectedOption) {
+            case 'normal':
+                power_user.pin_examples = false;
+                power_user.strip_examples = false;
+                break;
+            case 'keep':
+                power_user.pin_examples = true;
+                power_user.strip_examples = false;
+                break;
+            case 'strip':
+                power_user.pin_examples = false;
+                power_user.strip_examples = true;
+                break;
+        }
+
+        console.debug('power_user.pin_examples', power_user.pin_examples);
+        console.debug('power_user.strip_examples', power_user.strip_examples);
+
         saveSettingsDebounced();
     });
 
