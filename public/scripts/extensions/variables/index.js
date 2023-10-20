@@ -114,7 +114,7 @@ async function saveVariable(name){
     console.debug(DEBUG_PREFIX, FUNC_PREFIX("saveVariable"), SEPARATOR, name+" variable was registered into saved_vars");
 }
 
-registerSlashCommand("clonevar", (_, text) => cloneVariable(text), ["var.c"], ` – Clones/Duplicates a variable.`, true, true);
+registerSlashCommand("clonevar", (_, text) => cloneVariable(text), ["var.cl"], ` – Clones/Duplicates a variable.`, true, true);
 async function cloneVariable(nameraw){
     updateVariables();
     const appendUniqueKey = (obj, nameraw) => {
@@ -125,7 +125,7 @@ async function cloneVariable(nameraw){
         return nameraw + (num > 0 ? `_${num}` : '');
     };
     const name = appendUniqueKey(extension_settings.variables_extension.tmp_vars, nameraw);
-    extension_settings.variables_extension.tmp_vars[name] = extension_settings.variables_extension.tmp_vars[name];
+    extension_settings.variables_extension.tmp_vars[name] = extension_settings.variables_extension.tmp_vars[nameraw];
     saveSettingsDebounced();
     console.debug(DEBUG_PREFIX, FUNC_PREFIX("cloneVariable"), SEPARATOR, name+" variable was cloned with name "+nameraw);
 }
