@@ -1818,7 +1818,7 @@ function getVariable(_, variable) {
         return foundVariable;
     } else {
         console.debug(VAR_DEBUG_PREFIX, VAR_FUNC_PREFIX("getVariable"), VAR_SEPARATOR, sanitizedVariable+" variable not found");
-        return "none";
+        return "";
     }
 }
 
