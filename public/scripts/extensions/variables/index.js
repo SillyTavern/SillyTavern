@@ -117,6 +117,11 @@ async function saveVariable(name){
 registerSlashCommand("clonevar", (_, text) => cloneVariable(text), ["var.cl"], ` – Clones/Duplicates a variable.`, true, true);
 async function cloneVariable(nameraw){
     updateVariables();
+    if(extension_settings.variables_extension.tmp_vars[nameraw] === undefined){
+        toastr.warning(`${nameraw} does not exist`);
+        console.debug(DEBUG_PREFIX, FUNC_PREFIX("cloneVariable"), SEPARATOR, nameraw+" variable could not be cloned");
+        return;
+    }
     const appendUniqueKey = (obj, nameraw) => {
         let num = 0;
         while (obj.hasOwnProperty(nameraw + (num > 0 ? `_${num}` : ''))) {
@@ -132,6 +137,11 @@ async function cloneVariable(nameraw){
 
 registerSlashCommand("deletevar", (_, text) => deleteVariable(text), ["var.d"], ` – Deletes a variable from file and tmp.`, true, true);
 async function deleteVariable(name) {
+    if(extension_settings.variables_extension.tmp_vars[name] === undefined || extension_settings.variables_extension.saved_vars[name] === undefined ){
+        toastr.warning(`${name} does not exist`);
+        console.debug(DEBUG_PREFIX, FUNC_PREFIX("deleteVariable"), SEPARATOR, name+" variable could not be deleted");
+        return;
+    }
     delete extension_settings.variables_extension.tmp_vars[name];
     delete extension_settings.variables_extension.saved_vars[name];
     saveSettingsDebounced();
