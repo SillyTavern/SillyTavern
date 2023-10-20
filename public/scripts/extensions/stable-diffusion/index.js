@@ -321,8 +321,14 @@ async function expandPrompt(prompt) {
     }
 }
 
-async function refinePrompt(prompt) {
-    if (extension_settings.sd.expand) {
+/**
+ * Modifies prompt based on auto-expansion and user inputs.
+ * @param {string} prompt Prompt to refine
+ * @param {boolean} allowExpand Whether to allow auto-expansion
+ * @returns {Promise<string>} Refined prompt
+ */
+async function refinePrompt(prompt, allowExpand) {
+    if (allowExpand && extension_settings.sd.expand) {
         prompt = await expandPrompt(prompt);
     }
 
@@ -1159,7 +1165,7 @@ async function getPrompt(generationType, message, trigger, quiet_prompt) {
     }
 
     if (generationType !== generationMode.FREE) {
-        prompt = await refinePrompt(prompt);
+        prompt = await refinePrompt(prompt, true);
     }
 
     return prompt;
@@ -1553,7 +1559,7 @@ async function sdMessageButton(e) {
     try {
         setBusyIcon(true);
         if (hasSavedImage) {
-            const prompt = await refinePrompt(message.extra.title);
+            const prompt = await refinePrompt(message.extra.title, false);
             message.extra.title = prompt;
 
             console.log('Regenerating an image, using existing prompt:', prompt);
