@@ -160,6 +160,7 @@ const defaultSettings = {
 
     // Refine mode
     refine_mode: false,
+    expand: false,
 
     prompts: promptTemplates,
 
@@ -257,6 +258,7 @@ async function loadSettings() {
     $('#sd_restore_faces').prop('checked', extension_settings.sd.restore_faces);
     $('#sd_enable_hr').prop('checked', extension_settings.sd.enable_hr);
     $('#sd_refine_mode').prop('checked', extension_settings.sd.refine_mode);
+    $('#sd_expand').prop('checked', extension_settings.sd.expand);
     $('#sd_auto_url').val(extension_settings.sd.auto_url);
     $('#sd_auto_auth').val(extension_settings.sd.auto_auth);
     $('#sd_vlad_url').val(extension_settings.sd.vlad_url);
@@ -300,7 +302,30 @@ function addPromptTemplates() {
     }
 }
 
+async function expandPrompt(prompt) {
+    try {
+        const response = await fetch('/api/sd/expand', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ prompt: prompt }),
+        });
+
+        if (!response.ok) {
+            throw new Error('API returned an error.');
+        }
+
+        const data = await response.json();
+        return data.prompt;
+    } catch {
+        return prompt;
+    }
+}
+
 async function refinePrompt(prompt) {
+    if (extension_settings.sd.expand) {
+        prompt = await expandPrompt(prompt);
+    }
+
     if (extension_settings.sd.refine_mode) {
         const refinedPrompt = await callPopup('<h3>Review and edit the prompt:</h3>Press "Cancel" to abort the image generation.', 'input', prompt.trim(), { rows: 5, okButton: 'Generate' });
 
@@ -359,6 +384,11 @@ function combinePrefixes(str1, str2) {
     var result = `${str1}, ${str2},`;
 
     return result;
+}
+
+function onExpandInput() {
+    extension_settings.sd.expand = !!$(this).prop('checked');
+    saveSettingsDebounced();
 }
 
 function onRefineModeInput() {
@@ -1610,6 +1640,7 @@ jQuery(async () => {
     $('#sd_novel_upscale_ratio').on('input', onNovelUpscaleRatioInput);
     $('#sd_novel_anlas_guard').on('input', onNovelAnlasGuardInput);
     $('#sd_novel_view_anlas').on('click', onViewAnlasClick);
+    $('#sd_expand').on('input', onExpandInput);
     $('#sd_character_prompt_block').hide();
 
     $('.sd_settings .inline-drawer-toggle').on('click', function () {
