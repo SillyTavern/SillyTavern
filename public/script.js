@@ -1794,19 +1794,17 @@ function substituteParams(content, _name1, _name2, _original, _group) {
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++*/
 
 // For logging purposes:
-const VAR_DEBUG_PREFIX = "<Variables extension> ";
-function VAR_FUNC_PREFIX(f){ return `<script.js / ${f}>`; }
-const VAR_SEPARATOR = ": ";
+function VAR_LOG_PREFIX(f){ return `<Variables extension> <script.js / ${f}>: ` };
 
 function registerVariable(varname, vartext) {
     const sanitizedName = varname.replace(/\s/g, '_');
     extension_settings.variables_extension.tmp_vars[sanitizedName] = vartext;
     if (extension_settings.variables_extension.saved_vars[varname] !== undefined){
         extension_settings.variables_extension.saved_vars[varname] = extension_settings.variables_extension.tmp_vars[varname];
-        console.debug(VAR_DEBUG_PREFIX, VAR_FUNC_PREFIX("registerVariable"), VAR_SEPARATOR, sanitizedName+" is saved, saved variable was updated in saved_vars");
+        console.debug(VAR_LOG_PREFIX("registerVariable"), sanitizedName+" is saved, saved variable was updated in saved_vars");
     }
     saveSettingsDebounced();
-    console.debug(VAR_DEBUG_PREFIX, VAR_FUNC_PREFIX("registerVariable"), VAR_SEPARATOR, sanitizedName+" variable was registered into tmp_vars");
+    console.debug(VAR_LOG_PREFIX("registerVariable"), sanitizedName+" variable was registered into tmp_vars");
 }
 
 function getVariable(_, variable) {
@@ -1814,10 +1812,10 @@ function getVariable(_, variable) {
     const foundVariable = substituteParams(extension_settings.variables_extension.tmp_vars[sanitizedVariable]);
     
     if (foundVariable !== undefined) {
-        console.debug(VAR_DEBUG_PREFIX, VAR_FUNC_PREFIX("getVariable"), VAR_SEPARATOR, sanitizedVariable+" variable was found");
+        console.debug(VAR_LOG_PREFIX("getVariable"), sanitizedVariable+" variable was found");
         return foundVariable;
     } else {
-        console.debug(VAR_DEBUG_PREFIX, VAR_FUNC_PREFIX("getVariable"), VAR_SEPARATOR, sanitizedVariable+" variable not found");
+        console.debug(VAR_LOG_PREFIX("getVariable"), sanitizedVariable+" variable not found");
         return "";
     }
 }
