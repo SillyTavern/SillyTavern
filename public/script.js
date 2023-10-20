@@ -1753,7 +1753,7 @@ function substituteParams(content, _name1, _name2, _original, _group) {
     content = content.replace(/<CHARIFNOTGROUP>/gi, _group);
     content = content.replace(/<GROUP>/gi, _group);
 
-    content = content.replace(/\{\{\#(.*?)\}\}/g, "");
+    content = content.replace(/\{\{\/\/(.*?)\}\}/g, "");
 
     content = content.replace(/{{time}}/gi, moment().format('LT'));
     content = content.replace(/{{date}}/gi, moment().format('LL'));
