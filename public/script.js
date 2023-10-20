@@ -1753,11 +1753,14 @@ function substituteParams(content, _name1, _name2, _original, _group) {
     content = content.replace(/<CHARIFNOTGROUP>/gi, _group);
     content = content.replace(/<GROUP>/gi, _group);
 
+    content = content.replace(/\{\{\#(.*?)\}\}/g, "");
+
     content = content.replace(/{{time}}/gi, moment().format('LT'));
     content = content.replace(/{{date}}/gi, moment().format('LL'));
     content = content.replace(/{{weekday}}/gi, moment().format('dddd'));
     content = content.replace(/{{isotime}}/gi, moment().format('HH:mm'));
     content = content.replace(/{{isodate}}/gi, moment().format('YYYY-MM-DD'));
+    
     content = content.replace(/{{datetimeformat +([^}]*)}}/gi, (_, format) => {
         const formattedTime = moment().format(format);
         return formattedTime;
