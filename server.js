@@ -713,7 +713,7 @@ app.post("/getchat", jsonParser, function (request, response) {
         const lines = data.split('\n');
 
         // Iterate through the array of strings and parse each line as JSON
-        const jsonData = lines.map(tryParse).filter(x => x);
+        const jsonData = lines.map((l) => { try { return JSON.parse(l); } catch (_) { }}).filter(x => x);
         return response.send(jsonData);
     } catch (error) {
         console.error(error);
