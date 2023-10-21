@@ -1,8 +1,7 @@
 import { saveSettingsDebounced, callPopup, getRequestHeaders, substituteParams } from "../../../script.js";
 import { getContext, extension_settings } from "../../extensions.js";
 import { initScrollHeight, resetScrollHeight } from "../../utils.js";
-import { executeSlashCommands, getSlashCommandsHelp, registerSlashCommand } from "../../slash-commands.js";
-
+import { registerSlashCommand } from "../../slash-commands.js";
 
 export { MODULE_NAME };
 
@@ -17,7 +16,7 @@ const defaultSettings = {
     quickReplySlots: [],
     placeBeforeInputEnabled: false,
     quickActionEnabled: false,
-    AutoInputInject: true
+    AutoInputInject: true,
 }
 
 //method from worldinfo
@@ -36,8 +35,12 @@ async function updateQuickReplyPresetList() {
 
 
         if (presets !== undefined) {
-            presets.forEach((item, i) => {
-                $("#quickReplyPresets").append(`<option value='${item.name}'${selected_preset.includes(item.name) ? ' selected' : ''}>${item.name}</option>`);
+            presets.forEach((item) => {
+                const option = document.createElement('option');
+                option.value = item.name;
+                option.innerText = item.name;
+                option.selected = selected_preset.includes(item.name);
+                $("#quickReplyPresets").append(option);
             });
         }
     }
@@ -49,6 +52,10 @@ async function loadSettings(type) {
     }
     if (Object.keys(extension_settings.quickReply).length === 0) {
         Object.assign(extension_settings.quickReply, defaultSettings);
+    }
+
+    if (extension_settings.quickReply.AutoInputInject === undefined) {
+        extension_settings.quickReply.AutoInputInject = true;
     }
 
     // If the user has an old version of the extension, update it
@@ -85,14 +92,14 @@ async function loadSettings(type) {
 
 function onQuickReplyInput(id) {
     extension_settings.quickReply.quickReplySlots[id - 1].mes = $(`#quickReply${id}Mes`).val();
-    $(`#quickReply${id}`).attr('title', ($(`#quickReply${id}Mes`).val()));
+    $(`#quickReply${id}`).attr('title', String($(`#quickReply${id}Mes`).val()));
     resetScrollHeight($(`#quickReply${id}Mes`));
     saveSettingsDebounced();
 }
 
 function onQuickReplyLabelInput(id) {
     extension_settings.quickReply.quickReplySlots[id - 1].label = $(`#quickReply${id}Label`).val();
-    $(`#quickReply${id}`).text($(`#quickReply${id}Label`).val());
+    $(`#quickReply${id}`).text(String($(`#quickReply${id}Label`).val()));
     saveSettingsDebounced();
 }
 
@@ -132,7 +139,7 @@ async function sendQuickReply(index) {
 
     let newText;
 
-    if (existingText && extension_settings.quickReply.AutoInputInject){
+    if (existingText && extension_settings.quickReply.AutoInputInject) {
         if (extension_settings.quickReply.placeBeforeInputEnabled) {
             newText = `${prompt} ${existingText} `;
         } else {
@@ -148,9 +155,9 @@ async function sendQuickReply(index) {
     $("#send_textarea").val(newText);
 
     // Set the focus back to the textarea
-    $("#send_textarea").focus();
+    $("#send_textarea").trigger('focus');
 
-    // Only trigger send button if quickActionEnabled is not checked or 
+    // Only trigger send button if quickActionEnabled is not checked or
     // the prompt starts with '/'
     if (!extension_settings.quickReply.quickActionEnabled || prompt.startsWith('/')) {
         $("#send_but").trigger('click');
@@ -227,7 +234,7 @@ async function saveQuickReplyPreset() {
         }
         else {
             presets[quickReplyPresetIndex] = quickReplyPreset;
-            $(`#quickReplyPresets option[value="${name}"]`).attr('selected', true);
+            $(`#quickReplyPresets option[value="${name}"]`).prop('selected', true);
         }
         saveSettingsDebounced();
     } else {
@@ -315,7 +322,7 @@ async function applyQuickReplyPreset(name) {
     addQuickReplyBar();
     moduleWorker();
 
-    $(`#quickReplyPresets option[value="${name}"]`).attr('selected', true);
+    $(`#quickReplyPresets option[value="${name}"]`).prop('selected', true);
     console.debug('QR Preset applied: ' + name);
 }
 
@@ -340,7 +347,6 @@ async function doQR(_, text) {
 }
 
 jQuery(async () => {
-
     moduleWorker();
     setInterval(moduleWorker, UPDATE_INTERVAL);
     const settingsHtml = `
@@ -354,19 +360,19 @@ jQuery(async () => {
             <div>
                 <label class="checkbox_label">
                     <input id="quickReplyEnabled" type="checkbox" />
-                        Enable Quick Replies
+                    Enable Quick Replies
                 </label>
                 <label class="checkbox_label">
                     <input id="quickActionEnabled" type="checkbox" />
-                        Disable Send / Insert In User Input
+                    Disable Send / Insert In User Input
                 </label>
                 <label class="checkbox_label marginBot10">
                     <input id="placeBeforeInputEnabled" type="checkbox" />
-                        Place Quick-reply before the Input
+                    Place Quick-reply before the Input
                 </label>
                 <label class="checkbox_label marginBot10">
                     <input id="AutoInputInject" type="checkbox" />
-                        Inject user input automatically (If disabled, use {{input}} macro for manual injection)
+                    Inject user input automatically<br>(If disabled, use {{input}} macro for manual injection)
                 </label>
                 <div class="flex-container flexnowrap wide100p">
                     <select id="quickReplyPresets" name="quickreply-preset">
@@ -389,7 +395,7 @@ jQuery(async () => {
     </div>`;
 
     $('#extensions_settings2').append(settingsHtml);
-    
+
     // Add event handler for quickActionEnabled
     $('#quickActionEnabled').on('input', onQuickActionEnabledInput);
     $('#placeBeforeInputEnabled').on('input', onPlaceBeforeInputEnabledInput);
@@ -403,16 +409,13 @@ jQuery(async () => {
         extension_settings.quickReplyPreset = quickReplyPresetSelected;
         applyQuickReplyPreset(quickReplyPresetSelected);
         saveSettingsDebounced();
-
     });
 
     await loadSettings('init');
     addQuickReplyBar();
-
 });
 
-$(document).ready(() => {
+jQuery(() => {
     registerSlashCommand('qr', doQR, [], '<span class="monospace">(number)</span> – activates the specified Quick Reply', true, true);
     registerSlashCommand('qrset', doQRPresetSwitch, [], '<span class="monospace">(name)</span> – swaps to the specified Quick Reply Preset', true, true);
-
 })
