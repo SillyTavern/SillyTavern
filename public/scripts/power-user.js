@@ -28,7 +28,7 @@ import {
 } from "./instruct-mode.js";
 
 import { registerSlashCommand } from "./slash-commands.js";
-import { tokenizers, getTokenCount } from "./tokenizers.js";
+import { tokenizers } from "./tokenizers.js";
 
 import { countOccurrences, debounce, delay, isOdd, resetScrollHeight, sortMoments, timestampToMoment } from "./utils.js";
 
@@ -1554,21 +1554,6 @@ function doResetPanels() {
     $("#movingUIreset").trigger('click');
 }
 
-function doCount() {
-    // get all of the messages in the chat
-    const messages = $('#chat .mes');
-
-    //concat all the messages into a single string
-    const allMessages = messages.toArray().map(x => $(x).find('.mes_text').text()).join(' ');
-
-    console.log(allMessages);
-
-    //toastr success with the token count of the chat
-    toastr.success(`Token count: ${getTokenCount(allMessages)}`);
-}
-
-
-
 function setAvgBG() {
     const bgimg = new Image();
     bgimg.src = $('#bg1')
@@ -2411,5 +2396,4 @@ $(document).ready(() => {
     registerSlashCommand('cut', doMesCut, [], '<span class="monospace">(number)</span> – cuts the specified message from the chat', true, true);
     registerSlashCommand('resetpanels', doResetPanels, ['resetui'], '– resets UI panels to original state.', true, true);
     registerSlashCommand('bgcol', setAvgBG, [], '– WIP test of auto-bg avg coloring', true, true);
-    registerSlashCommand('count', doCount, [], '– counts the number of tokens in the current chat', true, false);
 });
