@@ -6095,7 +6095,8 @@ function enlargeMessageImage() {
     const imgContainer = $('<div><pre><code></code></pre></div>');
     imgContainer.prepend(img);
     imgContainer.addClass('img_enlarged_container');
-    imgContainer.find('code').text(title);
+    imgContainer.find('code').addClass('txt').text(title);
+    addCopyToCodeBlocks(imgContainer);
     callPopup(imgContainer, 'text', '', { wide: true, large: true });
 }
 
