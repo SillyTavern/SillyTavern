@@ -8104,8 +8104,22 @@ jQuery(async function () {
     $(document).on("click", function (e) {
         // Check if the click was outside the relevant elements
         if (!$(e.target).closest('.extraMesButtons, .extraMesButtonsHint').length) {
-            $('.extraMesButtonsHint').show().css('opacity', .2); // Reset the hint button to its original state
-            $('.extraMesButtons').hide().css('opacity', 0); // Hide the extra buttons and reset their opacity            
+            // Transition out the .extraMesButtons first
+            $('.extraMesButtons').transition({
+                opacity: 0,
+                duration: 150,
+                easing: 'ease-in-out',
+                complete: function () {
+                    $(this).hide(); // Hide the .extraMesButtons after the transition
+
+                    // Transition the .extraMesButtonsHint back in
+                    $('.extraMesButtonsHint').show().transition({
+                        opacity: .2,
+                        duration: 150,
+                        easing: 'ease-in-out'
+                    });
+                }
+            });        
         }
     });
 
