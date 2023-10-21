@@ -1161,9 +1161,13 @@ function loadContextSettings() {
                 const $element = $(`#${control.id}`);
 
                 if (control.isCheckbox) {
-                    $element.prop('checked', power_user.context[control.property]).trigger('input');
+                    $element
+                        .prop('checked', control.isGlobalSetting ? power_user[control.property] : power_user.context[control.property])
+                        .trigger('input');
                 } else {
-                    $element.val(power_user.context[control.property]).trigger('input');
+                    $element
+                        .val(control.isGlobalSetting ? power_user[control.property] : power_user.context[control.property])
+                        .trigger('input');
                 }
             }
         });
