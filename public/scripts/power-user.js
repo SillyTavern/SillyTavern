@@ -258,10 +258,6 @@ const contextControls = [
 
     // Existing power user settings
     { id: "always-force-name2-checkbox", property: "always_force_name2", isCheckbox: true, isGlobalSetting: true },
-    { id: "pin-examples-checkbox", property: "pin_examples", isCheckbox: true, isGlobalSetting: true },
-    { id: "remove-examples-checkbox", property: "strip_examples", isCheckbox: true, isGlobalSetting: true },
-    { id: "collapse-newlines-checkbox", property: "collapse_newlines", isCheckbox: true, isGlobalSetting: true },
-    { id: "trim_spaces", property: "trim_spaces", isCheckbox: true, isGlobalSetting: true },
     { id: "trim_sentences_checkbox", property: "trim_sentences", isCheckbox: true, isGlobalSetting: true },
     { id: "include_newline_checkbox", property: "include_newline", isCheckbox: true, isGlobalSetting: true },
     { id: "custom_stopping_strings", property: "custom_stopping_strings", isCheckbox: false, isGlobalSetting: true },
