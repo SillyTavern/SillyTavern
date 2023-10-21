@@ -15,8 +15,9 @@ const defaultSettings = {
     quickReplyEnabled: false,
     numberOfSlots: 5,
     quickReplySlots: [],
-    placeBeforePromptEnabled: false,
+    placeBeforeInputEnabled: false,
     quickActionEnabled: false,
+    AutoInputInject: true
 }
 
 //method from worldinfo
@@ -77,8 +78,9 @@ async function loadSettings(type) {
 
     $('#quickReplyEnabled').prop('checked', extension_settings.quickReply.quickReplyEnabled);
     $('#quickReplyNumberOfSlots').val(extension_settings.quickReply.numberOfSlots);
-    $('#placeBeforePromptEnabled').prop('checked', extension_settings.quickReply.placeBeforePromptEnabled);
+    $('#placeBeforeInputEnabled').prop('checked', extension_settings.quickReply.placeBeforeInputEnabled);
     $('#quickActionEnabled').prop('checked', extension_settings.quickReply.quickActionEnabled);
+    $('#AutoInputInject').prop('checked', extension_settings.quickReply.AutoInputInject);
 }
 
 function onQuickReplyInput(id) {
@@ -109,8 +111,13 @@ async function onQuickActionEnabledInput() {
     saveSettingsDebounced();
 }
 
-async function onPlaceBeforePromptEnabledInput() {
-    extension_settings.quickReply.placeBeforePromptEnabled = !!$(this).prop('checked');
+async function onPlaceBeforeInputEnabledInput() {
+    extension_settings.quickReply.placeBeforeInputEnabled = !!$(this).prop('checked');
+    saveSettingsDebounced();
+}
+
+async function onAutoInputInject() {
+    extension_settings.quickReply.AutoInputInject = !!$(this).prop('checked');
     saveSettingsDebounced();
 }
 
@@ -125,16 +132,15 @@ async function sendQuickReply(index) {
 
     let newText;
 
-    if (existingText) {
-        // If existing text, add space after prompt
-        if (extension_settings.quickReply.placeBeforePromptEnabled) {
+    if (existingText && extension_settings.quickReply.AutoInputInject){
+        if (extension_settings.quickReply.placeBeforeInputEnabled) {
             newText = `${prompt} ${existingText} `;
         } else {
             newText = `${existingText} ${prompt} `;
         }
     } else {
-        // If no existing text, add prompt only (with a trailing space)
-        newText = prompt + ' ';
+        // If no existing text and placeBeforeInputEnabled false, add prompt only (with a trailing space)
+        newText = `${prompt} `;
     }
 
     newText = substituteParams(newText);
@@ -355,8 +361,12 @@ jQuery(async () => {
                         Disable Send / Insert In User Input
                 </label>
                 <label class="checkbox_label marginBot10">
-                    <input id="placeBeforePromptEnabled" type="checkbox" />
-                        Place Quick-reply before the Prompt
+                    <input id="placeBeforeInputEnabled" type="checkbox" />
+                        Place Quick-reply before the Input
+                </label>
+                <label class="checkbox_label marginBot10">
+                    <input id="AutoInputInject" type="checkbox" />
+                        Inject user input automatically (If disabled, use {{input}} macro for manual injection)
                 </label>
                 <div class="flex-container flexnowrap wide100p">
                     <select id="quickReplyPresets" name="quickreply-preset">
@@ -382,7 +392,8 @@ jQuery(async () => {
     
     // Add event handler for quickActionEnabled
     $('#quickActionEnabled').on('input', onQuickActionEnabledInput);
-    $('#placeBeforePromptEnabled').on('input', onPlaceBeforePromptEnabledInput);
+    $('#placeBeforeInputEnabled').on('input', onPlaceBeforeInputEnabledInput);
+    $('#AutoInputInject').on('input', onAutoInputInject);
     $('#quickReplyEnabled').on('input', onQuickReplyEnabledInput);
     $('#quickReplyNumberOfSlotsApply').on('click', onQuickReplyNumberOfSlotsInput);
     $("#quickReplyPresetSaveButton").on('click', saveQuickReplyPreset);
