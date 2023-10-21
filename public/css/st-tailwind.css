@@ -6,6 +6,12 @@
     color: var(--fullred);
 }
 
+.highlighted {
+    color: black;
+    background-color: yellow;
+    text-shadow: none !important;
+}
+
 .m-t-0 {
     margin-top: 0;
 }
