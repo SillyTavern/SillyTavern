@@ -1,5 +1,5 @@
 import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods, } from "./scripts/RossAscends-mods.js";
-import { userStatsHandler, statMesProcess } from './scripts/stats.js';
+import { userStatsHandler, statMesProcess, initStats } from './scripts/stats.js';
 import {
     generateKoboldWithStreaming,
     kai_settings,
@@ -723,6 +723,7 @@ async function firstLoadInit() {
     initAuthorsNote();
     initPersonas();
     initRossMods();
+    initStats();
 }
 
 function checkOnlineStatus() {
