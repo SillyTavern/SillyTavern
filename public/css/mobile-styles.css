@@ -293,7 +293,7 @@
         display: none;
     }
 
-    #bg_menu_content {
+    .bg_list {
         width: unset;
     }
 }

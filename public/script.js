@@ -1675,7 +1675,7 @@ function substituteParams(content, _name1, _name2, _original, _group) {
     if (typeof _original === 'string') {
         content = content.replace(/{{original}}/i, _original);
     }
-    content = content.replace(/{{input}}/gi, $('#send_textarea').val());
+    content = content.replace(/{{input}}/gi, String($('#send_textarea').val()));
     content = content.replace(/{{user}}/gi, _name1);
     content = content.replace(/{{char}}/gi, _name2);
     content = content.replace(/{{charIfNotGroup}}/gi, _group);
@@ -1686,11 +1686,14 @@ function substituteParams(content, _name1, _name2, _original, _group) {
     content = content.replace(/<CHARIFNOTGROUP>/gi, _group);
     content = content.replace(/<GROUP>/gi, _group);
 
+    content = content.replace(/\{\{\/\/(.*?)\}\}/g, "");
+
     content = content.replace(/{{time}}/gi, moment().format('LT'));
     content = content.replace(/{{date}}/gi, moment().format('LL'));
     content = content.replace(/{{weekday}}/gi, moment().format('dddd'));
     content = content.replace(/{{isotime}}/gi, moment().format('HH:mm'));
     content = content.replace(/{{isodate}}/gi, moment().format('YYYY-MM-DD'));
+
     content = content.replace(/{{datetimeformat +([^}]*)}}/gi, (_, format) => {
         const formattedTime = moment().format(format);
         return formattedTime;
@@ -7719,6 +7722,7 @@ jQuery(async function () {
                 $("#rm_button_selected_ch").children("h2").text('');
                 select_rm_characters();
                 sendSystemMessage(system_message_types.WELCOME);
+                eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
             } else {
                 toastr.info("Please stop the message generation first.");
             }
@@ -8069,6 +8073,33 @@ jQuery(async function () {
             });
         }, 150);
     })
+
+    $(document).on("click", function (e) {
+        // Expanded options don't need to be closed
+        if (power_user.expand_message_actions) {
+            return;
+        }
+
+        // Check if the click was outside the relevant elements
+        if (!$(e.target).closest('.extraMesButtons, .extraMesButtonsHint').length) {
+            // Transition out the .extraMesButtons first
+            $('.extraMesButtons:visible').transition({
+                opacity: 0,
+                duration: 150,
+                easing: 'ease-in-out',
+                complete: function () {
+                    $(this).hide(); // Hide the .extraMesButtons after the transition
+
+                    // Transition the .extraMesButtonsHint back in
+                    $('.extraMesButtonsHint:not(:visible)').show().transition({
+                        opacity: .2,
+                        duration: 150,
+                        easing: 'ease-in-out'
+                    });
+                }
+            });
+        }
+    });
 
     $(document).on("click", ".mes_edit_cancel", function () {
         let text = chat[this_edit_mes_id]["mes"];

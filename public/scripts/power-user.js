@@ -399,6 +399,7 @@ function switchMessageActions() {
     power_user.expand_message_actions = value === null ? false : value == "true";
     $("body").toggleClass("expandMessageActions", power_user.expand_message_actions);
     $("#expandMessageActions").prop("checked", power_user.expand_message_actions);
+    $('.extraMesButtons, .extraMesButtonsHint').removeAttr('style');
 }
 
 function switchUiMode() {

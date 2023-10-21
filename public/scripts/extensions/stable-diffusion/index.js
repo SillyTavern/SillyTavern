@@ -1116,10 +1116,9 @@ async function generatePicture(_, trigger, message, callback) {
             extension_settings.sd.width = Math.round(extension_settings.sd.height * 1.8 / 64) * 64;
         }
         const callbackOriginal = callback;
-        callback = async function (prompt, base64Image) {
-            const imagePath = base64Image;
-            const imgUrl = `url("${encodeURI(base64Image)}")`;
-            eventSource.emit(event_types.FORCE_SET_BACKGROUND, imgUrl);
+        callback = async function (prompt, imagePath) {
+            const imgUrl = `url("${encodeURI(imagePath)}")`;
+            eventSource.emit(event_types.FORCE_SET_BACKGROUND, { url: imgUrl, path: imagePath });
 
             if (typeof callbackOriginal === 'function') {
                 callbackOriginal(prompt, imagePath);
