@@ -1,6 +1,13 @@
 import { characters, getCharacters, handleDeleteCharacter, callPopup } from "../script.js";
+import {CharacterGroupOverlay} from "../../CharacterGroupOverlay.js";
 
 let is_bulk_edit = false;
+
+(new CharacterGroupOverlay()).addLongPressEndCallback(() => {
+    disableBulkSelect();
+    $("#bulkDeleteButton").hide();
+    is_bulk_edit = false;
+});
 
 /**
  * Toggles bulk edit mode on/off when the edit button is clicked.
@@ -10,11 +17,13 @@ function onEditButtonClick() {
     // toggle bulk edit mode
     if (is_bulk_edit) {
         disableBulkSelect();
+        (new CharacterGroupOverlay()).browseState();
         // hide the delete button
         $("#bulkDeleteButton").hide();
         is_bulk_edit = false;
     } else {
         enableBulkSelect();
+        (new CharacterGroupOverlay()).selectState();
         // show the delete button
         $("#bulkDeleteButton").show();
         is_bulk_edit = true;
