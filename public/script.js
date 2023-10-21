@@ -8073,6 +8073,11 @@ jQuery(async function () {
     })
 
     $(document).on("click", function (e) {
+        // Expanded options don't need to be closed
+        if (power_user.expand_message_actions) {
+            return;
+        }
+
         // Check if the click was outside the relevant elements
         if (!$(e.target).closest('.extraMesButtons, .extraMesButtonsHint').length) {
             // Transition out the .extraMesButtons first
