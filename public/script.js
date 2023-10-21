@@ -8101,6 +8101,14 @@ jQuery(async function () {
         }, 150);
     })
 
+    $(document).on("click", function (e) {
+        // Check if the click was outside the relevant elements
+        if (!$(e.target).closest('.extraMesButtons, .extraMesButtonsHint').length) {
+            $('.extraMesButtonsHint').show().css('opacity', .2); // Reset the hint button to its original state
+            $('.extraMesButtons').hide().css('opacity', 0); // Hide the extra buttons and reset their opacity            
+        }
+    });
+
     $(document).on("click", ".mes_edit_cancel", function () {
         let text = chat[this_edit_mes_id]["mes"];
 
