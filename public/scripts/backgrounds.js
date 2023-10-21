@@ -302,7 +302,9 @@ async function onDeleteBackgroundClick(e) {
 const autoBgPrompt = `Pause your roleplay and choose a location ONLY from the provided list that is the most suitable for the current scene. Do not output any other text:\n{0}`;
 
 async function autoBackgroundCommand() {
-    const options = Array.from(document.querySelectorAll('.BGSampleTitle')).map(x => ({ element: x, text: x.innerText.trim() })).filter(x => x.text.length > 0);
+    /** @type {HTMLElement[]} */
+    const bgTitles = Array.from(document.querySelectorAll('#bg_menu_content .BGSampleTitle'));
+    const options = bgTitles.map(x => ({ element: x, text: x.innerText.trim() })).filter(x => x.text.length > 0);
     if (options.length == 0) {
         toastr.warning('No backgrounds to choose from. Please upload some images to the "backgrounds" folder.');
         return;

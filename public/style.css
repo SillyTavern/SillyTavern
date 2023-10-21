@@ -1565,6 +1565,10 @@ input[type=search]:focus::-webkit-search-cancel-button {
     font-size: calc(var(--fontScale) * 0.9em);
 }
 
+.bg_example[custom="true"] .BGSampleTitle {
+    display: none;
+}
+
 .bg_button {
     width: 15px;
     height: 15px;
