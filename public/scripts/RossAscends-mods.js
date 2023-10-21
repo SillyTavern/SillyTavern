@@ -18,6 +18,8 @@ import {
     getThumbnailUrl,
     selectCharacterById,
     eventSource,
+    menu_type,
+    substituteParams,
 } from "../script.js";
 
 import {
@@ -234,7 +236,9 @@ export function RA_CountCharTokens() {
             total_tokens += Number(counter.text());
             permanent_tokens += isPermanent ? Number(counter.text()) : 0;
         } else {
-            const tokens = getTokenCount(value);
+            // We substitute macro for existing characters, but not for the character being created
+            const valueToCount = menu_type === 'create' ? value : substituteParams(value);
+            const tokens = getTokenCount(valueToCount);
             counter.text(tokens);
             total_tokens += tokens;
             permanent_tokens += isPermanent ? tokens : 0;

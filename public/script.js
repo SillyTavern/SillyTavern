@@ -1674,7 +1674,7 @@ function substituteParams(content, _name1, _name2, _original, _group) {
     if (typeof _original === 'string') {
         content = content.replace(/{{original}}/i, _original);
     }
-    content = content.replace(/{{input}}/gi, $('#send_textarea').val());
+    content = content.replace(/{{input}}/gi, String($('#send_textarea').val()));
     content = content.replace(/{{user}}/gi, _name1);
     content = content.replace(/{{char}}/gi, _name2);
     content = content.replace(/{{charIfNotGroup}}/gi, _group);
@@ -1692,7 +1692,7 @@ function substituteParams(content, _name1, _name2, _original, _group) {
     content = content.replace(/{{weekday}}/gi, moment().format('dddd'));
     content = content.replace(/{{isotime}}/gi, moment().format('HH:mm'));
     content = content.replace(/{{isodate}}/gi, moment().format('YYYY-MM-DD'));
-    
+
     content = content.replace(/{{datetimeformat +([^}]*)}}/gi, (_, format) => {
         const formattedTime = moment().format(format);
         return formattedTime;
@@ -8090,7 +8090,7 @@ jQuery(async function () {
                         easing: 'ease-in-out'
                     });
                 }
-            });        
+            });
         }
     });
 
