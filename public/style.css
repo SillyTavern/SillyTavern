@@ -2,6 +2,7 @@
 
 @import url(css/promptmanager.css);
 @import url(css/loader.css);
+@import url(css/character-group-overlay.css);
 
 :root {
     --doc-height: 100%;

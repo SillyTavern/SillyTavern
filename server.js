@@ -57,7 +57,7 @@ const characterCardParser = require('./src/character-card-parser.js');
 const contentManager = require('./src/content-manager');
 const statsHelpers = require('./statsHelpers.js');
 const { readSecret, migrateSecrets, SECRET_KEYS } = require('./src/secrets');
-const { delay, getVersion } = require('./src/util');
+const { delay, getVersion, deepMerge} = require('./src/util');
 const { invalidateThumbnail, ensureThumbnailCache } = require('./src/thumbnails');
 const { getTokenizerModel, getTiktokenTokenizer, loadTokenizers, TEXT_COMPLETION_MODELS } = require('./src/tokenizers');
 const { convertClaudePrompt } = require('./src/chat-completion');
@@ -208,6 +208,7 @@ const AVATAR_HEIGHT = 600;
 const jsonParser = express.json({ limit: '100mb' });
 const urlencodedParser = express.urlencoded({ extended: true, limit: '100mb' });
 const { DIRECTORIES, UPLOADS_PATH, PALM_SAFETY } = require('./src/constants');
+const {TavernCardValidator} = require("./src/validator/TavernCardValidator");
 
 // CSRF Protection //
 if (cliArguments.disableCsrf === false) {
@@ -1164,6 +1165,42 @@ app.post("/editcharacterattribute", jsonParser, async function (request, respons
         await charaWrite(avatarPath, newCharJSON, (request.body.avatar_url).replace('.png', ''), response, 'Character saved');
     } catch (err) {
         console.error('An error occured, character edit invalidated.', err);
+    }
+});
+
+/**
+ * Handle a POST request to edit character properties.
+ *
+ * Merges the request body with the selected character and
+ * validates the result against TavernCard V2 specification.
+ *
+ * @param {Object} request - The HTTP request object.
+ * @param {Object} response - The HTTP response object.
+ *
+ * @returns {void}
+ * */
+app.post("/v2/editcharacterattribute", jsonParser, async function (request, response) {
+    const update = request.body;
+    const avatarPath = path.join(charactersPath, update.avatar);
+
+    try {
+        let character =  JSON.parse(await charaRead(avatarPath));
+        character = deepMerge(character, update);
+
+        const validator = new TavernCardValidator(character);
+        if (validator.validateV2()) {
+            await charaWrite(
+                avatarPath,
+                JSON.stringify(character),
+                (update.avatar).replace('.png', ''),
+                response,
+                'Character saved'
+            );
+        } else {
+            response.status(400).send({message: `Validation failed for card ${character.name}`, field: validator.getValidationError});
+        }
+    } catch (exception) {
+        response.status(500).send({message: 'Unexpected error while saving character.', error: exception.toString()});
     }
 });
 
