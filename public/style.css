@@ -279,6 +279,11 @@ table.responsiveTable {
     font-weight: bold;
 }
 
+.img_enlarged_container {
+    padding: 10px;
+}
+
+.img_enlarged_container pre code,
 .mes_text pre code {
     position: relative;
     display: block;
@@ -3058,7 +3063,6 @@ a {
 .img_enlarged {
     max-width: 100%;
     max-height: 100%;
-    padding: 10px 0;
     border-radius: 2px;
 }
 
