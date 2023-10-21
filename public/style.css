@@ -1506,13 +1506,13 @@ input[type=search]:focus::-webkit-search-cancel-button {
     z-index: 3001;
 }
 
-#bg_menu_content {
+.bg_list {
     display: flex;
     flex-wrap: wrap;
     width: calc(var(--sheldWidth) - 10px);
     max-width: 100vw;
     max-width: 100svw;
-    justify-content: center;
+    justify-content: space-evenly;
 }
 
 .bg_example {
@@ -1529,6 +1529,26 @@ input[type=search]:focus::-webkit-search-cancel-button {
     aspect-ratio: 16/9;
     justify-content: flex-end;
     position: relative;
+}
+
+.bg_example.locked {
+    outline: 2px solid var(--golden);
+}
+
+.bg_example:hover.locked .bg_example_lock {
+    display: none;
+}
+
+.bg_example:hover:not(.locked) .bg_example_unlock {
+    display: none;
+}
+
+.bg_example:hover[custom="true"] .bg_example_edit {
+    display: none;
+}
+
+.bg_example:hover[custom="false"] .bg_example_copy {
+    display: none;
 }
 
 .BGSampleTitle {
@@ -1551,7 +1571,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     position: absolute;
     top: 5px;
     cursor: pointer;
-    opacity: 0.7;
+    opacity: 0.8;
     border-radius: 50%;
     font-size: 20px;
     color: var(--black70a);
@@ -1577,6 +1597,16 @@ input[type=search]:focus::-webkit-search-cancel-button {
 
 .bg_example_edit {
     left: 10px;
+}
+
+.bg_example_copy {
+    left: 10px;
+}
+
+.bg_example_lock,
+.bg_example_unlock {
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 .add_bg_but {

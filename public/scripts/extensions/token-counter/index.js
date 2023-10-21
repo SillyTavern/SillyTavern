@@ -1,6 +1,7 @@
 import { callPopup, main_api } from "../../../script.js";
 import { getContext } from "../../extensions.js";
-import { getTokenizerModel } from "../../tokenizers.js";
+import { registerSlashCommand } from "../../slash-commands.js";
+import { getTokenCount, getTokenizerModel } from "../../tokenizers.js";
 
 async function doTokenCounter() {
     const selectedTokenizer = main_api == 'openai'
@@ -29,6 +30,20 @@ async function doTokenCounter() {
     callPopup(dialog, 'text');
 }
 
+function doCount() {
+    // get all of the messages in the chat
+    const context = getContext();
+    const messages = context.chat.filter(x => x.mes && !x.is_system).map(x => x.mes);
+
+    //concat all the messages into a single string
+    const allMessages = messages.join(' ');
+
+    console.debug('All messages:', allMessages);
+
+    //toastr success with the token count of the chat
+    toastr.success(`Token count: ${getTokenCount(allMessages)}`);
+}
+
 jQuery(() => {
     const buttonHtml = `
         <div id="token_counter" class="list-group-item flex-container flexGap5">
@@ -37,4 +52,5 @@ jQuery(() => {
         </div>`;
     $('#extensionsMenu').prepend(buttonHtml);
     $('#token_counter').on('click', doTokenCounter);
+    registerSlashCommand('count', doCount, [], '– counts the number of tokens in the current chat', true, false);
 });

@@ -3234,16 +3234,33 @@
             <div id="site_logo" class="drawer-toggle drawer-header">
                 <div class="drawer-icon fa-solid fa-panorama  closedIcon"></div>
             </div>
-            <div class="drawer-content closedDrawer">
+            <div id="Backgrounds" class="drawer-content closedDrawer">
                 <div class="flex-container">
-                    <input id="bg-filter" placeholder="Filter" class="text_pole" type="search" />
-                    <div id="bg_menu_content">
+                    <div class="flex-container wide100p">
+                        <input id="bg-filter" placeholder="Filter" class="text_pole flex1" type="search" />
+                        <div id="auto_background" class="menu_button menu_button_icon" title="Automatically select a background based on the chat context.">
+                            <i class="fa-solid fa-wand-magic"></i>
+                            Auto-select
+                        </div>
+                    </div>
+                    <h3 data-i18n="System Backgrounds" class="wide100p textAlignCenter">
+                        System Backgrounds
+                    </h3>
+                    <div id="bg_menu_content" class="bg_list">
                         <form id="form_bg_download" class="bg_example no-border no-shadow" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <label class="input-file">
                                 <input type="file" id="add_bg_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
                                 <div class="bg_example no-border no-shadow add_bg_but" style="background-image: url('/img/addbg3.png');"></div>
                             </label>
                         </form>
+                    </div>
+                    <h3 data-i18n="Chat Backgrounds" class="wide100p textAlignCenter">
+                        Chat Backgrounds
+                    </h3>
+                    <div id="bg_chat_hint" class="wide100p textAlignCenter">
+                        Chat backgrounds generated with the <code><i class="fa-solid fa-paintbrush"></i>&nbsp;Stable Diffusion</code> extension will appear here.
+                    </div>
+                    <div id="bg_custom_content" class="bg_list">
                     </div>
                 </div>
             </div>
@@ -3510,8 +3527,10 @@
                                     <span class="note-link-span">?</span>
                                 </a>
                             </span>
-                            <div class="menu_button open_alternate_greetings" title="Click to set additional greeting messages" data-i18n="[title]Click to set additional greeting messages">
-                                <i class="fa-solid fa-comment-dots"></i>
+                            <div class="menu_button menu_button_icon open_alternate_greetings margin0" title="Click to set additional greeting messages" data-i18n="[title]Click to set additional greeting messages">
+                                <span data-i18n="Alt. Greetings">
+                                    Alt. Greetings
+                                </span>
                             </div>
                         </div>
                         <textarea id="firstmessage_textarea" data-i18n="[placeholder]This will be the first message from the character that starts every chat." placeholder="This will be the first message from the character that starts every chat." class="marginBot5" name="first_mes" placeholder=""></textarea>
@@ -3883,8 +3902,11 @@
 
     <div id="background_template" class="template_element">
         <div class="bg_example flex-container" bgfile="" class="bg_example_img" title="">
-            <div title="Rename background" bgfile="" class="bg_button bg_example_edit fa-solid fa-pencil"></div>
-            <div title="Delete background" bgfile="" class="bg_button bg_example_cross fa-solid fa-circle-xmark"></div>
+            <div title="Copy to system backgrounds" class="bg_button bg_example_copy fa-solid fa-file-arrow-up"></div>
+            <div title="Rename background" class="bg_button bg_example_edit fa-solid fa-pencil"></div>
+            <div title="Lock" class="bg_button bg_example_lock fa-solid fa-lock"></div>
+            <div title="Unlock" class="bg_button bg_example_unlock fa-solid fa-lock-open"></div>
+            <div title="Delete background" class="bg_button bg_example_cross fa-solid fa-circle-xmark"></div>
             <div class="BGSampleTitle">
             </div>
         </div>
