@@ -8081,7 +8081,7 @@ jQuery(async function () {
         // Check if the click was outside the relevant elements
         if (!$(e.target).closest('.extraMesButtons, .extraMesButtonsHint').length) {
             // Transition out the .extraMesButtons first
-            $('.extraMesButtons').transition({
+            $('.extraMesButtons:visible').transition({
                 opacity: 0,
                 duration: 150,
                 easing: 'ease-in-out',
@@ -8089,7 +8089,7 @@ jQuery(async function () {
                     $(this).hide(); // Hide the .extraMesButtons after the transition
 
                     // Transition the .extraMesButtonsHint back in
-                    $('.extraMesButtonsHint').show().transition({
+                    $('.extraMesButtonsHint:not(:visible)').show().transition({
                         opacity: .2,
                         duration: 150,
                         easing: 'ease-in-out'
