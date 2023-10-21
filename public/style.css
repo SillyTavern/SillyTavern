@@ -1171,6 +1171,14 @@ input[type="file"] {
     align-items: center;
 }
 
+.bulk_select_checkbox {
+    align-self: center;
+}
+
+#rm_print_characters_block.bulk_select .wide100pLess70px {
+    width: calc(100% - 85px);
+}
+
 #rm_print_characters_block {
     overflow-y: auto;
     flex-grow: 1;
