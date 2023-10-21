@@ -713,7 +713,7 @@ app.post("/getchat", jsonParser, function (request, response) {
         const lines = data.split('\n');
 
         // Iterate through the array of strings and parse each line as JSON
-        const jsonData = lines.map((l) => { try { return JSON.parse(l); } catch (_) { }}).filter(x => x);
+        const jsonData = lines.map((l) => { try { return JSON.parse(l); } catch (_) { } }).filter(x => x);
         return response.send(jsonData);
     } catch (error) {
         console.error(error);
@@ -1825,37 +1825,27 @@ function getImages(path) {
         .sort(Intl.Collator().compare);
 }
 
-app.post("/getallchatsofcharacter", jsonParser, function (request, response) {
+app.post("/getallchatsofcharacter", jsonParser, async function (request, response) {
     if (!request.body) return response.sendStatus(400);
 
-    var char_dir = (request.body.avatar_url).replace('.png', '')
-    fs.readdir(chatsPath + char_dir, async (err, files) => {
-        if (err) {
-            console.log('found error in history loading');
-            console.error(err);
-            response.send({ error: true });
-            return;
-        }
+    const characterDirectory = (request.body.avatar_url).replace('.png', '');
 
-        // filter for JSON files
+    try {
+        const chatsDirectory = path.join(chatsPath, characterDirectory);
+        const files = fs.readdirSync(chatsDirectory);
         const jsonFiles = files.filter(file => path.extname(file) === '.jsonl');
 
-        // sort the files by name
-        //jsonFiles.sort().reverse();
-        // print the sorted file names
-        let ii = jsonFiles.length; //this is the number of files belonging to the character
-        if (ii === 0) {
+        if (jsonFiles.length === 0) {
             response.send({ error: true });
             return;
         }
 
         const jsonFilesPromise = jsonFiles.map((file) => {
             return new Promise(async (res) => {
-                const fileStream = fs.createReadStream(chatsPath + char_dir + '/' + file);
-
-                const fullPathAndFile = chatsPath + char_dir + '/' + file
-                const stats = fs.statSync(fullPathAndFile);
-                const fileSizeInKB = (stats.size / 1024).toFixed(2) + "kb";
+                const pathToFile = path.join(chatsPath, characterDirectory, file);
+                const fileStream = fs.createReadStream(pathToFile);
+                const stats = fs.statSync(pathToFile);
+                const fileSizeInKB = `${(stats.size / 1024).toFixed(2)}kb`;
 
                 const rl = readline.createInterface({
                     input: fileStream,
@@ -1872,29 +1862,19 @@ app.post("/getallchatsofcharacter", jsonParser, function (request, response) {
                     rl.close();
 
                     if (lastLine) {
-                        let jsonData = tryParse(lastLine);
-                        if (
-                            jsonData &&
-                            (jsonData.name !== undefined ||
-                                jsonData.character_name !== undefined)
-                        ) {
+                        const jsonData = tryParse(lastLine);
+                        if (jsonData && (jsonData.name || jsonData.character_name)) {
                             const chatData = {};
 
                             chatData['file_name'] = file;
                             chatData['file_size'] = fileSizeInKB;
                             chatData['chat_items'] = itemCounter - 1;
-                            chatData['mes'] =
-                                jsonData['mes'] || '[The chat is empty]';
-                            chatData['last_mes'] =
-                                jsonData['send_date'] || Date.now();
+                            chatData['mes'] = jsonData['mes'] || '[The chat is empty]';
+                            chatData['last_mes'] = jsonData['send_date'] || Date.now();
 
                             res(chatData);
                         } else {
-                            console.log(
-                                'Found an invalid or corrupted chat file: ' +
-                                    fullPathAndFile
-                            );
-
+                            console.log('Found an invalid or corrupted chat file:', pathToFile);
                             res({});
                         }
                     }
@@ -1903,9 +1883,13 @@ app.post("/getallchatsofcharacter", jsonParser, function (request, response) {
         });
 
         const chatData = await Promise.all(jsonFilesPromise);
+        const validFiles = chatData.filter(i => i.file_name);
 
-        response.send(chatData);
-    })
+        return response.send(validFiles);
+    } catch (error) {
+        console.log(error);
+        return response.send({ error: true });
+    }
 });
 
 function getPngName(file) {
