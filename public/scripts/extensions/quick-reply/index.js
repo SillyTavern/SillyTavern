@@ -287,8 +287,8 @@ function generateQuickReplyElements() {
     for (let i = 1; i <= extension_settings.quickReply.numberOfSlots; i++) {
         quickReplyHtml += `
         <div class="flex-container alignitemsflexstart">
-            <input class="text_pole wide30p" id="quickReply${i}Label" placeholder="(Add a button label)">
-            <textarea id="quickReply${i}Mes" placeholder="(custom message here)" class="text_pole widthUnset flex1" rows="2"></textarea>
+            <input class="text_pole wide30p" id="quickReply${i}Label" placeholder="(Button label)">
+            <textarea id="quickReply${i}Mes" placeholder="(Custom message or /command)" class="text_pole widthUnset flex1" rows="2"></textarea>
         </div>
         `;
     }
@@ -374,10 +374,14 @@ jQuery(async () => {
                     <input id="AutoInputInject" type="checkbox" />
                     Inject user input automatically<br>(If disabled, use {{input}} macro for manual injection)
                 </label>
+                <label for="quickReplyPresets">Quick Reply presets:</label>
                 <div class="flex-container flexnowrap wide100p">
-                    <select id="quickReplyPresets" name="quickreply-preset">
+                    <select id="quickReplyPresets" name="quickreply-preset" class="flex1 text_pole">
                     </select>
-                    <i id="quickReplyPresetSaveButton" class="fa-solid fa-save"></i>
+                    <div id="quickReplyPresetSaveButton" class="menu_button menu_button_icon">
+                        <div class="fa-solid fa-save"></div>
+                        <span>Save</span>
+                    </div>
                 </div>
                 <label for="quickReplyNumberOfSlots">Number of slots:</label>
             </div>
