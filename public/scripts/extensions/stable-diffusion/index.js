@@ -121,6 +121,17 @@ const helpString = [
     example: '/sd apple tree' would generate a picture of an apple tree.`,
 ].join('<br>');
 
+const defaultPrefix = 'best quality, absurdres, masterpiece,';
+const defaultNegative = 'lowres, bad anatomy, bad hands, text, error, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry';
+
+const defaultStyles = [
+    {
+        name: 'Default',
+        negative: defaultNegative,
+        prefix: defaultPrefix,
+    },
+];
+
 const defaultSettings = {
     source: sources.extras,
 
@@ -143,8 +154,8 @@ const defaultSettings = {
     width: 512,
     height: 512,
 
-    prompt_prefix: 'best quality, absurdres, masterpiece,',
-    negative_prompt: 'lowres, bad anatomy, bad hands, text, error, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry',
+    prompt_prefix: defaultPrefix,
+    negative_prompt: defaultNegative,
     sampler: 'DDIM',
     model: '',
 
@@ -191,6 +202,9 @@ const defaultSettings = {
     novel_upscale_ratio_step: 0.1,
     novel_upscale_ratio: 1.0,
     novel_anlas_guard: false,
+
+    style: 'Default',
+    styles: defaultStyles,
 }
 
 function getSdRequestBody() {
@@ -239,6 +253,10 @@ async function loadSettings() {
         extension_settings.sd.character_prompts = {};
     }
 
+    if (!Array.isArray(extension_settings.sd.styles)) {
+        extension_settings.sd.styles = defaultStyles;
+    }
+
     $('#sd_source').val(extension_settings.sd.source);
     $('#sd_scale').val(extension_settings.sd.scale).trigger('input');
     $('#sd_steps').val(extension_settings.sd.steps).trigger('input');
@@ -263,6 +281,14 @@ async function loadSettings() {
     $('#sd_auto_auth').val(extension_settings.sd.auto_auth);
     $('#sd_vlad_url').val(extension_settings.sd.vlad_url);
     $('#sd_vlad_auth').val(extension_settings.sd.vlad_auth);
+
+    for (const style of extension_settings.sd.styles) {
+        const option = document.createElement('option');
+        option.value = style.name;
+        option.text = style.name;
+        option.selected = style.name === extension_settings.sd.style;
+        $('#sd_style').append(option);
+    }
 
     toggleSourceControls();
     addPromptTemplates();
@@ -300,6 +326,58 @@ function addPromptTemplates() {
         $('#sd_prompt_templates').append(container);
         $('#sd_prompt_templates').append(textarea);
     }
+}
+
+function onStyleSelect() {
+    const selectedStyle = String($('#sd_style').find(':selected').val());
+    const styleObject = extension_settings.sd.styles.find(x => x.name === selectedStyle);
+
+    if (!styleObject) {
+        console.warn(`Could not find style object for ${selectedStyle}`);
+        return;
+    }
+
+    $('#sd_prompt_prefix').val(styleObject.prefix).trigger('input');
+    $('#sd_negative_prompt').val(styleObject.negative).trigger('input');
+    extension_settings.sd.style = selectedStyle;
+    saveSettingsDebounced();
+}
+
+async function onSaveStyleClick() {
+    const userInput = await callPopup('Enter style name:', 'input', '', { okButton: 'Save' });
+
+    if (!userInput) {
+        return;
+    }
+
+    const name = String(userInput).trim();
+    const prefix = String($('#sd_prompt_prefix').val());
+    const negative = String($('#sd_negative_prompt').val());
+
+    const existingStyle = extension_settings.sd.styles.find(x => x.name === name);
+
+    if (existingStyle) {
+        existingStyle.prefix = prefix;
+        existingStyle.negative = negative;
+        $('#sd_style').val(name);
+        saveSettingsDebounced();
+        return;
+    }
+
+    const styleObject = {
+        name: name,
+        prefix: prefix,
+        negative: negative,
+    };
+
+    extension_settings.sd.styles.push(styleObject);
+    const option = document.createElement('option');
+    option.value = styleObject.name;
+    option.text = styleObject.name;
+    option.selected = true;
+    $('#sd_style').append(option);
+    $('#sd_style').val(styleObject.name);
+    saveSettingsDebounced();
 }
 
 async function expandPrompt(prompt) {
@@ -377,7 +455,14 @@ function getCharacterPrefix() {
     return '';
 }
 
-function combinePrefixes(str1, str2) {
+/**
+ * Combines two prompt prefixes into one.
+ * @param {string} str1 Base string
+ * @param {string} str2 Secondary string
+ * @param {string} macro Macro to replace with the secondary string
+ * @returns {string} Combined string with a comma between them
+ */
+function combinePrefixes(str1, str2, macro = '') {
     if (!str2) {
         return str1;
     }
@@ -386,9 +471,8 @@ function combinePrefixes(str1, str2) {
     str1 = str1.trim().replace(/^,|,$/g, '');
     str2 = str2.trim().replace(/^,|,$/g, '');
 
-    // Combine the strings with a comma between them
-    var result = `${str1}, ${str2},`;
-
+    // Combine the strings with a comma between them)
+    const result = macro && str1.includes(macro) ? str1.replace(macro, str2) : `${str1}, ${str2},`;
     return result;
 }
 
@@ -1171,7 +1255,7 @@ async function getPrompt(generationType, message, trigger, quiet_prompt) {
 }
 
 async function generatePrompt(quiet_prompt) {
-    const reply = await generateQuietPrompt(quiet_prompt, false);
+    const reply = await generateQuietPrompt(quiet_prompt, false, false);
     return processReply(reply);
 }
 
@@ -1180,7 +1264,7 @@ async function sendGenerationRequest(generationType, prompt, characterName = nul
         ? combinePrefixes(extension_settings.sd.prompt_prefix, getCharacterPrefix())
         : extension_settings.sd.prompt_prefix;
 
-    const prefixedPrompt = combinePrefixes(prefix, prompt);
+    const prefixedPrompt = combinePrefixes(prefix, prompt, '{prompt}');
 
     let result = { format: '', data: '' };
     const currentChatId = getCurrentChatId();
@@ -1646,6 +1730,8 @@ jQuery(async () => {
     $('#sd_novel_anlas_guard').on('input', onNovelAnlasGuardInput);
     $('#sd_novel_view_anlas').on('click', onViewAnlasClick);
     $('#sd_expand').on('input', onExpandInput);
+    $('#sd_style').on('change', onStyleSelect);
+    $('#sd_save_style').on('click', onSaveStyleClick);
     $('#sd_character_prompt_block').hide();
 
     $('.sd_settings .inline-drawer-toggle').on('click', function () {
