@@ -1801,10 +1801,10 @@ function registerVariable(varname, vartext) {
     extension_settings.variables_extension.tmp_vars[sanitizedName] = vartext;
     if (extension_settings.variables_extension.saved_vars[varname] !== undefined){
         extension_settings.variables_extension.saved_vars[varname] = extension_settings.variables_extension.tmp_vars[varname];
-        console.debug(VAR_LOG_PREFIX("registerVariable"), sanitizedName+" is saved, saved variable was updated in saved_vars");
+        console.debug(VAR_LOG_PREFIX("registerVariable"), `${sanitizedName} is saved, saved variable was updated in saved_vars`);
     }
     saveSettingsDebounced();
-    console.debug(VAR_LOG_PREFIX("registerVariable"), sanitizedName+" variable was registered into tmp_vars");
+    console.debug(VAR_LOG_PREFIX("registerVariable"), `${sanitizedName} variable was registered into tmp_vars`);
 }
 
 function getVariable(_, variable) {
@@ -1812,10 +1812,10 @@ function getVariable(_, variable) {
     const foundVariable = substituteParams(extension_settings.variables_extension.tmp_vars[sanitizedVariable]);
     
     if (foundVariable !== undefined) {
-        console.debug(VAR_LOG_PREFIX("getVariable"), sanitizedVariable+" variable was found");
+        console.debug(VAR_LOG_PREFIX("getVariable"), `${sanitizedVariable} variable was found`);
         return foundVariable;
     } else {
-        console.debug(VAR_LOG_PREFIX("getVariable"), sanitizedVariable+" variable not found");
+        console.debug(VAR_LOG_PREFIX("getVariable"), `${sanitizedVariable} variable not found`);
         return "";
     }
 }

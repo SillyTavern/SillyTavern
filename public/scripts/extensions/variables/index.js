@@ -39,7 +39,7 @@ function loadSettings() {
     }
     saveSettingsDebounced();
     
-    console.debug(VAR_LOG_PREFIX("loadSettings"), "Loaded saved variables: " + JSON.stringify(extension_settings.variables_extension.saved_vars));
+    console.debug(VAR_LOG_PREFIX("loadSettings"), `Loaded saved variables: ${JSON.stringify(extension_settings.variables_extension.saved_vars)}`);
 }
 
 function updateVariables(){
@@ -68,10 +68,10 @@ function registerVariable(name, variable_text) {
     extension_settings.variables_extension.tmp_vars[sanitizedName] = variable_text;
     if (extension_settings.variables_extension.saved_vars[name] !== undefined){
         saveVariable(name);
-        console.debug(VAR_LOG_PREFIX("registerVariable"), sanitizedName+" is saved, saved variable was updated in saved_vars");
+        console.debug(VAR_LOG_PREFIX("registerVariable"), `${sanitizedName} is saved, saved variable was updated in saved_vars`);
     }
     saveSettingsDebounced();
-    console.debug(VAR_LOG_PREFIX("registerVariable"), sanitizedName+" variable was registered into tmp_vars");
+    console.debug(VAR_LOG_PREFIX("registerVariable"), `${sanitizedName} variable was registered into tmp_vars`);
 }
 
 function parseVariableCommand(text) {
@@ -102,7 +102,7 @@ async function setVariable(_, text) {
     updateVariables();
     var [varname, vartext] = parseVariableCommand(text);
     registerVariable(varname, vartext);
-    console.debug(VAR_LOG_PREFIX("setVariable"), varname+" variable was registered into tmp_vars, with text: " + vartext);
+    console.debug(VAR_LOG_PREFIX("setVariable"), `${varname} variable was registered into tmp_vars, with text: ${vartext}`);
 }
 
 registerSlashCommand("savevar", (_, text) => saveVariable(text), ["var.sa"], ` – Saves a variable to file.`, true, true);
@@ -110,7 +110,7 @@ async function saveVariable(name){
     updateVariables();
     extension_settings.variables_extension.saved_vars[name] = extension_settings.variables_extension.tmp_vars[name];
     saveSettingsDebounced();
-    console.debug(VAR_LOG_PREFIX("saveVariable"), name+" variable was registered into saved_vars");
+    console.debug(VAR_LOG_PREFIX("saveVariable"), `${name} variable was registered into saved_vars`);
 }
 
 registerSlashCommand("clonevar", (_, text) => cloneVariable(text), ["var.cl"], ` – Clones/Duplicates a variable.`, true, true);
@@ -118,7 +118,7 @@ async function cloneVariable(nameraw){
     updateVariables();
     if(extension_settings.variables_extension.tmp_vars[nameraw] === undefined){
         toastr.warning(`${nameraw} does not exist`);
-        console.debug(VAR_LOG_PREFIX("cloneVariable"), nameraw+" variable could not be cloned");
+        console.debug(VAR_LOG_PREFIX("cloneVariable"), `${nameraw} variable could not be cloned`);
         return;
     }
     const appendUniqueKey = (obj, nameraw) => {
@@ -131,20 +131,20 @@ async function cloneVariable(nameraw){
     const name = appendUniqueKey(extension_settings.variables_extension.tmp_vars, nameraw);
     extension_settings.variables_extension.tmp_vars[name] = extension_settings.variables_extension.tmp_vars[nameraw];
     saveSettingsDebounced();
-    console.debug(VAR_LOG_PREFIX("cloneVariable"), name+" variable was cloned with name "+nameraw);
+    console.debug(VAR_LOG_PREFIX("cloneVariable"), `${name} variable was cloned with name ${nameraw}`);
 }
 
 registerSlashCommand("deletevar", (_, text) => deleteVariable(text), ["var.d"], ` – Deletes a variable from file and tmp.`, true, true);
 async function deleteVariable(name) {
     if(extension_settings.variables_extension.tmp_vars[name] === undefined || extension_settings.variables_extension.saved_vars[name] === undefined ){
         toastr.warning(`${name} does not exist`);
-        console.debug(VAR_LOG_PREFIX("deleteVariable"), name+" variable could not be deleted");
+        console.debug(VAR_LOG_PREFIX("deleteVariable"), `${name} variable could not be deleted`);
         return;
     }
     delete extension_settings.variables_extension.tmp_vars[name];
     delete extension_settings.variables_extension.saved_vars[name];
     saveSettingsDebounced();
-    console.debug(VAR_LOG_PREFIX("deleteVariable"), name+" variable was deleted from tmp_vars and saved_vars");
+    console.debug(VAR_LOG_PREFIX("deleteVariable"), `${name} variable was deleted from tmp_vars and saved_vars`);
 }
 
 registerSlashCommand("listvars", (_, text) => listVariables(), ["var.l"], ` – lists all currently saved variables.`, true, true);
@@ -191,7 +191,7 @@ function gen_raw_command(text) {
             //toastr.info('Done generating!');
         })
         .catch((error) => {
-            toastr.error('An error occurred: ', error);
+            toastr.error(`An error occurred: ${error}`);
         });
 }
 
