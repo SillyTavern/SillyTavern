@@ -749,10 +749,6 @@ class VoiceMapEntry {
  *
  */
 export async function initVoiceMap(){
-    // Clear existing voiceMap state
-    $('#tts_voicemap_block').empty()
-    voiceMapEntries = []
-
     // Gate initialization if not enabled or TTS Provider not ready. Prevents error popups.
     const enabled = $('#tts_enabled').is(':checked')
     if (!enabled){
@@ -770,6 +766,10 @@ export async function initVoiceMap(){
 
     setTtsStatus("TTS Provider Loaded", true)
 
+    // Clear existing voiceMap state
+    $('#tts_voicemap_block').empty()
+    voiceMapEntries = []
+    
     // Get characters in current chat
     const characters = getCharacters()
 
