@@ -1498,6 +1498,8 @@ function setExpressionOverrideHtml(forceClear = false) {
         if (isVisualNovelMode()) {
             $('#visual-novel-wrapper').empty();
         }
+
+        updateFunction();
     });
     eventSource.on(event_types.MOVABLE_PANELS_RESET, updateVisualNovelModeDebounced);
     eventSource.on(event_types.GROUP_UPDATED, updateVisualNovelModeDebounced);
