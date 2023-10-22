@@ -17,6 +17,8 @@ class State {
 
 class CharacterGroupOverlay {
     static containerId = 'rm_print_characters_block';
+    static contextMenuClass = 'character_context_menu';
+    static characterClass = 'character_select';
     static selectModeClass = 'group_overlay_mode_select';
     static selectedClass = 'character_selected';
 
@@ -79,12 +81,12 @@ class CharacterGroupOverlay {
      */
     onPageLoad = () => {
         let touchState = false;
-        const grid = document.getElementById('rm_print_characters_block');
+        const grid = document.getElementById(CharacterGroupOverlay.containerId);
 
         const sortable = new Sortable(grid, {
             group: 'shared',
             animation: 150,
-            sort:false,
+            sort: false,
             handle: '.character_select',
             onEnd: (evt) => {
                 if (evt.from !== evt.to) {
@@ -93,16 +95,34 @@ class CharacterGroupOverlay {
             }
         });
 
-        const elements = [...document.getElementsByClassName('character_select')];
+        const elements = [...document.getElementsByClassName(CharacterGroupOverlay.characterClass)];
 
         elements.forEach(element => element.addEventListener('touchstart', this.handleHold));
         elements.forEach(element => element.addEventListener('mousedown', this.handleHold));
 
-        elements.forEach(element => element.addEventListener('touchend', this._handleLongPressEnd));
-        elements.forEach(element => element.addEventListener('mouseup', this._handleLongPressEnd));
-        elements.forEach(element => element.addEventListener('dragend', this._handleLongPressEnd));
+        elements.forEach(element => element.addEventListener('touchend', this.handleLongPressEnd));
+        elements.forEach(element => element.addEventListener('mouseup', this.handleLongPressEnd));
+        elements.forEach(element => element.addEventListener('dragend', this.handleLongPressEnd));
 
         grid.addEventListener('click', this.handleCancelClick);
+    }
+
+    /**
+     * Block the browsers native context menu and
+     * set a click event to hide the custom context menu.
+     */
+    enableContextMenu = () => {
+        document.addEventListener('contextmenu', this.handleContextMenuShow);
+        document.addEventListener('click', this.handleContextMenuHide);
+    }
+
+    /**
+     * Remove event listeners, allowing the native browser context
+     * menu to be opened.
+     */
+    disableContextMenu = () => {
+        document.removeEventListener('contextmenu', this.handleContextMenuShow);
+        document.removeEventListener('click', this.handleContextMenuHide);
     }
 
     handleHold = (event) => {
@@ -114,7 +134,7 @@ class CharacterGroupOverlay {
         }, 3000);
     }
 
-    _handleLongPressEnd = () => {
+    handleLongPressEnd = () => {
         this.isLongPress = false;
     }
 
@@ -126,16 +146,17 @@ class CharacterGroupOverlay {
         switch (this.state) {
             case State.browse:
                 this.container.classList.remove(CharacterGroupOverlay.selectModeClass);
-                [...this.container.getElementsByClassName('character_select')]
+                [...this.container.getElementsByClassName(CharacterGroupOverlay.characterClass)]
                     .forEach(element => element.removeEventListener('click', this.toggleCharacterSelected));
                 this.longPressEndCallbacks.forEach(callback => callback());
                 this.clearSelectedCharacters();
+                this.disableContextMenu();
                 break;
             case State.select:
                 this.container.classList.add(CharacterGroupOverlay.selectModeClass);
-                [...this.container.getElementsByClassName('character_select')]
+                [...this.container.getElementsByClassName(CharacterGroupOverlay.characterClass)]
                     .forEach(element => element.addEventListener('click', this.toggleCharacterSelected));
-                this.clearSelectedCharacters();
+                this.enableContextMenu();
         }
     }
 
@@ -154,7 +175,23 @@ class CharacterGroupOverlay {
             character.classList.add(CharacterGroupOverlay.selectedClass);
             this.selectCharacter(characterId);
         }
+    }
 
+    handleContextMenuShow = (event) => {
+        event.preventDefault();
+        document.getElementById(CharacterGroupOverlay.containerId).style.pointerEvents = 'none';
+        let contextMenu = document.getElementById(CharacterGroupOverlay.contextMenuClass);
+        contextMenu.style.top = `${event.clientY}px`;
+        contextMenu.style.left = `${event.clientX}px`;
+        contextMenu.classList.remove('hidden');
+    }
+
+    handleContextMenuHide = (event) => {
+        document.getElementById(CharacterGroupOverlay.containerId).style.pointerEvents = '';
+        let contextMenu = document.getElementById(CharacterGroupOverlay.contextMenuClass);
+        if (false === contextMenu.contains(event.target)) {
+            contextMenu.classList.add('hidden');
+        }
     }
 
     addLongPressEndCallback = callback => this.longPressEndCallbacks.push(callback);
@@ -164,7 +201,7 @@ class CharacterGroupOverlay {
     dismissCharacter = characterId => this.#selectedCharacters = this.selectedCharacters.filter(item => String(characterId) !== item);
 
     clearSelectedCharacters = () => {
-        this.selectedCharacters.forEach(characterId => document.querySelector('.character_select[chid="'+characterId+'"]')?.classList.remove(CharacterGroupOverlay.selectedClass))
+        this.selectedCharacters.forEach(characterId => document.querySelector('.character_select[chid="' + characterId + '"]')?.classList.remove(CharacterGroupOverlay.selectedClass))
         this.selectedCharacters.length = 0;
     }
 }

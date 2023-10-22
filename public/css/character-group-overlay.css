@@ -11,3 +11,34 @@
     visibility: hidden;
     height: 0 !important;
 }
+
+#character_context_menu.hidden { display: none; }
+#character_context_menu {
+    position: absolute;
+    padding: 3px;
+    z-index: 10000;
+    background-color: var(--SmartThemeUserMesBlurTintColor);
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 10px;
+}
+
+#character_context_menu ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+#character_context_menu li {
+    padding: 10px;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+#character_context_menu .character_context_menu_separator {
+    height: 1px;
+    background-color: var(--SmartThemeBotMesBlurTintColor);
+}
+
+#character_context_menu li:hover {
+    background-color: var(--SmartThemeBotMesBlurTintColor);
+}
