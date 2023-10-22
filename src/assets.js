@@ -66,6 +66,26 @@ function registerEndpoints(app, jsonParser) {
                 for (const folder of folders) {
                     if (folder == "temp")
                         continue;
+
+                    // Live2d assets
+                    if (folder == "live2d") {
+                        output[folder] = [];
+                        const live2d_folders = fs.readdirSync(path.join(folderPath, folder));
+                        for (let model_folder of live2d_folders) {
+                            const live2d_model_path = path.join(folderPath, folder, model_folder);
+                            if (fs.statSync(live2d_model_path).isDirectory()) {
+                                for (let file of fs.readdirSync(live2d_model_path)) {
+                                    if (file.includes("model")) {
+                                        //console.debug("Asset live2d model found:",file)
+                                        output[folder].push([`${model_folder}`,path.join("assets", folder, model_folder, file)]);
+                                    }
+                                }
+                            }
+                        }
+                        continue;
+                    }
+
+                    // Other assets (bgm/ambient/blip)
                     const files = fs.readdirSync(path.join(folderPath, folder))
                         .filter(filename => {
                             return filename != ".placeholder";
@@ -235,7 +255,7 @@ function registerEndpoints(app, jsonParser) {
                         const live2dModelPath = path.join(folderPath, modelFolder);
                         if (fs.statSync(live2dModelPath).isDirectory()) {
                             for (let file of fs.readdirSync(live2dModelPath)) {
-                                console.debug(file)
+                                //console.debug("Character live2d model found:", file)
                                 if (file.includes("model"))
                                     output.push([`${modelFolder}`,`/characters/${name}/${category}/${modelFolder}/${file}`]);
                             }
