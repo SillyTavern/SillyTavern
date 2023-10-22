@@ -1082,16 +1082,20 @@ async function loadNovelModels() {
 
     return [
         {
+            value: 'nai-diffusion-2',
+            text: 'NAI Diffusion Anime V2',
+        },
+        {
             value: 'nai-diffusion',
-            text: 'Full',
+            text: 'NAI Diffusion Anime V1 (Full)',
         },
         {
             value: 'safe-diffusion',
-            text: 'Safe',
+            text: 'NAI Diffusion Anime V1 (Curated)',
         },
         {
             value: 'nai-diffusion-furry',
-            text: 'Furry',
+            text: 'NAI Diffusion Furry',
         },
     ];
 }
