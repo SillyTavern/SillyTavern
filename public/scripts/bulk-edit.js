@@ -1,4 +1,4 @@
-import { characters, getCharacters, handleDeleteCharacter, callPopup } from "../../../script.js";
+import { characters, getCharacters, handleDeleteCharacter, callPopup } from "../script.js";
 
 let is_bulk_edit = false;
 
@@ -65,23 +65,6 @@ async function onDeleteButtonClick() {
 }
 
 /**
- * Adds the bulk edit and delete buttons to the UI.
- */
-function addButtons() {
-    const editButton = $(
-        "<i id='bulkEditButton' class='fa-solid fa-edit menu_button bulkEditButton' title='Bulk edit characters'></i>"
-    );
-    const deleteButton = $(
-        "<i id='bulkDeleteButton' class='fa-solid fa-trash menu_button bulkDeleteButton' title='Bulk delete characters' style='display: none;'></i>"
-    );
-
-    $("#charListGridToggle").after(editButton, deleteButton);
-
-    $("#bulkEditButton").on("click", onEditButtonClick);
-    $("#bulkDeleteButton").on("click", onDeleteButtonClick);
-}
-
-/**
  * Enables bulk selection by adding a checkbox next to each character.
  */
 function enableBulkSelect() {
@@ -111,7 +94,7 @@ function disableBulkSelect() {
 /**
  * Entry point that runs on page load.
  */
-jQuery(async () => {
-    addButtons();
-    // loadSettings();
+jQuery(() => {
+    $("#bulkEditButton").on("click", onEditButtonClick);
+    $("#bulkDeleteButton").on("click", onDeleteButtonClick);
 });

@@ -41,6 +41,7 @@ export {
     fixMarkdown,
     power_user,
     send_on_enter_options,
+    getContextSettings,
 };
 
 export const MAX_CONTEXT_DEFAULT = 4096;
@@ -131,7 +132,6 @@ let power_user = {
 
     custom_css: '',
 
-
     waifuMode: false,
     movingUI: false,
     movingUIState: {},
@@ -139,7 +139,7 @@ let power_user = {
     noShadows: false,
     theme: 'Default (Dark) 1.7.1',
 
-
+    gestures: true,
     auto_swipe: false,
     auto_swipe_minimum_length: 0,
     auto_swipe_blacklist: [],
@@ -248,6 +248,20 @@ const storage_keys = {
     message_token_count_enabled: 'MessageTokenCountEnabled',
     expand_message_actions: 'ExpandMessageActions',
 };
+
+const contextControls = [
+    // Power user context scoped settings
+    { id: "context_story_string", property: "story_string", isCheckbox: false, isGlobalSetting: false },
+    { id: "context_example_separator", property: "example_separator", isCheckbox: false, isGlobalSetting: false },
+    { id: "context_chat_start", property: "chat_start", isCheckbox: false, isGlobalSetting: false },
+
+    // Existing power user settings
+    { id: "always-force-name2-checkbox", property: "always_force_name2", isCheckbox: true, isGlobalSetting: true },
+    { id: "trim_sentences_checkbox", property: "trim_sentences", isCheckbox: true, isGlobalSetting: true },
+    { id: "include_newline_checkbox", property: "include_newline", isCheckbox: true, isGlobalSetting: true },
+    { id: "custom_stopping_strings", property: "custom_stopping_strings", isCheckbox: false, isGlobalSetting: true },
+    { id: "custom_stopping_strings_macro", property: "custom_stopping_strings_macro", isCheckbox: true, isGlobalSetting: true }
+];
 
 let browser_has_focus = true;
 const debug_functions = [];
@@ -877,7 +891,6 @@ function loadPowerUserSettings(settings, data) {
     const timestamps = localStorage.getItem(storage_keys.timestamps_enabled);
     const mesIDDisplay = localStorage.getItem(storage_keys.mesIDDisplay_enabled);
     const expandMessageActions = localStorage.getItem(storage_keys.expand_message_actions);
-    console.log(expandMessageActions)
     power_user.fast_ui_mode = fastUi === null ? true : fastUi == "true";
     power_user.movingUI = movingUI === null ? false : movingUI == "true";
     power_user.noShadows = noShadows === null ? false : noShadows == "true";
@@ -886,7 +899,6 @@ function loadPowerUserSettings(settings, data) {
     power_user.timestamps_enabled = timestamps === null ? true : timestamps == "true";
     power_user.mesIDDisplay_enabled = mesIDDisplay === null ? true : mesIDDisplay == "true";
     power_user.expand_message_actions = expandMessageActions === null ? true : expandMessageActions == "true";
-    console.log(power_user.expand_message_actions)
     power_user.avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? avatar_styles.ROUND);
     //power_user.chat_display = Number(localStorage.getItem(storage_keys.chat_display) ?? chat_styles.DEFAULT);
     power_user.chat_width = Number(localStorage.getItem(storage_keys.chat_width) ?? 50);
@@ -915,6 +927,7 @@ function loadPowerUserSettings(settings, data) {
     $('#continue_on_send').prop("checked", power_user.continue_on_send);
     $('#quick_continue').prop("checked", power_user.quick_continue);
     $('#mes_continue').css('display', power_user.quick_continue ? '' : 'none');
+    $('#gestures-checkbox').prop("checked", power_user.gestures);
     $('#auto_swipe').prop("checked", power_user.auto_swipe);
     $('#auto_swipe_minimum_length').val(power_user.auto_swipe_minimum_length);
     $('#auto_swipe_blacklist').val(power_user.auto_swipe_blacklist.join(", "));
@@ -1083,14 +1096,28 @@ function switchMaxContextSize() {
     }
 }
 
-function loadContextSettings() {
-    const controls = [
-        { id: "context_story_string", property: "story_string", isCheckbox: false },
-        { id: "context_example_separator", property: "example_separator", isCheckbox: false },
-        { id: "context_chat_start", property: "chat_start", isCheckbox: false },
-    ];
+// Fetch a compiled object of all preset settings
+function getContextSettings() {
+    let compiledSettings = {};
 
-    controls.forEach(control => {
+    contextControls.forEach((control) => {
+        let value = control.isGlobalSetting ? power_user[control.property] : power_user.context[control.property];
+
+        // Force to a boolean if the setting is a checkbox
+        if (control.isCheckbox) {
+            value = !!value;
+        }
+
+        compiledSettings[control.property] = value;
+    });
+
+    return compiledSettings;
+}
+
+// TODO: Maybe add a refresh button to reset settings to preset
+// TODO: Add "global state" if a preset doesn't set the power_user checkboxes
+function loadContextSettings() {
+    contextControls.forEach(control => {
         const $element = $(`#${control.id}`);
 
         if (control.isCheckbox) {
@@ -1099,8 +1126,16 @@ function loadContextSettings() {
             $element.val(power_user.context[control.property]);
         }
 
+        // If the setting already exists, no need to duplicate it
+        // TODO: Maybe check the power_user object for the setting instead of a flag?
         $element.on('input', function () {
-            power_user.context[control.property] = control.isCheckbox ? !!$(this).prop('checked') : $(this).val();
+            const value = control.isCheckbox ? !!$(this).prop('checked') : $(this).val();
+            if (control.isGlobalSetting) {
+                power_user[control.property] = value;
+            } else {
+                power_user.context[control.property] = value;
+            }
+
             saveSettingsDebounced();
             if (!control.isCheckbox) {
                 resetScrollHeight($element);
@@ -1126,15 +1161,24 @@ function loadContextSettings() {
         }
 
         power_user.context.preset = name;
-        controls.forEach(control => {
+        contextControls.forEach(control => {
             if (preset[control.property] !== undefined) {
-                power_user.context[control.property] = preset[control.property];
+                if (control.isGlobalSetting) {
+                    power_user[control.property] = preset[control.property];
+                } else {
+                    power_user.context[control.property] = preset[control.property];
+                }
+
                 const $element = $(`#${control.id}`);
 
                 if (control.isCheckbox) {
-                    $element.prop('checked', power_user.context[control.property]).trigger('input');
+                    $element
+                        .prop('checked', control.isGlobalSetting ? power_user[control.property] : power_user.context[control.property])
+                        .trigger('input');
                 } else {
-                    $element.val(power_user.context[control.property]).trigger('input');
+                    $element
+                        .val(control.isGlobalSetting ? power_user[control.property] : power_user.context[control.property])
+                        .trigger('input');
                 }
             }
         });
@@ -2135,6 +2179,11 @@ $(document).ready(() => {
         power_user.sort_order = $(this).find(":selected").data('order');
         power_user.sort_rule = $(this).find(":selected").data('rule');
         printCharacters();
+        saveSettingsDebounced();
+    });
+
+    $('#gestures-checkbox').on('change', function () {
+        power_user.gestures = !!$('#gestures-checkbox').prop('checked');
         saveSettingsDebounced();
     });
 

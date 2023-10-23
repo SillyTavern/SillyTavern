@@ -705,6 +705,8 @@ async function getExtensionVersion(extensionName) {
 export async function installExtension(url) {
     console.debug('Extension import started', url);
 
+    toastr.info('Please wait...', 'Importing extension');
+
     const request = await fetch('/api/extensions/install', {
         method: 'POST',
         headers: getRequestHeaders(),

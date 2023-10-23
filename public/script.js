@@ -1,5 +1,5 @@
 import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods, } from "./scripts/RossAscends-mods.js";
-import { userStatsHandler, statMesProcess } from './scripts/stats.js';
+import { userStatsHandler, statMesProcess, initStats } from './scripts/stats.js';
 import {
     generateKoboldWithStreaming,
     kai_settings,
@@ -169,7 +169,7 @@ import { getDeviceInfo } from "./scripts/RossAscends-mods.js";
 import { registerPromptManagerMigration } from "./scripts/PromptManager.js";
 import { getRegexedString, regex_placement } from "./scripts/extensions/regex/engine.js";
 import { FILTER_TYPES, FilterHelper } from "./scripts/filters.js";
-import { getCfgPrompt, getGuidanceScale } from "./scripts/extensions/cfg/util.js";
+import { getCfgPrompt, getGuidanceScale, initCfg } from "./scripts/cfg-scale.js";
 import {
     force_output_sequence,
     formatInstructModeChat,
@@ -723,6 +723,8 @@ async function firstLoadInit() {
     initAuthorsNote();
     initPersonas();
     initRossMods();
+    initStats();
+    initCfg();
 }
 
 function checkOnlineStatus() {
@@ -3016,7 +3018,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                                 : ` ${cfgPrompt.value}`;
                     } else {
                         // TODO: Make all extension prompts use an array/splice method
-                        finalMesSend[mesSend.length - cfgPrompt.depth].extensionPrompts.push(`${cfgPrompt.value}\n`);
+                        const lengthDiff = mesSend.length - cfgPrompt.depth;
+                        const cfgDepth = lengthDiff >= 0 ? lengthDiff : 0;
+                        finalMesSend[cfgDepth].extensionPrompts.push(`${cfgPrompt.value}\n`);
                     }
                 }
 
@@ -6079,6 +6083,7 @@ function enlargeMessageImage() {
     const mesId = mesBlock.attr('mesid');
     const message = chat[mesId];
     const imgSrc = message?.extra?.image;
+    const title = message?.extra?.title;
 
     if (!imgSrc) {
         return;
@@ -6087,7 +6092,12 @@ function enlargeMessageImage() {
     const img = document.createElement('img');
     img.classList.add('img_enlarged');
     img.src = imgSrc;
-    callPopup(img.outerHTML, 'text', '', { wide: true, large: true });
+    const imgContainer = $('<div><pre><code></code></pre></div>');
+    imgContainer.prepend(img);
+    imgContainer.addClass('img_enlarged_container');
+    imgContainer.find('code').addClass('txt').text(title);
+    addCopyToCodeBlocks(imgContainer);
+    callPopup(imgContainer, 'text', '', { wide: true, large: true });
 }
 
 function updateAlternateGreetingsHintVisibility(root) {

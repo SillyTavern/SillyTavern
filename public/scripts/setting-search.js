@@ -1,29 +1,29 @@
-export { MODULE_NAME };
-
-const MODULE_NAME = 'settingsSearch';
-async function addSettingsSearchHTML() {
-
-    const html = `
-    <div class="wide100p">
-        <div class="justifyLeft">
-            <textarea id="settingsSearch" class="wide100p textarea_compact" rows="1" placeholder="Search Settings"></textarea>
-        </div>
-    </div>`
-
-    $("#user-settings-block").prepend(html);
-}
-
+/**
+ * Search for settings that match the search string and highlight them.
+ */
 async function searchSettings() {
     removeHighlighting(); // Remove previous highlights
-    let searchString = $("#settingsSearch").val();
-    let searchableText = $("#user-settings-block-content"); // Get the HTML block
+    const searchString = String($("#settingsSearch").val());
+    const searchableText = $("#user-settings-block-content"); // Get the HTML block
     if (searchString.trim() !== "") {
         highlightMatchingElements(searchableText[0], searchString); // Highlight matching elements
     }
 }
+
+/**
+ * Check if the element is a child of a header element
+ * @param {HTMLElement | Text | Document | Comment} element Settings block HTML element
+ * @returns {boolean} True if the element is a child of a header element, false otherwise
+ */
 function isParentHeader(element) {
     return $(element).closest('h4, h3').length > 0;
 }
+
+/**
+ * Recursively highlight elements that match the search string
+ * @param {HTMLElement | Text | Document | Comment} element Settings block HTML element
+ * @param {string} searchString Search string
+ */
 function highlightMatchingElements(element, searchString) {
     $(element).contents().each(function () {
         const isTextNode = this.nodeType === Node.TEXT_NODE;
@@ -41,17 +41,14 @@ function highlightMatchingElements(element, searchString) {
         }
     });
 }
+
+/**
+ * Remove highlighting from previously highlighted elements.
+ */
 function removeHighlighting() {
     $(".highlighted").removeClass("highlighted");  // Remove CSS class from previously highlighted elements
 }
+
 jQuery(() => {
-    //addSettingsSearchHTML();
     $('#settingsSearch').on('input change', searchSettings);
 });
-
-
-
-
-
-
-

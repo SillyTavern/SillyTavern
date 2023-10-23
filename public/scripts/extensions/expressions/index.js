@@ -764,7 +764,7 @@ function sampleClassifyText(text) {
     // Remove asterisks and quotes
     let result = text.replace(/[\*\"]/g, '');
 
-    const SAMPLE_THRESHOLD = 300;
+    const SAMPLE_THRESHOLD = 500;
     const HALF_SAMPLE_THRESHOLD = SAMPLE_THRESHOLD / 2;
 
     if (text.length < SAMPLE_THRESHOLD) {
@@ -1498,6 +1498,8 @@ function setExpressionOverrideHtml(forceClear = false) {
         if (isVisualNovelMode()) {
             $('#visual-novel-wrapper').empty();
         }
+
+        updateFunction();
     });
     eventSource.on(event_types.MOVABLE_PANELS_RESET, updateVisualNovelModeDebounced);
     eventSource.on(event_types.GROUP_UPDATED, updateVisualNovelModeDebounced);

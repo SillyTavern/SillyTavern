@@ -5,7 +5,7 @@ import {
     saveSettingsDebounced,
     setGenerationParamsFromPreset
 } from "../script.js";
-import { getCfgPrompt } from "./extensions/cfg/util.js";
+import { getCfgPrompt } from "./cfg-scale.js";
 import { MAX_CONTEXT_DEFAULT } from "./power-user.js";
 import { getTextTokens, tokenizers } from "./tokenizers.js";
 import {

@@ -429,7 +429,7 @@ async function processTtsQueue() {
 
     console.debug('New message found, running TTS')
     currentTtsJob = ttsJobQueue.shift()
-    let text = extension_settings.tts.narrate_translated_only ? currentTtsJob?.extra?.display_text : currentTtsJob.mes
+    let text = extension_settings.tts.narrate_translated_only ? (currentTtsJob?.extra?.display_text || currentTtsJob.mes) : currentTtsJob.mes
     text = extension_settings.tts.narrate_dialogues_only
         ? text.replace(/\*[^\*]*?(\*|$)/g, '').trim() // remove asterisks content
         : text.replaceAll('*', '').trim() // remove just the asterisks
@@ -614,8 +614,8 @@ function onTtsProviderChange() {
 
 // Ensure that TTS provider settings are saved to extension settings.
 export function saveTtsProviderSettings() {
-    updateVoiceMap()
     extension_settings.tts[ttsProviderName] = ttsProvider.settings
+    updateVoiceMap()
     saveSettingsDebounced()
     console.info(`Saved settings ${ttsProviderName} ${JSON.stringify(ttsProvider.settings)}`)
 }
@@ -695,6 +695,9 @@ function updateVoiceMap() {
         voiceMap = tempVoiceMap
         console.log(`Voicemap updated to ${JSON.stringify(voiceMap)}`)
     }
+    if (!extension_settings.tts[ttsProviderName].voiceMap) {
+        extension_settings.tts[ttsProviderName].voiceMap = {}
+    }
     Object.assign(extension_settings.tts[ttsProviderName].voiceMap, voiceMap)
     saveSettingsDebounced()
 }
@@ -748,10 +751,6 @@ class VoiceMapEntry {
  *
  */
 export async function initVoiceMap(){
-    // Clear existing voiceMap state
-    $('#tts_voicemap_block').empty()
-    voiceMapEntries = []
-
     // Gate initialization if not enabled or TTS Provider not ready. Prevents error popups.
     const enabled = $('#tts_enabled').is(':checked')
     if (!enabled){
@@ -769,6 +768,10 @@ export async function initVoiceMap(){
 
     setTtsStatus("TTS Provider Loaded", true)
 
+    // Clear existing voiceMap state
+    $('#tts_voicemap_block').empty()
+    voiceMapEntries = []
+    
     // Get characters in current chat
     const characters = getCharacters()
 
