@@ -270,7 +270,8 @@ function registerEndpoints(app, jsonParser) {
             });
 
             if (!result.ok) {
-                throw new Error('SD WebUI returned an error.');
+                const text = await result.text();
+                throw new Error('SD WebUI returned an error.', { cause: text });
             }
 
             const data = await result.json();
