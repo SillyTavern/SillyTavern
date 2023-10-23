@@ -901,6 +901,9 @@ export function initRossMods() {
     //Regenerate if user swipes on the last mesage in chat
 
     document.addEventListener('swiped-left', function (e) {
+        if (power_user.gestures === false) {
+            return
+        }
         var SwipeButR = $('.swipe_right:last');
         var SwipeTargetMesClassParent = $(e.target).closest('.last_mes');
         if (SwipeTargetMesClassParent !== null) {
@@ -910,6 +913,9 @@ export function initRossMods() {
         }
     });
     document.addEventListener('swiped-right', function (e) {
+        if (power_user.gestures === false) {
+            return
+        }
         var SwipeButL = $('.swipe_left:last');
         var SwipeTargetMesClassParent = $(e.target).closest('.last_mes');
         if (SwipeTargetMesClassParent !== null) {
