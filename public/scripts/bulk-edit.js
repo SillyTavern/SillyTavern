@@ -1,12 +1,36 @@
 import { characters, getCharacters, handleDeleteCharacter, callPopup } from "../script.js";
-import {CharacterGroupOverlay} from "../../CharacterGroupOverlay.js";
+import {CharacterGroupOverlay, CharacterGroupOverlayState} from "./CharacterGroupOverlay.js";
+
 
 let is_bulk_edit = false;
 
-(new CharacterGroupOverlay()).addLongPressEndCallback(() => {
+const enableBulkEdit = () => {
+    enableBulkSelect();
+    (new CharacterGroupOverlay()).selectState();
+    // show the delete button
+    $("#bulkDeleteButton").show();
+    is_bulk_edit = true;
+}
+
+const disableBulkEdit = () => {
     disableBulkSelect();
+    (new CharacterGroupOverlay()).browseState();
+    // hide the delete button
     $("#bulkDeleteButton").hide();
     is_bulk_edit = false;
+}
+
+const toggleBulkEditMode = (isBulkEdit) => {
+    if (isBulkEdit) {
+        disableBulkEdit();
+    } else {
+        enableBulkEdit();
+    }
+}
+
+(new CharacterGroupOverlay()).addStateChangeCallback((state) => {
+    if (state === CharacterGroupOverlayState.select) enableBulkEdit();
+    if (state === CharacterGroupOverlayState.browse) disableBulkEdit();
 });
 
 /**
@@ -14,20 +38,7 @@ let is_bulk_edit = false;
  */
 function onEditButtonClick() {
     console.log("Edit button clicked");
-    // toggle bulk edit mode
-    if (is_bulk_edit) {
-        disableBulkSelect();
-        (new CharacterGroupOverlay()).browseState();
-        // hide the delete button
-        $("#bulkDeleteButton").hide();
-        is_bulk_edit = false;
-    } else {
-        enableBulkSelect();
-        (new CharacterGroupOverlay()).selectState();
-        // show the delete button
-        $("#bulkDeleteButton").show();
-        is_bulk_edit = true;
-    }
+    toggleBulkEditMode(is_bulk_edit);
 }
 
 /**

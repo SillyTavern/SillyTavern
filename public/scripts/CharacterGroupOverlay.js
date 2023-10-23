@@ -10,7 +10,7 @@ import {event_types, eventSource} from "../script.js";
  */
 let characterGroupOverlayInstance = null;
 
-class State {
+class CharacterGroupOverlayState {
     static browse = 0;
     static select = 1;
 }
@@ -22,9 +22,9 @@ class CharacterGroupOverlay {
     static selectModeClass = 'group_overlay_mode_select';
     static selectedClass = 'character_selected';
 
-    #state = State.browse;
+    #state = CharacterGroupOverlayState.browse;
     #longPress = false;
-    #longPressEndCallbacks = [];
+    #stateChangeCallbacks = [];
     #selectedCharacters = [];
 
     /**
@@ -54,8 +54,8 @@ class CharacterGroupOverlay {
         this.#longPress = longPress;
     }
 
-    get longPressEndCallbacks() {
-        return this.#longPressEndCallbacks;
+    get stateChangeCallbacks() {
+        return this.#stateChangeCallbacks;
     }
 
     get selectedCharacters() {
@@ -73,14 +73,13 @@ class CharacterGroupOverlay {
         characterGroupOverlayInstance = Object.freeze(this);
     }
 
-    browseState = () => this.state = State.browse;
-    selectState = () => this.state = State.select;
+    browseState = () => this.state = CharacterGroupOverlayState.browse;
+    selectState = () => this.state = CharacterGroupOverlayState.select;
 
     /**
      * Set up a Sortable grid for the loaded page
      */
     onPageLoad = () => {
-        let touchState = false;
         const grid = document.getElementById(CharacterGroupOverlay.containerId);
 
         const sortable = new Sortable(grid, {
@@ -129,7 +128,7 @@ class CharacterGroupOverlay {
         this.isLongPress = true;
         setTimeout(() => {
             if (this.isLongPress) {
-                this.state = State.select;
+                this.state = CharacterGroupOverlayState.select;
             }
         }, 3000);
     }
@@ -139,25 +138,27 @@ class CharacterGroupOverlay {
     }
 
     handleCancelClick = () => {
-        this.state = State.browse;
+        this.state = CharacterGroupOverlayState.browse;
     }
 
     handleStateChange = () => {
         switch (this.state) {
-            case State.browse:
+            case CharacterGroupOverlayState.browse:
                 this.container.classList.remove(CharacterGroupOverlay.selectModeClass);
                 [...this.container.getElementsByClassName(CharacterGroupOverlay.characterClass)]
                     .forEach(element => element.removeEventListener('click', this.toggleCharacterSelected));
-                this.longPressEndCallbacks.forEach(callback => callback());
                 this.clearSelectedCharacters();
                 this.disableContextMenu();
                 break;
-            case State.select:
+            case CharacterGroupOverlayState.select:
                 this.container.classList.add(CharacterGroupOverlay.selectModeClass);
                 [...this.container.getElementsByClassName(CharacterGroupOverlay.characterClass)]
                     .forEach(element => element.addEventListener('click', this.toggleCharacterSelected));
                 this.enableContextMenu();
+                break;
         }
+
+        this.stateChangeCallbacks.forEach(callback => callback(this.state));
     }
 
     toggleCharacterSelected = event => {
@@ -194,7 +195,9 @@ class CharacterGroupOverlay {
         }
     }
 
-    addLongPressEndCallback = callback => this.longPressEndCallbacks.push(callback);
+    handleContextMenuFavorite = () => this.selectedCharacters.forEach(characterId => CharacterContextMenu.toggleFavorite(characterId));
+
+    addStateChangeCallback = callback => this.stateChangeCallbacks.push(callback);
 
     selectCharacter = characterId => this.selectedCharacters.push(String(characterId));
 
@@ -206,4 +209,4 @@ class CharacterGroupOverlay {
     }
 }
 
-export {CharacterGroupOverlay};
+export {CharacterGroupOverlayState, CharacterContextMenu, CharacterGroupOverlay};
