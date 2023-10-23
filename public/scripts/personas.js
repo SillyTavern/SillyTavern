@@ -181,7 +181,7 @@ async function bindUserNameToPersona() {
 
 export function selectCurrentPersona() {
     const personaName = power_user.personas[user_avatar];
-    if (personaName && name1 !== personaName) {
+    if (personaName) {
         const lockedPersona = chat_metadata['persona'];
         if (lockedPersona && lockedPersona !== user_avatar && power_user.persona_show_notifications) {
             toastr.info(
@@ -191,7 +191,10 @@ export function selectCurrentPersona() {
             );
         }
 
-        setUserName(personaName);
+        if (personaName !== name1) {
+            console.log(`Auto-updating user name to ${personaName}`);
+            setUserName(personaName);
+        }
 
         const descriptor = power_user.persona_descriptions[user_avatar];
 
