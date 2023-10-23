@@ -121,7 +121,7 @@ const helpString = [
     example: '/sd apple tree' would generate a picture of an apple tree.`,
 ].join('<br>');
 
-const defaultPrefix = 'best quality, absurdres, masterpiece,';
+const defaultPrefix = 'best quality, absurdres, aesthetic,';
 const defaultNegative = 'lowres, bad anatomy, bad hands, text, error, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry';
 
 const defaultStyles = [
@@ -1468,13 +1468,13 @@ function getNovelParams() {
     let width = extension_settings.sd.width;
     let height = extension_settings.sd.height;
 
-    // Don't apply Anlas guard if it's disabled.d
+    // Don't apply Anlas guard if it's disabled.
     if (!extension_settings.sd.novel_anlas_guard) {
         return { steps, width, height };
     }
 
     const MAX_STEPS = 28;
-    const MAX_PIXELS = 409600;
+    const MAX_PIXELS = 1024 * 1024;
 
     if (width * height > MAX_PIXELS) {
         const ratio = Math.sqrt(MAX_PIXELS / (width * height));
