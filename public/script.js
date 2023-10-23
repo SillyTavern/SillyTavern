@@ -4821,9 +4821,9 @@ export function setUserName(value) {
 function setUserAvatar() {
     user_avatar = $(this).attr("imgfile");
     reloadUserAvatar();
-    saveSettingsDebounced();
     highlightSelectedAvatar();
     selectCurrentPersona();
+    saveSettingsDebounced();
     $('.zoomed_avatar[forchar]').remove();
 }
 
