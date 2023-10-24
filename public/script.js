@@ -142,7 +142,7 @@ import {
     onlyUnique,
 } from "./scripts/utils.js";
 
-import { extension_settings, getContext, loadExtensionSettings, processExtensionHelpers, registerExtensionHelper, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
+import { ModuleWorkerWrapper, extension_settings, getContext, loadExtensionSettings, processExtensionHelpers, registerExtensionHelper, renderExtensionTemplate, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
 import { COMMENT_NAME_DEFAULT, executeSlashCommands, getSlashCommandsHelp, registerSlashCommand } from "./scripts/slash-commands.js";
 import {
     tag_map,
@@ -6447,6 +6447,10 @@ window["SillyTavern"].getContext = function () {
         chatId: selected_group
             ? groups.find(x => x.id == selected_group)?.chat_id
             : (this_chid && characters[this_chid] && characters[this_chid].chat),
+        getCurrentChatId: getCurrentChatId,
+        getRequestHeaders: getRequestHeaders,
+        reloadCurrentChat: reloadCurrentChat,
+        saveSettingsDebounced: saveSettingsDebounced,
         onlineStatus: online_status,
         maxContext: Number(max_context),
         chatMetadata: chat_metadata,
@@ -6468,6 +6472,12 @@ window["SillyTavern"].getContext = function () {
         registerSlashCommand: registerSlashCommand,
         registerHelper: registerExtensionHelper,
         registedDebugFunction: registerDebugFunction,
+        renderExtensionTemplate: renderExtensionTemplate,
+        callPopup: callPopup,
+        mainApi: main_api,
+        extensionSettings: extension_settings,
+        ModuleWorkerWrapper: ModuleWorkerWrapper,
+        getTokenizerModel: getTokenizerModel,
     };
 };
 
