@@ -180,7 +180,7 @@ import {
     formatInstructModeSystemPrompt,
 } from "./scripts/instruct-mode.js";
 import { applyLocale } from "./scripts/i18n.js";
-import { getTokenCount, getTokenizerModel, saveTokenCache } from "./scripts/tokenizers.js";
+import { getTokenCount, getTokenizerModel, initTokenizers, saveTokenCache } from "./scripts/tokenizers.js";
 import { initPersonas, selectCurrentPersona, setPersonaDescription } from "./scripts/personas.js";
 import { getBackgrounds, initBackgrounds } from "./scripts/backgrounds.js";
 
@@ -719,6 +719,7 @@ async function firstLoadInit() {
     await getUserAvatars();
     await getCharacters();
     await getBackgrounds();
+    await initTokenizers();
     initBackgrounds();
     initAuthorsNote();
     initPersonas();
