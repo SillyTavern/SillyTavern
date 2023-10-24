@@ -86,6 +86,9 @@
     <script type="module" src="scripts/filters.js"></script>
     <script type="module" src="scripts/personas.js"></script>
     <script type="module" src="scripts/server-history.js"></script>
+    <script type="module" src="scripts/setting-search.js"></script>
+    <script type="module" src="scripts/bulk-edit.js"></script>
+    <script type="module" src="scripts/cfg-scale.js"></script>
 
     <title>SillyTavern</title>
 </head>
@@ -127,8 +130,8 @@
                                         <span class="note-link-span">?</span>
                                     </a>
                                 </h4>
-                                <div class="preset_buttons">
-                                    <select id="settings_perset" data-preset-manager-for="kobold">
+                                <div class="flex-container">
+                                    <select id="settings_perset" data-preset-manager-for="kobold" class="flex1 text_pole">
                                         <option value="gui" data-i18n="guikoboldaisettings">GUI KoboldAI Settings</option>
                                     </select>
                                     <input type="file" hidden data-preset-manager-file="kobold" accept=".json, .settings">
@@ -146,8 +149,8 @@
                                         <span class="note-link-span">?</span>
                                     </a>
                                 </h4>
-                                <div class="preset_buttons">
-                                    <select id="settings_perset_novel" data-preset-manager-for="novel">
+                                <div class="flex-container">
+                                    <select id="settings_perset_novel" class="flex1 text_pole" data-preset-manager-for="novel">
                                         <option value="gui" data-i18n="default">Default</option>
                                     </select>
                                     <input type="file" hidden data-preset-manager-file="novel" accept=".json, .settings">
@@ -161,8 +164,8 @@
                             <div id="openai_api-presets">
                                 <div>
                                     <h4 class="margin0"><span data-i18n="openaipresets">Chat Completion Presets</span></h4>
-                                    <div class="openai_preset_buttons">
-                                        <select id="settings_perset_openai">
+                                    <div class="flex-container">
+                                        <select id="settings_perset_openai" class="flex1 text_pole">
                                             <option value="gui" data-i18n="default">Default</option>
                                         </select>
                                         <i id="update_oai_preset" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
@@ -176,8 +179,8 @@
                             </div>
                             <div id="textgenerationwebui_api-presets">
                                 <h4 class="margin0"><span data-i18n="Text Gen WebUI (ooba/Mancer) presets">Text Gen WebUI (ooba/Mancer) presets</span></h4>
-                                <div class="preset_buttons">
-                                    <select id="settings_preset_textgenerationwebui" data-preset-manager-for="textgenerationwebui">
+                                <div class="flex-container">
+                                    <select id="settings_preset_textgenerationwebui" class="flex1 text_pole" data-preset-manager-for="textgenerationwebui">
                                     </select>
                                     <input type="file" hidden data-preset-manager-file="textgenerationwebui" accept=".json, .settings">
                                     <i data-newbie-hidden data-preset-manager-update="textgenerationwebui" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
@@ -232,7 +235,7 @@
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
-                                            <input type="range" id="max_context" name="volume" min="512" max="4096" step="1">
+                                            <input type="range" id="max_context" name="volume" min="512" max="4096" step="512">
                                         </div>
                                         <div class="range-block-counter" data-randomization-disabled="true">
                                             <div contenteditable="true" data-for="max_context" id="max_context_counter">
@@ -1750,6 +1753,15 @@
                                                 Add bias entry
                                             </div>
                                             <div class="openai_logit_bias_list"></div>
+                                            <div class="m-t-1">
+                                                <small>
+                                                    <i class="fa-solid fa-lightbulb"></i>
+                                                    &nbsp;
+                                                    <span data-i18n="Most tokens have a leading space.">
+                                                        Most tokens have a leading space.
+                                                    </span>
+                                                </small>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -2261,8 +2273,8 @@
                             <h4 data-i18n="Context Template">
                                 Context Template
                             </h4>
-                            <div class="preset_buttons flex-container">
-                                <select id="context_presets" data-preset-manager-for="context" class="flex1"></select>
+                            <div class="flex-container">
+                                <select id="context_presets" data-preset-manager-for="context" class="flex1 text_pole"></select>
                                 <input type="file" hidden data-preset-manager-file="context" accept=".json, .settings">
                                 <i id="context_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this preset for Instruct Mode."></i>
                                 <i data-newbie-hidden data-preset-manager-update="context" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
@@ -2349,8 +2361,8 @@
                             <label for="instruct_presets">
                                 <span data-i18n="Presets">Presets</span>
                             </label>
-                            <div class="preset_buttons">
-                                <select id="instruct_presets" data-preset-manager-for="instruct" class="flex1"></select>
+                            <div class="flex-container">
+                                <select id="instruct_presets" data-preset-manager-for="instruct" class="flex1 text_pole"></select>
                                 <input type="file" hidden data-preset-manager-file="instruct" accept=".json, .settings">
                                 <i id="instruct_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this preset on API connection."></i>
                                 <i data-newbie-hidden data-preset-manager-update="instruct" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
@@ -2510,18 +2522,6 @@
                             <input id="always-force-name2-checkbox" type="checkbox" />
                             <span data-i18n="Always add character's name to prompt">
                                 Always add character's name to prompt
-                            </span>
-                        </label>
-                        <label data-newbie-hidden class="checkbox_label" for="pin-examples-checkbox">
-                            <input id="pin-examples-checkbox" type="checkbox" />
-                            <span data-i18n="Keep Example Messages in Prompt">
-                                Keep Example Messages in Prompt
-                            </span>
-                        </label>
-                        <label data-newbie-hidden class="checkbox_label" for="remove-examples-checkbox">
-                            <input id="remove-examples-checkbox" type="checkbox" />
-                            <span data-i18n="Strip Example Messages from Prompt">
-                                Strip Example Messages from Prompt
                             </span>
                         </label>
                         <label class="checkbox_label" for="collapse-newlines-checkbox"><input id="collapse-newlines-checkbox" type="checkbox" />
@@ -3076,7 +3076,19 @@
                     <div name="UserSettingsThirdColumn" id="power-user-options-block" class="flex-container wide100p">
                         <div id="power-user-option-checkboxes">
                             <div data-newbie-hidden name="CharacterHandlingToggles">
-                                <h4>Character Handling</h4>
+                                <h4 data-i18n="Character Handling">
+                                    Character Handling
+                                </h4>
+                                <div data-newbie-hidden id="examples-behavior-block">
+                                    <label data-i18n="Example Messages Behavior">
+                                        Example Messages Behavior:
+                                    </label>
+                                    <select id="example_messages_behavior">
+                                        <option value="normal">Gradual push-out</option>
+                                        <option value="keep">Always include examples</option>
+                                        <option value="strip">Never include examples</option>
+                                    </select>
+                                </div>
                                 <label data-newbie-hidden class="checkbox_label" for="fuzzy_search_checkbox">
                                     <input id="fuzzy_search_checkbox" type="checkbox" />
                                     <span data-i18n="Advanced Character Search">Advanced Character Search</span>
@@ -3131,10 +3143,16 @@
                                         Quick "Continue" button
                                     </span>
                                 </label>
-                                <label data-newbie-hidden class="checkbox_label" for="swipes-checkbox">
-                                    <input id="swipes-checkbox" type="checkbox" />
-                                    <span data-i18n="Swipes">Swipes</span>
-                                </label>
+                                <div class="checkbox-container flex-container">
+                                    <label data-newbie-hidden class="checkbox_label" for="swipes-checkbox">
+                                        <input id="swipes-checkbox" type="checkbox" />
+                                        <span data-i18n="Swipes">Swipes</span>
+                                    </label>
+                                    <label data-newbie-hidden class="checkbox_label" for="gestures-checkbox">
+                                        <input id="gestures-checkbox" type="checkbox" />
+                                        <span data-i18n="Gestures">Gestures</span>
+                                    </label>
+                                </div>
                                 <label class="checkbox_label" for="auto-load-chat-checkbox">
                                     <input id="auto-load-chat-checkbox" type="checkbox" />
                                     <span data-i18n="Auto-load Last Chat">Auto-load Last Chat</span>
@@ -3221,20 +3239,37 @@
             </div>
         </div>
 
-        <div id="logo_block" class="drawer" title="Change Background Image" data-i18n="[title]Change Background Image">
-            <div id="site_logo" class="drawer-toggle drawer-header">
+        <div id="logo_block" class="drawer">
+            <div id="site_logo" class="drawer-toggle drawer-header" title="Change Background Image" data-i18n="[title]Change Background Image">
                 <div class="drawer-icon fa-solid fa-panorama  closedIcon"></div>
             </div>
-            <div class="drawer-content closedDrawer">
+            <div id="Backgrounds" class="drawer-content closedDrawer">
                 <div class="flex-container">
-                    <input id="bg-filter" placeholder="Filter" class="text_pole" type="search" />
-                    <div id="bg_menu_content">
+                    <div class="flex-container wide100p">
+                        <input id="bg-filter" placeholder="Filter" class="text_pole flex1" type="search" />
+                        <div id="auto_background" class="menu_button menu_button_icon" title="Automatically select a background based on the chat context.">
+                            <i class="fa-solid fa-wand-magic"></i>
+                            Auto-select
+                        </div>
+                    </div>
+                    <h3 data-i18n="System Backgrounds" class="wide100p textAlignCenter">
+                        System Backgrounds
+                    </h3>
+                    <div id="bg_menu_content" class="bg_list">
                         <form id="form_bg_download" class="bg_example no-border no-shadow" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <label class="input-file">
                                 <input type="file" id="add_bg_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
                                 <div class="bg_example no-border no-shadow add_bg_but" style="background-image: url('/img/addbg3.png');"></div>
                             </label>
                         </form>
+                    </div>
+                    <h3 data-i18n="Chat Backgrounds" class="wide100p textAlignCenter">
+                        Chat Backgrounds
+                    </h3>
+                    <div id="bg_chat_hint" class="wide100p textAlignCenter">
+                        Chat backgrounds generated with the <code><i class="fa-solid fa-paintbrush"></i>&nbsp;Stable Diffusion</code> extension will appear here.
+                    </div>
+                    <div id="bg_custom_content" class="bg_list">
                     </div>
                 </div>
             </div>
@@ -3247,28 +3282,42 @@
             <div id="rm_extensions_block" class="drawer-content closedDrawer">
                 <div class="extensions_block flex-container">
                     <div class="alignitemscenter flex-container justifyCenter wide100p" style="justify-content: space-between;">
-                        <h3 class="margin0" data-i18n="Extensions API:">Extensions API:
-                            <a target="_blank" href="https://github.com/SillyTavern/SillyTavern-extras">
-                                SillyTavern-extras
+                        <h3 class="margin0" data-i18n="Extras API:">Extras API:
+                            <a target="_blank" href="https://github.com/SillyTavern/SillyTavern-Extras">
+                                SillyTavern-Extras
                             </a>
                         </h3>
                         <div class="flex-container">
                             <div id="extensions_status" data-i18n="Not connected...">Not connected...</div>
-                            <label for="extensions_autoconnect">
+                            <label for="extensions_autoconnect" class="checkbox_label flexNoGap">
                                 <input id="extensions_autoconnect" type="checkbox">
                                 <span data-i18n="Auto-connect">Auto-connect</span>
                             </label>
                         </div>
                     </div>
                     <div class="alignitemsflexstart flex-container wide100p">
-                        <input id="extensions_url" type="text" class="flex1 heightFitContent text_pole widthNatural" maxlength="250" data-i18n="[placeholder]Extensions URL" placeholder="Extensions URL">
-                        <input id="extensions_api_key" type="text" class="flex1 heightFitContent text_pole widthNatural" maxlength="250" data-i18n="[placeholder]API key" placeholder="Extras API key">
+                        <input id="extensions_url" type="text" class="flex1 heightFitContent text_pole widthNatural" maxlength="250" data-i18n="[placeholder]Extras API URL" placeholder="Extras API URL">
+                        <input id="extensions_api_key" type="text" class="flex1 heightFitContent text_pole widthNatural" maxlength="250" data-i18n="[placeholder]Extras API key (optional)" placeholder="Extras API key (optional)">
                         <div class="extensions_url_block">
                             <div id="extensions_connect" class="menu_button" data-i18n="Connect">Connect</div>
-                            <div id="extensions_details" class="menu_button_icon menu_button">
-                                Manage extensions
-                            </div>
-                            <div id="third_party_extension_button" title="Import Extension From Git Repo" class="menu_button fa-solid fa-cloud-arrow-down faSmallFontSquareFix"></div>
+                        </div>
+                    </div>
+                    <hr class="wide100p margin0">
+                    <div class="alignitemscenter flex-container wide100p">
+                        <h3 class="margin0 flex1" data-i18n="Extensions">
+                            Extensions
+                        </h3>
+                        <label for="extensions_notify_updates" class="checkbox_label flexNoGap">
+                            <input id="extensions_notify_updates" type="checkbox">
+                            <span data-i18n="Notify on extension updates">Notify on extension updates</span>
+                        </label>
+                        <div id="extensions_details" class="menu_button_icon menu_button">
+                            <i class="fa-solid fa-cubes"></i>
+                            Manage extensions
+                        </div>
+                        <div id="third_party_extension_button" title="Import Extension From Git Repo" class="menu_button menu_button_icon">
+                            <i class="fa-solid fa-cloud-arrow-down"></i>
+                            Install extension
                         </div>
                     </div>
                     <div id="extensions_settings" class="flex1 wide50p">
@@ -3501,8 +3550,10 @@
                                     <span class="note-link-span">?</span>
                                 </a>
                             </span>
-                            <div class="menu_button open_alternate_greetings" title="Click to set additional greeting messages" data-i18n="[title]Click to set additional greeting messages">
-                                <i class="fa-solid fa-comment-dots"></i>
+                            <div class="menu_button menu_button_icon open_alternate_greetings margin0" title="Click to set additional greeting messages" data-i18n="[title]Click to set additional greeting messages">
+                                <span data-i18n="Alt. Greetings">
+                                    Alt. Greetings
+                                </span>
                             </div>
                         </div>
                         <textarea id="firstmessage_textarea" data-i18n="[placeholder]This will be the first message from the character that starts every chat." placeholder="This will be the first message from the character that starts every chat." class="marginBot5" name="first_mes" placeholder=""></textarea>
@@ -3679,6 +3730,8 @@
 
                     <div id="rm_print_characters_pagination">
                         <i id="charListGridToggle" class="fa-solid fa-table-cells-large menu_button" title="Toggle character grid view"></i>
+                        <i id="bulkEditButton" class="fa-solid fa-edit menu_button bulkEditButton" title="Bulk edit characters"></i>
+                        <i id="bulkDeleteButton" class="fa-solid fa-trash menu_button bulkDeleteButton" title="Bulk delete characters" style="display: none;"></i>
                     </div>
                     <div id="rm_print_characters_block" class="flexFlowColumn"></div>
                 </div>
@@ -3874,8 +3927,11 @@
 
     <div id="background_template" class="template_element">
         <div class="bg_example flex-container" bgfile="" class="bg_example_img" title="">
-            <div title="Rename background" bgfile="" class="bg_button bg_example_edit fa-solid fa-pencil"></div>
-            <div title="Delete background" bgfile="" class="bg_button bg_example_cross fa-solid fa-circle-xmark"></div>
+            <div title="Copy to system backgrounds" class="bg_button bg_example_copy fa-solid fa-file-arrow-up"></div>
+            <div title="Rename background" class="bg_button bg_example_edit fa-solid fa-pencil"></div>
+            <div title="Lock" class="bg_button bg_example_lock fa-solid fa-lock"></div>
+            <div title="Unlock" class="bg_button bg_example_unlock fa-solid fa-lock-open"></div>
+            <div title="Delete background" class="bg_button bg_example_cross fa-solid fa-circle-xmark"></div>
             <div class="BGSampleTitle">
             </div>
         </div>
@@ -4316,7 +4372,7 @@
 
     <div id="openai_logit_bias_template" class="template_element">
         <div class="openai_logit_bias_form">
-            <input class="openai_logit_bias_text text_pole" data-i18n="[placeholder]Type here..." placeholder="type here..." />
+            <input class="openai_logit_bias_text text_pole" data-i18n="[placeholder]Text or token ids" placeholder="Text or [token ids]" />
             <input class="openai_logit_bias_value text_pole" type="number" min="-100" value="0" max="100" />
             <i class="menu_button fa-solid fa-xmark openai_logit_bias_remove"></i>
             </form>
@@ -4716,6 +4772,178 @@
                 </div>
             </div>
         </div>
+        <div id="cfgConfig" class="drawer-content flexGap5">
+            <div class="panelControlBar flex-container">
+                <div id="cfgConfigHeader" class="fa-solid fa-grip drag-grabber"></div>
+                <div id="CFGClose" class="fa-solid fa-circle-xmark"></div>
+            </div>
+            <div name="cfgConfigHolder" class="scrollY">
+                <div id="chat_cfg_container">
+                    <div class="inline-drawer">
+                        <div id="CFGBlockToggle" class="inline-drawer-toggle inline-drawer-header">
+                            <b>Chat CFG</b>
+                            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                        </div>
+                        <div class="inline-drawer-content">
+                            <small>
+                                <b>Unique to this chat.</b><br>
+                            </small>
+                            <label for="chat_cfg_guidance_scale">
+                                <span data-i18n="Scale">Scale</span>
+                                <small data-i18n="1 = disabled">1 = disabled</small>
+                            </label>
+                            <div class="range-block-range-and-counter">
+                                <div class="range-block-range">
+                                    <input type="range" id="chat_cfg_guidance_scale" name="volume" min="0.10" max="4.00" step="0.05">
+                                </div>
+                                <div class="range-block-counter">
+                                    <div contenteditable="true" data-for="chat_cfg_guidance_scale" id="chat_cfg_guidance_scale_counter">
+                                        select
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <label for="chat_cfg_negative_prompt">
+                                    <span data-i18n="Negative Prompt">Negative Prompt</span>
+                                </label>
+                                <textarea id="chat_cfg_negative_prompt" rows="2" class="text_pole textarea_compact" data-i18n="[placeholder]write short replies, write replies using past tense" placeholder="write short replies, write replies using past tense"></textarea>
+
+                                <label for="chat_cfg_positive_prompt">
+                                    <span data-i18n="Positive Prompt">Positive Prompt</span>
+                                </label>
+                                <textarea id="chat_cfg_positive_prompt" rows="2" class="text_pole textarea_compact" data-i18n="[placeholder]write short replies, write replies using past tense" placeholder="write short replies, write replies using past tense"></textarea>
+                            </div>
+                            <div id="groupchat_cfg_use_chara_container">
+                                <label class="checkbox_label" for="groupchat_cfg_use_chara">
+                                    <input type="checkbox" id="groupchat_cfg_use_chara" />
+                                    <span data-i18n="Use character CFG scales">Use character CFG scales</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="chara_cfg_container" style="display: none;">
+                    <hr class="sysHR">
+                    <div class="inline-drawer">
+                        <div id="charaANBlockToggle" class="inline-drawer-toggle inline-drawer-header">
+                            <b>Character CFG</b>
+                            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                        </div>
+                        <div class="inline-drawer-content">
+                            <small><b>Will be automatically added as the CFG for this character.</b></small>
+                            <br />
+                            <label for="chara_cfg_guidance_scale">
+                                <span data-i18n="Scale">Scale</span>
+                                <small data-i18n="1 = disabled">1 = disabled</small>
+                            </label>
+                            <div class="range-block-range-and-counter">
+                                <div class="range-block-range">
+                                    <input type="range" id="chara_cfg_guidance_scale" name="volume" min="0.10" max="4.00" step="0.05">
+                                </div>
+                                <div class="range-block-counter">
+                                    <div contenteditable="true" data-for="chara_cfg_guidance_scale" id="chara_cfg_guidance_scale_counter">
+                                        select
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <label for="chara_cfg_negative_prompt">
+                                    <span data-i18n="Negative Prompt">Negative Prompt</span>
+                                </label>
+                                <textarea id="chara_cfg_negative_prompt" rows="2" class="text_pole textarea_compact" data-i18n="[placeholder]write short replies, write replies using past tense" placeholder="write short replies, write replies using past tense"></textarea>
+
+                                <label for="chara_cfg_positive_prompt">
+                                    <span data-i18n="Positive Prompt">Positive Prompt</span>
+                                </label>
+                                <textarea id="chara_cfg_positive_prompt" rows="2" class="text_pole textarea_compact" data-i18n="[placeholder]write short replies, write replies using past tense" placeholder="write short replies, write replies using past tense"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="global_cfg_container">
+                    <hr class="sysHR">
+                    <div class="inline-drawer">
+                        <div id="defaultANBlockToggle" class="inline-drawer-toggle inline-drawer-header">
+                            <b>Global CFG</b>
+                            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                        </div>
+                        <div class="inline-drawer-content">
+                            <small><b>Will be used as the default CFG options for every chat unless overridden.</b></small>
+                            <br />
+                            <label for="global_cfg_guidance_scale">
+                                <span data-i18n="Scale">Scale</span>
+                                <small data-i18n="1 = disabled">1 = disabled</small>
+                            </label>
+                            <div class="range-block-range-and-counter">
+                                <div class="range-block-range">
+                                    <input type="range" id="global_cfg_guidance_scale" name="volume" min="0.10" max="4.00" step="0.05">
+                                </div>
+                                <div class="range-block-counter">
+                                    <div contenteditable="true" data-for="global_cfg_guidance_scale" id="global_cfg_guidance_scale_counter">
+                                        select
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <label for="global_cfg_negative_prompt">
+                                    <span data-i18n="Negative Prompt">Negative Prompt</span>
+                                </label>
+                                <textarea id="global_cfg_negative_prompt" rows="2" class="text_pole textarea_compact" data-i18n="[placeholder]write short replies, write replies using past tense" placeholder="write short replies, write replies using past tense"></textarea>
+
+                                <label for="global_cfg_positive_prompt">
+                                    <span data-i18n="Positive Prompt">Positive Prompt</span>
+                                </label>
+                                <textarea id="global_cfg_positive_prompt" rows="2" class="text_pole textarea_compact" data-i18n="[placeholder]write short replies, write replies using past tense" placeholder="write short replies, write replies using past tense"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="cfg_prompt_combine_container">
+                    <hr class="sysHR">
+                    <div class="inline-drawer">
+                        <div id="defaultANBlockToggle" class="inline-drawer-toggle inline-drawer-header">
+                            <b>CFG Prompt Cascading</b>
+                            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                        </div>
+                        <div class="inline-drawer-content">
+                            <div class="flex-container flexFlowColumn">
+                                <small>
+                                    <b>Combine positive/negative prompts from other boxes.</b>
+                                    <br />
+                                    For example, ticking the chat, global, and character boxes combine all negative prompts into a comma-separated string.
+                                </small>
+                            </div>
+                            <br />
+                            <div class="flex-container flexFlowColumn">
+                                <label for="cfg_prompt_combine">
+                                    <span data-i18n="Scale">Always Include</span>
+                                </label>
+                                <label class="checkbox_label">
+                                    <input type="checkbox" name="cfg_prompt_combine" value="0" />
+                                    <span data-i18n="Chat Negatives">Chat Negatives</span>
+                                </label>
+                                <label class="checkbox_label">
+                                    <input type="checkbox" name="cfg_prompt_combine" value="1" />
+                                    <span data-i18n="Character Negatives">Character Negatives</span>
+                                </label>
+                                <label class="checkbox_label">
+                                    <input type="checkbox" name="cfg_prompt_combine" value="2" />
+                                    <span data-i18n="Global Negatives">Global Negatives</span>
+                                </label>
+                            </div>
+                            <div class="flex-container flexFlowColumn">
+                                <label>
+                                    Custom Separator: <input id="cfg_prompt_separator" class="text_pole textarea_compact widthUnset" placeholder="&quot;\n&quot;" type="text" />
+                                </label>
+                                <label>
+                                    Insertion Depth: <input id="cfg_prompt_insertion_depth" class="text_pole widthUnset" type="number" min="0" max="99" />
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     <div id="sheld">
         <div id="sheldheader" class="fa-solid fa-grip drag-grabber"></div>
@@ -4755,9 +4983,10 @@
                 <i class="fa-lg fa-solid fa-note-sticky"></i>
                 <span data-i18n="Author's Note">Author's Note</span>
             </a>
-            <div data-newbie-hidden id="options_advanced">
-
-            </div>
+            <a data-newbie-hidden id="option_toggle_CFG">
+                <i class="fa-lg fa-solid fa-scale-balanced"></i>
+                <span data-i18n="CFG Scale">CFG Scale</span>
+            </a>
             <a id="option_back_to_main">
                 <i class="fa-lg fa-solid fa-left-long"></i>
                 <span data-i18n="Back to parent chat">Back to parent chat</span>

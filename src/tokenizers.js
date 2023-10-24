@@ -95,6 +95,10 @@ function getTokenizerModel(requestModel) {
         return 'gpt-4';
     }
 
+    if (requestModel.includes('gpt-3.5-turbo-0301')) {
+        return 'gpt-3.5-turbo-0301';
+    }
+
     if (requestModel.includes('gpt-3.5-turbo')) {
         return 'gpt-3.5-turbo';
     }
@@ -296,8 +300,8 @@ function registerEndpoints(app, jsonParser) {
             return res.send({ "token_count": num_tokens });
         }
 
-        const tokensPerName = model.includes('gpt-4') ? 1 : -1;
-        const tokensPerMessage = model.includes('gpt-4') ? 3 : 4;
+        const tokensPerName = queryModel.includes('gpt-3.5-turbo-0301') ? -1 : 1;
+        const tokensPerMessage = queryModel.includes('gpt-3.5-turbo-0301') ? 4 : 3;
         const tokensPadding = 3;
 
         const tokenizer = getTiktokenTokenizer(model);
@@ -319,7 +323,7 @@ function registerEndpoints(app, jsonParser) {
 
         // NB: Since 2023-10-14, the GPT-3.5 Turbo 0301 model shoves in 7-9 extra tokens to every message.
         // More details: https://community.openai.com/t/gpt-3-5-turbo-0301-showing-different-behavior-suddenly/431326/14
-        if (queryModel.endsWith('-0301')) {
+        if (queryModel.includes('gpt-3.5-turbo-0301')) {
             num_tokens += 9;
         }
 

@@ -1,5 +1,5 @@
 import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods, } from "./scripts/RossAscends-mods.js";
-import { userStatsHandler, statMesProcess } from './scripts/stats.js';
+import { userStatsHandler, statMesProcess, initStats } from './scripts/stats.js';
 import {
     generateKoboldWithStreaming,
     kai_settings,
@@ -142,7 +142,7 @@ import {
     onlyUnique,
 } from "./scripts/utils.js";
 
-import { extension_settings, getContext, installExtension, loadExtensionSettings, processExtensionHelpers, registerExtensionHelper, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
+import { extension_settings, getContext, loadExtensionSettings, processExtensionHelpers, registerExtensionHelper, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
 import { COMMENT_NAME_DEFAULT, executeSlashCommands, getSlashCommandsHelp, registerSlashCommand } from "./scripts/slash-commands.js";
 import {
     tag_map,
@@ -169,7 +169,7 @@ import { getDeviceInfo } from "./scripts/RossAscends-mods.js";
 import { registerPromptManagerMigration } from "./scripts/PromptManager.js";
 import { getRegexedString, regex_placement } from "./scripts/extensions/regex/engine.js";
 import { FILTER_TYPES, FilterHelper } from "./scripts/filters.js";
-import { getCfgPrompt, getGuidanceScale } from "./scripts/extensions/cfg/util.js";
+import { getCfgPrompt, getGuidanceScale, initCfg } from "./scripts/cfg-scale.js";
 import {
     force_output_sequence,
     formatInstructModeChat,
@@ -182,6 +182,7 @@ import {
 import { applyLocale } from "./scripts/i18n.js";
 import { getTokenCount, getTokenizerModel, saveTokenCache } from "./scripts/tokenizers.js";
 import { initPersonas, selectCurrentPersona, setPersonaDescription } from "./scripts/personas.js";
+import { getBackgrounds, initBackgrounds } from "./scripts/backgrounds.js";
 
 //exporting functions and vars for mods
 export {
@@ -319,7 +320,6 @@ reloadMarkdownProcessor();
 console.debug('initializing Prompt Itemization Array on Startup');
 let itemizedPrompts = [];
 
-/* let bg_menu_toggle = false; */
 export const systemUserName = "SillyTavern System";
 let default_user_name = "User";
 let name1 = default_user_name;
@@ -348,7 +348,6 @@ let generation_started = new Date();
 let characters = [];
 let this_chid;
 let saveCharactersPage = 0;
-let backgrounds = [];
 const default_avatar = "img/ai4.png";
 export const system_avatar = "img/five.png";
 export const comment_avatar = "img/quill.png";
@@ -632,7 +631,6 @@ let create_save = {
 let animation_duration = 125;
 let animation_easing = "ease-in-out";
 let popup_type = "";
-let bg_file_for_del = "";
 let chat_file_for_del = "";
 let online_status = "no_connection";
 
@@ -721,9 +719,12 @@ async function firstLoadInit() {
     await getUserAvatars();
     await getCharacters();
     await getBackgrounds();
+    initBackgrounds();
     initAuthorsNote();
     initPersonas();
     initRossMods();
+    initStats();
+    initCfg();
 }
 
 function checkOnlineStatus() {
@@ -1030,73 +1031,6 @@ async function getCharacters() {
 
         await getGroups();
         await printCharacters(true);
-    }
-}
-
-async function getBackgrounds() {
-    const response = await fetch("/getbackgrounds", {
-        method: "POST",
-        headers: getRequestHeaders(),
-        body: JSON.stringify({
-            "": "",
-        }),
-    });
-    if (response.ok === true) {
-        const getData = await response.json();
-        //background = getData;
-        //console.log(getData.length);
-        $("#bg_menu_content").children('div').remove();
-        for (const bg of getData) {
-            const template = getBackgroundFromTemplate(bg);
-            $("#bg_menu_content").append(template);
-        }
-    }
-}
-
-function getBackgroundFromTemplate(bg) {
-    const thumbPath = getThumbnailUrl('bg', bg);
-    const template = $('#background_template .bg_example').clone();
-    template.attr('bgfile', bg);
-    template.attr('title', bg);
-    template.find('.bg_button').attr('bgfile', bg);
-    template.css('background-image', `url('${thumbPath}')`);
-    template.find('.BGSampleTitle').text(bg.slice(0, bg.lastIndexOf('.')));
-    return template;
-}
-
-async function setBackground(bg) {
-
-    jQuery.ajax({
-        type: "POST", //
-        url: "/setbackground", //
-        data: JSON.stringify({
-            bg: bg,
-        }),
-        beforeSend: function () {
-
-        },
-        cache: false,
-        dataType: "json",
-        contentType: "application/json",
-        //processData: false,
-        success: function (html) { },
-        error: function (jqXHR, exception) {
-            console.log(exception);
-            console.log(jqXHR);
-        },
-    });
-}
-
-async function delBackground(bg) {
-    const response = await fetch("/delbackground", {
-        method: "POST",
-        headers: getRequestHeaders(),
-        body: JSON.stringify({
-            bg: bg,
-        }),
-    });
-    if (response.ok === true) {
-
     }
 }
 
@@ -1742,7 +1676,7 @@ function substituteParams(content, _name1, _name2, _original, _group) {
     if (typeof _original === 'string') {
         content = content.replace(/{{original}}/i, _original);
     }
-    content = content.replace(/{{input}}/gi, $('#send_textarea').val());
+    content = content.replace(/{{input}}/gi, String($('#send_textarea').val()));
     content = content.replace(/{{user}}/gi, _name1);
     content = content.replace(/{{char}}/gi, _name2);
     content = content.replace(/{{charIfNotGroup}}/gi, _group);
@@ -1753,11 +1687,14 @@ function substituteParams(content, _name1, _name2, _original, _group) {
     content = content.replace(/<CHARIFNOTGROUP>/gi, _group);
     content = content.replace(/<GROUP>/gi, _group);
 
+    content = content.replace(/\{\{\/\/(.*?)\}\}/g, "");
+
     content = content.replace(/{{time}}/gi, moment().format('LT'));
     content = content.replace(/{{date}}/gi, moment().format('LL'));
     content = content.replace(/{{weekday}}/gi, moment().format('dddd'));
     content = content.replace(/{{isotime}}/gi, moment().format('HH:mm'));
     content = content.replace(/{{isodate}}/gi, moment().format('YYYY-MM-DD'));
+
     content = content.replace(/{{datetimeformat +([^}]*)}}/gi, (_, format) => {
         const formattedTime = moment().format(format);
         return formattedTime;
@@ -2185,11 +2122,12 @@ class StreamingProcessor {
         let processedText = cleanUpMessage(text, isImpersonate, isContinue, !isFinal);
 
         // Predict unbalanced asterisks / quotes during streaming
-        const charsToBalance = ['*', '"'];
+        const charsToBalance = ['*', '"', '```'];
         for (const char of charsToBalance) {
             if (!isFinal && isOdd(countOccurrences(processedText, char))) {
                 // Add character at the end to balance it
-                processedText = processedText.trimEnd() + char;
+                const separator = char.length > 1 ? '\n' : '';
+                processedText = processedText.trimEnd() + separator + char;
             }
         }
 
@@ -3080,7 +3018,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                                 : ` ${cfgPrompt.value}`;
                     } else {
                         // TODO: Make all extension prompts use an array/splice method
-                        finalMesSend[mesSend.length - cfgPrompt.depth].extensionPrompts.push(`${cfgPrompt.value}\n`);
+                        const lengthDiff = mesSend.length - cfgPrompt.depth;
+                        const cfgDepth = lengthDiff >= 0 ? lengthDiff : 0;
+                        finalMesSend[cfgDepth].extensionPrompts.push(`${cfgPrompt.value}\n`);
                     }
                 }
 
@@ -4819,8 +4759,6 @@ export async function getUserAvatars() {
     });
     if (response.ok === true) {
         const getData = await response.json();
-        //background = getData;
-        //console.log(getData.length);
         $("#user_avatar_block").html(""); //RossAscends: necessary to avoid doubling avatars each refresh.
         $("#user_avatar_block").append('<div class="avatar_upload">+</div>');
 
@@ -4883,9 +4821,9 @@ export function setUserName(value) {
 function setUserAvatar() {
     user_avatar = $(this).attr("imgfile");
     reloadUserAvatar();
-    saveSettingsDebounced();
     highlightSelectedAvatar();
     selectCurrentPersona();
+    saveSettingsDebounced();
     $('.zoomed_avatar[forchar]').remove();
 }
 
@@ -5932,48 +5870,6 @@ function callPopup(text, type, inputValue = '', { okButton, rows, wide, large } 
     });
 }
 
-function read_bg_load(input) {
-    if (input.files && input.files[0]) {
-        var reader = new FileReader();
-
-        reader.onload = function (e) {
-            $("#bg_load_preview")
-                .attr("src", e.target.result)
-                .width(103)
-                .height(83);
-
-            var formData = new FormData($("#form_bg_download").get(0));
-
-            //console.log(formData);
-            jQuery.ajax({
-                type: "POST",
-                url: "/downloadbackground",
-                data: formData,
-                beforeSend: function () {
-
-                },
-                cache: false,
-                contentType: false,
-                processData: false,
-                success: function (html) {
-                    setBackground(html);
-                    $("#bg1").css(
-                        "background-image",
-                        `url("${e.target.result}")`
-                    );
-                    $("#form_bg_download").after(getBackgroundFromTemplate(html));
-                },
-                error: function (jqXHR, exception) {
-                    console.log(exception);
-                    console.log(jqXHR);
-                },
-            });
-        };
-
-        reader.readAsDataURL(input.files[0]);
-    }
-}
-
 function showSwipeButtons() {
     if (chat.length === 0) {
         return;
@@ -6187,6 +6083,7 @@ function enlargeMessageImage() {
     const mesId = mesBlock.attr('mesid');
     const message = chat[mesId];
     const imgSrc = message?.extra?.image;
+    const title = message?.extra?.title;
 
     if (!imgSrc) {
         return;
@@ -6195,7 +6092,12 @@ function enlargeMessageImage() {
     const img = document.createElement('img');
     img.classList.add('img_enlarged');
     img.src = imgSrc;
-    callPopup(img.outerHTML, 'text', '', { wide: true, large: true });
+    const imgContainer = $('<div><pre><code></code></pre></div>');
+    imgContainer.prepend(img);
+    imgContainer.addClass('img_enlarged_container');
+    imgContainer.find('code').addClass('txt').text(title);
+    addCopyToCodeBlocks(imgContainer);
+    callPopup(imgContainer, 'text', '', { wide: true, large: true });
 }
 
 function updateAlternateGreetingsHintVisibility(root) {
@@ -7340,86 +7242,6 @@ jQuery(async function () {
     });
     $("#avatar_upload_file").on("change", uploadUserAvatar);
 
-    $(document).on("click", ".bg_example", async function () {
-        //when user clicks on a BG thumbnail...
-        const this_bgfile = $(this).attr("bgfile"); // this_bgfile = whatever they clicked
-
-        const customBg = window.getComputedStyle(document.getElementById('bg_custom')).backgroundImage;
-
-        // custom background is set. Do not override the layer below
-        if (customBg !== 'none') {
-            return;
-        }
-
-        // if clicked on upload button
-        if (!this_bgfile) {
-            return;
-        }
-
-        const backgroundUrl = `backgrounds/${this_bgfile}`;
-
-        // fetching to browser memory to reduce flicker
-        fetch(backgroundUrl).then(() => {
-            $("#bg1").css(
-                "background-image",
-                `url("${backgroundUrl}")`
-            );
-            setBackground(this_bgfile);
-        }).catch(() => {
-            console.log('Background could not be set: ' + backgroundUrl);
-        });
-
-    });
-
-    $(document).on('click', '.bg_example_edit', async function (e) {
-        e.stopPropagation();
-        const old_bg = $(this).attr('bgfile');
-
-        if (!old_bg) {
-            console.debug('no bgfile');
-            return;
-        }
-
-        const fileExtension = old_bg.split('.').pop();
-        const old_bg_extensionless = old_bg.replace(`.${fileExtension}`, '');
-        const new_bg_extensionless = await callPopup('<h3>Enter new background name:</h3>', 'input', old_bg_extensionless);
-
-        if (!new_bg_extensionless) {
-            console.debug('no new_bg_extensionless');
-            return;
-        }
-
-        const new_bg = `${new_bg_extensionless}.${fileExtension}`;
-
-        if (old_bg_extensionless === new_bg_extensionless) {
-            console.debug('new_bg === old_bg');
-            return;
-        }
-
-        const data = { old_bg, new_bg };
-        const response = await fetch('/renamebackground', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            body: JSON.stringify(data),
-            cache: 'no-cache',
-        });
-
-        if (response.ok) {
-            await getBackgrounds();
-        } else {
-            toastr.warning('Failed to rename background');
-        }
-    });
-
-    $(document).on("click", ".bg_example_cross", function (e) {
-        e.stopPropagation();
-        bg_file_for_del = $(this);
-        //$(this).parent().remove();
-        //delBackground(this_bgfile);
-        popup_type = "del_bg";
-        callPopup("<h3>Delete the background?</h3>");
-    });
-
     $(document).on("click", ".PastChat_cross", function () {
         chat_file_for_del = $(this).attr('file_name');
         console.debug('detected cross click for' + chat_file_for_del);
@@ -7476,10 +7298,6 @@ jQuery(async function () {
             dialogueResolve($("#avatarToCrop").data('cropper').getCroppedCanvas().toDataURL('image/jpeg'));
         };
 
-        if (popup_type == "del_bg") {
-            delBackground(bg_file_for_del.attr("bgfile"));
-            bg_file_for_del.parent().remove();
-        }
         if (popup_type == "del_chat") {
             //close past chat popup
             $("#select_chat_cross").click();
@@ -7572,10 +7390,6 @@ jQuery(async function () {
             dialogueResolve = null;
         }
 
-    });
-
-    $("#add_bg_button").change(function () {
-        read_bg_load(this);
     });
 
     $("#add_avatar_button").change(function () {
@@ -7917,6 +7731,7 @@ jQuery(async function () {
                 $("#rm_button_selected_ch").children("h2").text('');
                 select_rm_characters();
                 sendSystemMessage(system_message_types.WELCOME);
+                eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
             } else {
                 toastr.info("Please stop the message generation first.");
             }
@@ -8267,6 +8082,33 @@ jQuery(async function () {
             });
         }, 150);
     })
+
+    $(document).on("click", function (e) {
+        // Expanded options don't need to be closed
+        if (power_user.expand_message_actions) {
+            return;
+        }
+
+        // Check if the click was outside the relevant elements
+        if (!$(e.target).closest('.extraMesButtons, .extraMesButtonsHint').length) {
+            // Transition out the .extraMesButtons first
+            $('.extraMesButtons:visible').transition({
+                opacity: 0,
+                duration: 150,
+                easing: 'ease-in-out',
+                complete: function () {
+                    $(this).hide(); // Hide the .extraMesButtons after the transition
+
+                    // Transition the .extraMesButtonsHint back in
+                    $('.extraMesButtonsHint:not(:visible)').show().transition({
+                        opacity: .2,
+                        duration: 150,
+                        easing: 'ease-in-out'
+                    });
+                }
+            });
+        }
+    });
 
     $(document).on("click", ".mes_edit_cancel", function () {
         let text = chat[this_edit_mes_id]["mes"];
@@ -8818,18 +8660,6 @@ jQuery(async function () {
         }
     });
 
-    $("#bg-filter").on("input", function () {
-        const filterValue = String($(this).val()).toLowerCase();
-        $("#bg_menu_content > div").each(function () {
-            const $bgContent = $(this);
-            if ($bgContent.attr("title").toLowerCase().includes(filterValue)) {
-                $bgContent.show();
-            } else {
-                $bgContent.hide();
-            }
-        });
-    });
-
     $("#char-management-dropdown").on('change', async (e) => {
         let target = $(e.target.selectedOptions).attr('id');
         switch (target) {
@@ -8973,34 +8803,6 @@ jQuery(async function () {
                 break;
         }
     });
-
-    /**
-     * Handles the click event for the third-party extension import button.
-     * Prompts the user to enter the Git URL of the extension to import.
-     * After obtaining the Git URL, makes a POST request to '/api/extensions/install' to import the extension.
-     * If the extension is imported successfully, a success message is displayed.
-     * If the extension import fails, an error message is displayed and the error is logged to the console.
-     * After successfully importing the extension, the extension settings are reloaded and a 'EXTENSION_SETTINGS_LOADED' event is emitted.
-     *
-     * @listens #third_party_extension_button#click - The click event of the '#third_party_extension_button' element.
-     */
-    $('#third_party_extension_button').on('click', async () => {
-        const html = `<h3>Enter the Git URL of the extension to import</h3>
-    <br>
-    <p><b>Disclaimer:</b> Please be aware that using external extensions can have unintended side effects and may pose security risks. Always make sure you trust the source before importing an extension. We are not responsible for any damage caused by third-party extensions.</p>
-    <br>
-    <p>Example: <tt> https://github.com/author/extension-name </tt></p>`
-        const input = await callPopup(html, 'input');
-
-        if (!input) {
-            console.debug('Extension import cancelled');
-            return;
-        }
-
-        const url = input.trim();
-        await installExtension(url);
-    });
-
 
     const $dropzone = $(document.body);
 
