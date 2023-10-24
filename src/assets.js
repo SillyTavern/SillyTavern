@@ -257,7 +257,7 @@ function registerEndpoints(app, jsonParser) {
                             for (let file of fs.readdirSync(live2dModelPath)) {
                                 //console.debug("Character live2d model found:", file)
                                 if (file.includes("model"))
-                                    output.push([`${modelFolder}`,`/characters/${name}/${category}/${modelFolder}/${file}`]);
+                                    output.push([`${modelFolder}`,path.join("characters", name, category, modelFolder, file) ]);
                             }
                         }
                     }
