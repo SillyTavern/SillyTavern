@@ -90,15 +90,26 @@ export function loadKoboldSettings(preset) {
     }
 }
 
-export function getKoboldGenerationData(finalPrompt, this_settings, this_amount_gen, this_max_context, isImpersonate, type) {
-    const sampler_order = kai_settings.sampler_order || this_settings.sampler_order;
+/**
+ * Gets the Kobold generation data.
+ * @param {string} finalPrompt Final text prompt.
+ * @param {object} settings Settings preset object.
+ * @param {number} maxLength Maximum length.
+ * @param {number} maxContextLength Maximum context length.
+ * @param {boolean} isHorde True if the generation is for a horde, false otherwise.
+ * @param {string} type Generation type.
+ * @returns {object} Kobold generation data.
+ */
+export function getKoboldGenerationData(finalPrompt, settings, maxLength, maxContextLength, isHorde, type) {
+    const isImpersonate = type === 'impersonate';
+    const sampler_order = kai_settings.sampler_order || settings.sampler_order;
 
     let generate_data = {
         prompt: finalPrompt,
         gui_settings: false,
         sampler_order: sampler_order,
-        max_context_length: Number(this_max_context),
-        max_length: this_amount_gen,
+        max_context_length: Number(maxContextLength),
+        max_length: maxLength,
         rep_pen: Number(kai_settings.rep_pen),
         rep_pen_range: Number(kai_settings.rep_pen_range),
         rep_pen_slope: kai_settings.rep_pen_slope,
@@ -117,7 +128,7 @@ export function getKoboldGenerationData(finalPrompt, this_settings, this_amount_
         s7: sampler_order[6],
         use_world_info: false,
         singleline: kai_settings.single_line,
-        stop_sequence: kai_flags.can_use_stop_sequence ? getStoppingStrings(isImpersonate) : undefined,
+        stop_sequence: (kai_flags.can_use_stop_sequence || isHorde) ? getStoppingStrings(isImpersonate) : undefined,
         streaming: kai_settings.streaming_kobold && kai_flags.can_use_streaming && type !== 'quiet',
         can_abort: kai_flags.can_use_streaming,
         mirostat: kai_flags.can_use_mirostat ? kai_settings.mirostat : undefined,
