@@ -3,6 +3,11 @@
 import {characters, event_types, eventSource, getOneCharacter} from "../script.js";
 import {favsToHotswap} from "./RossAscends-mods.js";
 
+const toggleFavoriteHighlight = (characterId) => {
+    const element = document.getElementById(`CharID${characterId}`);
+    element.classList.toggle('is_fav');
+}
+
 /**
  * Implement a SingletonPattern, allowing access to the group overlay instance
  * from everywhere via (new CharacterGroupOverlay())
@@ -38,10 +43,16 @@ class CharacterContextMenu {
             processData: false,
             success: () =>
                 getOneCharacter(character.avatar)
-                .then(() =>
+                    .then(() => {
+                        toggleFavoriteHighlight(characterId);
                         favsToHotswap()
-                        .then(() => eventSource.emit(event_types.CHARACTER_EDITED, { detail: { id: character.id, character: characters[character.id] } })
-                        )),
+                            .then(() => eventSource.emit(event_types.CHARACTER_EDITED, {
+                                detail: {
+                                    id: characterId,
+                                    character: character
+                                }
+                            }))
+                    }),
             error: response => toastr.error('Character not saved. Error: ' + response.responseJSON?.message),
         });
     }
