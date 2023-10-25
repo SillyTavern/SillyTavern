@@ -1,6 +1,13 @@
 "use strict";
 
-import {characters, event_types, eventSource, getOneCharacter} from "../script.js";
+import {
+    characters,
+    event_types,
+    eventSource,
+    getCharacters,
+    getOneCharacter,
+    getRequestHeaders
+} from "../script.js";
 import {favsToHotswap} from "./RossAscends-mods.js";
 
 const toggleFavoriteHighlight = (characterId) => {
@@ -22,7 +29,21 @@ class CharacterGroupOverlayState {
 }
 
 class CharacterContextMenu {
+    /**
+     * Duplicate a character
+     *
+     * @param characterId
+     * @returns {Promise<Response>}
+     */
+    static duplicate = async (characterId) => {
+        const character = CharacterContextMenu.getCharacter(characterId);
 
+        return fetch('/dupecharacter', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ avatar_url: character.avatar }),
+        });
+    }
 
     static favorite = (characterId) => {
         const character = CharacterContextMenu.getCharacter(characterId);
@@ -73,7 +94,8 @@ class CharacterContextMenu {
 
     constructor(characterGroupOverlay) {
         const contextMenuItems = [
-            {id: 'character_context_menu_favorite', callback: characterGroupOverlay.handleContextMenuFavorite}
+            {id: 'character_context_menu_favorite', callback: characterGroupOverlay.handleContextMenuFavorite},
+            {id: 'character_context_menu_duplicate', callback: characterGroupOverlay.handleContextMenuDuplicate}
         ];
 
         contextMenuItems.forEach(contextMenuItem => document.getElementById(contextMenuItem.id).addEventListener('click', contextMenuItem.callback))
@@ -259,6 +281,11 @@ class CharacterGroupOverlay {
     }
 
     handleContextMenuFavorite = () => this.selectedCharacters.forEach(characterId => CharacterContextMenu.favorite(characterId));
+
+    /**
+     * Aggregate duplicate promises for selected characters
+     */
+    handleContextMenuDuplicate = () => Promise.all(this.selectedCharacters.map(async characterId => CharacterContextMenu.duplicate(characterId))).then(() => getCharacters())
 
     addStateChangeCallback = callback => this.stateChangeCallbacks.push(callback);
 
