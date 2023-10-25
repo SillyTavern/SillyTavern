@@ -22,7 +22,9 @@ class CharacterGroupOverlayState {
 }
 
 class CharacterContextMenu {
-    static toggleFavorite = (characterId) => {
+
+
+    static favorite = (characterId) => {
         const character = CharacterContextMenu.getCharacter(characterId);
         const data = {
             name: character.name,
@@ -256,7 +258,7 @@ class CharacterGroupOverlay {
         }
     }
 
-    handleContextMenuFavorite = () => this.selectedCharacters.forEach(characterId => CharacterContextMenu.toggleFavorite(characterId));
+    handleContextMenuFavorite = () => this.selectedCharacters.forEach(characterId => CharacterContextMenu.favorite(characterId));
 
     addStateChangeCallback = callback => this.stateChangeCallbacks.push(callback);
 
