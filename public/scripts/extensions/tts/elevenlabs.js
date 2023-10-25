@@ -69,7 +69,7 @@ class ElevenLabsTtsProvider {
         $('#elevenlabs_tts_stability').val(this.settings.stability)
         $('#elevenlabs_tts_similarity_boost').val(this.settings.similarity_boost)
         $('#elevenlabs_tts_api_key').val(this.settings.apiKey)
-        $('#tts_auto_generation').prop('checked', this.settings.multilingual)
+        $('#elevenlabs_tts_multilingual').prop('checked', this.settings.multilingual)
         $('#eleven_labs_connect').on('click', () => {this.onConnectClick()})
         $('#elevenlabs_tts_settings').on('input',this.onSettingsChange)
 
