@@ -45,11 +45,18 @@ class CharacterContextMenu {
         });
     }
 
-    static favorite = (characterId) => {
+    /**
+     * Favorite a character
+     * and toggle its ui element.
+     *
+     * @param characterId
+     * @returns {Promise<void>}
+     */
+    static favorite = async (characterId) => {
         const character = CharacterContextMenu.getCharacter(characterId);
         const data = {
             name: character.name,
-            avatar:  character.avatar,
+            avatar: character.avatar,
             data: {
                 extensions: {
                     fav: !character.data.extensions.fav
@@ -57,26 +64,13 @@ class CharacterContextMenu {
             }
         };
 
-        jQuery.ajax({
-            type: "POST",
-            url: '/v2/editcharacterattribute',
-            data: JSON.stringify(data),
-            contentType: "application/json; charset=utf-8",
-            cache: false,
-            processData: false,
-            success: () =>
-                getOneCharacter(character.avatar)
-                    .then(() => {
-                        toggleFavoriteHighlight(characterId);
-                        favsToHotswap()
-                            .then(() => eventSource.emit(event_types.CHARACTER_EDITED, {
-                                detail: {
-                                    id: characterId,
-                                    character: character
-                                }
-                            }))
-                    }),
-            error: response => toastr.error('Character not saved. Error: ' + response.responseJSON?.message),
+        return fetch('/v2/editcharacterattribute', {
+            method: "POST",
+            headers: getRequestHeaders(),
+            body: JSON.stringify(data),
+        }).then((response) => {
+            if (response.ok) toggleFavoriteHighlight(characterId)
+            else toastr.error('Character not saved. Error: ' + response.json()?.message)
         });
     }
 
@@ -280,12 +274,14 @@ class CharacterGroupOverlay {
         }
     }
 
-    handleContextMenuFavorite = () => this.selectedCharacters.forEach(characterId => CharacterContextMenu.favorite(characterId));
+    handleContextMenuFavorite = () => Promise.all(this.selectedCharacters.map(async characterId => CharacterContextMenu.favorite(characterId)))
+        .then(() => getCharacters())
+        .then(() => favsToHotswap())
+        .then(() => this.browseState())
 
-    /**
-     * Aggregate duplicate promises for selected characters
-     */
-    handleContextMenuDuplicate = () => Promise.all(this.selectedCharacters.map(async characterId => CharacterContextMenu.duplicate(characterId))).then(() => getCharacters())
+    handleContextMenuDuplicate = () => Promise.all(this.selectedCharacters.map(async characterId => CharacterContextMenu.duplicate(characterId)))
+        .then(() => getCharacters())
+        .then(() => this.browseState())
 
     addStateChangeCallback = callback => this.stateChangeCallbacks.push(callback);
 
