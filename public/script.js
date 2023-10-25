@@ -5777,15 +5777,14 @@ export function setScenarioOverride() {
     const isGroup = !!selected_group;
     template.find('[data-group="true"]').toggle(isGroup);
     template.find('[data-character="true"]').toggle(!isGroup);
-    template.find('.chat_scenario').text(metadataValue).on('input', onScenarioOverrideInput);
+    template.find('.chat_scenario').val(metadataValue).on('input', onScenarioOverrideInput);
     template.find('.remove_scenario_override').on('click', onScenarioOverrideRemoveClick);
     callPopup(template, 'text');
 }
 
 function onScenarioOverrideInput() {
-    const value = $(this).val();
-    const metadata = { scenario: value, };
-    updateChatMetadata(metadata, false);
+    const value = String($(this).val());
+    chat_metadata['scenario'] = value;
     saveMetadataDebounced();
 }
 
