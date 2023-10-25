@@ -1,12 +1,12 @@
 "use strict";
 
 import {
-    characters,
+    characters, deleteCharacter,
     event_types,
     eventSource,
     getCharacters,
     getOneCharacter,
-    getRequestHeaders
+    getRequestHeaders, handleDeleteCharacter, this_chid
 } from "../script.js";
 import {favsToHotswap} from "./RossAscends-mods.js";
 
@@ -74,6 +74,39 @@ class CharacterContextMenu {
         });
     }
 
+    static delete = async (characterId, deleteChats = false) => {
+        const character = CharacterContextMenu.getCharacter(characterId);
+
+        return fetch('/deletecharacter', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ avatar_url: character.avatar , delete_chats: deleteChats }),
+            cache: 'no-cache',
+        }).then(response => {
+            if (response.ok) {
+                deleteCharacter(character.name, character.avatar).then(() => {
+                    if (deleteChats) {
+                        fetch("/getallchatsofcharacter", {
+                            method: 'POST',
+                            body: JSON.stringify({ avatar_url: character.avatar }),
+                            headers: getRequestHeaders(),
+                        }).then( (response) => {
+                            let data = response.json();
+                            data = Object.values(data);
+                            const pastChats = data.sort((a, b) => a["file_name"].localeCompare(b["file_name"])).reverse();
+
+                            for (const chat of pastChats) {
+                                const name = chat.file_name.replace('.jsonl', '');
+                                eventSource.emit(event_types.CHAT_DELETED, name);
+                            }
+                        });
+                    }
+                })
+            }
+            eventSource.emit('characterDeleted', { id: this_chid, character: characters[this_chid] });
+        });
+    }
+
     static getCharacter = (characterId) => characters[characterId] ?? null;
 
     static show = (positionX, positionY) => {
@@ -89,7 +122,8 @@ class CharacterContextMenu {
     constructor(characterGroupOverlay) {
         const contextMenuItems = [
             {id: 'character_context_menu_favorite', callback: characterGroupOverlay.handleContextMenuFavorite},
-            {id: 'character_context_menu_duplicate', callback: characterGroupOverlay.handleContextMenuDuplicate}
+            {id: 'character_context_menu_duplicate', callback: characterGroupOverlay.handleContextMenuDuplicate},
+            {id: 'character_context_menu_delete', callback: characterGroupOverlay.handleContextMenuDelete}
         ];
 
         contextMenuItems.forEach(contextMenuItem => document.getElementById(contextMenuItem.id).addEventListener('click', contextMenuItem.callback))
@@ -280,6 +314,10 @@ class CharacterGroupOverlay {
         .then(() => this.browseState())
 
     handleContextMenuDuplicate = () => Promise.all(this.selectedCharacters.map(async characterId => CharacterContextMenu.duplicate(characterId)))
+        .then(() => getCharacters())
+        .then(() => this.browseState())
+
+    handleContextMenuDelete = () => Promise.all(this.selectedCharacters.map(async characterId => CharacterContextMenu.delete(characterId)))
         .then(() => getCharacters())
         .then(() => this.browseState())
 
