@@ -1,6 +1,7 @@
 "use strict";
 
-import {event_types, eventSource} from "../script.js";
+import {characters, event_types, eventSource, getOneCharacter} from "../script.js";
+import {favsToHotswap} from "./RossAscends-mods.js";
 
 /**
  * Implement a SingletonPattern, allowing access to the group overlay instance
@@ -15,9 +16,60 @@ class CharacterGroupOverlayState {
     static select = 1;
 }
 
+class CharacterContextMenu {
+    static toggleFavorite = (characterId) => {
+        const character = CharacterContextMenu.getCharacter(characterId);
+        const data = {
+            name: character.name,
+            avatar:  character.avatar,
+            data: {
+                extensions: {
+                    fav: !character.data.extensions.fav
+                }
+            }
+        };
+
+        jQuery.ajax({
+            type: "POST",
+            url: '/v2/editcharacterattribute',
+            data: JSON.stringify(data),
+            contentType: "application/json; charset=utf-8",
+            cache: false,
+            processData: false,
+            success: () =>
+                getOneCharacter(character.avatar)
+                .then(() =>
+                        favsToHotswap()
+                        .then(() => eventSource.emit(event_types.CHARACTER_EDITED, { detail: { id: character.id, character: characters[character.id] } })
+                        )),
+            error: response => toastr.error('Character not saved. Error: ' + response.responseJSON?.message),
+        });
+    }
+
+    static getCharacter = (characterId) => characters[characterId] ?? null;
+
+    static show = (positionX, positionY) => {
+        let contextMenu = document.getElementById(CharacterGroupOverlay.contextMenuId);
+        contextMenu.style.left = `${positionX}px`;
+        contextMenu.style.top = `${positionY}px`;
+
+        document.getElementById(CharacterGroupOverlay.contextMenuId).classList.remove('hidden');
+    }
+
+    static hide = () => document.getElementById(CharacterGroupOverlay.contextMenuId).classList.add('hidden');
+
+    constructor(characterGroupOverlay) {
+        const contextMenuItems = [
+            {id: 'character_context_menu_favorite', callback: characterGroupOverlay.handleContextMenuFavorite}
+        ];
+
+        contextMenuItems.forEach(contextMenuItem => document.getElementById(contextMenuItem.id).addEventListener('click', contextMenuItem.callback))
+    }
+}
+
 class CharacterGroupOverlay {
     static containerId = 'rm_print_characters_block';
-    static contextMenuClass = 'character_context_menu';
+    static contextMenuId = 'character_context_menu';
     static characterClass = 'character_select';
     static selectModeClass = 'group_overlay_mode_select';
     static selectedClass = 'character_selected';
@@ -124,7 +176,7 @@ class CharacterGroupOverlay {
         document.removeEventListener('click', this.handleContextMenuHide);
     }
 
-    handleHold = (event) => {
+    handleHold = () => {
         this.isLongPress = true;
         setTimeout(() => {
             if (this.isLongPress) {
@@ -149,6 +201,7 @@ class CharacterGroupOverlay {
                     .forEach(element => element.removeEventListener('click', this.toggleCharacterSelected));
                 this.clearSelectedCharacters();
                 this.disableContextMenu();
+                CharacterContextMenu.hide();
                 break;
             case CharacterGroupOverlayState.select:
                 this.container.classList.add(CharacterGroupOverlay.selectModeClass);
@@ -181,17 +234,14 @@ class CharacterGroupOverlay {
     handleContextMenuShow = (event) => {
         event.preventDefault();
         document.getElementById(CharacterGroupOverlay.containerId).style.pointerEvents = 'none';
-        let contextMenu = document.getElementById(CharacterGroupOverlay.contextMenuClass);
-        contextMenu.style.top = `${event.clientY}px`;
-        contextMenu.style.left = `${event.clientX}px`;
-        contextMenu.classList.remove('hidden');
+        CharacterContextMenu.show(event.clientX, event.clientY);
     }
 
     handleContextMenuHide = (event) => {
         document.getElementById(CharacterGroupOverlay.containerId).style.pointerEvents = '';
-        let contextMenu = document.getElementById(CharacterGroupOverlay.contextMenuClass);
+        let contextMenu = document.getElementById(CharacterGroupOverlay.contextMenuId);
         if (false === contextMenu.contains(event.target)) {
-            contextMenu.classList.add('hidden');
+            CharacterContextMenu.hide();
         }
     }
 
