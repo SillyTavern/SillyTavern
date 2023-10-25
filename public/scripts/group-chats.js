@@ -66,6 +66,7 @@ import {
     system_avatar,
     isChatSaving,
     setExternalAbortController,
+    baseChatReplace,
 } from "../script.js";
 import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect, tag_map, printTagFilters } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
@@ -196,6 +197,53 @@ export async function getGroupChat(groupId) {
     }
 
     eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
+}
+
+/**
+ * Combines group members info a single string. Only for groups with generation mode set to APPEND.
+ * @param {string} groupId Group ID
+ * @returns {{description: string, personality: string, scenario: string, mesExample: string}} Group character cards combined
+ */
+export function getGroupCharacterCards(groupId) {
+    console.debug('getGroupCharacterCards entered for group: ', groupId);
+    const group = groups.find(x => x.id === groupId);
+
+    if (!group || group?.generation_mode !== group_generation_mode.APPEND || !Array.isArray(group.members) || !group.members.length) {
+        return null;
+    }
+
+    const scenarioOverride = chat_metadata['scenario'];
+
+    let descriptions = [];
+    let personalities = [];
+    let scenarios = [];
+    let mesExamples = [];
+
+    for (const member of group.members) {
+        if (group.disabled_members.includes(member)) {
+            console.debug(`Skipping disabled group member: ${member}`);
+            continue;
+        }
+
+        const character = characters.find(x => x.avatar === member);
+
+        if (!character) {
+            console.debug(`Skipping missing member: ${member}`);
+            continue;
+        }
+
+        descriptions.push(baseChatReplace(character.description.trim(), name1, character.name));
+        personalities.push(baseChatReplace(character.personality.trim(), name1, character.name));
+        scenarios.push(baseChatReplace(character.scenario.trim(), name1, character.name));
+        mesExamples.push(baseChatReplace(character.mes_example.trim(), name1, character.name));
+    }
+
+    const description = descriptions.join('\n');
+    const personality = personalities.join('\n');
+    const scenario = scenarioOverride?.trim() || scenarios.join('\n');
+    const mesExample = mesExamples.join('\n');
+
+    return { description, personality, scenario, mesExample };
 }
 
 function getFirstCharacterMessage(character) {
@@ -1098,7 +1146,7 @@ function select_group_chats(groupId, skipAnimation) {
     const group = openGroupId && groups.find((x) => x.id == openGroupId);
     const groupName = group?.name ?? "";
     const replyStrategy = Number(group?.activation_strategy ?? group_activation_strategy.NATURAL);
-    const generationMode = Number(group?.generation_mode ?? group_generation_mode.DEFAULT);
+    const generationMode = Number(group?.generation_mode ?? group_generation_mode.SWAP);
 
     setMenuType(!!group ? 'group_edit' : 'group_create');
     $("#group_avatar_preview").empty().append(getGroupAvatar(group));
