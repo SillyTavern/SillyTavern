@@ -2573,6 +2573,7 @@ app.post('/creategroup', jsonParser, (request, response) => {
         avatar_url: request.body.avatar_url,
         allow_self_responses: !!request.body.allow_self_responses,
         activation_strategy: request.body.activation_strategy ?? 0,
+        generation_mode: request.body.generation_mode ?? 0,
         disabled_members: request.body.disabled_members ?? [],
         chat_metadata: request.body.chat_metadata ?? {},
         fav: request.body.fav,

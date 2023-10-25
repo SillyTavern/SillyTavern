@@ -3591,7 +3591,12 @@
 
                     <div class="inline-drawer wide100p flexFlowColumn">
                         <div id="groupControlsToggle" class="inline-drawer-toggle inline-drawer-header">
-                            <span data-i18n="Group Controls">Group Controls</span>
+                            <span>
+                                <span data-i18n="Group Controls">Group Controls</span>
+                                <a href="https://docs.sillytavern.app/usage/core-concepts/groupchats/" class="notes-link" target="_blank">
+                                    <span class="note-link-span">?</span>
+                                </a>
+                            </span>
                             <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                         </div>
                         <div class="inline-drawer-content">
@@ -3607,7 +3612,7 @@
                                     </div>
                                     <div id="groupTagList" class="tags paddingTopBot5"></div>
                                 </div>
-                                <div id="rm_group_top_bar" class="flex-container alignitemscenter spaceBetween width100p">
+                                <div id="rm_group_top_bar" class="flex-container alignitemscenter spaceBetween width100p fontsize80p">
                                     <div>
                                         <label class="add_avatar avatar flex-container justifyCenter" for="group_avatar_button" title="Click to select a new avatar for this group" data-i18n="[title]Click to select a new avatar for this group">
                                             <div id="group_avatar_preview">
@@ -3618,32 +3623,24 @@
                                             <input hidden type="file" id="group_avatar_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
                                         </label>
                                     </div>
-                                    <div name="GroupStragegyAndOrder" id="rm_group_buttons" class="fontsize80p flex-container paddingLeftRight5 flex2">
-                                        <div class="">
+                                    <div name="GroupStragegyAndOrder" id="rm_group_buttons" class="flex-container paddingLeftRight5 flex2">
+                                        <div class="flex1 flexGap5">
                                             <div class="flex-container flexnowrap width100p whitespacenowrap">
                                                 <span data-i18n="Group reply strategy">Group reply strategy</span>
-                                                <a href="https://docs.sillytavern.app/usage/core-concepts/groupchats/" class="notes-link" target="_blank">
-                                                    <span class="note-link-span">?</span>
-                                                </a>
                                             </div>
-                                            <label class="checkbox_label flexnowrap whitespacenowrap">
-                                                <input type="radio" name="rm_group_activation_strategy" value="0" />
-                                                <span data-i18n="Natural order">Natural order</span>
-                                            </label>
-                                            <label class="checkbox_label flexnowrap whitespacenowrap">
-                                                <input type="radio" name="rm_group_activation_strategy" value="1" />
-                                                <span data-i18n="List order">List order</span>
-                                            </label>
+                                            <select id="rm_group_activation_strategy">
+                                                <option value="0" data-i18n="Natural order">Natural order</option>
+                                                <option value="1" data-i18n="List order">List order</option>
+                                            </select>
                                         </div>
-                                        <div class="">
-                                            <label class="checkbox_label whitespacenowrap">
-                                                <input id="rm_group_allow_self_responses" type="checkbox" />
-                                                <span data-i18n="Allow self responses">Allow self responses</span>
-                                            </label>
-                                            <label id="rm_group_automode_label" class="checkbox_label whitespacenowrap">
-                                                <input id="rm_group_automode" type="checkbox" />
-                                                <span data-i18n="Auto Mode">Auto Mode</span>
-                                            </label>
+                                        <div class="flex1 flexGap5">
+                                            <div class="flex-container flexnowrap width100p whitespacenowrap">
+                                                <span data-i18n="Group generation handling mode">Group generation handling mode</span>
+                                            </div>
+                                            <select id="rm_group_generation_mode">
+                                                <option value="0" data-i18n="Swap character cards">Swap character cards</option>
+                                                <option value="1" data-i18n="Join character cards">Join character cards</option>
+                                            </select>
                                         </div>
                                     </div>
                                     <div id="GroupFavDelOkBack" class="flex-container flexGap5 spaceEvenly flex1">
@@ -3654,6 +3651,17 @@
                                         <div id="rm_group_submit" class="heightFitContent margin0 menu_button fa-solid fa-check" title="Create" data-i18n="[title]Create"></div>
                                         <div id="rm_group_restore_avatar" class="heightFitContent margin0 menu_button fa-solid fa-images" title="Restore collage avatar" data-i18n="[title]Restore collage avatar"></div>
                                         <div id="rm_group_delete" class="heightFitContent margin0 menu_button fa-solid fa-trash-can" title="Delete" data-i18n="[title]Delete"></div>
+
+                                        <div class="flex1">
+                                            <label class="checkbox_label whitespacenowrap">
+                                                <input id="rm_group_allow_self_responses" type="checkbox" />
+                                                <span data-i18n="Allow self responses">Allow self responses</span>
+                                            </label>
+                                            <label id="rm_group_automode_label" class="checkbox_label whitespacenowrap">
+                                                <input id="rm_group_automode" type="checkbox" />
+                                                <span data-i18n="Auto Mode">Auto Mode</span>
+                                            </label>
+                                        </div>
                                     </div>
 
                                 </div>
