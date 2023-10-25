@@ -67,6 +67,7 @@ import {
     isChatSaving,
     setExternalAbortController,
     baseChatReplace,
+    depth_prompt_depth_default,
 } from "../script.js";
 import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect, tag_map, printTagFilters } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
@@ -197,6 +198,53 @@ export async function getGroupChat(groupId) {
     }
 
     eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
+}
+
+/**
+ * Gets depth prompts for group members.
+ * @param {string} groupId Group ID
+ * @returns {{depth: number, text: string}[]} Array of depth prompts
+ */
+export function getGroupDepthPrompts(groupId) {
+    if (!groupId) {
+        return [];
+    }
+
+    console.debug('getGroupDepthPrompts entered for group: ', groupId);
+    const group = groups.find(x => x.id === groupId);
+
+    if (!group || !Array.isArray(group.members) || !group.members.length) {
+        return [];
+    }
+
+    if (group.generation_mode === group_generation_mode.SWAP) {
+        return [];
+    }
+
+    const depthPrompts = [];
+
+    for (const member of group.members) {
+        if (group.disabled_members.includes(member)) {
+            console.debug(`Skipping disabled group member: ${member}`);
+            continue;
+        }
+
+        const character = characters.find(x => x.avatar === member);
+
+        if (!character) {
+            console.debug(`Skipping missing member: ${member}`);
+            continue;
+        }
+
+        const depthPromptText = baseChatReplace(character.data?.extensions?.depth_prompt?.prompt?.trim(), name1, character.name) || '';
+        const depthPromptDepth = character.data?.extensions?.depth_prompt?.depth ?? depth_prompt_depth_default;
+
+        if (depthPromptText) {
+            depthPrompts.push({ text: depthPromptText, depth: depthPromptDepth });
+        }
+    }
+
+    return depthPrompts;
 }
 
 /**

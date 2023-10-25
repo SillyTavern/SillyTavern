@@ -60,6 +60,7 @@ import {
     getGroupBlock,
     getGroupChatNames,
     getGroupCharacterCards,
+    getGroupDepthPrompts,
 } from "./scripts/group-chats.js";
 
 import {
@@ -599,7 +600,7 @@ function getCurrentChatId() {
 }
 
 const talkativeness_default = 0.5;
-const depth_prompt_depth_default = 4;
+export const depth_prompt_depth_default = 4;
 const per_page_default = 50;
 
 var is_advanced_char_open = false;
@@ -2563,9 +2564,18 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         }
 
         // Depth prompt (character-specific A/N)
-        const depthPromptText = baseChatReplace(characters[this_chid].data?.extensions?.depth_prompt?.prompt?.trim(), name1, name2) || '';
-        const depthPromptDepth = characters[this_chid].data?.extensions?.depth_prompt?.depth ?? depth_prompt_depth_default;
-        setExtensionPrompt('DEPTH_PROMPT', depthPromptText, extension_prompt_types.IN_CHAT, depthPromptDepth);
+        removeDepthPrompts();
+        const groupDepthPrompts = getGroupDepthPrompts(selected_group);
+
+        if (selected_group && Array.isArray(groupDepthPrompts) && groupDepthPrompts.length > 0) {
+            groupDepthPrompts.forEach((value, index) => {
+                setExtensionPrompt('DEPTH_PROMPT_' + index, value.text, extension_prompt_types.IN_CHAT, value.depth);
+            });
+        } else {
+            const depthPromptText = baseChatReplace(characters[this_chid].data?.extensions?.depth_prompt?.prompt?.trim(), name1, name2) || '';
+            const depthPromptDepth = characters[this_chid].data?.extensions?.depth_prompt?.depth ?? depth_prompt_depth_default;
+            setExtensionPrompt('DEPTH_PROMPT', depthPromptText, extension_prompt_types.IN_CHAT, depthPromptDepth);
+        }
 
         // Parse example messages
         if (!mesExamples.startsWith('<START>')) {
@@ -5760,6 +5770,18 @@ function select_rm_characters() {
  */
 export function setExtensionPrompt(key, value, position, depth) {
     extension_prompts[key] = { value: String(value), position: Number(position), depth: Number(depth) };
+}
+
+/**
+ * Removes all char A/N prompt injections from the chat.
+ * To clean up when switching from groups to solo and vice versa.
+ */
+export function removeDepthPrompts() {
+    for (const key of Object.keys(extension_prompts)) {
+        if (key.startsWith('DEPTH_PROMPT')) {
+            delete extension_prompts[key];
+        }
+    }
 }
 
 /**

@@ -1383,12 +1383,16 @@ async function checkWorldInfo(chat, maxContext) {
     // Add the depth or AN if enabled
     // Put this code here since otherwise, the chat reference is modified
     if (extension_settings.note.allowWIScan) {
-        let depthPrompt = getExtensionPromptByName("DEPTH_PROMPT")
-        if (depthPrompt) {
-            textToScan = `${depthPrompt}\n${textToScan}`
+        for (const key of Object.keys(context.extensionPrompts)) {
+            if (key.startsWith('DEPTH_PROMPT')) {
+                const depthPrompt = getExtensionPromptByName(key)
+                if (depthPrompt) {
+                    textToScan = `${depthPrompt}\n${textToScan}`
+                }
+            }
         }
 
-        let anPrompt = getExtensionPromptByName(NOTE_MODULE_NAME);
+        const anPrompt = getExtensionPromptByName(NOTE_MODULE_NAME);
         if (anPrompt) {
             textToScan = `${anPrompt}\n${textToScan}`
         }
