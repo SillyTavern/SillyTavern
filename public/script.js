@@ -59,6 +59,8 @@ import {
     importGroupChat,
     getGroupBlock,
     getGroupChatNames,
+    getGroupCharacterCards,
+    getGroupDepthPrompts,
 } from "./scripts/group-chats.js";
 
 import {
@@ -118,7 +120,7 @@ import {
     checkHordeStatus,
     getHordeModels,
     adjustHordeGenerationParams,
-    MIN_AMOUNT_GEN,
+    MIN_LENGTH,
 } from "./scripts/horde.js";
 
 import {
@@ -142,7 +144,7 @@ import {
     onlyUnique,
 } from "./scripts/utils.js";
 
-import { extension_settings, getContext, installExtension, loadExtensionSettings, processExtensionHelpers, registerExtensionHelper, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
+import { ModuleWorkerWrapper, extension_settings, getContext, loadExtensionSettings, processExtensionHelpers, registerExtensionHelper, renderExtensionTemplate, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
 import { COMMENT_NAME_DEFAULT, executeSlashCommands, getSlashCommandsHelp, registerSlashCommand } from "./scripts/slash-commands.js";
 import {
     tag_map,
@@ -180,7 +182,7 @@ import {
     formatInstructModeSystemPrompt,
 } from "./scripts/instruct-mode.js";
 import { applyLocale } from "./scripts/i18n.js";
-import { getTokenCount, getTokenizerModel, saveTokenCache } from "./scripts/tokenizers.js";
+import { getTokenCount, getTokenizerModel, initTokenizers, saveTokenCache } from "./scripts/tokenizers.js";
 import { initPersonas, selectCurrentPersona, setPersonaDescription } from "./scripts/personas.js";
 import { getBackgrounds, initBackgrounds } from "./scripts/backgrounds.js";
 
@@ -598,7 +600,7 @@ function getCurrentChatId() {
 }
 
 const talkativeness_default = 0.5;
-const depth_prompt_depth_default = 4;
+export const depth_prompt_depth_default = 4;
 const per_page_default = 50;
 
 var is_advanced_char_open = false;
@@ -719,6 +721,7 @@ async function firstLoadInit() {
     await getUserAvatars();
     await getCharacters();
     await getBackgrounds();
+    await initTokenizers();
     initBackgrounds();
     initAuthorsNote();
     initPersonas();
@@ -2035,7 +2038,7 @@ function getExtensionPrompt(position = 0, depth = undefined, separator = "\n") {
     return extension_prompt;
 }
 
-function baseChatReplace(value, name1, name2) {
+export function baseChatReplace(value, name1, name2) {
     if (value !== undefined && value.length > 0) {
         value = substituteParams(value, name1, name2);
 
@@ -2323,8 +2326,9 @@ export async function generateRaw(prompt, api) {
             if (preset_settings === 'gui') {
                 generateData = { prompt: prompt, gui_settings: true, max_length: amount_gen, max_context_length: max_context, };
             } else {
+                const isHorde = api === 'koboldhorde';
                 const koboldSettings = koboldai_settings[koboldai_setting_names[preset_settings]];
-                generateData = getKoboldGenerationData(prompt, koboldSettings, amount_gen, max_context, false, 'quiet');
+                generateData = getKoboldGenerationData(prompt, koboldSettings, amount_gen, max_context, isHorde, 'quiet');
             }
             break;
         case 'novel':
@@ -2537,21 +2541,41 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         const scenarioText = chat_metadata['scenario'] || characters[this_chid].scenario;
         let charDescription = baseChatReplace(characters[this_chid].description.trim(), name1, name2);
         let charPersonality = baseChatReplace(characters[this_chid].personality.trim(), name1, name2);
-        let personaDescription = baseChatReplace(power_user.persona_description.trim(), name1, name2);
-        let Scenario = baseChatReplace(scenarioText.trim(), name1, name2);
+        let scenario = baseChatReplace(scenarioText.trim(), name1, name2);
         let mesExamples = baseChatReplace(characters[this_chid].mes_example.trim(), name1, name2);
         let systemPrompt = power_user.prefer_character_prompt ? baseChatReplace(characters[this_chid].data?.system_prompt?.trim(), name1, name2) : '';
         let jailbreakPrompt = power_user.prefer_character_jailbreak ? baseChatReplace(characters[this_chid].data?.post_history_instructions?.trim(), name1, name2) : '';
+        let personaDescription = baseChatReplace(power_user.persona_description.trim(), name1, name2);
 
         if (isInstruct) {
             systemPrompt = power_user.prefer_character_prompt && systemPrompt ? systemPrompt : baseChatReplace(power_user.instruct.system_prompt, name1, name2);
             systemPrompt = formatInstructModeSystemPrompt(substituteParams(systemPrompt, name1, name2, power_user.instruct.system_prompt));
         }
 
+        if (selected_group) {
+            const groupCards = getGroupCharacterCards(selected_group, Number(this_chid));
+
+            if (groupCards) {
+                charDescription = groupCards.description;
+                charPersonality = groupCards.personality;
+                scenario = groupCards.scenario;
+                mesExamples = groupCards.mesExample;
+            }
+        }
+
         // Depth prompt (character-specific A/N)
-        const depthPromptText = baseChatReplace(characters[this_chid].data?.extensions?.depth_prompt?.prompt?.trim(), name1, name2) || '';
-        const depthPromptDepth = characters[this_chid].data?.extensions?.depth_prompt?.depth ?? depth_prompt_depth_default;
-        setExtensionPrompt('DEPTH_PROMPT', depthPromptText, extension_prompt_types.IN_CHAT, depthPromptDepth);
+        removeDepthPrompts();
+        const groupDepthPrompts = getGroupDepthPrompts(selected_group, Number(this_chid));
+
+        if (selected_group && Array.isArray(groupDepthPrompts) && groupDepthPrompts.length > 0) {
+            groupDepthPrompts.forEach((value, index) => {
+                setExtensionPrompt('DEPTH_PROMPT_' + index, value.text, extension_prompt_types.IN_CHAT, value.depth);
+            });
+        } else {
+            const depthPromptText = baseChatReplace(characters[this_chid].data?.extensions?.depth_prompt?.prompt?.trim(), name1, name2) || '';
+            const depthPromptDepth = characters[this_chid].data?.extensions?.depth_prompt?.depth ?? depth_prompt_depth_default;
+            setExtensionPrompt('DEPTH_PROMPT', depthPromptText, extension_prompt_types.IN_CHAT, depthPromptDepth);
+        }
 
         // Parse example messages
         if (!mesExamples.startsWith('<START>')) {
@@ -2680,7 +2704,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             description: charDescription,
             personality: charPersonality,
             persona: personaDescription,
-            scenario: Scenario,
+            scenario: scenario,
             system: isInstruct ? systemPrompt : '',
             char: name2,
             user: name1,
@@ -3073,13 +3097,13 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             // Include the entire guidance scale object
             const cfgValues = cfgGuidanceScale && cfgGuidanceScale?.value !== 1 ? ({ guidanceScale: cfgGuidanceScale, negativePrompt: negativePrompt }) : null;
 
-            let this_amount_gen = Number(amount_gen); // how many tokens the AI will be requested to generate
+            let maxLength = Number(amount_gen); // how many tokens the AI will be requested to generate
             let thisPromptBits = [];
 
             // TODO: Make this a switch
             if (main_api == 'koboldhorde' && horde_settings.auto_adjust_response_length) {
-                this_amount_gen = Math.min(this_amount_gen, adjustedParams.maxLength);
-                this_amount_gen = Math.max(this_amount_gen, MIN_AMOUNT_GEN); // prevent validation errors
+                maxLength = Math.min(maxLength, adjustedParams.maxLength);
+                maxLength = Math.max(maxLength, MIN_LENGTH); // prevent validation errors
             }
 
             let generate_data;
@@ -3087,29 +3111,30 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 generate_data = {
                     prompt: finalPrompt,
                     gui_settings: true,
-                    max_length: amount_gen,
+                    max_length: maxLength,
                     max_context_length: max_context,
                 };
 
                 if (preset_settings != 'gui') {
-                    const this_settings = koboldai_settings[koboldai_setting_names[preset_settings]];
+                    const isHorde = main_api == 'koboldhorde';
+                    const presetSettings = koboldai_settings[koboldai_setting_names[preset_settings]];
                     const maxContext = (adjustedParams && horde_settings.auto_adjust_context_length) ? adjustedParams.maxContextLength : max_context;
-                    generate_data = getKoboldGenerationData(finalPrompt, this_settings, this_amount_gen, maxContext, isImpersonate, type);
+                    generate_data = getKoboldGenerationData(finalPrompt, presetSettings, maxLength, maxContext, isHorde, type);
                 }
             }
             else if (main_api == 'textgenerationwebui') {
-                generate_data = getTextGenGenerationData(finalPrompt, this_amount_gen, isImpersonate, cfgValues);
+                generate_data = getTextGenGenerationData(finalPrompt, maxLength, isImpersonate, cfgValues);
             }
             else if (main_api == 'novel') {
-                const this_settings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
-                generate_data = getNovelGenerationData(finalPrompt, this_settings, this_amount_gen, isImpersonate, cfgValues);
+                const presetSettings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
+                generate_data = getNovelGenerationData(finalPrompt, presetSettings, maxLength, isImpersonate, cfgValues);
             }
             else if (main_api == 'openai') {
                 let [prompt, counts] = prepareOpenAIMessages({
                     name2: name2,
                     charDescription: charDescription,
                     charPersonality: charPersonality,
-                    Scenario: Scenario,
+                    Scenario: scenario,
                     worldInfoBefore: worldInfoBefore,
                     worldInfoAfter: worldInfoAfter,
                     extensionPrompts: extension_prompts,
@@ -4821,9 +4846,9 @@ export function setUserName(value) {
 function setUserAvatar() {
     user_avatar = $(this).attr("imgfile");
     reloadUserAvatar();
-    saveSettingsDebounced();
     highlightSelectedAvatar();
     selectCurrentPersona();
+    saveSettingsDebounced();
     $('.zoomed_avatar[forchar]').remove();
 }
 
@@ -5748,6 +5773,18 @@ export function setExtensionPrompt(key, value, position, depth) {
 }
 
 /**
+ * Removes all char A/N prompt injections from the chat.
+ * To clean up when switching from groups to solo and vice versa.
+ */
+export function removeDepthPrompts() {
+    for (const key of Object.keys(extension_prompts)) {
+        if (key.startsWith('DEPTH_PROMPT')) {
+            delete extension_prompts[key];
+        }
+    }
+}
+
+/**
  * Adds or updates the metadata for the currently active chat.
  * @param {Object} newValues An object with collection of new values to be added into the metadata.
  * @param {boolean} reset Should a metadata be reset by this call.
@@ -5774,15 +5811,14 @@ export function setScenarioOverride() {
     const isGroup = !!selected_group;
     template.find('[data-group="true"]').toggle(isGroup);
     template.find('[data-character="true"]').toggle(!isGroup);
-    template.find('.chat_scenario').text(metadataValue).on('input', onScenarioOverrideInput);
+    template.find('.chat_scenario').val(metadataValue).on('input', onScenarioOverrideInput);
     template.find('.remove_scenario_override').on('click', onScenarioOverrideRemoveClick);
     callPopup(template, 'text');
 }
 
 function onScenarioOverrideInput() {
-    const value = $(this).val();
-    const metadata = { scenario: value, };
-    updateChatMetadata(metadata, false);
+    const value = String($(this).val());
+    chat_metadata['scenario'] = value;
     saveMetadataDebounced();
 }
 
@@ -6445,6 +6481,10 @@ window["SillyTavern"].getContext = function () {
         chatId: selected_group
             ? groups.find(x => x.id == selected_group)?.chat_id
             : (this_chid && characters[this_chid] && characters[this_chid].chat),
+        getCurrentChatId: getCurrentChatId,
+        getRequestHeaders: getRequestHeaders,
+        reloadCurrentChat: reloadCurrentChat,
+        saveSettingsDebounced: saveSettingsDebounced,
         onlineStatus: online_status,
         maxContext: Number(max_context),
         chatMetadata: chat_metadata,
@@ -6466,6 +6506,12 @@ window["SillyTavern"].getContext = function () {
         registerSlashCommand: registerSlashCommand,
         registerHelper: registerExtensionHelper,
         registedDebugFunction: registerDebugFunction,
+        renderExtensionTemplate: renderExtensionTemplate,
+        callPopup: callPopup,
+        mainApi: main_api,
+        extensionSettings: extension_settings,
+        ModuleWorkerWrapper: ModuleWorkerWrapper,
+        getTokenizerModel: getTokenizerModel,
     };
 };
 
@@ -8803,34 +8849,6 @@ jQuery(async function () {
                 break;
         }
     });
-
-    /**
-     * Handles the click event for the third-party extension import button.
-     * Prompts the user to enter the Git URL of the extension to import.
-     * After obtaining the Git URL, makes a POST request to '/api/extensions/install' to import the extension.
-     * If the extension is imported successfully, a success message is displayed.
-     * If the extension import fails, an error message is displayed and the error is logged to the console.
-     * After successfully importing the extension, the extension settings are reloaded and a 'EXTENSION_SETTINGS_LOADED' event is emitted.
-     *
-     * @listens #third_party_extension_button#click - The click event of the '#third_party_extension_button' element.
-     */
-    $('#third_party_extension_button').on('click', async () => {
-        const html = `<h3>Enter the Git URL of the extension to import</h3>
-    <br>
-    <p><b>Disclaimer:</b> Please be aware that using external extensions can have unintended side effects and may pose security risks. Always make sure you trust the source before importing an extension. We are not responsible for any damage caused by third-party extensions.</p>
-    <br>
-    <p>Example: <tt> https://github.com/author/extension-name </tt></p>`
-        const input = await callPopup(html, 'input');
-
-        if (!input) {
-            console.debug('Extension import cancelled');
-            return;
-        }
-
-        const url = input.trim();
-        await installExtension(url);
-    });
-
 
     const $dropzone = $(document.body);
 

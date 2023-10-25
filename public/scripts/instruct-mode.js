@@ -335,7 +335,7 @@ export function formatInstructModePrompt(name, isImpersonate, promptBias, name1,
         text += (includeNames ? promptBias : (separator + promptBias));
     }
 
-    return text.trimEnd() + (includeNames ? '' : separator);
+    return (power_user.instruct.wrap ? text.trimEnd() : text) + (includeNames ? '' : separator);
 }
 
 /**

@@ -439,7 +439,7 @@ export function decodeTextTokens(tokenizerType, ids) {
     }
 }
 
-jQuery(async () => {
+export async function initTokenizers() {
     await loadTokenCache();
     registerDebugFunction('resetTokenCache', 'Reset token cache', 'Purges the calculated token counts. Use this if you want to force a full re-tokenization of all chats or suspect the token counts are wrong.', resetTokenCache);
-});
+}

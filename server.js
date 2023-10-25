@@ -692,6 +692,7 @@ app.post("/savechat", jsonParser, function (request, response) {
         let chat_data = request.body.chat;
         let jsonlData = chat_data.map(JSON.stringify).join('\n');
         writeFileAtomicSync(`${chatsPath + sanitize(dir_name)}/${sanitize(String(request.body.file_name))}.jsonl`, jsonlData, 'utf8');
+        backupChat(dir_name, jsonlData)
         return response.send({ result: "ok" });
     } catch (error) {
         response.send(error);
@@ -2572,6 +2573,7 @@ app.post('/creategroup', jsonParser, (request, response) => {
         avatar_url: request.body.avatar_url,
         allow_self_responses: !!request.body.allow_self_responses,
         activation_strategy: request.body.activation_strategy ?? 0,
+        generation_mode: request.body.generation_mode ?? 0,
         disabled_members: request.body.disabled_members ?? [],
         chat_metadata: request.body.chat_metadata ?? {},
         fav: request.body.fav,
@@ -2652,6 +2654,7 @@ app.post('/savegroupchat', jsonParser, (request, response) => {
     let chat_data = request.body.chat;
     let jsonlData = chat_data.map(JSON.stringify).join('\n');
     writeFileAtomicSync(pathToFile, jsonlData, 'utf8');
+    backupChat(String(id), jsonlData);
     return response.send({ ok: true });
 });
 
@@ -3541,21 +3544,48 @@ if (true === cliArguments.ssl) {
     );
 }
 
-function backupSettings() {
-    const MAX_BACKUPS = 25;
+function generateTimestamp() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
 
-    function generateTimestamp() {
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        const seconds = String(now.getSeconds()).padStart(2, '0');
+    return `${year}${month}${day}-${hours}${minutes}${seconds}`;
+}
 
-        return `${year}${month}${day}-${hours}${minutes}${seconds}`;
+/**
+ *
+ * @param {string} name
+ * @param {string} chat
+ */
+function backupChat(name, chat) {
+    try {
+        const isBackupDisabled = config.disableChatBackup;
+
+        if (isBackupDisabled) {
+            return;
+        }
+
+        if (!fs.existsSync(DIRECTORIES.backups)) {
+            fs.mkdirSync(DIRECTORIES.backups);
+        }
+
+        // replace non-alphanumeric characters with underscores
+        name = sanitize(name).replace(/[^a-z0-9]/gi, '_').toLowerCase();
+
+        const backupFile = path.join(DIRECTORIES.backups, `chat_${name}_${generateTimestamp()}.json`);
+        writeFileAtomicSync(backupFile, chat, 'utf-8');
+
+        removeOldBackups(`chat_${name}_`);
+    } catch (err) {
+        console.log(`Could not backup chat for ${name}`, err);
     }
+}
 
+function backupSettings() {
     try {
         if (!fs.existsSync(DIRECTORIES.backups)) {
             fs.mkdirSync(DIRECTORIES.backups);
@@ -3564,15 +3594,24 @@ function backupSettings() {
         const backupFile = path.join(DIRECTORIES.backups, `settings_${generateTimestamp()}.json`);
         fs.copyFileSync(SETTINGS_FILE, backupFile);
 
-        let files = fs.readdirSync(DIRECTORIES.backups).filter(f => f.startsWith('settings_'));
-        if (files.length > MAX_BACKUPS) {
-            files = files.map(f => path.join(DIRECTORIES.backups, f));
-            files.sort((a, b) => fs.statSync(a).mtimeMs - fs.statSync(b).mtimeMs);
-
-            fs.rmSync(files[0]);
-        }
+        removeOldBackups('settings_');
     } catch (err) {
         console.log('Could not backup settings file', err);
+    }
+}
+
+/**
+ * @param {string} prefix
+ */
+function removeOldBackups(prefix) {
+    const MAX_BACKUPS = 25;
+
+    let files = fs.readdirSync(DIRECTORIES.backups).filter(f => f.startsWith(prefix));
+    if (files.length > MAX_BACKUPS) {
+        files = files.map(f => path.join(DIRECTORIES.backups, f));
+        files.sort((a, b) => fs.statSync(a).mtimeMs - fs.statSync(b).mtimeMs);
+
+        fs.rmSync(files[0]);
     }
 }
 

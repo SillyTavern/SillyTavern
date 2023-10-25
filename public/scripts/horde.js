@@ -19,7 +19,7 @@ export {
     loadHordeSettings,
     adjustHordeGenerationParams,
     getHordeModels,
-    MIN_AMOUNT_GEN,
+    MIN_LENGTH,
 }
 
 let models = [];
@@ -33,7 +33,7 @@ let horde_settings = {
 
 const MAX_RETRIES = 240;
 const CHECK_INTERVAL = 5000;
-const MIN_AMOUNT_GEN = 16;
+const MIN_LENGTH = 16;
 const getRequestArgs = () => ({
     method: "GET",
     headers: {
