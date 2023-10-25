@@ -2553,7 +2553,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         }
 
         if (selected_group) {
-            const groupCards = getGroupCharacterCards(selected_group);
+            const groupCards = getGroupCharacterCards(selected_group, Number(this_chid));
 
             if (groupCards) {
                 charDescription = groupCards.description;
@@ -2565,7 +2565,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
         // Depth prompt (character-specific A/N)
         removeDepthPrompts();
-        const groupDepthPrompts = getGroupDepthPrompts(selected_group);
+        const groupDepthPrompts = getGroupDepthPrompts(selected_group, Number(this_chid));
 
         if (selected_group && Array.isArray(groupDepthPrompts) && groupDepthPrompts.length > 0) {
             groupDepthPrompts.forEach((value, index) => {

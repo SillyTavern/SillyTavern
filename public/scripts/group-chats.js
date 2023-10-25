@@ -203,9 +203,10 @@ export async function getGroupChat(groupId) {
 /**
  * Gets depth prompts for group members.
  * @param {string} groupId Group ID
+ * @param {number} characterId Current Character ID
  * @returns {{depth: number, text: string}[]} Array of depth prompts
  */
-export function getGroupDepthPrompts(groupId) {
+export function getGroupDepthPrompts(groupId, characterId) {
     if (!groupId) {
         return [];
     }
@@ -224,15 +225,16 @@ export function getGroupDepthPrompts(groupId) {
     const depthPrompts = [];
 
     for (const member of group.members) {
-        if (group.disabled_members.includes(member)) {
-            console.debug(`Skipping disabled group member: ${member}`);
+        const index = characters.findIndex(x => x.avatar === member);
+        const character = characters[index];
+
+        if (index === -1 || !character) {
+            console.debug(`Skipping missing member: ${member}`);
             continue;
         }
 
-        const character = characters.find(x => x.avatar === member);
-
-        if (!character) {
-            console.debug(`Skipping missing member: ${member}`);
+        if (group.disabled_members.includes(member) && characterId !== index) {
+            console.debug(`Skipping disabled group member: ${member}`);
             continue;
         }
 
@@ -250,9 +252,10 @@ export function getGroupDepthPrompts(groupId) {
 /**
  * Combines group members info a single string. Only for groups with generation mode set to APPEND.
  * @param {string} groupId Group ID
+ * @param {number} characterId Current Character ID
  * @returns {{description: string, personality: string, scenario: string, mesExample: string}} Group character cards combined
  */
-export function getGroupCharacterCards(groupId) {
+export function getGroupCharacterCards(groupId, characterId) {
     console.debug('getGroupCharacterCards entered for group: ', groupId);
     const group = groups.find(x => x.id === groupId);
 
@@ -268,15 +271,16 @@ export function getGroupCharacterCards(groupId) {
     let mesExamples = [];
 
     for (const member of group.members) {
-        if (group.disabled_members.includes(member)) {
-            console.debug(`Skipping disabled group member: ${member}`);
+        const index = characters.findIndex(x => x.avatar === member);
+        const character = characters[index];
+
+        if (index === -1 || !character) {
+            console.debug(`Skipping missing member: ${member}`);
             continue;
         }
 
-        const character = characters.find(x => x.avatar === member);
-
-        if (!character) {
-            console.debug(`Skipping missing member: ${member}`);
+        if (group.disabled_members.includes(member) && characterId !== index) {
+            console.debug(`Skipping disabled group member: ${member}`);
             continue;
         }
 
