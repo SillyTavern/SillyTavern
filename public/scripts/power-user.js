@@ -1126,6 +1126,10 @@ function loadContextSettings() {
     contextControls.forEach(control => {
         const $element = $(`#${control.id}`);
 
+        if (control.isGlobalSetting) {
+            return;
+        }
+
         if (control.isCheckbox) {
             $element.prop('checked', power_user.context[control.property]);
         } else {
