@@ -8815,7 +8815,7 @@ jQuery(async function () {
             }
 
             restoreCaretPosition($(this).get(0), caretPosition);
-        }, 500);
+        }, 2000);
     })
 
     $(".user_stats_button").on('click', function () {
