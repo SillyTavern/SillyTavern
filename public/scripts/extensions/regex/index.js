@@ -76,6 +76,14 @@ async function loadRegexScripts() {
         const scriptHtml = scriptTemplate.clone();
         scriptHtml.attr('id', uuidv4());
         scriptHtml.find('.regex_script_name').text(script.scriptName);
+        scriptHtml.find('.disable_regex').prop("checked", script.disabled ?? false)
+            .each(function() {
+                $(this).closest('.checkbox').find('span').toggle(this.checked);
+            })
+            .on('click', function() {
+                script.disabled = !script.disabled;
+                $(this).closest('.checkbox').find('span').toggle(this.checked);
+            });
         scriptHtml.find('.edit_existing_regex').on('click', async function() {
             await onRegexEditorOpenClick(scriptHtml.attr("id"));
         });
