@@ -9,6 +9,7 @@ import {
     getRequestHeaders, handleDeleteCharacter, this_chid
 } from "../script.js";
 import {favsToHotswap} from "./RossAscends-mods.js";
+import {convertCharacterToPersona} from "./personas.js";
 
 const popupMessage = {
     deleteChat(characterCount) {
@@ -18,6 +19,9 @@ const popupMessage = {
                     <input type="checkbox" id="del_char_checkbox" />
                     <span>Also delete the chat files</span>
                 </label><br></b>`;
+    },
+    exportCharacters(characterCount) {
+        return `<h3>Export ${characterCount} characters?</h3>`;
     }
 }
 
@@ -85,6 +89,8 @@ class CharacterContextMenu {
         });
     }
 
+    static persona = async (characterId) => convertCharacterToPersona(characterId);
+
     static delete = async (characterId, deleteChats = false) => {
         const character = CharacterContextMenu.getCharacter(characterId);
 
@@ -134,7 +140,8 @@ class CharacterContextMenu {
         const contextMenuItems = [
             {id: 'character_context_menu_favorite', callback: characterGroupOverlay.handleContextMenuFavorite},
             {id: 'character_context_menu_duplicate', callback: characterGroupOverlay.handleContextMenuDuplicate},
-            {id: 'character_context_menu_delete', callback: characterGroupOverlay.handleContextMenuDelete}
+            {id: 'character_context_menu_delete', callback: characterGroupOverlay.handleContextMenuDelete},
+            {id: 'character_context_menu_persona', callback: characterGroupOverlay.handleContextMenuPersona}
         ];
 
         contextMenuItems.forEach(contextMenuItem => document.getElementById(contextMenuItem.id).addEventListener('click', contextMenuItem.callback))
@@ -328,15 +335,18 @@ class CharacterGroupOverlay {
         .then(() => getCharacters())
         .then(() => this.browseState())
 
+    handleContextMenuPersona = () => { Promise.all(this.selectedCharacters.map(async characterId => CharacterContextMenu.persona(characterId)))
+        .then(() => this.browseState());
+    }
+
     handleContextMenuDelete = () => {
         callPopup(
-            popupMessage.deleteChat(this.selectedCharacters.length),
-            null
-        ).then(deleteChats =>
-            Promise.all(this.selectedCharacters.map(async characterId => CharacterContextMenu.delete(characterId, deleteChats)))
-                .then(() => getCharacters())
-                .then(() => this.browseState())
-        );
+            popupMessage.deleteChat(this.selectedCharacters.length), null)
+            .then(deleteChats =>
+                Promise.all(this.selectedCharacters.map(async characterId => CharacterContextMenu.delete(characterId, deleteChats)))
+                    .then(() => getCharacters())
+                    .then(() => this.browseState())
+            );
     }
 
     addStateChangeCallback = callback => this.stateChangeCallbacks.push(callback);
