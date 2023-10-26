@@ -188,7 +188,7 @@ function loadNovelSettingsUi(ui_settings) {
     $("#rep_pen_presence_novel").val(ui_settings.repetition_penalty_presence);
     $("#rep_pen_presence_counter_novel").val(Number(ui_settings.repetition_penalty_presence).toFixed(2));
     $("#tail_free_sampling_novel").val(ui_settings.tail_free_sampling);
-    $("#tail_free_sampling_counter_novel").val(Number(ui_settings.tail_free_sampling).toFixed(2));
+    $("#tail_free_sampling_counter_novel").val(Number(ui_settings.tail_free_sampling).toFixed(3));
     $("#top_k_novel").val(ui_settings.top_k);
     $("#top_k_counter_novel").val(Number(ui_settings.top_k).toFixed(0));
     $("#top_p_novel").val(ui_settings.top_p);
@@ -257,7 +257,7 @@ const sliders = [
         sliderId: "#tail_free_sampling_novel",
         counterId: "#tail_free_sampling_counter_novel",
         format: (val) => `${val}`,
-        setValue: (val) => { nai_settings.tail_free_sampling = Number(val).toFixed(2); },
+        setValue: (val) => { nai_settings.tail_free_sampling = Number(val).toFixed(3); },
     },
     {
         sliderId: "#top_k_novel",
