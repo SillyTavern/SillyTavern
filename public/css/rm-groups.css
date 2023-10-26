@@ -78,6 +78,7 @@
 
 #rm_group_members:empty {
     width: 100%;
+    padding: 0.5em 0;
 }
 
 #rm_group_members:empty::before {

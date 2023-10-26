@@ -59,6 +59,8 @@ import {
     importGroupChat,
     getGroupBlock,
     getGroupChatNames,
+    getGroupCharacterCards,
+    getGroupDepthPrompts,
 } from "./scripts/group-chats.js";
 
 import {
@@ -598,7 +600,7 @@ function getCurrentChatId() {
 }
 
 const talkativeness_default = 0.5;
-const depth_prompt_depth_default = 4;
+export const depth_prompt_depth_default = 4;
 const per_page_default = 50;
 
 var is_advanced_char_open = false;
@@ -2036,7 +2038,7 @@ function getExtensionPrompt(position = 0, depth = undefined, separator = "\n") {
     return extension_prompt;
 }
 
-function baseChatReplace(value, name1, name2) {
+export function baseChatReplace(value, name1, name2) {
     if (value !== undefined && value.length > 0) {
         value = substituteParams(value, name1, name2);
 
@@ -2539,21 +2541,41 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         const scenarioText = chat_metadata['scenario'] || characters[this_chid].scenario;
         let charDescription = baseChatReplace(characters[this_chid].description.trim(), name1, name2);
         let charPersonality = baseChatReplace(characters[this_chid].personality.trim(), name1, name2);
-        let personaDescription = baseChatReplace(power_user.persona_description.trim(), name1, name2);
-        let Scenario = baseChatReplace(scenarioText.trim(), name1, name2);
+        let scenario = baseChatReplace(scenarioText.trim(), name1, name2);
         let mesExamples = baseChatReplace(characters[this_chid].mes_example.trim(), name1, name2);
         let systemPrompt = power_user.prefer_character_prompt ? baseChatReplace(characters[this_chid].data?.system_prompt?.trim(), name1, name2) : '';
         let jailbreakPrompt = power_user.prefer_character_jailbreak ? baseChatReplace(characters[this_chid].data?.post_history_instructions?.trim(), name1, name2) : '';
+        let personaDescription = baseChatReplace(power_user.persona_description.trim(), name1, name2);
 
         if (isInstruct) {
             systemPrompt = power_user.prefer_character_prompt && systemPrompt ? systemPrompt : baseChatReplace(power_user.instruct.system_prompt, name1, name2);
             systemPrompt = formatInstructModeSystemPrompt(substituteParams(systemPrompt, name1, name2, power_user.instruct.system_prompt));
         }
 
+        if (selected_group) {
+            const groupCards = getGroupCharacterCards(selected_group, Number(this_chid));
+
+            if (groupCards) {
+                charDescription = groupCards.description;
+                charPersonality = groupCards.personality;
+                scenario = groupCards.scenario;
+                mesExamples = groupCards.mesExample;
+            }
+        }
+
         // Depth prompt (character-specific A/N)
-        const depthPromptText = baseChatReplace(characters[this_chid].data?.extensions?.depth_prompt?.prompt?.trim(), name1, name2) || '';
-        const depthPromptDepth = characters[this_chid].data?.extensions?.depth_prompt?.depth ?? depth_prompt_depth_default;
-        setExtensionPrompt('DEPTH_PROMPT', depthPromptText, extension_prompt_types.IN_CHAT, depthPromptDepth);
+        removeDepthPrompts();
+        const groupDepthPrompts = getGroupDepthPrompts(selected_group, Number(this_chid));
+
+        if (selected_group && Array.isArray(groupDepthPrompts) && groupDepthPrompts.length > 0) {
+            groupDepthPrompts.forEach((value, index) => {
+                setExtensionPrompt('DEPTH_PROMPT_' + index, value.text, extension_prompt_types.IN_CHAT, value.depth);
+            });
+        } else {
+            const depthPromptText = baseChatReplace(characters[this_chid].data?.extensions?.depth_prompt?.prompt?.trim(), name1, name2) || '';
+            const depthPromptDepth = characters[this_chid].data?.extensions?.depth_prompt?.depth ?? depth_prompt_depth_default;
+            setExtensionPrompt('DEPTH_PROMPT', depthPromptText, extension_prompt_types.IN_CHAT, depthPromptDepth);
+        }
 
         // Parse example messages
         if (!mesExamples.startsWith('<START>')) {
@@ -2682,7 +2704,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             description: charDescription,
             personality: charPersonality,
             persona: personaDescription,
-            scenario: Scenario,
+            scenario: scenario,
             system: isInstruct ? systemPrompt : '',
             char: name2,
             user: name1,
@@ -3112,7 +3134,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     name2: name2,
                     charDescription: charDescription,
                     charPersonality: charPersonality,
-                    Scenario: Scenario,
+                    Scenario: scenario,
                     worldInfoBefore: worldInfoBefore,
                     worldInfoAfter: worldInfoAfter,
                     extensionPrompts: extension_prompts,
@@ -5751,6 +5773,18 @@ export function setExtensionPrompt(key, value, position, depth) {
 }
 
 /**
+ * Removes all char A/N prompt injections from the chat.
+ * To clean up when switching from groups to solo and vice versa.
+ */
+export function removeDepthPrompts() {
+    for (const key of Object.keys(extension_prompts)) {
+        if (key.startsWith('DEPTH_PROMPT')) {
+            delete extension_prompts[key];
+        }
+    }
+}
+
+/**
  * Adds or updates the metadata for the currently active chat.
  * @param {Object} newValues An object with collection of new values to be added into the metadata.
  * @param {boolean} reset Should a metadata be reset by this call.
@@ -5777,15 +5811,14 @@ export function setScenarioOverride() {
     const isGroup = !!selected_group;
     template.find('[data-group="true"]').toggle(isGroup);
     template.find('[data-character="true"]').toggle(!isGroup);
-    template.find('.chat_scenario').text(metadataValue).on('input', onScenarioOverrideInput);
+    template.find('.chat_scenario').val(metadataValue).on('input', onScenarioOverrideInput);
     template.find('.remove_scenario_override').on('click', onScenarioOverrideRemoveClick);
     callPopup(template, 'text');
 }
 
 function onScenarioOverrideInput() {
-    const value = $(this).val();
-    const metadata = { scenario: value, };
-    updateChatMetadata(metadata, false);
+    const value = String($(this).val());
+    chat_metadata['scenario'] = value;
     saveMetadataDebounced();
 }
 
