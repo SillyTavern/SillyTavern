@@ -1,14 +1,25 @@
 "use strict";
 
 import {
+    callPopup,
     characters, deleteCharacter,
     event_types,
     eventSource,
     getCharacters,
-    getOneCharacter,
     getRequestHeaders, handleDeleteCharacter, this_chid
 } from "../script.js";
 import {favsToHotswap} from "./RossAscends-mods.js";
+
+const popupMessage = {
+    deleteChat(characterCount) {
+        return `<h3>Delete ${characterCount} characters?</h3>
+                <b>THIS IS PERMANENT!<br><br>
+                <label for="del_char_checkbox" class="checkbox_label justifyCenter">
+                    <input type="checkbox" id="del_char_checkbox" />
+                    <span>Also delete the chat files</span>
+                </label><br></b>`;
+    }
+}
 
 const toggleFavoriteHighlight = (characterId) => {
     const element = document.getElementById(`CharID${characterId}`);
@@ -317,9 +328,16 @@ class CharacterGroupOverlay {
         .then(() => getCharacters())
         .then(() => this.browseState())
 
-    handleContextMenuDelete = () => Promise.all(this.selectedCharacters.map(async characterId => CharacterContextMenu.delete(characterId)))
-        .then(() => getCharacters())
-        .then(() => this.browseState())
+    handleContextMenuDelete = () => {
+        callPopup(
+            popupMessage.deleteChat(this.selectedCharacters.length),
+            null
+        ).then(deleteChats =>
+            Promise.all(this.selectedCharacters.map(async characterId => CharacterContextMenu.delete(characterId, deleteChats)))
+                .then(() => getCharacters())
+                .then(() => this.browseState())
+        );
+    }
 
     addStateChangeCallback = callback => this.stateChangeCallbacks.push(callback);
 
