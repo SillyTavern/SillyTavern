@@ -268,7 +268,7 @@ const sliders = [
     {
         sliderId: "#top_p_novel",
         counterId: "#top_p_counter_novel",
-        format: (val) => Number(val).toFixed(2),
+        format: (val) => Number(val).toFixed(3),
         setValue: (val) => { nai_settings.top_p = Number(val).toFixed(3); },
     },
     {
