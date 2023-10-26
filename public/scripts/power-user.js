@@ -46,7 +46,7 @@ export {
 
 export const MAX_CONTEXT_DEFAULT = 8192;
 const MAX_CONTEXT_UNLOCKED = 65536;
-const unlockedMaxContextStep = 4096
+const unlockedMaxContextStep = 1024
 const unlockedMaxContestMin = 8192
 
 const defaultStoryString = "{{#if system}}{{system}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}'s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}";
@@ -1087,7 +1087,7 @@ function loadMaxContextUnlocked() {
 function switchMaxContextSize() {
     const elements = [$('#max_context'), $('#rep_pen_range'), $('#rep_pen_range_textgenerationwebui')];
     const maxValue = power_user.max_context_unlocked ? MAX_CONTEXT_UNLOCKED : MAX_CONTEXT_DEFAULT;
-    const minValue = power_user.max_context_unlocked ? unlockedMaxContestMin : 0;
+    const minValue = power_user.max_context_unlocked ? 0 : 0;
     const steps = power_user.max_context_unlocked ? unlockedMaxContextStep : 256;
 
     for (const element of elements) {
