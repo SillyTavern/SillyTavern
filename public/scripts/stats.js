@@ -194,10 +194,10 @@ async function getStats() {
 
 /**
  * Asynchronously recreates the stats file from chat files.
- * 
+ *
  * Sends a POST request to the "/recreatestats" endpoint. If the request fails,
  * it displays an error notification and throws an error.
- * 
+ *
  * @throws {Error} If the request to recreate stats is unsuccessful.
  */
 async function recreateStats() {
@@ -330,23 +330,12 @@ async function statMesProcess(line, type, characters, this_chid, oldMesssage) {
     updateStats();
 }
 
-jQuery(() => {
-    function init() {
-        $(".rm_stats_button").on('click', function () {
-            characterStatsHandler(characters, this_chid);
-        });
-        // Wait for debug functions to load, then add the refresh stats function
-        registerDebugFunction('refreshStats', 'Refresh Stat File', 'Recreates the stats file based on existing chat files', recreateStats);
-    }
-
-    // Check every 100ms if registerDebugFunction is defined (this is bad lmao)
-    const interval = setInterval(() => {
-        if (typeof registerDebugFunction !== 'undefined') {
-            clearInterval(interval); // Clear the interval once the function is found
-            init(); // Initialize your code
-        }
-    }, 100);
-});
-
+export function initStats() {
+    $(".rm_stats_button").on('click', function () {
+        characterStatsHandler(characters, this_chid);
+    });
+    // Wait for debug functions to load, then add the refresh stats function
+    registerDebugFunction('refreshStats', 'Refresh Stat File', 'Recreates the stats file based on existing chat files', recreateStats);
+}
 
 export { userStatsHandler, characterStatsHandler, getStats, statMesProcess, charStats };

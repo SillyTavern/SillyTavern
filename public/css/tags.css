@@ -138,8 +138,7 @@
     filter: brightness(1);
 }
 
-.tags_view,
-.open_alternate_greetings {
+.tags_view {
     margin: 0;
     aspect-ratio: 1 / 1;
 }

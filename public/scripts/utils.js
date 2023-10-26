@@ -18,7 +18,7 @@ export function escapeHtml(str) {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-export function isUrlOrAPIKey(value) {
+export function isValidUrl(value) {
     try {
         new URL(value);
         return true;
@@ -498,7 +498,7 @@ export function countOccurrences(string, character) {
     let count = 0;
 
     for (let i = 0; i < string.length; i++) {
-        if (string[i] === character) {
+        if (string.substring(i, i + character.length) === character) {
             count++;
         }
     }
@@ -870,7 +870,7 @@ export async function saveBase64AsFile(base64Data, characterName, filename = "",
     // If the response is successful, get the saved image path from the server's response
     if (response.ok) {
         const responseData = await response.json();
-        return responseData.path;
+        return responseData.path.replace(/\\/g, '/'); // Replace backslashes with forward slashes
     } else {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to upload the image to the server');

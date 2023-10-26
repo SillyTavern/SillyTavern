@@ -18,6 +18,8 @@ import {
     getThumbnailUrl,
     selectCharacterById,
     eventSource,
+    menu_type,
+    substituteParams,
 } from "../script.js";
 
 import {
@@ -31,7 +33,7 @@ import {
     SECRET_KEYS,
     secret_state,
 } from "./secrets.js";
-import { debounce, delay, getStringHash, isUrlOrAPIKey, waitUntilCondition } from "./utils.js";
+import { debounce, delay, getStringHash, isValidUrl, waitUntilCondition } from "./utils.js";
 import { chat_completion_sources, oai_settings } from "./openai.js";
 import { getTokenCount } from "./tokenizers.js";
 
@@ -234,7 +236,9 @@ export function RA_CountCharTokens() {
             total_tokens += Number(counter.text());
             permanent_tokens += isPermanent ? Number(counter.text()) : 0;
         } else {
-            const tokens = getTokenCount(value);
+            // We substitute macro for existing characters, but not for the character being created
+            const valueToCount = menu_type === 'create' ? value : substituteParams(value);
+            const tokens = getTokenCount(valueToCount);
             counter.text(tokens);
             total_tokens += tokens;
             permanent_tokens += isPermanent ? tokens : 0;
@@ -394,7 +398,7 @@ function RA_autoconnect(PrevApi) {
     if (online_status === "no_connection" && LoadLocalBool('AutoConnectEnabled')) {
         switch (main_api) {
             case 'kobold':
-                if (api_server && isUrlOrAPIKey(api_server)) {
+                if (api_server && isValidUrl(api_server)) {
                     $("#api_button").click();
                 }
                 break;
@@ -404,7 +408,7 @@ function RA_autoconnect(PrevApi) {
                 }
                 break;
             case 'textgenerationwebui':
-                if (api_server_textgenerationwebui && isUrlOrAPIKey(api_server_textgenerationwebui)) {
+                if (api_server_textgenerationwebui && isValidUrl(api_server_textgenerationwebui)) {
                     $("#api_button_textgenerationwebui").click();
                 }
                 break;
@@ -897,6 +901,9 @@ export function initRossMods() {
     //Regenerate if user swipes on the last mesage in chat
 
     document.addEventListener('swiped-left', function (e) {
+        if (power_user.gestures === false) {
+            return
+        }
         var SwipeButR = $('.swipe_right:last');
         var SwipeTargetMesClassParent = $(e.target).closest('.last_mes');
         if (SwipeTargetMesClassParent !== null) {
@@ -906,6 +913,9 @@ export function initRossMods() {
         }
     });
     document.addEventListener('swiped-right', function (e) {
+        if (power_user.gestures === false) {
+            return
+        }
         var SwipeButL = $('.swipe_left:last');
         var SwipeTargetMesClassParent = $(e.target).closest('.last_mes');
         if (SwipeTargetMesClassParent !== null) {
