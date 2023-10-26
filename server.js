@@ -1199,7 +1199,7 @@ app.post("/v2/editcharacterattribute", jsonParser, async function (request, resp
             response.status(400).send({message: `Validation failed for card ${character.name}`, field: validator.getValidationError});
         }
     } catch (exception) {
-        response.status(400).send({message: 'Unexpected error while saving character.', error: exception.toString()});
+        response.status(500).send({message: 'Unexpected error while saving character.', error: exception.toString()});
     }
 });
 
