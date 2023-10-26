@@ -1,6 +1,6 @@
 English | [中文](readme-zh_cn.md)
 
-![SillyTavern-Banner](https://github.com/deffcolony/SillyTavern/assets/61471128/8d38daff-43a8-4c51-8ddd-cad1a65edf34)
+![SillyTavern-Banner](https://github.com/deffcolony/SillyTavern/assets/61471128/16da405b-3a03-4ab6-8b13-dac495010ade)
 
 Mobile-friendly, Multi-API (KoboldAI/CPP, Horde, NovelAI, Ooba, OpenAI, OpenRouter, Claude, Scale), VN-like Waifu Mode, Horde SD, System TTS, WorldInfo (lorebooks), customizable UI, auto-translate, and more prompt options than you'd ever want or need. Optional Extras server for more SD/TTS options + ChromaDB/Summarize.
 
