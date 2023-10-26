@@ -192,7 +192,7 @@ function loadNovelSettingsUi(ui_settings) {
     $("#top_k_novel").val(ui_settings.top_k);
     $("#top_k_counter_novel").val(Number(ui_settings.top_k).toFixed(0));
     $("#top_p_novel").val(ui_settings.top_p);
-    $("#top_p_counter_novel").val(Number(ui_settings.top_p).toFixed(2));
+    $("#top_p_counter_novel").val(Number(ui_settings.top_p).toFixed(3));
     $("#top_a_novel").val(ui_settings.top_a);
     $("#top_a_counter_novel").val(Number(ui_settings.top_a).toFixed(2));
     $("#typical_p_novel").val(ui_settings.typical_p);
@@ -269,7 +269,7 @@ const sliders = [
         sliderId: "#top_p_novel",
         counterId: "#top_p_counter_novel",
         format: (val) => Number(val).toFixed(2),
-        setValue: (val) => { nai_settings.top_p = Number(val).toFixed(2); },
+        setValue: (val) => { nai_settings.top_p = Number(val).toFixed(3); },
     },
     {
         sliderId: "#top_a_novel",
