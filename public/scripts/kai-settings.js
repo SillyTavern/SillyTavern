@@ -72,7 +72,7 @@ export function loadKoboldSettings(preset) {
         const formattedValue = slider.format(value);
         slider.setValue(value);
         $(slider.sliderId).val(value);
-        $(slider.counterId).text(formattedValue);
+        $(slider.counterId).val(formattedValue);
     }
 
     // TODO: refactor checkboxes (if adding any more)
@@ -375,7 +375,7 @@ jQuery(function () {
             const value = $(this).val();
             const formattedValue = slider.format(value);
             slider.setValue(value);
-            $(slider.counterId).text(formattedValue);
+            $(slider.counterId).val(formattedValue);
             saveSettingsDebounced();
         });
     });

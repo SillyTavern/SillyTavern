@@ -286,7 +286,8 @@ jQuery(function () {
             }
             else {
                 const value = Number($(this).val());
-                $(`#${id}_counter_textgenerationwebui`).text(value.toFixed(2));
+                $(`#${id}_counter_textgenerationwebui`).val(value.toFixed(2));
+                $("#rep_pen_range_counter_textgenerationwebui").val(Math.floor(value));
                 textgenerationwebui_settings[id] = value;
             }
 
@@ -312,7 +313,8 @@ function setSettingByName(i, value, trigger) {
     else {
         const val = parseFloat(value);
         $(`#${i}_textgenerationwebui`).val(val);
-        $(`#${i}_counter_textgenerationwebui`).text(val.toFixed(2));
+        $(`#${i}_counter_textgenerationwebui`).val(val.toFixed(2));
+        $("#rep_pen_range_counter_textgenerationwebui").val(Math.floor(val));
     }
 
     if (trigger) {

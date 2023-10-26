@@ -2269,7 +2269,7 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
     text-align: center;
 }
 
-.range-block-counter div[contenteditable="true"] {
+.range-block-counter input {
     display: block;
     cursor: text;
     background-color: var(--black30a);
@@ -2278,6 +2278,7 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
     padding: 2px;
     flex: 1;
     text-align: center;
+    width: 70px;
 }
 
 .range-block-range {

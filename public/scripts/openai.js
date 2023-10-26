@@ -2070,7 +2070,7 @@ function loadOpenAISettings(data, settings) {
     $('#model_ai21_select').val(oai_settings.ai21_model);
     $(`#model_ai21_select option[value="${oai_settings.ai21_model}"`).attr('selected', true);
     $('#openai_max_context').val(oai_settings.openai_max_context);
-    $('#openai_max_context_counter').text(`${oai_settings.openai_max_context}`);
+    $('#openai_max_context_counter').val(`${oai_settings.openai_max_context}`);
     $('#model_openrouter_select').val(oai_settings.openrouter_model);
 
     $('#openai_max_tokens').val(oai_settings.openai_max_tokens);
@@ -2099,22 +2099,22 @@ function loadOpenAISettings(data, settings) {
     $('#send_if_empty_textarea').val(oai_settings.send_if_empty);
 
     $('#temp_openai').val(oai_settings.temp_openai);
-    $('#temp_counter_openai').text(Number(oai_settings.temp_openai).toFixed(2));
+    $('#temp_counter_openai').val(Number(oai_settings.temp_openai).toFixed(2));
 
     $('#freq_pen_openai').val(oai_settings.freq_pen_openai);
-    $('#freq_pen_counter_openai').text(Number(oai_settings.freq_pen_openai).toFixed(2));
+    $('#freq_pen_counter_openai').val(Number(oai_settings.freq_pen_openai).toFixed(2));
 
     $('#pres_pen_openai').val(oai_settings.pres_pen_openai);
-    $('#pres_pen_counter_openai').text(Number(oai_settings.pres_pen_openai).toFixed(2));
+    $('#pres_pen_counter_openai').val(Number(oai_settings.pres_pen_openai).toFixed(2));
 
     $('#count_pen').val(oai_settings.count_pen);
-    $('#count_pen_counter').text(Number(oai_settings.count_pen).toFixed(2));
+    $('#count_pen_counter').val(Number(oai_settings.count_pen).toFixed(2));
 
     $('#top_p_openai').val(oai_settings.top_p_openai);
-    $('#top_p_counter_openai').text(Number(oai_settings.top_p_openai).toFixed(2));
+    $('#top_p_counter_openai').val(Number(oai_settings.top_p_openai).toFixed(2));
 
     $('#top_k_openai').val(oai_settings.top_k_openai);
-    $('#top_k_counter_openai').text(Number(oai_settings.top_k_openai).toFixed(0));
+    $('#top_k_counter_openai').val(Number(oai_settings.top_k_openai).toFixed(0));
 
     if (settings.reverse_proxy !== undefined) oai_settings.reverse_proxy = settings.reverse_proxy;
     $('#openai_reverse_proxy').val(oai_settings.reverse_proxy);
@@ -3119,43 +3119,43 @@ $(document).ready(async function () {
 
     $(document).on('input', '#temp_openai', function () {
         oai_settings.temp_openai = Number($(this).val());
-        $('#temp_counter_openai').text(Number($(this).val()).toFixed(2));
+        $('#temp_counter_openai').val(Number($(this).val()).toFixed(2));
         saveSettingsDebounced();
     });
 
     $(document).on('input', '#freq_pen_openai', function () {
         oai_settings.freq_pen_openai = Number($(this).val());
-        $('#freq_pen_counter_openai').text(Number($(this).val()).toFixed(2));
+        $('#freq_pen_counter_openai').val(Number($(this).val()).toFixed(2));
         saveSettingsDebounced();
     });
 
     $(document).on('input', '#pres_pen_openai', function () {
         oai_settings.pres_pen_openai = Number($(this).val());
-        $('#pres_pen_counter_openai').text(Number($(this).val()).toFixed(2));
+        $('#pres_pen_counter_openai').val(Number($(this).val()).toFixed(2));
         saveSettingsDebounced();
     });
 
     $(document).on('input', '#count_pen', function () {
         oai_settings.count_pen = Number($(this).val());
-        $('#count_pen_counter').text(Number($(this).val()).toFixed(2));
+        $('#count_pen_counter').val(Number($(this).val()).toFixed(2));
         saveSettingsDebounced();
     });
 
     $(document).on('input', '#top_p_openai', function () {
         oai_settings.top_p_openai = Number($(this).val());
-        $('#top_p_counter_openai').text(Number($(this).val()).toFixed(2));
+        $('#top_p_counter_openai').val(Number($(this).val()).toFixed(2));
         saveSettingsDebounced();
     });
 
     $(document).on('input', '#top_k_openai', function () {
         oai_settings.top_k_openai = Number($(this).val());
-        $('#top_k_counter_openai').text(Number($(this).val()).toFixed(0));
+        $('#top_k_counter_openai').val(Number($(this).val()).toFixed(0));
         saveSettingsDebounced();
     });
 
     $(document).on('input', '#openai_max_context', function () {
         oai_settings.openai_max_context = Number($(this).val());
-        $('#openai_max_context_counter').text(`${$(this).val()}`);
+        $('#openai_max_context_counter').val(`${$(this).val()}`);
         calculateOpenRouterCost();
         saveSettingsDebounced();
     });
