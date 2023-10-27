@@ -234,11 +234,10 @@
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
-                                            <input type="range" id="max_context" name="volume" min="512" max="4096" step="512">
+                                            <input type="range" id="max_context" name="volume" min="512" max="8192" step="64">
                                         </div>
                                         <div class="range-block-counter" data-randomization-disabled="true">
-                                            <input type="number" min="512" max="4096" step="512" data-for="max_context" id="max_context_counter">
-
+                                            <input type="number" min="512" max="8192" step="64" data-for="max_context" id="max_context_counter">
                                         </div>
                                     </div>
                                 </div>
@@ -1089,6 +1088,14 @@
                                                 </span>
                                             </div>
                                         </div>
+                                    </div>
+                                    <hr>
+                                    <div class="range-block">
+                                        <div class="range-block-title" data-i18n="Seed">
+                                            Seed
+                                        </div>
+                                        <!-- Max value is 2**64 - 1 -->
+                                        <input type="number" id="seed_kobold" class="text_pole wide100p" min="-1" value="-1" max="18446744073709551615" />
                                     </div>
                                     <hr>
                                     <div class="range-block flexFlowColumn">
