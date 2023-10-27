@@ -1,6 +1,6 @@
 [English](readme.md) | 中文
 
-![image](https://github.com/SillyTavern/SillyTavern/assets/18619528/8c41a061-7f72-4d2b-9d54-e6d058209e7b)
+![image](https://github.com/SillyTavern/SillyTavern/assets/18619528/c2be4c3f-aada-4f64-87a3-ae35a68b61a4)
 
 移动设备界面友好，多种人工智能服务或模型支持（KoboldAI/CPP, Horde, NovelAI, Ooba, OpenAI, OpenRouter, Claude, Scale），类似 Galgame 的 老 婆 模 式，Horde SD，文本系统语音生成，世界信息（Lorebooks），可定制的界面，自动翻译，和比你所需要的更多的 Prompt。附带扩展服务，支持文本绘画生成与语音生成和基于向量数据库 的聊天信息总结。
 

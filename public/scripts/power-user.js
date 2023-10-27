@@ -44,8 +44,11 @@ export {
     getContextSettings,
 };
 
-export const MAX_CONTEXT_DEFAULT = 4096;
+export const MAX_CONTEXT_DEFAULT = 8192;
 const MAX_CONTEXT_UNLOCKED = 65536;
+const unlockedMaxContextStep = 256;
+const maxContextMin = 512;
+const maxContextStep = 64;
 
 const defaultStoryString = "{{#if system}}{{system}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}'s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}";
 const defaultExampleSeparator = '***';
@@ -551,7 +554,7 @@ function applyChatWidth(type) {
         })
     }
 
-    $('#chat_width_slider_counter').text(power_user.chat_width);
+    $('#chat_width_slider_counter').val(power_user.chat_width);
 }
 
 async function applyThemeColor(type) {
@@ -612,7 +615,7 @@ async function applyCustomCSS() {
 async function applyBlurStrength() {
     power_user.blur_strength = Number(localStorage.getItem(storage_keys.blur_strength) ?? 1);
     document.documentElement.style.setProperty('--blurStrength', power_user.blur_strength);
-    $("#blur_strength_counter").text(power_user.blur_strength);
+    $("#blur_strength_counter").val(power_user.blur_strength);
     $("#blur_strength").val(power_user.blur_strength);
 
 
@@ -621,7 +624,7 @@ async function applyBlurStrength() {
 async function applyShadowWidth() {
     power_user.shadow_width = Number(localStorage.getItem(storage_keys.shadow_width) ?? 2);
     document.documentElement.style.setProperty('--shadowWidth', power_user.shadow_width);
-    $("#shadow_width_counter").text(power_user.shadow_width);
+    $("#shadow_width_counter").val(power_user.shadow_width);
     $("#shadow_width").val(power_user.shadow_width);
 
 }
@@ -639,7 +642,7 @@ async function applyFontScale(type) {
         })
     }
 
-    $("#font_scale_counter").text(power_user.font_scale);
+    $("#font_scale_counter").val(power_user.font_scale);
     $("#font_scale").val(power_user.font_scale);
 }
 
@@ -985,13 +988,13 @@ function loadPowerUserSettings(settings, data) {
     $("#token_padding").val(power_user.token_padding);
 
     $("#font_scale").val(power_user.font_scale);
-    $("#font_scale_counter").text(power_user.font_scale);
+    $("#font_scale_counter").val(power_user.font_scale);
 
     $("#blur_strength").val(power_user.blur_strength);
-    $("#blur_strength_counter").text(power_user.blur_strength);
+    $("#blur_strength_counter").val(power_user.blur_strength);
 
     $("#shadow_width").val(power_user.shadow_width);
-    $("#shadow_width_counter").text(power_user.shadow_width);
+    $("#shadow_width_counter").val(power_user.shadow_width);
 
     $("#main-text-color-picker").attr('color', power_user.main_text_color);
     $("#italics-color-picker").attr('color', power_user.italics_text_color);
@@ -1085,9 +1088,13 @@ function loadMaxContextUnlocked() {
 function switchMaxContextSize() {
     const elements = [$('#max_context'), $('#rep_pen_range'), $('#rep_pen_range_textgenerationwebui')];
     const maxValue = power_user.max_context_unlocked ? MAX_CONTEXT_UNLOCKED : MAX_CONTEXT_DEFAULT;
+    const minValue = power_user.max_context_unlocked ? maxContextMin : maxContextMin;
+    const steps = power_user.max_context_unlocked ? unlockedMaxContextStep : maxContextStep;
 
     for (const element of elements) {
         element.attr('max', maxValue);
+        element.attr('step', steps);
+        element.attr('min', minValue);
         const value = Number(element.val());
 
         if (value >= maxValue) {
@@ -1119,6 +1126,10 @@ function getContextSettings() {
 function loadContextSettings() {
     contextControls.forEach(control => {
         const $element = $(`#${control.id}`);
+
+        if (control.isGlobalSetting) {
+            return;
+        }
 
         if (control.isCheckbox) {
             $element.prop('checked', power_user.context[control.property]);
@@ -2052,7 +2063,7 @@ $(document).ready(() => {
 
     $(`input[name="font_scale"]`).on('input', async function (e) {
         power_user.font_scale = Number(e.target.value);
-        $("#font_scale_counter").text(power_user.font_scale);
+        $("#font_scale_counter").val(power_user.font_scale);
         localStorage.setItem(storage_keys.font_scale, power_user.font_scale);
         await applyFontScale();
         saveSettingsDebounced();
@@ -2060,7 +2071,7 @@ $(document).ready(() => {
 
     $(`input[name="blur_strength"]`).on('input', async function (e) {
         power_user.blur_strength = Number(e.target.value);
-        $("#blur_strength_counter").text(power_user.blur_strength);
+        $("#blur_strength_counter").val(power_user.blur_strength);
         localStorage.setItem(storage_keys.blur_strength, power_user.blur_strength);
         await applyBlurStrength();
         saveSettingsDebounced();
@@ -2068,7 +2079,7 @@ $(document).ready(() => {
 
     $(`input[name="shadow_width"]`).on('input', async function (e) {
         power_user.shadow_width = Number(e.target.value);
-        $("#shadow_width_counter").text(power_user.shadow_width);
+        $("#shadow_width_counter").val(power_user.shadow_width);
         localStorage.setItem(storage_keys.shadow_width, power_user.shadow_width);
         await applyShadowWidth();
         saveSettingsDebounced();

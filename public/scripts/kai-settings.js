@@ -28,6 +28,7 @@ export const kai_settings = {
     mirostat_eta: 0.1,
     use_default_badwordsids: false,
     grammar: "",
+    seed: -1,
 };
 
 export const kai_flags = {
@@ -72,7 +73,7 @@ export function loadKoboldSettings(preset) {
         const formattedValue = slider.format(value);
         slider.setValue(value);
         $(slider.sliderId).val(value);
-        $(slider.counterId).text(formattedValue);
+        $(slider.counterId).val(formattedValue);
     }
 
     // TODO: refactor checkboxes (if adding any more)
@@ -136,6 +137,7 @@ export function getKoboldGenerationData(finalPrompt, settings, maxLength, maxCon
         mirostat_eta: kai_flags.can_use_mirostat ? kai_settings.mirostat_eta : undefined,
         use_default_badwordsids: kai_flags.can_use_default_badwordsids ? kai_settings.use_default_badwordsids : undefined,
         grammar: kai_flags.can_use_grammar ? substituteParams(kai_settings.grammar) : undefined,
+        sampler_seed: kai_settings.seed >= 0 ? kai_settings.seed : undefined,
     };
     return generate_data;
 }
@@ -281,6 +283,13 @@ const sliders = [
         format: (val) => val,
         setValue: (val) => { kai_settings.grammar = val; },
     },
+    {
+        name: "seed",
+        sliderId: "#seed_kobold",
+        counterId: "#seed_counter_kobold",
+        format: (val) => val,
+        setValue: (val) => { kai_settings.seed = Number(val); },
+    },
 ];
 
 export function setKoboldFlags(version, koboldVersion) {
@@ -375,7 +384,7 @@ jQuery(function () {
             const value = $(this).val();
             const formattedValue = slider.format(value);
             slider.setValue(value);
-            $(slider.counterId).text(formattedValue);
+            $(slider.counterId).val(formattedValue);
             saveSettingsDebounced();
         });
     });

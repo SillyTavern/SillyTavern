@@ -1690,7 +1690,7 @@ function substituteParams(content, _name1, _name2, _original, _group) {
     content = content.replace(/<CHARIFNOTGROUP>/gi, _group);
     content = content.replace(/<GROUP>/gi, _group);
 
-    content = content.replace(/\{\{\/\/(.*?)\}\}/g, "");
+    content = content.replace(/\{\{\/\/([\s\S]*?)\}\}/gm, "");
 
     content = content.replace(/{{time}}/gi, moment().format('LT'));
     content = content.replace(/{{date}}/gi, moment().format('LL'));
@@ -5047,10 +5047,10 @@ async function getSettings(type) {
 
         // Set context size after loading power user (may override the max value)
         $("#max_context").val(max_context);
-        $("#max_context_counter").text(`${max_context}`);
+        $("#max_context_counter").val(max_context);
 
         $("#amount_gen").val(amount_gen);
-        $("#amount_gen_counter").text(`${amount_gen}`);
+        $("#amount_gen_counter").val(amount_gen);
 
         //Load which API we are using
         if (settings.main_api == undefined) {
@@ -5184,7 +5184,7 @@ export function setGenerationParamsFromPreset(preset) {
     if (preset.genamt !== undefined) {
         amount_gen = preset.genamt;
         $("#amount_gen").val(amount_gen);
-        $("#amount_gen_counter").text(`${amount_gen}`);
+        $("#amount_gen_counter").val(amount_gen);
     }
 
     if (preset.max_length !== undefined) {
@@ -5193,7 +5193,7 @@ export function setGenerationParamsFromPreset(preset) {
         max_context = preset.max_length;
 
         $("#max_context").val(max_context);
-        $("#max_context_counter").text(`${max_context}`);
+        $("#max_context_counter").val(max_context);
     }
 }
 
@@ -7955,7 +7955,7 @@ jQuery(async function () {
             const value = $(this).val();
             const formattedValue = slider.format(value);
             slider.setValue(value);
-            $(slider.counterId).text(formattedValue);
+            $(slider.counterId).val(formattedValue);
             saveSettingsDebounced();
         });
     });
@@ -8756,46 +8756,67 @@ jQuery(async function () {
         }
     });
 
-    $(document).on('input', '.range-block-counter div[contenteditable="true"]', function () {
-        const caretPosition = saveCaretPosition($(this).get(0));
-        const myText = $(this).text().trim();
-        $(this).text(myText); // trim line breaks and spaces
-        const masterSelector = $(this).data('for');
-        const masterElement = document.getElementById(masterSelector);
+    $(document).on('input', '.range-block-counter input', function () {
+        setTimeout(() => {
+            const caretPosition = saveCaretPosition($(this).get(0));
+            const myText = $(this).val().trim();
+            $(this).val(myText); // trim line breaks and spaces
+            const masterSelector = $(this).data('for');
+            const masterElement = document.getElementById(masterSelector);
 
-        if (masterElement == null) {
-            console.error('Master input element not found for the editable label', masterSelector);
-            return;
-        }
+            if (masterElement == null) {
+                console.error('Master input element not found for the editable label', masterSelector);
+                return;
+            }
 
-        const myValue = Number(myText);
+            const myValue = Number(myText);
+            const masterStep = Number(masterElement.getAttribute('step'))
+            const masterMin = Number($(masterElement).attr('min'));
+            const masterMax = Number($(masterElement).attr('max'));
+            const rawStepCompare = myValue / masterStep
+            const closestStep = Math.round(rawStepCompare)
+            const closestStepRaw = (closestStep) * masterStep
 
-        if (Number.isNaN(myValue)) {
-            console.warn('Label input is not a valid number. Resetting the value', myText);
-            $(masterElement).trigger('input');
+            //if text box val is not a number, reset slider val to its previous and wait for better input
+            if (Number.isNaN(myValue)) {
+                console.warn('Label input is not a valid number. Resetting the value to match slider', myText);
+                $(masterElement).trigger('input');
+                restoreCaretPosition($(this).get(0), caretPosition);
+                return;
+            }
+
+            //if textbox val is less than min, set slider to min
+            //PROBLEM: the moment slider gets set to min, textbox also auto-sets to min.
+            //if min = 0, this prevents further typing and locks input at 0 unless users pastes
+            //a multi-character number which is between min and max. adding delay was necessary.
+            if (myValue < masterMin) {
+                console.warn('Label input is less than minimum.', myText, '<', masterMin);
+                $(masterElement).val(masterMin).trigger('input').trigger('mouseup');
+                $(masterElement).val(myValue)
+                restoreCaretPosition($(this).get(0), caretPosition);
+                return;
+            }
+            //Same as above but in reverse. Not a problem because max value has multiple
+            //characters which can be edited.
+            if (myValue > masterMax) {
+                console.warn('Label input is more than maximum.', myText, '>', masterMax);
+                $(masterElement).val(masterMax).trigger('input').trigger('mouseup');
+                $(masterElement).val(myValue)
+                restoreCaretPosition($(this).get(0), caretPosition);
+                return;
+            }
+
+            //round input value to nearest step if between min and max
+            if (!(myValue < masterMin) && !(myValue > masterMax)) {
+                console.debug(`Label value ${myText} is OK, setting slider to closest step (${closestStepRaw})`);
+                $(masterElement).val(closestStepRaw).trigger('input').trigger('mouseup');
+                restoreCaretPosition($(this).get(0), caretPosition);
+                return;
+            }
+
             restoreCaretPosition($(this).get(0), caretPosition);
-            return;
-        }
-
-        const masterMin = Number($(masterElement).attr('min'));
-        const masterMax = Number($(masterElement).attr('max'));
-
-        if (myValue < masterMin) {
-            console.warn('Label input is less than minimum.', myText, '<', masterMin);
-            restoreCaretPosition($(this).get(0), caretPosition);
-            return;
-        }
-
-        if (myValue > masterMax) {
-            console.warn('Label input is more than maximum.', myText, '>', masterMax);
-            restoreCaretPosition($(this).get(0), caretPosition);
-            return;
-        }
-
-        console.debug('Label value OK, setting to the master input control', myText);
-        $(masterElement).val(myValue).trigger('input').trigger('mouseup');
-        restoreCaretPosition($(this).get(0), caretPosition);
-    });
+        }, 2000);
+    })
 
     $(".user_stats_button").on('click', function () {
         userStatsHandler();
