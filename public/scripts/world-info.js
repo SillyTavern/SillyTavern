@@ -1,11 +1,12 @@
-import { saveSettings, callPopup, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types } from "../script.js";
+import { saveSettings, callPopup, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types, getExtensionPrompt, MAX_INJECTION_DEPTH, extension_prompt_types, getExtensionPromptByName, saveMetadata, getCurrentChatId } from "../script.js";
 import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition } from "./utils.js";
-import { getContext } from "./extensions.js";
+import { extension_settings, getContext } from "./extensions.js";
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from "./authors-note.js";
 import { registerSlashCommand } from "./slash-commands.js";
 import { getDeviceInfo } from "./RossAscends-mods.js";
 import { FILTER_TYPES, FilterHelper } from "./filters.js";
 import { getTokenCount } from "./tokenizers.js";
+import { power_user } from "./power-user.js";
 
 export {
     world_info,
@@ -52,6 +53,7 @@ let updateEditor = (navigation) => { navigation; };
 // Do not optimize. updateEditor is a function that is updated by the displayWorldEntries with new data.
 const worldInfoFilter = new FilterHelper(() => updateEditor());
 const SORT_ORDER_KEY = 'world_info_sort_order';
+const METADATA_KEY = 'world_info';
 
 const InputWidthReference = $("#WIInputWidthReference");
 
@@ -133,10 +135,10 @@ function setWorldInfoSettings(settings, data) {
 
     world_info = settings.world_info ?? {}
 
-    $("#world_info_depth_counter").text(world_info_depth);
+    $("#world_info_depth_counter").val(world_info_depth);
     $("#world_info_depth").val(world_info_depth);
 
-    $("#world_info_budget_counter").text(world_info_budget);
+    $("#world_info_budget_counter").val(world_info_budget);
     $("#world_info_budget").val(world_info_budget);
 
     $("#world_info_recursive").prop('checked', world_info_recursive);
@@ -148,7 +150,7 @@ function setWorldInfoSettings(settings, data) {
     $("#world_info_character_strategy").val(world_info_character_strategy);
 
     $("#world_info_budget_cap").val(world_info_budget_cap);
-    $("#world_info_budget_cap_counter").text(world_info_budget_cap);
+    $("#world_info_budget_cap_counter").val(world_info_budget_cap);
 
     world_names = data.world_names?.length ? data.world_names : [];
 
@@ -166,6 +168,11 @@ function setWorldInfoSettings(settings, data) {
 
     $('#world_info_sort_order').val(localStorage.getItem(SORT_ORDER_KEY) || '0');
     $("#world_editor_select").trigger("change");
+
+    eventSource.on(event_types.CHAT_CHANGED, () => {
+        const hasWorldInfo = !!chat_metadata[METADATA_KEY] && world_names.includes(chat_metadata[METADATA_KEY]);
+        $('.chat_lorebook_button').toggleClass('world_set', hasWorldInfo);
+    });
 }
 
 // World Info Editor
@@ -580,8 +587,8 @@ function getWorldEntry(name, data, entry) {
         data.entries[uid].selectiveLogic = !isNaN(value) ? value : 0;
         setOriginalDataValue(data, uid, "selectiveLogic", data.entries[uid].selectiveLogic);
         saveWorldInfo(name, data);
-
     });
+
     template
         .find(`select[name="entryLogicType"] option[value=${entry.selectiveLogic}]`)
         .prop("selected", true)
@@ -1274,6 +1281,11 @@ async function getCharacterLore() {
             continue;
         }
 
+        if (chat_metadata[METADATA_KEY] === worldName) {
+            console.debug(`Character ${name}'s world ${worldName} is already activated in chat lore! Skipping...`);
+            continue;
+        }
+
         const data = await loadWorldInfoData(worldName);
         const newEntries = data ? Object.keys(data.entries).map((x) => data.entries[x]) : [];
         entries = entries.concat(newEntries);
@@ -1300,10 +1312,31 @@ async function getGlobalLore() {
     return entries;
 }
 
+async function getChatLore() {
+    const chatWorld = chat_metadata[METADATA_KEY];
+
+    if (!chatWorld) {
+        return [];
+    }
+
+    if (selected_world_info.includes(chatWorld)) {
+        console.debug(`Chat world ${chatWorld} is already activated in global world info! Skipping...`);
+        return [];
+    }
+
+    const data = await loadWorldInfoData(chatWorld);
+    const entries = data ? Object.keys(data.entries).map((x) => data.entries[x]) : [];
+
+    console.debug(`Chat lore has ${entries.length} entries`);
+
+    return entries;
+}
+
 async function getSortedEntries() {
     try {
         const globalLore = await getGlobalLore();
         const characterLore = await getCharacterLore();
+        const chatLore = await getChatLore();
 
         let entries;
 
@@ -1326,6 +1359,9 @@ async function getSortedEntries() {
                 break;
         }
 
+        // Chat lore always goes first
+        entries = [...chatLore.sort(sortFn), ...entries];
+
         console.debug(`Sorted ${entries.length} world lore entries using strategy ${world_info_character_strategy}`);
 
         // Need to deep clone the entries to avoid modifying the cached data
@@ -1340,7 +1376,31 @@ async function getSortedEntries() {
 async function checkWorldInfo(chat, maxContext) {
     const context = getContext();
     const messagesToLookBack = world_info_depth * 2 || 1;
-    let textToScan = transformString(chat.slice(0, messagesToLookBack).join(""));
+
+    // Combine the chat
+    let textToScan = chat.slice(0, messagesToLookBack).join("");
+
+    // Add the depth or AN if enabled
+    // Put this code here since otherwise, the chat reference is modified
+    if (extension_settings.note.allowWIScan) {
+        for (const key of Object.keys(context.extensionPrompts)) {
+            if (key.startsWith('DEPTH_PROMPT')) {
+                const depthPrompt = getExtensionPromptByName(key)
+                if (depthPrompt) {
+                    textToScan = `${depthPrompt}\n${textToScan}`
+                }
+            }
+        }
+
+        const anPrompt = getExtensionPromptByName(NOTE_MODULE_NAME);
+        if (anPrompt) {
+            textToScan = `${anPrompt}\n${textToScan}`
+        }
+    }
+
+    // Transform the resulting string
+    textToScan = transformString(textToScan);
+
     let needsToScan = true;
     let count = 0;
     let allActivatedEntries = new Set();
@@ -1713,17 +1773,26 @@ export function checkEmbeddedWorld(chid) {
         if (!localStorage.getItem(checkKey) && (!worldName || !world_names.includes(worldName))) {
             localStorage.setItem(checkKey, 1);
 
-            callPopup(`<h3>This character has an embedded World/Lorebook.</h3>
-                       <h3>Would you like to import it now?</h3>
-                       <div class="m-b-1">If you want to import it later, select "Import Card Lore" in the "More..." dropdown menu on the character panel.</div>`,
-                'confirm',
-                '',
-                { okButton: 'Yes', })
-                .then((result) => {
-                    if (result) {
-                        importEmbeddedWorldInfo(true);
-                    }
-                });
+            if (power_user.world_import_dialog) {
+                callPopup(`<h3>This character has an embedded World/Lorebook.</h3>
+                           <h3>Would you like to import it now?</h3>
+                           <div class="m-b-1">If you want to import it later, select "Import Card Lore" in the "More..." dropdown menu on the character panel.</div>`,
+                    'confirm',
+                    '',
+                    { okButton: 'Yes', })
+                    .then((result) => {
+                        if (result) {
+                            importEmbeddedWorldInfo(true);
+                        }
+                    });
+            }
+            else {
+                toastr.info(
+                    'To import and use it, select "Import Card Lore" in the "More..." dropdown menu on the character panel.',
+                    `${characters[chid].name} has an embedded World/Lorebook`,
+                    { timeOut: 5000, extendedTimeOut: 10000, positionClass: 'toast-top-center' },
+                );
+            }
         }
         return true;
     }
@@ -1881,6 +1950,39 @@ export async function importWorldInfo(file) {
     });
 }
 
+function assignLorebookToChat() {
+    const selectedName = chat_metadata[METADATA_KEY];
+    const template = $('#chat_world_template .chat_world').clone();
+
+    const worldSelect = template.find('select');
+    const chatName = template.find('.chat_name');
+    chatName.text(getCurrentChatId());
+
+    for (const worldName of world_names) {
+        const option = document.createElement('option');
+        option.value = worldName;
+        option.innerText = worldName;
+        option.selected = selectedName === worldName;
+        worldSelect.append(option);
+    }
+
+    worldSelect.on('change', function () {
+        const worldName = $(this).val();
+
+        if (worldName) {
+            chat_metadata[METADATA_KEY] = worldName;
+            $('.chat_lorebook_button').addClass('world_set');
+        } else {
+            delete chat_metadata[METADATA_KEY];
+            $('.chat_lorebook_button').removeClass('world_set');
+        }
+
+        saveMetadata();
+    });
+
+    callPopup(template, 'text');
+}
+
 jQuery(() => {
 
     $(document).ready(function () {
@@ -1941,13 +2043,13 @@ jQuery(() => {
 
     $(document).on("input", "#world_info_depth", function () {
         world_info_depth = Number($(this).val());
-        $("#world_info_depth_counter").text($(this).val());
+        $("#world_info_depth_counter").val($(this).val());
         saveSettings();
     });
 
     $(document).on("input", "#world_info_budget", function () {
         world_info_budget = Number($(this).val());
-        $("#world_info_budget_counter").text($(this).val());
+        $("#world_info_budget_counter").val($(this).val());
         saveSettings();
     });
 
@@ -1967,7 +2069,7 @@ jQuery(() => {
     });
 
     $('#world_info_character_strategy').on('change', function () {
-        world_info_character_strategy = $(this).val();
+        world_info_character_strategy = Number($(this).val());
         saveSettings();
     });
 
@@ -1978,23 +2080,23 @@ jQuery(() => {
 
     $('#world_info_budget_cap').on('input', function () {
         world_info_budget_cap = Number($(this).val());
-        $("#world_info_budget_cap_counter").text(world_info_budget_cap);
+        $("#world_info_budget_cap_counter").val(world_info_budget_cap);
         saveSettings();
     });
 
-    $('#world_button').on('click', async function () {
+    $('#world_button').on('click', async function (event) {
         const chid = $('#set_character_world').data('chid');
 
         if (chid) {
             const worldName = characters[chid]?.data?.extensions?.world;
             const hasEmbed = checkEmbeddedWorld(chid);
-            if (worldName && world_names.includes(worldName)) {
+            if (worldName && world_names.includes(worldName) && !event.shiftKey) {
                 if (!$('#WorldInfo').is(':visible')) {
                     $('#WIDrawerIcon').trigger('click');
                 }
                 const index = world_names.indexOf(worldName);
                 $("#world_editor_select").val(index).trigger('change');
-            } else if (hasEmbed) {
+            } else if (hasEmbed && !event.shiftKey) {
                 await importEmbeddedWorldInfo();
                 saveCharacterDebounced();
             }
@@ -2020,6 +2122,8 @@ jQuery(() => {
 
         updateEditor(navigation_option.none);
     })
+
+    $(document).on('click', '.chat_lorebook_button', assignLorebookToChat);
 
     // Not needed on mobile
     const deviceInfo = getDeviceInfo();

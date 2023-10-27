@@ -79,7 +79,7 @@ function registerEndpoints(app, jsonParser) {
                 return response.status(409).send(`Directory already exists at ${extensionPath}`);
             }
 
-            await git.clone(url, extensionPath);
+            await git.clone(url, extensionPath, { '--depth': 1 });
             console.log(`Extension has been cloned at ${extensionPath}`);
 
 

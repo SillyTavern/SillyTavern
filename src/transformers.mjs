@@ -1,4 +1,4 @@
-import { pipeline, env, RawImage } from 'sillytavern-transformers';
+import { pipeline, env, RawImage, Pipeline } from 'sillytavern-transformers';
 import { getConfigValue } from './util.js';
 import path from 'path';
 import _ from 'lodash';
@@ -28,8 +28,18 @@ const tasks = {
         pipeline: null,
         configField: 'extras.embeddingModel',
     },
+    'text-generation': {
+        defaultModel: 'Cohee/fooocus_expansion-onnx',
+        pipeline: null,
+        configField: 'extras.promptExpansionModel',
+    },
 }
 
+/**
+ * Gets a RawImage object from a base64-encoded image.
+ * @param {string} image Base64-encoded image
+ * @returns {Promise<RawImage|null>} Object representing the image
+ */
 async function getRawImage(image) {
     try {
         const buffer = Buffer.from(image, 'base64');
@@ -43,6 +53,11 @@ async function getRawImage(image) {
     }
 }
 
+/**
+ * Gets the model to use for a given transformers.js task.
+ * @param {string} task The task to get the model for
+ * @returns {string} The model to use for the given task
+ */
 function getModelForTask(task) {
     const defaultModel = tasks[task].defaultModel;
 
@@ -55,6 +70,11 @@ function getModelForTask(task) {
     }
 }
 
+/**
+ * Gets the transformers.js pipeline for a given task.
+ * @param {string} task The task to get the pipeline for
+ * @returns {Promise<Pipeline>} Pipeline for the task
+ */
 async function getPipeline(task) {
     if (tasks[task].pipeline) {
         return tasks[task].pipeline;

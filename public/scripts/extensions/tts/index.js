@@ -8,7 +8,6 @@ import { CoquiTtsProvider } from './coqui.js'
 import { SystemTtsProvider } from './system.js'
 import { NovelTtsProvider } from './novel.js'
 import { power_user } from '../../power-user.js'
-import { rvcVoiceConversion } from "../rvc/index.js"
 export { talkingAnimation };
 
 const UPDATE_INTERVAL = 1000
@@ -415,8 +414,8 @@ async function tts(text, voiceId, char) {
     let response = await ttsProvider.generateTts(text, voiceId)
 
     // RVC injection
-    if (extension_settings.rvc.enabled)
-        response = await rvcVoiceConversion(response, char, text)
+    if (extension_settings.rvc.enabled && typeof window['rvcVoiceConversion'] === 'function')
+        response = await window['rvcVoiceConversion'](response, char, text)
 
     addAudioJob(response)
     completeTtsJob()
@@ -430,7 +429,7 @@ async function processTtsQueue() {
 
     console.debug('New message found, running TTS')
     currentTtsJob = ttsJobQueue.shift()
-    let text = extension_settings.tts.narrate_translated_only ? currentTtsJob?.extra?.display_text : currentTtsJob.mes
+    let text = extension_settings.tts.narrate_translated_only ? (currentTtsJob?.extra?.display_text || currentTtsJob.mes) : currentTtsJob.mes
     text = extension_settings.tts.narrate_dialogues_only
         ? text.replace(/\*[^\*]*?(\*|$)/g, '').trim() // remove asterisks content
         : text.replaceAll('*', '').trim() // remove just the asterisks
@@ -615,8 +614,8 @@ function onTtsProviderChange() {
 
 // Ensure that TTS provider settings are saved to extension settings.
 export function saveTtsProviderSettings() {
-    updateVoiceMap()
     extension_settings.tts[ttsProviderName] = ttsProvider.settings
+    updateVoiceMap()
     saveSettingsDebounced()
     console.info(`Saved settings ${ttsProviderName} ${JSON.stringify(ttsProvider.settings)}`)
 }
@@ -695,6 +694,9 @@ function updateVoiceMap() {
     if (Object.keys(tempVoiceMap).length !== 0){
         voiceMap = tempVoiceMap
         console.log(`Voicemap updated to ${JSON.stringify(voiceMap)}`)
+    }
+    if (!extension_settings.tts[ttsProviderName].voiceMap) {
+        extension_settings.tts[ttsProviderName].voiceMap = {}
     }
     Object.assign(extension_settings.tts[ttsProviderName].voiceMap, voiceMap)
     saveSettingsDebounced()

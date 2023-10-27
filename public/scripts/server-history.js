@@ -1,6 +1,6 @@
 import { saveSettingsDebounced } from "../script.js";
 import { power_user } from "./power-user.js";
-import { isUrlOrAPIKey } from "./utils.js";
+import { isValidUrl } from "./utils.js";
 
 /**
  * @param {{ term: string; }} request
@@ -64,7 +64,7 @@ function onServerConnectClick() {
         const value = String($(`[data-server-history="${serverLabel}"]`).val()).toLowerCase().trim();
 
         // Don't save empty values or invalid URLs
-        if (!value || !isUrlOrAPIKey(value)) {
+        if (!value || !isValidUrl(value)) {
             return;
         }
 

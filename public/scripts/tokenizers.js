@@ -182,6 +182,7 @@ export function getTokenizerModel() {
         return oai_settings.openai_model;
     }
 
+    const turbo0301Tokenizer = 'gpt-3.5-turbo-0301';
     const turboTokenizer = 'gpt-3.5-turbo';
     const gpt4Tokenizer = 'gpt-4';
     const gpt2Tokenizer = 'gpt2';
@@ -196,6 +197,9 @@ export function getTokenizerModel() {
     if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI && oai_settings.windowai_model) {
         if (oai_settings.windowai_model.includes('gpt-4')) {
             return gpt4Tokenizer;
+        }
+        else if (oai_settings.windowai_model.includes('gpt-3.5-turbo-0301')) {
+            return turbo0301Tokenizer;
         }
         else if (oai_settings.windowai_model.includes('gpt-3.5-turbo')) {
             return turboTokenizer;
@@ -212,6 +216,9 @@ export function getTokenizerModel() {
     if (oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER && oai_settings.openrouter_model) {
         if (oai_settings.openrouter_model.includes('gpt-4')) {
             return gpt4Tokenizer;
+        }
+        else if (oai_settings.openrouter_model.includes('gpt-3.5-turbo-0301')) {
+            return turbo0301Tokenizer;
         }
         else if (oai_settings.openrouter_model.includes('gpt-3.5-turbo')) {
             return turboTokenizer;
@@ -432,7 +439,7 @@ export function decodeTextTokens(tokenizerType, ids) {
     }
 }
 
-jQuery(async () => {
+export async function initTokenizers() {
     await loadTokenCache();
     registerDebugFunction('resetTokenCache', 'Reset token cache', 'Purges the calculated token counts. Use this if you want to force a full re-tokenization of all chats or suspect the token counts are wrong.', resetTokenCache);
-});
+}

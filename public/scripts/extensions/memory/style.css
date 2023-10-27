@@ -8,7 +8,8 @@
     line-height: 1.2;
 }
 
-label[for="memory_frozen"] {
+label[for="memory_frozen"],
+label[for="memory_skipWIAN"] {
     display: flex;
     align-items: center;
     margin: 0 !important;

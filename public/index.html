@@ -86,6 +86,9 @@
     <script type="module" src="scripts/filters.js"></script>
     <script type="module" src="scripts/personas.js"></script>
     <script type="module" src="scripts/server-history.js"></script>
+    <script type="module" src="scripts/setting-search.js"></script>
+    <script type="module" src="scripts/bulk-edit.js"></script>
+    <script type="module" src="scripts/cfg-scale.js"></script>
 
     <title>SillyTavern</title>
 </head>
@@ -122,13 +125,13 @@
                     <div class="flex-container" id="ai_response_configuration">
                         <div id="respective-presets-block" class="width100p">
                             <div id="kobold_api-presets">
-                                <h3><span data-i18n="kobldpresets">Kobold Presets</span>
+                                <h4 class="margin0"><span data-i18n="kobldpresets">Kobold Presets</span>
                                     <a href="https://docs.sillytavern.app/usage/api-connections/koboldai/" class="notes-link" target="_blank">
                                         <span class="note-link-span">?</span>
                                     </a>
-                                </h3>
-                                <div class="preset_buttons">
-                                    <select id="settings_perset" data-preset-manager-for="kobold">
+                                </h4>
+                                <div class="flex-container">
+                                    <select id="settings_perset" data-preset-manager-for="kobold" class="flex1 text_pole">
                                         <option value="gui" data-i18n="guikoboldaisettings">GUI KoboldAI Settings</option>
                                     </select>
                                     <input type="file" hidden data-preset-manager-file="kobold" accept=".json, .settings">
@@ -140,14 +143,14 @@
                                 </div>
                             </div>
                             <div id="novel_api-presets">
-                                <h3>
+                                <h4 class="margin0">
                                     <span data-i18n="novelaipreserts">NovelAI Presets</span>
                                     <a href="https://docs.sillytavern.app/usage/api-connections/novelai/" class="notes-link" target="_blank">
                                         <span class="note-link-span">?</span>
                                     </a>
-                                </h3>
-                                <div class="preset_buttons">
-                                    <select id="settings_perset_novel" data-preset-manager-for="novel">
+                                </h4>
+                                <div class="flex-container">
+                                    <select id="settings_perset_novel" class="flex1 text_pole" data-preset-manager-for="novel">
                                         <option value="gui" data-i18n="default">Default</option>
                                     </select>
                                     <input type="file" hidden data-preset-manager-file="novel" accept=".json, .settings">
@@ -160,9 +163,9 @@
                             </div>
                             <div id="openai_api-presets">
                                 <div>
-                                    <h4><span data-i18n="openaipresets">Chat Completion Presets</span></h4>
-                                    <div class="openai_preset_buttons">
-                                        <select id="settings_perset_openai">
+                                    <h4 class="margin0"><span data-i18n="openaipresets">Chat Completion Presets</span></h4>
+                                    <div class="flex-container">
+                                        <select id="settings_perset_openai" class="flex1 text_pole">
                                             <option value="gui" data-i18n="default">Default</option>
                                         </select>
                                         <i id="update_oai_preset" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
@@ -175,10 +178,9 @@
                                 </div>
                             </div>
                             <div id="textgenerationwebui_api-presets">
-                                <h3><span data-i18n="Text Gen WebUI (ooba/Mancer) presets">Text Gen WebUI (ooba/Mancer) presets</span>
-                                </h3>
-                                <div class="preset_buttons">
-                                    <select id="settings_preset_textgenerationwebui" data-preset-manager-for="textgenerationwebui">
+                                <h4 class="margin0"><span data-i18n="Text Gen WebUI (ooba/Mancer) presets">Text Gen WebUI (ooba/Mancer) presets</span></h4>
+                                <div class="flex-container">
+                                    <select id="settings_preset_textgenerationwebui" class="flex1 text_pole" data-preset-manager-for="textgenerationwebui">
                                     </select>
                                     <input type="file" hidden data-preset-manager-file="textgenerationwebui" accept=".json, .settings">
                                     <i data-newbie-hidden data-preset-manager-update="textgenerationwebui" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
@@ -220,9 +222,8 @@
                                                 <input type="range" id="amount_gen" name="volume" min="16" max="1024" step="1">
                                             </div>
                                             <div class="range-block-counter" data-randomization-disabled="true">
-                                                <div contenteditable="true" data-for="amount_gen" id="amount_gen_counter">
-                                                    select
-                                                </div>
+                                                <input type="number" min="16" max="1024" step="1" data-for="amount_gen" id="amount_gen_counter">
+
                                             </div>
                                         </div>
                                     </div>
@@ -233,12 +234,11 @@
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
-                                            <input type="range" id="max_context" name="volume" min="512" max="4096" step="1">
+                                            <input type="range" id="max_context" name="volume" min="512" max="4096" step="512">
                                         </div>
                                         <div class="range-block-counter" data-randomization-disabled="true">
-                                            <div contenteditable="true" data-for="max_context" id="max_context_counter">
-                                                select
-                                            </div>
+                                            <input type="number" min="512" max="4096" step="512" data-for="max_context" id="max_context_counter">
+
                                         </div>
                                     </div>
                                 </div>
@@ -286,9 +286,8 @@
                                             <input type="range" id="temp" name="volume" min="0.0" max="2.0" step="0.01">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="temp" id="temp_counter">
-                                                select
-                                            </div>
+                                            <input type="number" min="0.0" max="2.0" step="0.01" data-for="temp" id="temp_counter">
+
                                         </div>
                                     </div>
                                 </div>
@@ -301,9 +300,8 @@
                                             <input type="range" id="rep_pen" name="volume" min="1" max="1.5" step="0.01">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="rep_pen" id="rep_pen_counter">
-                                                select
-                                            </div>
+                                            <input type="number" min="1" max="1.5" step="0.01" data-for="rep_pen" id="rep_pen_counter">
+
                                         </div>
                                     </div>
                                 </div>
@@ -316,9 +314,8 @@
                                             <input type="range" id="rep_pen_range" name="volume" min="0" max="4096" step="1">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="rep_pen_range" id="rep_pen_range_counter">
-                                                select
-                                            </div>
+                                            <input type="number" min="0" max="4096" step="1" data-for="rep_pen_range" id="rep_pen_range_counter">
+
                                         </div>
                                     </div>
                                 </div>
@@ -331,9 +328,8 @@
                                             <input type="range" id="rep_pen_slope" name="volume" min="0" max="10" step="0.1">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="rep_pen_slope" id="rep_pen_slope_counter">
-                                                select
-                                            </div>
+                                            <input type="number" min="0" max="10" step="0.1" data-for="rep_pen_slope" id="rep_pen_slope_counter">
+
                                         </div>
                                     </div>
                                 </div>
@@ -361,9 +357,8 @@
                                             <input type="range" id="temp_novel" name="volume" min="0.1" max="2.50" step="0.01">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="temp_novel" id="temp_counter_novel">
-                                                select
-                                            </div>
+                                            <input type="number" min="0.1" max="2.50" step="0.01" data-for="temp_novel" id="temp_counter_novel">
+
                                         </div>
                                     </div>
                                 </div>
@@ -376,9 +371,8 @@
                                             <input type="range" id="rep_pen_novel" name="volume" min="1" max="8" step="0.05">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="rep_pen_novel" id="rep_pen_counter_novel">
-                                                select
-                                            </div>
+                                            <input type="number" min="1" max="8" step="0.05" data-for="rep_pen_novel" id="rep_pen_counter_novel">
+
                                         </div>
                                     </div>
                                 </div>
@@ -391,9 +385,8 @@
                                             <input type="range" id="rep_pen_size_novel" name="volume" min="0" max="8192" step="1">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="rep_pen_size_novel" id="rep_pen_size_counter_novel">
-                                                select
-                                            </div>
+                                            <input type="number" min="0" max="8192" step="1" data-for="rep_pen_size_novel" id="rep_pen_size_counter_novel">
+
                                         </div>
                                     </div>
                                 </div>
@@ -403,12 +396,11 @@
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
-                                            <input type="range" id="rep_pen_slope_novel" name="volume" min="0.01" max="10" step="0.01">
+                                            <input type="range" id="rep_pen_slope_novel" name="volume" min="0" max="10" step="0.01">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="rep_pen_slope_novel" id="rep_pen_slope_counter_novel">
-                                                select
-                                            </div>
+                                            <input type="number" min="0" max="10" step="0.01" data-for="rep_pen_slope_novel" id="rep_pen_slope_counter_novel">
+
                                         </div>
                                     </div>
                                 </div>
@@ -421,9 +413,8 @@
                                             <input type="range" id="rep_pen_freq_novel" name="volume" min="0" max="1" step="0.01">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="rep_pen_freq_novel" id="rep_pen_freq_counter_novel">
-                                                select
-                                            </div>
+                                            <input type="number" min="0" max="1" step="0.01" data-for="rep_pen_freq_novel" id="rep_pen_freq_counter_novel">
+
                                         </div>
                                     </div>
                                 </div>
@@ -436,9 +427,8 @@
                                             <input type="range" id="rep_pen_presence_novel" name="volume" min="0" max="1" step="0.01">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="rep_pen_presence_novel" id="rep_pen_presence_counter_novel">
-                                                select
-                                            </div>
+                                            <input type="number" min="0" max="1" step="0.01" data-for="rep_pen_presence_novel" id="rep_pen_presence_counter_novel">
+
                                         </div>
                                     </div>
                                 </div>
@@ -451,9 +441,7 @@
                                             <input type="range" id="tail_free_sampling_novel" name="volume" min="0" max="1" step="0.001">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="tail_free_sampling_novel" id="tail_free_sampling_counter_novel">
-                                                select
-                                            </div>
+                                            <input type="number" min="0" max="1" step="0.001" data-for="tail_free_sampling_novel" id="tail_free_sampling_counter_novel">
                                         </div>
                                     </div>
                                 </div>
@@ -494,9 +482,8 @@
                                             <input type="range" id="temp_textgenerationwebui" name="volume" min="0.0" max="2.0" step="0.01">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="temp_textgenerationwebui" id="temp_counter_textgenerationwebui">
-                                                select
-                                            </div>
+                                            <input type="number" min="0.0" max="2.0" step="0.01" data-for="temp_textgenerationwebui" id="temp_counter_textgenerationwebui">
+
                                         </div>
                                     </div>
                                 </div>
@@ -509,9 +496,8 @@
                                             <input type="range" id="rep_pen_textgenerationwebui" name="volume" min="1" max="1.5" step="0.01">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="rep_pen_textgenerationwebui" id="rep_pen_counter_textgenerationwebui">
-                                                select
-                                            </div>
+                                            <input type="number" min="1" max="1.5" step="0.01" data-for="rep_pen_textgenerationwebui" id="rep_pen_counter_textgenerationwebui">
+
                                         </div>
                                     </div>
                                 </div>
@@ -524,9 +510,8 @@
                                             <input type="range" id="rep_pen_range_textgenerationwebui" name="volume" min="0" max="4096" step="1">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="rep_pen_range_textgenerationwebui" id="rep_pen_range_counter_textgenerationwebui">
-                                                select
-                                            </div>
+                                            <input type="number" min="0" max="4096" step="1" data-for="rep_pen_range_textgenerationwebui" id="rep_pen_range_counter_textgenerationwebui">
+
                                         </div>
                                     </div>
                                 </div>
@@ -539,9 +524,36 @@
                                             <input type="range" id="encoder_rep_pen_textgenerationwebui" name="volume" min="0.8" max="1.5" step="0.01" />
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="encoder_rep_pen_textgenerationwebui" id="encoder_rep_pen_counter_textgenerationwebui">
-                                                select
-                                            </div>
+                                            <input type="number" min="0.8" max="1.5" step="0.01" data-for="encoder_rep_pen_textgenerationwebui" id="encoder_rep_pen_counter_textgenerationwebui">
+
+                                        </div>
+                                    </div>
+                                </div>
+                                <div data-newbie-hidden class="range-block">
+                                    <div class="range-block-title" data-i18n="Frequency Penalty">
+                                        Frequency Penalty
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="freq_pen_textgenerationwebui" name="volume" min="-2" max="2" step="0.01" />
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <input type="number" data-for="freq_pen_textgenerationwebui" min="-2" max="2" step="0.01" id="freq_pen_counter_textgenerationwebui">
+
+                                        </div>
+                                    </div>
+                                </div>
+                                <div data-newbie-hidden class="range-block">
+                                    <div class="range-block-title" data-i18n="Presence Penalty">
+                                        Presence Penalty
+                                    </div>
+                                    <div class="range-block-range-and-counter">
+                                        <div class="range-block-range">
+                                            <input type="range" id="presence_pen_textgenerationwebui" name="volume" min="-2" max="2" step="0.01" />
+                                        </div>
+                                        <div class="range-block-counter">
+                                            <input type="number" min="-2" max="2" step="0.01" data-for="presence_pen_textgenerationwebui" id="presence_pen_counter_textgenerationwebui">
+
                                         </div>
                                     </div>
                                 </div>
@@ -554,9 +566,8 @@
                                             <input type="range" id="no_repeat_ngram_size_textgenerationwebui" name="volume" min="0" max="20" step="1">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="no_repeat_ngram_size_textgenerationwebui" id="no_repeat_ngram_size_counter_textgenerationwebui">
-                                                select
-                                            </div>
+                                            <input type="number" min="0" max="20" step="1" data-for="no_repeat_ngram_size_textgenerationwebui" id="no_repeat_ngram_size_counter_textgenerationwebui">
+
                                         </div>
                                     </div>
                                 </div>
@@ -569,9 +580,8 @@
                                             <input type="range" id="min_length_textgenerationwebui" name="volume" min="0" max="2000" step="1" />
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="min_length_textgenerationwebui" id="min_length_counter_textgenerationwebui">
-                                                select
-                                            </div>
+                                            <input type="number" min="0" max="2000" step="1" data-for="min_length_textgenerationwebui" id="min_length_counter_textgenerationwebui">
+
                                         </div>
                                     </div>
                                 </div>
@@ -600,9 +610,8 @@
                                             <input type="range" id="openai_max_context" name="volume" min="512" max="4095" step="1">
                                         </div>
                                         <div class="range-block-counter" data-randomization-disabled="true">
-                                            <div contenteditable="true" data-for="openai_max_context" id="openai_max_context_counter">
-                                                select
-                                            </div>
+                                            <input type="number" min="512" max="4095" step="1" data-for="openai_max_context" id="openai_max_context_counter">
+
                                         </div>
                                     </div>
                                 </div>
@@ -641,8 +650,8 @@
                                             <input type="range" id="temp_openai" name="volume" min="0" max="2.0" step="0.01">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="temp_openai" id="temp_counter_openai">
-                                                select</div>
+                                            <input type="number" min="0" max="2.0" step="0.01" data-for="temp_openai" id="temp_counter_openai">
+
                                         </div>
                                     </div>
                                 </div>
@@ -655,9 +664,8 @@
                                             <input type="range" id="freq_pen_openai" name="volume" min="-2" max="2" step="0.01">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="freq_pen_openai" id="freq_pen_counter_openai">
-                                                select
-                                            </div>
+                                            <input type="number" min="-2" max="2" step="0.01" data-for="freq_pen_openai" id="freq_pen_counter_openai">
+
                                         </div>
                                     </div>
                                 </div>
@@ -670,9 +678,8 @@
                                             <input type="range" id="pres_pen_openai" name="volume" min="-2" max="2" step="0.01">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="pres_pen_openai" id="pres_pen_counter_openai">
-                                                select
-                                            </div>
+                                            <input type="number" min="-2" max="2" step="0.01" data-for="pres_pen_openai" id="pres_pen_counter_openai">
+
                                         </div>
                                     </div>
                                 </div>
@@ -685,9 +692,8 @@
                                             <input type="range" id="count_pen" name="volume" min="0" max="1" step="0.01">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="count_pen" id="count_pen_counter">
-                                                select
-                                            </div>
+                                            <input type="number" min="0" max="1" step="0.01" data-for="count_pen" id="count_pen_counter">
+
                                         </div>
                                     </div>
                                 </div>
@@ -700,9 +706,8 @@
                                             <input type="range" id="top_k_openai" name="volume" min="0" max="200" step="1">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="top_k_openai" id="top_k_counter_openai">
-                                                select
-                                            </div>
+                                            <input type="number" min="0" max="200" step="1" data-for="top_k_openai" id="top_k_counter_openai">
+
                                         </div>
                                     </div>
                                 </div>
@@ -715,9 +720,8 @@
                                             <input type="range" id="top_p_openai" name="volume" min="0" max="1" step="0.01">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="top_p_openai" id="top_p_counter_openai">
-                                                select
-                                            </div>
+                                            <input type="number" min="0" max="1" step="0.01" data-for="top_p_openai" id="top_p_counter_openai">
+
                                         </div>
                                     </div>
                                 </div>
@@ -933,9 +937,8 @@
                                                 <input type="range" id="top_p" name="volume" min="0" max="1" step="0.01">
                                             </div>
                                             <div class="range-block-counter">
-                                                <div contenteditable="true" data-for="top_p" id="top_p_counter">
-                                                    select
-                                                </div>
+                                                <input type="number" min="0" max="1" step="0.01" data-for="top_p" id="top_p_counter">
+
                                             </div>
                                         </div>
                                     </div>
@@ -948,9 +951,8 @@
                                                 <input type="range" id="top_a" name="volume" min="0" max="1" step="0.01">
                                             </div>
                                             <div class="range-block-counter">
-                                                <div contenteditable="true" data-for="top_a" id="top_a_counter">
-                                                    select
-                                                </div>
+                                                <input type="number" min="0" max="1" step="0.01" data-for="top_a" id="top_a_counter">
+
                                             </div>
                                         </div>
                                     </div>
@@ -963,9 +965,8 @@
                                                 <input type="range" id="top_k" name="volume" min="0" max="100" step="1">
                                             </div>
                                             <div class="range-block-counter">
-                                                <div contenteditable="true" data-for="top_k" id="top_k_counter">
-                                                    select
-                                                </div>
+                                                <input type="number" min="0" max="100" step="1" data-for="top_k" id="top_k_counter">
+
                                             </div>
                                         </div>
                                     </div>
@@ -978,9 +979,8 @@
                                                 <input type="range" id="typical" name="volume" min="0" max="1" step="0.01">
                                             </div>
                                             <div class="range-block-counter">
-                                                <div contenteditable="true" data-for="typical" id="typical_counter">
-                                                    select
-                                                </div>
+                                                <input type="number" min="0" max="1" step="0.01" data-for="typical" id="typical_counter">
+
                                             </div>
                                         </div>
                                     </div>
@@ -993,9 +993,8 @@
                                                 <input type="range" id="tfs" name="volume" min="0" max="1" step="0.01">
                                             </div>
                                             <div class="range-block-counter">
-                                                <div contenteditable="true" data-for="tfs" id="tfs_counter">
-                                                    select
-                                                </div>
+                                                <input type="number" min="0" max="1" step="0.01" data-for="tfs" id="tfs_counter">
+
                                             </div>
                                         </div>
                                     </div>
@@ -1040,9 +1039,8 @@
                                                 <input type="range" id="mirostat_mode_kobold" name="volume" min="0" max="2" step="1" />
                                             </div>
                                             <div class="range-block-counter">
-                                                <div contenteditable="true" data-for="mirostat_mode_kobold" id="mirostat_mode_counter_kobold">
-                                                    select
-                                                </div>
+                                                <input type="number" min="0" max="2" step="1" data-for="mirostat_mode_kobold" id="mirostat_mode_counter_kobold">
+
                                             </div>
                                         </div>
                                     </div>
@@ -1058,9 +1056,8 @@
                                                 <input type="range" id="mirostat_tau_kobold" name="volume" min="0" max="20" step="0.01" />
                                             </div>
                                             <div class="range-block-counter">
-                                                <div contenteditable="true" data-for="mirostat_tau_kobold" id="mirostat_tau_counter_kobold">
-                                                    select
-                                                </div>
+                                                <input type="number" min="0" max="20" step="0.01" data-for="mirostat_tau_kobold" id="mirostat_tau_counter_kobold">
+
                                             </div>
                                         </div>
                                     </div>
@@ -1076,9 +1073,8 @@
                                                 <input type="range" id="mirostat_eta_kobold" name="volume" min="0" max="1" step="0.01" />
                                             </div>
                                             <div class="range-block-counter">
-                                                <div contenteditable="true" data-for="mirostat_eta_kobold" id="mirostat_eta_counter_kobold">
-                                                    select
-                                                </div>
+                                                <input type="number" min="0" max="1" step="0.01" data-for="mirostat_eta_kobold" id="mirostat_eta_counter_kobold">
+
                                             </div>
                                         </div>
                                     </div>
@@ -1190,9 +1186,8 @@
                                             <input type="range" id="cfg_scale_novel" name="volume" min="1" max="3" step="0.05">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="cfg_scale_novel" id="cfg_scale_counter_novel">
-                                                select
-                                            </div>
+                                            <input type="number" min="1" max="3" step="0.05" data-for="cfg_scale_novel" id="cfg_scale_counter_novel">
+
                                         </div>
                                     </div>
                                 </div>
@@ -1214,12 +1209,10 @@
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
-                                            <input type="range" id="top_p_novel" name="volume" min="0" max="1" step="0.01">
+                                            <input type="range" id="top_p_novel" name="volume" min="0" max="1" step="0.001">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="top_p_novel" id="top_p_counter_novel">
-                                                select
-                                            </div>
+                                            <input type="number" min="0" max="1" step="0.001" data-for="top_p_novel" id="top_p_counter_novel">
                                         </div>
                                     </div>
                                 </div>
@@ -1232,9 +1225,8 @@
                                             <input type="range" id="top_a_novel" name="volume" min="0" max="1" step="0.01">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="top_a_novel" id="top_a_counter_novel">
-                                                select
-                                            </div>
+                                            <input type="number" min="0" max="1" step="0.01" data-for="top_a_novel" id="top_a_counter_novel">
+
                                         </div>
                                     </div>
                                 </div>
@@ -1247,9 +1239,8 @@
                                             <input type="range" id="top_k_novel" name="volume" min="0" max="300" step="1">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="top_k_novel" id="top_k_counter_novel">
-                                                select
-                                            </div>
+                                            <input type="number" min="0" max="300" step="1" data-for="top_k_novel" id="top_k_counter_novel">
+
                                         </div>
                                     </div>
                                 </div>
@@ -1262,9 +1253,8 @@
                                             <input type="range" id="mirostat_tau_novel" name="volume" min="0" max="6" step="0.01">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="mirostat_tau_novel" id="mirostat_tau_counter_novel">
-                                                select
-                                            </div>
+                                            <input type="number" min="0" max="6" step="0.01" data-for="mirostat_tau_novel" id="mirostat_tau_counter_novel">
+
                                         </div>
                                     </div>
                                 </div>
@@ -1277,9 +1267,8 @@
                                             <input type="range" id="mirostat_lr_novel" name="volume" min="0" max="1" step="0.01">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="mirostat_lr_novel" id="mirostat_lr_counter_novel">
-                                                select
-                                            </div>
+                                            <input type="number" min="0" max="1" step="0.01" data-for="mirostat_lr_novel" id="mirostat_lr_counter_novel">
+
                                         </div>
                                     </div>
                                 </div>
@@ -1289,12 +1278,11 @@
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
-                                            <input type="range" id="typical_p_novel" name="volume" min="0" max="1" step="0.001">
+                                            <input type="range" id="typical_p_novel" name="volume" min="0" max="1" step="0.01">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="typical_p_novel" id="typical_p_counter_novel">
-                                                select
-                                            </div>
+                                            <input type="number" min="0" max="1" step="0.01" data-for="typical_p_novel" id="typical_p_counter_novel">
+
                                         </div>
                                     </div>
                                 </div>
@@ -1307,9 +1295,8 @@
                                             <input type="range" id="min_length_novel" name="volume" min="1" max="150" step="1">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="min_length_novel" id="min_length_counter_novel">
-                                                select
-                                            </div>
+                                            <input type="number" min="1" max="150" step="1" data-for="min_length_novel" id="min_length_counter_novel">
+
                                         </div>
                                     </div>
                                 </div>
@@ -1375,9 +1362,8 @@
                                             <input type="range" id="top_k_textgenerationwebui" name="volume" min="0" max="200" step="1">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="top_k_textgenerationwebui" id="top_k_counter_textgenerationwebui">
-                                                select
-                                            </div>
+                                            <input type="number" min="0" max="200" step="1" data-for="top_k_textgenerationwebui" id="top_k_counter_textgenerationwebui">
+
                                         </div>
                                     </div>
                                 </div>
@@ -1390,9 +1376,8 @@
                                             <input type="range" id="top_p_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="top_p_textgenerationwebui" id="top_p_counter_textgenerationwebui">
-                                                select
-                                            </div>
+                                            <input type="number" min="0" max="1" step="0.01" data-for="top_p_textgenerationwebui" id="top_p_counter_textgenerationwebui">
+
                                         </div>
                                     </div>
                                 </div>
@@ -1405,9 +1390,8 @@
                                             <input type="range" id="typical_p_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="typical_p_textgenerationwebui" id="typical_p_counter_textgenerationwebui">
-                                                select
-                                            </div>
+                                            <input type="number" min="0" max="1" step="0.01" data-for="typical_p_textgenerationwebui" id="typical_p_counter_textgenerationwebui">
+
                                         </div>
                                     </div>
                                 </div>
@@ -1420,9 +1404,8 @@
                                             <input type="range" id="top_a_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="top_a_textgenerationwebui" id="top_a_counter_textgenerationwebui">
-                                                select
-                                            </div>
+                                            <input type="number" min="0" max="1" step="0.01" data-for="top_a_textgenerationwebui" id="top_a_counter_textgenerationwebui">
+
                                         </div>
                                     </div>
                                 </div>
@@ -1435,9 +1418,8 @@
                                             <input type="range" id="tfs_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="tfs_textgenerationwebui" id="tfs_counter_textgenerationwebui">
-                                                select
-                                            </div>
+                                            <input type="number" min="0" max="1" step="0.01" data-for="tfs_textgenerationwebui" id="tfs_counter_textgenerationwebui">
+
                                         </div>
                                     </div>
                                 </div>
@@ -1450,9 +1432,8 @@
                                             <input type="range" id="epsilon_cutoff_textgenerationwebui" name="volume" min="0" max="9" step="0.01">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="epsilon_cutoff_textgenerationwebui" id="epsilon_cutoff_counter_textgenerationwebui">
-                                                select
-                                            </div>
+                                            <input type="number" min="0" max="9" step="0.01" data-for="epsilon_cutoff_textgenerationwebui" id="epsilon_cutoff_counter_textgenerationwebui">
+
                                         </div>
                                     </div>
                                 </div>
@@ -1465,9 +1446,8 @@
                                             <input type="range" id="eta_cutoff_textgenerationwebui" name="volume" min="0" max="20" step="0.01">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="eta_cutoff_textgenerationwebui" id="eta_cutoff_counter_textgenerationwebui">
-                                                select
-                                            </div>
+                                            <input type="number" min="0" max="20" step="0.01" data-for="eta_cutoff_textgenerationwebui" id="eta_cutoff_counter_textgenerationwebui">
+
                                         </div>
                                     </div>
                                 </div>
@@ -1533,9 +1513,8 @@
                                             <input type="range" id="guidance_scale_textgenerationwebui" name="volume" min="0.1" max="4" step="0.05">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="guidance_scale_textgenerationwebui" id="guidance_scale_counter_textgenerationwebui">
-                                                select
-                                            </div>
+                                            <input type="number" min="0.1" max="4" step="0.05" data-for="guidance_scale_textgenerationwebui" id="guidance_scale_counter_textgenerationwebui">
+
                                         </div>
                                     </div>
                                 </div>
@@ -1561,9 +1540,8 @@
                                             <input type="range" id="num_beams_textgenerationwebui" name="volume" min="1" max="20" step="1" />
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="num_beams_textgenerationwebui" id="num_beams_counter_textgenerationwebui">
-                                                select
-                                            </div>
+                                            <input type="number" min="1" max="20" step="1" data-for="num_beams_textgenerationwebui" id="num_beams_counter_textgenerationwebui">
+
                                         </div>
                                     </div>
                                 </div>
@@ -1576,9 +1554,8 @@
                                             <input type="range" id="length_penalty_textgenerationwebui" name="volume" min="-5" max="5" step="0.1" />
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="length_penalty_textgenerationwebui" id="length_penalty_counter_textgenerationwebui">
-                                                select
-                                            </div>
+                                            <input type="number" min="-5" max="5" step="0.1" data-for="length_penalty_textgenerationwebui" id="length_penalty_counter_textgenerationwebui">
+
                                         </div>
                                     </div>
                                 </div>
@@ -1599,9 +1576,8 @@
                                             <input type="range" id="penalty_alpha_textgenerationwebui" name="volume" min="0" max="5" step="0.05" />
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="penalty_alpha_textgenerationwebui" id="penalty_alpha_counter_textgenerationwebui">
-                                                select
-                                            </div>
+                                            <input type="number" min="0" max="5" step="0.05" data-for="penalty_alpha_textgenerationwebui" id="penalty_alpha_counter_textgenerationwebui">
+
                                         </div>
                                     </div>
                                 </div>
@@ -1616,9 +1592,8 @@
                                             <input type="range" id="mirostat_mode_textgenerationwebui" name="volume" min="0" max="2" step="1" />
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="mirostat_mode_textgenerationwebui" id="mirostat_mode_counter_textgenerationwebui">
-                                                select
-                                            </div>
+                                            <input type="number" min="0" max="2" step="1" data-for="mirostat_mode_textgenerationwebui" id="mirostat_mode_counter_textgenerationwebui">
+
                                         </div>
                                     </div>
                                 </div>
@@ -1631,9 +1606,8 @@
                                             <input type="range" id="mirostat_tau_textgenerationwebui" name="volume" min="0" max="20" step="0.01" />
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="mirostat_tau_textgenerationwebui" id="mirostat_tau_counter_textgenerationwebui">
-                                                select
-                                            </div>
+                                            <input type="number" min="0" max="20" step="0.01" data-for="mirostat_tau_textgenerationwebui" id="mirostat_tau_counter_textgenerationwebui">
+
                                         </div>
                                     </div>
                                 </div>
@@ -1646,9 +1620,8 @@
                                             <input type="range" id="mirostat_eta_textgenerationwebui" name="volume" min="0" max="1" step="0.01" />
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="mirostat_eta_textgenerationwebui" id="mirostat_eta_counter_textgenerationwebui">
-                                                select
-                                            </div>
+                                            <input type="number" min="0" max="1" step="0.01" data-for="mirostat_eta_textgenerationwebui" id="mirostat_eta_counter_textgenerationwebui">
+
                                         </div>
                                     </div>
                                 </div>
@@ -1694,6 +1667,20 @@
                                             <span data-i18n="Send names in the ChatML objects.">Send names in the ChatML objects. Helps the model to associate messages with characters.</span>
                                         </div>
                                     </div>
+                                    <div class="range-block">
+                                        <label for="squash_system_messages" title="Squash system messages" class="checkbox_label widthFreeExpand">
+                                            <input id="squash_system_messages" type="checkbox" />
+                                            <span data-i18n="Squash system messages">
+                                                Squash system messages
+                                            </span>
+                                        </label>
+                                        <div class="toggle-description justifyLeft">
+                                            <span data-i18n="Combines consecutive system messages into one.">
+                                                Combines consecutive system messages into one (excluding example dialogues).
+                                                May improve coherence for some models.
+                                            </span>
+                                        </div>
+                                    </div>
                                     <div class="range-block" data-source="ai21">
                                         <label for="use_ai21_tokenizer" title="Use AI21 Tokenizer" class="checkbox_label widthFreeExpand">
                                             <input id="use_ai21_tokenizer" type="checkbox" /><span data-i18n="Use AI21 Tokenizer">Use AI21 Tokenizer</span>
@@ -1737,6 +1724,15 @@
                                                 Add bias entry
                                             </div>
                                             <div class="openai_logit_bias_list"></div>
+                                            <div class="m-t-1">
+                                                <small>
+                                                    <i class="fa-solid fa-lightbulb"></i>
+                                                    &nbsp;
+                                                    <span data-i18n="Most tokens have a leading space.">
+                                                        Most tokens have a leading space.
+                                                    </span>
+                                                </small>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -1755,7 +1751,7 @@
                 <div id="API-status-top" class="drawer-icon fa-solid fa-plug-circle-exclamation  closedIcon" title="API Connections" data-i18n="[title]API Connections"></div>
             </div>
             <div id="rm_api_block" class="drawer-content closedDrawer">
-                <h3 id="title_api">API</h3>
+                <h3 class="margin0" id="title_api">API</h3>
                 <div class="flex-container flexFlowColumn">
                     <div id="main-API-selector-block">
                         <select id="main_api">
@@ -1967,9 +1963,9 @@
                         </div>
                     </div>
                     <div id="openai_api" style="display: none;position: relative;">
-                        <h3 data-i18n="Chat Completion Source">
+                        <h4 class="margin0" data-i18n="Chat Completion Source">
                             Chat Completion Source
-                        </h3>
+                        </h4>
                         <select id="chat_completion_source">
                             <option value="openai">OpenAI</option>
                             <option value="windowai">Window AI</option>
@@ -2237,7 +2233,7 @@
                 <div class="drawer-icon fa-solid fa-font  closedIcon" title="AI Response Formatting" data-i18n="[title]AI Response Formatting"></div>
             </div>
             <div class="drawer-content">
-                <h3 data-i18n="Advanced Formatting">Advanced Formatting
+                <h3 class="margin0" data-i18n="Advanced Formatting">Advanced Formatting
                     <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/" class="notes-link" target="_blank">
                         <span class="note-link-span">?</span>
                     </a>
@@ -2248,8 +2244,8 @@
                             <h4 data-i18n="Context Template">
                                 Context Template
                             </h4>
-                            <div class="preset_buttons flex-container">
-                                <select id="context_presets" data-preset-manager-for="context" class="flex1"></select>
+                            <div class="flex-container">
+                                <select id="context_presets" data-preset-manager-for="context" class="flex1 text_pole"></select>
                                 <input type="file" hidden data-preset-manager-file="context" accept=".json, .settings">
                                 <i id="context_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this preset for Instruct Mode."></i>
                                 <i data-newbie-hidden data-preset-manager-update="context" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
@@ -2336,8 +2332,8 @@
                             <label for="instruct_presets">
                                 <span data-i18n="Presets">Presets</span>
                             </label>
-                            <div class="preset_buttons">
-                                <select id="instruct_presets" data-preset-manager-for="instruct" class="flex1"></select>
+                            <div class="flex-container">
+                                <select id="instruct_presets" data-preset-manager-for="instruct" class="flex1 text_pole"></select>
                                 <input type="file" hidden data-preset-manager-file="instruct" accept=".json, .settings">
                                 <i id="instruct_set_default" class="menu_button fa-solid fa-heart" title="Auto-select this preset on API connection."></i>
                                 <i data-newbie-hidden data-preset-manager-update="instruct" class="menu_button fa-solid fa-save" title="Update current preset" data-i18n="[title]Update current preset"></i>
@@ -2499,18 +2495,6 @@
                                 Always add character's name to prompt
                             </span>
                         </label>
-                        <label data-newbie-hidden class="checkbox_label" for="pin-examples-checkbox">
-                            <input id="pin-examples-checkbox" type="checkbox" />
-                            <span data-i18n="Keep Example Messages in Prompt">
-                                Keep Example Messages in Prompt
-                            </span>
-                        </label>
-                        <label data-newbie-hidden class="checkbox_label" for="remove-examples-checkbox">
-                            <input id="remove-examples-checkbox" type="checkbox" />
-                            <span data-i18n="Strip Example Messages from Prompt">
-                                Strip Example Messages from Prompt
-                            </span>
-                        </label>
                         <label class="checkbox_label" for="collapse-newlines-checkbox"><input id="collapse-newlines-checkbox" type="checkbox" />
                             <span data-i18n="Remove Empty New Lines from Output">
                                 Remove Empty New Lines from Output
@@ -2620,7 +2604,7 @@
                         <div class="unchecked fa-solid fa-unlock "></div>
                         <div class="checked fa-solid fa-lock "></div>
                     </label>
-                    <h3>
+                    <h3 class="margin0">
                         <span data-i18n="Worlds/Lorebooks">Worlds/Lorebooks</span>
                         <a href="https://docs.sillytavern.app/usage/core-concepts/worldinfo/" class="notes-link" target="_blank">
                             <span class="note-link-span">?</span>
@@ -2667,9 +2651,8 @@
                                             <input type="range" id="world_info_depth" name="volume" min="0" max="100" step="1">
                                         </div>
                                         <div class="range-block-counter margin0">
-                                            <div contenteditable="true" data-for="world_info_depth" id="world_info_depth_counter">
-                                                depth
-                                            </div>
+                                            <input type="number" data-for="world_info_depth" id="world_info_depth_counter">
+
                                         </div>
                                     </div>
                                 </div>
@@ -2683,9 +2666,8 @@
                                             <input type="range" id="world_info_budget" name="volume" min="1" max="100" step="1">
                                         </div>
                                         <div class="range-block-counter margin0">
-                                            <div contenteditable="true" data-for="world_info_budget" id="world_info_budget_counter">
-                                                budget
-                                            </div>
+                                            <input type="number" min="1" max="100" step="1" data-for="world_info_budget" id="world_info_budget_counter">
+
                                         </div>
                                     </div>
                                 </div>
@@ -2699,9 +2681,8 @@
                                             <input type="range" id="world_info_budget_cap" name="volume" min="0" max="8192" step="1">
                                         </div>
                                         <div class="range-block-counter margin0">
-                                            <div contenteditable="true" data-for="world_info_budget_cap" id="world_info_budget_cap_counter">
-                                                0
-                                            </div>
+                                            <input type="number" min="0" max="8192" step="1" data-for="world_info_budget_cap" id="world_info_budget_cap_counter">
+
                                         </div>
                                     </div>
                                     <div class="budget_cap_note">
@@ -2736,8 +2717,8 @@
                                     Alert On Overflow
                                 </small>
                             </label>
-                            <div id="WIInputWidthReference" style="display:none; height:1px;">10000</div>
                         </div>
+                        <div id="WIInputWidthReference" style="display:none; height:1px;">10000</div>
 
                     </div>
 
@@ -2797,7 +2778,7 @@
                     <div name="userSettingsRowOne" class="flex-container flexFlowRow alignitemscenter spaceBetween">
                         <div class="flex-container">
                             <div class="flex-container flexnowrap alignitemscenter">
-                                <h3><span data-i18n="User Settings">User Settings</span></h3>
+                                <h3 class="margin0"><span data-i18n="User Settings">User Settings</span></h3>
                                 <select id="ui_mode_select" class="margin0 widthNatural">
                                     <option value="0" data-i18n="Simple">Simple</option>
                                     <option value="1" data-i18n="Advanced">Advanced</option>
@@ -2901,9 +2882,8 @@
                                             <input id="chat_width_slider" class="wide100p" type="range" min="25" max="100" step="1" value="50">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="chat_width_slider" id="chat_width_slider_counter">
-                                                select
-                                            </div>
+                                            <input type="number" min="25" max="100" step="1" value="50" data-for="chat_width_slider" id="chat_width_slider_counter">
+
                                         </div>
                                     </div>
                                 </div>
@@ -2916,9 +2896,8 @@
                                             <input type="range" id="font_scale" name="font_scale" min="0.8" max="1.2" step="0.01">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="font_scale" id="font_scale_counter">
-                                                select
-                                            </div>
+                                            <input type="number" min="0.8" max="1.2" step="0.01" data-for="font_scale" id="font_scale_counter">
+
                                         </div>
                                     </div>
                                 </div>
@@ -2931,9 +2910,8 @@
                                             <input type="range" id="blur_strength" name="blur_strength" min="0" max="30" step="1">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="blur_strength" id="blur_strength_counter">
-                                                select
-                                            </div>
+                                            <input type="number" min="0" max="30" step="1" data-for="blur_strength" id="blur_strength_counter">
+
                                         </div>
                                     </div>
                                 </div>
@@ -2946,9 +2924,8 @@
                                             <input type="range" id="shadow_width" name="shadow_width" min="0" max="5" step="1">
                                         </div>
                                         <div class="range-block-counter">
-                                            <div contenteditable="true" data-for="shadow_width" id="shadow_width_counter">
-                                                select
-                                            </div>
+                                            <input type="number" min="0" max="5" step="1" data-for="shadow_width" id="shadow_width_counter">
+
                                         </div>
                                     </div>
                                 </div>
@@ -3027,6 +3004,10 @@
                                 <input id="relaxed_api_urls" type="checkbox" />
                                 <span data-i18n="Relaxed API URLS">Relaxed API URLs</span>
                             </label>
+                            <label data-newbie-hidden class="checkbox_label" for="world_import_dialog" title="Ask to import the World Info/Lorebook for every new character with embedded lorebook. If unchecked, a brief message will be shown instead.">
+                                <input id="world_import_dialog" type="checkbox" />
+                                <span data-i18n="Lorebook Import Dialog">Lorebook Import Dialog</span>
+                            </label>
                             <label data-newbie-hidden id="movingUIModeCheckBlock" for="movingUImode" class="checkbox_label">
                                 <input id="movingUImode" type="checkbox" />
                                 <span data-i18n="Movable UI Panels">MovingUI</span>
@@ -3059,7 +3040,19 @@
                     <div name="UserSettingsThirdColumn" id="power-user-options-block" class="flex-container wide100p">
                         <div id="power-user-option-checkboxes">
                             <div data-newbie-hidden name="CharacterHandlingToggles">
-                                <h4>Character Handling</h4>
+                                <h4 data-i18n="Character Handling">
+                                    Character Handling
+                                </h4>
+                                <div data-newbie-hidden id="examples-behavior-block">
+                                    <label data-i18n="Example Messages Behavior">
+                                        Example Messages Behavior:
+                                    </label>
+                                    <select id="example_messages_behavior">
+                                        <option value="normal">Gradual push-out</option>
+                                        <option value="keep">Always include examples</option>
+                                        <option value="strip">Never include examples</option>
+                                    </select>
+                                </div>
                                 <label data-newbie-hidden class="checkbox_label" for="fuzzy_search_checkbox">
                                     <input id="fuzzy_search_checkbox" type="checkbox" />
                                     <span data-i18n="Advanced Character Search">Advanced Character Search</span>
@@ -3114,10 +3107,16 @@
                                         Quick "Continue" button
                                     </span>
                                 </label>
-                                <label data-newbie-hidden class="checkbox_label" for="swipes-checkbox">
-                                    <input id="swipes-checkbox" type="checkbox" />
-                                    <span data-i18n="Swipes">Swipes</span>
-                                </label>
+                                <div class="checkbox-container flex-container">
+                                    <label data-newbie-hidden class="checkbox_label" for="swipes-checkbox">
+                                        <input id="swipes-checkbox" type="checkbox" />
+                                        <span data-i18n="Swipes">Swipes</span>
+                                    </label>
+                                    <label data-newbie-hidden class="checkbox_label" for="gestures-checkbox">
+                                        <input id="gestures-checkbox" type="checkbox" />
+                                        <span data-i18n="Gestures">Gestures</span>
+                                    </label>
+                                </div>
                                 <label class="checkbox_label" for="auto-load-chat-checkbox">
                                     <input id="auto-load-chat-checkbox" type="checkbox" />
                                     <span data-i18n="Auto-load Last Chat">Auto-load Last Chat</span>
@@ -3204,20 +3203,37 @@
             </div>
         </div>
 
-        <div id="logo_block" class="drawer" title="Change Background Image" data-i18n="[title]Change Background Image">
-            <div id="site_logo" class="drawer-toggle drawer-header">
+        <div id="logo_block" class="drawer">
+            <div id="site_logo" class="drawer-toggle drawer-header" title="Change Background Image" data-i18n="[title]Change Background Image">
                 <div class="drawer-icon fa-solid fa-panorama  closedIcon"></div>
             </div>
-            <div class="drawer-content closedDrawer">
+            <div id="Backgrounds" class="drawer-content closedDrawer">
                 <div class="flex-container">
-                    <input id="bg-filter" placeholder="Filter" class="text_pole" type="search" />
-                    <div id="bg_menu_content">
+                    <div class="flex-container wide100p">
+                        <input id="bg-filter" placeholder="Filter" class="text_pole flex1" type="search" />
+                        <div id="auto_background" class="menu_button menu_button_icon" title="Automatically select a background based on the chat context.">
+                            <i class="fa-solid fa-wand-magic"></i>
+                            Auto-select
+                        </div>
+                    </div>
+                    <h3 data-i18n="System Backgrounds" class="wide100p textAlignCenter">
+                        System Backgrounds
+                    </h3>
+                    <div id="bg_menu_content" class="bg_list">
                         <form id="form_bg_download" class="bg_example no-border no-shadow" action="javascript:void(null);" method="post" enctype="multipart/form-data">
                             <label class="input-file">
                                 <input type="file" id="add_bg_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
                                 <div class="bg_example no-border no-shadow add_bg_but" style="background-image: url('/img/addbg3.png');"></div>
                             </label>
                         </form>
+                    </div>
+                    <h3 data-i18n="Chat Backgrounds" class="wide100p textAlignCenter">
+                        Chat Backgrounds
+                    </h3>
+                    <div id="bg_chat_hint" class="wide100p textAlignCenter">
+                        Chat backgrounds generated with the <code><i class="fa-solid fa-paintbrush"></i>&nbsp;Stable Diffusion</code> extension will appear here.
+                    </div>
+                    <div id="bg_custom_content" class="bg_list">
                     </div>
                 </div>
             </div>
@@ -3230,28 +3246,42 @@
             <div id="rm_extensions_block" class="drawer-content closedDrawer">
                 <div class="extensions_block flex-container">
                     <div class="alignitemscenter flex-container justifyCenter wide100p" style="justify-content: space-between;">
-                        <h3 class="margin0" data-i18n="Extensions API:">Extensions API:
-                            <a target="_blank" href="https://github.com/SillyTavern/SillyTavern-extras">
-                                SillyTavern-extras
+                        <h3 class="margin0" data-i18n="Extras API:">Extras API:
+                            <a target="_blank" href="https://github.com/SillyTavern/SillyTavern-Extras">
+                                SillyTavern-Extras
                             </a>
                         </h3>
                         <div class="flex-container">
                             <div id="extensions_status" data-i18n="Not connected...">Not connected...</div>
-                            <label for="extensions_autoconnect">
+                            <label for="extensions_autoconnect" class="checkbox_label flexNoGap">
                                 <input id="extensions_autoconnect" type="checkbox">
                                 <span data-i18n="Auto-connect">Auto-connect</span>
                             </label>
                         </div>
                     </div>
                     <div class="alignitemsflexstart flex-container wide100p">
-                        <input id="extensions_url" type="text" class="flex1 heightFitContent text_pole widthNatural" maxlength="250" data-i18n="[placeholder]Extensions URL" placeholder="Extensions URL">
-                        <input id="extensions_api_key" type="text" class="flex1 heightFitContent text_pole widthNatural" maxlength="250" data-i18n="[placeholder]API key" placeholder="Extras API key">
+                        <input id="extensions_url" type="text" class="flex1 heightFitContent text_pole widthNatural" maxlength="250" data-i18n="[placeholder]Extras API URL" placeholder="Extras API URL">
+                        <input id="extensions_api_key" type="text" class="flex1 heightFitContent text_pole widthNatural" maxlength="250" data-i18n="[placeholder]Extras API key (optional)" placeholder="Extras API key (optional)">
                         <div class="extensions_url_block">
                             <div id="extensions_connect" class="menu_button" data-i18n="Connect">Connect</div>
-                            <div id="extensions_details" class="menu_button_icon menu_button">
-                                Manage extensions
-                            </div>
-                            <div id="third_party_extension_button" title="Import Extension From Git Repo" class="menu_button fa-solid fa-cloud-arrow-down faSmallFontSquareFix"></div>
+                        </div>
+                    </div>
+                    <hr class="wide100p margin0">
+                    <div class="alignitemscenter flex-container wide100p">
+                        <h3 class="margin0 flex1" data-i18n="Extensions">
+                            Extensions
+                        </h3>
+                        <label for="extensions_notify_updates" class="checkbox_label flexNoGap">
+                            <input id="extensions_notify_updates" type="checkbox">
+                            <span data-i18n="Notify on extension updates">Notify on extension updates</span>
+                        </label>
+                        <div id="extensions_details" class="menu_button_icon menu_button">
+                            <i class="fa-solid fa-cubes"></i>
+                            Manage extensions
+                        </div>
+                        <div id="third_party_extension_button" title="Import Extension From Git Repo" class="menu_button menu_button_icon">
+                            <i class="fa-solid fa-cloud-arrow-down"></i>
+                            Install extension
                         </div>
                     </div>
                     <div id="extensions_settings" class="flex1 wide50p">
@@ -3269,7 +3299,7 @@
             </div>
             <div class="drawer-content closedDrawer">
                 <div class="flex-container wide100p alignitemscenter spaceBetween">
-                    <h3><span data-i18n="Persona Management">Persona Management</span></h3>
+                    <h3 class="margin0"><span data-i18n="Persona Management">Persona Management</span></h3>
                     <a href="https://docs.sillytavern.app/usage/core-concepts/personas/" target="_blank" data-i18n="How do I use this?">How do I use this?</a>
                     <div id="persona-management-block" class="flex-container wide100p">
                         <div class="flex1">
@@ -3411,6 +3441,7 @@
                                                 <input type="hidden" id="fav_checkbox" name="fav" />
                                                 <div id="advanced_div" class="menu_button fa-solid fa-book " title="Advanced Definitions" data-i18n="[title]Advanced Definition"></div>
                                                 <div id="world_button" class="menu_button fa-solid fa-globe" title="Character Lore" data-i18n="[title]Character Lore"></div>
+                                                <div class="chat_lorebook_button menu_button fa-solid fa-passport" title="Chat Lore" data-i18n="[title]Chat Lore"></div>
                                                 <div id="export_button" class="menu_button fa-solid fa-file-export " title="Export and Download" data-i18n="[title]Export and Download"></div>
                                                 <!-- <div id="set_chat_scenario" class="menu_button fa-solid fa-scroll" title="Set a chat scenario override"></div> -->
                                                 <!-- <div id="set_character_world" class="menu_button fa-solid fa-globe" title="Set a character World Info / Lorebook"></div> -->
@@ -3483,8 +3514,10 @@
                                     <span class="note-link-span">?</span>
                                 </a>
                             </span>
-                            <div class="menu_button open_alternate_greetings" title="Click to set additional greeting messages" data-i18n="[title]Click to set additional greeting messages">
-                                <i class="fa-solid fa-comment-dots"></i>
+                            <div class="menu_button menu_button_icon open_alternate_greetings margin0" title="Click to set additional greeting messages" data-i18n="[title]Click to set additional greeting messages">
+                                <span data-i18n="Alt. Greetings">
+                                    Alt. Greetings
+                                </span>
                             </div>
                         </div>
                         <textarea id="firstmessage_textarea" data-i18n="[placeholder]This will be the first message from the character that starts every chat." placeholder="This will be the first message from the character that starts every chat." class="marginBot5" name="first_mes" placeholder=""></textarea>
@@ -3522,12 +3555,20 @@
 
                     <div class="inline-drawer wide100p flexFlowColumn">
                         <div id="groupControlsToggle" class="inline-drawer-toggle inline-drawer-header">
-                            <span data-i18n="Group Controls">Group Controls</span>
+                            <span>
+                                <span data-i18n="Group Controls">Group Controls</span>
+                                <a href="https://docs.sillytavern.app/usage/core-concepts/groupchats/" class="notes-link" target="_blank">
+                                    <span class="note-link-span">?</span>
+                                </a>
+                            </span>
                             <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                         </div>
                         <div class="inline-drawer-content">
-                            <div name="group-metadata-controls" class="marginTopBot5">
-                                <input id="rm_group_chat_name" class="text_pole wide100p" type="text" name="chat_name" data-i18n="[placeholder]Chat Name (Optional)" placeholder="Chat Name (Optional)" maxlength="100" />
+                            <div id="group-metadata-controls" class="marginTopBot5">
+                                <div class="flex-container wide100p">
+                                    <input id="rm_group_chat_name" class="text_pole flex1" type="text" name="chat_name" data-i18n="[placeholder]Chat Name (Optional)" placeholder="Chat Name (Optional)" maxlength="100" />
+                                    <div class="chat_lorebook_button menu_button fa-solid fa-passport" title="Chat Lore" data-i18n="[title]Chat Lore"></div>
+                                </div>
                                 <div id="group_tags_div" class="wide100p">
                                     <div class="tag_controls">
                                         <input id="groupTagInput" class="text_pole tag_input flex1 margin0" data-i18n="[placeholder]Search / Create Tags" placeholder="Search / Create tags" maxlength="25" />
@@ -3535,7 +3576,7 @@
                                     </div>
                                     <div id="groupTagList" class="tags paddingTopBot5"></div>
                                 </div>
-                                <div id="rm_group_top_bar" class="flex-container alignitemscenter spaceBetween width100p">
+                                <div id="rm_group_top_bar" class="flex-container alignitemscenter spaceBetween width100p fontsize80p">
                                     <div>
                                         <label class="add_avatar avatar flex-container justifyCenter" for="group_avatar_button" title="Click to select a new avatar for this group" data-i18n="[title]Click to select a new avatar for this group">
                                             <div id="group_avatar_preview">
@@ -3546,32 +3587,24 @@
                                             <input hidden type="file" id="group_avatar_button" name="avatar" accept="image/png, image/jpeg, image/jpg, image/gif, image/bmp">
                                         </label>
                                     </div>
-                                    <div name="GroupStragegyAndOrder" id="rm_group_buttons" class="fontsize80p flex-container paddingLeftRight5 flex2">
-                                        <div class="">
+                                    <div name="GroupStragegyAndOrder" id="rm_group_buttons" class="flex-container paddingLeftRight5 flex2">
+                                        <div class="flex1 flexGap5">
                                             <div class="flex-container flexnowrap width100p whitespacenowrap">
                                                 <span data-i18n="Group reply strategy">Group reply strategy</span>
-                                                <a href="https://docs.sillytavern.app/usage/core-concepts/groupchats/" class="notes-link" target="_blank">
-                                                    <span class="note-link-span">?</span>
-                                                </a>
                                             </div>
-                                            <label class="checkbox_label flexnowrap whitespacenowrap">
-                                                <input type="radio" name="rm_group_activation_strategy" value="0" />
-                                                <span data-i18n="Natural order">Natural order</span>
-                                            </label>
-                                            <label class="checkbox_label flexnowrap whitespacenowrap">
-                                                <input type="radio" name="rm_group_activation_strategy" value="1" />
-                                                <span data-i18n="List order">List order</span>
-                                            </label>
+                                            <select id="rm_group_activation_strategy">
+                                                <option value="0" data-i18n="Natural order">Natural order</option>
+                                                <option value="1" data-i18n="List order">List order</option>
+                                            </select>
                                         </div>
-                                        <div class="">
-                                            <label class="checkbox_label whitespacenowrap">
-                                                <input id="rm_group_allow_self_responses" type="checkbox" />
-                                                <span data-i18n="Allow self responses">Allow self responses</span>
-                                            </label>
-                                            <label id="rm_group_automode_label" class="checkbox_label whitespacenowrap">
-                                                <input id="rm_group_automode" type="checkbox" />
-                                                <span data-i18n="Auto Mode">Auto Mode</span>
-                                            </label>
+                                        <div class="flex1 flexGap5">
+                                            <div class="flex-container flexnowrap width100p whitespacenowrap">
+                                                <span data-i18n="Group generation handling mode">Group generation handling mode</span>
+                                            </div>
+                                            <select id="rm_group_generation_mode">
+                                                <option value="0" data-i18n="Swap character cards">Swap character cards</option>
+                                                <option value="1" data-i18n="Join character cards">Join character cards</option>
+                                            </select>
                                         </div>
                                     </div>
                                     <div id="GroupFavDelOkBack" class="flex-container flexGap5 spaceEvenly flex1">
@@ -3582,6 +3615,17 @@
                                         <div id="rm_group_submit" class="heightFitContent margin0 menu_button fa-solid fa-check" title="Create" data-i18n="[title]Create"></div>
                                         <div id="rm_group_restore_avatar" class="heightFitContent margin0 menu_button fa-solid fa-images" title="Restore collage avatar" data-i18n="[title]Restore collage avatar"></div>
                                         <div id="rm_group_delete" class="heightFitContent margin0 menu_button fa-solid fa-trash-can" title="Delete" data-i18n="[title]Delete"></div>
+
+                                        <div class="flex1">
+                                            <label class="checkbox_label whitespacenowrap">
+                                                <input id="rm_group_allow_self_responses" type="checkbox" />
+                                                <span data-i18n="Allow self responses">Allow self responses</span>
+                                            </label>
+                                            <label id="rm_group_automode_label" class="checkbox_label whitespacenowrap">
+                                                <input id="rm_group_automode" type="checkbox" />
+                                                <span data-i18n="Auto Mode">Auto Mode</span>
+                                            </label>
+                                        </div>
                                     </div>
 
                                 </div>
@@ -3594,9 +3638,9 @@
                             <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                         </div>
                         <div class="inline-drawer-content">
-                            <div name="Current Group Members" class="flex-container flexFlowColumn overflowYAuto flex1">
-                                <div id="rm_group_members_pagination" class="group_pagination"></div>
-                                <div id="rm_group_members" class="overflowYAuto flex-container"></div>
+                            <div id="currentGroupMembers" name="Current Group Members" class="flex-container flexFlowColumn overflowYAuto flex1">
+                                <div id="rm_group_members_pagination" class="rm_group_members_pagination group_pagination"></div>
+                                <div id="rm_group_members" class="rm_group_members overflowYAuto flex-container"></div>
                             </div>
                         </div>
                     </div>
@@ -3658,6 +3702,8 @@
 
                     <div id="rm_print_characters_pagination">
                         <i id="charListGridToggle" class="fa-solid fa-table-cells-large menu_button" title="Toggle character grid view"></i>
+                        <i id="bulkEditButton" class="fa-solid fa-edit menu_button bulkEditButton" title="Bulk edit characters"></i>
+                        <i id="bulkDeleteButton" class="fa-solid fa-trash menu_button bulkDeleteButton" title="Bulk delete characters" style="display: none;"></i>
                     </div>
                     <div id="rm_print_characters_block" class="flexFlowColumn"></div>
                 </div>
@@ -3670,7 +3716,7 @@
         <div id="dialogue_popup">
             <div id="dialogue_popup_holder">
                 <div id="dialogue_popup_text">
-                    <h3>text</h3>
+                    <h3 class="margin0">text</h3>
                 </div>
                 <textarea id="dialogue_popup_input" class="text_pole" rows="1"></textarea>
                 <div id="dialogue_popup_controls">
@@ -3683,7 +3729,7 @@
     <div id="character_popup" class="flex-container flexFlowColumn flexNoGap">
 
         <div id="character_popup_text">
-            <h3 id="character_popup_text_h3"></h3> <span data-i18n="Advanced Defininitions">- Advanced
+            <h3 id="character_popup_text_h3" class="margin0"></h3> <span data-i18n="Advanced Defininitions">- Advanced
                 Definitions</span>
         </div>
         <hr class="margin-bot-10px">
@@ -3853,8 +3899,11 @@
 
     <div id="background_template" class="template_element">
         <div class="bg_example flex-container" bgfile="" class="bg_example_img" title="">
-            <div title="Rename background" bgfile="" class="bg_button bg_example_edit fa-solid fa-pencil"></div>
-            <div title="Delete background" bgfile="" class="bg_button bg_example_cross fa-solid fa-circle-xmark"></div>
+            <div title="Copy to system backgrounds" class="bg_button bg_example_copy fa-solid fa-file-arrow-up"></div>
+            <div title="Rename background" class="bg_button bg_example_edit fa-solid fa-pencil"></div>
+            <div title="Lock" class="bg_button bg_example_lock fa-solid fa-lock"></div>
+            <div title="Unlock" class="bg_button bg_example_unlock fa-solid fa-lock-open"></div>
+            <div title="Delete background" class="bg_button bg_example_cross fa-solid fa-circle-xmark"></div>
             <div class="BGSampleTitle">
             </div>
         </div>
@@ -3864,7 +3913,7 @@
     <div id="scenario_override_template" class="template_element">
         <div class="scenario_override range-block flexFlowColumn flex-container">
             <div class="range-block-title title_restorable">
-                <h3><span data-i18n="Chat Scenario Override">Chat Scenario Override</span></h3>
+                <h3><span data-i18n="Chat Scenario Override" class="margin0">Chat Scenario Override</span></h3>
                 <div title="Remove" data-i18n="[title]Remove" class="menu_button fa-solid fa-trash-can remove_scenario_override"></div>
             </div>
             <div class="range-block-counter justifyLeft flex-container flexFlowColumn">
@@ -3875,6 +3924,25 @@
             </div>
             <div class="range-block-range wide100p">
                 <textarea class="wide100p chat_scenario" class="text_pole" rows="15" data-i18n="[placeholder]Type here..." placeholder="Type here..."></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div id="chat_world_template" class="template_element">
+        <div class="chat_world range-block flexFlowColumn flex-container">
+            <div class="range-block-title">
+                <h4 data-i18n="Chat Lorebook">Chat Lorebook for <span class="chat_name"></span></h4>
+            </div>
+            <div class="range-block-counter justifyLeft flex-container flexFlowColumn margin-bot-10px">
+                <span data-i18n="A selected World Info will be bound to this chat.">
+                    A selected World Info will be bound to this chat. When generating an AI reply,
+                    it will be combined with the entries from global and character lorebooks.
+                </span>
+            </div>
+            <div class="range-block-range wide100p">
+                <select class="chat_world_info_selector wide100p">
+                    <option value="">--- None ---</option>
+                </select>
             </div>
         </div>
     </div>
@@ -4276,7 +4344,7 @@
 
     <div id="openai_logit_bias_template" class="template_element">
         <div class="openai_logit_bias_form">
-            <input class="openai_logit_bias_text text_pole" data-i18n="[placeholder]Type here..." placeholder="type here..." />
+            <input class="openai_logit_bias_text text_pole" data-i18n="[placeholder]Text or token ids" placeholder="Text or [token ids]" />
             <input class="openai_logit_bias_value text_pole" type="number" min="-100" value="0" max="100" />
             <i class="menu_button fa-solid fa-xmark openai_logit_bias_remove"></i>
             </form>
@@ -4314,23 +4382,44 @@
             <h3>Edit</h3>
             <div class="completion_prompt_manager_popup_entry">
                 <form class="completion_prompt_manager_popup_entry_form">
-                    <div class="completion_prompt_manager_popup_entry_form_control">
-                        <label for="completion_prompt_manager_popup_entry_form_name">
-                            <span>Name</span>
-                        </label>
-                        <div class="text_muted">A name for this prompt.</div>
-                        <input id="completion_prompt_manager_popup_entry_form_name" class="text_pole" type="text" name="name" />
+                    <div class="flex-container gap10px">
+                        <div class="completion_prompt_manager_popup_entry_form_control flex1">
+                            <label for="completion_prompt_manager_popup_entry_form_name">
+                                <span>Name</span>
+                            </label>
+                            <div class="text_muted">A name for this prompt.</div>
+                            <input id="completion_prompt_manager_popup_entry_form_name" class="text_pole" type="text" name="name" />
+                        </div>
+                        <div class="completion_prompt_manager_popup_entry_form_control flex1">
+                            <label for="completion_prompt_manager_popup_entry_form_role">
+                                <span>Role</span>
+                            </label>
+                            <div class="text_muted">To whom this message will be attributed.</div>
+                            <select id="completion_prompt_manager_popup_entry_form_role" class="text_pole" name="role">
+                                <option value="system">System</option>
+                                <option value="user">User</option>
+                                <option value="assistant">AI Assistant</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="completion_prompt_manager_popup_entry_form_control">
-                        <label for="completion_prompt_manager_popup_entry_form_role">
-                            <span>Role</span>
-                        </label>
-                        <div class="text_muted">To whom this message will be attributed.</div>
-                        <select id="completion_prompt_manager_popup_entry_form_role" class="text_pole" name="role">
-                            <option value="system">System</option>
-                            <option value="user">User</option>
-                            <option value="assistant">AI Assistant</option>
-                        </select>
+                    <div class="flex-container gap10px">
+                        <div class="completion_prompt_manager_popup_entry_form_control flex1">
+                            <label for="completion_prompt_manager_popup_entry_form_injection_position">
+                                <span>Position</span>
+                            </label>
+                            <div class="text_muted">Injection position. Next to other prompts (relative) or in-chat (absolute).</div>
+                            <select id="completion_prompt_manager_popup_entry_form_injection_position" class="text_pole" name="injection_position">
+                                <option value="0">Relative</option>
+                                <option value="1">Absolute</option>
+                            </select>
+                        </div>
+                        <div class="completion_prompt_manager_popup_entry_form_control flex1">
+                            <label for="completion_prompt_manager_popup_entry_form_injection_depth">
+                                <span>Depth</span>
+                            </label>
+                            <div class="text_muted">Injection depth. 0 = after the last message, 1 = before the last message, etc.</div>
+                            <input id="completion_prompt_manager_popup_entry_form_injection_depth" class="text_pole" type="number" name="injection_depth" min="0" max="999" value="4" />
+                        </div>
                     </div>
                     <div class="completion_prompt_manager_popup_entry_form_control">
                         <label for="completion_prompt_manager_popup_entry_form_prompt">
@@ -4555,6 +4644,11 @@
                             Tokens: <span id="extension_floating_prompt_token_counter">0</span>
                         </div>
 
+                        <label class="checkbox_label" for="extension_floating_allow_wi_scan">
+                            <input id="extension_floating_allow_wi_scan" type="checkbox" />
+                            <span data-i18n="Include in World Info Scanning">Include in World Info Scanning</span>
+                        </label>
+
                         <div class="floating_prompt_radio_group">
                             <label>
                                 <input type="radio" name="extension_floating_position" value="2" />
@@ -4650,6 +4744,175 @@
                 </div>
             </div>
         </div>
+        <div id="cfgConfig" class="drawer-content flexGap5">
+            <div class="panelControlBar flex-container">
+                <div id="cfgConfigHeader" class="fa-solid fa-grip drag-grabber"></div>
+                <div id="CFGClose" class="fa-solid fa-circle-xmark"></div>
+            </div>
+            <div name="cfgConfigHolder" class="scrollY">
+                <div id="chat_cfg_container">
+                    <div class="inline-drawer">
+                        <div id="CFGBlockToggle" class="inline-drawer-toggle inline-drawer-header">
+                            <b>Chat CFG</b>
+                            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                        </div>
+                        <div class="inline-drawer-content">
+                            <small>
+                                <b>Unique to this chat.</b><br>
+                            </small>
+                            <label for="chat_cfg_guidance_scale">
+                                <span data-i18n="Scale">Scale</span>
+                                <small data-i18n="1 = disabled">1 = disabled</small>
+                            </label>
+                            <div class="range-block-range-and-counter">
+                                <div class="range-block-range">
+                                    <input type="range" id="chat_cfg_guidance_scale" name="volume" min="0.10" max="4.00" step="0.05">
+                                </div>
+                                <div class="range-block-counter">
+                                    <input type="number" min="0.10" max="4.00" step="0.05" data-for="chat_cfg_guidance_scale" id="chat_cfg_guidance_scale_counter">
+
+                                </div>
+                            </div>
+                            <div>
+                                <label for="chat_cfg_negative_prompt">
+                                    <span data-i18n="Negative Prompt">Negative Prompt</span>
+                                </label>
+                                <textarea id="chat_cfg_negative_prompt" rows="2" class="text_pole textarea_compact" data-i18n="[placeholder]write short replies, write replies using past tense" placeholder="write short replies, write replies using past tense"></textarea>
+
+                                <label for="chat_cfg_positive_prompt">
+                                    <span data-i18n="Positive Prompt">Positive Prompt</span>
+                                </label>
+                                <textarea id="chat_cfg_positive_prompt" rows="2" class="text_pole textarea_compact" data-i18n="[placeholder]write short replies, write replies using past tense" placeholder="write short replies, write replies using past tense"></textarea>
+                            </div>
+                            <div id="groupchat_cfg_use_chara_container">
+                                <label class="checkbox_label" for="groupchat_cfg_use_chara">
+                                    <input type="checkbox" id="groupchat_cfg_use_chara" />
+                                    <span data-i18n="Use character CFG scales">Use character CFG scales</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="chara_cfg_container" style="display: none;">
+                    <hr class="sysHR">
+                    <div class="inline-drawer">
+                        <div id="charaANBlockToggle" class="inline-drawer-toggle inline-drawer-header">
+                            <b>Character CFG</b>
+                            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                        </div>
+                        <div class="inline-drawer-content">
+                            <small><b>Will be automatically added as the CFG for this character.</b></small>
+                            <br />
+                            <label for="chara_cfg_guidance_scale">
+                                <span data-i18n="Scale">Scale</span>
+                                <small data-i18n="1 = disabled">1 = disabled</small>
+                            </label>
+                            <div class="range-block-range-and-counter">
+                                <div class="range-block-range">
+                                    <input type="range" id="chara_cfg_guidance_scale" name="volume" min="0.10" max="4.00" step="0.05">
+                                </div>
+                                <div class="range-block-counter">
+                                    <input type="number" min="0.10" max="4.00" step="0.05" data-for="chara_cfg_guidance_scale" id="chara_cfg_guidance_scale_counter">
+
+                                </div>
+                            </div>
+                            <div>
+                                <label for="chara_cfg_negative_prompt">
+                                    <span data-i18n="Negative Prompt">Negative Prompt</span>
+                                </label>
+                                <textarea id="chara_cfg_negative_prompt" rows="2" class="text_pole textarea_compact" data-i18n="[placeholder]write short replies, write replies using past tense" placeholder="write short replies, write replies using past tense"></textarea>
+
+                                <label for="chara_cfg_positive_prompt">
+                                    <span data-i18n="Positive Prompt">Positive Prompt</span>
+                                </label>
+                                <textarea id="chara_cfg_positive_prompt" rows="2" class="text_pole textarea_compact" data-i18n="[placeholder]write short replies, write replies using past tense" placeholder="write short replies, write replies using past tense"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="global_cfg_container">
+                    <hr class="sysHR">
+                    <div class="inline-drawer">
+                        <div id="defaultANBlockToggle" class="inline-drawer-toggle inline-drawer-header">
+                            <b>Global CFG</b>
+                            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                        </div>
+                        <div class="inline-drawer-content">
+                            <small><b>Will be used as the default CFG options for every chat unless overridden.</b></small>
+                            <br />
+                            <label for="global_cfg_guidance_scale">
+                                <span data-i18n="Scale">Scale</span>
+                                <small data-i18n="1 = disabled">1 = disabled</small>
+                            </label>
+                            <div class="range-block-range-and-counter">
+                                <div class="range-block-range">
+                                    <input type="range" id="global_cfg_guidance_scale" name="volume" min="0.10" max="4.00" step="0.05">
+                                </div>
+                                <div class="range-block-counter">
+                                    <input type="number" min="0.10" max="4.00" step="0.05" data-for="global_cfg_guidance_scale" id="global_cfg_guidance_scale_counter">
+
+                                </div>
+                            </div>
+                            <div>
+                                <label for="global_cfg_negative_prompt">
+                                    <span data-i18n="Negative Prompt">Negative Prompt</span>
+                                </label>
+                                <textarea id="global_cfg_negative_prompt" rows="2" class="text_pole textarea_compact" data-i18n="[placeholder]write short replies, write replies using past tense" placeholder="write short replies, write replies using past tense"></textarea>
+
+                                <label for="global_cfg_positive_prompt">
+                                    <span data-i18n="Positive Prompt">Positive Prompt</span>
+                                </label>
+                                <textarea id="global_cfg_positive_prompt" rows="2" class="text_pole textarea_compact" data-i18n="[placeholder]write short replies, write replies using past tense" placeholder="write short replies, write replies using past tense"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div id="cfg_prompt_combine_container">
+                    <hr class="sysHR">
+                    <div class="inline-drawer">
+                        <div id="defaultANBlockToggle" class="inline-drawer-toggle inline-drawer-header">
+                            <b>CFG Prompt Cascading</b>
+                            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                        </div>
+                        <div class="inline-drawer-content">
+                            <div class="flex-container flexFlowColumn">
+                                <small>
+                                    <b>Combine positive/negative prompts from other boxes.</b>
+                                    <br />
+                                    For example, ticking the chat, global, and character boxes combine all negative prompts into a comma-separated string.
+                                </small>
+                            </div>
+                            <br />
+                            <div class="flex-container flexFlowColumn">
+                                <label for="cfg_prompt_combine">
+                                    <span data-i18n="Scale">Always Include</span>
+                                </label>
+                                <label class="checkbox_label">
+                                    <input type="checkbox" name="cfg_prompt_combine" value="0" />
+                                    <span data-i18n="Chat Negatives">Chat Negatives</span>
+                                </label>
+                                <label class="checkbox_label">
+                                    <input type="checkbox" name="cfg_prompt_combine" value="1" />
+                                    <span data-i18n="Character Negatives">Character Negatives</span>
+                                </label>
+                                <label class="checkbox_label">
+                                    <input type="checkbox" name="cfg_prompt_combine" value="2" />
+                                    <span data-i18n="Global Negatives">Global Negatives</span>
+                                </label>
+                            </div>
+                            <div class="flex-container flexFlowColumn">
+                                <label>
+                                    Custom Separator: <input id="cfg_prompt_separator" class="text_pole textarea_compact widthUnset" placeholder="&quot;\n&quot;" type="text" />
+                                </label>
+                                <label>
+                                    Insertion Depth: <input id="cfg_prompt_insertion_depth" class="text_pole widthUnset" type="number" min="0" max="99" />
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     <div id="sheld">
         <div id="sheldheader" class="fa-solid fa-grip drag-grabber"></div>
@@ -4689,9 +4952,10 @@
                 <i class="fa-lg fa-solid fa-note-sticky"></i>
                 <span data-i18n="Author's Note">Author's Note</span>
             </a>
-            <div data-newbie-hidden id="options_advanced">
-
-            </div>
+            <a data-newbie-hidden id="option_toggle_CFG">
+                <i class="fa-lg fa-solid fa-scale-balanced"></i>
+                <span data-i18n="CFG Scale">CFG Scale</span>
+            </a>
             <a id="option_back_to_main">
                 <i class="fa-lg fa-solid fa-left-long"></i>
                 <span data-i18n="Back to parent chat">Back to parent chat</span>
@@ -4751,6 +5015,7 @@
 
     <template id="generic_draggable_template">
         <div class="draggable">
+            <div class="dragTitle"></div>
             <div class="panelControlBar flex-container">
                 <div class="fa-solid fa-grip drag-grabber"></div>
                 <div class="fa-solid fa-circle-xmark dragClose"></div>

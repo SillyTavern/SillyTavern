@@ -5,7 +5,7 @@ import {
     saveSettingsDebounced,
     setGenerationParamsFromPreset
 } from "../script.js";
-import { getCfgPrompt } from "./extensions/cfg/util.js";
+import { getCfgPrompt } from "./cfg-scale.js";
 import { MAX_CONTEXT_DEFAULT } from "./power-user.js";
 import { getTextTokens, tokenizers } from "./tokenizers.js";
 import {
@@ -176,36 +176,36 @@ export function loadNovelSettings(settings) {
 
 function loadNovelSettingsUi(ui_settings) {
     $("#temp_novel").val(ui_settings.temperature);
-    $("#temp_counter_novel").text(Number(ui_settings.temperature).toFixed(2));
+    $("#temp_counter_novel").val(Number(ui_settings.temperature).toFixed(2));
     $("#rep_pen_novel").val(ui_settings.repetition_penalty);
-    $("#rep_pen_counter_novel").text(Number(ui_settings.repetition_penalty).toFixed(2));
+    $("#rep_pen_counter_novel").val(Number(ui_settings.repetition_penalty).toFixed(2));
     $("#rep_pen_size_novel").val(ui_settings.repetition_penalty_range);
-    $("#rep_pen_size_counter_novel").text(Number(ui_settings.repetition_penalty_range).toFixed(0));
+    $("#rep_pen_size_counter_novel").val(Number(ui_settings.repetition_penalty_range).toFixed(0));
     $("#rep_pen_slope_novel").val(ui_settings.repetition_penalty_slope);
-    $("#rep_pen_slope_counter_novel").text(Number(`${ui_settings.repetition_penalty_slope}`).toFixed(2));
+    $("#rep_pen_slope_counter_novel").val(Number(`${ui_settings.repetition_penalty_slope}`).toFixed(2));
     $("#rep_pen_freq_novel").val(ui_settings.repetition_penalty_frequency);
-    $("#rep_pen_freq_counter_novel").text(Number(ui_settings.repetition_penalty_frequency).toFixed(5));
+    $("#rep_pen_freq_counter_novel").val(Number(ui_settings.repetition_penalty_frequency).toFixed(2));
     $("#rep_pen_presence_novel").val(ui_settings.repetition_penalty_presence);
-    $("#rep_pen_presence_counter_novel").text(Number(ui_settings.repetition_penalty_presence).toFixed(3));
+    $("#rep_pen_presence_counter_novel").val(Number(ui_settings.repetition_penalty_presence).toFixed(2));
     $("#tail_free_sampling_novel").val(ui_settings.tail_free_sampling);
-    $("#tail_free_sampling_counter_novel").text(Number(ui_settings.tail_free_sampling).toFixed(3));
+    $("#tail_free_sampling_counter_novel").val(Number(ui_settings.tail_free_sampling).toFixed(3));
     $("#top_k_novel").val(ui_settings.top_k);
-    $("#top_k_counter_novel").text(Number(ui_settings.top_k).toFixed(0));
+    $("#top_k_counter_novel").val(Number(ui_settings.top_k).toFixed(0));
     $("#top_p_novel").val(ui_settings.top_p);
-    $("#top_p_counter_novel").text(Number(ui_settings.top_p).toFixed(2));
+    $("#top_p_counter_novel").val(Number(ui_settings.top_p).toFixed(3));
     $("#top_a_novel").val(ui_settings.top_a);
-    $("#top_a_counter_novel").text(Number(ui_settings.top_a).toFixed(2));
+    $("#top_a_counter_novel").val(Number(ui_settings.top_a).toFixed(2));
     $("#typical_p_novel").val(ui_settings.typical_p);
-    $("#typical_p_counter_novel").text(Number(ui_settings.typical_p).toFixed(3));
+    $("#typical_p_counter_novel").val(Number(ui_settings.typical_p).toFixed(2));
     $("#cfg_scale_novel").val(ui_settings.cfg_scale);
-    $("#cfg_scale_counter_novel").text(Number(ui_settings.cfg_scale).toFixed(2));
+    $("#cfg_scale_counter_novel").val(Number(ui_settings.cfg_scale).toFixed(2));
     $("#phrase_rep_pen_novel").val(ui_settings.phrase_rep_pen || "off");
     $("#mirostat_lr_novel").val(ui_settings.mirostat_lr);
-    $("#mirostat_lr_counter_novel").text(Number(ui_settings.mirostat_lr).toFixed(2));
+    $("#mirostat_lr_counter_novel").val(Number(ui_settings.mirostat_lr).toFixed(2));
     $("#mirostat_tau_novel").val(ui_settings.mirostat_tau);
-    $("#mirostat_tau_counter_novel").text(Number(ui_settings.mirostat_tau).toFixed(2));
+    $("#mirostat_tau_counter_novel").val(Number(ui_settings.mirostat_tau).toFixed(2));
     $("#min_length_novel").val(ui_settings.min_length);
-    $("#min_length_counter_novel").text(Number(ui_settings.min_length).toFixed(0));
+    $("#min_length_counter_novel").val(Number(ui_settings.min_length).toFixed(0));
     $('#nai_preamble_textarea').val(ui_settings.preamble);
     $('#nai_prefix').val(ui_settings.prefix || "vanilla");
     $('#nai_cfg_uc').val(ui_settings.cfg_uc || "");
@@ -244,14 +244,14 @@ const sliders = [
     {
         sliderId: "#rep_pen_freq_novel",
         counterId: "#rep_pen_freq_counter_novel",
-        format: (val) => `${val}`,
-        setValue: (val) => { nai_settings.repetition_penalty_frequency = Number(val).toFixed(5); },
+        format: (val) => Number(val).toFixed(2),
+        setValue: (val) => { nai_settings.repetition_penalty_frequency = Number(val).toFixed(2); },
     },
     {
         sliderId: "#rep_pen_presence_novel",
         counterId: "#rep_pen_presence_counter_novel",
         format: (val) => `${val}`,
-        setValue: (val) => { nai_settings.repetition_penalty_presence = Number(val).toFixed(3); },
+        setValue: (val) => { nai_settings.repetition_penalty_presence = Number(val).toFixed(2); },
     },
     {
         sliderId: "#tail_free_sampling_novel",
@@ -268,8 +268,8 @@ const sliders = [
     {
         sliderId: "#top_p_novel",
         counterId: "#top_p_counter_novel",
-        format: (val) => Number(val).toFixed(2),
-        setValue: (val) => { nai_settings.top_p = Number(val).toFixed(2); },
+        format: (val) => Number(val).toFixed(3),
+        setValue: (val) => { nai_settings.top_p = Number(val).toFixed(3); },
     },
     {
         sliderId: "#top_a_novel",
@@ -280,8 +280,8 @@ const sliders = [
     {
         sliderId: "#typical_p_novel",
         counterId: "#typical_p_counter_novel",
-        format: (val) => Number(val).toFixed(3),
-        setValue: (val) => { nai_settings.typical_p = Number(val).toFixed(3); },
+        format: (val) => Number(val).toFixed(2),
+        setValue: (val) => { nai_settings.typical_p = Number(val).toFixed(2); },
     },
     {
         sliderId: "#mirostat_tau_novel",
@@ -740,7 +740,7 @@ jQuery(function () {
             const value = $(this).val();
             const formattedValue = slider.format(value);
             slider.setValue(value);
-            $(slider.counterId).text(formattedValue);
+            $(slider.counterId).val(formattedValue);
             saveSettingsDebounced();
         });
     });

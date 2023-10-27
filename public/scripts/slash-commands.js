@@ -21,9 +21,12 @@ import {
     reloadCurrentChat,
     sendMessageAsUser,
     name1,
+    Generate,
+    this_chid,
+    setCharacterName,
 } from "../script.js";
 import { getMessageTimeStamp } from "./RossAscends-mods.js";
-import { resetSelectedGroup } from "./group-chats.js";
+import { resetSelectedGroup, selected_group } from "./group-chats.js";
 import { getRegexedString, regex_placement } from "./extensions/regex/engine.js";
 import { chat_styles, power_user } from "./power-user.js";
 import { autoSelectPersona } from "./personas.js";
@@ -105,7 +108,10 @@ class SlashCommandParser {
 
     getHelpString() {
         const listItems = this.helpStrings.map(x => `<li>${x}</li>`).join('\n');
-        return `<p>Slash commands:</p><ol>${listItems}</ol>`;
+        return `<p>Slash commands:</p><ol>${listItems}</ol>
+        <small>Slash commands can be batched into a single input by adding a pipe character | at the end, and then writing a new slash command.</small>
+        <ul><li><small>Example:</small><code>/cut 1 | /sys Hello, | /continue</code></li>
+        <li>This will remove the first message in chat, send a system message that starts with 'Hello,', and then ask the AI to continue the message.</li></ul>`;
     }
 }
 
@@ -128,12 +134,95 @@ parser.addCommand('flat', setFlatModeCallback, ['default'], ' – sets the messa
 parser.addCommand('continue', continueChatCallback, ['cont'], ' – continues the last message in the chat', true, true);
 parser.addCommand('go', goToCharacterCallback, ['char'], '<span class="monospace">(name)</span> – opens up a chat with the character by its name', true, true);
 parser.addCommand('sysgen', generateSystemMessage, [], '<span class="monospace">(prompt)</span> – generates a system message using a specified prompt', true, true);
+parser.addCommand('ask', askCharacter, [], '<span class="monospace">(prompt)</span> – asks a specified character card a prompt', true, true);
 parser.addCommand('delname', deleteMessagesByNameCallback, ['cancel'], '<span class="monospace">(name)</span> – deletes all messages attributed to a specified name', true, true);
 parser.addCommand('send', sendUserMessageCallback, ['add'], '<span class="monospace">(text)</span> – adds a user message to the chat log without triggering a generation', true, true);
 
 const NARRATOR_NAME_KEY = 'narrator_name';
 const NARRATOR_NAME_DEFAULT = 'System';
 export const COMMENT_NAME_DEFAULT = 'Note';
+
+async function askCharacter(_, text) {
+    // Prevent generate recursion
+    $('#send_textarea').val('');
+
+    // Not supported in group chats
+    // TODO: Maybe support group chats?
+    if (selected_group) {
+        toastr.error("Cannot run this command in a group chat!");
+        return;
+    }
+
+    if (!text) {
+        console.warn('WARN: No text provided for /ask command')
+    }
+
+    const parts = text.split('\n');
+    if (parts.length <= 1) {
+        toastr.warning('Both character name and message are required. Separate them with a new line.');
+        return;
+    }
+
+    // Grabbing the message
+    const name = parts.shift().trim();
+    let mesText = parts.join('\n').trim();
+    const prevChId = this_chid;
+
+    // Find the character
+    const chId = characters.findIndex((e) => e.name === name);
+    if (!characters[chId] || chId === -1) {
+        toastr.error("Character not found.");
+        return;
+    }
+
+    // Override character and send a user message
+    setCharacterId(chId);
+
+    // TODO: Maybe look up by filename instead of name
+    const character = characters[chId];
+    let force_avatar, original_avatar;
+
+    if (character && character.avatar !== 'none') {
+        force_avatar = getThumbnailUrl('avatar', character.avatar);
+        original_avatar = character.avatar;
+    }
+    else {
+        force_avatar = default_avatar;
+        original_avatar = default_avatar;
+    }
+
+    setCharacterName(character.name);
+
+    sendMessageAsUser(mesText)
+
+    const restoreCharacter = () => {
+        setCharacterId(prevChId);
+        setCharacterName(characters[prevChId].name);
+
+        // Only force the new avatar if the character name is the same
+        // This skips if an error was fired
+        const lastMessage = chat[chat.length - 1];
+        if (lastMessage && lastMessage?.name === character.name) {
+            lastMessage.force_avatar = force_avatar;
+            lastMessage.original_avatar = original_avatar;
+        }
+
+        // Kill this callback once the event fires
+        eventSource.removeListener(event_types.CHARACTER_MESSAGE_RENDERED, restoreCharacter)
+    }
+
+    // Run generate and restore previous character on error
+    try {
+        toastr.info(`Asking ${character.name} something...`);
+        await Generate('ask_command')
+    } catch {
+        restoreCharacter()
+    }
+
+    // Restore previous character once message renders
+    // Hack for generate
+    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, restoreCharacter);
+}
 
 async function sendUserMessageCallback(_, text) {
     if (!text) {
