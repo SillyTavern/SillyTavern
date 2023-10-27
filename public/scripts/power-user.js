@@ -1095,7 +1095,10 @@ function switchMaxContextSize() {
     for (const element of elements) {
         element.attr('max', maxValue);
         element.attr('step', steps);
-        element.attr('min', minValue);
+
+        if (element.attr('id') == 'max_context') {
+            element.attr('min', minValue);
+        }
         const value = Number(element.val());
 
         if (value >= maxValue) {
