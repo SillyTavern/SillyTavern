@@ -144,7 +144,7 @@ import {
     onlyUnique,
 } from "./scripts/utils.js";
 
-import { ModuleWorkerWrapper, extension_settings, getContext, loadExtensionSettings, processExtensionHelpers, registerExtensionHelper, renderExtensionTemplate, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
+import { ModuleWorkerWrapper, doDailyExtensionUpdatesCheck, extension_settings, getContext, loadExtensionSettings, processExtensionHelpers, registerExtensionHelper, renderExtensionTemplate, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
 import { COMMENT_NAME_DEFAULT, executeSlashCommands, getSlashCommandsHelp, registerSlashCommand } from "./scripts/slash-commands.js";
 import {
     tag_map,
@@ -728,6 +728,7 @@ async function firstLoadInit() {
     initRossMods();
     initStats();
     initCfg();
+    doDailyExtensionUpdatesCheck();
 }
 
 function checkOnlineStatus() {
