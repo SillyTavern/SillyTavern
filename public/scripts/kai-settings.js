@@ -20,7 +20,6 @@ export const kai_settings = {
     typical: 1,
     tfs: 1,
     rep_pen_slope: 0.9,
-    single_line: false,
     streaming_kobold: false,
     sampler_order: [0, 1, 2, 3, 4, 5, 6],
     mirostat: 0,
@@ -76,11 +75,6 @@ export function loadKoboldSettings(preset) {
         $(slider.counterId).val(formattedValue);
     }
 
-    // TODO: refactor checkboxes (if adding any more)
-    if (preset.hasOwnProperty('single_line')) {
-        kai_settings.single_line = preset.single_line;
-        $('#single_line').prop('checked', kai_settings.single_line);
-    }
     if (preset.hasOwnProperty('streaming_kobold')) {
         kai_settings.streaming_kobold = preset.streaming_kobold;
         $('#streaming_kobold').prop('checked', kai_settings.streaming_kobold);
@@ -128,7 +122,7 @@ export function getKoboldGenerationData(finalPrompt, settings, maxLength, maxCon
         s6: sampler_order[5],
         s7: sampler_order[6],
         use_world_info: false,
-        singleline: kai_settings.single_line,
+        singleline: false,
         stop_sequence: (kai_flags.can_use_stop_sequence || isHorde) ? getStoppingStrings(isImpersonate) : undefined,
         streaming: kai_settings.streaming_kobold && kai_flags.can_use_streaming && type !== 'quiet',
         can_abort: kai_flags.can_use_streaming,
@@ -387,12 +381,6 @@ jQuery(function () {
             $(slider.counterId).val(formattedValue);
             saveSettingsDebounced();
         });
-    });
-
-    $('#single_line').on("input", function () {
-        const value = !!$(this).prop('checked');
-        kai_settings.single_line = value;
-        saveSettingsDebounced();
     });
 
     $('#streaming_kobold').on("input", function () {

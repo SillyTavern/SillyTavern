@@ -170,6 +170,7 @@ let power_user = {
     relaxed_api_urls: false,
     world_import_dialog: true,
     disable_group_trimming: false,
+    single_line: false,
 
     default_instruct: '',
     instruct: {
@@ -259,11 +260,10 @@ const contextControls = [
     { id: "context_chat_start", property: "chat_start", isCheckbox: false, isGlobalSetting: false },
 
     // Existing power user settings
-    { id: "always-force-name2-checkbox", property: "always_force_name2", isCheckbox: true, isGlobalSetting: true },
-    { id: "trim_sentences_checkbox", property: "trim_sentences", isCheckbox: true, isGlobalSetting: true },
-    { id: "include_newline_checkbox", property: "include_newline", isCheckbox: true, isGlobalSetting: true },
-    { id: "custom_stopping_strings", property: "custom_stopping_strings", isCheckbox: false, isGlobalSetting: true },
-    { id: "custom_stopping_strings_macro", property: "custom_stopping_strings_macro", isCheckbox: true, isGlobalSetting: true }
+    { id: "always-force-name2-checkbox", property: "always_force_name2", isCheckbox: true, isGlobalSetting: true, defaultValue: true },
+    { id: "trim_sentences_checkbox", property: "trim_sentences", isCheckbox: true, isGlobalSetting: true, defaultValue: false },
+    { id: "include_newline_checkbox", property: "include_newline", isCheckbox: true, isGlobalSetting: true, defaultValue: false },
+    { id: "single_line", property: "single_line", isCheckbox: true, isGlobalSetting: true, defaultValue: false },
 ];
 
 let browser_has_focus = true;
@@ -924,6 +924,7 @@ function loadPowerUserSettings(settings, data) {
         power_user.tokenizer = tokenizers.GPT2;
     }
 
+    $('#single_line').prop("checked", power_user.single_line);
     $('#relaxed_api_urls').prop("checked", power_user.relaxed_api_urls);
     $('#world_import_dialog').prop("checked", power_user.world_import_dialog);
     $('#trim_spaces').prop("checked", power_user.trim_spaces);
@@ -1173,11 +1174,13 @@ function loadContextSettings() {
 
         power_user.context.preset = name;
         contextControls.forEach(control => {
-            if (preset[control.property] !== undefined) {
+            const presetValue = preset[control.property] ?? control.defaultValue;
+
+            if (presetValue !== undefined) {
                 if (control.isGlobalSetting) {
-                    power_user[control.property] = preset[control.property];
+                    power_user[control.property] = presetValue;
                 } else {
-                    power_user.context[control.property] = preset[control.property];
+                    power_user.context[control.property] = presetValue;
                 }
 
                 const $element = $(`#${control.id}`);
@@ -1938,6 +1941,12 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
+    $('#single_line').on("input", function () {
+        const value = !!$(this).prop('checked');
+        power_user.single_line = value;
+        saveSettingsDebounced();
+    });
+
     $("#always-force-name2-checkbox").change(function () {
         power_user.always_force_name2 = !!$(this).prop("checked");
         saveSettingsDebounced();
@@ -2115,7 +2124,6 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-
     $("#user-mes-blur-tint-color-picker").on('change', (evt) => {
         power_user.user_mes_blur_tint_color = evt.detail.rgba;
         applyThemeColor('userMesBlurTint');
@@ -2153,7 +2161,6 @@ $(document).ready(() => {
         power_user.movingUIPreset = movingUIPresetSelected;
         applyMovingUIPreset(movingUIPresetSelected);
         saveSettingsDebounced();
-
     });
 
     $("#ui-preset-save-button").on('click', saveTheme);

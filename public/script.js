@@ -1840,6 +1840,10 @@ function getStoppingStrings(isImpersonate) {
         result.push(...customStoppingStrings);
     }
 
+    if (power_user.single_line) {
+        result.unshift('\n');
+    }
+
     return result.filter(onlyUnique);
 }
 

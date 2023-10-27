@@ -5,7 +5,6 @@
     "always_force_name2": false,
     "trim_sentences": false,
     "include_newline": false,
-    "custom_stopping_strings": "[\"\\n\"]",
-    "custom_stopping_strings_macro": true,
+    "single_line": true,
     "name": "Adventure"
 }
