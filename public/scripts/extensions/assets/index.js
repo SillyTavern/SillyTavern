@@ -55,6 +55,14 @@ function downloadAssetsList(url) {
                 for (const assetType of assetTypes) {
                     let assetTypeMenu = $('<div />', { id: "assets_audio_ambient_div", class: "assets-list-div" });
                     assetTypeMenu.append(`<h3>${assetType}</h3>`)
+
+                    if (assetType == 'extension') {
+                        assetTypeMenu.append(`
+                        <div class="assets-list-git">
+                            To download extensions from this page, you need to have <a href="https://git-scm.com/downloads" target="_blank">Git</a> installed.
+                        </div>`);
+                    }
+
                     for (const i in availableAssets[assetType]) {
                         const asset = availableAssets[assetType][i];
                         const elemId = `assets_install_${assetType}_${i}`;

@@ -13,11 +13,17 @@
     padding: 5px;
 }
 
+.assets-list-git {
+    font-size: calc(var(--mainFontSize) * 0.8);
+    opacity: 0.8;
+    margin-bottom: 1em;
+}
+
 .assets-list-div h3 {
     text-transform: capitalize;
 }
 
-.assets-list-div a {
+.assets-list-div i a {
     color: inherit;
 }
 
