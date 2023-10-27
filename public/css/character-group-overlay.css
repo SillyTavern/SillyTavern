@@ -17,21 +17,40 @@
     position: absolute;
     padding: 3px;
     z-index: 10000;
-    background-color: var(--SmartThemeUserMesBlurTintColor);
-    border: 1px solid var(--SmartThemeBorderColor);
+    background-color: var(--black90a);
+    border: 1px solid var(--black90a);
     border-radius: 10px;
+}
+
+#character_context_menu ul li button {
+    border: 0;
+    border-bottom-color: currentcolor;
+    color: var(--SmartThemeQuoteColor);
+    background-color: transparent;
+    font-weight: bold;
+    font-size: 1em;
+    padding: 0.5em;
+    border-bottom: 1px dotted var(--SmartThemeQuoteColor);
+    width: 100%;
+    cursor: pointer;
+}
+
+#character_context_menu ul li button:hover {
+    background-color: var(--SmartThemeBlurTintColor);
+}
+
+#character_context_menu ul li:last-child button {
+    border-bottom: 0;
+}
+
+#character_context_menu ul li #character_context_menu_delete {
+    color: var(--fullred);
 }
 
 #character_context_menu ul {
     list-style-type: none;
     padding: 0;
     margin: 0;
-}
-
-#character_context_menu li {
-    padding: 10px;
-    border-radius: 10px;
-    cursor: pointer;
 }
 
 #character_context_menu .character_context_menu_separator {
