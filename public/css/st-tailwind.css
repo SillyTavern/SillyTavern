@@ -105,6 +105,10 @@
     align-items: flex-end !important;
 }
 
+.alignItemsBaseline {
+    align-items: baseline !important;
+}
+
 .alignSelfStart {
     align-self: start;
 }

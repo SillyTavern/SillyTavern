@@ -774,10 +774,14 @@ async function loadExtensionSettings(settings, versionChanged) {
     if (extension_settings.autoConnect && extension_settings.apiUrl) {
         connectToApi(extension_settings.apiUrl);
     }
+}
 
-    if (extension_settings.notifyUpdates) {
-        checkForExtensionUpdates(false);
-    }
+export function doDailyExtensionUpdatesCheck() {
+    setTimeout(() => {
+        if (extension_settings.notifyUpdates) {
+            checkForExtensionUpdates(false);
+        }
+    }, 1);
 }
 
 /**
