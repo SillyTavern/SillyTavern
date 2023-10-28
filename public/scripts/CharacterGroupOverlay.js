@@ -213,20 +213,6 @@ class CharacterGroupOverlay {
      * Set up a Sortable grid for the loaded page
      */
     onPageLoad = () => {
-        const grid = document.getElementById(CharacterGroupOverlay.containerId);
-
-        const sortable = new Sortable(grid, {
-            group: 'shared',
-            animation: 150,
-            sort: false,
-            handle: '.character_select',
-            onEnd: (evt) => {
-                if (evt.from !== evt.to) {
-                    console.log('Folder creation request')
-                }
-            }
-        });
-
         const elements = [...document.getElementsByClassName(CharacterGroupOverlay.characterClass)];
 
         elements.forEach(element => element.addEventListener('touchstart', this.handleHold));
@@ -236,6 +222,7 @@ class CharacterGroupOverlay {
         elements.forEach(element => element.addEventListener('mouseup', this.handleLongPressEnd));
         elements.forEach(element => element.addEventListener('dragend', this.handleLongPressEnd));
 
+        const grid = document.getElementById(CharacterGroupOverlay.containerId);
         grid.addEventListener('click', this.handleCancelClick);
     }
 
