@@ -265,22 +265,26 @@ class CharacterGroupOverlay {
         switch (this.state) {
             case CharacterGroupOverlayState.browse:
                 this.container.classList.remove(CharacterGroupOverlay.selectModeClass);
-                [...this.container.getElementsByClassName(CharacterGroupOverlay.characterClass)]
-                    .forEach(element => element.removeEventListener('click', this.toggleCharacterSelected));
+                this.#enableClickEventsForCharacters();
                 this.clearSelectedCharacters();
                 this.disableContextMenu();
                 CharacterContextMenu.hide();
                 break;
             case CharacterGroupOverlayState.select:
                 this.container.classList.add(CharacterGroupOverlay.selectModeClass);
-                [...this.container.getElementsByClassName(CharacterGroupOverlay.characterClass)]
-                    .forEach(element => element.addEventListener('click', this.toggleCharacterSelected));
+                this.#disableClickEventsForCharacters();
                 this.enableContextMenu();
                 break;
         }
 
         this.stateChangeCallbacks.forEach(callback => callback(this.state));
     }
+
+    #enableClickEventsForCharacters = () => [...this.container.getElementsByClassName(CharacterGroupOverlay.characterClass)]
+        .forEach(element => element.removeEventListener('click', this.toggleCharacterSelected));
+
+    #disableClickEventsForCharacters = () => [...this.container.getElementsByClassName(CharacterGroupOverlay.characterClass)]
+        .forEach(element => element.addEventListener('click', this.toggleCharacterSelected));
 
     toggleCharacterSelected = event => {
         event.stopPropagation();
