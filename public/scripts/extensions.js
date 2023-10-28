@@ -733,8 +733,9 @@ export async function installExtension(url) {
     });
 
     if (!request.ok) {
-        toastr.info(request.statusText, 'Extension installation failed');
-        console.error('Extension installation failed', request.status, request.statusText);
+        const text = await request.text();
+        toastr.warning(text || request.statusText, 'Extension installation failed', { timeOut: 5000 });
+        console.error('Extension installation failed', request.status, request.statusText, text);
         return;
     }
 
@@ -773,10 +774,14 @@ async function loadExtensionSettings(settings, versionChanged) {
     if (extension_settings.autoConnect && extension_settings.apiUrl) {
         connectToApi(extension_settings.apiUrl);
     }
+}
 
-    if (extension_settings.notifyUpdates) {
-        checkForExtensionUpdates(false);
-    }
+export function doDailyExtensionUpdatesCheck() {
+    setTimeout(() => {
+        if (extension_settings.notifyUpdates) {
+            checkForExtensionUpdates(false);
+        }
+    }, 1);
 }
 
 /**

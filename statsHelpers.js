@@ -173,8 +173,12 @@ async function loadStatsFile(chatsPath, charactersPath, recreateStats = false) {
 async function saveStatsToFile() {
     if (charStats.timestamp > lastSaveTimestamp) {
         //console.debug("Saving stats to file...");
-        await writeFile(statsFilePath, JSON.stringify(charStats));
-        lastSaveTimestamp = Date.now();
+        try {
+            await writeFile(statsFilePath, JSON.stringify(charStats));
+            lastSaveTimestamp = Date.now();
+        } catch (error) {
+            console.log("Failed to save stats to file.", error);
+        }
     } else {
         //console.debug('Stats have not changed since last save. Skipping file write.');
     }
@@ -184,9 +188,9 @@ async function saveStatsToFile() {
  * Attempts to save charStats to a file and then terminates the process.
  * If an error occurs during the file write, it logs the error before exiting.
  */
-async function writeStatsToFileAndExit(charStats) {
+async function writeStatsToFileAndExit() {
     try {
-        await saveStatsToFile(charStats);
+        await saveStatsToFile();
     } catch (err) {
         console.error("Failed to write stats to file:", err);
     } finally {

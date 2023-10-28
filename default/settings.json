@@ -405,7 +405,6 @@
         "typical": 1,
         "tfs": 1,
         "rep_pen_slope": 0,
-        "single_line": false,
         "streaming_kobold": false,
         "sampler_order": [
             6,

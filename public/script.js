@@ -144,7 +144,7 @@ import {
     onlyUnique,
 } from "./scripts/utils.js";
 
-import { ModuleWorkerWrapper, extension_settings, getContext, loadExtensionSettings, processExtensionHelpers, registerExtensionHelper, renderExtensionTemplate, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
+import { ModuleWorkerWrapper, doDailyExtensionUpdatesCheck, extension_settings, getContext, loadExtensionSettings, processExtensionHelpers, registerExtensionHelper, renderExtensionTemplate, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
 import { COMMENT_NAME_DEFAULT, executeSlashCommands, getSlashCommandsHelp, registerSlashCommand } from "./scripts/slash-commands.js";
 import {
     tag_map,
@@ -728,6 +728,7 @@ async function firstLoadInit() {
     initRossMods();
     initStats();
     initCfg();
+    doDailyExtensionUpdatesCheck();
 }
 
 function checkOnlineStatus() {
@@ -1838,6 +1839,10 @@ function getStoppingStrings(isImpersonate) {
     if (power_user.custom_stopping_strings) {
         const customStoppingStrings = getCustomStoppingStrings();
         result.push(...customStoppingStrings);
+    }
+
+    if (power_user.single_line) {
+        result.unshift('\n');
     }
 
     return result.filter(onlyUnique);
@@ -8815,7 +8820,7 @@ jQuery(async function () {
             }
 
             restoreCaretPosition($(this).get(0), caretPosition);
-        }, 500);
+        }, 2000);
     })
 
     $(".user_stats_button").on('click', function () {
