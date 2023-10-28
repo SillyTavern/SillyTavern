@@ -1803,6 +1803,7 @@ function convertWorldInfoToCharacterBook(name, entries) {
                 probability: entry.probability ?? null,
                 useProbability: entry.useProbability ?? false,
                 depth: entry.depth ?? 4,
+                selectiveLogic: entry.selectiveLogic ?? 0,
             },
         };
 
