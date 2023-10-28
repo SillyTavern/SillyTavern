@@ -13,6 +13,7 @@ function createDefaultFiles() {
         settings: './public/settings.json',
         bg_load: './public/css/bg_load.css',
         config: './config.conf',
+        user: './public/css/user.css',
     };
 
     for (const file of Object.values(files)) {
