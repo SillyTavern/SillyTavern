@@ -1736,6 +1736,7 @@ function convertCharacterBook(characterBook) {
             probability: entry.extensions?.probability ?? null,
             useProbability: entry.extensions?.useProbability ?? false,
             depth: entry.extensions?.depth ?? DEFAULT_DEPTH,
+            selectiveLogic: entry.extensions?.selectiveLogic ?? 0,
         };
     });
 

@@ -65,6 +65,7 @@
     <link rel="stylesheet" type="text/css" href="css/mobile-styles.css">
 
     <link rel="stylesheet" href="css/bg_load.css">
+    <link rel="stylesheet" type="text/css" href="css/user.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <script type="module" src="scripts/i18n.js"></script>
     <script type="module" src="script.js"></script>
@@ -995,17 +996,6 @@
                                                 <input type="number" min="0" max="1" step="0.01" data-for="tfs" id="tfs_counter">
 
                                             </div>
-                                        </div>
-                                    </div>
-                                    <div class="range-block">
-                                        <label class="checkbox_label" for="single_line">
-                                            <input id="single_line" type="checkbox" /><span data-i18n="Single-line mode">
-                                                Single-line mode</span>
-                                        </label>
-                                        <div class="toggle-description justifyLeft">
-                                            <span data-i18n="Generate only one line per request (KoboldAI only, ignored by KoboldCpp).">
-                                                Generate only one line per request (KoboldAI only, ignored by KoboldCpp).
-                                            </span>
                                         </div>
                                     </div>
                                     <div class="range-block">
@@ -2240,7 +2230,8 @@
                 <div class="drawer-icon fa-solid fa-font  closedIcon" title="AI Response Formatting" data-i18n="[title]AI Response Formatting"></div>
             </div>
             <div class="drawer-content">
-                <h3 class="margin0" data-i18n="Advanced Formatting">Advanced Formatting
+                <h3 class="margin0" data-i18n="Advanced Formatting">
+                    Advanced Formatting
                     <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/" class="notes-link" target="_blank">
                         <span class="note-link-span">?</span>
                     </a>
@@ -2470,6 +2461,52 @@
                         </div>
                     </div>
                     <div id="ContextFormatting">
+                        <div>
+                            <div class="flex-container alignItemsBaseline">
+                                <h4 data-i18n="Context Formatting">
+                                    Context Formatting
+                                </h4>
+                                <small>
+                                    &nbsp;(Saved to Context Template)
+                                </small>
+                            </div>
+                            <label class="checkbox_label" for="always-force-name2-checkbox">
+                                <input id="always-force-name2-checkbox" type="checkbox" />
+                                <span data-i18n="Always add character's name to prompt">
+                                    Always add character's name to prompt
+                                </span>
+                            </label>
+                            <label class="checkbox_label" for="single_line">
+                                <input id="single_line" type="checkbox" />
+                                <span data-i18n="Generate only one line per request">
+                                    Generate only one line per request
+                                </span>
+                            </label>
+                            <label class="checkbox_label" for="trim_sentences_checkbox">
+                                <input id="trim_sentences_checkbox" type="checkbox" />
+                                <span data-i18n="Trim Incomplete Sentences">
+                                    Trim Incomplete Sentences
+                                </span>
+                            </label>
+                            <!-- Add margin since this is a child of above -->
+                            <label data-newbie-hidden class="checkbox_label indent20p" for="include_newline_checkbox">
+                                <input id="include_newline_checkbox" type="checkbox" />
+                                <span data-i18n="Include Newline">Include Newline</span>
+                            </label>
+                        </div>
+                        <h4>
+                            Misc. Settings
+                        </h4>
+                        <label class="checkbox_label" for="collapse-newlines-checkbox">
+                            <input id="collapse-newlines-checkbox" type="checkbox" />
+                            <span data-i18n="Remove Empty New Lines from Output">
+                                Remove Empty New Lines from Output
+                            </span>
+                        </label>
+                        <label data-newbie-hidden class="checkbox_label" for="trim_spaces">
+                            <input id="trim_spaces" type="checkbox" />
+                            <span data-i18n="Trim spaces">Trim spaces</span>
+                        </label>
                         <div data-newbie-hidden>
                             <h4><span data-i18n="Tokenizer">Tokenizer</span>
                                 <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/#tokenizer" class="notes-link" target="_blank">
@@ -2496,77 +2533,57 @@
                             </div>
                             <input id="token_padding" class="text_pole textarea_compact" type="number" min="-2048" max="2048" />
                         </div>
-                        <label class="checkbox_label" for="always-force-name2-checkbox">
-                            <input id="always-force-name2-checkbox" type="checkbox" />
-                            <span data-i18n="Always add character's name to prompt">
-                                Always add character's name to prompt
-                            </span>
-                        </label>
-                        <label class="checkbox_label" for="collapse-newlines-checkbox"><input id="collapse-newlines-checkbox" type="checkbox" />
-                            <span data-i18n="Remove Empty New Lines from Output">
-                                Remove Empty New Lines from Output
-                            </span>
-                        </label>
-                        <label data-newbie-hidden class="checkbox_label" for="trim_spaces">
-                            <input id="trim_spaces" type="checkbox" />
-                            <span data-i18n="Trim spaces">Trim spaces</span>
-                        </label>
-                        <label class="checkbox_label" for="trim_sentences_checkbox">
-                            <input id="trim_sentences_checkbox" type="checkbox" />
-                            <span data-i18n="Trim Incomplete Sentences">Trim Incomplete Sentences</span>
-                        </label>
-                        <!-- Add margin since this is a child of above -->
-                        <label data-newbie-hidden class="checkbox_label indent20p" for="include_newline_checkbox">
-                            <input id="include_newline_checkbox" type="checkbox" />
-                            <span data-i18n="Include Newline">Include Newline</span>
-                        </label>
-                        <div data-newbie-hidden>
-                            <h4>
-                                <span data-i18n="Start Reply With">
-                                    Start Reply With
-                                </span>
-                            </h4>
+                        <div class="flex-container flexFlowColumn" data-newbie-hidden>
                             <div>
-                                <textarea id="start_reply_with" rows="2" class="text_pole textarea_compact" data-i18n="[placeholder]AI reply prefix" placeholder="AI reply prefix"></textarea>
+                                <h4 class="range-block-title justifyLeft">
+                                    <span data-i18n="Start Reply With">
+                                        Start Reply With
+                                    </span>
+                                </h4>
+                                <div>
+                                    <textarea id="start_reply_with" rows="2" class="text_pole textarea_compact" data-i18n="[placeholder]AI reply prefix" placeholder="AI reply prefix"></textarea>
+                                </div>
+                                <label class="checkbox_label" for="chat-show-reply-prefix-checkbox">
+                                    <input id="chat-show-reply-prefix-checkbox" type="checkbox" />
+                                    <span data-i18n="Show reply prefix in chat">
+                                        Show reply prefix in chat
+                                    </span>
+                                </label>
                             </div>
-                            <label class="checkbox_label" for="chat-show-reply-prefix-checkbox"><input id="chat-show-reply-prefix-checkbox" type="checkbox" />
-                                <span data-i18n="Show reply prefix in chat">
-                                    Show reply prefix in chat
-                                </span>
-                            </label>
                             <div>
-                                <h4 data-i18n="Non-markdown strings">
-                                    Non-markdown strings
+                                <h4 class="range-block-title justifyLeft">
+                                    <span data-i18n="Non-markdown strings">
+                                        Non-markdown strings
+                                    </span>
                                 </h4>
                                 <div>
                                     <input id="markdown_escape_strings" class="text_pole textarea_compact" type="text" data-i18n="[placeholder]separate with commas w/o space between" placeholder="separate with commas w/o space between" maxlength="100" />
                                 </div>
                             </div>
-                            <h4>
-                                <div class="range-block-title justifyLeft">
+                            <div>
+                                <h4 class="range-block-title justifyLeft">
                                     <span data-i18n="Custom Stopping Strings">
                                         Custom Stopping Strings
                                     </span>
                                     <a href="https://docs.sillytavern.app/usage/core-concepts/advancedformatting/#custom-stopping-strings" class="notes-link" target="_blank">
                                         <span class="note-link-span">?</span>
                                     </a>
-                                </div>
+                                </h4>
                                 <div>
                                     <small>
-                                        <span data-i18n="JSON serialized array of strings">JSON serialized array of strings, for example:</span><br>
-                                        <span class="monospace">["\n", "\nUser:", "\nChar:"]</span>
+                                        <span data-i18n="JSON serialized array of strings">JSON serialized array of strings</span>
                                     </small>
                                 </div>
-                            </h4>
-                            <div>
-                                <textarea id="custom_stopping_strings" rows="2" class="text_pole textarea_compact monospace" placeholder="[&quot;Ford&quot;, &quot;BMW&quot;, &quot;Fiat&quot;]"></textarea>
+                                <div>
+                                    <textarea id="custom_stopping_strings" rows="2" class="text_pole textarea_compact monospace" placeholder="[&quot;Ford&quot;, &quot;BMW&quot;, &quot;Fiat&quot;]"></textarea>
+                                </div>
+                                <label class="checkbox_label" for="custom_stopping_strings_macro">
+                                    <input id="custom_stopping_strings_macro" type="checkbox" checked>
+                                    <span data-i18n="Replace Macro in Custom Stopping Strings">
+                                        Replace Macro in Custom Stopping Strings
+                                    </span>
+                                </label>
                             </div>
-                            <label class="checkbox_label" for="custom_stopping_strings_macro">
-                                <input id="custom_stopping_strings_macro" type="checkbox" checked>
-                                <span data-i18n="Replace Macro in Custom Stopping Strings">
-                                    Replace Macro in Custom Stopping Strings
-                                </span>
-                            </label>
                         </div>
                         <div data-newbie-hidden>
                             <h4>
