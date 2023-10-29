@@ -62,12 +62,6 @@ function registerEndpoints(app, jsonParser) {
      * @returns {void}
      */
     app.post('/api/extensions/install', jsonParser, async (request, response) => {
-        const gitExists = commandExistsSync('git');
-
-        if (!gitExists) {
-            return response.status(400).send('Server Error: git is not installed on the system.');
-        }
-
         if (!request.body.url) {
             return response.status(400).send('Bad Request: URL is required in the request body.');
         }
