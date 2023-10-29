@@ -178,7 +178,7 @@ async function modifyCharaHtml() {
 function loadSettings() {
     // Set chat CFG if it exists
     $('#chat_cfg_guidance_scale').val(chat_metadata[metadataKeys.guidance_scale] ?? 1.0.toFixed(2));
-    $('#chat_cfg_guidance_scale_counter').text(chat_metadata[metadataKeys.guidance_scale]?.toFixed(2) ?? 1.0.toFixed(2));
+    $('#chat_cfg_guidance_scale_counter').val(chat_metadata[metadataKeys.guidance_scale]?.toFixed(2) ?? 1.0.toFixed(2));
     $('#chat_cfg_negative_prompt').val(chat_metadata[metadataKeys.negative_prompt] ?? '');
     $('#chat_cfg_positive_prompt').val(chat_metadata[metadataKeys.positive_prompt] ?? '');
     $('#groupchat_cfg_use_chara').prop('checked', chat_metadata[metadataKeys.groupchat_individual_chars] ?? false);
@@ -211,7 +211,7 @@ function loadSettings() {
     if (!selected_group) {
         const charaCfg = extension_settings.cfg.chara.find((e) => e.name === getCharaFilename());
         $('#chara_cfg_guidance_scale').val(charaCfg?.guidance_scale ?? 1.00);
-        $('#chara_cfg_guidance_scale_counter').text(charaCfg?.guidance_scale?.toFixed(2) ?? 1.0.toFixed(2));
+        $('#chara_cfg_guidance_scale_counter').val(charaCfg?.guidance_scale?.toFixed(2) ?? 1.0.toFixed(2));
         $('#chara_cfg_negative_prompt').val(charaCfg?.negative_prompt ?? '');
         $('#chara_cfg_positive_prompt').val(charaCfg?.positive_prompt ?? '');
     }
@@ -228,7 +228,7 @@ async function initialLoadSettings() {
 
     // Set global CFG values on load
     $('#global_cfg_guidance_scale').val(extension_settings.cfg.global.guidance_scale);
-    $('#global_cfg_guidance_scale_counter').text(extension_settings.cfg.global.guidance_scale.toFixed(2));
+    $('#global_cfg_guidance_scale_counter').val(extension_settings.cfg.global.guidance_scale.toFixed(2));
     $('#global_cfg_negative_prompt').val(extension_settings.cfg.global.negative_prompt);
     $('#global_cfg_positive_prompt').val(extension_settings.cfg.global.positive_prompt);
 }
@@ -291,7 +291,7 @@ export function initCfg() {
         const numberValue = Number($(this).val());
         const success = setChatCfg(numberValue, settingType.guidance_scale);
         if (success) {
-            $('#chat_cfg_guidance_scale_counter').text(numberValue.toFixed(2));
+            $('#chat_cfg_guidance_scale_counter').val(numberValue.toFixed(2));
         }
     });
 
@@ -307,7 +307,7 @@ export function initCfg() {
         const value = $(this).val();
         const success = setCharCfg(value, settingType.guidance_scale);
         if (success) {
-            $('#chara_cfg_guidance_scale_counter').text(Number(value).toFixed(2));
+            $('#chara_cfg_guidance_scale_counter').val(Number(value).toFixed(2));
         }
     });
 
@@ -321,7 +321,7 @@ export function initCfg() {
 
     $('#global_cfg_guidance_scale').on('input', function() {
         extension_settings.cfg.global.guidance_scale = Number($(this).val());
-        $('#global_cfg_guidance_scale_counter').text(extension_settings.cfg.global.guidance_scale.toFixed(2));
+        $('#global_cfg_guidance_scale_counter').val(extension_settings.cfg.global.guidance_scale.toFixed(2));
         saveSettingsDebounced();
     });
 
