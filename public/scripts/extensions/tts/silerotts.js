@@ -32,6 +32,7 @@ class SileroTtsProvider {
         // Used when provider settings are updated from UI
         this.settings.provider_endpoint = $('#silero_tts_endpoint').val()
         saveTtsProviderSettings()
+        this.refreshSession()
     }
 
     async loadSettings(settings) {
@@ -64,6 +65,7 @@ class SileroTtsProvider {
 
         $('#silero_tts_endpoint').val(this.settings.provider_endpoint)
         $('#silero_tts_endpoint').on("input", () => {this.onSettingsChange()})
+        this.refreshSession()
 
         await this.checkReady()
 
@@ -77,6 +79,10 @@ class SileroTtsProvider {
 
     async onRefreshClick() {
         return
+    }
+    
+    async refreshSession() {
+        await this.initSession()
     }
 
     //#################//
@@ -125,12 +131,36 @@ class SileroTtsProvider {
                 },
                 body: JSON.stringify({
                     "text": inputText,
-                    "speaker": voiceId
+                    "speaker": voiceId,
+                    "session": "sillytavern"
                 })
             }
         )
         if (!response.ok) {
             toastr.error(response.statusText, 'TTS Generation Failed');
+            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+        }
+        return response
+    }
+    
+    async initSession() {
+        console.info(`requesting new session`)
+        const response = await doExtrasFetch(
+            `${this.settings.provider_endpoint}/init_session`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+					'Cache-Control': 'no-cache'  // Added this line to disable caching of file so new files are always played - Rolyat 7/7/23
+                },
+                body: JSON.stringify({
+                    "path": "sillytavern"
+                })
+            }
+        )
+
+        if (!response.ok && response.status !== 404) {
+            toastr.error(response.statusText, 'Fetching Session Failed');
             throw new Error(`HTTP ${response.status}: ${await response.text()}`);
         }
         return response
