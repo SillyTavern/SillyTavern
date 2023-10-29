@@ -146,7 +146,7 @@ class SileroTtsProvider {
     async initSession() {
         console.info(`requesting new session`)
         const response = await doExtrasFetch(
-            `${this.settings.provider_endpoint}/init_session`,
+            `${this.settings.provider_endpoint}/session`,
             {
                 method: 'POST',
                 headers: {
