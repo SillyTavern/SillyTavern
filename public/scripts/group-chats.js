@@ -197,7 +197,7 @@ export async function getGroupChat(groupId) {
         updateChatMetadata(metadata, true);
     }
 
-    eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
+    await eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
 }
 
 /**

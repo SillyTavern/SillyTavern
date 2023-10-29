@@ -1158,9 +1158,8 @@ export async function reloadCurrentChat() {
     else {
         resetChatState();
         await printMessages();
+        await eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
     }
-
-    await eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
 }
 
 function messageFormatting(mes, ch_name, isSystem, isUser) {
