@@ -3540,8 +3540,8 @@ a {
 .icon-svg {
     fill: currentColor;
     /* Takes on the color of the surrounding text */
-    width: 16px;
-    height: 16px;
+    width: auto;
+    height: 14px;
     vertical-align: middle;
     /* To align with adjacent text */
 }
