@@ -2404,7 +2404,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
     if (interruptedByCommand) {
         $("#send_textarea").val('').trigger('input');
-        is_send_press = false;
+        unblockGeneration();
         return;
     }
 
@@ -2414,18 +2414,18 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         textgenerationwebui_settings.type === textgen_types.OOBA &&
         !textgenerationwebui_settings.streaming_url) {
         toastr.error('Streaming URL is not set. Look it up in the console window when starting TextGen Web UI');
-        is_send_press = false;
+        unblockGeneration();
         return;
     }
 
     if (main_api == 'kobold' && kai_settings.streaming_kobold && !kai_flags.can_use_streaming) {
         toastr.error('Streaming is enabled, but the version of Kobold used does not support token streaming.', undefined, { timeOut: 10000, preventDuplicates: true, });
-        is_send_press = false;
+        unblockGeneration();
         return;
     }
 
     if (isHordeGenerationNotAllowed()) {
-        is_send_press = false;
+        unblockGeneration();
         return;
     }
 
@@ -2465,7 +2465,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             setCharacterName('');
         } else {
             console.log('No enabled members found');
-            is_send_press = false;
+            unblockGeneration();
             return;
         }
     }
@@ -2616,7 +2616,13 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
         if (!dryRun) {
             console.debug('Running extension interceptors');
-            await runGenerationInterceptors(coreChat, this_max_context);
+            const aborted = await runGenerationInterceptors(coreChat, this_max_context);
+
+            if (aborted) {
+                console.debug('Generation aborted by extension interceptors');
+                unblockGeneration();
+                return;
+            }
         } else {
             console.debug('Skipping extension interceptors for dry run');
         }
@@ -2669,7 +2675,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 adjustedParams = await adjustHordeGenerationParams(max_context, amount_gen);
             }
             catch {
-                activateSendButtons();
+                unblockGeneration();
                 return;
             }
             if (horde_settings.auto_adjust_context_length) {
@@ -3418,6 +3424,14 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     //console.log('generate ending');
 } //generate ends
 
+function unblockGeneration() {
+    is_send_press = false;
+    activateSendButtons();
+    showSwipeButtons();
+    setGenerationProgress(0);
+    $("#send_textarea").removeAttr('disabled');
+}
+
 function getNextMessageId(type) {
     return type == 'swipe' ? Number(count_view_mes - 1) : Number(count_view_mes);
 }
@@ -3882,11 +3896,7 @@ function getGenerateUrl(api) {
 function throwCircuitBreakerError() {
     callPopup(`Could not extract reply in ${MAX_GENERATION_LOOPS} attempts. Try generating again`, 'text');
     generate_loop_counter = 0;
-    $("#send_textarea").removeAttr('disabled');
-    is_send_press = false;
-    activateSendButtons();
-    setGenerationProgress(0);
-    showSwipeButtons();
+    unblockGeneration();
     throw new Error('Generate circuit breaker interruption');
 }
 

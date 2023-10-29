@@ -839,17 +839,37 @@ async function autoUpdateExtensions() {
     }
 }
 
+/**
+ * Runs the generate interceptors for all extensions.
+ * @param {any[]} chat Chat array
+ * @param {number} contextSize Context size
+ * @returns {Promise<boolean>} True if generation should be aborted
+ */
 async function runGenerationInterceptors(chat, contextSize) {
+    let aborted = false;
+    let exitImmediately = false;
+
+    const abort = (/** @type {boolean} */ immediately) => {
+        aborted = true;
+        exitImmediately = immediately;
+    };
+
     for (const manifest of Object.values(manifests)) {
         const interceptorKey = manifest.generate_interceptor;
         if (typeof window[interceptorKey] === 'function') {
             try {
-                await window[interceptorKey](chat, contextSize);
+                await window[interceptorKey](chat, contextSize, abort);
             } catch (e) {
                 console.error(`Failed running interceptor for ${manifest.display_name}`, e);
             }
         }
+
+        if (exitImmediately) {
+            break;
+        }
     }
+
+    return aborted;
 }
 
 jQuery(function () {
