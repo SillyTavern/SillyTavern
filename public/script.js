@@ -4204,6 +4204,8 @@ function getGeneratingApi() {
     switch (main_api) {
         case 'openai':
             return oai_settings.chat_completion_source || 'openai';
+        case 'textgenerationwebui':
+            return textgenerationwebui_settings.type === textgen_types.OOBA ? 'textgenerationwebui' : textgenerationwebui_settings.type;
         default:
             return main_api;
     }
