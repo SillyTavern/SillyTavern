@@ -945,6 +945,7 @@ select {
 @media screen and (max-width: 1000px) {
     #form_create textarea {
         flex-grow: 1;
+        min-height: 20svh;
     }
 }
 
