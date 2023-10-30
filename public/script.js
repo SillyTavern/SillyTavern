@@ -1049,6 +1049,9 @@ async function printCharacters(fullRefresh = false) {
         callback: function (data) {
             $("#rm_print_characters_block").empty();
             for (const i of data) {
+                if (i.type === 'deck') {
+                    $("#rm_print_characters_block").append(getCharacterBlock(i.item));
+                }
                 if (i.type === 'character') {
                     $("#rm_print_characters_block").append(getCharacterBlock(i.item, i.id));
                 }
@@ -1074,6 +1077,7 @@ async function printCharacters(fullRefresh = false) {
 
 export function getEntitiesList({ doFilter } = {}) {
     let entities = [];
+    entities.push(...(settings.characterDecks?.decks ?? []).map((item) => ({ item, id: item.id, type: 'deck' })));
     entities.push(...characters.map((item, index) => ({ item, id: index, type: 'character' })));
     entities.push(...groups.map((item) => ({ item, id: item.id, type: 'group' })));
 
@@ -5309,6 +5313,7 @@ async function saveSettings(type) {
             horde_settings: horde_settings,
             power_user: power_user,
             extension_settings: extension_settings,
+            characterDecks: settings.characterDecks,
             tags: tags,
             tag_map: tag_map,
             nai_settings: nai_settings,
