@@ -35,6 +35,9 @@ let world_info = {};
 let selected_world_info = [];
 let world_names;
 let world_info_depth = 2;
+let world_info_min_activations = 0; // if > 0, will continue seeking chat until minimum world infos are activated
+let world_info_min_activations_depth_max = 20; // used when (world_info_min_activations > 0)
+
 let world_info_budget = 25;
 let world_info_recursive = false;
 let world_info_overflow_alert = false;
@@ -1379,6 +1382,7 @@ async function checkWorldInfo(chat, maxContext) {
 
     // Combine the chat
     let textToScan = chat.slice(0, messagesToLookBack).join("");
+    let minActivationMsgIndex = messagesToLookBack; // tracks chat index to satisfy `world_info_min_activations`
 
     // Add the depth or AN if enabled
     // Put this code here since otherwise, the chat reference is modified
@@ -1552,6 +1556,17 @@ async function checkWorldInfo(chat, maxContext) {
             const currentlyActivatedText = transformString(text);
             textToScan = (currentlyActivatedText + '\n' + textToScan);
             allActivatedText = (currentlyActivatedText + '\n' + allActivatedText);
+        }
+
+        // world_info_min_activations
+        if (!needsToScan) {
+            if (world_info_min_activations > 0 && (allActivatedEntries.size < world_info_min_activations)) {
+                if (minActivationMsgIndex <= world_info_min_activations_depth_max) {
+                    needsToScan = true
+                    textToScan = transformString(chat.slice(minActivationMsgIndex, minActivationMsgIndex + 1).join(""));
+                    minActivationMsgIndex += 1
+                }
+            }
         }
     }
 
