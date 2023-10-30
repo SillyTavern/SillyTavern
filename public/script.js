@@ -185,7 +185,7 @@ import { applyLocale } from "./scripts/i18n.js";
 import { getTokenCount, getTokenizerModel, initTokenizers, saveTokenCache } from "./scripts/tokenizers.js";
 import { initPersonas, selectCurrentPersona, setPersonaDescription } from "./scripts/personas.js";
 import { getBackgrounds, initBackgrounds } from "./scripts/backgrounds.js";
-import {CharacterContextMenu, CharacterGroupOverlay} from "./scripts/CharacterGroupOverlay.js";
+import {CharacterContextMenu, BulkEditOverlay} from "./scripts/BulkEditOverlay.js";
 
 //exporting functions and vars for mods
 export {
@@ -315,7 +315,7 @@ eventSource.on(event_types.CHAT_CHANGED, displayOverrideWarnings);
 eventSource.on(event_types.MESSAGE_RECEIVED, processExtensionHelpers);
 eventSource.on(event_types.MESSAGE_SENT, processExtensionHelpers);
 
-const characterGroupOverlay = new CharacterGroupOverlay();
+const characterGroupOverlay = new BulkEditOverlay();
 const characterContextMenu = new CharacterContextMenu(characterGroupOverlay);
 eventSource.on(event_types.CHARACTER_PAGE_LOADED, characterGroupOverlay.onPageLoad);
 

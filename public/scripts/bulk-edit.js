@@ -1,12 +1,12 @@
 import { characters, getCharacters, handleDeleteCharacter, callPopup } from "../script.js";
-import {CharacterGroupOverlay, CharacterGroupOverlayState} from "./CharacterGroupOverlay.js";
+import {BulkEditOverlay, CharacterGroupOverlayState} from "./BulkEditOverlay.js";
 
 
 let is_bulk_edit = false;
 
 const enableBulkEdit = () => {
     enableBulkSelect();
-    (new CharacterGroupOverlay()).selectState();
+    (new BulkEditOverlay()).selectState();
     // show the delete button
     $("#bulkDeleteButton").show();
     is_bulk_edit = true;
@@ -14,7 +14,7 @@ const enableBulkEdit = () => {
 
 const disableBulkEdit = () => {
     disableBulkSelect();
-    (new CharacterGroupOverlay()).browseState();
+    (new BulkEditOverlay()).browseState();
     // hide the delete button
     $("#bulkDeleteButton").hide();
     is_bulk_edit = false;
@@ -28,7 +28,7 @@ const toggleBulkEditMode = (isBulkEdit) => {
     }
 }
 
-(new CharacterGroupOverlay()).addStateChangeCallback((state) => {
+(new BulkEditOverlay()).addStateChangeCallback((state) => {
     if (state === CharacterGroupOverlayState.select) enableBulkEdit();
     if (state === CharacterGroupOverlayState.browse) disableBulkEdit();
 });

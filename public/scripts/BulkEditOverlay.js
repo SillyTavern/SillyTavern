@@ -97,7 +97,7 @@ class CharacterDeckCollection {
  * Implement a SingletonPattern, allowing access to the group overlay instance
  * from everywhere via (new CharacterGroupOverlay())
  *
- * @type CharacterGroupOverlay
+ * @type BulkEditOverlay
  */
 let characterGroupOverlayInstance = null;
 
@@ -205,14 +205,14 @@ class CharacterContextMenu {
     static getCharacter = (characterId) => characters[characterId] ?? null;
 
     static show = (positionX, positionY) => {
-        let contextMenu = document.getElementById(CharacterGroupOverlay.contextMenuId);
+        let contextMenu = document.getElementById(BulkEditOverlay.contextMenuId);
         contextMenu.style.left = `${positionX}px`;
         contextMenu.style.top = `${positionY}px`;
 
-        document.getElementById(CharacterGroupOverlay.contextMenuId).classList.remove('hidden');
+        document.getElementById(BulkEditOverlay.contextMenuId).classList.remove('hidden');
     }
 
-    static hide = () => document.getElementById(CharacterGroupOverlay.contextMenuId).classList.add('hidden');
+    static hide = () => document.getElementById(BulkEditOverlay.contextMenuId).classList.add('hidden');
 
     constructor(characterGroupOverlay) {
         const contextMenuItems = [
@@ -227,7 +227,7 @@ class CharacterContextMenu {
     }
 }
 
-class CharacterGroupOverlay {
+class BulkEditOverlay {
     static containerId = 'rm_print_characters_block';
     static contextMenuId = 'character_context_menu';
     static characterClass = 'character_select';
@@ -275,10 +275,10 @@ class CharacterGroupOverlay {
     }
 
     constructor() {
-        if (characterGroupOverlayInstance instanceof CharacterGroupOverlay)
+        if (characterGroupOverlayInstance instanceof BulkEditOverlay)
             return characterGroupOverlayInstance
 
-        this.container = document.getElementById(CharacterGroupOverlay.containerId);
+        this.container = document.getElementById(BulkEditOverlay.containerId);
         this.container.addEventListener('click', this.handleCancelClick);
 
         eventSource.on(event_types.CHARACTER_GROUP_OVERLAY_STATE_CHANGE_AFTER, this.handleStateChange);
@@ -294,14 +294,14 @@ class CharacterGroupOverlay {
     onPageLoad = () => {
         this.browseState();
 
-        const elements = [...document.getElementsByClassName(CharacterGroupOverlay.characterClass)];
+        const elements = [...document.getElementsByClassName(BulkEditOverlay.characterClass)];
         elements.forEach(element => element.addEventListener('touchstart', this.handleHold));
         elements.forEach(element => element.addEventListener('mousedown', this.handleHold));
         elements.forEach(element => element.addEventListener('touchend', this.handleLongPressEnd));
         elements.forEach(element => element.addEventListener('mouseup', this.handleLongPressEnd));
         elements.forEach(element => element.addEventListener('dragend', this.handleLongPressEnd));
 
-        const grid = document.getElementById(CharacterGroupOverlay.containerId);
+        const grid = document.getElementById(BulkEditOverlay.containerId);
         grid.addEventListener('click', this.handleCancelClick);
     }
 
@@ -343,14 +343,14 @@ class CharacterGroupOverlay {
     handleStateChange = () => {
         switch (this.state) {
             case CharacterGroupOverlayState.browse:
-                this.container.classList.remove(CharacterGroupOverlay.selectModeClass);
+                this.container.classList.remove(BulkEditOverlay.selectModeClass);
                 this.#enableClickEventsForCharacters();
                 this.clearSelectedCharacters();
                 this.disableContextMenu();
                 CharacterContextMenu.hide();
                 break;
             case CharacterGroupOverlayState.select:
-                this.container.classList.add(CharacterGroupOverlay.selectModeClass);
+                this.container.classList.add(BulkEditOverlay.selectModeClass);
                 this.#disableClickEventsForCharacters();
                 this.enableContextMenu();
                 break;
@@ -359,10 +359,10 @@ class CharacterGroupOverlay {
         this.stateChangeCallbacks.forEach(callback => callback(this.state));
     }
 
-    #enableClickEventsForCharacters = () => [...this.container.getElementsByClassName(CharacterGroupOverlay.characterClass)]
+    #enableClickEventsForCharacters = () => [...this.container.getElementsByClassName(BulkEditOverlay.characterClass)]
         .forEach(element => element.removeEventListener('click', this.toggleCharacterSelected));
 
-    #disableClickEventsForCharacters = () => [...this.container.getElementsByClassName(CharacterGroupOverlay.characterClass)]
+    #disableClickEventsForCharacters = () => [...this.container.getElementsByClassName(BulkEditOverlay.characterClass)]
         .forEach(element => element.addEventListener('click', this.toggleCharacterSelected));
 
     toggleCharacterSelected = event => {
@@ -374,23 +374,23 @@ class CharacterGroupOverlay {
         const alreadySelected = this.selectedCharacters.includes(characterId)
 
         if (alreadySelected) {
-            character.classList.remove(CharacterGroupOverlay.selectedClass);
+            character.classList.remove(BulkEditOverlay.selectedClass);
             this.dismissCharacter(characterId);
         } else {
-            character.classList.add(CharacterGroupOverlay.selectedClass);
+            character.classList.add(BulkEditOverlay.selectedClass);
             this.selectCharacter(characterId);
         }
     }
 
     handleContextMenuShow = (event) => {
         event.preventDefault();
-        document.getElementById(CharacterGroupOverlay.containerId).style.pointerEvents = 'none';
+        document.getElementById(BulkEditOverlay.containerId).style.pointerEvents = 'none';
         CharacterContextMenu.show(event.clientX, event.clientY);
     }
 
     handleContextMenuHide = (event) => {
-        document.getElementById(CharacterGroupOverlay.containerId).style.pointerEvents = '';
-        let contextMenu = document.getElementById(CharacterGroupOverlay.contextMenuId);
+        document.getElementById(BulkEditOverlay.containerId).style.pointerEvents = '';
+        let contextMenu = document.getElementById(BulkEditOverlay.contextMenuId);
         if (false === contextMenu.contains(event.target)) {
             CharacterContextMenu.hide();
         }
@@ -434,9 +434,9 @@ class CharacterGroupOverlay {
     dismissCharacter = characterId => this.#selectedCharacters = this.selectedCharacters.filter(item => String(characterId) !== item);
 
     clearSelectedCharacters = () => {
-        this.selectedCharacters.forEach(characterId => document.querySelector('.character_select[chid="' + characterId + '"]')?.classList.remove(CharacterGroupOverlay.selectedClass))
+        this.selectedCharacters.forEach(characterId => document.querySelector('.character_select[chid="' + characterId + '"]')?.classList.remove(BulkEditOverlay.selectedClass))
         this.selectedCharacters.length = 0;
     }
 }
 
-export {CharacterGroupOverlayState, CharacterContextMenu, CharacterGroupOverlay};
+export {CharacterGroupOverlayState, CharacterContextMenu, BulkEditOverlay};
