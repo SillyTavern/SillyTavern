@@ -347,12 +347,14 @@ class BulkEditOverlay {
                 this.#enableClickEventsForCharacters();
                 this.clearSelectedCharacters();
                 this.disableContextMenu();
+                this.#disableBulkEditButtonHighlight();
                 CharacterContextMenu.hide();
                 break;
             case CharacterGroupOverlayState.select:
                 this.container.classList.add(BulkEditOverlay.selectModeClass);
                 this.#disableClickEventsForCharacters();
                 this.enableContextMenu();
+                this.#enableBulkEditButtonHighlight();
                 break;
         }
 
@@ -364,6 +366,10 @@ class BulkEditOverlay {
 
     #disableClickEventsForCharacters = () => [...this.container.getElementsByClassName(BulkEditOverlay.characterClass)]
         .forEach(element => element.addEventListener('click', this.toggleCharacterSelected));
+
+    #enableBulkEditButtonHighlight = () => document.getElementById('bulkEditButton').classList.add('bulk_edit_overlay_active');
+
+    #disableBulkEditButtonHighlight = () => document.getElementById('bulkEditButton').classList.remove('bulk_edit_overlay_active');
 
     toggleCharacterSelected = event => {
         event.stopPropagation();
