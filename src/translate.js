@@ -1,8 +1,6 @@
 const fetch = require('node-fetch').default;
 const https = require('https');
 const { readSecret, SECRET_KEYS } = require('./secrets');
-const { generateRequestUrl, normaliseResponse } = require('google-translate-api-browser');
-const bingTranslateApi = require('bing-translate-api')
 
 const DEEPLX_URL_DEFAULT = 'http://127.0.0.1:1188/translate';
 const ONERING_URL_DEFAULT = 'http://127.0.0.1:4990/translate';
