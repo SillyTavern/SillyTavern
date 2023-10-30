@@ -148,9 +148,14 @@ let color = {
     white: (mess) => color.byNum(mess, 37)
 };
 
-function get_mancer_headers() {
-    const api_key_mancer = readSecret(SECRET_KEYS.MANCER);
-    return api_key_mancer ? { "X-API-KEY": api_key_mancer } : {};
+function getMancerHeaders() {
+    const apiKey = readSecret(SECRET_KEYS.MANCER);
+    return apiKey ? { "X-API-KEY": apiKey } : {};
+}
+
+function getAphroditeHeaders() {
+    const apiKey = readSecret(SECRET_KEYS.APHRODITE);
+    return apiKey ? { "X-API-KEY": apiKey } : {};
 }
 
 function getOverrideHeaders(urlHost) {
@@ -160,6 +165,26 @@ function getOverrideHeaders(urlHost) {
     } else {
         return {};
     }
+}
+
+/**
+ * Sets additional headers for the request.
+ * @param {object} request Original request body
+ * @param {object} args New request arguments
+ * @param {string|null} server API server for new request
+ */
+function setAdditionalHeaders(request, args, server) {
+    let headers = {};
+
+    if (request.body.use_mancer) {
+        headers = getMancerHeaders();
+    } else if (request.body.use_aphrodite) {
+        headers = getAphroditeHeaders();
+    } else {
+        headers = server ? getOverrideHeaders((new URL(server))?.host) : '';
+    }
+
+    args.headers = Object.assign(args.headers, headers);
 }
 
 function humanizedISO8601DateTime(date) {
@@ -182,7 +207,7 @@ const AVATAR_WIDTH = 400;
 const AVATAR_HEIGHT = 600;
 const jsonParser = express.json({ limit: '100mb' });
 const urlencodedParser = express.urlencoded({ extended: true, limit: '100mb' });
-const { DIRECTORIES, UPLOADS_PATH } = require('./src/constants');
+const { DIRECTORIES, UPLOADS_PATH, PALM_SAFETY } = require('./src/constants');
 
 // CSRF Protection //
 if (cliArguments.disableCsrf === false) {
@@ -376,6 +401,7 @@ app.post("/generate", jsonParser, async function (request, response_generate) {
             mirostat_eta: request.body.mirostat_eta,
             mirostat_tau: request.body.mirostat_tau,
             grammar: request.body.grammar,
+            sampler_seed: request.body.sampler_seed,
         };
         if (!!request.body.stop_sequence) {
             this_settings['stop_sequence'] = request.body.stop_sequence;
@@ -451,6 +477,52 @@ app.post("/generate", jsonParser, async function (request, response_generate) {
     return response_generate.send({ error: true });
 });
 
+/**
+ * @param {string} streamingUrlString Streaming URL
+ * @param {import('express').Request} request Express request
+ * @param {import('express').Response} response Express response
+ * @param {AbortController} controller Abort controller
+ * @returns
+ */
+async function sendAphroditeStreamingRequest(streamingUrlString, request, response, controller) {
+    request.body['stream'] = true;
+
+    const args = {
+        method: 'POST',
+        body: JSON.stringify(request.body),
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+    };
+
+    setAdditionalHeaders(request, args, streamingUrlString);
+
+    try {
+        const generateResponse = await fetch(streamingUrlString + "/v1/generate", args);
+        // Pipe remote SSE stream to Express response
+        generateResponse.body.pipe(response);
+
+        request.socket.on('close', function () {
+            if (generateResponse.body instanceof Readable) generateResponse.body.destroy(); // Close the remote stream
+            response.end(); // End the Express response
+        });
+
+        generateResponse.body.on('end', function () {
+            console.log("Streaming request finished");
+            response.end();
+        });
+    } catch (error) {
+        let value = { error: true, status: error.status, response: error.statusText };
+        console.log("Aphrodite endpoint error:", error);
+
+        if (!response.headersSent) {
+            return response.send(value);
+        } else {
+            return response.end();
+        }
+    }
+
+}
+
 //************** Text generation web UI
 app.post("/generate_textgenerationwebui", jsonParser, async function (request, response_generate) {
     if (!request.body) return response_generate.sendStatus(400);
@@ -470,6 +542,10 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
         if (streamingUrlHeader === undefined) return response_generate.sendStatus(400);
         const streamingUrlString = streamingUrlHeader.replace("localhost", "127.0.0.1");
 
+        if (request.body.use_aphrodite) {
+            return sendAphroditeStreamingRequest(streamingUrlString, request, response_generate, controller);
+        }
+
         response_generate.writeHead(200, {
             'Content-Type': 'text/plain;charset=utf-8',
             'Transfer-Encoding': 'chunked',
@@ -477,14 +553,35 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
         });
 
         async function* readWebsocket() {
-            const streamingUrl = new URL(streamingUrlString);
-            const websocket = new WebSocket(streamingUrl);
+            /** @type {WebSocket} */
+            let websocket;
+            /** @type {URL} */
+            let streamingUrl;
+
+            try {
+                const streamingUrl = new URL(streamingUrlString);
+                websocket = new WebSocket(streamingUrl);
+            } catch (error) {
+                console.log("[SillyTavern] Socket error", error);
+                return;
+            }
 
             websocket.on('open', async function () {
                 console.log('WebSocket opened');
+
+                let headers = {};
+
+                if (request.body.use_mancer) {
+                    headers = getMancerHeaders();
+                } else if (request.body.use_aphrodite) {
+                    headers = getAphroditeHeaders();
+                } else {
+                    headers = getOverrideHeaders(streamingUrl?.host);
+                }
+
                 const combined_args = Object.assign(
                     {},
-                    request.body.use_mancer ? get_mancer_headers() : getOverrideHeaders(streamingUrl?.host),
+                    headers,
                     request.body
                 );
                 console.log(combined_args);
@@ -531,6 +628,9 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
                         yield message.text;
                         break;
                     case 'stream_end':
+                        if (message.error) {
+                            yield `\n[API Error] ${message.error}\n`
+                        }
                         websocket.close();
                         return;
                 }
@@ -568,11 +668,7 @@ app.post("/generate_textgenerationwebui", jsonParser, async function (request, r
             signal: controller.signal,
         };
 
-        if (request.body.use_mancer) {
-            args.headers = Object.assign(args.headers, get_mancer_headers());
-        } else {
-            args.headers = Object.assign(args.headers, getOverrideHeaders((new URL(api_server))?.host));
-        }
+        setAdditionalHeaders(request, args, api_server);
 
         try {
             const data = await postAsync(api_server + "/v1/generate", args);
@@ -597,6 +693,7 @@ app.post("/savechat", jsonParser, function (request, response) {
         let chat_data = request.body.chat;
         let jsonlData = chat_data.map(JSON.stringify).join('\n');
         writeFileAtomicSync(`${chatsPath + sanitize(dir_name)}/${sanitize(String(request.body.file_name))}.jsonl`, jsonlData, 'utf8');
+        backupChat(dir_name, jsonlData)
         return response.send({ result: "ok" });
     } catch (error) {
         response.send(error);
@@ -631,7 +728,7 @@ app.post("/getchat", jsonParser, function (request, response) {
         const lines = data.split('\n');
 
         // Iterate through the array of strings and parse each line as JSON
-        const jsonData = lines.map(tryParse).filter(x => x);
+        const jsonData = lines.map((l) => { try { return JSON.parse(l); } catch (_) { } }).filter(x => x);
         return response.send(jsonData);
     } catch (error) {
         console.error(error);
@@ -677,11 +774,7 @@ app.post("/getstatus", jsonParser, async function (request, response) {
         headers: { "Content-Type": "application/json" }
     };
 
-    if (main_api == 'textgenerationwebui' && request.body.use_mancer) {
-        args.headers = Object.assign(args.headers, get_mancer_headers());
-    } else {
-        args.headers = Object.assign(args.headers, getOverrideHeaders((new URL(api_server))?.host));
-    }
+    setAdditionalHeaders(request, args, api_server);
 
     const url = api_server + "/v1/model";
     let version = '';
@@ -750,6 +843,8 @@ function convertToV2(char) {
         fav: char.fav,
         creator: char.creator,
         tags: char.tags,
+        depth_prompt_prompt: char.depth_prompt_prompt,
+        depth_prompt_response: char.depth_prompt_response,
     });
 
     result.chat = char.chat ?? humanizedISO8601DateTime();
@@ -765,7 +860,7 @@ function unsetFavFlag(char) {
 
 function readFromV2(char) {
     if (_.isUndefined(char.data)) {
-        console.warn('Spec v2 data missing');
+        console.warn(`Char ${char['name']} has Spec v2 data missing`);
         return char;
     }
 
@@ -800,12 +895,12 @@ function readFromV2(char) {
                 //console.debug(`Spec v2 extension data missing for field: ${charField}, using default value: ${defaultValue}`);
                 char[charField] = defaultValue;
             } else {
-                console.debug(`Spec v2 data missing for unknown field: ${charField}`);
+                console.debug(`Char ${char['name']} has Spec v2 data missing for unknown field: ${charField}`);
                 return;
             }
         }
         if (!_.isUndefined(char[charField]) && !_.isUndefined(v2Value) && String(char[charField]) !== String(v2Value)) {
-            console.debug(`Spec v2 data mismatch with Spec v1 for field: ${charField}`, char[charField], v2Value);
+            console.debug(`Char ${char['name']} has Spec v2 data mismatch with Spec v1 for field: ${charField}`, char[charField], v2Value);
         }
         char[charField] = v2Value;
     });
@@ -865,6 +960,12 @@ function charaFormatData(data) {
     _.set(char, 'data.extensions.talkativeness', data.talkativeness);
     _.set(char, 'data.extensions.fav', data.fav == 'true');
     _.set(char, 'data.extensions.world', data.world || '');
+
+    // Spec extension: depth prompt
+    const depth_default = 4;
+    const depth_value = !isNaN(Number(data.depth_prompt_depth)) ? Number(data.depth_prompt_depth) : depth_default;
+    _.set(char, 'data.extensions.depth_prompt.prompt', data.depth_prompt_prompt ?? '');
+    _.set(char, 'data.extensions.depth_prompt.depth', depth_value);
     //_.set(char, 'data.extensions.create_date', humanizedISO8601DateTime());
     //_.set(char, 'data.extensions.avatar', 'none');
     //_.set(char, 'data.extensions.chat', data.ch_name + ' - ' + humanizedISO8601DateTime());
@@ -1264,6 +1365,12 @@ app.post("/getcharacters", jsonParser, function (request, response) {
         let processingPromises = pngFiles.map((file, index) => processCharacter(file, index));
         await Promise.all(processingPromises); performance.mark('B');
 
+        // Filter out invalid/broken characters
+        characters = Object.values(characters).filter(x => x?.name).reduce((acc, val, index) => {
+            acc[index] = val;
+            return acc;
+        }, {});
+
         response.send(JSON.stringify(characters));
     });
 });
@@ -1299,11 +1406,11 @@ app.post("/getstats", jsonParser, function (request, response) {
 
 /**
  * Endpoint: POST /recreatestats
- * 
+ *
  * Triggers the recreation of statistics from chat files.
  * - If successful: returns a 200 OK status.
  * - On failure: returns a 500 Internal Server Error status.
- * 
+ *
  * @param {Object} request - Express request object.
  * @param {Object} response - Express response object.
  */
@@ -1430,8 +1537,8 @@ app.post("/delchat", jsonParser, function (request, response) {
 app.post('/renamebackground', jsonParser, function (request, response) {
     if (!request.body) return response.sendStatus(400);
 
-    const oldFileName = path.join('public/backgrounds/', sanitize(request.body.old_bg));
-    const newFileName = path.join('public/backgrounds/', sanitize(request.body.new_bg));
+    const oldFileName = path.join(DIRECTORIES.backgrounds, sanitize(request.body.old_bg));
+    const newFileName = path.join(DIRECTORIES.backgrounds, sanitize(request.body.new_bg));
 
     if (!fs.existsSync(oldFileName)) {
         console.log('BG file not found');
@@ -1695,7 +1802,8 @@ function convertWorldInfoToCharacterBook(name, entries) {
                 display_index: entry.displayIndex,
                 probability: entry.probability ?? null,
                 useProbability: entry.useProbability ?? false,
-            }
+                depth: entry.depth ?? 4,
+            },
         };
 
         result.entries.push(originalEntry);
@@ -1705,15 +1813,18 @@ function convertWorldInfoToCharacterBook(name, entries) {
 }
 
 function readWorldInfoFile(worldInfoName) {
+    const dummyObject = { entries: {} };
+
     if (!worldInfoName) {
-        return { entries: {} };
+        return dummyObject;
     }
 
     const filename = `${worldInfoName}.json`;
     const pathToWorldInfo = path.join(DIRECTORIES.worlds, filename);
 
     if (!fs.existsSync(pathToWorldInfo)) {
-        throw new Error(`World info file ${filename} doesn't exist.`);
+        console.log(`World info file ${filename} doesn't exist.`);
+        return dummyObject;
     }
 
     const worldInfoText = fs.readFileSync(pathToWorldInfo, 'utf8');
@@ -1732,37 +1843,27 @@ function getImages(path) {
         .sort(Intl.Collator().compare);
 }
 
-app.post("/getallchatsofcharacter", jsonParser, function (request, response) {
+app.post("/getallchatsofcharacter", jsonParser, async function (request, response) {
     if (!request.body) return response.sendStatus(400);
 
-    var char_dir = (request.body.avatar_url).replace('.png', '')
-    fs.readdir(chatsPath + char_dir, (err, files) => {
-        if (err) {
-            console.log('found error in history loading');
-            console.error(err);
+    const characterDirectory = (request.body.avatar_url).replace('.png', '');
+
+    try {
+        const chatsDirectory = path.join(chatsPath, characterDirectory);
+        const files = fs.readdirSync(chatsDirectory);
+        const jsonFiles = files.filter(file => path.extname(file) === '.jsonl');
+
+        if (jsonFiles.length === 0) {
             response.send({ error: true });
             return;
         }
 
-        // filter for JSON files
-        const jsonFiles = files.filter(file => path.extname(file) === '.jsonl');
-
-        // sort the files by name
-        //jsonFiles.sort().reverse();
-        // print the sorted file names
-        var chatData = {};
-        let ii = jsonFiles.length;	//this is the number of files belonging to the character
-        if (ii !== 0) {
-            //console.log('found '+ii+' chat logs to load');
-            for (let i = jsonFiles.length - 1; i >= 0; i--) {
-                const file = jsonFiles[i];
-                const fileStream = fs.createReadStream(chatsPath + char_dir + '/' + file);
-
-                const fullPathAndFile = chatsPath + char_dir + '/' + file
-                const stats = fs.statSync(fullPathAndFile);
-                const fileSizeInKB = (stats.size / 1024).toFixed(2) + "kb";
-
-                //console.log(fileSizeInKB);
+        const jsonFilesPromise = jsonFiles.map((file) => {
+            return new Promise(async (res) => {
+                const pathToFile = path.join(chatsPath, characterDirectory, file);
+                const fileStream = fs.createReadStream(pathToFile);
+                const stats = fs.statSync(pathToFile);
+                const fileSizeInKB = `${(stats.size / 1024).toFixed(2)}kb`;
 
                 const rl = readline.createInterface({
                     input: fileStream,
@@ -1776,34 +1877,37 @@ app.post("/getallchatsofcharacter", jsonParser, function (request, response) {
                     lastLine = line;
                 });
                 rl.on('close', () => {
-                    ii--;
-                    if (lastLine) {
+                    rl.close();
 
-                        let jsonData = tryParse(lastLine);
-                        if (jsonData && (jsonData.name !== undefined || jsonData.character_name !== undefined)) {
-                            chatData[i] = {};
-                            chatData[i]['file_name'] = file;
-                            chatData[i]['file_size'] = fileSizeInKB;
-                            chatData[i]['chat_items'] = itemCounter - 1;
-                            chatData[i]['mes'] = jsonData['mes'] || '[The chat is empty]';
-                            chatData[i]['last_mes'] = jsonData['send_date'] || Date.now();
+                    if (lastLine) {
+                        const jsonData = tryParse(lastLine);
+                        if (jsonData && (jsonData.name || jsonData.character_name)) {
+                            const chatData = {};
+
+                            chatData['file_name'] = file;
+                            chatData['file_size'] = fileSizeInKB;
+                            chatData['chat_items'] = itemCounter - 1;
+                            chatData['mes'] = jsonData['mes'] || '[The chat is empty]';
+                            chatData['last_mes'] = jsonData['send_date'] || Date.now();
+
+                            res(chatData);
                         } else {
-                            console.log('Found an invalid or corrupted chat file: ' + fullPathAndFile);
+                            console.log('Found an invalid or corrupted chat file:', pathToFile);
+                            res({});
                         }
                     }
-                    if (ii === 0) {
-                        //console.log('ii count went to zero, responding with chatData');
-                        response.send(chatData);
-                    }
-                    //console.log('successfully closing getallchatsofcharacter');
-                    rl.close();
                 });
-            };
-        } else {
-            //console.log('Found No Chats. Exiting Load Routine.');
-            response.send({ error: true });
-        };
-    })
+            });
+        });
+
+        const chatData = await Promise.all(jsonFilesPromise);
+        const validFiles = chatData.filter(i => i.file_name);
+
+        return response.send(validFiles);
+    } catch (error) {
+        console.log(error);
+        return response.send({ error: true });
+    }
 });
 
 function getPngName(file) {
@@ -2470,6 +2574,7 @@ app.post('/creategroup', jsonParser, (request, response) => {
         avatar_url: request.body.avatar_url,
         allow_self_responses: !!request.body.allow_self_responses,
         activation_strategy: request.body.activation_strategy ?? 0,
+        generation_mode: request.body.generation_mode ?? 0,
         disabled_members: request.body.disabled_members ?? [],
         chat_metadata: request.body.chat_metadata ?? {},
         fav: request.body.fav,
@@ -2550,6 +2655,7 @@ app.post('/savegroupchat', jsonParser, (request, response) => {
     let chat_data = request.body.chat;
     let jsonlData = chat_data.map(JSON.stringify).join('\n');
     writeFileAtomicSync(pathToFile, jsonlData, 'utf8');
+    backupChat(String(id), jsonlData);
     return response.send({ ok: true });
 });
 
@@ -2642,7 +2748,7 @@ app.post("/getstatus_openai", jsonParser, async function (request, response_gets
             const data = await response.json();
             response_getstatus_openai.send(data);
 
-            if (request.body.use_openrouter) {
+            if (request.body.use_openrouter && Array.isArray(data?.data)) {
                 let models = [];
 
                 data.data.forEach(model => {
@@ -2657,8 +2763,14 @@ app.post("/getstatus_openai", jsonParser, async function (request, response_gets
 
                 console.log('Available OpenRouter models:', models);
             } else {
-                const modelIds = data?.data?.map(x => x.id)?.sort();
-                console.log('Available OpenAI models:', modelIds);
+                const models = data?.data;
+
+                if (Array.isArray(models)) {
+                    const modelIds = models.filter(x => x && typeof x === 'object').map(x => x.id).sort();
+                    console.log('Available OpenAI models:', modelIds);
+                } else {
+                    console.log('OpenAI endpoint did not return a list of models.')
+                }
             }
         }
         else {
@@ -2667,7 +2779,12 @@ app.post("/getstatus_openai", jsonParser, async function (request, response_gets
         }
     } catch (e) {
         console.error(e);
-        response_getstatus_openai.send({ error: true });
+
+        if (!response_getstatus_openai.headersSent) {
+            response_getstatus_openai.send({ error: true });
+        } else {
+            response_getstatus_openai.end();
+        }
     }
 });
 
@@ -2692,7 +2809,7 @@ app.post("/openai_bias", jsonParser, async function (request, response) {
         }
 
         try {
-            const tokens = tokenizer.encode(entry.text);
+            const tokens = getEntryTokens(entry.text);
 
             for (const token of tokens) {
                 result[token] = entry.value;
@@ -2705,6 +2822,28 @@ app.post("/openai_bias", jsonParser, async function (request, response) {
     // not needed for cached tokenizers
     //tokenizer.free();
     return response.send(result);
+
+    /**
+     * Gets tokenids for a given entry
+     * @param {string} text Entry text
+     * @returns {Uint32Array} Array of token ids
+     */
+    function getEntryTokens(text) {
+        // Get raw token ids from JSON array
+        if (text.trim().startsWith('[') && text.trim().endsWith(']')) {
+            try {
+                const json = JSON.parse(text);
+                if (Array.isArray(json) && json.every(x => typeof x === 'number')) {
+                    return new Uint32Array(json);
+                }
+            } catch {
+                // ignore
+            }
+        }
+
+        // Otherwise, get token ids from tokenizer
+        return tokenizer.encode(text);
+    }
 });
 
 function convertChatMLPrompt(messages) {
@@ -2926,6 +3065,69 @@ async function sendClaudeRequest(request, response) {
     }
 }
 
+/**
+ * @param {express.Request} request
+ * @param {express.Response} response
+ */
+async function sendPalmRequest(request, response) {
+    const api_key_palm = readSecret(SECRET_KEYS.PALM);
+
+    if (!api_key_palm) {
+        return response.status(401).send({ error: true });
+    }
+
+    const body = {
+        prompt: {
+            text: request.body.messages,
+        },
+        stopSequences: request.body.stop,
+        safetySettings: PALM_SAFETY,
+        temperature: request.body.temperature,
+        topP: request.body.top_p,
+        topK: request.body.top_k || undefined,
+        maxOutputTokens: request.body.max_tokens,
+        candidate_count: 1,
+    };
+
+    console.log('Palm request:', body);
+
+    try {
+        const controller = new AbortController();
+        request.socket.removeAllListeners('close');
+        request.socket.on('close', function () {
+            controller.abort();
+        });
+
+        const generateResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta2/models/text-bison-001:generateText?key=${api_key_palm}`, {
+            body: JSON.stringify(body),
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            signal: controller.signal,
+            timeout: 0,
+        });
+
+        if (!generateResponse.ok) {
+            console.log(`Palm API returned error: ${generateResponse.status} ${generateResponse.statusText} ${await generateResponse.text()}`);
+            return response.status(generateResponse.status).send({ error: true });
+        }
+
+        const generateResponseJson = await generateResponse.json();
+        const responseText = generateResponseJson.candidates[0]?.output;
+        console.log('Palm response:', responseText);
+
+        // Wrap it back to OAI format
+        const reply = { choices: [{ "message": { "content": responseText, } }] };
+        return response.send(reply);
+    } catch (error) {
+        console.log('Error communicating with Palm API: ', error);
+        if (!response.headersSent) {
+            return response.status(500).send({ error: true });
+        }
+    }
+}
+
 app.post("/generate_openai", jsonParser, function (request, response_generate_openai) {
     if (!request.body) return response_generate_openai.status(400).send({ error: true });
 
@@ -2939,6 +3141,10 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
 
     if (request.body.use_ai21) {
         return sendAI21Request(request, response_generate_openai);
+    }
+
+    if (request.body.use_palm) {
+        return sendPalmRequest(request, response_generate_openai);
     }
 
     let api_url;
@@ -3169,9 +3375,8 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
         };
 
         if (main_api == 'textgenerationwebui') {
-            if (request.body.use_mancer) {
-                args.headers = Object.assign(args.headers, get_mancer_headers());
-            }
+            setAdditionalHeaders(request, args, null);
+
             const data = await postAsync(api_server + "/v1/token-count", args);
             return response.send({ count: data['results'][0]['tokens'] });
         }
@@ -3340,21 +3545,48 @@ if (true === cliArguments.ssl) {
     );
 }
 
-function backupSettings() {
-    const MAX_BACKUPS = 25;
+function generateTimestamp() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
 
-    function generateTimestamp() {
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        const seconds = String(now.getSeconds()).padStart(2, '0');
+    return `${year}${month}${day}-${hours}${minutes}${seconds}`;
+}
 
-        return `${year}${month}${day}-${hours}${minutes}${seconds}`;
+/**
+ *
+ * @param {string} name
+ * @param {string} chat
+ */
+function backupChat(name, chat) {
+    try {
+        const isBackupDisabled = config.disableChatBackup;
+
+        if (isBackupDisabled) {
+            return;
+        }
+
+        if (!fs.existsSync(DIRECTORIES.backups)) {
+            fs.mkdirSync(DIRECTORIES.backups);
+        }
+
+        // replace non-alphanumeric characters with underscores
+        name = sanitize(name).replace(/[^a-z0-9]/gi, '_').toLowerCase();
+
+        const backupFile = path.join(DIRECTORIES.backups, `chat_${name}_${generateTimestamp()}.json`);
+        writeFileAtomicSync(backupFile, chat, 'utf-8');
+
+        removeOldBackups(`chat_${name}_`);
+    } catch (err) {
+        console.log(`Could not backup chat for ${name}`, err);
     }
+}
 
+function backupSettings() {
     try {
         if (!fs.existsSync(DIRECTORIES.backups)) {
             fs.mkdirSync(DIRECTORIES.backups);
@@ -3363,15 +3595,24 @@ function backupSettings() {
         const backupFile = path.join(DIRECTORIES.backups, `settings_${generateTimestamp()}.json`);
         fs.copyFileSync(SETTINGS_FILE, backupFile);
 
-        let files = fs.readdirSync(DIRECTORIES.backups).filter(f => f.startsWith('settings_'));
-        if (files.length > MAX_BACKUPS) {
-            files = files.map(f => path.join(DIRECTORIES.backups, f));
-            files.sort((a, b) => fs.statSync(a).mtimeMs - fs.statSync(b).mtimeMs);
-
-            fs.rmSync(files[0]);
-        }
+        removeOldBackups('settings_');
     } catch (err) {
         console.log('Could not backup settings file', err);
+    }
+}
+
+/**
+ * @param {string} prefix
+ */
+function removeOldBackups(prefix) {
+    const MAX_BACKUPS = 25;
+
+    let files = fs.readdirSync(DIRECTORIES.backups).filter(f => f.startsWith(prefix));
+    if (files.length > MAX_BACKUPS) {
+        files = files.map(f => path.join(DIRECTORIES.backups, f));
+        files.sort((a, b) => fs.statSync(a).mtimeMs - fs.statSync(b).mtimeMs);
+
+        fs.rmSync(files[0]);
     }
 }
 

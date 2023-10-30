@@ -1,4 +1,4 @@
-import { callPopup, eventSource, event_types, getRequestHeaders, saveSettingsDebounced } from "../../../script.js";
+import { callPopup, eventSource, event_types, getRequestHeaders, saveSettingsDebounced, this_chid } from "../../../script.js";
 import { dragElement, isMobile } from "../../RossAscends-mods.js";
 import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch, renderExtensionTemplate } from "../../extensions.js";
 import { loadMovingUIState, power_user } from "../../power-user.js";
@@ -493,24 +493,6 @@ async function moduleWorker() {
         return;
     }
 
-    // character changed
-    if (context.groupId !== lastCharacter && context.characterId !== lastCharacter) {
-        removeExpression();
-        spriteCache = {};
-
-        //clear expression
-        let imgElement = document.getElementById('expression-image');
-        if (imgElement && imgElement instanceof HTMLImageElement) {
-            imgElement.src = "";
-        }
-
-        //set checkbox to global var
-        $('#image_type_toggle').prop('checked', extension_settings.expressions.talkinghead);
-        if (extension_settings.expressions.talkinghead) {
-            setTalkingHeadState(extension_settings.expressions.talkinghead);
-        }
-    }
-
     const vnMode = isVisualNovelMode();
     const vnWrapperVisible = $('#visual-novel-wrapper').is(':visible');
 
@@ -531,7 +513,7 @@ async function moduleWorker() {
     }
 
     const currentLastMessage = getLastCharacterMessage();
-    let spriteFolderName = getSpriteFolderName(currentLastMessage, currentLastMessage.name);
+    let spriteFolderName = context.groupId ? getSpriteFolderName(currentLastMessage, currentLastMessage.name) : getSpriteFolderName();
 
     // character has no expressions or it is not loaded
     if (Object.keys(spriteCache).length === 0) {
@@ -563,6 +545,11 @@ async function moduleWorker() {
             await forceUpdateVisualNovelMode();
         }
 
+        if (context.groupId && !Array.isArray(spriteCache[spriteFolderName])) {
+            await validateImages(spriteFolderName, true);
+            await forceUpdateVisualNovelMode();
+        }
+
         offlineMode.css('display', 'none');
     }
 
@@ -584,7 +571,7 @@ async function moduleWorker() {
     }
 
     // Throttle classification requests during streaming
-    if (context.streamingProcessor && !context.streamingProcessor.isFinished) {
+    if (!context.groupId && context.streamingProcessor && !context.streamingProcessor.isFinished) {
         const now = Date.now();
         const timeSinceLastServerResponse = now - lastServerResponseTime;
 
@@ -777,7 +764,7 @@ function sampleClassifyText(text) {
     // Remove asterisks and quotes
     let result = text.replace(/[\*\"]/g, '');
 
-    const SAMPLE_THRESHOLD = 300;
+    const SAMPLE_THRESHOLD = 500;
     const HALF_SAMPLE_THRESHOLD = SAMPLE_THRESHOLD / 2;
 
     if (text.length < SAMPLE_THRESHOLD) {
@@ -1487,14 +1474,35 @@ function setExpressionOverrideHtml(forceClear = false) {
     moduleWorker();
     dragElement($("#expression-holder"))
     eventSource.on(event_types.CHAT_CHANGED, () => {
+        // character changed
+        const context = getContext();
+        if (context.groupId !== lastCharacter && context.characterId !== lastCharacter) {
+            removeExpression();
+            spriteCache = {};
+
+            //clear expression
+            let imgElement = document.getElementById('expression-image');
+            if (imgElement && imgElement instanceof HTMLImageElement) {
+                imgElement.src = "";
+            }
+
+            //set checkbox to global var
+            $('#image_type_toggle').prop('checked', extension_settings.expressions.talkinghead);
+            if (extension_settings.expressions.talkinghead) {
+                setTalkingHeadState(extension_settings.expressions.talkinghead);
+            }
+        }
+
         setExpressionOverrideHtml();
 
         if (isVisualNovelMode()) {
             $('#visual-novel-wrapper').empty();
         }
+
+        updateFunction();
     });
     eventSource.on(event_types.MOVABLE_PANELS_RESET, updateVisualNovelModeDebounced);
     eventSource.on(event_types.GROUP_UPDATED, updateVisualNovelModeDebounced);
-    registerSlashCommand('sprite', setSpriteSlashCommand, ['emote'], '<span class="monospace">spriteId</span> – force sets the sprite for the current character', true, true);
-    registerSlashCommand('spriteoverride', setSpriteSetCommand, ['costume'], '<span class="monospace">folder</span>  – sets an override sprite folder for the current character. If the name starts with a slash or a backslash, selects a sub-folder in the character-named folder. Empty value to reset to default.', true, true);
+    registerSlashCommand('sprite', setSpriteSlashCommand, ['emote'], '<span class="monospace">(spriteId)</span> – force sets the sprite for the current character', true, true);
+    registerSlashCommand('spriteoverride', setSpriteSetCommand, ['costume'], '<span class="monospace">(optional folder)</span> – sets an override sprite folder for the current character. If the name starts with a slash or a backslash, selects a sub-folder in the character-named folder. Empty value to reset to default.', true, true);
 })();

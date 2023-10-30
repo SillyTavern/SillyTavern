@@ -1,3 +1,5 @@
+export {translate};
+
 import {
     callPopup,
     eventSource,
@@ -11,7 +13,7 @@ import {
 import { extension_settings, getContext } from "../../extensions.js";
 import { secret_state, writeSecret } from "../../secrets.js";
 
-const autoModeOptions = {
+export const autoModeOptions = {
     NONE: 'none',
     RESPONSES: 'responses',
     INPUT: 'inputs',

@@ -19,7 +19,7 @@ export {
     loadHordeSettings,
     adjustHordeGenerationParams,
     getHordeModels,
-    MIN_AMOUNT_GEN,
+    MIN_LENGTH,
 }
 
 let models = [];
@@ -33,7 +33,7 @@ let horde_settings = {
 
 const MAX_RETRIES = 240;
 const CHECK_INTERVAL = 5000;
-const MIN_AMOUNT_GEN = 16;
+const MIN_LENGTH = 16;
 const getRequestArgs = () => ({
     method: "GET",
     headers: {
@@ -73,6 +73,11 @@ async function adjustHordeGenerationParams(max_context_length, max_length) {
     for (const model of selectedModels) {
         for (const worker of workers) {
             if (model.cluster == worker.cluster && worker.models.includes(model.name)) {
+                // Skip workers that are not trusted if the option is enabled
+                if (horde_settings.trusted_workers_only && !worker.trusted) {
+                    continue;
+                }
+
                 availableWorkers.push(worker);
             }
         }
@@ -92,7 +97,15 @@ async function adjustHordeGenerationParams(max_context_length, max_length) {
     return { maxContextLength, maxLength };
 }
 
-async function generateHorde(prompt, params, signal) {
+function setContextSizePreview() {
+    if (horde_settings.models.length) {
+        adjustHordeGenerationParams(max_context, amount_gen);
+    } else {
+        $("#adjustedHordeParams").text(`Context: --, Response: --`);
+    }
+}
+
+async function generateHorde(prompt, params, signal, reportProgress) {
     validateHordeModel();
     delete params.prompt;
 
@@ -164,7 +177,7 @@ async function generateHorde(prompt, params, signal) {
         }
 
         if (statusCheckJson.done && Array.isArray(statusCheckJson.generations) && statusCheckJson.generations.length) {
-            setGenerationProgress(100);
+            reportProgress && setGenerationProgress(100);
             const generatedText = statusCheckJson.generations[0].text;
             const WorkerName = statusCheckJson.generations[0].worker_name;
             const WorkerModel = statusCheckJson.generations[0].model;
@@ -174,12 +187,12 @@ async function generateHorde(prompt, params, signal) {
         }
         else if (!queue_position_first) {
             queue_position_first = statusCheckJson.queue_position;
-            setGenerationProgress(0);
+            reportProgress && setGenerationProgress(0);
         }
         else if (statusCheckJson.queue_position >= 0) {
             let queue_position = statusCheckJson.queue_position;
             const progress = Math.round(100 - (queue_position / queue_position_first * 100));
-            setGenerationProgress(progress);
+            reportProgress && setGenerationProgress(progress);
         }
 
         await delay(CHECK_INTERVAL);
@@ -213,6 +226,8 @@ async function getHordeModels() {
     if (horde_settings.models.length && models.filter(m => horde_settings.models.includes(m.name)).length === 0) {
         horde_settings.models = [];
     }
+
+    setContextSizePreview();
 }
 
 function loadHordeSettings(settings) {
@@ -263,26 +278,19 @@ jQuery(function () {
 
     $("#horde_auto_adjust_response_length").on("input", function () {
         horde_settings.auto_adjust_response_length = !!$(this).prop("checked");
-        if (horde_settings.models.length) {
-            adjustHordeGenerationParams(max_context, amount_gen)
-        } else {
-            $("#adjustedHordeParams").text(`Context: --, Response: --`)
-        }
+        setContextSizePreview();
         saveSettingsDebounced();
     });
 
     $("#horde_auto_adjust_context_length").on("input", function () {
         horde_settings.auto_adjust_context_length = !!$(this).prop("checked");
-        if (horde_settings.models.length) {
-            adjustHordeGenerationParams(max_context, amount_gen);
-        } else {
-            $("#adjustedHordeParams").text(`Context: --, Response: --`)
-        }
+        setContextSizePreview();
         saveSettingsDebounced();
     });
 
     $("#horde_trusted_workers_only").on("input", function () {
         horde_settings.trusted_workers_only = !!$(this).prop("checked");
+        setContextSizePreview();
         saveSettingsDebounced();
     })
 
@@ -313,3 +321,4 @@ jQuery(function () {
         });
     }
 })
+

@@ -1,14 +1,18 @@
 English | [中文](readme-zh_cn.md)
 
-![image](https://github.com/SillyTavern/SillyTavern/assets/18619528/8c41a061-7f72-4d2b-9d54-e6d058209e7b)
+![SillyTavern-Banner](https://github.com/SillyTavern/SillyTavern/assets/18619528/c2be4c3f-aada-4f64-87a3-ae35a68b61a4)
 
-Mobile-friendly, Multi-API (KoboldAI/CPP, Horde, NovelAI, Ooba, OpenAI, OpenRouter, Claude, Scale), VN-like Waifu Mode, Horde SD, System TTS, WorldInfo (lorebooks), customizable UI, auto-translate, and more prompt options than you'd ever want or need. Optional Extras server for more SD/TTS options + ChromaDB/Summarize.
+Mobile-friendly layout, Multi-API (KoboldAI/CPP, Horde, NovelAI, Ooba, OpenAI, OpenRouter, Claude, Scale), VN-like Waifu Mode, Stable Diffusion, TTS, WorldInfo (lorebooks), customizable UI, auto-translate, and more prompt options than you'd ever want or need + ability to install third-party extensions.
 
-Based on a fork of TavernAI 1.2.8
+Based on a fork of [TavernAI](https://github.com/TavernAI/TavernAI) 1.2.8
+
+## Important news!
+
+1. We have created a [Documentation website](https://docs.sillytavern.app/) to answer most of your questions and help you get started.
+
+2. Missing extensions after the update? Since the 1.10.6 release version, most of the previously built-in extensions have been converted to downloadable add-ons. You can download them via the built-in "Download Extensions and Assets" menu in the extensions panel (stacked blocks icon in the top bar).
 
 ### Brought to you by Cohee, RossAscends, and the SillyTavern community
-
-NOTE: We have created a [Documentation website](https://docs.sillytavern.app/) to answer most of your questions and help you get started.
 
 ### What is SillyTavern or TavernAI?
 
@@ -80,7 +84,6 @@ SillyTavern has extensibility support, with some additional AI modules hosted vi
 * Sending images to chat, and the AI interpreting the content
 * Stable Diffusion image generation (5 chat-related presets plus 'free mode')
 * Text-to-speech for AI response messages (via ElevenLabs, Silero, or the OS's System TTS)
-* ChromaDB vector storage for smarter chat prompt formatting
 
 A full list of included extensions and tutorials on how to use them can be found in the [Docs](https://docs.sillytavern.app/extras/extensions/).
 

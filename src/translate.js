@@ -60,6 +60,7 @@ function registerEndpoints(app, jsonParser) {
     });
 
     app.post('/api/translate/google', jsonParser, async (request, response) => {
+        const { generateRequestUrl, normaliseResponse } = require('google-translate-api-browser');
         const text = request.body.text;
         const lang = request.body.lang;
 
@@ -244,8 +245,10 @@ function registerEndpoints(app, jsonParser) {
     });
 
     app.post('/api/translate/bing', jsonParser, async (request, response) => {
+        const bingTranslateApi = require('bing-translate-api');
         const text = request.body.text;
-        let lang = request.body.lang
+        let lang = request.body.lang;
+
         if (request.body.lang === 'zh-CN') {
             lang = 'zh-Hans'
         }

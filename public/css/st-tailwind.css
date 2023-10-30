@@ -6,6 +6,16 @@
     color: var(--fullred);
 }
 
+.highlighted {
+    color: black;
+    background-color: yellow;
+    text-shadow: none !important;
+}
+
+.m-t-0 {
+    margin-top: 0;
+}
+
 .m-t-1 {
     margin-top: 1em;
 }
@@ -95,8 +105,16 @@
     align-items: flex-end !important;
 }
 
+.alignItemsBaseline {
+    align-items: baseline !important;
+}
+
 .alignSelfStart {
     align-self: start;
+}
+
+.gap3px {
+    gap: 3px !important;
 }
 
 .gap5px {
@@ -118,6 +136,10 @@
 
 .wideMax100px {
     max-width: 100px;
+}
+
+.width100px {
+    width: 100px;
 }
 
 .widthUnset {
@@ -145,6 +167,10 @@
     text-align: center;
     font-size: large;
     font-weight: 600;
+}
+
+.textAlignCenter {
+    text-align: center;
 }
 
 .margin-right-10px {
@@ -228,6 +254,10 @@
 
 .overflowHidden {
     overflow: hidden;
+}
+
+.padding0 {
+    padding: 0;
 }
 
 .padding5 {
@@ -366,6 +396,11 @@
     cursor: pointer;
 }
 
+input:disabled,
+textarea:disabled {
+    cursor: not-allowed;
+}
+
 .debug-red {
     border: 1px solid red !important;
 }
@@ -392,6 +427,11 @@
 
 .fontsize60p {
     font-size: calc(var(--mainFontSize) * 0.6) !important;
+}
+
+.paddingBottom5px {
+    padding: unset;
+    padding-bottom: 5px;
 }
 
 .paddingTopBot5 {

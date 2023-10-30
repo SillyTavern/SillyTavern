@@ -35,6 +35,7 @@ const sources = {
     horde: 'horde',
     auto: 'auto',
     novel: 'novel',
+    vlad: 'vlad',
 }
 
 const generationMode = {
@@ -120,6 +121,17 @@ const helpString = [
     example: '/sd apple tree' would generate a picture of an apple tree.`,
 ].join('<br>');
 
+const defaultPrefix = 'best quality, absurdres, aesthetic,';
+const defaultNegative = 'lowres, bad anatomy, bad hands, text, error, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry';
+
+const defaultStyles = [
+    {
+        name: 'Default',
+        negative: defaultNegative,
+        prefix: defaultPrefix,
+    },
+];
+
 const defaultSettings = {
     source: sources.extras,
 
@@ -142,8 +154,8 @@ const defaultSettings = {
     width: 512,
     height: 512,
 
-    prompt_prefix: 'best quality, absurdres, masterpiece,',
-    negative_prompt: 'lowres, bad anatomy, bad hands, text, error, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry',
+    prompt_prefix: defaultPrefix,
+    negative_prompt: defaultNegative,
     sampler: 'DDIM',
     model: '',
 
@@ -155,15 +167,20 @@ const defaultSettings = {
     horde: false,
     horde_nsfw: false,
     horde_karras: true,
+    horde_sanitize: true,
 
     // Refine mode
     refine_mode: false,
+    expand: false,
 
     prompts: promptTemplates,
 
     // AUTOMATIC1111 settings
     auto_url: 'http://localhost:7860',
     auto_auth: '',
+
+    vlad_url: 'http://localhost:7860',
+    vlad_auth: '',
 
     hr_upscaler: 'Latent',
     hr_scale: 2.0,
@@ -185,14 +202,26 @@ const defaultSettings = {
     novel_upscale_ratio_step: 0.1,
     novel_upscale_ratio: 1.0,
     novel_anlas_guard: false,
+
+    style: 'Default',
+    styles: defaultStyles,
 }
 
-const getAutoRequestBody = () => ({ url: extension_settings.sd.auto_url, auth: extension_settings.sd.auto_auth });
+function getSdRequestBody() {
+    switch (extension_settings.sd.source) {
+        case sources.vlad:
+            return { url: extension_settings.sd.vlad_url, auth: extension_settings.sd.vlad_auth };
+        case sources.auto:
+            return { url: extension_settings.sd.auto_url, auth: extension_settings.sd.auto_auth };
+        default:
+            throw new Error('Invalid SD source.');
+    }
+}
 
 function toggleSourceControls() {
     $('.sd_settings [data-sd-source]').each(function () {
-        const source = $(this).data('sd-source');
-        $(this).toggle(source === extension_settings.sd.source);
+        const source = $(this).data('sd-source').split(',');
+        $(this).toggle(source.includes(extension_settings.sd.source));
     });
 }
 
@@ -224,6 +253,10 @@ async function loadSettings() {
         extension_settings.sd.character_prompts = {};
     }
 
+    if (!Array.isArray(extension_settings.sd.styles)) {
+        extension_settings.sd.styles = defaultStyles;
+    }
+
     $('#sd_source').val(extension_settings.sd.source);
     $('#sd_scale').val(extension_settings.sd.scale).trigger('input');
     $('#sd_steps').val(extension_settings.sd.steps).trigger('input');
@@ -239,11 +272,23 @@ async function loadSettings() {
     $('#sd_horde').prop('checked', extension_settings.sd.horde);
     $('#sd_horde_nsfw').prop('checked', extension_settings.sd.horde_nsfw);
     $('#sd_horde_karras').prop('checked', extension_settings.sd.horde_karras);
+    $('#sd_horde_sanitize').prop('checked', extension_settings.sd.horde_sanitize);
     $('#sd_restore_faces').prop('checked', extension_settings.sd.restore_faces);
     $('#sd_enable_hr').prop('checked', extension_settings.sd.enable_hr);
     $('#sd_refine_mode').prop('checked', extension_settings.sd.refine_mode);
+    $('#sd_expand').prop('checked', extension_settings.sd.expand);
     $('#sd_auto_url').val(extension_settings.sd.auto_url);
     $('#sd_auto_auth').val(extension_settings.sd.auto_auth);
+    $('#sd_vlad_url').val(extension_settings.sd.vlad_url);
+    $('#sd_vlad_auth').val(extension_settings.sd.vlad_auth);
+
+    for (const style of extension_settings.sd.styles) {
+        const option = document.createElement('option');
+        option.value = style.name;
+        option.text = style.name;
+        option.selected = style.name === extension_settings.sd.style;
+        $('#sd_style').append(option);
+    }
 
     toggleSourceControls();
     addPromptTemplates();
@@ -283,9 +328,90 @@ function addPromptTemplates() {
     }
 }
 
-async function refinePrompt(prompt) {
+function onStyleSelect() {
+    const selectedStyle = String($('#sd_style').find(':selected').val());
+    const styleObject = extension_settings.sd.styles.find(x => x.name === selectedStyle);
+
+    if (!styleObject) {
+        console.warn(`Could not find style object for ${selectedStyle}`);
+        return;
+    }
+
+    $('#sd_prompt_prefix').val(styleObject.prefix).trigger('input');
+    $('#sd_negative_prompt').val(styleObject.negative).trigger('input');
+    extension_settings.sd.style = selectedStyle;
+    saveSettingsDebounced();
+}
+
+async function onSaveStyleClick() {
+    const userInput = await callPopup('Enter style name:', 'input', '', { okButton: 'Save' });
+
+    if (!userInput) {
+        return;
+    }
+
+    const name = String(userInput).trim();
+    const prefix = String($('#sd_prompt_prefix').val());
+    const negative = String($('#sd_negative_prompt').val());
+
+    const existingStyle = extension_settings.sd.styles.find(x => x.name === name);
+
+    if (existingStyle) {
+        existingStyle.prefix = prefix;
+        existingStyle.negative = negative;
+        $('#sd_style').val(name);
+        saveSettingsDebounced();
+        return;
+    }
+
+    const styleObject = {
+        name: name,
+        prefix: prefix,
+        negative: negative,
+    };
+
+    extension_settings.sd.styles.push(styleObject);
+    const option = document.createElement('option');
+    option.value = styleObject.name;
+    option.text = styleObject.name;
+    option.selected = true;
+    $('#sd_style').append(option);
+    $('#sd_style').val(styleObject.name);
+    saveSettingsDebounced();
+}
+
+async function expandPrompt(prompt) {
+    try {
+        const response = await fetch('/api/sd/expand', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ prompt: prompt }),
+        });
+
+        if (!response.ok) {
+            throw new Error('API returned an error.');
+        }
+
+        const data = await response.json();
+        return data.prompt;
+    } catch {
+        return prompt;
+    }
+}
+
+/**
+ * Modifies prompt based on auto-expansion and user inputs.
+ * @param {string} prompt Prompt to refine
+ * @param {boolean} allowExpand Whether to allow auto-expansion
+ * @returns {Promise<string>} Refined prompt
+ */
+async function refinePrompt(prompt, allowExpand) {
+    if (allowExpand && extension_settings.sd.expand) {
+        prompt = await expandPrompt(prompt);
+    }
+
     if (extension_settings.sd.refine_mode) {
-        const refinedPrompt = await callPopup('<h3>Review and edit the prompt:</h3>Press "Cancel" to abort the image generation.', 'input', prompt, { rows: 5, okButton: 'Generate' });
+        const refinedPrompt = await callPopup('<h3>Review and edit the prompt:</h3>Press "Cancel" to abort the image generation.', 'input', prompt.trim(), { rows: 5, okButton: 'Generate' });
 
         if (refinedPrompt) {
             return refinedPrompt;
@@ -316,7 +442,7 @@ function onCharacterPromptInput() {
 }
 
 function getCharacterPrefix() {
-    if (selected_group) {
+    if (!this_chid || selected_group) {
         return '';
     }
 
@@ -329,7 +455,14 @@ function getCharacterPrefix() {
     return '';
 }
 
-function combinePrefixes(str1, str2) {
+/**
+ * Combines two prompt prefixes into one.
+ * @param {string} str1 Base string
+ * @param {string} str2 Secondary string
+ * @param {string} macro Macro to replace with the secondary string
+ * @returns {string} Combined string with a comma between them
+ */
+function combinePrefixes(str1, str2, macro = '') {
     if (!str2) {
         return str1;
     }
@@ -338,10 +471,14 @@ function combinePrefixes(str1, str2) {
     str1 = str1.trim().replace(/^,|,$/g, '');
     str2 = str2.trim().replace(/^,|,$/g, '');
 
-    // Combine the strings with a comma between them
-    var result = `${str1}, ${str2},`;
-
+    // Combine the strings with a comma between them)
+    const result = macro && str1.includes(macro) ? str1.replace(macro, str2) : `${str1}, ${str2},`;
     return result;
+}
+
+function onExpandInput() {
+    extension_settings.sd.expand = !!$(this).prop('checked');
+    saveSettingsDebounced();
 }
 
 function onRefineModeInput() {
@@ -424,13 +561,18 @@ function onNovelAnlasGuardInput() {
     saveSettingsDebounced();
 }
 
-async function onHordeNsfwInput() {
+function onHordeNsfwInput() {
     extension_settings.sd.horde_nsfw = !!$(this).prop('checked');
     saveSettingsDebounced();
 }
 
-async function onHordeKarrasInput() {
+function onHordeKarrasInput() {
     extension_settings.sd.horde_karras = !!$(this).prop('checked');
+    saveSettingsDebounced();
+}
+
+function onHordeSanitizeInput() {
+    extension_settings.sd.horde_sanitize = !!$(this).prop('checked');
     saveSettingsDebounced();
 }
 
@@ -451,6 +593,16 @@ function onAutoUrlInput() {
 
 function onAutoAuthInput() {
     extension_settings.sd.auto_auth = $('#sd_auto_auth').val();
+    saveSettingsDebounced();
+}
+
+function onVladUrlInput() {
+    extension_settings.sd.vlad_url = $('#sd_vlad_url').val();
+    saveSettingsDebounced();
+}
+
+function onVladAuthInput() {
+    extension_settings.sd.vlad_auth = $('#sd_vlad_auth').val();
     saveSettingsDebounced();
 }
 
@@ -486,7 +638,7 @@ async function validateAutoUrl() {
         const result = await fetch('/api/sd/ping', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify(getAutoRequestBody()),
+            body: JSON.stringify(getSdRequestBody()),
         });
 
         if (!result.ok) {
@@ -498,6 +650,30 @@ async function validateAutoUrl() {
         toastr.success('SD WebUI API connected.');
     } catch (error) {
         toastr.error(`Could not validate SD WebUI API: ${error.message}`);
+    }
+}
+
+async function validateVladUrl() {
+    try {
+        if (!extension_settings.sd.vlad_url) {
+            throw new Error('URL is not set.');
+        }
+
+        const result = await fetch('/api/sd/ping', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify(getSdRequestBody()),
+        });
+
+        if (!result.ok) {
+            throw new Error('SD.Next returned an error.');
+        }
+
+        await loadSamplers();
+        await loadModels();
+        toastr.success('SD.Next API connected.');
+    } catch (error) {
+        toastr.error(`Could not validate SD.Next API: ${error.message}`);
     }
 }
 
@@ -515,7 +691,7 @@ async function onModelChange() {
     if (extension_settings.sd.source === sources.extras) {
         await updateExtrasRemoteModel();
     }
-    if (extension_settings.sd.source === sources.auto) {
+    if (extension_settings.sd.source === sources.auto || extension_settings.sd.source === sources.vlad) {
         await updateAutoRemoteModel();
     }
     toastr.success('Model successfully loaded!', 'Stable Diffusion');
@@ -526,7 +702,7 @@ async function getAutoRemoteModel() {
         const result = await fetch('/api/sd/get-model', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify(getAutoRequestBody()),
+            body: JSON.stringify(getSdRequestBody()),
         });
 
         if (!result.ok) {
@@ -546,11 +722,31 @@ async function getAutoRemoteUpscalers() {
         const result = await fetch('/api/sd/upscalers', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify(getAutoRequestBody()),
+            body: JSON.stringify(getSdRequestBody()),
         });
 
         if (!result.ok) {
             throw new Error('SD WebUI returned an error.');
+        }
+
+        const data = await result.json();
+        return data;
+    } catch (error) {
+        console.error(error);
+        return [extension_settings.sd.hr_upscaler];
+    }
+}
+
+async function getVladRemoteUpscalers() {
+    try {
+        const result = await fetch('/api/sd-next/upscalers', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify(getSdRequestBody()),
+        });
+
+        if (!result.ok) {
+            throw new Error('SD.Next returned an error.');
         }
 
         const data = await result.json();
@@ -566,7 +762,7 @@ async function updateAutoRemoteModel() {
         const result = await fetch('/api/sd/set-model', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify({ ...getAutoRequestBody(), model: extension_settings.sd.model }),
+            body: JSON.stringify({ ...getSdRequestBody(), model: extension_settings.sd.model }),
         });
 
         if (!result.ok) {
@@ -609,6 +805,9 @@ async function loadSamplers() {
             break;
         case sources.novel:
             samplers = await loadNovelSamplers();
+            break;
+        case sources.vlad:
+            samplers = await loadVladSamplers();
             break;
     }
 
@@ -661,11 +860,34 @@ async function loadAutoSamplers() {
         const result = await fetch('/api/sd/samplers', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify(getAutoRequestBody()),
+            body: JSON.stringify(getSdRequestBody()),
         });
 
         if (!result.ok) {
             throw new Error('SD WebUI returned an error.');
+        }
+
+        const data = await result.json();
+        return data;
+    } catch (error) {
+        return [];
+    }
+}
+
+async function loadVladSamplers() {
+    if (!extension_settings.sd.vlad_url) {
+        return [];
+    }
+
+    try {
+        const result = await fetch('/api/sd/samplers', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify(getSdRequestBody()),
+        });
+
+        if (!result.ok) {
+            throw new Error('SD.Next returned an error.');
         }
 
         const data = await result.json();
@@ -708,6 +930,9 @@ async function loadModels() {
             break;
         case sources.novel:
             models = await loadNovelModels();
+            break;
+        case sources.vlad:
+            models = await loadVladModels();
             break;
     }
 
@@ -778,7 +1003,7 @@ async function loadAutoModels() {
         const result = await fetch('/api/sd/models', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify(getAutoRequestBody()),
+            body: JSON.stringify(getSdRequestBody()),
         });
 
         if (!result.ok) {
@@ -786,6 +1011,49 @@ async function loadAutoModels() {
         }
 
         const upscalers = await getAutoRemoteUpscalers();
+
+        if (Array.isArray(upscalers) && upscalers.length > 0) {
+            $('#sd_hr_upscaler').empty();
+
+            for (const upscaler of upscalers) {
+                const option = document.createElement('option');
+                option.innerText = upscaler;
+                option.value = upscaler;
+                option.selected = upscaler === extension_settings.sd.hr_upscaler;
+                $('#sd_hr_upscaler').append(option);
+            }
+        }
+
+        const data = await result.json();
+        return data;
+    } catch (error) {
+        return [];
+    }
+}
+
+async function loadVladModels() {
+    if (!extension_settings.sd.vlad_url) {
+        return [];
+    }
+
+    try {
+        const currentModel = await getAutoRemoteModel();
+
+        if (currentModel) {
+            extension_settings.sd.model = currentModel;
+        }
+
+        const result = await fetch('/api/sd/models', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify(getSdRequestBody()),
+        });
+
+        if (!result.ok) {
+            throw new Error('SD WebUI returned an error.');
+        }
+
+        const upscalers = await getVladRemoteUpscalers();
 
         if (Array.isArray(upscalers) && upscalers.length > 0) {
             $('#sd_hr_upscaler').empty();
@@ -814,16 +1082,20 @@ async function loadNovelModels() {
 
     return [
         {
+            value: 'nai-diffusion-2',
+            text: 'NAI Diffusion Anime V2',
+        },
+        {
             value: 'nai-diffusion',
-            text: 'Full',
+            text: 'NAI Diffusion Anime V1 (Full)',
         },
         {
             value: 'safe-diffusion',
-            text: 'Safe',
+            text: 'NAI Diffusion Anime V1 (Curated)',
         },
         {
             value: 'nai-diffusion-furry',
-            text: 'Furry',
+            text: 'NAI Diffusion Furry',
         },
     ];
 }
@@ -913,7 +1185,7 @@ async function generatePicture(_, trigger, message, callback) {
 
     // if context.characterId is not null, then we get context.characters[context.characterId].avatar, else we get groupId and context.groups[groupId].id
     // sadly, groups is not an array, but is a dict with keys being index numbers, so we have to filter it
-    const characterName = context.characterId ? context.characters[context.characterId].name : context.groups[Object.keys(context.groups).filter(x => context.groups[x].id === context.groupId)[0]].id.toString();
+    const characterName = context.characterId ? context.characters[context.characterId].name : context.groups[Object.keys(context.groups).filter(x => context.groups[x].id === context.groupId)[0]]?.id?.toString();
 
     const prevSDHeight = extension_settings.sd.height;
     const prevSDWidth = extension_settings.sd.width;
@@ -932,10 +1204,9 @@ async function generatePicture(_, trigger, message, callback) {
             extension_settings.sd.width = Math.round(extension_settings.sd.height * 1.8 / 64) * 64;
         }
         const callbackOriginal = callback;
-        callback = async function (prompt, base64Image) {
-            const imagePath = base64Image;
-            const imgUrl = `url("${encodeURI(base64Image)}")`;
-            eventSource.emit(event_types.FORCE_SET_BACKGROUND, imgUrl);
+        callback = async function (prompt, imagePath) {
+            const imgUrl = `url("${encodeURI(imagePath)}")`;
+            eventSource.emit(event_types.FORCE_SET_BACKGROUND, { url: imgUrl, path: imagePath });
 
             if (typeof callbackOriginal === 'function') {
                 callbackOriginal(prompt, imagePath);
@@ -981,14 +1252,14 @@ async function getPrompt(generationType, message, trigger, quiet_prompt) {
     }
 
     if (generationType !== generationMode.FREE) {
-        prompt = await refinePrompt(prompt);
+        prompt = await refinePrompt(prompt, true);
     }
 
     return prompt;
 }
 
 async function generatePrompt(quiet_prompt) {
-    const reply = await generateQuietPrompt(quiet_prompt);
+    const reply = await generateQuietPrompt(quiet_prompt, false, false);
     return processReply(reply);
 }
 
@@ -997,7 +1268,7 @@ async function sendGenerationRequest(generationType, prompt, characterName = nul
         ? combinePrefixes(extension_settings.sd.prompt_prefix, getCharacterPrefix())
         : extension_settings.sd.prompt_prefix;
 
-    const prefixedPrompt = combinePrefixes(prefix, prompt);
+    const prefixedPrompt = combinePrefixes(prefix, prompt, '{prompt}');
 
     let result = { format: '', data: '' };
     const currentChatId = getCurrentChatId();
@@ -1009,6 +1280,9 @@ async function sendGenerationRequest(generationType, prompt, characterName = nul
                 break;
             case sources.horde:
                 result = await generateHordeImage(prefixedPrompt);
+                break;
+            case sources.vlad:
+                result = await generateAutoImage(prefixedPrompt);
                 break;
             case sources.auto:
                 result = await generateAutoImage(prefixedPrompt);
@@ -1099,6 +1373,7 @@ async function generateHordeImage(prompt) {
             nsfw: extension_settings.sd.horde_nsfw,
             restore_faces: !!extension_settings.sd.restore_faces,
             enable_hr: !!extension_settings.sd.enable_hr,
+            sanitize: !!extension_settings.sd.horde_sanitize,
         }),
     });
 
@@ -1121,7 +1396,7 @@ async function generateAutoImage(prompt) {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
-            ...getAutoRequestBody(),
+            ...getSdRequestBody(),
             prompt: prompt,
             negative_prompt: extension_settings.sd.negative_prompt,
             sampler_name: extension_settings.sd.sampler,
@@ -1193,13 +1468,13 @@ function getNovelParams() {
     let width = extension_settings.sd.width;
     let height = extension_settings.sd.height;
 
-    // Don't apply Anlas guard if it's disabled.d
+    // Don't apply Anlas guard if it's disabled.
     if (!extension_settings.sd.novel_anlas_guard) {
         return { steps, width, height };
     }
 
     const MAX_STEPS = 28;
-    const MAX_PIXELS = 409600;
+    const MAX_PIXELS = 1024 * 1024;
 
     if (width * height > MAX_PIXELS) {
         const ratio = Math.sqrt(MAX_PIXELS / (width * height));
@@ -1325,6 +1600,8 @@ function isValidState() {
             return true;
         case sources.auto:
             return !!extension_settings.sd.auto_url;
+        case sources.vlad:
+            return !!extension_settings.sd.vlad_url;
         case sources.novel:
             return secret_state[SECRET_KEYS.NOVEL];
     }
@@ -1357,7 +1634,7 @@ async function sdMessageButton(e) {
     const message_id = $mes.attr('mesid');
     const message = context.chat[message_id];
     const characterName = message?.name || context.name2;
-    const characterFileName = context.characterId ? context.characters[context.characterId].name : context.groups[Object.keys(context.groups).filter(x => context.groups[x].id === context.groupId)[0]].id.toString();
+    const characterFileName = context.characterId ? context.characters[context.characterId].name : context.groups[Object.keys(context.groups).filter(x => context.groups[x].id === context.groupId)[0]]?.id?.toString();
     const messageText = message?.mes;
     const hasSavedImage = message?.extra?.image && message?.extra?.title;
 
@@ -1369,7 +1646,7 @@ async function sdMessageButton(e) {
     try {
         setBusyIcon(true);
         if (hasSavedImage) {
-            const prompt = await refinePrompt(message.extra.title);
+            const prompt = await refinePrompt(message.extra.title, false);
             message.extra.title = prompt;
 
             console.log('Regenerating an image, using existing prompt:', prompt);
@@ -1438,6 +1715,7 @@ jQuery(async () => {
     $('#sd_height').on('input', onHeightInput);
     $('#sd_horde_nsfw').on('input', onHordeNsfwInput);
     $('#sd_horde_karras').on('input', onHordeKarrasInput);
+    $('#sd_horde_sanitize').on('input', onHordeSanitizeInput);
     $('#sd_restore_faces').on('input', onRestoreFacesInput);
     $('#sd_enable_hr').on('input', onHighResFixInput);
     $('#sd_refine_mode').on('input', onRefineModeInput);
@@ -1445,6 +1723,9 @@ jQuery(async () => {
     $('#sd_auto_validate').on('click', validateAutoUrl);
     $('#sd_auto_url').on('input', onAutoUrlInput);
     $('#sd_auto_auth').on('input', onAutoAuthInput);
+    $('#sd_vlad_validate').on('click', validateVladUrl);
+    $('#sd_vlad_url').on('input', onVladUrlInput);
+    $('#sd_vlad_auth').on('input', onVladAuthInput);
     $('#sd_hr_upscaler').on('change', onHrUpscalerChange);
     $('#sd_hr_scale').on('input', onHrScaleInput);
     $('#sd_denoising_strength').on('input', onDenoisingStrengthInput);
@@ -1452,6 +1733,9 @@ jQuery(async () => {
     $('#sd_novel_upscale_ratio').on('input', onNovelUpscaleRatioInput);
     $('#sd_novel_anlas_guard').on('input', onNovelAnlasGuardInput);
     $('#sd_novel_view_anlas').on('click', onViewAnlasClick);
+    $('#sd_expand').on('input', onExpandInput);
+    $('#sd_style').on('change', onStyleSelect);
+    $('#sd_save_style').on('click', onSaveStyleClick);
     $('#sd_character_prompt_block').hide();
 
     $('.sd_settings .inline-drawer-toggle').on('click', function () {

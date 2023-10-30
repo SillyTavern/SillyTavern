@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const { default: simpleGit } = require('simple-git');
 const sanitize = require('sanitize-filename');
+const commandExistsSync = require('command-exists').sync;
 const { DIRECTORIES } = require('./constants');
 
 /**
@@ -61,12 +62,13 @@ function registerEndpoints(app, jsonParser) {
      * @returns {void}
      */
     app.post('/api/extensions/install', jsonParser, async (request, response) => {
-        const git = simpleGit();
         if (!request.body.url) {
             return response.status(400).send('Bad Request: URL is required in the request body.');
         }
 
         try {
+            const git = simpleGit();
+
             // make sure the third-party directory exists
             if (!fs.existsSync(path.join(DIRECTORIES.extensions, 'third-party'))) {
                 fs.mkdirSync(path.join(DIRECTORIES.extensions, 'third-party'));
@@ -79,7 +81,7 @@ function registerEndpoints(app, jsonParser) {
                 return response.status(409).send(`Directory already exists at ${extensionPath}`);
             }
 
-            await git.clone(url, extensionPath);
+            await git.clone(url, extensionPath, { '--depth': 1 });
             console.log(`Extension has been cloned at ${extensionPath}`);
 
 
@@ -87,7 +89,6 @@ function registerEndpoints(app, jsonParser) {
 
 
             return response.send({ version, author, display_name, extensionPath });
-
         } catch (error) {
             console.log('Importing custom content failed', error);
             return response.status(500).send(`Server Error: ${error.message}`);

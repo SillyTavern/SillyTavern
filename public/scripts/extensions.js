@@ -11,7 +11,7 @@ export {
     ModuleWorkerWrapper,
 };
 
-let extensionNames = [];
+export let extensionNames = [];
 let manifests = {};
 const defaultUrl = "http://localhost:5100";
 
@@ -123,6 +123,7 @@ const extension_settings = {
     apiUrl: defaultUrl,
     apiKey: '',
     autoConnect: false,
+    notifyUpdates: false,
     disabledExtensions: [],
     expressionOverrides: [],
     memory: {},
@@ -367,6 +368,15 @@ function addExtensionsButtonAndMenu() {
     });
 }
 
+function notifyUpdatesInputHandler() {
+    extension_settings.notifyUpdates = !!$('#extensions_notify_updates').prop('checked');
+    saveSettingsDebounced();
+
+    if (extension_settings.notifyUpdates) {
+        checkForExtensionUpdates(true);
+    }
+}
+
 /*     $(document).on('click', function (e) {
         const target = $(e.target);
         if (target.is(dropdown)) return;
@@ -582,15 +592,24 @@ async function showExtensionsDetails() {
     let htmlExternal = '<h3>External Extensions:</h3>';
 
     const extensions = Object.entries(manifests).sort((a, b) => a[1].loading_order - b[1].loading_order);
+    const promises = [];
 
     for (const extension of extensions) {
-        const { isExternal, extensionHtml } = await getExtensionData(extension);
-        if (isExternal) {
-            htmlExternal += extensionHtml;
-        } else {
-            htmlDefault += extensionHtml;
-        }
+        promises.push(getExtensionData(extension));
     }
+
+    const settledPromises = await Promise.allSettled(promises);
+
+    settledPromises.forEach(promise => {
+        if (promise.status === 'fulfilled') {
+            const { isExternal, extensionHtml } = promise.value;
+            if (isExternal) {
+                htmlExternal += extensionHtml;
+            } else {
+                htmlDefault += extensionHtml;
+            }
+        }
+    });
 
     const html = `
         ${getModuleInformation()}
@@ -609,6 +628,15 @@ async function showExtensionsDetails() {
  */
 async function onUpdateClick() {
     const extensionName = $(this).data('name');
+    await updateExtension(extensionName, false);
+}
+
+/**
+ * Updates a third-party extension via the API.
+ * @param {string} extensionName Extension folder name
+ * @param {boolean} quiet If true, don't show a success message
+ */
+async function updateExtension(extensionName, quiet) {
     try {
         const response = await fetch('/api/extensions/update', {
             method: 'POST',
@@ -618,15 +646,20 @@ async function onUpdateClick() {
 
         const data = await response.json();
         if (data.isUpToDate) {
-            toastr.success('Extension is already up to date');
+            if (!quiet) {
+                toastr.success('Extension is already up to date');
+            }
         } else {
-            toastr.success(`Extension updated to ${data.shortCommitHash}`);
+            toastr.success(`Extension ${extensionName} updated to ${data.shortCommitHash}`);
         }
-        showExtensionsDetails();
+
+        if (!quiet) {
+            showExtensionsDetails();
+        }
     } catch (error) {
         console.error('Error:', error);
     }
-};
+}
 
 /**
  * Handles the click event for the delete button of an extension.
@@ -639,23 +672,26 @@ async function onDeleteClick() {
     // use callPopup to create a popup for the user to confirm before delete
     const confirmation = await callPopup(`Are you sure you want to delete ${extensionName}?`, 'delete_extension');
     if (confirmation) {
-        try {
-            const response = await fetch('/api/extensions/delete', {
-                method: 'POST',
-                headers: getRequestHeaders(),
-                body: JSON.stringify({ extensionName })
-            });
-        } catch (error) {
-            console.error('Error:', error);
-        }
-        toastr.success(`Extension ${extensionName} deleted`);
-        showExtensionsDetails();
-        // reload the page to remove the extension from the list
-        location.reload();
+        await deleteExtension(extensionName);
     }
 };
 
+export async function deleteExtension(extensionName) {
+    try {
+        const response = await fetch('/api/extensions/delete', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ extensionName })
+        });
+    } catch (error) {
+        console.error('Error:', error);
+    }
 
+    toastr.success(`Extension ${extensionName} deleted`);
+    showExtensionsDetails();
+    // reload the page to remove the extension from the list
+    location.reload();
+}
 
 /**
  * Fetches the version details of a specific extension.
@@ -680,9 +716,42 @@ async function getExtensionVersion(extensionName) {
     }
 }
 
+/**
+ * Installs a third-party extension via the API.
+ * @param {string} url Extension repository URL
+ * @returns {Promise<void>}
+ */
+export async function installExtension(url) {
+    console.debug('Extension installation started', url);
 
+    toastr.info('Please wait...', 'Installing extension');
 
-async function loadExtensionSettings(settings) {
+    const request = await fetch('/api/extensions/install', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ url }),
+    });
+
+    if (!request.ok) {
+        const text = await request.text();
+        toastr.warning(text || request.statusText, 'Extension installation failed', { timeOut: 5000 });
+        console.error('Extension installation failed', request.status, request.statusText, text);
+        return;
+    }
+
+    const response = await request.json();
+    toastr.success(`Extension "${response.display_name}" by ${response.author} (version ${response.version}) has been installed successfully!`, 'Extension installation successful');
+    console.debug(`Extension "${response.display_name}" has been installed successfully at ${response.extensionPath}`);
+    await loadExtensionSettings({}, false);
+    eventSource.emit(event_types.EXTENSION_SETTINGS_LOADED);
+}
+
+/**
+ * Loads extension settings from the app settings.
+ * @param {object} settings App Settings
+ * @param {boolean} versionChanged Is this a version change?
+ */
+async function loadExtensionSettings(settings, versionChanged) {
     if (settings.extension_settings) {
         Object.assign(extension_settings, settings.extension_settings);
     }
@@ -690,14 +759,83 @@ async function loadExtensionSettings(settings) {
     $("#extensions_url").val(extension_settings.apiUrl);
     $("#extensions_api_key").val(extension_settings.apiKey);
     $("#extensions_autoconnect").prop('checked', extension_settings.autoConnect);
+    $("#extensions_notify_updates").prop('checked', extension_settings.notifyUpdates);
 
     // Activate offline extensions
     eventSource.emit(event_types.EXTENSIONS_FIRST_LOAD);
     extensionNames = await discoverExtensions();
     manifests = await getManifests(extensionNames)
+
+    if (versionChanged) {
+        await autoUpdateExtensions();
+    }
+
     await activateExtensions();
     if (extension_settings.autoConnect && extension_settings.apiUrl) {
         connectToApi(extension_settings.apiUrl);
+    }
+}
+
+export function doDailyExtensionUpdatesCheck() {
+    setTimeout(() => {
+        if (extension_settings.notifyUpdates) {
+            checkForExtensionUpdates(false);
+        }
+    }, 1);
+}
+
+/**
+ * Checks if there are updates available for 3rd-party extensions.
+ * @param {boolean} force Skip nag check
+ * @returns {Promise<any>}
+ */
+async function checkForExtensionUpdates(force) {
+    if (!force) {
+        const STORAGE_NAG_KEY = 'extension_update_nag';
+        const currentDate = new Date().toDateString();
+
+        // Don't nag more than once a day
+        if (localStorage.getItem(STORAGE_NAG_KEY) === currentDate) {
+            return;
+        }
+
+        localStorage.setItem(STORAGE_NAG_KEY, currentDate);
+    }
+
+    const updatesAvailable = [];
+    const promises = [];
+
+    for (const [id, manifest] of Object.entries(manifests)) {
+        if (manifest.auto_update && id.startsWith('third-party')) {
+            const promise = new Promise(async (resolve, reject) => {
+                try {
+                    const data = await getExtensionVersion(id.replace('third-party', ''));
+                    if (data.isUpToDate === false) {
+                        updatesAvailable.push(manifest.display_name);
+                    }
+                    resolve();
+                } catch (error) {
+                    console.error('Error checking for extension updates', error);
+                    reject();
+                }
+            });
+            promises.push(promise);
+        }
+    }
+
+    await Promise.allSettled(promises);
+
+    if (updatesAvailable.length > 0) {
+        toastr.info(`${updatesAvailable.map(x => `• ${x}`).join('\n')}`, 'Extension updates available');
+    }
+}
+
+async function autoUpdateExtensions() {
+    for (const [id, manifest] of Object.entries(manifests)) {
+        if (manifest.auto_update && id.startsWith('third-party')) {
+            console.debug(`Auto-updating 3rd-party extension: ${manifest.display_name} (${id})`);
+            await updateExtension(id.replace('third-party', ''), true);
+        }
     }
 }
 
@@ -721,8 +859,36 @@ jQuery(function () {
     $("#extensions_connect").on('click', connectClickHandler);
     $("#extensions_autoconnect").on('input', autoConnectInputHandler);
     $("#extensions_details").on('click', showExtensionsDetails);
+    $("#extensions_notify_updates").on('input', notifyUpdatesInputHandler);
     $(document).on('click', '.toggle_disable', onDisableExtensionClick);
     $(document).on('click', '.toggle_enable', onEnableExtensionClick);
     $(document).on('click', '.btn_update', onUpdateClick);
     $(document).on('click', '.btn_delete', onDeleteClick);
+
+    /**
+     * Handles the click event for the third-party extension import button.
+     * Prompts the user to enter the Git URL of the extension to import.
+     * After obtaining the Git URL, makes a POST request to '/api/extensions/install' to import the extension.
+     * If the extension is imported successfully, a success message is displayed.
+     * If the extension import fails, an error message is displayed and the error is logged to the console.
+     * After successfully importing the extension, the extension settings are reloaded and a 'EXTENSION_SETTINGS_LOADED' event is emitted.
+     *
+     * @listens #third_party_extension_button#click - The click event of the '#third_party_extension_button' element.
+     */
+    $('#third_party_extension_button').on('click', async () => {
+        const html = `<h3>Enter the Git URL of the extension to install</h3>
+    <br>
+    <p><b>Disclaimer:</b> Please be aware that using external extensions can have unintended side effects and may pose security risks. Always make sure you trust the source before importing an extension. We are not responsible for any damage caused by third-party extensions.</p>
+    <br>
+    <p>Example: <tt> https://github.com/author/extension-name </tt></p>`
+        const input = await callPopup(html, 'input');
+
+        if (!input) {
+            console.debug('Extension install cancelled');
+            return;
+        }
+
+        const url = input.trim();
+        await installExtension(url);
+    });
 });

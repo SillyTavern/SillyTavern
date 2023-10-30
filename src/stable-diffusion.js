@@ -2,6 +2,43 @@ const fetch = require('node-fetch').default;
 const { getBasicAuthHeader, delay } = require('./util');
 
 /**
+ * Sanitizes a string.
+ * @param {string} x String to sanitize
+ * @returns {string} Sanitized string
+ */
+function safeStr(x) {
+    x = String(x);
+    for (let i = 0; i < 16; i++) {
+        x = x.replace(/  /g, ' ');
+    }
+    x = x.trim();
+    x = x.replace(/^[\s,.]+|[\s,.]+$/g, '');
+    return x;
+}
+
+const splitStrings = [
+    ', extremely',
+    ', intricate,',
+];
+
+const dangerousPatterns = '[]【】()（）|:：';
+
+/**
+ * Removes patterns from a string.
+ * @param {string} x String to sanitize
+ * @param {string} pattern Pattern to remove
+ * @returns {string} Sanitized string
+ */
+function removePattern(x, pattern) {
+    for (let i = 0; i < pattern.length; i++) {
+        let p = pattern[i];
+        let regex = new RegExp("\\" + p, 'g');
+        x = x.replace(regex, '');
+    }
+    return x;
+}
+
+/**
  * Registers the endpoints for the Stable Diffusion API extension.
  * @param {import("express").Express} app Express app
  * @param {any} jsonParser JSON parser middleware
@@ -10,7 +47,7 @@ function registerEndpoints(app, jsonParser) {
     app.post('/api/sd/ping', jsonParser, async (request, response) => {
         try {
             const url = new URL(request.body.url);
-            url.pathname = '/internal/ping';
+            url.pathname = '/sdapi/v1/options';
 
             const result = await fetch(url, {
                 method: 'GET',
@@ -233,7 +270,8 @@ function registerEndpoints(app, jsonParser) {
             });
 
             if (!result.ok) {
-                throw new Error('SD WebUI returned an error.');
+                const text = await result.text();
+                throw new Error('SD WebUI returned an error.', { cause: text });
             }
 
             const data = await result.json();
@@ -241,6 +279,72 @@ function registerEndpoints(app, jsonParser) {
         } catch (error) {
             console.log(error);
             return response.sendStatus(500);
+        }
+    });
+
+    app.post('/api/sd-next/upscalers', jsonParser, async (request, response) => {
+        try {
+            const url = new URL(request.body.url);
+            url.pathname = '/sdapi/v1/upscalers';
+
+            const result = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Authorization': getBasicAuthHeader(request.body.auth),
+                },
+            });
+
+            if (!result.ok) {
+                throw new Error('SD WebUI returned an error.');
+            }
+
+            // Vlad doesn't provide Latent Upscalers in the API, so we have to hardcode them here
+            const latentUpscalers = ['Latent', 'Latent (antialiased)', 'Latent (bicubic)', 'Latent (bicubic antialiased)', 'Latent (nearest)', 'Latent (nearest-exact)'];
+
+            const data = await result.json();
+            const names = data.map(x => x.name);
+
+            // 0 = None, then Latent Upscalers, then Upscalers
+            names.splice(1, 0, ...latentUpscalers);
+
+            return response.send(names);
+        } catch (error) {
+            console.log(error);
+            return response.sendStatus(500);
+        }
+    });
+
+    /**
+     * SD prompt expansion using GPT-2 text generation model.
+     * Adapted from: https://github.com/lllyasviel/Fooocus/blob/main/modules/expansion.py
+     */
+    app.post('/api/sd/expand', jsonParser, async (request, response) => {
+        const originalPrompt = request.body.prompt;
+
+        if (!originalPrompt) {
+            console.warn('No prompt provided for SD expansion.');
+            return response.send({ prompt: '' });
+        }
+
+        console.log('Refine prompt input:', originalPrompt);
+        const splitString = splitStrings[Math.floor(Math.random() * splitStrings.length)];
+        let prompt = safeStr(originalPrompt) + splitString;
+
+        try {
+            const task = 'text-generation';
+            const module = await import('./transformers.mjs');
+            const pipe = await module.default.getPipeline(task);
+
+            const result = await pipe(prompt, { num_beams: 1, max_new_tokens: 256, do_sample: true });
+
+            const newText = result[0].generated_text;
+            const newPrompt = safeStr(removePattern(newText, dangerousPatterns));
+            console.log('Refine prompt output:', newPrompt);
+
+            return response.send({ prompt: newPrompt });
+        } catch {
+            console.warn('Failed to load transformers.js pipeline.');
+            return response.send({ prompt: originalPrompt });
         }
     });
 }

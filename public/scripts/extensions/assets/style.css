@@ -13,16 +13,35 @@
     padding: 5px;
 }
 
+.assets-list-git {
+    font-size: calc(var(--mainFontSize) * 0.8);
+    opacity: 0.8;
+    margin-bottom: 1em;
+}
+
+.assets-list-div h3 {
+    text-transform: capitalize;
+}
+
+.assets-list-div i a {
+    color: inherit;
+}
+
 .assets-list-div i {
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: left;
     padding: 5px;
+    font-style: normal;
 }
 
-.assets-list-div i span{
+.assets-list-div i span {
     margin-left: 10px;
+}
+
+.assets-list-div i span:first-of-type {
+    font-weight: bold;
 }
 
 .asset-download-button {
@@ -33,8 +52,8 @@
     outline: none;
     border-radius: 2px;
     cursor: pointer;
-  }
-  
+}
+
 .asset-download-button:active {
     background: #007a63;
 }
@@ -67,13 +86,11 @@
 }
 
 @keyframes asset-download-button-loading-spinner {
-from {
-    transform: rotate(0turn);
-}
+    from {
+        transform: rotate(0turn);
+    }
 
-to {
-    transform: rotate(1turn);
+    to {
+        transform: rotate(1turn);
+    }
 }
-}
-  
-  

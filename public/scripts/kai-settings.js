@@ -2,6 +2,7 @@ import {
     getRequestHeaders,
     saveSettingsDebounced,
     getStoppingStrings,
+    substituteParams,
 } from "../script.js";
 
 import {
@@ -19,14 +20,14 @@ export const kai_settings = {
     typical: 1,
     tfs: 1,
     rep_pen_slope: 0.9,
-    single_line: false,
     streaming_kobold: false,
     sampler_order: [0, 1, 2, 3, 4, 5, 6],
     mirostat: 0,
     mirostat_tau: 5.0,
     mirostat_eta: 0.1,
-    use_default_badwordsids: true,
+    use_default_badwordsids: false,
     grammar: "",
+    seed: -1,
 };
 
 export const kai_flags = {
@@ -71,14 +72,9 @@ export function loadKoboldSettings(preset) {
         const formattedValue = slider.format(value);
         slider.setValue(value);
         $(slider.sliderId).val(value);
-        $(slider.counterId).text(formattedValue);
+        $(slider.counterId).val(formattedValue);
     }
 
-    // TODO: refactor checkboxes (if adding any more)
-    if (preset.hasOwnProperty('single_line')) {
-        kai_settings.single_line = preset.single_line;
-        $('#single_line').prop('checked', kai_settings.single_line);
-    }
     if (preset.hasOwnProperty('streaming_kobold')) {
         kai_settings.streaming_kobold = preset.streaming_kobold;
         $('#streaming_kobold').prop('checked', kai_settings.streaming_kobold);
@@ -89,15 +85,26 @@ export function loadKoboldSettings(preset) {
     }
 }
 
-export function getKoboldGenerationData(finalPrompt, this_settings, this_amount_gen, this_max_context, isImpersonate, type) {
-    const sampler_order = kai_settings.sampler_order || this_settings.sampler_order;
+/**
+ * Gets the Kobold generation data.
+ * @param {string} finalPrompt Final text prompt.
+ * @param {object} settings Settings preset object.
+ * @param {number} maxLength Maximum length.
+ * @param {number} maxContextLength Maximum context length.
+ * @param {boolean} isHorde True if the generation is for a horde, false otherwise.
+ * @param {string} type Generation type.
+ * @returns {object} Kobold generation data.
+ */
+export function getKoboldGenerationData(finalPrompt, settings, maxLength, maxContextLength, isHorde, type) {
+    const isImpersonate = type === 'impersonate';
+    const sampler_order = kai_settings.sampler_order || settings.sampler_order;
 
     let generate_data = {
         prompt: finalPrompt,
         gui_settings: false,
         sampler_order: sampler_order,
-        max_context_length: Number(this_max_context),
-        max_length: this_amount_gen,
+        max_context_length: Number(maxContextLength),
+        max_length: maxLength,
         rep_pen: Number(kai_settings.rep_pen),
         rep_pen_range: Number(kai_settings.rep_pen_range),
         rep_pen_slope: kai_settings.rep_pen_slope,
@@ -115,15 +122,16 @@ export function getKoboldGenerationData(finalPrompt, this_settings, this_amount_
         s6: sampler_order[5],
         s7: sampler_order[6],
         use_world_info: false,
-        singleline: kai_settings.single_line,
-        stop_sequence: kai_flags.can_use_stop_sequence ? getStoppingStrings(isImpersonate) : undefined,
+        singleline: false,
+        stop_sequence: (kai_flags.can_use_stop_sequence || isHorde) ? getStoppingStrings(isImpersonate) : undefined,
         streaming: kai_settings.streaming_kobold && kai_flags.can_use_streaming && type !== 'quiet',
         can_abort: kai_flags.can_use_streaming,
         mirostat: kai_flags.can_use_mirostat ? kai_settings.mirostat : undefined,
         mirostat_tau: kai_flags.can_use_mirostat ? kai_settings.mirostat_tau : undefined,
         mirostat_eta: kai_flags.can_use_mirostat ? kai_settings.mirostat_eta : undefined,
         use_default_badwordsids: kai_flags.can_use_default_badwordsids ? kai_settings.use_default_badwordsids : undefined,
-        grammar: kai_flags.can_use_grammar ? kai_settings.grammar : undefined,
+        grammar: kai_flags.can_use_grammar ? substituteParams(kai_settings.grammar) : undefined,
+        sampler_seed: kai_settings.seed >= 0 ? kai_settings.seed : undefined,
     };
     return generate_data;
 }
@@ -269,6 +277,13 @@ const sliders = [
         format: (val) => val,
         setValue: (val) => { kai_settings.grammar = val; },
     },
+    {
+        name: "seed",
+        sliderId: "#seed_kobold",
+        counterId: "#seed_counter_kobold",
+        format: (val) => val,
+        setValue: (val) => { kai_settings.seed = Number(val); },
+    },
 ];
 
 export function setKoboldFlags(version, koboldVersion) {
@@ -363,15 +378,9 @@ jQuery(function () {
             const value = $(this).val();
             const formattedValue = slider.format(value);
             slider.setValue(value);
-            $(slider.counterId).text(formattedValue);
+            $(slider.counterId).val(formattedValue);
             saveSettingsDebounced();
         });
-    });
-
-    $('#single_line').on("input", function () {
-        const value = !!$(this).prop('checked');
-        kai_settings.single_line = value;
-        saveSettingsDebounced();
     });
 
     $('#streaming_kobold').on("input", function () {

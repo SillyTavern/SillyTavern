@@ -1,0 +1,6 @@
+{
+    "story_string": "{{system}}\n{{#if wiBefore}}{{wiBefore}}\n{{/if}}{{#if description}}{{char}}'s description:{{description}}\n{{/if}}{{#if personality}}{{char}}'s personality:{{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if wiAfter}}{{wiAfter}}\n{{/if}}{{#if persona}}{{user}}'s persona: {{persona}}\n{{/if}}",
+    "chat_start": "This is the history of the roleplay:",
+    "example_separator": "Example of an interaction:",
+    "name": "Lightning 1.1"
+}

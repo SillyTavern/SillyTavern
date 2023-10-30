@@ -1,0 +1,17 @@
+{
+    "wrap": true,
+    "names": true,
+    "system_prompt": "Avoid repetition, don't loop. Develop the plot slowly, always stay in character. Describe all actions in full, elaborate, explicit, graphic, and vivid detail. Mention all relevant sensory perceptions.",
+    "system_sequence_prefix": "",
+    "stop_sequence": "",
+    "input_sequence": "",
+    "output_sequence": "",
+    "separator_sequence": "",
+    "macro": true,
+    "names_force_groups": true,
+    "last_output_sequence": "\n### Response:",
+    "activation_regex": "",
+    "first_output_sequence": "",
+    "system_sequence_suffix": "",
+    "name": "Libra-32B"
+}

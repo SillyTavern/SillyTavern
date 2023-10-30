@@ -8,7 +8,6 @@
     "typical": 1,
     "tfs": 1,
     "rep_pen_slope": 0.9,
-    "single_line": false,
     "sampler_order": [
         6,
         0,
@@ -21,5 +20,5 @@
     "mirostat": 2,
     "mirostat_tau": 9.62,
     "mirostat_eta": 1,
-    "use_default_badwordsids": true
+    "grammar": ""
 }

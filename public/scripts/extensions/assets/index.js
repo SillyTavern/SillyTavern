@@ -1,14 +1,16 @@
 /*
 TODO:
- - Check failed install file (0kb size ?)
 */
-//const DEBUG_TONY_SAMA_FORK_MODE = false
+//const DEBUG_TONY_SAMA_FORK_MODE = true
 
 import { getRequestHeaders, callPopup } from "../../../script.js";
+import { deleteExtension, extensionNames, installExtension, renderExtensionTemplate } from "../../extensions.js";
+import { getStringHash, isValidUrl } from "../../utils.js";
 export { MODULE_NAME };
 
-const MODULE_NAME = 'Assets';
+const MODULE_NAME = 'assets';
 const DEBUG_PREFIX = "<Assets module> ";
+let previewAudio = null;
 let ASSETS_JSON_URL = "https://raw.githubusercontent.com/SillyTavern/SillyTavern-Content/main/index.json"
 
 const extensionName = "assets";
@@ -29,7 +31,7 @@ const defaultSettings = {
 
 function downloadAssetsList(url) {
     updateCurrentAssets().then(function () {
-        fetch(url)
+        fetch(url, { cache: "no-cache" })
             .then(response => response.json())
             .then(json => {
 
@@ -47,10 +49,20 @@ function downloadAssetsList(url) {
                 }
 
                 console.debug(DEBUG_PREFIX, "Updated available assets to", availableAssets);
+                // First extensions, then everything else
+                const assetTypes = Object.keys(availableAssets).sort((a, b) => (a === 'extension') ? -1 : (b === 'extension') ? 1 : 0);
 
-                for (const assetType in availableAssets) {
+                for (const assetType of assetTypes) {
                     let assetTypeMenu = $('<div />', { id: "assets_audio_ambient_div", class: "assets-list-div" });
                     assetTypeMenu.append(`<h3>${assetType}</h3>`)
+
+                    if (assetType == 'extension') {
+                        assetTypeMenu.append(`
+                        <div class="assets-list-git">
+                            To download extensions from this page, you need to have <a href="https://git-scm.com/downloads" target="_blank">Git</a> installed.
+                        </div>`);
+                    }
+
                     for (const i in availableAssets[assetType]) {
                         const asset = availableAssets[assetType][i];
                         const elemId = `assets_install_${assetType}_${i}`;
@@ -59,7 +71,7 @@ function downloadAssetsList(url) {
                         element.append(label);
 
                         //if (DEBUG_TONY_SAMA_FORK_MODE)
-                        //    assetUrl = assetUrl.replace("https://github.com/SillyTavern/","https://github.com/Tony-sama/"); // DBG
+                        //    asset["url"] = asset["url"].replace("https://github.com/SillyTavern/","https://github.com/Tony-sama/"); // DBG
 
                         console.debug(DEBUG_PREFIX, "Checking asset", asset["id"], asset["url"]);
 
@@ -71,18 +83,18 @@ function downloadAssetsList(url) {
                             label.addClass("fa-check");
                             this.classList.remove('asset-download-button-loading');
                             element.on("click", assetDelete);
-                            element.on("mouseenter", function(){
+                            element.on("mouseenter", function () {
                                 label.removeClass("fa-check");
                                 label.addClass("fa-trash");
                                 label.addClass("redOverlayGlow");
-                            }).on("mouseleave", function(){
+                            }).on("mouseleave", function () {
                                 label.addClass("fa-check");
                                 label.removeClass("fa-trash");
                                 label.removeClass("redOverlayGlow");
                             });
                         };
 
-                        const assetDelete = async function() {
+                        const assetDelete = async function () {
                             element.off("click");
                             await deleteAsset(assetType, asset["id"]);
                             label.removeClass("fa-check");
@@ -98,11 +110,11 @@ function downloadAssetsList(url) {
                             label.toggleClass("fa-download");
                             label.toggleClass("fa-check");
                             element.on("click", assetDelete);
-                            element.on("mouseenter", function(){
+                            element.on("mouseenter", function () {
                                 label.removeClass("fa-check");
                                 label.addClass("fa-trash");
                                 label.addClass("redOverlayGlow");
-                            }).on("mouseleave", function(){
+                            }).on("mouseleave", function () {
                                 label.addClass("fa-check");
                                 label.removeClass("fa-trash");
                                 label.removeClass("redOverlayGlow");
@@ -114,14 +126,28 @@ function downloadAssetsList(url) {
                             element.on("click", assetInstall);
                         }
 
-                        console.debug(DEBUG_PREFIX, "Created element for BGM", asset["id"])
+                        console.debug(DEBUG_PREFIX, "Created element for ", asset["id"])
+
+                        const displayName = DOMPurify.sanitize(asset["name"] || asset["id"]);
+                        const description = DOMPurify.sanitize(asset["description"] || "");
+                        const url = isValidUrl(asset["url"]) ? asset["url"] : "";
+                        const previewIcon = assetType == 'extension' ? 'fa-arrow-up-right-from-square' : 'fa-headphones-simple';
 
                         $(`<i></i>`)
                             .append(element)
-                            .append(`<span>${asset["id"]}</span>`)
+                            .append(`<div class="flex-container flexFlowColumn">
+                                        <span class="flex-container alignitemscenter">
+                                            <b>${displayName}</b>
+                                            <a class="asset_preview" href="${url}" target="_blank" title="Preview in browser">
+                                                <i class="fa-solid fa-sm ${previewIcon}"></i>
+                                            </a>
+                                        </span>
+                                        <span>${description}</span>
+                                     </div>`)
                             .appendTo(assetTypeMenu);
                     }
                     assetTypeMenu.appendTo("#assets_menu");
+                    assetTypeMenu.on('click', 'a.asset_preview', previewAsset);
                 }
 
                 $("#assets_menu").show();
@@ -135,8 +161,37 @@ function downloadAssetsList(url) {
     });
 }
 
+function previewAsset(e) {
+    const href = $(this).attr('href');
+    const audioExtensions = ['.mp3', '.ogg', '.wav'];
+
+    if (audioExtensions.some(ext => href.endsWith(ext))) {
+        e.preventDefault();
+
+        if (previewAudio) {
+            previewAudio.pause();
+
+            if (previewAudio.src === href) {
+                previewAudio = null;
+                return;
+            }
+        }
+
+        previewAudio = new Audio(href);
+        previewAudio.play();
+        return;
+    }
+}
+
 function isAssetInstalled(assetType, filename) {
-    for (const i of currentAssets[assetType]) {
+    let assetList = currentAssets[assetType];
+
+    if (assetType == 'extension') {
+        const thirdPartyMarker = "third-party/";
+        assetList = extensionNames.filter(x => x.startsWith(thirdPartyMarker)).map(x => x.replace(thirdPartyMarker, ''));
+    }
+
+    for (const i of assetList) {
         //console.debug(DEBUG_PREFIX,i,filename)
         if (i.includes(filename))
             return true;
@@ -149,6 +204,13 @@ async function installAsset(url, assetType, filename) {
     console.debug(DEBUG_PREFIX, "Downloading ", url);
     const category = assetType;
     try {
+        if (category === 'extension') {
+            console.debug(DEBUG_PREFIX, "Installing extension ", url)
+            await installExtension(url);
+            console.debug(DEBUG_PREFIX, "Extension installed.")
+            return;
+        }
+
         const body = { url, category, filename };
         const result = await fetch('/api/assets/download', {
             method: 'POST',
@@ -170,6 +232,12 @@ async function deleteAsset(assetType, filename) {
     console.debug(DEBUG_PREFIX, "Deleting ", assetType, filename);
     const category = assetType;
     try {
+        if (category === 'extension') {
+            console.debug(DEBUG_PREFIX, "Deleting extension ", filename)
+            await deleteExtension(filename);
+            console.debug(DEBUG_PREFIX, "Extension deleted.")
+        }
+
         const body = { category, filename };
         const result = await fetch('/api/assets/delete', {
             method: 'POST',
@@ -214,24 +282,35 @@ async function updateCurrentAssets() {
 // This function is called when the extension is loaded
 jQuery(async () => {
     // This is an example of loading HTML from a file
-    const windowHtml = $(await $.get(`${extensionFolderPath}/window.html`));
+    const windowHtml = $(renderExtensionTemplate(MODULE_NAME, 'window', {}));
 
     const assetsJsonUrl = windowHtml.find('#assets-json-url-field');
     assetsJsonUrl.val(ASSETS_JSON_URL);
 
     const connectButton = windowHtml.find('#assets-connect-button');
     connectButton.on("click", async function () {
-        const confirmation = await callPopup(`Are you sure you want to connect to '${assetsJsonUrl.val()}'?`, 'confirm')
+        const url = String(assetsJsonUrl.val());
+        const rememberKey = `Assets_SkipConfirm_${getStringHash(url)}`;
+        const skipConfirm = localStorage.getItem(rememberKey) === 'true';
+
+        const template = renderExtensionTemplate(MODULE_NAME, 'confirm', { url });
+        const confirmation = skipConfirm || await callPopup(template, 'confirm');
+
         if (confirmation) {
             try {
+                if (!skipConfirm) {
+                    const rememberValue = Boolean($('#assets-remember').prop('checked'));
+                    localStorage.setItem(rememberKey, String(rememberValue));
+                }
+
                 console.debug(DEBUG_PREFIX, "Confimation, loading assets...");
-                downloadAssetsList(assetsJsonUrl.val());
+                downloadAssetsList(url);
                 connectButton.removeClass("fa-plug-circle-exclamation");
                 connectButton.removeClass("redOverlayGlow");
                 connectButton.addClass("fa-plug-circle-check");
             } catch (error) {
                 console.error('Error:', error);
-                toastr.error(`Cannot get assets list from ${assetsJsonUrl.val()}`);
+                toastr.error(`Cannot get assets list from ${url}`);
                 connectButton.removeClass("fa-plug-circle-check");
                 connectButton.addClass("fa-plug-circle-exclamation");
                 connectButton.removeClass("redOverlayGlow");
