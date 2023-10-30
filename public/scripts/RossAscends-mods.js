@@ -173,7 +173,7 @@ export function humanizedDateTime() {
     let humanMillisecond =
         (baseDate.getMilliseconds() < 10 ? "0" : "") + baseDate.getMilliseconds();
     let HumanizedDateTime =
-        humanYear + "-" + humanMonth + "-" + humanDate + " @" + humanHour + "h " + humanMinute + "m " + humanSecond + "s " + humanMillisecond + "ms";
+        humanYear + "-" + humanMonth + "-" + humanDate + "@" + humanHour + "h" + humanMinute + "m" + humanSecond + "s";
     return HumanizedDateTime;
 }
 

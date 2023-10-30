@@ -5426,7 +5426,7 @@ export async function displayPastChats() {
     data.sort((a, b) => sortMoments(timestampToMoment(a.last_mes), timestampToMoment(b.last_mes)));
     console.log(data);
     $("#load_select_chat_div").css("display", "none");
-    $("#ChatHistoryCharName").text(displayName);
+    $("#ChatHistoryCharName").text(`${displayName}'s `);
 
     const displayChats = (searchQuery) => {
         $("#select_chat_div").empty();  // Clear the current chats before appending filtered chats
@@ -5450,13 +5450,13 @@ export async function displayPastChats() {
                 const chat_items = data[key]["chat_items"];
                 const file_size = data[key]["file_size"];
                 const fileName = data[key]['file_name'];
-                const timestamp = timestampToMoment(data[key]['last_mes']).format('LL LT');
+                const timestamp = timestampToMoment(data[key]['last_mes']).format('lll');
                 const template = $('#past_chat_template .select_chat_block_wrapper').clone();
                 template.find('.select_chat_block').attr('file_name', fileName);
                 template.find('.avatar img').attr('src', avatarImg);
                 template.find('.select_chat_block_filename').text(fileName);
-                template.find('.chat_file_size').text(" (" + file_size + ")");
-                template.find('.chat_messages_num').text(" (" + chat_items + " messages)");
+                template.find('.chat_file_size').text(`(${file_size},`);
+                template.find('.chat_messages_num').text(`${chat_items}💬)`);
                 template.find('.select_chat_block_mes').text(mes);
                 template.find('.PastChat_cross').attr('file_name', fileName);
                 template.find('.chat_messages_date').text(timestamp);
@@ -7408,7 +7408,7 @@ jQuery(async function () {
             else {
                 //RossAscends: added character name to new chat filenames and replaced Date.now() with humanizedDateTime;
                 chat_metadata = {};
-                characters[this_chid].chat = name2 + " - " + humanizedDateTime();
+                characters[this_chid].chat = name2 + "-" + humanizedDateTime();
                 $("#selected_chat_pole").val(characters[this_chid].chat);
                 await getChat();
                 await createOrEditCharacter();

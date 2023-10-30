@@ -391,6 +391,10 @@
     display: none;
 }
 
+.hoverglow {
+    transition: opacity 200ms;
+}
+
 .hoverglow:hover {
     opacity: 1 !important;
     cursor: pointer;
@@ -419,6 +423,10 @@ textarea:disabled {
 
 .debug-purple {
     border: 1px solid purple !important;
+}
+
+.fontsize120p {
+    font-size: calc(var(--mainFontSize) * 1.2) !important;
 }
 
 .fontsize80p {
@@ -457,6 +465,10 @@ textarea:disabled {
 
 .flexGap10 {
     gap: 10px;
+}
+
+.opacity50p {
+    opacity: 0.5
 }
 
 .opacity1 {

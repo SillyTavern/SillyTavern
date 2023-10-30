@@ -965,8 +965,7 @@ select {
     margin-bottom: 0;
 }
 
-#character_cross,
-#select_chat_cross {
+#character_cross {
     position: absolute;
     right: 5px;
     top: 5px;
@@ -1954,8 +1953,7 @@ grammarly-extension {
 }
 
 .avatar_div .menu_button,
-.form_create_bottom_buttons_block .menu_button,
-#select_chat_import .menu_button {
+.form_create_bottom_buttons_block .menu_button {
     font-weight: bold;
     padding: 5px;
     margin: 0;
@@ -2655,30 +2653,18 @@ h5 {
     margin: 0;
 }
 
-#select_chat_import {
-    display: grid;
-    grid-template-columns: min-content auto;
-    align-items: center;
-    grid-gap: 10px;
-    margin-bottom: 10px;
-}
-
-.select_chat_block_wrapper {
+/* .select_chat_block_wrapper {
     display: grid;
     grid-template-columns: auto min-content;
     align-items: center;
     grid-gap: 10px;
-}
+} */
 
 .select_chat_block {
-    border-radius: 10px;
-    margin-top: 10px;
+    border-radius: 5px;
+    margin-top: 5px;
     border: 1px solid var(--SmartThemeBorderColor);
-    padding: 10px;
-    display: grid;
-    grid-template-columns: min-content auto;
-    grid-template-rows: auto auto;
-    grid-gap: 10px;
+    padding: 5px 7px;
 }
 
 .select_chat_block:hover {
@@ -2691,12 +2677,6 @@ h5 {
 
 .select_chat_block .avatar {
     grid-row: span 2;
-}
-
-#select_chat_name_wrapper {
-    display: flex;
-    gap: 5px;
-    flex-wrap: wrap;
 }
 
 .select_chat_block_filename_item {
@@ -2716,16 +2696,6 @@ h5 {
 
 .select_chat_block_mes {
     font-size: calc(var(--mainFontSize) - .25rem);
-}
-
-#select_chat_cross {
-    position: absolute;
-    right: 15px;
-    top: 15px;
-    width: 20px;
-    height: 20px;
-    cursor: pointer;
-    opacity: 0.6;
 }
 
 .PastChat_cross {
@@ -3627,22 +3597,6 @@ a {
     text-decoration: underline;
     order: -1;
     cursor: pointer;
-}
-
-#select_chat_search {
-    background-color: transparent;
-    border: none;
-    outline: none;
-    color: var(--SmartThemeBodyColor);
-    display: inline-block;
-    /* Change display to inline-block */
-    vertical-align: middle;
-    /* Align to middle if there's a height discrepancy */
-    width: 200px;
-    font-size: 16px;
-    z-index: 10;
-    margin-left: 10px;
-    /* Give some space between the button and search box */
 }
 
 .draggable img {
