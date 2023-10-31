@@ -39,6 +39,8 @@ export class FilterHelper {
         [FILTER_TYPES.FAV]: this.favFilter.bind(this),
         [FILTER_TYPES.TAG]: this.tagFilter.bind(this),
         [FILTER_TYPES.WORLD_INFO_SEARCH]: this.wiSearchFilter.bind(this),
+        hide_characters_present_in_deck: this.hideCharactersAlreadyInDeck.bind(this)
+
     }
 
     /**
@@ -51,6 +53,13 @@ export class FilterHelper {
         [FILTER_TYPES.FAV]: false,
         [FILTER_TYPES.TAG]: { excluded: [], selected: [] },
         [FILTER_TYPES.WORLD_INFO_SEARCH]: '',
+    }
+
+    hideCharactersAlreadyInDeck(data) {
+        const decks = data.filter(item => 'deck' === item.type)
+        const characterIds = [...new Set(decks.reduce((a, b) => a.concat(b.item.characters), []))];
+
+        return data.filter(item => false === characterIds.includes(String(item.id)));
     }
 
     /**
