@@ -323,7 +323,9 @@ class BulkEditOverlay {
         document.removeEventListener('click', this.handleContextMenuHide);
     }
 
-    handleHold = () => {
+    handleHold = (event) => {
+        if (0 !== event.button) return;
+
         this.isLongPress = true;
         setTimeout(() => {
             if (this.isLongPress) {
