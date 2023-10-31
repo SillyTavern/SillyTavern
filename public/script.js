@@ -185,6 +185,7 @@ import { applyLocale } from "./scripts/i18n.js";
 import { getTokenCount, getTokenizerModel, initTokenizers, saveTokenCache } from "./scripts/tokenizers.js";
 import { initPersonas, selectCurrentPersona, setPersonaDescription } from "./scripts/personas.js";
 import { getBackgrounds, initBackgrounds } from "./scripts/backgrounds.js";
+import { hideLoader, showLoader } from "./scripts/loader.js";
 
 //exporting functions and vars for mods
 export {
@@ -257,6 +258,9 @@ export {
     isOdd,
     countOccurrences
 }
+
+// Cohee: Uncomment when we decide to use loader
+// showLoader();
 
 // Allow target="_blank" in links
 DOMPurify.addHook('afterSanitizeAttributes', function (node) {
@@ -729,6 +733,8 @@ async function firstLoadInit() {
     initStats();
     initCfg();
     doDailyExtensionUpdatesCheck();
+    // Cohee: Uncomment when we decide to use loader
+    // hideLoader();
 }
 
 function checkOnlineStatus() {

@@ -306,7 +306,7 @@ function addPromptTemplates() {
         const textarea = $('<textarea></textarea>')
             .addClass('textarea_compact text_pole')
             .attr('id', `sd_prompt_${name}`)
-            .attr('rows', 6)
+            .attr('rows', 3)
             .val(prompt).on('input', () => {
                 extension_settings.sd.prompts[name] = textarea.val();
                 saveSettingsDebounced();

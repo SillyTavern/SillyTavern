@@ -1,0 +1,19 @@
+#loader {
+    position: fixed;
+    margin: 0;
+    padding: 0;
+    top: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999999;
+    width: 100vw;
+    height: 100vh;
+    width: 100svw;
+    height: 100svh;
+    background-color: var(--SmartThemeBlurTintColor);
+    color: val(--SmartThemeBodyColor);
+    opacity: 0.7;
+    transition: 500ms;
+}
