@@ -212,7 +212,8 @@ async function saveQuickReplyPreset() {
         quickReplyEnabled: extension_settings.quickReply.quickReplyEnabled,
         quickReplySlots: extension_settings.quickReply.quickReplySlots,
         numberOfSlots: extension_settings.quickReply.numberOfSlots,
-        selectedPreset: name
+        AutoInputInject: extension_settings.quickReply.AutoInputInject,
+        selectedPreset: name,
     }
 
     const response = await fetch('/savequickreply', {

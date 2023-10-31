@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   viewBox="0 0 500 500"
+   version="1.1"
+   id="svg6"
+   sodipodi:docname="aphrodite.svg"
+   inkscape:version="1.3 (0e150ed, 2023-07-21)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs6" />
+  <sodipodi:namedview
+     id="namedview6"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="0.472"
+     inkscape:cx="251.05932"
+     inkscape:cy="250"
+     inkscape:window-width="1280"
+     inkscape:window-height="449"
+     inkscape:window-x="0"
+     inkscape:window-y="25"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg6" />
+  <g
+     transform="matrix(1.3637143,0,0,1.2306337,286.98714,309.0439)"
+     id="b08450db-4034-4e8d-9232-9d086fc10fd0" />
+  <g
+     transform="matrix(1.3637143,0,0,1.2306337,286.98714,309.0439)"
+     id="54daa6c1-4b17-4e19-b0bb-42d1bcbfe659" />
+  <g
+     transform="matrix(1.3637143,0,0,1.2306337,186.0314,431.30731)"
+     id="g2" />
+  <g
+     transform="matrix(1.3637143,0,0,1.2306337,288.29633,320.27957)"
+     id="g3" />
+  <g
+     transform="matrix(1.686936,0,0,1.507445,388.05263,106.65182)"
+     id="g6"
+     style="">
+    <g
+       id="g5"
+       style="">
+      <path
+         style="opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;"
+         vector-effect="non-scaling-stroke"
+         d="m -189.927,161.041 32.809,-32.022 47.368,38.876 -32.619,43.738 -87.665,49.304 z"
+         stroke-linecap="round"
+         id="path3" />
+      <path
+         style="opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;"
+         vector-effect="non-scaling-stroke"
+         d="m -64.913,42.392 32.651,28.068 -77.49,97.438 -47.367,-38.878 91.346,-87.359 z"
+         stroke-linecap="round"
+         id="path4" />
+      <path
+         style="opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;"
+         vector-effect="non-scaling-stroke"
+         d="m 46.895,-67.722 -2.202,2.004 -110.467,107.379 33.512,28.799 95.769,-121.944 0.023,-0.025 c 2.011,-2.328 2.952,-5.03 2.819,-8.105 -0.131,-3.074 -1.3,-5.686 -3.502,-7.834 -2.205,-2.148 -4.846,-3.248 -7.922,-3.3 -3.077,-0.054 -5.754,0.955 -8.03,3.026 z"
+         stroke-linecap="round"
+         id="path5" />
+    </g>
+  </g>
+</svg>

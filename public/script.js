@@ -1158,9 +1158,8 @@ export async function reloadCurrentChat() {
     else {
         resetChatState();
         await printMessages();
+        await eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
     }
-
-    await eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
 }
 
 function messageFormatting(mes, ch_name, isSystem, isUser) {
@@ -2404,7 +2403,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
     if (interruptedByCommand) {
         $("#send_textarea").val('').trigger('input');
-        is_send_press = false;
+        unblockGeneration();
         return;
     }
 
@@ -2414,18 +2413,18 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         textgenerationwebui_settings.type === textgen_types.OOBA &&
         !textgenerationwebui_settings.streaming_url) {
         toastr.error('Streaming URL is not set. Look it up in the console window when starting TextGen Web UI');
-        is_send_press = false;
+        unblockGeneration();
         return;
     }
 
     if (main_api == 'kobold' && kai_settings.streaming_kobold && !kai_flags.can_use_streaming) {
         toastr.error('Streaming is enabled, but the version of Kobold used does not support token streaming.', undefined, { timeOut: 10000, preventDuplicates: true, });
-        is_send_press = false;
+        unblockGeneration();
         return;
     }
 
     if (isHordeGenerationNotAllowed()) {
-        is_send_press = false;
+        unblockGeneration();
         return;
     }
 
@@ -2465,7 +2464,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             setCharacterName('');
         } else {
             console.log('No enabled members found');
-            is_send_press = false;
+            unblockGeneration();
             return;
         }
     }
@@ -2616,7 +2615,13 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
         if (!dryRun) {
             console.debug('Running extension interceptors');
-            await runGenerationInterceptors(coreChat, this_max_context);
+            const aborted = await runGenerationInterceptors(coreChat, this_max_context);
+
+            if (aborted) {
+                console.debug('Generation aborted by extension interceptors');
+                unblockGeneration();
+                return;
+            }
         } else {
             console.debug('Skipping extension interceptors for dry run');
         }
@@ -2669,7 +2674,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 adjustedParams = await adjustHordeGenerationParams(max_context, amount_gen);
             }
             catch {
-                activateSendButtons();
+                unblockGeneration();
                 return;
             }
             if (horde_settings.auto_adjust_context_length) {
@@ -3418,6 +3423,14 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     //console.log('generate ending');
 } //generate ends
 
+function unblockGeneration() {
+    is_send_press = false;
+    activateSendButtons();
+    showSwipeButtons();
+    setGenerationProgress(0);
+    $("#send_textarea").removeAttr('disabled');
+}
+
 function getNextMessageId(type) {
     return type == 'swipe' ? Number(count_view_mes - 1) : Number(count_view_mes);
 }
@@ -3882,11 +3895,7 @@ function getGenerateUrl(api) {
 function throwCircuitBreakerError() {
     callPopup(`Could not extract reply in ${MAX_GENERATION_LOOPS} attempts. Try generating again`, 'text');
     generate_loop_counter = 0;
-    $("#send_textarea").removeAttr('disabled');
-    is_send_press = false;
-    activateSendButtons();
-    setGenerationProgress(0);
-    showSwipeButtons();
+    unblockGeneration();
     throw new Error('Generate circuit breaker interruption');
 }
 
@@ -4194,6 +4203,8 @@ function getGeneratingApi() {
     switch (main_api) {
         case 'openai':
             return oai_settings.chat_completion_source || 'openai';
+        case 'textgenerationwebui':
+            return textgenerationwebui_settings.type === textgen_types.OOBA ? 'textgenerationwebui' : textgenerationwebui_settings.type;
         default:
             return main_api;
     }
@@ -5415,7 +5426,7 @@ export async function displayPastChats() {
     data.sort((a, b) => sortMoments(timestampToMoment(a.last_mes), timestampToMoment(b.last_mes)));
     console.log(data);
     $("#load_select_chat_div").css("display", "none");
-    $("#ChatHistoryCharName").text(displayName);
+    $("#ChatHistoryCharName").text(`${displayName}'s `);
 
     const displayChats = (searchQuery) => {
         $("#select_chat_div").empty();  // Clear the current chats before appending filtered chats
@@ -5439,13 +5450,13 @@ export async function displayPastChats() {
                 const chat_items = data[key]["chat_items"];
                 const file_size = data[key]["file_size"];
                 const fileName = data[key]['file_name'];
-                const timestamp = timestampToMoment(data[key]['last_mes']).format('LL LT');
+                const timestamp = timestampToMoment(data[key]['last_mes']).format('lll');
                 const template = $('#past_chat_template .select_chat_block_wrapper').clone();
                 template.find('.select_chat_block').attr('file_name', fileName);
                 template.find('.avatar img').attr('src', avatarImg);
                 template.find('.select_chat_block_filename').text(fileName);
-                template.find('.chat_file_size').text(" (" + file_size + ")");
-                template.find('.chat_messages_num').text(" (" + chat_items + " messages)");
+                template.find('.chat_file_size').text(`(${file_size},`);
+                template.find('.chat_messages_num').text(`${chat_items}💬)`);
                 template.find('.select_chat_block_mes').text(mes);
                 template.find('.PastChat_cross').attr('file_name', fileName);
                 template.find('.chat_messages_date').text(timestamp);
@@ -7397,7 +7408,7 @@ jQuery(async function () {
             else {
                 //RossAscends: added character name to new chat filenames and replaced Date.now() with humanizedDateTime;
                 chat_metadata = {};
-                characters[this_chid].chat = name2 + " - " + humanizedDateTime();
+                characters[this_chid].chat = name2 + "-" + humanizedDateTime();
                 $("#selected_chat_pole").val(characters[this_chid].chat);
                 await getChat();
                 await createOrEditCharacter();

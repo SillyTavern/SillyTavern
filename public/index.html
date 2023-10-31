@@ -3269,28 +3269,6 @@
             </div>
             <div id="rm_extensions_block" class="drawer-content closedDrawer">
                 <div class="extensions_block flex-container">
-                    <div class="alignitemscenter flex-container justifyCenter wide100p" style="justify-content: space-between;">
-                        <h3 class="margin0" data-i18n="Extras API:">Extras API:
-                            <a target="_blank" href="https://github.com/SillyTavern/SillyTavern-Extras">
-                                SillyTavern-Extras
-                            </a>
-                        </h3>
-                        <div class="flex-container">
-                            <div id="extensions_status" data-i18n="Not connected...">Not connected...</div>
-                            <label for="extensions_autoconnect" class="checkbox_label flexNoGap">
-                                <input id="extensions_autoconnect" type="checkbox">
-                                <span data-i18n="Auto-connect">Auto-connect</span>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="alignitemsflexstart flex-container wide100p">
-                        <input id="extensions_url" type="text" class="flex1 heightFitContent text_pole widthNatural" maxlength="250" data-i18n="[placeholder]Extras API URL" placeholder="Extras API URL">
-                        <input id="extensions_api_key" type="text" class="flex1 heightFitContent text_pole widthNatural" maxlength="250" data-i18n="[placeholder]Extras API key (optional)" placeholder="Extras API key (optional)">
-                        <div class="extensions_url_block">
-                            <div id="extensions_connect" class="menu_button" data-i18n="Connect">Connect</div>
-                        </div>
-                    </div>
-                    <hr class="wide100p margin0">
                     <div class="alignitemscenter flex-container wide100p">
                         <h3 class="margin0 flex1" data-i18n="Extensions">
                             Extensions
@@ -3312,7 +3290,28 @@
                     </div>
                     <div id="extensions_settings2" class="flex1 wide50p">
                     </div>
-
+                    <hr class="wide100p margin0">
+                    <div class="alignitemscenter flex-container justifyCenter wide100p" style="justify-content: space-between;">
+                        <h4 class="margin0" data-i18n="Extras API:">Extras API:
+                            <a target="_blank" href="https://github.com/SillyTavern/SillyTavern-Extras">
+                                SillyTavern-Extras
+                            </a>
+                        </h4>
+                        <div class="flex-container">
+                            <div id="extensions_status" data-i18n="Not connected...">Not connected...</div>
+                            <label for="extensions_autoconnect" class="checkbox_label flexNoGap">
+                                <input id="extensions_autoconnect" type="checkbox">
+                                <span data-i18n="Auto-connect">Auto-connect</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="alignitemsflexstart flex-container wide100p">
+                        <input id="extensions_url" type="text" class="flex1 heightFitContent text_pole widthNatural" maxlength="250" data-i18n="[placeholder]Extras API URL" placeholder="Extras API URL">
+                        <input id="extensions_api_key" type="text" class="flex1 heightFitContent text_pole widthNatural" maxlength="250" data-i18n="[placeholder]Extras API key (optional)" placeholder="Extras API key (optional)">
+                        <div class="extensions_url_block">
+                            <div id="extensions_connect" class="menu_button" data-i18n="Connect">Connect</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -3894,27 +3893,25 @@
 
     <div id="shadow_select_chat_popup">
         <div id="select_chat_popup">
-            <input type="text" id="select_chat_search" placeholder="Search..." autocomplete="off">
-            <div id="select_chat_import"> <!-- import chat popup header -->
-                <div id="chat_import_button" class="fa-solid fa-file-import  menu_button"></div>
+            <div name="selectChatPopupHeader" class="flex-container alignitemscenter justifySpaceBetween">
+                <div id="select_chat_import"> <!-- import chat popup header -->
+                    <div id="chat_import_button" class="fa-solid fa-file-import opacity50p hoverglow fontsize120p"></div>
+                    <form id="form_import_chat" action="javascript:void(null);" method="post" enctype="multipart/form-data" style="display: none;">
+                        <input type="file" id="chat_import_file" accept=".json, .jsonl" name="avatar">
+                        <input id="chat_import_file_type" name="file_type" class="text_pole" maxlength="999" size="2" value="" autocomplete="off" style="display: none;">
+                        <input id="chat_import_avatar_url" name="avatar_url" class="text_pole" maxlength="999" size="2" value="" autocomplete="off" style="display: none;">
+                        <input id="chat_import_character_name" name="character_name" class="text_pole" maxlength="999" size="2" value="" autocomplete="off" style="display: none;">
+                    </form>
+                </div>
                 <div id="selectChatPopupHeaderText" class="TxtLrgBoldCenter">
-                    <span id="ChatHistoryCharName"></span>
-                    <br>
-                    <span data-i18n="Chat History">Chat History</span>
+                    <span id="ChatHistoryCharName"></span><span data-i18n="Chat History">Chat History</span>
                     <a href="https://docs.sillytavern.app/usage/core-concepts/chatfilemanagement/#chat-import" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
                 </div>
-                <form id="form_import_chat" action="javascript:void(null);" method="post" enctype="multipart/form-data" style="display: none;">
-                    <input type="file" id="chat_import_file" accept=".json, .jsonl" name="avatar">
-                    <input id="chat_import_file_type" name="file_type" class="text_pole" maxlength="999" size="2" value="" autocomplete="off" style="display: none;">
-                    <input id="chat_import_avatar_url" name="avatar_url" class="text_pole" maxlength="999" size="2" value="" autocomplete="off" style="display: none;">
-                    <input id="chat_import_character_name" name="character_name" class="text_pole" maxlength="999" size="2" value="" autocomplete="off" style="display: none;">
-                </form>
-                <div id="select_chat_cross" class="fa-solid fa-circle-xmark" alt="Close Past Chat Popup"></div>
-            </div>
 
-            <div id="select_chat_div">
-
+                <input type="text" id="select_chat_search" class="menu_button" placeholder="Search..." autocomplete="off">
+                <div id="select_chat_cross" class="opacity50p hoverglow fa-solid fa-circle-xmark fontsize120p" alt="Close Past Chat Popup"></div>
             </div>
+            <div id="select_chat_div"></div>
             <div id="load_select_chat_div">
                 <div class="fa-solid fa-hourglass fa-spin"></div>
             </div>
@@ -4008,29 +4005,30 @@
     </div>
 
     <div id="past_chat_template" class="template_element">
-        <div class="select_chat_block_wrapper">
-            <div class="select_chat_block" file_name="">
-                <div class="avatar">
-                    <img src="">
-                </div>
-                <div id="select_chat_name_wrapper">
-                    <div class="select_chat_block_filename select_chat_block_filename_item"></div>
-
-                    <div class="select_chat_info flex-container">
-                        <div class="chat_messages_date"></div>
-                        <div class="chat_messages_num select_chat_block_filename_item"></div>
-                        <div class="chat_file_size select_chat_block_filename_item"></div>
+        <div class="select_chat_block_wrapper flex-container">
+            <div class="select_chat_block  wide100p flex-container" file_name="">
+                <div id="select_chat_name_wrapper" class="flex-container alignitemscenter justifySpaceBetween wide100p">
+                    <div>
+                        <small class="select_chat_block_filename select_chat_block_filename_item"></small>
+                        <div title="Rename chat file" class="renameChatButton hoverglow opacity50p fa-solid fa-pencil" data-i18n="[title]Rename chat file"></div>
+                    </div>
+                    <div class="flex-container gap10px">
+                        <div class="select_chat_info flex-container">
+                            <small class="chat_messages_date select_chat_block_filename_item"></small>
+                            <small class="chat_file_size select_chat_block_filename_item"></small>
+                            <small class="chat_messages_num select_chat_block_filename_item"></small>
+                        </div>
+                        <div class="flex-container gap10px">
+                            <div title="Export JSONL chat file" data-format="jsonl" class="exportRawChatButton opacity50p hoverglow fa-solid fa-file-export" data-i18n="[title]Export JSONL chat file"></div>
+                            <div title="Download chat as plain text document" data-format="txt" class="exportChatButton opacity50p hoverglow fa-solid fa-file-lines" data-i18n="[title]Download chat as plain text document"></div>
+                            <div title="Delete chat file" file_name="" class="PastChat_cross opacity50p hoverglow fa-solid fa-skull" data-i18n="[title]Delete chat file"></div>
+                        </div>
                     </div>
                 </div>
 
                 <div class="select_chat_block_mes"></div>
             </div>
-            <div class="flex-container height100pSpaceEvenly">
-                <div title="Rename chat file" class="renameChatButton fa-solid fa-pencil" data-i18n="[title]Rename chat file"></div>
-                <div title="Export JSONL chat file" data-format="jsonl" class="exportRawChatButton fa-solid fa-file-export" data-i18n="[title]Export JSONL chat file"></div>
-                <div title="Download chat as plain text document" data-format="txt" class="exportChatButton fa-solid fa-file-lines" data-i18n="[title]Download chat as plain text document"></div>
-                <div title="Delete chat file" file_name="" class="PastChat_cross fa-solid fa-skull" data-i18n="[title]Delete chat file"></div>
-            </div>
+
         </div>
     </div>
 
@@ -4479,8 +4477,10 @@
             <div class="mes_block">
                 <div class="ch_name flex-container justifySpaceBetween">
                     <div class="flex-container flex1 alignitemscenter">
-                        <span class="name_text">${characterName}</span>
-                        <small class="timestamp"></small>
+                        <div class="flex-container alignItemsBaseline">
+                            <span class="name_text">${characterName}</span>
+                            <small class="timestamp"></small>
+                        </div>
                     </div>
 
                     <div class="mes_buttons">
@@ -5003,7 +5003,7 @@
             </a>
             <a id="option_select_chat">
                 <i class="fa-lg fa-solid fa-address-book"></i>
-                <span data-i18n="View past chats">View past chats</span>
+                <span data-i18n="Manage chat files">Manage chat files</span>
             </a>
             <hr>
             <a id="option_delete_mes">
