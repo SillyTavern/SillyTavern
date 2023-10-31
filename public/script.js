@@ -927,6 +927,41 @@ function getCharacterBlock(item, id) {
     return template;
 }
 
+function isCharacterDeckValid(deck) {
+    return deck && deck.characters && deck.characters.length > 0;
+}
+
+/**
+ * @param {CharacterDeck} deck
+ * @returns {Node}
+ */
+function getDeckBlock(deck) {
+    if (false === isCharacterDeckValid()) {
+        console.log('Faulty waifu')
+        return '';
+    }
+
+    const template = document.getElementById('character_deck_template').firstElementChild;
+    const blockElement = template.cloneNode(true);
+
+    blockElement.id = deck.id;
+
+    (deck.characters ?? []).some((characterId, index) => {
+        const character = characters[characterId];
+
+        if (!character) return false;
+
+        const imageHtml = `<img src="${getThumbnailUrl('avatar', character.avatar)}" alt="${character.avatar}" class="character_deck_thumbnail character_deck_thumbnail_${index}" />`;
+        blockElement.querySelector('.avatar').insertAdjacentHTML('beforeend', imageHtml);
+
+        return index === 2;
+    });
+
+    blockElement.querySelector('.ch_name').textContent = deck.name;
+
+    return blockElement;
+}
+
 async function printCharacters(fullRefresh = false) {
     if (fullRefresh) {
         saveCharactersPage = 0;
@@ -955,7 +990,7 @@ async function printCharacters(fullRefresh = false) {
             $("#rm_print_characters_block").empty();
             for (const i of data) {
                 if (i.type === 'deck') {
-                    $("#rm_print_characters_block").append(getCharacterBlock(i.item));
+                    $("#rm_print_characters_block").append(getDeckBlock(i.item));
                 }
                 if (i.type === 'character') {
                     $("#rm_print_characters_block").append(getCharacterBlock(i.item, i.id));

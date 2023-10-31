@@ -65,3 +65,29 @@
 #bulkEditButton.bulk_edit_overlay_active {
     color: var(--golden);
 }
+
+.character_deck .avatar {
+    position: relative;
+}
+
+.character_deck .avatar img.character_deck_thumbnail {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 48px;
+    height:72px;
+}
+
+.character_deck .avatar img.character_deck_thumbnail_0 {
+
+}
+
+.character_deck .avatar img.character_deck_thumbnail_1 {
+    margin-top: 9px;
+    margin-left: 9px;
+}
+
+.character_deck .avatar img.character_deck_thumbnail_2 {
+    margin-top: 18px;
+    margin-left: 18px;
+}
