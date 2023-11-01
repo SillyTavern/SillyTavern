@@ -237,6 +237,10 @@
     flex-basis: 200px
 }
 
+.flexBasis48p {
+    flex-basis: 48%
+}
+
 .flex-container {
     display: flex;
     gap: 5px;
