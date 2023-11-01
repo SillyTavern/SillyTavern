@@ -4751,6 +4751,11 @@ function changeMainAPI() {
         activeItem.amountGenElem.find('input').prop("disabled", false);
         activeItem.amountGenElem.css("opacity", 1.0);
     }
+    if (selectedVal === "textgenerationwebui") {
+        $("#streaming_textgenerationwebui_block").css('display', 'block')
+    } else {
+        $("#streaming_textgenerationwebui_block").css('display', 'none')
+    }
 
     if (selectedVal === "novel") {
         $("#ai_module_block_novel").css("display", "block");
