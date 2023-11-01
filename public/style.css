@@ -2281,6 +2281,35 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
     width: 70px;
 }
 
+.neo-range-input {
+    display: block;
+    cursor: text;
+    background-color: var(--black30a);
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 0 0 5px 5px;
+    padding: 2px;
+    padding-left: 1em;
+    padding-top: 5px;
+    text-align: center;
+    width: 100%;
+}
+
+.neo-range-slider {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    margin: 0 !important;
+    margin-top: 7px !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: 5px !important;
+    background: var(--white50a) !important;
+    border-radius: 7px 7px 0 0 !important;
+    background-size: 70% 100% !important;
+    background-repeat: no-repeat !important;
+    box-shadow: inset 0 0 2px black !important;
+    cursor: ew-resize !important;
+}
+
 .range-block-range {
     margin: 0;
     flex: 5;
@@ -2332,7 +2361,28 @@ input[type="range"]::-webkit-slider-thumb {
     transition: all 250ms;
 }
 
-.note-link-span:hover {
+.note-link-span-lrg {
+    color: var(--SmartThemeQuoteColor);
+    border: 3px solid var(--SmartThemeQuoteColor);
+    border-radius: 100%;
+    line-height: calc(var(--mainFontSize)*1.6);
+    font-size: calc(var(--mainFontSize)*1.4);
+    font-weight: 700;
+    width: calc(var(--mainFontSize) + 1rem);
+    height: calc(var(--mainFontSize) + 1rem);
+    display: inline-block;
+    opacity: 0.5;
+    margin: 0 5px;
+    text-align: center;
+    box-shadow: 0 0 3px black;
+    transition: all 250ms;
+    position: absolute;
+    top: 6px;
+    right: 23px;
+}
+
+.note-link-span:hover,
+.note-link-span-lrg:hover {
     opacity: 1;
 }
 
@@ -3053,7 +3103,8 @@ a {
 
 #extensions_settings .inline-drawer-toggle.inline-drawer-header,
 #extensions_settings2 .inline-drawer-toggle.inline-drawer-header,
-#user-settings-block h4 {
+#user-settings-block h4,
+.standoutHeader {
     background-image: linear-gradient(348deg, var(--white30a)2%, var(--grey30a)10%, var(--black70a)95%, var(--SmartThemeQuoteColor)100%);
     margin-bottom: 5px;
     border-radius: 10px;
@@ -3405,7 +3456,7 @@ a {
 }
 
 #max_context_unlocked_warning {
-    flex-basis: 100%;
+    /* flex-basis: 100%; */
 }
 
 #max_context_unlocked:not(:checked)+div {

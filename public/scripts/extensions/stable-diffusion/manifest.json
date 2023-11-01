@@ -5,6 +5,7 @@
     "optional": [
         "sd"
     ],
+    "generate_interceptor": "SD_ProcessTriggers",
     "js": "index.js",
     "css": "style.css",
     "author": "Cohee#1207",
