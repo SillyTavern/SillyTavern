@@ -62,23 +62,24 @@
 
 .margin-bot-10px,
 .marginBot10 {
-    margin-bottom: 10px;
+    margin-bottom: 10px !important;
 }
 
 .marginTop10 {
-    margin-top: 10px;
+    margin-top: 10px !important;
 }
 
 .marginBot5 {
-    margin-bottom: 5px;
+    margin-bottom: 5px !important;
 }
 
 .marginTop5 {
-    margin-top: 5px;
+    margin-top: 5px !important;
 }
 
 .marginTopBot5 {
-    margin: 5px 0;
+    margin-top: 5px !important;
+    margin-bottom: 5px !important;
 }
 
 .margin5 {
@@ -113,6 +114,10 @@
     align-self: start;
 }
 
+.gap0 {
+    gap: 0 !important;
+}
+
 .gap3px {
     gap: 3px !important;
 }
@@ -123,6 +128,14 @@
 
 .gap10px {
     gap: 10px !important;
+}
+
+.gap10h20v {
+    gap: 10px 20px !important;
+}
+
+.gap10h5v {
+    gap: 5px 10px !important;
 }
 
 .wide10pMinFit {
@@ -212,6 +225,22 @@
     display: flex;
 }
 
+.flexBasis50p {
+    flex-basis: 50%
+}
+
+.flexBasis25p {
+    flex-basis: 25%
+}
+
+.flexBasis200px {
+    flex-basis: 200px
+}
+
+.flexBasis48p {
+    flex-basis: 48%
+}
+
 .flex-container {
     display: flex;
     gap: 5px;
@@ -224,6 +253,10 @@
 
 .flexGrow {
     flex-grow: 1;
+}
+
+.flexShrink {
+    flex-shrink: 1
 }
 
 .flexnowrap {
@@ -302,10 +335,6 @@
 
 .flexWide50p {
     flex: 50%;
-}
-
-.wide50p {
-    width: 50% !important;
 }
 
 .wide25p {
@@ -473,4 +502,16 @@ textarea:disabled {
 
 .opacity1 {
     opacity: 1 !important;
+}
+
+.circleborder30px {
+    right: 30px;
+    top: 10px;
+    position: absolute;
+    border: 1px solid var(--SmartThemeBodyColor);
+    border-radius: 100%;
+    aspect-ratio: 1 / 1;
+    height: 30px;
+    text-align: center;
+    padding: 5px;
 }

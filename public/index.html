@@ -122,6 +122,7 @@
                 <div data-i18n="clickslidertips" class="toggle-description wide100p editable-slider-notification">
                     Click slider numbers to input manually.
                 </div>
+                <div name="samplerHelpButton" class="note-link-span-lrg fa-solid fa-question fa-2x"></div>
                 <div class="scrollableInner">
                     <div class="flex-container" id="ai_response_configuration">
                         <div id="respective-presets-block" class="width100p">
@@ -212,47 +213,36 @@
                         </div>
 
                         <div id="common-gen-settings-block" class="width100p">
-                            <div id="pro-settings-block">
-                                <div id="amount_gen_block" class="range-block">
-                                    <div class="range-block-title" data-i18n="response legth(tokens)">
-                                        Response Length (tokens)
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range-and-counter">
-                                            <div class="range-block-range">
-                                                <input type="range" id="amount_gen" name="volume" min="16" max="1024" step="1">
-                                            </div>
-                                            <div class="range-block-counter" data-randomization-disabled="true">
-                                                <input type="number" min="16" max="1024" step="1" data-for="amount_gen" id="amount_gen_counter">
+                            <div id="pro-settings-block" class="flex-container gap10h5v justifyCenter">
 
-                                            </div>
-                                        </div>
+                                <div id="amount_gen_block" class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexShrink gap0" data-i18n="response legth(tokens)">
+                                    <small>Response Length (tokens)</small>
+                                    <input class="neo-range-slider" type="range" id="amount_gen" name="volume" min="16" max="1024" step="1">
+                                    <div data-randomization-disabled="true" class="wide100p">
+                                        <input class="neo-range-input" type="number" min="16" max="1024" step="1" data-for="amount_gen" id="amount_gen_counter">
+                                    </div>
+                                    <div id="streaming_textgenerationwebui_block" class="flex-container alignitemscenter justifyCenter marginTop5">
+                                        <label class="checkbox_label" for="streaming_textgenerationwebui">
+                                            <input type="checkbox" id="streaming_textgenerationwebui" />
+                                            <small data-i18n="Streaming">Stream
+                                                <div class="margin5 fa-solid fa-question opacity50p hoverglow" title="Display the response bit by bit as it is generated.&#13;When this is off, responses will be displayed all at once when they are complete."></div>
+                                            </small>
+                                        </label>
                                     </div>
                                 </div>
-                                <div id="max_context_block" class="range-block">
-                                    <div class="range-block-title" data-i18n="context size(tokens)">
-                                        Context Size (tokens)
+                                <div id="max_context_block" class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexShrink gap0" data-i18n="context size(tokens)">
+                                    <small>Context Size (tokens)</small>
+                                    <input class="neo-range-slider" type="range" id="max_context" name="volume" min="512" max="8192" step="64">
+                                    <div data-randomization-disabled="true" class="wide100p">
+                                        <input class="neo-range-input" type="number" min="512" max="8192" step="64" data-for="max_context" id="max_context_counter">
                                     </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="max_context" name="volume" min="512" max="8192" step="64">
-                                        </div>
-                                        <div class="range-block-counter" data-randomization-disabled="true">
-                                            <input type="number" min="512" max="8192" step="64" data-for="max_context" id="max_context_counter">
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="max_context_unlocked_block">
-                                    <label class="checkbox_label">
-                                        <input id="max_context_unlocked" type="checkbox" />
-                                        <span data-i18n="unlocked">Unlocked</span>
-                                    </label>
-                                    <div id="max_context_unlocked_warning" class="toggle-description justifyLeft widthUnset">
-                                        <span data-i18n="Only select models support context sizes greater than 4096 tokens. Increase only if you know what you're doing.">
-                                            Only select models support context sizes greater than 4096 tokens.
-                                            Increase only if you know what you're doing.
-                                        </span>
+                                    <div class="flex-container alignitemscenter justifyCenter marginTop5" id="max_context_unlocked_block">
+                                        <label class="checkbox_label">
+                                            <input id="max_context_unlocked" type="checkbox" />
+                                            <small data-i18n="unlocked">Unlocked
+                                                <div id="max_context_unlocked_warning" class="fa-solid fa-question opacity50p hoverglow" title="Only select models support context sizes greater than 4096 tokens.&#13;Increase only if you know what you're doing."></div>
+                                            </small>
+                                        </label>
                                     </div>
                                 </div>
                             </div>
@@ -460,129 +450,62 @@
                                 </div>
                             </div>
                             <div id="range_block_textgenerationwebui">
-                                <div class="range-block">
-                                    <label class="checkbox_label" for="streaming_textgenerationwebui">
-                                        <input type="checkbox" id="streaming_textgenerationwebui" />
-                                        <span data-i18n="Streaming">Streaming</span>
-                                    </label>
-                                    <div class="toggle-description justifyLeft">
-                                        <span data-i18n="Display the response bit by bit as it is generated.">
-                                            Display the response bit by bit as it is generated.</span><br>
-                                        <span data-i18n="When this is off, responses will be displayed all at once when they are complete.">
-                                            When this is off, responses will be displayed all at once when they are complete.
-                                        </span>
-                                    </div>
-                                </div>
-                                <div class="range-block">
-                                    <div class="range-block-title" data-i18n="temperature">
-                                        Temperature
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="temp_textgenerationwebui" name="volume" min="0.0" max="2.0" step="0.01">
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <input type="number" min="0.0" max="2.0" step="0.01" data-for="temp_textgenerationwebui" id="temp_counter_textgenerationwebui">
+                                <div class="flex-container gap10h5v justifyCenter">
+                                    <div class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexShrink gap0" data-i18n="temperature">
+                                        <small>Temperature
 
-                                        </div>
+                                        </small>
+                                        <input class="neo-range-slider" type="range" id="temp_textgenerationwebui" name="volume" min="0.0" max="2.0" step="0.01" x-setting-id="temp">
+                                        <input type="number" class="neo-range-input" min="0.0" max="2.0" step="0.01" data-for="temp_textgenerationwebui" id="temp_counter_textgenerationwebui">
                                     </div>
-                                </div>
-                                <div class="range-block">
-                                    <div class="range-block-title" data-i18n="rep.pen">
-                                        Repetition Penalty
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="rep_pen_textgenerationwebui" name="volume" min="1" max="1.5" step="0.01">
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <input type="number" min="1" max="1.5" step="0.01" data-for="rep_pen_textgenerationwebui" id="rep_pen_counter_textgenerationwebui">
+                                    <div data-newbie-hidden class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexShrink gap0" data-i18n="rep.pen">
+                                        <small>Repetition Penalty
 
-                                        </div>
+                                        </small>
+                                        <input class="neo-range-slider" type="range" id="rep_pen_textgenerationwebui" name="volume" min="1" max="1.5" step="0.01">
+                                        <input class="neo-range-input" type="number" min="1" max="1.5" step="0.01" data-for="rep_pen_textgenerationwebui" id="rep_pen_counter_textgenerationwebui">
                                     </div>
-                                </div>
-                                <div data-newbie-hidden class="range-block">
-                                    <div class="range-block-title" data-i18n="rep.pen range">
-                                        Repetition Penalty Range
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="rep_pen_range_textgenerationwebui" name="volume" min="0" max="4096" step="1">
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <input type="number" min="0" max="4096" step="1" data-for="rep_pen_range_textgenerationwebui" id="rep_pen_range_counter_textgenerationwebui">
+                                    <div data-newbie-hidden class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexShrink gap0" data-i18n="rep.pen range">
+                                        <small>Repetition Penalty Range
 
-                                        </div>
+                                        </small>
+                                        <input class="neo-range-slider" type="range" id="rep_pen_range_textgenerationwebui" name="volume" min="0" max="4096" step="1">
+                                        <input class="neo-range-input" type="number" min="0" max="4096" step="1" data-for="rep_pen_range_textgenerationwebui" id="rep_pen_range_counter_textgenerationwebui">
                                     </div>
-                                </div>
-                                <div data-newbie-hidden class="range-block">
-                                    <div class="range-block-title" data-i18n="Encoder Rep. Pen.">
-                                        Encoder Repetition Penalty
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="encoder_rep_pen_textgenerationwebui" name="volume" min="0.8" max="1.5" step="0.01" />
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <input type="number" min="0.8" max="1.5" step="0.01" data-for="encoder_rep_pen_textgenerationwebui" id="encoder_rep_pen_counter_textgenerationwebui">
+                                    <div data-newbie-hidden class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexShrink gap0" data-i18n="Encoder Rep. Pen.">
+                                        <small>Encoder Repetition Penalty
 
-                                        </div>
+                                        </small>
+                                        <input class="neo-range-slider" type="range" id="encoder_rep_pen_textgenerationwebui" name="volume" min="0.8" max="1.5" step="0.01" />
+                                        <input class="neo-range-input" type="number" min="0.8" max="1.5" step="0.01" data-for="encoder_rep_pen_textgenerationwebui" id="encoder_rep_pen_counter_textgenerationwebui">
                                     </div>
-                                </div>
-                                <div data-newbie-hidden class="range-block">
-                                    <div class="range-block-title" data-i18n="Frequency Penalty">
-                                        Frequency Penalty
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="freq_pen_textgenerationwebui" name="volume" min="-2" max="2" step="0.01" />
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <input type="number" data-for="freq_pen_textgenerationwebui" min="-2" max="2" step="0.01" id="freq_pen_counter_textgenerationwebui">
+                                    <div data-newbie-hidden class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexShrink gap0" data-i18n="Frequency Penalty">
+                                        <small>Frequency Penalty
 
-                                        </div>
+                                        </small>
+                                        <input class="neo-range-slider" type="range" id="freq_pen_textgenerationwebui" name="volume" min="-2" max="2" step="0.01" />
+                                        <input class="neo-range-input" type="number" data-for="freq_pen_textgenerationwebui" min="-2" max="2" step="0.01" id="freq_pen_counter_textgenerationwebui">
                                     </div>
-                                </div>
-                                <div data-newbie-hidden class="range-block">
-                                    <div class="range-block-title" data-i18n="Presence Penalty">
-                                        Presence Penalty
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="presence_pen_textgenerationwebui" name="volume" min="-2" max="2" step="0.01" />
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <input type="number" min="-2" max="2" step="0.01" data-for="presence_pen_textgenerationwebui" id="presence_pen_counter_textgenerationwebui">
+                                    <div data-newbie-hidden class="alignitemscenter flex-container marginBot5  flexFlowColumn flexBasis48p flexShrink gap0" data-i18n="Presence Penalty">
+                                        <small>Presence Penalty
 
-                                        </div>
+                                        </small>
+                                        <input class="neo-range-slider" type="range" id="presence_pen_textgenerationwebui" name="volume" min="-2" max="2" step="0.01" />
+                                        <input class="neo-range-input" type="number" min="-2" max="2" step="0.01" data-for="presence_pen_textgenerationwebui" id="presence_pen_counter_textgenerationwebui">
                                     </div>
-                                </div>
-                                <div data-newbie-hidden class="range-block">
-                                    <div class="range-block-title" data-i18n="No Repeat Ngram Size">
-                                        No Repeat Ngram Size
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="no_repeat_ngram_size_textgenerationwebui" name="volume" min="0" max="20" step="1">
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <input type="number" min="0" max="20" step="1" data-for="no_repeat_ngram_size_textgenerationwebui" id="no_repeat_ngram_size_counter_textgenerationwebui">
+                                    <div data-newbie-hidden class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexShrink gap0" data-i18n="No Repeat Ngram Size">
+                                        <small>No Repeat Ngram Size
 
-                                        </div>
+                                        </small>
+                                        <input class="neo-range-slider" type="range" id="no_repeat_ngram_size_textgenerationwebui" name="volume" min="0" max="20" step="1">
+                                        <input class="neo-range-input" type="number" min="0" max="20" step="1" data-for="no_repeat_ngram_size_textgenerationwebui" id="no_repeat_ngram_size_counter_textgenerationwebui">
                                     </div>
-                                </div>
-                                <div data-newbie-hidden class="range-block">
-                                    <div class="range-block-title" data-i18n="Min Length">
-                                        Min Length
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="min_length_textgenerationwebui" name="volume" min="0" max="2000" step="1" />
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <input type="number" min="0" max="2000" step="1" data-for="min_length_textgenerationwebui" id="min_length_counter_textgenerationwebui">
+                                    <div data-newbie-hidden class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexShrink gap0" data-i18n="Min Length">
+                                        <small>Min Length
 
-                                        </div>
+                                        </small>
+                                        <input class="neo-range-slider" type="range" id="min_length_textgenerationwebui" name="volume" min="0" max="2000" step="1" />
+                                        <input class="neo-range-input" type="number" min="0" max="2000" step="1" data-for="min_length_textgenerationwebui" id="min_length_counter_textgenerationwebui">
                                     </div>
                                 </div>
                             </div>
@@ -751,7 +674,7 @@
                                         </div>
                                         <div id="claude_assistant_prefill_block" data-source="claude" class="range-block">
                                             <span id="claude_assistant_prefill_text" data-i18n="Assistant Prefill">Assistant Prefill</span>
-                                            <textarea id="claude_assistant_prefill" class="text_pole textarea_compact" name="assistant_prefill autoSetHeight" rows="3" maxlength="5000" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
+                                            <textarea id="claude_assistant_prefill" class="text_pole textarea_compact" name="assistant_prefill autoSetHeight" rows="3" maxlength="10000" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -891,7 +814,7 @@
                                         </div>
                                     </div>
                                     <div class="wide100p">
-                                        <input id="openai_reverse_proxy" type="text" class="text_pole" placeholder="https://api.openai.com/v1" maxlength="100" />
+                                        <input id="openai_reverse_proxy" type="text" class="text_pole" placeholder="https://api.openai.com/v1" maxlength="500" />
                                     </div>
                                 </div>
                                 <div class="range-block" data-source="openai,claude">
@@ -904,7 +827,7 @@
                                         </span>
                                     </div>
                                     <div class="flex-container width100p">
-                                        <input id="openai_proxy_password" type="password" class="text_pole flex1" placeholder="" maxlength="200" form="openai_form" />
+                                        <input id="openai_proxy_password" type="password" class="text_pole flex1" placeholder="" maxlength="500" form="openai_form" />
                                         <div id="openai_proxy_password_show" title="Peek a password" class="menu_button fa-solid fa-eye-slash fa-fw"></div>
                                     </div>
                                 </div>
@@ -922,9 +845,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <hr>
                         </div>
-
                         <div data-newbie-hidden id="advanced-ai-config-block" class="width100p">
                             <div data-newbie-hidden id="kobold_api-settings">
                                 <div id="kobold-advanced-config">
@@ -1350,298 +1271,187 @@
                                 </div>
                             </div>
                             <div data-newbie-hidden id="textgenerationwebui_api-settings">
-                                <div class="range-block">
-                                    <div class="range-block-title" data-i18n="Top K">
-                                        Top K
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="top_k_textgenerationwebui" name="volume" min="0" max="200" step="1">
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <input type="number" min="0" max="200" step="1" data-for="top_k_textgenerationwebui" id="top_k_counter_textgenerationwebui">
 
+                                <div class="flex-container gap10h5v justifyCenter">
+                                    <div class="alignitemscenter flex-container  flexFlowColumn flexBasis48p flexShrink gap0" data-i18n="Top K">
+                                        <small>Top K</small>
+                                        <input class="neo-range-slider" type="range" id="top_k_textgenerationwebui" name="volume" min="0" max="200" step="1">
+                                        <input class="neo-range-input" type="number" min="0" max="200" step="1" data-for="top_k_textgenerationwebui" id="top_k_counter_textgenerationwebui">
+                                    </div>
+                                    <div class="alignitemscenter flex-container  flexFlowColumn flexBasis48p flexShrink gap0" data-i18n="Top P">
+                                        <small>Top P</small>
+                                        <input class="neo-range-slider" type="range" id="top_p_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
+                                        <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="top_p_textgenerationwebui" id="top_p_counter_textgenerationwebui">
+                                    </div>
+                                    <div class="alignitemscenter flex-container  flexFlowColumn flexBasis48p flexShrink gap0" data-i18n="Typical P">
+                                        <small>Typical P</small>
+                                        <input class="neo-range-slider" type="range" id="typical_p_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
+                                        <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="typical_p_textgenerationwebui" id="typical_p_counter_textgenerationwebui">
+                                    </div>
+                                    <div class="alignitemscenter flex-container  flexFlowColumn flexBasis48p flexShrink gap0" data-i18n="Top A">
+                                        <small>Top A</small>
+                                        <input class="neo-range-slider" type="range" id="top_a_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
+                                        <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="top_a_textgenerationwebui" id="top_a_counter_textgenerationwebui">
+                                    </div>
+                                    <div class="alignitemscenter flex-container  flexFlowColumn flexBasis48p flexShrink gap0" data-i18n="Tail Free Sampling">
+                                        <small>Tail Free Sampling</small>
+                                        <input class="neo-range-slider" type="range" id="tfs_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
+                                        <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="tfs_textgenerationwebui" id="tfs_counter_textgenerationwebui">
+                                    </div>
+                                    <div class="alignitemscenter flex-container  flexFlowColumn flexBasis48p flexShrink gap0" data-i18n="Epsilon Cutoff">
+                                        <small>Epsilon Cutoff</small>
+                                        <input class="neo-range-slider" type="range" id="epsilon_cutoff_textgenerationwebui" name="volume" min="0" max="9" step="0.01">
+                                        <input class="neo-range-input" type="number" min="0" max="9" step="0.01" data-for="epsilon_cutoff_textgenerationwebui" id="epsilon_cutoff_counter_textgenerationwebui">
+                                    </div>
+                                    <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexShrink gap0" data-i18n="Eta Cutoff">
+                                        <small>Eta Cutoff</small>
+                                        <input class="neo-range-slider" type="range" id="eta_cutoff_textgenerationwebui" name="volume" min="0" max="20" step="0.01">
+                                        <input class="neo-range-input" type="number" min="0" max="20" step="0.01" data-for="eta_cutoff_textgenerationwebui" id="eta_cutoff_counter_textgenerationwebui">
+                                    </div>
+                                    <div name="checkboxes" class="flex-container flexFlowColumn flexBasis48p flexShrink ">
+                                        <div class="justifyCenter">
+                                            <label class="checkbox_label" for="do_sample_textgenerationwebui">
+                                                <input type="checkbox" id="do_sample_textgenerationwebui" />
+                                                <small data-i18n="Do Sample">Do Sample</small>
+                                            </label>
+                                            <label class="checkbox_label" for="add_bos_token_textgenerationwebui">
+                                                <input type="checkbox" id="add_bos_token_textgenerationwebui" />
+                                                <small data-i18n="Add BOS Token">Add BOS Token
+                                                    <div class="fa-solid fa-question opacity50p hoverglow" data-i18n="Add the bos_token to the beginning of prompts. Disabling this can make the replies more creative." title="Add the bos_token to the beginning of prompts. Disabling this can make the replies more creative."></div>
+                                                </small>
+                                            </label>
+                                            <label class="checkbox_label" for="ban_eos_token_textgenerationwebui">
+                                                <input type="checkbox" id="ban_eos_token_textgenerationwebui" />
+                                                <small data-i18n="Ban EOS Token">Ban EOS Token
+                                                    <div class="fa-solid fa-question opacity50p hoverglow" data-i18n="Ban the eos_token. This forces the model to never end the generation prematurely" title="Ban the eos_token. This forces the model to never end the generation prematurely."></div>
+                                                </small>
+                                            </label>
+                                            <label class="checkbox_label" for="skip_special_tokens_textgenerationwebui">
+                                                <input type="checkbox" id="skip_special_tokens_textgenerationwebui" />
+                                                <small data-i18n="Skip Special Tokens">Skip Special Tokens</small>
+                                            </label>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="range-block">
-                                    <div class="range-block-title" data-i18n="Top P">
-                                        Top P
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="top_p_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <input type="number" min="0" max="1" step="0.01" data-for="top_p_textgenerationwebui" id="top_p_counter_textgenerationwebui">
-
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="range-block">
-                                    <div class="range-block-title" data-i18n="Typical P">
-                                        Typical P
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="typical_p_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <input type="number" min="0" max="1" step="0.01" data-for="typical_p_textgenerationwebui" id="typical_p_counter_textgenerationwebui">
-
+                                    <div name="miroStatBlock">
+                                        <h4 class="wide100p textAlignCenter" data-i18n="Mirostat (mode=1 is only for llama.cpp)">Mirostat
+                                            <div class=" fa-solid fa-question opacity50p hoverglow" title="Mode=1 is only for llama.cpp&#13;More helpful tips coming soon."></div>
+                                        </h4>
+                                        <div class="flex-container flexFlowRow gap10px flexShrink">
+                                            <div class="alignitemscenter flex-container marginBot5 flexFlowColumn  flexShrink gap0" data-i18n="Mirostat Mode">
+                                                <small>Mode</small>
+                                                <input class="neo-range-slider" type="range" id="mirostat_mode_textgenerationwebui" name="volume" min="0" max="2" step="1" />
+                                                <input class="neo-range-input" type="number" min="0" max="2" step="1" data-for="mirostat_mode_textgenerationwebui" id="mirostat_mode_counter_textgenerationwebui">
+                                            </div>
+                                            <div class="alignitemscenter flex-container marginBot5 flexFlowColumn  flexShrink gap0" data-i18n="Mirostat Tau">
+                                                <small>Tau</small>
+                                                <input class="neo-range-slider" type="range" id="mirostat_tau_textgenerationwebui" name="volume" min="0" max="20" step="0.01" />
+                                                <input class="neo-range-input" type="number" min="0" max="20" step="0.01" data-for="mirostat_tau_textgenerationwebui" id="mirostat_tau_counter_textgenerationwebui">
+                                            </div>
+                                            <div class="alignitemscenter flex-container marginBot5 flexFlowColumn  flexShrink gap0" data-i18n="Mirostat Eta">
+                                                <small>Eta</small>
+                                                <input class="neo-range-slider" type="range" id="mirostat_eta_textgenerationwebui" name="volume" min="0" max="1" step="0.01" />
+                                                <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="mirostat_eta_textgenerationwebui" id="mirostat_eta_counter_textgenerationwebui">
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="range-block">
-                                    <div class="range-block-title">
-                                        Top A
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="top_a_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <input type="number" min="0" max="1" step="0.01" data-for="top_a_textgenerationwebui" id="top_a_counter_textgenerationwebui">
-
+                                    <div name="contrastiveSearchBlock">
+                                        <h4 data-i18n="Contrastive search">Contrast Search
+                                            <div class=" fa-solid fa-question opacity50p hoverglow" title="Helpful tip coming soon."></div>
+                                        </h4>
+                                        <div class="alignitemscenter flexFlowColumn flex-container flexBasis48p flexShrink gap0" data-i18n="Penalty Alpha">
+                                            <small>Penalty Alpha</small>
+                                            <input class="neo-range-slider" type="range" id="penalty_alpha_textgenerationwebui" name="volume" min="0" max="5" step="0.05" />
+                                            <input class="neo-range-input" type="number" min="0" max="5" step="0.05" data-for="penalty_alpha_textgenerationwebui" id="penalty_alpha_counter_textgenerationwebui">
                                         </div>
                                     </div>
-                                </div>
-                                <div class="range-block">
-                                    <div class="range-block-title" data-i18n="Tail Free Sampling">
-                                        Tail Free Sampling
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="tfs_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
+                                    <div name="beamSearchBlock">
+                                        <h4 class="textAlignCenter" span data-i18n="Beam search">Beam Search
+                                            <div class=" fa-solid fa-question opacity50p hoverglow" title="Helpful tip coming soon."></div>
+                                        </h4>
+                                        <div class="flex-container flexFlowRow gap10px ">
+                                            <div class="alignitemscenter flex-container  flexFlowColumn flexBasis48p  gap0" data-i18n="Number of Beams">
+                                                <small>Number of Beams</small>
+                                                <input class="neo-range-slider" type="range" id="num_beams_textgenerationwebui" name="volume" min="1" max="20" step="1" />
+                                                <input class="neo-range-input" type="number" min="1" max="20" step="1" data-for="num_beams_textgenerationwebui" id="num_beams_counter_textgenerationwebui">
+                                            </div>
+                                            <div class="alignitemscenter flex-container  flexFlowColumn flexBasis48p  gap0">
+                                                <small data-i18n="Length Penalty">Length Penalty</small>
+                                                <input class="neo-range-slider" type="range" id="length_penalty_textgenerationwebui" name="volume" min="-5" max="5" step="0.1" />
+                                                <input class="neo-range-input" type="number" min="-5" max="5" step="0.1" data-for="length_penalty_textgenerationwebui" id="length_penalty_counter_textgenerationwebui">
+                                            </div>
                                         </div>
-                                        <div class="range-block-counter">
-                                            <input type="number" min="0" max="1" step="0.01" data-for="tfs_textgenerationwebui" id="tfs_counter_textgenerationwebui">
-
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="range-block">
-                                    <div class="range-block-title" data-i18n="Epsilon Cutoff">
-                                        Epsilon Cutoff
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="epsilon_cutoff_textgenerationwebui" name="volume" min="0" max="9" step="0.01">
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <input type="number" min="0" max="9" step="0.01" data-for="epsilon_cutoff_textgenerationwebui" id="epsilon_cutoff_counter_textgenerationwebui">
-
+                                        <div class="justifyCenter widthFitContent marginTopBot5">
+                                            <label class="checkbox_label" for="early_stopping_textgenerationwebui">
+                                                <input type="checkbox" id="early_stopping_textgenerationwebui" />
+                                                <small data-i18n="Early Stopping">Early Stopping</small>
+                                            </label>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="range-block">
-                                    <div class="range-block-title" data-i18n="Eta Cutoff">
-                                        Eta Cutoff
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="eta_cutoff_textgenerationwebui" name="volume" min="0" max="20" step="0.01">
+                                    <hr class="width100p">
+                                    <div class="">
+                                        <h4 class="range-block-title justifyLeft">
+                                            <span data-i18n="Banned Tokens">Banned Tokens</span>
+                                            <span data-i18n="LLaMA models">(LLaMA models)</span>
+                                            <div class="margin5 fa-solid fa-question opacity50p hoverglow" title="Helpful tip coming soon."></div>
+                                        </h4>
+                                        <small class="" data-i18n="Sequences you don't want to appear in the output. One per line.">
+                                            Sequences you don't want to appear in the output. One per line. Text or [token ids].
+                                        </small>
+                                        <div class="wide100p">
+                                            <textarea id="banned_tokens_textgenerationwebui" class="text_pole textarea_compact" name="banned_tokens_textgenerationwebui" rows="3" placeholder="Example:&#10;some text&#10;[42, 69, 1337]"></textarea>
                                         </div>
-                                        <div class="range-block-counter">
-                                            <input type="number" min="0" max="20" step="0.01" data-for="eta_cutoff_textgenerationwebui" id="eta_cutoff_counter_textgenerationwebui">
-
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="range-block">
-                                    <label class="checkbox_label" for="do_sample_textgenerationwebui">
-                                        <input type="checkbox" id="do_sample_textgenerationwebui" />
-                                        <span data-i18n="Do Sample">Do Sample</span>
-                                    </label>
-                                </div>
-                                <div class="range-block">
-                                    <label class="checkbox_label" for="add_bos_token_textgenerationwebui">
-                                        <input type="checkbox" id="add_bos_token_textgenerationwebui" />
-                                        <span data-i18n="Add BOS Token">Add BOS Token</span>
-                                    </label>
-                                    <div class="toggle-description justifyLeft" data-i18n="Add the bos_token to the beginning of prompts. Disabling this can make the replies more creative.">
-                                        Add the bos_token to the beginning of prompts. Disabling this can make the
-                                        replies more creative.
-                                    </div>
-                                </div>
-                                <div class="range-block">
-                                    <label class="checkbox_label" for="ban_eos_token_textgenerationwebui">
-                                        <input type="checkbox" id="ban_eos_token_textgenerationwebui" />
-                                        <span data-i18n="Ban EOS Token">Ban EOS Token</span>
-                                    </label>
-                                    <div class="toggle-description justifyLeft" data-i18n="Ban the eos_token. This forces the model to never end the generation prematurely">
-                                        Ban the eos_token. This forces the model to never end the generation
-                                        prematurely.
-                                    </div>
-                                </div>
-                                <div class="range-block">
-                                    <label class="checkbox_label" for="skip_special_tokens_textgenerationwebui">
-                                        <input type="checkbox" id="skip_special_tokens_textgenerationwebui" />
-                                        <span data-i18n="Skip Special Tokens">Skip Special Tokens</span>
-                                    </label>
-                                </div>
-                                <hr>
-                                <div class="range-block">
-                                    <h4 class="range-block-title justifyLeft">
-                                        <span data-i18n="Banned Tokens">Banned Tokens</span>
-                                        <span data-i18n="LLaMA models">(LLaMA models)</span>
-                                    </h4>
-                                    <div class="toggle-description justifyLeft" data-i18n="Sequences you don't want to appear in the output. One per line.">
-                                        Sequences you don't want to appear in the output. One per line. Text or [token ids].
-                                    </div>
-                                    <div class="wide100p">
-                                        <textarea id="banned_tokens_textgenerationwebui" class="text_pole textarea_compact" name="banned_tokens_textgenerationwebui" rows="3" placeholder="Example:&#10;some text&#10;[42, 69, 1337]"></textarea>
-                                    </div>
-                                    <small>
-                                        <i class="fa-solid fa-lightbulb"></i>
-                                        &nbsp;
-                                        <span data-i18n="Most tokens have a leading space.">
-                                            Most tokens have a leading space.
-                                        </span>
-                                    </small>
-                                </div>
-                                <hr>
-                                <div class="range-block">
-                                    <h4 class="range-block-title justifyLeft" data-i18n="CFG Scale">
-                                        CFG Scale
-                                    </h4>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="guidance_scale_textgenerationwebui" name="volume" min="0.1" max="4" step="0.05">
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <input type="number" min="0.1" max="4" step="0.05" data-for="guidance_scale_textgenerationwebui" id="guidance_scale_counter_textgenerationwebui">
-
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="range-block">
-                                    <div class="range-block-title justifyLeft">
-                                        <span data-i18n="Negative Prompt">Negative Prompt</span>
-                                    </div>
-                                    <div class="wide100p">
-                                        <textarea id="negative_prompt_textgenerationwebui" class="text_pole textarea_compact" name="negative_prompt" rows="3" data-i18n="[placeholder]Add text here that would make the AI generate things you don't want in your outputs." placeholder="Add text here that would make the AI generate things you don't want in your outputs."></textarea>
-                                    </div>
-                                    <small data-i18n="Used if CFG Scale is unset globally, per chat or character">
-                                        Used if CFG Scale is unset globally, per chat or character
-                                    </small>
-                                </div>
-                                <hr>
-                                <h4><span data-i18n="Beam search">Beam search</span></h4>
-                                <div class="range-block">
-                                    <div class="range-block-title" data-i18n="Number of Beams">
-                                        Number of Beams
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="num_beams_textgenerationwebui" name="volume" min="1" max="20" step="1" />
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <input type="number" min="1" max="20" step="1" data-for="num_beams_textgenerationwebui" id="num_beams_counter_textgenerationwebui">
-
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="range-block">
-                                    <div class="range-block-title">
-                                        <span data-i18n="Length Penalty">Length Penalty</span>
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="length_penalty_textgenerationwebui" name="volume" min="-5" max="5" step="0.1" />
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <input type="number" min="-5" max="5" step="0.1" data-for="length_penalty_textgenerationwebui" id="length_penalty_counter_textgenerationwebui">
-
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="range-block">
-                                    <label class="checkbox_label" for="early_stopping_textgenerationwebui">
-                                        <input type="checkbox" id="early_stopping_textgenerationwebui" />
-                                        <span data-i18n="Early Stopping">Early Stopping</span>
-                                    </label>
-                                </div>
-                                <hr>
-                                <h4 data-i18n="Contrastive search">Contrastive search</h4>
-                                <div class="range-block">
-                                    <div class="range-block-title" data-i18n="Penalty Alpha">
-                                        Penalty Alpha
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="penalty_alpha_textgenerationwebui" name="volume" min="0" max="5" step="0.05" />
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <input type="number" min="0" max="5" step="0.05" data-for="penalty_alpha_textgenerationwebui" id="penalty_alpha_counter_textgenerationwebui">
-
-                                        </div>
-                                    </div>
-                                </div>
-                                <hr>
-                                <h4 data-i18n="Mirostat (mode=1 is only for llama.cpp)">Mirostat (mode=1 is only for llama.cpp)</h4>
-                                <div class="range-block">
-                                    <div class="range-block-title" data-i18n="Mirostat Mode">
-                                        Mirostat Mode
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="mirostat_mode_textgenerationwebui" name="volume" min="0" max="2" step="1" />
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <input type="number" min="0" max="2" step="1" data-for="mirostat_mode_textgenerationwebui" id="mirostat_mode_counter_textgenerationwebui">
-
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="range-block">
-                                    <div class="range-block-title" data-i18n="Mirostat Tau">
-                                        Mirostat Tau
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="mirostat_tau_textgenerationwebui" name="volume" min="0" max="20" step="0.01" />
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <input type="number" min="0" max="20" step="0.01" data-for="mirostat_tau_textgenerationwebui" id="mirostat_tau_counter_textgenerationwebui">
-
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="range-block">
-                                    <div class="range-block-title" data-i18n="Mirostat Eta">
-                                        Mirostat Eta
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range">
-                                            <input type="range" id="mirostat_eta_textgenerationwebui" name="volume" min="0" max="1" step="0.01" />
-                                        </div>
-                                        <div class="range-block-counter">
-                                            <input type="number" min="0" max="1" step="0.01" data-for="mirostat_eta_textgenerationwebui" id="mirostat_eta_counter_textgenerationwebui">
-
-                                        </div>
-                                    </div>
-                                </div>
-                                <hr>
-                                <div id="grammar_block_ooba">
-                                    <h4 data-i18n="Grammar">Grammar</h4>
-                                    <div class="range-block">
-                                        <textarea id="grammar_string_textgenerationwebui" rows="2" class="text_pole textarea_compact monospace"></textarea>
-                                        <div class="toggle-description justifyLeft">
-                                            <span data-i18n="Type in the desired custom grammar (GBNF).">
-                                                Type in the desired custom grammar (<a href="https://github.com/ggerganov/llama.cpp/blob/master/grammars/README.md" target="_blank">GBNF</a>).
+                                        <small>
+                                            <i class="fa-solid fa-lightbulb"></i>
+                                            &nbsp;
+                                            <span data-i18n="Most tokens have a leading space.">
+                                                Most tokens have a leading space.
                                             </span>
+                                        </small>
+                                    </div>
+                                    <hr class="width100p">
+                                    <div class="alignitemscenter flex-container  flexFlowColumn flexBasis48p flexShrink gap0" data-i18n="CFG Scale">
+                                        <div>
+                                            CFG Scale
+                                            <div class="margin5 fa-solid fa-question opacity50p hoverglow" title="Helpful tip coming soon."></div>
+                                        </div>
+                                        <input class="neo-range-slider" type="range" id="guidance_scale_textgenerationwebui" name="volume" min="0.1" max="4" step="0.05">
+                                        <input class="neo-range-input" type="number" min="0.1" max="4" step="0.05" data-for="guidance_scale_textgenerationwebui" id="guidance_scale_counter_textgenerationwebui">
+                                    </div>
+                                    <div class="range-block">
+                                        <div class="range-block-title justifyLeft">
+                                            <span data-i18n="Negative Prompt">Negative Prompt</span>
+                                        </div>
+                                        <div class="wide100p">
+                                            <textarea id="negative_prompt_textgenerationwebui" class="text_pole textarea_compact" name="negative_prompt" rows="3" data-i18n="[placeholder]Add text here that would make the AI generate things you don't want in your outputs." placeholder="Add text here that would make the AI generate things you don't want in your outputs."></textarea>
+                                        </div>
+                                        <small data-i18n="Used if CFG Scale is unset globally, per chat or character">
+                                            Used if CFG Scale is unset globally, per chat or character
+                                        </small>
+                                    </div>
+                                    <hr class="width100p">
+                                    <div id="grammar_block_ooba">
+                                        <h4 data-i18n="Grammar">Grammar
+                                            <div class="margin5 fa-solid fa-question opacity50p hoverglow" title="Helpful tip coming soon."></div>
+                                        </h4>
+                                        <div class="range-block">
+                                            <textarea id="grammar_string_textgenerationwebui" rows="2" class="text_pole textarea_compact monospace"></textarea>
+                                            <div class="toggle-description justifyLeft">
+                                                <span data-i18n="Type in the desired custom grammar (GBNF).">
+                                                    Type in the desired custom grammar (<a href="https://github.com/ggerganov/llama.cpp/blob/master/grammars/README.md" target="_blank">GBNF</a>).
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <hr>
-                                <div class="range-block">
-                                    <div class="range-block-title" data-i18n="Seed">
-                                        Seed
+                                    <div class="range-block">
+                                        <div class="range-block-title" data-i18n="Seed">
+                                            Seed
+                                            <div class="margin5 fa-solid fa-question opacity50p hoverglow" title="Helpful tip coming soon."></div>
+                                        </div>
+                                        <input type="number" id="seed_textgenerationwebui" class="text_pole wide100p" maxlength="100" />
                                     </div>
-                                    <input type="number" id="seed_textgenerationwebui" class="text_pole wide100p" maxlength="100" />
                                 </div>
                             </div>
+
                             <div id="openai_settings">
                                 <div class="">
                                     <div class="range-block">
@@ -3328,7 +3138,7 @@
                         <div class="flex1">
                             <h4 data-i18n="Name">Name</h4>
                             <div class="change_name">
-                                <input id="your_name" name="your_name" data-i18n="[placeholder]Enter your name" placeholder="Enter your name" class="text_pole wide100p" maxlength="50" value="" autocomplete="off">
+                                <input id="your_name" name="your_name" data-i18n="[placeholder]Enter your name" placeholder="Enter your name" class="text_pole wide100p" maxlength="100" value="" autocomplete="off">
                                 <div id="your_name_button" class="menu_button fa-solid fa-check" title="Click to set a new User Name" data-i18n="[title]Click to set a new User Name">
                                 </div>
                                 <div id="lock_user_name" class="menu_button fa-solid fa-unlock" title="Click to lock your selected persona to the current chat. Click again to remove the lock." data-i18n="[title]Click to lock your selected persona to the current chat. Click again to remove the lock.">
@@ -3338,7 +3148,7 @@
                             </div>
                             <div>
                                 <h4 data-i18n="Persona Description">Persona Description</h4>
-                                <textarea id="persona_description" name="persona_description" placeholder="Example:&#10;[{{user}} is a 28-year-old Romanian cat girl.]" class="text_pole textarea_compact" maxlength="5000" value="" autocomplete="off" rows="8"></textarea>
+                                <textarea id="persona_description" name="persona_description" placeholder="Example:&#10;[{{user}} is a 28-year-old Romanian cat girl.]" class="text_pole textarea_compact" maxlength="50000" value="" autocomplete="off" rows="8"></textarea>
                                 <div class="extension_token_counter">
                                     Tokens: <span id="persona_description_token_count">0</span>
                                 </div>
@@ -3442,7 +3252,7 @@
 
                         <div id="avatar-and-name-block">
                             <div id="name_div">
-                                <input id="character_name_pole" name="ch_name" class="text_pole" data-i18n="[placeholder]Name this character" placeholder="Name this character" maxlength="50" value="" autocomplete="off">
+                                <input id="character_name_pole" name="ch_name" class="text_pole" data-i18n="[placeholder]Name this character" placeholder="Name this character" maxlength="100" value="" autocomplete="off">
                                 <div class="extension_token_counter">
                                     Tokens: <span data-token-counter="character_name_pole" data-token-permanent="true">counting...</span>
                                 </div>
@@ -3507,7 +3317,7 @@
 
                                         <div id="tags_div" class="marginBot5">
                                             <div class="tag_controls">
-                                                <input id="tagInput" class="text_pole tag_input wide100p margin0" data-i18n="[placeholder]Search / Create Tags" placeholder="Search / Create tags" maxlength="25" />
+                                                <input id="tagInput" class="text_pole tag_input wide100p margin0" data-i18n="[placeholder]Search / Create Tags" placeholder="Search / Create tags" maxlength="50" />
                                                 <div class="tags_view menu_button fa-solid fa-tags" title="View all tags" data-i18n="[title]View all tags"></div>
                                             </div>
                                             <div id="tagList" class="tags"></div>
@@ -3589,12 +3399,12 @@
                         <div class="inline-drawer-content">
                             <div id="group-metadata-controls" class="marginTopBot5">
                                 <div class="flex-container wide100p">
-                                    <input id="rm_group_chat_name" class="text_pole flex1" type="text" name="chat_name" data-i18n="[placeholder]Chat Name (Optional)" placeholder="Chat Name (Optional)" maxlength="100" />
+                                    <input id="rm_group_chat_name" class="text_pole flex1" type="text" name="chat_name" data-i18n="[placeholder]Chat Name (Optional)" placeholder="Chat Name (Optional)" maxlength="200" />
                                     <div class="chat_lorebook_button menu_button fa-solid fa-passport" title="Chat Lore" data-i18n="[title]Chat Lore"></div>
                                 </div>
                                 <div id="group_tags_div" class="wide100p">
                                     <div class="tag_controls">
-                                        <input id="groupTagInput" class="text_pole tag_input flex1 margin0" data-i18n="[placeholder]Search / Create Tags" placeholder="Search / Create tags" maxlength="25" />
+                                        <input id="groupTagInput" class="text_pole tag_input flex1 margin0" data-i18n="[placeholder]Search / Create Tags" placeholder="Search / Create tags" maxlength="50" />
                                         <div class="tags_view menu_button fa-solid fa-tags margin0" title="View all tags" data-i18n="[title]View all tags"></div>
                                     </div>
                                     <div id="groupTagList" class="tags paddingTopBot5"></div>
@@ -3675,7 +3485,7 @@
                         <div class="inline-drawer-content">
                             <div name="Unadded Char List" class="flex-container flexFlowColumn overflowYAuto flex1">
                                 <div id="rm_group_add_members_header">
-                                    <input id="rm_group_filter" class="text_pole margin0" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." maxlength="100" />
+                                    <input id="rm_group_filter" class="text_pole margin0" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." maxlength="200" />
                                 </div>
                                 <div class="rm_tag_controls">
                                     <div class="tags rm_tag_filter"></div>
@@ -3702,7 +3512,7 @@
                             <div id="character_import_button" title="Import Character from File" data-i18n="[title]Import Character from File" class="menu_button fa-solid fa-file-import faSmallFontSquareFix"></div>
                             <div id="external_import_button" title="Import content from external URL" data-i18n="[title]Import content from external URL" class="menu_button fa-solid fa-cloud-arrow-down faSmallFontSquareFix"></div>
                             <div id="rm_button_group_chats" title="Create New Chat Group" data-i18n="[title]Create New Chat Group" class="menu_button fa-solid fa-users-gear "></div>
-                            <input id="character_search_bar" class="text_pole width100p" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." maxlength="50" />
+                            <input id="character_search_bar" class="text_pole width100p" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." maxlength="100" />
                             <select id="character_sort_order" title="Characters sorting order" data-i18n="[title]Characters sorting order">
                                 <option data-field="name" data-order="asc" data-i18n="A-Z">A-Z</option>
                                 <option data-field="name" data-order="desc" data-i18n="Z-A">Z-A</option>
@@ -3771,14 +3581,14 @@
                 <small data-i18n="Insert {{original}} into either box to include the respective default prompt from system settings.">Insert {{original}} into either box to include the respective default prompt from system settings.</small>
                 <div>
                     <h4 data-i18n="Main Prompt">Main Prompt</h4>
-                    <textarea id="system_prompt_textarea" name="system_prompt" data-i18n="[placeholder]Any contents here will replace the default Main Prompt used for this character. (v2 spec: system_prompt)" placeholder="Any contents here will replace the default Main Prompt used for this character.&#10;(v2 spec: system_prompt)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="20000"></textarea>
+                    <textarea id="system_prompt_textarea" name="system_prompt" data-i18n="[placeholder]Any contents here will replace the default Main Prompt used for this character. (v2 spec: system_prompt)" placeholder="Any contents here will replace the default Main Prompt used for this character.&#10;(v2 spec: system_prompt)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="50000"></textarea>
                     <div class="extension_token_counter">
                         Tokens: <span data-token-counter="system_prompt_textarea">counting...</span>
                     </div>
                 </div>
                 <div>
                     <h4 data-i18n="Jailbreak">Jailbreak</h4>
-                    <textarea id="post_history_instructions_textarea" name="post_history_instructions" data-i18n="[placeholder]Any contents here will replace the default Jailbreak Prompt used for this character. (v2 spec: post_history_instructions)" placeholder="Any contents here will replace the default Jailbreak Prompt used for this character.&#10;(v2 spec: post_history_instructions)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="20000"></textarea>
+                    <textarea id="post_history_instructions_textarea" name="post_history_instructions" data-i18n="[placeholder]Any contents here will replace the default Jailbreak Prompt used for this character. (v2 spec: post_history_instructions)" placeholder="Any contents here will replace the default Jailbreak Prompt used for this character.&#10;(v2 spec: post_history_instructions)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="50000"></textarea>
                     <div class="extension_token_counter">
                         Tokens: <span data-token-counter="post_history_instructions_textarea">counting...</span>
                     </div>
@@ -3799,11 +3609,11 @@
                 <div class="flex-container flexnowrap">
                     <div class="flex1">
                         <h4 data-i18n="Created by">Created by</h4>
-                        <textarea id="creator_textarea" name="creator" data-i18n="[placeholder](Botmaker's name / Contact Info)" placeholder="(Botmaker's name / Contact info)" form="form_create" class="text_pole" autocomplete="off" rows="2" maxlength="2000"></textarea>
+                        <textarea id="creator_textarea" name="creator" data-i18n="[placeholder](Botmaker's name / Contact Info)" placeholder="(Botmaker's name / Contact info)" form="form_create" class="text_pole" autocomplete="off" rows="2" maxlength="5000"></textarea>
                     </div>
                     <div class="flex1">
                         <h4 data-i18n="Character Version">Character Version</h4>
-                        <textarea id="character_version_textarea" name="character_version" data-i18n="[placeholder](If you want to track character versions)" placeholder="(If you want to track character versions)" form="form_create" class="text_pole" autocomplete="off" rows="2" maxlength="200"></textarea>
+                        <textarea id="character_version_textarea" name="character_version" data-i18n="[placeholder](If you want to track character versions)" placeholder="(If you want to track character versions)" form="form_create" class="text_pole" autocomplete="off" rows="2" maxlength="500"></textarea>
                     </div>
                 </div>
                 <div class="flex-container flexnowrap">
@@ -3813,7 +3623,7 @@
                     </div>
                     <div class="flex1">
                         <h4 data-i18n="Tags to Embed">Tags to Embed</h4>
-                        <textarea id="tags_textarea" name="tags" data-i18n="[placeholder](Write a comma-separated list of tags)" placeholder="(Write a comma-separated list of tags)" form="form_create" class="text_pole" autocomplete="off" rows="4" maxlength="2000"></textarea>
+                        <textarea id="tags_textarea" name="tags" data-i18n="[placeholder](Write a comma-separated list of tags)" placeholder="(Write a comma-separated list of tags)" form="form_create" class="text_pole" autocomplete="off" rows="4" maxlength="5000"></textarea>
                     </div>
                 </div>
             </div>
@@ -3824,7 +3634,7 @@
                 <span data-i18n="Personality summary">Personality summary</span>
                 <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#personality-summary" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
             </h4>
-            <textarea id="personality_textarea" name="personality" data-i18n="[placeholder](A brief description of the personality)" placeholder="(A brief description of the personality)" form="form_create" class="text_pole" autocomplete="off" rows="1" maxlength="20000"></textarea>
+            <textarea id="personality_textarea" name="personality" data-i18n="[placeholder](A brief description of the personality)" placeholder="(A brief description of the personality)" form="form_create" class="text_pole" autocomplete="off" rows="1" maxlength="50000"></textarea>
             <div class="extension_token_counter">
                 Tokens: <span data-token-counter="personality_textarea" data-token-permanent="true">counting...</span>
             </div>
@@ -3837,7 +3647,7 @@
                     <span class="note-link-span">?</span>
                 </a>
             </h4>
-            <textarea id="scenario_pole" name="scenario" data-i18n="[placeholder](Circumstances and context of the interaction)" placeholder="(Circumstances and context of the interaction)" class="text_pole" maxlength="20000" value="" autocomplete="off" form="form_create" rows="1"></textarea>
+            <textarea id="scenario_pole" name="scenario" data-i18n="[placeholder](Circumstances and context of the interaction)" placeholder="(Circumstances and context of the interaction)" class="text_pole" maxlength="50000" value="" autocomplete="off" form="form_create" rows="1"></textarea>
             <div class="extension_token_counter">
                 Tokens: <span data-token-counter="scenario_pole" data-token-permanent="true">counting...</span>
             </div>
@@ -3850,7 +3660,7 @@
                         Character's Note
                     </span>
                 </h4>
-                <textarea id="depth_prompt_prompt" name="depth_prompt_prompt" class="text_pole" rows="2" maxlength="20000" autocomplete="off" form="form_create" placeholder="(Text to be inserted in-chat @ designated depth)"></textarea>
+                <textarea id="depth_prompt_prompt" name="depth_prompt_prompt" class="text_pole" rows="2" maxlength="50000" autocomplete="off" form="form_create" placeholder="(Text to be inserted in-chat @ designated depth)"></textarea>
             </div>
             <div>
                 <h4>
@@ -3882,7 +3692,7 @@
                 <h4><span data-i18n="Examples of dialogue">Examples of dialogue</span></h4>
                 <h5 data-i18n="Important to set the character's writing style.">Important to set the character's writing style. <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#examples-of-dialogue" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
             </div>
-            <textarea id="mes_example_textarea" class="flexGrow" name="mes_example" data-i18n="[placeholder](Examples of chat dialog. Begin each example with START on a new line.)" placeholder="(Examples of chat dialog. Begin each example with &lt;START&gt; on a new line.)" form="form_create" maxlength="20000" rows="6"></textarea>
+            <textarea id="mes_example_textarea" class="flexGrow" name="mes_example" data-i18n="[placeholder](Examples of chat dialog. Begin each example with START on a new line.)" placeholder="(Examples of chat dialog. Begin each example with &lt;START&gt; on a new line.)" form="form_create" maxlength="50000" rows="6"></textarea>
             <div class="extension_token_counter">
                 Tokens: <span data-token-counter="mes_example_textarea">counting...</span>
             </div>
@@ -4056,7 +3866,7 @@
                             <span class="flex-container alignitemscenter wide100p">
                                 <div class="WIEntryTitleAndStatus flex-container flex1 alignitemscenter">
                                     <div class="flex-container flex1">
-                                        <textarea class="text_pole" name="comment" maxlength="2000" data-i18n="[placeholder]Entry Title/Memo" placeholder="Entry Title/Memo"></textarea>
+                                        <textarea class="text_pole" name="comment" maxlength="5000" data-i18n="[placeholder]Entry Title/Memo" placeholder="Entry Title/Memo"></textarea>
                                     </div>
                                     <!-- <span class="world_entry_form_position_value"></span> -->
                                     <select title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;❌ Disabled" name="entryStateSelector" class="widthNatural margin0">
@@ -4137,7 +3947,7 @@
                                         </span>
                                     </small>
                                     <small class="textAlignCenter">Primary Keywords</small>
-                                    <textarea class="text_pole keyprimarytextpole" name="key" rows="1" data-i18n="[placeholder]Comma separated (required)" placeholder="Comma separated (required)" maxlength="1000"></textarea>
+                                    <textarea class="text_pole keyprimarytextpole" name="key" rows="1" data-i18n="[placeholder]Comma separated (required)" placeholder="Comma separated (required)" maxlength="2000"></textarea>
                                 </div>
                                 <div class="world_entry_form_control">
                                     <small class="textAlignCenter">Logic</small>
@@ -4155,7 +3965,7 @@
                                     </small>
                                     <small class="textAlignCenter">Optional Filter</small>
                                     <div class="flex-container flexFlowRow alignitemscenter">
-                                        <textarea class="text_pole keysecondarytextpole" name="keysecondary" rows="1" data-i18n="[placeholder]Comma separated (ignored if empty)" placeholder="Comma separated list" maxlength="1000"></textarea>
+                                        <textarea class="text_pole keysecondarytextpole" name="keysecondary" rows="1" data-i18n="[placeholder]Comma separated (ignored if empty)" placeholder="Comma separated list" maxlength="2000"></textarea>
 
                                     </div>
                                 </div>
@@ -4638,7 +4448,7 @@
                 <strong>Alternate Greeting #<span class="greeting_index"></span></strong>
                 <div class="menu_button fa-solid fa-trash-alt delete_alternate_greeting"></div>
             </div>
-            <textarea name="alternate_greetings" data-i18n="[placeholder](This will be the first message from the character that starts every chat)" placeholder="(This will be the first message from the character that starts every chat)" class="text_pole textarea_compact alternate_greeting_text" maxlength="20000" value="" autocomplete="off" rows="4"></textarea>
+            <textarea name="alternate_greetings" data-i18n="[placeholder](This will be the first message from the character that starts every chat)" placeholder="(This will be the first message from the character that starts every chat)" class="text_pole textarea_compact alternate_greeting_text" maxlength="50000" value="" autocomplete="off" rows="4"></textarea>
         </div>
     </div>
 
@@ -4663,7 +4473,7 @@
                             <b>Unique to this chat</b>.<br>
                             Bookmarks inherit the Note from their parent, and can be changed individually after that.<br>
                         </small>
-                        <textarea id="extension_floating_prompt" class="text_pole" rows="8" maxlength="10000"></textarea>
+                        <textarea id="extension_floating_prompt" class="text_pole" rows="8" maxlength="50000"></textarea>
                         <div class="extension_token_counter">
                             Tokens: <span id="extension_floating_prompt_token_counter">0</span>
                         </div>
@@ -4714,7 +4524,7 @@
                         <small>Will be automatically added as the author's note for this character. Will be used in groups, but
                             can't be modified when a group chat is open.</small>
 
-                        <textarea id="extension_floating_chara" class="text_pole" rows="8" maxlength="10000" placeholder="Example:&#10;[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
+                        <textarea id="extension_floating_chara" class="text_pole" rows="8" maxlength="50000" placeholder="Example:&#10;[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
                         <div class="extension_token_counter">
                             Tokens: <span id="extension_floating_chara_token_counter">0</span>
                         </div>
@@ -4748,7 +4558,7 @@
                     <div class="inline-drawer-content">
                         <small>Will be automatically added as the Author's Note for all new chats.</small>
 
-                        <textarea id="extension_floating_default" class="text_pole" rows="8" maxlength="10000" placeholder="Example:&#10;[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
+                        <textarea id="extension_floating_default" class="text_pole" rows="8" maxlength="50000" placeholder="Example:&#10;[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
                         <div class="extension_token_counter">
                             Tokens: <span id="extension_floating_default_token_counter">0</span>
                         </div>
