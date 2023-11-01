@@ -38,7 +38,7 @@ let selected_world_info = [];
 let world_names;
 let world_info_depth = 2;
 let world_info_min_activations = 0; // if > 0, will continue seeking chat until minimum world infos are activated
-let world_info_min_activations_depth_max = 20; // used when (world_info_min_activations > 0)
+let world_info_min_activations_depth_max = 0; // used when (world_info_min_activations > 0)
 
 let world_info_budget = 25;
 let world_info_recursive = false;
