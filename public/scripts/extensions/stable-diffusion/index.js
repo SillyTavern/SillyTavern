@@ -69,6 +69,18 @@ const triggerWords = {
     [generationMode.BACKGROUND]: ['background'],
 }
 
+const messageTrigger = {
+    activationRegex: /\b(send|mail|imagine|generate|make|create|draw|paint|render)\b.*\b(pic|picture|image|drawing|painting|photo|photograph)\b(?:\s+of)?(?:\s+(?:a|an|the)?)?(.+)/i,
+    specialCases: {
+        [generationMode.CHARACTER]: ['you', 'yourself'],
+        [generationMode.USER]: ['me', 'myself'],
+        [generationMode.SCENARIO]: ['story', 'scenario', 'whole story'],
+        [generationMode.NOW]: ['last message'],
+        [generationMode.FACE]: ['your face', 'your portrait', 'your selfie'],
+        [generationMode.BACKGROUND]: ['background', 'scene background', 'scene', 'scenery', 'surroundings', 'environment'],
+    },
+}
+
 const promptTemplates = {
     /*OLD:     [generationMode.CHARACTER]: "Pause your roleplay and provide comma-delimited list of phrases and keywords which describe {{char}}'s physical appearance and clothing. Ignore {{char}}'s personality traits, and chat history when crafting this description. End your response once the comma-delimited list is complete. Do not roleplay when writing this description, and do not attempt to continue the story.", */
     [generationMode.CHARACTER]: "[In the next response I want you to provide only a detailed comma-delimited list of keywords and phrases which describe {{char}}. The list must include all of the following items in this order: name, species and race, gender, age, clothing, occupation, physical features and appearances. Do not include descriptions of non-visual qualities such as personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase 'full body portrait,']",
@@ -172,6 +184,7 @@ const defaultSettings = {
     // Refine mode
     refine_mode: false,
     expand: false,
+    interactive_mode: false,
 
     prompts: promptTemplates,
 
@@ -206,6 +219,62 @@ const defaultSettings = {
     style: 'Default',
     styles: defaultStyles,
 }
+
+function processTriggers(chat, _, abort) {
+    if (!extension_settings.sd.interactive_mode) {
+        return;
+    }
+
+    const lastMessage = chat[chat.length - 1];
+
+    if (!lastMessage) {
+        return;
+    }
+
+    const message = lastMessage.mes;
+    const isUser = lastMessage.is_user;
+
+    if (!message || !isUser) {
+        return;
+    }
+
+    const messageLower = message.toLowerCase();
+
+    try {
+        const activationRegex = new RegExp(messageTrigger.activationRegex, 'i');
+        const activationMatch = messageLower.match(activationRegex);
+
+        if (!activationMatch) {
+            return;
+        }
+
+        let subject = activationMatch[3].trim();
+
+        if (!subject) {
+            return;
+        }
+
+        console.log(`SD: Triggered by "${message}", detected subject: ${subject}"`);
+
+        for (const [specialMode, triggers] of Object.entries(messageTrigger.specialCases)) {
+            for (const trigger of triggers) {
+                if (subject === trigger) {
+                    subject = triggerWords[specialMode][0];
+                    console.log(`SD: Detected special case "${trigger}", switching to mode ${specialMode}`);
+                    break;
+                }
+            }
+        }
+
+        abort(true);
+        setTimeout(() => generatePicture('sd', subject, message), 1);
+    } catch {
+        console.log('SD: Failed to process triggers.');
+        return;
+    }
+}
+
+window['SD_ProcessTriggers'] = processTriggers;
 
 function getSdRequestBody() {
     switch (extension_settings.sd.source) {
@@ -281,6 +350,7 @@ async function loadSettings() {
     $('#sd_auto_auth').val(extension_settings.sd.auto_auth);
     $('#sd_vlad_url').val(extension_settings.sd.vlad_url);
     $('#sd_vlad_auth').val(extension_settings.sd.vlad_auth);
+    $('#sd_interactive_mode').prop('checked', extension_settings.sd.interactive_mode);
 
     for (const style of extension_settings.sd.styles) {
         const option = document.createElement('option');
@@ -326,6 +396,11 @@ function addPromptTemplates() {
         $('#sd_prompt_templates').append(container);
         $('#sd_prompt_templates').append(textarea);
     }
+}
+
+function onInteractiveModeInput() {
+    extension_settings.sd.interactive_mode = !!$(this).prop('checked');
+    saveSettingsDebounced();
 }
 
 function onStyleSelect() {
@@ -1187,6 +1262,42 @@ async function generatePicture(_, trigger, message, callback) {
     // sadly, groups is not an array, but is a dict with keys being index numbers, so we have to filter it
     const characterName = context.characterId ? context.characters[context.characterId].name : context.groups[Object.keys(context.groups).filter(x => context.groups[x].id === context.groupId)[0]]?.id?.toString();
 
+    if (generationType == generationMode.BACKGROUND) {
+        const callbackOriginal = callback;
+        callback = async function (prompt, imagePath, generationType) {
+            const imgUrl = `url("${encodeURI(imagePath)}")`;
+            eventSource.emit(event_types.FORCE_SET_BACKGROUND, { url: imgUrl, path: imagePath });
+
+            if (typeof callbackOriginal === 'function') {
+                callbackOriginal(prompt, imagePath, generationType);
+            } else {
+                sendMessage(prompt, imagePath, generationType);
+            }
+        }
+    }
+
+    const dimensions = setTypeSpecificDimensions(generationType);
+
+    try {
+        const prompt = await getPrompt(generationType, message, trigger, quiet_prompt);
+        console.log('Processed Stable Diffusion prompt:', prompt);
+
+        context.deactivateSendButtons();
+        hideSwipeButtons();
+
+        await sendGenerationRequest(generationType, prompt, characterName, callback);
+    } catch (err) {
+        console.trace(err);
+        throw new Error('SD prompt text generation failed.')
+    }
+    finally {
+        restoreOriginalDimensions(dimensions);
+        context.activateSendButtons();
+        showSwipeButtons();
+    }
+}
+
+function setTypeSpecificDimensions(generationType) {
     const prevSDHeight = extension_settings.sd.height;
     const prevSDWidth = extension_settings.sd.width;
     const aspectRatio = extension_settings.sd.width / extension_settings.sd.height;
@@ -1203,37 +1314,14 @@ async function generatePicture(_, trigger, message, callback) {
             // Round to nearest multiple of 64
             extension_settings.sd.width = Math.round(extension_settings.sd.height * 1.8 / 64) * 64;
         }
-        const callbackOriginal = callback;
-        callback = async function (prompt, imagePath) {
-            const imgUrl = `url("${encodeURI(imagePath)}")`;
-            eventSource.emit(event_types.FORCE_SET_BACKGROUND, { url: imgUrl, path: imagePath });
-
-            if (typeof callbackOriginal === 'function') {
-                callbackOriginal(prompt, imagePath);
-            } else {
-                sendMessage(prompt, imagePath);
-            }
-        }
     }
 
-    try {
-        const prompt = await getPrompt(generationType, message, trigger, quiet_prompt);
-        console.log('Processed Stable Diffusion prompt:', prompt);
+    return { height: prevSDHeight, width: prevSDWidth };
+}
 
-        context.deactivateSendButtons();
-        hideSwipeButtons();
-
-        await sendGenerationRequest(generationType, prompt, characterName, callback);
-    } catch (err) {
-        console.trace(err);
-        throw new Error('SD prompt text generation failed.')
-    }
-    finally {
-        extension_settings.sd.height = prevSDHeight;
-        extension_settings.sd.width = prevSDWidth;
-        context.activateSendButtons();
-        showSwipeButtons();
-    }
+function restoreOriginalDimensions(savedParams) {
+    extension_settings.sd.height = savedParams.height;
+    extension_settings.sd.width = savedParams.width;
 }
 
 async function getPrompt(generationType, message, trigger, quiet_prompt) {
@@ -1264,7 +1352,7 @@ async function generatePrompt(quiet_prompt) {
 }
 
 async function sendGenerationRequest(generationType, prompt, characterName = null, callback) {
-    const prefix = generationType !== generationMode.BACKGROUND
+    const prefix = (generationType !== generationMode.BACKGROUND && generationType !== generationMode.FREE)
         ? combinePrefixes(extension_settings.sd.prompt_prefix, getCharacterPrefix())
         : extension_settings.sd.prompt_prefix;
 
@@ -1308,7 +1396,7 @@ async function sendGenerationRequest(generationType, prompt, characterName = nul
 
     const filename = `${characterName}_${humanizedDateTime()}`;
     const base64Image = await saveBase64AsFile(result.data, characterName, filename, result.format);
-    callback ? callback(prompt, base64Image) : sendMessage(prompt, base64Image);
+    callback ? callback(prompt, base64Image, generationType) : sendMessage(prompt, base64Image, generationType);
 }
 
 /**
@@ -1514,7 +1602,7 @@ function getNovelParams() {
     return { steps, width, height };
 }
 
-async function sendMessage(prompt, image) {
+async function sendMessage(prompt, image, generationType) {
     const context = getContext();
     const messageText = `[${context.name2} sends a picture that contains: ${prompt}]`;
     const message = {
@@ -1526,6 +1614,7 @@ async function sendMessage(prompt, image) {
         extra: {
             image: image,
             title: prompt,
+            generationType: generationType,
         },
     };
     context.chat.push(message);
@@ -1643,14 +1732,18 @@ async function sdMessageButton(e) {
         return;
     }
 
+    let dimensions = null;
+
     try {
         setBusyIcon(true);
         if (hasSavedImage) {
             const prompt = await refinePrompt(message.extra.title, false);
             message.extra.title = prompt;
 
+            const generationType = message?.extra?.generationType ?? generationMode.FREE;
             console.log('Regenerating an image, using existing prompt:', prompt);
-            await sendGenerationRequest(generationMode.FREE, prompt, characterFileName, saveGeneratedImage);
+            dimensions = setTypeSpecificDimensions(generationType);
+            await sendGenerationRequest(generationType, prompt, characterFileName, saveGeneratedImage);
         }
         else {
             console.log("doing /sd raw last");
@@ -1662,9 +1755,13 @@ async function sdMessageButton(e) {
     }
     finally {
         setBusyIcon(false);
+
+        if (dimensions) {
+            restoreOriginalDimensions(dimensions);
+        }
     }
 
-    function saveGeneratedImage(prompt, image) {
+    function saveGeneratedImage(prompt, image, generationType) {
         // Some message sources may not create the extra object
         if (typeof message.extra !== 'object') {
             message.extra = {};
@@ -1674,6 +1771,7 @@ async function sdMessageButton(e) {
         message.extra.inline_image = message.extra.image && !message.extra.inline_image ? false : true;
         message.extra.image = image;
         message.extra.title = prompt;
+        message.extra.generationType = generationType;
         appendImageToMessage(message, $mes);
 
         context.saveChat();
@@ -1737,6 +1835,7 @@ jQuery(async () => {
     $('#sd_style').on('change', onStyleSelect);
     $('#sd_save_style').on('click', onSaveStyleClick);
     $('#sd_character_prompt_block').hide();
+    $('#sd_interactive_mode').on('input', onInteractiveModeInput);
 
     $('.sd_settings .inline-drawer-toggle').on('click', function () {
         initScrollHeight($("#sd_prompt_prefix"));
