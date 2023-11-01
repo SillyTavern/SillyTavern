@@ -674,7 +674,7 @@
                                         </div>
                                         <div id="claude_assistant_prefill_block" data-source="claude" class="range-block">
                                             <span id="claude_assistant_prefill_text" data-i18n="Assistant Prefill">Assistant Prefill</span>
-                                            <textarea id="claude_assistant_prefill" class="text_pole textarea_compact" name="assistant_prefill autoSetHeight" rows="3" maxlength="5000" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
+                                            <textarea id="claude_assistant_prefill" class="text_pole textarea_compact" name="assistant_prefill autoSetHeight" rows="3" maxlength="10000" data-i18n="[placeholder]Start Claude's answer with..." placeholder="Start Claude's answer with..."></textarea>
                                         </div>
                                     </div>
                                 </div>
@@ -814,7 +814,7 @@
                                         </div>
                                     </div>
                                     <div class="wide100p">
-                                        <input id="openai_reverse_proxy" type="text" class="text_pole" placeholder="https://api.openai.com/v1" maxlength="100" />
+                                        <input id="openai_reverse_proxy" type="text" class="text_pole" placeholder="https://api.openai.com/v1" maxlength="500" />
                                     </div>
                                 </div>
                                 <div class="range-block" data-source="openai,claude">
@@ -827,7 +827,7 @@
                                         </span>
                                     </div>
                                     <div class="flex-container width100p">
-                                        <input id="openai_proxy_password" type="password" class="text_pole flex1" placeholder="" maxlength="200" form="openai_form" />
+                                        <input id="openai_proxy_password" type="password" class="text_pole flex1" placeholder="" maxlength="500" form="openai_form" />
                                         <div id="openai_proxy_password_show" title="Peek a password" class="menu_button fa-solid fa-eye-slash fa-fw"></div>
                                     </div>
                                 </div>
@@ -3156,7 +3156,7 @@
                         <div class="flex1">
                             <h4 data-i18n="Name">Name</h4>
                             <div class="change_name">
-                                <input id="your_name" name="your_name" data-i18n="[placeholder]Enter your name" placeholder="Enter your name" class="text_pole wide100p" maxlength="50" value="" autocomplete="off">
+                                <input id="your_name" name="your_name" data-i18n="[placeholder]Enter your name" placeholder="Enter your name" class="text_pole wide100p" maxlength="100" value="" autocomplete="off">
                                 <div id="your_name_button" class="menu_button fa-solid fa-check" title="Click to set a new User Name" data-i18n="[title]Click to set a new User Name">
                                 </div>
                                 <div id="lock_user_name" class="menu_button fa-solid fa-unlock" title="Click to lock your selected persona to the current chat. Click again to remove the lock." data-i18n="[title]Click to lock your selected persona to the current chat. Click again to remove the lock.">
@@ -3166,7 +3166,7 @@
                             </div>
                             <div>
                                 <h4 data-i18n="Persona Description">Persona Description</h4>
-                                <textarea id="persona_description" name="persona_description" placeholder="Example:&#10;[{{user}} is a 28-year-old Romanian cat girl.]" class="text_pole textarea_compact" maxlength="5000" value="" autocomplete="off" rows="8"></textarea>
+                                <textarea id="persona_description" name="persona_description" placeholder="Example:&#10;[{{user}} is a 28-year-old Romanian cat girl.]" class="text_pole textarea_compact" maxlength="50000" value="" autocomplete="off" rows="8"></textarea>
                                 <div class="extension_token_counter">
                                     Tokens: <span id="persona_description_token_count">0</span>
                                 </div>
@@ -3270,7 +3270,7 @@
 
                         <div id="avatar-and-name-block">
                             <div id="name_div">
-                                <input id="character_name_pole" name="ch_name" class="text_pole" data-i18n="[placeholder]Name this character" placeholder="Name this character" maxlength="50" value="" autocomplete="off">
+                                <input id="character_name_pole" name="ch_name" class="text_pole" data-i18n="[placeholder]Name this character" placeholder="Name this character" maxlength="100" value="" autocomplete="off">
                                 <div class="extension_token_counter">
                                     Tokens: <span data-token-counter="character_name_pole" data-token-permanent="true">counting...</span>
                                 </div>
@@ -3335,7 +3335,7 @@
 
                                         <div id="tags_div" class="marginBot5">
                                             <div class="tag_controls">
-                                                <input id="tagInput" class="text_pole tag_input wide100p margin0" data-i18n="[placeholder]Search / Create Tags" placeholder="Search / Create tags" maxlength="25" />
+                                                <input id="tagInput" class="text_pole tag_input wide100p margin0" data-i18n="[placeholder]Search / Create Tags" placeholder="Search / Create tags" maxlength="50" />
                                                 <div class="tags_view menu_button fa-solid fa-tags" title="View all tags" data-i18n="[title]View all tags"></div>
                                             </div>
                                             <div id="tagList" class="tags"></div>
@@ -3417,12 +3417,12 @@
                         <div class="inline-drawer-content">
                             <div id="group-metadata-controls" class="marginTopBot5">
                                 <div class="flex-container wide100p">
-                                    <input id="rm_group_chat_name" class="text_pole flex1" type="text" name="chat_name" data-i18n="[placeholder]Chat Name (Optional)" placeholder="Chat Name (Optional)" maxlength="100" />
+                                    <input id="rm_group_chat_name" class="text_pole flex1" type="text" name="chat_name" data-i18n="[placeholder]Chat Name (Optional)" placeholder="Chat Name (Optional)" maxlength="200" />
                                     <div class="chat_lorebook_button menu_button fa-solid fa-passport" title="Chat Lore" data-i18n="[title]Chat Lore"></div>
                                 </div>
                                 <div id="group_tags_div" class="wide100p">
                                     <div class="tag_controls">
-                                        <input id="groupTagInput" class="text_pole tag_input flex1 margin0" data-i18n="[placeholder]Search / Create Tags" placeholder="Search / Create tags" maxlength="25" />
+                                        <input id="groupTagInput" class="text_pole tag_input flex1 margin0" data-i18n="[placeholder]Search / Create Tags" placeholder="Search / Create tags" maxlength="50" />
                                         <div class="tags_view menu_button fa-solid fa-tags margin0" title="View all tags" data-i18n="[title]View all tags"></div>
                                     </div>
                                     <div id="groupTagList" class="tags paddingTopBot5"></div>
@@ -3503,7 +3503,7 @@
                         <div class="inline-drawer-content">
                             <div name="Unadded Char List" class="flex-container flexFlowColumn overflowYAuto flex1">
                                 <div id="rm_group_add_members_header">
-                                    <input id="rm_group_filter" class="text_pole margin0" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." maxlength="100" />
+                                    <input id="rm_group_filter" class="text_pole margin0" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." maxlength="200" />
                                 </div>
                                 <div class="rm_tag_controls">
                                     <div class="tags rm_tag_filter"></div>
@@ -3530,7 +3530,7 @@
                             <div id="character_import_button" title="Import Character from File" data-i18n="[title]Import Character from File" class="menu_button fa-solid fa-file-import faSmallFontSquareFix"></div>
                             <div id="external_import_button" title="Import content from external URL" data-i18n="[title]Import content from external URL" class="menu_button fa-solid fa-cloud-arrow-down faSmallFontSquareFix"></div>
                             <div id="rm_button_group_chats" title="Create New Chat Group" data-i18n="[title]Create New Chat Group" class="menu_button fa-solid fa-users-gear "></div>
-                            <input id="character_search_bar" class="text_pole width100p" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." maxlength="50" />
+                            <input id="character_search_bar" class="text_pole width100p" type="search" data-i18n="[placeholder]Search..." placeholder="Search..." maxlength="100" />
                             <select id="character_sort_order" title="Characters sorting order" data-i18n="[title]Characters sorting order">
                                 <option data-field="name" data-order="asc" data-i18n="A-Z">A-Z</option>
                                 <option data-field="name" data-order="desc" data-i18n="Z-A">Z-A</option>
@@ -3599,14 +3599,14 @@
                 <small data-i18n="Insert {{original}} into either box to include the respective default prompt from system settings.">Insert {{original}} into either box to include the respective default prompt from system settings.</small>
                 <div>
                     <h4 data-i18n="Main Prompt">Main Prompt</h4>
-                    <textarea id="system_prompt_textarea" name="system_prompt" data-i18n="[placeholder]Any contents here will replace the default Main Prompt used for this character. (v2 spec: system_prompt)" placeholder="Any contents here will replace the default Main Prompt used for this character.&#10;(v2 spec: system_prompt)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="20000"></textarea>
+                    <textarea id="system_prompt_textarea" name="system_prompt" data-i18n="[placeholder]Any contents here will replace the default Main Prompt used for this character. (v2 spec: system_prompt)" placeholder="Any contents here will replace the default Main Prompt used for this character.&#10;(v2 spec: system_prompt)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="50000"></textarea>
                     <div class="extension_token_counter">
                         Tokens: <span data-token-counter="system_prompt_textarea">counting...</span>
                     </div>
                 </div>
                 <div>
                     <h4 data-i18n="Jailbreak">Jailbreak</h4>
-                    <textarea id="post_history_instructions_textarea" name="post_history_instructions" data-i18n="[placeholder]Any contents here will replace the default Jailbreak Prompt used for this character. (v2 spec: post_history_instructions)" placeholder="Any contents here will replace the default Jailbreak Prompt used for this character.&#10;(v2 spec: post_history_instructions)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="20000"></textarea>
+                    <textarea id="post_history_instructions_textarea" name="post_history_instructions" data-i18n="[placeholder]Any contents here will replace the default Jailbreak Prompt used for this character. (v2 spec: post_history_instructions)" placeholder="Any contents here will replace the default Jailbreak Prompt used for this character.&#10;(v2 spec: post_history_instructions)" form="form_create" class="text_pole" autocomplete="off" rows="3" maxlength="50000"></textarea>
                     <div class="extension_token_counter">
                         Tokens: <span data-token-counter="post_history_instructions_textarea">counting...</span>
                     </div>
@@ -3627,11 +3627,11 @@
                 <div class="flex-container flexnowrap">
                     <div class="flex1">
                         <h4 data-i18n="Created by">Created by</h4>
-                        <textarea id="creator_textarea" name="creator" data-i18n="[placeholder](Botmaker's name / Contact Info)" placeholder="(Botmaker's name / Contact info)" form="form_create" class="text_pole" autocomplete="off" rows="2" maxlength="2000"></textarea>
+                        <textarea id="creator_textarea" name="creator" data-i18n="[placeholder](Botmaker's name / Contact Info)" placeholder="(Botmaker's name / Contact info)" form="form_create" class="text_pole" autocomplete="off" rows="2" maxlength="5000"></textarea>
                     </div>
                     <div class="flex1">
                         <h4 data-i18n="Character Version">Character Version</h4>
-                        <textarea id="character_version_textarea" name="character_version" data-i18n="[placeholder](If you want to track character versions)" placeholder="(If you want to track character versions)" form="form_create" class="text_pole" autocomplete="off" rows="2" maxlength="200"></textarea>
+                        <textarea id="character_version_textarea" name="character_version" data-i18n="[placeholder](If you want to track character versions)" placeholder="(If you want to track character versions)" form="form_create" class="text_pole" autocomplete="off" rows="2" maxlength="500"></textarea>
                     </div>
                 </div>
                 <div class="flex-container flexnowrap">
@@ -3641,7 +3641,7 @@
                     </div>
                     <div class="flex1">
                         <h4 data-i18n="Tags to Embed">Tags to Embed</h4>
-                        <textarea id="tags_textarea" name="tags" data-i18n="[placeholder](Write a comma-separated list of tags)" placeholder="(Write a comma-separated list of tags)" form="form_create" class="text_pole" autocomplete="off" rows="4" maxlength="2000"></textarea>
+                        <textarea id="tags_textarea" name="tags" data-i18n="[placeholder](Write a comma-separated list of tags)" placeholder="(Write a comma-separated list of tags)" form="form_create" class="text_pole" autocomplete="off" rows="4" maxlength="5000"></textarea>
                     </div>
                 </div>
             </div>
@@ -3652,7 +3652,7 @@
                 <span data-i18n="Personality summary">Personality summary</span>
                 <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#personality-summary" class="notes-link" target="_blank"><span class="note-link-span">?</span></a>
             </h4>
-            <textarea id="personality_textarea" name="personality" data-i18n="[placeholder](A brief description of the personality)" placeholder="(A brief description of the personality)" form="form_create" class="text_pole" autocomplete="off" rows="1" maxlength="20000"></textarea>
+            <textarea id="personality_textarea" name="personality" data-i18n="[placeholder](A brief description of the personality)" placeholder="(A brief description of the personality)" form="form_create" class="text_pole" autocomplete="off" rows="1" maxlength="50000"></textarea>
             <div class="extension_token_counter">
                 Tokens: <span data-token-counter="personality_textarea" data-token-permanent="true">counting...</span>
             </div>
@@ -3665,7 +3665,7 @@
                     <span class="note-link-span">?</span>
                 </a>
             </h4>
-            <textarea id="scenario_pole" name="scenario" data-i18n="[placeholder](Circumstances and context of the interaction)" placeholder="(Circumstances and context of the interaction)" class="text_pole" maxlength="20000" value="" autocomplete="off" form="form_create" rows="1"></textarea>
+            <textarea id="scenario_pole" name="scenario" data-i18n="[placeholder](Circumstances and context of the interaction)" placeholder="(Circumstances and context of the interaction)" class="text_pole" maxlength="50000" value="" autocomplete="off" form="form_create" rows="1"></textarea>
             <div class="extension_token_counter">
                 Tokens: <span data-token-counter="scenario_pole" data-token-permanent="true">counting...</span>
             </div>
@@ -3678,7 +3678,7 @@
                         Character's Note
                     </span>
                 </h4>
-                <textarea id="depth_prompt_prompt" name="depth_prompt_prompt" class="text_pole" rows="2" maxlength="20000" autocomplete="off" form="form_create" placeholder="(Text to be inserted in-chat @ designated depth)"></textarea>
+                <textarea id="depth_prompt_prompt" name="depth_prompt_prompt" class="text_pole" rows="2" maxlength="50000" autocomplete="off" form="form_create" placeholder="(Text to be inserted in-chat @ designated depth)"></textarea>
             </div>
             <div>
                 <h4>
@@ -3710,7 +3710,7 @@
                 <h4><span data-i18n="Examples of dialogue">Examples of dialogue</span></h4>
                 <h5 data-i18n="Important to set the character's writing style.">Important to set the character's writing style. <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#examples-of-dialogue" class="notes-link" target="_blank"><span class="note-link-span">?</span></a></h5>
             </div>
-            <textarea id="mes_example_textarea" class="flexGrow" name="mes_example" data-i18n="[placeholder](Examples of chat dialog. Begin each example with START on a new line.)" placeholder="(Examples of chat dialog. Begin each example with &lt;START&gt; on a new line.)" form="form_create" maxlength="20000" rows="6"></textarea>
+            <textarea id="mes_example_textarea" class="flexGrow" name="mes_example" data-i18n="[placeholder](Examples of chat dialog. Begin each example with START on a new line.)" placeholder="(Examples of chat dialog. Begin each example with &lt;START&gt; on a new line.)" form="form_create" maxlength="50000" rows="6"></textarea>
             <div class="extension_token_counter">
                 Tokens: <span data-token-counter="mes_example_textarea">counting...</span>
             </div>
@@ -3884,7 +3884,7 @@
                             <span class="flex-container alignitemscenter wide100p">
                                 <div class="WIEntryTitleAndStatus flex-container flex1 alignitemscenter">
                                     <div class="flex-container flex1">
-                                        <textarea class="text_pole" name="comment" maxlength="2000" data-i18n="[placeholder]Entry Title/Memo" placeholder="Entry Title/Memo"></textarea>
+                                        <textarea class="text_pole" name="comment" maxlength="5000" data-i18n="[placeholder]Entry Title/Memo" placeholder="Entry Title/Memo"></textarea>
                                     </div>
                                     <!-- <span class="world_entry_form_position_value"></span> -->
                                     <select title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;❌ Disabled" name="entryStateSelector" class="widthNatural margin0">
@@ -3965,7 +3965,7 @@
                                         </span>
                                     </small>
                                     <small class="textAlignCenter">Primary Keywords</small>
-                                    <textarea class="text_pole keyprimarytextpole" name="key" rows="1" data-i18n="[placeholder]Comma separated (required)" placeholder="Comma separated (required)" maxlength="1000"></textarea>
+                                    <textarea class="text_pole keyprimarytextpole" name="key" rows="1" data-i18n="[placeholder]Comma separated (required)" placeholder="Comma separated (required)" maxlength="2000"></textarea>
                                 </div>
                                 <div class="world_entry_form_control">
                                     <small class="textAlignCenter">Logic</small>
@@ -3983,7 +3983,7 @@
                                     </small>
                                     <small class="textAlignCenter">Optional Filter</small>
                                     <div class="flex-container flexFlowRow alignitemscenter">
-                                        <textarea class="text_pole keysecondarytextpole" name="keysecondary" rows="1" data-i18n="[placeholder]Comma separated (ignored if empty)" placeholder="Comma separated list" maxlength="1000"></textarea>
+                                        <textarea class="text_pole keysecondarytextpole" name="keysecondary" rows="1" data-i18n="[placeholder]Comma separated (ignored if empty)" placeholder="Comma separated list" maxlength="2000"></textarea>
 
                                     </div>
                                 </div>
@@ -4466,7 +4466,7 @@
                 <strong>Alternate Greeting #<span class="greeting_index"></span></strong>
                 <div class="menu_button fa-solid fa-trash-alt delete_alternate_greeting"></div>
             </div>
-            <textarea name="alternate_greetings" data-i18n="[placeholder](This will be the first message from the character that starts every chat)" placeholder="(This will be the first message from the character that starts every chat)" class="text_pole textarea_compact alternate_greeting_text" maxlength="20000" value="" autocomplete="off" rows="4"></textarea>
+            <textarea name="alternate_greetings" data-i18n="[placeholder](This will be the first message from the character that starts every chat)" placeholder="(This will be the first message from the character that starts every chat)" class="text_pole textarea_compact alternate_greeting_text" maxlength="50000" value="" autocomplete="off" rows="4"></textarea>
         </div>
     </div>
 
@@ -4491,7 +4491,7 @@
                             <b>Unique to this chat</b>.<br>
                             Bookmarks inherit the Note from their parent, and can be changed individually after that.<br>
                         </small>
-                        <textarea id="extension_floating_prompt" class="text_pole" rows="8" maxlength="10000"></textarea>
+                        <textarea id="extension_floating_prompt" class="text_pole" rows="8" maxlength="50000"></textarea>
                         <div class="extension_token_counter">
                             Tokens: <span id="extension_floating_prompt_token_counter">0</span>
                         </div>
@@ -4542,7 +4542,7 @@
                         <small>Will be automatically added as the author's note for this character. Will be used in groups, but
                             can't be modified when a group chat is open.</small>
 
-                        <textarea id="extension_floating_chara" class="text_pole" rows="8" maxlength="10000" placeholder="Example:&#10;[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
+                        <textarea id="extension_floating_chara" class="text_pole" rows="8" maxlength="50000" placeholder="Example:&#10;[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
                         <div class="extension_token_counter">
                             Tokens: <span id="extension_floating_chara_token_counter">0</span>
                         </div>
@@ -4576,7 +4576,7 @@
                     <div class="inline-drawer-content">
                         <small>Will be automatically added as the Author's Note for all new chats.</small>
 
-                        <textarea id="extension_floating_default" class="text_pole" rows="8" maxlength="10000" placeholder="Example:&#10;[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
+                        <textarea id="extension_floating_default" class="text_pole" rows="8" maxlength="50000" placeholder="Example:&#10;[Scenario: wacky adventures; Genre: romantic comedy; Style: verbose, creative]"></textarea>
                         <div class="extension_token_counter">
                             Tokens: <span id="extension_floating_default_token_counter">0</span>
                         </div>
