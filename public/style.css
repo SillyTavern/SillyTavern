@@ -2346,36 +2346,16 @@ input[type="range"]::-webkit-slider-thumb {
 
 .note-link-span {
     color: var(--SmartThemeQuoteColor);
-    border: 1px solid var(--SmartThemeQuoteColor);
-    border-radius: 10px;
-    line-height: var(--mainFontSize);
-    font-size: var(--mainFontSize);
-    font-weight: 700;
-    width: calc(var(--mainFontSize) + 0.2rem);
-    height: calc(var(--mainFontSize) + 0.2rem);
     display: inline-block;
     opacity: 0.5;
     margin: 0 5px;
     text-align: center;
+    border-radius: 100%;
     box-shadow: 0 0 3px black;
     transition: all 250ms;
 }
 
-.note-link-span-lrg {
-    color: var(--SmartThemeQuoteColor);
-    border: 3px solid var(--SmartThemeQuoteColor);
-    border-radius: 100%;
-    line-height: calc(var(--mainFontSize)*1.6);
-    font-size: calc(var(--mainFontSize)*1.4);
-    font-weight: 700;
-    width: calc(var(--mainFontSize) + 1rem);
-    height: calc(var(--mainFontSize) + 1rem);
-    display: inline-block;
-    opacity: 0.5;
-    margin: 0 5px;
-    text-align: center;
-    box-shadow: 0 0 3px black;
-    transition: all 250ms;
+.topRightInset {
     position: absolute;
     top: 6px;
     right: 23px;
@@ -3455,9 +3435,6 @@ a {
     flex-wrap: wrap;
 }
 
-#max_context_unlocked_warning {
-    /* flex-basis: 100%; */
-}
 
 #max_context_unlocked:not(:checked)+div {
     display: none;
