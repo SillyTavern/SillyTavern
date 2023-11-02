@@ -2441,6 +2441,14 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         reject = () => { };
     }
 
+    let chat_regexed = chat.map(x => ({
+        ...x,
+        mes: getRegexedString(x.mes, x.is_user ? regex_placement.USER_INPUT : regex_placement.AI_OUTPUT, {
+            isPrompt: true,
+        }),
+    }))
+
+
     if (selected_group && !is_group_generating && !dryRun) {
         generateGroupWrapper(false, type, { resolve, reject, quiet_prompt, force_chid, signal: abortController.signal });
         return;
@@ -2485,34 +2493,34 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             $("#send_textarea").val('').trigger('input');
         } else {
             textareaText = "";
-            if (chat.length && chat[chat.length - 1]['is_user']) {
+            if (chat_regexed.length && chat_regexed[chat_regexed.length - 1]['is_user']) {
                 //do nothing? why does this check exist?
             }
-            else if (type !== 'quiet' && type !== "swipe" && !isImpersonate && !dryRun && chat.length) {
-                chat.length = chat.length - 1;
+            else if (type !== 'quiet' && type !== "swipe" && !isImpersonate && !dryRun && chat_regexed.length) {
+                chat_regexed.length = chat_regexed.length - 1;
                 count_view_mes -= 1;
                 $('#chat').children().last().hide(250, function () {
                     $(this).remove();
                 });
-                await eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
+                await eventSource.emit(event_types.MESSAGE_DELETED, chat_regexed.length);
             }
         }
 
-        if (!type && !textareaText && power_user.continue_on_send && !selected_group && chat.length && !chat[chat.length - 1]['is_user'] && !chat[chat.length - 1]['is_system']) {
+        if (!type && !textareaText && power_user.continue_on_send && !selected_group && chat_regexed.length && !chat_regexed[chat_regexed.length - 1]['is_user'] && !chat_regexed[chat_regexed.length - 1]['is_system']) {
             type = 'continue';
         }
 
         const isContinue = type == 'continue';
 
         // Rewrite the generation timer to account for the time passed for all the continuations.
-        if (isContinue && chat.length) {
-            const prevFinished = chat[chat.length - 1]['gen_finished'];
-            const prevStarted = chat[chat.length - 1]['gen_started'];
+        if (isContinue && chat_regexed.length) {
+            const prevFinished = chat_regexed[chat_regexed.length - 1]['gen_finished'];
+            const prevStarted = chat_regexed[chat_regexed.length - 1]['gen_started'];
 
             if (prevFinished && prevStarted) {
                 const timePassed = prevFinished - prevStarted;
                 generation_started = new Date(Date.now() - timePassed);
-                chat[chat.length - 1]['gen_started'] = generation_started;
+                chat_regexed[chat_regexed.length - 1]['gen_started'] = generation_started;
             }
         }
 
@@ -2600,12 +2608,12 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             mesExamplesArray = []
 
         // First message in fresh 1-on-1 chat reacts to user/character settings changes
-        if (chat.length) {
-            chat[0].mes = substituteParams(chat[0].mes);
+        if (chat_regexed.length) {
+            chat_regexed[0].mes = substituteParams(chat_regexed[0].mes);
         }
 
         // Collect messages with usable content
-        let coreChat = chat.filter(x => !x.is_system);
+        let coreChat = chat_regexed.filter(x => !x.is_system);
         if (type === 'swipe') {
             coreChat.pop();
         }
@@ -2626,7 +2634,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             console.debug('Skipping extension interceptors for dry run');
         }
 
-        console.log(`Core/all messages: ${coreChat.length}/${chat.length}`);
+        console.log(`Core/all messages: ${coreChat.length}/${chat_regexed.length}`);
 
         // kingbri MARK: - Make sure the prompt bias isn't the same as the user bias
         if ((promptBias && !isUserPromptBias) || power_user.always_force_name2 || main_api == 'novel') {
