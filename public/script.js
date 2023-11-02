@@ -2619,7 +2619,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         // Determine token limit
         let this_max_context = getMaxContextSize();
 
-        if (!dryRun) {
+        if (!dryRun && type !== 'quiet') {
             console.debug('Running extension interceptors');
             const aborted = await runGenerationInterceptors(coreChat, this_max_context);
 
