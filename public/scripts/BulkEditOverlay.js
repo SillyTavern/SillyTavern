@@ -2,18 +2,14 @@
 
 import {
     callPopup,
-    characters,
-    deleteCharacter,
+    characters, deleteCharacter,
     event_types,
     eventSource,
     getCharacters,
-    getRequestHeaders,
-    saveSettings,
-    settings
+    getRequestHeaders, handleDeleteCharacter, this_chid
 } from "../script.js";
 import {favsToHotswap} from "./RossAscends-mods.js";
 import {convertCharacterToPersona} from "./personas.js";
-import {uuidv4} from "./utils.js";
 
 const popupMessage = {
     deleteChat(characterCount) {
@@ -24,73 +20,14 @@ const popupMessage = {
                     <span>Also delete the chat files</span>
                 </label><br></b>`;
     },
-    newDeck() {
-        return `<br/><p>Create a new character deck with the selected characters.</p>
-                <h3>Set a name:</h3><br/>`;
-    },
+    exportCharacters(characterCount) {
+        return `<h3>Export ${characterCount} characters?</h3>`;
+    }
 }
 
 const toggleFavoriteHighlight = (characterId) => {
     const element = document.getElementById(`CharID${characterId}`);
     element.classList.toggle('is_fav');
-}
-
-/**
- * Defines a visual grouping of characters
- */
-class CharacterDeck {
-    id = '';
-    name = '';
-
-    /**  @type {int[]} */
-    characters = [];
-
-    constructor(id, name, characters = []) {
-        this.id = id;
-        this.name = name;
-        this.characters = characters;
-
-        return this;
-    }
-
-    addCharacter = (characterId) => {
-        this.characters.push(characterId);
-
-        return this;
-    }
-
-    static fromObject(obj) {
-        return new CharacterDeck(obj.id, obj.name, obj.characters);
-    }
-}
-
-/**
- * Represents the characterCollections setting
- */
-class CharacterDeckCollection {
-    /** @type {CharacterDeck[]} */
-    decks = [];
-
-    constructor(decks = []) {
-        if (false === Array.isArray(decks) || decks.some(deck => !(deck instanceof CharacterDeck))) {
-            throw new Error('All groups must be instances of CharacterGroup');
-        }
-        this.decks = decks;
-    }
-
-    addDeck = (deck) => {
-        if (!(deck instanceof CharacterDeck)) {
-            throw new Error('Group must be an instance of CharacterGroup');
-        }
-        this.decks.push(deck);
-
-        return this;
-    }
-
-    static fromObject(object) {
-        const decks = object.decks.map(deck => CharacterDeck.fromObject(deck));
-        return new CharacterDeckCollection(decks);
-    }
 }
 
 /**
@@ -107,7 +44,6 @@ class CharacterGroupOverlayState {
 }
 
 class CharacterContextMenu {
-
     /**
      * Duplicate a character
      *
@@ -155,20 +91,6 @@ class CharacterContextMenu {
 
     static persona = async (characterId) => convertCharacterToPersona(characterId);
 
-    static deck = (name = 'New Deck', characterIds = []) => {
-        let characterDeckCollection = null;
-        if (settings.characterDecks && Array.isArray(settings.characterDecks.decks)) {
-            characterDeckCollection = CharacterDeckCollection.fromObject(settings.characterDecks);
-        } else {
-            characterDeckCollection = new CharacterDeckCollection();
-        }
-
-        const id = uuidv4();
-        characterDeckCollection.addDeck(new CharacterDeck(id, name, characterIds));
-
-        settings.characterDecks = JSON.parse(JSON.stringify(characterDeckCollection))
-    }
-
     static delete = async (characterId, deleteChats = false) => {
         const character = CharacterContextMenu.getCharacter(characterId);
 
@@ -198,7 +120,7 @@ class CharacterContextMenu {
                     }
                 })
             }
-            eventSource.emit('characterDeleted', { id: characterId, character: character });
+            eventSource.emit('characterDeleted', { id: this_chid, character: characters[this_chid] });
         });
     }
 
@@ -219,8 +141,7 @@ class CharacterContextMenu {
             {id: 'character_context_menu_favorite', callback: characterGroupOverlay.handleContextMenuFavorite},
             {id: 'character_context_menu_duplicate', callback: characterGroupOverlay.handleContextMenuDuplicate},
             {id: 'character_context_menu_delete', callback: characterGroupOverlay.handleContextMenuDelete},
-            {id: 'character_context_menu_persona', callback: characterGroupOverlay.handleContextMenuPersona},
-            {id: 'character_context_menu_deck', callback: characterGroupOverlay.handleContextMenuCreateDeck}
+            {id: 'character_context_menu_persona', callback: characterGroupOverlay.handleContextMenuPersona}
         ];
 
         contextMenuItems.forEach(contextMenuItem => document.getElementById(contextMenuItem.id).addEventListener('click', contextMenuItem.callback))
@@ -297,6 +218,7 @@ class BulkEditOverlay {
         const elements = [...document.getElementsByClassName(BulkEditOverlay.characterClass)];
         elements.forEach(element => element.addEventListener('touchstart', this.handleHold));
         elements.forEach(element => element.addEventListener('mousedown', this.handleHold));
+
         elements.forEach(element => element.addEventListener('touchend', this.handleLongPressEnd));
         elements.forEach(element => element.addEventListener('mouseup', this.handleLongPressEnd));
         elements.forEach(element => element.addEventListener('dragend', this.handleLongPressEnd));
@@ -413,8 +335,9 @@ class BulkEditOverlay {
         .then(() => getCharacters())
         .then(() => this.browseState())
 
-    handleContextMenuPersona = () =>  Promise.all(this.selectedCharacters.map(async characterId => CharacterContextMenu.persona(characterId)))
+    handleContextMenuPersona = () => { Promise.all(this.selectedCharacters.map(async characterId => CharacterContextMenu.persona(characterId)))
         .then(() => this.browseState());
+    }
 
     handleContextMenuDelete = () => {
         callPopup(
@@ -424,15 +347,6 @@ class BulkEditOverlay {
                     .then(() => getCharacters())
                     .then(() => this.browseState())
             );
-    }
-
-    handleContextMenuCreateDeck = () => {
-        callPopup(popupMessage.newDeck, 'input').then(
-            (resolve) => {
-                CharacterContextMenu.deck(resolve, this.selectedCharacters);
-                saveSettings().then(async () => await getCharacters());
-            }
-        );
     }
 
     addStateChangeCallback = callback => this.stateChangeCallbacks.push(callback);
