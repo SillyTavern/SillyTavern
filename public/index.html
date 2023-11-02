@@ -1941,9 +1941,21 @@
                                     <input id="openrouter_use_fallback" type="checkbox" />
                                     <span data-i18n="Allow fallback routes">Allow fallback routes</span>
                                 </label>
-                                <div class="toggle-description justifyLeft">
+                                <div class="toggle-description justifyLeft wide100p">
                                     <span data-i18n="Allow fallback routes Description">
                                         Automatically chooses an alternative model if the chosen model can't serve your request.
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="marginTopBot5">
+                                <label for="openrouter_force_instruct" class="checkbox_label">
+                                    <input id="openrouter_force_instruct" type="checkbox" />
+                                    <span data-i18n="Force Instruct Mode formatting">Force Instruct Mode formatting</span>
+                                </label>
+                                <div class="toggle-description justifyLeft wide100p">
+                                    <span data-i18n="Force Instruct Mode formatting Description">
+                                        If both Instruct Mode and this are enabled, the prompt will be formatted by SillyTavern using the current
+                                        advanced formatting settings (except instruct System Prompt). If disabled, the prompt will be formatted by OpenRouter.
                                     </span>
                                 </div>
                             </div>

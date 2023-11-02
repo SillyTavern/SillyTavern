@@ -2849,6 +2849,10 @@ app.post("/openai_bias", jsonParser, async function (request, response) {
 });
 
 function convertChatMLPrompt(messages) {
+    if (typeof messages === 'string') {
+        return messages;
+    }
+
     const messageStrings = [];
     messages.forEach(m => {
         if (m.role === 'system' && m.name === undefined) {
@@ -3180,9 +3184,9 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
         bodyParams['stop'] = request.body.stop;
     }
 
-    const isTextCompletion = Boolean(request.body.model && TEXT_COMPLETION_MODELS.includes(request.body.model));
+    const isTextCompletion = Boolean(request.body.model && TEXT_COMPLETION_MODELS.includes(request.body.model)) || typeof request.body.messages === 'string';
     const textPrompt = isTextCompletion ? convertChatMLPrompt(request.body.messages) : '';
-    const endpointUrl = isTextCompletion ? `${api_url}/completions` : `${api_url}/chat/completions`;
+    const endpointUrl = isTextCompletion && !request.body.use_openrouter ? `${api_url}/completions` : `${api_url}/chat/completions`;
 
     const controller = new AbortController();
     request.socket.removeAllListeners('close');
