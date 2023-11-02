@@ -1508,11 +1508,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     background-color: var(--white30a);
 }
 
-/*LEFT SIDE BG MENU*/
-
-#logo_block {
-    z-index: 3001;
-}
+/* BG MENU */
 
 #bg_menu {
     cursor: pointer;
