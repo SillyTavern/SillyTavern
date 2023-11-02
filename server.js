@@ -393,6 +393,7 @@ app.post("/generate", jsonParser, async function (request, response_generate) {
             top_a: request.body.top_a,
             top_k: request.body.top_k,
             top_p: request.body.top_p,
+            min_p: request.body.min_p,
             typical: request.body.typical,
             sampler_order: sampler_order,
             singleline: !!request.body.singleline,

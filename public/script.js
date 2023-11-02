@@ -2619,7 +2619,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         // Determine token limit
         let this_max_context = getMaxContextSize();
 
-        if (!dryRun) {
+        if (!dryRun && type !== 'quiet') {
             console.debug('Running extension interceptors');
             const aborted = await runGenerationInterceptors(coreChat, this_max_context);
 
@@ -4750,6 +4750,11 @@ function changeMainAPI() {
         console.log("enabling amount_gen for ooba/novel");
         activeItem.amountGenElem.find('input').prop("disabled", false);
         activeItem.amountGenElem.css("opacity", 1.0);
+    }
+    if (selectedVal === "textgenerationwebui") {
+        $("#streaming_textgenerationwebui_block").css('display', 'block')
+    } else {
+        $("#streaming_textgenerationwebui_block").css('display', 'none')
     }
 
     if (selectedVal === "novel") {
