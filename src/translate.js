@@ -203,7 +203,10 @@ function registerEndpoints(app, jsonParser) {
         }
 
         const text = request.body.text;
-        const lang = request.body.lang;
+        let lang = request.body.lang;
+        if (request.body.lang === 'zh-CN') {
+            lang = 'ZH'
+        }
 
         if (!text || !lang) {
             return response.sendStatus(400);
