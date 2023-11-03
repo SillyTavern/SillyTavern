@@ -90,6 +90,7 @@
     <script type="module" src="scripts/setting-search.js"></script>
     <script type="module" src="scripts/bulk-edit.js"></script>
     <script type="module" src="scripts/cfg-scale.js"></script>
+    <script type="module" src="scripts/chats.js"></script>
 
     <title>SillyTavern</title>
 </head>
@@ -4348,6 +4349,7 @@
                     <div class="flex-container flex1 alignitemscenter">
                         <div class="flex-container alignItemsBaseline">
                             <span class="name_text">${characterName}</span>
+                            <i class="mes_ghost fa-solid fa-ghost" title="This message is invisible for the AI" data-i18n="[title]This message is invisible for the AI"></i>
                             <small class="timestamp"></small>
                         </div>
                     </div>
@@ -4359,6 +4361,8 @@
                             <div title="Generate Image" class="sd_message_gen fa-solid fa-paintbrush" data-i18n="[title]Generate Image"></div>
                             <div title="Narrate" class="mes_narrate fa-solid fa-bullhorn" data-i18n="[title]Narrate"></div>
                             <div title="Prompt" class="mes_prompt fa-solid fa-square-poll-horizontal " data-i18n="[title]Prompt"></div>
+                            <div title="Exclude message from prompts" class="mes_hide fa-solid fa-eye" data-i18n="[title]Exclude message from prompts"></div>
+                            <div title="Include message in prompts" class="mes_unhide fa-solid fa-eye-slash" data-i18n="[title]Include message in prompts"></div>
                             <div title="Create bookmark" class="mes_create_bookmark fa-regular fa-solid fa-book-bookmark" data-i18n="[title]Create Bookmark"></div>
                             <div title="Create branch" class="mes_create_branch fa-regular fa-code-branch" data-i18n="[title]Create Branch"></div>
                             <div title="Copy" class="mes_copy fa-solid fa-copy " data-i18n="[title]Copy"></div>
