@@ -119,19 +119,9 @@ const promptTemplates = {
 }
 
 const helpString = [
-    `${m('(argument)')} – requests SD to make an image. Supported arguments:`,
-    '<ul>',
-    `<li>${m(j(triggerWords[generationMode.CHARACTER]))} – AI character full body selfie</li>`,
-    `<li>${m(j(triggerWords[generationMode.FACE]))} – AI character face-only selfie</li>`,
-    `<li>${m(j(triggerWords[generationMode.USER]))} – user character full body selfie</li>`,
-    `<li>${m(j(triggerWords[generationMode.SCENARIO]))} – visual recap of the whole chat scenario</li>`,
-    `<li>${m(j(triggerWords[generationMode.NOW]))} – visual recap of the last chat message</li>`,
-    `<li>${m(j(triggerWords[generationMode.RAW_LAST]))} – visual recap of the last chat message with no summary</li>`,
-    `<li>${m(j(triggerWords[generationMode.BACKGROUND]))} – generate a background for this chat based on the chat's context</li>`,
-    '</ul>',
-    `Anything else would trigger a "free mode" to make SD generate whatever you prompted.<Br>
-    example: '/sd apple tree' would generate a picture of an apple tree.`,
-].join('<br>');
+    `${m('(argument)')} – requests SD to make an image. Supported arguments: ${m(j(Object.values(triggerWords).flat()))}.`,
+    `Anything else would trigger a "free mode" to make SD generate whatever you prompted. Example: '/sd apple tree' would generate a picture of an apple tree.`,
+].join(' ');
 
 const defaultPrefix = 'best quality, absurdres, aesthetic,';
 const defaultNegative = 'lowres, bad anatomy, bad hands, text, error, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry';
