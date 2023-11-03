@@ -55,6 +55,7 @@ import {
     stringFormat,
 } from "./utils.js";
 import { countTokensOpenAI } from "./tokenizers.js";
+import { formatInstructModeChat, formatInstructModeExamples, formatInstructModePrompt, formatInstructModeSystemPrompt } from "./instruct-mode.js";
 
 export {
     is_get_status_openai,
@@ -205,6 +206,7 @@ const default_settings = {
     windowai_model: '',
     openrouter_model: openrouter_website_model,
     openrouter_use_fallback: false,
+    openrouter_force_instruct: false,
     jailbreak_system: false,
     reverse_proxy: '',
     legacy_streaming: false,
@@ -250,6 +252,7 @@ const oai_settings = {
     windowai_model: '',
     openrouter_model: openrouter_website_model,
     openrouter_use_fallback: false,
+    openrouter_force_instruct: false,
     jailbreak_system: false,
     reverse_proxy: '',
     legacy_streaming: false,
@@ -289,6 +292,90 @@ function validateReverseProxy() {
 
 function setOpenAIOnlineStatus(value) {
     is_get_status_openai = value;
+}
+
+function convertChatCompletionToInstruct(messages, type) {
+    messages = messages.filter(x => x.content !== oai_settings.new_chat_prompt && x.content !== oai_settings.new_example_chat_prompt);
+
+    let chatMessagesText = '';
+    let systemPromptText = '';
+    let examplesText = '';
+
+    function getPrefix(message) {
+        let prefix;
+
+        if (message.role === 'user' || message.name === 'example_user') {
+            if (selected_group) {
+                prefix = ''
+            } else if (message.name === 'example_user') {
+                prefix = name1;
+            } else {
+                prefix = message.name ?? name1;
+            }
+        }
+
+        if (message.role === 'assistant' || message.name === 'example_assistant') {
+            if (selected_group) {
+                prefix = ''
+            }
+            else if (message.name === 'example_assistant') {
+                prefix = name2;
+            } else {
+                prefix = message.name ?? name2;
+            }
+        }
+
+        return prefix;
+    }
+
+    function toString(message) {
+        if (message.role === 'system' && !message.name) {
+            return message.content;
+        }
+
+        const prefix = getPrefix(message);
+        return prefix ? `${prefix}: ${message.content}` : message.content;
+    }
+
+    const firstChatMessage = messages.findIndex(message => message.role === 'assistant' || message.role === 'user');
+    const systemPromptMessages = messages.slice(0, firstChatMessage).filter(message => message.role === 'system' && !message.name);
+
+    if (systemPromptMessages.length) {
+        systemPromptText = systemPromptMessages.map(message => message.content).join('\n');
+        systemPromptText = formatInstructModeSystemPrompt(systemPromptText);
+    }
+
+    const exampleMessages = messages.filter(x => x.role === 'system' && (x.name === 'example_user' || x.name === 'example_assistant'));
+
+    if (exampleMessages.length) {
+        examplesText = power_user.context.example_separator + '\n';
+        examplesText += exampleMessages.map(toString).join('\n');
+        examplesText = formatInstructModeExamples(examplesText, name1, name2);
+    }
+
+    const chatMessages = messages.slice(firstChatMessage);
+
+    if (chatMessages.length) {
+        chatMessagesText = power_user.context.chat_start + '\n';
+
+        for (const message of chatMessages) {
+            const name = getPrefix(message);
+            const isUser = message.role === 'user';
+            const isNarrator = message.role === 'system';
+            chatMessagesText += formatInstructModeChat(name, message.content, isUser, isNarrator, '', name1, name2, false);
+        }
+    }
+
+    const isImpersonate = type === 'impersonate';
+    const promptName = isImpersonate ? name1 : name2;
+    const promptLine = formatInstructModePrompt(promptName, isImpersonate, '', name1, name2).trimStart();
+
+    const prompt = [systemPromptText, examplesText, chatMessagesText, promptLine]
+        .filter(x => x)
+        .map(x => x.endsWith('\n') ? x : `${x}\n`)
+        .join('');
+
+    return prompt;
 }
 
 function setOpenAIMessages(chat) {
@@ -1222,10 +1309,15 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
     const isScale = oai_settings.chat_completion_source == chat_completion_sources.SCALE;
     const isAI21 = oai_settings.chat_completion_source == chat_completion_sources.AI21;
     const isPalm = oai_settings.chat_completion_source == chat_completion_sources.PALM;
-    const isTextCompletion = oai_settings.chat_completion_source == chat_completion_sources.OPENAI && textCompletionModels.includes(oai_settings.openai_model);
+    const isOAI = oai_settings.chat_completion_source == chat_completion_sources.OPENAI;
+    const isTextCompletion = (isOAI && textCompletionModels.includes(oai_settings.openai_model)) || (isOpenRouter && oai_settings.openrouter_force_instruct && power_user.instruct.enabled);
     const isQuiet = type === 'quiet';
     const isImpersonate = type === 'impersonate';
     const stream = oai_settings.stream_openai && !isQuiet && !isScale && !isAI21 && !isPalm;
+
+    if (isTextCompletion && isOpenRouter) {
+        openai_msgs_tosend = convertChatCompletionToInstruct(openai_msgs_tosend, type);
+    }
 
     if (isAI21 || isPalm) {
         const joinedMsgs = openai_msgs_tosend.reduce((acc, obj) => {
@@ -2034,6 +2126,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.windowai_model = settings.windowai_model ?? default_settings.windowai_model;
     oai_settings.openrouter_model = settings.openrouter_model ?? default_settings.openrouter_model;
     oai_settings.openrouter_use_fallback = settings.openrouter_use_fallback ?? default_settings.openrouter_use_fallback;
+    oai_settings.openrouter_force_instruct = settings.openrouter_force_instruct ?? default_settings.openrouter_force_instruct;
     oai_settings.ai21_model = settings.ai21_model ?? default_settings.ai21_model;
     oai_settings.chat_completion_source = settings.chat_completion_source ?? default_settings.chat_completion_source;
     oai_settings.api_url_scale = settings.api_url_scale ?? default_settings.api_url_scale;
@@ -2085,6 +2178,7 @@ function loadOpenAISettings(data, settings) {
     $('#exclude_assistant').prop('checked', oai_settings.exclude_assistant);
     $('#scale-alt').prop('checked', oai_settings.use_alt_scale);
     $('#openrouter_use_fallback').prop('checked', oai_settings.openrouter_use_fallback);
+    $('#openrouter_force_instruct').prop('checked', oai_settings.openrouter_force_instruct);
     $('#squash_system_messages').prop('checked', oai_settings.squash_system_messages);
     if (settings.impersonation_prompt !== undefined) oai_settings.impersonation_prompt = settings.impersonation_prompt;
 
@@ -2251,6 +2345,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         windowai_model: settings.windowai_model,
         openrouter_model: settings.openrouter_model,
         openrouter_use_fallback: settings.openrouter_use_fallback,
+        openrouter_force_instruct: settings.openrouter_force_instruct,
         ai21_model: settings.ai21_model,
         temperature: settings.temp_openai,
         frequency_penalty: settings.freq_pen_openai,
@@ -2612,6 +2707,7 @@ function onSettingsPresetChange() {
         windowai_model: ['#model_windowai_select', 'windowai_model', false],
         openrouter_model: ['#model_openrouter_select', 'openrouter_model', false],
         openrouter_use_fallback: ['#openrouter_use_fallback', 'openrouter_use_fallback', true],
+        openrouter_force_instruct: ['#openrouter_force_instruct', 'openrouter_force_instruct', true],
         ai21_model: ['#model_ai21_select', 'ai21_model', false],
         openai_max_context: ['#openai_max_context', 'openai_max_context', false],
         openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false],
@@ -3341,6 +3437,11 @@ $(document).ready(async function () {
 
     $('#openrouter_use_fallback').on('input', function () {
         oai_settings.openrouter_use_fallback = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#openrouter_force_instruct').on('input', function () {
+        oai_settings.openrouter_force_instruct = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 

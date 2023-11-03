@@ -897,6 +897,8 @@ export interface ModelGenerationInputKobold {
     top_k?: number;
     /** Top-p sampling value. */
     top_p?: number;
+    /** Min-p sampling value. */
+    min_p?: number;
     /** Typical sampling value. */
     typical?: number;
     /** Array of integers representing the sampler order to be used */
