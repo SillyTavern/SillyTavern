@@ -398,7 +398,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
                     Trigger %
                 </small>
             </div>`
-            const blocks = page.map(entry => getWorldEntry(name, data, entry));
+            const blocks = page.map(entry => getWorldEntry(name, data, entry)).filter(x => x);
             $("#world_popup_entries_list").append(keywordHeaders);
             $("#world_popup_entries_list").append(blocks);
         },
@@ -559,6 +559,10 @@ function deleteOriginalDataValue(data, uid) {
 }
 
 function getWorldEntry(name, data, entry) {
+    if (!data.entries[entry.uid]) {
+        return;
+    }
+
     const template = $("#entry_edit_template .world_entry").clone();
     template.data("uid", entry.uid);
     template.attr("uid", entry.uid);
