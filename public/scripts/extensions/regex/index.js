@@ -114,6 +114,9 @@ async function onRegexEditorOpenClick(existingId) {
                 .find(`input[name="only_format_display"]`)
                 .prop("checked", existingScript.markdownOnly ?? false);
             editorHtml
+                .find(`input[name="only_format_prompt"]`)
+                .prop("checked", existingScript.promptOnly ?? false);
+            editorHtml
                 .find(`input[name="run_on_edit"]`)
                 .prop("checked", existingScript.runOnEdit ?? false);
             editorHtml
@@ -165,6 +168,10 @@ async function onRegexEditorOpenClick(existingId) {
                 editorHtml
                     .find(`input[name="only_format_display"]`)
                     .prop("checked"),
+            promptOnly:
+                editorHtml
+                    .find(`input[name="only_format_prompt"]`)
+                    .prop("checked"),
             runOnEdit:
                 editorHtml
                     .find(`input[name="run_on_edit"]`)
@@ -197,6 +204,7 @@ function migrateSettings() {
                 script.placement = script.placement.filter((e) => e !== regex_placement.MD_DISPLAY);
 
             script.markdownOnly = true
+            script.promptOnly = true
 
             performSave = true;
         }

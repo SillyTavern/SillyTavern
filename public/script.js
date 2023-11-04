@@ -2632,6 +2632,13 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             coreChat.pop();
         }
 
+        coreChat = coreChat.map(x => ({
+            ...x,
+            mes: getRegexedString(x.mes, x.is_user ? regex_placement.USER_INPUT : regex_placement.AI_OUTPUT, {
+                isPrompt: true,
+            }),
+        }))
+
         // Determine token limit
         let this_max_context = getMaxContextSize();
 
