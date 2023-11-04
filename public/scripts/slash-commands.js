@@ -681,7 +681,7 @@ function setBackgroundCallback(_, bg) {
     }
 }
 
-function executeSlashCommands(text) {
+async function executeSlashCommands(text) {
     if (!text) {
         return false;
     }
@@ -706,8 +706,12 @@ function executeSlashCommands(text) {
             continue;
         }
 
+        if (result.value && typeof result.value === 'string') {
+            result.value = substituteParams(result.value.trim());
+        }
+
         console.debug('Slash command executing:', result);
-        result.command.callback(result.args, result.value);
+        await result.command.callback(result.args, result.value);
 
         if (result.command.interruptsGeneration) {
             interrupt = true;

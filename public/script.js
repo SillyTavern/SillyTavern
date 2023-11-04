@@ -1662,6 +1662,20 @@ function scrollChatToBottom() {
 }
 
 /**
+ * Returns the ID of the last message in the chat.
+ * @returns {string} The ID of the last message in the chat.
+ */
+function getLastMessageId() {
+    const index = chat?.length - 1;
+
+    if (!isNaN(index) && index >= 0) {
+        return String(index);
+    }
+
+    return '';
+}
+
+/**
  * Substitutes {{macro}} parameters in a string.
  * @param {string} content - The string to substitute parameters in.
  * @param {*} _name1 - The name of the user. Uses global name1 if not provided.
@@ -1690,6 +1704,7 @@ function substituteParams(content, _name1, _name2, _original, _group) {
     content = content.replace(/{{char}}/gi, _name2);
     content = content.replace(/{{charIfNotGroup}}/gi, _group);
     content = content.replace(/{{group}}/gi, _group);
+    content = content.replace(/{{lastMessageId}}/gi, getLastMessageId());
 
     content = content.replace(/<USER>/gi, _name1);
     content = content.replace(/<BOT>/gi, _name2);
@@ -1885,12 +1900,12 @@ export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN) {
         });
 }
 
-function processCommands(message, type) {
+async function processCommands(message, type) {
     if (type == "regenerate" || type == "swipe" || type == 'quiet') {
         return null;
     }
 
-    const result = executeSlashCommands(message);
+    const result = await executeSlashCommands(message);
     $("#send_textarea").val(result.newText).trigger('input');
 
     // interrupt generation if the input was nothing but a command
@@ -2405,7 +2420,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
     message_already_generated = isImpersonate ? `${name1}: ` : `${name2}: `;
 
-    const interruptedByCommand = processCommands($("#send_textarea").val(), type);
+    const interruptedByCommand = await processCommands($("#send_textarea").val(), type);
 
     if (interruptedByCommand) {
         $("#send_textarea").val('').trigger('input');
@@ -4457,7 +4472,13 @@ function saveChatDebounced() {
 
 async function saveChat(chat_name, withMetadata, mesId) {
     const metadata = { ...chat_metadata, ...(withMetadata || {}) };
-    let file_name = chat_name ?? characters[this_chid].chat;
+    let file_name = chat_name ?? characters[this_chid]?.chat;
+
+    if (!file_name) {
+        console.warn('saveChat called without chat_name and no chat file found');
+        return;
+    }
+
     characters[this_chid]['date_last_chat'] = Date.now();
     chat.forEach(function (item, i) {
         if (item["is_group"]) {
