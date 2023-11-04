@@ -64,6 +64,13 @@ const textgenerationwebui_settings = {
     negative_prompt: '',
     grammar_string: '',
     banned_tokens: '',
+    //n_aphrodite: 1,
+    //best_of_aphrodite: 1,
+    //ignore_eos_token_aphrodite: false,
+    //spaces_between_special_tokens_aphrodite: true,
+    //logits_processors_aphrodite: [],
+    //log_probs_aphrodite: 0,
+    //prompt_log_probs_aphrodite: 0,
     type: textgen_types.OOBA,
 };
 
@@ -106,6 +113,13 @@ const setting_names = [
     "negative_prompt",
     "grammar_string",
     "banned_tokens",
+    //'n_aphrodite',
+    //'best_of_aphrodite',
+    //'ignore_eos_token_aphrodite',
+    //'spaces_between_special_tokens_aphrodite',
+    //'logits_processors_aphrodite',
+    //'log_probs_aphrodite',
+    //'prompt_log_probs_aphrodite'
 ];
 
 function selectPreset(name) {
@@ -250,6 +264,26 @@ jQuery(function () {
     $('#textgen_type').on('change', function () {
         const type = String($(this).val());
         textgenerationwebui_settings.type = type;
+
+        /*         if (type === 'aphrodite') {
+                    $('[data-forAphro=False]').each(function () {
+                        $(this).hide()
+                    })
+                    $('[data-forAphro=True]').each(function () {
+                        $(this).show()
+                    })
+                    $('#mirostat_mode_textgenerationwebui').attr('step', 2) //Aphro disallows mode 1
+                    $("#do_sample_textgenerationwebui").prop('checked', true) //Aphro should always do sample; 'otherwise set temp to 0 to mimic no sample'
+                    $("#ban_eos_token_textgenerationwebui").prop('checked', false) //Aphro should not ban EOS, just ignore it; 'add token '2' to ban list do to this'
+                } else {
+                    $('[data-forAphro=False]').each(function () {
+                        $(this).show()
+                    })
+                    $('[data-forAphro=True]').each(function () {
+                        $(this).hide()
+                    })
+                    $('#mirostat_mode_textgenerationwebui').attr('step', 1)
+                } */
 
         $('[data-tg-type]').each(function () {
             const tgType = $(this).attr('data-tg-type');
@@ -445,5 +479,12 @@ export function getTextGenGenerationData(finalPrompt, this_amount_gen, isImperso
         'custom_token_bans': getCustomTokenBans(),
         'use_mancer': isMancer(),
         'use_aphrodite': isAphrodite(),
+        //'n': textgenerationwebui_settings.n_aphrodite,
+        //'best_of': textgenerationwebui_settings.n_aphrodite, //n must always == best_of and vice versa
+        //'ignore_eos': textgenerationwebui_settings.ignore_eos_token_aphrodite,
+        //'spaces_between_special_tokens': textgenerationwebui_settings.spaces_between_special_tokens_aphrodite,
+        // 'logits_processors': textgenerationwebui_settings.logits_processors_aphrodite,
+        //'logprobs': textgenerationwebui_settings.log_probs_aphrodite,
+        //'prompt_logprobs': textgenerationwebui_settings.prompt_log_probs_aphrodite,
     };
 }

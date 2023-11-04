@@ -465,14 +465,14 @@
                                         <input class="neo-range-slider" type="range" id="rep_pen_textgenerationwebui" name="volume" min="1" max="1.5" step="0.01">
                                         <input class="neo-range-input" type="number" min="1" max="1.5" step="0.01" data-for="rep_pen_textgenerationwebui" id="rep_pen_counter_textgenerationwebui">
                                     </div>
-                                    <div data-newbie-hidden class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="rep.pen range">
+                                    <div data-forAphro=False data-newbie-hidden class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="rep.pen range">
                                         <small>Repetition Penalty Range
 
                                         </small>
                                         <input class="neo-range-slider" type="range" id="rep_pen_range_textgenerationwebui" name="volume" min="0" max="4096" step="1">
                                         <input class="neo-range-input" type="number" min="0" max="4096" step="1" data-for="rep_pen_range_textgenerationwebui" id="rep_pen_range_counter_textgenerationwebui">
                                     </div>
-                                    <div data-newbie-hidden class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="Encoder Rep. Pen.">
+                                    <div data-forAphro=False data-newbie-hidden class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="Encoder Rep. Pen.">
                                         <small>Encoder Repetition Penalty
 
                                         </small>
@@ -493,7 +493,7 @@
                                         <input class="neo-range-slider" type="range" id="presence_pen_textgenerationwebui" name="volume" min="-2" max="2" step="0.01" />
                                         <input class="neo-range-input" type="number" min="-2" max="2" step="0.01" data-for="presence_pen_textgenerationwebui" id="presence_pen_counter_textgenerationwebui">
                                     </div>
-                                    <div data-newbie-hidden class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="No Repeat Ngram Size">
+                                    <div data-forAphro=False data-newbie-hidden class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="No Repeat Ngram Size">
                                         <small>No Repeat Ngram Size
 
                                         </small>
@@ -1322,28 +1322,65 @@
                                         <input class="neo-range-slider" type="range" id="eta_cutoff_textgenerationwebui" name="volume" min="0" max="20" step="0.01">
                                         <input class="neo-range-input" type="number" min="0" max="20" step="0.01" data-for="eta_cutoff_textgenerationwebui" id="eta_cutoff_counter_textgenerationwebui">
                                     </div>
+                                    <!--
+                                    <div data-forAphro=True class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="Responses">
+                                        <small>Responses</small>
+                                        <input class="neo-range-slider" type="range" id="n_aphrodite_textgenerationwebui" name="volume" min="1" max="5" step="1">
+                                        <input class="neo-range-input" type="number" min="1" max="5" step="1" data-for="n_aphrodite" id="n_aphrodite_counter_textgenerationwebui">
+                                    </div>
+                                   
+                                    <div data-forAphro=True class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0 displayNone" data-i18n="Keep # Best Responses">
+                                        <small>Keep # Best Responses</small>
+                                        <input class="neo-range-slider" type="range" id="best_of_aphrodite_textgenerationwebui" name="volume" min="1" max="5" step="1">
+                                        <input class="neo-range-input" type="number" min="1" max="5" step="1" data-for="best_of_aphrodite" id="best_of_aphrodite_counter_textgenerationwebui">
+                                    </div>
+                                    <div data-forAphro=True class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0 displayNone" data-i18n="Logit Probabilities">
+                                        <small>Logit Probabilities</small>
+                                        <input class="neo-range-slider" type="range" id="log_probs_aphrodite_textgenerationwebui" name="volume" min="0" max="5" step="1">
+                                        <input class="neo-range-input" type="number" min="0" max="5" step="1" data-for="log_probs_aphrodite" id="log_probs_aphrodite_counter_textgenerationwebui">
+                                    </div>
+                                    <div data-forAphro=True class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0 displayNone" data-i18n="Prompt Logit Probabilities">
+                                        <small>Prompt Logit Probabilities</small>
+                                        <input class="neo-range-slider" type="range" id="prompt_log_probs_aphrodite_textgenerationwebui" name="volume" min="0" max="5" step="1">
+                                        <input class="neo-range-input" type="number" min="0" max="5" step="1" data-for="prompt_log_probs_aphrodite" id="prompt_log_probs_aphrodite_counter_textgenerationwebui">
+                                    </div>
+-->
                                     <div name="checkboxes" class="flex-container flexFlowColumn flexBasis48p flexGrow flexShrink ">
                                         <div class="justifyCenter">
-                                            <label class="checkbox_label" for="do_sample_textgenerationwebui">
+                                            <label data-forAphro=False class="checkbox_label" for="do_sample_textgenerationwebui">
                                                 <input type="checkbox" id="do_sample_textgenerationwebui" />
                                                 <small data-i18n="Do Sample">Do Sample</small>
                                             </label>
-                                            <label class="checkbox_label" for="add_bos_token_textgenerationwebui">
+                                            <label data-forAphro=False class="checkbox_label" for="add_bos_token_textgenerationwebui">
                                                 <input type="checkbox" id="add_bos_token_textgenerationwebui" />
                                                 <small data-i18n="Add BOS Token">Add BOS Token
                                                     <div class="fa-solid fa-circle-info opacity50p " data-i18n="Add the bos_token to the beginning of prompts. Disabling this can make the replies more creative." title="Add the bos_token to the beginning of prompts. Disabling this can make the replies more creative."></div>
                                                 </small>
                                             </label>
-                                            <label class="checkbox_label" for="ban_eos_token_textgenerationwebui">
+                                            <label data-forAphro=False class="checkbox_label" for="ban_eos_token_textgenerationwebui">
                                                 <input type="checkbox" id="ban_eos_token_textgenerationwebui" />
                                                 <small data-i18n="Ban EOS Token">Ban EOS Token
                                                     <div class="fa-solid fa-circle-info opacity50p " data-i18n="Ban the eos_token. This forces the model to never end the generation prematurely" title="Ban the eos_token. This forces the model to never end the generation prematurely."></div>
                                                 </small>
                                             </label>
+                                            <!--
+                                            <label data-forAphro=True class="checkbox_label" for="ignore_eos_token_aphrodite_textgenerationwebui">
+                                                <input type="checkbox" id="ignore_eos_token_aphrodite_textgenerationwebui" />
+                                                <small data-i18n="Ignore EOS Token">Ignore EOS Token
+                                                    <div class="fa-solid fa-circle-info opacity50p " data-i18n="Ignore the EOS Token even if it generates." title="Ignore the EOS Token even if it generates."></div>
+                                                </small>
+                                            </label>
+                                            -->
                                             <label class="checkbox_label" for="skip_special_tokens_textgenerationwebui">
                                                 <input type="checkbox" id="skip_special_tokens_textgenerationwebui" />
                                                 <small data-i18n="Skip Special Tokens">Skip Special Tokens</small>
                                             </label>
+                                            <!--
+                                            <label data-forAphro=True class="checkbox_label" for="spaces_between_special_tokens_aphrodite_textgenerationwebui">
+                                                <input type="checkbox" id="spaces_between_special_tokens_aphrodite_textgenerationwebui" />
+                                                <small data-i18n="Spaces Between Special Tokens">Spaces Between Special Tokens</small>
+                                            </label>
+                                            -->
                                         </div>
                                     </div>
                                     <div name="miroStatBlock">
@@ -1423,7 +1460,7 @@
                                         </small>
                                     </div>
                                     <hr class="width100p">
-                                    <div class="alignitemscenter flex-container  flexFlowColumn flexBasis48p flexShrink gap0" data-i18n="CFG Scale">
+                                    <div data-forAphro=False class="alignitemscenter flex-container  flexFlowColumn flexBasis48p flexShrink gap0" data-i18n="CFG Scale">
                                         <div>
                                             CFG Scale
                                             <div class="margin5 fa-solid fa-circle-info opacity50p " title="Helpful tip coming soon."></div>
@@ -1431,7 +1468,7 @@
                                         <input class="neo-range-slider" type="range" id="guidance_scale_textgenerationwebui" name="volume" min="0.1" max="4" step="0.05">
                                         <input class="neo-range-input" type="number" min="0.1" max="4" step="0.05" data-for="guidance_scale_textgenerationwebui" id="guidance_scale_counter_textgenerationwebui">
                                     </div>
-                                    <div class="range-block">
+                                    <div data-forAphro=False class="range-block">
                                         <div class="range-block-title justifyLeft">
                                             <span data-i18n="Negative Prompt">Negative Prompt</span>
                                         </div>
@@ -1442,8 +1479,8 @@
                                             Used if CFG Scale is unset globally, per chat or character
                                         </small>
                                     </div>
-                                    <hr class="width100p">
-                                    <div id="grammar_block_ooba">
+                                    <div data-forAphro=False id="grammar_block_ooba">
+                                        <hr class="width100p">
                                         <h4 data-i18n="Grammar">Grammar
                                             <div class="margin5 fa-solid fa-circle-info opacity50p " title="Helpful tip coming soon."></div>
                                         </h4>
