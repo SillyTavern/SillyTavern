@@ -125,7 +125,7 @@ const parser = new SlashCommandParser();
 const registerSlashCommand = parser.addCommand.bind(parser);
 const getSlashCommandsHelp = parser.getHelpString.bind(parser);
 
-parser.addCommand('help', helpCommandCallback, ['?'], ' – displays this help message', true, true);
+parser.addCommand('?', helpCommandCallback, ['help'], ' – get help on macros, chat formatting and commands', true, true);
 parser.addCommand('name', setNameCallback, ['persona'], '<span class="monospace">(name)</span> – sets user name and persona avatar (if set)', true, true);
 parser.addCommand('sync', syncCallback, [], ' – syncs user name in user-attributed messages in the current chat', true, true);
 parser.addCommand('lock', bindCallback, ['bind'], ' – locks/unlocks a persona (name and avatar) to the current chat', true, true);
