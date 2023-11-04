@@ -2791,6 +2791,49 @@ body .ui-front {
     z-index: 10000;
 }
 
+body .ui-slider {
+    margin-top: 7px;
+}
+
+body .ui-slider-handle {
+    background-color: var(--SmartThemeBlurTintColor);
+    border: 1px solid var(--SmartThemeBorderColor) !important;
+    border-radius: 5px;
+    box-shadow: 0 0 5px black;
+    text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
+    backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)*2));
+    color: var(--SmartThemeBodyColor);
+    width: 50px !important;
+    padding: 0 5px;
+    text-align: center;
+    margin-left: 0;
+    opacity: 1 !important;
+    transition: filter 200ms;
+}
+
+.ui-slider-handle.ui-state-default {
+    color: var(--SmartThemeBodyColor);
+    background: var(--SmartThemeBlurTintColor);
+    filter: brightness(0.5)
+}
+
+.ui-slider-handle:focus {
+    outline: none;
+}
+
+.ui-slider-handle.ui-state-hover {
+    color: var(--SmartThemeBodyColor);
+    background: var(--SmartThemeBlurTintColor);
+    filter: brightness(0.7)
+}
+
+.ui-slider-handle.ui-state-active {
+    color: var(--SmartThemeBodyColor);
+    background: var(--SmartThemeBlurTintColor);
+    filter: brightness(1);
+    border-color: var(--SmartThemeBorderColor) !important;
+}
+
 body .ui-widget-content {
     background-color: var(--SmartThemeBlurTintColor);
     border: 1px solid var(--SmartThemeBorderColor) !important;
@@ -2801,7 +2844,7 @@ body .ui-widget-content {
     color: var(--SmartThemeBodyColor);
 }
 
-body .ui-widget-content .ui-state-active {
+body .ui-widget-content .ui-state-active:not(.ui-slider-handle) {
     margin: unset !important;
 }
 

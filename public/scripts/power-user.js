@@ -162,6 +162,7 @@ let power_user = {
     max_context_unlocked: false,
     message_token_count_enabled: false,
     expand_message_actions: false,
+    enableZenSliders: false,
     prefer_character_prompt: true,
     prefer_character_jailbreak: true,
     quick_continue: false,
@@ -251,6 +252,7 @@ const storage_keys = {
     mesIDDisplay_enabled: 'mesIDDisplayEnabled',
     message_token_count_enabled: 'MessageTokenCountEnabled',
     expand_message_actions: 'ExpandMessageActions',
+    enableZenSliders: 'enableZenSliders',
 };
 
 const contextControls = [
@@ -418,6 +420,147 @@ function switchMessageActions() {
     $("#expandMessageActions").prop("checked", power_user.expand_message_actions);
     $('.extraMesButtons, .extraMesButtonsHint').removeAttr('style');
 }
+
+async function switchZenSliders() {
+    const value = localStorage.getItem(storage_keys.enableZenSliders);
+    power_user.enableZenSliders = value === null ? false : value == "true";
+    $("body").toggleClass("enableZenSliders", power_user.enableZenSliders);
+    $("#enableZenSliders").prop("checked", power_user.enableZenSliders);
+
+    function revertOriginalSliders() {
+        $("#range_block_textgenerationwebui input[type='number']").show();
+        $("#textgenerationwebui_api-settings input[type='number']").show();
+        $("#pro-settings-block input[type='number']").show();
+        $(`#range_block_textgenerationwebui input[type='range'],
+         #textgenerationwebui_api-settings input[type='range'],
+         #pro-settings-block input[type='range']`).each(function () {
+            $(this).show();
+        });
+        $('div[id$="_zenslider"]').remove();
+    }
+
+    if (power_user.enableZenSliders) {
+        $("#range_block_textgenerationwebui input[type='number']").hide();
+        $("#textgenerationwebui_api-settings input[type='number']").hide();
+        $("#pro-settings-block input[type='number']").hide();
+        $("#seed_textgenerationwebui").show();
+        $(`#range_block_textgenerationwebui input[type='range'], 
+        #textgenerationwebui_api-settings input[type='range'], 
+        #pro-settings-block input[type='range']`).each(
+            function () {
+                CreateZenSliders($(this))
+            }
+        )
+
+    } else {
+        revertOriginalSliders();
+    }
+    async function CreateZenSliders(elmnt) {
+        await delay(100)
+        var originalSlider = elmnt;
+        var sliderID = originalSlider.attr('id')
+        var sliderMin = Number(originalSlider.attr('min'))
+        var sliderMax = Number(originalSlider.attr('max'))
+        var sliderValue = originalSlider.val();
+        var sliderRange = sliderMax - sliderMin
+        var midpoint = sliderRange / 2
+        var numSteps = 10
+        var decimals = 2
+
+        if (sliderID == 'rep_pen_range_textgenerationwebui') {
+            numSteps = 16
+            decimals = 0
+        }
+        if (sliderID == 'amount_gen') {
+            decimals = 0
+        }
+        if (sliderID == 'max_context') {
+            numSteps = 15
+            decimals = 0
+        }
+        if (sliderID == 'encoder_rep_pen_textgenerationwebui') {
+            numSteps = 14
+        }
+        if (sliderID == 'mirostat_mode_textgenerationwebui') {
+            numSteps = 2
+            decimals = 0
+        }
+        if (sliderID == 'mirostat_tau_textgenerationwebui' ||
+            sliderID == 'top_k_textgenerationwebui' ||
+            sliderID == 'num_beams_textgenerationwebui' ||
+            sliderID == 'no_repeat_ngram_size_textgenerationwebui') {
+            numSteps = 20
+            decimals = 0
+        }
+        if (sliderID == 'epsilon_cutoff_textgenerationwebui') {
+            numSteps = 20
+            decimals = 1
+        }
+        if (sliderID == 'tfs_textgenerationwebui') {
+            numSteps = 20
+            decimals = 2
+        }
+
+        if (sliderID == 'mirostat_eta_textgenerationwebui' ||
+            sliderID == 'penalty_alpha_textgenerationwebui' ||
+            sliderID == 'length_penalty_textgenerationwebui') {
+            numSteps = 50
+        }
+        if (sliderID == 'eta_cutoff_textgenerationwebui') {
+            numSteps = 50
+            decimals = 1
+        }
+        if (sliderID == 'guidance_scale_textgenerationwebui') {
+            numSteps = 78
+        }
+        if (sliderID == 'min_length_textgenerationwebui') {
+            decimals = 0
+        }
+        if (sliderID == 'temp_textgenerationwebui') {
+            numSteps = 20
+        }
+
+        var stepScale = sliderRange / numSteps
+
+        var newSlider = $("<div>")
+            .attr('id', `${sliderID}_zenslider`)
+            .css("width", "100%")
+            .insertBefore(originalSlider);
+
+        newSlider.slider({
+            value: sliderValue,
+            step: stepScale,
+            min: sliderMin,
+            max: sliderMax,
+            create: function () {
+                var handle = $(this).find(".ui-slider-handle");
+                var handleText = Number(sliderValue).toFixed(decimals)
+                handle.text(handleText);
+                //var width = handle.width()
+                var stepNumber = ((sliderValue - sliderMin) / stepScale)
+                var leftMargin = (stepNumber / numSteps) * 50 * -1
+                handle.css('margin-left', `${leftMargin}px`)
+            },
+            slide: function (event, ui) {
+                var handle = $(this).find(".ui-slider-handle");
+                //var width = handle.outerWidth()
+                handle.text(ui.value.toFixed(decimals));
+                var stepNumber = ((ui.value - sliderMin) / stepScale)
+                var leftMargin = (stepNumber / numSteps) * 50 * -1
+                handle.css('margin-left', `${leftMargin}px`)
+                let handleText = (ui.value)
+                originalSlider.val(handleText);
+                originalSlider.trigger('input')
+                originalSlider.trigger('change')
+            }
+
+        });
+        originalSlider.data("newSlider", newSlider);
+        originalSlider.hide();
+    };
+
+}
+
 
 function switchUiMode() {
     const fastUi = localStorage.getItem(storage_keys.fast_ui_mode);
@@ -781,6 +924,13 @@ async function applyTheme(name) {
             }
         },
         {
+            key: 'enableZenSliders',
+            action: async () => {
+                localStorage.setItem(storage_keys.enableZenSliders, Boolean(power_user.enableZenSliders));
+                switchMessageActions();
+            }
+        },
+        {
             key: 'hotswap_enabled',
             action: async () => {
                 localStorage.setItem(storage_keys.hotswap_enabled, Boolean(power_user.hotswap_enabled));
@@ -894,6 +1044,7 @@ function loadPowerUserSettings(settings, data) {
     const timestamps = localStorage.getItem(storage_keys.timestamps_enabled);
     const mesIDDisplay = localStorage.getItem(storage_keys.mesIDDisplay_enabled);
     const expandMessageActions = localStorage.getItem(storage_keys.expand_message_actions);
+    const enableZenSliders = localStorage.getItem(storage_keys.enableZenSliders);
     power_user.fast_ui_mode = fastUi === null ? true : fastUi == "true";
     power_user.movingUI = movingUI === null ? false : movingUI == "true";
     power_user.noShadows = noShadows === null ? false : noShadows == "true";
@@ -902,6 +1053,7 @@ function loadPowerUserSettings(settings, data) {
     power_user.timestamps_enabled = timestamps === null ? true : timestamps == "true";
     power_user.mesIDDisplay_enabled = mesIDDisplay === null ? true : mesIDDisplay == "true";
     power_user.expand_message_actions = expandMessageActions === null ? true : expandMessageActions == "true";
+    power_user.enableZenSliders = enableZenSliders === null ? true : enableZenSliders == "true";
     power_user.avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? avatar_styles.ROUND);
     //power_user.chat_display = Number(localStorage.getItem(storage_keys.chat_display) ?? chat_styles.DEFAULT);
     power_user.chat_width = Number(localStorage.getItem(storage_keys.chat_width) ?? 50);
@@ -983,6 +1135,7 @@ function loadPowerUserSettings(settings, data) {
     $("#mesIDDisplayEnabled").prop("checked", power_user.mesIDDisplay_enabled);
     $("#prefer_character_prompt").prop("checked", power_user.prefer_character_prompt);
     $("#prefer_character_jailbreak").prop("checked", power_user.prefer_character_jailbreak);
+    $("#enableZenSliders").prop('checked', power_user.enableZenSliders).trigger('input');
     $(`input[name="avatar_style"][value="${power_user.avatar_style}"]`).prop("checked", true);
     $(`#chat_display option[value=${power_user.chat_display}]`).attr("selected", true).trigger('change');
     $('#chat_width_slider').val(power_user.chat_width);
@@ -1402,7 +1555,7 @@ async function saveTheme() {
         mesIDDisplay_enabled: power_user.mesIDDisplay_enabled,
         message_token_count_enabled: power_user.message_token_count_enabled,
         expand_message_actions: power_user.expand_message_actions,
-
+        enableZenSliders: power_user.enableZenSliders,
         hotswap_enabled: power_user.hotswap_enabled,
         custom_css: power_user.custom_css,
 
@@ -1640,7 +1793,7 @@ function setAvgBG() {
             .attr('src')
             .replace(/^url\(['"]?/, '')
             .replace(/['"]?\)$/, '');
-
+ 
         const userAvatar = new Image()
         userAvatar.src = $("#user_avatar_block .avatar.selected img")
             .attr('src')
@@ -1671,7 +1824,7 @@ function setAvgBG() {
             //console.log(rgb);
             $("#bot-mes-blur-tint-color-picker").attr('color', 'rgb(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ')');
         }
-
+ 
         userAvatar.onload = function () {
             var rgb = getAverageRGB(userAvatar);
             //console.log(`average color of the user avatar is:`);
@@ -1777,16 +1930,16 @@ function setAvgBG() {
     //this version keeps BG and main text in same hue
     /* function getReadableTextColor(rgb) {
          const [r, g, b] = rgb;
-
+ 
          // Convert RGB to HSL
          const rgbToHsl = (r, g, b) => {
              const max = Math.max(r, g, b);
              const min = Math.min(r, g, b);
              const d = max - min;
              const l = (max + min) / 2;
-
+ 
              if (d === 0) return [0, 0, l];
-
+ 
              const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
              const h = (() => {
                  switch (max) {
@@ -1798,16 +1951,16 @@ function setAvgBG() {
                          return (r - g) / d + 4;
                  }
              })() / 6;
-
+ 
              return [h, s, l];
          };
          const [h, s, l] = rgbToHsl(r / 255, g / 255, b / 255);
-
+ 
          // Calculate appropriate text color based on background color
          const targetLuminance = l > 0.5 ? 0.2 : 0.8;
          const targetSaturation = s > 0.5 ? s - 0.2 : s + 0.2;
          const [rNew, gNew, bNew] = hslToRgb(h, targetSaturation, targetLuminance);
-
+ 
          // Return the text color in RGBA format
          return `rgba(${rNew.toFixed(0)}, ${gNew.toFixed(0)}, ${bNew.toFixed(0)}, 1)`;
      }*/
@@ -2344,6 +2497,13 @@ $(document).ready(() => {
         power_user.expand_message_actions = value;
         localStorage.setItem(storage_keys.expand_message_actions, Boolean(power_user.expand_message_actions));
         switchMessageActions();
+    });
+
+    $("#enableZenSliders").on("input", function () {
+        const value = !!$(this).prop('checked');
+        power_user.enableZenSliders = value;
+        localStorage.setItem(storage_keys.enableZenSliders, Boolean(power_user.enableZenSliders));
+        switchZenSliders();
     });
 
     $("#mesIDDisplayEnabled").on("input", function () {
