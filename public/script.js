@@ -8804,7 +8804,7 @@ jQuery(async function () {
         }
     });
 
-    $(document).on('input', '.range-block-counter input', function () {
+    $(document).on('input', '.range-block-counter input, .neo-range-input', function () {
         setTimeout(() => {
             const caretPosition = saveCaretPosition($(this).get(0));
             const myText = $(this).val().trim();
