@@ -218,6 +218,11 @@ table.responsiveTable {
     display: none;
 }
 
+.mes[is_system="true"] .avatar {
+    opacity: 0.9;
+    filter: grayscale(25%);
+}
+
 .mes_text table {
     border-spacing: 0;
     border-collapse: collapse;
@@ -304,8 +309,21 @@ table.responsiveTable {
 
 .mes_translate,
 .sd_message_gen,
+.mes_ghost,
 .mes_narrate {
     display: none;
+}
+
+.mes[is_system="true"] .mes_hide {
+    display: none;
+}
+
+.mes[is_system="false"] .mes_unhide {
+    display: none;
+}
+
+.mes[is_system="true"] .mes_ghost {
+    display: flex;
 }
 
 small {
@@ -2802,7 +2820,7 @@ body .ui-widget-content li {
     align-items: center;
     cursor: pointer;
     opacity: 0.5;
-    transition: all 200ms;
+    transition: opacity 200ms;
 }
 
 body .ui-widget-content li:hover {
