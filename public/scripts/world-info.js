@@ -12,6 +12,8 @@ export {
     world_info,
     world_info_budget,
     world_info_depth,
+    world_info_min_activations,
+    world_info_min_activations_depth_max,
     world_info_recursive,
     world_info_overflow_alert,
     world_info_case_sensitive,
@@ -35,6 +37,9 @@ let world_info = {};
 let selected_world_info = [];
 let world_names;
 let world_info_depth = 2;
+let world_info_min_activations = 0; // if > 0, will continue seeking chat until minimum world infos are activated
+let world_info_min_activations_depth_max = 0; // used when (world_info_min_activations > 0)
+
 let world_info_budget = 25;
 let world_info_recursive = false;
 let world_info_overflow_alert = false;
@@ -63,6 +68,8 @@ export function getWorldInfoSettings() {
     return {
         world_info,
         world_info_depth,
+        world_info_min_activations,
+        world_info_min_activations_depth_max,
         world_info_budget,
         world_info_recursive,
         world_info_overflow_alert,
@@ -102,6 +109,10 @@ async function getWorldInfoPrompt(chat2, maxContext) {
 function setWorldInfoSettings(settings, data) {
     if (settings.world_info_depth !== undefined)
         world_info_depth = Number(settings.world_info_depth);
+    if (settings.world_info_min_activations !== undefined)
+        world_info_min_activations = Number(settings.world_info_min_activations);
+    if (settings.world_info_min_activations_depth_max !== undefined)
+        world_info_min_activations_depth_max = Number(settings.world_info_min_activations_depth_max);
     if (settings.world_info_budget !== undefined)
         world_info_budget = Number(settings.world_info_budget);
     if (settings.world_info_recursive !== undefined)
@@ -137,6 +148,12 @@ function setWorldInfoSettings(settings, data) {
 
     $("#world_info_depth_counter").val(world_info_depth);
     $("#world_info_depth").val(world_info_depth);
+
+    $("#world_info_min_activations_counter").val(world_info_min_activations);
+    $("#world_info_min_activations").val(world_info_min_activations);
+
+    $("#world_info_min_activations_depth_max_counter").val(world_info_min_activations_depth_max);
+    $("#world_info_min_activations_depth_max").val(world_info_min_activations_depth_max);
 
     $("#world_info_budget_counter").val(world_info_budget);
     $("#world_info_budget").val(world_info_budget);
@@ -1379,6 +1396,7 @@ async function checkWorldInfo(chat, maxContext) {
 
     // Combine the chat
     let textToScan = chat.slice(0, messagesToLookBack).join("");
+    let minActivationMsgIndex = messagesToLookBack; // tracks chat index to satisfy `world_info_min_activations`
 
     // Add the depth or AN if enabled
     // Put this code here since otherwise, the chat reference is modified
@@ -1402,6 +1420,7 @@ async function checkWorldInfo(chat, maxContext) {
     textToScan = transformString(textToScan);
 
     let needsToScan = true;
+    let token_budget_overflowed = false;
     let count = 0;
     let allActivatedEntries = new Set();
     let failedProbabilityChecks = new Set();
@@ -1531,6 +1550,7 @@ async function checkWorldInfo(chat, maxContext) {
                     toastr.warning(`World info budget reached after ${allActivatedEntries.size} entries.`, 'World Info');
                 }
                 needsToScan = false;
+                token_budget_overflowed = true;
                 break;
             }
 
@@ -1552,6 +1572,24 @@ async function checkWorldInfo(chat, maxContext) {
             const currentlyActivatedText = transformString(text);
             textToScan = (currentlyActivatedText + '\n' + textToScan);
             allActivatedText = (currentlyActivatedText + '\n' + allActivatedText);
+        }
+
+        // world_info_min_activations
+        if (!needsToScan && !token_budget_overflowed) {
+            if (world_info_min_activations > 0 && (allActivatedEntries.size < world_info_min_activations)) {
+                let over_max = false
+                over_max = (
+                    world_info_min_activations_depth_max > 0 &&
+                    minActivationMsgIndex > world_info_min_activations_depth_max
+                ) || (
+                    minActivationMsgIndex >= chat.length
+                )
+                if (!over_max) {
+                    needsToScan = true
+                    textToScan = transformString(chat.slice(minActivationMsgIndex, minActivationMsgIndex + 1).join(""));
+                    minActivationMsgIndex += 1
+                }
+            }
         }
     }
 
@@ -2045,6 +2083,18 @@ jQuery(() => {
     $(document).on("input", "#world_info_depth", function () {
         world_info_depth = Number($(this).val());
         $("#world_info_depth_counter").val($(this).val());
+        saveSettings();
+    });
+
+    $(document).on("input", "#world_info_min_activations", function () {
+        world_info_min_activations = Number($(this).val());
+        $("#world_info_min_activations_counter").val($(this).val());
+        saveSettings();
+    });
+
+    $(document).on("input", "#world_info_min_activations_depth_max", function () {
+        world_info_min_activations_depth_max = Number($(this).val());
+        $("#world_info_min_activations_depth_max_counter").val($(this).val());
         saveSettings();
     });
 
