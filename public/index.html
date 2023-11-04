@@ -1329,7 +1329,7 @@
                                         <input class="neo-range-slider" type="range" id="n_aphrodite_textgenerationwebui" name="volume" min="1" max="5" step="1">
                                         <input class="neo-range-input" type="number" min="1" max="5" step="1" data-for="n_aphrodite" id="n_aphrodite_counter_textgenerationwebui">
                                     </div>
-                                   
+
                                     <div data-forAphro=True class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0 displayNone" data-i18n="Keep # Best Responses">
                                         <small>Keep # Best Responses</small>
                                         <input class="neo-range-slider" type="range" id="best_of_aphrodite_textgenerationwebui" name="volume" min="1" max="5" step="1">
@@ -2510,152 +2510,154 @@
                     </h3>
                 </div>
                 <div id="wi-holder" class="margin5">
-                    <div class="justifyContentSpaceAround wi-settings flex-container gap10px alignitemscenter">
-                        <div id="WIMultiSelector" class="flex2 flex alignSelfStart range-block">
-                            <div class="range-block-title justifyLeft">
-                                <span data-i18n="Active World(s) for all chats"><small>Active World(s) for all chats</small></span>
-                            </div>
-                            <div class="range-block-range">
-                                <select id="world_info" multiple>
-                                    <option value="">
-                                        <span data-i18n="-- World Info not found --">-- World Info not found --</span>
-                                    </option>
-                                </select>
-                            </div>
+                    <div id="WIMultiSelector" class="flex2 flex alignSelfStart range-block">
+                        <div class="range-block-title justifyLeft">
+                            <span data-i18n="Active World(s) for all chats"><small>Active World(s) for all chats</small></span>
                         </div>
-                        <div class="flex2 flex-container flexFlowColumn">
-                            <div data-newbie-hidden class="flex range-block">
-                                <div class="range-block-title justifyLeft">
-                                    <label for="world_info_character_strategy">
-                                        <span data-i18n="Character Lore Insertion Strategy"><small>Character Lore Insertion Strategy</small></span>
+                        <div class="range-block-range">
+                            <select id="world_info" multiple>
+                                <option value="">
+                                    <span data-i18n="-- World Info not found --">-- World Info not found --</span>
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+
+
+                    <div data-newbie-hidden class="inline-drawer wide100p flexFlowColumn">
+                        <div class="inline-drawer-toggle inline-drawer-header">
+                            <b><span data-i18n="Activation Settings">Activation Settings</span></b>
+                            <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
+                        </div>
+                        <div class="inline-drawer-content">
+                            <div class="justifyContentSpaceAround wi-settings flex-container gap10px alignitemscenter">
+                                <div class="flex2 flex-container flexFlowColumn">
+                                    <div data-newbie-hidden class="flex range-block">
+                                        <div class="range-block-title justifyLeft">
+                                            <label for="world_info_character_strategy">
+                                                <span data-i18n="Character Lore Insertion Strategy"><small>Character Lore Insertion Strategy</small></span>
+                                            </label>
+                                        </div>
+                                        <div class="range-block-range">
+                                            <select id="world_info_character_strategy" class="flexGrow margin0">
+                                                <option value="0" data-i18n="Sorted Evenly">Sorted Evenly</option>
+                                                <option value="1" data-i18n="Character Lore First">Character Lore First</option>
+                                                <option value="2" data-i18n="Global Lore First">Global Lore First</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div name="WIScanAndTokens" class="flex1 flex-container flexFlowColumn">
+                                        <div data-newbie-hidden class="flex1 gap5px range-block">
+                                            <div class="wide10pMinFit">
+                                                <small data-i18n="Scan Depth">Scan Depth</small>
+                                            </div>
+                                            <div class="range-block-range-and-counter">
+                                                <div class="range-block-range paddingLeftRight5">
+                                                    <input type="range" id="world_info_depth" name="volume" min="0" max="100" step="1">
+                                                </div>
+                                                <div class="range-block-counter margin0">
+                                                    <input type="number" data-for="world_info_depth" id="world_info_depth_counter">
+
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="flex1 gap5px range-block">
+                                            <div class="wide10pMinFit">
+                                                <small data-i18n="Context %">Context %</small>
+                                            </div>
+                                            <div class="range-block-range-and-counter ">
+                                                <div class="range-block-range paddingLeftRight5">
+                                                    <input type="range" id="world_info_budget" name="volume" min="1" max="100" step="1">
+                                                </div>
+                                                <div class="range-block-counter margin0">
+                                                    <input type="number" min="1" max="100" step="1" data-for="world_info_budget" id="world_info_budget_counter">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div data-newbie-hidden class="flex1 gap5px range-block">
+                                            <div class="wide10pMinFit">
+                                                <small data-i18n="Budget Cap">Budget Cap</small>
+                                            </div>
+                                            <div class="range-block-range-and-counter ">
+                                                <div class="range-block-range paddingLeftRight5">
+                                                    <input type="range" id="world_info_budget_cap" name="volume" min="0" max="8192" step="1">
+                                                </div>
+                                                <div class="range-block-counter margin0">
+                                                    <input type="number" min="0" max="8192" step="1" data-for="world_info_budget_cap" id="world_info_budget_cap_counter">
+                                                </div>
+                                            </div>
+                                            <div class="budget_cap_note">
+                                                <small data-i18n="(0 = disabled)">(0 = disabled)</small>
+                                            </div>
+                                        </div>
+
+
+                                        <div data-newbie-hidden class="flex1 gap5px range-block" title="Scan chronologically until reached min entries or token budget." data-i18n="[title]Scan chronologically until reached min entries or token budget.">
+                                            <div class="wide10pMinFit">
+                                                <small data-i18n="Min Activations">Min Activations</small>
+                                            </div>
+                                            <div class="range-block-range-and-counter">
+                                                <div class="range-block-range paddingLeftRight5">
+                                                    <input type="range" id="world_info_min_activations" name="volume" min="0" max="100" step="1">
+                                                </div>
+                                                <div class="range-block-counter margin0">
+                                                    <input type="number" data-for="world_info_min_activations" id="world_info_min_activations_counter">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div data-newbie-hidden class="flex1 gap5px range-block">
+                                            <div class="wide10pMinFit">
+                                                <small data-i18n="Max Depth">Max Depth</small>
+                                            </div>
+                                            <div class="range-block-range-and-counter">
+                                                <div class="range-block-range paddingLeftRight5">
+                                                    <input type="range" id="world_info_min_activations_depth_max" name="volume" min="0" max="100" step="1">
+                                                </div>
+                                                <div class="range-block-counter margin0">
+                                                    <input type="number" data-for="world_info_min_activations_depth_max" id="world_info_min_activations_depth_max_counter">
+
+                                                </div>
+                                            </div>
+                                            <div class="budget_cap_note">
+                                                <small data-i18n="(0 = unlimited, use budget)">(0 = unlimited, use budget)</small>
+                                            </div>
+                                        </div>
+
+
+                                    </div>
+                                </div>
+
+                                <div id="worldInfoScanningCheckboxes" data-newbie-hidden class="alignitemsflexstart flex1 flex-container flexFlowColumn">
+                                    <label title="Entries can activate other entries by mentioning their keywords" data-i18n="[title]Entries can activate other entries by mentioning their keywords" class="checkbox_label flex1">
+                                        <input id="world_info_recursive" type="checkbox" />
+                                        <small data-i18n="Recursive Scan" class="whitespacenowrap flex1">
+                                            Recursive Scan
+                                        </small>
+                                    </label>
+                                    <label title="Lookup for the entry keys in the context will respect the case" data-i18n="[title]Lookup for the entry keys in the context will respect the case" class="checkbox_label flex1">
+                                        <input id="world_info_case_sensitive" type="checkbox" />
+                                        <small data-i18n="Case Sensitive" class="whitespacenowrap flex1">
+                                            Case-sensitive
+                                        </small>
+                                    </label>
+                                    <label title="If the entry key consists of only one word, it would not be matched as part of other words" data-i18n="[title]If the entry key consists of only one word, it would not be matched as part of other words" class="checkbox_label flex1">
+                                        <input id="world_info_match_whole_words" type="checkbox" />
+                                        <small data-i18n="Match whole words" class="whitespacenowrap flex1">
+                                            Match whole words
+                                        </small>
+                                    </label>
+                                    <label title="Alert if your world info is greater than the allocated budget." data-i18n="[title]Alert if your world info is greater than the allocated budget." class="checkbox_label flex1">
+                                        <input id="world_info_overflow_alert" type="checkbox" />
+                                        <small data-i18n="Alert On Overflow" class="whitespacenowrap flex1">
+                                            Alert On Overflow
+                                        </small>
                                     </label>
                                 </div>
-                                <div class="range-block-range">
-                                    <select id="world_info_character_strategy" class="flexGrow margin0">
-                                        <option value="0" data-i18n="Sorted Evenly">Sorted Evenly</option>
-                                        <option value="1" data-i18n="Character Lore First">Character Lore First</option>
-                                        <option value="2" data-i18n="Global Lore First">Global Lore First</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div name="WIScanAndTokens" class="flex1 flex-container flexFlowColumn">
-                                <div data-newbie-hidden class="flex1 gap5px range-block">
-                                    <div class="wide10pMinFit">
-                                        <small data-i18n="Scan Depth">Scan Depth</small>
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range paddingLeftRight5">
-                                            <input type="range" id="world_info_depth" name="volume" min="0" max="100" step="1">
-                                        </div>
-                                        <div class="range-block-counter margin0">
-                                            <input type="number" data-for="world_info_depth" id="world_info_depth_counter">
-
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="flex1 gap5px range-block">
-                                    <div class="wide10pMinFit">
-                                        <small data-i18n="Context %">Context %</small>
-                                    </div>
-                                    <div class="range-block-range-and-counter ">
-                                        <div class="range-block-range paddingLeftRight5">
-                                            <input type="range" id="world_info_budget" name="volume" min="1" max="100" step="1">
-                                        </div>
-                                        <div class="range-block-counter margin0">
-                                            <input type="number" min="1" max="100" step="1" data-for="world_info_budget" id="world_info_budget_counter">
-
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div data-newbie-hidden class="flex1 gap5px range-block">
-                                    <div class="wide10pMinFit">
-                                        <small data-i18n="Budget Cap">Budget Cap</small>
-                                    </div>
-                                    <div class="range-block-range-and-counter ">
-                                        <div class="range-block-range paddingLeftRight5">
-                                            <input type="range" id="world_info_budget_cap" name="volume" min="0" max="8192" step="1">
-                                        </div>
-                                        <div class="range-block-counter margin0">
-                                            <input type="number" min="0" max="8192" step="1" data-for="world_info_budget_cap" id="world_info_budget_cap_counter">
-
-                                        </div>
-                                    </div>
-                                    <div class="budget_cap_note">
-                                        <small data-i18n="(0 = disabled)">(0 = disabled)</small>
-                                    </div>
-                                </div>
-
-                                
-                                <div data-newbie-hidden class="flex1 gap5px range-block">
-                                    <div class="wide10pMinFit">
-                                        <small data-i18n="Min Activations">Min Activations</small>
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range paddingLeftRight5">
-                                            <input type="range" id="world_info_min_activations" name="volume" min="0" max="100" step="1">
-                                        </div>
-                                        <div class="range-block-counter margin0">
-                                            <input type="number" data-for="world_info_min_activations" id="world_info_min_activations_counter">
-
-                                        </div>
-                                    </div>
-                                    <div class="budget_cap_note">
-                                        <small data-i18n="scan chronologically until min entries or token budget">scan chronologically until min entries or token budget</small>
-                                    </div>
-                                </div>
-                                <div data-newbie-hidden class="flex1 gap5px range-block">
-                                    <div class="wide10pMinFit">
-                                        <small data-i18n="Min Activations: Max Depth">Min Activations: Max Depth</small>
-                                    </div>
-                                    <div class="range-block-range-and-counter">
-                                        <div class="range-block-range paddingLeftRight5">
-                                            <input type="range" id="world_info_min_activations_depth_max" name="volume" min="0" max="100" step="1">
-                                        </div>
-                                        <div class="range-block-counter margin0">
-                                            <input type="number" data-for="world_info_min_activations_depth_max" id="world_info_min_activations_depth_max_counter">
-
-                                        </div>
-                                    </div>
-                                    <div class="budget_cap_note">
-                                        <small data-i18n="(0 = chronological scan depth unlimited, use token budget)">(0 = chronological scan depth unlimited, use token budget)</small>
-                                    </div>
-                                </div>
-
-                                
                             </div>
                         </div>
-
-                        <div id="worldInfoScanningCheckboxes" data-newbie-hidden class="alignitemsflexstart flex1 flex-container flexFlowColumn">
-                            <label title="Entries can activate other entries by mentioning their keywords" data-i18n="[title]Entries can activate other entries by mentioning their keywords" class="checkbox_label flex1">
-                                <input id="world_info_recursive" type="checkbox" />
-                                <small data-i18n="Recursive Scan" class="whitespacenowrap flex1">
-                                    Recursive Scan
-                                </small>
-                            </label>
-                            <label title="Lookup for the entry keys in the context will respect the case" data-i18n="[title]Lookup for the entry keys in the context will respect the case" class="checkbox_label flex1">
-                                <input id="world_info_case_sensitive" type="checkbox" />
-                                <small data-i18n="Case Sensitive" class="whitespacenowrap flex1">
-                                    Case-sensitive
-                                </small>
-                            </label>
-                            <label title="If the entry key consists of only one word, it would not be matched as part of other words" data-i18n="[title]If the entry key consists of only one word, it would not be matched as part of other words" class="checkbox_label flex1">
-                                <input id="world_info_match_whole_words" type="checkbox" />
-                                <small data-i18n="Match whole words" class="whitespacenowrap flex1">
-                                    Match whole words
-                                </small>
-                            </label>
-                            <label title="Alert if your world info is greater than the allocated budget." data-i18n="[title]Alert if your world info is greater than the allocated budget." class="checkbox_label flex1">
-                                <input id="world_info_overflow_alert" type="checkbox" />
-                                <small data-i18n="Alert On Overflow" class="whitespacenowrap flex1">
-                                    Alert On Overflow
-                                </small>
-                            </label>
-                        </div>
-                        <div id="WIInputWidthReference" style="display:none; height:1px;">10000</div>
-
                     </div>
 
                     <div id="world_popup">

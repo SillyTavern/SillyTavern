@@ -60,8 +60,6 @@ const worldInfoFilter = new FilterHelper(() => updateEditor());
 const SORT_ORDER_KEY = 'world_info_sort_order';
 const METADATA_KEY = 'world_info';
 
-const InputWidthReference = $("#WIInputWidthReference");
-
 const DEFAULT_DEPTH = 4;
 
 export function getWorldInfoSettings() {
@@ -384,22 +382,21 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
             <small class="flex1">
             Title/Memo
         </small>
-                <small style="width:${InputWidthReference.width() + 5 + 'px'}">
+                <small style="width: calc(3.5em + 5px)">
                     Status
                 </small>
-                <small style="width:${InputWidthReference.width() + 20 + 'px'}">
+                <small style="width: calc(3.5em + 20px)">
                     Position
                 </small>
-                <small style="width:${InputWidthReference.width() + 15 + 'px'}">
+                <small style="width: calc(3.5em + 15px)">
                     Depth
                 </small>
-                <small style="width:${InputWidthReference.width() + 15 + 'px'}">
+                <small style="width: calc(3.5em + 15px)">
                     Order
                 </small>
-                <small style="width:${InputWidthReference.width() + 15 + 'px'}">
+                <small style="width: calc(3.5em + 15px)">
                     Trigger %
                 </small>
-
             </div>`
             const blocks = page.map(entry => getWorldEntry(name, data, entry));
             $("#world_popup_entries_list").append(keywordHeaders);
@@ -836,7 +833,7 @@ function getWorldEntry(name, data, entry) {
         saveWorldInfo(name, data);
     });
     orderInput.val(entry.order).trigger("input");
-    orderInput.width(InputWidthReference.width() + 15 + 'px')
+    orderInput.css('width', 'calc(3em + 15px)');
 
     // probability
     if (entry.probability === undefined) {
@@ -857,7 +854,7 @@ function getWorldEntry(name, data, entry) {
         saveWorldInfo(name, data);
     });
     depthInput.val(entry.depth ?? DEFAULT_DEPTH).trigger("input");
-    depthInput.width(InputWidthReference.width() + 15 + 'px');
+    depthInput.css('width', 'calc(3em + 15px)');
 
     // Hide by default unless depth is specified
     if (entry.position === world_info_position.atDepth) {
@@ -885,7 +882,7 @@ function getWorldEntry(name, data, entry) {
         saveWorldInfo(name, data);
     });
     probabilityInput.val(entry.probability).trigger("input");
-    probabilityInput.width(InputWidthReference.width() + 15 + 'px')
+    probabilityInput.css('width', 'calc(3em + 15px)');
 
     // probability toggle
     if (entry.useProbability === undefined) {
@@ -2065,7 +2062,7 @@ jQuery(() => {
     $("#world_editor_select").on('change', async () => {
         $("#world_info_search").val('');
         worldInfoFilter.setFilterData(FILTER_TYPES.WORLD_INFO_SEARCH, '', true);
-        const selectedIndex = $("#world_editor_select").find(":selected").val();
+        const selectedIndex = String($("#world_editor_select").find(":selected").val());
 
         if (selectedIndex === "") {
             hideWorldEditor();
@@ -2080,39 +2077,39 @@ jQuery(() => {
         eventSource.emit(event_types.WORLDINFO_SETTINGS_UPDATED);
     }
 
-    $(document).on("input", "#world_info_depth", function () {
+    $("#world_info_depth").on('input', function () {
         world_info_depth = Number($(this).val());
         $("#world_info_depth_counter").val($(this).val());
         saveSettings();
     });
 
-    $(document).on("input", "#world_info_min_activations", function () {
+    $("#world_info_min_activations").on('input', function () {
         world_info_min_activations = Number($(this).val());
         $("#world_info_min_activations_counter").val($(this).val());
         saveSettings();
     });
 
-    $(document).on("input", "#world_info_min_activations_depth_max", function () {
+    $("#world_info_min_activations_depth_max").on('input', function () {
         world_info_min_activations_depth_max = Number($(this).val());
         $("#world_info_min_activations_depth_max_counter").val($(this).val());
         saveSettings();
     });
 
-    $(document).on("input", "#world_info_budget", function () {
+    $("#world_info_budget").on('input', function () {
         world_info_budget = Number($(this).val());
         $("#world_info_budget_counter").val($(this).val());
         saveSettings();
     });
 
-    $(document).on("input", "#world_info_recursive", function () {
+    $("#world_info_recursive").on('input', function () {
         world_info_recursive = !!$(this).prop('checked');
         saveSettings();
-    })
+    });
 
     $('#world_info_case_sensitive').on('input', function () {
         world_info_case_sensitive = !!$(this).prop('checked');
         saveSettings();
-    })
+    });
 
     $('#world_info_match_whole_words').on('input', function () {
         world_info_match_whole_words = !!$(this).prop('checked');
