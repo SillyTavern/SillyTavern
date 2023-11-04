@@ -2698,12 +2698,9 @@ h5 {
     margin: 0;
 }
 
-/* .select_chat_block_wrapper {
-    display: grid;
-    grid-template-columns: auto min-content;
-    align-items: center;
-    grid-gap: 10px;
-} */
+.select_chat_block_wrapper {
+    cursor: pointer;
+}
 
 .select_chat_block {
     border-radius: 5px;

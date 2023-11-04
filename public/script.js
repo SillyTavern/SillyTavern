@@ -5450,6 +5450,12 @@ export async function displayPastChats() {
 
     const group = selected_group ? groups.find(x => x.id === selected_group) : null;
     const data = await (selected_group ? getGroupPastChats(selected_group) : getPastCharacterChats());
+
+    if (!data) {
+        toastr.error('Could not load chat data. Try reloading the page.');
+        return;
+    }
+
     const currentChat = selected_group ? group?.chat_id : characters[this_chid]["chat"];
     const displayName = selected_group ? group?.name : characters[this_chid].name;
     const avatarImg = selected_group ? group?.avatar_url : getThumbnailUrl('avatar', characters[this_chid]['avatar']);
