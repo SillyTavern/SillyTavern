@@ -12,6 +12,8 @@ export {
     world_info,
     world_info_budget,
     world_info_depth,
+    world_info_min_activations,
+    world_info_min_activations_depth_max,
     world_info_recursive,
     world_info_overflow_alert,
     world_info_case_sensitive,
@@ -35,6 +37,9 @@ let world_info = {};
 let selected_world_info = [];
 let world_names;
 let world_info_depth = 2;
+let world_info_min_activations = 0; // if > 0, will continue seeking chat until minimum world infos are activated
+let world_info_min_activations_depth_max = 0; // used when (world_info_min_activations > 0)
+
 let world_info_budget = 25;
 let world_info_recursive = false;
 let world_info_overflow_alert = false;
@@ -55,14 +60,14 @@ const worldInfoFilter = new FilterHelper(() => updateEditor());
 const SORT_ORDER_KEY = 'world_info_sort_order';
 const METADATA_KEY = 'world_info';
 
-const InputWidthReference = $("#WIInputWidthReference");
-
 const DEFAULT_DEPTH = 4;
 
 export function getWorldInfoSettings() {
     return {
         world_info,
         world_info_depth,
+        world_info_min_activations,
+        world_info_min_activations_depth_max,
         world_info_budget,
         world_info_recursive,
         world_info_overflow_alert,
@@ -102,6 +107,10 @@ async function getWorldInfoPrompt(chat2, maxContext) {
 function setWorldInfoSettings(settings, data) {
     if (settings.world_info_depth !== undefined)
         world_info_depth = Number(settings.world_info_depth);
+    if (settings.world_info_min_activations !== undefined)
+        world_info_min_activations = Number(settings.world_info_min_activations);
+    if (settings.world_info_min_activations_depth_max !== undefined)
+        world_info_min_activations_depth_max = Number(settings.world_info_min_activations_depth_max);
     if (settings.world_info_budget !== undefined)
         world_info_budget = Number(settings.world_info_budget);
     if (settings.world_info_recursive !== undefined)
@@ -137,6 +146,12 @@ function setWorldInfoSettings(settings, data) {
 
     $("#world_info_depth_counter").val(world_info_depth);
     $("#world_info_depth").val(world_info_depth);
+
+    $("#world_info_min_activations_counter").val(world_info_min_activations);
+    $("#world_info_min_activations").val(world_info_min_activations);
+
+    $("#world_info_min_activations_depth_max_counter").val(world_info_min_activations_depth_max);
+    $("#world_info_min_activations_depth_max").val(world_info_min_activations_depth_max);
 
     $("#world_info_budget_counter").val(world_info_budget);
     $("#world_info_budget").val(world_info_budget);
@@ -367,24 +382,23 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
             <small class="flex1">
             Title/Memo
         </small>
-                <small style="width:${InputWidthReference.width() + 5 + 'px'}">
+                <small style="width: calc(3.5em + 5px)">
                     Status
                 </small>
-                <small style="width:${InputWidthReference.width() + 20 + 'px'}">
+                <small style="width: calc(3.5em + 20px)">
                     Position
                 </small>
-                <small style="width:${InputWidthReference.width() + 15 + 'px'}">
+                <small style="width: calc(3.5em + 15px)">
                     Depth
                 </small>
-                <small style="width:${InputWidthReference.width() + 15 + 'px'}">
+                <small style="width: calc(3.5em + 15px)">
                     Order
                 </small>
-                <small style="width:${InputWidthReference.width() + 15 + 'px'}">
+                <small style="width: calc(3.5em + 15px)">
                     Trigger %
                 </small>
-
             </div>`
-            const blocks = page.map(entry => getWorldEntry(name, data, entry));
+            const blocks = page.map(entry => getWorldEntry(name, data, entry)).filter(x => x);
             $("#world_popup_entries_list").append(keywordHeaders);
             $("#world_popup_entries_list").append(blocks);
         },
@@ -545,6 +559,10 @@ function deleteOriginalDataValue(data, uid) {
 }
 
 function getWorldEntry(name, data, entry) {
+    if (!data.entries[entry.uid]) {
+        return;
+    }
+
     const template = $("#entry_edit_template .world_entry").clone();
     template.data("uid", entry.uid);
     template.attr("uid", entry.uid);
@@ -819,7 +837,7 @@ function getWorldEntry(name, data, entry) {
         saveWorldInfo(name, data);
     });
     orderInput.val(entry.order).trigger("input");
-    orderInput.width(InputWidthReference.width() + 15 + 'px')
+    orderInput.css('width', 'calc(3em + 15px)');
 
     // probability
     if (entry.probability === undefined) {
@@ -840,7 +858,7 @@ function getWorldEntry(name, data, entry) {
         saveWorldInfo(name, data);
     });
     depthInput.val(entry.depth ?? DEFAULT_DEPTH).trigger("input");
-    depthInput.width(InputWidthReference.width() + 15 + 'px');
+    depthInput.css('width', 'calc(3em + 15px)');
 
     // Hide by default unless depth is specified
     if (entry.position === world_info_position.atDepth) {
@@ -868,7 +886,7 @@ function getWorldEntry(name, data, entry) {
         saveWorldInfo(name, data);
     });
     probabilityInput.val(entry.probability).trigger("input");
-    probabilityInput.width(InputWidthReference.width() + 15 + 'px')
+    probabilityInput.css('width', 'calc(3em + 15px)');
 
     // probability toggle
     if (entry.useProbability === undefined) {
@@ -1379,6 +1397,7 @@ async function checkWorldInfo(chat, maxContext) {
 
     // Combine the chat
     let textToScan = chat.slice(0, messagesToLookBack).join("");
+    let minActivationMsgIndex = messagesToLookBack; // tracks chat index to satisfy `world_info_min_activations`
 
     // Add the depth or AN if enabled
     // Put this code here since otherwise, the chat reference is modified
@@ -1402,6 +1421,7 @@ async function checkWorldInfo(chat, maxContext) {
     textToScan = transformString(textToScan);
 
     let needsToScan = true;
+    let token_budget_overflowed = false;
     let count = 0;
     let allActivatedEntries = new Set();
     let failedProbabilityChecks = new Set();
@@ -1531,6 +1551,7 @@ async function checkWorldInfo(chat, maxContext) {
                     toastr.warning(`World info budget reached after ${allActivatedEntries.size} entries.`, 'World Info');
                 }
                 needsToScan = false;
+                token_budget_overflowed = true;
                 break;
             }
 
@@ -1552,6 +1573,24 @@ async function checkWorldInfo(chat, maxContext) {
             const currentlyActivatedText = transformString(text);
             textToScan = (currentlyActivatedText + '\n' + textToScan);
             allActivatedText = (currentlyActivatedText + '\n' + allActivatedText);
+        }
+
+        // world_info_min_activations
+        if (!needsToScan && !token_budget_overflowed) {
+            if (world_info_min_activations > 0 && (allActivatedEntries.size < world_info_min_activations)) {
+                let over_max = false
+                over_max = (
+                    world_info_min_activations_depth_max > 0 &&
+                    minActivationMsgIndex > world_info_min_activations_depth_max
+                ) || (
+                    minActivationMsgIndex >= chat.length
+                )
+                if (!over_max) {
+                    needsToScan = true
+                    textToScan = transformString(chat.slice(minActivationMsgIndex, minActivationMsgIndex + 1).join(""));
+                    minActivationMsgIndex += 1
+                }
+            }
         }
     }
 
@@ -2027,7 +2066,7 @@ jQuery(() => {
     $("#world_editor_select").on('change', async () => {
         $("#world_info_search").val('');
         worldInfoFilter.setFilterData(FILTER_TYPES.WORLD_INFO_SEARCH, '', true);
-        const selectedIndex = $("#world_editor_select").find(":selected").val();
+        const selectedIndex = String($("#world_editor_select").find(":selected").val());
 
         if (selectedIndex === "") {
             hideWorldEditor();
@@ -2042,27 +2081,39 @@ jQuery(() => {
         eventSource.emit(event_types.WORLDINFO_SETTINGS_UPDATED);
     }
 
-    $(document).on("input", "#world_info_depth", function () {
+    $("#world_info_depth").on('input', function () {
         world_info_depth = Number($(this).val());
         $("#world_info_depth_counter").val($(this).val());
         saveSettings();
     });
 
-    $(document).on("input", "#world_info_budget", function () {
+    $("#world_info_min_activations").on('input', function () {
+        world_info_min_activations = Number($(this).val());
+        $("#world_info_min_activations_counter").val($(this).val());
+        saveSettings();
+    });
+
+    $("#world_info_min_activations_depth_max").on('input', function () {
+        world_info_min_activations_depth_max = Number($(this).val());
+        $("#world_info_min_activations_depth_max_counter").val($(this).val());
+        saveSettings();
+    });
+
+    $("#world_info_budget").on('input', function () {
         world_info_budget = Number($(this).val());
         $("#world_info_budget_counter").val($(this).val());
         saveSettings();
     });
 
-    $(document).on("input", "#world_info_recursive", function () {
+    $("#world_info_recursive").on('input', function () {
         world_info_recursive = !!$(this).prop('checked');
         saveSettings();
-    })
+    });
 
     $('#world_info_case_sensitive').on('input', function () {
         world_info_case_sensitive = !!$(this).prop('checked');
         saveSettings();
-    })
+    });
 
     $('#world_info_match_whole_words').on('input', function () {
         world_info_match_whole_words = !!$(this).prop('checked');

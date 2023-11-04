@@ -260,7 +260,7 @@ export {
 }
 
 // Cohee: Uncomment when we decide to use loader
-// showLoader();
+showLoader();
 
 // Allow target="_blank" in links
 DOMPurify.addHook('afterSanitizeAttributes', function (node) {
@@ -713,6 +713,7 @@ async function firstLoadInit() {
         const tokenData = await tokenResponse.json();
         token = tokenData.token;
     } catch {
+        hideLoader();
         toastr.error("Couldn't get CSRF token. Please refresh the page.", "Error", { timeOut: 0, extendedTimeOut: 0, preventDuplicates: true });
         throw new Error("Initialization failed");
     }
@@ -734,7 +735,7 @@ async function firstLoadInit() {
     initCfg();
     doDailyExtensionUpdatesCheck();
     // Cohee: Uncomment when we decide to use loader
-    // hideLoader();
+    hideLoader();
 }
 
 function checkOnlineStatus() {
@@ -2630,6 +2631,13 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         if (type === 'swipe') {
             coreChat.pop();
         }
+
+        coreChat = coreChat.map(x => ({
+            ...x,
+            mes: getRegexedString(x.mes, x.is_user ? regex_placement.USER_INPUT : regex_placement.AI_OUTPUT, {
+                isPrompt: true,
+            }),
+        }))
 
         // Determine token limit
         let this_max_context = getMaxContextSize();
@@ -5450,6 +5458,12 @@ export async function displayPastChats() {
 
     const group = selected_group ? groups.find(x => x.id === selected_group) : null;
     const data = await (selected_group ? getGroupPastChats(selected_group) : getPastCharacterChats());
+
+    if (!data) {
+        toastr.error('Could not load chat data. Try reloading the page.');
+        return;
+    }
+
     const currentChat = selected_group ? group?.chat_id : characters[this_chid]["chat"];
     const displayName = selected_group ? group?.name : characters[this_chid].name;
     const avatarImg = selected_group ? group?.avatar_url : getThumbnailUrl('avatar', characters[this_chid]['avatar']);
@@ -8804,7 +8818,7 @@ jQuery(async function () {
         }
     });
 
-    $(document).on('input', '.range-block-counter input', function () {
+    $(document).on('input', '.range-block-counter input, .neo-range-input', function () {
         setTimeout(() => {
             const caretPosition = saveCaretPosition($(this).get(0));
             const myText = $(this).val().trim();
