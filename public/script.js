@@ -260,7 +260,7 @@ export {
 }
 
 // Cohee: Uncomment when we decide to use loader
-// showLoader();
+showLoader();
 
 // Allow target="_blank" in links
 DOMPurify.addHook('afterSanitizeAttributes', function (node) {
@@ -713,6 +713,7 @@ async function firstLoadInit() {
         const tokenData = await tokenResponse.json();
         token = tokenData.token;
     } catch {
+        hideLoader();
         toastr.error("Couldn't get CSRF token. Please refresh the page.", "Error", { timeOut: 0, extendedTimeOut: 0, preventDuplicates: true });
         throw new Error("Initialization failed");
     }
@@ -734,7 +735,7 @@ async function firstLoadInit() {
     initCfg();
     doDailyExtensionUpdatesCheck();
     // Cohee: Uncomment when we decide to use loader
-    // hideLoader();
+    hideLoader();
 }
 
 function checkOnlineStatus() {
