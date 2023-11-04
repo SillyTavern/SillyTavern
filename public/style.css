@@ -1854,6 +1854,7 @@ grammarly-extension {
 
 /* Focus */
 
+#bulk_tag_popup,
 #dialogue_popup {
     width: 500px;
     max-width: 90vw;
@@ -1896,6 +1897,7 @@ grammarly-extension {
     width: unset !important;
 }
 
+#bulk_tag_popup_holder,
 #dialogue_popup_holder {
     display: flex;
     flex-direction: column;
@@ -1916,6 +1918,7 @@ grammarly-extension {
     gap: 20px;
 }
 
+#bulk_tag_popup_reset,
 #dialogue_popup_ok {
     background-color: var(--crimson70a);
     cursor: pointer;
@@ -1926,6 +1929,7 @@ grammarly-extension {
     width: 100%;
 }
 
+#bulk_tag_popup_cancel,
 #dialogue_popup_cancel {
     cursor: pointer;
 }

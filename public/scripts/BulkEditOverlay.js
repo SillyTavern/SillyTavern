@@ -2,14 +2,17 @@
 
 import {
     callPopup,
-    characters, deleteCharacter,
+    characters,
+    deleteCharacter,
     event_types,
     eventSource,
     getCharacters,
-    getRequestHeaders, handleDeleteCharacter, this_chid
+    getRequestHeaders,
+    this_chid
 } from "../script.js";
 import {favsToHotswap} from "./RossAscends-mods.js";
 import {convertCharacterToPersona} from "./personas.js";
+import {createTagInput, getTagKeyForCharacter, tag_map} from "./tags.js";
 
 const popupMessage = {
     deleteChat(characterCount) {
@@ -20,9 +23,6 @@ const popupMessage = {
                     <span>Also delete the chat files</span>
                 </label><br></b>`;
     },
-    exportCharacters(characterCount) {
-        return `<h3>Export ${characterCount} characters?</h3>`;
-    }
 }
 
 const toggleFavoriteHighlight = (characterId) => {
@@ -30,20 +30,16 @@ const toggleFavoriteHighlight = (characterId) => {
     element.classList.toggle('is_fav');
 }
 
-/**
- * Implement a SingletonPattern, allowing access to the group overlay instance
- * from everywhere via (new CharacterGroupOverlay())
- *
- * @type BulkEditOverlay
- */
-let characterGroupOverlayInstance = null;
-
 class CharacterGroupOverlayState {
     static browse = 0;
     static select = 1;
 }
 
 class CharacterContextMenu {
+    static tag = (selectedCharacters) => {
+        BulkTagPopupHandler.show(selectedCharacters);
+    }
+
     /**
      * Duplicate a character
      *
@@ -141,12 +137,71 @@ class CharacterContextMenu {
             {id: 'character_context_menu_favorite', callback: characterGroupOverlay.handleContextMenuFavorite},
             {id: 'character_context_menu_duplicate', callback: characterGroupOverlay.handleContextMenuDuplicate},
             {id: 'character_context_menu_delete', callback: characterGroupOverlay.handleContextMenuDelete},
-            {id: 'character_context_menu_persona', callback: characterGroupOverlay.handleContextMenuPersona}
+            {id: 'character_context_menu_persona', callback: characterGroupOverlay.handleContextMenuPersona},
+            {id: 'character_context_menu_tag', callback: characterGroupOverlay.handleContextMenuTag}
         ];
 
         contextMenuItems.forEach(contextMenuItem => document.getElementById(contextMenuItem.id).addEventListener('click', contextMenuItem.callback))
     }
 }
+
+/**
+ * Appends/Removes the bulk tag popup
+ */
+class BulkTagPopupHandler {
+    static #getHtml = (characterIds) => {
+        const characterData = JSON.stringify({characterIds: characterIds});
+        return `<div id="bulk_tag_shadow_popup">
+            <div id="bulk_tag_popup">
+                <div id="bulk_tag_popup_holder">
+                <h3 class="m-b-1">Add tags to ${characterIds.length} characters</h3>
+                <br>
+                    <div id="bulk_tags_div" class="marginBot5" data-characters='${characterData}'>
+                        <div class="tag_controls">
+                            <input id="bulkTagInput" class="text_pole tag_input wide100p margin0" data-i18n="[placeholder]Search / Create Tags" placeholder="Search / Create tags" maxlength="25" />
+                            <div class="tags_view menu_button fa-solid fa-tags" title="View all tags" data-i18n="[title]View all tags"></div>
+                        </div>
+                        <div id="bulkTagList" class="m-t-1 tags"></div>
+                    </div>
+                    <div id="dialogue_popup_controls" class="m-t-1">
+                        <div id="bulk_tag_popup_cancel" class="menu_button" data-i18n="Cancel">Close</div>
+                        <div id="bulk_tag_popup_reset" class="menu_button" data-i18n="Cancel">Remove all</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `
+    };
+
+    static show(characters) {
+        document.body.insertAdjacentHTML('beforeend', this.#getHtml(characters));
+        createTagInput('#bulkTagInput', '#bulkTagList');
+        document.querySelector('#bulk_tag_popup_cancel').addEventListener('click', this.hide.bind(this));
+        document.querySelector('#bulk_tag_popup_reset').addEventListener('click', this.resetTags.bind(this, characters));
+    }
+
+    static hide() {
+        let popupElement = document.querySelector('#bulk_tag_shadow_popup');
+        if (popupElement) {
+            document.body.removeChild(popupElement);
+        }
+    }
+
+    static resetTags(characterIds) {
+        characterIds.forEach((characterId) => {
+            const key = getTagKeyForCharacter(characterId);
+            if (key) tag_map[key] = [];
+        });
+    }
+}
+
+/**
+ * Implement a SingletonPattern, allowing access to the group overlay instance
+ * from everywhere via (new CharacterGroupOverlay())
+ *
+ * @type BulkEditOverlay
+ */
+let bulkEditOverlayInstance = null;
 
 class BulkEditOverlay {
     static containerId = 'rm_print_characters_block';
@@ -191,19 +246,23 @@ class BulkEditOverlay {
         return this.#stateChangeCallbacks;
     }
 
+    /**
+     *
+     * @returns {*[]}
+     */
     get selectedCharacters() {
         return this.#selectedCharacters;
     }
 
     constructor() {
-        if (characterGroupOverlayInstance instanceof BulkEditOverlay)
-            return characterGroupOverlayInstance
+        if (bulkEditOverlayInstance instanceof BulkEditOverlay)
+            return bulkEditOverlayInstance
 
         this.container = document.getElementById(BulkEditOverlay.containerId);
         this.container.addEventListener('click', this.handleCancelClick);
 
         eventSource.on(event_types.CHARACTER_GROUP_OVERLAY_STATE_CHANGE_AFTER, this.handleStateChange);
-        characterGroupOverlayInstance = Object.freeze(this);
+        bulkEditOverlayInstance = Object.freeze(this);
     }
 
     browseState = () => this.state = CharacterGroupOverlayState.browse;
@@ -347,6 +406,10 @@ class BulkEditOverlay {
                     .then(() => getCharacters())
                     .then(() => this.browseState())
             );
+    }
+
+    handleContextMenuTag = () => {
+        CharacterContextMenu.tag(this.selectedCharacters);
     }
 
     addStateChangeCallback = callback => this.stateChangeCallbacks.push(callback);
