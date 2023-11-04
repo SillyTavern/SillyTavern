@@ -68,6 +68,7 @@ import {
     setExternalAbortController,
     baseChatReplace,
     depth_prompt_depth_default,
+    loadItemizedPrompts,
 } from "../script.js";
 import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect, tag_map, printTagFilters } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
@@ -167,6 +168,8 @@ export async function getGroupChat(groupId) {
     const group = groups.find((x) => x.id === groupId);
     const chat_id = group.chat_id;
     const data = await loadGroupChat(chat_id);
+
+    await loadItemizedPrompts(getCurrentChatId());
 
     if (Array.isArray(data) && data.length) {
         data[0].is_group = true;
@@ -913,10 +916,10 @@ async function deleteGroup(id) {
     }
 
     if (response.ok) {
+        await clearChat();
         selected_group = null;
         delete tag_map[id];
         resetChatState();
-        clearChat();
         await printMessages();
         await getCharacters();
 
@@ -1385,12 +1388,12 @@ export async function openGroupById(groupId) {
 
     if (!is_send_press && !is_group_generating) {
         if (selected_group !== groupId) {
+            await clearChat();
             cancelTtsPlay();
             selected_group = groupId;
             setCharacterId(undefined);
             setCharacterName('');
             setEditedMessageId(undefined);
-            clearChat();
             updateChatMetadata({}, true);
             chat.length = 0;
             await getGroupChat(groupId);
@@ -1484,7 +1487,7 @@ export async function createNewGroupChat(groupId) {
         group.past_metadata = {};
     }
 
-    clearChat();
+    await clearChat();
     chat.length = 0;
     if (oldChatName) {
         group.past_metadata[oldChatName] = Object.assign({}, chat_metadata);
@@ -1537,7 +1540,7 @@ export async function openGroupChat(groupId, chatId) {
         return;
     }
 
-    clearChat();
+    await clearChat();
     chat.length = 0;
     const previousChat = group.chat_id;
     group.past_metadata[previousChat] = Object.assign({}, chat_metadata);

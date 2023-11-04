@@ -324,6 +324,7 @@ reloadMarkdownProcessor();
 
 // array for prompt token calculations
 console.debug('initializing Prompt Itemization Array on Startup');
+const promptStorage = new localforage.createInstance({ name: "SillyTavern_Prompts" });
 let itemizedPrompts = [];
 
 export const systemUserName = "SillyTavern System";
@@ -772,6 +773,53 @@ export function setActiveGroup(group) {
     active_group = group;
 }
 
+/**
+ * Gets the itemized prompts for a chat.
+ * @param {string} chatId Chat ID to load
+ */
+export async function loadItemizedPrompts(chatId) {
+    try {
+        if (!chatId) {
+            itemizedPrompts = [];
+            return;
+        }
+
+        itemizedPrompts = await promptStorage.getItem(chatId);
+
+        if (!itemizedPrompts) {
+            itemizedPrompts = [];
+        }
+    } catch {
+        console.log("Error loading itemized prompts for chat", chatId);
+        itemizedPrompts = [];
+    }
+}
+
+/**
+ * Saves the itemized prompts for a chat.
+ * @param {string} chatId Chat ID to save itemized prompts for
+ */
+export async function saveItemizedPrompts(chatId) {
+    try {
+        if (!chatId) {
+            return;
+        }
+
+        await promptStorage.setItem(chatId, itemizedPrompts);
+    } catch {
+        console.log("Error saving itemized prompts for chat", chatId);
+    }
+}
+
+export async function clearItemizedPrompts() {
+    try {
+        await promptStorage.clear();
+        itemizedPrompts = [];
+    } catch {
+        console.log("Error clearing itemized prompts");
+    }
+}
+
 async function getStatus() {
     if (is_get_status) {
         if (main_api == "koboldhorde") {
@@ -849,7 +897,7 @@ function resultCheckStatus() {
     $("#api_button_textgenerationwebui").css("display", "inline-block");
 }
 
-export function selectCharacterById(id) {
+export async function selectCharacterById(id) {
     if (characters[id] == undefined) {
         return;
     }
@@ -866,15 +914,15 @@ export function selectCharacterById(id) {
     if (selected_group || this_chid !== id) {
         //if clicked on a different character from what was currently selected
         if (!is_send_press) {
+            await clearChat();
             cancelTtsPlay();
             resetSelectedGroup();
             this_edit_mes_id = undefined;
             selected_button = "character_edit";
             this_chid = id;
-            clearChat();
             chat.length = 0;
             chat_metadata = {};
-            getChat();
+            await getChat();
         }
     } else {
         //if clicked on character that was already selected
@@ -1066,7 +1114,7 @@ async function delChat(chatfile) {
 }
 
 async function replaceCurrentChat() {
-    clearChat();
+    await clearChat();
     chat.length = 0;
 
     const chatsResponse = await fetch("/getallchatsofcharacter", {
@@ -1134,7 +1182,7 @@ async function printMessages() {
     }
 }
 
-function clearChat() {
+async function clearChat() {
     count_view_mes = 0;
     extension_prompts = {};
     $("#chat").children().remove();
@@ -1142,6 +1190,8 @@ function clearChat() {
         console.debug('saw avatars to remove')
         $('.zoomed_avatar[forChar]').remove();
     } else { console.debug('saw no avatars') }
+
+    await saveItemizedPrompts(getCurrentChatId());
     itemizedPrompts = [];
 }
 
@@ -1153,7 +1203,7 @@ async function deleteLastMessage() {
 }
 
 export async function reloadCurrentChat() {
-    clearChat();
+    await clearChat();
     chat.length = 0;
 
     if (selected_group) {
@@ -4362,7 +4412,7 @@ async function renameCharacter() {
                 if (newChId !== -1) {
                     // Select the character after the renaming
                     this_chid = -1;
-                    selectCharacterById(String(newChId));
+                    await selectCharacterById(String(newChId));
 
                     // Async delay to update UI
                     await delay(1);
@@ -4655,6 +4705,7 @@ async function getChatResult() {
         chat.push(message);
         await saveChatConditional();
     }
+    await loadItemizedPrompts(getCurrentChatId());
     await printMessages();
     select_selected_character(this_chid);
 
@@ -4690,8 +4741,8 @@ function getFirstMessage() {
 }
 
 async function openCharacterChat(file_name) {
+    await clearChat();
     characters[this_chid]["chat"] = file_name;
-    clearChat();
     chat.length = 0;
     chat_metadata = {};
     await getChat();
@@ -4896,7 +4947,7 @@ export function setUserName(value) {
     if (power_user.persona_show_notifications) {
         toastr.success(`Your messages will now be sent as ${name1}`, 'Current persona updated');
     }
-    saveSettings("change_name");
+    saveSettingsDebounced();
 }
 
 function setUserAvatar() {
@@ -5207,26 +5258,13 @@ async function saveSettings(type) {
             kai_settings: kai_settings,
             oai_settings: oai_settings,
         }, null, 4),
-        beforeSend: function () {
-            if (type == "change_name") {
-                //let nameBeforeChange = name1;
-                name1 = $("#your_name").val();
-                //$(`.mes[ch_name="${nameBeforeChange}"]`).attr('ch_name' === name1);
-                //console.log('beforeSend name1 = ' + nameBeforeChange);
-                //console.log('new name: ' + name1);
-            }
-        },
+        beforeSend: function () { },
         cache: false,
         dataType: "json",
         contentType: "application/json",
         //processData: false,
         success: async function (data) {
-            //online_status = data.result;
             eventSource.emit(event_types.SETTINGS_UPDATED);
-            if (type == "change_name") {
-                clearChat();
-                await printMessages();
-            }
         },
         error: function (jqXHR, exception) {
             toastr.error('Check the server connection and reload the page to prevent data loss.', 'Settings could not be saved');
@@ -6056,8 +6094,9 @@ export async function saveChatConditional() {
             await saveChat();
         }
 
-        // Save token cache to IndexedDB storage
+        // Save token and prompts cache to IndexedDB storage
         saveTokenCache();
+        saveItemizedPrompts(getCurrentChatId());
     } catch (error) {
         console.error('Error saving chat', error);
     } finally {
@@ -6516,7 +6555,7 @@ async function createOrEditCharacter(e) {
 
                     const chat_id = (chat.length - 1);
                     await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id);
-                    clearChat();
+                    await clearChat();
                     await printMessages();
                     await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, chat_id);
                     await saveChatConditional();
@@ -7155,6 +7194,7 @@ export async function handleDeleteCharacter(popup_type, this_chid, delete_chats)
  * @param {string} avatar - The avatar URL of the character to be deleted.
  */
 export async function deleteCharacter(name, avatar) {
+    await clearChat();
     $("#character_cross").click();
     this_chid = "invalid-safety-id";
     characters.length = 0;
@@ -7162,7 +7202,6 @@ export async function deleteCharacter(name, avatar) {
     chat = [...safetychat];
     chat_metadata = {};
     $(document.getElementById("rm_button_selected_ch")).children("h2").text("");
-    clearChat();
     this_chid = undefined;
     delete tag_map[avatar];
     await getCharacters();
@@ -7291,9 +7330,9 @@ jQuery(async function () {
         $("#character_search_bar").val("").trigger("input");
     });
 
-    $(document).on("click", ".character_select", function () {
+    $(document).on("click", ".character_select", async function () {
         const id = $(this).attr("chid");
-        selectCharacterById(id);
+        await selectCharacterById(id);
     });
 
     $(document).on("input", ".edit_textarea", function () {
@@ -7445,7 +7484,7 @@ jQuery(async function () {
             menu_type != "create"
         ) {
             //Fix it; New chat doesn't create while open create character menu
-            clearChat();
+            await clearChat();
             chat.length = 0;
 
             if (selected_group) {
@@ -7762,7 +7801,7 @@ jQuery(async function () {
     /* $('#set_chat_scenario').on('click', setScenarioOverride); */
 
     ///////////// OPTIMIZED LISTENERS FOR LEFT SIDE OPTIONS POPUP MENU //////////////////////
-    $("#options [id]").on("click", function (event, customData) {
+    $("#options [id]").on("click", async function (event, customData) {
         const fromSlashCommand = customData?.fromSlashCommand || false;
         var id = $(this).attr("id");
 
@@ -7826,7 +7865,7 @@ jQuery(async function () {
 
         else if (id == "option_close_chat") {
             if (is_send_press == false) {
-                clearChat();
+                await clearChat();
                 chat.length = 0;
                 resetSelectedGroup();
                 setCharacterId(undefined);
@@ -9001,5 +9040,10 @@ jQuery(async function () {
         toastr.info('Working on it...');
         const message = await generateRaw(text, null);
         alert(message);
+    });
+
+    registerDebugFunction('clearPrompts', 'Delete itemized prompts', 'Deletes all itemized prompts from the local storage.', async () => {
+        await clearItemizedPrompts();
+        await reloadCurrentChat();
     });
 });
