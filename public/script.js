@@ -7207,7 +7207,8 @@ function doCloseChat() {
  * @param {boolean} delete_chats - Whether to delete chats or not.
  */
 export async function handleDeleteCharacter(popup_type, this_chid, delete_chats) {
-    if (popup_type !== "del_ch") {
+    if (popup_type !== "del_ch" ||
+        !characters[this_chid]) {
         return;
     }
 
