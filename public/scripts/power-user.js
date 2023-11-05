@@ -473,6 +473,13 @@ async function switchZenSliders() {
         }
         if (sliderID == 'amount_gen') {
             decimals = 0
+            var steps = [16, 50, 100, 150, 200, 256, 300, 400, 512, 1024];
+            sliderMin = 0
+            sliderMax = steps.length - 1
+            stepScale = 1;
+            numSteps = 10
+            sliderValue = steps.indexOf(Number(sliderValue))
+            if (sliderValue === -1) { sliderValue = 4 } // default to '200' if origSlider has value we can't use
         }
         if (sliderID == 'max_context') {
             numSteps = 15
@@ -521,7 +528,9 @@ async function switchZenSliders() {
             numSteps = 20
         }
 
-        var stepScale = sliderRange / numSteps
+        if (sliderID !== 'amount_gen') {
+            var stepScale = sliderRange / numSteps
+        }
 
         var newSlider = $("<div>")
             .attr('id', `${sliderID}_zenslider`)
@@ -535,24 +544,48 @@ async function switchZenSliders() {
             max: sliderMax,
             create: function () {
                 var handle = $(this).find(".ui-slider-handle");
-                var handleText = Number(sliderValue).toFixed(decimals)
-                handle.text(handleText);
-                //var width = handle.width()
-                var stepNumber = ((sliderValue - sliderMin) / stepScale)
-                var leftMargin = (stepNumber / numSteps) * 50 * -1
-                handle.css('margin-left', `${leftMargin}px`)
+                if (newSlider.attr('id') == 'amount_gen_zenslider') {
+                    //console.log(sliderValue, steps.indexOf(Number(sliderValue)))
+                    var handleText = steps[sliderValue]
+                    handle.text(handleText);
+                    //console.log(handleText)
+                    var stepNumber = sliderValue
+                    var leftMargin = ((stepNumber) / numSteps) * 50 * -1
+                    //console.log(`initial value:${handleText}, stepNum:${stepNumber}, numSteps:${numSteps}, left-margin:${leftMargin}`)
+                    handle.css('margin-left', `${leftMargin}px`)
+                } else {
+                    var handleText = Number(sliderValue).toFixed(decimals)
+                    handle.text(handleText);
+                    var stepNumber = ((sliderValue - sliderMin) / stepScale)
+                    var leftMargin = (stepNumber / numSteps) * 50 * -1
+                    handle.css('margin-left', `${leftMargin}px`)
+                }
             },
             slide: function (event, ui) {
                 var handle = $(this).find(".ui-slider-handle");
-                //var width = handle.outerWidth()
-                handle.text(ui.value.toFixed(decimals));
-                var stepNumber = ((ui.value - sliderMin) / stepScale)
-                var leftMargin = (stepNumber / numSteps) * 50 * -1
-                handle.css('margin-left', `${leftMargin}px`)
-                let handleText = (ui.value)
-                originalSlider.val(handleText);
-                originalSlider.trigger('input')
-                originalSlider.trigger('change')
+                if (newSlider.attr('id') == 'amount_gen_zenslider') {
+                    //console.log(`stepScale${stepScale}, UIvalue:${ui.value}, mappedValue:${steps[ui.value]}`)
+                    $(this).val(steps[ui.value])
+                    let handleText = steps[ui.value].toFixed(decimals)
+                    handle.text(handleText);
+                    var stepNumber = steps.indexOf(Number(handleText))
+                    var leftMargin = (stepNumber / numSteps) * 50 * -1
+                    //console.log(`handleText:${handleText},stepNum:${stepNumber}, numSteps:${numSteps},LeftMargin:${leftMargin}`)
+                    handle.css('margin-left', `${leftMargin}px`)
+                    originalSlider.val(handleText);
+                    originalSlider.trigger('input')
+                    originalSlider.trigger('change')
+                } else {
+                    handle.text(ui.value.toFixed(decimals));
+                    var stepNumber = ((ui.value - sliderMin) / stepScale)
+                    var leftMargin = (stepNumber / numSteps) * 50 * -1
+                    handle.css('margin-left', `${leftMargin}px`)
+                    let handleText = (ui.value)
+                    originalSlider.val(handleText);
+                    originalSlider.trigger('input')
+                    originalSlider.trigger('change')
+                }
+
             }
 
         });
