@@ -1,5 +1,3 @@
-const characterBook = require("lodash/object");
-
 /**
  * Validates the data structure of character cards.
  * Supported specs: V1, V2
@@ -8,7 +6,7 @@ const characterBook = require("lodash/object");
  * @link https://github.com/malfoyslastname/character-card-spec-v2
  */
 class TavernCardValidator {
-    #validationError = null;
+    #lastValidationError = null;
 
     constructor(card) {
         this.card = card;
@@ -19,24 +17,24 @@ class TavernCardValidator {
      *
      * @returns {null|string}
      */
-    get validationError() {
-        return this.#validationError;
+    get lastValidationError() {
+        return this.#lastValidationError;
     }
 
     /**
-     * Validate against V1 and V2 spec.
+     * Validate against V1 or V2 spec.
      *
      * @returns {number|boolean} - false when neither V1 nor V2 spec were matched. Specification version number otherwise.
      */
     validate() {
-        this.#validationError = null;
+        this.#lastValidationError = null;
 
         if (this.validateV1()) {
-            return 2;
+            return 1;
         }
 
         if (this.validateV2()) {
-            return 1;
+            return 2;
         }
 
         return false;
@@ -51,7 +49,7 @@ class TavernCardValidator {
         const requiredFields = ['name', 'description', 'personality', 'scenario', 'first_mes', 'mes_example'];
         return requiredFields.every(field => {
             if (!this.card.hasOwnProperty(field)) {
-                this.#validationError = field;
+                this.#lastValidationError = field;
                 return false;
             }
             return true;
@@ -72,7 +70,7 @@ class TavernCardValidator {
 
     #validateSpec() {
         if (this.card.spec !== 'chara_card_v2') {
-            this.#validationError = 'spec';
+            this.#lastValidationError = 'spec';
             return false;
         }
         return true;
@@ -80,7 +78,7 @@ class TavernCardValidator {
 
     #validateSpecVersion() {
         if (this.card.spec_version !== '2.0') {
-            this.#validationError = 'spec_version';
+            this.#lastValidationError = 'spec_version';
             return false;
         }
         return true;
@@ -90,14 +88,14 @@ class TavernCardValidator {
         const data = this.card.data;
 
         if (!data) {
-            this.#validationError = 'data';
+            this.#lastValidationError = 'data';
             return false;
         }
 
         const requiredFields = ['name', 'description', 'personality', 'scenario', 'first_mes', 'mes_example', 'creator_notes', 'system_prompt', 'post_history_instructions', 'alternate_greetings', 'tags', 'creator', 'character_version', 'extensions'];
         const isAllRequiredFieldsPresent = requiredFields.every(field => {
             if (!data.hasOwnProperty(field)) {
-                this.#validationError = `data.${field}`;
+                this.#lastValidationError = `data.${field}`;
                 return false;
             }
             return true;
@@ -116,7 +114,7 @@ class TavernCardValidator {
         const requiredFields = ['extensions', 'entries'];
         const isAllRequiredFieldsPresent = requiredFields.every(field => {
             if (!characterBook.hasOwnProperty(field)) {
-                this.#validationError = `data.character_book.${field}`;
+                this.#lastValidationError = `data.character_book.${field}`;
                 return false;
             }
             return true;
