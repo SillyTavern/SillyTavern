@@ -93,6 +93,7 @@ import {
     openai_messages_count,
     chat_completion_sources,
     getChatCompletionModel,
+    isOpenRouterWithInstruct,
 } from "./scripts/openai.js";
 
 import {
@@ -811,6 +812,29 @@ export async function saveItemizedPrompts(chatId) {
     }
 }
 
+/**
+ * Replaces the itemized prompt text for a message.
+ * @param {number} mesId Message ID to get itemized prompt for
+ * @param {string} promptText New raw prompt text
+ * @returns
+ */
+export async function replaceItemizedPromptText(mesId, promptText) {
+    if (!Array.isArray(itemizedPrompts)) {
+        itemizedPrompts = [];
+    }
+
+    const itemizedPrompt = itemizedPrompts.find(x => x.mesId === mesId);
+
+    if (!itemizedPrompt) {
+        return;
+    }
+
+    itemizedPrompt.rawPrompt = promptText;
+}
+
+/**
+ * Empties the itemized prompts array and caches.
+ */
 export async function clearItemizedPrompts() {
     try {
         await promptStorage.clear();
@@ -2893,7 +2917,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
         if (isContinue) {
             // Coping mechanism for OAI spacing
-            if ((main_api === 'openai') && !cyclePrompt.endsWith(' ')) {
+            const isForceInstruct = isOpenRouterWithInstruct();
+            if (main_api === 'openai' && !isForceInstruct && !cyclePrompt.endsWith(' ')) {
                 cyclePrompt += ' ';
                 continue_mag += ' ';
             }
@@ -3290,8 +3315,15 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             thisPromptBits = additionalPromptStuff;
 
             //console.log(thisPromptBits);
+            const itemizedIndex = itemizedPrompts.findIndex((item) => item.mesId === thisPromptBits['mesId']);
 
-            itemizedPrompts.push(thisPromptBits);
+            if (itemizedIndex !== -1) {
+                itemizedPrompts[itemizedIndex] = thisPromptBits;
+            }
+            else {
+                itemizedPrompts.push(thisPromptBits);
+            }
+
             console.debug(`pushed prompt bits to itemizedPrompts array. Length is now: ${itemizedPrompts.length}`);
 
             if (main_api == 'openai') {
@@ -3510,7 +3542,7 @@ function unblockGeneration() {
     $("#send_textarea").removeAttr('disabled');
 }
 
-function getNextMessageId(type) {
+export function getNextMessageId(type) {
     return type == 'swipe' ? Number(count_view_mes - 1) : Number(count_view_mes);
 }
 
@@ -9044,6 +9076,9 @@ jQuery(async function () {
 
     registerDebugFunction('clearPrompts', 'Delete itemized prompts', 'Deletes all itemized prompts from the local storage.', async () => {
         await clearItemizedPrompts();
-        await reloadCurrentChat();
+        toastr.info('Itemized prompts deleted.');
+        if (getCurrentChatId()) {
+            await reloadCurrentChat();
+        }
     });
 });
