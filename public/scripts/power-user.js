@@ -428,11 +428,9 @@ async function switchZenSliders() {
     $("#enableZenSliders").prop("checked", power_user.enableZenSliders);
 
     function revertOriginalSliders() {
-        $("#range_block_textgenerationwebui input[type='number']").show();
         $("#textgenerationwebui_api-settings input[type='number']").show();
         $("#pro-settings-block input[type='number']").show();
-        $(`#range_block_textgenerationwebui input[type='range'],
-         #textgenerationwebui_api-settings input[type='range'],
+        $(`#textgenerationwebui_api-settings input[type='range'],
          #pro-settings-block input[type='range']`).each(function () {
             $(this).show();
         });
@@ -440,30 +438,27 @@ async function switchZenSliders() {
     }
 
     if (power_user.enableZenSliders) {
-        $("#range_block_textgenerationwebui input[type='number']").hide();
         $("#textgenerationwebui_api-settings input[type='number']").hide();
         $("#pro-settings-block input[type='number']").hide();
         $("#seed_textgenerationwebui").show();
-        $(`#range_block_textgenerationwebui input[type='range'],
-        #textgenerationwebui_api-settings input[type='range'],
-        #pro-settings-block input[type='range']`).each(
-            function () {
+        $(`#textgenerationwebui_api-settings input[type='range'],
+        #pro-settings-block input[type='range']`)
+            .hide()
+            .each(function () {
                 CreateZenSliders($(this))
-            }
-        )
+            })
 
     } else {
         revertOriginalSliders();
     }
     async function CreateZenSliders(elmnt) {
-        await delay(100)
+        //await delay(100)
         var originalSlider = elmnt;
         var sliderID = originalSlider.attr('id')
         var sliderMin = Number(originalSlider.attr('min'))
         var sliderMax = Number(originalSlider.attr('max'))
         var sliderValue = originalSlider.val();
         var sliderRange = sliderMax - sliderMin
-        var midpoint = sliderRange / 2
         var numSteps = 10
         var decimals = 2
 

@@ -452,66 +452,6 @@
                                     </select>
                                 </div>
                             </div>
-                            <div id="range_block_textgenerationwebui">
-                                <div class="flex-container gap10h5v justifyCenter">
-                                    <div class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="temperature">
-                                        <small>Temperature
-
-                                        </small>
-                                        <input class="neo-range-slider" type="range" id="temp_textgenerationwebui" name="volume" min="0.0" max="2.0" step="0.01" x-setting-id="temp">
-                                        <input type="number" class="neo-range-input" min="0.0" max="2.0" step="0.01" data-for="temp_textgenerationwebui" id="temp_counter_textgenerationwebui">
-                                    </div>
-                                    <div data-newbie-hidden class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="rep.pen">
-                                        <small>Repetition Penalty
-
-                                        </small>
-                                        <input class="neo-range-slider" type="range" id="rep_pen_textgenerationwebui" name="volume" min="1" max="1.5" step="0.01">
-                                        <input class="neo-range-input" type="number" min="1" max="1.5" step="0.01" data-for="rep_pen_textgenerationwebui" id="rep_pen_counter_textgenerationwebui">
-                                    </div>
-                                    <div data-forAphro=False data-newbie-hidden class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="rep.pen range">
-                                        <small>Repetition Penalty Range
-
-                                        </small>
-                                        <input class="neo-range-slider" type="range" id="rep_pen_range_textgenerationwebui" name="volume" min="0" max="4096" step="1">
-                                        <input class="neo-range-input" type="number" min="0" max="4096" step="1" data-for="rep_pen_range_textgenerationwebui" id="rep_pen_range_counter_textgenerationwebui">
-                                    </div>
-                                    <div data-forAphro=False data-newbie-hidden class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="Encoder Rep. Pen.">
-                                        <small>Encoder Penalty
-
-                                        </small>
-                                        <input class="neo-range-slider" type="range" id="encoder_rep_pen_textgenerationwebui" name="volume" min="0.8" max="1.5" step="0.01" />
-                                        <input class="neo-range-input" type="number" min="0.8" max="1.5" step="0.01" data-for="encoder_rep_pen_textgenerationwebui" id="encoder_rep_pen_counter_textgenerationwebui">
-                                    </div>
-                                    <div data-newbie-hidden class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="Frequency Penalty">
-                                        <small>Frequency Penalty
-
-                                        </small>
-                                        <input class="neo-range-slider" type="range" id="freq_pen_textgenerationwebui" name="volume" min="-2" max="2" step="0.01" />
-                                        <input class="neo-range-input" type="number" data-for="freq_pen_textgenerationwebui" min="-2" max="2" step="0.01" id="freq_pen_counter_textgenerationwebui">
-                                    </div>
-                                    <div data-newbie-hidden class="alignitemscenter flex-container marginBot5  flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="Presence Penalty">
-                                        <small>Presence Penalty
-
-                                        </small>
-                                        <input class="neo-range-slider" type="range" id="presence_pen_textgenerationwebui" name="volume" min="-2" max="2" step="0.01" />
-                                        <input class="neo-range-input" type="number" min="-2" max="2" step="0.01" data-for="presence_pen_textgenerationwebui" id="presence_pen_counter_textgenerationwebui">
-                                    </div>
-                                    <div data-forAphro=False data-newbie-hidden class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="No Repeat Ngram Size">
-                                        <small>No Repeat Ngram Size
-
-                                        </small>
-                                        <input class="neo-range-slider" type="range" id="no_repeat_ngram_size_textgenerationwebui" name="volume" min="0" max="20" step="1">
-                                        <input class="neo-range-input" type="number" min="0" max="20" step="1" data-for="no_repeat_ngram_size_textgenerationwebui" id="no_repeat_ngram_size_counter_textgenerationwebui">
-                                    </div>
-                                    <div data-newbie-hidden class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="Min Length">
-                                        <small>Min Length
-
-                                        </small>
-                                        <input class="neo-range-slider" type="range" id="min_length_textgenerationwebui" name="volume" min="0" max="2000" step="1" />
-                                        <input class="neo-range-input" type="number" min="0" max="2000" step="1" data-for="min_length_textgenerationwebui" id="min_length_counter_textgenerationwebui">
-                                    </div>
-                                </div>
-                            </div>
                             <div id="range_block_openai">
                                 <div data-newbie-hidden class="range-block">
                                     <label class="checkbox_label">
@@ -1288,8 +1228,12 @@
                                 </div>
                             </div>
                             <div data-newbie-hidden id="textgenerationwebui_api-settings">
-
                                 <div class="flex-container gap10h5v justifyCenter">
+                                    <div class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="temperature">
+                                        <small>Temperature</small>
+                                        <input class="neo-range-slider" type="range" id="temp_textgenerationwebui" name="volume" min="0.0" max="2.0" step="0.01" x-setting-id="temp">
+                                        <input type="number" class="neo-range-input" min="0.0" max="2.0" step="0.01" data-for="temp_textgenerationwebui" id="temp_counter_textgenerationwebui">
+                                    </div>
                                     <div class="alignitemscenter flex-container  flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="Top K">
                                         <small>Top K</small>
                                         <input class="neo-range-slider" type="range" id="top_k_textgenerationwebui" name="volume" min="0" max="200" step="1">
@@ -1330,6 +1274,41 @@
                                         <input class="neo-range-slider" type="range" id="eta_cutoff_textgenerationwebui" name="volume" min="0" max="20" step="0.01">
                                         <input class="neo-range-input" type="number" min="0" max="20" step="0.01" data-for="eta_cutoff_textgenerationwebui" id="eta_cutoff_counter_textgenerationwebui">
                                     </div>
+                                    <div data-newbie-hidden class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="rep.pen">
+                                        <small>Repetition Penalty</small>
+                                        <input class="neo-range-slider" type="range" id="rep_pen_textgenerationwebui" name="volume" min="1" max="1.5" step="0.01">
+                                        <input class="neo-range-input" type="number" min="1" max="1.5" step="0.01" data-for="rep_pen_textgenerationwebui" id="rep_pen_counter_textgenerationwebui">
+                                    </div>
+                                    <div data-forAphro=False data-newbie-hidden class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="rep.pen range">
+                                        <small>Repetition Penalty Range</small>
+                                        <input class="neo-range-slider" type="range" id="rep_pen_range_textgenerationwebui" name="volume" min="0" max="4096" step="1">
+                                        <input class="neo-range-input" type="number" min="0" max="4096" step="1" data-for="rep_pen_range_textgenerationwebui" id="rep_pen_range_counter_textgenerationwebui">
+                                    </div>
+                                    <div data-forAphro=False data-newbie-hidden class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="Encoder Rep. Pen.">
+                                        <small>Encoder Penalty</small>
+                                        <input class="neo-range-slider" type="range" id="encoder_rep_pen_textgenerationwebui" name="volume" min="0.8" max="1.5" step="0.01" />
+                                        <input class="neo-range-input" type="number" min="0.8" max="1.5" step="0.01" data-for="encoder_rep_pen_textgenerationwebui" id="encoder_rep_pen_counter_textgenerationwebui">
+                                    </div>
+                                    <div data-newbie-hidden class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="Frequency Penalty">
+                                        <small>Frequency Penalty</small>
+                                        <input class="neo-range-slider" type="range" id="freq_pen_textgenerationwebui" name="volume" min="-2" max="2" step="0.01" />
+                                        <input class="neo-range-input" type="number" data-for="freq_pen_textgenerationwebui" min="-2" max="2" step="0.01" id="freq_pen_counter_textgenerationwebui">
+                                    </div>
+                                    <div data-newbie-hidden class="alignitemscenter flex-container marginBot5  flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="Presence Penalty">
+                                        <small>Presence Penalty</small>
+                                        <input class="neo-range-slider" type="range" id="presence_pen_textgenerationwebui" name="volume" min="-2" max="2" step="0.01" />
+                                        <input class="neo-range-input" type="number" min="-2" max="2" step="0.01" data-for="presence_pen_textgenerationwebui" id="presence_pen_counter_textgenerationwebui">
+                                    </div>
+                                    <div data-forAphro=False data-newbie-hidden class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="No Repeat Ngram Size">
+                                        <small>No Repeat Ngram Size</small>
+                                        <input class="neo-range-slider" type="range" id="no_repeat_ngram_size_textgenerationwebui" name="volume" min="0" max="20" step="1">
+                                        <input class="neo-range-input" type="number" min="0" max="20" step="1" data-for="no_repeat_ngram_size_textgenerationwebui" id="no_repeat_ngram_size_counter_textgenerationwebui">
+                                    </div>
+                                    <div data-newbie-hidden class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="Min Length">
+                                        <small>Min Length</small>
+                                        <input class="neo-range-slider" type="range" id="min_length_textgenerationwebui" name="volume" min="0" max="2000" step="1" />
+                                        <input class="neo-range-input" type="number" min="0" max="2000" step="1" data-for="min_length_textgenerationwebui" id="min_length_counter_textgenerationwebui">
+                                    </div>
                                     <!--
                                     <div data-forAphro=True class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="Responses">
                                         <small>Responses</small>
@@ -1352,9 +1331,9 @@
                                         <input class="neo-range-slider" type="range" id="prompt_log_probs_aphrodite_textgenerationwebui" name="volume" min="0" max="5" step="1">
                                         <input class="neo-range-input" type="number" min="0" max="5" step="1" data-for="prompt_log_probs_aphrodite" id="prompt_log_probs_aphrodite_counter_textgenerationwebui">
                                     </div>
--->
+                                -->
                                     <div name="checkboxes" class="flex-container flexFlowColumn flexBasis48p flexGrow flexShrink ">
-                                        <div class="justifyCenter">
+                                        <div class="justifyCenter flex-container marginTop5">
                                             <label data-forAphro=False class="checkbox_label" for="do_sample_textgenerationwebui">
                                                 <input type="checkbox" id="do_sample_textgenerationwebui" />
                                                 <small data-i18n="Do Sample">Do Sample</small>
@@ -1515,7 +1494,7 @@
                                         <input type="number" id="seed_textgenerationwebui" class="text_pole wide100p" maxlength="100" />
                                     </div>
                                 </div>
-                            </div>
+                            </div><!-- end of textgen settings-->
 
                             <div id="openai_settings">
                                 <div class="">
