@@ -268,11 +268,11 @@ async function RA_autoloadchat() {
         let active_character_id = Object.keys(characters).find(key => characters[key].avatar === active_character);
 
         if (active_character_id !== null) {
-            selectCharacterById(String(active_character_id));
+            await selectCharacterById(String(active_character_id));
         }
 
         if (active_group != null) {
-            openGroupById(String(active_group));
+            await openGroupById(String(active_group));
         }
 
         // if the character list hadn't been loaded yet, try again.

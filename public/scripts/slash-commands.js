@@ -639,21 +639,34 @@ async function sendCommentMessage(_, text) {
     await saveChatConditional();
 }
 
+/**
+ * Displays a help message from the slash command
+ * @param {any} _ Unused
+ * @param {string} type Type of help to display
+ */
 function helpCommandCallback(_, type) {
-    switch (type?.trim()) {
+    switch (type?.trim()?.toLowerCase()) {
         case 'slash':
+        case 'commands':
+        case 'slashes':
+        case 'slash commands':
         case '1':
             sendSystemMessage(system_message_types.SLASH_COMMANDS);
             break;
         case 'format':
+        case 'formatting':
+        case 'formats':
+        case 'chat formatting':
         case '2':
             sendSystemMessage(system_message_types.FORMATTING);
             break;
         case 'hotkeys':
+        case 'hotkey':
         case '3':
             sendSystemMessage(system_message_types.HOTKEYS);
             break;
         case 'macros':
+        case 'macro':
         case '4':
             sendSystemMessage(system_message_types.MACROS);
             break;
