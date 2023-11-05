@@ -209,6 +209,7 @@ class BulkEditOverlay {
     static characterClass = 'character_select';
     static selectModeClass = 'group_overlay_mode_select';
     static selectedClass = 'character_selected';
+    static legacySelectedClass = 'bulk_select_checkbox';
 
     #state = CharacterGroupOverlayState.browse;
     #longPress = false;
@@ -364,9 +365,11 @@ class BulkEditOverlay {
 
         if (alreadySelected) {
             character.classList.remove(BulkEditOverlay.selectedClass);
+            character.querySelector('.' + BulkEditOverlay.legacySelectedClass).checked = false;
             this.dismissCharacter(characterId);
         } else {
-            character.classList.add(BulkEditOverlay.selectedClass);
+            character.classList.add(BulkEditOverlay.selectedClass)
+            character.querySelector('.' + BulkEditOverlay.legacySelectedClass).checked = true;
             this.selectCharacter(characterId);
         }
     }
