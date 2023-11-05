@@ -418,8 +418,13 @@ class BulkEditOverlay {
 
     dismissCharacter = characterId => this.#selectedCharacters = this.selectedCharacters.filter(item => String(characterId) !== item);
 
+    /**
+     * Clears internal character storage and
+     * removes visual highlight.
+     */
     clearSelectedCharacters = () => {
-        this.selectedCharacters.forEach(characterId => document.querySelector('.character_select[chid="' + characterId + '"]')?.classList.remove(BulkEditOverlay.selectedClass))
+        document.querySelectorAll('#' + BulkEditOverlay.containerId + ' .' + BulkEditOverlay.selectedClass)
+            .forEach( element => element.classList.remove(BulkEditOverlay.selectedClass));
         this.selectedCharacters.length = 0;
     }
 }
