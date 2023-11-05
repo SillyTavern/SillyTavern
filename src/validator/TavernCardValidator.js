@@ -88,7 +88,7 @@ class TavernCardValidator {
         const data = this.card.data;
 
         if (!data) {
-            this.#lastValidationError = 'data';
+            this.#lastValidationError = 'No tavern card data found';
             return false;
         }
 

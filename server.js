@@ -1189,7 +1189,8 @@ app.post("/v2/editcharacterattribute", jsonParser, async function (request, resp
 
         const validator = new TavernCardValidator(character);
 
-        if (true === validator.validateV2()) {
+        //Accept either V1 or V2.
+        if (validator.validate()) {
             await charaWrite(
                 avatarPath,
                 JSON.stringify(character),
@@ -1198,7 +1199,8 @@ app.post("/v2/editcharacterattribute", jsonParser, async function (request, resp
                 'Character saved'
             );
         } else {
-            response.status(400).send({message: `Validation failed for card ${character.name}`, field: validator.lastValidationError});
+            console.log(validator.lastValidationError)
+            response.status(400).send({message: `Validation failed for ${character.name}`, error: validator.lastValidationError});
         }
     } catch (exception) {
         response.status(500).send({message: 'Unexpected error while saving character.', error: exception.toString()});

@@ -81,7 +81,7 @@ class CharacterContextMenu {
             body: JSON.stringify(data),
         }).then((response) => {
             if (response.ok) toggleFavoriteHighlight(characterId)
-            else toastr.error('Character not saved. Error: ' + response.json()?.message)
+            else response.json().then(json => toastr.error('Character not saved. Error: ' + json.message + '. Field: ' + json.error));
         });
     }
 
