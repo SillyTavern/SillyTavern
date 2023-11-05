@@ -444,8 +444,8 @@ async function switchZenSliders() {
         $("#textgenerationwebui_api-settings input[type='number']").hide();
         $("#pro-settings-block input[type='number']").hide();
         $("#seed_textgenerationwebui").show();
-        $(`#range_block_textgenerationwebui input[type='range'], 
-        #textgenerationwebui_api-settings input[type='range'], 
+        $(`#range_block_textgenerationwebui input[type='range'],
+        #textgenerationwebui_api-settings input[type='range'],
         #pro-settings-block input[type='range']`).each(
             function () {
                 CreateZenSliders($(this))
@@ -1087,7 +1087,7 @@ function loadPowerUserSettings(settings, data) {
     power_user.timestamps_enabled = timestamps === null ? true : timestamps == "true";
     power_user.mesIDDisplay_enabled = mesIDDisplay === null ? true : mesIDDisplay == "true";
     power_user.expand_message_actions = expandMessageActions === null ? true : expandMessageActions == "true";
-    power_user.enableZenSliders = enableZenSliders === null ? true : enableZenSliders == "true";
+    power_user.enableZenSliders = enableZenSliders === null ? false : enableZenSliders == "true";
     power_user.avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? avatar_styles.ROUND);
     //power_user.chat_display = Number(localStorage.getItem(storage_keys.chat_display) ?? chat_styles.DEFAULT);
     power_user.chat_width = Number(localStorage.getItem(storage_keys.chat_width) ?? 50);
@@ -1827,7 +1827,7 @@ function setAvgBG() {
             .attr('src')
             .replace(/^url\(['"]?/, '')
             .replace(/['"]?\)$/, '');
- 
+
         const userAvatar = new Image()
         userAvatar.src = $("#user_avatar_block .avatar.selected img")
             .attr('src')
@@ -1858,7 +1858,7 @@ function setAvgBG() {
             //console.log(rgb);
             $("#bot-mes-blur-tint-color-picker").attr('color', 'rgb(' + rgb.r + ',' + rgb.g + ',' + rgb.b + ')');
         }
- 
+
         userAvatar.onload = function () {
             var rgb = getAverageRGB(userAvatar);
             //console.log(`average color of the user avatar is:`);
@@ -1964,16 +1964,16 @@ function setAvgBG() {
     //this version keeps BG and main text in same hue
     /* function getReadableTextColor(rgb) {
          const [r, g, b] = rgb;
- 
+
          // Convert RGB to HSL
          const rgbToHsl = (r, g, b) => {
              const max = Math.max(r, g, b);
              const min = Math.min(r, g, b);
              const d = max - min;
              const l = (max + min) / 2;
- 
+
              if (d === 0) return [0, 0, l];
- 
+
              const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
              const h = (() => {
                  switch (max) {
@@ -1985,16 +1985,16 @@ function setAvgBG() {
                          return (r - g) / d + 4;
                  }
              })() / 6;
- 
+
              return [h, s, l];
          };
          const [h, s, l] = rgbToHsl(r / 255, g / 255, b / 255);
- 
+
          // Calculate appropriate text color based on background color
          const targetLuminance = l > 0.5 ? 0.2 : 0.8;
          const targetSaturation = s > 0.5 ? s - 0.2 : s + 0.2;
          const [rNew, gNew, bNew] = hslToRgb(h, targetSaturation, targetLuminance);
- 
+
          // Return the text color in RGBA format
          return `rgba(${rNew.toFixed(0)}, ${gNew.toFixed(0)}, ${bNew.toFixed(0)}, 1)`;
      }*/
