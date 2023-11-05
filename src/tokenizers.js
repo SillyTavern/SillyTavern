@@ -308,7 +308,7 @@ function registerEndpoints(app, jsonParser) {
             if (model == 'llama') {
                 const jsonBody = req.body.flatMap(x => Object.values(x)).join('\n\n');
                 const llamaResult = await countSentencepieceTokens(spp_llama, jsonBody);
-                console.log('jsonBody', jsonBody, 'llamaResult', llamaResult);
+                // console.log('jsonBody', jsonBody, 'llamaResult', llamaResult);
                 num_tokens = llamaResult.count;
                 return res.send({ "token_count": num_tokens });
             }

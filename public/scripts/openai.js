@@ -1226,7 +1226,7 @@ function calculateOpenRouterCost() {
 }
 
 function saveModelList(data) {
-    model_list = data.map((model) => ({ id: model.id, context_length: model.context_length, pricing: model.pricing }));
+    model_list = data.map((model) => ({ id: model.id, context_length: model.context_length, pricing: model.pricing, architecture: model.architecture }));
     model_list.sort((a, b) => a?.id && b?.id && a.id.localeCompare(b.id));
 
     if (oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER) {
