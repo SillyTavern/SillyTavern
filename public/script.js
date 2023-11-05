@@ -5394,7 +5394,7 @@ function openMessageDelete() {
         $("#send_form").css("display", "none");
         $(".del_checkbox").each(function () {
             if ($(this).parent().attr("mesid") != 0) {
-                $(this).css("display", "block");
+                $(this).css("display", "grid");
                 $(this).parent().children(".for_checkbox").css("display", "none");
             }
         });

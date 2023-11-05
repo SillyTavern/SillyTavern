@@ -2129,15 +2129,6 @@ grammarly-extension {
     gap: 5px;
 }
 
-/* STLYES FOR THE CHAT MESSAGE DELETION CHECKBOXES */
-/* ------------------------------------------------*/
-
-.del_checkbox {
-    display: none;
-    opacity: 0.7;
-    margin-top: 12px;
-    margin-right: 12px;
-}
 
 /* Override toastr default styles */
 body #toast-container {
@@ -2156,7 +2147,7 @@ body #toast-container>div {
     display: block;
 }
 
-input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin) {
+input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button_panel_pin):not(#WI_panel_pin) {
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
@@ -2166,36 +2157,46 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin) {
     height: var(--mainFontSize);
     overflow: hidden;
     border-radius: 3px;
-    background-color: white;
+    border: 1px solid var(--SmartThemeBorderColor);
+    background-color: var(--SmartThemeBlurTintColor);
     box-shadow: inset 0 0 3px 0 var(--black70a);
     cursor: pointer;
+    transform: translateY(-0.075em);
     flex-shrink: 0;
+    place-content: center;
 }
 
-input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button_panel_pin)::after {
-    content: '';
-    color: var(--white100);
-    position: absolute;
-    top: 1px;
-    right: 1px;
-    bottom: 1px;
-    left: 1px;
-    background-color: var(--transparent);
-    background-size: contain;
-    background-position: center center;
-    background-repeat: no-repeat;
-    border-radius: 2px;
-    -webkit-transform: scale(0);
+input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button_panel_pin):not(#WI_panel_pin):not(.del_checkbox) {
+    display: grid;
+}
+
+input[type="checkbox"]:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button_panel_pin):not(#WI_panel_pin)::before {
+    content: "";
+    width: 0.65em;
+    height: 0.65em;
     transform: scale(0);
-    -webkit-transition: 0.25s ease-in-out;
-    transition: 0.25s ease-in-out;
-    background-image: url("data:image/svg+xml;base64,PCEtLSBHZW5lcmF0ZWQgYnkgSWNvTW9vbi5pbyAtLT4KPHN2ZyB2ZXJzaW9uPSIxLjEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjQ0OCIgaGVpZ2h0PSI0NDgiIHZpZXdCb3g9IjAgMCA0NDggNDQ4Ij4KPHRpdGxlPjwvdGl0bGU+CjxnIGlkPSJpY29tb29uLWlnbm9yZSI+CjwvZz4KPHBhdGggZD0iTTQxNy43NSAxNDEuNWMwIDYuMjUtMi41IDEyLjUtNyAxN2wtMjE1IDIxNWMtNC41IDQuNS0xMC43NSA3LTE3IDdzLTEyLjUtMi41LTE3LTdsLTEyNC41LTEyNC41Yy00LjUtNC41LTctMTAuNzUtNy0xN3MyLjUtMTIuNSA3LTE3bDM0LTM0YzQuNS00LjUgMTAuNzUtNyAxNy03czEyLjUgMi41IDE3IDdsNzMuNSA3My43NSAxNjQtMTY0LjI1YzQuNS00LjUgMTAuNzUtNyAxNy03czEyLjUgMi41IDE3IDdsMzQgMzRjNC41IDQuNSA3IDEwLjc1IDcgMTd6Ij48L3BhdGg+Cjwvc3ZnPgo=");
+    transition: 120ms transform ease-in-out;
+    box-shadow: inset 1em 1em var(--SmartThemeBodyColor);
+    transform-origin: bottom left;
+    clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
 }
 
-input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button_panel_pin):checked::after {
-    -webkit-transform: scale(1);
+input[type="checkbox"]:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button_panel_pin):not(#WI_panel_pin):checked::before {
     transform: scale(1);
 }
+
+input[type="checkbox"]:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button_panel_pin):not(#WI_panel_pin):disabled {
+    color: grey;
+    cursor: not-allowed;
+}
+
+.del_checkbox {
+    display: none;
+    opacity: 0.7;
+    margin-top: 12px;
+    margin-right: 12px;
+}
+
 
 #user_avatar_block {
     display: flex;
