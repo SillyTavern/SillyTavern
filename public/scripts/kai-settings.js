@@ -29,6 +29,11 @@ export const kai_settings = {
     use_default_badwordsids: false,
     grammar: "",
     seed: -1,
+    min_temp: 0.0,
+    max_temp: 2.0,
+    k: 25.0,
+    scp: 0.75,
+    exponent_val: 2.0,
 };
 
 export const kai_flags = {
@@ -69,13 +74,11 @@ export function loadKoboldSettings(preset) {
         if (!slider) {
             continue;
         }
-
         const formattedValue = slider.format(value);
         slider.setValue(value);
         $(slider.sliderId).val(value);
         $(slider.counterId).val(formattedValue);
     }
-
     if (preset.hasOwnProperty('streaming_kobold')) {
         kai_settings.streaming_kobold = preset.streaming_kobold;
         $('#streaming_kobold').prop('checked', kai_settings.streaming_kobold);
@@ -134,6 +137,11 @@ export function getKoboldGenerationData(finalPrompt, settings, maxLength, maxCon
         use_default_badwordsids: kai_flags.can_use_default_badwordsids ? kai_settings.use_default_badwordsids : undefined,
         grammar: kai_flags.can_use_grammar ? substituteParams(kai_settings.grammar) : undefined,
         sampler_seed: kai_settings.seed >= 0 ? kai_settings.seed : undefined,
+        min_temp: kai_settings.min_temp,
+        max_temp: kai_settings.max_temp,
+        k: kai_settings.k,
+        scp: kai_settings.scp,
+        exponent_val: kai_settings.exponent_val,
     };
     return generate_data;
 }
@@ -292,6 +300,41 @@ const sliders = [
         counterId: "#seed_counter_kobold",
         format: (val) => val,
         setValue: (val) => { kai_settings.seed = Number(val); },
+    },
+    {
+        name: "min_temp",
+        sliderId: "#min_temp",
+        counterId: "#min_temp_counter",
+        format: (val) => val,
+        setValue: (val) => { kai_settings.min_temp = Number(val); },
+    },
+    {
+        name: "max_temp",
+        sliderId: "#max_temp",
+        counterId: "#max_temp_counter",
+        format: (val) => val,
+        setValue: (val) => { kai_settings.max_temp = Number(val);},
+    },
+    {
+        name: "k",
+        sliderId: "#k",
+        counterId: "#k_counter",
+        format: (val) => val,
+        setValue: (val) => { kai_settings.k = Number(val);},
+    },
+    {
+        name: "scp",
+        sliderId: "#scp",
+        counterId: "#scp_counter",
+        format: (val) => val,
+        setValue: (val) => { kai_settings.scp = Number(val);},
+    },
+    {
+        name: "exponent_val",
+        sliderId: "#exponent_val",
+        counterId: "#exponent_val_counter",
+        format: (val) => val,
+        setValue: (val) => { kai_settings.exponent_val = Number(val);},
     },
 ];
 

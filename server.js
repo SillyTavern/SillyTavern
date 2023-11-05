@@ -403,6 +403,11 @@ app.post("/generate", jsonParser, async function (request, response_generate) {
             mirostat_tau: request.body.mirostat_tau,
             grammar: request.body.grammar,
             sampler_seed: request.body.sampler_seed,
+            min_temp: request.body.min_temp,
+            max_temp: request.body.max_temp,
+            k: request.body.k,
+            scp: request.body.scp,
+            exponent_val: request.body.exponent_val,
         };
         if (!!request.body.stop_sequence) {
             this_settings['stop_sequence'] = request.body.stop_sequence;

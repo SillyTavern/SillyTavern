@@ -903,6 +903,16 @@ export interface ModelGenerationInputKobold {
     typical?: number;
     /** Array of integers representing the sampler order to be used */
     sample_order?: number[];
+    /** Min Temp DynaTemp sampling value. */
+    min_temp?: number;
+    /** Max Temp DynaTemp sampling value. */
+    max_temp?: number;
+    /** K DynaTemp sampling value. */
+    k?: number;
+    /** Sigmoid Center Point DynaTemp sampling value. */
+    scp?: number;
+    /** Exponent Value DynaTemp sampling value. */
+    exponent_val?: number;
 }
 export interface ModelPayloadKobold extends ModelGenerationInputKobold {
     prompt?: string;
