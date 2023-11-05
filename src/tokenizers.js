@@ -87,6 +87,10 @@ function getTokenizerModel(requestModel) {
         return 'claude';
     }
 
+    if (requestModel.includes('llama')) {
+        return 'llama';
+    }
+
     if (requestModel.includes('gpt-4-32k')) {
         return 'gpt-4-32k';
     }
@@ -288,49 +292,64 @@ function registerEndpoints(app, jsonParser) {
     app.post("/api/decode/nerdstash_v2", jsonParser, createSentencepieceDecodingHandler(() => spp_nerd_v2));
     app.post("/api/decode/gpt2", jsonParser, createTiktokenDecodingHandler('gpt2'));
 
-    app.post("/api/tokenize/openai", jsonParser, function (req, res) {
-        if (!req.body) return res.sendStatus(400);
+    app.post("/api/tokenize/openai", jsonParser, async function (req, res) {
+        try {
+            if (!req.body) return res.sendStatus(400);
 
-        let num_tokens = 0;
-        const queryModel = String(req.query.model || '');
-        const model = getTokenizerModel(queryModel);
+            let num_tokens = 0;
+            const queryModel = String(req.query.model || '');
+            const model = getTokenizerModel(queryModel);
 
-        if (model == 'claude') {
-            num_tokens = countClaudeTokens(claude_tokenizer, req.body);
-            return res.send({ "token_count": num_tokens });
-        }
-
-        const tokensPerName = queryModel.includes('gpt-3.5-turbo-0301') ? -1 : 1;
-        const tokensPerMessage = queryModel.includes('gpt-3.5-turbo-0301') ? 4 : 3;
-        const tokensPadding = 3;
-
-        const tokenizer = getTiktokenTokenizer(model);
-
-        for (const msg of req.body) {
-            try {
-                num_tokens += tokensPerMessage;
-                for (const [key, value] of Object.entries(msg)) {
-                    num_tokens += tokenizer.encode(value).length;
-                    if (key == "name") {
-                        num_tokens += tokensPerName;
-                    }
-                }
-            } catch {
-                console.warn("Error tokenizing message:", msg);
+            if (model == 'claude') {
+                num_tokens = countClaudeTokens(claude_tokenizer, req.body);
+                return res.send({ "token_count": num_tokens });
             }
+
+            if (model == 'llama') {
+                const jsonBody = req.body.flatMap(x => Object.values(x)).join('\n\n');
+                const llamaResult = await countSentencepieceTokens(spp_llama, jsonBody);
+                console.log('jsonBody', jsonBody, 'llamaResult', llamaResult);
+                num_tokens = llamaResult.count;
+                return res.send({ "token_count": num_tokens });
+            }
+
+            const tokensPerName = queryModel.includes('gpt-3.5-turbo-0301') ? -1 : 1;
+            const tokensPerMessage = queryModel.includes('gpt-3.5-turbo-0301') ? 4 : 3;
+            const tokensPadding = 3;
+
+            const tokenizer = getTiktokenTokenizer(model);
+
+            for (const msg of req.body) {
+                try {
+                    num_tokens += tokensPerMessage;
+                    for (const [key, value] of Object.entries(msg)) {
+                        num_tokens += tokenizer.encode(value).length;
+                        if (key == "name") {
+                            num_tokens += tokensPerName;
+                        }
+                    }
+                } catch {
+                    console.warn("Error tokenizing message:", msg);
+                }
+            }
+            num_tokens += tokensPadding;
+
+            // NB: Since 2023-10-14, the GPT-3.5 Turbo 0301 model shoves in 7-9 extra tokens to every message.
+            // More details: https://community.openai.com/t/gpt-3-5-turbo-0301-showing-different-behavior-suddenly/431326/14
+            if (queryModel.includes('gpt-3.5-turbo-0301')) {
+                num_tokens += 9;
+            }
+
+            // not needed for cached tokenizers
+            //tokenizer.free();
+
+            res.send({ "token_count": num_tokens });
+        } catch (error) {
+            console.error('An error counting tokens, using fallback estimation method', error);
+            const jsonBody = JSON.stringify(req.body);
+            const num_tokens = Math.ceil(jsonBody.length / CHARS_PER_TOKEN);
+            res.send({ "token_count": num_tokens });
         }
-        num_tokens += tokensPadding;
-
-        // NB: Since 2023-10-14, the GPT-3.5 Turbo 0301 model shoves in 7-9 extra tokens to every message.
-        // More details: https://community.openai.com/t/gpt-3-5-turbo-0301-showing-different-behavior-suddenly/431326/14
-        if (queryModel.includes('gpt-3.5-turbo-0301')) {
-            num_tokens += 9;
-        }
-
-        // not needed for cached tokenizers
-        //tokenizer.free();
-
-        res.send({ "token_count": num_tokens });
     });
 }
 

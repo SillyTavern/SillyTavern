@@ -1,6 +1,6 @@
 import { characters, main_api, nai_settings, online_status, this_chid } from "../script.js";
 import { power_user, registerDebugFunction } from "./power-user.js";
-import { chat_completion_sources, oai_settings } from "./openai.js";
+import { chat_completion_sources, model_list, oai_settings } from "./openai.js";
 import { groups, selected_group } from "./group-chats.js";
 import { getStringHash } from "./utils.js";
 import { kai_flags } from "./kai-settings.js";
@@ -187,6 +187,7 @@ export function getTokenizerModel() {
     const gpt4Tokenizer = 'gpt-4';
     const gpt2Tokenizer = 'gpt2';
     const claudeTokenizer = 'claude';
+    const llamaTokenizer = 'llama';
 
     // Assuming no one would use it for different models.. right?
     if (oai_settings.chat_completion_source == chat_completion_sources.SCALE) {
@@ -214,7 +215,12 @@ export function getTokenizerModel() {
 
     // And for OpenRouter (if not a site model, then it's impossible to determine the tokenizer)
     if (oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER && oai_settings.openrouter_model) {
-        if (oai_settings.openrouter_model.includes('gpt-4')) {
+        const model = model_list.find(x => x.id === oai_settings.openrouter_model);
+
+        if (model?.architecture?.tokenizer === 'Llama2') {
+            return llamaTokenizer;
+        }
+        else if (oai_settings.openrouter_model.includes('gpt-4')) {
             return gpt4Tokenizer;
         }
         else if (oai_settings.openrouter_model.includes('gpt-3.5-turbo-0301')) {

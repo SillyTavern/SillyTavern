@@ -153,7 +153,7 @@ const textCompletionModels = [
 ];
 
 let biasCache = undefined;
-let model_list = [];
+export let model_list = [];
 
 export const chat_completion_sources = {
     OPENAI: 'openai',
