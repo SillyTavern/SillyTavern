@@ -24,6 +24,7 @@
     --grey10: rgb(25, 25, 25);
     --grey30: rgb(75, 75, 75);
     --grey50: rgb(125, 125, 125);
+    --grey5020a: rgba(125, 125, 125, 0.2);
     --grey70: rgb(175, 175, 175);
     --grey75: rgb(190, 190, 190);
 
@@ -2151,7 +2152,7 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
-    outline: none;
+    outline: 1px solid var(--grey5020a);
     position: relative;
     width: var(--mainFontSize);
     height: var(--mainFontSize);
@@ -2159,7 +2160,7 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
     border-radius: 3px;
     border: 1px solid var(--SmartThemeBorderColor);
     background-color: var(--SmartThemeBlurTintColor);
-    box-shadow: inset 0 0 3px 0 var(--black70a);
+    box-shadow: inset 0 0 2px 0 var(--SmartThemeShadowColor);
     cursor: pointer;
     transform: translateY(-0.075em);
     flex-shrink: 0;
@@ -2321,7 +2322,7 @@ input[type="checkbox"]:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
     border-radius: 7px 7px 0 0 !important;
     background-size: 70% 100% !important;
     background-repeat: no-repeat !important;
-    box-shadow: inset 0 0 2px black !important;
+    box-shadow: inset 0 0 2px var(--black50a) !important;
     cursor: ew-resize !important;
 }
 
@@ -2792,18 +2793,14 @@ body .ui-front {
     z-index: 10000;
 }
 
-body .ui-slider {
-    margin-top: 7px;
-}
 
 body .ui-slider-handle {
     background-color: var(--SmartThemeBlurTintColor);
     border: 1px solid var(--SmartThemeBorderColor) !important;
     border-radius: 5px;
-    box-shadow: 0 0 5px black;
+    outline: 1px solid var(--grey5020a);
+    box-shadow: 0 0 3px var(--black50a);
     text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
-    backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)*2));
-    color: var(--SmartThemeBodyColor);
     width: 50px !important;
     padding: 0 5px;
     text-align: center;
@@ -2815,7 +2812,6 @@ body .ui-slider-handle {
 .ui-slider-handle.ui-state-default {
     color: var(--SmartThemeBodyColor);
     background: var(--SmartThemeBlurTintColor);
-    filter: brightness(0.5)
 }
 
 .ui-slider-handle:focus {
@@ -2825,13 +2821,13 @@ body .ui-slider-handle {
 .ui-slider-handle.ui-state-hover {
     color: var(--SmartThemeBodyColor);
     background: var(--SmartThemeBlurTintColor);
-    filter: brightness(0.7)
+    filter: brightness(1.2)
 }
 
 .ui-slider-handle.ui-state-active {
     color: var(--SmartThemeBodyColor);
     background: var(--SmartThemeBlurTintColor);
-    filter: brightness(1);
+    filter: brightness(1.5);
     border-color: var(--SmartThemeBorderColor) !important;
 }
 
@@ -2839,10 +2835,16 @@ body .ui-widget-content {
     background-color: var(--SmartThemeBlurTintColor);
     border: 1px solid var(--SmartThemeBorderColor) !important;
     border-radius: 10px;
-    box-shadow: 0 0 5px black;
+    box-shadow: 0 0 3px var(--black50a);
     text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
     backdrop-filter: blur(calc(var(--SmartThemeBlurStrength)*2));
     color: var(--SmartThemeBodyColor);
+}
+
+.ui-slider {
+    margin: 5px 0;
+    outline: 1px solid var(--grey5020a);
+    border-radius: 5px !important;
 }
 
 body .ui-widget-content .ui-state-active:not(.ui-slider-handle) {
