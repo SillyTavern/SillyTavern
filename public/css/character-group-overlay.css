@@ -1,6 +1,12 @@
 
 #rm_print_characters_block.group_overlay_mode_select .character_select {
-    background-color: rgba(170, 170, 170, 0.2);
+    transition: background-color 0.4s ease;
+    margin-bottom: 0.5em;
+    background-color: rgba(170, 170, 170, 0.15);
+}
+
+#rm_print_characters_block.group_overlay_mode_select .character_select input.bulk_select_checkbox {
+    display: none !important;
 }
 
 #rm_print_characters_block.group_overlay_mode_select .character_select.character_selected {
