@@ -3527,6 +3527,7 @@ a {
     aspect-ratio: 2 / 3;
     padding: 0;
     border: 0;
+    background-color: transparent;
 }
 
 .zoomed_avatar img {

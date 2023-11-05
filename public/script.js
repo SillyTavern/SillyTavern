@@ -1274,6 +1274,11 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
         isSystem = false;
     }
 
+    // Let hidden messages have markdown
+    if (isSystem && ch_name !== systemUserName) {
+        isSystem = false;
+    }
+
     // Prompt bias replacement should be applied on the raw message
     if (!power_user.show_user_prompt_bias && ch_name && !isUser && !isSystem) {
         mes = mes.replaceAll(substituteParams(power_user.user_prompt_bias), "");
@@ -4776,7 +4781,7 @@ function getFirstMessage() {
         is_user: false,
         is_system: false,
         send_date: getMessageTimeStamp(),
-        mes: getRegexedString(firstMes, regex_placement.AI_OUTPUT),
+        mes: substituteParams(getRegexedString(firstMes, regex_placement.AI_OUTPUT)),
         extra: {},
     };
 
