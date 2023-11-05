@@ -496,7 +496,8 @@ async function switchZenSliders() {
             numSteps = 20
             decimals = 1
         }
-        if (sliderID == 'tfs_textgenerationwebui') {
+        if (sliderID == 'tfs_textgenerationwebui' ||
+            sliderID == 'min_p_textgenerationwebui') {
             numSteps = 20
             decimals = 2
         }

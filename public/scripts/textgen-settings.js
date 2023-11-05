@@ -36,6 +36,7 @@ const textgenerationwebui_settings = {
     epsilon_cutoff: 0,
     eta_cutoff: 0,
     typical_p: 1,
+    min_p: 0,
     rep_pen: 1.2,
     rep_pen_range: 0,
     no_repeat_ngram_size: 0,
@@ -91,6 +92,7 @@ const setting_names = [
     "epsilon_cutoff",
     "eta_cutoff",
     "typical_p",
+    "min_p",
     "penalty_alpha",
     "num_beams",
     "length_penalty",
@@ -122,7 +124,7 @@ const setting_names = [
     //'prompt_log_probs_aphrodite'
 ];
 
-function selectPreset(name) {
+async function selectPreset(name) {
     const preset = textgenerationwebui_presets[textgenerationwebui_preset_names.indexOf(name)];
 
     if (!preset) {
@@ -351,6 +353,14 @@ function setSettingByName(i, value, trigger) {
         const val = parseFloat(value);
         $(`#${i}_textgenerationwebui`).val(val);
         $(`#${i}_counter_textgenerationwebui`).val(val);
+        if (power_user.enableZenSliders) {
+            let zenSlider = $(`#${i}_textgenerationwebui_zenslider`).slider()
+            zenSlider.slider('option', 'value', val)
+            zenSlider.slider('option', 'slide')
+                .call(zenSlider, null, {
+                    handle: $('.ui-slider-handle', zenSlider), value: val
+                });
+        }
     }
 
     if (trigger) {
@@ -448,6 +458,7 @@ export function getTextGenGenerationData(finalPrompt, this_amount_gen, isImperso
         'temperature': textgenerationwebui_settings.temp,
         'top_p': textgenerationwebui_settings.top_p,
         'typical_p': textgenerationwebui_settings.typical_p,
+        'min_p': textgenerationwebui_settings.min_p,
         'repetition_penalty': textgenerationwebui_settings.rep_pen,
         'repetition_penalty_range': textgenerationwebui_settings.rep_pen_range,
         'encoder_repetition_penalty': textgenerationwebui_settings.encoder_rep_pen,
