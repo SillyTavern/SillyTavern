@@ -11,10 +11,7 @@ const TOKENIZER_WARNING_KEY = 'tokenizationWarningShown';
 export const tokenizers = {
     NONE: 0,
     GPT2: 1,
-    /**
-     * @deprecated Use GPT2 instead.
-     */
-    LEGACY: 2,
+    OPENAI: 2,
     LLAMA: 3,
     NERD: 4,
     NERD2: 5,
@@ -65,7 +62,7 @@ async function resetTokenCache() {
     }
 }
 
-function getTokenizerBestMatch() {
+export function getTokenizerBestMatch() {
     if (main_api === 'novel') {
         if (nai_settings.model_novel.includes('clio')) {
             return tokenizers.NERD;
@@ -363,9 +360,14 @@ function countTokensRemote(endpoint, str, padding) {
  * Calls the underlying tokenizer model to encode a string to tokens.
  * @param {string} endpoint API endpoint.
  * @param {string} str String to tokenize.
+ * @param {string} model Tokenizer model.
  * @returns {number[]} Array of token ids.
  */
-function getTextTokensRemote(endpoint, str) {
+function getTextTokensRemote(endpoint, str, model = '') {
+    if (model) {
+        endpoint += `?model=${model}`;
+    }
+
     let ids = [];
     jQuery.ajax({
         async: false,
@@ -418,6 +420,9 @@ export function getTextTokens(tokenizerType, str) {
             return getTextTokensRemote('/api/tokenize/nerdstash', str);
         case tokenizers.NERD2:
             return getTextTokensRemote('/api/tokenize/nerdstash_v2', str);
+        case tokenizers.OPENAI:
+            const model = getTokenizerModel();
+            return getTextTokensRemote('/api/tokenize/openai-encode', str, model);
         default:
             console.warn("Calling getTextTokens with unsupported tokenizer type", tokenizerType);
             return [];

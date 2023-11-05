@@ -1,12 +1,21 @@
 import { callPopup, main_api } from "../../../script.js";
 import { getContext } from "../../extensions.js";
 import { registerSlashCommand } from "../../slash-commands.js";
-import { getTokenCount, getTokenizerModel } from "../../tokenizers.js";
+import { getTextTokens, getTokenCount, getTokenizerBestMatch, getTokenizerModel, tokenizers } from "../../tokenizers.js";
 
 async function doTokenCounter() {
+    const tokenizerOption = $("#tokenizer").find(':selected');
+    let tokenizerId = Number(tokenizerOption.val());
+    let tokenizerName = tokenizerOption.text();
+
+    if (main_api !== 'openai' && tokenizerId === tokenizers.BEST_MATCH) {
+        tokenizerId = getTokenizerBestMatch();
+        tokenizerName = $(`#tokenizer option[value="${tokenizerId}"]`).text();
+    }
+
     const selectedTokenizer = main_api == 'openai'
-        ? `tiktoken (${getTokenizerModel()})`
-        : $("#tokenizer").find(':selected').text();
+        ? getTokenizerModel()
+        : tokenizerName;
     const html = `
     <div class="wide100p">
         <h3>Token Counter</h3>
@@ -15,15 +24,26 @@ async function doTokenCounter() {
             <p>Selected tokenizer: ${selectedTokenizer}</p>
             <textarea id="token_counter_textarea" class="wide100p textarea_compact margin-bot-10px" rows="20"></textarea>
             <div>Tokens: <span id="token_counter_result">0</span></div>
+            <br>
+            <div>Token IDs (if applicable):</div>
+            <textarea id="token_counter_ids" disabled rows="10"></textarea>
         </div>
     </div>`;
 
     const dialog = $(html);
     dialog.find('#token_counter_textarea').on('input', () => {
-        const text = $('#token_counter_textarea').val();
-        const context = getContext();
-        const count = context.getTokenCount(text);
-        $('#token_counter_result').text(count);
+        const text = String($('#token_counter_textarea').val());
+        const ids = main_api == 'openai' ? getTextTokens(tokenizers.OPENAI, text) : getTextTokens(tokenizerId, text);
+
+        if (Array.isArray(ids) && ids.length > 0) {
+            $('#token_counter_ids').text(JSON.stringify(ids));
+            $('#token_counter_result').text(ids.length);
+        } else {
+            const context = getContext();
+            const count = context.getTokenCount(text);
+            $('#token_counter_ids').text('—');
+            $('#token_counter_result').text(count);
+        }
     });
 
     $('#dialogue_popup').addClass('wide_dialogue_popup');

@@ -292,6 +292,30 @@ function registerEndpoints(app, jsonParser) {
     app.post("/api/decode/nerdstash_v2", jsonParser, createSentencepieceDecodingHandler(() => spp_nerd_v2));
     app.post("/api/decode/gpt2", jsonParser, createTiktokenDecodingHandler('gpt2'));
 
+    app.post("/api/tokenize/openai-encode", jsonParser, async function (req, res) {
+        try {
+            const queryModel = String(req.query.model || '');
+
+            if (queryModel.includes('llama')) {
+                const handler = createSentencepieceEncodingHandler(() => spp_llama);
+                return handler(req, res);
+            }
+
+            if (queryModel.includes('claude')) {
+                const text = req.body.text || '';
+                const tokens = Object.values(claude_tokenizer.encode(text));
+                return res.send({ ids: tokens, count: tokens.length });
+            }
+
+            const model = getTokenizerModel(queryModel);
+            const handler = createTiktokenEncodingHandler(model);
+            return handler(req, res);
+        } catch (error) {
+            console.log(error);
+            return res.send({ ids: [], count: 0 });
+        }
+    });
+
     app.post("/api/tokenize/openai", jsonParser, async function (req, res) {
         try {
             if (!req.body) return res.sendStatus(400);
