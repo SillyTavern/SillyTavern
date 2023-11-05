@@ -1305,6 +1305,11 @@
                                         <input class="neo-range-slider" type="range" id="typical_p_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
                                         <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="typical_p_textgenerationwebui" id="typical_p_counter_textgenerationwebui">
                                     </div>
+                                    <div class="alignitemscenter flex-container  flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="Typical P">
+                                        <small>Min P</small>
+                                        <input class="neo-range-slider" type="range" id="min_p_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
+                                        <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="min_p_textgenerationwebui" id="min_p_counter_textgenerationwebui">
+                                    </div>
                                     <div class="alignitemscenter flex-container  flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="Top A">
                                         <small>Top A</small>
                                         <input class="neo-range-slider" type="range" id="top_a_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
@@ -1377,6 +1382,12 @@
                                             <label class="checkbox_label" for="skip_special_tokens_textgenerationwebui">
                                                 <input type="checkbox" id="skip_special_tokens_textgenerationwebui" />
                                                 <small data-i18n="Skip Special Tokens">Skip Special Tokens</small>
+                                            </label>
+                                            <label data-forAphro=False class="checkbox_label" for="temperature_last_textgenerationwebui">
+                                                <input type="checkbox" id="temperature_last_textgenerationwebui" />
+                                                <small data-i18n="Temperature Last">Temperature Last
+                                                    <div class="fa-solid fa-circle-info opacity50p " data-i18n="Use the temperature sampler last." title="Use the temperature sampler last."></div>
+                                                </small>
                                             </label>
                                             <!--
                                             <label data-forAphro=True class="checkbox_label" for="spaces_between_special_tokens_aphrodite_textgenerationwebui">

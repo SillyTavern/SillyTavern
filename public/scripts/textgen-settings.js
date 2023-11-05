@@ -29,6 +29,7 @@ export const textgen_types = {
 
 const textgenerationwebui_settings = {
     temp: 0.7,
+    temperature_last: false,
     top_p: 0.5,
     top_k: 40,
     top_a: 0,
@@ -36,6 +37,7 @@ const textgenerationwebui_settings = {
     epsilon_cutoff: 0,
     eta_cutoff: 0,
     typical_p: 1,
+    min_p: 0,
     rep_pen: 1.2,
     rep_pen_range: 0,
     no_repeat_ngram_size: 0,
@@ -81,6 +83,7 @@ export let textgenerationwebui_preset_names = [];
 
 const setting_names = [
     "temp",
+    "temperature_last",
     "rep_pen",
     "rep_pen_range",
     "no_repeat_ngram_size",
@@ -91,6 +94,7 @@ const setting_names = [
     "epsilon_cutoff",
     "eta_cutoff",
     "typical_p",
+    "min_p",
     "penalty_alpha",
     "num_beams",
     "length_penalty",
@@ -446,8 +450,10 @@ export function getTextGenGenerationData(finalPrompt, this_amount_gen, isImperso
         'max_new_tokens': this_amount_gen,
         'do_sample': textgenerationwebui_settings.do_sample,
         'temperature': textgenerationwebui_settings.temp,
+        'temperature_last': textgenerationwebui_settings.temperature_last,
         'top_p': textgenerationwebui_settings.top_p,
         'typical_p': textgenerationwebui_settings.typical_p,
+        'min_p': textgenerationwebui_settings.min_p,
         'repetition_penalty': textgenerationwebui_settings.rep_pen,
         'repetition_penalty_range': textgenerationwebui_settings.rep_pen_range,
         'encoder_repetition_penalty': textgenerationwebui_settings.encoder_rep_pen,
