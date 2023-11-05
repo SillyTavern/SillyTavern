@@ -597,11 +597,12 @@ function reloadMarkdownProcessor(render_formulas = false) {
 }
 
 function getCurrentChatId() {
+    console.debug(`selectedGroup:${selected_group}, this_chid:${this_chid}`)
     if (selected_group) {
         return groups.find(x => x.id == selected_group)?.chat_id;
     }
     else if (this_chid) {
-        return characters[this_chid].chat;
+        return characters[this_chid]?.chat;
     }
 }
 
@@ -5774,7 +5775,7 @@ function select_rm_info(type, charId, previousCharId = null) {
 
 export function select_selected_character(chid) {
     //character select
-    //console.log('select_selected_character() -- starting with input of -- '+chid+' (name:'+characters[chid].name+')');
+    //console.log('select_selected_character() -- starting with input of -- ' + chid + ' (name:' + characters[chid].name + ')');
     select_rm_create();
     menu_type = "character_edit";
     $("#delete_button").css("display", "flex");
