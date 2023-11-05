@@ -46,6 +46,7 @@ const CHARS_PER_TOKEN = 3.35;
 let spp_llama;
 let spp_nerd;
 let spp_nerd_v2;
+let spp_mistral;
 let claude_tokenizer;
 
 async function loadSentencepieceTokenizer(modelPath) {
@@ -89,6 +90,10 @@ function getTokenizerModel(requestModel) {
 
     if (requestModel.includes('llama')) {
         return 'llama';
+    }
+
+    if (requestModel.includes('mistral')) {
+        return 'mistral';
     }
 
     if (requestModel.includes('gpt-4-32k')) {
@@ -247,10 +252,11 @@ function createTiktokenDecodingHandler(modelId) {
  * @returns {Promise<void>} Promise that resolves when the tokenizers are loaded
  */
 async function loadTokenizers() {
-    [spp_llama, spp_nerd, spp_nerd_v2, claude_tokenizer] = await Promise.all([
-        loadSentencepieceTokenizer('src/sentencepiece/tokenizer.model'),
+    [spp_llama, spp_nerd, spp_nerd_v2, spp_mistral, claude_tokenizer] = await Promise.all([
+        loadSentencepieceTokenizer('src/sentencepiece/llama.model'),
         loadSentencepieceTokenizer('src/sentencepiece/nerdstash.model'),
         loadSentencepieceTokenizer('src/sentencepiece/nerdstash_v2.model'),
+        loadSentencepieceTokenizer('src/sentencepiece/mistral.model'),
         loadClaudeTokenizer('src/claude.json'),
     ]);
 }
@@ -286,10 +292,12 @@ function registerEndpoints(app, jsonParser) {
     app.post("/api/tokenize/llama", jsonParser, createSentencepieceEncodingHandler(() => spp_llama));
     app.post("/api/tokenize/nerdstash", jsonParser, createSentencepieceEncodingHandler(() => spp_nerd));
     app.post("/api/tokenize/nerdstash_v2", jsonParser, createSentencepieceEncodingHandler(() => spp_nerd_v2));
+    app.post("/api/tokenize/mistral", jsonParser, createSentencepieceEncodingHandler(() => spp_mistral));
     app.post("/api/tokenize/gpt2", jsonParser, createTiktokenEncodingHandler('gpt2'));
     app.post("/api/decode/llama", jsonParser, createSentencepieceDecodingHandler(() => spp_llama));
     app.post("/api/decode/nerdstash", jsonParser, createSentencepieceDecodingHandler(() => spp_nerd));
     app.post("/api/decode/nerdstash_v2", jsonParser, createSentencepieceDecodingHandler(() => spp_nerd_v2));
+    app.post("/api/decode/mistral", jsonParser, createSentencepieceDecodingHandler(() => spp_mistral));
     app.post("/api/decode/gpt2", jsonParser, createTiktokenDecodingHandler('gpt2'));
 
     app.post("/api/tokenize/openai-encode", jsonParser, async function (req, res) {
@@ -298,6 +306,11 @@ function registerEndpoints(app, jsonParser) {
 
             if (queryModel.includes('llama')) {
                 const handler = createSentencepieceEncodingHandler(() => spp_llama);
+                return handler(req, res);
+            }
+
+            if (queryModel.includes('mistral')) {
+                const handler = createSentencepieceEncodingHandler(() => spp_mistral);
                 return handler(req, res);
             }
 
@@ -332,8 +345,14 @@ function registerEndpoints(app, jsonParser) {
             if (model == 'llama') {
                 const jsonBody = req.body.flatMap(x => Object.values(x)).join('\n\n');
                 const llamaResult = await countSentencepieceTokens(spp_llama, jsonBody);
-                // console.log('jsonBody', jsonBody, 'llamaResult', llamaResult);
                 num_tokens = llamaResult.count;
+                return res.send({ "token_count": num_tokens });
+            }
+
+            if (model == 'mistral') {
+                const jsonBody = req.body.flatMap(x => Object.values(x)).join('\n\n');
+                const mistralResult = await countSentencepieceTokens(spp_mistral, jsonBody);
+                num_tokens = mistralResult.count;
                 return res.send({ "token_count": num_tokens });
             }
 
