@@ -29,6 +29,7 @@ export const textgen_types = {
 
 const textgenerationwebui_settings = {
     temp: 0.7,
+    temperature_last: true,
     top_p: 0.5,
     top_k: 40,
     top_a: 0,
@@ -82,6 +83,7 @@ export let textgenerationwebui_preset_names = [];
 
 const setting_names = [
     "temp",
+    "temperature_last",
     "rep_pen",
     "rep_pen_range",
     "no_repeat_ngram_size",
@@ -456,6 +458,7 @@ export function getTextGenGenerationData(finalPrompt, this_amount_gen, isImperso
         'max_new_tokens': this_amount_gen,
         'do_sample': textgenerationwebui_settings.do_sample,
         'temperature': textgenerationwebui_settings.temp,
+        'temperature_last': textgenerationwebui_settings.temperature_last,
         'top_p': textgenerationwebui_settings.top_p,
         'typical_p': textgenerationwebui_settings.typical_p,
         'min_p': textgenerationwebui_settings.min_p,
