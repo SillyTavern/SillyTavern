@@ -5,6 +5,10 @@
     flex-direction: row;
 }
 
+.regex_settings .checkbox {
+    align-items: center;
+}
+
 .regex-script-container {
     margin-top: 10px;
     margin-bottom: 10px;
