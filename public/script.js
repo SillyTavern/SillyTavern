@@ -4781,7 +4781,7 @@ function getFirstMessage() {
         is_user: false,
         is_system: false,
         send_date: getMessageTimeStamp(),
-        mes: getRegexedString(firstMes, regex_placement.AI_OUTPUT),
+        mes: substituteParams(getRegexedString(firstMes, regex_placement.AI_OUTPUT)),
         extra: {},
     };
 
