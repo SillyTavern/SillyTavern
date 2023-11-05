@@ -22,7 +22,7 @@ async function doTokenCounter() {
         <div class="justifyLeft">
             <h4>Type / paste in the box below to see the number of tokens in the text.</h4>
             <p>Selected tokenizer: ${selectedTokenizer}</p>
-            <textarea id="token_counter_textarea" class="wide100p textarea_compact margin-bot-10px" rows="20"></textarea>
+            <textarea id="token_counter_textarea" class="wide100p textarea_compact margin-bot-10px" rows="15"></textarea>
             <div>Tokens: <span id="token_counter_result">0</span></div>
             <br>
             <div>Token IDs (if applicable):</div>
@@ -47,7 +47,7 @@ async function doTokenCounter() {
     });
 
     $('#dialogue_popup').addClass('wide_dialogue_popup');
-    callPopup(dialog, 'text');
+    callPopup(dialog, 'text', '', { wide: true, large: true });
 }
 
 function doCount() {
