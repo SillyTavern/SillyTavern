@@ -85,7 +85,14 @@ class CharacterContextMenu {
         });
     }
 
-    static persona = async (characterId) => convertCharacterToPersona(characterId);
+    /**
+     * Convert the given characters to personas.
+     * Shows popup for each.
+     *
+     * @param characterId
+     * @returns {Promise<void>}
+     */
+    static persona = async (characterId) => await convertCharacterToPersona(characterId);
 
     static delete = async (characterId, deleteChats = false) => {
         const character = CharacterContextMenu.getCharacter(characterId);
@@ -397,8 +404,17 @@ class BulkEditOverlay {
         .then(() => getCharacters())
         .then(() => this.browseState())
 
-    handleContextMenuPersona = () => { Promise.all(this.selectedCharacters.map(async characterId => CharacterContextMenu.persona(characterId)))
-        .then(() => this.browseState());
+    /**
+     * Sequentially handle all character-to-persona conversions.
+     *
+     * @returns {Promise<void>}
+     */
+    handleContextMenuPersona = async () => {
+        for (const characterId of this.selectedCharacters) {
+            await CharacterContextMenu.persona(characterId)
+        }
+
+        this.browseState();
     }
 
     handleContextMenuDelete = () => {
