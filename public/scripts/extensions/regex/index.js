@@ -91,6 +91,12 @@ async function loadRegexScripts() {
             await onRegexEditorOpenClick(scriptHtml.attr("id"));
         });
         scriptHtml.find('.delete_regex').on('click', async function () {
+            const confirm = await callPopup("Are you sure you want to delete this regex script?", "confirm");
+
+            if (!confirm) {
+                return;
+            }
+
             await deleteRegexScript({ existingId: scriptHtml.attr("id") });
         });
 
