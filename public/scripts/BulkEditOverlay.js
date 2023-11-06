@@ -528,10 +528,14 @@ class BulkEditOverlay {
     handleContextMenuDelete = () => {
         callPopup(
             popupMessage.deleteChat(this.selectedCharacters.length), null)
-            .then(deleteChats =>
+            .then((accept) => {
+                if (true !== accept) return;
+
+                const deleteChats = document.getElementById('del_char_checkbox').checked ?? false;
+
                 Promise.all(this.selectedCharacters.map(async characterId => CharacterContextMenu.delete(characterId, deleteChats)))
                     .then(() => getCharacters())
-                    .then(() => this.browseState())
+                    .then(() => this.browseState())}
             );
     }
 
