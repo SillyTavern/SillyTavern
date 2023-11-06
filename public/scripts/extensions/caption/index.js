@@ -1,6 +1,6 @@
 import { getBase64Async, saveBase64AsFile } from "../../utils.js";
 import { getContext, getApiUrl, doExtrasFetch, extension_settings, modules } from "../../extensions.js";
-import { callPopup, getRequestHeaders, saveSettingsDebounced } from "../../../script.js";
+import { callPopup, getRequestHeaders, saveSettingsDebounced, substituteParams } from "../../../script.js";
 import { getMessageTimeStamp } from "../../RossAscends-mods.js";
 import { SECRET_KEYS, secret_state } from "../../secrets.js";
 export { MODULE_NAME };
@@ -8,17 +8,32 @@ export { MODULE_NAME };
 const MODULE_NAME = 'caption';
 const UPDATE_INTERVAL = 1000;
 
+const PROMPT_DEFAULT = 'What’s in this image?';
+const TEMPLATE_DEFAULT = '[{{user}} sends {{char}} a picture that contains: {{caption}}]';
+
 async function moduleWorker() {
     const hasConnection = getContext().onlineStatus !== 'no_connection';
     $('#send_picture').toggle(hasConnection);
 }
 
-function migrateLocalSourceSetting() {
+function migrateSettings() {
     if (extension_settings.caption.local !== undefined) {
         extension_settings.caption.source = extension_settings.caption.local ? 'local' : 'extras';
     }
 
     delete extension_settings.caption.local;
+
+    if (!extension_settings.caption.source) {
+        extension_settings.caption.source = 'extras';
+    }
+
+    if (!extension_settings.caption.prompt) {
+        extension_settings.caption.prompt = PROMPT_DEFAULT;
+    }
+
+    if (!extension_settings.caption.template) {
+        extension_settings.caption.template = TEMPLATE_DEFAULT;
+    }
 }
 
 async function setImageIcon() {
@@ -45,7 +60,14 @@ async function setSpinnerIcon() {
 
 async function sendCaptionedMessage(caption, image) {
     const context = getContext();
-    let messageText = `[${context.name1} sends ${context.name2 ?? ''} a picture that contains: ${caption}]`;
+    let template = extension_settings.caption.template || TEMPLATE_DEFAULT;
+
+    if (!/{{caption}}/i.test(template)) {
+        console.warn('Poka-yoke: Caption template does not contain {{caption}}. Appending it.')
+        template += ' {{caption}}';
+    }
+
+    let messageText = substituteParams(template).replace(/{{caption}}/i, caption);
 
     if (extension_settings.caption.refine_mode) {
         messageText = await callPopup(
@@ -151,10 +173,11 @@ async function captionHorde(base64Img) {
 }
 
 async function captionOpenAI(base64Img) {
+    const prompt = extension_settings.caption.prompt || PROMPT_DEFAULT;
     const apiResult = await fetch('/api/openai/caption-image', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify({ image: base64Img })
+        body: JSON.stringify({ image: base64Img, prompt: prompt }),
     });
 
     if (!apiResult.ok) {
@@ -218,7 +241,7 @@ jQuery(function () {
                 extension_settings.caption.source === 'horde';
 
             if (!hasCaptionModule) {
-                toastr.error('No captioning module is available. Either enable the local captioning pipeline or connect to Extras.');
+                toastr.error('No captioning module is available. Choose other captioning source in the extension settings.');
                 return;
             }
 
@@ -244,12 +267,16 @@ jQuery(function () {
                 </div>
                 <div class="inline-drawer-content">
                     <label for="caption_source">Source:</label>
-                    <select id="caption_source" class="form-control">
+                    <select id="caption_source" class="text_pole">
                         <option value="local">Local</option>
                         <option value="extras">Extras</option>
                         <option value="horde">Horde</option>
                         <option value="openai">OpenAI</option>
                     </select>
+                    <label for="caption_prompt">Caption Prompt (OpenAI):</label>
+                    <textarea id="caption_prompt" class="text_pole" rows="1" placeholder="&lt; Use default &gt;">${PROMPT_DEFAULT}</textarea>
+                    <label for="caption_template">Message Template: <small>(use <tt>{{caption}}</tt> macro)</small></label>
+                    <textarea id="caption_template" class="text_pole" rows="2" placeholder="&lt; Use default &gt;">${TEMPLATE_DEFAULT}</textarea>
                     <label class="checkbox_label margin-bot-10px" for="caption_refine_mode">
                         <input id="caption_refine_mode" type="checkbox" class="checkbox">
                         Edit captions before generation
@@ -265,14 +292,24 @@ jQuery(function () {
     addPictureSendForm();
     addSendPictureButton();
     setImageIcon();
-    migrateLocalSourceSetting();
+    migrateSettings();
     moduleWorker();
 
     $('#caption_refine_mode').prop('checked', !!(extension_settings.caption.refine_mode));
     $('#caption_source').val(extension_settings.caption.source);
+    $('#caption_prompt').val(extension_settings.caption.prompt);
+    $('#caption_template').val(extension_settings.caption.template);
     $('#caption_refine_mode').on('input', onRefineModeInput);
     $('#caption_source').on('change', () => {
         extension_settings.caption.source = String($('#caption_source').val());
+        saveSettingsDebounced();
+    });
+    $('#caption_prompt').on('input', () => {
+        extension_settings.caption.prompt = String($('#caption_prompt').val());
+        saveSettingsDebounced();
+    });
+    $('#caption_template').on('input', () => {
+        extension_settings.caption.template = String($('#caption_template').val());
         saveSettingsDebounced();
     });
     setInterval(moduleWorker, UPDATE_INTERVAL);

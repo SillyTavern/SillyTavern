@@ -22,7 +22,7 @@ function registerEndpoints(app, jsonParser) {
                     {
                         role: "user",
                         content: [
-                            { type: "text", text: "What’s in this image?" },
+                            { type: "text", text: request.body.prompt },
                             { type: "image_url", image_url: { "url": request.body.image } }
                         ]
                     }
