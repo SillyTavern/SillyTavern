@@ -2801,6 +2801,9 @@ function getMaxContextOpenAI(value) {
     else if (value.includes('gpt-4-1106')) {
         return max_128k;
     }
+    else if (value.includes('gpt-3.5-turbo-1106')) {
+        return max_16k;
+    }
     else if (['gpt-4', 'gpt-4-0314', 'gpt-4-0613'].includes(value)) {
         return max_8k;
     }
@@ -2831,6 +2834,9 @@ function getMaxContextWindowAI(value) {
     }
     else if (value.includes('claude')) {
         return claude_max;
+    }
+    else if (value.includes('gpt-3.5-turbo-1106')) {
+        return max_16k;
     }
     else if (value.includes('gpt-3.5-turbo-16k')) {
         return max_16k;
