@@ -1,5 +1,5 @@
 import { characters, getCharacters, handleDeleteCharacter, callPopup } from "../script.js";
-import {BulkEditOverlay, CharacterGroupOverlayState} from "./BulkEditOverlay.js";
+import {BulkEditOverlay, BulkEditOverlayState} from "./BulkEditOverlay.js";
 
 
 let is_bulk_edit = false;
@@ -29,8 +29,8 @@ const toggleBulkEditMode = (isBulkEdit) => {
 }
 
 (new BulkEditOverlay()).addStateChangeCallback((state) => {
-    if (state === CharacterGroupOverlayState.select) enableBulkEdit();
-    if (state === CharacterGroupOverlayState.browse) disableBulkEdit();
+    if (state === BulkEditOverlayState.select) enableBulkEdit();
+    if (state === BulkEditOverlayState.browse) disableBulkEdit();
 });
 
 /**

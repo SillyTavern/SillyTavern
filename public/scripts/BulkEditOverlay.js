@@ -246,7 +246,7 @@ class BulkTagPopupHandler {
     }
 }
 
-class CharacterGroupOverlayState {
+class BulkEditOverlayState {
     /**
      *
      * @type {number}
@@ -278,7 +278,7 @@ class BulkEditOverlay {
 
     static longPressDelay = 2800;
 
-    #state = CharacterGroupOverlayState.browse;
+    #state = BulkEditOverlayState.browse;
     #longPress = false;
     #stateChangeCallbacks = [];
     #selectedCharacters = [];
@@ -336,12 +336,12 @@ class BulkEditOverlay {
     /**
      * Set the overlay to browse mode
      */
-    browseState = () => this.state = CharacterGroupOverlayState.browse;
+    browseState = () => this.state = BulkEditOverlayState.browse;
 
     /**
      * Set the overlay to select mode
      */
-    selectState = () => this.state = CharacterGroupOverlayState.select;
+    selectState = () => this.state = BulkEditOverlayState.select;
 
     /**
      * Set up a Sortable grid for the loaded page
@@ -368,7 +368,7 @@ class BulkEditOverlay {
      */
     handleStateChange = () => {
         switch (this.state) {
-            case CharacterGroupOverlayState.browse:
+            case BulkEditOverlayState.browse:
                 this.container.classList.remove(BulkEditOverlay.selectModeClass);
                 this.#enableClickEventsForCharacters();
                 this.clearSelectedCharacters();
@@ -376,7 +376,7 @@ class BulkEditOverlay {
                 this.#disableBulkEditButtonHighlight();
                 CharacterContextMenu.hide();
                 break;
-            case CharacterGroupOverlayState.select:
+            case BulkEditOverlayState.select:
                 this.container.classList.add(BulkEditOverlay.selectModeClass);
                 this.#disableClickEventsForCharacters();
                 this.enableContextMenu();
@@ -415,9 +415,9 @@ class BulkEditOverlay {
         this.isLongPress = true;
         setTimeout(() => {
             if (this.isLongPress) {
-                if (this.state === CharacterGroupOverlayState.browse)
+                if (this.state === BulkEditOverlayState.browse)
                     this.selectState();
-                else if (this.state === CharacterGroupOverlayState.select)
+                else if (this.state === BulkEditOverlayState.select)
                     CharacterContextMenu.show(...this.#getContextMenuPosition(event));
             }
         }, BulkEditOverlay.longPressDelay);
@@ -428,7 +428,7 @@ class BulkEditOverlay {
     }
 
     handleCancelClick = () => {
-        this.state = CharacterGroupOverlayState.browse;
+        this.state = BulkEditOverlayState.browse;
     }
 
     /**
@@ -563,4 +563,4 @@ class BulkEditOverlay {
     }
 }
 
-export {CharacterGroupOverlayState, CharacterContextMenu, BulkEditOverlay};
+export {BulkEditOverlayState, CharacterContextMenu, BulkEditOverlay};
