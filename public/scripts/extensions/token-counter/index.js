@@ -1,7 +1,8 @@
 import { callPopup, main_api } from "../../../script.js";
 import { getContext } from "../../extensions.js";
 import { registerSlashCommand } from "../../slash-commands.js";
-import { getTextTokens, getTokenCount, getTokenizerBestMatch, getTokenizerModel, tokenizers } from "../../tokenizers.js";
+import { getFriendlyTokenizerName, getTextTokens, getTokenCount, tokenizers } from "../../tokenizers.js";
+import { resetScrollHeight } from "../../utils.js";
 
 function rgb2hex(rgb) {
     rgb = rgb.match(/^rgba?[\s+]?\([\s+]?(\d+)[\s+]?,[\s+]?(\d+)[\s+]?,[\s+]?(\d+)[\s+]?/i);
@@ -17,33 +18,22 @@ $('button').click(function () {
 });
 
 async function doTokenCounter() {
-    const tokenizerOption = $("#tokenizer").find(':selected');
-    let tokenizerId = Number(tokenizerOption.val());
-    let tokenizerName = tokenizerOption.text();
-
-    if (main_api !== 'openai' && tokenizerId === tokenizers.BEST_MATCH) {
-        tokenizerId = getTokenizerBestMatch();
-        tokenizerName = $(`#tokenizer option[value="${tokenizerId}"]`).text();
-    }
-
-    const selectedTokenizer = main_api == 'openai'
-        ? getTokenizerModel()
-        : tokenizerName;
+    const { tokenizerName, tokenizerId } = getFriendlyTokenizerName(main_api);
     const html = `
     <div class="wide100p">
         <h3>Token Counter</h3>
-        <div class="justifyLeft">
+        <div class="justifyLeft flex-container flexFlowColumn">
             <h4>Type / paste in the box below to see the number of tokens in the text.</h4>
-            <p>Selected tokenizer: ${selectedTokenizer}</p>
+            <p>Selected tokenizer: ${tokenizerName}</p>
             <div>Input:</div>
-            <textarea id="token_counter_textarea" class="wide100p textarea_compact margin-bot-10px" rows="10"></textarea>
+            <textarea id="token_counter_textarea" class="wide100p textarea_compact" rows="1"></textarea>
             <div>Tokens: <span id="token_counter_result">0</span></div>
-            <br>
+            <hr>
             <div>Tokenized text:</div>
             <div id="tokenized_chunks_display" class="wide100p">—</div>
-            <br>
+            <hr>
             <div>Token IDs:</div>
-            <textarea id="token_counter_ids" disabled rows="10">—</textarea>
+            <textarea id="token_counter_ids" class="wide100p textarea_compact" disabled rows="1">—</textarea>
         </div>
     </div>`;
 
@@ -66,6 +56,9 @@ async function doTokenCounter() {
             $('#token_counter_result').text(count);
             $('#tokenized_chunks_display').text('—');
         }
+
+        resetScrollHeight($('#token_counter_textarea'));
+        resetScrollHeight($('#token_counter_ids'));
     });
 
     $('#dialogue_popup').addClass('wide_dialogue_popup');

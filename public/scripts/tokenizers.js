@@ -63,8 +63,47 @@ async function resetTokenCache() {
     }
 }
 
-export function getTokenizerBestMatch() {
-    if (main_api === 'novel') {
+/**
+ * Gets the friendly name of the current tokenizer.
+ * @param {string} forApi API to get the tokenizer for. Defaults to the main API.
+ * @returns { { tokenizerName: string, tokenizerId: number } } Tokenizer info
+ */
+export function getFriendlyTokenizerName(forApi) {
+    if (!forApi) {
+        forApi = main_api;
+    }
+
+    const tokenizerOption = $("#tokenizer").find(':selected');
+    let tokenizerId = Number(tokenizerOption.val());
+    let tokenizerName = tokenizerOption.text();
+
+    if (forApi !== 'openai' && tokenizerId === tokenizers.BEST_MATCH) {
+        tokenizerId = getTokenizerBestMatch(forApi);
+        tokenizerName = $(`#tokenizer option[value="${tokenizerId}"]`).text();
+    }
+
+    tokenizerName = forApi == 'openai'
+        ? getTokenizerModel()
+        : tokenizerName;
+
+    tokenizerId = forApi == 'openai'
+        ? tokenizers.OPENAI
+        : tokenizerId;
+
+    return { tokenizerName, tokenizerId };
+}
+
+/**
+ * Gets the best tokenizer for the current API.
+ * @param {string} forApi API to get the tokenizer for. Defaults to the main API.
+ * @returns {number} Tokenizer type.
+ */
+export function getTokenizerBestMatch(forApi) {
+    if (!forApi) {
+        forApi = main_api;
+    }
+
+    if (forApi === 'novel') {
         if (nai_settings.model_novel.includes('clio')) {
             return tokenizers.NERD;
         }
@@ -72,7 +111,7 @@ export function getTokenizerBestMatch() {
             return tokenizers.NERD2;
         }
     }
-    if (main_api === 'kobold' || main_api === 'textgenerationwebui' || main_api === 'koboldhorde') {
+    if (forApi === 'kobold' || forApi === 'textgenerationwebui' || forApi === 'koboldhorde') {
         // Try to use the API tokenizer if possible:
         // - API must be connected
         // - Kobold must pass a version check
@@ -140,7 +179,7 @@ export function getTokenCount(str, padding = undefined) {
     }
 
     if (tokenizerType === tokenizers.BEST_MATCH) {
-        tokenizerType = getTokenizerBestMatch();
+        tokenizerType = getTokenizerBestMatch(main_api);
     }
 
     if (padding === undefined) {
