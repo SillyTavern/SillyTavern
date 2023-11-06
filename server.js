@@ -3434,6 +3434,9 @@ async function postAsync(url, args) { return fetchJSON(url, { method: 'POST', ti
 
 // ** END **
 
+// OpenAI API
+require('./src/openai').registerEndpoints(app, jsonParser);
+
 // Tokenizers
 require('./src/tokenizers').registerEndpoints(app, jsonParser);
 

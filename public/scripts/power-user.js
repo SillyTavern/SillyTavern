@@ -422,6 +422,7 @@ function switchMessageActions() {
 }
 
 async function switchZenSliders() {
+    await delay(100)
     const value = localStorage.getItem(storage_keys.enableZenSliders);
     power_user.enableZenSliders = value === null ? false : value == "true";
     $("body").toggleClass("enableZenSliders", power_user.enableZenSliders);
@@ -549,11 +550,13 @@ async function switchZenSliders() {
                     //console.log(`initial value:${handleText}, stepNum:${stepNumber}, numSteps:${numSteps}, left-margin:${leftMargin}`)
                     handle.css('margin-left', `${leftMargin}px`)
                 } else {
+
                     var handleText = Number(sliderValue).toFixed(decimals)
                     handle.text(handleText);
                     var stepNumber = ((sliderValue - sliderMin) / stepScale)
                     var leftMargin = (stepNumber / numSteps) * 50 * -1
                     handle.css('margin-left', `${leftMargin}px`)
+                    console.debug(sliderID, sliderValue, handleText, stepNumber, stepScale)
                 }
             },
             slide: function (event, ui) {

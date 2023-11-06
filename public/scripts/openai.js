@@ -113,6 +113,7 @@ const max_4k = 4095;
 const max_8k = 8191;
 const max_16k = 16383;
 const max_32k = 32767;
+const max_128k = 128 * 1024 - 1;
 const scale_max = 8191;
 const claude_max = 9000; // We have a proper tokenizer, so theoretically could be larger (up to 9k)
 const palm2_max = 7500; // The real context window is 8192, spare some for padding due to using turbo tokenizer
@@ -2797,6 +2798,12 @@ function getMaxContextOpenAI(value) {
     if (oai_settings.max_context_unlocked) {
         return unlocked_max;
     }
+    else if (value.includes('gpt-4-1106')) {
+        return max_128k;
+    }
+    else if (value.includes('gpt-3.5-turbo-1106')) {
+        return max_16k;
+    }
     else if (['gpt-4', 'gpt-4-0314', 'gpt-4-0613'].includes(value)) {
         return max_8k;
     }
@@ -2828,11 +2835,17 @@ function getMaxContextWindowAI(value) {
     else if (value.includes('claude')) {
         return claude_max;
     }
+    else if (value.includes('gpt-3.5-turbo-1106')) {
+        return max_16k;
+    }
     else if (value.includes('gpt-3.5-turbo-16k')) {
         return max_16k;
     }
     else if (value.includes('gpt-3.5')) {
         return max_4k;
+    }
+    else if (value.includes('gpt-4-1106')) {
+        return max_128k;
     }
     else if (value.includes('gpt-4-32k')) {
         return max_32k;

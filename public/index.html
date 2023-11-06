@@ -273,6 +273,10 @@
                                 <div class="range-block">
                                     <div class="range-block-title" data-i18n="temperature">
                                         Temperature
+                                        <small>
+                                            <div class="fa-solid fa-circle-info opacity50p" title="Temperature controls the randomness in token selection:&#13;- low temperature (<1.0) leads to more predictable text, favoring higher probability tokens.&#13;- high temperature (>1.0) increases creativity and diversity in the output by giving lower probability tokens a better chance.&#13;Set to 1.0 for the original probabilities."></div>
+
+                                        </small>
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
@@ -280,10 +284,11 @@
                                         </div>
                                         <div class="range-block-counter">
                                             <input type="number" min="0.0" max="2.0" step="0.01" data-for="temp" id="temp_counter">
-
                                         </div>
                                     </div>
                                 </div>
+                                <hr>
+                                <h4 class="textAlignCenter" data-i18n="Repetition Penalty Settings">Repetition Penalty Settings</h4>
                                 <div class="range-block">
                                     <div class="range-block-title" data-i18n="rep.pen">
                                         Repetition Penalty
@@ -318,15 +323,16 @@
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
-                                            <input type="range" id="rep_pen_slope" name="volume" min="0" max="10" step="0.1">
+                                            <input type="range" id="rep_pen_slope" name="volume" min="0" max="10" step="0.01">
                                         </div>
                                         <div class="range-block-counter">
-                                            <input type="number" min="0" max="10" step="0.1" data-for="rep_pen_slope" id="rep_pen_slope_counter">
+                                            <input type="number" min="0" max="10" step="0.01" data-for="rep_pen_slope" id="rep_pen_slope_counter">
 
                                         </div>
                                     </div>
                                 </div>
                             </div>
+                            <hr>
                             <div id="range_block_novel">
                                 <div class="range-block">
                                     <label class="checkbox_label widthFreeExpand">
@@ -393,7 +399,6 @@
                                         </div>
                                         <div class="range-block-counter">
                                             <input type="number" min="0" max="10" step="0.01" data-for="rep_pen_slope_novel" id="rep_pen_slope_counter_novel">
-
                                         </div>
                                     </div>
                                 </div>
@@ -403,10 +408,10 @@
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
-                                            <input type="range" id="rep_pen_freq_novel" name="volume" min="0" max="1" step="0.01">
+                                            <input type="range" id="rep_pen_freq_novel" name="volume" min="0" max="1" step="0.001">
                                         </div>
                                         <div class="range-block-counter">
-                                            <input type="number" min="0" max="1" step="0.01" data-for="rep_pen_freq_novel" id="rep_pen_freq_counter_novel">
+                                            <input type="number" min="0" max="1" step="0.001" data-for="rep_pen_freq_novel" id="rep_pen_freq_counter_novel">
 
                                         </div>
                                     </div>
@@ -417,10 +422,10 @@
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
-                                            <input type="range" id="rep_pen_presence_novel" name="volume" min="0" max="1" step="0.01">
+                                            <input type="range" id="rep_pen_presence_novel" name="volume" min="0" max="1" step="0.001">
                                         </div>
                                         <div class="range-block-counter">
-                                            <input type="number" min="0" max="1" step="0.01" data-for="rep_pen_presence_novel" id="rep_pen_presence_counter_novel">
+                                            <input type="number" min="0" max="1" step="0.001" data-for="rep_pen_presence_novel" id="rep_pen_presence_counter_novel">
 
                                         </div>
                                     </div>
@@ -795,6 +800,10 @@
                                     <div class="range-block">
                                         <div class="range-block-title" data-i18n="Top P">
                                             Top P
+                                            <small>
+                                                <div class="fa-solid fa-circle-info opacity50p" title="Top P adds up all the top tokens required to add up to the target percentage.&#13;E.g If the Top 2 tokens are both 25%, and Top P is 0.50, only the Top 2 tokens are considered.&#13;Set to 1.0 to disable."></div>
+                                            </small>
+
                                         </div>
                                         <div class="range-block-range-and-counter">
                                             <div class="range-block-range">
@@ -809,6 +818,10 @@
                                     <div class="range-block">
                                         <div class="range-block-title" data-i18n="Min P">
                                             Min P
+                                            <small>
+                                                <div class="fa-solid fa-circle-info opacity50p" title="Min P sets a base minimum probability.&#13;This is scaled according to the top token's probability.&#13;E.g If Top token is 80% probability, and Min P is 0.1, only tokens higher than 8% would be considered.&#13;Set to 0 to disable."></div>
+
+                                            </small>
                                         </div>
                                         <div class="range-block-range-and-counter">
                                             <div class="range-block-range">
@@ -823,13 +836,17 @@
                                     <div class="range-block">
                                         <div class="range-block-title" data-i18n="Top A">
                                             Top A
+                                            <small>
+                                                <div class="fa-solid fa-circle-info opacity50p" title="Top A sets a threshold for token selection based on the square of the highest token probability.&#13;E.g if the Top-A value is 0.2 and the top token's probability is 50%, tokens with probabilities below 5% (0.2 * 0.5^2) are excluded.&#13;Set to 0 to disable."></div>
+
+                                            </small>
                                         </div>
                                         <div class="range-block-range-and-counter">
                                             <div class="range-block-range">
-                                                <input type="range" id="top_a" name="volume" min="0" max="1" step="0.01">
+                                                <input type="range" id="top_a" name="volume" min="0" max="1" step="0.001">
                                             </div>
                                             <div class="range-block-counter">
-                                                <input type="number" min="0" max="1" step="0.01" data-for="top_a" id="top_a_counter">
+                                                <input type="number" min="0" max="1" step="0.001" data-for="top_a" id="top_a_counter">
 
                                             </div>
                                         </div>
@@ -837,6 +854,10 @@
                                     <div class="range-block">
                                         <div class="range-block-title" data-i18n="Top K">
                                             Top K
+                                            <small>
+                                                <div class="fa-solid fa-circle-info opacity50p" title="Top K sets a maximum amount of top tokens that can be chosen from.&#13;E.g Top K is 20, this means only the 20 highest ranking tokens will be kept (regardless of their probabilities being diverse or limited).&#13;Set to 0 to disable."></div>
+
+                                            </small>
                                         </div>
                                         <div class="range-block-range-and-counter">
                                             <div class="range-block-range">
@@ -851,13 +872,17 @@
                                     <div class="range-block">
                                         <div class="range-block-title" data-i18n="Typical Sampling">
                                             Typical Sampling
+                                            <small>
+                                                <div class="fa-solid fa-circle-info opacity50p" title="Typical Sampling prioritizes tokens based on their deviation from the average entropy of the set.&#13;It maintains tokens whose cumulative probability is close to a predefined threshold (e.g., 0.5), emphasizing those with average information content.&#13;Set to 1.0 to disable."></div>
+
+                                            </small>
                                         </div>
                                         <div class="range-block-range-and-counter">
                                             <div class="range-block-range">
-                                                <input type="range" id="typical" name="volume" min="0" max="1" step="0.01">
+                                                <input type="range" id="typical" name="volume" min="0" max="1" step="0.001">
                                             </div>
                                             <div class="range-block-counter">
-                                                <input type="number" min="0" max="1" step="0.01" data-for="typical" id="typical_counter">
+                                                <input type="number" min="0" max="1" step="0.001" data-for="typical" id="typical_counter">
 
                                             </div>
                                         </div>
@@ -865,31 +890,30 @@
                                     <div class="range-block">
                                         <div class="range-block-title" data-i18n="Tail Free Sampling">
                                             Tail Free Sampling
+                                            <small>
+                                                <div class="fa-solid fa-circle-info opacity50p" title="Tail-Free Sampling (TFS) analyzes the rate of change in token probabilities using derivatives.&#13;It retains tokens up to a threshold (e.g., 0.3) based on the normalized second derivative.&#13;Set to 1.0 to disable."></div>
+
+                                            </small>
                                         </div>
                                         <div class="range-block-range-and-counter">
                                             <div class="range-block-range">
-                                                <input type="range" id="tfs" name="volume" min="0" max="1" step="0.01">
+                                                <input type="range" id="tfs" name="volume" min="0" max="1" step="0.001">
                                             </div>
                                             <div class="range-block-counter">
-                                                <input type="number" min="0" max="1" step="0.01" data-for="tfs" id="tfs_counter">
+                                                <input type="number" min="0" max="1" step="0.001" data-for="tfs" id="tfs_counter">
 
                                             </div>
                                         </div>
                                     </div>
                                     <div class="range-block">
-                                        <label class="checkbox_label" for="use_default_badwordsids">
+                                        <label class="checkbox_label alignItemsBaseline" for="use_default_badwordsids">
                                             <input id="use_default_badwordsids" type="checkbox" />
                                             <span data-i18n="Ban EOS Token">
                                                 Ban EOS Token
+                                                <small class="fa-solid fa-circle-info opacity50p" title="Ban the End-of-Sequence (EOS) token with KoboldCpp (and possibly also other tokens with KoboldAI).&#13;Good for story writing, but should not be used for chat and instruct mode."></small>
                                             </span>
                                         </label>
-                                        <div class="toggle-description justifyLeft">
-                                            <span data-i18n="Ban the End-of-Sequence (EOS) token (with KoboldCpp, and possibly also other tokens with KoboldAI).">
-                                                Ban the End-of-Sequence (EOS) token (with KoboldCpp, and possibly also other tokens with KoboldAI).</span><br>
-                                            <span data-i18n="Good for story writing, but should not be used for chat and instruct mode.">
-                                                Good for story writing, but should not be used for chat and instruct mode.
-                                            </span>
-                                        </div>
+
                                     </div>
                                     <div class="range-block">
                                         <div class="range-block-title" data-i18n="Min Temp">
@@ -1167,10 +1191,10 @@
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
-                                            <input type="range" id="top_a_novel" name="volume" min="0" max="1" step="0.01">
+                                            <input type="range" id="top_a_novel" name="volume" min="0" max="1" step="0.001">
                                         </div>
                                         <div class="range-block-counter">
-                                            <input type="number" min="0" max="1" step="0.01" data-for="top_a_novel" id="top_a_counter_novel">
+                                            <input type="number" min="0" max="1" step="0.001" data-for="top_a_novel" id="top_a_counter_novel">
 
                                         </div>
                                     </div>
@@ -1223,10 +1247,10 @@
                                     </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
-                                            <input type="range" id="typical_p_novel" name="volume" min="0" max="1" step="0.01">
+                                            <input type="range" id="typical_p_novel" name="volume" min="0" max="1" step="0.001">
                                         </div>
                                         <div class="range-block-counter">
-                                            <input type="number" min="0" max="1" step="0.01" data-for="typical_p_novel" id="typical_p_counter_novel">
+                                            <input type="number" min="0" max="1" step="0.001" data-for="typical_p_novel" id="typical_p_counter_novel">
 
                                         </div>
                                     </div>
@@ -1936,6 +1960,7 @@
                                         <option value="gpt-3.5-turbo-16k-0613">gpt-3.5-turbo-16k-0613</option>
                                         <option value="gpt-3.5-turbo-0613">gpt-3.5-turbo-0613</option>
                                         <option value="gpt-3.5-turbo-0301">gpt-3.5-turbo-0301</option>
+                                        <option value="gpt-3.5-turbo-1106">gpt-3.5-turbo-1106</option>
                                     </optgroup>
                                     <optgroup label="GPT-3.5 Turbo Instruct">
                                         <option value="gpt-3.5-turbo-instruct">gpt-3.5-turbo-instruct</option>
@@ -1943,6 +1968,7 @@
                                     </optgroup>
                                     <optgroup label="GPT-4">
                                         <option value="gpt-4">gpt-4</option>
+                                        <option value="gpt-4-1106-preview">gpt-4-1106-preview</option>
                                         <option value="gpt-4-0613">gpt-4-0613</option>
                                         <option value="gpt-4-0314">gpt-4-0314</option>
                                         <option value="gpt-4-32k">gpt-4-32k</option>
@@ -2454,9 +2480,10 @@
                                 <option value="0">None / Estimated</option>
                                 <option value="1">GPT-2</option>
                                 <!-- Option #2 was a legacy GPT-2/3 tokenizer -->
-                                <option value="3">Sentencepiece (LLaMA)</option>
+                                <option value="3">LLaMA</option>
                                 <option value="4">NerdStash (NovelAI Clio)</option>
                                 <option value="5">NerdStash v2 (NovelAI Kayra)</option>
+                                <option value="7">Mistral</option>
                                 <option value="6">API (WebUI / koboldcpp)</option>
                             </select>
                         </div>

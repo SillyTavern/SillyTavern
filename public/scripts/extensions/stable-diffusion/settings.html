@@ -29,6 +29,7 @@
                 <option value="auto">Stable Diffusion Web UI (AUTOMATIC1111)</option>
                 <option value="vlad">SD.Next (vladmandic)</option>
                 <option value="novel">NovelAI Diffusion</option>
+                <option value="openai">OpenAI (DALL-E)</option>
             </select>
             <div data-sd-source="auto">
                 <label for="sd_auto_url">SD Web UI URL</label>
@@ -95,6 +96,21 @@
                     </div>
                 </div>
                 <i>Hint: Save an API key in the NovelAI API settings to use it here.</i>
+            </div>
+            <div data-sd-source="openai">
+                <small>These settings only apply to DALL-E 3</small>
+                <div class="flex-container">
+                    <label for="sd_openai_style">Image Style</label>
+                    <select id="sd_openai_style">
+                        <option value="vivid">Vivid</option>
+                        <option value="natural">Natural</option>
+                    </select>
+                    <label for="sd_openai_quality">Image Quality</label>
+                    <select id="sd_openai_quality">
+                        <option value="standard">Standard</option>
+                        <option value="hd">HD</option>
+                    </select>
+                </div>
             </div>
             <label for="sd_scale">CFG Scale (<span id="sd_scale_value"></span>)</label>
             <input id="sd_scale" type="range" min="{{scale_min}}" max="{{scale_max}}" step="{{scale_step}}" value="{{scale}}" />

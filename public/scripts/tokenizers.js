@@ -16,6 +16,7 @@ export const tokenizers = {
     NERD: 4,
     NERD2: 5,
     API: 6,
+    MISTRAL: 7,
     BEST_MATCH: 99,
 };
 
@@ -62,8 +63,47 @@ async function resetTokenCache() {
     }
 }
 
-export function getTokenizerBestMatch() {
-    if (main_api === 'novel') {
+/**
+ * Gets the friendly name of the current tokenizer.
+ * @param {string} forApi API to get the tokenizer for. Defaults to the main API.
+ * @returns { { tokenizerName: string, tokenizerId: number } } Tokenizer info
+ */
+export function getFriendlyTokenizerName(forApi) {
+    if (!forApi) {
+        forApi = main_api;
+    }
+
+    const tokenizerOption = $("#tokenizer").find(':selected');
+    let tokenizerId = Number(tokenizerOption.val());
+    let tokenizerName = tokenizerOption.text();
+
+    if (forApi !== 'openai' && tokenizerId === tokenizers.BEST_MATCH) {
+        tokenizerId = getTokenizerBestMatch(forApi);
+        tokenizerName = $(`#tokenizer option[value="${tokenizerId}"]`).text();
+    }
+
+    tokenizerName = forApi == 'openai'
+        ? getTokenizerModel()
+        : tokenizerName;
+
+    tokenizerId = forApi == 'openai'
+        ? tokenizers.OPENAI
+        : tokenizerId;
+
+    return { tokenizerName, tokenizerId };
+}
+
+/**
+ * Gets the best tokenizer for the current API.
+ * @param {string} forApi API to get the tokenizer for. Defaults to the main API.
+ * @returns {number} Tokenizer type.
+ */
+export function getTokenizerBestMatch(forApi) {
+    if (!forApi) {
+        forApi = main_api;
+    }
+
+    if (forApi === 'novel') {
         if (nai_settings.model_novel.includes('clio')) {
             return tokenizers.NERD;
         }
@@ -71,7 +111,7 @@ export function getTokenizerBestMatch() {
             return tokenizers.NERD2;
         }
     }
-    if (main_api === 'kobold' || main_api === 'textgenerationwebui' || main_api === 'koboldhorde') {
+    if (forApi === 'kobold' || forApi === 'textgenerationwebui' || forApi === 'koboldhorde') {
         // Try to use the API tokenizer if possible:
         // - API must be connected
         // - Kobold must pass a version check
@@ -105,6 +145,8 @@ function callTokenizer(type, str, padding) {
             return countTokensRemote('/api/tokenize/nerdstash', str, padding);
         case tokenizers.NERD2:
             return countTokensRemote('/api/tokenize/nerdstash_v2', str, padding);
+        case tokenizers.MISTRAL:
+            return countTokensRemote('/api/tokenize/mistral', str, padding);
         case tokenizers.API:
             return countTokensRemote('/tokenize_via_api', str, padding);
         default:
@@ -137,7 +179,7 @@ export function getTokenCount(str, padding = undefined) {
     }
 
     if (tokenizerType === tokenizers.BEST_MATCH) {
-        tokenizerType = getTokenizerBestMatch();
+        tokenizerType = getTokenizerBestMatch(main_api);
     }
 
     if (padding === undefined) {
@@ -185,6 +227,7 @@ export function getTokenizerModel() {
     const gpt2Tokenizer = 'gpt2';
     const claudeTokenizer = 'claude';
     const llamaTokenizer = 'llama';
+    const mistralTokenizer = 'mistral';
 
     // Assuming no one would use it for different models.. right?
     if (oai_settings.chat_completion_source == chat_completion_sources.SCALE) {
@@ -216,6 +259,9 @@ export function getTokenizerModel() {
 
         if (model?.architecture?.tokenizer === 'Llama2') {
             return llamaTokenizer;
+        }
+        else if (model?.architecture?.tokenizer === 'Mistral') {
+            return mistralTokenizer;
         }
         else if (oai_settings.openrouter_model.includes('gpt-4')) {
             return gpt4Tokenizer;
@@ -378,6 +424,11 @@ function getTextTokensRemote(endpoint, str, model = '') {
         contentType: "application/json",
         success: function (data) {
             ids = data.ids;
+
+            // Don't want to break reverse compatibility, so sprinkle in some of the JS magic
+            if (Array.isArray(data.chunks)) {
+                Object.defineProperty(ids, 'chunks', { value: data.chunks });
+            }
         }
     });
     return ids;
@@ -420,6 +471,8 @@ export function getTextTokens(tokenizerType, str) {
             return getTextTokensRemote('/api/tokenize/nerdstash', str);
         case tokenizers.NERD2:
             return getTextTokensRemote('/api/tokenize/nerdstash_v2', str);
+        case tokenizers.MISTRAL:
+            return getTextTokensRemote('/api/tokenize/mistral', str);
         case tokenizers.OPENAI:
             const model = getTokenizerModel();
             return getTextTokensRemote('/api/tokenize/openai-encode', str, model);
@@ -444,6 +497,8 @@ export function decodeTextTokens(tokenizerType, ids) {
             return decodeTextTokensRemote('/api/decode/nerdstash', ids);
         case tokenizers.NERD2:
             return decodeTextTokensRemote('/api/decode/nerdstash_v2', ids);
+        case tokenizers.MISTRAL:
+            return decodeTextTokensRemote('/api/decode/mistral', ids);
         default:
             console.warn("Calling decodeTextTokens with unsupported tokenizer type", tokenizerType);
             return '';
