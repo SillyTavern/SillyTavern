@@ -160,6 +160,9 @@ const extension_settings = {
     rvc: {},
     hypebot: {},
     vectors: {},
+    variables: {
+        global: {},
+    },
 };
 
 let modules = [];
