@@ -2,6 +2,7 @@ import { getBase64Async, saveBase64AsFile } from "../../utils.js";
 import { getContext, getApiUrl, doExtrasFetch, extension_settings, modules } from "../../extensions.js";
 import { callPopup, getRequestHeaders, saveSettingsDebounced } from "../../../script.js";
 import { getMessageTimeStamp } from "../../RossAscends-mods.js";
+import { SECRET_KEYS, secret_state } from "../../secrets.js";
 export { MODULE_NAME };
 
 const MODULE_NAME = 'caption';
@@ -10,6 +11,14 @@ const UPDATE_INTERVAL = 1000;
 async function moduleWorker() {
     const hasConnection = getContext().onlineStatus !== 'no_connection';
     $('#send_picture').toggle(hasConnection);
+}
+
+function migrateLocalSourceSetting() {
+    if (extension_settings.caption.local !== undefined) {
+        extension_settings.caption.source = extension_settings.caption.local ? 'local' : 'extras';
+    }
+
+    delete extension_settings.caption.local;
 }
 
 async function setImageIcon() {
@@ -65,42 +74,95 @@ async function sendCaptionedMessage(caption, image) {
     await context.generate('caption');
 }
 
-async function doCaptionRequest(base64Img) {
-    if (extension_settings.caption.local) {
-        const apiResult = await fetch('/api/extra/caption', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            body: JSON.stringify({ image: base64Img })
-        });
+/**
+ *
+ * @param {string} base64Img Base64 encoded image without the data:image/...;base64, prefix
+ * @param {string} fileData Base64 encoded image with the data:image/...;base64, prefix
+ * @returns
+ */
+async function doCaptionRequest(base64Img, fileData) {
+    switch (extension_settings.caption.source) {
+        case 'local':
+            return await captionLocal(base64Img);
+        case 'extras':
+            return await captionExtras(base64Img);
+        case 'horde':
+            return await captionHorde(base64Img);
+        case 'openai':
+            return await captionOpenAI(fileData);
+        default:
+            throw new Error('Unknown caption source.');
+    }
+}
 
-        if (!apiResult.ok) {
-            throw new Error('Failed to caption image via local pipeline.');
-        }
-
-        const data = await apiResult.json();
-        return data;
-    } else if (modules.includes('caption')) {
-        const url = new URL(getApiUrl());
-        url.pathname = '/api/caption';
-
-        const apiResult = await doExtrasFetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Bypass-Tunnel-Reminder': 'bypass',
-            },
-            body: JSON.stringify({ image: base64Img })
-        });
-
-        if (!apiResult.ok) {
-            throw new Error('Failed to caption image via Extras.');
-        }
-
-        const data = await apiResult.json();
-        return data;
-    } else {
+async function captionExtras(base64Img) {
+    if (!modules.includes('caption')) {
         throw new Error('No captioning module is available.');
     }
+
+    const url = new URL(getApiUrl());
+    url.pathname = '/api/caption';
+
+    const apiResult = await doExtrasFetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Bypass-Tunnel-Reminder': 'bypass',
+        },
+        body: JSON.stringify({ image: base64Img })
+    });
+
+    if (!apiResult.ok) {
+        throw new Error('Failed to caption image via Extras.');
+    }
+
+    const data = await apiResult.json();
+    return data;
+}
+
+async function captionLocal(base64Img) {
+    const apiResult = await fetch('/api/extra/caption', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ image: base64Img })
+    });
+
+    if (!apiResult.ok) {
+        throw new Error('Failed to caption image via local pipeline.');
+    }
+
+    const data = await apiResult.json();
+    return data;
+}
+
+async function captionHorde(base64Img) {
+    const apiResult = await fetch('/api/horde/caption-image', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ image: base64Img })
+    });
+
+    if (!apiResult.ok) {
+        throw new Error('Failed to caption image via Horde.');
+    }
+
+    const data = await apiResult.json();
+    return data;
+}
+
+async function captionOpenAI(base64Img) {
+    const apiResult = await fetch('/api/openai/caption-image', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ image: base64Img })
+    });
+
+    if (!apiResult.ok) {
+        throw new Error('Failed to caption image via OpenAI.');
+    }
+
+    const data = await apiResult.json();
+    return data;
 }
 
 async function onSelectImage(e) {
@@ -116,7 +178,7 @@ async function onSelectImage(e) {
         const fileData = await getBase64Async(file);
         const base64Format = fileData.split(',')[0].split(';')[0].split('/')[1];
         const base64Data = fileData.split(',')[1];
-        const data = await doCaptionRequest(base64Data);
+        const data = await doCaptionRequest(base64Data, fileData);
         const caption = data.caption;
         const imageToSave = data.thumbnail ? data.thumbnail : base64Data;
         const format = data.thumbnail ? 'jpeg' : base64Format;
@@ -149,7 +211,11 @@ jQuery(function () {
         $('#extensionsMenu').prepend(sendButton);
         $(sendButton).hide();
         $(sendButton).on('click', () => {
-            const hasCaptionModule = modules.includes('caption') || extension_settings.caption.local;
+            const hasCaptionModule =
+                (modules.includes('caption') && extension_settings.caption.source === 'extras') ||
+                (extension_settings.caption.source === 'openai' && secret_state[SECRET_KEYS.OPENAI]) ||
+                extension_settings.caption.source === 'local' ||
+                extension_settings.caption.source === 'horde';
 
             if (!hasCaptionModule) {
                 toastr.error('No captioning module is available. Either enable the local captioning pipeline or connect to Extras.');
@@ -177,11 +243,14 @@ jQuery(function () {
                     <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                 </div>
                 <div class="inline-drawer-content">
-                    <label class="checkbox_label" for="caption_local">
-                        <input id="caption_local" type="checkbox" class="checkbox">
-                        Use local captioning pipeline
-                    </label>
-                    <label class="checkbox_label" for="caption_refine_mode">
+                    <label for="caption_source">Source:</label>
+                    <select id="caption_source" class="form-control">
+                        <option value="local">Local</option>
+                        <option value="extras">Extras</option>
+                        <option value="horde">Horde</option>
+                        <option value="openai">OpenAI</option>
+                    </select>
+                    <label class="checkbox_label margin-bot-10px" for="caption_refine_mode">
                         <input id="caption_refine_mode" type="checkbox" class="checkbox">
                         Edit captions before generation
                     </label>
@@ -196,12 +265,14 @@ jQuery(function () {
     addPictureSendForm();
     addSendPictureButton();
     setImageIcon();
+    migrateLocalSourceSetting();
     moduleWorker();
+
     $('#caption_refine_mode').prop('checked', !!(extension_settings.caption.refine_mode));
-    $('#caption_local').prop('checked', !!(extension_settings.caption.local));
+    $('#caption_source').val(extension_settings.caption.source);
     $('#caption_refine_mode').on('input', onRefineModeInput);
-    $('#caption_local').on('input', () => {
-        extension_settings.caption.local = !!$('#caption_local').prop('checked');
+    $('#caption_source').on('change', () => {
+        extension_settings.caption.source = String($('#caption_source').val());
         saveSettingsDebounced();
     });
     setInterval(moduleWorker, UPDATE_INTERVAL);

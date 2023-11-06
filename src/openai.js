@@ -1,4 +1,5 @@
 const { readSecret, SECRET_KEYS } = require("./secrets");
+const fetch = require('node-fetch').default;
 
 /**
  * Registers the OpenAI endpoints.
@@ -6,6 +7,62 @@ const { readSecret, SECRET_KEYS } = require("./secrets");
  * @param {any} jsonParser
  */
 function registerEndpoints(app, jsonParser) {
+    app.post('/api/openai/caption-image', jsonParser, async (request, response) => {
+        try {
+            const key = readSecret(SECRET_KEYS.OPENAI);
+
+            if (!key) {
+                console.log('No OpenAI key found');
+                return response.sendStatus(401);
+            }
+
+            const body = {
+                model: "gpt-4-vision-preview",
+                messages: [
+                    {
+                        role: "user",
+                        content: [
+                            { type: "text", text: "What’s in this image?" },
+                            { type: "image_url", image_url: { "url": request.body.image } }
+                        ]
+                    }
+                ],
+                max_tokens: 300
+            };
+
+            console.log('OpenAI request', body);
+            const result = await fetch('https://api.openai.com/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${key}`,
+                },
+                body: JSON.stringify(body),
+                timeout: 0,
+            });
+
+            if (!result.ok) {
+                const text = await result.text();
+                console.log('OpenAI request failed', result.statusText, text);
+                return response.status(500).send(text);
+            }
+
+            const data = await result.json();
+            console.log('OpenAI response', data);
+            const caption = data?.choices[0]?.message?.content;
+
+            if (!caption) {
+                return response.status(500).send('No caption found');
+            }
+
+            return response.json({ caption });
+        }
+        catch (error) {
+            console.error(error);
+            response.status(500).send('Internal server error');
+        }
+    });
+
     app.post('/api/openai/generate-image', jsonParser, async (request, response) => {
         try {
             const key = readSecret(SECRET_KEYS.OPENAI);
@@ -24,6 +81,7 @@ function registerEndpoints(app, jsonParser) {
                     Authorization: `Bearer ${key}`,
                 },
                 body: JSON.stringify(request.body),
+                timeout: 0,
             });
 
             if (!result.ok) {
