@@ -184,9 +184,9 @@ function loadNovelSettingsUi(ui_settings) {
     $("#rep_pen_slope_novel").val(ui_settings.repetition_penalty_slope);
     $("#rep_pen_slope_counter_novel").val(Number(`${ui_settings.repetition_penalty_slope}`).toFixed(2));
     $("#rep_pen_freq_novel").val(ui_settings.repetition_penalty_frequency);
-    $("#rep_pen_freq_counter_novel").val(Number(ui_settings.repetition_penalty_frequency).toFixed(2));
+    $("#rep_pen_freq_counter_novel").val(Number(ui_settings.repetition_penalty_frequency).toFixed(3));
     $("#rep_pen_presence_novel").val(ui_settings.repetition_penalty_presence);
-    $("#rep_pen_presence_counter_novel").val(Number(ui_settings.repetition_penalty_presence).toFixed(2));
+    $("#rep_pen_presence_counter_novel").val(Number(ui_settings.repetition_penalty_presence).toFixed(3));
     $("#tail_free_sampling_novel").val(ui_settings.tail_free_sampling);
     $("#tail_free_sampling_counter_novel").val(Number(ui_settings.tail_free_sampling).toFixed(3));
     $("#top_k_novel").val(ui_settings.top_k);
@@ -245,13 +245,13 @@ const sliders = [
         sliderId: "#rep_pen_freq_novel",
         counterId: "#rep_pen_freq_counter_novel",
         format: (val) => Number(val).toFixed(2),
-        setValue: (val) => { nai_settings.repetition_penalty_frequency = Number(val).toFixed(2); },
+        setValue: (val) => { nai_settings.repetition_penalty_frequency = Number(val).toFixed(3); },
     },
     {
         sliderId: "#rep_pen_presence_novel",
         counterId: "#rep_pen_presence_counter_novel",
         format: (val) => `${val}`,
-        setValue: (val) => { nai_settings.repetition_penalty_presence = Number(val).toFixed(2); },
+        setValue: (val) => { nai_settings.repetition_penalty_presence = Number(val).toFixed(3); },
     },
     {
         sliderId: "#tail_free_sampling_novel",
