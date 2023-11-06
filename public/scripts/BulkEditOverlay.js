@@ -276,6 +276,8 @@ class BulkEditOverlay {
     static selectedClass = 'character_selected';
     static legacySelectedClass = 'bulk_select_checkbox';
 
+    static longPressDelay = 2800;
+
     #state = CharacterGroupOverlayState.browse;
     #longPress = false;
     #stateChangeCallbacks = [];
@@ -347,7 +349,7 @@ class BulkEditOverlay {
     onPageLoad = () => {
         this.browseState();
 
-        const elements = [...document.getElementsByClassName(BulkEditOverlay.characterClass)];
+        const elements = this.#getEnabledElements();
         elements.forEach(element => element.addEventListener('touchstart', this.handleHold));
         elements.forEach(element => element.addEventListener('mousedown', this.handleHold));
 
@@ -404,14 +406,21 @@ class BulkEditOverlay {
     }
 
     handleHold = (event) => {
-        if (0 !== event.button) return;
+        if (0 !== event.button && event.type !== 'touchstart') return;
+
+        // Prevent call for mobile browser context menu on long-press.
+        event.preventDefault();
+        event.stopPropagation();
 
         this.isLongPress = true;
         setTimeout(() => {
             if (this.isLongPress) {
-                this.state = CharacterGroupOverlayState.select;
+                if (this.state === CharacterGroupOverlayState.browse)
+                    this.selectState();
+                else if (this.state === CharacterGroupOverlayState.select)
+                    CharacterContextMenu.show(...this.#getContextMenuPosition(event));
             }
-        }, 3000);
+        }, BulkEditOverlay.longPressDelay);
     }
 
     handleLongPressEnd = () => {
@@ -422,15 +431,26 @@ class BulkEditOverlay {
         this.state = CharacterGroupOverlayState.browse;
     }
 
-    #enableClickEventsForCharacters = () => [...this.container.getElementsByClassName(BulkEditOverlay.characterClass)]
-        .forEach(element => element.removeEventListener('click', this.toggleCharacterSelected));
+    /**
+     * Returns the position of the mouse/touch location
+     *
+     * @param event
+     * @returns {(boolean|number|*)[]}
+     */
+    #getContextMenuPosition = (event) => [
+        event.clientX || event.touches[0].clientX,
+        event.clientY || event.touches[0].clientY,
+    ];
 
-    #disableClickEventsForCharacters = () => [...this.container.getElementsByClassName(BulkEditOverlay.characterClass)]
-        .forEach(element => element.addEventListener('click', this.toggleCharacterSelected));
+    #enableClickEventsForCharacters = () => this.#getEnabledElements().forEach(element => element.removeEventListener('click', this.toggleCharacterSelected));
+
+    #disableClickEventsForCharacters = () => this.#getEnabledElements().forEach(element => element.addEventListener('click', this.toggleCharacterSelected));
 
     #enableBulkEditButtonHighlight = () => document.getElementById('bulkEditButton').classList.add('bulk_edit_overlay_active');
 
     #disableBulkEditButtonHighlight = () => document.getElementById('bulkEditButton').classList.remove('bulk_edit_overlay_active');
+
+    #getEnabledElements = () => [...this.container.getElementsByClassName(BulkEditOverlay.characterClass)];
 
     toggleCharacterSelected = event => {
         event.stopPropagation();
@@ -440,13 +460,15 @@ class BulkEditOverlay {
 
         const alreadySelected = this.selectedCharacters.includes(characterId)
 
+        const legacyBulkEditCheckbox = character.querySelector('.' + BulkEditOverlay.legacySelectedClass);
+
         if (alreadySelected) {
             character.classList.remove(BulkEditOverlay.selectedClass);
-            character.querySelector('.' + BulkEditOverlay.legacySelectedClass).checked = false;
+            if (legacyBulkEditCheckbox) legacyBulkEditCheckbox.checked = false;
             this.dismissCharacter(characterId);
         } else {
             character.classList.add(BulkEditOverlay.selectedClass)
-            character.querySelector('.' + BulkEditOverlay.legacySelectedClass).checked = true;
+            if (legacyBulkEditCheckbox) legacyBulkEditCheckbox.checked = true;
             this.selectCharacter(characterId);
         }
     }
@@ -454,7 +476,7 @@ class BulkEditOverlay {
     handleContextMenuShow = (event) => {
         event.preventDefault();
         document.getElementById(BulkEditOverlay.containerId).style.pointerEvents = 'none';
-        CharacterContextMenu.show(event.clientX, event.clientY);
+        CharacterContextMenu.show(...this.#getContextMenuPosition(event));
     }
 
     handleContextMenuHide = (event) => {
@@ -465,11 +487,21 @@ class BulkEditOverlay {
         }
     }
 
+    /**
+     * Concurrently handle character favorite requests.
+     *
+     * @returns {Promise<number>}
+     */
     handleContextMenuFavorite = () => Promise.all(this.selectedCharacters.map(async characterId => CharacterContextMenu.favorite(characterId)))
         .then(() => getCharacters())
         .then(() => favsToHotswap())
         .then(() => this.browseState())
 
+    /**
+     * Concurrently handle character duplicate requests.
+     *
+     * @returns {Promise<number>}
+     */
     handleContextMenuDuplicate = () => Promise.all(this.selectedCharacters.map(async characterId => CharacterContextMenu.duplicate(characterId)))
         .then(() => getCharacters())
         .then(() => this.browseState())
@@ -487,6 +519,12 @@ class BulkEditOverlay {
         this.browseState();
     }
 
+    /**
+     * Request user input before concurrently handle deletion
+     * requests.
+     *
+     * @returns {Promise<number>}
+     */
     handleContextMenuDelete = () => {
         callPopup(
             popupMessage.deleteChat(this.selectedCharacters.length), null)
@@ -497,6 +535,9 @@ class BulkEditOverlay {
             );
     }
 
+    /**
+     * Attaches and opens the tag menu
+     */
     handleContextMenuTag = () => {
         CharacterContextMenu.tag(this.selectedCharacters);
     }
