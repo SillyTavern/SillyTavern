@@ -385,6 +385,11 @@ function getTextTokensRemote(endpoint, str, model = '') {
         contentType: "application/json",
         success: function (data) {
             ids = data.ids;
+
+            // Don't want to break reverse compatibility, so sprinkle in some of the JS magic
+            if (Array.isArray(data.chunks)) {
+                Object.defineProperty(ids, 'chunks', { value: data.chunks });
+            }
         }
     });
     return ids;
