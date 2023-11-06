@@ -737,7 +737,6 @@ async function firstLoadInit() {
     initStats();
     initCfg();
     doDailyExtensionUpdatesCheck();
-    // Cohee: Uncomment when we decide to use loader
     hideLoader();
 }
 
