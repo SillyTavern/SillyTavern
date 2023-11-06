@@ -273,10 +273,11 @@
                                 <div class="range-block">
                                     <div class="range-block-title" data-i18n="temperature">
                                         Temperature
-										<a href="#" class="notes-link" title="Temperature controls the randomness in token selection: a lower temperature (<1.0) leads to more predictable text, favoring higher probability tokens, while a higher temperature (>1.0) increases creativity and diversity in the output by giving lower probability tokens a better chance. Set to 1.0 for the original probabilities.">
-											<span class="fa-solid fa-circle-question note-link-span"></span>
-										</a>
-									</div>
+                                        <small>
+                                            <div class="fa-solid fa-circle-info opacity50p" title="Temperature controls the randomness in token selection:&#13;- low temperature (<1.0) leads to more predictable text, favoring higher probability tokens.&#13;- high temperature (>1.0) increases creativity and diversity in the output by giving lower probability tokens a better chance.&#13;Set to 1.0 for the original probabilities."></div>
+
+                                        </small>
+                                    </div>
                                     <div class="range-block-range-and-counter">
                                         <div class="range-block-range">
                                             <input type="range" id="temp" name="volume" min="0.0" max="2.0" step="0.01">
@@ -286,8 +287,8 @@
                                         </div>
                                     </div>
                                 </div>
-								<hr>
-								<h4 data-i18n="Repetition Penalty Settings">Repetition Penalty Settings</h4>
+                                <hr>
+                                <h4 class="textAlignCenter" data-i18n="Repetition Penalty Settings">Repetition Penalty Settings</h4>
                                 <div class="range-block">
                                     <div class="range-block-title" data-i18n="rep.pen">
                                         Repetition Penalty
@@ -800,10 +801,11 @@
                                     <div class="range-block">
                                         <div class="range-block-title" data-i18n="Top P">
                                             Top P
-											<a href="#" class="notes-link" title="Top P adds up all the top tokens required to add up to the target percentage. E.g Top 2 tokens are both 25%, and Top P is 0.50, only the Top 2 tokens are considered. Set to 1.0 to disable.">
-												<span class="fa-solid fa-circle-question note-link-span"></span>
-											</a>
-										</div>
+                                            <small>
+                                                <div class="fa-solid fa-circle-info opacity50p" title="Top P adds up all the top tokens required to add up to the target percentage.&#13;E.g If the Top 2 tokens are both 25%, and Top P is 0.50, only the Top 2 tokens are considered.&#13;Set to 1.0 to disable."></div>
+                                            </small>
+
+                                        </div>
                                         <div class="range-block-range-and-counter">
                                             <div class="range-block-range">
                                                 <input type="range" id="top_p" name="volume" min="0" max="1" step="0.01">
@@ -817,10 +819,11 @@
                                     <div class="range-block">
                                         <div class="range-block-title" data-i18n="Min P">
                                             Min P
-											<a href="#" class="notes-link" title="Min P sets a base minimum probability. This is scaled according to the top token's probability. E.g If Top token is 80% probability, and Min P is 0.1, only tokens higher than 8% would be considered. Set to 0 to disable.">
-												<span class="fa-solid fa-circle-question note-link-span"></span>
-											</a>
-										</div>
+                                            <small>
+                                                <div class="fa-solid fa-circle-info opacity50p" title="Min P sets a base minimum probability.&#13;This is scaled according to the top token's probability.&#13;E.g If Top token is 80% probability, and Min P is 0.1, only tokens higher than 8% would be considered.&#13;Set to 0 to disable."></div>
+
+                                            </small>
+                                        </div>
                                         <div class="range-block-range-and-counter">
                                             <div class="range-block-range">
                                                 <input type="range" id="min_p" name="volume" min="0" max="1" step="0.01">
@@ -834,10 +837,11 @@
                                     <div class="range-block">
                                         <div class="range-block-title" data-i18n="Top A">
                                             Top A
-											<a href="#" class="notes-link" title="Top A sets a threshold for token selection based on the square of the highest token probability. E.g if the Top-A value is 0.2 and the top token's probability is 50%, tokens with probabilities below 5% (0.2 * 0.5^2) are excluded. Set to 0 to disable.">
-												<span class="fa-solid fa-circle-question note-link-span"></span>
-											</a>
-										</div>
+                                            <small>
+                                                <div class="fa-solid fa-circle-info opacity50p" title="Top A sets a threshold for token selection based on the square of the highest token probability.&#13;E.g if the Top-A value is 0.2 and the top token's probability is 50%, tokens with probabilities below 5% (0.2 * 0.5^2) are excluded.&#13;Set to 0 to disable."></div>
+
+                                            </small>
+                                        </div>
                                         <div class="range-block-range-and-counter">
                                             <div class="range-block-range">
                                                 <input type="range" id="top_a" name="volume" min="0" max="1" step="0.01">
@@ -851,10 +855,11 @@
                                     <div class="range-block">
                                         <div class="range-block-title" data-i18n="Top K">
                                             Top K
-											<a href="#" class="notes-link" title="Top K sets a maximum amount of top tokens that can be chosen from. E.g Top K is 20, this means only the 20 highest ranking tokens will be kept (regardless of their probabilities being diverse or limited). Set to 0 to disable.">
-												<span class="fa-solid fa-circle-question note-link-span"></span>
-											</a>
-										</div>
+                                            <small>
+                                                <div class="fa-solid fa-circle-info opacity50p" title="Top K sets a maximum amount of top tokens that can be chosen from.&#13;E.g Top K is 20, this means only the 20 highest ranking tokens will be kept (regardless of their probabilities being diverse or limited).&#13;Set to 0 to disable."></div>
+
+                                            </small>
+                                        </div>
                                         <div class="range-block-range-and-counter">
                                             <div class="range-block-range">
                                                 <input type="range" id="top_k" name="volume" min="0" max="100" step="1">
@@ -868,10 +873,11 @@
                                     <div class="range-block">
                                         <div class="range-block-title" data-i18n="Typical Sampling">
                                             Typical Sampling
-											<a href="#" class="notes-link" title="Typical Sampling prioritizes tokens based on their deviation from the average entropy of the set. It maintains tokens whose cumulative probability is close to a predefined threshold (e.g., 0.5), emphasizing those with average information content. Set to 1.0 to disable.">
-												<span class="fa-solid fa-circle-question note-link-span"></span>
-											</a>
-										</div>
+                                            <small>
+                                                <div class="fa-solid fa-circle-info opacity50p" title="Typical Sampling prioritizes tokens based on their deviation from the average entropy of the set.&#13;It maintains tokens whose cumulative probability is close to a predefined threshold (e.g., 0.5), emphasizing those with average information content.&#13;Set to 1.0 to disable."></div>
+
+                                            </small>
+                                        </div>
                                         <div class="range-block-range-and-counter">
                                             <div class="range-block-range">
                                                 <input type="range" id="typical" name="volume" min="0" max="1" step="0.01">
@@ -882,14 +888,15 @@
                                             </div>
                                         </div>
                                     </div>
-									<div class="range-block">
-										<div class="range-block-title" data-i18n="Tail Free Sampling">
-											Tail Free Sampling
-											<a href="#" class="notes-link" title="Tail-Free Sampling (TFS) analyzes the rate of change in token probabilities using derivatives. It retains tokens up to a threshold (e.g., 0.3) based on the normalized second derivative. Set to 1.0 to disable.">
-												<span class="fa-solid fa-circle-question note-link-span"></span>
-											</a>
-										</div>
-										<div class="range-block-range-and-counter">
+                                    <div class="range-block">
+                                        <div class="range-block-title" data-i18n="Tail Free Sampling">
+                                            Tail Free Sampling
+                                            <small>
+                                                <div class="fa-solid fa-circle-info opacity50p" title="Tail-Free Sampling (TFS) analyzes the rate of change in token probabilities using derivatives.&#13;It retains tokens up to a threshold (e.g., 0.3) based on the normalized second derivative.&#13;Set to 1.0 to disable."></div>
+
+                                            </small>
+                                        </div>
+                                        <div class="range-block-range-and-counter">
                                             <div class="range-block-range">
                                                 <input type="range" id="tfs" name="volume" min="0" max="1" step="0.01">
                                             </div>
