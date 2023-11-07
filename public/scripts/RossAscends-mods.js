@@ -894,7 +894,7 @@ export function initRossMods() {
         const originalScrollBottom = chatBlock[0].scrollHeight - (chatBlock.scrollTop() + chatBlock.outerHeight());
         this.style.height = window.getComputedStyle(this).getPropertyValue('min-height');
         this.style.height = (this.scrollHeight) + 'px';
-        const newScrollTop = chatBlock[0].scrollHeight - (chatBlock.outerHeight() + originalScrollBottom);
+        const newScrollTop = Math.round(chatBlock[0].scrollHeight - (chatBlock.outerHeight() + originalScrollBottom));
         chatBlock.scrollTop(newScrollTop);
     });
 
