@@ -1,14 +1,8 @@
-import { api_server_textgenerationwebui, getRequestHeaders, setGenerationParamsFromPreset } from "../script.js";
+import { getRequestHeaders, setGenerationParamsFromPreset } from "../script.js";
 import { getDeviceInfo } from "./RossAscends-mods.js";
+import { textgenerationwebui_settings } from "./textgen-settings.js";
 
 let models = [];
-
-/**
- * @param {string} modelId
- */
-export function getMancerModelURL(modelId) {
-    return `https://neuro.mancer.tech/webui/${modelId}/api`;
-}
 
 export async function loadMancerModels() {
     try {
@@ -29,7 +23,7 @@ export async function loadMancerModels() {
             const option = document.createElement('option');
             option.value = model.id;
             option.text = model.name;
-            option.selected = api_server_textgenerationwebui === getMancerModelURL(model.id);
+            option.selected = model.id === textgenerationwebui_settings.mancer_model;
             $('#mancer_model').append(option);
         }
 
@@ -40,12 +34,11 @@ export async function loadMancerModels() {
 
 function onMancerModelSelect() {
     const modelId = String($('#mancer_model').val());
-    const url = getMancerModelURL(modelId);
-    $('#mancer_api_url_text').val(url);
+    textgenerationwebui_settings.mancer_model = modelId;
     $('#api_button_textgenerationwebui').trigger('click');
 
-    const context = models.find(x => x.id === modelId)?.context;
-    setGenerationParamsFromPreset({ max_length: context });
+    const limits = models.find(x => x.id === modelId)?.limits;
+    setGenerationParamsFromPreset({ max_length: limits.context, genamt: limits.completion });
 }
 
 function getMancerModelTemplate(option) {
@@ -57,8 +50,7 @@ function getMancerModelTemplate(option) {
 
     return $((`
         <div class="flex-container flexFlowColumn">
-            <div><strong>${DOMPurify.sanitize(model.name)}</strong> | <span>${model.context} ctx</span></div>
-            <small>${DOMPurify.sanitize(model.description)}</small>
+            <div><strong>${DOMPurify.sanitize(model.name)}</strong> | <span>${model.limits?.context} ctx</span></div>
         </div>
     `));
 }

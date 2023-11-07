@@ -1793,9 +1793,6 @@
                                 <div class="flex1">
                                     <h4>Mancer Model</h4>
                                     <select id="mancer_model"></select>
-                                    <h4 data-i18n="Mancer API url">Mancer API URL</h4>
-                                    <small data-i18n="Example: https://neuro.mancer.tech/webui/MODEL/api">Example: https://neuro.mancer.tech/webui/MODEL/api</small>
-                                    <input id="mancer_api_url_text" name="mancer_api_url" class="text_pole wide100p" maxlength="500" value="" autocomplete="off">
                                 </div>
                             </div>
                             <div data-tg-type="ooba" class="flex-container flexFlowColumn">
@@ -1808,14 +1805,9 @@
                                     </span>
                                 </div>
                                 <div class="flex1">
-                                    <h4 data-i18n="Blocking API url">Blocking API URL</h4>
-                                    <small data-i18n="Example: http://127.0.0.1:5000/api ">Example: http://127.0.0.1:5000/api </small>
+                                    <h4 data-i18n="Server url">Server URL</h4>
+                                    <small data-i18n="Example: http://127.0.0.1:5000 ">Example: http://127.0.0.1:5000</small>
                                     <input id="textgenerationwebui_api_url_text" name="textgenerationwebui_api_url" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="ooba_blocking">
-                                </div>
-                                <div class="flex1">
-                                    <h4 data-i18n="Streaming API url">Streaming API URL</h4>
-                                    <small data-i18n="Example: ws://127.0.0.1:5005/api/v1/stream">Example: ws://127.0.0.1:5005/api/v1/stream </small>
-                                    <input id="streaming_url_textgenerationwebui" type="text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="ooba_streaming">
                                 </div>
                             </div>
                             <div data-tg-type="aphrodite">
@@ -1835,11 +1827,11 @@
                                 </div>
                                 <div class="flex1">
                                     <h4 data-i18n="API url">API URL</h4>
-                                    <small data-i18n="Example: http://127.0.0.1:5000/api ">Example: http://127.0.0.1:5000/api </small>
+                                    <small data-i18n="Example: http://127.0.0.1:5000">Example: http://127.0.0.1:5000</small>
                                     <input id="aphrodite_api_url_text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="aphrodite">
                                 </div>
                             </div>
-                            <div id="api_button_textgenerationwebui" class="menu_button" type="submit" data-i18n="Connect" data-server-connect="ooba_blocking,ooba_streaming,aphrodite">Connect</div>
+                            <div id="api_button_textgenerationwebui" class="menu_button" type="submit" data-i18n="Connect" data-server-connect="ooba_blocking,aphrodite">Connect</div>
                             <div id="api_loading_textgenerationwebui" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
                         </form>
                         <div class="online_status4">

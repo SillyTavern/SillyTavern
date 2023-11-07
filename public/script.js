@@ -21,6 +21,8 @@ import {
     isAphrodite,
     textgen_types,
     textgenerationwebui_banned_in_macros,
+    isOoba,
+    MANCER_SERVER,
 } from "./scripts/textgen-settings.js";
 
 import {
@@ -187,7 +189,7 @@ import { getFriendlyTokenizerName, getTokenCount, getTokenizerModel, initTokeniz
 import { initPersonas, selectCurrentPersona, setPersonaDescription } from "./scripts/personas.js";
 import { getBackgrounds, initBackgrounds } from "./scripts/backgrounds.js";
 import { hideLoader, showLoader } from "./scripts/loader.js";
-import {CharacterContextMenu, BulkEditOverlay} from "./scripts/BulkEditOverlay.js";
+import { CharacterContextMenu, BulkEditOverlay } from "./scripts/BulkEditOverlay.js";
 
 //exporting functions and vars for mods
 export {
@@ -884,14 +886,27 @@ async function getStatus() {
             return;
         }
 
+        const url = main_api == "textgenerationwebui" ?  '/api/textgenerationwebui/status' : '/getstatus';
+
+        let endpoint = api_server;
+
+        if (main_api == "textgenerationwebui") {
+            endpoint = api_server_textgenerationwebui;
+        }
+
+        if (main_api == "textgenerationwebui" && isMancer()) {
+            endpoint = MANCER_SERVER
+        }
+
         jQuery.ajax({
             type: "POST", //
-            url: "/getstatus", //
+            url: url, //
             data: JSON.stringify({
-                api_server: main_api == "kobold" ? api_server : api_server_textgenerationwebui,
                 main_api: main_api,
+                api_server: endpoint,
                 use_mancer: main_api == "textgenerationwebui" ? isMancer() : false,
                 use_aphrodite: main_api == "textgenerationwebui" ? isAphrodite() : false,
+                use_ooba: main_api == "textgenerationwebui" ? isOoba() : false,
             }),
             beforeSend: function () { },
             cache: false,
@@ -900,8 +915,13 @@ async function getStatus() {
             contentType: "application/json",
             //processData: false,
             success: function (data) {
-                online_status = data.result;
-                if (online_status == undefined) {
+                if (main_api == "textgenerationwebui" && isMancer()) {
+                    online_status = textgenerationwebui_settings.mancer_model;
+                } else {
+                    online_status = data.result;
+                }
+
+                if (!online_status) {
                     online_status = "no_connection";
                 }
 
@@ -914,11 +934,10 @@ async function getStatus() {
                 }
 
                 // We didn't get a 200 status code, but the endpoint has an explanation. Which means it DID connect, but I digress.
-                if (online_status == "no_connection" && data.response) {
+                if (online_status === "no_connection" && data.response) {
                     toastr.error(data.response, "API Error", { timeOut: 5000, preventDuplicates: true })
                 }
 
-                //console.log(online_status);
                 resultCheckStatus();
             },
             error: function (jqXHR, exception) {
@@ -3510,11 +3529,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     //console.log('runGenerate calling showSwipeBtns');
                     showSwipeButtons();
 
-                    if (main_api == 'textgenerationwebui' && isMancer()) {
-                        const errorText = `<h3>Inferencer endpoint is unhappy!</h3>
-                        Returned status <tt>${data.status}</tt> with the reason:<br/>
-                        ${data.response}`;
-                        callPopup(errorText, 'text');
+                    if (data?.response) {
+                        toastr.error(data.response, 'API Error');
                     }
                 }
                 console.debug('/savechat called by /Generate');
@@ -4025,7 +4041,7 @@ function getGenerateUrl(api) {
     if (api == 'kobold') {
         generate_url = '/generate';
     } else if (api == 'textgenerationwebui') {
-        generate_url = '/generate_textgenerationwebui';
+        generate_url = '/api/textgenerationwebui/generate';
     } else if (api == 'novel') {
         generate_url = '/api/novelai/generate';
     }
@@ -4054,7 +4070,7 @@ function extractMessageFromData(data) {
         case 'koboldhorde':
             return data.text;
         case 'textgenerationwebui':
-            return data.results[0].text;
+            return data.choices[0].text;
         case 'novel':
             return data.output;
         case 'openai':
@@ -5265,7 +5281,6 @@ async function getSettings(type) {
 
         api_server_textgenerationwebui = settings.api_server_textgenerationwebui;
         $("#textgenerationwebui_api_url_text").val(api_server_textgenerationwebui);
-        $("#mancer_api_url_text").val(api_server_textgenerationwebui);
         $("#aphrodite_api_url_text").val(api_server_textgenerationwebui);
 
         selected_button = settings.selected_button;
@@ -7835,36 +7850,37 @@ jQuery(async function () {
     });
 
     $("#api_button_textgenerationwebui").on('click', async function (e) {
+        const mancerKey = String($("#api_key_mancer").val()).trim();
+        if (mancerKey.length) {
+            await writeSecret(SECRET_KEYS.MANCER, mancerKey);
+        }
+
+        const aphroditeKey = String($("#api_key_aphrodite").val()).trim();
+        if (aphroditeKey.length) {
+            await writeSecret(SECRET_KEYS.APHRODITE, aphroditeKey);
+        }
+
         const urlSourceId = getTextGenUrlSourceId();
 
-        if ($(urlSourceId).val() != "") {
-            let value = formatTextGenURL(String($(urlSourceId).val()).trim(), isMancer());
+        if (urlSourceId && $(urlSourceId).val() !== "") {
+            let value = formatTextGenURL(String($(urlSourceId).val()).trim());
             if (!value) {
-                callPopup("Please enter a valid URL.<br/>WebUI URLs should end with <tt>/api</tt><br/>Enable 'Relaxed API URLs' to allow other paths.", 'text');
+                callPopup("Please enter a valid URL.", 'text');
                 return;
             }
 
-            const mancerKey = String($("#api_key_mancer").val()).trim();
-            if (mancerKey.length) {
-                await writeSecret(SECRET_KEYS.MANCER, mancerKey);
-            }
-
-            const aphroditeKey = String($("#api_key_aphrodite").val()).trim();
-            if (aphroditeKey.length) {
-                await writeSecret(SECRET_KEYS.APHRODITE, aphroditeKey);
-            }
-
             $(urlSourceId).val(value);
-            $("#api_loading_textgenerationwebui").css("display", "inline-block");
-            $("#api_button_textgenerationwebui").css("display", "none");
-
             api_server_textgenerationwebui = value;
-            main_api = "textgenerationwebui";
-            saveSettingsDebounced();
-            is_get_status = true;
-            is_api_button_press = true;
-            getStatus();
         }
+
+        $("#api_loading_textgenerationwebui").css("display", "inline-block");
+        $("#api_button_textgenerationwebui").css("display", "none");
+
+        main_api = "textgenerationwebui";
+        saveSettingsDebounced();
+        is_get_status = true;
+        is_api_button_press = true;
+        getStatus();
     });
 
     var button = $('#options_button');

@@ -9,7 +9,6 @@ const path = require('path');
 const readline = require('readline');
 const util = require('util');
 const { Readable } = require('stream');
-const { TextDecoder } = require('util');
 
 // cli/fs related library imports
 const open = require('open');
@@ -35,7 +34,6 @@ const fetch = require('node-fetch').default;
 const ipaddr = require('ipaddr.js');
 const ipMatching = require('ip-matching');
 const json5 = require('json5');
-const WebSocket = require('ws');
 
 // image processing related library imports
 const encode = require('png-chunks-encode');
@@ -57,7 +55,7 @@ const characterCardParser = require('./src/character-card-parser.js');
 const contentManager = require('./src/content-manager');
 const statsHelpers = require('./statsHelpers.js');
 const { readSecret, migrateSecrets, SECRET_KEYS } = require('./src/secrets');
-const { delay, getVersion, deepMerge} = require('./src/util');
+const { delay, getVersion, deepMerge } = require('./src/util');
 const { invalidateThumbnail, ensureThumbnailCache } = require('./src/thumbnails');
 const { getTokenizerModel, getTiktokenTokenizer, loadTokenizers, TEXT_COMPLETION_MODELS } = require('./src/tokenizers');
 const { convertClaudePrompt } = require('./src/chat-completion');
@@ -150,12 +148,20 @@ let color = {
 
 function getMancerHeaders() {
     const apiKey = readSecret(SECRET_KEYS.MANCER);
-    return apiKey ? { "X-API-KEY": apiKey } : {};
+
+    return apiKey ? ({
+        "X-API-KEY": apiKey,
+        "Authorization": `Bearer ${apiKey}`,
+    }) : {};
 }
 
 function getAphroditeHeaders() {
     const apiKey = readSecret(SECRET_KEYS.APHRODITE);
-    return apiKey ? { "X-API-KEY": apiKey } : {};
+
+    return apiKey ? ({
+        "X-API-KEY": apiKey,
+        "Authorization": `Bearer ${apiKey}`,
+    }) : {};
 }
 
 function getOverrideHeaders(urlHost) {
@@ -181,7 +187,7 @@ function setAdditionalHeaders(request, args, server) {
     } else if (request.body.use_aphrodite) {
         headers = getAphroditeHeaders();
     } else {
-        headers = server ? getOverrideHeaders((new URL(server))?.host) : '';
+        headers = server ? getOverrideHeaders((new URL(server))?.host) : {};
     }
 
     args.headers = Object.assign(args.headers, headers);
@@ -208,7 +214,7 @@ const AVATAR_HEIGHT = 600;
 const jsonParser = express.json({ limit: '100mb' });
 const urlencodedParser = express.urlencoded({ extended: true, limit: '100mb' });
 const { DIRECTORIES, UPLOADS_PATH, PALM_SAFETY } = require('./src/constants');
-const {TavernCardValidator} = require("./src/validator/TavernCardValidator");
+const { TavernCardValidator } = require("./src/validator/TavernCardValidator");
 
 // CSRF Protection //
 if (cliArguments.disableCsrf === false) {
@@ -479,215 +485,146 @@ app.post("/generate", jsonParser, async function (request, response_generate) {
     return response_generate.send({ error: true });
 });
 
-/**
- * @param {string} streamingUrlString Streaming URL
- * @param {import('express').Request} request Express request
- * @param {import('express').Response} response Express response
- * @param {AbortController} controller Abort controller
- * @returns
- */
-async function sendAphroditeStreamingRequest(streamingUrlString, request, response, controller) {
-    request.body['stream'] = true;
-
-    const args = {
-        method: 'POST',
-        body: JSON.stringify(request.body),
-        headers: { "Content-Type": "application/json" },
-        signal: controller.signal,
-    };
-
-    setAdditionalHeaders(request, args, streamingUrlString);
+//************** Text generation web UI
+app.post("/api/textgenerationwebui/status", jsonParser, async function (request, response) {
+    if (!request.body) return response.sendStatus(400);
 
     try {
-        const generateResponse = await fetch(streamingUrlString + "/v1/generate", args);
-        // Pipe remote SSE stream to Express response
-        generateResponse.body.pipe(response);
-
-        request.socket.on('close', function () {
-            if (generateResponse.body instanceof Readable) generateResponse.body.destroy(); // Close the remote stream
-            response.end(); // End the Express response
-        });
-
-        generateResponse.body.on('end', function () {
-            console.log("Streaming request finished");
-            response.end();
-        });
-    } catch (error) {
-        let value = { error: true, status: error.status, response: error.statusText };
-        console.log("Aphrodite endpoint error:", error);
-
-        if (!response.headersSent) {
-            return response.send(value);
-        } else {
-            return response.end();
-        }
-    }
-
-}
-
-//************** Text generation web UI
-app.post("/generate_textgenerationwebui", jsonParser, async function (request, response_generate) {
-    if (!request.body) return response_generate.sendStatus(400);
-
-    console.log(request.body);
-
-    const controller = new AbortController();
-    let isGenerationStopped = false;
-    request.socket.removeAllListeners('close');
-    request.socket.on('close', function () {
-        isGenerationStopped = true;
-        controller.abort();
-    });
-
-    if (request.header('X-Response-Streaming')) {
-        const streamingUrlHeader = request.header('X-Streaming-URL');
-        if (streamingUrlHeader === undefined) return response_generate.sendStatus(400);
-        const streamingUrlString = streamingUrlHeader.replace("localhost", "127.0.0.1");
-
-        if (request.body.use_aphrodite) {
-            return sendAphroditeStreamingRequest(streamingUrlString, request, response_generate, controller);
+        if (request.body.api_server.indexOf('localhost') !== -1) {
+            request.body.api_server = request.body.api_server.replace('localhost', '127.0.0.1');
         }
 
-        response_generate.writeHead(200, {
-            'Content-Type': 'text/plain;charset=utf-8',
-            'Transfer-Encoding': 'chunked',
-            'Cache-Control': 'no-transform',
-        });
+        console.log('Trying to connect to API:', request.body);
 
-        async function* readWebsocket() {
-            /** @type {WebSocket} */
-            let websocket;
-            /** @type {URL} */
-            let streamingUrl;
+        const baseUrl = request.body.api_server;
 
-            try {
-                const streamingUrl = new URL(streamingUrlString);
-                websocket = new WebSocket(streamingUrl);
-            } catch (error) {
-                console.log("[SillyTavern] Socket error", error);
-                return;
-            }
-
-            websocket.on('open', async function () {
-                console.log('WebSocket opened');
-
-                let headers = {};
-
-                if (request.body.use_mancer) {
-                    headers = getMancerHeaders();
-                } else if (request.body.use_aphrodite) {
-                    headers = getAphroditeHeaders();
-                } else {
-                    headers = getOverrideHeaders(streamingUrl?.host);
-                }
-
-                const combined_args = Object.assign(
-                    {},
-                    headers,
-                    request.body
-                );
-                console.log(combined_args);
-
-                websocket.send(JSON.stringify(combined_args));
-            });
-
-            websocket.on('close', (code, buffer) => {
-                const reason = new TextDecoder().decode(buffer)
-                console.log("WebSocket closed (reason: %o)", reason);
-            });
-
-            while (true) {
-                if (isGenerationStopped) {
-                    console.error('Streaming stopped by user. Closing websocket...');
-                    websocket.close();
-                    return;
-                }
-
-                let rawMessage = null;
-                try {
-                    // This lunacy is because the websocket can fail to connect AFTER we're awaiting 'message'... so 'message' never triggers.
-                    // So instead we need to look for 'error' at the same time to reject the promise. And then remove the listener if we resolve.
-                    // This is awful.
-                    // Welcome to the shenanigan shack.
-                    rawMessage = await new Promise(function (resolve, reject) {
-                        websocket.once('error', reject);
-                        websocket.once('message', (data, isBinary) => {
-                            websocket.removeListener('error', reject);
-                            resolve(data);
-                        });
-                    });
-                } catch (err) {
-                    console.error("Socket error:", err);
-                    websocket.close();
-                    yield "[SillyTavern] Streaming failed:\n" + err;
-                    return;
-                }
-
-                const message = json5.parse(rawMessage);
-
-                switch (message.event) {
-                    case 'text_stream':
-                        yield message.text;
-                        break;
-                    case 'stream_end':
-                        if (message.error) {
-                            yield `\n[API Error] ${message.error}\n`
-                        }
-                        websocket.close();
-                        return;
-                }
-            }
-        }
-
-        let reply = '';
-
-        try {
-            for await (const text of readWebsocket()) {
-                if (typeof text !== 'string') {
-                    break;
-                }
-
-                let newText = text;
-
-                if (!newText) {
-                    continue;
-                }
-
-                reply += text;
-                response_generate.write(newText);
-            }
-
-            console.log(reply);
-        }
-        finally {
-            response_generate.end();
-        }
-    }
-    else {
         const args = {
-            body: JSON.stringify(request.body),
             headers: { "Content-Type": "application/json" },
-            signal: controller.signal,
+            timeout: 0,
         };
 
-        setAdditionalHeaders(request, args, api_server);
+        setAdditionalHeaders(request, args, baseUrl);
 
-        try {
-            const data = await postAsync(api_server + "/v1/generate", args);
-            console.log("Endpoint response:", data);
-            return response_generate.send(data);
-        } catch (error) {
-            let retval = { error: true, status: error.status, response: error.statusText };
-            console.log("Endpoint error:", error);
-            try {
-                retval.response = await error.json();
-                retval.response = retval.response.result;
-            } catch { }
-            return response_generate.send(retval);
+        const url = new URL(baseUrl);
+
+        if (request.body.use_ooba) {
+            url.pathname = "/v1/models";
         }
+
+        if (request.body.use_aphrodite) {
+            url.pathname = "/v1/models";
+        }
+
+        if (request.body.use_mancer) {
+            url.pathname = "/oai/v1/models";
+        }
+
+        const modelsReply = await fetch(url, args);
+
+        if (!modelsReply.ok) {
+            console.log('Models endpoint is offline.');
+            return response.status(modelsReply.status);
+        }
+
+        const data = await modelsReply.json();
+
+        if (!Array.isArray(data.data)) {
+            console.log('Models response is not an array.')
+            return response.status(503);
+        }
+
+        const modelIds = data.data.map(x => x.id);
+        console.log('Models available:', modelIds);
+
+        const result = modelIds[0] ?? 'Valid';
+        return response.send({ result });
+    } catch (error) {
+        console.error(error);
+        return response.status(500);
     }
 });
 
+app.post("/api/textgenerationwebui/generate", jsonParser, async function (request, response_generate) {
+    if (!request.body) return response_generate.sendStatus(400);
+
+    try {
+        if (request.body.api_server.indexOf('localhost') !== -1) {
+            request.body.api_server = request.body.api_server.replace('localhost', '127.0.0.1');
+        }
+
+        const baseUrl = request.body.api_server;
+        console.log(request.body);
+
+        const controller = new AbortController();
+        request.socket.removeAllListeners('close');
+        request.socket.on('close', function () {
+            controller.abort();
+        });
+
+        const url = new URL(baseUrl);
+
+        if (request.body.use_aphrodite || request.body.use_ooba) {
+            url.pathname = "/v1/completions";
+        }
+
+        if (request.body.use_mancer) {
+            url.pathname = "/oai/v1/completions";
+        }
+
+        const args = {
+            method: 'POST',
+            body: JSON.stringify(request.body),
+            headers: { "Content-Type": "application/json" },
+            signal: controller.signal,
+            timeout: 0,
+        };
+
+        setAdditionalHeaders(request, args, baseUrl);
+
+        if (request.body.stream) {
+            const completionsStream = await fetch(url, args);
+            // Pipe remote SSE stream to Express response
+            completionsStream.body.pipe(response_generate);
+
+            request.socket.on('close', function () {
+                if (completionsStream.body instanceof Readable) completionsStream.body.destroy(); // Close the remote stream
+                response_generate.end(); // End the Express response
+            });
+
+            completionsStream.body.on('end', function () {
+                console.log("Streaming request finished");
+                response_generate.end();
+            });
+        }
+        else {
+            const completionsReply = await fetch(url, args);
+
+            if (completionsReply.ok) {
+                const data = await completionsReply.json();
+                console.log("Endpoint response:", data);
+                return response_generate.send(data);
+            } else {
+                const text = await completionsReply.text();
+                const errorBody = { error: true, status: completionsReply.status, response: text };
+
+                if (!response_generate.headersSent) {
+                    return response_generate.send(errorBody);
+                }
+
+                return response_generate.end();
+            }
+        }
+    } catch (error) {
+        let value = { error: true, status: error?.status, response: error?.statusText };
+        console.log("Endpoint error:", error);
+
+        if (!response_generate.headersSent) {
+            return response_generate.send(value);
+        }
+
+        return response_generate.end();
+    }
+});
 
 app.post("/savechat", jsonParser, function (request, response) {
     try {
@@ -740,7 +677,7 @@ app.post("/getchat", jsonParser, function (request, response) {
 
 app.post("/api/mancer/models", jsonParser, async function (_req, res) {
     try {
-        const response = await fetch('https://mancer.tech/internal/api/models');
+        const response = await fetch('https://neuro.mancer.tech/oai/v1/models');
         const data = await response.json();
 
         if (!response.ok) {
@@ -748,15 +685,12 @@ app.post("/api/mancer/models", jsonParser, async function (_req, res) {
             return res.json([]);
         }
 
-        if (!Array.isArray(data.models)) {
+        if (!Array.isArray(data.data)) {
             console.log('Mancer models response is not an array.')
             return res.json([]);
         }
 
-        const modelIds = data.models.map(x => x.id);
-        console.log('Mancer models available:', modelIds);
-
-        return res.json(data.models);
+        return res.json(data.data);
     } catch (error) {
         console.error(error);
         return res.json([]);
@@ -1184,7 +1118,7 @@ app.post("/v2/editcharacterattribute", jsonParser, async function (request, resp
     const avatarPath = path.join(charactersPath, update.avatar);
 
     try {
-        let character =  JSON.parse(await charaRead(avatarPath));
+        let character = JSON.parse(await charaRead(avatarPath));
         character = deepMerge(character, update);
 
         const validator = new TavernCardValidator(character);
@@ -1200,10 +1134,10 @@ app.post("/v2/editcharacterattribute", jsonParser, async function (request, resp
             );
         } else {
             console.log(validator.lastValidationError)
-            response.status(400).send({message: `Validation failed for ${character.name}`, error: validator.lastValidationError});
+            response.status(400).send({ message: `Validation failed for ${character.name}`, error: validator.lastValidationError });
         }
     } catch (exception) {
-        response.status(500).send({message: 'Unexpected error while saving character.', error: exception.toString()});
+        response.status(500).send({ message: 'Unexpected error while saving character.', error: exception.toString() });
     }
 });
 
