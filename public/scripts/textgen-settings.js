@@ -437,9 +437,11 @@ function tryParseStreamingError(response) {
         // No JSON. Do nothing.
     }
 
-    if (data?.error?.message) {
-        toastr.error(data.error.message, 'API Error');
-        throw new Error(data.error.message);
+    const message = data?.error?.message || data?.message;
+
+    if (message) {
+        toastr.error(message, 'API Error');
+        throw new Error(message);
     }
 }
 
