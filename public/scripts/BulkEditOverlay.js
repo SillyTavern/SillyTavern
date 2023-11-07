@@ -281,7 +281,7 @@ class BulkEditOverlay {
     static selectedClass = 'character_selected';
     static legacySelectedClass = 'bulk_select_checkbox';
 
-    static longPressDelay = 2800;
+    static longPressDelay = 1500;
 
     #state = BulkEditOverlayState.browse;
     #longPress = false;
