@@ -187,6 +187,7 @@ import { getFriendlyTokenizerName, getTokenCount, getTokenizerModel, initTokeniz
 import { initPersonas, selectCurrentPersona, setPersonaDescription } from "./scripts/personas.js";
 import { getBackgrounds, initBackgrounds } from "./scripts/backgrounds.js";
 import { hideLoader, showLoader } from "./scripts/loader.js";
+import {CharacterContextMenu, BulkEditOverlay} from "./scripts/BulkEditOverlay.js";
 
 //exporting functions and vars for mods
 export {
@@ -299,6 +300,9 @@ export const event_types = {
     OAI_PRESET_CHANGED_AFTER: 'oai_preset_changed_after',
     WORLDINFO_SETTINGS_UPDATED: 'worldinfo_settings_updated',
     CHARACTER_EDITED: 'character_edited',
+    CHARACTER_PAGE_LOADED: 'character_page_loaded',
+    CHARACTER_GROUP_OVERLAY_STATE_CHANGE_BEFORE: 'character_group_overlay_state_change_before',
+    CHARACTER_GROUP_OVERLAY_STATE_CHANGE_AFTER: 'character_group_overlay_state_change_after',
     USER_MESSAGE_RENDERED: 'user_message_rendered',
     CHARACTER_MESSAGE_RENDERED: 'character_message_rendered',
     FORCE_SET_BACKGROUND: 'force_set_background',
@@ -315,6 +319,10 @@ eventSource.on(event_types.SETTINGS_LOADED, () => { settingsReady = true; });
 eventSource.on(event_types.CHAT_CHANGED, displayOverrideWarnings);
 eventSource.on(event_types.MESSAGE_RECEIVED, processExtensionHelpers);
 eventSource.on(event_types.MESSAGE_SENT, processExtensionHelpers);
+
+const characterGroupOverlay = new BulkEditOverlay();
+const characterContextMenu = new CharacterContextMenu(characterGroupOverlay);
+eventSource.on(event_types.CHARACTER_PAGE_LOADED, characterGroupOverlay.onPageLoad);
 
 hljs.addPlugin({ "before:highlightElement": ({ el }) => { el.textContent = el.innerText } });
 
@@ -1048,6 +1056,7 @@ async function printCharacters(fullRefresh = false) {
                     $("#rm_print_characters_block").append(getGroupBlock(i.item));
                 }
             }
+            eventSource.emit(event_types.CHARACTER_PAGE_LOADED);
         },
         afterSizeSelectorChange: function (e) {
             localStorage.setItem(storageKey, e.target.value);
@@ -1076,7 +1085,7 @@ export function getEntitiesList({ doFilter } = {}) {
     return entities;
 }
 
-async function getOneCharacter(avatarUrl) {
+export async function getOneCharacter(avatarUrl) {
     const response = await fetch("/getonecharacter", {
         method: "POST",
         headers: getRequestHeaders(),
@@ -5523,6 +5532,8 @@ export async function getChatsFromFiles(data, isGroupChat) {
  * in descending order by file name. Returns `undefined` if the fetch request is unsuccessful.
  */
 async function getPastCharacterChats() {
+    if (!characters.includes(this_chid)) return;
+
     const response = await fetch("/getallchatsofcharacter", {
         method: 'POST',
         body: JSON.stringify({ avatar_url: characters[this_chid].avatar }),
@@ -7204,7 +7215,8 @@ function doCloseChat() {
  * @param {boolean} delete_chats - Whether to delete chats or not.
  */
 export async function handleDeleteCharacter(popup_type, this_chid, delete_chats) {
-    if (popup_type !== "del_ch") {
+    if (popup_type !== "del_ch" ||
+        !characters[this_chid]) {
         return;
     }
 
