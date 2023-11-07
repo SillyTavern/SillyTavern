@@ -2333,6 +2333,7 @@ input[type="checkbox"]:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
     background-repeat: no-repeat !important;
     box-shadow: inset 0 0 2px var(--black50a) !important;
     cursor: ew-resize !important;
+    z-index: 1;
 }
 
 .range-block-range {
