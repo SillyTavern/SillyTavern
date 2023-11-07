@@ -162,6 +162,7 @@ let power_user = {
     max_context_unlocked: false,
     message_token_count_enabled: false,
     expand_message_actions: false,
+    enableZenSliders: false,
     prefer_character_prompt: true,
     prefer_character_jailbreak: true,
     quick_continue: false,
@@ -251,6 +252,7 @@ const storage_keys = {
     mesIDDisplay_enabled: 'mesIDDisplayEnabled',
     message_token_count_enabled: 'MessageTokenCountEnabled',
     expand_message_actions: 'ExpandMessageActions',
+    enableZenSliders: 'enableZenSliders',
 };
 
 const contextControls = [
@@ -418,6 +420,179 @@ function switchMessageActions() {
     $("#expandMessageActions").prop("checked", power_user.expand_message_actions);
     $('.extraMesButtons, .extraMesButtonsHint').removeAttr('style');
 }
+
+async function switchZenSliders() {
+    await delay(100)
+    const value = localStorage.getItem(storage_keys.enableZenSliders);
+    power_user.enableZenSliders = value === null ? false : value == "true";
+    $("body").toggleClass("enableZenSliders", power_user.enableZenSliders);
+    $("#enableZenSliders").prop("checked", power_user.enableZenSliders);
+
+    function revertOriginalSliders() {
+        $("#textgenerationwebui_api-settings input[type='number']").show();
+        $("#pro-settings-block input[type='number']").show();
+        $(`#textgenerationwebui_api-settings input[type='range'],
+         #pro-settings-block input[type='range']`).each(function () {
+            $(this).show();
+        });
+        $('div[id$="_zenslider"]').remove();
+    }
+
+    if (power_user.enableZenSliders) {
+        $("#textgenerationwebui_api-settings input[type='number']").hide();
+        $("#pro-settings-block input[type='number']").hide();
+        $("#seed_textgenerationwebui").show();
+        $(`#textgenerationwebui_api-settings input[type='range'],
+        #pro-settings-block input[type='range']`)
+            .hide()
+            .each(function () {
+                CreateZenSliders($(this))
+            })
+
+    } else {
+        revertOriginalSliders();
+    }
+    async function CreateZenSliders(elmnt) {
+        //await delay(100)
+        var originalSlider = elmnt;
+        var sliderID = originalSlider.attr('id')
+        var sliderMin = Number(originalSlider.attr('min'))
+        var sliderMax = Number(originalSlider.attr('max'))
+        var sliderValue = originalSlider.val();
+        var sliderRange = sliderMax - sliderMin
+        var numSteps = 10
+        var decimals = 2
+
+        if (sliderID == 'rep_pen_range_textgenerationwebui') {
+            numSteps = 16
+            decimals = 0
+        }
+        if (sliderID == 'amount_gen') {
+            decimals = 0
+            var steps = [16, 50, 100, 150, 200, 256, 300, 400, 512, 1024];
+            sliderMin = 0
+            sliderMax = steps.length - 1
+            stepScale = 1;
+            numSteps = 10
+            sliderValue = steps.indexOf(Number(sliderValue))
+            if (sliderValue === -1) { sliderValue = 4 } // default to '200' if origSlider has value we can't use
+        }
+        if (sliderID == 'max_context') {
+            numSteps = 15
+            decimals = 0
+        }
+        if (sliderID == 'encoder_rep_pen_textgenerationwebui') {
+            numSteps = 14
+        }
+        if (sliderID == 'mirostat_mode_textgenerationwebui') {
+            numSteps = 2
+            decimals = 0
+        }
+        if (sliderID == 'mirostat_tau_textgenerationwebui' ||
+            sliderID == 'top_k_textgenerationwebui' ||
+            sliderID == 'num_beams_textgenerationwebui' ||
+            sliderID == 'no_repeat_ngram_size_textgenerationwebui') {
+            numSteps = 20
+            decimals = 0
+        }
+        if (sliderID == 'epsilon_cutoff_textgenerationwebui') {
+            numSteps = 20
+            decimals = 1
+        }
+        if (sliderID == 'tfs_textgenerationwebui' ||
+            sliderID == 'min_p_textgenerationwebui') {
+            numSteps = 20
+            decimals = 2
+        }
+
+        if (sliderID == 'mirostat_eta_textgenerationwebui' ||
+            sliderID == 'penalty_alpha_textgenerationwebui' ||
+            sliderID == 'length_penalty_textgenerationwebui') {
+            numSteps = 50
+        }
+        if (sliderID == 'eta_cutoff_textgenerationwebui') {
+            numSteps = 50
+            decimals = 1
+        }
+        if (sliderID == 'guidance_scale_textgenerationwebui') {
+            numSteps = 78
+        }
+        if (sliderID == 'min_length_textgenerationwebui') {
+            decimals = 0
+        }
+        if (sliderID == 'temp_textgenerationwebui') {
+            numSteps = 20
+        }
+
+        if (sliderID !== 'amount_gen') {
+            var stepScale = sliderRange / numSteps
+        }
+
+        var newSlider = $("<div>")
+            .attr('id', `${sliderID}_zenslider`)
+            .css("width", "100%")
+            .insertBefore(originalSlider);
+
+        newSlider.slider({
+            value: sliderValue,
+            step: stepScale,
+            min: sliderMin,
+            max: sliderMax,
+            create: function () {
+                var handle = $(this).find(".ui-slider-handle");
+                if (newSlider.attr('id') == 'amount_gen_zenslider') {
+                    //console.log(sliderValue, steps.indexOf(Number(sliderValue)))
+                    var handleText = steps[sliderValue]
+                    handle.text(handleText);
+                    //console.log(handleText)
+                    var stepNumber = sliderValue
+                    var leftMargin = ((stepNumber) / numSteps) * 50 * -1
+                    //console.log(`initial value:${handleText}, stepNum:${stepNumber}, numSteps:${numSteps}, left-margin:${leftMargin}`)
+                    handle.css('margin-left', `${leftMargin}px`)
+                } else {
+
+                    var handleText = Number(sliderValue).toFixed(decimals)
+                    handle.text(handleText);
+                    var stepNumber = ((sliderValue - sliderMin) / stepScale)
+                    var leftMargin = (stepNumber / numSteps) * 50 * -1
+                    handle.css('margin-left', `${leftMargin}px`)
+                    console.debug(sliderID, sliderValue, handleText, stepNumber, stepScale)
+                }
+            },
+            slide: function (event, ui) {
+                var handle = $(this).find(".ui-slider-handle");
+                if (newSlider.attr('id') == 'amount_gen_zenslider') {
+                    //console.log(`stepScale${stepScale}, UIvalue:${ui.value}, mappedValue:${steps[ui.value]}`)
+                    $(this).val(steps[ui.value])
+                    let handleText = steps[ui.value].toFixed(decimals)
+                    handle.text(handleText);
+                    var stepNumber = steps.indexOf(Number(handleText))
+                    var leftMargin = (stepNumber / numSteps) * 50 * -1
+                    //console.log(`handleText:${handleText},stepNum:${stepNumber}, numSteps:${numSteps},LeftMargin:${leftMargin}`)
+                    handle.css('margin-left', `${leftMargin}px`)
+                    originalSlider.val(handleText);
+                    originalSlider.trigger('input')
+                    originalSlider.trigger('change')
+                } else {
+                    handle.text(ui.value.toFixed(decimals));
+                    var stepNumber = ((ui.value - sliderMin) / stepScale)
+                    var leftMargin = (stepNumber / numSteps) * 50 * -1
+                    handle.css('margin-left', `${leftMargin}px`)
+                    let handleText = (ui.value)
+                    originalSlider.val(handleText);
+                    originalSlider.trigger('input')
+                    originalSlider.trigger('change')
+                }
+
+            }
+
+        });
+        originalSlider.data("newSlider", newSlider);
+        originalSlider.hide();
+    };
+
+}
+
 
 function switchUiMode() {
     const fastUi = localStorage.getItem(storage_keys.fast_ui_mode);
@@ -781,6 +956,13 @@ async function applyTheme(name) {
             }
         },
         {
+            key: 'enableZenSliders',
+            action: async () => {
+                localStorage.setItem(storage_keys.enableZenSliders, Boolean(power_user.enableZenSliders));
+                switchMessageActions();
+            }
+        },
+        {
             key: 'hotswap_enabled',
             action: async () => {
                 localStorage.setItem(storage_keys.hotswap_enabled, Boolean(power_user.hotswap_enabled));
@@ -894,6 +1076,7 @@ function loadPowerUserSettings(settings, data) {
     const timestamps = localStorage.getItem(storage_keys.timestamps_enabled);
     const mesIDDisplay = localStorage.getItem(storage_keys.mesIDDisplay_enabled);
     const expandMessageActions = localStorage.getItem(storage_keys.expand_message_actions);
+    const enableZenSliders = localStorage.getItem(storage_keys.enableZenSliders);
     power_user.fast_ui_mode = fastUi === null ? true : fastUi == "true";
     power_user.movingUI = movingUI === null ? false : movingUI == "true";
     power_user.noShadows = noShadows === null ? false : noShadows == "true";
@@ -902,6 +1085,7 @@ function loadPowerUserSettings(settings, data) {
     power_user.timestamps_enabled = timestamps === null ? true : timestamps == "true";
     power_user.mesIDDisplay_enabled = mesIDDisplay === null ? true : mesIDDisplay == "true";
     power_user.expand_message_actions = expandMessageActions === null ? true : expandMessageActions == "true";
+    power_user.enableZenSliders = enableZenSliders === null ? false : enableZenSliders == "true";
     power_user.avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? avatar_styles.ROUND);
     //power_user.chat_display = Number(localStorage.getItem(storage_keys.chat_display) ?? chat_styles.DEFAULT);
     power_user.chat_width = Number(localStorage.getItem(storage_keys.chat_width) ?? 50);
@@ -983,6 +1167,7 @@ function loadPowerUserSettings(settings, data) {
     $("#mesIDDisplayEnabled").prop("checked", power_user.mesIDDisplay_enabled);
     $("#prefer_character_prompt").prop("checked", power_user.prefer_character_prompt);
     $("#prefer_character_jailbreak").prop("checked", power_user.prefer_character_jailbreak);
+    $("#enableZenSliders").prop('checked', power_user.enableZenSliders).trigger('input');
     $(`input[name="avatar_style"][value="${power_user.avatar_style}"]`).prop("checked", true);
     $(`#chat_display option[value=${power_user.chat_display}]`).attr("selected", true).trigger('change');
     $('#chat_width_slider').val(power_user.chat_width);
@@ -1402,7 +1587,7 @@ async function saveTheme() {
         mesIDDisplay_enabled: power_user.mesIDDisplay_enabled,
         message_token_count_enabled: power_user.message_token_count_enabled,
         expand_message_actions: power_user.expand_message_actions,
-
+        enableZenSliders: power_user.enableZenSliders,
         hotswap_enabled: power_user.hotswap_enabled,
         custom_css: power_user.custom_css,
 
@@ -2344,6 +2529,13 @@ $(document).ready(() => {
         power_user.expand_message_actions = value;
         localStorage.setItem(storage_keys.expand_message_actions, Boolean(power_user.expand_message_actions));
         switchMessageActions();
+    });
+
+    $("#enableZenSliders").on("input", function () {
+        const value = !!$(this).prop('checked');
+        power_user.enableZenSliders = value;
+        localStorage.setItem(storage_keys.enableZenSliders, Boolean(power_user.enableZenSliders));
+        switchZenSliders();
     });
 
     $("#mesIDDisplayEnabled").on("input", function () {

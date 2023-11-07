@@ -33,7 +33,7 @@
                     <small data-i18n="Replace With">Replace With</small>
                 </label>
                 <div>
-                    <textarea 
+                    <textarea
                         class="regex_replace_string text_pole wide100p textarea_compact"
                         placeholder="Use {{match}} to include the matched text from the Find Regex"
                         rows="2"
@@ -45,7 +45,7 @@
                     <small data-i18n="Trim Out">Trim Out</small>
                 </label>
                 <div>
-                    <textarea 
+                    <textarea
                         class="regex_trim_strings text_pole wide100p textarea_compact"
                         placeholder="Globally trims any unwanted parts from a regex match before replacement. Separate each element by an enter."
                         rows="3"
@@ -85,6 +85,10 @@
                 <label class="checkbox flex-container">
                     <input type="checkbox" name="only_format_display" />
                     <span data-i18n="Only Format Display">Only Format Display</span>
+                </label>
+                <label class="checkbox flex-container" title="Chat history won't change, only the prompt as the request is sent (on generation)">
+                    <input type="checkbox" name="only_format_prompt"/>
+                    <span data-i18n="Only Format Prompt (?)">Only Format Prompt (?)</span>
                 </label>
                 <label class="checkbox flex-container">
                     <input type="checkbox" name="run_on_edit" />

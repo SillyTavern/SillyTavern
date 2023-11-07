@@ -25,6 +25,9 @@ import {
     event_types,
     substituteParams,
     MAX_INJECTION_DEPTH,
+    getStoppingStrings,
+    getNextMessageId,
+    replaceItemizedPromptText,
 } from "../script.js";
 import { groups, selected_group } from "./group-chats.js";
 
@@ -110,6 +113,7 @@ const max_4k = 4095;
 const max_8k = 8191;
 const max_16k = 16383;
 const max_32k = 32767;
+const max_128k = 128 * 1024 - 1;
 const scale_max = 8191;
 const claude_max = 9000; // We have a proper tokenizer, so theoretically could be larger (up to 9k)
 const palm2_max = 7500; // The real context window is 8192, spare some for padding due to using turbo tokenizer
@@ -153,7 +157,7 @@ const textCompletionModels = [
 ];
 
 let biasCache = undefined;
-let model_list = [];
+export let model_list = [];
 
 export const chat_completion_sources = {
     OPENAI: 'openai',
@@ -367,13 +371,18 @@ function convertChatCompletionToInstruct(messages, type) {
     }
 
     const isImpersonate = type === 'impersonate';
+    const isContinue = type === 'continue';
     const promptName = isImpersonate ? name1 : name2;
-    const promptLine = formatInstructModePrompt(promptName, isImpersonate, '', name1, name2).trimStart();
+    const promptLine = isContinue ? '' : formatInstructModePrompt(promptName, isImpersonate, '', name1, name2).trimStart();
 
-    const prompt = [systemPromptText, examplesText, chatMessagesText, promptLine]
+    let prompt = [systemPromptText, examplesText, chatMessagesText, promptLine]
         .filter(x => x)
         .map(x => x.endsWith('\n') ? x : `${x}\n`)
         .join('');
+
+    if (isContinue) {
+        prompt = prompt.replace(/\n$/, '');
+    }
 
     return prompt;
 }
@@ -578,6 +587,10 @@ function populationInjectionPrompts(prompts) {
     openai_msgs = openai_msgs.reverse();
 }
 
+export function isOpenRouterWithInstruct() {
+    return oai_settings.chat_completion_source === chat_completion_sources.OPENROUTER && oai_settings.openrouter_force_instruct && power_user.instruct.enabled;
+}
+
 /**
  * Populates the chat history of the conversation.
  *
@@ -604,7 +617,8 @@ function populateChatHistory(prompts, chatCompletion, type = null, cyclePrompt =
 
     // Reserve budget for continue nudge
     let continueMessage = null;
-    if (type === 'continue' && cyclePrompt) {
+    const instruct = isOpenRouterWithInstruct();
+    if (type === 'continue' && cyclePrompt && !instruct) {
         const continuePrompt = new Prompt({
             identifier: 'continueNudge',
             role: 'system',
@@ -1213,7 +1227,7 @@ function calculateOpenRouterCost() {
 }
 
 function saveModelList(data) {
-    model_list = data.map((model) => ({ id: model.id, context_length: model.context_length, pricing: model.pricing }));
+    model_list = data.map((model) => ({ id: model.id, context_length: model.context_length, pricing: model.pricing, architecture: model.architecture }));
     model_list.sort((a, b) => a?.id && b?.id && a.id.localeCompare(b.id));
 
     if (oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER) {
@@ -1249,7 +1263,7 @@ function saveModelList(data) {
     }
 }
 
-async function sendAltScaleRequest(openai_msgs_tosend, logit_bias, signal) {
+async function sendAltScaleRequest(openai_msgs_tosend, logit_bias, signal, type) {
     const generate_url = '/generate_altscale';
 
     let firstSysMsgs = []
@@ -1269,6 +1283,8 @@ async function sendAltScaleRequest(openai_msgs_tosend, logit_bias, signal) {
     }, "");
 
     openai_msgs_tosend = substituteParams(joinedSubsequentMsgs);
+    const messageId = getNextMessageId(type);
+    replaceItemizedPromptText(messageId, openai_msgs_tosend);
 
     const generate_data = {
         sysprompt: joinedSysMsgs,
@@ -1304,6 +1320,7 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
     openai_msgs_tosend = openai_msgs_tosend.filter(msg => msg && typeof msg === 'object');
 
     let logit_bias = {};
+    const messageId = getNextMessageId(type);
     const isClaude = oai_settings.chat_completion_source == chat_completion_sources.CLAUDE;
     const isOpenRouter = oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER;
     const isScale = oai_settings.chat_completion_source == chat_completion_sources.SCALE;
@@ -1317,6 +1334,7 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
 
     if (isTextCompletion && isOpenRouter) {
         openai_msgs_tosend = convertChatCompletionToInstruct(openai_msgs_tosend, type);
+        replaceItemizedPromptText(messageId, openai_msgs_tosend);
     }
 
     if (isAI21 || isPalm) {
@@ -1325,6 +1343,7 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
             return acc + (prefix ? (selected_group ? "\n" : prefix + " ") : "") + obj.content + "\n";
         }, "");
         openai_msgs_tosend = substituteParams(joinedMsgs) + (isImpersonate ? `${name1}:` : `${name2}:`);
+        replaceItemizedPromptText(messageId, openai_msgs_tosend);
     }
 
     // If we're using the window.ai extension, use that instead
@@ -1343,7 +1362,7 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
     }
 
     if (isScale && oai_settings.use_alt_scale) {
-        return sendAltScaleRequest(openai_msgs_tosend, logit_bias, signal)
+        return sendAltScaleRequest(openai_msgs_tosend, logit_bias, signal, type);
     }
 
     const model = getChatCompletionModel();
@@ -1382,6 +1401,10 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
         generate_data['use_openrouter'] = true;
         generate_data['top_k'] = Number(oai_settings.top_k_openai);
         generate_data['use_fallback'] = oai_settings.openrouter_use_fallback;
+
+        if (isTextCompletion) {
+            generate_data['stop'] = getStoppingStrings(isImpersonate);
+        }
     }
 
     if (isScale) {
@@ -2775,6 +2798,12 @@ function getMaxContextOpenAI(value) {
     if (oai_settings.max_context_unlocked) {
         return unlocked_max;
     }
+    else if (value.includes('gpt-4-1106')) {
+        return max_128k;
+    }
+    else if (value.includes('gpt-3.5-turbo-1106')) {
+        return max_16k;
+    }
     else if (['gpt-4', 'gpt-4-0314', 'gpt-4-0613'].includes(value)) {
         return max_8k;
     }
@@ -2806,11 +2835,17 @@ function getMaxContextWindowAI(value) {
     else if (value.includes('claude')) {
         return claude_max;
     }
+    else if (value.includes('gpt-3.5-turbo-1106')) {
+        return max_16k;
+    }
     else if (value.includes('gpt-3.5-turbo-16k')) {
         return max_16k;
     }
     else if (value.includes('gpt-3.5')) {
         return max_4k;
+    }
+    else if (value.includes('gpt-4-1106')) {
+        return max_128k;
     }
     else if (value.includes('gpt-4-32k')) {
         return max_32k;
