@@ -8,6 +8,7 @@ import {
     eventSource,
     getCharacters,
     getRequestHeaders,
+    printCharacters,
     this_chid
 } from "../script.js";
 
@@ -231,6 +232,8 @@ class BulkTagPopupHandler {
         if (popupElement) {
             document.body.removeChild(popupElement);
         }
+
+        printCharacters(true);
     }
 
     /**
@@ -243,6 +246,8 @@ class BulkTagPopupHandler {
             const key = getTagKeyForCharacter(characterId);
             if (key) tag_map[key] = [];
         });
+
+        printCharacters(true);
     }
 }
 
