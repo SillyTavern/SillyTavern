@@ -12,9 +12,9 @@ import {
     this_chid
 } from "../script.js";
 
-import {favsToHotswap} from "./RossAscends-mods.js";
-import {convertCharacterToPersona} from "./personas.js";
-import {createTagInput, getTagKeyForCharacter, tag_map} from "./tags.js";
+import { favsToHotswap } from "./RossAscends-mods.js";
+import { convertCharacterToPersona } from "./personas.js";
+import { createTagInput, getTagKeyForCharacter, tag_map } from "./tags.js";
 
 // Utility object for popup messages.
 const popupMessage = {
@@ -117,7 +117,7 @@ class CharacterContextMenu {
         return fetch('/deletecharacter', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify({ avatar_url: character.avatar , delete_chats: deleteChats }),
+            body: JSON.stringify({ avatar_url: character.avatar, delete_chats: deleteChats }),
             cache: 'no-cache',
         }).then(response => {
             if (response.ok) {
@@ -127,7 +127,7 @@ class CharacterContextMenu {
                             method: 'POST',
                             body: JSON.stringify({ avatar_url: character.avatar }),
                             headers: getRequestHeaders(),
-                        }).then( (response) => {
+                        }).then((response) => {
                             let data = response.json();
                             data = Object.values(data);
                             const pastChats = data.sort((a, b) => a["file_name"].localeCompare(b["file_name"])).reverse();
@@ -173,11 +173,11 @@ class CharacterContextMenu {
      */
     constructor(characterGroupOverlay) {
         const contextMenuItems = [
-            {id: 'character_context_menu_favorite', callback: characterGroupOverlay.handleContextMenuFavorite},
-            {id: 'character_context_menu_duplicate', callback: characterGroupOverlay.handleContextMenuDuplicate},
-            {id: 'character_context_menu_delete', callback: characterGroupOverlay.handleContextMenuDelete},
-            {id: 'character_context_menu_persona', callback: characterGroupOverlay.handleContextMenuPersona},
-            {id: 'character_context_menu_tag', callback: characterGroupOverlay.handleContextMenuTag}
+            { id: 'character_context_menu_favorite', callback: characterGroupOverlay.handleContextMenuFavorite },
+            { id: 'character_context_menu_duplicate', callback: characterGroupOverlay.handleContextMenuDuplicate },
+            { id: 'character_context_menu_delete', callback: characterGroupOverlay.handleContextMenuDelete },
+            { id: 'character_context_menu_persona', callback: characterGroupOverlay.handleContextMenuPersona },
+            { id: 'character_context_menu_tag', callback: characterGroupOverlay.handleContextMenuTag }
         ];
 
         contextMenuItems.forEach(contextMenuItem => document.getElementById(contextMenuItem.id).addEventListener('click', contextMenuItem.callback))
@@ -189,7 +189,7 @@ class CharacterContextMenu {
  */
 class BulkTagPopupHandler {
     static #getHtml = (characterIds) => {
-        const characterData = JSON.stringify({characterIds: characterIds});
+        const characterData = JSON.stringify({ characterIds: characterIds });
         return `<div id="bulk_tag_shadow_popup">
             <div id="bulk_tag_popup">
                 <div id="bulk_tag_popup_holder">
@@ -281,7 +281,7 @@ class BulkEditOverlay {
     static selectedClass = 'character_selected';
     static legacySelectedClass = 'bulk_select_checkbox';
 
-    static longPressDelay = 1500;
+    static longPressDelay = 2500;
 
     #state = BulkEditOverlayState.browse;
     #longPress = false;
@@ -357,10 +357,12 @@ class BulkEditOverlay {
         const elements = this.#getEnabledElements();
         elements.forEach(element => element.addEventListener('touchstart', this.handleHold));
         elements.forEach(element => element.addEventListener('mousedown', this.handleHold));
+        elements.forEach(element => element.addEventListener('contextmenu', this.handleDefaultContextMenu));
 
         elements.forEach(element => element.addEventListener('touchend', this.handleLongPressEnd));
         elements.forEach(element => element.addEventListener('mouseup', this.handleLongPressEnd));
         elements.forEach(element => element.addEventListener('dragend', this.handleLongPressEnd));
+        elements.forEach(element => element.addEventListener('touchmove', this.handleLongPressEnd));
 
         const grid = document.getElementById(BulkEditOverlay.containerId);
         grid.addEventListener('click', this.handleCancelClick);
@@ -410,12 +412,16 @@ class BulkEditOverlay {
         document.removeEventListener('click', this.handleContextMenuHide);
     }
 
+    handleDefaultContextMenu = (event) => {
+        if (this.isLongPress) {
+            event.preventDefault();
+            event.stopPropagation();
+            return false;
+        }
+    }
+
     handleHold = (event) => {
         if (0 !== event.button && event.type !== 'touchstart') return;
-
-        // Prevent call for mobile browser context menu on long-press.
-        event.preventDefault();
-        event.stopPropagation();
 
         this.isLongPress = true;
         setTimeout(() => {
@@ -540,7 +546,8 @@ class BulkEditOverlay {
 
                 Promise.all(this.selectedCharacters.map(async characterId => CharacterContextMenu.delete(characterId, deleteChats)))
                     .then(() => getCharacters())
-                    .then(() => this.browseState())}
+                    .then(() => this.browseState())
+            }
             );
     }
 
@@ -563,9 +570,9 @@ class BulkEditOverlay {
      */
     clearSelectedCharacters = () => {
         document.querySelectorAll('#' + BulkEditOverlay.containerId + ' .' + BulkEditOverlay.selectedClass)
-            .forEach( element => element.classList.remove(BulkEditOverlay.selectedClass));
+            .forEach(element => element.classList.remove(BulkEditOverlay.selectedClass));
         this.selectedCharacters.length = 0;
     }
 }
 
-export {BulkEditOverlayState, CharacterContextMenu, BulkEditOverlay};
+export { BulkEditOverlayState, CharacterContextMenu, BulkEditOverlay };
