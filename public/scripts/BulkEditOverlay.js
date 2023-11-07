@@ -397,7 +397,7 @@ class BulkEditOverlay {
      * set a click event to hide the custom context menu.
      */
     enableContextMenu = () => {
-        document.addEventListener('contextmenu', this.handleContextMenuShow);
+        document.getElementById('rm_print_characters_block').addEventListener('contextmenu', this.handleContextMenuShow);
         document.addEventListener('click', this.handleContextMenuHide);
     }
 
@@ -406,7 +406,7 @@ class BulkEditOverlay {
      * menu to be opened.
      */
     disableContextMenu = () => {
-        document.removeEventListener('contextmenu', this.handleContextMenuShow);
+        document.getElementById('rm_print_characters_block').removeEventListener('contextmenu', this.handleContextMenuShow);
         document.removeEventListener('click', this.handleContextMenuHide);
     }
 
