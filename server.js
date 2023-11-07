@@ -500,7 +500,6 @@ app.post("/api/textgenerationwebui/status", jsonParser, async function (request,
 
         const args = {
             headers: { "Content-Type": "application/json" },
-            timeout: 0,
         };
 
         setAdditionalHeaders(request, args, baseUrl);
