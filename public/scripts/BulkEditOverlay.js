@@ -290,6 +290,13 @@ class BulkEditOverlay {
     #selectedCharacters = [];
 
     /**
+     * If ture, prevents items from being deselected by clicking anywhere
+     *
+     * @type {boolean}
+     */
+    #selectModeLock = false;
+
+    /**
      * @type HTMLElement
      */
     container = null;
@@ -376,6 +383,7 @@ class BulkEditOverlay {
         switch (this.state) {
             case BulkEditOverlayState.browse:
                 this.container.classList.remove(BulkEditOverlay.selectModeClass);
+                this.#selectModeLock = false;
                 this.#enableClickEventsForCharacters();
                 this.#enableClickEventsForGroups();
                 this.clearSelectedCharacters();
@@ -439,10 +447,13 @@ class BulkEditOverlay {
 
         setTimeout(() => {
             if (this.isLongPress && !cancel) {
-                if (this.state === BulkEditOverlayState.browse)
+                if (this.state === BulkEditOverlayState.browse) {
                     this.selectState();
-                else if (this.state === BulkEditOverlayState.select)
+                }
+                else if (this.state === BulkEditOverlayState.select) {
+                    this.#selectModeLock = true;
                     CharacterContextMenu.show(...this.#getContextMenuPosition(event));
+                }
             }
 
             this.container.removeEventListener('mouseup', cancelHold);
@@ -452,10 +463,12 @@ class BulkEditOverlay {
 
     handleLongPressEnd = () => {
         this.isLongPress = false;
+        if (this.#selectModeLock) event.stopPropagation();
     }
 
     handleCancelClick = () => {
-        this.state = BulkEditOverlayState.browse;
+        if (false === this.#selectModeLock) this.state = BulkEditOverlayState.browse;
+        this.#selectModeLock = false;
     }
 
     /**
@@ -497,21 +510,23 @@ class BulkEditOverlay {
 
         const legacyBulkEditCheckbox = character.querySelector('.' + BulkEditOverlay.legacySelectedClass);
 
-        if (alreadySelected) {
-            character.classList.remove(BulkEditOverlay.selectedClass);
-            if (legacyBulkEditCheckbox) legacyBulkEditCheckbox.checked = false;
-            this.dismissCharacter(characterId);
-        } else {
-            character.classList.add(BulkEditOverlay.selectedClass)
-            if (legacyBulkEditCheckbox) legacyBulkEditCheckbox.checked = true;
-            this.selectCharacter(characterId);
-        }
+        if (!this.#selectModeLock)
+            if (alreadySelected) {
+                character.classList.remove(BulkEditOverlay.selectedClass);
+                if (legacyBulkEditCheckbox) legacyBulkEditCheckbox.checked = false;
+                this.dismissCharacter(characterId);
+            } else {
+                character.classList.add(BulkEditOverlay.selectedClass)
+                if (legacyBulkEditCheckbox) legacyBulkEditCheckbox.checked = true;
+                this.selectCharacter(characterId);
+            }
     }
 
     handleContextMenuShow = (event) => {
         event.preventDefault();
         this.container.style.pointerEvents = 'none';
         CharacterContextMenu.show(...this.#getContextMenuPosition(event));
+        this.#selectModeLock = true;
     }
 
     handleContextMenuHide = (event) => {
