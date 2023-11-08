@@ -31,7 +31,7 @@
 #character_context_menu {
     position: absolute;
     padding: 3px;
-    z-index: 10000;
+    z-index: 9998;
     background-color: var(--black90a);
     border: 1px solid var(--black90a);
     border-radius: 10px;
