@@ -151,7 +151,8 @@ function formatTextGenURL(value) {
     try {
         const url = new URL(value);
         if (url.pathname === '/api' && !textgenerationwebui_settings.legacy_api) {
-            toastr.info(`Enable compatibility mode or update ooba-webui to the latest version.`, 'Legacy API URL detected. Generation may fail.', { preventDuplicates: true });
+            toastr.info(`Enable Legacy API or start Ooba with the OpenAI extension enabled.`, 'Legacy API URL detected. Generation may fail.', { preventDuplicates: true, timeOut: 10000, extendedTimeOut: 20000 });
+            url.pathname = '';
         }
 
         if (!power_user.relaxed_api_urls && textgenerationwebui_settings.legacy_api && !isMancer()) {
