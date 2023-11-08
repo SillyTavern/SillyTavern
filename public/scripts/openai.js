@@ -2111,17 +2111,17 @@ function loadOpenAISettings(data, settings) {
         openai_settings[i] = JSON.parse(item);
     });
 
-    $("#settings_perset_openai").empty();
+    $("#settings_preset_openai").empty();
     let arr_holder = {};
     openai_setting_names.forEach(function (item, i, arr) {
         arr_holder[item] = i;
-        $('#settings_perset_openai').append(`<option value=${i}>${item}</option>`);
+        $('#settings_preset_openai').append(`<option value=${i}>${item}</option>`);
 
     });
     openai_setting_names = arr_holder;
 
     oai_settings.preset_settings_openai = settings.preset_settings_openai;
-    $(`#settings_perset_openai option[value=${openai_setting_names[oai_settings.preset_settings_openai]}]`).attr('selected', true);
+    $(`#settings_preset_openai option[value=${openai_setting_names[oai_settings.preset_settings_openai]}]`).attr('selected', true);
 
     oai_settings.temp_openai = settings.temp_openai ?? default_settings.temp_openai;
     oai_settings.freq_pen_openai = settings.freq_pen_openai ?? default_settings.freq_pen_openai;
@@ -2332,8 +2332,8 @@ function trySelectPresetByName(name) {
     if (preset_found) {
         oai_settings.preset_settings_openai = preset_found;
         const value = openai_setting_names[preset_found]
-        $(`#settings_perset_openai option[value="${value}"]`).attr('selected', true);
-        $('#settings_perset_openai').val(value).trigger('change');
+        $(`#settings_preset_openai option[value="${value}"]`).attr('selected', true);
+        $('#settings_preset_openai').val(value).trigger('change');
     }
 }
 
@@ -2404,8 +2404,8 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
             oai_settings.preset_settings_openai = data.name;
             const value = openai_setting_names[data.name];
             Object.assign(openai_settings[value], presetBody);
-            $(`#settings_perset_openai option[value="${value}"]`).attr('selected', true);
-            if (triggerUi) $('#settings_perset_openai').trigger('change');
+            $(`#settings_preset_openai option[value="${value}"]`).attr('selected', true);
+            if (triggerUi) $('#settings_preset_openai').trigger('change');
         }
         else {
             openai_settings.push(presetBody);
@@ -2414,7 +2414,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
             option.selected = true;
             option.value = openai_settings.length - 1;
             option.innerText = data.name;
-            if (triggerUi) $('#settings_perset_openai').append(option).trigger('change');
+            if (triggerUi) $('#settings_preset_openai').append(option).trigger('change');
         }
     } else {
         toastr.error('Failed to save preset');
@@ -2568,8 +2568,8 @@ async function onPresetImportFileChange(e) {
         oai_settings.preset_settings_openai = data.name;
         const value = openai_setting_names[data.name];
         Object.assign(openai_settings[value], presetBody);
-        $(`#settings_perset_openai option[value="${value}"]`).attr('selected', true);
-        $('#settings_perset_openai').trigger('change');
+        $(`#settings_preset_openai option[value="${value}"]`).attr('selected', true);
+        $('#settings_preset_openai').trigger('change');
     } else {
         openai_settings.push(presetBody);
         openai_setting_names[data.name] = openai_settings.length - 1;
@@ -2577,7 +2577,7 @@ async function onPresetImportFileChange(e) {
         option.selected = true;
         option.value = openai_settings.length - 1;
         option.innerText = data.name;
-        $('#settings_perset_openai').append(option).trigger('change');
+        $('#settings_preset_openai').append(option).trigger('change');
     }
 }
 
@@ -2652,15 +2652,15 @@ async function onDeletePresetClick() {
 
     const nameToDelete = oai_settings.preset_settings_openai;
     const value = openai_setting_names[oai_settings.preset_settings_openai];
-    $(`#settings_perset_openai option[value="${value}"]`).remove();
+    $(`#settings_preset_openai option[value="${value}"]`).remove();
     delete openai_setting_names[oai_settings.preset_settings_openai];
     oai_settings.preset_settings_openai = null;
 
     if (Object.keys(openai_setting_names).length) {
         oai_settings.preset_settings_openai = Object.keys(openai_setting_names)[0];
         const newValue = openai_setting_names[oai_settings.preset_settings_openai];
-        $(`#settings_perset_openai option[value="${newValue}"]`).attr('selected', true);
-        $('#settings_perset_openai').trigger('change');
+        $(`#settings_preset_openai option[value="${newValue}"]`).attr('selected', true);
+        $('#settings_preset_openai').trigger('change');
     }
 
     const response = await fetch('/api/presets/delete-openai', {
@@ -2744,7 +2744,7 @@ function onSettingsPresetChange() {
         squash_system_messages: ['#squash_system_messages', 'squash_system_messages', true],
     };
 
-    const presetName = $('#settings_perset_openai').find(":selected").text();
+    const presetName = $('#settings_preset_openai').find(":selected").text();
     oai_settings.preset_settings_openai = presetName;
 
     const preset = structuredClone(openai_settings[openai_setting_names[oai_settings.preset_settings_openai]]);
@@ -3477,7 +3477,7 @@ $(document).ready(async function () {
     $("#model_palm_select").on("change", onModelChange);
     $("#model_openrouter_select").on("change", onModelChange);
     $("#model_ai21_select").on("change", onModelChange);
-    $("#settings_perset_openai").on("change", onSettingsPresetChange);
+    $("#settings_preset_openai").on("change", onSettingsPresetChange);
     $("#new_oai_preset").on("click", onNewPresetClick);
     $("#delete_oai_preset").on("click", onDeletePresetClick);
     $("#openai_logit_bias_preset").on("change", onLogitBiasPresetChange);

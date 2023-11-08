@@ -2063,7 +2063,7 @@ grammarly-extension {
     flex-grow: 1;
 }
 
-.prompt_order>div:hover {
+.prompt_order:not(.ui-sortable-disabled)>div:hover {
     background-color: var(--SmartThemeBorderColor);
 }
 
@@ -2076,6 +2076,11 @@ grammarly-extension {
 .prompt_order .disabled {
     opacity: 0.5;
     filter: grayscale(0.5);
+}
+
+.ui-sortable-disabled,
+.prompt_order.ui-sortable-disabled>div {
+    cursor: not-allowed;
 }
 
 .prompt_order .toggle_button {
