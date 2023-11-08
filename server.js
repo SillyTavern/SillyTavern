@@ -496,7 +496,8 @@ app.post("/api/textgenerationwebui/status", jsonParser, async function (request,
 
         console.log('Trying to connect to API:', request.body);
 
-        const baseUrl = request.body.api_server;
+        // Convert to string + remove trailing slash
+        const baseUrl = String(request.body.api_server).replace(/\/$/, '');
 
         const args = {
             headers: { "Content-Type": "application/json" },
@@ -504,18 +505,19 @@ app.post("/api/textgenerationwebui/status", jsonParser, async function (request,
 
         setAdditionalHeaders(request, args, baseUrl);
 
-        const url = new URL(baseUrl);
+        let url = baseUrl;
 
-        if (request.body.use_ooba) {
-            url.pathname = "/v1/models";
+        if (request.body.legacy_api) {
+            url += "/v1/model";
         }
-
-        if (request.body.use_aphrodite) {
-            url.pathname = "/v1/models";
+        else if (request.body.use_ooba) {
+            url += "/v1/models";
         }
-
-        if (request.body.use_mancer) {
-            url.pathname = "/oai/v1/models";
+        else if (request.body.use_aphrodite) {
+            url += "/v1/models";
+        }
+        else if (request.body.use_mancer) {
+            url += "/oai/v1/models";
         }
 
         const modelsReply = await fetch(url, args);
@@ -526,6 +528,11 @@ app.post("/api/textgenerationwebui/status", jsonParser, async function (request,
         }
 
         const data = await modelsReply.json();
+
+        if (request.body.legacy_api) {
+            console.log('Legacy API response:', data);
+            return response.send({ result: data?.result });
+        }
 
         if (!Array.isArray(data.data)) {
             console.log('Models response is not an array.')
@@ -560,14 +567,17 @@ app.post("/api/textgenerationwebui/generate", jsonParser, async function (reques
             controller.abort();
         });
 
-        const url = new URL(baseUrl);
+        // Convert to string + remove trailing slash
+        let url = String(baseUrl).replace(/\/$/, '');
 
-        if (request.body.use_aphrodite || request.body.use_ooba) {
-            url.pathname = "/v1/completions";
+        if (request.body.legacy_api) {
+            url += "/v1/generate";
         }
-
-        if (request.body.use_mancer) {
-            url.pathname = "/oai/v1/completions";
+        else if (request.body.use_aphrodite || request.body.use_ooba) {
+            url += "/v1/completions";
+        }
+        else if (request.body.use_mancer) {
+            url += "/oai/v1/completions";
         }
 
         const args = {
@@ -601,6 +611,13 @@ app.post("/api/textgenerationwebui/generate", jsonParser, async function (reques
             if (completionsReply.ok) {
                 const data = await completionsReply.json();
                 console.log("Endpoint response:", data);
+
+                // Wrap legacy response to OAI completions format
+                if (request.body.legacy_api) {
+                    const text = data?.results[0]?.text;
+                    data['choices'] = [{ text }];
+                }
+
                 return response_generate.send(data);
             } else {
                 const text = await completionsReply.text();
@@ -3323,9 +3340,10 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
     if (!request.body) {
         return response.sendStatus(400);
     }
-    const text = request.body.text || '';
-    const api = request.body.api;
-    const baseUrl = request.body.url;
+    const text = String(request.body.text) || '';
+    const api = String(request.body.api);
+    const baseUrl = String(request.body.url);
+    const legacyApi = Boolean(request.body.legacy_api);
 
     try {
         if (api == 'textgenerationwebui') {
@@ -3337,8 +3355,14 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
 
             setAdditionalHeaders(request, args, null);
 
-            const url = new URL(baseUrl);
-            url.pathname = '/api/v1/token-count'
+            let url = String(baseUrl).replace(/\/$/, '');
+
+            if (legacyApi) {
+                url += '/v1/token-count';
+
+            } else {
+                url += '/api/v1/token-count';
+            }
 
             const result = await fetch(url, args);
 
@@ -3358,8 +3382,8 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
                 headers: { "Content-Type": "application/json" }
             };
 
-            const url = new URL(baseUrl);
-            url.pathname = '/api/extra/tokencount';
+            let url = String(baseUrl).replace(/\/$/, '');
+            url += '/extra/tokencount';
 
             const result = await fetch(url, args);
 

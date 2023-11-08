@@ -1805,7 +1805,7 @@
                                         oobabooga/text-generation-webui
                                     </a>
                                     <span data-i18n="Make sure you run it with">
-                                        Make sure you run it with <tt>--api</tt> flag
+                                        Make sure you run it with <tt>--extensions openai</tt> flag
                                     </span>
                                 </div>
                                 <div class="flex1">
@@ -1817,7 +1817,7 @@
                             <div data-tg-type="aphrodite">
                                 <div class="flex-container flexFlowColumn">
                                     <a href="https://github.com/PygmalionAI/aphrodite-engine" target="_blank">
-                                        PygmalionAI/aphrodite-engine
+                                        PygmalionAI/aphrodite-engine (OpenAI API wrapper mode)
                                     </a>
                                 </div>
                                 <h4 data-i18n="Aphrodite API key">Aphrodite API key</h4>
@@ -1839,6 +1839,10 @@
                                 <div id="api_button_textgenerationwebui" class="api_button menu_button" type="submit" data-i18n="Connect" data-server-connect="ooba_blocking,aphrodite">Connect</div>
                                 <div class="api_loading menu_button" data-i18n="Cancel">Cancel</div>
                             </div>
+                            <label class="checkbox_label margin-bot-10px" for="legacy_api_textgenerationwebui">
+                                <input type="checkbox" id="legacy_api_textgenerationwebui" />
+                                <span data-i18n="Use Legacy API schema (pre-OAI)">Use Legacy API schema (pre-OAI, no streaming)</span>
+                            </label>
                         </form>
                         <div class="online_status">
                             <div class="online_status_indicator"></div>

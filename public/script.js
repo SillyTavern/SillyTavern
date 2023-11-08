@@ -886,6 +886,7 @@ async function getStatus() {
                 use_mancer: main_api == "textgenerationwebui" ? isMancer() : false,
                 use_aphrodite: main_api == "textgenerationwebui" ? isAphrodite() : false,
                 use_ooba: main_api == "textgenerationwebui" ? isOoba() : false,
+                legacy_api: main_api == "textgenerationwebui" ? textgenerationwebui_settings.legacy_api : false,
             }),
             signal: abortStatusCheck.signal,
         });
@@ -2544,6 +2545,12 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
     if (main_api == 'kobold' && kai_settings.streaming_kobold && !kai_flags.can_use_streaming) {
         toastr.error('Streaming is enabled, but the version of Kobold used does not support token streaming.', undefined, { timeOut: 10000, preventDuplicates: true, });
+        unblockGeneration();
+        return;
+    }
+
+    if (main_api === 'textgenerationwebui' && textgenerationwebui_settings.streaming && textgenerationwebui_settings.legacy_api) {
+        toastr.error('Streaming is not supported for the legacy API schema. Update TextGen WebUI and use --extension openai to enable streaming.', undefined, { timeOut: 10000, preventDuplicates: true, });
         unblockGeneration();
         return;
     }

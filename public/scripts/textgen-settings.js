@@ -78,6 +78,7 @@ const textgenerationwebui_settings = {
     //prompt_log_probs_aphrodite: 0,
     type: textgen_types.OOBA,
     mancer_model: 'mytholite',
+    legacy_api: false,
 };
 
 export let textgenerationwebui_banned_in_macros = [];
@@ -120,6 +121,7 @@ const setting_names = [
     "negative_prompt",
     "grammar_string",
     "banned_tokens",
+    "legacy_api",
     //'n_aphrodite',
     //'best_of_aphrodite',
     //'ignore_eos_token_aphrodite',
@@ -148,9 +150,8 @@ async function selectPreset(name) {
 function formatTextGenURL(value) {
     try {
         const url = new URL(value);
-        if (url.pathname === '/api' && textgenerationwebui_settings.type === textgen_types.OOBA) {
-            url.pathname = '/';
-            toastr.info(`Legacy API URL detected, please make sure you updated ooba-webui to the latest version.`);
+        if (url.pathname === '/api' && !textgenerationwebui_settings.legacy_api) {
+            toastr.info(`Enable compatibility mode or update ooba-webui to the latest version.`, 'Legacy API URL detected. Generation may fail.');
         }
         return url.toString();
     } catch { } // Just using URL as a validation check
@@ -516,6 +517,7 @@ export function getTextGenGenerationData(finalPrompt, this_amount_gen, isImperso
         'use_aphrodite': isAphrodite(),
         'use_ooba': isOoba(),
         'api_server': isMancer() ? MANCER_SERVER : api_server_textgenerationwebui,
+        'legacy_api': textgenerationwebui_settings.legacy_api,
         //'n': textgenerationwebui_settings.n_aphrodite,
         //'best_of': textgenerationwebui_settings.n_aphrodite, //n must always == best_of and vice versa
         //'ignore_eos': textgenerationwebui_settings.ignore_eos_token_aphrodite,
