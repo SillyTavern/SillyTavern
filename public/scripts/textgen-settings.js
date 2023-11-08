@@ -148,9 +148,9 @@ async function selectPreset(name) {
 function formatTextGenURL(value) {
     try {
         const url = new URL(value);
-        if (url.pathname === '/api') {
+        if (url.pathname === '/api' && textgenerationwebui_settings.type === textgen_types.OOBA) {
             url.pathname = '/';
-            toastr.info('Legacy API URL detected, please make sure you updated ooba-webui to the latest version.');
+            toastr.info(`Legacy API URL detected, please make sure you updated ooba-webui to the latest version.`);
         }
         return url.toString();
     } catch { } // Just using URL as a validation check

@@ -26,6 +26,7 @@
     --grey30: rgb(75, 75, 75);
     --grey50: rgb(125, 125, 125);
     --grey5020a: rgba(125, 125, 125, 0.2);
+    --grey5050a: rgba(125, 125, 125, 0.5);
     --grey70: rgb(175, 175, 175);
     --grey75: rgb(190, 190, 190);
 
@@ -2167,7 +2168,7 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
     overflow: hidden;
     border-radius: 3px;
     border: 1px solid var(--SmartThemeBorderColor);
-    background-color: var(--SmartThemeBlurTintColor);
+    background-color: var(--SmartThemeBodyColor);
     box-shadow: inset 0 0 2px 0 var(--SmartThemeShadowColor);
     cursor: pointer;
     transform: translateY(-0.075em);
@@ -2185,7 +2186,7 @@ input[type="checkbox"]:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
     height: 0.65em;
     transform: scale(0);
     transition: 120ms transform ease-in-out;
-    box-shadow: inset 1em 1em var(--SmartThemeBodyColor);
+    box-shadow: inset 1em 1em var(--SmartThemeBlurTintColor);
     transform-origin: bottom left;
     clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
 }
@@ -2852,7 +2853,7 @@ body .ui-widget-content {
 
 .ui-slider {
     margin: 5px 0;
-    outline: 1px solid var(--grey5020a);
+    outline: 1px solid var(--grey5050a);
     border-radius: 5px !important;
 }
 
