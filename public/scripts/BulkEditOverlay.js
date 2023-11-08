@@ -399,7 +399,7 @@ class BulkEditOverlay {
      * set a click event to hide the custom context menu.
      */
     enableContextMenu = () => {
-        document.getElementById('rm_print_characters_block').addEventListener('contextmenu', this.handleContextMenuShow);
+        document.getElementById(BulkEditOverlay.containerId).addEventListener('contextmenu', this.handleContextMenuShow);
         document.addEventListener('click', this.handleContextMenuHide);
     }
 
@@ -408,7 +408,7 @@ class BulkEditOverlay {
      * menu to be opened.
      */
     disableContextMenu = () => {
-        document.getElementById('rm_print_characters_block').removeEventListener('contextmenu', this.handleContextMenuShow);
+        document.getElementById(BulkEditOverlay.containerId).removeEventListener('contextmenu', this.handleContextMenuShow);
         document.removeEventListener('click', this.handleContextMenuHide);
     }
 
@@ -420,16 +420,37 @@ class BulkEditOverlay {
         }
     }
 
+    /**
+     * Opens menu on long-press.
+     *
+     * @param event - Pointer event
+     */
     handleHold = (event) => {
         if (0 !== event.button && event.type !== 'touchstart') return;
 
+        let cancel = false;
+
+        const container = document.getElementById(BulkEditOverlay.containerId);
+        const cancelHold = (event) => cancel = true;
+
+        if (this.state === BulkEditOverlayState.select) {
+            container.addEventListener('mouseup', cancelHold);
+            container.addEventListener('touchend', cancelHold);
+        }
+
         this.isLongPress = true;
+
         setTimeout(() => {
-            if (this.isLongPress) {
+            if (this.isLongPress && !cancel) {
                 if (this.state === BulkEditOverlayState.browse)
                     this.selectState();
                 else if (this.state === BulkEditOverlayState.select)
                     CharacterContextMenu.show(...this.#getContextMenuPosition(event));
+            }
+
+            if (this.state === BulkEditOverlayState.select) {
+                container.removeEventListener('mouseup', cancelHold);
+                container.removeEventListener('touchend', cancelHold);
             }
         }, BulkEditOverlay.longPressDelay);
     }
