@@ -15,6 +15,9 @@ import {
     setCharacterId,
     setEditedMessageId,
     renderTemplate,
+    chat,
+    getFirstDisplayedMessageId,
+    showMoreMessages,
 } from "../script.js";
 import { isMobile, initMovingUI, favsToHotswap } from "./RossAscends-mods.js";
 import {
@@ -30,7 +33,7 @@ import {
 import { registerSlashCommand } from "./slash-commands.js";
 import { tokenizers } from "./tokenizers.js";
 
-import { countOccurrences, debounce, delay, isOdd, resetScrollHeight, sortMoments, timestampToMoment } from "./utils.js";
+import { countOccurrences, debounce, delay, isOdd, resetScrollHeight, sortMoments, stringToRange, timestampToMoment } from "./utils.js";
 
 export {
     loadPowerUserSettings,
@@ -1750,24 +1753,48 @@ function doRandomChat() {
 
 async function doMesCut(_, text) {
     console.debug(`was asked to cut message id #${text}`)
+    const range = stringToRange(text, 0, chat.length - 1);
+
     //reject invalid args or no args
-    if (text && isNaN(text) || !text) {
-        toastr.error(`Must enter a single number only, non-number characters disallowed.`)
+    if (!range) {
+        toastr.warning(`Must provide a Message ID or a range to cut.`)
         return
     }
 
-    let mesIDToCut = Number(text).toFixed(0)
-    let mesToCut = $("#chat").find(`.mes[mesid=${mesIDToCut}]`)
+    let totalMesToCut = (range.end - range.start) + 1;
+    let mesIDToCut = range.start;
 
-    if (!mesToCut.length) {
-        toastr.error(`Could not find message with ID: ${mesIDToCut}`)
-        return
+    for (let i = 0; i < totalMesToCut; i++) {
+        let done = false;
+        let mesToCut = $("#chat").find(`.mes[mesid=${mesIDToCut}]`)
+
+        if (!mesToCut.length) {
+            while (getFirstDisplayedMessageId() > mesIDToCut && getFirstDisplayedMessageId() !== 0) {
+                showMoreMessages();
+                await delay(1);
+                mesToCut = $("#chat").find(`.mes[mesid=${mesIDToCut}]`);
+
+                if (mesToCut.length) {
+                    break;
+                }
+            }
+
+            if (!mesToCut.length) {
+                toastr.error(`Could not find message with ID: ${mesIDToCut}`)
+                return;
+            }
+        }
+
+        setEditedMessageId(mesIDToCut);
+        eventSource.once(event_types.MESSAGE_DELETED, () => {
+            done = true;
+        });
+        mesToCut.find('.mes_edit_delete').trigger('click', { fromSlashCommand: true });
+        while (!done) {
+            await delay(1);
+        }
     }
-
-    setEditedMessageId(mesIDToCut);
-    mesToCut.find('.mes_edit_delete').trigger('click', { fromSlashCommand: true });
 }
-
 
 async function doDelMode(_, text) {
 
@@ -2671,7 +2698,7 @@ $(document).ready(() => {
     registerSlashCommand('newchat', doNewChat, [], '– start a new chat with current character', true, true);
     registerSlashCommand('random', doRandomChat, [], '– start a new chat with a random character', true, true);
     registerSlashCommand('delmode', doDelMode, ['del'], '<span class="monospace">(optional number)</span> – enter message deletion mode, and auto-deletes N messages if numeric argument is provided', true, true);
-    registerSlashCommand('cut', doMesCut, [], '<span class="monospace">(number)</span> – cuts the specified message from the chat', true, true);
+    registerSlashCommand('cut', doMesCut, [], '<span class="monospace">(number or range)</span> – cuts the specified message or continuous chunk from the chat, e.g. <tt>/cut 0-10</tt>. Ranges are inclusive!', true, true);
     registerSlashCommand('resetpanels', doResetPanels, ['resetui'], '– resets UI panels to original state.', true, true);
     registerSlashCommand('bgcol', setAvgBG, [], '– WIP test of auto-bg avg coloring', true, true);
 });

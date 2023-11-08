@@ -1205,7 +1205,7 @@ async function replaceCurrentChat() {
 
 const TRUNCATION_THRESHOLD = 100;
 
-function showMoreMessages() {
+export function showMoreMessages() {
     let messageId = Number($('#chat').children('.mes').first().attr('mesid'));
     let count = TRUNCATION_THRESHOLD;
 
@@ -6217,8 +6217,8 @@ async function importCharacterChat(formData) {
     });
 }
 
-function updateViewMessageIds() {
-    const minId = getFirstDisplayedMessageId();
+function updateViewMessageIds(startFromZero = false) {
+    const minId = startFromZero ? 0 : getFirstDisplayedMessageId();
 
     $('#chat').find(".mes").each(function (index, element) {
         $(element).attr("mesid", minId + index);
@@ -6231,7 +6231,7 @@ function updateViewMessageIds() {
     updateEditArrowClasses();
 }
 
-function getFirstDisplayedMessageId() {
+export function getFirstDisplayedMessageId() {
     const allIds = Array.from(document.querySelectorAll('#chat .mes')).map(el => Number(el.getAttribute('mesid'))).filter(x => !isNaN(x));
     const minId = Math.min(...allIds);
     return minId;
@@ -8520,15 +8520,17 @@ jQuery(async function () {
             count_view_mes--;
         }
 
+        let startFromZero = Number(this_edit_mes_id) === 0;
+
         this_edit_mes_id = undefined;
 
-        updateViewMessageIds();
-        await saveChatConditional();
-
-        eventSource.emit(event_types.MESSAGE_DELETED, count_view_mes);
+        updateViewMessageIds(startFromZero);
+        saveChatDebounced();
 
         hideSwipeButtons();
         showSwipeButtons();
+
+        await eventSource.emit(event_types.MESSAGE_DELETED, count_view_mes);
     });
 
     $(document).on("click", ".mes_edit_done", async function () {
