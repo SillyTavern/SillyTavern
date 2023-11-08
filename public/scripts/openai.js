@@ -1033,7 +1033,7 @@ function prepareOpenAIMessages({
         // Pass chat completion to prompt manager for inspection
         promptManager.setChatCompletion(chatCompletion);
 
-        if (oai_settings.squash_system_messages) {
+        if (oai_settings.squash_system_messages && dryRun == false) {
             chatCompletion.squashSystemMessages();
         }
 

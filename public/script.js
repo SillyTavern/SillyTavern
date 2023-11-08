@@ -1799,7 +1799,7 @@ function getLastMessageId() {
  * @param {*} _group - The group members list for {{group}} substitution.
  * @returns {string} The string with substituted parameters.
  */
-function substituteParams(content, _name1, _name2, _original, _group) {
+function substituteParams(content, _name1, _name2, _original, _group, _replaceCharacterCard = true) {
     _name1 = _name1 ?? name1;
     _name2 = _name2 ?? name2;
     _group = _group ?? name2;
@@ -1814,7 +1814,18 @@ function substituteParams(content, _name1, _name2, _original, _group) {
     if (typeof _original === 'string') {
         content = content.replace(/{{original}}/i, _original);
     }
+
     content = content.replace(/{{input}}/gi, String($('#send_textarea').val()));
+
+    if (_replaceCharacterCard) {
+        const fields = getCharacterCardFields();
+        content = content.replace(/{{description}}/gi, fields.description || '');
+        content = content.replace(/{{personality}}/gi, fields.personality || '');
+        content = content.replace(/{{scenario}}/gi, fields.scenario || '');
+        content = content.replace(/{{persona}}/gi, fields.persona || '');
+        content = content.replace(/{{mesExamples}}/gi, fields.mesExamples || '');
+    }
+
     content = content.replace(/{{user}}/gi, _name1);
     content = content.replace(/{{char}}/gi, _name2);
     content = content.replace(/{{charIfNotGroup}}/gi, _group);
@@ -2180,7 +2191,8 @@ function getExtensionPrompt(position = 0, depth = undefined, separator = "\n") {
 
 export function baseChatReplace(value, name1, name2) {
     if (value !== undefined && value.length > 0) {
-        value = substituteParams(value, name1, name2);
+        const _ = undefined;
+        value = substituteParams(value, name1, name2, _, _, false);
 
         if (power_user.collapse_newlines) {
             value = collapseNewlines(value);
@@ -2189,6 +2201,41 @@ export function baseChatReplace(value, name1, name2) {
         value = value.replace(/\r/g, '');
     }
     return value;
+}
+
+/**
+ * Returns the character card fields for the current character.
+ * @returns {{system: string, mesExamples: string, description: string, personality: string, persona: string, scenario: string, jailbreak: string}}
+ */
+function getCharacterCardFields() {
+    const result = { system: '', mesExamples: '', description: '', personality: '', persona: '', scenario: '', jailbreak: '' };
+    const character = characters[this_chid];
+
+    if (!character) {
+        return result;
+    }
+
+    const scenarioText = chat_metadata['scenario'] || characters[this_chid].scenario;
+    result.description = baseChatReplace(characters[this_chid].description.trim(), name1, name2);
+    result.personality = baseChatReplace(characters[this_chid].personality.trim(), name1, name2);
+    result.scenario = baseChatReplace(scenarioText.trim(), name1, name2);
+    result.mesExamples = baseChatReplace(characters[this_chid].mes_example.trim(), name1, name2);
+    result.persona = baseChatReplace(power_user.persona_description.trim(), name1, name2);
+    result.system = power_user.prefer_character_prompt ? baseChatReplace(characters[this_chid].data?.system_prompt?.trim(), name1, name2) : '';
+    result.jailbreak = power_user.prefer_character_jailbreak ? baseChatReplace(characters[this_chid].data?.post_history_instructions?.trim(), name1, name2) : '';
+
+    if (selected_group) {
+        const groupCards = getGroupCharacterCards(selected_group, Number(this_chid));
+
+        if (groupCards) {
+            result.description = groupCards.description;
+            result.personality = groupCards.personality;
+            result.scenario = groupCards.scenario;
+            result.mesExamples = groupCards.mesExamples;
+        }
+    }
+
+    return result;
 }
 
 function isStreamingEnabled() {
@@ -2673,30 +2720,19 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             await sendMessageAsUser(oai_settings.send_if_empty.trim(), messageBias);
         }
 
-        ////////////////////////////////////
-        const scenarioText = chat_metadata['scenario'] || characters[this_chid].scenario;
-        let charDescription = baseChatReplace(characters[this_chid].description.trim(), name1, name2);
-        let charPersonality = baseChatReplace(characters[this_chid].personality.trim(), name1, name2);
-        let scenario = baseChatReplace(scenarioText.trim(), name1, name2);
-        let mesExamples = baseChatReplace(characters[this_chid].mes_example.trim(), name1, name2);
-        let systemPrompt = power_user.prefer_character_prompt ? baseChatReplace(characters[this_chid].data?.system_prompt?.trim(), name1, name2) : '';
-        let jailbreakPrompt = power_user.prefer_character_jailbreak ? baseChatReplace(characters[this_chid].data?.post_history_instructions?.trim(), name1, name2) : '';
-        let personaDescription = baseChatReplace(power_user.persona_description.trim(), name1, name2);
+        let {
+            description,
+            personality,
+            persona,
+            scenario,
+            mesExamples,
+            system,
+            jailbreak,
+        } = getCharacterCardFields();
 
         if (isInstruct) {
-            systemPrompt = power_user.prefer_character_prompt && systemPrompt ? systemPrompt : baseChatReplace(power_user.instruct.system_prompt, name1, name2);
-            systemPrompt = formatInstructModeSystemPrompt(substituteParams(systemPrompt, name1, name2, power_user.instruct.system_prompt));
-        }
-
-        if (selected_group) {
-            const groupCards = getGroupCharacterCards(selected_group, Number(this_chid));
-
-            if (groupCards) {
-                charDescription = groupCards.description;
-                charPersonality = groupCards.personality;
-                scenario = groupCards.scenario;
-                mesExamples = groupCards.mesExample;
-            }
+            system = power_user.prefer_character_prompt && system ? system : baseChatReplace(power_user.instruct.system_prompt, name1, name2);
+            system = formatInstructModeSystemPrompt(substituteParams(system, name1, name2, power_user.instruct.system_prompt));
         }
 
         // Depth prompt (character-specific A/N)
@@ -2850,11 +2886,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         let zeroDepthAnchor = getExtensionPrompt(extension_prompt_types.IN_CHAT, 0, ' ');
 
         const storyStringParams = {
-            description: charDescription,
-            personality: charPersonality,
-            persona: personaDescription,
+            description: description,
+            personality: personality,
+            persona: persona,
             scenario: scenario,
-            system: isInstruct ? systemPrompt : '',
+            system: isInstruct ? system : '',
             char: name2,
             user: name1,
             wiBefore: worldInfoBefore,
@@ -3282,8 +3318,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             else if (main_api == 'openai') {
                 let [prompt, counts] = prepareOpenAIMessages({
                     name2: name2,
-                    charDescription: charDescription,
-                    charPersonality: charPersonality,
+                    charDescription: description,
+                    charPersonality: personality,
                     Scenario: scenario,
                     worldInfoBefore: worldInfoBefore,
                     worldInfoAfter: worldInfoAfter,
@@ -3292,9 +3328,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     type: type,
                     quietPrompt: quiet_prompt,
                     cyclePrompt: cyclePrompt,
-                    systemPromptOverride: systemPrompt,
-                    jailbreakPromptOverride: jailbreakPrompt,
-                    personaDescription: personaDescription
+                    systemPromptOverride: system,
+                    jailbreakPromptOverride: jailbreak,
+                    personaDescription: persona
                 }, dryRun);
                 generate_data = { prompt: prompt };
 
@@ -3338,13 +3374,13 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 generatedPromptCache: generatedPromptCache,
                 promptBias: promptBias,
                 finalPrompt: finalPrompt,
-                charDescription: charDescription,
-                charPersonality: charPersonality,
-                scenarioText: scenarioText,
+                charDescription: description,
+                charPersonality: personality,
+                scenarioText: scenario,
                 this_max_context: this_max_context,
                 padding: power_user.token_padding,
                 main_api: main_api,
-                instruction: isInstruct ? substituteParams(power_user.prefer_character_prompt && systemPrompt ? systemPrompt : power_user.instruct.system_prompt) : '',
+                instruction: isInstruct ? substituteParams(power_user.prefer_character_prompt && system ? system : power_user.instruct.system_prompt) : '',
                 userPersona: (power_user.persona_description || ''),
             };
 
@@ -5888,7 +5924,7 @@ function select_rm_create() {
     $("#scenario_pole").val(create_save.scenario);
     $("#depth_prompt_prompt").val(create_save.depth_prompt_prompt);
     $("#depth_prompt_depth").val(create_save.depth_prompt_depth);
-    $("#mes_example_textarea").val(create_save.mes_example.trim().length === 0 ? '<START>' : create_save.mes_example);
+    $("#mes_example_textarea").val(create_save.mes_example);
     $('#character_json_data').val('');
     $("#avatar_div").css("display", "flex");
     $("#avatar_load_preview").attr("src", default_avatar);
