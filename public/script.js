@@ -886,7 +886,7 @@ async function getStatus() {
                 use_mancer: main_api == "textgenerationwebui" ? isMancer() : false,
                 use_aphrodite: main_api == "textgenerationwebui" ? isAphrodite() : false,
                 use_ooba: main_api == "textgenerationwebui" ? isOoba() : false,
-                legacy_api: main_api == "textgenerationwebui" ? textgenerationwebui_settings.legacy_api : false,
+                legacy_api: main_api == "textgenerationwebui" ? textgenerationwebui_settings.legacy_api && !isMancer() : false,
             }),
             signal: abortStatusCheck.signal,
         });
@@ -2596,7 +2596,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         return;
     }
 
-    if (main_api === 'textgenerationwebui' && textgenerationwebui_settings.streaming && textgenerationwebui_settings.legacy_api) {
+    if (main_api === 'textgenerationwebui' && textgenerationwebui_settings.streaming && textgenerationwebui_settings.legacy_api && !isMancer()) {
         toastr.error('Streaming is not supported for the Legacy API. Update Ooba and use --extensions openai to enable streaming.', undefined, { timeOut: 10000, preventDuplicates: true, });
         unblockGeneration();
         return;

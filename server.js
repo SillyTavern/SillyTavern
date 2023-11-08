@@ -691,7 +691,7 @@ app.post("/getchat", jsonParser, function (request, response) {
     }
 });
 
-// Only called for kobold and ooba/mancer
+// Only called for kobold
 app.post("/getstatus", jsonParser, async function (request, response) {
     if (!request.body) return response.sendStatus(400);
     api_server = request.body.api_server;

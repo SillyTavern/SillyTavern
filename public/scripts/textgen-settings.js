@@ -149,13 +149,18 @@ async function selectPreset(name) {
 
 function formatTextGenURL(value) {
     try {
+        // Mancer doesn't need any formatting (it's hardcoded)
+        if (isMancer()) {
+            return value;
+        }
+
         const url = new URL(value);
         if (url.pathname === '/api' && !textgenerationwebui_settings.legacy_api) {
             toastr.info(`Enable Legacy API or start Ooba with the OpenAI extension enabled.`, 'Legacy API URL detected. Generation may fail.', { preventDuplicates: true, timeOut: 10000, extendedTimeOut: 20000 });
             url.pathname = '';
         }
 
-        if (!power_user.relaxed_api_urls && textgenerationwebui_settings.legacy_api && !isMancer()) {
+        if (!power_user.relaxed_api_urls && textgenerationwebui_settings.legacy_api) {
             url.pathname = '/api';
         }
         return url.toString();
@@ -522,7 +527,7 @@ export function getTextGenGenerationData(finalPrompt, this_amount_gen, isImperso
         'use_aphrodite': isAphrodite(),
         'use_ooba': isOoba(),
         'api_server': isMancer() ? MANCER_SERVER : api_server_textgenerationwebui,
-        'legacy_api': textgenerationwebui_settings.legacy_api,
+        'legacy_api': textgenerationwebui_settings.legacy_api && !isMancer(),
         //'n': textgenerationwebui_settings.n_aphrodite,
         //'best_of': textgenerationwebui_settings.n_aphrodite, //n must always == best_of and vice versa
         //'ignore_eos': textgenerationwebui_settings.ignore_eos_token_aphrodite,
