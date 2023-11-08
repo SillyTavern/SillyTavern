@@ -2539,7 +2539,7 @@ input[type="range"]::-webkit-slider-thumb {
     display: flex;
     flex-direction: row;
     column-gap: 5px;
-    align-items: center;
+    align-items: baseline;
 }
 
 .auto_continue_settings_block {
