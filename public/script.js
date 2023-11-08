@@ -6807,9 +6807,21 @@ function swipe_left() {      // when we swipe left..but no generation.
     }
 }
 
-async function branchChat(mesID) {
-    let name = await createBranch(mesID);
-    await openCharacterChat(name);
+/**
+ * Creates a new branch from the message with the given ID
+ * @param {number} mesId Message ID
+ * @returns {Promise<string>} Branch file name
+ */
+async function branchChat(mesId) {
+    const fileName = await createBranch(mesId);
+
+    if (selected_group) {
+        await openGroupChat(selected_group, fileName);
+    } else {
+        await openCharacterChat(fileName);
+    }
+
+    return fileName;
 }
 
 // when we click swipe right button
