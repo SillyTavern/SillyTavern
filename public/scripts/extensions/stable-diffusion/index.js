@@ -1888,7 +1888,7 @@ $("#sd_dropdown [id]").on("click", function () {
 });
 
 jQuery(async () => {
-    getContext().registerSlashCommand('imagine', generatePicture, ['sd'], helpString, true, true);
+    getContext().registerSlashCommand('imagine', generatePicture, ['sd', 'img', 'image'], helpString, true, true);
 
     $('#extensions_settings').append(renderExtensionTemplate('stable-diffusion', 'settings', defaultSettings));
     $('#sd_source').on('change', onSourceChange);
