@@ -7534,7 +7534,8 @@ jQuery(async function () {
     });
     $("#avatar_upload_file").on("change", uploadUserAvatar);
 
-    $(document).on("click", ".PastChat_cross", function () {
+    $(document).on("click", ".PastChat_cross", function (e) {
+        e.stopPropagation();
         chat_file_for_del = $(this).attr('file_name');
         console.debug('detected cross click for' + chat_file_for_del);
         popup_type = "del_chat";
@@ -7746,7 +7747,8 @@ jQuery(async function () {
 
     /* $("#renameCharButton").on('click', renameCharacter); */
 
-    $(document).on("click", ".renameChatButton", async function () {
+    $(document).on("click", ".renameChatButton", async function (e) {
+        e.stopPropagation();
         const old_filenamefull = $(this).closest('.select_chat_block_wrapper').find('.select_chat_block_filename').text();
         const old_filename = old_filenamefull.replace('.jsonl', '');
 
@@ -7807,7 +7809,8 @@ jQuery(async function () {
         }
     });
 
-    $(document).on("click", ".exportChatButton, .exportRawChatButton", async function () {
+    $(document).on("click", ".exportChatButton, .exportRawChatButton", async function (e) {
+        e.stopPropagation();
         const format = $(this).data('format') || 'txt';
         await saveChatConditional();
         const filenamefull = $(this).closest('.select_chat_block_wrapper').find('.select_chat_block_filename').text();
