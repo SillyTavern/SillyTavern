@@ -1751,6 +1751,32 @@ function doRandomChat() {
 
 }
 
+/**
+ * Loads the chat until the given message ID is displayed.
+ * @param {number} mesId
+ * @returns JQuery<HTMLElement>
+ */
+async function loadUntilMesId(mesId) {
+    let target;
+
+    while (getFirstDisplayedMessageId() > mesId && getFirstDisplayedMessageId() !== 0) {
+        showMoreMessages();
+        await delay(1);
+        target = $("#chat").find(`.mes[mesid=${mesId}]`);
+
+        if (target.length) {
+            break;
+        }
+    }
+
+    if (!target.length) {
+        toastr.error(`Could not find message with ID: ${mesId}`)
+        return target;
+    }
+
+    return target;
+}
+
 async function doMesCut(_, text) {
     console.debug(`was asked to cut message id #${text}`)
     const range = stringToRange(text, 0, chat.length - 1);
@@ -1769,18 +1795,9 @@ async function doMesCut(_, text) {
         let mesToCut = $("#chat").find(`.mes[mesid=${mesIDToCut}]`)
 
         if (!mesToCut.length) {
-            while (getFirstDisplayedMessageId() > mesIDToCut && getFirstDisplayedMessageId() !== 0) {
-                showMoreMessages();
-                await delay(1);
-                mesToCut = $("#chat").find(`.mes[mesid=${mesIDToCut}]`);
+            mesToCut = await loadUntilMesId(mesIDToCut);
 
-                if (mesToCut.length) {
-                    break;
-                }
-            }
-
-            if (!mesToCut.length) {
-                toastr.error(`Could not find message with ID: ${mesIDToCut}`)
+            if (!mesToCut || !mesToCut.length) {
                 return;
             }
         }
@@ -1814,15 +1831,24 @@ async function doDelMode(_, text) {
         await delay(300) //same as above, need event signal for 'entered del mode'
         console.debug('parsing msgs to del')
         let numMesToDel = Number(text);
-        let lastMesID = Number($('.last_mes').attr('mesid'));
+        let lastMesID = Number($('#chat .mes').last().attr('mesid'));
         let oldestMesIDToDel = lastMesID - numMesToDel + 1;
 
-        //disallow targeting first message
-        if (oldestMesIDToDel <= 0) {
-            oldestMesIDToDel = 1
+        if (oldestMesIDToDel < 0) {
+            toastr.warning(`Cannot delete more thans ${chat.length} messages.`)
+            return;
         }
 
         let oldestMesToDel = $('#chat').find(`.mes[mesid=${oldestMesIDToDel}]`)
+
+        if (!oldestMesIDToDel) {
+            oldestMesToDel = await loadUntilMesId(oldestMesIDToDel);
+
+            if (!oldestMesToDel || !oldestMesToDel.length) {
+                return;
+            }
+        }
+
         let oldestDelMesCheckbox = $(oldestMesToDel).find('.del_checkbox');
         let newLastMesID = oldestMesIDToDel - 1;
         console.debug(`DelMesReport -- numMesToDel:  ${numMesToDel}, lastMesID: ${lastMesID}, oldestMesIDToDel:${oldestMesIDToDel}, newLastMesID: ${newLastMesID}`)
@@ -2697,7 +2723,7 @@ $(document).ready(() => {
     registerSlashCommand('vn', toggleWaifu, [], '– swaps Visual Novel Mode On/Off', false, true);
     registerSlashCommand('newchat', doNewChat, [], '– start a new chat with current character', true, true);
     registerSlashCommand('random', doRandomChat, [], '– start a new chat with a random character', true, true);
-    registerSlashCommand('delmode', doDelMode, ['del'], '<span class="monospace">(optional number)</span> – enter message deletion mode, and auto-deletes N messages if numeric argument is provided', true, true);
+    registerSlashCommand('delmode', doDelMode, ['del'], '<span class="monospace">(optional number)</span> – enter message deletion mode, and auto-deletes last N messages if numeric argument is provided', true, true);
     registerSlashCommand('cut', doMesCut, [], '<span class="monospace">(number or range)</span> – cuts the specified message or continuous chunk from the chat, e.g. <tt>/cut 0-10</tt>. Ranges are inclusive!', true, true);
     registerSlashCommand('resetpanels', doResetPanels, ['resetui'], '– resets UI panels to original state.', true, true);
     registerSlashCommand('bgcol', setAvgBG, [], '– WIP test of auto-bg avg coloring', true, true);
