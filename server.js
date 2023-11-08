@@ -3222,7 +3222,8 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
             } else if (fetchResponse.status === 429 && retries > 0) {
                 console.log(`Out of quota, retrying in ${Math.round(timeout / 1000)}s`);
                 setTimeout(() => {
-                    makeRequest(config, response_generate_openai, request, retries - 1);
+                    timeout *= 2;
+                    makeRequest(config, response_generate_openai, request, retries - 1, timeout);
                 }, timeout);
             } else {
                 await handleErrorResponse(fetchResponse);
