@@ -496,8 +496,8 @@ app.post("/api/textgenerationwebui/status", jsonParser, async function (request,
 
         console.log('Trying to connect to API:', request.body);
 
-        // Convert to string + remove trailing slash
-        const baseUrl = String(request.body.api_server).replace(/\/$/, '');
+        // Convert to string + remove trailing slash + /v1 suffix
+        const baseUrl = String(request.body.api_server).replace(/\/$/, '').replace(/\/v1$/, '');
 
         const args = {
             headers: { "Content-Type": "application/json" },
@@ -567,8 +567,8 @@ app.post("/api/textgenerationwebui/generate", jsonParser, async function (reques
             controller.abort();
         });
 
-        // Convert to string + remove trailing slash
-        let url = String(baseUrl).replace(/\/$/, '');
+        // Convert to string + remove trailing slash + /v1 suffix
+        let url = String(baseUrl).replace(/\/$/, '').replace(/\/v1$/, '');
 
         if (request.body.legacy_api) {
             url += "/v1/generate";
@@ -3356,7 +3356,8 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
 
             setAdditionalHeaders(request, args, null);
 
-            let url = String(baseUrl).replace(/\/$/, '');
+            // Convert to string + remove trailing slash + /v1 suffix
+            let url = String(baseUrl).replace(/\/$/, '').replace(/\/v1$/, '');
 
             if (legacyApi) {
                 url += '/v1/token-count';
