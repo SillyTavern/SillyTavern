@@ -2597,7 +2597,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     }
 
     if (main_api === 'textgenerationwebui' && textgenerationwebui_settings.streaming && textgenerationwebui_settings.legacy_api) {
-        toastr.error('Streaming is not supported for the legacy API schema. Update TextGen WebUI and use --extension openai to enable streaming.', undefined, { timeOut: 10000, preventDuplicates: true, });
+        toastr.error('Streaming is not supported for the Legacy API. Update Ooba and use --extensions openai to enable streaming.', undefined, { timeOut: 10000, preventDuplicates: true, });
         unblockGeneration();
         return;
     }
