@@ -277,6 +277,7 @@ class BulkEditOverlay {
     static containerId = 'rm_print_characters_block';
     static contextMenuId = 'character_context_menu';
     static characterClass = 'character_select';
+    static groupClass = 'group_select';
     static selectModeClass = 'group_overlay_mode_select';
     static selectedClass = 'character_selected';
     static legacySelectedClass = 'bulk_select_checkbox';
@@ -376,6 +377,7 @@ class BulkEditOverlay {
             case BulkEditOverlayState.browse:
                 this.container.classList.remove(BulkEditOverlay.selectModeClass);
                 this.#enableClickEventsForCharacters();
+                this.#enableClickEventsForGroups();
                 this.clearSelectedCharacters();
                 this.disableContextMenu();
                 this.#disableBulkEditButtonHighlight();
@@ -384,6 +386,7 @@ class BulkEditOverlay {
             case BulkEditOverlayState.select:
                 this.container.classList.add(BulkEditOverlay.selectModeClass);
                 this.#disableClickEventsForCharacters();
+                this.#disableClickEventsForGroups();
                 this.enableContextMenu();
                 this.#enableBulkEditButtonHighlight();
                 break;
@@ -466,6 +469,12 @@ class BulkEditOverlay {
         event.clientY || event.touches[0].clientY,
     ];
 
+    #stopEventPropagation = (event) => event.stopPropagation();
+
+    #enableClickEventsForGroups = () => this.#getDisabledElements().forEach((element) => element.removeEventListener('click', this.#stopEventPropagation));
+
+    #disableClickEventsForGroups = () => this.#getDisabledElements().forEach((element) => element.addEventListener('click', this.#stopEventPropagation));
+
     #enableClickEventsForCharacters = () => this.#getEnabledElements().forEach(element => element.removeEventListener('click', this.toggleCharacterSelected));
 
     #disableClickEventsForCharacters = () => this.#getEnabledElements().forEach(element => element.addEventListener('click', this.toggleCharacterSelected));
@@ -475,6 +484,8 @@ class BulkEditOverlay {
     #disableBulkEditButtonHighlight = () => document.getElementById('bulkEditButton').classList.remove('bulk_edit_overlay_active');
 
     #getEnabledElements = () => [...this.container.getElementsByClassName(BulkEditOverlay.characterClass)];
+
+    #getDisabledElements = () =>[...this.container.querySelectorAll('.' + BulkEditOverlay.groupClass)];
 
     toggleCharacterSelected = event => {
         event.stopPropagation();
