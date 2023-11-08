@@ -122,6 +122,12 @@ async function moduleWorker() {
     ) {
         currentMessageNumber = context.chat.length ? context.chat.length : 0
         saveLastValues()
+
+        // Force to speak on the first message in the new chat
+        if (context.chat.length === 1) {
+            lastMessageHash = -1;
+        }
+
         return
     }
 
@@ -771,7 +777,7 @@ export async function initVoiceMap(){
     // Clear existing voiceMap state
     $('#tts_voicemap_block').empty()
     voiceMapEntries = []
-    
+
     // Get characters in current chat
     const characters = getCharacters()
 
