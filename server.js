@@ -524,7 +524,7 @@ app.post("/api/textgenerationwebui/status", jsonParser, async function (request,
 
         if (!modelsReply.ok) {
             console.log('Models endpoint is offline.');
-            return response.status(modelsReply.status);
+            return response.status(400);
         }
 
         const data = await modelsReply.json();
@@ -536,7 +536,7 @@ app.post("/api/textgenerationwebui/status", jsonParser, async function (request,
 
         if (!Array.isArray(data.data)) {
             console.log('Models response is not an array.')
-            return response.status(503);
+            return response.status(400);
         }
 
         const modelIds = data.data.map(x => x.id);
