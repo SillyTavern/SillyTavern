@@ -244,9 +244,7 @@ table.responsiveTable {
 }
 
 .mes_text li tt {
-    min-width: 80px;
     display: inline-block;
-    text-align: right;
 }
 
 .mes_text br,
