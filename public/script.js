@@ -5446,10 +5446,8 @@ function openMessageDelete() {
         $("#dialogue_del_mes").css("display", "block");
         $("#send_form").css("display", "none");
         $(".del_checkbox").each(function () {
-            if ($(this).parent().attr("mesid") != 0) {
-                $(this).css("display", "grid");
-                $(this).parent().children(".for_checkbox").css("display", "none");
-            }
+            $(this).css("display", "grid");
+            $(this).parent().children(".for_checkbox").css("display", "none");
         });
     } else {
         console.debug(`
@@ -8080,18 +8078,16 @@ jQuery(async function () {
             $(this).parent().css("background", css_mes_bg);
             $(this).prop("checked", false);
         });
-        if (this_del_mes != 0) {
-            $(".mes[mesid='" + this_del_mes + "']")
-                .nextAll("div")
-                .remove();
-            $(".mes[mesid='" + this_del_mes + "']").remove();
-            chat.length = this_del_mes;
-            count_view_mes = this_del_mes;
-            await saveChatConditional();
-            var $textchat = $("#chat");
-            $textchat.scrollTop($textchat[0].scrollHeight);
-            eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
-        }
+        $(".mes[mesid='" + this_del_mes + "']")
+            .nextAll("div")
+            .remove();
+        $(".mes[mesid='" + this_del_mes + "']").remove();
+        chat.length = this_del_mes;
+        count_view_mes = this_del_mes;
+        await saveChatConditional();
+        var $textchat = $("#chat");
+        $textchat.scrollTop($textchat[0].scrollHeight);
+        eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
         this_del_mes = 0;
         $('#chat .mes').last().addClass('last_mes');
         $('#chat .mes').eq(-2).removeClass('last_mes');
