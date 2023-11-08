@@ -151,7 +151,7 @@ function formatTextGenURL(value) {
     try {
         const url = new URL(value);
         if (url.pathname === '/api' && !textgenerationwebui_settings.legacy_api) {
-            toastr.info(`Enable compatibility mode or update ooba-webui to the latest version.`, 'Legacy API URL detected. Generation may fail.');
+            toastr.info(`Enable compatibility mode or update ooba-webui to the latest version.`, 'Legacy API URL detected. Generation may fail.', { preventDuplicates: true });
         }
 
         if (!power_user.relaxed_api_urls && textgenerationwebui_settings.legacy_api && !isMancer()) {
