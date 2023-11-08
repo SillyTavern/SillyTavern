@@ -5520,7 +5520,7 @@ export async function getChatsFromFiles(data, isGroupChat) {
  * in descending order by file name. Returns `undefined` if the fetch request is unsuccessful.
  */
 async function getPastCharacterChats() {
-    if (!characters.includes(this_chid)) return;
+    if (!characters[this_chid]) return;
 
     const response = await fetch("/getallchatsofcharacter", {
         method: 'POST',
