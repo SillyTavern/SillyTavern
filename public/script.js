@@ -5439,10 +5439,10 @@ function updateMessage(div) {
     return { mesBlock, text, mes, bias };
 }
 
-function openMessageDelete() {
+function openMessageDelete(fromSlashCommand) {
     closeMessageEditor();
     hideSwipeButtons();
-    if ((this_chid != undefined && !is_send_press) || (selected_group && !is_group_generating)) {
+    if (fromSlashCommand || (this_chid != undefined && !is_send_press) || (selected_group && !is_group_generating)) {
         $("#dialogue_del_mes").css("display", "block");
         $("#send_form").css("display", "none");
         $(".del_checkbox").each(function () {
@@ -7999,7 +7999,7 @@ jQuery(async function () {
         }
 
         else if (id == "option_delete_mes") {
-            setTimeout(openMessageDelete, animation_duration);
+            setTimeout(() => openMessageDelete(fromSlashCommand), animation_duration);
         }
 
         else if (id == "option_close_chat") {

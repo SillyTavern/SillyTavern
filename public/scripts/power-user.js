@@ -1814,9 +1814,8 @@ async function doMesCut(_, text) {
 }
 
 async function doDelMode(_, text) {
-
     //first enter delmode
-    $("#option_delete_mes").trigger('click')
+    $("#option_delete_mes").trigger('click', { fromSlashCommand: true });
 
     //reject invalid args
     if (text && isNaN(text)) {
