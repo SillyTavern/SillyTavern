@@ -4926,10 +4926,17 @@ function changeMainAPI() {
         activeItem.amountGenElem.find('input').prop("disabled", false);
         activeItem.amountGenElem.css("opacity", 1.0);
     }
+
+    //custom because streaming has been moved up under response tokens, which exists inside common settings block
     if (selectedVal === "textgenerationwebui") {
         $("#streaming_textgenerationwebui_block").css('display', 'block')
     } else {
         $("#streaming_textgenerationwebui_block").css('display', 'none')
+    }
+    if (selectedVal === "kobold") {
+        $("#streaming_kobold_block").css('display', 'block')
+    } else {
+        $("#streaming_kobold_block").css('display', 'none')
     }
 
     if (selectedVal === "novel") {
@@ -5168,14 +5175,14 @@ async function getSettings(type) {
 
         let arr_holder = {};
 
-        $("#settings_perset").empty(); //RossAscends: uncommented this to prevent settings selector from doubling preset list on refresh
-        $("#settings_perset").append(
+        $("#settings_preset").empty();
+        $("#settings_preset").append(
             '<option value="gui">GUI KoboldAI Settings</option>'
         ); //adding in the GUI settings, since it is not loaded dynamically
 
         koboldai_setting_names.forEach(function (item, i, arr) {
             arr_holder[item] = i;
-            $("#settings_perset").append(`<option value=${i}>${item}</option>`);
+            $("#settings_preset").append(`<option value=${i}>${item}</option>`);
             //console.log('loading preset #'+i+' -- '+item);
         });
         koboldai_setting_names = {};
@@ -5186,7 +5193,7 @@ async function getSettings(type) {
             selectKoboldGuiPreset();
         } else {
             if (typeof koboldai_setting_names[preset_settings] !== "undefined") {
-                $(`#settings_perset option[value=${koboldai_setting_names[preset_settings]}]`)
+                $(`#settings_preset option[value=${koboldai_setting_names[preset_settings]}]`)
                     .attr("selected", "true");
             } else {
                 preset_settings = "gui";
@@ -5201,11 +5208,11 @@ async function getSettings(type) {
         });
         arr_holder = {};
 
-        $("#settings_perset_novel").empty();
+        $("#settings_preset_novel").empty();
 
         novelai_setting_names.forEach(function (item, i, arr) {
             arr_holder[item] = i;
-            $("#settings_perset_novel").append(`<option value=${i}>${item}</option>`);
+            $("#settings_preset_novel").append(`<option value=${i}>${item}</option>`);
         });
         novelai_setting_names = {};
         novelai_setting_names = arr_holder;
@@ -5226,7 +5233,7 @@ async function getSettings(type) {
 
         // Novel
         loadNovelSettings(settings.nai_settings ?? settings);
-        $(`#settings_perset_novel option[value=${novelai_setting_names[nai_settings.preset_settings_novel]}]`).attr("selected", "true");
+        $(`#settings_preset_novel option[value=${novelai_setting_names[nai_settings.preset_settings_novel]}]`).attr("selected", "true");
 
         // TextGen
         loadTextGenSettings(data, settings);
@@ -5312,7 +5319,7 @@ async function getSettings(type) {
 }
 
 function selectKoboldGuiPreset() {
-    $("#settings_perset option[value=gui]")
+    $("#settings_preset option[value=gui]")
         .attr("selected", "true")
         .trigger("change");
 }
@@ -8093,37 +8100,33 @@ jQuery(async function () {
         is_delete_mode = false;
     });
 
-    $("#settings_perset").change(function () {
-        if ($("#settings_perset").find(":selected").val() != "gui") {
-            preset_settings = $("#settings_perset").find(":selected").text();
+    $("#settings_preset").change(function () {
+        if ($("#settings_preset").find(":selected").val() != "gui") {
+            preset_settings = $("#settings_preset").find(":selected").text();
             const preset = koboldai_settings[koboldai_setting_names[preset_settings]];
             loadKoboldSettings(preset);
-
             setGenerationParamsFromPreset(preset);
-
-            $("#range_block").find('input').prop("disabled", false);
-            $("#range_block").css("opacity", 1.0);
-
-            $("#kobold-advanced-config").find('input').prop("disabled", false);
-            $("#kobold-advanced-config").css('opacity', 1.0);
-
-            $("#kobold_order").sortable("enable");
+            $("#kobold_api-settings").find('input').prop("disabled", false);
+            $("#kobold_api-settings").css('opacity', 1.0);
+            $("#kobold_order")
+                .css('opacity', 1)
+                .sortable("enable");
         } else {
             //$('.button').disableSelection();
             preset_settings = "gui";
-            $("#range_block").find('input').prop("disabled", true);
-            $("#range_block").css("opacity", 0.5);
 
-            $("#kobold-advanced-config").find('input').prop("disabled", true);
-            $("#kobold-advanced-config").css('opacity', 0.5);
+            $("#kobold_api-settings").find('input').prop("disabled", true);
+            $("#kobold_api-settings").css('opacity', 0.5);
 
-            $("#kobold_order").sortable("disable");
+            $("#kobold_order")
+                .css('opacity', 0.5)
+                .sortable("disable");
         }
         saveSettingsDebounced();
     });
 
-    $("#settings_perset_novel").change(function () {
-        nai_settings.preset_settings_novel = $("#settings_perset_novel")
+    $("#settings_preset_novel").change(function () {
+        nai_settings.preset_settings_novel = $("#settings_preset_novel")
             .find(":selected")
             .text();
 
