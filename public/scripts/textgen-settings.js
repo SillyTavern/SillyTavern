@@ -6,8 +6,8 @@ import {
     online_status,
     saveSettingsDebounced,
     setGenerationParamsFromPreset,
+    setOnlineStatus,
 } from "../script.js";
-import { loadMancerModels } from "./mancer-settings.js";
 
 import {
     power_user,
@@ -236,7 +236,8 @@ function loadTextGenSettings(data, settings) {
         setSettingByName(i, value);
     }
 
-    $('#textgen_type').val(textgenerationwebui_settings.type).trigger('change');
+    $('#textgen_type').val(textgenerationwebui_settings.type);
+    showTypeSpecificControls(textgenerationwebui_settings.type);
 }
 
 export function isMancer() {
@@ -285,21 +286,13 @@ jQuery(function () {
                     $('#mirostat_mode_textgenerationwebui').attr('step', 1)
                 } */
 
-        $('[data-tg-type]').each(function () {
-            const tgType = $(this).attr('data-tg-type');
-            if (tgType == type) {
-                $(this).show();
-            } else {
-                $(this).hide();
-            }
-        });
+        showTypeSpecificControls(type);
+        setOnlineStatus('no_connection');
 
-        if (isMancer()) {
-            loadMancerModels();
-        }
+        $('#main_api').trigger('change');
+        $('#api_button_textgenerationwebui').trigger('click');
 
         saveSettingsDebounced();
-        $('#api_button_textgenerationwebui').trigger('click');
     });
 
     $('#settings_preset_textgenerationwebui').on('change', function () {
@@ -332,6 +325,17 @@ jQuery(function () {
         });
     }
 })
+
+function showTypeSpecificControls(type) {
+    $('[data-tg-type]').each(function () {
+        const tgType = $(this).attr('data-tg-type');
+        if (tgType == type) {
+            $(this).show();
+        } else {
+            $(this).hide();
+        }
+    });
+}
 
 function setSettingByName(i, value, trigger) {
     if (value === null || value === undefined) {

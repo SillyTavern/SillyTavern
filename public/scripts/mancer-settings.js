@@ -1,34 +1,24 @@
-import { getRequestHeaders, setGenerationParamsFromPreset } from "../script.js";
+import { setGenerationParamsFromPreset } from "../script.js";
 import { getDeviceInfo } from "./RossAscends-mods.js";
 import { textgenerationwebui_settings } from "./textgen-settings.js";
 
 let models = [];
 
-export async function loadMancerModels() {
-    try {
-        const response = await fetch('/api/mancer/models', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-        });
+export async function loadMancerModels(data) {
+    if (!Array.isArray(data)) {
+        console.error('Invalid Mancer models data', data);
+        return;
+    }
 
-        if (!response.ok) {
-            return;
-        }
+    models = data;
 
-        const data = await response.json();
-        models = data;
-
-        $('#mancer_model').empty();
-        for (const model of data) {
-            const option = document.createElement('option');
-            option.value = model.id;
-            option.text = model.name;
-            option.selected = model.id === textgenerationwebui_settings.mancer_model;
-            $('#mancer_model').append(option);
-        }
-
-    } catch {
-        console.warn('Failed to load Mancer models');
+    $('#mancer_model').empty();
+    for (const model of data) {
+        const option = document.createElement('option');
+        option.value = model.id;
+        option.text = model.name;
+        option.selected = model.id === textgenerationwebui_settings.mancer_model;
+        $('#mancer_model').append(option);
     }
 }
 

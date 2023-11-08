@@ -89,9 +89,7 @@ import {
     prepareOpenAIMessages,
     sendOpenAIRequest,
     loadOpenAISettings,
-    setOpenAIOnlineStatus,
     oai_settings,
-    is_get_status_openai,
     openai_messages_count,
     chat_completion_sources,
     getChatCompletionModel,
@@ -190,6 +188,7 @@ import { initPersonas, selectCurrentPersona, setPersonaDescription } from "./scr
 import { getBackgrounds, initBackgrounds } from "./scripts/backgrounds.js";
 import { hideLoader, showLoader } from "./scripts/loader.js";
 import { CharacterContextMenu, BulkEditOverlay } from "./scripts/BulkEditOverlay.js";
+import { loadMancerModels } from "./scripts/mancer-settings.js";
 
 //exporting functions and vars for mods
 export {
@@ -212,7 +211,7 @@ export {
     setCharacterName,
     replaceCurrentChat,
     setOnlineStatus,
-    checkOnlineStatus,
+    displayOnlineStatus,
     setEditedMessageId,
     setSendButtonState,
     selectRightMenuWithAnimation,
@@ -387,6 +386,7 @@ let crop_data = undefined;
 let is_delete_mode = false;
 let fav_ch_checked = false;
 let scrollLock = false;
+export let abortStatusCheck = new AbortController();
 
 const durationSaveEdit = 1000;
 const saveSettingsDebounced = debounce(() => saveSettings(), durationSaveEdit);
@@ -655,12 +655,6 @@ let online_status = "no_connection";
 
 let api_server = "";
 let api_server_textgenerationwebui = "";
-//var interval_timer = setInterval(getStatus, 2000);
-//let interval_timer_novel = setInterval(getStatusNovel, 90000);
-let is_get_status = false;
-let is_get_status_novel = false;
-let is_api_button_press = false;
-let is_api_button_press_novel = false;
 
 let is_send_press = false; //Send generation
 
@@ -750,29 +744,19 @@ async function firstLoadInit() {
     hideLoader();
 }
 
-function checkOnlineStatus() {
-    ///////// REMOVED LINES THAT DUPLICATE RA_CHeckOnlineStatus FEATURES
+function cancelStatusCheck() {
+    abortStatusCheck?.abort();
+    abortStatusCheck = new AbortController();
+    setOnlineStatus("no_connection");
+}
+
+function displayOnlineStatus() {
     if (online_status == "no_connection") {
-        $("#online_status_indicator2").css("background-color", "red");  //Kobold
-        $("#online_status_text2").html("No connection...");
-        $("#online_status_indicator_horde").css("background-color", "red");  //Kobold Horde
-        $("#online_status_text_horde").html("No connection...");
-        $("#online_status_indicator3").css("background-color", "red");  //Novel
-        $("#online_status_text3").html("No connection...");
-        $(".online_status_indicator4").css("background-color", "red");  //OAI / ooba
-        $(".online_status_text4").html("No connection...");
-        is_get_status = false;
-        is_get_status_novel = false;
-        setOpenAIOnlineStatus(false);
+        $(".online_status_indicator").removeClass("success");
+        $(".online_status_text").text("No connection...");
     } else {
-        $("#online_status_indicator2").css("background-color", "green"); //kobold
-        $("#online_status_text2").html(online_status);
-        $("#online_status_indicator_horde").css("background-color", "green");  //Kobold Horde
-        $("#online_status_text_horde").html(online_status);
-        $("#online_status_indicator3").css("background-color", "green"); //novel
-        $("#online_status_text3").html(online_status);
-        $(".online_status_indicator4").css("background-color", "green"); //OAI / ooba
-        $(".online_status_text4").html(online_status);
+        $(".online_status_indicator").addClass("success");
+        $(".online_status_text").text(online_status);
     }
 }
 
@@ -871,97 +855,95 @@ export async function clearItemizedPrompts() {
 }
 
 async function getStatus() {
-    if (is_get_status) {
-        if (main_api == "koboldhorde") {
-            try {
-                const hordeStatus = await checkHordeStatus();
-                online_status = hordeStatus ? 'Connected' : 'no_connection';
-                resultCheckStatus();
-            }
-            catch {
-                online_status = "no_connection";
-                resultCheckStatus();
-            }
-
-            return;
+    if (main_api == "koboldhorde") {
+        try {
+            const hordeStatus = await checkHordeStatus();
+            online_status = hordeStatus ? 'Connected' : 'no_connection';
+        }
+        catch {
+            online_status = "no_connection";
         }
 
-        const url = main_api == "textgenerationwebui" ?  '/api/textgenerationwebui/status' : '/getstatus';
+        return resultCheckStatus();
+    }
 
-        let endpoint = api_server;
+    const url = main_api == "textgenerationwebui" ? '/api/textgenerationwebui/status' : '/getstatus';
 
-        if (main_api == "textgenerationwebui") {
-            endpoint = api_server_textgenerationwebui;
-        }
+    let endpoint = api_server;
 
-        if (main_api == "textgenerationwebui" && isMancer()) {
-            endpoint = MANCER_SERVER
-        }
+    if (main_api == "textgenerationwebui") {
+        endpoint = api_server_textgenerationwebui;
+    }
 
-        jQuery.ajax({
-            type: "POST", //
-            url: url, //
-            data: JSON.stringify({
+    if (main_api == "textgenerationwebui" && isMancer()) {
+        endpoint = MANCER_SERVER;
+    }
+
+    if (!endpoint) {
+        console.warn("No endpoint for status check");
+        return;
+    }
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
                 main_api: main_api,
                 api_server: endpoint,
                 use_mancer: main_api == "textgenerationwebui" ? isMancer() : false,
                 use_aphrodite: main_api == "textgenerationwebui" ? isAphrodite() : false,
                 use_ooba: main_api == "textgenerationwebui" ? isOoba() : false,
             }),
-            beforeSend: function () { },
-            cache: false,
-            dataType: "json",
-            crossDomain: true,
-            contentType: "application/json",
-            //processData: false,
-            success: function (data) {
-                if (main_api == "textgenerationwebui" && isMancer()) {
-                    online_status = textgenerationwebui_settings.mancer_model;
-                } else {
-                    online_status = data.result;
-                }
-
-                if (!online_status) {
-                    online_status = "no_connection";
-                }
-
-                // Determine instruct mode preset
-                autoSelectInstructPreset(online_status);
-
-                // determine if we can use stop sequence and streaming
-                if (main_api === "kobold" || main_api === "koboldhorde") {
-                    setKoboldFlags(data.version, data.koboldVersion);
-                }
-
-                // We didn't get a 200 status code, but the endpoint has an explanation. Which means it DID connect, but I digress.
-                if (online_status === "no_connection" && data.response) {
-                    toastr.error(data.response, "API Error", { timeOut: 5000, preventDuplicates: true })
-                }
-
-                resultCheckStatus();
-            },
-            error: function (jqXHR, exception) {
-                console.log(exception);
-                console.log(jqXHR);
-                online_status = "no_connection";
-
-                resultCheckStatus();
-            },
+            signal: abortStatusCheck.signal,
         });
-    } else {
-        if (is_get_status_novel != true && is_get_status_openai != true) {
+
+        const data = await response.json();
+
+        if (main_api == "textgenerationwebui" && isMancer()) {
+            online_status = textgenerationwebui_settings.mancer_model;
+            loadMancerModels(data?.data);
+        } else {
+            online_status = data?.result;
+        }
+
+        if (!online_status) {
             online_status = "no_connection";
         }
+
+        // Determine instruct mode preset
+        autoSelectInstructPreset(online_status);
+
+        // determine if we can use stop sequence and streaming
+        if (main_api === "kobold" || main_api === "koboldhorde") {
+            setKoboldFlags(data.version, data.koboldVersion);
+        }
+
+        // We didn't get a 200 status code, but the endpoint has an explanation. Which means it DID connect, but I digress.
+        if (online_status === "no_connection" && data.response) {
+            toastr.error(data.response, "API Error", { timeOut: 5000, preventDuplicates: true })
+        }
+    } catch (err) {
+        console.error("Error getting status", err);
+        online_status = "no_connection";
     }
+
+    return resultCheckStatus();
 }
 
-function resultCheckStatus() {
-    is_api_button_press = false;
-    checkOnlineStatus();
-    $("#api_loading").css("display", "none");
-    $("#api_button").css("display", "inline-block");
-    $("#api_loading_textgenerationwebui").css("display", "none");
-    $("#api_button_textgenerationwebui").css("display", "inline-block");
+export function startStatusLoading() {
+    $(".api_loading").show();
+    $(".api_button").attr("disabled", "disabled").addClass("disabled");
+}
+
+export function stopStatusLoading() {
+    $(".api_loading").hide();
+    $(".api_button").removeAttr("disabled").removeClass("disabled");
+}
+
+export function resultCheckStatus() {
+    displayOnlineStatus();
+    stopStatusLoading();
 }
 
 export async function selectCharacterById(id) {
@@ -4444,6 +4426,7 @@ function setCharacterName(value) {
 
 function setOnlineStatus(value) {
     online_status = value;
+    displayOnlineStatus();
 }
 
 function setEditedMessageId(value) {
@@ -4452,13 +4435,6 @@ function setEditedMessageId(value) {
 
 function setSendButtonState(value) {
     is_send_press = value;
-}
-
-function resultCheckStatusNovel() {
-    is_api_button_press_novel = false;
-    checkOnlineStatus();
-    $("#api_loading_novel").css("display", "none");
-    $("#api_button_novel").css("display", "inline-block");
 }
 
 async function renameCharacter() {
@@ -4938,7 +4914,6 @@ function changeMainAPI() {
     }
 
     if (main_api == "koboldhorde") {
-        is_get_status = true;
         getStatus();
         getHordeModels();
     }
@@ -5650,29 +5625,20 @@ export async function displayPastChats() {
     });
 }
 
-//************************************************************
-//************************Novel.AI****************************
-//************************************************************
 async function getStatusNovel() {
-    if (is_get_status_novel) {
-        try {
-            const result = await loadNovelSubscriptionData();
+    try {
+        const result = await loadNovelSubscriptionData();
 
-            if (!result) {
-                throw new Error('Could not load subscription data');
-            }
-
-            online_status = getNovelTier();
-        } catch {
-            online_status = "no_connection";
+        if (!result) {
+            throw new Error('Could not load subscription data');
         }
 
-        resultCheckStatusNovel();
-    } else {
-        if (is_get_status != true && is_get_status_openai != true) {
-            online_status = "no_connection";
-        }
+        online_status = getNovelTier();
+    } catch {
+        online_status = "no_connection";
     }
+
+    resultCheckStatus();
 }
 
 function selectRightMenuWithAnimation(selectedMenuId) {
@@ -7358,6 +7324,8 @@ jQuery(async function () {
         scrollLock = true;
     });
 
+    $(document).on('click', '.api_loading', cancelStatusCheck);
+
     //////////INPUT BAR FOCUS-KEEPING LOGIC/////////////
     let S_TAFocused = false;
     let S_TAPreviouslyFocused = false;
@@ -7838,13 +7806,10 @@ jQuery(async function () {
 
             $("#api_url_text").val(value);
             api_server = value;
-            $("#api_loading").css("display", "inline-block");
-            $("#api_button").css("display", "none");
+            startStatusLoading();
 
             main_api = "kobold";
             saveSettingsDebounced();
-            is_get_status = true;
-            is_api_button_press = true;
             getStatus();
         }
     });
@@ -7873,13 +7838,9 @@ jQuery(async function () {
             api_server_textgenerationwebui = value;
         }
 
-        $("#api_loading_textgenerationwebui").css("display", "inline-block");
-        $("#api_button_textgenerationwebui").css("display", "none");
-
+        startStatusLoading();
         main_api = "textgenerationwebui";
         saveSettingsDebounced();
-        is_get_status = true;
-        is_api_button_press = true;
         getStatus();
     });
 
@@ -8122,11 +8083,7 @@ jQuery(async function () {
     });
 
     $("#main_api").change(function () {
-        is_get_status = false;
-        is_get_status_novel = false;
-        setOpenAIOnlineStatus(false);
-        online_status = "no_connection";
-        checkOnlineStatus();
+        cancelStatusCheck();
         changeMainAPI();
         saveSettingsDebounced();
     });
@@ -8562,10 +8519,7 @@ jQuery(async function () {
             return;
         }
 
-        $("#api_loading_novel").css("display", "inline-block");
-        $("#api_button_novel").css("display", "none");
-        is_get_status_novel = true;
-        is_api_button_press_novel = true;
+        startStatusLoading();
         // Check near immediately rather than waiting for up to 90s
         setTimeout(getStatusNovel, 10);
     });

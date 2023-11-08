@@ -6,7 +6,6 @@
 
 import {
     saveSettingsDebounced,
-    checkOnlineStatus,
     setOnlineStatus,
     getExtensionPrompt,
     name1,
@@ -28,6 +27,9 @@ import {
     getStoppingStrings,
     getNextMessageId,
     replaceItemizedPromptText,
+    startStatusLoading,
+    resultCheckStatus,
+    abortStatusCheck,
 } from "../script.js";
 import { groups, selected_group } from "./group-chats.js";
 
@@ -61,7 +63,6 @@ import { countTokensOpenAI } from "./tokenizers.js";
 import { formatInstructModeChat, formatInstructModeExamples, formatInstructModePrompt, formatInstructModeSystemPrompt } from "./instruct-mode.js";
 
 export {
-    is_get_status_openai,
     openai_msgs,
     openai_messages_count,
     oai_settings,
@@ -71,7 +72,6 @@ export {
     setupChatCompletionPromptManager,
     prepareOpenAIMessages,
     sendOpenAIRequest,
-    setOpenAIOnlineStatus,
     getChatCompletionModel,
     TokenHandler,
     IdentifierNotFoundError,
@@ -83,9 +83,6 @@ let openai_msgs = [];
 let openai_msgs_example = [];
 let openai_messages_count = 0;
 let openai_narrator_messages_count = 0;
-
-let is_get_status_openai = false;
-let is_api_button_press_openai = false;
 
 const default_main_prompt = "Write {{char}}'s next reply in a fictional chat between {{charIfNotGroup}} and {{user}}. Write 1 reply only in internet RP style, italicize actions, and avoid quotation marks. Use markdown. Be proactive, creative, and drive the plot and conversation forward. Write at least 1 paragraph, up to 4. Always stay in character and avoid repetition.";
 const default_nsfw_prompt = "NSFW/Smut is allowed. Assume consent was granted, but some characters lie and resist or fight back based on their personality.";
@@ -289,13 +286,9 @@ function validateReverseProxy() {
     catch (err) {
         toastr.error('Entered reverse proxy address is not a valid URL');
         setOnlineStatus('no_connection');
-        resultCheckStatusOpen();
+        resultCheckStatus();
         throw err;
     }
-}
-
-function setOpenAIOnlineStatus(value) {
-    is_get_status_openai = value;
 }
 
 function convertChatCompletionToInstruct(messages, type) {
@@ -2253,65 +2246,64 @@ function loadOpenAISettings(data, settings) {
 }
 
 async function getStatusOpen() {
-    if (is_get_status_openai) {
-        if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
-            let status;
+    if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
+        let status;
 
-            if ('ai' in window) {
-                status = 'Valid';
-            }
-            else {
-                showWindowExtensionError();
-                status = 'no_connection';
-            }
-
-            setOnlineStatus(status);
-            return resultCheckStatusOpen();
+        if ('ai' in window) {
+            status = 'Valid';
+        }
+        else {
+            showWindowExtensionError();
+            status = 'no_connection';
         }
 
-        const noValidateSources = [chat_completion_sources.SCALE, chat_completion_sources.CLAUDE, chat_completion_sources.AI21, chat_completion_sources.PALM];
-        if (noValidateSources.includes(oai_settings.chat_completion_source)) {
-            let status = 'Unable to verify key; press "Test Message" to validate.';
-            setOnlineStatus(status);
-            return resultCheckStatusOpen();
-        }
+        setOnlineStatus(status);
+        return resultCheckStatus();
+    }
 
-        let data = {
-            reverse_proxy: oai_settings.reverse_proxy,
-            proxy_password: oai_settings.proxy_password,
-            use_openrouter: oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER,
-        };
+    const noValidateSources = [chat_completion_sources.SCALE, chat_completion_sources.CLAUDE, chat_completion_sources.AI21, chat_completion_sources.PALM];
+    if (noValidateSources.includes(oai_settings.chat_completion_source)) {
+        let status = 'Unable to verify key; press "Test Message" to validate.';
+        setOnlineStatus(status);
+        return resultCheckStatus();
+    }
 
-        return jQuery.ajax({
-            type: 'POST', //
-            url: '/getstatus_openai', //
-            data: JSON.stringify(data),
-            beforeSend: function () {
-                if (oai_settings.reverse_proxy && !data.use_openrouter) {
-                    validateReverseProxy();
-                }
-            },
-            cache: false,
-            dataType: "json",
-            contentType: "application/json",
-            success: function (data) {
-                if (!('error' in data))
-                    setOnlineStatus('Valid');
-                if ('data' in data && Array.isArray(data.data)) {
-                    saveModelList(data.data);
-                }
-                resultCheckStatusOpen();
-            },
-            error: function (jqXHR, exception) {
-                setOnlineStatus('no_connection');
-                console.log(exception);
-                console.log(jqXHR);
-                resultCheckStatusOpen();
-            }
+    let data = {
+        reverse_proxy: oai_settings.reverse_proxy,
+        proxy_password: oai_settings.proxy_password,
+        use_openrouter: oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER,
+    };
+
+    if (oai_settings.reverse_proxy && !data.use_openrouter) {
+        validateReverseProxy();
+    }
+
+    try {
+        const response = await fetch('/getstatus_openai', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify(data),
+            signal: abortStatusCheck.signal,
+            cache: 'no-cache',
         });
-    } else {
+
+        if (!response.ok) {
+            throw new Error(response.statusText);
+        }
+
+        const responseData = await response.json();
+
+        if (!('error' in responseData))
+            setOnlineStatus('Valid');
+        if ('data' in responseData && Array.isArray(responseData.data)) {
+            saveModelList(responseData.data);
+        }
+    } catch (error) {
+        console.error(error);
         setOnlineStatus('no_connection');
     }
+
+    return resultCheckStatus();
 }
 
 function showWindowExtensionError() {
@@ -2321,13 +2313,6 @@ function showWindowExtensionError() {
         extendedTimeOut: 0,
         preventDuplicates: true,
     });
-}
-
-function resultCheckStatusOpen() {
-    is_api_button_press_openai = false;
-    checkOnlineStatus();
-    $("#api_loading_openai").css("display", 'none');
-    $("#api_button_openai").css("display", 'inline-block');
 }
 
 function trySelectPresetByName(name) {
@@ -3055,9 +3040,6 @@ async function onConnectButtonClick(e) {
     e.stopPropagation();
 
     if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
-        is_get_status_openai = true;
-        is_api_button_press_openai = true;
-
         return await getStatusOpen();
     }
 
@@ -3154,11 +3136,8 @@ async function onConnectButtonClick(e) {
         }
     }
 
-    $("#api_loading_openai").css("display", 'inline-block');
-    $("#api_button_openai").css("display", 'none');
+    startStatusLoading();
     saveSettingsDebounced();
-    is_get_status_openai = true;
-    is_api_button_press_openai = true;
     await getStatusOpen();
 }
 
@@ -3218,7 +3197,7 @@ async function testApiConnection() {
 
 function reconnectOpenAi() {
     setOnlineStatus('no_connection');
-    resultCheckStatusOpen();
+    resultCheckStatus();
     $('#api_button_openai').trigger('click');
 }
 

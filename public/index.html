@@ -1706,9 +1706,9 @@
                                     <option data-i18n="-- Horde models not loaded --">-- Horde models not loaded --</option>
                                 </select>
                             </div>
-                            <div id="online_status_horde">
-                                <div id="online_status_indicator_horde"></div>
-                                <div id="online_status_text_horde" data-i18n="Not connected...">Not connected...</div>
+                            <div class="online_status">
+                                <div class="online_status_indicator"></div>
+                                <div data-i18n="Not connected..." class="online_status_text">Not connected...</div>
                             </div>
                         </form>
                     </div>
@@ -1718,12 +1718,14 @@
                                 <h4 data-i18n="API url">API url</h4>
                                 <small data-i18n="Example: http://127.0.0.1:5000/api ">Example: http://127.0.0.1:5000/api </small>
                                 <input id="api_url_text" name="api_url" class="text_pole" placeholder="http://127.0.0.1:5000/api" maxlength="500" value="" autocomplete="off" data-server-history="kobold">
-                                <div id="api_button" class="menu_button" type="submit" data-i18n="Connect" data-server-connect="kobold">Connect</div>
-                                <div id="api_loading" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
+                                <div class="flex-container">
+                                    <div id="api_button" class="api_button menu_button" type="submit" data-i18n="Connect" data-server-connect="kobold">Connect</div>
+                                    <div class="api_loading menu_button" data-i18n="Cancel">Cancel</div>
+                                </div>
                             </div>
-                            <div id="online_status2">
-                                <div id="online_status_indicator2"></div>
-                                <div id="online_status_text2" data-i18n="Not connected...">Not connected...</div>
+                            <div class="online_status">
+                                <div class="online_status_indicator"></div>
+                                <div class="online_status_text" data-i18n="Not connected...">Not connected...</div>
                             </div>
                         </form>
                     </div>
@@ -1748,8 +1750,10 @@
                             <div data-for="api_key_novel" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
                                 For privacy reasons, your API key will be hidden after you reload the page.
                             </div>
-                            <div id="api_button_novel" class="menu_button" type="submit" data-i18n="Connect">Connect</div>
-                            <div id="api_loading_novel" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
+                            <div class="flex-container">
+                                <div id="api_button_novel" class="api_button menu_button" type="submit" data-i18n="Connect">Connect</div>
+                                <div class="api_loading menu_button" data-i18n="Cancel">Cancel</div>
+                            </div>
                             <h4><span data-i18n="Novel AI Model">Novel AI Model</span>
                                 <a href="https://docs.sillytavern.app/usage/api-connections/novelai/#models" class="notes-link" target="_blank">
                                     <span class="fa-solid fa-circle-question note-link-span"></span>
@@ -1760,9 +1764,9 @@
                                 <option value="kayra-v1">Kayra</option>
                             </select>
                         </form>
-                        <div id="online_status3">
-                            <div id="online_status_indicator3"></div>
-                            <div id="online_status_text3" data-i18n="No connection...">No connection... </div>
+                        <div class="online_status">
+                            <div class="online_status_indicator"></div>
+                            <div class="online_status_text" data-i18n="No connection...">No connection... </div>
                         </div>
                     </div>
                     <div id="textgenerationwebui_api" style="display: none;position: relative;">
@@ -1777,11 +1781,13 @@
                             </div>
                             <div data-tg-type="mancer" class="flex-container flexFlowColumn">
                                 <div class="flex-container flexFlowColumn">
-                                    <a href="https://mancer.tech/" target="_blank">
-                                        Mancer AI
-                                    </a>
                                 </div>
-                                <h4 data-i18n="Mancer API key">Mancer API key</h4>
+                                <h4 data-i18n="Mancer API key">
+                                    Mancer API key
+                                    <a href="https://mancer.tech/" class="notes-link" target="_blank">
+                                        <span class="fa-solid fa-circle-question note-link-span"></span>
+                                    </a>
+                                </h4>
                                 <div class="flex-container">
                                     <input id="api_key_mancer" name="api_key_mancer" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
                                     <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_mancer">
@@ -1831,12 +1837,14 @@
                                     <input id="aphrodite_api_url_text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="aphrodite">
                                 </div>
                             </div>
-                            <div id="api_button_textgenerationwebui" class="menu_button" type="submit" data-i18n="Connect" data-server-connect="ooba_blocking,aphrodite">Connect</div>
-                            <div id="api_loading_textgenerationwebui" class="api-load-icon fa-solid fa-hourglass fa-spin"></div>
+                            <div class="flex-container">
+                                <div id="api_button_textgenerationwebui" class="api_button menu_button" type="submit" data-i18n="Connect" data-server-connect="ooba_blocking,aphrodite">Connect</div>
+                                <div class="api_loading menu_button" data-i18n="Cancel">Cancel</div>
+                            </div>
                         </form>
-                        <div class="online_status4">
-                            <div class="online_status_indicator4"></div>
-                            <div class="online_status_text4" data-i18n="Not connected...">Not connected...</div>
+                        <div class="online_status">
+                            <div class="online_status_indicator"></div>
+                            <div class="online_status_text" data-i18n="Not connected...">Not connected...</div>
                         </div>
                     </div>
                     <div id="openai_api" style="display: none;position: relative;">
@@ -2100,13 +2108,13 @@
 
                         <div class="flex-container flex">
                             <div id="api_button_openai" class="menu_button menu_button_icon" type="submit" data-i18n="Connect">Connect</div>
+                            <div class="api_loading menu_button" data-i18n="Cancel">Cancel</div>
                             <div data-source="openrouter" id="openrouter_authorize" class="menu_button menu_button_icon" title="Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai" data-i18n="[title]Get your OpenRouter API token using OAuth flow. You will be redirected to openrouter.ai">Authorize</div>
                             <div id="test_api_button" class="menu_button menu_button_icon" title="Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!" data-i18n="[title]Verifies your API connection by sending a short test message. Be aware that you'll be credited for it!">Test Message</div>
                         </div>
-                        <div id="api_loading_openai" class=" api-load-icon fa-solid fa-hourglass fa-spin"></div>
-                        <div class="online_status4">
-                            <div class="online_status_indicator4"></div>
-                            <div class="online_status_text4" data-i18n="No connection...">No connection...</div>
+                        <div class="online_status">
+                            <div class="online_status_indicator"></div>
+                            <div class="online_status_text" data-i18n="No connection...">No connection...</div>
                         </div>
                     </div>
                 </div>

@@ -2089,11 +2089,7 @@ grammarly-extension {
     content: '☐';
 }
 
-/* ------ online status indicators and texts. 2 = kobold AI, 3 = Novel AI  ----------*/
-#online_status2,
-#online_status3,
-#online_status_horde,
-.online_status4 {
+.online_status {
     opacity: 0.8;
     margin-top: 2px;
     margin-bottom: 15px;
@@ -2102,10 +2098,11 @@ grammarly-extension {
     gap: 5px;
 }
 
-#online_status_indicator2,
-#online_status_indicator3,
-#online_status_indicator_horde,
-.online_status_indicator4 {
+.online_status_indicator.success {
+    background-color: green;
+}
+
+.online_status_indicator {
     border-radius: 7px;
     width: 14px;
     height: 14px;
@@ -2113,10 +2110,7 @@ grammarly-extension {
     display: inline-block;
 }
 
-#online_status_text2,
-#online_status_text3,
-#online_status_text_horde,
-.online_status_text4 {
+.online_status_text {
     margin-left: 4px;
     display: inline-block;
 }

@@ -1,4 +1,5 @@
 import {
+    abortStatusCheck,
     getRequestHeaders,
     getStoppingStrings,
     novelai_setting_names,
@@ -91,6 +92,7 @@ export async function loadNovelSubscriptionData() {
     const result = await fetch('/api/novelai/status', {
         method: 'POST',
         headers: getRequestHeaders(),
+        signal: abortStatusCheck.signal,
     });
 
     if (result.ok) {

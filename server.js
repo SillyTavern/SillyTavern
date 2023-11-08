@@ -536,7 +536,7 @@ app.post("/api/textgenerationwebui/status", jsonParser, async function (request,
         console.log('Models available:', modelIds);
 
         const result = modelIds[0] ?? 'Valid';
-        return response.send({ result });
+        return response.send({ result, data: data.data });
     } catch (error) {
         console.error(error);
         return response.status(500);
@@ -671,28 +671,6 @@ app.post("/getchat", jsonParser, function (request, response) {
     } catch (error) {
         console.error(error);
         return response.send({});
-    }
-});
-
-app.post("/api/mancer/models", jsonParser, async function (_req, res) {
-    try {
-        const response = await fetch('https://neuro.mancer.tech/oai/v1/models');
-        const data = await response.json();
-
-        if (!response.ok) {
-            console.log('Mancer models endpoint is offline.');
-            return res.json([]);
-        }
-
-        if (!Array.isArray(data.data)) {
-            console.log('Mancer models response is not an array.')
-            return res.json([]);
-        }
-
-        return res.json(data.data);
-    } catch (error) {
-        console.error(error);
-        return res.json([]);
     }
 });
 
