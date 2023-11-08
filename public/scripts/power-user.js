@@ -1835,7 +1835,7 @@ async function doDelMode(_, text) {
         let oldestMesIDToDel = lastMesID - numMesToDel + 1;
 
         if (oldestMesIDToDel < 0) {
-            toastr.warning(`Cannot delete more thans ${chat.length} messages.`)
+            toastr.warning(`Cannot delete more than ${chat.length} messages.`)
             return;
         }
 
