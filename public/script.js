@@ -869,15 +869,7 @@ async function getStatus() {
 
     const url = main_api == "textgenerationwebui" ? '/api/textgenerationwebui/status' : '/getstatus';
 
-    let endpoint = api_server;
-
-    if (main_api == "textgenerationwebui") {
-        endpoint = api_server_textgenerationwebui;
-    }
-
-    if (main_api == "textgenerationwebui" && isMancer()) {
-        endpoint = MANCER_SERVER;
-    }
+    let endpoint = getAPIServerUrl();
 
     if (!endpoint) {
         console.warn("No endpoint for status check");
@@ -944,6 +936,22 @@ export function stopStatusLoading() {
 export function resultCheckStatus() {
     displayOnlineStatus();
     stopStatusLoading();
+}
+
+export function getAPIServerUrl() {
+    if (main_api == "textgenerationwebui") {
+        if (isMancer()) {
+            return MANCER_SERVER;
+        }
+
+        return api_server_textgenerationwebui;
+    }
+
+    if (main_api == "kobold") {
+        return api_server;
+    }
+
+    return "";
 }
 
 export async function selectCharacterById(id) {
@@ -2530,16 +2538,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
     if (interruptedByCommand) {
         $("#send_textarea").val('').trigger('input');
-        unblockGeneration();
-        return;
-    }
-
-    if (
-        main_api == 'textgenerationwebui' &&
-        textgenerationwebui_settings.streaming &&
-        textgenerationwebui_settings.type === textgen_types.OOBA &&
-        !textgenerationwebui_settings.streaming_url) {
-        toastr.error('Streaming URL is not set. Look it up in the console window when starting TextGen Web UI');
         unblockGeneration();
         return;
     }

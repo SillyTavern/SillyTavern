@@ -3324,27 +3324,57 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
         return response.sendStatus(400);
     }
     const text = request.body.text || '';
+    const api = request.body.api;
+    const baseUrl = request.body.url;
 
     try {
-        const args = {
-            body: JSON.stringify({ "prompt": text }),
-            headers: { "Content-Type": "application/json" }
-        };
+        if (api == 'textgenerationwebui') {
+            const args = {
+                method: 'POST',
+                body: JSON.stringify({ "prompt": text }),
+                headers: { "Content-Type": "application/json" }
+            };
 
-        if (main_api == 'textgenerationwebui') {
             setAdditionalHeaders(request, args, null);
 
-            const data = await postAsync(api_server + "/v1/token-count", args);
+            const url = new URL(baseUrl);
+            url.pathname = '/api/v1/token-count'
+
+            const result = await fetch(url, args);
+
+            if (!result.ok) {
+                console.log(`API returned error: ${result.status} ${result.statusText}`);
+                return response.send({ error: true });
+            }
+
+            const data = await result.json();
             return response.send({ count: data['results'][0]['tokens'] });
         }
 
-        else if (main_api == 'kobold') {
-            const data = await postAsync(api_server + "/extra/tokencount", args);
+        else if (api == 'kobold') {
+            const args = {
+                method: 'POST',
+                body: JSON.stringify({ "prompt": text }),
+                headers: { "Content-Type": "application/json" }
+            };
+
+            const url = new URL(baseUrl);
+            url.pathname = '/api/extra/tokencount';
+
+            const result = await fetch(url, args);
+
+            if (!result.ok) {
+                console.log(`API returned error: ${result.status} ${result.statusText}`);
+                return response.send({ error: true });
+            }
+
+            const data = await result.json();
             const count = data['value'];
             return response.send({ count: count });
         }
 
         else {
+            console.log('Unknown API', api);
             return response.send({ error: true });
         }
     } catch (error) {
@@ -3371,12 +3401,6 @@ async function fetchJSON(url, args = {}) {
 
     throw response;
 }
-/**
- * Convenience function for fetch requests (default POST with no timeout) returning as JSON.
- * @param {string} url
- * @param {import('node-fetch').RequestInit} args
- */
-async function postAsync(url, args) { return fetchJSON(url, { method: 'POST', timeout: 0, ...args }) }
 
 // ** END **
 

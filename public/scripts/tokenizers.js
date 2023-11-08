@@ -1,4 +1,4 @@
-import { characters, main_api, nai_settings, online_status, this_chid } from "../script.js";
+import { api_server, api_server_textgenerationwebui, characters, getAPIServerUrl, main_api, nai_settings, online_status, this_chid } from "../script.js";
 import { power_user, registerDebugFunction } from "./power-user.js";
 import { chat_completion_sources, model_list, oai_settings } from "./openai.js";
 import { groups, selected_group } from "./group-chats.js";
@@ -376,7 +376,11 @@ function countTokensRemote(endpoint, str, padding) {
         async: false,
         type: 'POST',
         url: endpoint,
-        data: JSON.stringify({ text: str }),
+        data: JSON.stringify({
+            text: str,
+            api: main_api,
+            url: getAPIServerUrl(),
+        }),
         dataType: "json",
         contentType: "application/json",
         success: function (data) {
