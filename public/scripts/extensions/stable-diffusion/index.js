@@ -120,8 +120,8 @@ const promptTemplates = {
 }
 
 const helpString = [
-    `${m('(argument)')} – requests SD to make an image. Supported arguments: ${m(j(Object.values(triggerWords).flat()))}.`,
-    `Anything else would trigger a "free mode" to make SD generate whatever you prompted. Example: '/sd apple tree' would generate a picture of an apple tree.`,
+    `${m('(argument)')} – requests to generate an image. Supported arguments: ${m(j(Object.values(triggerWords).flat()))}.`,
+    `Anything else would trigger a "free mode" to make generate whatever you prompted. Example: '/imagine apple tree' would generate a picture of an apple tree.`,
 ].join(' ');
 
 const defaultPrefix = 'best quality, absurdres, aesthetic,';
@@ -776,7 +776,7 @@ async function onModelChange() {
     if (extension_settings.sd.source === sources.auto || extension_settings.sd.source === sources.vlad) {
         await updateAutoRemoteModel();
     }
-    toastr.success('Model successfully loaded!', 'Stable Diffusion');
+    toastr.success('Model successfully loaded!', 'Image Generation');
 }
 
 async function getAutoRemoteModel() {
@@ -1251,7 +1251,7 @@ function getRawLastMessage() {
             return message.mes;
         }
 
-        toastr.warning('No usable messages found.', 'Stable Diffusion');
+        toastr.warning('No usable messages found.', 'Image Generation');
         throw new Error('No usable messages found.');
     }
 
@@ -1304,7 +1304,7 @@ async function generatePicture(_, trigger, message, callback) {
 
     try {
         const prompt = await getPrompt(generationType, message, trigger, quiet_prompt);
-        console.log('Processed Stable Diffusion prompt:', prompt);
+        console.log('Processed image prompt:', prompt);
 
         context.deactivateSendButtons();
         hideSwipeButtons();
@@ -1412,13 +1412,13 @@ async function sendGenerationRequest(generationType, prompt, characterName = nul
         }
     } catch (err) {
         console.error(err);
-        toastr.error('Image generation failed. Please try again.' + '\n\n' + String(err), 'Stable Diffusion');
+        toastr.error('Image generation failed. Please try again.' + '\n\n' + String(err), 'Image Generation');
         return;
     }
 
     if (currentChatId !== getCurrentChatId()) {
         console.warn('Chat changed, aborting SD result saving');
-        toastr.warning('Chat changed, generated image discarded.', 'Stable Diffusion');
+        toastr.warning('Chat changed, generated image discarded.', 'Image Generation');
         return;
     }
 
@@ -1714,7 +1714,7 @@ function addSDGenButtons() {
     const buttonHtml = `
     <div id="sd_gen" class="list-group-item flex-container flexGap5">
         <div class="fa-solid fa-paintbrush extensionsMenuExtensionButton" title="Trigger Stable Diffusion" /></div>
-        Stable Diffusion
+        Generate Image
     </div>
         `;
 
@@ -1888,7 +1888,7 @@ $("#sd_dropdown [id]").on("click", function () {
 });
 
 jQuery(async () => {
-    getContext().registerSlashCommand('sd', generatePicture, [], helpString, true, true);
+    getContext().registerSlashCommand('imagine', generatePicture, ['sd'], helpString, true, true);
 
     $('#extensions_settings').append(renderExtensionTemplate('stable-diffusion', 'settings', defaultSettings));
     $('#sd_source').on('change', onSourceChange);
