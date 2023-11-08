@@ -145,7 +145,7 @@ async function moduleWorker() {
     }
 
     // clone message object, as things go haywire if message object is altered below (it's passed by reference)
-    const message = JSON.parse(JSON.stringify(chat[chat.length - 1]))
+    const message = structuredClone(chat[chat.length - 1])
 
     // if last message within current message, message got extended. only send diff to TTS.
     if (ttsLastMessage !== null && message.mes.indexOf(ttsLastMessage) !== -1) {
@@ -646,6 +646,7 @@ export function saveTtsProviderSettings() {
 async function onChatChanged() {
     await resetTtsPlayback()
     await initVoiceMap()
+    ttsLastMessage = null
 }
 
 async function onChatDeleted() {
