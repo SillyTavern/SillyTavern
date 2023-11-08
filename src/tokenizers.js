@@ -60,6 +60,36 @@ async function loadSentencepieceTokenizer(modelPath) {
     }
 };
 
+const sentencepieceTokenizers = [
+    'llama',
+    'nerdstash',
+    'nerdstash_v2',
+    'mistral',
+];
+
+/**
+ * Gets the Sentencepiece tokenizer by the model name.
+ * @param {string} model Sentencepiece model name
+ * @returns {*} Sentencepiece tokenizer
+ */
+function getSentencepiceTokenizer(model) {
+    if (model.includes('llama')) {
+        return spp_llama;
+    }
+
+    if (model.includes('nerdstash')) {
+        return spp_nerd;
+    }
+
+    if (model.includes('mistral')) {
+        return spp_mistral;
+    }
+
+    if (model.includes('nerdstash_v2')) {
+        return spp_nerd_v2;
+    }
+}
+
 async function countSentencepieceTokens(spp, text) {
     // Fallback to strlen estimation
     if (!spp) {
@@ -438,5 +468,7 @@ module.exports = {
     countClaudeTokens,
     loadTokenizers,
     registerEndpoints,
+    getSentencepiceTokenizer,
+    sentencepieceTokenizers,
 }
 

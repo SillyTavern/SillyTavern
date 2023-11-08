@@ -59,7 +59,7 @@ import {
     resetScrollHeight,
     stringFormat,
 } from "./utils.js";
-import { countTokensOpenAI } from "./tokenizers.js";
+import { countTokensOpenAI, getTokenizerModel } from "./tokenizers.js";
 import { formatInstructModeChat, formatInstructModeExamples, formatInstructModePrompt, formatInstructModeSystemPrompt } from "./instruct-mode.js";
 
 export {
@@ -1541,7 +1541,7 @@ async function calculateLogitBias() {
     let result = {};
 
     try {
-        const reply = await fetch(`/openai_bias?model=${oai_settings.openai_model}`, {
+        const reply = await fetch(`/openai_bias?model=${getTokenizerModel()}`, {
             method: 'POST',
             headers: getRequestHeaders(),
             body,
