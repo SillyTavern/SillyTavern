@@ -485,7 +485,7 @@ class BulkEditOverlay {
             BulkEditOverlay.longPressDelay);
     }
 
-    handleLongPressEnd = () => {
+    handleLongPressEnd = (event) => {
         this.isLongPress = false;
         if (this.#contextMenuOpen) event.stopPropagation();
     }
@@ -506,7 +506,12 @@ class BulkEditOverlay {
         event.clientY || event.touches[0].clientY,
     ];
 
-    #stopEventPropagation = (event) => event.stopPropagation();
+    #stopEventPropagation = (event) => {
+        if (this.#contextMenuOpen) {
+            this.handleContextMenuHide(event);
+        }
+        event.stopPropagation();
+    }
 
     #enableClickEventsForGroups = () => this.#getDisabledElements().forEach((element) => element.removeEventListener('click', this.#stopEventPropagation));
 
