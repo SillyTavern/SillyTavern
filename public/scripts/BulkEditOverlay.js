@@ -294,7 +294,14 @@ class BulkEditOverlay {
      *
      * @type {boolean}
      */
-    #selectModeLock = false;
+    #contextMenuOpen = false;
+
+    /**
+     * Whether the next character select should be skipped
+     *
+     * @type {boolean}
+     */
+    #cancelNextToggle = false;
 
     /**
      * @type HTMLElement
@@ -383,7 +390,7 @@ class BulkEditOverlay {
         switch (this.state) {
             case BulkEditOverlayState.browse:
                 this.container.classList.remove(BulkEditOverlay.selectModeClass);
-                this.#selectModeLock = false;
+                this.#contextMenuOpen = false;
                 this.#enableClickEventsForCharacters();
                 this.#enableClickEventsForGroups();
                 this.clearSelectedCharacters();
@@ -436,8 +443,9 @@ class BulkEditOverlay {
      */
     handleHold = (event) => {
         if (0 !== event.button && event.type !== 'touchstart') return;
-        if (this.#selectModeLock) {
-            this.#selectModeLock = false;
+        if (this.#contextMenuOpen) {
+            this.#contextMenuOpen = false;
+            this.#cancelNextToggle = true;
             CharacterContextMenu.hide();
             return;
         }
@@ -455,7 +463,7 @@ class BulkEditOverlay {
                     if (this.state === BulkEditOverlayState.browse) {
                         this.selectState();
                     } else if (this.state === BulkEditOverlayState.select) {
-                        this.#selectModeLock = true;
+                        this.#contextMenuOpen = true;
                         CharacterContextMenu.show(...this.#getContextMenuPosition(event));
                     }
                 }
@@ -468,12 +476,12 @@ class BulkEditOverlay {
 
     handleLongPressEnd = () => {
         this.isLongPress = false;
-        if (this.#selectModeLock) event.stopPropagation();
+        if (this.#contextMenuOpen) event.stopPropagation();
     }
 
     handleCancelClick = () => {
-        if (false === this.#selectModeLock) this.state = BulkEditOverlayState.browse;
-        this.#selectModeLock = false;
+        if (false === this.#contextMenuOpen) this.state = BulkEditOverlayState.browse;
+        this.#contextMenuOpen = false;
     }
 
     /**
@@ -515,7 +523,8 @@ class BulkEditOverlay {
 
         const legacyBulkEditCheckbox = character.querySelector('.' + BulkEditOverlay.legacySelectedClass);
 
-        if (!this.#selectModeLock)
+        // Only toggle when context menu is closed and has not just been closed
+        if (!this.#contextMenuOpen && !this.#cancelNextToggle)
             if (alreadySelected) {
                 character.classList.remove(BulkEditOverlay.selectedClass);
                 if (legacyBulkEditCheckbox) legacyBulkEditCheckbox.checked = false;
@@ -525,12 +534,14 @@ class BulkEditOverlay {
                 if (legacyBulkEditCheckbox) legacyBulkEditCheckbox.checked = true;
                 this.selectCharacter(characterId);
             }
+
+        this.#cancelNextToggle = false;
     }
 
     handleContextMenuShow = (event) => {
         event.preventDefault();
         CharacterContextMenu.show(...this.#getContextMenuPosition(event));
-        this.#selectModeLock = true;
+        this.#contextMenuOpen = true;
     }
 
     handleContextMenuHide = (event) => {
