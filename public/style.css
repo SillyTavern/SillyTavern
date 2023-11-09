@@ -2177,6 +2177,7 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
     transform: translateY(-0.075em);
     flex-shrink: 0;
     place-content: center;
+    filter: brightness(1.2);
 }
 
 input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button_panel_pin):not(#WI_panel_pin):not(.del_checkbox) {
@@ -2820,6 +2821,7 @@ body .ui-slider-handle {
     margin-left: 0;
     opacity: 1 !important;
     transition: filter 200ms;
+    filter: brightness(1.2);
 }
 
 .ui-slider-handle.ui-state-default {
