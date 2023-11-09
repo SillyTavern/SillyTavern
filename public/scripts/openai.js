@@ -1982,8 +1982,7 @@ class ChatCompletion {
                 const message = { role: item.role, content: item.content, ...(item.name ? { name: item.name } : {}) };
                 chat.push(message);
             } else {
-                this.log(`Item ${item} has an unknown type. Adding as-is`);
-                chat.push(item);
+                console.warn('Invalid message in collection', item);
             }
         }
         return chat;
