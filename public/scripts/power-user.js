@@ -431,30 +431,36 @@ async function switchZenSliders() {
     $("body").toggleClass("enableZenSliders", power_user.enableZenSliders);
     $("#enableZenSliders").prop("checked", power_user.enableZenSliders);
 
-    function revertOriginalSliders() {
-        $("#textgenerationwebui_api-settings input[type='number']").show();
-        $("#pro-settings-block input[type='number']").show();
+    if (power_user.enableZenSliders) {
+        $("#pro-settings-block input[type='number']").hide();
+        //hide number inputs that are not 'seed' inputs
+        $(`#textgenerationwebui_api-settings :input[type='number']:not([id^='seed']), 
+            #kobold_api-settings :input[type='number']:not([id^='seed'])`).hide()
+        //hide original sliders
         $(`#textgenerationwebui_api-settings input[type='range'],
-         #pro-settings-block input[type='range']`).each(function () {
+            #kobold_api-settings input[type='range'],
+            #pro-settings-block input[type='range']`)
+            .hide()
+            .each(function () {
+                //make a zen slider for each original slider
+                CreateZenSliders($(this))
+            })
+    } else {
+        revertOriginalSliders();
+    }
+
+    function revertOriginalSliders() {
+        $(`#pro-settings-block input[type='number']`).show();
+        $(`#textgenerationwebui_api-settings input[type='number'],
+            #kobold_api-settings input[type='number']`).show();
+        $(`#textgenerationwebui_api-settings input[type='range'],
+            #kobold_api-settings input[type='range'],
+            #pro-settings-block input[type='range']`).each(function () {
             $(this).show();
         });
         $('div[id$="_zenslider"]').remove();
     }
 
-    if (power_user.enableZenSliders) {
-        $("#textgenerationwebui_api-settings input[type='number']").hide();
-        $("#pro-settings-block input[type='number']").hide();
-        $("#seed_textgenerationwebui").show();
-        $(`#textgenerationwebui_api-settings input[type='range'],
-        #pro-settings-block input[type='range']`)
-            .hide()
-            .each(function () {
-                CreateZenSliders($(this))
-            })
-
-    } else {
-        revertOriginalSliders();
-    }
     async function CreateZenSliders(elmnt) {
         //await delay(100)
         var originalSlider = elmnt;
@@ -466,10 +472,6 @@ async function switchZenSliders() {
         var numSteps = 10
         var decimals = 2
 
-        if (sliderID == 'rep_pen_range_textgenerationwebui') {
-            numSteps = 16
-            decimals = 0
-        }
         if (sliderID == 'amount_gen') {
             decimals = 0
             var steps = [16, 50, 100, 150, 200, 256, 300, 400, 512, 1024];
@@ -482,6 +484,11 @@ async function switchZenSliders() {
         }
         if (sliderID == 'max_context') {
             numSteps = 15
+            decimals = 0
+        }
+
+        if (sliderID == 'rep_pen_range_textgenerationwebui') {
+            numSteps = 16
             decimals = 0
         }
         if (sliderID == 'encoder_rep_pen_textgenerationwebui') {

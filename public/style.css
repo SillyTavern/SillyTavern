@@ -921,7 +921,7 @@ textarea {
     background-color: var(--black30a);
     outline: none;
     border: 1px solid var(--SmartThemeBorderColor);
-    border-radius: 7px;
+    border-radius: 5px;
     color: var(--SmartThemeBodyColor);
     font-size: var(--mainFontSize);
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
@@ -1011,7 +1011,7 @@ select {
     background-color: var(--black30a);
     color: var(--SmartThemeBodyColor);
     border: 1px solid var(--SmartThemeBorderColor);
-    border-radius: 7px;
+    border-radius: 5px;
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
     padding: 3px 5px;
     width: 100%;
@@ -1321,7 +1321,7 @@ select {
     padding: 3px 2px;
     background-color: var(--black30a);
     border: 1px solid var(--SmartThemeBorderColor);
-    border-radius: 7px;
+    border-radius: 5px;
     margin-bottom: 5px;
     height: min-content;
 }
@@ -1443,14 +1443,14 @@ select option:not(:checked) {
     margin: 0;
     height: fit-content;
     padding: 5px;
-    border-radius: 7px;
+    border-radius: 5px;
     aspect-ratio: 1 / 1;
 }
 
 #character_sort_order {
     margin: 0;
     flex: 1;
-    border-radius: 7px;
+    border-radius: 5px;
     height: auto;
 }
 
@@ -1969,7 +1969,7 @@ grammarly-extension {
     color: var(--SmartThemeBodyColor);
     background-color: var(--black50a);
     border: 1px solid var(--SmartThemeBorderColor);
-    border-radius: 7px;
+    border-radius: 5px;
     padding: 3px 5px;
     width: min-content;
     cursor: pointer;
@@ -2107,7 +2107,7 @@ grammarly-extension {
 }
 
 .online_status_indicator {
-    border-radius: 7px;
+    border-radius: 100%;
     width: 14px;
     height: 14px;
     background-color: red;
