@@ -159,6 +159,15 @@ class CharacterContextMenu {
         contextMenu.style.top = `${positionY}px`;
 
         document.getElementById(BulkEditOverlay.contextMenuId).classList.remove('hidden');
+
+        // Adjust position if context menu is outside of viewport
+        const boundingRect = contextMenu.getBoundingClientRect();
+        if (boundingRect.right > window.innerWidth) {
+            contextMenu.style.left = `${positionX - (boundingRect.right - window.innerWidth)}px`;
+        }
+        if (boundingRect.bottom > window.innerHeight) {
+            contextMenu.style.top = `${positionY - (boundingRect.bottom - window.innerHeight)}px`;
+        }
     }
 
     /**
@@ -277,6 +286,7 @@ class BulkEditOverlay {
     static containerId = 'rm_print_characters_block';
     static contextMenuId = 'character_context_menu';
     static characterClass = 'character_select';
+    static groupClass = 'group_select';
     static selectModeClass = 'group_overlay_mode_select';
     static selectedClass = 'character_selected';
     static legacySelectedClass = 'bulk_select_checkbox';
@@ -287,6 +297,20 @@ class BulkEditOverlay {
     #longPress = false;
     #stateChangeCallbacks = [];
     #selectedCharacters = [];
+
+    /**
+     * Locks other pointer actions when the context menu is open
+     *
+     * @type {boolean}
+     */
+    #contextMenuOpen = false;
+
+    /**
+     * Whether the next character select should be skipped
+     *
+     * @type {boolean}
+     */
+    #cancelNextToggle = false;
 
     /**
      * @type HTMLElement
@@ -332,7 +356,6 @@ class BulkEditOverlay {
             return bulkEditOverlayInstance
 
         this.container = document.getElementById(BulkEditOverlay.containerId);
-        this.container.addEventListener('click', this.handleCancelClick);
 
         eventSource.on(event_types.CHARACTER_GROUP_OVERLAY_STATE_CHANGE_AFTER, this.handleStateChange);
         bulkEditOverlayInstance = Object.freeze(this);
@@ -364,8 +387,9 @@ class BulkEditOverlay {
         elements.forEach(element => element.addEventListener('dragend', this.handleLongPressEnd));
         elements.forEach(element => element.addEventListener('touchmove', this.handleLongPressEnd));
 
-        const grid = document.getElementById(BulkEditOverlay.containerId);
-        grid.addEventListener('click', this.handleCancelClick);
+        // Cohee: It only triggers when clicking on a margin between the elements?
+        // Feel free to fix or remove this, I'm not sure how to.
+        //this.container.addEventListener('click', this.handleCancelClick);
     }
 
     /**
@@ -377,7 +401,9 @@ class BulkEditOverlay {
         switch (this.state) {
             case BulkEditOverlayState.browse:
                 this.container.classList.remove(BulkEditOverlay.selectModeClass);
+                this.#contextMenuOpen = false;
                 this.#enableClickEventsForCharacters();
+                this.#enableClickEventsForGroups();
                 this.clearSelectedCharacters();
                 this.disableContextMenu();
                 this.#disableBulkEditButtonHighlight();
@@ -386,6 +412,7 @@ class BulkEditOverlay {
             case BulkEditOverlayState.select:
                 this.container.classList.add(BulkEditOverlay.selectModeClass);
                 this.#disableClickEventsForCharacters();
+                this.#disableClickEventsForGroups();
                 this.enableContextMenu();
                 this.#enableBulkEditButtonHighlight();
                 break;
@@ -399,7 +426,7 @@ class BulkEditOverlay {
      * set a click event to hide the custom context menu.
      */
     enableContextMenu = () => {
-        document.getElementById('rm_print_characters_block').addEventListener('contextmenu', this.handleContextMenuShow);
+        this.container.addEventListener('contextmenu', this.handleContextMenuShow);
         document.addEventListener('click', this.handleContextMenuHide);
     }
 
@@ -408,7 +435,7 @@ class BulkEditOverlay {
      * menu to be opened.
      */
     disableContextMenu = () => {
-        document.getElementById('rm_print_characters_block').removeEventListener('contextmenu', this.handleContextMenuShow);
+        this.container.removeEventListener('contextmenu', this.handleContextMenuShow);
         document.removeEventListener('click', this.handleContextMenuHide);
     }
 
@@ -420,26 +447,52 @@ class BulkEditOverlay {
         }
     }
 
+    /**
+     * Opens menu on long-press.
+     *
+     * @param event - Pointer event
+     */
     handleHold = (event) => {
         if (0 !== event.button && event.type !== 'touchstart') return;
+        if (this.#contextMenuOpen) {
+            this.#contextMenuOpen = false;
+            this.#cancelNextToggle = true;
+            CharacterContextMenu.hide();
+            return;
+        }
+
+        let cancel = false;
+
+        const cancelHold = (event) => cancel = true;
+        this.container.addEventListener('mouseup', cancelHold);
+        this.container.addEventListener('touchend', cancelHold);
 
         this.isLongPress = true;
+
         setTimeout(() => {
-            if (this.isLongPress) {
-                if (this.state === BulkEditOverlayState.browse)
-                    this.selectState();
-                else if (this.state === BulkEditOverlayState.select)
-                    CharacterContextMenu.show(...this.#getContextMenuPosition(event));
-            }
-        }, BulkEditOverlay.longPressDelay);
+                if (this.isLongPress && !cancel) {
+                    if (this.state === BulkEditOverlayState.browse) {
+                        this.selectState();
+                    } else if (this.state === BulkEditOverlayState.select) {
+                        this.#contextMenuOpen = true;
+                        CharacterContextMenu.show(...this.#getContextMenuPosition(event));
+                    }
+                }
+
+                this.container.removeEventListener('mouseup', cancelHold);
+                this.container.removeEventListener('touchend', cancelHold);
+            },
+            BulkEditOverlay.longPressDelay);
     }
 
-    handleLongPressEnd = () => {
+    handleLongPressEnd = (event) => {
         this.isLongPress = false;
+        if (this.#contextMenuOpen) event.stopPropagation();
     }
 
     handleCancelClick = () => {
-        this.state = BulkEditOverlayState.browse;
+        if (false === this.#contextMenuOpen) this.state = BulkEditOverlayState.browse;
+        this.#contextMenuOpen = false;
     }
 
     /**
@@ -453,6 +506,17 @@ class BulkEditOverlay {
         event.clientY || event.touches[0].clientY,
     ];
 
+    #stopEventPropagation = (event) => {
+        if (this.#contextMenuOpen) {
+            this.handleContextMenuHide(event);
+        }
+        event.stopPropagation();
+    }
+
+    #enableClickEventsForGroups = () => this.#getDisabledElements().forEach((element) => element.removeEventListener('click', this.#stopEventPropagation));
+
+    #disableClickEventsForGroups = () => this.#getDisabledElements().forEach((element) => element.addEventListener('click', this.#stopEventPropagation));
+
     #enableClickEventsForCharacters = () => this.#getEnabledElements().forEach(element => element.removeEventListener('click', this.toggleCharacterSelected));
 
     #disableClickEventsForCharacters = () => this.#getEnabledElements().forEach(element => element.addEventListener('click', this.toggleCharacterSelected));
@@ -462,6 +526,8 @@ class BulkEditOverlay {
     #disableBulkEditButtonHighlight = () => document.getElementById('bulkEditButton').classList.remove('bulk_edit_overlay_active');
 
     #getEnabledElements = () => [...this.container.getElementsByClassName(BulkEditOverlay.characterClass)];
+
+    #getDisabledElements = () =>[...this.container.getElementsByClassName(BulkEditOverlay.groupClass)];
 
     toggleCharacterSelected = event => {
         event.stopPropagation();
@@ -473,25 +539,28 @@ class BulkEditOverlay {
 
         const legacyBulkEditCheckbox = character.querySelector('.' + BulkEditOverlay.legacySelectedClass);
 
-        if (alreadySelected) {
-            character.classList.remove(BulkEditOverlay.selectedClass);
-            if (legacyBulkEditCheckbox) legacyBulkEditCheckbox.checked = false;
-            this.dismissCharacter(characterId);
-        } else {
-            character.classList.add(BulkEditOverlay.selectedClass)
-            if (legacyBulkEditCheckbox) legacyBulkEditCheckbox.checked = true;
-            this.selectCharacter(characterId);
-        }
+        // Only toggle when context menu is closed and wasn't just closed.
+        if (!this.#contextMenuOpen && !this.#cancelNextToggle)
+            if (alreadySelected) {
+                character.classList.remove(BulkEditOverlay.selectedClass);
+                if (legacyBulkEditCheckbox) legacyBulkEditCheckbox.checked = false;
+                this.dismissCharacter(characterId);
+            } else {
+                character.classList.add(BulkEditOverlay.selectedClass)
+                if (legacyBulkEditCheckbox) legacyBulkEditCheckbox.checked = true;
+                this.selectCharacter(characterId);
+            }
+
+        this.#cancelNextToggle = false;
     }
 
     handleContextMenuShow = (event) => {
         event.preventDefault();
-        document.getElementById(BulkEditOverlay.containerId).style.pointerEvents = 'none';
         CharacterContextMenu.show(...this.#getContextMenuPosition(event));
+        this.#contextMenuOpen = true;
     }
 
     handleContextMenuHide = (event) => {
-        document.getElementById(BulkEditOverlay.containerId).style.pointerEvents = '';
         let contextMenu = document.getElementById(BulkEditOverlay.contextMenuId);
         if (false === contextMenu.contains(event.target)) {
             CharacterContextMenu.hide();
