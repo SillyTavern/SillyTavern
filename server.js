@@ -3384,8 +3384,7 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
         if (api == 'textgenerationwebui') {
             const args = {
                 method: 'POST',
-                body: JSON.stringify({ "prompt": text }),
-                headers: { "Content-Type": "application/json" }
+                headers: { "Content-Type": "application/json" },
             };
 
             setAdditionalHeaders(request, args, null);
@@ -3395,9 +3394,10 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
 
             if (legacyApi) {
                 url += '/v1/token-count';
-
+                args.body = JSON.stringify({ "prompt": text});
             } else {
-                url += '/api/v1/token-count';
+                url += '/v1/internal/encode';
+                args.body = JSON.stringify({ "text": text });
             }
 
             const result = await fetch(url, args);
@@ -3408,7 +3408,10 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
             }
 
             const data = await result.json();
-            return response.send({ count: data['results'][0]['tokens'] });
+            const count = legacyApi ? data?.results[0]?.tokens : data?.length;
+            const ids = legacyApi ? [] : data?.tokens;
+
+            return response.send({ count, ids });
         }
 
         else if (api == 'kobold') {
@@ -3430,7 +3433,7 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
 
             const data = await result.json();
             const count = data['value'];
-            return response.send({ count: count });
+            return response.send({ count: count, ids: [] });
         }
 
         else {
