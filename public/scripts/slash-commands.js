@@ -82,7 +82,8 @@ class SlashCommandParser {
                 if (equalsIndex !== -1) {
                     const key = arg.substring(0, equalsIndex);
                     const value = arg.substring(equalsIndex + 1);
-                    argObj[key] = value;
+                    // Replace "wrapping quotes" used for escaping spaces
+                    argObj[key] = value.replace(/(^")|("$)/g, '');
                 }
                 else {
                     break;

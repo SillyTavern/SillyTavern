@@ -6697,6 +6697,7 @@ window["SillyTavern"].getContext = function () {
         deactivateSendButtons,
         saveReply,
         registerSlashCommand: registerSlashCommand,
+        executeSlashCommands: executeSlashCommands,
         registerHelper: registerExtensionHelper,
         registedDebugFunction: registerDebugFunction,
         renderExtensionTemplate: renderExtensionTemplate,
