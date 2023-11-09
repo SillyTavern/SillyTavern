@@ -159,6 +159,15 @@ class CharacterContextMenu {
         contextMenu.style.top = `${positionY}px`;
 
         document.getElementById(BulkEditOverlay.contextMenuId).classList.remove('hidden');
+
+        // Adjust position if context menu is outside of viewport
+        const boundingRect = contextMenu.getBoundingClientRect();
+        if (boundingRect.right > window.innerWidth) {
+            contextMenu.style.left = `${positionX - (boundingRect.right - window.innerWidth)}px`;
+        }
+        if (boundingRect.bottom > window.innerHeight) {
+            contextMenu.style.top = `${positionY - (boundingRect.bottom - window.innerHeight)}px`;
+        }
     }
 
     /**
@@ -378,7 +387,9 @@ class BulkEditOverlay {
         elements.forEach(element => element.addEventListener('dragend', this.handleLongPressEnd));
         elements.forEach(element => element.addEventListener('touchmove', this.handleLongPressEnd));
 
-        this.container.addEventListener('click', this.handleCancelClick);
+        // Cohee: It only triggers when clicking on a margin between the elements?
+        // Feel free to fix or remove this, I'm not sure how to.
+        //this.container.addEventListener('click', this.handleCancelClick);
     }
 
     /**
