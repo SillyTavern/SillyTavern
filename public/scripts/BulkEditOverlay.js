@@ -290,7 +290,7 @@ class BulkEditOverlay {
     #selectedCharacters = [];
 
     /**
-     * If ture, prevents items from being deselected by clicking anywhere
+     * Locks other pointer actions when the context menu is open
      *
      * @type {boolean}
      */
@@ -523,7 +523,7 @@ class BulkEditOverlay {
 
         const legacyBulkEditCheckbox = character.querySelector('.' + BulkEditOverlay.legacySelectedClass);
 
-        // Only toggle when context menu is closed and has not just been closed
+        // Only toggle when context menu is closed and wasn't just closed.
         if (!this.#contextMenuOpen && !this.#cancelNextToggle)
             if (alreadySelected) {
                 character.classList.remove(BulkEditOverlay.selectedClass);
