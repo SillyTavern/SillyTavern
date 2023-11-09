@@ -2,6 +2,7 @@
 
 @import url(css/promptmanager.css);
 @import url(css/loader.css);
+@import url(css/character-group-overlay.css);
 
 :root {
     --doc-height: 100%;
@@ -25,6 +26,7 @@
     --grey30: rgb(75, 75, 75);
     --grey50: rgb(125, 125, 125);
     --grey5020a: rgba(125, 125, 125, 0.2);
+    --grey5050a: rgba(125, 125, 125, 0.5);
     --grey70: rgb(175, 175, 175);
     --grey75: rgb(190, 190, 190);
 
@@ -242,9 +244,7 @@ table.responsiveTable {
 }
 
 .mes_text li tt {
-    min-width: 80px;
     display: inline-block;
-    text-align: right;
 }
 
 .mes_text br,
@@ -921,7 +921,7 @@ textarea {
     background-color: var(--black30a);
     outline: none;
     border: 1px solid var(--SmartThemeBorderColor);
-    border-radius: 7px;
+    border-radius: 5px;
     color: var(--SmartThemeBodyColor);
     font-size: var(--mainFontSize);
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
@@ -1011,7 +1011,7 @@ select {
     background-color: var(--black30a);
     color: var(--SmartThemeBodyColor);
     border: 1px solid var(--SmartThemeBorderColor);
-    border-radius: 7px;
+    border-radius: 5px;
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
     padding: 3px 5px;
     width: 100%;
@@ -1321,7 +1321,7 @@ select {
     padding: 3px 2px;
     background-color: var(--black30a);
     border: 1px solid var(--SmartThemeBorderColor);
-    border-radius: 7px;
+    border-radius: 5px;
     margin-bottom: 5px;
     height: min-content;
 }
@@ -1443,14 +1443,14 @@ select option:not(:checked) {
     margin: 0;
     height: fit-content;
     padding: 5px;
-    border-radius: 7px;
+    border-radius: 5px;
     aspect-ratio: 1 / 1;
 }
 
 #character_sort_order {
     margin: 0;
     flex: 1;
-    border-radius: 7px;
+    border-radius: 5px;
     height: auto;
 }
 
@@ -1863,6 +1863,7 @@ grammarly-extension {
 
 /* Focus */
 
+#bulk_tag_popup,
 #dialogue_popup {
     width: 500px;
     max-width: 90vw;
@@ -1905,6 +1906,7 @@ grammarly-extension {
     width: unset !important;
 }
 
+#bulk_tag_popup_holder,
 #dialogue_popup_holder {
     display: flex;
     flex-direction: column;
@@ -1925,6 +1927,7 @@ grammarly-extension {
     gap: 20px;
 }
 
+#bulk_tag_popup_reset,
 #dialogue_popup_ok {
     background-color: var(--crimson70a);
     cursor: pointer;
@@ -1935,6 +1938,7 @@ grammarly-extension {
     width: 100%;
 }
 
+#bulk_tag_popup_cancel,
 #dialogue_popup_cancel {
     cursor: pointer;
 }
@@ -1965,7 +1969,7 @@ grammarly-extension {
     color: var(--SmartThemeBodyColor);
     background-color: var(--black50a);
     border: 1px solid var(--SmartThemeBorderColor);
-    border-radius: 7px;
+    border-radius: 5px;
     padding: 3px 5px;
     width: min-content;
     cursor: pointer;
@@ -2057,7 +2061,7 @@ grammarly-extension {
     flex-grow: 1;
 }
 
-.prompt_order>div:hover {
+.prompt_order:not(.ui-sortable-disabled)>div:hover {
     background-color: var(--SmartThemeBorderColor);
 }
 
@@ -2072,6 +2076,11 @@ grammarly-extension {
     filter: grayscale(0.5);
 }
 
+.ui-sortable-disabled,
+.prompt_order.ui-sortable-disabled>div {
+    cursor: not-allowed;
+}
+
 .prompt_order .toggle_button {
     padding-right: 0;
 }
@@ -2084,11 +2093,7 @@ grammarly-extension {
     content: '☐';
 }
 
-/* ------ online status indicators and texts. 2 = kobold AI, 3 = Novel AI  ----------*/
-#online_status2,
-#online_status3,
-#online_status_horde,
-.online_status4 {
+.online_status {
     opacity: 0.8;
     margin-top: 2px;
     margin-bottom: 15px;
@@ -2097,21 +2102,19 @@ grammarly-extension {
     gap: 5px;
 }
 
-#online_status_indicator2,
-#online_status_indicator3,
-#online_status_indicator_horde,
-.online_status_indicator4 {
-    border-radius: 7px;
+.online_status_indicator.success {
+    background-color: green;
+}
+
+.online_status_indicator {
+    border-radius: 100%;
     width: 14px;
     height: 14px;
     background-color: red;
     display: inline-block;
 }
 
-#online_status_text2,
-#online_status_text3,
-#online_status_text_horde,
-.online_status_text4 {
+.online_status_text {
     margin-left: 4px;
     display: inline-block;
 }
@@ -2168,7 +2171,7 @@ input[type='checkbox']:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
     overflow: hidden;
     border-radius: 3px;
     border: 1px solid var(--SmartThemeBorderColor);
-    background-color: var(--SmartThemeBlurTintColor);
+    background-color: var(--SmartThemeBodyColor);
     box-shadow: inset 0 0 2px 0 var(--SmartThemeShadowColor);
     cursor: pointer;
     transform: translateY(-0.075em);
@@ -2186,7 +2189,7 @@ input[type="checkbox"]:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
     height: 0.65em;
     transform: scale(0);
     transition: 120ms transform ease-in-out;
-    box-shadow: inset 1em 1em var(--SmartThemeBodyColor);
+    box-shadow: inset 1em 1em var(--SmartThemeBlurTintColor);
     transform-origin: bottom left;
     clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
 }
@@ -2534,7 +2537,7 @@ input[type="range"]::-webkit-slider-thumb {
     display: flex;
     flex-direction: row;
     column-gap: 5px;
-    align-items: center;
+    align-items: baseline;
 }
 
 .auto_continue_settings_block {
@@ -2853,7 +2856,7 @@ body .ui-widget-content {
 
 .ui-slider {
     margin: 5px 0;
-    outline: 1px solid var(--grey5020a);
+    outline: 1px solid var(--grey5050a);
     border-radius: 5px !important;
 }
 

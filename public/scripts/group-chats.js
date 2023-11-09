@@ -256,7 +256,7 @@ export function getGroupDepthPrompts(groupId, characterId) {
  * Combines group members info a single string. Only for groups with generation mode set to APPEND.
  * @param {string} groupId Group ID
  * @param {number} characterId Current Character ID
- * @returns {{description: string, personality: string, scenario: string, mesExample: string}} Group character cards combined
+ * @returns {{description: string, personality: string, scenario: string, mesExamples: string}} Group character cards combined
  */
 export function getGroupCharacterCards(groupId, characterId) {
     console.debug('getGroupCharacterCards entered for group: ', groupId);
@@ -271,7 +271,7 @@ export function getGroupCharacterCards(groupId, characterId) {
     let descriptions = [];
     let personalities = [];
     let scenarios = [];
-    let mesExamples = [];
+    let mesExamplesArray = [];
 
     for (const member of group.members) {
         const index = characters.findIndex(x => x.avatar === member);
@@ -290,15 +290,15 @@ export function getGroupCharacterCards(groupId, characterId) {
         descriptions.push(baseChatReplace(character.description.trim(), name1, character.name));
         personalities.push(baseChatReplace(character.personality.trim(), name1, character.name));
         scenarios.push(baseChatReplace(character.scenario.trim(), name1, character.name));
-        mesExamples.push(baseChatReplace(character.mes_example.trim(), name1, character.name));
+        mesExamplesArray.push(baseChatReplace(character.mes_example.trim(), name1, character.name));
     }
 
     const description = descriptions.join('\n');
     const personality = personalities.join('\n');
     const scenario = scenarioOverride?.trim() || scenarios.join('\n');
-    const mesExample = mesExamples.join('\n');
+    const mesExamples = mesExamplesArray.join('\n');
 
-    return { description, personality, scenario, mesExample };
+    return { description, personality, scenario, mesExamples };
 }
 
 function getFirstCharacterMessage(character) {

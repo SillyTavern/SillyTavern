@@ -15,6 +15,9 @@ import {
     setCharacterId,
     setEditedMessageId,
     renderTemplate,
+    chat,
+    getFirstDisplayedMessageId,
+    showMoreMessages,
 } from "../script.js";
 import { isMobile, initMovingUI, favsToHotswap } from "./RossAscends-mods.js";
 import {
@@ -30,7 +33,7 @@ import {
 import { registerSlashCommand } from "./slash-commands.js";
 import { tokenizers } from "./tokenizers.js";
 
-import { countOccurrences, debounce, delay, isOdd, resetScrollHeight, sortMoments, timestampToMoment } from "./utils.js";
+import { countOccurrences, debounce, delay, isOdd, resetScrollHeight, sortMoments, stringToRange, timestampToMoment } from "./utils.js";
 
 export {
     loadPowerUserSettings,
@@ -428,30 +431,36 @@ async function switchZenSliders() {
     $("body").toggleClass("enableZenSliders", power_user.enableZenSliders);
     $("#enableZenSliders").prop("checked", power_user.enableZenSliders);
 
-    function revertOriginalSliders() {
-        $("#textgenerationwebui_api-settings input[type='number']").show();
-        $("#pro-settings-block input[type='number']").show();
+    if (power_user.enableZenSliders) {
+        $("#pro-settings-block input[type='number']").hide();
+        //hide number inputs that are not 'seed' inputs
+        $(`#textgenerationwebui_api-settings :input[type='number']:not([id^='seed']), 
+            #kobold_api-settings :input[type='number']:not([id^='seed'])`).hide()
+        //hide original sliders
         $(`#textgenerationwebui_api-settings input[type='range'],
-         #pro-settings-block input[type='range']`).each(function () {
+            #kobold_api-settings input[type='range'],
+            #pro-settings-block input[type='range']`)
+            .hide()
+            .each(function () {
+                //make a zen slider for each original slider
+                CreateZenSliders($(this))
+            })
+    } else {
+        revertOriginalSliders();
+    }
+
+    function revertOriginalSliders() {
+        $(`#pro-settings-block input[type='number']`).show();
+        $(`#textgenerationwebui_api-settings input[type='number'],
+            #kobold_api-settings input[type='number']`).show();
+        $(`#textgenerationwebui_api-settings input[type='range'],
+            #kobold_api-settings input[type='range'],
+            #pro-settings-block input[type='range']`).each(function () {
             $(this).show();
         });
         $('div[id$="_zenslider"]').remove();
     }
 
-    if (power_user.enableZenSliders) {
-        $("#textgenerationwebui_api-settings input[type='number']").hide();
-        $("#pro-settings-block input[type='number']").hide();
-        $("#seed_textgenerationwebui").show();
-        $(`#textgenerationwebui_api-settings input[type='range'],
-        #pro-settings-block input[type='range']`)
-            .hide()
-            .each(function () {
-                CreateZenSliders($(this))
-            })
-
-    } else {
-        revertOriginalSliders();
-    }
     async function CreateZenSliders(elmnt) {
         //await delay(100)
         var originalSlider = elmnt;
@@ -463,10 +472,6 @@ async function switchZenSliders() {
         var numSteps = 10
         var decimals = 2
 
-        if (sliderID == 'rep_pen_range_textgenerationwebui') {
-            numSteps = 16
-            decimals = 0
-        }
         if (sliderID == 'amount_gen') {
             decimals = 0
             var steps = [16, 50, 100, 150, 200, 256, 300, 400, 512, 1024];
@@ -479,6 +484,11 @@ async function switchZenSliders() {
         }
         if (sliderID == 'max_context') {
             numSteps = 15
+            decimals = 0
+        }
+
+        if (sliderID == 'rep_pen_range_textgenerationwebui') {
+            numSteps = 16
             decimals = 0
         }
         if (sliderID == 'encoder_rep_pen_textgenerationwebui') {
@@ -1748,31 +1758,71 @@ function doRandomChat() {
 
 }
 
-async function doMesCut(_, text) {
-    console.debug(`was asked to cut message id #${text}`)
-    //reject invalid args or no args
-    if (text && isNaN(text) || !text) {
-        toastr.error(`Must enter a single number only, non-number characters disallowed.`)
-        return
+/**
+ * Loads the chat until the given message ID is displayed.
+ * @param {number} mesId
+ * @returns JQuery<HTMLElement>
+ */
+async function loadUntilMesId(mesId) {
+    let target;
+
+    while (getFirstDisplayedMessageId() > mesId && getFirstDisplayedMessageId() !== 0) {
+        showMoreMessages();
+        await delay(1);
+        target = $("#chat").find(`.mes[mesid=${mesId}]`);
+
+        if (target.length) {
+            break;
+        }
     }
 
-    let mesIDToCut = Number(text).toFixed(0)
-    let mesToCut = $("#chat").find(`.mes[mesid=${mesIDToCut}]`)
-
-    if (!mesToCut.length) {
-        toastr.error(`Could not find message with ID: ${mesIDToCut}`)
-        return
+    if (!target.length) {
+        toastr.error(`Could not find message with ID: ${mesId}`)
+        return target;
     }
 
-    setEditedMessageId(mesIDToCut);
-    mesToCut.find('.mes_edit_delete').trigger('click', { fromSlashCommand: true });
+    return target;
 }
 
+async function doMesCut(_, text) {
+    console.debug(`was asked to cut message id #${text}`)
+    const range = stringToRange(text, 0, chat.length - 1);
+
+    //reject invalid args or no args
+    if (!range) {
+        toastr.warning(`Must provide a Message ID or a range to cut.`)
+        return
+    }
+
+    let totalMesToCut = (range.end - range.start) + 1;
+    let mesIDToCut = range.start;
+
+    for (let i = 0; i < totalMesToCut; i++) {
+        let done = false;
+        let mesToCut = $("#chat").find(`.mes[mesid=${mesIDToCut}]`)
+
+        if (!mesToCut.length) {
+            mesToCut = await loadUntilMesId(mesIDToCut);
+
+            if (!mesToCut || !mesToCut.length) {
+                return;
+            }
+        }
+
+        setEditedMessageId(mesIDToCut);
+        eventSource.once(event_types.MESSAGE_DELETED, () => {
+            done = true;
+        });
+        mesToCut.find('.mes_edit_delete').trigger('click', { fromSlashCommand: true });
+        while (!done) {
+            await delay(1);
+        }
+    }
+}
 
 async function doDelMode(_, text) {
-
     //first enter delmode
-    $("#option_delete_mes").trigger('click')
+    $("#option_delete_mes").trigger('click', { fromSlashCommand: true });
 
     //reject invalid args
     if (text && isNaN(text)) {
@@ -1787,15 +1837,24 @@ async function doDelMode(_, text) {
         await delay(300) //same as above, need event signal for 'entered del mode'
         console.debug('parsing msgs to del')
         let numMesToDel = Number(text);
-        let lastMesID = Number($('.last_mes').attr('mesid'));
+        let lastMesID = Number($('#chat .mes').last().attr('mesid'));
         let oldestMesIDToDel = lastMesID - numMesToDel + 1;
 
-        //disallow targeting first message
-        if (oldestMesIDToDel <= 0) {
-            oldestMesIDToDel = 1
+        if (oldestMesIDToDel < 0) {
+            toastr.warning(`Cannot delete more than ${chat.length} messages.`)
+            return;
         }
 
         let oldestMesToDel = $('#chat').find(`.mes[mesid=${oldestMesIDToDel}]`)
+
+        if (!oldestMesIDToDel) {
+            oldestMesToDel = await loadUntilMesId(oldestMesIDToDel);
+
+            if (!oldestMesToDel || !oldestMesToDel.length) {
+                return;
+            }
+        }
+
         let oldestDelMesCheckbox = $(oldestMesToDel).find('.del_checkbox');
         let newLastMesID = oldestMesIDToDel - 1;
         console.debug(`DelMesReport -- numMesToDel:  ${numMesToDel}, lastMesID: ${lastMesID}, oldestMesIDToDel:${oldestMesIDToDel}, newLastMesID: ${newLastMesID}`)
@@ -2670,8 +2729,8 @@ $(document).ready(() => {
     registerSlashCommand('vn', toggleWaifu, [], '– swaps Visual Novel Mode On/Off', false, true);
     registerSlashCommand('newchat', doNewChat, [], '– start a new chat with current character', true, true);
     registerSlashCommand('random', doRandomChat, [], '– start a new chat with a random character', true, true);
-    registerSlashCommand('delmode', doDelMode, ['del'], '<span class="monospace">(optional number)</span> – enter message deletion mode, and auto-deletes N messages if numeric argument is provided', true, true);
-    registerSlashCommand('cut', doMesCut, [], '<span class="monospace">(number)</span> – cuts the specified message from the chat', true, true);
+    registerSlashCommand('delmode', doDelMode, ['del'], '<span class="monospace">(optional number)</span> – enter message deletion mode, and auto-deletes last N messages if numeric argument is provided', true, true);
+    registerSlashCommand('cut', doMesCut, [], '<span class="monospace">(number or range)</span> – cuts the specified message or continuous chunk from the chat, e.g. <tt>/cut 0-10</tt>. Ranges are inclusive!', true, true);
     registerSlashCommand('resetpanels', doResetPanels, ['resetui'], '– resets UI panels to original state.', true, true);
     registerSlashCommand('bgcol', setAvgBG, [], '– WIP test of auto-bg avg coloring', true, true);
 });

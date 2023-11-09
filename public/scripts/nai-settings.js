@@ -1,4 +1,5 @@
 import {
+    abortStatusCheck,
     getRequestHeaders,
     getStoppingStrings,
     novelai_setting_names,
@@ -91,6 +92,7 @@ export async function loadNovelSubscriptionData() {
     const result = await fetch('/api/novelai/status', {
         method: 'POST',
         headers: getRequestHeaders(),
+        signal: abortStatusCheck.signal,
     });
 
     if (result.ok) {
@@ -757,9 +759,9 @@ jQuery(function () {
 
         // Update the selected preset to something appropriate
         const default_preset = default_presets[nai_settings.model_novel];
-        $(`#settings_perset_novel`).val(novelai_setting_names[default_preset]);
-        $(`#settings_perset_novel option[value=${novelai_setting_names[default_preset]}]`).attr("selected", "true")
-        $(`#settings_perset_novel`).trigger("change");
+        $(`#settings_preset_novel`).val(novelai_setting_names[default_preset]);
+        $(`#settings_preset_novel option[value=${novelai_setting_names[default_preset]}]`).attr("selected", "true")
+        $(`#settings_preset_novel`).trigger("change");
     });
 
     $("#nai_prefix").on('change', function () {

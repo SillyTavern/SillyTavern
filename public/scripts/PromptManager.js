@@ -2,7 +2,7 @@
 
 import { callPopup, event_types, eventSource, is_send_press, main_api, substituteParams } from "../script.js";
 import { is_group_generating } from "./group-chats.js";
-import { TokenHandler } from "./openai.js";
+import { Message, TokenHandler } from "./openai.js";
 import { power_user } from "./power-user.js";
 import { debounce, waitUntilCondition, escapeHtml } from "./utils.js";
 
@@ -1141,12 +1141,10 @@ PromptManagerModule.prototype.loadMessagesIntoInspectForm = function (messages) 
         let drawerHTML = `
     <div class="inline-drawer ${this.configuration.prefix}prompt_manager_prompt">
         <div class="inline-drawer-toggle inline-drawer-header">
-            <span>Name: ${title}, Role: ${role}, Tokens: ${tokens}</span>
+            <span>Name: ${escapeHtml(title)}, Role: ${role}, Tokens: ${tokens}</span>
             <div class="fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
         </div>
-        <div class="inline-drawer-content">
-            ${content}
-        </div>
+        <div class="inline-drawer-content" style="white-space: pre-wrap;">${escapeHtml(content)}</div>
     </div>
     `;
 
@@ -1157,9 +1155,11 @@ PromptManagerModule.prototype.loadMessagesIntoInspectForm = function (messages) 
 
     const messageList = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_inspect_list');
 
-    if (0 === messages.getCollection().length) messageList.innerHTML = `<span>This marker does not contain any prompts.</span>`;
+    const messagesCollection = messages instanceof Message ? [messages] : messages.getCollection();
 
-    messages.getCollection().forEach(message => {
+    if (0 === messagesCollection.length) messageList.innerHTML = `<span>This marker does not contain any prompts.</span>`;
+
+    messagesCollection.forEach(message => {
         messageList.append(createInlineDrawer(message));
     });
 }

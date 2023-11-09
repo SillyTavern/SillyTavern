@@ -1,5 +1,5 @@
 {
-    "display_name": "Stable Diffusion",
+    "display_name": "Image Generation",
     "loading_order": 10,
     "requires": [],
     "optional": [

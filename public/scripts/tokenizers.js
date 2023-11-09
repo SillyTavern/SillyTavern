@@ -1,9 +1,10 @@
-import { characters, main_api, nai_settings, online_status, this_chid } from "../script.js";
+import { characters, getAPIServerUrl, main_api, nai_settings, online_status, this_chid } from "../script.js";
 import { power_user, registerDebugFunction } from "./power-user.js";
 import { chat_completion_sources, model_list, oai_settings } from "./openai.js";
 import { groups, selected_group } from "./group-chats.js";
 import { getStringHash } from "./utils.js";
 import { kai_flags } from "./kai-settings.js";
+import { isMancer, textgenerationwebui_settings } from "./textgen-settings.js";
 
 export const CHARACTERS_PER_TOKEN_RATIO = 3.35;
 const TOKENIZER_WARNING_KEY = 'tokenizationWarningShown';
@@ -376,7 +377,12 @@ function countTokensRemote(endpoint, str, padding) {
         async: false,
         type: 'POST',
         url: endpoint,
-        data: JSON.stringify({ text: str }),
+        data: JSON.stringify({
+            text: str,
+            api: main_api,
+            url: getAPIServerUrl(),
+            legacy_api: main_api === 'textgenerationwebui' && textgenerationwebui_settings.legacy_api && !isMancer() ,
+        }),
         dataType: "json",
         contentType: "application/json",
         success: function (data) {
