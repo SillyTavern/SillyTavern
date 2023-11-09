@@ -10,7 +10,7 @@ import {
 import { FILTER_TYPES, FilterHelper } from "./filters.js";
 
 import { groupCandidatesFilter, selected_group } from "./group-chats.js";
-import { uuidv4 } from "./utils.js";
+import { onlyUnique, uuidv4 } from "./utils.js";
 
 export {
     tags,
@@ -153,6 +153,7 @@ function addTagToMap(tagId, characterId = null) {
     }
     else {
         tag_map[key].push(tagId);
+        tag_map[key] = tag_map[key].filter(onlyUnique);
     }
 }
 
