@@ -2,7 +2,7 @@
     <div class="inline-drawer">
         <div class="inline-drawer-toggle inline-drawer-header">
             <b>
-                Stable Diffusion
+                Image Generation
                 <a href="https://docs.sillytavern.app/extras/extensions/stable-diffusion/" class="notes-link" target="_blank">
                     <span class="note-link-span">?</span>
                 </a>
@@ -120,7 +120,7 @@
             <input id="sd_width" type="range" max="{{dimension_max}}" min="{{dimension_min}}" step="{{dimension_step}}" value="{{width}}" />
             <label for="sd_height">Height (<span id="sd_height_value"></span>)</label>
             <input id="sd_height" type="range" max="{{dimension_max}}" min="{{dimension_min}}" step="{{dimension_step}}" value="{{height}}" />
-            <label for="sd_model">Stable Diffusion model</label>
+            <label for="sd_model">Model</label>
             <select id="sd_model"></select>
             <label for="sd_sampler">Sampling method</label>
             <select id="sd_sampler"></select>
@@ -171,7 +171,7 @@
     </div>
     <div class="inline-drawer">
         <div class="inline-drawer-toggle inline-drawer-header">
-            <b>SD Prompt Templates</b>
+            <b>Image Prompt Templates</b>
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div id="sd_prompt_templates" class="inline-drawer-content">

@@ -263,6 +263,7 @@ class PresetManager {
             'streaming_kobold',
             "enabled",
             'seed',
+            'mancer_model',
         ];
         const settings = Object.assign({}, getSettingsByApiId(this.apiId));
 

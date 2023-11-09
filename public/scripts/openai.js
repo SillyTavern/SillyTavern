@@ -6,7 +6,6 @@
 
 import {
     saveSettingsDebounced,
-    checkOnlineStatus,
     setOnlineStatus,
     getExtensionPrompt,
     name1,
@@ -28,6 +27,9 @@ import {
     getStoppingStrings,
     getNextMessageId,
     replaceItemizedPromptText,
+    startStatusLoading,
+    resultCheckStatus,
+    abortStatusCheck,
 } from "../script.js";
 import { groups, selected_group } from "./group-chats.js";
 
@@ -57,11 +59,10 @@ import {
     resetScrollHeight,
     stringFormat,
 } from "./utils.js";
-import { countTokensOpenAI } from "./tokenizers.js";
+import { countTokensOpenAI, getTokenizerModel } from "./tokenizers.js";
 import { formatInstructModeChat, formatInstructModeExamples, formatInstructModePrompt, formatInstructModeSystemPrompt } from "./instruct-mode.js";
 
 export {
-    is_get_status_openai,
     openai_msgs,
     openai_messages_count,
     oai_settings,
@@ -71,7 +72,6 @@ export {
     setupChatCompletionPromptManager,
     prepareOpenAIMessages,
     sendOpenAIRequest,
-    setOpenAIOnlineStatus,
     getChatCompletionModel,
     TokenHandler,
     IdentifierNotFoundError,
@@ -83,9 +83,6 @@ let openai_msgs = [];
 let openai_msgs_example = [];
 let openai_messages_count = 0;
 let openai_narrator_messages_count = 0;
-
-let is_get_status_openai = false;
-let is_api_button_press_openai = false;
 
 const default_main_prompt = "Write {{char}}'s next reply in a fictional chat between {{charIfNotGroup}} and {{user}}. Write 1 reply only in internet RP style, italicize actions, and avoid quotation marks. Use markdown. Be proactive, creative, and drive the plot and conversation forward. Write at least 1 paragraph, up to 4. Always stay in character and avoid repetition.";
 const default_nsfw_prompt = "NSFW/Smut is allowed. Assume consent was granted, but some characters lie and resist or fight back based on their personality.";
@@ -113,7 +110,7 @@ const max_4k = 4095;
 const max_8k = 8191;
 const max_16k = 16383;
 const max_32k = 32767;
-const max_128k = 128 * 1024 - 1;
+const max_128k = 128 * 1000;
 const scale_max = 8191;
 const claude_max = 9000; // We have a proper tokenizer, so theoretically could be larger (up to 9k)
 const palm2_max = 7500; // The real context window is 8192, spare some for padding due to using turbo tokenizer
@@ -289,13 +286,9 @@ function validateReverseProxy() {
     catch (err) {
         toastr.error('Entered reverse proxy address is not a valid URL');
         setOnlineStatus('no_connection');
-        resultCheckStatusOpen();
+        resultCheckStatus();
         throw err;
     }
-}
-
-function setOpenAIOnlineStatus(value) {
-    is_get_status_openai = value;
 }
 
 function convertChatCompletionToInstruct(messages, type) {
@@ -1040,7 +1033,7 @@ function prepareOpenAIMessages({
         // Pass chat completion to prompt manager for inspection
         promptManager.setChatCompletion(chatCompletion);
 
-        if (oai_settings.squash_system_messages) {
+        if (oai_settings.squash_system_messages && dryRun == false) {
             chatCompletion.squashSystemMessages();
         }
 
@@ -1548,7 +1541,7 @@ async function calculateLogitBias() {
     let result = {};
 
     try {
-        const reply = await fetch(`/openai_bias?model=${oai_settings.openai_model}`, {
+        const reply = await fetch(`/openai_bias?model=${getTokenizerModel()}`, {
             method: 'POST',
             headers: getRequestHeaders(),
             body,
@@ -2118,17 +2111,17 @@ function loadOpenAISettings(data, settings) {
         openai_settings[i] = JSON.parse(item);
     });
 
-    $("#settings_perset_openai").empty();
+    $("#settings_preset_openai").empty();
     let arr_holder = {};
     openai_setting_names.forEach(function (item, i, arr) {
         arr_holder[item] = i;
-        $('#settings_perset_openai').append(`<option value=${i}>${item}</option>`);
+        $('#settings_preset_openai').append(`<option value=${i}>${item}</option>`);
 
     });
     openai_setting_names = arr_holder;
 
     oai_settings.preset_settings_openai = settings.preset_settings_openai;
-    $(`#settings_perset_openai option[value=${openai_setting_names[oai_settings.preset_settings_openai]}]`).attr('selected', true);
+    $(`#settings_preset_openai option[value=${openai_setting_names[oai_settings.preset_settings_openai]}]`).attr('selected', true);
 
     oai_settings.temp_openai = settings.temp_openai ?? default_settings.temp_openai;
     oai_settings.freq_pen_openai = settings.freq_pen_openai ?? default_settings.freq_pen_openai;
@@ -2253,65 +2246,64 @@ function loadOpenAISettings(data, settings) {
 }
 
 async function getStatusOpen() {
-    if (is_get_status_openai) {
-        if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
-            let status;
+    if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
+        let status;
 
-            if ('ai' in window) {
-                status = 'Valid';
-            }
-            else {
-                showWindowExtensionError();
-                status = 'no_connection';
-            }
-
-            setOnlineStatus(status);
-            return resultCheckStatusOpen();
+        if ('ai' in window) {
+            status = 'Valid';
+        }
+        else {
+            showWindowExtensionError();
+            status = 'no_connection';
         }
 
-        const noValidateSources = [chat_completion_sources.SCALE, chat_completion_sources.CLAUDE, chat_completion_sources.AI21, chat_completion_sources.PALM];
-        if (noValidateSources.includes(oai_settings.chat_completion_source)) {
-            let status = 'Unable to verify key; press "Test Message" to validate.';
-            setOnlineStatus(status);
-            return resultCheckStatusOpen();
-        }
+        setOnlineStatus(status);
+        return resultCheckStatus();
+    }
 
-        let data = {
-            reverse_proxy: oai_settings.reverse_proxy,
-            proxy_password: oai_settings.proxy_password,
-            use_openrouter: oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER,
-        };
+    const noValidateSources = [chat_completion_sources.SCALE, chat_completion_sources.CLAUDE, chat_completion_sources.AI21, chat_completion_sources.PALM];
+    if (noValidateSources.includes(oai_settings.chat_completion_source)) {
+        let status = 'Unable to verify key; press "Test Message" to validate.';
+        setOnlineStatus(status);
+        return resultCheckStatus();
+    }
 
-        return jQuery.ajax({
-            type: 'POST', //
-            url: '/getstatus_openai', //
-            data: JSON.stringify(data),
-            beforeSend: function () {
-                if (oai_settings.reverse_proxy && !data.use_openrouter) {
-                    validateReverseProxy();
-                }
-            },
-            cache: false,
-            dataType: "json",
-            contentType: "application/json",
-            success: function (data) {
-                if (!('error' in data))
-                    setOnlineStatus('Valid');
-                if ('data' in data && Array.isArray(data.data)) {
-                    saveModelList(data.data);
-                }
-                resultCheckStatusOpen();
-            },
-            error: function (jqXHR, exception) {
-                setOnlineStatus('no_connection');
-                console.log(exception);
-                console.log(jqXHR);
-                resultCheckStatusOpen();
-            }
+    let data = {
+        reverse_proxy: oai_settings.reverse_proxy,
+        proxy_password: oai_settings.proxy_password,
+        use_openrouter: oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER,
+    };
+
+    if (oai_settings.reverse_proxy && !data.use_openrouter) {
+        validateReverseProxy();
+    }
+
+    try {
+        const response = await fetch('/getstatus_openai', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify(data),
+            signal: abortStatusCheck.signal,
+            cache: 'no-cache',
         });
-    } else {
+
+        if (!response.ok) {
+            throw new Error(response.statusText);
+        }
+
+        const responseData = await response.json();
+
+        if (!('error' in responseData))
+            setOnlineStatus('Valid');
+        if ('data' in responseData && Array.isArray(responseData.data)) {
+            saveModelList(responseData.data);
+        }
+    } catch (error) {
+        console.error(error);
         setOnlineStatus('no_connection');
     }
+
+    return resultCheckStatus();
 }
 
 function showWindowExtensionError() {
@@ -2321,13 +2313,6 @@ function showWindowExtensionError() {
         extendedTimeOut: 0,
         preventDuplicates: true,
     });
-}
-
-function resultCheckStatusOpen() {
-    is_api_button_press_openai = false;
-    checkOnlineStatus();
-    $("#api_loading_openai").css("display", 'none');
-    $("#api_button_openai").css("display", 'inline-block');
 }
 
 function trySelectPresetByName(name) {
@@ -2347,8 +2332,8 @@ function trySelectPresetByName(name) {
     if (preset_found) {
         oai_settings.preset_settings_openai = preset_found;
         const value = openai_setting_names[preset_found]
-        $(`#settings_perset_openai option[value="${value}"]`).attr('selected', true);
-        $('#settings_perset_openai').val(value).trigger('change');
+        $(`#settings_preset_openai option[value="${value}"]`).attr('selected', true);
+        $('#settings_preset_openai').val(value).trigger('change');
     }
 }
 
@@ -2419,8 +2404,8 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
             oai_settings.preset_settings_openai = data.name;
             const value = openai_setting_names[data.name];
             Object.assign(openai_settings[value], presetBody);
-            $(`#settings_perset_openai option[value="${value}"]`).attr('selected', true);
-            if (triggerUi) $('#settings_perset_openai').trigger('change');
+            $(`#settings_preset_openai option[value="${value}"]`).attr('selected', true);
+            if (triggerUi) $('#settings_preset_openai').trigger('change');
         }
         else {
             openai_settings.push(presetBody);
@@ -2429,7 +2414,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
             option.selected = true;
             option.value = openai_settings.length - 1;
             option.innerText = data.name;
-            if (triggerUi) $('#settings_perset_openai').append(option).trigger('change');
+            if (triggerUi) $('#settings_preset_openai').append(option).trigger('change');
         }
     } else {
         toastr.error('Failed to save preset');
@@ -2583,8 +2568,8 @@ async function onPresetImportFileChange(e) {
         oai_settings.preset_settings_openai = data.name;
         const value = openai_setting_names[data.name];
         Object.assign(openai_settings[value], presetBody);
-        $(`#settings_perset_openai option[value="${value}"]`).attr('selected', true);
-        $('#settings_perset_openai').trigger('change');
+        $(`#settings_preset_openai option[value="${value}"]`).attr('selected', true);
+        $('#settings_preset_openai').trigger('change');
     } else {
         openai_settings.push(presetBody);
         openai_setting_names[data.name] = openai_settings.length - 1;
@@ -2592,7 +2577,7 @@ async function onPresetImportFileChange(e) {
         option.selected = true;
         option.value = openai_settings.length - 1;
         option.innerText = data.name;
-        $('#settings_perset_openai').append(option).trigger('change');
+        $('#settings_preset_openai').append(option).trigger('change');
     }
 }
 
@@ -2667,15 +2652,15 @@ async function onDeletePresetClick() {
 
     const nameToDelete = oai_settings.preset_settings_openai;
     const value = openai_setting_names[oai_settings.preset_settings_openai];
-    $(`#settings_perset_openai option[value="${value}"]`).remove();
+    $(`#settings_preset_openai option[value="${value}"]`).remove();
     delete openai_setting_names[oai_settings.preset_settings_openai];
     oai_settings.preset_settings_openai = null;
 
     if (Object.keys(openai_setting_names).length) {
         oai_settings.preset_settings_openai = Object.keys(openai_setting_names)[0];
         const newValue = openai_setting_names[oai_settings.preset_settings_openai];
-        $(`#settings_perset_openai option[value="${newValue}"]`).attr('selected', true);
-        $('#settings_perset_openai').trigger('change');
+        $(`#settings_preset_openai option[value="${newValue}"]`).attr('selected', true);
+        $('#settings_preset_openai').trigger('change');
     }
 
     const response = await fetch('/api/presets/delete-openai', {
@@ -2759,7 +2744,7 @@ function onSettingsPresetChange() {
         squash_system_messages: ['#squash_system_messages', 'squash_system_messages', true],
     };
 
-    const presetName = $('#settings_perset_openai').find(":selected").text();
+    const presetName = $('#settings_preset_openai').find(":selected").text();
     oai_settings.preset_settings_openai = presetName;
 
     const preset = structuredClone(openai_settings[openai_setting_names[oai_settings.preset_settings_openai]]);
@@ -3055,9 +3040,6 @@ async function onConnectButtonClick(e) {
     e.stopPropagation();
 
     if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
-        is_get_status_openai = true;
-        is_api_button_press_openai = true;
-
         return await getStatusOpen();
     }
 
@@ -3154,11 +3136,8 @@ async function onConnectButtonClick(e) {
         }
     }
 
-    $("#api_loading_openai").css("display", 'inline-block');
-    $("#api_button_openai").css("display", 'none');
+    startStatusLoading();
     saveSettingsDebounced();
-    is_get_status_openai = true;
-    is_api_button_press_openai = true;
     await getStatusOpen();
 }
 
@@ -3218,7 +3197,7 @@ async function testApiConnection() {
 
 function reconnectOpenAi() {
     setOnlineStatus('no_connection');
-    resultCheckStatusOpen();
+    resultCheckStatus();
     $('#api_button_openai').trigger('click');
 }
 
@@ -3498,7 +3477,7 @@ $(document).ready(async function () {
     $("#model_palm_select").on("change", onModelChange);
     $("#model_openrouter_select").on("change", onModelChange);
     $("#model_ai21_select").on("change", onModelChange);
-    $("#settings_perset_openai").on("change", onSettingsPresetChange);
+    $("#settings_preset_openai").on("change", onSettingsPresetChange);
     $("#new_oai_preset").on("click", onNewPresetClick);
     $("#delete_oai_preset").on("click", onDeletePresetClick);
     $("#openai_logit_bias_preset").on("change", onLogitBiasPresetChange);

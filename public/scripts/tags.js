@@ -10,7 +10,7 @@ import {
 import { FILTER_TYPES, FilterHelper } from "./filters.js";
 
 import { groupCandidatesFilter, selected_group } from "./group-chats.js";
-import { uuidv4 } from "./utils.js";
+import { onlyUnique, uuidv4 } from "./utils.js";
 
 export {
     tags,
@@ -137,8 +137,12 @@ function getTagKey() {
     return null;
 }
 
-function addTagToMap(tagId) {
-    const key = getTagKey();
+export function getTagKeyForCharacter(characterId = null) {
+    return characters[characterId]?.avatar;
+}
+
+function addTagToMap(tagId, characterId = null) {
+    const key = getTagKey() ?? getTagKeyForCharacter(characterId);
 
     if (!key) {
         return;
@@ -149,11 +153,12 @@ function addTagToMap(tagId) {
     }
     else {
         tag_map[key].push(tagId);
+        tag_map[key] = tag_map[key].filter(onlyUnique);
     }
 }
 
-function removeTagFromMap(tagId) {
-    const key = getTagKey();
+function removeTagFromMap(tagId, characterId = null) {
+    const key = getTagKey() ?? getTagKeyForCharacter(characterId);
 
     if (!key) {
         return;
@@ -197,7 +202,17 @@ function selectTag(event, ui, listSelector) {
     // add tag to the UI and internal map
     appendTagToList(listSelector, tag, { removable: true });
     appendTagToList(getInlineListSelector(), tag, { removable: false });
-    addTagToMap(tag.id);
+
+    // Optional, check for multiple character ids being present.
+    const characterData = event.target.closest('#bulk_tags_div')?.dataset.characters;
+    const characterIds = characterData ? JSON.parse(characterData).characterIds : null;
+
+    if (characterIds) {
+        characterIds.forEach((characterId) => addTagToMap(tag.id,characterId));
+    } else  {
+        addTagToMap(tag.id);
+    }
+
     saveSettingsDebounced();
     printTagFilters(tag_filter_types.character);
     printTagFilters(tag_filter_types.group_member);
@@ -383,8 +398,19 @@ function onTagRemoveClick(event) {
     event.stopPropagation();
     const tag = $(this).closest(".tag");
     const tagId = tag.attr("id");
+
+    // Optional, check for multiple character ids being present.
+    const characterData = event.target.closest('#bulk_tags_div')?.dataset.characters;
+    const characterIds = characterData ? JSON.parse(characterData).characterIds : null;
+
     tag.remove();
-    removeTagFromMap(tagId);
+
+    if (characterIds) {
+        characterIds.forEach((characterId) => removeTagFromMap(tagId, characterId));
+    } else {
+        removeTagFromMap(tagId);
+    }
+
     $(`${getInlineListSelector()} .tag[id="${tagId}"]`).remove();
 
     printTagFilters(tag_filter_types.character);
@@ -439,7 +465,7 @@ function applyTagsOnGroupSelect() {
     }
 }
 
-function createTagInput(inputSelector, listSelector) {
+export function createTagInput(inputSelector, listSelector) {
     $(inputSelector)
         .autocomplete({
             source: (i, o) => findTag(i, o, listSelector),

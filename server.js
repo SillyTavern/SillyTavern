@@ -9,7 +9,6 @@ const path = require('path');
 const readline = require('readline');
 const util = require('util');
 const { Readable } = require('stream');
-const { TextDecoder } = require('util');
 
 // cli/fs related library imports
 const open = require('open');
@@ -35,7 +34,6 @@ const fetch = require('node-fetch').default;
 const ipaddr = require('ipaddr.js');
 const ipMatching = require('ip-matching');
 const json5 = require('json5');
-const WebSocket = require('ws');
 
 // image processing related library imports
 const encode = require('png-chunks-encode');
@@ -57,9 +55,9 @@ const characterCardParser = require('./src/character-card-parser.js');
 const contentManager = require('./src/content-manager');
 const statsHelpers = require('./statsHelpers.js');
 const { readSecret, migrateSecrets, SECRET_KEYS } = require('./src/secrets');
-const { delay, getVersion } = require('./src/util');
+const { delay, getVersion, deepMerge } = require('./src/util');
 const { invalidateThumbnail, ensureThumbnailCache } = require('./src/thumbnails');
-const { getTokenizerModel, getTiktokenTokenizer, loadTokenizers, TEXT_COMPLETION_MODELS } = require('./src/tokenizers');
+const { getTokenizerModel, getTiktokenTokenizer, loadTokenizers, TEXT_COMPLETION_MODELS, getSentencepiceTokenizer, sentencepieceTokenizers } = require('./src/tokenizers');
 const { convertClaudePrompt } = require('./src/chat-completion');
 
 // Work around a node v20.0.0, v20.1.0, and v20.2.0 bug. The issue was fixed in v20.3.0.
@@ -150,12 +148,20 @@ let color = {
 
 function getMancerHeaders() {
     const apiKey = readSecret(SECRET_KEYS.MANCER);
-    return apiKey ? { "X-API-KEY": apiKey } : {};
+
+    return apiKey ? ({
+        "X-API-KEY": apiKey,
+        "Authorization": `Bearer ${apiKey}`,
+    }) : {};
 }
 
 function getAphroditeHeaders() {
     const apiKey = readSecret(SECRET_KEYS.APHRODITE);
-    return apiKey ? { "X-API-KEY": apiKey } : {};
+
+    return apiKey ? ({
+        "X-API-KEY": apiKey,
+        "Authorization": `Bearer ${apiKey}`,
+    }) : {};
 }
 
 function getOverrideHeaders(urlHost) {
@@ -181,7 +187,7 @@ function setAdditionalHeaders(request, args, server) {
     } else if (request.body.use_aphrodite) {
         headers = getAphroditeHeaders();
     } else {
-        headers = server ? getOverrideHeaders((new URL(server))?.host) : '';
+        headers = server ? getOverrideHeaders((new URL(server))?.host) : {};
     }
 
     args.headers = Object.assign(args.headers, headers);
@@ -208,6 +214,7 @@ const AVATAR_HEIGHT = 600;
 const jsonParser = express.json({ limit: '100mb' });
 const urlencodedParser = express.urlencoded({ extended: true, limit: '100mb' });
 const { DIRECTORIES, UPLOADS_PATH, PALM_SAFETY } = require('./src/constants');
+const { TavernCardValidator } = require("./src/validator/TavernCardValidator");
 
 // CSRF Protection //
 if (cliArguments.disableCsrf === false) {
@@ -483,215 +490,182 @@ app.post("/generate", jsonParser, async function (request, response_generate) {
     return response_generate.send({ error: true });
 });
 
-/**
- * @param {string} streamingUrlString Streaming URL
- * @param {import('express').Request} request Express request
- * @param {import('express').Response} response Express response
- * @param {AbortController} controller Abort controller
- * @returns
- */
-async function sendAphroditeStreamingRequest(streamingUrlString, request, response, controller) {
-    request.body['stream'] = true;
-
-    const args = {
-        method: 'POST',
-        body: JSON.stringify(request.body),
-        headers: { "Content-Type": "application/json" },
-        signal: controller.signal,
-    };
-
-    setAdditionalHeaders(request, args, streamingUrlString);
+//************** Text generation web UI
+app.post("/api/textgenerationwebui/status", jsonParser, async function (request, response) {
+    if (!request.body) return response.sendStatus(400);
 
     try {
-        const generateResponse = await fetch(streamingUrlString + "/v1/generate", args);
-        // Pipe remote SSE stream to Express response
-        generateResponse.body.pipe(response);
-
-        request.socket.on('close', function () {
-            if (generateResponse.body instanceof Readable) generateResponse.body.destroy(); // Close the remote stream
-            response.end(); // End the Express response
-        });
-
-        generateResponse.body.on('end', function () {
-            console.log("Streaming request finished");
-            response.end();
-        });
-    } catch (error) {
-        let value = { error: true, status: error.status, response: error.statusText };
-        console.log("Aphrodite endpoint error:", error);
-
-        if (!response.headersSent) {
-            return response.send(value);
-        } else {
-            return response.end();
-        }
-    }
-
-}
-
-//************** Text generation web UI
-app.post("/generate_textgenerationwebui", jsonParser, async function (request, response_generate) {
-    if (!request.body) return response_generate.sendStatus(400);
-
-    console.log(request.body);
-
-    const controller = new AbortController();
-    let isGenerationStopped = false;
-    request.socket.removeAllListeners('close');
-    request.socket.on('close', function () {
-        isGenerationStopped = true;
-        controller.abort();
-    });
-
-    if (request.header('X-Response-Streaming')) {
-        const streamingUrlHeader = request.header('X-Streaming-URL');
-        if (streamingUrlHeader === undefined) return response_generate.sendStatus(400);
-        const streamingUrlString = streamingUrlHeader.replace("localhost", "127.0.0.1");
-
-        if (request.body.use_aphrodite) {
-            return sendAphroditeStreamingRequest(streamingUrlString, request, response_generate, controller);
+        if (request.body.api_server.indexOf('localhost') !== -1) {
+            request.body.api_server = request.body.api_server.replace('localhost', '127.0.0.1');
         }
 
-        response_generate.writeHead(200, {
-            'Content-Type': 'text/plain;charset=utf-8',
-            'Transfer-Encoding': 'chunked',
-            'Cache-Control': 'no-transform',
-        });
+        console.log('Trying to connect to API:', request.body);
 
-        async function* readWebsocket() {
-            /** @type {WebSocket} */
-            let websocket;
-            /** @type {URL} */
-            let streamingUrl;
+        // Convert to string + remove trailing slash + /v1 suffix
+        const baseUrl = String(request.body.api_server).replace(/\/$/, '').replace(/\/v1$/, '');
 
-            try {
-                const streamingUrl = new URL(streamingUrlString);
-                websocket = new WebSocket(streamingUrl);
-            } catch (error) {
-                console.log("[SillyTavern] Socket error", error);
-                return;
-            }
-
-            websocket.on('open', async function () {
-                console.log('WebSocket opened');
-
-                let headers = {};
-
-                if (request.body.use_mancer) {
-                    headers = getMancerHeaders();
-                } else if (request.body.use_aphrodite) {
-                    headers = getAphroditeHeaders();
-                } else {
-                    headers = getOverrideHeaders(streamingUrl?.host);
-                }
-
-                const combined_args = Object.assign(
-                    {},
-                    headers,
-                    request.body
-                );
-                console.log(combined_args);
-
-                websocket.send(JSON.stringify(combined_args));
-            });
-
-            websocket.on('close', (code, buffer) => {
-                const reason = new TextDecoder().decode(buffer)
-                console.log("WebSocket closed (reason: %o)", reason);
-            });
-
-            while (true) {
-                if (isGenerationStopped) {
-                    console.error('Streaming stopped by user. Closing websocket...');
-                    websocket.close();
-                    return;
-                }
-
-                let rawMessage = null;
-                try {
-                    // This lunacy is because the websocket can fail to connect AFTER we're awaiting 'message'... so 'message' never triggers.
-                    // So instead we need to look for 'error' at the same time to reject the promise. And then remove the listener if we resolve.
-                    // This is awful.
-                    // Welcome to the shenanigan shack.
-                    rawMessage = await new Promise(function (resolve, reject) {
-                        websocket.once('error', reject);
-                        websocket.once('message', (data, isBinary) => {
-                            websocket.removeListener('error', reject);
-                            resolve(data);
-                        });
-                    });
-                } catch (err) {
-                    console.error("Socket error:", err);
-                    websocket.close();
-                    yield "[SillyTavern] Streaming failed:\n" + err;
-                    return;
-                }
-
-                const message = json5.parse(rawMessage);
-
-                switch (message.event) {
-                    case 'text_stream':
-                        yield message.text;
-                        break;
-                    case 'stream_end':
-                        if (message.error) {
-                            yield `\n[API Error] ${message.error}\n`
-                        }
-                        websocket.close();
-                        return;
-                }
-            }
-        }
-
-        let reply = '';
-
-        try {
-            for await (const text of readWebsocket()) {
-                if (typeof text !== 'string') {
-                    break;
-                }
-
-                let newText = text;
-
-                if (!newText) {
-                    continue;
-                }
-
-                reply += text;
-                response_generate.write(newText);
-            }
-
-            console.log(reply);
-        }
-        finally {
-            response_generate.end();
-        }
-    }
-    else {
         const args = {
-            body: JSON.stringify(request.body),
             headers: { "Content-Type": "application/json" },
-            signal: controller.signal,
         };
 
-        setAdditionalHeaders(request, args, api_server);
+        setAdditionalHeaders(request, args, baseUrl);
 
-        try {
-            const data = await postAsync(api_server + "/v1/generate", args);
-            console.log("Endpoint response:", data);
-            return response_generate.send(data);
-        } catch (error) {
-            let retval = { error: true, status: error.status, response: error.statusText };
-            console.log("Endpoint error:", error);
-            try {
-                retval.response = await error.json();
-                retval.response = retval.response.result;
-            } catch { }
-            return response_generate.send(retval);
+        let url = baseUrl;
+        let result = '';
+
+        if (request.body.legacy_api) {
+            url += "/v1/model";
         }
+        else if (request.body.use_ooba) {
+            url += "/v1/models";
+        }
+        else if (request.body.use_aphrodite) {
+            url += "/v1/models";
+        }
+        else if (request.body.use_mancer) {
+            url += "/oai/v1/models";
+        }
+
+        const modelsReply = await fetch(url, args);
+
+        if (!modelsReply.ok) {
+            console.log('Models endpoint is offline.');
+            return response.status(400);
+        }
+
+        const data = await modelsReply.json();
+
+        if (request.body.legacy_api) {
+            console.log('Legacy API response:', data);
+            return response.send({ result: data?.result });
+        }
+
+        if (!Array.isArray(data.data)) {
+            console.log('Models response is not an array.')
+            return response.status(400);
+        }
+
+        const modelIds = data.data.map(x => x.id);
+        console.log('Models available:', modelIds);
+
+        // Set result to the first model ID
+        result = modelIds[0] || 'Valid';
+
+        if (request.body.use_ooba) {
+            try {
+                const modelInfoUrl = baseUrl + '/v1/internal/model/info';
+                const modelInfoReply = await fetch(modelInfoUrl, args);
+
+                if (modelInfoReply.ok) {
+                    const modelInfo = await modelInfoReply.json();
+                    console.log('Ooba model info:', modelInfo);
+
+                    const modelName = modelInfo?.model_name;
+                    result = modelName || result;
+                }
+            } catch (error) {
+                console.error('Failed to get Ooba model info:', error);
+            }
+        }
+
+        return response.send({ result, data: data.data });
+    } catch (error) {
+        console.error(error);
+        return response.status(500);
     }
 });
 
+app.post("/api/textgenerationwebui/generate", jsonParser, async function (request, response_generate) {
+    if (!request.body) return response_generate.sendStatus(400);
+
+    try {
+        if (request.body.api_server.indexOf('localhost') !== -1) {
+            request.body.api_server = request.body.api_server.replace('localhost', '127.0.0.1');
+        }
+
+        const baseUrl = request.body.api_server;
+        console.log(request.body);
+
+        const controller = new AbortController();
+        request.socket.removeAllListeners('close');
+        request.socket.on('close', function () {
+            controller.abort();
+        });
+
+        // Convert to string + remove trailing slash + /v1 suffix
+        let url = String(baseUrl).replace(/\/$/, '').replace(/\/v1$/, '');
+
+        if (request.body.legacy_api) {
+            url += "/v1/generate";
+        }
+        else if (request.body.use_aphrodite || request.body.use_ooba) {
+            url += "/v1/completions";
+        }
+        else if (request.body.use_mancer) {
+            url += "/oai/v1/completions";
+        }
+
+        const args = {
+            method: 'POST',
+            body: JSON.stringify(request.body),
+            headers: { "Content-Type": "application/json" },
+            signal: controller.signal,
+            timeout: 0,
+        };
+
+        setAdditionalHeaders(request, args, baseUrl);
+
+        if (request.body.stream) {
+            const completionsStream = await fetch(url, args);
+            // Pipe remote SSE stream to Express response
+            completionsStream.body.pipe(response_generate);
+
+            request.socket.on('close', function () {
+                if (completionsStream.body instanceof Readable) completionsStream.body.destroy(); // Close the remote stream
+                response_generate.end(); // End the Express response
+            });
+
+            completionsStream.body.on('end', function () {
+                console.log("Streaming request finished");
+                response_generate.end();
+            });
+        }
+        else {
+            const completionsReply = await fetch(url, args);
+
+            if (completionsReply.ok) {
+                const data = await completionsReply.json();
+                console.log("Endpoint response:", data);
+
+                // Wrap legacy response to OAI completions format
+                if (request.body.legacy_api) {
+                    const text = data?.results[0]?.text;
+                    data['choices'] = [{ text }];
+                }
+
+                return response_generate.send(data);
+            } else {
+                const text = await completionsReply.text();
+                const errorBody = { error: true, status: completionsReply.status, response: text };
+
+                if (!response_generate.headersSent) {
+                    return response_generate.send(errorBody);
+                }
+
+                return response_generate.end();
+            }
+        }
+    } catch (error) {
+        let value = { error: true, status: error?.status, response: error?.statusText };
+        console.log("Endpoint error:", error);
+
+        if (!response_generate.headersSent) {
+            return response_generate.send(value);
+        }
+
+        return response_generate.end();
+    }
+});
 
 app.post("/savechat", jsonParser, function (request, response) {
     try {
@@ -742,32 +716,7 @@ app.post("/getchat", jsonParser, function (request, response) {
     }
 });
 
-app.post("/api/mancer/models", jsonParser, async function (_req, res) {
-    try {
-        const response = await fetch('https://mancer.tech/internal/api/models');
-        const data = await response.json();
-
-        if (!response.ok) {
-            console.log('Mancer models endpoint is offline.');
-            return res.json([]);
-        }
-
-        if (!Array.isArray(data.models)) {
-            console.log('Mancer models response is not an array.')
-            return res.json([]);
-        }
-
-        const modelIds = data.models.map(x => x.id);
-        console.log('Mancer models available:', modelIds);
-
-        return res.json(data.models);
-    } catch (error) {
-        console.error(error);
-        return res.json([]);
-    }
-});
-
-// Only called for kobold and ooba/mancer
+// Only called for kobold
 app.post("/getstatus", jsonParser, async function (request, response) {
     if (!request.body) return response.sendStatus(400);
     api_server = request.body.api_server;
@@ -1169,6 +1118,45 @@ app.post("/editcharacterattribute", jsonParser, async function (request, respons
         await charaWrite(avatarPath, newCharJSON, (request.body.avatar_url).replace('.png', ''), response, 'Character saved');
     } catch (err) {
         console.error('An error occured, character edit invalidated.', err);
+    }
+});
+
+/**
+ * Handle a POST request to edit character properties.
+ *
+ * Merges the request body with the selected character and
+ * validates the result against TavernCard V2 specification.
+ *
+ * @param {Object} request - The HTTP request object.
+ * @param {Object} response - The HTTP response object.
+ *
+ * @returns {void}
+ * */
+app.post("/v2/editcharacterattribute", jsonParser, async function (request, response) {
+    const update = request.body;
+    const avatarPath = path.join(charactersPath, update.avatar);
+
+    try {
+        let character = JSON.parse(await charaRead(avatarPath));
+        character = deepMerge(character, update);
+
+        const validator = new TavernCardValidator(character);
+
+        //Accept either V1 or V2.
+        if (validator.validate()) {
+            await charaWrite(
+                avatarPath,
+                JSON.stringify(character),
+                (update.avatar).replace('.png', ''),
+                response,
+                'Character saved'
+            );
+        } else {
+            console.log(validator.lastValidationError)
+            response.status(400).send({ message: `Validation failed for ${character.name}`, error: validator.lastValidationError });
+        }
+    } catch (exception) {
+        response.status(500).send({ message: 'Unexpected error while saving character.', error: exception.toString() });
     }
 });
 
@@ -2799,57 +2787,71 @@ app.post("/openai_bias", jsonParser, async function (request, response) {
     if (!request.body || !Array.isArray(request.body))
         return response.sendStatus(400);
 
-    let result = {};
+    try {
+        const result = {};
+        const model = getTokenizerModel(String(request.query.model || ''));
 
-    const model = getTokenizerModel(String(request.query.model || ''));
-
-    // no bias for claude
-    if (model == 'claude') {
-        return response.send(result);
-    }
-
-    const tokenizer = getTiktokenTokenizer(model);
-
-    for (const entry of request.body) {
-        if (!entry || !entry.text) {
-            continue;
+        // no bias for claude
+        if (model == 'claude') {
+            return response.send(result);
         }
 
-        try {
-            const tokens = getEntryTokens(entry.text);
+        let encodeFunction;
 
-            for (const token of tokens) {
-                result[token] = entry.value;
+        if (sentencepieceTokenizers.includes(model)) {
+            const tokenizer = getSentencepiceTokenizer(model);
+            encodeFunction = (text) => new Uint32Array(tokenizer.encodeIds(text));
+        } else {
+            const tokenizer = getTiktokenTokenizer(model);
+            encodeFunction = (tokenizer.encode.bind(tokenizer));
+        }
+
+
+        for (const entry of request.body) {
+            if (!entry || !entry.text) {
+                continue;
             }
-        } catch {
-            console.warn('Tokenizer failed to encode:', entry.text);
-        }
-    }
 
-    // not needed for cached tokenizers
-    //tokenizer.free();
-    return response.send(result);
-
-    /**
-     * Gets tokenids for a given entry
-     * @param {string} text Entry text
-     * @returns {Uint32Array} Array of token ids
-     */
-    function getEntryTokens(text) {
-        // Get raw token ids from JSON array
-        if (text.trim().startsWith('[') && text.trim().endsWith(']')) {
             try {
-                const json = JSON.parse(text);
-                if (Array.isArray(json) && json.every(x => typeof x === 'number')) {
-                    return new Uint32Array(json);
+                const tokens = getEntryTokens(entry.text, encodeFunction);
+
+                for (const token of tokens) {
+                    result[token] = entry.value;
                 }
             } catch {
-                // ignore
+                console.warn('Tokenizer failed to encode:', entry.text);
             }
         }
 
-        // Otherwise, get token ids from tokenizer
-        return tokenizer.encode(text);
+        // not needed for cached tokenizers
+        //tokenizer.free();
+        return response.send(result);
+
+        /**
+         * Gets tokenids for a given entry
+         * @param {string} text Entry text
+         * @param {(string) => Uint32Array} encode Function to encode text to token ids
+         * @returns {Uint32Array} Array of token ids
+         */
+        function getEntryTokens(text, encode) {
+            // Get raw token ids from JSON array
+            if (text.trim().startsWith('[') && text.trim().endsWith(']')) {
+                try {
+                    const json = JSON.parse(text);
+                    if (Array.isArray(json) && json.every(x => typeof x === 'number')) {
+                        return new Uint32Array(json);
+                    }
+                } catch {
+                    // ignore
+                }
+            }
+
+            // Otherwise, get token ids from tokenizer
+            return encode(text);
+        }
+    } catch (error) {
+        console.error(error);
+        return response.send({});
     }
 });
 
@@ -3259,7 +3261,8 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
             } else if (fetchResponse.status === 429 && retries > 0) {
                 console.log(`Out of quota, retrying in ${Math.round(timeout / 1000)}s`);
                 setTimeout(() => {
-                    makeRequest(config, response_generate_openai, request, retries - 1);
+                    timeout *= 2;
+                    makeRequest(config, response_generate_openai, request, retries - 1, timeout);
                 }, timeout);
             } else {
                 await handleErrorResponse(fetchResponse);
@@ -3377,28 +3380,69 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
     if (!request.body) {
         return response.sendStatus(400);
     }
-    const text = request.body.text || '';
+    const text = String(request.body.text) || '';
+    const api = String(request.body.api);
+    const baseUrl = String(request.body.url);
+    const legacyApi = Boolean(request.body.legacy_api);
 
     try {
-        const args = {
-            body: JSON.stringify({ "prompt": text }),
-            headers: { "Content-Type": "application/json" }
-        };
+        if (api == 'textgenerationwebui') {
+            const args = {
+                method: 'POST',
+                headers: { "Content-Type": "application/json" },
+            };
 
-        if (main_api == 'textgenerationwebui') {
             setAdditionalHeaders(request, args, null);
 
-            const data = await postAsync(api_server + "/v1/token-count", args);
-            return response.send({ count: data['results'][0]['tokens'] });
+            // Convert to string + remove trailing slash + /v1 suffix
+            let url = String(baseUrl).replace(/\/$/, '').replace(/\/v1$/, '');
+
+            if (legacyApi) {
+                url += '/v1/token-count';
+                args.body = JSON.stringify({ "prompt": text});
+            } else {
+                url += '/v1/internal/encode';
+                args.body = JSON.stringify({ "text": text });
+            }
+
+            const result = await fetch(url, args);
+
+            if (!result.ok) {
+                console.log(`API returned error: ${result.status} ${result.statusText}`);
+                return response.send({ error: true });
+            }
+
+            const data = await result.json();
+            const count = legacyApi ? data?.results[0]?.tokens : data?.length;
+            const ids = legacyApi ? [] : data?.tokens;
+
+            return response.send({ count, ids });
         }
 
-        else if (main_api == 'kobold') {
-            const data = await postAsync(api_server + "/extra/tokencount", args);
+        else if (api == 'kobold') {
+            const args = {
+                method: 'POST',
+                body: JSON.stringify({ "prompt": text }),
+                headers: { "Content-Type": "application/json" }
+            };
+
+            let url = String(baseUrl).replace(/\/$/, '');
+            url += '/extra/tokencount';
+
+            const result = await fetch(url, args);
+
+            if (!result.ok) {
+                console.log(`API returned error: ${result.status} ${result.statusText}`);
+                return response.send({ error: true });
+            }
+
+            const data = await result.json();
             const count = data['value'];
-            return response.send({ count: count });
+            return response.send({ count: count, ids: [] });
         }
 
         else {
+            console.log('Unknown API', api);
             return response.send({ error: true });
         }
     } catch (error) {
@@ -3425,12 +3469,6 @@ async function fetchJSON(url, args = {}) {
 
     throw response;
 }
-/**
- * Convenience function for fetch requests (default POST with no timeout) returning as JSON.
- * @param {string} url
- * @param {import('node-fetch').RequestInit} args
- */
-async function postAsync(url, args) { return fetchJSON(url, { method: 'POST', timeout: 0, ...args }) }
 
 // ** END **
 
