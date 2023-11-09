@@ -506,6 +506,7 @@ app.post("/api/textgenerationwebui/status", jsonParser, async function (request,
         setAdditionalHeaders(request, args, baseUrl);
 
         let url = baseUrl;
+        let result = '';
 
         if (request.body.legacy_api) {
             url += "/v1/model";
@@ -542,7 +543,26 @@ app.post("/api/textgenerationwebui/status", jsonParser, async function (request,
         const modelIds = data.data.map(x => x.id);
         console.log('Models available:', modelIds);
 
-        const result = modelIds[0] ?? 'Valid';
+        // Set result to the first model ID
+        result = modelIds[0] || 'Valid';
+
+        if (request.body.use_ooba) {
+            try {
+                const modelInfoUrl = baseUrl + '/v1/internal/model/info';
+                const modelInfoReply = await fetch(modelInfoUrl, args);
+
+                if (modelInfoReply.ok) {
+                    const modelInfo = await modelInfoReply.json();
+                    console.log('Ooba model info:', modelInfo);
+
+                    const modelName = modelInfo?.model_name;
+                    result = modelName || result;
+                }
+            } catch (error) {
+                console.error('Failed to get Ooba model info:', error);
+            }
+        }
+
         return response.send({ result, data: data.data });
     } catch (error) {
         console.error(error);
