@@ -906,6 +906,9 @@ export function initRossMods() {
         if (power_user.gestures === false) {
             return
         }
+        if ($(".mes_edit_buttons, #character_popup, #dialogue_popup, #WorldInfo").is(":visible")) {
+            return
+        }
         var SwipeButR = $('.swipe_right:last');
         var SwipeTargetMesClassParent = $(e.target).closest('.last_mes');
         if (SwipeTargetMesClassParent !== null) {
@@ -916,6 +919,9 @@ export function initRossMods() {
     });
     document.addEventListener('swiped-right', function (e) {
         if (power_user.gestures === false) {
+            return
+        }
+        if ($(".mes_edit_buttons, #character_popup, #dialogue_popup, #WorldInfo").is(":visible")) {
             return
         }
         var SwipeButL = $('.swipe_left:last');
