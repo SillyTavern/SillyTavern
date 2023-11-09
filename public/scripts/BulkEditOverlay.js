@@ -436,6 +436,11 @@ class BulkEditOverlay {
      */
     handleHold = (event) => {
         if (0 !== event.button && event.type !== 'touchstart') return;
+        if (this.#selectModeLock) {
+            this.#selectModeLock = false;
+            CharacterContextMenu.hide();
+            return;
+        }
 
         let cancel = false;
 
@@ -446,19 +451,19 @@ class BulkEditOverlay {
         this.isLongPress = true;
 
         setTimeout(() => {
-            if (this.isLongPress && !cancel) {
-                if (this.state === BulkEditOverlayState.browse) {
-                    this.selectState();
+                if (this.isLongPress && !cancel) {
+                    if (this.state === BulkEditOverlayState.browse) {
+                        this.selectState();
+                    } else if (this.state === BulkEditOverlayState.select) {
+                        this.#selectModeLock = true;
+                        CharacterContextMenu.show(...this.#getContextMenuPosition(event));
+                    }
                 }
-                else if (this.state === BulkEditOverlayState.select) {
-                    this.#selectModeLock = true;
-                    CharacterContextMenu.show(...this.#getContextMenuPosition(event));
-                }
-            }
 
-            this.container.removeEventListener('mouseup', cancelHold);
-            this.container.removeEventListener('touchend', cancelHold);
-        }, BulkEditOverlay.longPressDelay);
+                this.container.removeEventListener('mouseup', cancelHold);
+                this.container.removeEventListener('touchend', cancelHold);
+            },
+            BulkEditOverlay.longPressDelay);
     }
 
     handleLongPressEnd = () => {
@@ -498,7 +503,7 @@ class BulkEditOverlay {
 
     #getEnabledElements = () => [...this.container.getElementsByClassName(BulkEditOverlay.characterClass)];
 
-    #getDisabledElements = () =>[...this.container.querySelectorAll('.' + BulkEditOverlay.groupClass)];
+    #getDisabledElements = () =>[...this.container.getElementsByClassName(BulkEditOverlay.groupClass)];
 
     toggleCharacterSelected = event => {
         event.stopPropagation();
@@ -524,13 +529,11 @@ class BulkEditOverlay {
 
     handleContextMenuShow = (event) => {
         event.preventDefault();
-        this.container.style.pointerEvents = 'none';
         CharacterContextMenu.show(...this.#getContextMenuPosition(event));
         this.#selectModeLock = true;
     }
 
     handleContextMenuHide = (event) => {
-        this.container.style.pointerEvents = '';
         let contextMenu = document.getElementById(BulkEditOverlay.contextMenuId);
         if (false === contextMenu.contains(event.target)) {
             CharacterContextMenu.hide();
