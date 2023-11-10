@@ -483,6 +483,7 @@ async function switchZenSliders() {
 
 
     if (power_user.enableZenSliders) {
+        $("#clickSlidersTips").hide()
         $("#pro-settings-block input[type='number']").hide();
         //hide number inputs that are not 'seed' inputs
         $(`#textgenerationwebui_api-settings :input[type='number']:not([id^='seed']), 
@@ -497,6 +498,7 @@ async function switchZenSliders() {
                 CreateZenSliders($(this))
             })
     } else {
+        $("#clickSlidersTips").show()
         revertOriginalSliders();
     }
 
