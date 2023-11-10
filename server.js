@@ -3122,7 +3122,20 @@ async function sendPalmRequest(request, response) {
         }
 
         const generateResponseJson = await generateResponse.json();
-        const responseText = generateResponseJson.candidates[0]?.output;
+        const responseText = generateResponseJson?.candidates[0]?.output;
+
+        if (!responseText) {
+            console.log('Palm API returned no response', generateResponseJson);
+            let message = `Palm API returned no response: ${JSON.stringify(generateResponseJson)}`;
+
+            // Check for filters
+            if (generateResponseJson?.filters[0]?.message) {
+                message = `Palm filter triggered: ${generateResponseJson.filters[0].message}`;
+            }
+
+            return response.send({ error: { message } });
+        }
+
         console.log('Palm response:', responseText);
 
         // Wrap it back to OAI format
@@ -3394,7 +3407,7 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
 
             if (legacyApi) {
                 url += '/v1/token-count';
-                args.body = JSON.stringify({ "prompt": text});
+                args.body = JSON.stringify({ "prompt": text });
             } else {
                 url += '/v1/internal/encode';
                 args.body = JSON.stringify({ "text": text });
