@@ -592,37 +592,43 @@ function getModuleInformation() {
  * Generates the HTML strings for all extensions and displays them in a popup.
  */
 async function showExtensionsDetails() {
-    showLoader();
-    let htmlDefault = '<h3>Built-in Extensions:</h3>';
-    let htmlExternal = '<h3>Installed Extensions:</h3>';
+    try{
+        showLoader();
+        let htmlDefault = '<h3>Built-in Extensions:</h3>';
+        let htmlExternal = '<h3>Installed Extensions:</h3>';
 
-    const extensions = Object.entries(manifests).sort((a, b) => a[1].loading_order - b[1].loading_order);
-    const promises = [];
+        const extensions = Object.entries(manifests).sort((a, b) => a[1].loading_order - b[1].loading_order);
+        const promises = [];
 
-    for (const extension of extensions) {
-        promises.push(getExtensionData(extension));
-    }
-
-    const settledPromises = await Promise.allSettled(promises);
-
-    settledPromises.forEach(promise => {
-        if (promise.status === 'fulfilled') {
-            const { isExternal, extensionHtml } = promise.value;
-            if (isExternal) {
-                htmlExternal += extensionHtml;
-            } else {
-                htmlDefault += extensionHtml;
-            }
+        for (const extension of extensions) {
+            promises.push(getExtensionData(extension));
         }
-    });
 
-    const html = `
-        ${getModuleInformation()}
-        ${htmlDefault}
-        ${htmlExternal}
-    `;
-    hideLoader();
-    callPopup(`<div class="extensions_info">${html}</div>`, 'text');
+        const settledPromises = await Promise.allSettled(promises);
+
+        settledPromises.forEach(promise => {
+            if (promise.status === 'fulfilled') {
+                const { isExternal, extensionHtml } = promise.value;
+                if (isExternal) {
+                    htmlExternal += extensionHtml;
+                } else {
+                    htmlDefault += extensionHtml;
+                }
+            }
+        });
+
+        const html = `
+            ${getModuleInformation()}
+            ${htmlDefault}
+            ${htmlExternal}
+        `;
+        callPopup(`<div class="extensions_info">${html}</div>`, 'text');
+    } catch (error) {
+        toastr.error('Error loading extensions. See browser console for details.');
+        console.error(error);
+    } finally {
+        hideLoader();
+    }
 }
 
 
