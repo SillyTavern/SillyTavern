@@ -31,6 +31,7 @@ import {
 } from "./instruct-mode.js";
 
 import { registerSlashCommand } from "./slash-commands.js";
+import { tags } from "./tags.js";
 import { tokenizers } from "./tokenizers.js";
 
 import { countOccurrences, debounce, delay, isOdd, resetScrollHeight, sortMoments, stringToRange, timestampToMoment } from "./utils.js";
@@ -166,6 +167,7 @@ let power_user = {
     message_token_count_enabled: false,
     expand_message_actions: false,
     enableZenSliders: false,
+    enableLabMode: false,
     prefer_character_prompt: true,
     prefer_character_jailbreak: true,
     quick_continue: false,
@@ -217,6 +219,7 @@ let power_user = {
     fuzzy_search: false,
     encode_tags: false,
     servers: [],
+    bogus_folders: false,
 };
 
 let themes = [];
@@ -256,6 +259,7 @@ const storage_keys = {
     message_token_count_enabled: 'MessageTokenCountEnabled',
     expand_message_actions: 'ExpandMessageActions',
     enableZenSliders: 'enableZenSliders',
+    enableLabMode: 'enableLabMode',
 };
 
 const contextControls = [
@@ -424,17 +428,67 @@ function switchMessageActions() {
     $('.extraMesButtons, .extraMesButtonsHint').removeAttr('style');
 }
 
+var originalSliderValues = []
+
+async function switchLabMode() {
+
+    if (power_user.enableZenSliders) {
+        //force disable ZenSliders for Lab Mode
+        $("#enableZenSliders").trigger('click')
+    }
+    await delay(100)
+    const value = localStorage.getItem(storage_keys.enableLabMode);
+    power_user.enableLabMode = value === null ? false : value == "true";
+    $("body").toggleClass("enableLabMode", power_user.enableLabMode);
+    $("#enableLabMode").prop("checked", power_user.enableLabMode);
+
+    if (power_user.enableLabMode) {
+        //save all original slider values into an array
+        $("#advanced-ai-config-block input").each(function () {
+            let id = $(this).attr('id')
+            let min = $(this).attr('min')
+            let max = $(this).attr('max')
+            let step = $(this).attr('step')
+            originalSliderValues.push({ id, min, max, step });
+        })
+        //console.log(originalSliderValues)
+        //remove limits on all inputs and hide sliders
+        $("#advanced-ai-config-block input")
+            .attr('min', '-99999')
+            .attr('max', '99999')
+            .attr('step', '0.001')
+        $("#labModeWarning").show()
+        //$("#advanced-ai-config-block input[type='range']").hide()
+
+    } else {
+        //re apply the original sliders values to each input
+        originalSliderValues.forEach(function (slider) {
+            $("#" + slider.id)
+                .attr('min', slider.min)
+                .attr('max', slider.max)
+                .attr('step', slider.step)
+                .trigger('input')
+        });
+        $("#advanced-ai-config-block input[type='range']").show()
+        $("#labModeWarning").hide()
+    }
+}
+
 async function switchZenSliders() {
+
     await delay(100)
     const value = localStorage.getItem(storage_keys.enableZenSliders);
     power_user.enableZenSliders = value === null ? false : value == "true";
     $("body").toggleClass("enableZenSliders", power_user.enableZenSliders);
     $("#enableZenSliders").prop("checked", power_user.enableZenSliders);
 
+
+
     if (power_user.enableZenSliders) {
+        $("#clickSlidersTips").hide()
         $("#pro-settings-block input[type='number']").hide();
         //hide number inputs that are not 'seed' inputs
-        $(`#textgenerationwebui_api-settings :input[type='number']:not([id^='seed']), 
+        $(`#textgenerationwebui_api-settings :input[type='number']:not([id^='seed']),
             #kobold_api-settings :input[type='number']:not([id^='seed'])`).hide()
         //hide original sliders
         $(`#textgenerationwebui_api-settings input[type='range'],
@@ -446,6 +500,7 @@ async function switchZenSliders() {
                 CreateZenSliders($(this))
             })
     } else {
+        $("#clickSlidersTips").show()
         revertOriginalSliders();
     }
 
@@ -973,12 +1028,26 @@ async function applyTheme(name) {
             }
         },
         {
+            key: 'enableLabMode',
+            action: async () => {
+                localStorage.setItem(storage_keys.enableLabMode, Boolean(power_user.enableLabMode));
+                switchMessageActions();
+            }
+        },
+        {
             key: 'hotswap_enabled',
             action: async () => {
                 localStorage.setItem(storage_keys.hotswap_enabled, Boolean(power_user.hotswap_enabled));
                 switchHotswap();
             }
-        }
+        },
+        {
+            key: 'bogus_folders',
+            action: async () => {
+                $('#bogus_folders').prop('checked', power_user.bogus_folders);
+                await printCharacters(true);
+            },
+        },
     ];
 
     for (const { key, selector, type, action } of themeProperties) {
@@ -1087,6 +1156,7 @@ function loadPowerUserSettings(settings, data) {
     const mesIDDisplay = localStorage.getItem(storage_keys.mesIDDisplay_enabled);
     const expandMessageActions = localStorage.getItem(storage_keys.expand_message_actions);
     const enableZenSliders = localStorage.getItem(storage_keys.enableZenSliders);
+    const enableLabMode = localStorage.getItem(storage_keys.enableLabMode);
     power_user.fast_ui_mode = fastUi === null ? true : fastUi == "true";
     power_user.movingUI = movingUI === null ? false : movingUI == "true";
     power_user.noShadows = noShadows === null ? false : noShadows == "true";
@@ -1096,6 +1166,7 @@ function loadPowerUserSettings(settings, data) {
     power_user.mesIDDisplay_enabled = mesIDDisplay === null ? true : mesIDDisplay == "true";
     power_user.expand_message_actions = expandMessageActions === null ? true : expandMessageActions == "true";
     power_user.enableZenSliders = enableZenSliders === null ? false : enableZenSliders == "true";
+    power_user.enableLabMode = enableLabMode === null ? false : enableLabMode == "true";
     power_user.avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? avatar_styles.ROUND);
     //power_user.chat_display = Number(localStorage.getItem(storage_keys.chat_display) ?? chat_styles.DEFAULT);
     power_user.chat_width = Number(localStorage.getItem(storage_keys.chat_width) ?? 50);
@@ -1141,6 +1212,7 @@ function loadPowerUserSettings(settings, data) {
     $("#console_log_prompts").prop("checked", power_user.console_log_prompts);
     $('#auto_fix_generated_markdown').prop("checked", power_user.auto_fix_generated_markdown);
     $('#auto_scroll_chat_to_bottom').prop("checked", power_user.auto_scroll_chat_to_bottom);
+    $('#bogus_folders').prop("checked", power_user.bogus_folders);
     $(`#tokenizer option[value="${power_user.tokenizer}"]`).attr('selected', true);
     $(`#send_on_enter option[value=${power_user.send_on_enter}]`).attr("selected", true);
     $("#import_card_tags").prop("checked", power_user.import_card_tags);
@@ -1178,6 +1250,7 @@ function loadPowerUserSettings(settings, data) {
     $("#prefer_character_prompt").prop("checked", power_user.prefer_character_prompt);
     $("#prefer_character_jailbreak").prop("checked", power_user.prefer_character_jailbreak);
     $("#enableZenSliders").prop('checked', power_user.enableZenSliders).trigger('input');
+    $("#enableLabMode").prop('checked', power_user.enableLabMode).trigger('input');
     $(`input[name="avatar_style"][value="${power_user.avatar_style}"]`).prop("checked", true);
     $(`#chat_display option[value=${power_user.chat_display}]`).attr("selected", true).trigger('change');
     $('#chat_width_slider').val(power_user.chat_width);
@@ -1474,6 +1547,22 @@ export function fuzzySearchWorldInfo(data, searchValue) {
     return results.map(x => x.item?.uid);
 }
 
+export function fuzzySearchTags(searchValue) {
+    const fuse = new Fuse(tags, {
+        keys: [
+            { name: 'name', weight: 1},
+        ],
+        includeScore: true,
+        ignoreLocation: true,
+        threshold: 0.2
+    });
+
+    const results = fuse.search(searchValue);
+    console.debug('Tags fuzzy search results for ' + searchValue, results);
+    const ids = results.map(x => String(x.item?.id)).filter(x => x);
+    return ids;
+}
+
 export function fuzzySearchGroups(searchValue) {
     const fuse = new Fuse(groups, {
         keys: [
@@ -1598,10 +1687,10 @@ async function saveTheme() {
         message_token_count_enabled: power_user.message_token_count_enabled,
         expand_message_actions: power_user.expand_message_actions,
         enableZenSliders: power_user.enableZenSliders,
+        enableLabMode: power_user.enableLabMode,
         hotswap_enabled: power_user.hotswap_enabled,
         custom_css: power_user.custom_css,
-
-
+        bogus_folders: power_user.bogus_folders,
     };
 
     const response = await fetch('/savetheme', {
@@ -2591,10 +2680,29 @@ $(document).ready(() => {
     });
 
     $("#enableZenSliders").on("input", function () {
+        if (power_user.enableLabMode) {
+            //disallow zenSliders while Lab Mode is active
+            toastr.warning('ZenSliders not allowed in Mad Lab Mode')
+            $(this).prop('checked', false);
+            return
+        }
         const value = !!$(this).prop('checked');
         power_user.enableZenSliders = value;
         localStorage.setItem(storage_keys.enableZenSliders, Boolean(power_user.enableZenSliders));
         switchZenSliders();
+    });
+
+    $("#enableLabMode").on("input", function () {
+        if (power_user.enableZenSliders) {
+            //disallow Lab Mode if ZenSliders are active
+            toastr.warning('Mad Lab Mode not allowed while ZenSliders are active')
+            $(this).prop('checked', false);
+            return
+        }
+        const value = !!$(this).prop('checked');
+        power_user.enableLabMode = value;
+        localStorage.setItem(storage_keys.enableLabMode, Boolean(power_user.enableLabMode));
+        switchLabMode();
     });
 
     $("#mesIDDisplayEnabled").on("input", function () {
@@ -2705,6 +2813,13 @@ $(document).ready(() => {
         power_user.ui_mode = Number(value);
         saveSettingsDebounced();
         switchSimpleMode();
+    });
+
+    $('#bogus_folders').on('input', function() {
+        const value = !!$(this).prop('checked');
+        power_user.bogus_folders = value;
+        saveSettingsDebounced();
+        printCharacters(true);
     });
 
     $(document).on('click', '#debug_table [data-debug-function]', function () {

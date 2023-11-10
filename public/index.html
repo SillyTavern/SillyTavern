@@ -93,11 +93,11 @@
     <div id="bg1"></div>
     <div id="character_context_menu" class="hidden">
         <ul>
-            <li><button id="character_context_menu_favorite">Favorite</button></li>
-            <li><button id="character_context_menu_tag">Tag</button></li>
-            <li><button id="character_context_menu_duplicate">Duplicate</button></li>
-            <li><button id="character_context_menu_persona">Persona</button></li>
-            <li><button id="character_context_menu_delete">Delete</button></li>
+            <li><button id="character_context_menu_favorite" data-i18n="Favorite">Favorite</button></li>
+            <li><button id="character_context_menu_tag" data-i18n="Tag">Tag</button></li>
+            <li><button id="character_context_menu_duplicate" data-i18n="Duplicate">Duplicate</button></li>
+            <li><button id="character_context_menu_persona" data-i18n="Persona">Persona</button></li>
+            <li><button id="character_context_menu_delete" data-i18n="Delete">Delete</button></li>
         </ul>
     </div>
     <!-- top bar central settings buttons -->
@@ -118,9 +118,10 @@
                         <div class="checked fa-solid fa-lock "></div>
                     </label>
                 </div>
-                <div data-i18n="clickslidertips" class="toggle-description wide100p editable-slider-notification">
+                <div id="clickSlidersTips" data-i18n="clickslidertips" class="toggle-description wide100p editable-slider-notification">
                     Click slider numbers to input manually.
                 </div>
+                <div id="labModeWarning" class="redWarningBG textAlignCenter">MAD LAB MODE ON</div>
                 <a href="https://docs.sillytavern.app/usage/common-settings/" target="_blank" title="Documentation on sampling parameters.">
                     <span name="samplerHelpButton" class="note-link-span topRightInset fa-solid fa-circle-question"></span>
                 </a>
@@ -1404,7 +1405,7 @@
                                         Logit Bias
                                     </div>
                                     <div class="toggle-description justifyLeft" data-i18n="Helps to ban or reenforce the usage of certain words">
-                                        Helps to ban or reinforce the usage of certain tokens. Confirm token parsing with <a target="_blank" href="https://tiktokenizer.vercel.app/">Tiktokenizer</a>.
+                                        Helps to ban or reinforce the usage of certain tokens. Confirm token parsing with <a target="_blank" href="https://platform.openai.com/tokenizer/">Tokenizer</a>.
                                     </div>
                                     <div class="openai_logit_bias_preset_form">
                                         <select id="openai_logit_bias_preset">
@@ -2702,6 +2703,10 @@
                                 <input id="enableZenSliders" type="checkbox" />
                                 <span data-i18n="Zen Sliders">Zen Sliders</span>
                             </label>
+                            <label data-newbie-hidden for="enableLabMode" class="checkbox_label">
+                                <input id="enableLabMode" type="checkbox" />
+                                <span data-i18n="Mad Lab Mode">Mad Lab Mode</span>
+                            </label>
                             <label data-newbie-hidden for="messageTimerEnabled" class="checkbox_label">
                                 <input id="messageTimerEnabled" type="checkbox" />
                                 <span data-i18n="Message Timer">Message Timer</span>
@@ -2725,6 +2730,10 @@
                             <label data-newbie-hidden for="hotswapEnabled" class="checkbox_label">
                                 <input id="hotswapEnabled" type="checkbox" />
                                 <span data-i18n="Characters Hotswap">Characters Hotswap</span>
+                            </label>
+                            <label for="bogus_folders" class="checkbox_label">
+                                <input id="bogus_folders" type="checkbox" />
+                                <span data-i18n="Tags as Folders">Tags as Folders</span>
                             </label>
                         </div>
                         <h4><span data-i18n="Miscellaneous">Miscellaneous</span></h4>
@@ -3985,7 +3994,7 @@
                                 <option value="1">Absolute</option>
                             </select>
                         </div>
-                        <div class="completion_prompt_manager_popup_entry_form_control flex1">
+                        <div id="completion_prompt_manager_depth_block" class="completion_prompt_manager_popup_entry_form_control flex1">
                             <label for="completion_prompt_manager_popup_entry_form_injection_depth">
                                 <span>Depth</span>
                             </label>
@@ -4152,6 +4161,22 @@
                 <i class='group_fav_icon fa-solid fa-star'></i>
                 <input class="ch_fav" value="" hidden />
                 <div class="tags tags_inline"></div>
+            </div>
+        </div>
+    </div>
+    <div id="bogus_folder_template" class="template_element">
+        <div class="bogus_folder_select flex-container wide100p alignitemsflexstart">
+            <div class="avatar flex alignitemscenter textAlignCenter">
+                <i class="fa-solid fa-folder-open fa-xl"></i>
+            </div>
+            <div class="flex-container wide100pLess70px character_select_container">
+                <div class="wide100p character_name_block">
+                    <span class="ch_name"></span>
+                </div>
+                <div class="bogus_folder_counter_block">
+                    <span class="bogus_folder_counter"></span>
+                    <span data="character card(s)">character card(s)</span>
+                </div>
             </div>
         </div>
     </div>
@@ -4540,6 +4565,10 @@
                 <i class="fa-lg fa-solid fa-trash-can"></i>
                 <span data-i18n="Delete messages">Delete messages</span>
             </a>
+            <a id="option_regenerate">
+                <i class="fa-lg fa-solid fa-repeat"></i>
+                <span data-i18n="Regenerate">Regenerate</span>
+            </a>
             <a id="option_impersonate" title="Ask AI to write your message for you" data-i18n="[title]Ask AI to write your message for you">
                 <i class="fa-lg fa-solid fa-user-secret"></i>
                 <span data-i18n="Impersonate">Impersonate</span>
@@ -4547,10 +4576,6 @@
             <a id="option_continue" title="Continue the last message" data-i18n="[title]Continue the last message">
                 <i class="fa-lg fa-solid fa-arrow-right"></i>
                 <span data-i18n="Continue">Continue</span>
-            </a>
-            <a id="option_regenerate">
-                <i class="fa-lg fa-solid fa-repeat"></i>
-                <span data-i18n="Regenerate">Regenerate</span>
             </a>
         </div>
     </div>

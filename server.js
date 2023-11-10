@@ -506,6 +506,7 @@ app.post("/api/textgenerationwebui/status", jsonParser, async function (request,
         setAdditionalHeaders(request, args, baseUrl);
 
         let url = baseUrl;
+        let result = '';
 
         if (request.body.legacy_api) {
             url += "/v1/model";
@@ -542,7 +543,26 @@ app.post("/api/textgenerationwebui/status", jsonParser, async function (request,
         const modelIds = data.data.map(x => x.id);
         console.log('Models available:', modelIds);
 
-        const result = modelIds[0] ?? 'Valid';
+        // Set result to the first model ID
+        result = modelIds[0] || 'Valid';
+
+        if (request.body.use_ooba) {
+            try {
+                const modelInfoUrl = baseUrl + '/v1/internal/model/info';
+                const modelInfoReply = await fetch(modelInfoUrl, args);
+
+                if (modelInfoReply.ok) {
+                    const modelInfo = await modelInfoReply.json();
+                    console.log('Ooba model info:', modelInfo);
+
+                    const modelName = modelInfo?.model_name;
+                    result = modelName || result;
+                }
+            } catch (error) {
+                console.error('Failed to get Ooba model info:', error);
+            }
+        }
+
         return response.send({ result, data: data.data });
     } catch (error) {
         console.error(error);
@@ -3102,7 +3122,20 @@ async function sendPalmRequest(request, response) {
         }
 
         const generateResponseJson = await generateResponse.json();
-        const responseText = generateResponseJson.candidates[0]?.output;
+        const responseText = generateResponseJson?.candidates[0]?.output;
+
+        if (!responseText) {
+            console.log('Palm API returned no response', generateResponseJson);
+            let message = `Palm API returned no response: ${JSON.stringify(generateResponseJson)}`;
+
+            // Check for filters
+            if (generateResponseJson?.filters[0]?.message) {
+                message = `Palm filter triggered: ${generateResponseJson.filters[0].message}`;
+            }
+
+            return response.send({ error: { message } });
+        }
+
         console.log('Palm response:', responseText);
 
         // Wrap it back to OAI format
@@ -3364,8 +3397,7 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
         if (api == 'textgenerationwebui') {
             const args = {
                 method: 'POST',
-                body: JSON.stringify({ "prompt": text }),
-                headers: { "Content-Type": "application/json" }
+                headers: { "Content-Type": "application/json" },
             };
 
             setAdditionalHeaders(request, args, null);
@@ -3375,9 +3407,10 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
 
             if (legacyApi) {
                 url += '/v1/token-count';
-
+                args.body = JSON.stringify({ "prompt": text });
             } else {
-                url += '/api/v1/token-count';
+                url += '/v1/internal/encode';
+                args.body = JSON.stringify({ "text": text });
             }
 
             const result = await fetch(url, args);
@@ -3388,7 +3421,10 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
             }
 
             const data = await result.json();
-            return response.send({ count: data['results'][0]['tokens'] });
+            const count = legacyApi ? data?.results[0]?.tokens : data?.length;
+            const ids = legacyApi ? [] : data?.tokens;
+
+            return response.send({ count, ids });
         }
 
         else if (api == 'kobold') {
@@ -3410,7 +3446,7 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
 
             const data = await result.json();
             const count = data['value'];
-            return response.send({ count: count });
+            return response.send({ count: count, ids: [] });
         }
 
         else {

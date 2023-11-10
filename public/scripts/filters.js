@@ -1,4 +1,4 @@
-import { fuzzySearchCharacters, fuzzySearchGroups, fuzzySearchWorldInfo, power_user } from "./power-user.js";
+import { fuzzySearchCharacters, fuzzySearchGroups, fuzzySearchTags, fuzzySearchWorldInfo, power_user } from "./power-user.js";
 import { tag_map } from "./tags.js";
 
 /**
@@ -148,16 +148,20 @@ export class FilterHelper {
         const searchValue = this.filterData[FILTER_TYPES.SEARCH].trim().toLowerCase();
         const fuzzySearchCharactersResults = power_user.fuzzy_search ? fuzzySearchCharacters(searchValue) : [];
         const fuzzySearchGroupsResults = power_user.fuzzy_search ? fuzzySearchGroups(searchValue) : [];
+        const fuzzySearchTagsResult = power_user.fuzzy_search ? fuzzySearchTags(searchValue) : [];
 
         function getIsValidSearch(entity) {
             const isGroup = entity.type === 'group';
             const isCharacter = entity.type === 'character';
+            const isTag = entity.type === 'tag';
 
             if (power_user.fuzzy_search) {
                 if (isCharacter) {
                     return fuzzySearchCharactersResults.includes(parseInt(entity.id));
                 } else if (isGroup) {
                     return fuzzySearchGroupsResults.includes(String(entity.id));
+                } else if (isTag) {
+                    return fuzzySearchTagsResult.includes(String(entity.id));
                 } else {
                     return false;
                 }

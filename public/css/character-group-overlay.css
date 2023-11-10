@@ -1,12 +1,19 @@
-#rm_print_characters_block .character_select,
-#rm_print_characters_block .group_select{
-    cursor: pointer;
-}
 
 #rm_print_characters_block.group_overlay_mode_select .character_select {
     transition: background-color 0.4s ease;
     margin-bottom: 1px;
     background-color: rgba(170, 170, 170, 0.15);
+}
+
+#rm_print_characters_block.group_overlay_mode_select .bogus_folder_select,
+#rm_print_characters_block.group_overlay_mode_select .group_select {
+    cursor: auto;
+    filter: saturate(0.3);
+}
+
+#rm_print_characters_block.group_overlay_mode_select .bogus_folder_select:hover,
+#rm_print_characters_block.group_overlay_mode_select .group_select:hover {
+    background: none;
 }
 
 #rm_print_characters_block.group_overlay_mode_select .character_select input.bulk_select_checkbox {
@@ -26,7 +33,7 @@
 #character_context_menu {
     position: absolute;
     padding: 3px;
-    z-index: 10000;
+    z-index: 9998;
     background-color: var(--black90a);
     border: 1px solid var(--black90a);
     border-radius: 10px;
