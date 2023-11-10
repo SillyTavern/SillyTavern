@@ -26,7 +26,7 @@ const DEFAULT_DEPTH = 4;
 /**
  * @enum {number}
  */
-export const INJECTION_POSITION ={
+export const INJECTION_POSITION = {
     RELATIVE: 0,
     ABSOLUTE: 1,
 }
@@ -289,7 +289,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
     this.serviceSettings = serviceSettings;
     this.containerElement = document.getElementById(this.configuration.containerIdentifier);
 
-    if ('global' === this.configuration.promptOrder.strategy) this.activeCharacter = {id: this.configuration.promptOrder.dummyId};
+    if ('global' === this.configuration.promptOrder.strategy) this.activeCharacter = { id: this.configuration.promptOrder.dummyId };
 
     this.sanitizeServiceSettings();
 
@@ -397,6 +397,7 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt').value = prompt.content;
         document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_position').value = prompt.injection_position ?? 0;
         document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_depth').value = prompt.injection_depth ?? DEFAULT_DEPTH;
+        document.getElementById(this.configuration.prefix + 'prompt_manager_depth_block').style.visibility = prompt.injection_position === INJECTION_POSITION.ABSOLUTE ? 'visible' : 'hidden';
     }
 
     // Append prompt to selected character
@@ -1105,12 +1106,14 @@ PromptManagerModule.prototype.loadPromptIntoEditForm = function (prompt) {
     const promptField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt');
     const injectionPositionField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_position');
     const injectionDepthField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_depth');
+    const injectionDepthBlock = document.getElementById(this.configuration.prefix + 'prompt_manager_depth_block');
 
     nameField.value = prompt.name ?? '';
     roleField.value = prompt.role ?? '';
     promptField.value = prompt.content ?? '';
     injectionPositionField.value = prompt.injection_position ?? INJECTION_POSITION.RELATIVE;
     injectionDepthField.value = prompt.injection_depth ?? DEFAULT_DEPTH;
+    injectionDepthBlock.style.visibility = prompt.injection_position === INJECTION_POSITION.ABSOLUTE ? 'visible' : 'hidden';
 
     const resetPromptButton = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_reset');
     if (true === prompt.system_prompt) {
@@ -1120,8 +1123,21 @@ PromptManagerModule.prototype.loadPromptIntoEditForm = function (prompt) {
         resetPromptButton.style.display = 'none';
     }
 
+    injectionPositionField.removeEventListener('change', (e) => this.handleInjectionPositionChange(e));
+    injectionPositionField.addEventListener('change', (e) => this.handleInjectionPositionChange(e));
+
     const savePromptButton = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_save');
     savePromptButton.dataset.pmPrompt = prompt.identifier;
+}
+
+PromptManagerModule.prototype.handleInjectionPositionChange = function (event) {
+    const injectionDepthBlock = document.getElementById(this.configuration.prefix + 'prompt_manager_depth_block');
+    const injectionPosition = Number(event.target.value);
+    if (injectionPosition === INJECTION_POSITION.ABSOLUTE) {
+        injectionDepthBlock.style.visibility = 'visible';
+    } else {
+        injectionDepthBlock.style.visibility = 'hidden';
+    }
 }
 
 /**
@@ -1176,12 +1192,14 @@ PromptManagerModule.prototype.clearEditForm = function () {
     const promptField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_prompt');
     const injectionPositionField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_position');
     const injectionDepthField = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_depth');
+    const injectionDepthBlock = document.getElementById(this.configuration.prefix + 'prompt_manager_depth_block');
 
     nameField.value = '';
     roleField.selectedIndex = 0;
     promptField.value = '';
     injectionPositionField.selectedIndex = 0;
     injectionDepthField.value = DEFAULT_DEPTH;
+    injectionDepthBlock.style.visibility = 'unset';
 
     roleField.disabled = false;
 }
