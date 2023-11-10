@@ -9010,6 +9010,13 @@ jQuery(async function () {
             const closestStep = Math.round(rawStepCompare)
             const closestStepRaw = (closestStep) * masterStep
 
+            //yolo anything for Lab Mode
+            if (power_user.enableLabMode) {
+                console.log($(masterElement).attr('id'), myValue)
+                $(masterElement).val(myValue).trigger('input')
+                return
+            }
+
             //if text box val is not a number, reset slider val to its previous and wait for better input
             if (Number.isNaN(myValue)) {
                 console.warn('Label input is not a valid number. Resetting the value to match slider', myText);

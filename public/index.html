@@ -121,6 +121,7 @@
                 <div data-i18n="clickslidertips" class="toggle-description wide100p editable-slider-notification">
                     Click slider numbers to input manually.
                 </div>
+                <div id="labModeWarning" class="redWarningBG textAlignCenter">MAD LAB MODE ON</div>
                 <a href="https://docs.sillytavern.app/usage/common-settings/" target="_blank" title="Documentation on sampling parameters.">
                     <span name="samplerHelpButton" class="note-link-span topRightInset fa-solid fa-circle-question"></span>
                 </a>
@@ -2701,6 +2702,10 @@
                             <label data-newbie-hidden for="enableZenSliders" class="checkbox_label">
                                 <input id="enableZenSliders" type="checkbox" />
                                 <span data-i18n="Zen Sliders">Zen Sliders</span>
+                            </label>
+                            <label data-newbie-hidden for="enableLabMode" class="checkbox_label">
+                                <input id="enableLabMode" type="checkbox" />
+                                <span data-i18n="Mad Lab Mode">Mad Lab Mode</span>
                             </label>
                             <label data-newbie-hidden for="messageTimerEnabled" class="checkbox_label">
                                 <input id="messageTimerEnabled" type="checkbox" />
