@@ -287,6 +287,7 @@ class BulkEditOverlay {
     static contextMenuId = 'character_context_menu';
     static characterClass = 'character_select';
     static groupClass = 'group_select';
+    static bogusFolderClass = 'bogus_folder_select';
     static selectModeClass = 'group_overlay_mode_select';
     static selectedClass = 'character_selected';
     static legacySelectedClass = 'bulk_select_checkbox';
@@ -527,7 +528,7 @@ class BulkEditOverlay {
 
     #getEnabledElements = () => [...this.container.getElementsByClassName(BulkEditOverlay.characterClass)];
 
-    #getDisabledElements = () =>[...this.container.getElementsByClassName(BulkEditOverlay.groupClass)];
+    #getDisabledElements = () =>[...this.container.getElementsByClassName(BulkEditOverlay.groupClass), ...this.container.getElementsByClassName(BulkEditOverlay.bogusFolderClass)];
 
     toggleCharacterSelected = event => {
         event.stopPropagation();

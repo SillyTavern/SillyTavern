@@ -5,11 +5,13 @@
     background-color: rgba(170, 170, 170, 0.15);
 }
 
+#rm_print_characters_block.group_overlay_mode_select .bogus_folder_select,
 #rm_print_characters_block.group_overlay_mode_select .group_select {
     cursor: auto;
     filter: saturate(0.3);
 }
 
+#rm_print_characters_block.group_overlay_mode_select .bogus_folder_select:hover,
 #rm_print_characters_block.group_overlay_mode_select .group_select:hover {
     background: none;
 }

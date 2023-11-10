@@ -996,10 +996,6 @@ function getTagBlock(item) {
     template.find('.avatar').css({'background-color': item.color, 'color': item.color2 });
     template.find('.ch_name').text(item.name);
     template.find('.bogus_folder_counter').text(count);
-    template.on('click', () => {
-        console.log('Bogus folder clicked', item.id);
-        entitiesFilter.setFilterData(FILTER_TYPES.TAG, { excluded: [], selected: [item.id], bogus: true, });
-    });
     return template;
 }
 
@@ -7523,6 +7519,12 @@ jQuery(async function () {
         const id = $(this).attr("chid");
         await selectCharacterById(id);
     });
+
+    $(document).on("click", ".bogus_folder_select", function () {
+        const tagId = $(this).attr('tagid');
+        console.log('Bogus folder clicked', tagId);
+        entitiesFilter.setFilterData(FILTER_TYPES.TAG, { excluded: [], selected: [tagId], bogus: true, });
+    })
 
     $(document).on("input", ".edit_textarea", function () {
         scroll_holder = $("#chat").scrollTop();
