@@ -889,8 +889,18 @@ hr {
     box-shadow: 0 0 5px var(--black50a);
 }
 
+.bogus_folder_select .avatar,
 .character_select .avatar {
     flex: unset;
+}
+
+.bogus_folder_select .avatar {
+    justify-content: center;
+    background-color: var(--SmartThemeBlurTintColor);
+    color: var(--SmartThemeBodyColor);
+    outline-style: solid;
+    outline-width: 1px;
+    outline-color: var(--SmartThemeBorderColor);
 }
 
 .mes_block {
@@ -1213,6 +1223,20 @@ input[type="file"] {
     width: calc(100% - 85px);
 }
 
+#rm_print_characters_block .empty_block {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex-wrap: wrap;
+    text-align: center;
+    height: 100%;
+    width: 100%;
+    opacity: 0.5;
+    justify-content: center;
+    margin: 0 auto;
+    align-items: center;
+}
+
 #rm_print_characters_block {
     overflow-y: auto;
     flex-grow: 1;
@@ -1479,6 +1503,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     pointer-events: all;
 }
 
+.bogus_folder_select,
 .character_select {
     display: flex;
     flex-direction: row;
@@ -1505,6 +1530,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     font-style: italic;
 }
 
+.bogus_folder_select .avatar,
 .character_select .avatar {
     align-self: center;
 }
@@ -1532,6 +1558,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     display: block;
 }
 
+.bogus_folder_select:hover,
 .character_select:hover {
     background-color: var(--white30a);
 }

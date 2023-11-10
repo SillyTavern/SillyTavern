@@ -2731,6 +2731,10 @@
                                 <input id="hotswapEnabled" type="checkbox" />
                                 <span data-i18n="Characters Hotswap">Characters Hotswap</span>
                             </label>
+                            <label for="bogus_folders" class="checkbox_label">
+                                <input id="bogus_folders" type="checkbox" />
+                                <span data-i18n="Tags as Folders">Tags as Folders</span>
+                            </label>
                         </div>
                         <h4><span data-i18n="Miscellaneous">Miscellaneous</span></h4>
                         <div>
@@ -4157,6 +4161,22 @@
                 <i class='group_fav_icon fa-solid fa-star'></i>
                 <input class="ch_fav" value="" hidden />
                 <div class="tags tags_inline"></div>
+            </div>
+        </div>
+    </div>
+    <div id="bogus_folder_template" class="template_element">
+        <div class="bogus_folder_select flex-container wide100p alignitemsflexstart">
+            <div class="avatar flex alignitemscenter textAlignCenter">
+                <i class="fa-solid fa-folder-open fa-xl"></i>
+            </div>
+            <div class="flex-container wide100pLess70px character_select_container">
+                <div class="wide100p character_name_block">
+                    <span class="ch_name"></span>
+                </div>
+                <div class="bogus_folder_counter_block">
+                    <span class="bogus_folder_counter"></span>
+                    <span data="character card(s)">character card(s)</span>
+                </div>
             </div>
         </div>
     </div>

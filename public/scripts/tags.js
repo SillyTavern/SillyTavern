@@ -6,6 +6,7 @@ import {
     menu_type,
     getCharacters,
     entitiesFilter,
+    printCharacters,
 } from "../script.js";
 import { FILTER_TYPES, FilterHelper } from "./filters.js";
 
@@ -48,12 +49,12 @@ const InListActionable = {
 }
 
 const DEFAULT_TAGS = [
-    { id: uuidv4(), name: "Plain Text" },
-    { id: uuidv4(), name: "OpenAI" },
-    { id: uuidv4(), name: "W++" },
-    { id: uuidv4(), name: "Boostyle" },
-    { id: uuidv4(), name: "PList" },
-    { id: uuidv4(), name: "AliChat" },
+    { id: uuidv4(), name: "Plain Text", create_date: Date.now() },
+    { id: uuidv4(), name: "OpenAI", create_date: Date.now() },
+    { id: uuidv4(), name: "W++", create_date: Date.now() },
+    { id: uuidv4(), name: "Boostyle", create_date: Date.now() },
+    { id: uuidv4(), name: "PList", create_date: Date.now() },
+    { id: uuidv4(), name: "AliChat", create_date: Date.now() },
 ];
 
 let tags = [];
@@ -208,8 +209,8 @@ function selectTag(event, ui, listSelector) {
     const characterIds = characterData ? JSON.parse(characterData).characterIds : null;
 
     if (characterIds) {
-        characterIds.forEach((characterId) => addTagToMap(tag.id,characterId));
-    } else  {
+        characterIds.forEach((characterId) => addTagToMap(tag.id, characterId));
+    } else {
         addTagToMap(tag.id);
     }
 
@@ -231,7 +232,6 @@ function getExistingTags(new_tags) {
     }
     return existing_tags
 }
-
 
 async function importTags(imported_char) {
     let imported_tags = imported_char.tags.filter(t => t !== "ROOT" && t !== "TAVERN");
@@ -272,13 +272,13 @@ async function importTags(imported_char) {
     return false;
 }
 
-
 function createNewTag(tagName) {
     const tag = {
         id: uuidv4(),
         name: tagName,
         color: '',
         color2: '',
+        create_date: Date.now(),
     };
     tags.push(tag);
     return tag;
@@ -477,55 +477,78 @@ export function createTagInput(inputSelector, listSelector) {
 
 function onViewTagsListClick() {
     $('#dialogue_popup').addClass('large_dialogue_popup');
-    const list = document.createElement('div');
+    const list = $(document.createElement('div'));
+    list.attr('id', 'tag_view_list');
     const everything = Object.values(tag_map).flat();
-    $(list).append('<h3>Tags</h3><i>Click on the tag name to edit it.</i><br>');
-    $(list).append('<i>Click on color box to assign new color.</i><br><br>');
+    $(list).append(`
+    <div class="title_restorable alignItemsBaseline">
+        <h3>Tag Management</h3>
+        <div class="menu_button menu_button_icon tag_view_create">
+            <i class="fa-solid fa-plus"></i>
+            <span data-i18n="Create">Create</span>
+        </div>
+    </div>
+    <div class="justifyLeft m-b-1">
+        <small>
+            Click on the tag name to edit it.<br>
+            Click on color box to assign new color.
+        </small>
+    </div>`);
 
     for (const tag of tags.slice().sort((a, b) => a?.name?.toLowerCase()?.localeCompare(b?.name?.toLowerCase()))) {
-        const count = everything.filter(x => x == tag.id).length;
-        const template = $('#tag_view_template .tag_view_item').clone();
-        template.attr('id', tag.id);
-        template.find('.tag_view_counter_value').text(count);
-        template.find('.tag_view_name').text(tag.name);
-        template.find('.tag_view_name').addClass('tag');
-
-        template.find('.tag_view_name').css('background-color', tag.color);
-        template.find('.tag_view_name').css('color', tag.color2);
-
-        const colorPickerId = tag.id + "-tag-color";
-        const colorPicker2Id = tag.id + "-tag-color2";
-
-        template.find('.tagColorPickerHolder').html(
-            `<toolcool-color-picker id="${colorPickerId}" color="${tag.color}" class="tag-color"></toolcool-color-picker>`
-        );
-        template.find('.tagColorPicker2Holder').html(
-            `<toolcool-color-picker id="${colorPicker2Id}" color="${tag.color2}" class="tag-color2"></toolcool-color-picker>`
-        );
-
-        template.find('.tag-color').attr('id', colorPickerId);
-        template.find('.tag-color2').attr('id', colorPicker2Id);
-
-        list.appendChild(template.get(0));
-
-        setTimeout(function () {
-            document.querySelector(`.tag-color[id="${colorPickerId}"`).addEventListener('change', (evt) => {
-                onTagColorize(evt);
-            });
-
-        }, 100);
-
-        setTimeout(function () {
-            document.querySelector(`.tag-color2[id="${colorPicker2Id}"`).addEventListener('change', (evt) => {
-                onTagColorize2(evt);
-            });
-        }, 100);
-
-        $(colorPickerId).color = tag.color;
-        $(colorPicker2Id).color = tag.color2;
-
+        appendViewTagToList(list, tag, everything);
     }
-    callPopup(list.outerHTML, 'text');
+
+    callPopup(list, 'text');
+}
+
+function onTagCreateClick() {
+    const tag = createNewTag('New Tag');
+    appendViewTagToList($('#tag_view_list'), tag, []);
+    printCharacters(false);
+    saveSettingsDebounced();
+}
+
+function appendViewTagToList(list, tag, everything) {
+    const count = everything.filter(x => x == tag.id).length;
+    const template = $('#tag_view_template .tag_view_item').clone();
+    template.attr('id', tag.id);
+    template.find('.tag_view_counter_value').text(count);
+    template.find('.tag_view_name').text(tag.name);
+    template.find('.tag_view_name').addClass('tag');
+
+    template.find('.tag_view_name').css('background-color', tag.color);
+    template.find('.tag_view_name').css('color', tag.color2);
+
+    const colorPickerId = tag.id + "-tag-color";
+    const colorPicker2Id = tag.id + "-tag-color2";
+
+    template.find('.tagColorPickerHolder').html(
+        `<toolcool-color-picker id="${colorPickerId}" color="${tag.color}" class="tag-color"></toolcool-color-picker>`
+    );
+    template.find('.tagColorPicker2Holder').html(
+        `<toolcool-color-picker id="${colorPicker2Id}" color="${tag.color2}" class="tag-color2"></toolcool-color-picker>`
+    );
+
+    template.find('.tag-color').attr('id', colorPickerId);
+    template.find('.tag-color2').attr('id', colorPicker2Id);
+
+    list.append(template);
+
+    setTimeout(function () {
+        document.querySelector(`.tag-color[id="${colorPickerId}"`).addEventListener('change', (evt) => {
+            onTagColorize(evt);
+        });
+    }, 100);
+
+    setTimeout(function () {
+        document.querySelector(`.tag-color2[id="${colorPicker2Id}"`).addEventListener('change', (evt) => {
+            onTagColorize2(evt);
+        });
+    }, 100);
+
+    $(colorPickerId).color = tag.color;
+    $(colorPicker2Id).color = tag.color2;
 }
 
 function onTagDeleteClick() {
@@ -541,6 +564,7 @@ function onTagDeleteClick() {
     tags.splice(index, 1);
     $(`.tag[id="${id}"]`).remove();
     $(`.tag_view_item[id="${id}"]`).remove();
+    printCharacters(false);
     saveSettingsDebounced();
 }
 
@@ -559,6 +583,7 @@ function onTagColorize(evt) {
     const newColor = evt.detail.rgba;
     $(evt.target).parent().parent().find('.tag_view_name').css('background-color', newColor);
     $(`.tag[id="${id}"]`).css('background-color', newColor);
+    $(`.bogus_folder_select[tagid="${id}"] .avatar`).css('background-color', newColor);
     const tag = tags.find(x => x.id === id);
     tag.color = newColor;
     console.debug(tag);
@@ -571,6 +596,7 @@ function onTagColorize2(evt) {
     const newColor = evt.detail.rgba;
     $(evt.target).parent().parent().find('.tag_view_name').css('color', newColor);
     $(`.tag[id="${id}"]`).css('color', newColor);
+    $(`.bogus_folder_select[tagid="${id}"] .avatar`).css('color', newColor);
     const tag = tags.find(x => x.id === id);
     tag.color2 = newColor;
     console.debug(tag);
@@ -597,4 +623,5 @@ $(document).ready(() => {
     $(document).on("click", ".tags_view", onViewTagsListClick);
     $(document).on("click", ".tag_delete", onTagDeleteClick);
     $(document).on("input", ".tag_view_name", onTagRenameInput);
+    $(document).on("click", ".tag_view_create", onTagCreateClick);
 });

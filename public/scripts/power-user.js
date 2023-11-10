@@ -31,6 +31,7 @@ import {
 } from "./instruct-mode.js";
 
 import { registerSlashCommand } from "./slash-commands.js";
+import { tags } from "./tags.js";
 import { tokenizers } from "./tokenizers.js";
 
 import { countOccurrences, debounce, delay, isOdd, resetScrollHeight, sortMoments, stringToRange, timestampToMoment } from "./utils.js";
@@ -218,6 +219,7 @@ let power_user = {
     fuzzy_search: false,
     encode_tags: false,
     servers: [],
+    bogus_folders: false,
 };
 
 let themes = [];
@@ -486,7 +488,7 @@ async function switchZenSliders() {
         $("#clickSlidersTips").hide()
         $("#pro-settings-block input[type='number']").hide();
         //hide number inputs that are not 'seed' inputs
-        $(`#textgenerationwebui_api-settings :input[type='number']:not([id^='seed']), 
+        $(`#textgenerationwebui_api-settings :input[type='number']:not([id^='seed']),
             #kobold_api-settings :input[type='number']:not([id^='seed'])`).hide()
         //hide original sliders
         $(`#textgenerationwebui_api-settings input[type='range'],
@@ -1038,7 +1040,14 @@ async function applyTheme(name) {
                 localStorage.setItem(storage_keys.hotswap_enabled, Boolean(power_user.hotswap_enabled));
                 switchHotswap();
             }
-        }
+        },
+        {
+            key: 'bogus_folders',
+            action: async () => {
+                $('#bogus_folders').prop('checked', power_user.bogus_folders);
+                await printCharacters(true);
+            },
+        },
     ];
 
     for (const { key, selector, type, action } of themeProperties) {
@@ -1203,6 +1212,7 @@ function loadPowerUserSettings(settings, data) {
     $("#console_log_prompts").prop("checked", power_user.console_log_prompts);
     $('#auto_fix_generated_markdown').prop("checked", power_user.auto_fix_generated_markdown);
     $('#auto_scroll_chat_to_bottom').prop("checked", power_user.auto_scroll_chat_to_bottom);
+    $('#bogus_folders').prop("checked", power_user.bogus_folders);
     $(`#tokenizer option[value="${power_user.tokenizer}"]`).attr('selected', true);
     $(`#send_on_enter option[value=${power_user.send_on_enter}]`).attr("selected", true);
     $("#import_card_tags").prop("checked", power_user.import_card_tags);
@@ -1537,6 +1547,22 @@ export function fuzzySearchWorldInfo(data, searchValue) {
     return results.map(x => x.item?.uid);
 }
 
+export function fuzzySearchTags(searchValue) {
+    const fuse = new Fuse(tags, {
+        keys: [
+            { name: 'name', weight: 1},
+        ],
+        includeScore: true,
+        ignoreLocation: true,
+        threshold: 0.2
+    });
+
+    const results = fuse.search(searchValue);
+    console.debug('Tags fuzzy search results for ' + searchValue, results);
+    const ids = results.map(x => String(x.item?.id)).filter(x => x);
+    return ids;
+}
+
 export function fuzzySearchGroups(searchValue) {
     const fuse = new Fuse(groups, {
         keys: [
@@ -1664,8 +1690,7 @@ async function saveTheme() {
         enableLabMode: power_user.enableLabMode,
         hotswap_enabled: power_user.hotswap_enabled,
         custom_css: power_user.custom_css,
-
-
+        bogus_folders: power_user.bogus_folders,
     };
 
     const response = await fetch('/savetheme', {
@@ -2788,6 +2813,13 @@ $(document).ready(() => {
         power_user.ui_mode = Number(value);
         saveSettingsDebounced();
         switchSimpleMode();
+    });
+
+    $('#bogus_folders').on('input', function() {
+        const value = !!$(this).prop('checked');
+        power_user.bogus_folders = value;
+        saveSettingsDebounced();
+        printCharacters(true);
     });
 
     $(document).on('click', '#debug_table [data-debug-function]', function () {

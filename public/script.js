@@ -989,6 +989,33 @@ export async function selectCharacterById(id) {
     }
 }
 
+function getTagBlock(item) {
+    const count = Object.values(tag_map).flat().filter(x => x == item.id).length;
+    const template = $('#bogus_folder_template .bogus_folder_select').clone();
+    template.attr({ 'tagid': item.id, 'id': `BogusFolder${item.id}` });
+    template.find('.avatar').css({'background-color': item.color, 'color': item.color2 });
+    template.find('.ch_name').text(item.name);
+    template.find('.bogus_folder_counter').text(count);
+    template.on('click', () => {
+        console.log('Bogus folder clicked', item.id);
+        entitiesFilter.setFilterData(FILTER_TYPES.TAG, { excluded: [], selected: [item.id], bogus: true, });
+    });
+    return template;
+}
+
+function getEmptyBlock() {
+    const icons = ['fa-dragon', 'fa-otter', 'fa-kiwi-bird', 'fa-crow', 'fa-frog'];
+    const texts = ['Here be dragons', 'Otterly empty', 'Kiwibunga', 'Pump-a-Rum', 'Croak it'];
+    const roll = Math.floor(Math.random() * icons.length);
+    const emptyBlock = `
+    <div class="empty_block">
+        <i class="fa-solid ${icons[roll]} fa-4x"></i>
+        <h1>${texts[roll]}</h1>
+        <p>There are no items to display.</p>
+    </div>`;
+    return $(emptyBlock);
+}
+
 function getCharacterBlock(item, id) {
     let this_avatar = default_avatar;
     if (item.avatar != "none") {
@@ -1037,6 +1064,12 @@ async function printCharacters(fullRefresh = false) {
         saveCharactersPage = 0;
         printTagFilters(tag_filter_types.character);
         printTagFilters(tag_filter_types.group_member);
+        const isBogusFolderOpen = !!entitiesFilter.getFilterData(FILTER_TYPES.TAG)?.bogus;
+
+        // Return to main list
+        if (isBogusFolderOpen) {
+            entitiesFilter.setFilterData(FILTER_TYPES.TAG, { excluded: [], selected: [] });
+        }
 
         await delay(1);
         displayOverrideWarnings();
@@ -1065,6 +1098,12 @@ async function printCharacters(fullRefresh = false) {
                 if (i.type === 'group') {
                     $("#rm_print_characters_block").append(getGroupBlock(i.item));
                 }
+                if (i.type === 'tag') {
+                    $("#rm_print_characters_block").append(getTagBlock(i.item));
+                }
+            }
+            if (!data.length) {
+                $("#rm_print_characters_block").append(getEmptyBlock());
             }
             eventSource.emit(event_types.CHARACTER_PAGE_LOADED);
         },
@@ -1086,6 +1125,10 @@ export function getEntitiesList({ doFilter } = {}) {
     let entities = [];
     entities.push(...characters.map((item, index) => ({ item, id: index, type: 'character' })));
     entities.push(...groups.map((item) => ({ item, id: item.id, type: 'group' })));
+
+    if (power_user.bogus_folders) {
+        entities.push(...tags.map((item) => ({ item, id: item.id, type: 'tag' })));
+    }
 
     if (doFilter) {
         entities = entitiesFilter.applyFilters(entities);

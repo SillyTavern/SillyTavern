@@ -550,7 +550,7 @@ export function timestampToMoment(timestamp) {
         return moment.invalid();
     }
 
-    // Unix time (legacy TAI)
+    // Unix time (legacy TAI / tags)
     if (typeof timestamp === 'number') {
         return moment(timestamp);
     }
