@@ -39,7 +39,23 @@ async function uploadUserAvatar(url, name) {
 }
 
 async function createDummyPersona() {
-    await uploadUserAvatar(default_avatar);
+    const personaName = await callPopup('<h3>Enter a name for this persona:</h3>', 'input', '');
+
+    if (!personaName) {
+        console.debug('User cancelled creating dummy persona');
+        return;
+    }
+
+    // Date + name (only ASCII) to make it unique
+    const avatarId = `${Date.now()}-${personaName.replace(/[^a-zA-Z0-9]/g, '')}.png`;
+    power_user.personas[avatarId] = personaName;
+    power_user.persona_descriptions[avatarId] = {
+        description: '',
+        position: persona_description_positions.IN_PROMPT,
+    };
+
+    await uploadUserAvatar(default_avatar, avatarId);
+    saveSettingsDebounced();
 }
 
 export async function convertCharacterToPersona(characterId = null) {
