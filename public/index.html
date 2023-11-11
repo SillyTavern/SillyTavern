@@ -2680,7 +2680,7 @@
                             </div>
                         </div>
                     </div>
-                    <div name="UserSettingsSecondColumn" id="UI-Customization" class="flex-container flexFlowColumn wide100p">
+                    <div name="UserSettingsSecondColumn" id="UI-Customization" class="flex-container flexFlowColumn wide100p flexNoGap">
                         <div name="themeToggles">
                             <h4 data-i18n="Theme Toggles">Theme Toggles</h4>
                             <label data-newbie-hidden for="fast_ui_mode" class="checkbox_label" title="removes blur from window backgrounds" data-i18n="[title]removes blur from window backgrounds">
@@ -2737,6 +2737,13 @@
                             </label>
                         </div>
                         <h4><span data-i18n="Miscellaneous">Miscellaneous</span></h4>
+                        <div title="If set in the advanced character definitions, this field will be displayed in the characters list.">
+                            <label for="aux_field" data-i18n="Aux List Field">Aux List Field</label>
+                            <select id="aux_field">
+                                <option data-i18n="Character Version" value="character_version">Character Version</option>
+                                <option data-i18n="Created by" value="creator">Created by</option>
+                            </select>
+                        </div>
                         <div>
                             <label for="play_message_sound" class="checkbox_label">
                                 <input id="play_message_sound" type="checkbox" />

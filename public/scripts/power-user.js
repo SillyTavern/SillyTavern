@@ -220,6 +220,7 @@ let power_user = {
     encode_tags: false,
     servers: [],
     bogus_folders: false,
+    aux_field: 'character_version',
 };
 
 let themes = [];
@@ -1255,6 +1256,7 @@ function loadPowerUserSettings(settings, data) {
     $(`#chat_display option[value=${power_user.chat_display}]`).attr("selected", true).trigger('change');
     $('#chat_width_slider').val(power_user.chat_width);
     $("#token_padding").val(power_user.token_padding);
+    $("#aux_field").val(power_user.aux_field);
 
     $("#font_scale").val(power_user.font_scale);
     $("#font_scale_counter").val(power_user.font_scale);
@@ -2820,6 +2822,13 @@ $(document).ready(() => {
         power_user.bogus_folders = value;
         saveSettingsDebounced();
         printCharacters(true);
+    });
+
+    $('#aux_field').on('change', function() {
+        const value = $(this).find(':selected').val();
+        power_user.aux_field = String(value);
+        saveSettingsDebounced();
+        printCharacters(false);
     });
 
     $(document).on('click', '#debug_table [data-debug-function]', function () {
