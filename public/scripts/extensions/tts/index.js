@@ -76,6 +76,8 @@ let ttsProviders = {
 let ttsProvider
 let ttsProviderName
 
+let ttsLastMessage = null;
+
 async function onNarrateOneMessage() {
     audioElement.src = '/sounds/silence.mp3';
     const context = getContext();
@@ -132,11 +134,27 @@ async function moduleWorker() {
     let diff = lastMessageNumber - currentMessageNumber
     let hashNew = getStringHash((chat.length && chat[chat.length - 1].mes) ?? '')
 
+    // if messages got deleted, diff will be < 0
+    if (diff < 0) {
+        // necessary actions will be taken by the onChatDeleted() handler
+        return
+    }
+
     if (diff == 0 && hashNew === lastMessageHash) {
         return
     }
 
-    const message = chat[chat.length - 1]
+    // clone message object, as things go haywire if message object is altered below (it's passed by reference)
+    const message = structuredClone(chat[chat.length - 1])
+
+    // if last message within current message, message got extended. only send diff to TTS.
+    if (ttsLastMessage !== null && message.mes.indexOf(ttsLastMessage) !== -1) {
+        let tmp = message.mes
+        message.mes = message.mes.replace(ttsLastMessage, '')
+        ttsLastMessage = tmp
+    } else {
+        ttsLastMessage = message.mes
+    }
 
     // We're currently swiping or streaming. Don't generate voice
     if (
@@ -628,6 +646,26 @@ export function saveTtsProviderSettings() {
 async function onChatChanged() {
     await resetTtsPlayback()
     await initVoiceMap()
+    ttsLastMessage = null
+}
+
+async function onChatDeleted() {
+    const context = getContext()
+
+    // update internal references to new last message
+    lastChatId = context.chatId
+    currentMessageNumber = context.chat.length ? context.chat.length : 0
+
+    // compare against lastMessageHash. If it's the same, we did not delete the last chat item, so no need to reset tts queue
+    let messageHash = getStringHash((context.chat.length && context.chat[context.chat.length - 1].mes) ?? '')
+    if (messageHash === lastMessageHash) {
+        return
+    }
+    lastMessageHash = messageHash
+    ttsLastMessage = (context.chat.length && context.chat[context.chat.length - 1].mes) ?? '';
+
+    // stop any tts playback since message might not exist anymore
+    await resetTtsPlayback()
 }
 
 function getCharacters(){
@@ -771,7 +809,7 @@ export async function initVoiceMap(){
     // Clear existing voiceMap state
     $('#tts_voicemap_block').empty()
     voiceMapEntries = []
-    
+
     // Get characters in current chat
     const characters = getCharacters()
 
@@ -898,4 +936,5 @@ $(document).ready(function () {
     eventSource.on(event_types.MESSAGE_SWIPED, resetTtsPlayback);
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged)
     eventSource.on(event_types.GROUP_UPDATED, onChatChanged)
+    eventSource.on(event_types.MESSAGE_DELETED, onChatDeleted);
 })
