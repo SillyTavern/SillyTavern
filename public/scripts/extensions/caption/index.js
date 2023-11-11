@@ -1,8 +1,9 @@
 import { getBase64Async, saveBase64AsFile } from "../../utils.js";
 import { getContext, getApiUrl, doExtrasFetch, extension_settings, modules } from "../../extensions.js";
-import { callPopup, getRequestHeaders, saveSettingsDebounced, substituteParams } from "../../../script.js";
+import { appendImageToMessage, callPopup, getRequestHeaders, saveSettingsDebounced, substituteParams } from "../../../script.js";
 import { getMessageTimeStamp } from "../../RossAscends-mods.js";
 import { SECRET_KEYS, secret_state } from "../../secrets.js";
+import { isImageInliningSupported } from "../../openai.js";
 export { MODULE_NAME };
 
 const MODULE_NAME = 'caption';
@@ -223,6 +224,83 @@ function onRefineModeInput() {
     saveSettingsDebounced();
 }
 
+async function sendEmbeddedImage(e) {
+    const file = e.target.files[0];
+
+    if (!file || !(file instanceof File)) {
+        return;
+    }
+
+    try {
+        const context = getContext();
+        const fileData = await getBase64Async(file);
+        const base64Format = fileData.split(',')[0].split(';')[0].split('/')[1];
+        const base64Data = fileData.split(',')[1];
+        const caption = await callPopup('<h3>Enter a comment or question (optional)</h3>', 'input', 'What is this?', { okButton: 'Send', rows: 2 });
+        const imagePath = await saveBase64AsFile(base64Data, context.name2, '', base64Format);
+        const message = {
+            name: context.name1,
+            is_user: true,
+            send_date: getMessageTimeStamp(),
+            mes: caption || `[${context.name1} sends ${context.name2} a picture]`,
+            extra: {
+                image: imagePath,
+                inline_image: !!caption,
+                title: caption || '',
+            },
+        };
+        context.chat.push(message);
+        context.addOneMessage(message);
+        await context.generate('caption');
+    }
+    catch (error) {
+        console.log(error);
+    }
+    finally {
+        e.target.form.reset();
+        setImageIcon();
+    }
+}
+
+function onImageEmbedClicked() {
+    const context = getContext();
+    const messageElement = $(this).closest('.mes');
+    const messageId = messageElement.attr('mesid');
+    const message = context.chat[messageId];
+
+    if (!message) {
+        console.warn('Failed to find message with id', messageId);
+        return;
+    }
+
+    $('#embed_img_file')
+        .off('change')
+        .on('change', parseAndUploadEmbed)
+        .trigger('click');
+
+    async function parseAndUploadEmbed(e) {
+        const file = e.target.files[0];
+
+        if (!file || !(file instanceof File)) {
+            return;
+        }
+        const fileData = await getBase64Async(file);
+        const base64Data = fileData.split(',')[1];
+        const base64Format = fileData.split(',')[0].split(';')[0].split('/')[1];
+        const imagePath = await saveBase64AsFile(base64Data, context.name2, '', base64Format);
+
+        if (!message.extra) {
+            message.extra = {};
+        }
+
+        message.extra.image = imagePath;
+        message.extra.inline_image = true;
+        message.extra.title = '';
+        appendImageToMessage(message, messageElement);
+        await context.saveChat();
+    }
+}
+
 jQuery(function () {
     function addSendPictureButton() {
         const sendButton = $(`
@@ -234,6 +312,12 @@ jQuery(function () {
         $('#extensionsMenu').prepend(sendButton);
         $(sendButton).hide();
         $(sendButton).on('click', () => {
+            if (isImageInliningSupported()) {
+                console.log('Native image inlining is supported. Skipping captioning.');
+                $('#embed_img_file').off('change').on('change', sendEmbeddedImage).trigger('click');
+                return;
+            }
+
             const hasCaptionModule =
                 (modules.includes('caption') && extension_settings.caption.source === 'extras') ||
                 (extension_settings.caption.source === 'openai' && secret_state[SECRET_KEYS.OPENAI]) ||
@@ -249,10 +333,12 @@ jQuery(function () {
         });
     }
     function addPictureSendForm() {
-        const inputHtml = `<input id="img_file" type="file" accept="image/*">`;
+        const inputHtml = `<input id="img_file" type="file" hidden accept="image/*">`;
+        const embedInputHtml = `<input id="embed_img_file" type="file" hidden accept="image/*">`;
         const imgForm = document.createElement('form');
         imgForm.id = 'img_form';
         $(imgForm).append(inputHtml);
+        $(imgForm).append(embedInputHtml);
         $(imgForm).hide();
         $('#form_sheld').append(imgForm);
         $('#img_file').on('change', onSelectImage);
@@ -312,5 +398,6 @@ jQuery(function () {
         extension_settings.caption.template = String($('#caption_template').val());
         saveSettingsDebounced();
     });
+    $(document).on('click', '.mes_embed', onImageEmbedClicked);
     setInterval(moduleWorker, UPDATE_INTERVAL);
 });

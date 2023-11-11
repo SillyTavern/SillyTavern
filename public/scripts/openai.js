@@ -54,7 +54,9 @@ import {
 import {
     delay,
     download,
+    getBase64Async,
     getFileText, getSortableDelay,
+    isDataURL,
     parseJsonFile,
     resetScrollHeight,
     stringFormat,
@@ -70,7 +72,6 @@ export {
     setOpenAIMessages,
     setOpenAIMessageExamples,
     setupChatCompletionPromptManager,
-    prepareOpenAIMessages,
     sendOpenAIRequest,
     getChatCompletionModel,
     TokenHandler,
@@ -221,6 +222,7 @@ const default_settings = {
     exclude_assistant: false,
     use_alt_scale: false,
     squash_system_messages: false,
+    image_inlining: false,
 };
 
 const oai_settings = {
@@ -267,6 +269,7 @@ const oai_settings = {
     exclude_assistant: false,
     use_alt_scale: false,
     squash_system_messages: false,
+    image_inlining: false,
 };
 
 let openai_setting_names;
@@ -409,7 +412,8 @@ function setOpenAIMessages(chat) {
         // Apply the "wrap in quotes" option
         if (role == 'user' && oai_settings.wrap_in_quotes) content = `"${content}"`;
         const name = chat[j]['name'];
-        openai_msgs[i] = { "role": role, "content": content, name: name };
+        const image = chat[j]?.extra?.image;
+        openai_msgs[i] = { "role": role, "content": content, name: name, "image": image };
         j++;
     }
 }
@@ -592,7 +596,7 @@ export function isOpenRouterWithInstruct() {
  * @param type
  * @param cyclePrompt
  */
-function populateChatHistory(prompts, chatCompletion, type = null, cyclePrompt = null) {
+async function populateChatHistory(prompts, chatCompletion, type = null, cyclePrompt = null) {
     chatCompletion.add(new MessageCollection('chatHistory'), prompts.index('chatHistory'));
 
     let names = (selected_group && groups.find(x => x.id === selected_group)?.members.map(member => characters.find(c => c.avatar === member)?.name).filter(Boolean).join(', ')) || '';
@@ -629,8 +633,13 @@ function populateChatHistory(prompts, chatCompletion, type = null, cyclePrompt =
         chatCompletion.insert(message, 'chatHistory');
     }
 
+    const imageInlining = isImageInliningSupported();
+
     // Insert chat messages as long as there is budget available
-    [...openai_msgs].reverse().every((chatPrompt, index) => {
+    const chatPool = [...openai_msgs].reverse();
+    for (let index = 0; index < chatPool.length; index++) {
+        const chatPrompt = chatPool[index];
+
         // We do not want to mutate the prompt
         const prompt = new Prompt(chatPrompt);
         prompt.identifier = `chatHistory-${openai_msgs.length - index}`;
@@ -641,10 +650,16 @@ function populateChatHistory(prompts, chatCompletion, type = null, cyclePrompt =
             chatMessage.setName(messageName);
         }
 
-        if (chatCompletion.canAfford(chatMessage)) chatCompletion.insertAtStart(chatMessage, 'chatHistory');
-        else return false;
-        return true;
-    });
+        if (imageInlining && chatPrompt.image) {
+            await chatMessage.addImage(chatPrompt.image);
+        }
+
+        if (chatCompletion.canAfford(chatMessage)) {
+            chatCompletion.insertAtStart(chatMessage, 'chatHistory');
+        } else {
+            break;
+        }
+    }
 
     // Insert and free new chat
     chatCompletion.freeBudget(newChatMessage);
@@ -724,7 +739,7 @@ function getPromptPosition(position) {
  * @param {string} options.quietPrompt - Instruction prompt for extras
  * @param {string} options.type - The type of the chat, can be 'impersonate'.
  */
-function populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, type, cyclePrompt } = {}) {
+async function populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, type, cyclePrompt } = {}) {
     // Helper function for preparing a prompt, that already exists within the prompt collection, for completion
     const addToChatCompletion = (source, target = null) => {
         // We need the prompts array to determine a position for the source.
@@ -825,9 +840,9 @@ function populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, ty
     // Decide whether dialogue examples should always be added
     if (power_user.pin_examples) {
         populateDialogueExamples(prompts, chatCompletion);
-        populateChatHistory(prompts, chatCompletion, type, cyclePrompt);
+        await populateChatHistory(prompts, chatCompletion, type, cyclePrompt);
     } else {
-        populateChatHistory(prompts, chatCompletion, type, cyclePrompt);
+        await populateChatHistory(prompts, chatCompletion, type, cyclePrompt);
         populateDialogueExamples(prompts, chatCompletion);
     }
 
@@ -969,7 +984,7 @@ function preparePromptsForChatCompletion({ Scenario, charPersonality, name2, wor
  * @param dryRun - Whether this is a live call or not.
  * @returns {(*[]|boolean)[]} An array where the first element is the prepared chat and the second element is a boolean flag.
  */
-function prepareOpenAIMessages({
+export async function prepareOpenAIMessages({
     name2,
     charDescription,
     charPersonality,
@@ -1012,7 +1027,7 @@ function prepareOpenAIMessages({
         });
 
         // Fill the chat completion with as much context as the budget allows
-        populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, type, cyclePrompt });
+        await populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, type, cyclePrompt });
     } catch (error) {
         if (error instanceof TokenBudgetExceededError) {
             toastr.error('An error occurred while counting tokens: Token budget exceeded.')
@@ -1372,6 +1387,16 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
         "stop": getCustomStoppingStrings(openai_max_stop_strings),
     };
 
+    // Empty array will produce a validation error
+    if (!Array.isArray(generate_data.stop) || !generate_data.stop.length) {
+        delete generate_data.stop;
+    }
+
+    // Vision models don't support logit bias
+    if (isImageInliningSupported()) {
+        delete generate_data.logit_bias;
+    }
+
     // Proxy is only supported for Claude and OpenAI
     if (oai_settings.reverse_proxy && [chat_completion_sources.CLAUDE, chat_completion_sources.OPENAI].includes(oai_settings.chat_completion_source)) {
         validateReverseProxy();
@@ -1640,7 +1665,18 @@ class InvalidCharacterNameError extends Error {
  * Used for creating, managing, and interacting with a specific message object.
  */
 class Message {
-    tokens; identifier; role; content; name;
+    static tokensPerImage = 85;
+
+    /** @type {number} */
+    tokens;
+    /** @type {string} */
+    identifier;
+    /** @type {string} */
+    role;
+    /** @type {string|any[]} */
+    content;
+    /** @type {string} */
+    name;
 
     /**
      * @constructor
@@ -1663,6 +1699,30 @@ class Message {
     setName(name) {
         this.name = name;
         this.tokens = tokenHandler.count({ role: this.role, content: this.content, name: this.name });
+    }
+
+    async addImage(image) {
+        const textContent = this.content;
+        const isDataUrl = isDataURL(image);
+
+        if (!isDataUrl) {
+            try {
+                const response = await fetch(image, { method: 'GET', cache: 'force-cache' });
+                if (!response.ok) throw new Error('Failed to fetch image');
+                const blob = await response.blob();
+                image = await getBase64Async(blob);
+            } catch (error) {
+                console.error('Image adding skipped', error);
+                return;
+            }
+        }
+
+        this.content = [
+            { type: "text", text: textContent },
+            { type: "image_url", image_url: { "url": image, "detail": "low" } },
+        ];
+
+        this.tokens += Message.tokensPerImage;
     }
 
     /**
@@ -2148,6 +2208,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.show_external_models = settings.show_external_models ?? default_settings.show_external_models;
     oai_settings.proxy_password = settings.proxy_password ?? default_settings.proxy_password;
     oai_settings.assistant_prefill = settings.assistant_prefill ?? default_settings.assistant_prefill;
+    oai_settings.image_inlining = settings.image_inlining ?? default_settings.image_inlining;
 
     oai_settings.prompts = settings.prompts ?? default_settings.prompts;
     oai_settings.prompt_order = settings.prompt_order ?? default_settings.prompt_order;
@@ -2168,6 +2229,7 @@ function loadOpenAISettings(data, settings) {
     $('#api_url_scale').val(oai_settings.api_url_scale);
     $('#openai_proxy_password').val(oai_settings.proxy_password);
     $('#claude_assistant_prefill').val(oai_settings.assistant_prefill);
+    $('#openai_image_inlining').prop('checked', oai_settings.image_inlining);
 
     $('#model_openai_select').val(oai_settings.openai_model);
     $(`#model_openai_select option[value="${oai_settings.openai_model}"`).attr('selected', true);
@@ -2388,6 +2450,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         exclude_assistant: settings.exclude_assistant,
         use_alt_scale: settings.use_alt_scale,
         squash_system_messages: settings.squash_system_messages,
+        image_inlining: settings.image_inlining,
     };
 
     const savePresetSettings = await fetch(`/api/presets/save-openai?name=${name}`, {
@@ -2741,6 +2804,7 @@ function onSettingsPresetChange() {
         exclude_assistant: ['#exclude_assistant', 'exclude_assistant', true],
         use_alt_scale: ['#use_alt_scale', 'use_alt_scale', true],
         squash_system_messages: ['#squash_system_messages', 'squash_system_messages', true],
+        image_inlining: ['#openai_image_inlining', 'image_inlining', true],
     };
 
     const presetName = $('#settings_preset_openai').find(":selected").text();
@@ -2783,6 +2847,9 @@ function getMaxContextOpenAI(value) {
         return unlocked_max;
     }
     else if (value.includes('gpt-4-1106')) {
+        return max_128k;
+    }
+    else if (value.includes('gpt-4-vision')) {
         return max_128k;
     }
     else if (value.includes('gpt-3.5-turbo-1106')) {
@@ -2829,6 +2896,9 @@ function getMaxContextWindowAI(value) {
         return max_4k;
     }
     else if (value.includes('gpt-4-1106')) {
+        return max_128k;
+    }
+    else if (value.includes('gpt-4-vision')) {
         return max_128k;
     }
     else if (value.includes('gpt-4-32k')) {
@@ -3217,6 +3287,27 @@ function updateScaleForm() {
     }
 }
 
+/**
+ * Check if the model supports image inlining
+ * @returns {boolean} True if the model supports image inlining
+ */
+export function isImageInliningSupported() {
+    const modelId = 'gpt-4-vision';
+
+    if (!oai_settings.image_inlining) {
+        return false;
+    }
+
+    switch (oai_settings.chat_completion_source) {
+        case chat_completion_sources.OPENAI:
+            return oai_settings.openai_model.includes(modelId);
+        case chat_completion_sources.OPENROUTER:
+            return oai_settings.openrouter_model.includes(modelId);
+        default:
+            return false;
+    }
+}
+
 $(document).ready(async function () {
     $('#test_api_button').on('click', testApiConnection);
 
@@ -3460,6 +3551,11 @@ $(document).ready(async function () {
 
     $('#squash_system_messages').on('input', function () {
         oai_settings.squash_system_messages = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#openai_image_inlining').on('input', function () {
+        oai_settings.image_inlining = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 

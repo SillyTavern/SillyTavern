@@ -1723,6 +1723,7 @@
                                     </optgroup>
                                     <optgroup label="GPT-4">
                                         <option value="gpt-4">gpt-4</option>
+                                        <option value="gpt-4-vision-preview">gpt-4-vision-preview</option>
                                         <option value="gpt-4-1106-preview">gpt-4-1106-preview</option>
                                         <option value="gpt-4-0613">gpt-4-0613</option>
                                         <option value="gpt-4-0314">gpt-4-0314</option>
@@ -1744,6 +1745,17 @@
                                 <label for="openai_show_external_models" class="checkbox_label">
                                     <input id="openai_show_external_models" type="checkbox" />
                                     <span data-i18n="Show External models (provided by API)">Show "External" models (provided by API)</span>
+                                </label>
+                                <label for="openai_image_inlining" class="checkbox_label flexWrap">
+                                    <input id="openai_image_inlining" type="checkbox" />
+                                    <span data-i18n="Send inline images">Send inline images (only GPT-4V model)</span>
+                                    <div id="image_inlining_hint" class="flexBasis100p">
+                                        <small>
+                                            Natively replaces captioning if the model supports it.<br>
+                                            Use the <code><i class="fa-solid fa-image"></i></code> action on any message or the
+                                            <code><i class="fa-solid fa-wand-magic-sparkles"></i></code> menu to attach an image to the chat.
+                                        </small>
+                                    </div>
                                 </label>
                             </div>
                         </form>
@@ -4057,6 +4069,7 @@
                             <div title="Prompt" class="mes_prompt fa-solid fa-square-poll-horizontal " data-i18n="[title]Prompt"></div>
                             <div title="Exclude message from prompts" class="mes_hide fa-solid fa-eye" data-i18n="[title]Exclude message from prompts"></div>
                             <div title="Include message in prompts" class="mes_unhide fa-solid fa-eye-slash" data-i18n="[title]Include message in prompts"></div>
+                            <div title="Embed image" class="mes_embed fa-solid fa-image" data-i18n="[title]Embed image"></div>
                             <div title="Create bookmark" class="mes_create_bookmark fa-regular fa-solid fa-book-bookmark" data-i18n="[title]Create Bookmark"></div>
                             <div title="Create branch" class="mes_create_branch fa-regular fa-code-branch" data-i18n="[title]Create Branch"></div>
                             <div title="Copy" class="mes_copy fa-solid fa-copy " data-i18n="[title]Copy"></div>
