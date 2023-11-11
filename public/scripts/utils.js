@@ -28,6 +28,33 @@ export function isValidUrl(value) {
 }
 
 /**
+ * Parses ranges like 10-20 or 10.
+ * Range is inclusive. Start must be less than end.
+ * Returns null if invalid.
+ * @param {string} input The input string.
+ * @param {number} min The minimum value.
+ * @param {number} max The maximum value.
+ * @returns {{ start: number, end: number }} The parsed range.
+ */
+export function stringToRange(input, min, max) {
+    let start, end;
+
+    if (input.includes('-')) {
+        const parts = input.split('-');
+        start = parts[0] ? parseInt(parts[0], 10) : NaN;
+        end = parts[1] ? parseInt(parts[1], 10) : NaN;
+    } else {
+        start = end = parseInt(input, 10);
+    }
+
+    if (isNaN(start) || isNaN(end) || start > end || start < min || end > max) {
+        return null;
+    }
+
+    return { start, end };
+}
+
+/**
  * Determines if a value is unique in an array.
  * @param {any} value Current value.
  * @param {number} index Current index.
@@ -523,7 +550,7 @@ export function timestampToMoment(timestamp) {
         return moment.invalid();
     }
 
-    // Unix time (legacy TAI)
+    // Unix time (legacy TAI / tags)
     if (typeof timestamp === 'number') {
         return moment(timestamp);
     }

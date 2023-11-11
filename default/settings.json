@@ -49,7 +49,6 @@
         "ban_eos_token": false,
         "skip_special_tokens": true,
         "streaming": false,
-        "streaming_url": "ws://127.0.0.1:5005/api/v1/stream",
         "mirostat_mode": 0,
         "mirostat_tau": 5,
         "mirostat_eta": 0.1,
@@ -164,6 +163,8 @@
         "custom_stopping_strings_macro": true,
         "fuzzy_search": true,
         "encode_tags": false,
+        "enableLabMode": false,
+        "enableZenSliders": false,
         "ui_mode": 1
     },
     "extension_settings": {

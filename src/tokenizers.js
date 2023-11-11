@@ -46,6 +46,7 @@ const CHARS_PER_TOKEN = 3.35;
 let spp_llama;
 let spp_nerd;
 let spp_nerd_v2;
+let spp_mistral;
 let claude_tokenizer;
 
 async function loadSentencepieceTokenizer(modelPath) {
@@ -58,6 +59,36 @@ async function loadSentencepieceTokenizer(modelPath) {
         return null;
     }
 };
+
+const sentencepieceTokenizers = [
+    'llama',
+    'nerdstash',
+    'nerdstash_v2',
+    'mistral',
+];
+
+/**
+ * Gets the Sentencepiece tokenizer by the model name.
+ * @param {string} model Sentencepiece model name
+ * @returns {*} Sentencepiece tokenizer
+ */
+function getSentencepiceTokenizer(model) {
+    if (model.includes('llama')) {
+        return spp_llama;
+    }
+
+    if (model.includes('nerdstash')) {
+        return spp_nerd;
+    }
+
+    if (model.includes('mistral')) {
+        return spp_mistral;
+    }
+
+    if (model.includes('nerdstash_v2')) {
+        return spp_nerd_v2;
+    }
+}
 
 async function countSentencepieceTokens(spp, text) {
     // Fallback to strlen estimation
@@ -77,6 +108,39 @@ async function countSentencepieceTokens(spp, text) {
     };
 }
 
+async function countSentencepieceArrayTokens(tokenizer, array) {
+    const jsonBody = array.flatMap(x => Object.values(x)).join('\n\n');
+    const result = await countSentencepieceTokens(tokenizer, jsonBody);
+    const num_tokens = result.count;
+    return num_tokens;
+}
+
+async function getTiktokenChunks(tokenizer, ids) {
+    const decoder = new TextDecoder();
+    const chunks = [];
+
+    for (let i = 0; i < ids.length; i++) {
+        const id = ids[i];
+        const chunkTextBytes = await tokenizer.decode(new Uint32Array([id]));
+        const chunkText = decoder.decode(chunkTextBytes);
+        chunks.push(chunkText);
+    }
+
+    return chunks;
+}
+
+async function getWebTokenizersChunks(tokenizer, ids) {
+    const chunks = [];
+
+    for (let i = 0; i < ids.length; i++) {
+        const id = ids[i];
+        const chunkText = await tokenizer.decode(new Uint32Array([id]));
+        chunks.push(chunkText);
+    }
+
+    return chunks;
+}
+
 /**
  * Gets the tokenizer model by the model name.
  * @param {string} requestModel Models to use for tokenization
@@ -85,6 +149,14 @@ async function countSentencepieceTokens(spp, text) {
 function getTokenizerModel(requestModel) {
     if (requestModel.includes('claude')) {
         return 'claude';
+    }
+
+    if (requestModel.includes('llama')) {
+        return 'llama';
+    }
+
+    if (requestModel.includes('mistral')) {
+        return 'mistral';
     }
 
     if (requestModel.includes('gpt-4-32k')) {
@@ -160,10 +232,11 @@ function createSentencepieceEncodingHandler(getTokenizerFn) {
             const text = request.body.text || '';
             const tokenizer = getTokenizerFn();
             const { ids, count } = await countSentencepieceTokens(tokenizer, text);
-            return response.send({ ids, count });
+            const chunks = await tokenizer.encodePieces(text);
+            return response.send({ ids, count, chunks });
         } catch (error) {
             console.log(error);
-            return response.send({ ids: [], count: 0 });
+            return response.send({ ids: [], count: 0, chunks: [] });
         }
     };
 }
@@ -206,10 +279,11 @@ function createTiktokenEncodingHandler(modelId) {
             const text = request.body.text || '';
             const tokenizer = getTiktokenTokenizer(modelId);
             const tokens = Object.values(tokenizer.encode(text));
-            return response.send({ ids: tokens, count: tokens.length });
+            const chunks = await getTiktokenChunks(tokenizer, tokens);
+            return response.send({ ids: tokens, count: tokens.length, chunks });
         } catch (error) {
             console.log(error);
-            return response.send({ ids: [], count: 0 });
+            return response.send({ ids: [], count: 0, chunks: [] });
         }
     }
 }
@@ -243,10 +317,11 @@ function createTiktokenDecodingHandler(modelId) {
  * @returns {Promise<void>} Promise that resolves when the tokenizers are loaded
  */
 async function loadTokenizers() {
-    [spp_llama, spp_nerd, spp_nerd_v2, claude_tokenizer] = await Promise.all([
-        loadSentencepieceTokenizer('src/sentencepiece/tokenizer.model'),
+    [spp_llama, spp_nerd, spp_nerd_v2, spp_mistral, claude_tokenizer] = await Promise.all([
+        loadSentencepieceTokenizer('src/sentencepiece/llama.model'),
         loadSentencepieceTokenizer('src/sentencepiece/nerdstash.model'),
         loadSentencepieceTokenizer('src/sentencepiece/nerdstash_v2.model'),
+        loadSentencepieceTokenizer('src/sentencepiece/mistral.model'),
         loadClaudeTokenizer('src/claude.json'),
     ]);
 }
@@ -282,55 +357,104 @@ function registerEndpoints(app, jsonParser) {
     app.post("/api/tokenize/llama", jsonParser, createSentencepieceEncodingHandler(() => spp_llama));
     app.post("/api/tokenize/nerdstash", jsonParser, createSentencepieceEncodingHandler(() => spp_nerd));
     app.post("/api/tokenize/nerdstash_v2", jsonParser, createSentencepieceEncodingHandler(() => spp_nerd_v2));
+    app.post("/api/tokenize/mistral", jsonParser, createSentencepieceEncodingHandler(() => spp_mistral));
     app.post("/api/tokenize/gpt2", jsonParser, createTiktokenEncodingHandler('gpt2'));
     app.post("/api/decode/llama", jsonParser, createSentencepieceDecodingHandler(() => spp_llama));
     app.post("/api/decode/nerdstash", jsonParser, createSentencepieceDecodingHandler(() => spp_nerd));
     app.post("/api/decode/nerdstash_v2", jsonParser, createSentencepieceDecodingHandler(() => spp_nerd_v2));
+    app.post("/api/decode/mistral", jsonParser, createSentencepieceDecodingHandler(() => spp_mistral));
     app.post("/api/decode/gpt2", jsonParser, createTiktokenDecodingHandler('gpt2'));
 
-    app.post("/api/tokenize/openai", jsonParser, function (req, res) {
-        if (!req.body) return res.sendStatus(400);
+    app.post("/api/tokenize/openai-encode", jsonParser, async function (req, res) {
+        try {
+            const queryModel = String(req.query.model || '');
 
-        let num_tokens = 0;
-        const queryModel = String(req.query.model || '');
-        const model = getTokenizerModel(queryModel);
-
-        if (model == 'claude') {
-            num_tokens = countClaudeTokens(claude_tokenizer, req.body);
-            return res.send({ "token_count": num_tokens });
-        }
-
-        const tokensPerName = queryModel.includes('gpt-3.5-turbo-0301') ? -1 : 1;
-        const tokensPerMessage = queryModel.includes('gpt-3.5-turbo-0301') ? 4 : 3;
-        const tokensPadding = 3;
-
-        const tokenizer = getTiktokenTokenizer(model);
-
-        for (const msg of req.body) {
-            try {
-                num_tokens += tokensPerMessage;
-                for (const [key, value] of Object.entries(msg)) {
-                    num_tokens += tokenizer.encode(value).length;
-                    if (key == "name") {
-                        num_tokens += tokensPerName;
-                    }
-                }
-            } catch {
-                console.warn("Error tokenizing message:", msg);
+            if (queryModel.includes('llama')) {
+                const handler = createSentencepieceEncodingHandler(() => spp_llama);
+                return handler(req, res);
             }
+
+            if (queryModel.includes('mistral')) {
+                const handler = createSentencepieceEncodingHandler(() => spp_mistral);
+                return handler(req, res);
+            }
+
+            if (queryModel.includes('claude')) {
+                const text = req.body.text || '';
+                const tokens = Object.values(claude_tokenizer.encode(text));
+                const chunks = await getWebTokenizersChunks(claude_tokenizer, tokens);
+                return res.send({ ids: tokens, count: tokens.length, chunks });
+            }
+
+            const model = getTokenizerModel(queryModel);
+            const handler = createTiktokenEncodingHandler(model);
+            return handler(req, res);
+        } catch (error) {
+            console.log(error);
+            return res.send({ ids: [], count: 0, chunks: [] });
         }
-        num_tokens += tokensPadding;
+    });
 
-        // NB: Since 2023-10-14, the GPT-3.5 Turbo 0301 model shoves in 7-9 extra tokens to every message.
-        // More details: https://community.openai.com/t/gpt-3-5-turbo-0301-showing-different-behavior-suddenly/431326/14
-        if (queryModel.includes('gpt-3.5-turbo-0301')) {
-            num_tokens += 9;
+    app.post("/api/tokenize/openai", jsonParser, async function (req, res) {
+        try {
+            if (!req.body) return res.sendStatus(400);
+
+            let num_tokens = 0;
+            const queryModel = String(req.query.model || '');
+            const model = getTokenizerModel(queryModel);
+
+            if (model == 'claude') {
+                num_tokens = countClaudeTokens(claude_tokenizer, req.body);
+                return res.send({ "token_count": num_tokens });
+            }
+
+            if (model == 'llama') {
+                num_tokens = await countSentencepieceArrayTokens(spp_llama, req.body);
+                return res.send({ "token_count": num_tokens });
+            }
+
+            if (model == 'mistral') {
+                num_tokens = await countSentencepieceArrayTokens(spp_mistral, req.body);
+                return res.send({ "token_count": num_tokens });
+            }
+
+            const tokensPerName = queryModel.includes('gpt-3.5-turbo-0301') ? -1 : 1;
+            const tokensPerMessage = queryModel.includes('gpt-3.5-turbo-0301') ? 4 : 3;
+            const tokensPadding = 3;
+
+            const tokenizer = getTiktokenTokenizer(model);
+
+            for (const msg of req.body) {
+                try {
+                    num_tokens += tokensPerMessage;
+                    for (const [key, value] of Object.entries(msg)) {
+                        num_tokens += tokenizer.encode(value).length;
+                        if (key == "name") {
+                            num_tokens += tokensPerName;
+                        }
+                    }
+                } catch {
+                    console.warn("Error tokenizing message:", msg);
+                }
+            }
+            num_tokens += tokensPadding;
+
+            // NB: Since 2023-10-14, the GPT-3.5 Turbo 0301 model shoves in 7-9 extra tokens to every message.
+            // More details: https://community.openai.com/t/gpt-3-5-turbo-0301-showing-different-behavior-suddenly/431326/14
+            if (queryModel.includes('gpt-3.5-turbo-0301')) {
+                num_tokens += 9;
+            }
+
+            // not needed for cached tokenizers
+            //tokenizer.free();
+
+            res.send({ "token_count": num_tokens });
+        } catch (error) {
+            console.error('An error counting tokens, using fallback estimation method', error);
+            const jsonBody = JSON.stringify(req.body);
+            const num_tokens = Math.ceil(jsonBody.length / CHARS_PER_TOKEN);
+            res.send({ "token_count": num_tokens });
         }
-
-        // not needed for cached tokenizers
-        //tokenizer.free();
-
-        res.send({ "token_count": num_tokens });
     });
 }
 
@@ -344,4 +468,7 @@ module.exports = {
     countClaudeTokens,
     loadTokenizers,
     registerEndpoints,
+    getSentencepiceTokenizer,
+    sentencepieceTokenizers,
 }
+

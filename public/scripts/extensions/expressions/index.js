@@ -1475,22 +1475,19 @@ function setExpressionOverrideHtml(forceClear = false) {
     dragElement($("#expression-holder"))
     eventSource.on(event_types.CHAT_CHANGED, () => {
         // character changed
-        const context = getContext();
-        if (context.groupId !== lastCharacter && context.characterId !== lastCharacter) {
-            removeExpression();
-            spriteCache = {};
+        removeExpression();
+        spriteCache = {};
 
-            //clear expression
-            let imgElement = document.getElementById('expression-image');
-            if (imgElement && imgElement instanceof HTMLImageElement) {
-                imgElement.src = "";
-            }
+        //clear expression
+        let imgElement = document.getElementById('expression-image');
+        if (imgElement && imgElement instanceof HTMLImageElement) {
+            imgElement.src = "";
+        }
 
-            //set checkbox to global var
-            $('#image_type_toggle').prop('checked', extension_settings.expressions.talkinghead);
-            if (extension_settings.expressions.talkinghead) {
-                setTalkingHeadState(extension_settings.expressions.talkinghead);
-            }
+        //set checkbox to global var
+        $('#image_type_toggle').prop('checked', extension_settings.expressions.talkinghead);
+        if (extension_settings.expressions.talkinghead) {
+            setTalkingHeadState(extension_settings.expressions.talkinghead);
         }
 
         setExpressionOverrideHtml();

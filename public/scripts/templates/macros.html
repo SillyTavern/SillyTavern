@@ -1,18 +1,26 @@
-System-wide Replacement Macros:
+System-wide Replacement Macros (in order of evaluation):
 <ul>
-    <li><tt>&lcub;&lcub;user&rcub;&rcub;</tt> - your current Persona username</li>
-    <li><tt>&lcub;&lcub;char&rcub;&rcub;</tt> - the Character's name</li>
-    <li><tt>&lcub;&lcub;input&rcub;&rcub;</tt> - the user input</li>
-    <li><tt>&lcub;&lcub;// (note)&rcub;&rcub;</tt> - you can leave a note here, and the macro will be replaced with blank content. Not visible for the AI.</li>
-    <li><tt>&lcub;&lcub;time&rcub;&rcub;</tt> - the current time</li>
-    <li><tt>&lcub;&lcub;date&rcub;&rcub;</tt> - the current date</li>
-    <li><tt>&lcub;&lcub;weekday&rcub;&rcub;</tt> - the current weekday</li>
-    <li><tt>&lcub;&lcub;isotime&rcub;&rcub;</tt> - the current ISO date (YYYY-MM-DD)</li>
-    <li><tt>&lcub;&lcub;isodate&rcub;&rcub;</tt> - the current ISO time (24-hour clock)</li>
-    <li><tt>&lcub;&lcub;datetimeformat &hellip;&rcub;&rcub;</tt> - the current date/time in the specified format, e. g. for German date/time: <tt>&lcub;&lcub;datetimeformat DD.MM.YYYY HH:mm&rcub;&rcub;</tt></li>
-    <li><tt>&lcub;&lcub;bias "text here"&rcub;&rcub;</tt> - sets a behavioral bias for the AI until the next user input. Quotes around the text are important.</li>
-    <li><tt>&lcub;&lcub;banned "text here"&rcub;&rcub;</tt> - dynamically add text in the quotes to banned words sequences, if Text Generation WebUI backend used. Do nothing for others backends. Can be used anywhere (Character description, WI, AN, etc.) Quotes around the text are important.</li>
-    <li><tt>&lcub;&lcub;idle_duration&rcub;&rcub;</tt> - the time since the last user message was sent</li>
-    <li><tt>&lcub;&lcub;random:(args)&rcub;&rcub;</tt> - returns a random item from the list. (ex: &lcub;&lcub;random:1,2,3,4&rcub;&rcub; will return 1 of the 4 numbers at random. Works with text lists too.</li>
-    <li><tt>&lcub;&lcub;roll:(formula)&rcub;&rcub;</tt> - rolls a dice. (ex: &lcub;&lcub;roll:1d6&rcub;&rcub; will roll a 6-sided dice and return a number between 1 and 6)</li>
+    <li><tt>&lcub;&lcub;original&rcub;&rcub;</tt> – global prompts defined in API settings. Only valid in Advanced Definitions prompt overrides.</li>
+    <li><tt>&lcub;&lcub;input&rcub;&rcub;</tt> – the user input</li>
+    <li><tt>&lcub;&lcub;description&rcub;&rcub;</tt> – the Character's Description</li>
+    <li><tt>&lcub;&lcub;personality&rcub;&rcub;</tt> – the Character's Personality</li>
+    <li><tt>&lcub;&lcub;scenario&rcub;&rcub;</tt> – the Character's Scenario</li>
+    <li><tt>&lcub;&lcub;persona&rcub;&rcub;</tt> – your current Persona Description</li>
+    <li><tt>&lcub;&lcub;mesExamples&rcub;&rcub;</tt> – the Character's Dialogue Examples</li>
+    <li><tt>&lcub;&lcub;user&rcub;&rcub;</tt> – your current Persona username</li>
+    <li><tt>&lcub;&lcub;char&rcub;&rcub;</tt> – the Character's name</li>
+    <li><tt>&lcub;&lcub;lastMessageId&rcub;&rcub;</tt> – index # of the latest chat message. Useful for slash command batching.</li>
+    <li><tt>&lcub;&lcub;// (note)&rcub;&rcub;</tt> – you can leave a note here, and the macro will be replaced with blank content. Not visible for the AI.</li>
+    <li><tt>&lcub;&lcub;time&rcub;&rcub;</tt> – the current time</li>
+    <li><tt>&lcub;&lcub;date&rcub;&rcub;</tt> – the current date</li>
+    <li><tt>&lcub;&lcub;weekday&rcub;&rcub;</tt> – the current weekday</li>
+    <li><tt>&lcub;&lcub;isotime&rcub;&rcub;</tt> – the current ISO date (YYYY-MM-DD)</li>
+    <li><tt>&lcub;&lcub;isodate&rcub;&rcub;</tt> – the current ISO time (24-hour clock)</li>
+    <li><tt>&lcub;&lcub;datetimeformat &hellip;&rcub;&rcub;</tt> – the current date/time in the specified format, e. g. for German date/time: <tt>&lcub;&lcub;datetimeformat DD.MM.YYYY HH:mm&rcub;&rcub;</tt></li>
+    <li><tt>&lcub;&lcub;time_UTC±#&rcub;&rcub;</tt> – the current time in the specified UTC time zone offset, e.g. UTC-4 or UTC+2</li>
+    <li><tt>&lcub;&lcub;idle_duration&rcub;&rcub;</tt> – the time since the last user message was sent</li>
+    <li><tt>&lcub;&lcub;bias "text here"&rcub;&rcub;</tt> – sets a behavioral bias for the AI until the next user input. Quotes around the text are important.</li>
+    <li><tt>&lcub;&lcub;random:(args)&rcub;&rcub;</tt> – returns a random item from the list. (ex: &lcub;&lcub;random:1,2,3,4&rcub;&rcub; will return 1 of the 4 numbers at random. Works with text lists too.</li>
+    <li><tt>&lcub;&lcub;roll:(formula)&rcub;&rcub;</tt> – rolls a dice. (ex: &lcub;&lcub;roll:1d6&rcub;&rcub; will roll a 6-    sided dice and return a number between 1 and 6)</li>
+    <li><tt>&lcub;&lcub;banned "text here"&rcub;&rcub;</tt> – dynamically add text in the quotes to banned words sequences, if Text Generation WebUI backend used. Do nothing for others backends. Can be used anywhere (Character description, WI, AN, etc.) Quotes around the text are important.</li>
 </ul>

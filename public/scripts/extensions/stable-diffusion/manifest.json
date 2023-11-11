@@ -1,10 +1,11 @@
 {
-    "display_name": "Stable Diffusion",
+    "display_name": "Image Generation",
     "loading_order": 10,
     "requires": [],
     "optional": [
         "sd"
     ],
+    "generate_interceptor": "SD_ProcessTriggers",
     "js": "index.js",
     "css": "style.css",
     "author": "Cohee#1207",
