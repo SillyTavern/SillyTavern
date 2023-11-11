@@ -1357,7 +1357,7 @@ function loadMaxContextUnlocked() {
 }
 
 function switchMaxContextSize() {
-    const elements = [$('#max_context'), $('#rep_pen_range'), $('#rep_pen_range_textgenerationwebui')];
+    const elements = [$('#max_context'), $('#max_context_counter'), $('#rep_pen_range'), $('#rep_pen_range_textgenerationwebui')];
     const maxValue = power_user.max_context_unlocked ? MAX_CONTEXT_UNLOCKED : MAX_CONTEXT_DEFAULT;
     const minValue = power_user.max_context_unlocked ? maxContextMin : maxContextMin;
     const steps = power_user.max_context_unlocked ? unlockedMaxContextStep : maxContextStep;
@@ -1366,7 +1366,7 @@ function switchMaxContextSize() {
         element.attr('max', maxValue);
         element.attr('step', steps);
 
-        if (element.attr('id') == 'max_context') {
+        if (element.attr('id').indexOf('max_context') !== -1) {
             element.attr('min', minValue);
         }
         const value = Number(element.val());
