@@ -26,7 +26,7 @@ import {
     setCharacterName,
 } from "../script.js";
 import { getMessageTimeStamp } from "./RossAscends-mods.js";
-import { groups, resetSelectedGroup, selected_group } from "./group-chats.js";
+import { groups, is_group_generating, resetSelectedGroup, selected_group } from "./group-chats.js";
 import { getRegexedString, regex_placement } from "./extensions/regex/engine.js";
 import { chat_styles, power_user } from "./power-user.js";
 import { autoSelectPersona } from "./personas.js";
@@ -270,7 +270,12 @@ async function unhideMessageCallback(_, arg) {
 
 async function triggerGroupMessageCallback(_, arg) {
     if (!selected_group) {
-        toastr.warning("Cannot run this command outside of a group chat.");
+        toastr.warning("Cannot run trigger command outside of a group chat.");
+        return;
+    }
+
+    if (is_group_generating) {
+        toastr.warning("Cannot run trigger command while the group reply is generating.");
         return;
     }
 
