@@ -3292,6 +3292,10 @@ function updateScaleForm() {
  * @returns {boolean} True if the model supports image inlining
  */
 export function isImageInliningSupported() {
+    if (main_api !== 'openai') {
+        return false;
+    }
+
     const modelId = 'gpt-4-vision';
 
     if (!oai_settings.image_inlining) {
