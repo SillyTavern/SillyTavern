@@ -1,0 +1,25 @@
+#loader {
+    position: fixed;
+    margin: 0;
+    padding: 0;
+    top: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999999;
+    width: 100vw;
+    height: 100vh;
+    width: 100svw;
+    height: 100svh;
+    background-color: var(--SmartThemeBlurTintColor);
+    /*for some reason the full screen blur does not work on iOS*/
+    backdrop-filter: blur(30px);
+    color: var(--SmartThemeBodyColor);
+    opacity: 1;
+}
+
+#load-spinner {
+    transition: all 300ms ease-out;
+    opacity: 1;
+}

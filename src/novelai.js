@@ -132,6 +132,13 @@ function registerEndpoints(app, jsonParser) {
             }
         }
 
+        // Remove empty arrays from bad words list
+        for (const badWord of badWordsList) {
+            if (badWord.length === 0) {
+                badWordsList.splice(badWordsList.indexOf(badWord), 1);
+            }
+        }
+
         // Add default biases for dinkus and asterism
         const logit_bias_exp = isNewModel ? logitBiasExp.slice() : [];
 
@@ -164,7 +171,7 @@ function registerEndpoints(app, jsonParser) {
                 "cfg_uc": req.body.cfg_uc,
                 "phrase_rep_pen": req.body.phrase_rep_pen,
                 "stop_sequences": req.body.stop_sequences,
-                "bad_words_ids": badWordsList,
+                "bad_words_ids": badWordsList.length ? badWordsList : null,
                 "logit_bias_exp": logit_bias_exp,
                 "generate_until_sentence": req.body.generate_until_sentence,
                 "use_cache": req.body.use_cache,

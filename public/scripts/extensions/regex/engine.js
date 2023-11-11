@@ -24,12 +24,12 @@ function regexFromString(input) {
     try {
         // Parse input
         var m = input.match(/(\/?)(.+)\1([a-z]*)/i);
-    
+
         // Invalid flags
         if (m[3] && !/^(?!.*?(.).*?\1)[gmixXsuUAJ]+$/.test(m[3])) {
             return RegExp(input);
         }
-    
+
         // Create the regular expression
         return new RegExp(m[2], m[3]);
     } catch {
@@ -38,19 +38,24 @@ function regexFromString(input) {
 }
 
 // Parent function to fetch a regexed version of a raw string
-function getRegexedString(rawString, placement, { characterOverride, isMarkdown } = {}) {
+function getRegexedString(rawString, placement, { characterOverride, isMarkdown, isPrompt } = {}) {
     let finalString = rawString;
     if (extension_settings.disabledExtensions.includes("regex") || !rawString || placement === undefined) {
         return finalString;
     }
 
     extension_settings.regex.forEach((script) => {
-        if ((script.markdownOnly && !isMarkdown) || (!script.markdownOnly && isMarkdown)) {
-            return;
-        }
-
-        if (script.placement.includes(placement)) {
-            finalString = runRegexScript(script, finalString, { characterOverride });
+        if (
+            // Script applies to Markdown and input is Markdown
+            (script.markdownOnly && isMarkdown) ||
+            // Script applies to Generate and input is Generate
+            (script.promptOnly && isPrompt) ||
+            // Script applies to all cases when neither "only"s are true, but there's no need to do it when `isMarkdown`, the as source (chat history) should already be changed beforehand
+            (!script.markdownOnly && !script.promptOnly && !isMarkdown)
+        ) {
+            if (script.placement.includes(placement)) {
+                finalString = runRegexScript(script, finalString, { characterOverride });
+            }
         }
     });
 
@@ -91,7 +96,7 @@ function runRegexScript(regexScript, rawString, { characterOverride } = {}) {
         const subReplaceString = substituteRegexParams(
             regexScript.replaceString,
             trimCapturedMatch ?? trimFencedMatch,
-            { 
+            {
                 characterOverride,
                 replaceStrategy: regexScript.replaceStrategy ?? regex_replace_strategy.REPLACE
             }

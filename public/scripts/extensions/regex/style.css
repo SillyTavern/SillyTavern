@@ -5,6 +5,10 @@
     flex-direction: row;
 }
 
+.regex_settings .checkbox {
+    align-items: center;
+}
+
 .regex-script-container {
     margin-top: 10px;
     margin-bottom: 10px;
@@ -17,4 +21,34 @@
     padding: 0 5px;
     margin-top: 1px;
     margin-bottom: 1px;
+}
+
+input.disable_regex {
+    display: none !important;
+}
+
+.regex-toggle-off {
+    cursor: pointer;
+    opacity: 0.5;
+    filter: grayscale(0.5);
+}
+
+.regex-toggle-on {
+    cursor: pointer;
+}
+
+.disable_regex:checked ~ .regex-toggle-off {
+    display: block;
+}
+
+.disable_regex:checked ~ .regex-toggle-on {
+    display: none;
+}
+
+.disable_regex:not(:checked) ~ .regex-toggle-off {
+    display: none;
+}
+
+.disable_regex:not(:checked) ~ .regex-toggle-on {
+    display: block;
 }

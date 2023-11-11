@@ -68,6 +68,7 @@ import {
     setExternalAbortController,
     baseChatReplace,
     depth_prompt_depth_default,
+    loadItemizedPrompts,
 } from "../script.js";
 import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect, tag_map, printTagFilters } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
@@ -168,6 +169,8 @@ export async function getGroupChat(groupId) {
     const chat_id = group.chat_id;
     const data = await loadGroupChat(chat_id);
 
+    await loadItemizedPrompts(getCurrentChatId());
+
     if (Array.isArray(data) && data.length) {
         data[0].is_group = true;
         for (let key of data) {
@@ -197,7 +200,7 @@ export async function getGroupChat(groupId) {
         updateChatMetadata(metadata, true);
     }
 
-    eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
+    await eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
 }
 
 /**
@@ -253,7 +256,7 @@ export function getGroupDepthPrompts(groupId, characterId) {
  * Combines group members info a single string. Only for groups with generation mode set to APPEND.
  * @param {string} groupId Group ID
  * @param {number} characterId Current Character ID
- * @returns {{description: string, personality: string, scenario: string, mesExample: string}} Group character cards combined
+ * @returns {{description: string, personality: string, scenario: string, mesExamples: string}} Group character cards combined
  */
 export function getGroupCharacterCards(groupId, characterId) {
     console.debug('getGroupCharacterCards entered for group: ', groupId);
@@ -268,7 +271,7 @@ export function getGroupCharacterCards(groupId, characterId) {
     let descriptions = [];
     let personalities = [];
     let scenarios = [];
-    let mesExamples = [];
+    let mesExamplesArray = [];
 
     for (const member of group.members) {
         const index = characters.findIndex(x => x.avatar === member);
@@ -287,15 +290,15 @@ export function getGroupCharacterCards(groupId, characterId) {
         descriptions.push(baseChatReplace(character.description.trim(), name1, character.name));
         personalities.push(baseChatReplace(character.personality.trim(), name1, character.name));
         scenarios.push(baseChatReplace(character.scenario.trim(), name1, character.name));
-        mesExamples.push(baseChatReplace(character.mes_example.trim(), name1, character.name));
+        mesExamplesArray.push(baseChatReplace(character.mes_example.trim(), name1, character.name));
     }
 
     const description = descriptions.join('\n');
     const personality = personalities.join('\n');
     const scenario = scenarioOverride?.trim() || scenarios.join('\n');
-    const mesExample = mesExamples.join('\n');
+    const mesExamples = mesExamplesArray.join('\n');
 
-    return { description, personality, scenario, mesExample };
+    return { description, personality, scenario, mesExamples };
 }
 
 function getFirstCharacterMessage(character) {
@@ -913,10 +916,10 @@ async function deleteGroup(id) {
     }
 
     if (response.ok) {
+        await clearChat();
         selected_group = null;
         delete tag_map[id];
         resetChatState();
-        clearChat();
         await printMessages();
         await getCharacters();
 
@@ -1385,12 +1388,12 @@ export async function openGroupById(groupId) {
 
     if (!is_send_press && !is_group_generating) {
         if (selected_group !== groupId) {
+            await clearChat();
             cancelTtsPlay();
             selected_group = groupId;
             setCharacterId(undefined);
             setCharacterName('');
             setEditedMessageId(undefined);
-            clearChat();
             updateChatMetadata({}, true);
             chat.length = 0;
             await getGroupChat(groupId);
@@ -1484,7 +1487,7 @@ export async function createNewGroupChat(groupId) {
         group.past_metadata = {};
     }
 
-    clearChat();
+    await clearChat();
     chat.length = 0;
     if (oldChatName) {
         group.past_metadata[oldChatName] = Object.assign({}, chat_metadata);
@@ -1537,7 +1540,7 @@ export async function openGroupChat(groupId, chatId) {
         return;
     }
 
-    clearChat();
+    await clearChat();
     chat.length = 0;
     const previousChat = group.chat_id;
     group.past_metadata[previousChat] = Object.assign({}, chat_metadata);

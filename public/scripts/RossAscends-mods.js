@@ -36,6 +36,7 @@ import {
 import { debounce, delay, getStringHash, isValidUrl, waitUntilCondition } from "./utils.js";
 import { chat_completion_sources, oai_settings } from "./openai.js";
 import { getTokenCount } from "./tokenizers.js";
+import { isMancer } from "./textgen-settings.js";
 
 
 var RPanelPin = document.getElementById("rm_button_panel_pin");
@@ -59,9 +60,7 @@ const countTokensDebounced = debounce(RA_CountCharTokens, 1000);
 
 const observer = new MutationObserver(function (mutations) {
     mutations.forEach(function (mutation) {
-        if (mutation.target.id === "online_status_text2" ||
-            mutation.target.id === "online_status_text3" ||
-            mutation.target.classList.contains("online_status_text4")) {
+        if (mutation.target.classList.contains("online_status_text")) {
             RA_checkOnlineStatus();
         } else if (mutation.target.parentNode === SelectedCharacterTab) {
             setTimeout(RA_CountCharTokens, 200);
@@ -173,7 +172,7 @@ export function humanizedDateTime() {
     let humanMillisecond =
         (baseDate.getMilliseconds() < 10 ? "0" : "") + baseDate.getMilliseconds();
     let HumanizedDateTime =
-        humanYear + "-" + humanMonth + "-" + humanDate + " @" + humanHour + "h " + humanMinute + "m " + humanSecond + "s " + humanMillisecond + "ms";
+        humanYear + "-" + humanMonth + "-" + humanDate + "@" + humanHour + "h" + humanMinute + "m" + humanSecond + "s";
     return HumanizedDateTime;
 }
 
@@ -268,11 +267,11 @@ async function RA_autoloadchat() {
         let active_character_id = Object.keys(characters).find(key => characters[key].avatar === active_character);
 
         if (active_character_id !== null) {
-            selectCharacterById(String(active_character_id));
+            await selectCharacterById(String(active_character_id));
         }
 
         if (active_group != null) {
-            openGroupById(String(active_group));
+            await openGroupById(String(active_group));
         }
 
         // if the character list hadn't been loaded yet, try again.
@@ -372,7 +371,7 @@ function RA_checkOnlineStatus() {
         connection_made = false;
     } else {
         if (online_status !== undefined && online_status !== "no_connection") {
-            $("#send_textarea").attr("placeholder", `Type a message, or /? for command list`); //on connect, placeholder tells user to type message
+            $("#send_textarea").attr("placeholder", `Type a message, or /? for help`); //on connect, placeholder tells user to type message
             $('#send_form').removeClass("no-connection");
             $("#API-status-top").removeClass("fa-plug-circle-exclamation redOverlayGlow");
             $("#API-status-top").addClass("fa-plug");
@@ -399,17 +398,20 @@ function RA_autoconnect(PrevApi) {
         switch (main_api) {
             case 'kobold':
                 if (api_server && isValidUrl(api_server)) {
-                    $("#api_button").click();
+                    $("#api_button").trigger('click');
                 }
                 break;
             case 'novel':
                 if (secret_state[SECRET_KEYS.NOVEL]) {
-                    $("#api_button_novel").click();
+                    $("#api_button_novel").trigger('click');
                 }
                 break;
             case 'textgenerationwebui':
-                if (api_server_textgenerationwebui && isValidUrl(api_server_textgenerationwebui)) {
-                    $("#api_button_textgenerationwebui").click();
+                if (isMancer() && secret_state[SECRET_KEYS.MANCER]) {
+                    $("#api_button_textgenerationwebui").trigger('click');
+                }
+                else if (api_server_textgenerationwebui && isValidUrl(api_server_textgenerationwebui)) {
+                    $("#api_button_textgenerationwebui").trigger('click');
                 }
                 break;
             case 'openai':
@@ -421,7 +423,7 @@ function RA_autoconnect(PrevApi) {
                     || (secret_state[SECRET_KEYS.AI21] && oai_settings.chat_completion_source == chat_completion_sources.AI21)
                     || (secret_state[SECRET_KEYS.PALM] && oai_settings.chat_completion_source == chat_completion_sources.PALM)
                 ) {
-                    $("#api_button_openai").click();
+                    $("#api_button_openai").trigger('click');
                 }
                 break;
         }
@@ -429,8 +431,8 @@ function RA_autoconnect(PrevApi) {
         if (!connection_made) {
             RA_AC_retries++;
             retry_delay = Math.min(retry_delay * 2, 30000); // double retry delay up to to 30 secs
-            //console.log('connection attempts: ' + RA_AC_retries + ' delay: ' + (retry_delay / 1000) + 's');
-            setTimeout(RA_autoconnect, retry_delay);
+            // console.log('connection attempts: ' + RA_AC_retries + ' delay: ' + (retry_delay / 1000) + 's');
+            // setTimeout(RA_autoconnect, retry_delay);
         }
     }
 }
@@ -894,7 +896,7 @@ export function initRossMods() {
         const originalScrollBottom = chatBlock[0].scrollHeight - (chatBlock.scrollTop() + chatBlock.outerHeight());
         this.style.height = window.getComputedStyle(this).getPropertyValue('min-height');
         this.style.height = (this.scrollHeight) + 'px';
-        const newScrollTop = chatBlock[0].scrollHeight - (chatBlock.outerHeight() + originalScrollBottom);
+        const newScrollTop = Math.round(chatBlock[0].scrollHeight - (chatBlock.outerHeight() + originalScrollBottom));
         chatBlock.scrollTop(newScrollTop);
     });
 
@@ -902,6 +904,9 @@ export function initRossMods() {
 
     document.addEventListener('swiped-left', function (e) {
         if (power_user.gestures === false) {
+            return
+        }
+        if ($(".mes_edit_buttons, #character_popup, #dialogue_popup, #WorldInfo").is(":visible")) {
             return
         }
         var SwipeButR = $('.swipe_right:last');
@@ -914,6 +919,9 @@ export function initRossMods() {
     });
     document.addEventListener('swiped-right', function (e) {
         if (power_user.gestures === false) {
+            return
+        }
+        if ($(".mes_edit_buttons, #character_popup, #dialogue_popup, #WorldInfo").is(":visible")) {
             return
         }
         var SwipeButL = $('.swipe_left:last');

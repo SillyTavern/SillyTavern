@@ -15,6 +15,9 @@ import {
     setCharacterId,
     setEditedMessageId,
     renderTemplate,
+    chat,
+    getFirstDisplayedMessageId,
+    showMoreMessages,
 } from "../script.js";
 import { isMobile, initMovingUI, favsToHotswap } from "./RossAscends-mods.js";
 import {
@@ -28,9 +31,10 @@ import {
 } from "./instruct-mode.js";
 
 import { registerSlashCommand } from "./slash-commands.js";
+import { tags } from "./tags.js";
 import { tokenizers } from "./tokenizers.js";
 
-import { countOccurrences, debounce, delay, isOdd, resetScrollHeight, sortMoments, timestampToMoment } from "./utils.js";
+import { countOccurrences, debounce, delay, isOdd, resetScrollHeight, sortMoments, stringToRange, timestampToMoment } from "./utils.js";
 
 export {
     loadPowerUserSettings,
@@ -162,6 +166,8 @@ let power_user = {
     max_context_unlocked: false,
     message_token_count_enabled: false,
     expand_message_actions: false,
+    enableZenSliders: false,
+    enableLabMode: false,
     prefer_character_prompt: true,
     prefer_character_jailbreak: true,
     quick_continue: false,
@@ -213,6 +219,7 @@ let power_user = {
     fuzzy_search: false,
     encode_tags: false,
     servers: [],
+    bogus_folders: false,
 };
 
 let themes = [];
@@ -251,6 +258,8 @@ const storage_keys = {
     mesIDDisplay_enabled: 'mesIDDisplayEnabled',
     message_token_count_enabled: 'MessageTokenCountEnabled',
     expand_message_actions: 'ExpandMessageActions',
+    enableZenSliders: 'enableZenSliders',
+    enableLabMode: 'enableLabMode',
 };
 
 const contextControls = [
@@ -418,6 +427,237 @@ function switchMessageActions() {
     $("#expandMessageActions").prop("checked", power_user.expand_message_actions);
     $('.extraMesButtons, .extraMesButtonsHint').removeAttr('style');
 }
+
+var originalSliderValues = []
+
+async function switchLabMode() {
+
+    if (power_user.enableZenSliders) {
+        //force disable ZenSliders for Lab Mode
+        $("#enableZenSliders").trigger('click')
+    }
+    await delay(100)
+    const value = localStorage.getItem(storage_keys.enableLabMode);
+    power_user.enableLabMode = value === null ? false : value == "true";
+    $("body").toggleClass("enableLabMode", power_user.enableLabMode);
+    $("#enableLabMode").prop("checked", power_user.enableLabMode);
+
+    if (power_user.enableLabMode) {
+        //save all original slider values into an array
+        $("#advanced-ai-config-block input").each(function () {
+            let id = $(this).attr('id')
+            let min = $(this).attr('min')
+            let max = $(this).attr('max')
+            let step = $(this).attr('step')
+            originalSliderValues.push({ id, min, max, step });
+        })
+        //console.log(originalSliderValues)
+        //remove limits on all inputs and hide sliders
+        $("#advanced-ai-config-block input")
+            .attr('min', '-99999')
+            .attr('max', '99999')
+            .attr('step', '0.001')
+        $("#labModeWarning").show()
+        //$("#advanced-ai-config-block input[type='range']").hide()
+
+    } else {
+        //re apply the original sliders values to each input
+        originalSliderValues.forEach(function (slider) {
+            $("#" + slider.id)
+                .attr('min', slider.min)
+                .attr('max', slider.max)
+                .attr('step', slider.step)
+                .trigger('input')
+        });
+        $("#advanced-ai-config-block input[type='range']").show()
+        $("#labModeWarning").hide()
+    }
+}
+
+async function switchZenSliders() {
+
+    await delay(100)
+    const value = localStorage.getItem(storage_keys.enableZenSliders);
+    power_user.enableZenSliders = value === null ? false : value == "true";
+    $("body").toggleClass("enableZenSliders", power_user.enableZenSliders);
+    $("#enableZenSliders").prop("checked", power_user.enableZenSliders);
+
+
+
+    if (power_user.enableZenSliders) {
+        $("#clickSlidersTips").hide()
+        $("#pro-settings-block input[type='number']").hide();
+        //hide number inputs that are not 'seed' inputs
+        $(`#textgenerationwebui_api-settings :input[type='number']:not([id^='seed']),
+            #kobold_api-settings :input[type='number']:not([id^='seed'])`).hide()
+        //hide original sliders
+        $(`#textgenerationwebui_api-settings input[type='range'],
+            #kobold_api-settings input[type='range'],
+            #pro-settings-block input[type='range']`)
+            .hide()
+            .each(function () {
+                //make a zen slider for each original slider
+                CreateZenSliders($(this))
+            })
+    } else {
+        $("#clickSlidersTips").show()
+        revertOriginalSliders();
+    }
+
+    function revertOriginalSliders() {
+        $(`#pro-settings-block input[type='number']`).show();
+        $(`#textgenerationwebui_api-settings input[type='number'],
+            #kobold_api-settings input[type='number']`).show();
+        $(`#textgenerationwebui_api-settings input[type='range'],
+            #kobold_api-settings input[type='range'],
+            #pro-settings-block input[type='range']`).each(function () {
+            $(this).show();
+        });
+        $('div[id$="_zenslider"]').remove();
+    }
+
+    async function CreateZenSliders(elmnt) {
+        //await delay(100)
+        var originalSlider = elmnt;
+        var sliderID = originalSlider.attr('id')
+        var sliderMin = Number(originalSlider.attr('min'))
+        var sliderMax = Number(originalSlider.attr('max'))
+        var sliderValue = originalSlider.val();
+        var sliderRange = sliderMax - sliderMin
+        var numSteps = 10
+        var decimals = 2
+
+        if (sliderID == 'amount_gen') {
+            decimals = 0
+            var steps = [16, 50, 100, 150, 200, 256, 300, 400, 512, 1024];
+            sliderMin = 0
+            sliderMax = steps.length - 1
+            stepScale = 1;
+            numSteps = 10
+            sliderValue = steps.indexOf(Number(sliderValue))
+            if (sliderValue === -1) { sliderValue = 4 } // default to '200' if origSlider has value we can't use
+        }
+        if (sliderID == 'max_context') {
+            numSteps = 15
+            decimals = 0
+        }
+
+        if (sliderID == 'rep_pen_range_textgenerationwebui') {
+            numSteps = 16
+            decimals = 0
+        }
+        if (sliderID == 'encoder_rep_pen_textgenerationwebui') {
+            numSteps = 14
+        }
+        if (sliderID == 'mirostat_mode_textgenerationwebui') {
+            numSteps = 2
+            decimals = 0
+        }
+        if (sliderID == 'mirostat_tau_textgenerationwebui' ||
+            sliderID == 'top_k_textgenerationwebui' ||
+            sliderID == 'num_beams_textgenerationwebui' ||
+            sliderID == 'no_repeat_ngram_size_textgenerationwebui') {
+            numSteps = 20
+            decimals = 0
+        }
+        if (sliderID == 'epsilon_cutoff_textgenerationwebui') {
+            numSteps = 20
+            decimals = 1
+        }
+        if (sliderID == 'tfs_textgenerationwebui' ||
+            sliderID == 'min_p_textgenerationwebui') {
+            numSteps = 20
+            decimals = 2
+        }
+
+        if (sliderID == 'mirostat_eta_textgenerationwebui' ||
+            sliderID == 'penalty_alpha_textgenerationwebui' ||
+            sliderID == 'length_penalty_textgenerationwebui') {
+            numSteps = 50
+        }
+        if (sliderID == 'eta_cutoff_textgenerationwebui') {
+            numSteps = 50
+            decimals = 1
+        }
+        if (sliderID == 'guidance_scale_textgenerationwebui') {
+            numSteps = 78
+        }
+        if (sliderID == 'min_length_textgenerationwebui') {
+            decimals = 0
+        }
+        if (sliderID == 'temp_textgenerationwebui') {
+            numSteps = 20
+        }
+
+        if (sliderID !== 'amount_gen') {
+            var stepScale = sliderRange / numSteps
+        }
+
+        var newSlider = $("<div>")
+            .attr('id', `${sliderID}_zenslider`)
+            .css("width", "100%")
+            .insertBefore(originalSlider);
+
+        newSlider.slider({
+            value: sliderValue,
+            step: stepScale,
+            min: sliderMin,
+            max: sliderMax,
+            create: function () {
+                var handle = $(this).find(".ui-slider-handle");
+                if (newSlider.attr('id') == 'amount_gen_zenslider') {
+                    //console.log(sliderValue, steps.indexOf(Number(sliderValue)))
+                    var handleText = steps[sliderValue]
+                    handle.text(handleText);
+                    //console.log(handleText)
+                    var stepNumber = sliderValue
+                    var leftMargin = ((stepNumber) / numSteps) * 50 * -1
+                    //console.log(`initial value:${handleText}, stepNum:${stepNumber}, numSteps:${numSteps}, left-margin:${leftMargin}`)
+                    handle.css('margin-left', `${leftMargin}px`)
+                } else {
+
+                    var handleText = Number(sliderValue).toFixed(decimals)
+                    handle.text(handleText);
+                    var stepNumber = ((sliderValue - sliderMin) / stepScale)
+                    var leftMargin = (stepNumber / numSteps) * 50 * -1
+                    handle.css('margin-left', `${leftMargin}px`)
+                    console.debug(sliderID, sliderValue, handleText, stepNumber, stepScale)
+                }
+            },
+            slide: function (event, ui) {
+                var handle = $(this).find(".ui-slider-handle");
+                if (newSlider.attr('id') == 'amount_gen_zenslider') {
+                    //console.log(`stepScale${stepScale}, UIvalue:${ui.value}, mappedValue:${steps[ui.value]}`)
+                    $(this).val(steps[ui.value])
+                    let handleText = steps[ui.value].toFixed(decimals)
+                    handle.text(handleText);
+                    var stepNumber = steps.indexOf(Number(handleText))
+                    var leftMargin = (stepNumber / numSteps) * 50 * -1
+                    //console.log(`handleText:${handleText},stepNum:${stepNumber}, numSteps:${numSteps},LeftMargin:${leftMargin}`)
+                    handle.css('margin-left', `${leftMargin}px`)
+                    originalSlider.val(handleText);
+                    originalSlider.trigger('input')
+                    originalSlider.trigger('change')
+                } else {
+                    handle.text(ui.value.toFixed(decimals));
+                    var stepNumber = ((ui.value - sliderMin) / stepScale)
+                    var leftMargin = (stepNumber / numSteps) * 50 * -1
+                    handle.css('margin-left', `${leftMargin}px`)
+                    let handleText = (ui.value)
+                    originalSlider.val(handleText);
+                    originalSlider.trigger('input')
+                    originalSlider.trigger('change')
+                }
+
+            }
+
+        });
+        originalSlider.data("newSlider", newSlider);
+        originalSlider.hide();
+    };
+
+}
+
 
 function switchUiMode() {
     const fastUi = localStorage.getItem(storage_keys.fast_ui_mode);
@@ -781,12 +1021,33 @@ async function applyTheme(name) {
             }
         },
         {
+            key: 'enableZenSliders',
+            action: async () => {
+                localStorage.setItem(storage_keys.enableZenSliders, Boolean(power_user.enableZenSliders));
+                switchMessageActions();
+            }
+        },
+        {
+            key: 'enableLabMode',
+            action: async () => {
+                localStorage.setItem(storage_keys.enableLabMode, Boolean(power_user.enableLabMode));
+                switchMessageActions();
+            }
+        },
+        {
             key: 'hotswap_enabled',
             action: async () => {
                 localStorage.setItem(storage_keys.hotswap_enabled, Boolean(power_user.hotswap_enabled));
                 switchHotswap();
             }
-        }
+        },
+        {
+            key: 'bogus_folders',
+            action: async () => {
+                $('#bogus_folders').prop('checked', power_user.bogus_folders);
+                await printCharacters(true);
+            },
+        },
     ];
 
     for (const { key, selector, type, action } of themeProperties) {
@@ -894,6 +1155,8 @@ function loadPowerUserSettings(settings, data) {
     const timestamps = localStorage.getItem(storage_keys.timestamps_enabled);
     const mesIDDisplay = localStorage.getItem(storage_keys.mesIDDisplay_enabled);
     const expandMessageActions = localStorage.getItem(storage_keys.expand_message_actions);
+    const enableZenSliders = localStorage.getItem(storage_keys.enableZenSliders);
+    const enableLabMode = localStorage.getItem(storage_keys.enableLabMode);
     power_user.fast_ui_mode = fastUi === null ? true : fastUi == "true";
     power_user.movingUI = movingUI === null ? false : movingUI == "true";
     power_user.noShadows = noShadows === null ? false : noShadows == "true";
@@ -902,6 +1165,8 @@ function loadPowerUserSettings(settings, data) {
     power_user.timestamps_enabled = timestamps === null ? true : timestamps == "true";
     power_user.mesIDDisplay_enabled = mesIDDisplay === null ? true : mesIDDisplay == "true";
     power_user.expand_message_actions = expandMessageActions === null ? true : expandMessageActions == "true";
+    power_user.enableZenSliders = enableZenSliders === null ? false : enableZenSliders == "true";
+    power_user.enableLabMode = enableLabMode === null ? false : enableLabMode == "true";
     power_user.avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? avatar_styles.ROUND);
     //power_user.chat_display = Number(localStorage.getItem(storage_keys.chat_display) ?? chat_styles.DEFAULT);
     power_user.chat_width = Number(localStorage.getItem(storage_keys.chat_width) ?? 50);
@@ -947,6 +1212,7 @@ function loadPowerUserSettings(settings, data) {
     $("#console_log_prompts").prop("checked", power_user.console_log_prompts);
     $('#auto_fix_generated_markdown').prop("checked", power_user.auto_fix_generated_markdown);
     $('#auto_scroll_chat_to_bottom').prop("checked", power_user.auto_scroll_chat_to_bottom);
+    $('#bogus_folders').prop("checked", power_user.bogus_folders);
     $(`#tokenizer option[value="${power_user.tokenizer}"]`).attr('selected', true);
     $(`#send_on_enter option[value=${power_user.send_on_enter}]`).attr("selected", true);
     $("#import_card_tags").prop("checked", power_user.import_card_tags);
@@ -983,6 +1249,8 @@ function loadPowerUserSettings(settings, data) {
     $("#mesIDDisplayEnabled").prop("checked", power_user.mesIDDisplay_enabled);
     $("#prefer_character_prompt").prop("checked", power_user.prefer_character_prompt);
     $("#prefer_character_jailbreak").prop("checked", power_user.prefer_character_jailbreak);
+    $("#enableZenSliders").prop('checked', power_user.enableZenSliders).trigger('input');
+    $("#enableLabMode").prop('checked', power_user.enableLabMode).trigger('input');
     $(`input[name="avatar_style"][value="${power_user.avatar_style}"]`).prop("checked", true);
     $(`#chat_display option[value=${power_user.chat_display}]`).attr("selected", true).trigger('change');
     $('#chat_width_slider').val(power_user.chat_width);
@@ -1279,6 +1547,22 @@ export function fuzzySearchWorldInfo(data, searchValue) {
     return results.map(x => x.item?.uid);
 }
 
+export function fuzzySearchTags(searchValue) {
+    const fuse = new Fuse(tags, {
+        keys: [
+            { name: 'name', weight: 1},
+        ],
+        includeScore: true,
+        ignoreLocation: true,
+        threshold: 0.2
+    });
+
+    const results = fuse.search(searchValue);
+    console.debug('Tags fuzzy search results for ' + searchValue, results);
+    const ids = results.map(x => String(x.item?.id)).filter(x => x);
+    return ids;
+}
+
 export function fuzzySearchGroups(searchValue) {
     const fuse = new Fuse(groups, {
         keys: [
@@ -1365,7 +1649,17 @@ function sortEntitiesList(entities) {
         return;
     }
 
-    entities.sort((a, b) => sortFunc(a.item, b.item));
+    entities.sort((a, b) => {
+        if (a.type === 'tag' && b.type !== 'tag') {
+            return -1;
+        }
+
+        if (a.type !== 'tag' && b.type === 'tag') {
+            return 1;
+        }
+
+        return sortFunc(a.item, b.item);
+    });
 }
 
 async function saveTheme() {
@@ -1402,11 +1696,11 @@ async function saveTheme() {
         mesIDDisplay_enabled: power_user.mesIDDisplay_enabled,
         message_token_count_enabled: power_user.message_token_count_enabled,
         expand_message_actions: power_user.expand_message_actions,
-
+        enableZenSliders: power_user.enableZenSliders,
+        enableLabMode: power_user.enableLabMode,
         hotswap_enabled: power_user.hotswap_enabled,
         custom_css: power_user.custom_css,
-
-
+        bogus_folders: power_user.bogus_folders,
     };
 
     const response = await fetch('/savetheme', {
@@ -1563,31 +1857,71 @@ function doRandomChat() {
 
 }
 
-async function doMesCut(_, text) {
-    console.debug(`was asked to cut message id #${text}`)
-    //reject invalid args or no args
-    if (text && isNaN(text) || !text) {
-        toastr.error(`Must enter a single number only, non-number characters disallowed.`)
-        return
+/**
+ * Loads the chat until the given message ID is displayed.
+ * @param {number} mesId
+ * @returns JQuery<HTMLElement>
+ */
+async function loadUntilMesId(mesId) {
+    let target;
+
+    while (getFirstDisplayedMessageId() > mesId && getFirstDisplayedMessageId() !== 0) {
+        showMoreMessages();
+        await delay(1);
+        target = $("#chat").find(`.mes[mesid=${mesId}]`);
+
+        if (target.length) {
+            break;
+        }
     }
 
-    let mesIDToCut = Number(text).toFixed(0)
-    let mesToCut = $("#chat").find(`.mes[mesid=${mesIDToCut}]`)
-
-    if (!mesToCut.length) {
-        toastr.error(`Could not find message with ID: ${mesIDToCut}`)
-        return
+    if (!target.length) {
+        toastr.error(`Could not find message with ID: ${mesId}`)
+        return target;
     }
 
-    setEditedMessageId(mesIDToCut);
-    mesToCut.find('.mes_edit_delete').trigger('click', { fromSlashCommand: true });
+    return target;
 }
 
+async function doMesCut(_, text) {
+    console.debug(`was asked to cut message id #${text}`)
+    const range = stringToRange(text, 0, chat.length - 1);
+
+    //reject invalid args or no args
+    if (!range) {
+        toastr.warning(`Must provide a Message ID or a range to cut.`)
+        return
+    }
+
+    let totalMesToCut = (range.end - range.start) + 1;
+    let mesIDToCut = range.start;
+
+    for (let i = 0; i < totalMesToCut; i++) {
+        let done = false;
+        let mesToCut = $("#chat").find(`.mes[mesid=${mesIDToCut}]`)
+
+        if (!mesToCut.length) {
+            mesToCut = await loadUntilMesId(mesIDToCut);
+
+            if (!mesToCut || !mesToCut.length) {
+                return;
+            }
+        }
+
+        setEditedMessageId(mesIDToCut);
+        eventSource.once(event_types.MESSAGE_DELETED, () => {
+            done = true;
+        });
+        mesToCut.find('.mes_edit_delete').trigger('click', { fromSlashCommand: true });
+        while (!done) {
+            await delay(1);
+        }
+    }
+}
 
 async function doDelMode(_, text) {
-
     //first enter delmode
-    $("#option_delete_mes").trigger('click')
+    $("#option_delete_mes").trigger('click', { fromSlashCommand: true });
 
     //reject invalid args
     if (text && isNaN(text)) {
@@ -1602,15 +1936,24 @@ async function doDelMode(_, text) {
         await delay(300) //same as above, need event signal for 'entered del mode'
         console.debug('parsing msgs to del')
         let numMesToDel = Number(text);
-        let lastMesID = Number($('.last_mes').attr('mesid'));
+        let lastMesID = Number($('#chat .mes').last().attr('mesid'));
         let oldestMesIDToDel = lastMesID - numMesToDel + 1;
 
-        //disallow targeting first message
-        if (oldestMesIDToDel <= 0) {
-            oldestMesIDToDel = 1
+        if (oldestMesIDToDel < 0) {
+            toastr.warning(`Cannot delete more than ${chat.length} messages.`)
+            return;
         }
 
         let oldestMesToDel = $('#chat').find(`.mes[mesid=${oldestMesIDToDel}]`)
+
+        if (!oldestMesIDToDel) {
+            oldestMesToDel = await loadUntilMesId(oldestMesIDToDel);
+
+            if (!oldestMesToDel || !oldestMesToDel.length) {
+                return;
+            }
+        }
+
         let oldestDelMesCheckbox = $(oldestMesToDel).find('.del_checkbox');
         let newLastMesID = oldestMesIDToDel - 1;
         console.debug(`DelMesReport -- numMesToDel:  ${numMesToDel}, lastMesID: ${lastMesID}, oldestMesIDToDel:${oldestMesIDToDel}, newLastMesID: ${newLastMesID}`)
@@ -2346,6 +2689,32 @@ $(document).ready(() => {
         switchMessageActions();
     });
 
+    $("#enableZenSliders").on("input", function () {
+        if (power_user.enableLabMode) {
+            //disallow zenSliders while Lab Mode is active
+            toastr.warning('ZenSliders not allowed in Mad Lab Mode')
+            $(this).prop('checked', false);
+            return
+        }
+        const value = !!$(this).prop('checked');
+        power_user.enableZenSliders = value;
+        localStorage.setItem(storage_keys.enableZenSliders, Boolean(power_user.enableZenSliders));
+        switchZenSliders();
+    });
+
+    $("#enableLabMode").on("input", function () {
+        if (power_user.enableZenSliders) {
+            //disallow Lab Mode if ZenSliders are active
+            toastr.warning('Mad Lab Mode not allowed while ZenSliders are active')
+            $(this).prop('checked', false);
+            return
+        }
+        const value = !!$(this).prop('checked');
+        power_user.enableLabMode = value;
+        localStorage.setItem(storage_keys.enableLabMode, Boolean(power_user.enableLabMode));
+        switchLabMode();
+    });
+
     $("#mesIDDisplayEnabled").on("input", function () {
         const value = !!$(this).prop('checked');
         power_user.mesIDDisplay_enabled = value;
@@ -2456,6 +2825,13 @@ $(document).ready(() => {
         switchSimpleMode();
     });
 
+    $('#bogus_folders').on('input', function() {
+        const value = !!$(this).prop('checked');
+        power_user.bogus_folders = value;
+        saveSettingsDebounced();
+        printCharacters(true);
+    });
+
     $(document).on('click', '#debug_table [data-debug-function]', function () {
         const functionId = $(this).data('debug-function');
         const functionRecord = debug_functions.find(f => f.functionId === functionId);
@@ -2478,8 +2854,8 @@ $(document).ready(() => {
     registerSlashCommand('vn', toggleWaifu, [], '– swaps Visual Novel Mode On/Off', false, true);
     registerSlashCommand('newchat', doNewChat, [], '– start a new chat with current character', true, true);
     registerSlashCommand('random', doRandomChat, [], '– start a new chat with a random character', true, true);
-    registerSlashCommand('delmode', doDelMode, ['del'], '<span class="monospace">(optional number)</span> – enter message deletion mode, and auto-deletes N messages if numeric argument is provided', true, true);
-    registerSlashCommand('cut', doMesCut, [], '<span class="monospace">(number)</span> – cuts the specified message from the chat', true, true);
+    registerSlashCommand('delmode', doDelMode, ['del'], '<span class="monospace">(optional number)</span> – enter message deletion mode, and auto-deletes last N messages if numeric argument is provided', true, true);
+    registerSlashCommand('cut', doMesCut, [], '<span class="monospace">(number or range)</span> – cuts the specified message or continuous chunk from the chat, e.g. <tt>/cut 0-10</tt>. Ranges are inclusive!', true, true);
     registerSlashCommand('resetpanels', doResetPanels, ['resetui'], '– resets UI panels to original state.', true, true);
     registerSlashCommand('bgcol', setAvgBG, [], '– WIP test of auto-bg avg coloring', true, true);
 });
