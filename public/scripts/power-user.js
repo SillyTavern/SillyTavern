@@ -1649,7 +1649,17 @@ function sortEntitiesList(entities) {
         return;
     }
 
-    entities.sort((a, b) => sortFunc(a.item, b.item));
+    entities.sort((a, b) => {
+        if (a.type === 'tag' && b.type !== 'tag') {
+            return -1;
+        }
+
+        if (a.type !== 'tag' && b.type === 'tag') {
+            return 1;
+        }
+
+        return sortFunc(a.item, b.item);
+    });
 }
 
 async function saveTheme() {

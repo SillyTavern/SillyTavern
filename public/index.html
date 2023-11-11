@@ -715,8 +715,8 @@
                                             Temperature
                                             <div class="fa-solid fa-circle-info opacity50p" title="Temperature controls the randomness in token selection:&#13;- low temperature (<1.0) leads to more predictable text, favoring higher probability tokens.&#13;- high temperature (>1.0) increases creativity and diversity in the output by giving lower probability tokens a better chance.&#13;Set to 1.0 for the original probabilities."></div>
                                         </small>
-                                        <input class="neo-range-slider" type="range" id="temp" name="volume" min="0.0" max="2.0" step="0.01">
-                                        <input class="neo-range-input" type="number" min="0.0" max="2.0" step="0.01" data-for="temp" id="temp_counter">
+                                        <input class="neo-range-slider" type="range" id="temp" name="volume" min="0.0" max="4.0" step="0.01">
+                                        <input class="neo-range-input" type="number" min="0.0" max="4.0" step="0.01" data-for="temp" id="temp_counter">
                                     </div>
                                     <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <small data-i18n="Top K">
@@ -4167,7 +4167,7 @@
     <div id="bogus_folder_template" class="template_element">
         <div class="bogus_folder_select flex-container wide100p alignitemsflexstart">
             <div class="avatar flex alignitemscenter textAlignCenter">
-                <i class="fa-solid fa-folder-open fa-xl"></i>
+                <i class="bogus_folder_icon fa-solid fa-folder-open fa-xl"></i>
             </div>
             <div class="flex-container wide100pLess70px character_select_container">
                 <div class="wide100p character_name_block">
@@ -4176,6 +4176,18 @@
                 <div class="bogus_folder_counter_block">
                     <span class="bogus_folder_counter"></span>
                     <span data="character card(s)">character card(s)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="bogus_folder_back_template" class="template_element">
+        <div class="bogus_folder_select flex-container wide100p alignitemsflexstart" id="BogusFolderBack" tagid="back">
+            <div class="avatar flex alignitemscenter textAlignCenter">
+                <i class="bogus_folder_icon fa-solid fa-xl fa-right-from-bracket fa-flip-horizontal"></i>
+            </div>
+            <div class="flex-container wide100pLess70px character_select_container height100p alignitemscenter">
+                <div class="wide100p character_name_block">
+                    <span class="ch_name">Go back</span>
                 </div>
             </div>
         </div>
