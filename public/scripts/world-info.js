@@ -587,7 +587,7 @@ function getWorldEntry(name, data, entry) {
         setOriginalDataValue(data, uid, "keys", data.entries[uid].key);
         saveWorldInfo(name, data);
     });
-    keyInput.val(entry.key.join(",")).trigger("input");
+    keyInput.val(entry.key.join(", ")).trigger("input");
     //initScrollHeight(keyInput);
 
     // logic AND/NOT
@@ -708,7 +708,7 @@ function getWorldEntry(name, data, entry) {
         saveWorldInfo(name, data);
     });
 
-    keySecondaryInput.val(entry.keysecondary.join(",")).trigger("input");
+    keySecondaryInput.val(entry.keysecondary.join(", ")).trigger("input");
     initScrollHeight(keySecondaryInput);
 
     // comment
