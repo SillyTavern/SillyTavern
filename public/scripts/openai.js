@@ -223,6 +223,7 @@ const default_settings = {
     use_alt_scale: false,
     squash_system_messages: false,
     image_inlining: false,
+    bypass_status_check: false,
 };
 
 const oai_settings = {
@@ -270,6 +271,7 @@ const oai_settings = {
     use_alt_scale: false,
     squash_system_messages: false,
     image_inlining: false,
+    bypass_status_check: false,
 };
 
 let openai_setting_names;
@@ -1242,7 +1244,7 @@ function saveModelList(data) {
         $('#model_openrouter_select').empty();
         $('#model_openrouter_select').append($('<option>', { value: openrouter_website_model, text: 'Use OpenRouter website setting' }));
         model_list.forEach((model) => {
-            let tokens_dollar = Number(1 / (1000 * model.pricing.prompt));
+            let tokens_dollar = Number(1 / (1000 * model.pricing?.prompt));
             let tokens_rounded = (Math.round(tokens_dollar * 1000) / 1000).toFixed(0);
             let model_description = `${model.id} | ${tokens_rounded}k t/$ | ${model.context_length} ctx`;
             $('#model_openrouter_select').append(
@@ -2209,6 +2211,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.proxy_password = settings.proxy_password ?? default_settings.proxy_password;
     oai_settings.assistant_prefill = settings.assistant_prefill ?? default_settings.assistant_prefill;
     oai_settings.image_inlining = settings.image_inlining ?? default_settings.image_inlining;
+    oai_settings.bypass_status_check = settings.bypass_status_check ?? default_settings.bypass_status_check;
 
     oai_settings.prompts = settings.prompts ?? default_settings.prompts;
     oai_settings.prompt_order = settings.prompt_order ?? default_settings.prompt_order;
@@ -2230,6 +2233,7 @@ function loadOpenAISettings(data, settings) {
     $('#openai_proxy_password').val(oai_settings.proxy_password);
     $('#claude_assistant_prefill').val(oai_settings.assistant_prefill);
     $('#openai_image_inlining').prop('checked', oai_settings.image_inlining);
+    $('#openai_bypass_status_check').prop('checked', oai_settings.bypass_status_check);
 
     $('#model_openai_select').val(oai_settings.openai_model);
     $(`#model_openai_select option[value="${oai_settings.openai_model}"`).attr('selected', true);
@@ -2354,8 +2358,12 @@ async function getStatusOpen() {
 
         const responseData = await response.json();
 
-        if (!('error' in responseData))
+        if (responseData.error && responseData.can_bypass && oai_settings.bypass_status_check) {
+            setOnlineStatus('Status check bypassed. Proceed with caution.');
+        }
+        if (!('error' in responseData)) {
             setOnlineStatus('Valid');
+        }
         if ('data' in responseData && Array.isArray(responseData.data)) {
             saveModelList(responseData.data);
         }
@@ -3503,6 +3511,11 @@ $(document).ready(async function () {
         oai_settings.legacy_streaming = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
+
+    $('#openai_bypass_status_check').on('input', function () {
+        oai_settings.bypass_status_check = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    })
 
     $('#chat_completion_source').on('change', function () {
         oai_settings.chat_completion_source = String($(this).find(":selected").val());
