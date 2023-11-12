@@ -735,12 +735,12 @@
                                         <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="top_p" id="top_p_counter">
                                     </div>
                                     <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                        <small data-i18n="Typical Sampling">
-                                            Typical Sampling
-                                            <div class="fa-solid fa-circle-info opacity50p" title="Typical Sampling prioritizes tokens based on their deviation from the average entropy of the set.&#13;It maintains tokens whose cumulative probability is close to a predefined threshold (e.g., 0.5), emphasizing those with average information content.&#13;Set to 1.0 to disable."></div>
+                                        <small data-i18n="Typical P">
+                                            Typical P
+                                            <div class="fa-solid fa-circle-info opacity50p" title="Typical P Sampling prioritizes tokens based on their deviation from the average entropy of the set.&#13;It maintains tokens whose cumulative probability is close to a predefined threshold (e.g., 0.5), emphasizing those with average information content.&#13;Set to 1.0 to disable."></div>
                                         </small>
-                                        <input class="neo-range-slider" type="range" id="typical" name="volume" min="0" max="1" step="0.001">
-                                        <input class="neo-range-input" type="number" min="0" max="1" step="0.001" data-for="typical" id="typical_counter">
+                                        <input class="neo-range-slider" type="range" id="typical_p" name="volume" min="0" max="1" step="0.001">
+                                        <input class="neo-range-input" type="number" min="0" max="1" step="0.001" data-for="typical_p" id="typical_p_counter">
                                     </div>
                                     <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <small data-i18n="Min P">
@@ -867,7 +867,7 @@
                                                 <small>3</small>
                                             </div>
                                             <div data-id="4">
-                                                <span data-i18n="Typical Sampling">Typical P Sampling</span>
+                                                <span data-i18n="Typical P">Typical P</span>
                                                 <small>4</small>
                                             </div>
                                             <div data-id="5">
@@ -1077,7 +1077,7 @@
                                             <div class="toggle_button right_menu_button"></div>
                                         </div>
                                         <div data-id="5">
-                                            <span data-i18n="Typical Sampling">Typical Sampling</span>
+                                            <span data-i18n="Typical P">Typical P</span>
                                             <small>5</small>
                                             <div class="toggle_button right_menu_button"></div>
                                         </div>

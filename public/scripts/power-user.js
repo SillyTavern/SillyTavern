@@ -478,14 +478,11 @@ async function switchLabMode() {
 }
 
 async function switchZenSliders() {
-
     await delay(100)
     const value = localStorage.getItem(storage_keys.enableZenSliders);
     power_user.enableZenSliders = value === null ? false : value == "true";
     $("body").toggleClass("enableZenSliders", power_user.enableZenSliders);
     $("#enableZenSliders").prop("checked", power_user.enableZenSliders);
-
-
 
     if (power_user.enableZenSliders) {
         $("#clickSlidersTips").hide()
@@ -541,87 +538,107 @@ async function switchZenSliders() {
             sliderValue = steps.indexOf(Number(sliderValue))
             if (sliderValue === -1) { sliderValue = 4 } // default to '200' if origSlider has value we can't use
         }
-        if (sliderID == 'max_context') {
-            numSteps = 15
+        //customize decimals
+        if (sliderID == 'max_context' ||
+            sliderID == 'mirostat_mode_textgenerationwebui' ||
+            sliderID == 'mirostat_tau_textgenerationwebui' ||
+            sliderID == 'top_k_textgenerationwebui' ||
+            sliderID == 'num_beams_textgenerationwebui' ||
+            sliderID == 'no_repeat_ngram_size_textgenerationwebui' ||
+            sliderID == 'min_length_textgenerationwebui' ||
+            sliderID == 'top_k' ||
+            sliderID == 'mirostat_mode_kobold' ||
+            sliderID == 'rep_pen_range') {
             decimals = 0
         }
+        if (sliderID == 'eta_cutoff_textgenerationwebui' ||
+            sliderID == 'epsilon_cutoff_textgenerationwebui') {
+            numSteps = 50
+            decimals = 1
+        }
 
-        if (sliderID == 'rep_pen_range_textgenerationwebui') {
-            numSteps = 16
-            decimals = 0
+        //customize steps
+        if (sliderID == 'mirostat_mode_textgenerationwebui' ||
+            sliderID == 'mirostat_mode_kobold') {
+            numSteps = 2
         }
         if (sliderID == 'encoder_rep_pen_textgenerationwebui') {
             numSteps = 14
         }
-        if (sliderID == 'mirostat_mode_textgenerationwebui') {
-            numSteps = 2
-            decimals = 0
+        if (sliderID == 'max_context') {
+            numSteps = 15
+        }
+        if (sliderID == 'rep_pen_range_textgenerationwebui') {
+            numSteps = 16
         }
         if (sliderID == 'mirostat_tau_textgenerationwebui' ||
             sliderID == 'top_k_textgenerationwebui' ||
             sliderID == 'num_beams_textgenerationwebui' ||
-            sliderID == 'no_repeat_ngram_size_textgenerationwebui') {
-            numSteps = 20
-            decimals = 0
-        }
-        if (sliderID == 'presence_pen_textgenerationwebui' ||
-            sliderID == 'freq_pen_textgenerationwebui' ||
-            sliderID == 'mirostat_tau_textgenerationwebui' ||
-            sliderID == 'min_p_textgenerationwebui' ||
             sliderID == 'no_repeat_ngram_size_textgenerationwebui' ||
-            sliderID == 'mirostat_eta_textgenerationwebui' ||
-            sliderID == 'penalty_alpha_textgenerationwebui' ||
-            sliderID == 'length_penalty_textgenerationwebui' ||
             sliderID == 'epsilon_cutoff_textgenerationwebui' ||
-            sliderID == 'mirostat_mode_textgenerationwebui' ||
-            sliderID == 'rep_pen_range_textgenerationwebui' ||
-            sliderID == 'eta_cutoff_textgenerationwebui' ||
-            sliderID == 'top_a_textgenerationwebui' ||
-            sliderID == 'top_k_textgenerationwebui' ||
-            sliderID == 'min_length_textgenerationwebui') {
-            offVal = 0
-        }
-
-        if (sliderID == 'rep_pen_textgenerationwebui' ||
             sliderID == 'tfs_textgenerationwebui' ||
-            sliderID == 'top_p_textgenerationwebui' ||
-            sliderID == 'num_beams_textgenerationwebui' ||
-            sliderID == 'typical_p_textgenerationwebui' ||
-            sliderID == 'encoder_rep_pen_textgenerationwebui' ||
+            sliderID == 'min_p_textgenerationwebui' ||
             sliderID == 'temp_textgenerationwebui' ||
-            sliderID == 'guidance_scale_textgenerationwebui') {
-            offVal = 1
-        }
-
-        if (sliderID == 'epsilon_cutoff_textgenerationwebui') {
+            sliderID == 'temp') {
             numSteps = 20
-            decimals = 1
         }
-        if (sliderID == 'tfs_textgenerationwebui' ||
-            sliderID == 'min_p_textgenerationwebui') {
-            numSteps = 20
-            decimals = 2
-        }
-
         if (sliderID == 'mirostat_eta_textgenerationwebui' ||
             sliderID == 'penalty_alpha_textgenerationwebui' ||
             sliderID == 'length_penalty_textgenerationwebui') {
             numSteps = 50
         }
-        if (sliderID == 'eta_cutoff_textgenerationwebui') {
-            numSteps = 50
-            decimals = 1
+
+        //customize off values
+        if (sliderID == 'presence_pen_textgenerationwebui' ||
+            sliderID == 'freq_pen_textgenerationwebui' ||
+            sliderID == 'mirostat_mode_textgenerationwebui' ||
+            sliderID == 'mirostat_mode_kobold' ||
+            sliderID == 'mirostat_tau_textgenerationwebui' ||
+            sliderID == 'mirostat_tau_kobold' ||
+            sliderID == 'mirostat_eta_textgenerationwebui' ||
+            sliderID == 'mirostat_eta_kobold' ||
+            sliderID == 'min_p_textgenerationwebui' ||
+            sliderID == 'min_p' ||
+            sliderID == 'no_repeat_ngram_size_textgenerationwebui' ||
+            sliderID == 'penalty_alpha_textgenerationwebui' ||
+            sliderID == 'length_penalty_textgenerationwebui' ||
+            sliderID == 'epsilon_cutoff_textgenerationwebui' ||
+            sliderID == 'rep_pen_range_textgenerationwebui' ||
+            sliderID == 'rep_pen_range' ||
+            sliderID == 'eta_cutoff_textgenerationwebui' ||
+            sliderID == 'top_a_textgenerationwebui' ||
+            sliderID == 'top_a' ||
+            sliderID == 'top_k_textgenerationwebui' ||
+            sliderID == 'top_k' ||
+            sliderID == 'rep_pen_slope' ||
+            sliderID == 'min_length_textgenerationwebui') {
+            offVal = 0
         }
+
+        if (sliderID == 'rep_pen_textgenerationwebui' ||
+            sliderID == 'rep_pen' ||
+            sliderID == 'tfs_textgenerationwebui' ||
+            sliderID == 'tfs' ||
+            sliderID == 'top_p_textgenerationwebui' ||
+            sliderID == 'top_p' ||
+            sliderID == 'num_beams_textgenerationwebui' ||
+            sliderID == 'typical_p_textgenerationwebui' ||
+            sliderID == 'typical_p' ||
+            sliderID == 'encoder_rep_pen_textgenerationwebui' ||
+            sliderID == 'temp_textgenerationwebui' ||
+            sliderID == 'temp' ||
+            sliderID == 'guidance_scale_textgenerationwebui' ||
+            sliderID == 'guidance_scale') {
+            offVal = 1
+        }
+
+
+
         if (sliderID == 'guidance_scale_textgenerationwebui') {
             numSteps = 78
         }
-        if (sliderID == 'min_length_textgenerationwebui') {
-            decimals = 0
-        }
-        if (sliderID == 'temp_textgenerationwebui') {
-            numSteps = 20
-        }
 
+        //customize amt gen steps
         if (sliderID !== 'amount_gen') {
             var stepScale = sliderRange / numSteps
         }
@@ -638,18 +655,19 @@ async function switchZenSliders() {
             max: sliderMax,
             create: function () {
                 var handle = $(this).find(".ui-slider-handle");
+                //handling creaetion of amt_gen
                 if (newSlider.attr('id') == 'amount_gen_zenslider') {
-                    //console.log(sliderValue, steps.indexOf(Number(sliderValue)))
                     var handleText = steps[sliderValue]
-                    handle.text(handleText);
-                    //console.log(handleText)
                     var stepNumber = sliderValue
                     var leftMargin = ((stepNumber) / numSteps) * 50 * -1
-                    //console.log(`initial value:${handleText}, stepNum:${stepNumber}, numSteps:${numSteps}, left-margin:${leftMargin}`)
-                    handle.css('margin-left', `${leftMargin}px`)
+                    handle.text(handleText)
+                        .css('margin-left', `${leftMargin}px`)
+                    console.log(`initial value:${handleText}, stepNum:${stepNumber}, numSteps:${numSteps}, left-margin:${leftMargin}`)
                 } else {
+                    //handling creation for all other sliders
                     var numVal = Number(sliderValue).toFixed(decimals)
                     offVal = Number(offVal).toFixed(decimals)
+                    console.log(`${sliderID} ON LOAD OFFVAL ${offVal}`)
                     if (numVal === offVal) {
                         handle.text('Off').css('color', 'rgba(128,128,128,0.5');
                     } else {
@@ -657,51 +675,103 @@ async function switchZenSliders() {
                     }
                     var stepNumber = ((sliderValue - sliderMin) / stepScale)
                     var leftMargin = (stepNumber / numSteps) * 50 * -1
+                    var isManualInput = false
+                    var valueBeforeManualInput
                     handle.css('margin-left', `${leftMargin}px`)
+                        .attr('contenteditable', 'true')
+                        .on('click', function () {
+                            //this just selects all the text in the handle so user can overwrite easily
+                            //needed because JQUery UI uses left/right arrow keys as well as home/end to move the slider..
+                            valueBeforeManualInput = newSlider.val()
+                            console.log(valueBeforeManualInput)
+                            let handleElement = handle.get(0);
+                            let range = document.createRange();
+                            range.selectNodeContents(handleElement);
+                            let selection = window.getSelection();
+                            selection.removeAllRanges();
+                            selection.addRange(range);
+                        })
+                        .on('keyup', function () {
+                            valueBeforeManualInput = newSlider.val()
+                            console.log(valueBeforeManualInput)
+                            isManualInput = true
+                        })
+                        //trigger slider changes when user clicks away
+                        .on('mouseup blur', function () {
+                            let manualInput = parseFloat(handle.text()).toFixed(decimals)
+                            if (isManualInput) {
+                                //disallow manual inputs outside acceptable range 
+                                if (manualInput >= sliderMin && manualInput <= sliderMax) {
+                                    //if value is ok, assign to slider and update handle text and position
+                                    newSlider.val(manualInput)
+                                    handleSlideEvent.call(newSlider, null, { value: parseFloat(manualInput) }, 'manual');
+                                    valueBeforeManualInput = manualInput
+                                } else {
+                                    //if value not ok, warn and reset to last known valid value
+                                    toastr.warning(`Invalid value. Must be between ${sliderMin} and ${sliderMax}`)
+                                    console.log(valueBeforeManualInput)
+                                    newSlider.val(valueBeforeManualInput)
+                                    handle.text(valueBeforeManualInput)
+                                }
+                            }
+                            isManualInput = false
+                        })
                     console.debug(sliderID, sliderValue, handleText, stepNumber, stepScale)
                 }
             },
-            slide: function (event, ui) {
-                var handle = $(this).find(".ui-slider-handle");
-                var numVal = Number(ui.value).toFixed(decimals)
-                offVal = Number(offVal).toFixed(decimals)
-                if (newSlider.attr('id') == 'amount_gen_zenslider') {
-                    //console.log(`stepScale${stepScale}, UIvalue:${ui.value}, mappedValue:${steps[ui.value]}`)
-                    $(this).val(steps[ui.value])
-                    let handleText = steps[ui.value].toFixed(decimals)
-                    handle.text(handleText);
-                    var stepNumber = steps.indexOf(Number(handleText))
-                    var leftMargin = (stepNumber / numSteps) * 50 * -1
-                    //console.log(`handleText:${handleText},stepNum:${stepNumber}, numSteps:${numSteps},LeftMargin:${leftMargin}`)
-                    handle.css('margin-left', `${leftMargin}px`)
-                    originalSlider.val(handleText);
-                    originalSlider.trigger('input')
-                    originalSlider.trigger('change')
-                } else {
-                    if (numVal === offVal) {
-                        handle.text('Off').css('color', 'rgba(128,128,128,0.5')
-                    } else {
-                        handle.text(ui.value.toFixed(decimals)).css('color', '')
-                    }
-                    var stepNumber = ((ui.value - sliderMin) / stepScale)
-                    var leftMargin = (stepNumber / numSteps) * 50 * -1
-                    handle.css('margin-left', `${leftMargin}px`)
-                    let handleText = (ui.value)
-                    originalSlider.val(handleText);
-                    originalSlider.trigger('input')
-                    originalSlider.trigger('change')
-                }
-
-            }
-
+            slide: handleSlideEvent
         });
+
+        function handleSlideEvent(event, ui, type) {
+            var handle = $(this).find(".ui-slider-handle");
+            var numVal = Number(ui.value).toFixed(decimals);
+            offVal = Number(offVal).toFixed(decimals);
+            var stepNumber = ((ui.value - sliderMin) / stepScale);
+            var handleText = (ui.value);
+            var leftMargin = (stepNumber / numSteps) * 50 * -1;
+            var percentOfMax = Number((ui.value / sliderMax)) //what % our value is of the max
+            var perStepPercent = 1 / numSteps //how far in % each step should be on the slider
+            var leftPos = newSlider.width() * (stepNumber * perStepPercent) //how big of a left margin to give the slider for manual inputs
+
+            console.log(`
+            numVal: ${numVal},
+            offVal: ${offVal},
+            initial value: ${handleText},
+            stepNum: ${stepNumber},
+            numSteps: ${numSteps},
+            left-margin: ${leftMargin},
+            width: ${newSlider.width()}
+            percent of max: ${percentOfMax}
+            left: ${leftPos}`)
+
+            //special handling for response length slider, pulls text aliases for step values from an array
+            if (newSlider.attr('id') == 'amount_gen_zenslider') {
+                handleText = steps[stepNumber]
+                handle.text(handleText);
+                newSlider.val(stepNumber)
+            }
+            //everything else uses the flat slider value
+            else {
+                //show 'off' if disabled value is set
+                if (numVal === offVal) { handle.text('Off').css('color', 'rgba(128,128,128,0.5'); }
+                else { handle.text(ui.value.toFixed(decimals)).css('color', ''); }
+                newSlider.val(handleText)
+            }
+            //for manually typed-in values we must adjust left position because JQUI doesn't do it for us
+            if (type === 'manual') { handle.css('left', leftPos) }
+            //adjust a negative left margin to avoid overflowing right side of slider body
+            handle.css('margin-left', `${leftMargin}px`);
+
+            originalSlider.val(handleText);
+            originalSlider.trigger('input');
+            originalSlider.trigger('change');
+        }
         originalSlider.data("newSlider", newSlider);
         await delay(1)
         originalSlider.hide();
     };
 
 }
-
 
 function switchUiMode() {
     const fastUi = localStorage.getItem(storage_keys.fast_ui_mode);
