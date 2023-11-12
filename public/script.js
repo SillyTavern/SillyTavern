@@ -1014,7 +1014,7 @@ function getBackBlock() {
 function getEmptyBlock() {
     const icons = ['fa-dragon', 'fa-otter', 'fa-kiwi-bird', 'fa-crow', 'fa-frog'];
     const texts = ['Here be dragons', 'Otterly empty', 'Kiwibunga', 'Pump-a-Rum', 'Croak it'];
-    const roll = Math.floor(Math.random() * icons.length);
+    const roll = new Date().getMinutes() % icons.length;
     const emptyBlock = `
     <div class="empty_block">
         <i class="fa-solid ${icons[roll]} fa-4x"></i>
