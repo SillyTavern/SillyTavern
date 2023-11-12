@@ -5,64 +5,63 @@
 */
 
 import {
-    saveSettingsDebounced,
-    setOnlineStatus,
+    abortStatusCheck,
+    callPopup,
+    characters,
+    event_types,
+    eventSource,
+    extension_prompt_types,
+    Generate,
     getExtensionPrompt,
+    getNextMessageId,
+    getRequestHeaders,
+    getStoppingStrings,
+    is_send_press,
+    main_api,
+    MAX_INJECTION_DEPTH,
     name1,
     name2,
-    extension_prompt_types,
-    characters,
-    this_chid,
-    callPopup,
-    getRequestHeaders,
-    system_message_types,
     replaceBiasMarkup,
-    is_send_press,
-    Generate,
-    main_api,
-    eventSource,
-    event_types,
-    substituteParams,
-    MAX_INJECTION_DEPTH,
-    getStoppingStrings,
-    getNextMessageId,
     replaceItemizedPromptText,
-    startStatusLoading,
     resultCheckStatus,
-    abortStatusCheck,
+    saveSettingsDebounced,
+    setOnlineStatus,
+    startStatusLoading,
+    substituteParams,
+    system_message_types,
+    this_chid,
 } from "../script.js";
-import { groups, selected_group } from "./group-chats.js";
+import {groups, selected_group} from "./group-chats.js";
 
 import {
-    promptManagerDefaultPromptOrders,
-    chatCompletionDefaultPrompts, Prompt,
-    PromptManagerModule as PromptManager,
+    chatCompletionDefaultPrompts,
     INJECTION_POSITION,
+    Prompt,
+    promptManagerDefaultPromptOrders,
+    PromptManagerModule as PromptManager,
 } from "./PromptManager.js";
 
-import {
-    getCustomStoppingStrings,
-    persona_description_positions,
-    power_user,
-} from "./power-user.js";
-import {
-    SECRET_KEYS,
-    secret_state,
-    writeSecret,
-} from "./secrets.js";
+import {getCustomStoppingStrings, persona_description_positions, power_user,} from "./power-user.js";
+import {SECRET_KEYS, secret_state, writeSecret,} from "./secrets.js";
 
 import {
     delay,
     download,
     getBase64Async,
-    getFileText, getSortableDelay,
+    getFileText,
+    getSortableDelay,
     isDataURL,
     parseJsonFile,
     resetScrollHeight,
     stringFormat,
 } from "./utils.js";
-import { countTokensOpenAI, getTokenizerModel } from "./tokenizers.js";
-import { formatInstructModeChat, formatInstructModeExamples, formatInstructModePrompt, formatInstructModeSystemPrompt } from "./instruct-mode.js";
+import {countTokensOpenAI, getTokenizerModel} from "./tokenizers.js";
+import {
+    formatInstructModeChat,
+    formatInstructModeExamples,
+    formatInstructModePrompt,
+    formatInstructModeSystemPrompt
+} from "./instruct-mode.js";
 
 export {
     openai_msgs,
@@ -1283,7 +1282,10 @@ function appendOpenRouterOptions(model_list, groupModels = false, sort = false) 
     const appendOption = (model, parent = null) => {
         let tokens_dollar = Number(1 / (1000 * model.pricing?.prompt));
         let tokens_rounded = (Math.round(tokens_dollar * 1000) / 1000).toFixed(0);
-        let model_description = `${model.id} | ${tokens_rounded}k t/$ | ${model.context_length} ctx`;
+
+        const price = 0 === Number(model.pricing?.prompt) ? 'Free' : `${tokens_rounded}k t/$ `;
+
+        let model_description = `${model.id} | ${price} | ${model.context_length} ctx`;
         (parent || $('#model_openrouter_select')).append(
             $('<option>', {
                 value: model.id,
@@ -1322,7 +1324,7 @@ const openRouterSortBy = (data, property = 'alphabetically') => {
 };
 
 function openRouterGroupByVendor(array) {
-    const unsorted = array.reduce((acc, curr) => {
+    return array.reduce((acc, curr) => {
         const vendor = curr.id.split('/')[0];
 
         if (!acc.has(vendor)) {
@@ -1333,8 +1335,6 @@ function openRouterGroupByVendor(array) {
 
         return acc;
     }, new Map());
-
-    return unsorted;
 }
 
 async function sendAltScaleRequest(openai_msgs_tosend, logit_bias, signal, type) {
@@ -2312,7 +2312,6 @@ function loadOpenAISettings(data, settings) {
     $('#openai_max_context').val(oai_settings.openai_max_context);
     $('#openai_max_context_counter').val(`${oai_settings.openai_max_context}`);
     $('#model_openrouter_select').val(oai_settings.openrouter_model);
-    $('#openrouter_group_models').val(oai_settings.openrouter_group_models);
     $('#openrouter_sort_models').val(oai_settings.openrouter_sort_models);
 
     $('#openai_max_tokens').val(oai_settings.openai_max_tokens);
@@ -2328,6 +2327,7 @@ function loadOpenAISettings(data, settings) {
     $('#scale-alt').prop('checked', oai_settings.use_alt_scale);
     $('#openrouter_use_fallback').prop('checked', oai_settings.openrouter_use_fallback);
     $('#openrouter_force_instruct').prop('checked', oai_settings.openrouter_force_instruct);
+    $('#openrouter_group_models').prop('checked', oai_settings.openrouter_group_models);
     $('#squash_system_messages').prop('checked', oai_settings.squash_system_messages);
     if (settings.impersonation_prompt !== undefined) oai_settings.impersonation_prompt = settings.impersonation_prompt;
 
@@ -2491,6 +2491,8 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         openrouter_model: settings.openrouter_model,
         openrouter_use_fallback: settings.openrouter_use_fallback,
         openrouter_force_instruct: settings.openrouter_force_instruct,
+        openrouter_group_models: settings.openrouter_group_models,
+        openrouter_sort_models: settings.openrouter_sort_models,
         ai21_model: settings.ai21_model,
         temperature: settings.temp_openai,
         frequency_penalty: settings.freq_pen_openai,
@@ -3164,6 +3166,10 @@ async function onModelChange() {
     eventSource.emit(event_types.CHATCOMPLETION_MODEL_CHANGED, value);
 }
 
+async function onOpenrouterModelSortChange() {
+    await getStatusOpen();
+}
+
 async function onNewPresetClick() {
     const popupText = `
         <h3>Preset name:</h3>
@@ -3636,6 +3642,16 @@ $(document).ready(async function () {
         saveSettingsDebounced();
     });
 
+    $('#openrouter_group_models').on('input', function () {
+        oai_settings.openrouter_group_models = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#openrouter_sort_models').on('input', function () {
+        oai_settings.openrouter_sort_models = String($(this).val());
+        saveSettingsDebounced();
+    });
+
     $('#squash_system_messages').on('input', function () {
         oai_settings.squash_system_messages = !!$(this).prop('checked');
         saveSettingsDebounced();
@@ -3658,8 +3674,8 @@ $(document).ready(async function () {
     $("#model_scale_select").on("change", onModelChange);
     $("#model_palm_select").on("change", onModelChange);
     $("#model_openrouter_select").on("change", onModelChange);
-    $("#openrouter_group_models").on("change", getStatusOpen);
-    $("#openrouter_sort_models").on("change", getStatusOpen);
+    $("#openrouter_group_models").on("change", onOpenrouterModelSortChange);
+    $("#openrouter_sort_models").on("change", onOpenrouterModelSortChange);
     $("#model_ai21_select").on("change", onModelChange);
     $("#settings_preset_openai").on("change", onSettingsPresetChange);
     $("#new_oai_preset").on("click", onNewPresetClick);
