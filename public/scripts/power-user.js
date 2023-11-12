@@ -529,6 +529,7 @@ async function switchZenSliders() {
         var sliderRange = sliderMax - sliderMin
         var numSteps = 10
         var decimals = 2
+        var offVal
 
         if (sliderID == 'amount_gen') {
             decimals = 0
@@ -563,6 +564,35 @@ async function switchZenSliders() {
             numSteps = 20
             decimals = 0
         }
+        if (sliderID == 'presence_pen_textgenerationwebui' ||
+            sliderID == 'freq_pen_textgenerationwebui' ||
+            sliderID == 'mirostat_tau_textgenerationwebui' ||
+            sliderID == 'min_p_textgenerationwebui' ||
+            sliderID == 'no_repeat_ngram_size_textgenerationwebui' ||
+            sliderID == 'mirostat_eta_textgenerationwebui' ||
+            sliderID == 'penalty_alpha_textgenerationwebui' ||
+            sliderID == 'length_penalty_textgenerationwebui' ||
+            sliderID == 'epsilon_cutoff_textgenerationwebui' ||
+            sliderID == 'mirostat_mode_textgenerationwebui' ||
+            sliderID == 'rep_pen_range_textgenerationwebui' ||
+            sliderID == 'eta_cutoff_textgenerationwebui' ||
+            sliderID == 'top_a_textgenerationwebui' ||
+            sliderID == 'top_k_textgenerationwebui' ||
+            sliderID == 'min_length_textgenerationwebui') {
+            offVal = 0
+        }
+
+        if (sliderID == 'rep_pen_textgenerationwebui' ||
+            sliderID == 'tfs_textgenerationwebui' ||
+            sliderID == 'top_p_textgenerationwebui' ||
+            sliderID == 'num_beams_textgenerationwebui' ||
+            sliderID == 'typical_p_textgenerationwebui' ||
+            sliderID == 'encoder_rep_pen_textgenerationwebui' ||
+            sliderID == 'temp_textgenerationwebui' ||
+            sliderID == 'guidance_scale_textgenerationwebui') {
+            offVal = 1
+        }
+
         if (sliderID == 'epsilon_cutoff_textgenerationwebui') {
             numSteps = 20
             decimals = 1
@@ -618,9 +648,13 @@ async function switchZenSliders() {
                     //console.log(`initial value:${handleText}, stepNum:${stepNumber}, numSteps:${numSteps}, left-margin:${leftMargin}`)
                     handle.css('margin-left', `${leftMargin}px`)
                 } else {
-
-                    var handleText = Number(sliderValue).toFixed(decimals)
-                    handle.text(handleText);
+                    var numVal = Number(sliderValue).toFixed(decimals)
+                    offVal = Number(offVal).toFixed(decimals)
+                    if (numVal === offVal) {
+                        handle.text('Off').css('color', 'rgba(128,128,128,0.5');
+                    } else {
+                        handle.text(numVal).css('color', '');
+                    }
                     var stepNumber = ((sliderValue - sliderMin) / stepScale)
                     var leftMargin = (stepNumber / numSteps) * 50 * -1
                     handle.css('margin-left', `${leftMargin}px`)
@@ -629,6 +663,8 @@ async function switchZenSliders() {
             },
             slide: function (event, ui) {
                 var handle = $(this).find(".ui-slider-handle");
+                var numVal = Number(ui.value).toFixed(decimals)
+                offVal = Number(offVal).toFixed(decimals)
                 if (newSlider.attr('id') == 'amount_gen_zenslider') {
                     //console.log(`stepScale${stepScale}, UIvalue:${ui.value}, mappedValue:${steps[ui.value]}`)
                     $(this).val(steps[ui.value])
@@ -642,7 +678,11 @@ async function switchZenSliders() {
                     originalSlider.trigger('input')
                     originalSlider.trigger('change')
                 } else {
-                    handle.text(ui.value.toFixed(decimals));
+                    if (numVal === offVal) {
+                        handle.text('Off').css('color', 'rgba(128,128,128,0.5')
+                    } else {
+                        handle.text(ui.value.toFixed(decimals)).css('color', '')
+                    }
                     var stepNumber = ((ui.value - sliderMin) / stepScale)
                     var leftMargin = (stepNumber / numSteps) * 50 * -1
                     handle.css('margin-left', `${leftMargin}px`)
@@ -656,6 +696,7 @@ async function switchZenSliders() {
 
         });
         originalSlider.data("newSlider", newSlider);
+        await delay(1)
         originalSlider.hide();
     };
 
@@ -2839,7 +2880,7 @@ $(document).ready(() => {
         printCharacters(true);
     });
 
-    $('#aux_field').on('change', function() {
+    $('#aux_field').on('change', function () {
         const value = $(this).find(':selected').val();
         power_user.aux_field = String(value);
         saveSettingsDebounced();
