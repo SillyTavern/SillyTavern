@@ -2764,8 +2764,8 @@ app.post("/getstatus_openai", jsonParser, async function (request, response_gets
             }
         }
         else {
-            console.log('Access Token is incorrect.');
-            response_getstatus_openai.send({ error: true });
+            console.log('OpenAI status check failed. Either Access Token is incorrect or API endpoint is down.');
+            response_getstatus_openai.send({ error: true, can_bypass: true, data: { data: [] } });
         }
     } catch (e) {
         console.error(e);
