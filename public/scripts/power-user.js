@@ -700,7 +700,7 @@ async function switchZenSliders() {
                         .on('mouseup blur', function () {
                             let manualInput = parseFloat(handle.text()).toFixed(decimals)
                             if (isManualInput) {
-                                //disallow manual inputs outside acceptable range 
+                                //disallow manual inputs outside acceptable range
                                 if (manualInput >= sliderMin && manualInput <= sliderMax) {
                                     //if value is ok, assign to slider and update handle text and position
                                     newSlider.val(manualInput)
@@ -1476,10 +1476,11 @@ function switchMaxContextSize() {
     const steps = power_user.max_context_unlocked ? unlockedMaxContextStep : maxContextStep;
 
     for (const element of elements) {
+        const id = element.attr('id');
         element.attr('max', maxValue);
         element.attr('step', steps);
 
-        if (element.attr('id').indexOf('max_context') !== -1) {
+        if (typeof id === 'string' && id?.indexOf('max_context') !== -1) {
             element.attr('min', minValue);
         }
         const value = Number(element.val());
