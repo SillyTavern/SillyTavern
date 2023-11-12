@@ -314,11 +314,6 @@ export const event_types = {
 
 export const eventSource = new EventEmitter();
 
-// Check for override warnings every 5 seconds...
-setInterval(displayOverrideWarnings, 5000);
-// ...or when the chat changes
-eventSource.on(event_types.SETTINGS_LOADED, () => { settingsReady = true; });
-eventSource.on(event_types.CHAT_CHANGED, displayOverrideWarnings);
 eventSource.on(event_types.MESSAGE_RECEIVED, processExtensionHelpers);
 eventSource.on(event_types.MESSAGE_SENT, processExtensionHelpers);
 
@@ -730,7 +725,7 @@ async function firstLoadInit() {
     sendSystemMessage(system_message_types.WELCOME);
     await readSecretState();
     await getClientVersion();
-    await getSettings("def");
+    await getSettings();
     await getUserAvatars();
     await getCharacters();
     await getBackgrounds();
@@ -1081,7 +1076,6 @@ async function printCharacters(fullRefresh = false) {
         }
 
         await delay(1);
-        displayOverrideWarnings();
     }
 
     const storageKey = 'Characters_PerPage';
@@ -5236,7 +5230,7 @@ async function doOnboarding(avatarId) {
 
 //***************SETTINGS****************//
 ///////////////////////////////////////////
-async function getSettings(type) {
+async function getSettings() {
     const response = await fetch("/getsettings", {
         method: "POST",
         headers: getRequestHeaders(),
@@ -5409,6 +5403,7 @@ async function getSettings(type) {
         }
     }
 
+    settingsReady = true;
     eventSource.emit(event_types.SETTINGS_LOADED);
 }
 
@@ -7133,19 +7128,6 @@ const swipe_right = () => {
     }
 }
 
-
-
-function displayOverrideWarnings() {
-    if (!this_chid || !selected_group) {
-        $('.prompt_overridden').hide();
-        $('.jailbreak_overridden').hide();
-        return;
-    }
-
-    $('.prompt_overridden').toggle(!!(characters[this_chid]?.data?.system_prompt));
-    $('.jailbreak_overridden').toggle(!!(characters[this_chid]?.data?.post_history_instructions));
-}
-
 function connectAPISlash(_, text) {
     if (!text) return;
 
@@ -8696,7 +8678,7 @@ jQuery(async function () {
 
         startStatusLoading();
         // Check near immediately rather than waiting for up to 90s
-        setTimeout(getStatusNovel, 10);
+        await getStatusNovel();
     });
 
     //**************************CHARACTER IMPORT EXPORT*************************//

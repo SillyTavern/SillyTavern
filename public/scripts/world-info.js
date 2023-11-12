@@ -227,7 +227,7 @@ async function loadWorldInfoData(name) {
 }
 
 async function updateWorldInfoList() {
-    var result = await fetch("/getsettings", {
+    const result = await fetch("/getsettings", {
         method: "POST",
         headers: getRequestHeaders(),
         body: JSON.stringify({}),
