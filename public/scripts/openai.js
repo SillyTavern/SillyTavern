@@ -31,7 +31,7 @@ import {
     system_message_types,
     this_chid,
 } from "../script.js";
-import {groups, selected_group} from "./group-chats.js";
+import { groups, selected_group } from "./group-chats.js";
 
 import {
     chatCompletionDefaultPrompts,
@@ -41,8 +41,8 @@ import {
     PromptManagerModule as PromptManager,
 } from "./PromptManager.js";
 
-import {getCustomStoppingStrings, persona_description_positions, power_user,} from "./power-user.js";
-import {SECRET_KEYS, secret_state, writeSecret,} from "./secrets.js";
+import { getCustomStoppingStrings, persona_description_positions, power_user, } from "./power-user.js";
+import { SECRET_KEYS, secret_state, writeSecret, } from "./secrets.js";
 
 import {
     delay,
@@ -55,7 +55,7 @@ import {
     resetScrollHeight,
     stringFormat,
 } from "./utils.js";
-import {countTokensOpenAI, getTokenizerModel} from "./tokenizers.js";
+import { countTokensOpenAI, getTokenizerModel } from "./tokenizers.js";
 import {
     formatInstructModeChat,
     formatInstructModeExamples,
