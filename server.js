@@ -2743,7 +2743,7 @@ app.post("/getstatus_openai", jsonParser, async function (request, response_gets
 
                 data.data.forEach(model => {
                     const context_length = model.context_length;
-                    const tokens_dollar = Number(1 / (1000 * model.pricing.prompt));
+                    const tokens_dollar = Number(1 / (1000 * model.pricing?.prompt));
                     const tokens_rounded = (Math.round(tokens_dollar * 1000) / 1000).toFixed(0);
                     models[model.id] = {
                         tokens_per_dollar: tokens_rounded + 'k',
