@@ -1242,7 +1242,7 @@ function saveModelList(data) {
         $('#model_openrouter_select').empty();
         $('#model_openrouter_select').append($('<option>', { value: openrouter_website_model, text: 'Use OpenRouter website setting' }));
         model_list.forEach((model) => {
-            let tokens_dollar = Number(1 / (1000 * model.pricing.prompt));
+            let tokens_dollar = Number(1 / (1000 * model.pricing?.prompt));
             let tokens_rounded = (Math.round(tokens_dollar * 1000) / 1000).toFixed(0);
             let model_description = `${model.id} | ${tokens_rounded}k t/$ | ${model.context_length} ctx`;
             $('#model_openrouter_select').append(
