@@ -93,7 +93,7 @@ function registerEndpoints(app, jsonParser) {
                         const files = getFiles(live2d_folder)
                         //console.debug("FILE FOUND:",files)
                         for (let file of files) {
-                            file = path.normalize(file.replace('public\\', ''));
+                            file = path.normalize(file.replace(path.normalize('public\\'), ''));
                             if (file.endsWith("model3.json")) {
                                 //console.debug("Asset live2d model found:",file)
                                 output[folder].push(path.normalize(path.join(file)));
