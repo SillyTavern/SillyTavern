@@ -432,10 +432,12 @@ var originalSliderValues = []
 
 async function switchLabMode() {
 
-    if (power_user.enableZenSliders) {
-        //force disable ZenSliders for Lab Mode
-        $("#enableZenSliders").trigger('click')
-    }
+    /*     if (power_user.enableZenSliders && power_user.enableLabMode) {
+            toastr.warning("Can't start Lab Mode while Zen Sliders are active")
+            return
+            //$("#enableZenSliders").trigger('click')
+        }
+     */
     await delay(100)
     const value = localStorage.getItem(storage_keys.enableLabMode);
     power_user.enableLabMode = value === null ? false : value == "true";
@@ -457,7 +459,7 @@ async function switchLabMode() {
             .attr('min', '-99999')
             .attr('max', '99999')
             .attr('step', '0.001')
-        $("#labModeWarning").show()
+        $("#labModeWarning").removeClass('hidden')
         //$("#advanced-ai-config-block input[type='range']").hide()
 
     } else {
@@ -470,7 +472,7 @@ async function switchLabMode() {
                 .trigger('input')
         });
         $("#advanced-ai-config-block input[type='range']").show()
-        $("#labModeWarning").hide()
+        $("#labModeWarning").addClass('hidden')
     }
 }
 
@@ -1550,7 +1552,7 @@ export function fuzzySearchWorldInfo(data, searchValue) {
 export function fuzzySearchTags(searchValue) {
     const fuse = new Fuse(tags, {
         keys: [
-            { name: 'name', weight: 1},
+            { name: 'name', weight: 1 },
         ],
         includeScore: true,
         ignoreLocation: true,
@@ -2680,28 +2682,31 @@ $(document).ready(() => {
     });
 
     $("#enableZenSliders").on("input", function () {
-        if (power_user.enableLabMode) {
+        const value = !!$(this).prop('checked');
+        if (power_user.enableLabMode === true && value === true) {
             //disallow zenSliders while Lab Mode is active
-            toastr.warning('ZenSliders not allowed in Mad Lab Mode')
-            $(this).prop('checked', false);
+            toastr.warning('Disable Mad Lab Mode before enabling Zen Sliders')
+            $(this).prop('checked', false).trigger('input');
             return
         }
-        const value = !!$(this).prop('checked');
         power_user.enableZenSliders = value;
         localStorage.setItem(storage_keys.enableZenSliders, Boolean(power_user.enableZenSliders));
+        saveSettingsDebounced();
         switchZenSliders();
     });
 
     $("#enableLabMode").on("input", function () {
-        if (power_user.enableZenSliders) {
+        const value = !!$(this).prop('checked');
+        if (power_user.enableZenSliders === true && value === true) {
             //disallow Lab Mode if ZenSliders are active
-            toastr.warning('Mad Lab Mode not allowed while ZenSliders are active')
-            $(this).prop('checked', false);
+            toastr.warning('Disable Zen Sliders before enabling Mad Lab Mode')
+            $(this).prop('checked', false).trigger('input');;
             return
         }
-        const value = !!$(this).prop('checked');
+
         power_user.enableLabMode = value;
         localStorage.setItem(storage_keys.enableLabMode, Boolean(power_user.enableLabMode));
+        saveSettingsDebounced();
         switchLabMode();
     });
 
@@ -2815,7 +2820,7 @@ $(document).ready(() => {
         switchSimpleMode();
     });
 
-    $('#bogus_folders').on('input', function() {
+    $('#bogus_folders').on('input', function () {
         const value = !!$(this).prop('checked');
         power_user.bogus_folders = value;
         saveSettingsDebounced();

@@ -993,7 +993,7 @@ function getTagBlock(item) {
     const count = Object.values(tag_map).flat().filter(x => x == item.id).length;
     const template = $('#bogus_folder_template .bogus_folder_select').clone();
     template.attr({ 'tagid': item.id, 'id': `BogusFolder${item.id}` });
-    template.find('.avatar').css({'background-color': item.color, 'color': item.color2 });
+    template.find('.avatar').css({ 'background-color': item.color, 'color': item.color2 });
     template.find('.ch_name').text(item.name);
     template.find('.bogus_folder_counter').text(count);
     return template;
@@ -9057,7 +9057,7 @@ jQuery(async function () {
 
             //yolo anything for Lab Mode
             if (power_user.enableLabMode) {
-                console.log($(masterElement).attr('id'), myValue)
+                //console.log($(masterElement).attr('id'), myValue)
                 $(masterElement).val(myValue).trigger('input')
                 return
             }
