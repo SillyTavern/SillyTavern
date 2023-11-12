@@ -9,6 +9,7 @@ import { SystemTtsProvider } from './system.js'
 import { NovelTtsProvider } from './novel.js'
 import { power_user } from '../../power-user.js'
 import { registerSlashCommand } from '../../slash-commands.js'
+import { OpenAITtsProvider } from './openai.js'
 export { talkingAnimation };
 
 const UPDATE_INTERVAL = 1000
@@ -73,6 +74,7 @@ let ttsProviders = {
     Coqui: CoquiTtsProvider,
     Edge: EdgeTtsProvider,
     Novel: NovelTtsProvider,
+    OpenAI: OpenAITtsProvider,
 }
 let ttsProvider
 let ttsProviderName

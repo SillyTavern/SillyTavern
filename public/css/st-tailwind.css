@@ -229,6 +229,10 @@
     display: flex;
 }
 
+.flexBasis100p {
+    flex-basis: 100%;
+}
+
 .flexBasis50p {
     flex-basis: 50%
 }
@@ -261,6 +265,10 @@
 
 .flexShrink {
     flex-shrink: 1
+}
+
+.flexWrap {
+    flex-wrap: wrap;
 }
 
 .flexnowrap {

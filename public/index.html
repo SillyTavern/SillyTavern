@@ -715,8 +715,8 @@
                                             Temperature
                                             <div class="fa-solid fa-circle-info opacity50p" title="Temperature controls the randomness in token selection:&#13;- low temperature (<1.0) leads to more predictable text, favoring higher probability tokens.&#13;- high temperature (>1.0) increases creativity and diversity in the output by giving lower probability tokens a better chance.&#13;Set to 1.0 for the original probabilities."></div>
                                         </small>
-                                        <input class="neo-range-slider" type="range" id="temp" name="volume" min="0.0" max="2.0" step="0.01">
-                                        <input class="neo-range-input" type="number" min="0.0" max="2.0" step="0.01" data-for="temp" id="temp_counter">
+                                        <input class="neo-range-slider" type="range" id="temp" name="volume" min="0.0" max="4.0" step="0.01">
+                                        <input class="neo-range-input" type="number" min="0.0" max="4.0" step="0.01" data-for="temp" id="temp_counter">
                                     </div>
                                     <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <small data-i18n="Top K">
@@ -1723,6 +1723,7 @@
                                     </optgroup>
                                     <optgroup label="GPT-4">
                                         <option value="gpt-4">gpt-4</option>
+                                        <option value="gpt-4-vision-preview">gpt-4-vision-preview</option>
                                         <option value="gpt-4-1106-preview">gpt-4-1106-preview</option>
                                         <option value="gpt-4-0613">gpt-4-0613</option>
                                         <option value="gpt-4-0314">gpt-4-0314</option>
@@ -1744,6 +1745,17 @@
                                 <label for="openai_show_external_models" class="checkbox_label">
                                     <input id="openai_show_external_models" type="checkbox" />
                                     <span data-i18n="Show External models (provided by API)">Show "External" models (provided by API)</span>
+                                </label>
+                                <label for="openai_image_inlining" class="checkbox_label flexWrap">
+                                    <input id="openai_image_inlining" type="checkbox" />
+                                    <span data-i18n="Send inline images">Send inline images (only GPT-4V model)</span>
+                                    <div id="image_inlining_hint" class="flexBasis100p">
+                                        <small>
+                                            Natively replaces captioning if the model supports it.<br>
+                                            Use the <code><i class="fa-solid fa-image"></i></code> action on any message or the
+                                            <code><i class="fa-solid fa-wand-magic-sparkles"></i></code> menu to attach an image to the chat.
+                                        </small>
+                                    </div>
                                 </label>
                             </div>
                         </form>
@@ -2502,6 +2514,7 @@
                             <input type="search" class="text_pole textarea_compact" data-i18n="[placeholder]Search..." id="world_info_search" placeholder="Search...">
                             <select id="world_info_sort_order" class="margin0">
                                 <option data-rule="priority" value="0">Priority</option>
+                                <option data-rule="custom" value="13">Custom</option>
                                 <option data-order="asc" data-field="comment" value="1">Title A-Z</option>
                                 <option data-order="desc" data-field="comment" value="2">Title Z-A</option>
                                 <option data-order="asc" data-field="content" data-rule="length" value="3">Tokens ↗</option>
@@ -2680,7 +2693,7 @@
                             </div>
                         </div>
                     </div>
-                    <div name="UserSettingsSecondColumn" id="UI-Customization" class="flex-container flexFlowColumn wide100p">
+                    <div name="UserSettingsSecondColumn" id="UI-Customization" class="flex-container flexFlowColumn wide100p flexNoGap">
                         <div name="themeToggles">
                             <h4 data-i18n="Theme Toggles">Theme Toggles</h4>
                             <label data-newbie-hidden for="fast_ui_mode" class="checkbox_label" title="removes blur from window backgrounds" data-i18n="[title]removes blur from window backgrounds">
@@ -2737,6 +2750,13 @@
                             </label>
                         </div>
                         <h4><span data-i18n="Miscellaneous">Miscellaneous</span></h4>
+                        <div title="If set in the advanced character definitions, this field will be displayed in the characters list.">
+                            <label for="aux_field" data-i18n="Aux List Field">Aux List Field</label>
+                            <select id="aux_field">
+                                <option data-i18n="Character Version" value="character_version">Character Version</option>
+                                <option data-i18n="Created by" value="creator">Created by</option>
+                            </select>
+                        </div>
                         <div>
                             <label for="play_message_sound" class="checkbox_label">
                                 <input id="play_message_sound" type="checkbox" />
@@ -3088,7 +3108,7 @@
                                 </div>
                                 <div id="create_dummy_persona" class="menu_button menu_button_icon" title="Create a dummy persona" data-i18n="[title]Create a dummy persona">
                                     <i class="fa-solid fa-person-circle-question fa-fw"></i>
-                                    <span data-i18n="Blank">Blank</span>
+                                    <span data-i18n="Create">Create</span>
                                 </div>
                             </h4>
                             <div id="user_avatar_block">
@@ -3752,7 +3772,7 @@
             <form class="world_entry_form  wi-card-entry">
                 <div class="inline-drawer wide100p">
                     <div class="inline-drawer-toggle inline-drawer-header gap5px padding0">
-                        <!-- <span class="drag-handle">&#9776;</span> -->
+                        <span class="drag-handle">&#9776;</span>
                         <div class="gap5px world_entry_thin_controls wide100p alignitemscenter">
                             <div class="fa-fw fa-solid fa-circle-chevron-down inline-drawer-icon down"></div>
                             <span class="flex-container alignitemscenter wide100p">
@@ -3854,7 +3874,7 @@
                                             </span>
                                         </small>
                                     </label>
-                                    <textarea class="text_pole" name="content" rows="4" data-i18n="[placeholder]What this keyword should mean to the AI, sent verbatim" placeholder="What this keyword should mean to the AI, sent verbatim"></textarea>
+                                    <textarea class="text_pole" name="content" rows="8" data-i18n="[placeholder]What this keyword should mean to the AI, sent verbatim" placeholder="What this keyword should mean to the AI, sent verbatim"></textarea>
                                 </div>
                             </div>
                             <div class="world_entry_thin_controls commentContainer">
@@ -4049,6 +4069,7 @@
                             <div title="Prompt" class="mes_prompt fa-solid fa-square-poll-horizontal " data-i18n="[title]Prompt"></div>
                             <div title="Exclude message from prompts" class="mes_hide fa-solid fa-eye" data-i18n="[title]Exclude message from prompts"></div>
                             <div title="Include message in prompts" class="mes_unhide fa-solid fa-eye-slash" data-i18n="[title]Include message in prompts"></div>
+                            <div title="Embed image" class="mes_embed fa-solid fa-image" data-i18n="[title]Embed image"></div>
                             <div title="Create bookmark" class="mes_create_bookmark fa-regular fa-solid fa-book-bookmark" data-i18n="[title]Create Bookmark"></div>
                             <div title="Create branch" class="mes_create_branch fa-regular fa-code-branch" data-i18n="[title]Create Branch"></div>
                             <div title="Copy" class="mes_copy fa-solid fa-copy " data-i18n="[title]Copy"></div>
@@ -4167,7 +4188,7 @@
     <div id="bogus_folder_template" class="template_element">
         <div class="bogus_folder_select flex-container wide100p alignitemsflexstart">
             <div class="avatar flex alignitemscenter textAlignCenter">
-                <i class="fa-solid fa-folder-open fa-xl"></i>
+                <i class="bogus_folder_icon fa-solid fa-folder-open fa-xl"></i>
             </div>
             <div class="flex-container wide100pLess70px character_select_container">
                 <div class="wide100p character_name_block">
@@ -4176,6 +4197,18 @@
                 <div class="bogus_folder_counter_block">
                     <span class="bogus_folder_counter"></span>
                     <span data="character card(s)">character card(s)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="bogus_folder_back_template" class="template_element">
+        <div class="bogus_folder_select flex-container wide100p alignitemsflexstart" id="BogusFolderBack" tagid="back">
+            <div class="avatar flex alignitemscenter textAlignCenter">
+                <i class="bogus_folder_icon fa-solid fa-xl fa-right-from-bracket fa-flip-horizontal"></i>
+            </div>
+            <div class="flex-container wide100pLess70px character_select_container height100p alignitemscenter">
+                <div class="wide100p character_name_block">
+                    <span class="ch_name">Go back</span>
                 </div>
             </div>
         </div>

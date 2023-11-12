@@ -38,14 +38,13 @@ export const tag_filter_types = {
 };
 
 const ACTIONABLE_TAGS = {
-
     FAV: { id: 1, name: 'Show only favorites', color: 'rgba(255, 255, 0, 0.5)', action: applyFavFilter, icon: 'fa-solid fa-star', class: 'filterByFavorites' },
     GROUP: { id: 0, name: 'Show only groups', color: 'rgba(100, 100, 100, 0.5)', action: filterByGroups, icon: 'fa-solid fa-users', class: 'filterByGroups' },
+    VIEW: { id: 2, name: 'Manage tags', color: 'rgba(150, 100, 100, 0.5)', action: onViewTagsListClick, icon: 'fa-solid fa-gear', class: 'manageTags' },
     HINT: { id: 3, name: 'Show Tag List', color: 'rgba(150, 100, 100, 0.5)', action: onTagListHintClick, icon: 'fa-solid fa-tags', class: 'showTagList' },
 }
 
 const InListActionable = {
-    VIEW: { id: 2, name: 'Manage tags', color: 'rgba(150, 100, 100, 0.5)', action: onViewTagsListClick, icon: 'fa-solid fa-gear' },
 }
 
 const DEFAULT_TAGS = [
@@ -321,9 +320,9 @@ function appendTagToList(listElement, tag, { removable, selectable, action, isGe
         tagElement.on('click', () => action.bind(tagElement)(filter));
         tagElement.addClass('actionable');
     }
-    if (action && tag.id === 2) {
+    /*if (action && tag.id === 2) {
         tagElement.addClass('innerActionable hidden');
-    }
+    }*/
 
     $(listElement).append(tagElement);
 }

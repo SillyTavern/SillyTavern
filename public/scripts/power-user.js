@@ -220,6 +220,7 @@ let power_user = {
     encode_tags: false,
     servers: [],
     bogus_folders: false,
+    aux_field: 'character_version',
 };
 
 let themes = [];
@@ -1257,6 +1258,7 @@ function loadPowerUserSettings(settings, data) {
     $(`#chat_display option[value=${power_user.chat_display}]`).attr("selected", true).trigger('change');
     $('#chat_width_slider').val(power_user.chat_width);
     $("#token_padding").val(power_user.token_padding);
+    $("#aux_field").val(power_user.aux_field);
 
     $("#font_scale").val(power_user.font_scale);
     $("#font_scale_counter").val(power_user.font_scale);
@@ -1357,7 +1359,7 @@ function loadMaxContextUnlocked() {
 }
 
 function switchMaxContextSize() {
-    const elements = [$('#max_context'), $('#rep_pen_range'), $('#rep_pen_range_textgenerationwebui')];
+    const elements = [$('#max_context'), $('#max_context_counter'), $('#rep_pen_range'), $('#rep_pen_range_textgenerationwebui')];
     const maxValue = power_user.max_context_unlocked ? MAX_CONTEXT_UNLOCKED : MAX_CONTEXT_DEFAULT;
     const minValue = power_user.max_context_unlocked ? maxContextMin : maxContextMin;
     const steps = power_user.max_context_unlocked ? unlockedMaxContextStep : maxContextStep;
@@ -1366,7 +1368,7 @@ function switchMaxContextSize() {
         element.attr('max', maxValue);
         element.attr('step', steps);
 
-        if (element.attr('id') == 'max_context') {
+        if (element.attr('id').indexOf('max_context') !== -1) {
             element.attr('min', minValue);
         }
         const value = Number(element.val());
@@ -1651,7 +1653,17 @@ function sortEntitiesList(entities) {
         return;
     }
 
-    entities.sort((a, b) => sortFunc(a.item, b.item));
+    entities.sort((a, b) => {
+        if (a.type === 'tag' && b.type !== 'tag') {
+            return -1;
+        }
+
+        if (a.type !== 'tag' && b.type === 'tag') {
+            return 1;
+        }
+
+        return sortFunc(a.item, b.item);
+    });
 }
 
 async function saveTheme() {
@@ -2825,6 +2837,13 @@ $(document).ready(() => {
         power_user.bogus_folders = value;
         saveSettingsDebounced();
         printCharacters(true);
+    });
+
+    $('#aux_field').on('change', function() {
+        const value = $(this).find(':selected').val();
+        power_user.aux_field = String(value);
+        saveSettingsDebounced();
+        printCharacters(false);
     });
 
     $(document).on('click', '#debug_table [data-debug-function]', function () {
