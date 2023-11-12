@@ -1244,14 +1244,12 @@ function saveModelList(data) {
     model_list.sort((a, b) => a?.id && b?.id && a.id.localeCompare(b.id));
 
     if (oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER) {
-        const sortingProperty = document.getElementById('openrouter_sort_models').value;
-        model_list = openRouterSortBy(model_list, sortingProperty);
+        model_list = openRouterSortBy(model_list, oai_settings.openrouter_sort_models);
 
         $('#model_openrouter_select').empty();
 
-        const groupModels = document.getElementById('openrouter_group_models')?.checked ?? false;
-        if (groupModels) {
-            appendOpenRouterOptions(openRouterGroupByVendor(model_list), groupModels);
+        if (true === oai_settings.openrouter_group_models) {
+            appendOpenRouterOptions(openRouterGroupByVendor(model_list), oai_settings.openrouter_group_models);
         } else {
             appendOpenRouterOptions(model_list);
         }
