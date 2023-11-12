@@ -927,12 +927,12 @@ async function getStatus() {
 
 export function startStatusLoading() {
     $(".api_loading").show();
-    $(".api_button").attr("disabled", "disabled").addClass("disabled");
+    $(".api_button").addClass("disabled");
 }
 
 export function stopStatusLoading() {
     $(".api_loading").hide();
-    $(".api_button").removeAttr("disabled").removeClass("disabled");
+    $(".api_button").removeClass("disabled");
 }
 
 export function resultCheckStatus() {
