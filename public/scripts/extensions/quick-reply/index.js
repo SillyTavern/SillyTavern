@@ -21,7 +21,7 @@ const defaultSettings = {
 
 //method from worldinfo
 async function updateQuickReplyPresetList() {
-    var result = await fetch("/getsettings", {
+    const result = await fetch("/getsettings", {
         method: "POST",
         headers: getRequestHeaders(),
         body: JSON.stringify({}),

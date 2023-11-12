@@ -220,6 +220,7 @@ let power_user = {
     encode_tags: false,
     servers: [],
     bogus_folders: false,
+    aux_field: 'character_version',
 };
 
 let themes = [];
@@ -432,10 +433,12 @@ var originalSliderValues = []
 
 async function switchLabMode() {
 
-    if (power_user.enableZenSliders) {
-        //force disable ZenSliders for Lab Mode
-        $("#enableZenSliders").trigger('click')
-    }
+    /*     if (power_user.enableZenSliders && power_user.enableLabMode) {
+            toastr.warning("Can't start Lab Mode while Zen Sliders are active")
+            return
+            //$("#enableZenSliders").trigger('click')
+        }
+     */
     await delay(100)
     const value = localStorage.getItem(storage_keys.enableLabMode);
     power_user.enableLabMode = value === null ? false : value == "true";
@@ -457,7 +460,7 @@ async function switchLabMode() {
             .attr('min', '-99999')
             .attr('max', '99999')
             .attr('step', '0.001')
-        $("#labModeWarning").show()
+        $("#labModeWarning").removeClass('displayNone')
         //$("#advanced-ai-config-block input[type='range']").hide()
 
     } else {
@@ -470,19 +473,16 @@ async function switchLabMode() {
                 .trigger('input')
         });
         $("#advanced-ai-config-block input[type='range']").show()
-        $("#labModeWarning").hide()
+        $("#labModeWarning").addClass('displayNone')
     }
 }
 
 async function switchZenSliders() {
-
     await delay(100)
     const value = localStorage.getItem(storage_keys.enableZenSliders);
     power_user.enableZenSliders = value === null ? false : value == "true";
     $("body").toggleClass("enableZenSliders", power_user.enableZenSliders);
     $("#enableZenSliders").prop("checked", power_user.enableZenSliders);
-
-
 
     if (power_user.enableZenSliders) {
         $("#clickSlidersTips").hide()
@@ -526,6 +526,7 @@ async function switchZenSliders() {
         var sliderRange = sliderMax - sliderMin
         var numSteps = 10
         var decimals = 2
+        var offVal
 
         if (sliderID == 'amount_gen') {
             decimals = 0
@@ -537,58 +538,107 @@ async function switchZenSliders() {
             sliderValue = steps.indexOf(Number(sliderValue))
             if (sliderValue === -1) { sliderValue = 4 } // default to '200' if origSlider has value we can't use
         }
-        if (sliderID == 'max_context') {
-            numSteps = 15
+        //customize decimals
+        if (sliderID == 'max_context' ||
+            sliderID == 'mirostat_mode_textgenerationwebui' ||
+            sliderID == 'mirostat_tau_textgenerationwebui' ||
+            sliderID == 'top_k_textgenerationwebui' ||
+            sliderID == 'num_beams_textgenerationwebui' ||
+            sliderID == 'no_repeat_ngram_size_textgenerationwebui' ||
+            sliderID == 'min_length_textgenerationwebui' ||
+            sliderID == 'top_k' ||
+            sliderID == 'mirostat_mode_kobold' ||
+            sliderID == 'rep_pen_range') {
             decimals = 0
         }
+        if (sliderID == 'eta_cutoff_textgenerationwebui' ||
+            sliderID == 'epsilon_cutoff_textgenerationwebui') {
+            numSteps = 50
+            decimals = 1
+        }
 
-        if (sliderID == 'rep_pen_range_textgenerationwebui') {
-            numSteps = 16
-            decimals = 0
+        //customize steps
+        if (sliderID == 'mirostat_mode_textgenerationwebui' ||
+            sliderID == 'mirostat_mode_kobold') {
+            numSteps = 2
         }
         if (sliderID == 'encoder_rep_pen_textgenerationwebui') {
             numSteps = 14
         }
-        if (sliderID == 'mirostat_mode_textgenerationwebui') {
-            numSteps = 2
-            decimals = 0
+        if (sliderID == 'max_context') {
+            numSteps = 15
+        }
+        if (sliderID == 'rep_pen_range_textgenerationwebui') {
+            numSteps = 16
         }
         if (sliderID == 'mirostat_tau_textgenerationwebui' ||
             sliderID == 'top_k_textgenerationwebui' ||
             sliderID == 'num_beams_textgenerationwebui' ||
-            sliderID == 'no_repeat_ngram_size_textgenerationwebui') {
+            sliderID == 'no_repeat_ngram_size_textgenerationwebui' ||
+            sliderID == 'epsilon_cutoff_textgenerationwebui' ||
+            sliderID == 'tfs_textgenerationwebui' ||
+            sliderID == 'min_p_textgenerationwebui' ||
+            sliderID == 'temp_textgenerationwebui' ||
+            sliderID == 'temp') {
             numSteps = 20
-            decimals = 0
         }
-        if (sliderID == 'epsilon_cutoff_textgenerationwebui') {
-            numSteps = 20
-            decimals = 1
-        }
-        if (sliderID == 'tfs_textgenerationwebui' ||
-            sliderID == 'min_p_textgenerationwebui') {
-            numSteps = 20
-            decimals = 2
-        }
-
         if (sliderID == 'mirostat_eta_textgenerationwebui' ||
             sliderID == 'penalty_alpha_textgenerationwebui' ||
             sliderID == 'length_penalty_textgenerationwebui') {
             numSteps = 50
         }
-        if (sliderID == 'eta_cutoff_textgenerationwebui') {
-            numSteps = 50
-            decimals = 1
+
+        //customize off values
+        if (sliderID == 'presence_pen_textgenerationwebui' ||
+            sliderID == 'freq_pen_textgenerationwebui' ||
+            sliderID == 'mirostat_mode_textgenerationwebui' ||
+            sliderID == 'mirostat_mode_kobold' ||
+            sliderID == 'mirostat_tau_textgenerationwebui' ||
+            sliderID == 'mirostat_tau_kobold' ||
+            sliderID == 'mirostat_eta_textgenerationwebui' ||
+            sliderID == 'mirostat_eta_kobold' ||
+            sliderID == 'min_p_textgenerationwebui' ||
+            sliderID == 'min_p' ||
+            sliderID == 'no_repeat_ngram_size_textgenerationwebui' ||
+            sliderID == 'penalty_alpha_textgenerationwebui' ||
+            sliderID == 'length_penalty_textgenerationwebui' ||
+            sliderID == 'epsilon_cutoff_textgenerationwebui' ||
+            sliderID == 'rep_pen_range_textgenerationwebui' ||
+            sliderID == 'rep_pen_range' ||
+            sliderID == 'eta_cutoff_textgenerationwebui' ||
+            sliderID == 'top_a_textgenerationwebui' ||
+            sliderID == 'top_a' ||
+            sliderID == 'top_k_textgenerationwebui' ||
+            sliderID == 'top_k' ||
+            sliderID == 'rep_pen_slope' ||
+            sliderID == 'min_length_textgenerationwebui') {
+            offVal = 0
         }
+
+        if (sliderID == 'rep_pen_textgenerationwebui' ||
+            sliderID == 'rep_pen' ||
+            sliderID == 'tfs_textgenerationwebui' ||
+            sliderID == 'tfs' ||
+            sliderID == 'top_p_textgenerationwebui' ||
+            sliderID == 'top_p' ||
+            sliderID == 'num_beams_textgenerationwebui' ||
+            sliderID == 'typical_p_textgenerationwebui' ||
+            sliderID == 'typical_p' ||
+            sliderID == 'encoder_rep_pen_textgenerationwebui' ||
+            sliderID == 'temp_textgenerationwebui' ||
+            sliderID == 'temp' ||
+            sliderID == 'guidance_scale_textgenerationwebui' ||
+            sliderID == 'guidance_scale') {
+            offVal = 1
+        }
+
+
+
         if (sliderID == 'guidance_scale_textgenerationwebui') {
             numSteps = 78
         }
-        if (sliderID == 'min_length_textgenerationwebui') {
-            decimals = 0
-        }
-        if (sliderID == 'temp_textgenerationwebui') {
-            numSteps = 20
-        }
 
+        //customize amt gen steps
         if (sliderID !== 'amount_gen') {
             var stepScale = sliderRange / numSteps
         }
@@ -605,59 +655,123 @@ async function switchZenSliders() {
             max: sliderMax,
             create: function () {
                 var handle = $(this).find(".ui-slider-handle");
+                //handling creaetion of amt_gen
                 if (newSlider.attr('id') == 'amount_gen_zenslider') {
-                    //console.log(sliderValue, steps.indexOf(Number(sliderValue)))
                     var handleText = steps[sliderValue]
-                    handle.text(handleText);
-                    //console.log(handleText)
                     var stepNumber = sliderValue
                     var leftMargin = ((stepNumber) / numSteps) * 50 * -1
-                    //console.log(`initial value:${handleText}, stepNum:${stepNumber}, numSteps:${numSteps}, left-margin:${leftMargin}`)
-                    handle.css('margin-left', `${leftMargin}px`)
+                    handle.text(handleText)
+                        .css('margin-left', `${leftMargin}px`)
+                    console.log(`initial value:${handleText}, stepNum:${stepNumber}, numSteps:${numSteps}, left-margin:${leftMargin}`)
                 } else {
-
-                    var handleText = Number(sliderValue).toFixed(decimals)
-                    handle.text(handleText);
+                    //handling creation for all other sliders
+                    var numVal = Number(sliderValue).toFixed(decimals)
+                    offVal = Number(offVal).toFixed(decimals)
+                    console.log(`${sliderID} ON LOAD OFFVAL ${offVal}`)
+                    if (numVal === offVal) {
+                        handle.text('Off').css('color', 'rgba(128,128,128,0.5');
+                    } else {
+                        handle.text(numVal).css('color', '');
+                    }
                     var stepNumber = ((sliderValue - sliderMin) / stepScale)
                     var leftMargin = (stepNumber / numSteps) * 50 * -1
+                    var isManualInput = false
+                    var valueBeforeManualInput
                     handle.css('margin-left', `${leftMargin}px`)
+                        .attr('contenteditable', 'true')
+                        .on('click', function () {
+                            //this just selects all the text in the handle so user can overwrite easily
+                            //needed because JQUery UI uses left/right arrow keys as well as home/end to move the slider..
+                            valueBeforeManualInput = newSlider.val()
+                            console.log(valueBeforeManualInput)
+                            let handleElement = handle.get(0);
+                            let range = document.createRange();
+                            range.selectNodeContents(handleElement);
+                            let selection = window.getSelection();
+                            selection.removeAllRanges();
+                            selection.addRange(range);
+                        })
+                        .on('keyup', function () {
+                            valueBeforeManualInput = newSlider.val()
+                            console.log(valueBeforeManualInput)
+                            isManualInput = true
+                        })
+                        //trigger slider changes when user clicks away
+                        .on('mouseup blur', function () {
+                            let manualInput = parseFloat(handle.text()).toFixed(decimals)
+                            if (isManualInput) {
+                                //disallow manual inputs outside acceptable range
+                                if (manualInput >= sliderMin && manualInput <= sliderMax) {
+                                    //if value is ok, assign to slider and update handle text and position
+                                    newSlider.val(manualInput)
+                                    handleSlideEvent.call(newSlider, null, { value: parseFloat(manualInput) }, 'manual');
+                                    valueBeforeManualInput = manualInput
+                                } else {
+                                    //if value not ok, warn and reset to last known valid value
+                                    toastr.warning(`Invalid value. Must be between ${sliderMin} and ${sliderMax}`)
+                                    console.log(valueBeforeManualInput)
+                                    newSlider.val(valueBeforeManualInput)
+                                    handle.text(valueBeforeManualInput)
+                                }
+                            }
+                            isManualInput = false
+                        })
                     console.debug(sliderID, sliderValue, handleText, stepNumber, stepScale)
                 }
             },
-            slide: function (event, ui) {
-                var handle = $(this).find(".ui-slider-handle");
-                if (newSlider.attr('id') == 'amount_gen_zenslider') {
-                    //console.log(`stepScale${stepScale}, UIvalue:${ui.value}, mappedValue:${steps[ui.value]}`)
-                    $(this).val(steps[ui.value])
-                    let handleText = steps[ui.value].toFixed(decimals)
-                    handle.text(handleText);
-                    var stepNumber = steps.indexOf(Number(handleText))
-                    var leftMargin = (stepNumber / numSteps) * 50 * -1
-                    //console.log(`handleText:${handleText},stepNum:${stepNumber}, numSteps:${numSteps},LeftMargin:${leftMargin}`)
-                    handle.css('margin-left', `${leftMargin}px`)
-                    originalSlider.val(handleText);
-                    originalSlider.trigger('input')
-                    originalSlider.trigger('change')
-                } else {
-                    handle.text(ui.value.toFixed(decimals));
-                    var stepNumber = ((ui.value - sliderMin) / stepScale)
-                    var leftMargin = (stepNumber / numSteps) * 50 * -1
-                    handle.css('margin-left', `${leftMargin}px`)
-                    let handleText = (ui.value)
-                    originalSlider.val(handleText);
-                    originalSlider.trigger('input')
-                    originalSlider.trigger('change')
-                }
-
-            }
-
+            slide: handleSlideEvent
         });
+
+        function handleSlideEvent(event, ui, type) {
+            var handle = $(this).find(".ui-slider-handle");
+            var numVal = Number(ui.value).toFixed(decimals);
+            offVal = Number(offVal).toFixed(decimals);
+            var stepNumber = ((ui.value - sliderMin) / stepScale);
+            var handleText = (ui.value);
+            var leftMargin = (stepNumber / numSteps) * 50 * -1;
+            var percentOfMax = Number((ui.value / sliderMax)) //what % our value is of the max
+            var perStepPercent = 1 / numSteps //how far in % each step should be on the slider
+            var leftPos = newSlider.width() * (stepNumber * perStepPercent) //how big of a left margin to give the slider for manual inputs
+
+            console.log(`
+            numVal: ${numVal},
+            offVal: ${offVal},
+            initial value: ${handleText},
+            stepNum: ${stepNumber},
+            numSteps: ${numSteps},
+            left-margin: ${leftMargin},
+            width: ${newSlider.width()}
+            percent of max: ${percentOfMax}
+            left: ${leftPos}`)
+
+            //special handling for response length slider, pulls text aliases for step values from an array
+            if (newSlider.attr('id') == 'amount_gen_zenslider') {
+                handleText = steps[stepNumber]
+                handle.text(handleText);
+                newSlider.val(stepNumber)
+            }
+            //everything else uses the flat slider value
+            else {
+                //show 'off' if disabled value is set
+                if (numVal === offVal) { handle.text('Off').css('color', 'rgba(128,128,128,0.5'); }
+                else { handle.text(ui.value.toFixed(decimals)).css('color', ''); }
+                newSlider.val(handleText)
+            }
+            //for manually typed-in values we must adjust left position because JQUI doesn't do it for us
+            if (type === 'manual') { handle.css('left', leftPos) }
+            //adjust a negative left margin to avoid overflowing right side of slider body
+            handle.css('margin-left', `${leftMargin}px`);
+
+            originalSlider.val(handleText);
+            originalSlider.trigger('input');
+            originalSlider.trigger('change');
+        }
         originalSlider.data("newSlider", newSlider);
+        await delay(1)
         originalSlider.hide();
     };
 
 }
-
 
 function switchUiMode() {
     const fastUi = localStorage.getItem(storage_keys.fast_ui_mode);
@@ -1255,6 +1369,7 @@ function loadPowerUserSettings(settings, data) {
     $(`#chat_display option[value=${power_user.chat_display}]`).attr("selected", true).trigger('change');
     $('#chat_width_slider').val(power_user.chat_width);
     $("#token_padding").val(power_user.token_padding);
+    $("#aux_field").val(power_user.aux_field);
 
     $("#font_scale").val(power_user.font_scale);
     $("#font_scale_counter").val(power_user.font_scale);
@@ -1355,16 +1470,17 @@ function loadMaxContextUnlocked() {
 }
 
 function switchMaxContextSize() {
-    const elements = [$('#max_context'), $('#rep_pen_range'), $('#rep_pen_range_textgenerationwebui')];
+    const elements = [$('#max_context'), $('#max_context_counter'), $('#rep_pen_range'), $('#rep_pen_range_textgenerationwebui')];
     const maxValue = power_user.max_context_unlocked ? MAX_CONTEXT_UNLOCKED : MAX_CONTEXT_DEFAULT;
     const minValue = power_user.max_context_unlocked ? maxContextMin : maxContextMin;
     const steps = power_user.max_context_unlocked ? unlockedMaxContextStep : maxContextStep;
 
     for (const element of elements) {
+        const id = element.attr('id');
         element.attr('max', maxValue);
         element.attr('step', steps);
 
-        if (element.attr('id') == 'max_context') {
+        if (typeof id === 'string' && id?.indexOf('max_context') !== -1) {
             element.attr('min', minValue);
         }
         const value = Number(element.val());
@@ -1550,7 +1666,7 @@ export function fuzzySearchWorldInfo(data, searchValue) {
 export function fuzzySearchTags(searchValue) {
     const fuse = new Fuse(tags, {
         keys: [
-            { name: 'name', weight: 1},
+            { name: 'name', weight: 1 },
         ],
         includeScore: true,
         ignoreLocation: true,
@@ -2690,28 +2806,31 @@ $(document).ready(() => {
     });
 
     $("#enableZenSliders").on("input", function () {
-        if (power_user.enableLabMode) {
+        const value = !!$(this).prop('checked');
+        if (power_user.enableLabMode === true && value === true) {
             //disallow zenSliders while Lab Mode is active
-            toastr.warning('ZenSliders not allowed in Mad Lab Mode')
-            $(this).prop('checked', false);
+            toastr.warning('Disable Mad Lab Mode before enabling Zen Sliders')
+            $(this).prop('checked', false).trigger('input');
             return
         }
-        const value = !!$(this).prop('checked');
         power_user.enableZenSliders = value;
         localStorage.setItem(storage_keys.enableZenSliders, Boolean(power_user.enableZenSliders));
+        saveSettingsDebounced();
         switchZenSliders();
     });
 
     $("#enableLabMode").on("input", function () {
-        if (power_user.enableZenSliders) {
+        const value = !!$(this).prop('checked');
+        if (power_user.enableZenSliders === true && value === true) {
             //disallow Lab Mode if ZenSliders are active
-            toastr.warning('Mad Lab Mode not allowed while ZenSliders are active')
-            $(this).prop('checked', false);
+            toastr.warning('Disable Zen Sliders before enabling Mad Lab Mode')
+            $(this).prop('checked', false).trigger('input');;
             return
         }
-        const value = !!$(this).prop('checked');
+
         power_user.enableLabMode = value;
         localStorage.setItem(storage_keys.enableLabMode, Boolean(power_user.enableLabMode));
+        saveSettingsDebounced();
         switchLabMode();
     });
 
@@ -2825,11 +2944,18 @@ $(document).ready(() => {
         switchSimpleMode();
     });
 
-    $('#bogus_folders').on('input', function() {
+    $('#bogus_folders').on('input', function () {
         const value = !!$(this).prop('checked');
         power_user.bogus_folders = value;
         saveSettingsDebounced();
         printCharacters(true);
+    });
+
+    $('#aux_field').on('change', function () {
+        const value = $(this).find(':selected').val();
+        power_user.aux_field = String(value);
+        saveSettingsDebounced();
+        printCharacters(false);
     });
 
     $(document).on('click', '#debug_table [data-debug-function]', function () {
