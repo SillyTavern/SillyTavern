@@ -1832,8 +1832,17 @@
                                 </select>
                             </div>
                             <div class="marginTopBot5">
-                                <label for="openrouter_group_options" class="checkbox_label">
-                                    <input id="openrouter_group_options" type="checkbox" onchange="document.getElementById('chat_completion_source').dispatchEvent(new Event('change'))"/>
+                                <label for="openrouter_sort_models" class="checkbox_label">
+                                    <select id="openrouter_sort_models">
+                                        <option data-i18n="Alphabetically" value="alphabetically">Alphabetically</option>
+                                        <option data-i18n="Price" value="pricing.prompt">Price (cheapest)</option>
+                                        <option data-i18n="Context Size" value="context_length">Context Size</option>
+                                    </select>
+                                </label>
+                            </div>
+                            <div class="marginTopBot5">
+                                <label for="openrouter_group_models" class="checkbox_label">
+                                    <input id="openrouter_group_models" type="checkbox" />
                                     <span data-i18n="Group by vendor names">Group by vendor names</span>
                                 </label>
                             </div>
