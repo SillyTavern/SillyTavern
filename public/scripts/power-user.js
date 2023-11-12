@@ -460,7 +460,7 @@ async function switchLabMode() {
             .attr('min', '-99999')
             .attr('max', '99999')
             .attr('step', '0.001')
-        $("#labModeWarning").removeClass('hidden')
+        $("#labModeWarning").removeClass('displayNone')
         //$("#advanced-ai-config-block input[type='range']").hide()
 
     } else {
@@ -473,7 +473,7 @@ async function switchLabMode() {
                 .trigger('input')
         });
         $("#advanced-ai-config-block input[type='range']").show()
-        $("#labModeWarning").addClass('hidden')
+        $("#labModeWarning").addClass('displayNone')
     }
 }
 

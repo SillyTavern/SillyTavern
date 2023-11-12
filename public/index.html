@@ -213,8 +213,8 @@
                         </div>
                         <div id="common-gen-settings-block" class="width100p">
                             <div id="pro-settings-block" class="flex-container gap10h5v justifyCenter">
-                                <div id="amount_gen_block" class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="response legth(tokens)">
-                                    <small>Response (tokens)</small>
+                                <div id="amount_gen_block" class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                    <small data-i18n="response legth(tokens)">Response (tokens)</small>
                                     <input class="neo-range-slider" type="range" id="amount_gen" name="volume" min="16" max="1024" step="1">
                                     <div data-randomization-disabled="true" class="wide100p">
                                         <input class="neo-range-input" type="number" min="16" max="1024" step="1" data-for="amount_gen" id="amount_gen_counter">
@@ -236,8 +236,8 @@
                                         </label>
                                     </div>
                                 </div>
-                                <div id="max_context_block" class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0" data-i18n="context size(tokens)">
-                                    <small>Context (tokens)</small>
+                                <div id="max_context_block" class="alignitemscenter flex-container marginBot5 flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                    <small data-i18n="context size(tokens)">Context (tokens)</small>
                                     <input class="neo-range-slider" type="range" id="max_context" name="volume" min="512" max="8192" step="64">
                                     <div data-randomization-disabled="true" class="wide100p">
                                         <input class="neo-range-input" type="number" min="512" max="8192" step="64" data-for="max_context" id="max_context_counter">
@@ -245,7 +245,7 @@
                                     <div class="flex-container alignitemscenter justifyCenter marginTop5" id="max_context_unlocked_block">
                                         <label class="checkbox_label">
                                             <input id="max_context_unlocked" type="checkbox" />
-                                            <small data-i18n="unlocked">Unlocked
+                                            <small><span data-i18n="unlocked">Unlocked</span>
                                                 <div id="max_context_unlocked_warning" class="fa-solid fa-circle-info opacity50p " title="Only select models support context sizes greater than 4096 tokens.&#13;Increase only if you know what you're doing."></div>
                                             </small>
                                         </label>
