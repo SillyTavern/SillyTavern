@@ -9104,8 +9104,11 @@ jQuery(async function () {
         }
     });
 
+    let manualInputTimeout;
+
     $(document).on('input', '.range-block-counter input, .neo-range-input', function () {
-        setTimeout(() => {
+        clearTimeout(manualInputTimeout);
+        manualInputTimeout = setTimeout(() => {
             const caretPosition = saveCaretPosition($(this).get(0));
             const myText = $(this).val().trim();
             $(this).val(myText); // trim line breaks and spaces
@@ -9171,7 +9174,7 @@ jQuery(async function () {
 
             restoreCaretPosition($(this).get(0), caretPosition);
         }, 2000);
-    })
+    });
 
     $(".user_stats_button").on('click', function () {
         userStatsHandler();
