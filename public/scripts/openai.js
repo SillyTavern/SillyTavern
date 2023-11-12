@@ -1242,17 +1242,14 @@ function saveModelList(data) {
 
     if (oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER) {
         $('#model_openrouter_select').empty();
-        $('#model_openrouter_select').append($('<option>', { value: openrouter_website_model, text: 'Use OpenRouter website setting' }));
-        model_list.forEach((model) => {
-            let tokens_dollar = Number(1 / (1000 * model.pricing?.prompt));
-            let tokens_rounded = (Math.round(tokens_dollar * 1000) / 1000).toFixed(0);
-            let model_description = `${model.id} | ${tokens_rounded}k t/$ | ${model.context_length} ctx`;
-            $('#model_openrouter_select').append(
-                $('<option>', {
-                    value: model.id,
-                    text: model_description,
-                }));
-        });
+
+        const groupModels = document.getElementById('openrouter_group_options')?.checked ?? false;
+        if (groupModels) {
+            appendOpenRouterOptions(groupByVendor(model_list), groupModels);
+        } else {
+            appendOpenRouterOptions(model_list);
+        }
+
         $('#model_openrouter_select').val(oai_settings.openrouter_model).trigger('change');
     }
 
@@ -1271,6 +1268,53 @@ function saveModelList(data) {
             $('#model_openai_select').val(model).trigger('change');
         }
     }
+}
+
+function appendOpenRouterOptions(model_list, groupModels = false, sort = false) {
+    $('#model_openrouter_select').append($('<option>', { value: openrouter_website_model, text: 'Use OpenRouter website setting' }));
+
+    const appendOption = (model, parent = null) => {
+        let tokens_dollar = Number(1 / (1000 * model.pricing?.prompt));
+        let tokens_rounded = (Math.round(tokens_dollar * 1000) / 1000).toFixed(0);
+        let model_description = `${model.id} | ${tokens_rounded}k t/$ | ${model.context_length} ctx`;
+        (parent || $('#model_openrouter_select')).append(
+            $('<option>', {
+                value: model.id,
+                text: model_description,
+            }));
+    };
+
+    if (groupModels) {
+        model_list.forEach((models, vendor) => {
+            const optgroup = $(`<optgroup label="${vendor}">`);
+
+            models.forEach((model) => {
+                appendOption(model, optgroup);
+            });
+
+            $('#model_openrouter_select').append(optgroup);
+        });
+    } else {
+        model_list.forEach((model) => {
+            appendOption(model);
+        });
+    }
+}
+
+function groupByVendor(array) {
+    const unsorted = array.reduce((acc, curr) => {
+        const vendor = curr.id.split('/')[0];
+
+        if (!acc.has(vendor)) {
+            acc.set(vendor, []);
+        }
+
+        acc.get(vendor).push(curr);
+
+        return acc;
+    }, new Map());
+
+    return new Map([...unsorted.entries()].sort());
 }
 
 async function sendAltScaleRequest(openai_msgs_tosend, logit_bias, signal, type) {
@@ -2202,6 +2246,7 @@ function loadOpenAISettings(data, settings) {
     oai_settings.claude_model = settings.claude_model ?? default_settings.claude_model;
     oai_settings.windowai_model = settings.windowai_model ?? default_settings.windowai_model;
     oai_settings.openrouter_model = settings.openrouter_model ?? default_settings.openrouter_model;
+    oai_settings.openrouter_group_models = settings.openrouter_group_models ?? default_settings.openrouter_group_models;
     oai_settings.openrouter_use_fallback = settings.openrouter_use_fallback ?? default_settings.openrouter_use_fallback;
     oai_settings.openrouter_force_instruct = settings.openrouter_force_instruct ?? default_settings.openrouter_force_instruct;
     oai_settings.ai21_model = settings.ai21_model ?? default_settings.ai21_model;
@@ -2246,6 +2291,7 @@ function loadOpenAISettings(data, settings) {
     $('#openai_max_context').val(oai_settings.openai_max_context);
     $('#openai_max_context_counter').val(`${oai_settings.openai_max_context}`);
     $('#model_openrouter_select').val(oai_settings.openrouter_model);
+    $('#openrouter_group_models').val(oai_settings.openrouter_group_models);
 
     $('#openai_max_tokens').val(oai_settings.openai_max_tokens);
 
@@ -2786,6 +2832,7 @@ function onSettingsPresetChange() {
         openrouter_model: ['#model_openrouter_select', 'openrouter_model', false],
         openrouter_use_fallback: ['#openrouter_use_fallback', 'openrouter_use_fallback', true],
         openrouter_force_instruct: ['#openrouter_force_instruct', 'openrouter_force_instruct', true],
+        openrouter_group_models: ['#openrouter_group_models', 'openrouter_group_models', false],
         ai21_model: ['#model_ai21_select', 'ai21_model', false],
         openai_max_context: ['#openai_max_context', 'openai_max_context', false],
         openai_max_tokens: ['#openai_max_tokens', 'openai_max_tokens', false],

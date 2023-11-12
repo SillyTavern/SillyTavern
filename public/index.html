@@ -1832,6 +1832,12 @@
                                 </select>
                             </div>
                             <div class="marginTopBot5">
+                                <label for="openrouter_group_options" class="checkbox_label">
+                                    <input id="openrouter_group_options" type="checkbox" onchange="document.getElementById('chat_completion_source').dispatchEvent(new Event('change'))"/>
+                                    <span data-i18n="Group by vendor names">Group by vendor names</span>
+                                </label>
+                            </div>
+                            <div class="marginTopBot5">
                                 <label for="openrouter_use_fallback" class="checkbox_label">
                                     <input id="openrouter_use_fallback" type="checkbox" />
                                     <span data-i18n="Allow fallback routes">Allow fallback routes</span>
