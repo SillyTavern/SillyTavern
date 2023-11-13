@@ -11,6 +11,7 @@ import {
 
 import {
     power_user,
+    registerDebugFunction,
 } from "./power-user.js";
 import { getTextTokens, tokenizers } from "./tokenizers.js";
 import { onlyUnique } from "./utils.js";
@@ -29,7 +30,10 @@ export const textgen_types = {
 };
 
 // Maybe let it be configurable in the future?
-export const MANCER_SERVER = 'https://neuro.mancer.tech';
+// (7 days later) The future has come.
+const MANCER_SERVER_KEY = 'mancer_server';
+const MANCER_SERVER_DEFAULT = 'https://neuro.mancer.tech';
+export let MANCER_SERVER = localStorage.getItem(MANCER_SERVER_KEY) ?? MANCER_SERVER_DEFAULT;
 
 const textgenerationwebui_settings = {
     temp: 0.7,
@@ -71,8 +75,8 @@ const textgenerationwebui_settings = {
     banned_tokens: '',
     //n_aphrodite: 1,
     //best_of_aphrodite: 1,
-    //ignore_eos_token_aphrodite: false,
-    //spaces_between_special_tokens_aphrodite: true,
+    ignore_eos_token_aphrodite: false,
+    spaces_between_special_tokens_aphrodite: true,
     //logits_processors_aphrodite: [],
     //log_probs_aphrodite: 0,
     //prompt_log_probs_aphrodite: 0,
@@ -124,8 +128,8 @@ const setting_names = [
     "legacy_api",
     //'n_aphrodite',
     //'best_of_aphrodite',
-    //'ignore_eos_token_aphrodite',
-    //'spaces_between_special_tokens_aphrodite',
+    'ignore_eos_token_aphrodite',
+    'spaces_between_special_tokens_aphrodite',
     //'logits_processors_aphrodite',
     //'log_probs_aphrodite',
     //'prompt_log_probs_aphrodite'
@@ -249,6 +253,25 @@ function loadTextGenSettings(data, settings) {
 
     $('#textgen_type').val(textgenerationwebui_settings.type);
     showTypeSpecificControls(textgenerationwebui_settings.type);
+    //this is needed because showTypeSpecificControls() does not handle NOT declarations
+    if (isAphrodite()) {
+        $('[data-forAphro=False]').each(function () {
+            $(this).hide()
+        })
+    } else {
+        $('[data-forAphro=False]').each(function () {
+            $(this).show()
+        })
+    }
+
+    registerDebugFunction('change-mancer-url', 'Change Mancer base URL', 'Change Mancer API server base URL', () => {
+        const result = prompt(`Enter Mancer base URL\nDefault: ${MANCER_SERVER_DEFAULT}`, MANCER_SERVER);
+
+        if (result) {
+            localStorage.setItem(MANCER_SERVER_KEY, result);
+            MANCER_SERVER = result;
+        }
+    });
 }
 
 export function isMancer() {
@@ -277,25 +300,33 @@ jQuery(function () {
         const type = String($(this).val());
         textgenerationwebui_settings.type = type;
 
-        /*         if (type === 'aphrodite') {
-                    $('[data-forAphro=False]').each(function () {
-                        $(this).hide()
-                    })
-                    $('[data-forAphro=True]').each(function () {
-                        $(this).show()
-                    })
-                    $('#mirostat_mode_textgenerationwebui').attr('step', 2) //Aphro disallows mode 1
-                    $("#do_sample_textgenerationwebui").prop('checked', true) //Aphro should always do sample; 'otherwise set temp to 0 to mimic no sample'
-                    $("#ban_eos_token_textgenerationwebui").prop('checked', false) //Aphro should not ban EOS, just ignore it; 'add token '2' to ban list do to this'
-                } else {
-                    $('[data-forAphro=False]').each(function () {
-                        $(this).show()
-                    })
-                    $('[data-forAphro=True]').each(function () {
-                        $(this).hide()
-                    })
-                    $('#mirostat_mode_textgenerationwebui').attr('step', 1)
-                } */
+        if (isAphrodite()) {
+            //this is needed because showTypeSpecificControls() does not handle NOT declarations
+            $('[data-forAphro=False]').each(function () {
+                $(this).hide()
+            })
+            $('#mirostat_mode_textgenerationwebui').attr('step', 2) //Aphro disallows mode 1
+            $("#do_sample_textgenerationwebui").prop('checked', true) //Aphro should always do sample; 'otherwise set temp to 0 to mimic no sample'
+            $("#ban_eos_token_textgenerationwebui").prop('checked', false) //Aphro should not ban EOS, just ignore it; 'add token '2' to ban list do to this'
+            //special handling for Aphrodite topK -1 disable state
+            $('#top_k_textgenerationwebui').attr('min', -1)
+            if ($('#top_k_textgenerationwebui').val() === '0' || textgenerationwebui_settings['top_k'] === 0) {
+                textgenerationwebui_settings['top_k'] = -1
+                $('#top_k_textgenerationwebui').val('-1').trigger('input')
+            }
+        } else {
+            //this is needed because showTypeSpecificControls() does not handle NOT declarations
+            $('[data-forAphro=False]').each(function () {
+                $(this).show()
+            })
+            $('#mirostat_mode_textgenerationwebui').attr('step', 1)
+            //undo special Aphrodite setup for topK
+            $('#top_k_textgenerationwebui').attr('min', 0)
+            if ($('#top_k_textgenerationwebui').val() === '-1' || textgenerationwebui_settings['top_k'] === -1) {
+                textgenerationwebui_settings['top_k'] = 0
+                $('#top_k_textgenerationwebui').val('0').trigger('input')
+            }
+        }
 
         showTypeSpecificControls(type);
         setOnlineStatus('no_connection');
@@ -330,8 +361,12 @@ jQuery(function () {
                 const value = Number($(this).val());
                 $(`#${id}_counter_textgenerationwebui`).val(value);
                 textgenerationwebui_settings[id] = value;
+                //special handling for aphrodite using -1 as disabled instead of 0
+                if ($(this).attr('id') === 'top_k_textgenerationwebui' && isAphrodite() && value === 0) {
+                    textgenerationwebui_settings[id] = -1
+                    $(this).val(-1)
+                }
             }
-
             saveSettingsDebounced();
         });
     }
@@ -481,33 +516,24 @@ function getModel() {
 }
 
 export function getTextGenGenerationData(finalPrompt, this_amount_gen, isImpersonate, cfgValues) {
-    return {
+    let APIflags = {
         'prompt': finalPrompt,
         'model': getModel(),
         'max_new_tokens': this_amount_gen,
         'max_tokens': this_amount_gen,
-        'do_sample': textgenerationwebui_settings.do_sample,
         'temperature': textgenerationwebui_settings.temp,
-        'temperature_last': textgenerationwebui_settings.temperature_last,
         'top_p': textgenerationwebui_settings.top_p,
         'typical_p': textgenerationwebui_settings.typical_p,
         'min_p': textgenerationwebui_settings.min_p,
         'repetition_penalty': textgenerationwebui_settings.rep_pen,
-        'repetition_penalty_range': textgenerationwebui_settings.rep_pen_range,
-        'encoder_repetition_penalty': textgenerationwebui_settings.encoder_rep_pen,
         'frequency_penalty': textgenerationwebui_settings.freq_pen,
         'presence_penalty': textgenerationwebui_settings.presence_pen,
         'top_k': textgenerationwebui_settings.top_k,
         'min_length': textgenerationwebui_settings.min_length,
         'min_tokens': textgenerationwebui_settings.min_length,
-        'no_repeat_ngram_size': textgenerationwebui_settings.no_repeat_ngram_size,
         'num_beams': textgenerationwebui_settings.num_beams,
-        'penalty_alpha': textgenerationwebui_settings.penalty_alpha,
         'length_penalty': textgenerationwebui_settings.length_penalty,
         'early_stopping': textgenerationwebui_settings.early_stopping,
-        'guidance_scale': cfgValues?.guidanceScale?.value ?? textgenerationwebui_settings.guidance_scale ?? 1,
-        'negative_prompt': cfgValues?.negativePrompt ?? textgenerationwebui_settings.negative_prompt ?? '',
-        'seed': textgenerationwebui_settings.seed,
         'add_bos_token': textgenerationwebui_settings.add_bos_token,
         'stopping_strings': getStoppingStrings(isImpersonate),
         'stop': getStoppingStrings(isImpersonate),
@@ -521,20 +547,40 @@ export function getTextGenGenerationData(finalPrompt, this_amount_gen, isImperso
         'mirostat_mode': textgenerationwebui_settings.mirostat_mode,
         'mirostat_tau': textgenerationwebui_settings.mirostat_tau,
         'mirostat_eta': textgenerationwebui_settings.mirostat_eta,
-        'grammar_string': textgenerationwebui_settings.grammar_string,
         'custom_token_bans': isAphrodite() ? toIntArray(getCustomTokenBans()) : getCustomTokenBans(),
         'use_mancer': isMancer(),
         'use_aphrodite': isAphrodite(),
         'use_ooba': isOoba(),
         'api_server': isMancer() ? MANCER_SERVER : api_server_textgenerationwebui,
         'legacy_api': textgenerationwebui_settings.legacy_api && !isMancer(),
+    };
+    let aphroditeExclusionFlags = {
+        'repetition_penalty_range': textgenerationwebui_settings.rep_pen_range,
+        'encoder_repetition_penalty': textgenerationwebui_settings.encoder_rep_pen,
+        'no_repeat_ngram_size': textgenerationwebui_settings.no_repeat_ngram_size,
+        'penalty_alpha': textgenerationwebui_settings.penalty_alpha,
+        'temperature_last': textgenerationwebui_settings.temperature_last,
+        'do_sample': textgenerationwebui_settings.do_sample,
+        'seed': textgenerationwebui_settings.seed,
+        'guidance_scale': cfgValues?.guidanceScale?.value ?? textgenerationwebui_settings.guidance_scale ?? 1,
+        'negative_prompt': cfgValues?.negativePrompt ?? textgenerationwebui_settings.negative_prompt ?? '',
+        'grammar_string': textgenerationwebui_settings.grammar_string,
+    }
+    let aphroditeFlags = {
         //'n': textgenerationwebui_settings.n_aphrodite,
         //'best_of': textgenerationwebui_settings.n_aphrodite, //n must always == best_of and vice versa
-        //'ignore_eos': textgenerationwebui_settings.ignore_eos_token_aphrodite,
-        //'spaces_between_special_tokens': textgenerationwebui_settings.spaces_between_special_tokens_aphrodite,
-        // 'logits_processors': textgenerationwebui_settings.logits_processors_aphrodite,
+        'ignore_eos': textgenerationwebui_settings.ignore_eos_token_aphrodite,
+        'spaces_between_special_tokens': textgenerationwebui_settings.spaces_between_special_tokens_aphrodite,
+        //'logits_processors': textgenerationwebui_settings.logits_processors_aphrodite,
         //'logprobs': textgenerationwebui_settings.log_probs_aphrodite,
         //'prompt_logprobs': textgenerationwebui_settings.prompt_log_probs_aphrodite,
-    };
+    }
+    if (isAphrodite()) {
+        APIflags = Object.assign(APIflags, aphroditeFlags);
+    } else {
+        APIflags = Object.assign(APIflags, aphroditeExclusionFlags);
+    }
+
+    return APIflags
 }
 

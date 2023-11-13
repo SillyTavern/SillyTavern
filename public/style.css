@@ -3492,14 +3492,6 @@ a {
     align-items: center;
 }
 
-.prompt_overridden,
-.jailbreak_overridden {
-    color: var(--SmartThemeQuoteColor);
-    font-weight: bold;
-    font-style: italic;
-    font-size: 0.8em;
-}
-
 .openai_restorable .right_menu_button img {
     height: 20px;
 }

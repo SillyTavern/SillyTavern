@@ -2409,6 +2409,11 @@ async function getStatusOpen() {
         validateReverseProxy();
     }
 
+    const canBypass = oai_settings.chat_completion_source === chat_completion_sources.OPENAI && oai_settings.bypass_status_check;
+    if (canBypass) {
+        setOnlineStatus('Status check bypassed');
+    }
+
     try {
         const response = await fetch('/getstatus_openai', {
             method: 'POST',
@@ -2424,9 +2429,6 @@ async function getStatusOpen() {
 
         const responseData = await response.json();
 
-        if (responseData.error && responseData.can_bypass && oai_settings.bypass_status_check) {
-            setOnlineStatus('Status check bypassed. Proceed with caution.');
-        }
         if (!('error' in responseData)) {
             setOnlineStatus('Valid');
         }
@@ -2435,7 +2437,10 @@ async function getStatusOpen() {
         }
     } catch (error) {
         console.error(error);
-        setOnlineStatus('no_connection');
+
+        if (!canBypass) {
+            setOnlineStatus('no_connection');
+        }
     }
 
     return resultCheckStatus();
@@ -3588,6 +3593,7 @@ $(document).ready(async function () {
 
     $('#openai_bypass_status_check').on('input', function () {
         oai_settings.bypass_status_check = !!$(this).prop('checked');
+        getStatusOpen();
         saveSettingsDebounced();
     })
 
