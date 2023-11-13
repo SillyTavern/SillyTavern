@@ -31,6 +31,11 @@ export const kai_settings = {
     seed: -1,
 };
 
+/**
+ * Stable version of KoboldAI has a nasty payload validation.
+ * It will reject any payload that has a key that is not in the whitelist.
+ * @typedef {Object.<string, boolean>} kai_flags
+ */
 export const kai_flags = {
     can_use_tokenization: false,
     can_use_stop_sequence: false,
@@ -38,6 +43,7 @@ export const kai_flags = {
     can_use_default_badwordsids: false,
     can_use_mirostat: false,
     can_use_grammar: false,
+    can_use_min_p: false,
 };
 
 const defaultValues = Object.freeze(structuredClone(kai_settings));
@@ -48,6 +54,7 @@ const MIN_STREAMING_KCPPVERSION = '1.30';
 const MIN_TOKENIZATION_KCPPVERSION = '1.41';
 const MIN_MIROSTAT_KCPPVERSION = '1.35';
 const MIN_GRAMMAR_KCPPVERSION = '1.44';
+const MIN_MIN_P_KCPPVERSION = '1.48';
 const KOBOLDCPP_ORDER = [6, 0, 1, 3, 4, 2, 5];
 
 export function formatKoboldUrl(value) {
@@ -114,7 +121,7 @@ export function getKoboldGenerationData(finalPrompt, settings, maxLength, maxCon
         top_a: kai_settings.top_a,
         top_k: kai_settings.top_k,
         top_p: kai_settings.top_p,
-        min_p: kai_settings.min_p,
+        min_p: (kai_flags.can_use_min_p || isHorde) ? kai_settings.min_p : undefined,
         typical: kai_settings.typical,
         s1: sampler_order[0],
         s2: sampler_order[1],
@@ -128,11 +135,11 @@ export function getKoboldGenerationData(finalPrompt, settings, maxLength, maxCon
         stop_sequence: (kai_flags.can_use_stop_sequence || isHorde) ? getStoppingStrings(isImpersonate) : undefined,
         streaming: kai_settings.streaming_kobold && kai_flags.can_use_streaming && type !== 'quiet',
         can_abort: kai_flags.can_use_streaming,
-        mirostat: kai_flags.can_use_mirostat ? kai_settings.mirostat : undefined,
-        mirostat_tau: kai_flags.can_use_mirostat ? kai_settings.mirostat_tau : undefined,
-        mirostat_eta: kai_flags.can_use_mirostat ? kai_settings.mirostat_eta : undefined,
-        use_default_badwordsids: kai_flags.can_use_default_badwordsids ? kai_settings.use_default_badwordsids : undefined,
-        grammar: kai_flags.can_use_grammar ? substituteParams(kai_settings.grammar) : undefined,
+        mirostat: (kai_flags.can_use_mirostat || isHorde) ? kai_settings.mirostat : undefined,
+        mirostat_tau: (kai_flags.can_use_mirostat || isHorde) ? kai_settings.mirostat_tau : undefined,
+        mirostat_eta: (kai_flags.can_use_mirostat || isHorde) ? kai_settings.mirostat_eta : undefined,
+        use_default_badwordsids: (kai_flags.can_use_default_badwordsids || isHorde) ? kai_settings.use_default_badwordsids : undefined,
+        grammar: (kai_flags.can_use_grammar || isHorde) ? substituteParams(kai_settings.grammar) : undefined,
         sampler_seed: kai_settings.seed >= 0 ? kai_settings.seed : undefined,
     };
     return generate_data;
@@ -302,6 +309,7 @@ export function setKoboldFlags(version, koboldVersion) {
     kai_flags.can_use_default_badwordsids = canUseDefaultBadwordIds(version);
     kai_flags.can_use_mirostat = canUseMirostat(koboldVersion);
     kai_flags.can_use_grammar = canUseGrammar(koboldVersion);
+    kai_flags.can_use_min_p = canUseMinP(koboldVersion);
 }
 
 /**
@@ -363,6 +371,17 @@ function canUseMirostat(koboldVersion) {
 function canUseGrammar(koboldVersion) {
     if (koboldVersion && koboldVersion.result == 'KoboldCpp') {
         return (koboldVersion.version || '0.0').localeCompare(MIN_GRAMMAR_KCPPVERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
+    } else return false;
+}
+
+/**
+ * Determines if the Kobold min_p can be used with the given version.
+ * @param {{result:string, version:string;}} koboldVersion KoboldAI version object.
+ * @returns {boolean} True if the Kobold min_p can be used, false otherwise.
+ */
+function canUseMinP(koboldVersion) {
+    if (koboldVersion && koboldVersion.result == 'KoboldCpp') {
+        return (koboldVersion.version || '0.0').localeCompare(MIN_MIN_P_KCPPVERSION, undefined, { numeric: true, sensitivity: 'base' }) > -1;
     } else return false;
 }
 

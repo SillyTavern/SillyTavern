@@ -13,6 +13,7 @@ import {
 } from "../script.js";
 
 import { favsToHotswap } from "./RossAscends-mods.js";
+import { hideLoader, showLoader } from "./loader.js";
 import { convertCharacterToPersona } from "./personas.js";
 import { createTagInput, getTagKeyForCharacter, tag_map } from "./tags.js";
 
@@ -614,9 +615,12 @@ class BulkEditOverlay {
 
                 const deleteChats = document.getElementById('del_char_checkbox').checked ?? false;
 
+                showLoader();
+                toastr.info("We're deleting your characters, please wait...", 'Working on it');
                 Promise.all(this.selectedCharacters.map(async characterId => CharacterContextMenu.delete(characterId, deleteChats)))
                     .then(() => getCharacters())
                     .then(() => this.browseState())
+                    .finally(() => hideLoader());
             }
             );
     }
