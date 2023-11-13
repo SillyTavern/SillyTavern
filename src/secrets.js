@@ -21,6 +21,7 @@ const SECRET_KEYS = {
     ONERING_URL: 'oneringtranslator_url',
     DEEPLX_URL: 'deeplx_url',
     PALM: 'api_key_palm',
+    SERPAPI: 'api_key_serpapi',
 }
 
 /**
