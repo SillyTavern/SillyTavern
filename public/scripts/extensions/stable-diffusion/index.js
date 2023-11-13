@@ -71,7 +71,7 @@ const triggerWords = {
 }
 
 const messageTrigger = {
-    activationRegex: /\b(send|mail|imagine|generate|make|create|draw|paint|render)\b.*\b(pic|picture|image|drawing|painting|photo|photograph)\b(?:\s+of)?(?:\s+(?:a|an|the)?)?(.+)/i,
+    activationRegex: /\b(send|mail|imagine|generate|make|create|draw|paint|render)\b.*\b(pic|picture|image|drawing|painting|photo|photograph)\b(?:\s+of)?(?:\s+(?:a|an|the|this|that|those)?)?(.+)/i,
     specialCases: {
         [generationMode.CHARACTER]: ['you', 'yourself'],
         [generationMode.USER]: ['me', 'myself'],
@@ -251,12 +251,12 @@ function processTriggers(chat, _, abort) {
 
         console.log(`SD: Triggered by "${message}", detected subject: ${subject}"`);
 
-        for (const [specialMode, triggers] of Object.entries(messageTrigger.specialCases)) {
+        outer: for (const [specialMode, triggers] of Object.entries(messageTrigger.specialCases)) {
             for (const trigger of triggers) {
                 if (subject === trigger) {
                     subject = triggerWords[specialMode][0];
                     console.log(`SD: Detected special case "${trigger}", switching to mode ${specialMode}`);
-                    break;
+                    break outer;
                 }
             }
         }

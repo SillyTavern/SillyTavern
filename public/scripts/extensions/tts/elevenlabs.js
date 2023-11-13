@@ -45,6 +45,8 @@ class ElevenLabsTtsProvider {
         this.settings.stability = $('#elevenlabs_tts_stability').val()
         this.settings.similarity_boost = $('#elevenlabs_tts_similarity_boost').val()
         this.settings.model = $('#elevenlabs_tts_model').find(':selected').val()
+        $('#elevenlabs_tts_stability_output').text(this.settings.stability);
+        $('#elevenlabs_tts_similarity_boost_output').text(this.settings.similarity_boost);
         saveTtsProviderSettings()
     }
 
@@ -79,6 +81,8 @@ class ElevenLabsTtsProvider {
         $('#elevenlabs_tts_similarity_boost').on('input', this.onSettingsChange.bind(this))
         $('#elevenlabs_tts_stability').on('input', this.onSettingsChange.bind(this))
         $('#elevenlabs_tts_model').on('change', this.onSettingsChange.bind(this))
+        $('#elevenlabs_tts_stability_output').text(this.settings.stability);
+        $('#elevenlabs_tts_similarity_boost_output').text(this.settings.similarity_boost);
 
         try {
             await this.checkReady()

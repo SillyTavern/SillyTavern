@@ -227,7 +227,7 @@ async function loadWorldInfoData(name) {
 }
 
 async function updateWorldInfoList() {
-    var result = await fetch("/getsettings", {
+    const result = await fetch("/getsettings", {
         method: "POST",
         headers: getRequestHeaders(),
         body: JSON.stringify({}),
@@ -269,7 +269,15 @@ function sortEntries(data) {
     const sortRule = option.data('rule');
     const orderSign = sortOrder === 'asc' ? 1 : -1;
 
-    if (sortRule === 'priority') {
+    if (sortRule === 'custom') {
+        // First by display index, then by order, then by uid
+        data.sort((a, b) => {
+            const aValue = a.displayIndex;
+            const bValue = b.displayIndex;
+
+            return (aValue - bValue || b.order - a.order || a.uid - b.uid);
+        });
+    } else if (sortRule === 'priority') {
         // First constant, then normal, then disabled. Then sort by order
         data.sort((a, b) => {
             const aValue = a.constant ? 0 : a.disable ? 2 : 1;
@@ -375,7 +383,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
         nextText: '>',
         formatNavigator: PAGINATION_TEMPLATE,
         showNavigator: true,
-        callback: function (page) {
+        callback: function (/** @type {object[]} */ page) {
             $("#world_popup_entries_list").empty();
             const keywordHeaders = `
             <div id="WIEntryHeaderTitlesPC" class="flex-container wide100p spaceBetween justifyCenter textAlignCenter" style="padding:0 2.5em;">
@@ -399,6 +407,12 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
                 </small>
             </div>`
             const blocks = page.map(entry => getWorldEntry(name, data, entry)).filter(x => x);
+            const isCustomOrder = $('#world_info_sort_order').find(':selected').data('rule') === 'custom';
+            if (!isCustomOrder) {
+                blocks.forEach(block => {
+                    block.find('.drag-handle').remove();
+                });
+            }
             $("#world_popup_entries_list").append(keywordHeaders);
             $("#world_popup_entries_list").append(blocks);
         },
@@ -500,6 +514,8 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
         delay: getSortableDelay(),
         handle: ".drag-handle",
         stop: async function (event, ui) {
+            const firstEntryUid = $('#world_popup_entries_list .world_entry').first().data('uid');
+            const minDisplayIndex = data?.entries[firstEntryUid]?.displayIndex ?? 0;
             $('#world_popup_entries_list .world_entry').each(function (index) {
                 const uid = $(this).data('uid');
 
@@ -511,8 +527,8 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
                     return;
                 }
 
-                item.displayIndex = index;
-                setOriginalDataValue(data, uid, 'extensions.display_index', index);
+                item.displayIndex = minDisplayIndex + index;
+                setOriginalDataValue(data, uid, 'extensions.display_index', item.displayIndex);
             });
 
             console.table(Object.keys(data.entries).map(uid => data.entries[uid]).map(x => ({ uid: x.uid, key: x.key.join(','), displayIndex: x.displayIndex })));
@@ -587,7 +603,7 @@ function getWorldEntry(name, data, entry) {
         setOriginalDataValue(data, uid, "keys", data.entries[uid].key);
         saveWorldInfo(name, data);
     });
-    keyInput.val(entry.key.join(",")).trigger("input");
+    keyInput.val(entry.key.join(", ")).trigger("input");
     //initScrollHeight(keyInput);
 
     // logic AND/NOT
@@ -708,7 +724,7 @@ function getWorldEntry(name, data, entry) {
         saveWorldInfo(name, data);
     });
 
-    keySecondaryInput.val(entry.keysecondary.join(",")).trigger("input");
+    keySecondaryInput.val(entry.keysecondary.join(", ")).trigger("input");
     initScrollHeight(keySecondaryInput);
 
     // comment
@@ -1582,9 +1598,7 @@ async function checkWorldInfo(chat, maxContext) {
                 over_max = (
                     world_info_min_activations_depth_max > 0 &&
                     minActivationMsgIndex > world_info_min_activations_depth_max
-                ) || (
-                    minActivationMsgIndex >= chat.length
-                )
+                ) || (minActivationMsgIndex >= chat.length)
                 if (!over_max) {
                     needsToScan = true
                     textToScan = transformString(chat.slice(minActivationMsgIndex, minActivationMsgIndex + 1).join(""));
@@ -2167,11 +2181,9 @@ jQuery(() => {
         updateEditor(navigation_option.previous);
     });
 
-    $('#world_info_sort_order').on('change', function (e) {
-        if (e.target instanceof HTMLOptionElement) {
-            localStorage.setItem(SORT_ORDER_KEY, e.target.value);
-        }
-
+    $('#world_info_sort_order').on('change', function () {
+        const value = String($(this).find(":selected").val());
+        localStorage.setItem(SORT_ORDER_KEY, value);
         updateEditor(navigation_option.none);
     })
 
