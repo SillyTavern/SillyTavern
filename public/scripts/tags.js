@@ -7,7 +7,6 @@ import {
     getCharacters,
     entitiesFilter,
     printCharacters,
-    getEmptyBlock,
 } from "../script.js";
 import { FILTER_TYPES, FilterHelper } from "./filters.js";
 
