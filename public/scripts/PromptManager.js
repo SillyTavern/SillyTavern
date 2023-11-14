@@ -721,6 +721,12 @@ PromptManagerModule.prototype.getTokenHandler = function () {
     return this.tokenHandler;
 }
 
+PromptManagerModule.prototype.isPromptDisabledForActiveCharacter = function (identifier) {
+    const promptOrderEntry = this.getPromptOrderEntry(this.activeCharacter, identifier);
+    if (promptOrderEntry) return !promptOrderEntry.enabled;
+    return false;
+}
+
 /**
  * Add a prompt to the current character's prompt list.
  * @param {object} prompt - The prompt to be added.
@@ -859,7 +865,8 @@ PromptManagerModule.prototype.isPromptEditAllowed = function (prompt) {
  * @returns {boolean} True if the prompt can be deleted, false otherwise.
  */
 PromptManagerModule.prototype.isPromptToggleAllowed = function (prompt) {
-    return prompt.marker ? false : !this.configuration.toggleDisabled.includes(prompt.identifier);
+    const forceTogglePrompts = ['charDescription', 'charPersonality', 'scenario', 'personaDescription', 'worldInfoBefore', 'worldInfoAfter'];
+    return prompt.marker && !forceTogglePrompts.includes(prompt.identifier) ? false : !this.configuration.toggleDisabled.includes(prompt.identifier);
 }
 
 /**
