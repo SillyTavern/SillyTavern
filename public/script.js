@@ -5187,7 +5187,7 @@ async function uploadUserAvatar(e) {
                 reloadUserAvatar(true);
             }
 
-            if (data.path) {
+            if (!name && data.path) {
                 await getUserAvatars();
                 await delay(500);
                 await createPersona(data.path);
