@@ -94,7 +94,7 @@ function registerEndpoints(app, jsonParser) {
                         //console.debug("FILE FOUND:",files)
                         for (let file of files) {
                             file = path.normalize(file.replace('public' + path.sep, ''));
-                            if (file.endsWith("model3.json")) {
+                            if (file.includes("model") && file.endsWith(".json")) {
                                 //console.debug("Asset live2d model found:",file)
                                 output[folder].push(path.normalize(path.join(file)));
                             }
@@ -273,7 +273,7 @@ function registerEndpoints(app, jsonParser) {
                         if (fs.statSync(live2dModelPath).isDirectory()) {
                             for (let file of fs.readdirSync(live2dModelPath)) {
                                 //console.debug("Character live2d model found:", file)
-                                if (file.includes("model"))
+                                if (file.includes("model") && file.endsWith(".json"))
                                     output.push(path.join("characters", name, category, modelFolder, file));
                             }
                         }

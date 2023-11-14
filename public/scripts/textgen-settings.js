@@ -11,6 +11,7 @@ import {
 
 import {
     power_user,
+    registerDebugFunction,
 } from "./power-user.js";
 import { getTextTokens, tokenizers } from "./tokenizers.js";
 import { onlyUnique } from "./utils.js";
@@ -29,7 +30,10 @@ export const textgen_types = {
 };
 
 // Maybe let it be configurable in the future?
-export const MANCER_SERVER = 'https://neuro.mancer.tech';
+// (7 days later) The future has come.
+const MANCER_SERVER_KEY = 'mancer_server';
+const MANCER_SERVER_DEFAULT = 'https://neuro.mancer.tech';
+export let MANCER_SERVER = localStorage.getItem(MANCER_SERVER_KEY) ?? MANCER_SERVER_DEFAULT;
 
 const textgenerationwebui_settings = {
     temp: 0.7,
@@ -259,6 +263,15 @@ function loadTextGenSettings(data, settings) {
             $(this).show()
         })
     }
+
+    registerDebugFunction('change-mancer-url', 'Change Mancer base URL', 'Change Mancer API server base URL', () => {
+        const result = prompt(`Enter Mancer base URL\nDefault: ${MANCER_SERVER_DEFAULT}`, MANCER_SERVER);
+
+        if (result) {
+            localStorage.setItem(MANCER_SERVER_KEY, result);
+            MANCER_SERVER = result;
+        }
+    });
 }
 
 export function isMancer() {

@@ -12,6 +12,7 @@ export const SECRET_KEYS = {
     AI21: 'api_key_ai21',
     SCALE_COOKIE: 'scale_cookie',
     PALM: 'api_key_palm',
+    SERPAPI: 'api_key_serpapi',
 }
 
 const INPUT_MAP = {
