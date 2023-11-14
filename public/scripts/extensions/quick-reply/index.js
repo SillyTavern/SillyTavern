@@ -294,7 +294,7 @@ function generateQuickReplyElements() {
         quickReplyHtml += `
         <div class="flex-container alignitemsflexstart">
             <input class="text_pole wide30p" id="quickReply${i}Label" placeholder="(Button label)">
-            <textarea id="quickReply${i}Mes" placeholder="(Custom message or /command)" class="text_pole widthUnset flex1" rows="2"></textarea>
+            <textarea id="quickReply${i}Mes" placeholder="(Custom message or /command)" class="text_pole widthUnset flex1 autoSetHeight" rows="2"></textarea>
         </div>
         `;
     }
