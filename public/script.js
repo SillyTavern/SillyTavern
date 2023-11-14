@@ -8023,14 +8023,14 @@ jQuery(async function () {
         return menu.is(':hover') || button.is(':hover');
     }
 
-    button.on('mouseenter click', function () { showMenu(); });
-    button.on('mouseleave', function () {
+    button.on('click', function () { showMenu(); });
+    button.on('blur', function () {
         //delay to prevent menu hiding when mouse leaves button into menu
         setTimeout(() => {
             if (!isMouseOverButtonOrMenu()) { hideMenu(); }
         }, 100)
     });
-    menu.on('mouseleave', function () {
+    menu.on('blur', function () {
         //delay to prevent menu hide when mouseleaves menu into button
         setTimeout(() => {
             if (!isMouseOverButtonOrMenu()) { hideMenu(); }

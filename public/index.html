@@ -4568,14 +4568,18 @@
                 <div id="dialogue_del_mes_cancel" class="menu_button">Cancel</div>
             </div>
             <form id="send_form" class="no-connection">
-                <div id="options_button" class="fa-solid fa-bars"></div>
-                <textarea id="send_textarea" data-i18n="[placeholder]Not connected to API!" placeholder="Not connected to API!" name="text"></textarea>
-                <div id="send_but_sheld">
-                    <div id="mes_stop" title="Abort request" class="mes_stop" data-i18n="[title]Abort request">
-                        <i class="fa-solid fa-circle-stop"></i>
+                <div id="nonQRFormItems">
+                    <div id="leftSendForm" class="alignContentCenter">
+                        <div id="options_button" class="fa-solid fa-bars"></div>
                     </div>
-                    <div id="mes_continue" class="fa-fw fa-solid fa-arrow-right displayNone" title="Continue the last message" data-i18n="[title]Continue the last message"></div>
-                    <div id="send_but" class="fa-solid fa-paper-plane displayNone" title="Send a message" data-i18n="[title]Send a message"></div>
+                    <textarea id="send_textarea" data-i18n="[placeholder]Not connected to API!" placeholder="Not connected to API!" name="text"></textarea>
+                    <div id="rightSendForm" class="alignContentCenter">
+                        <div id="mes_stop" title="Abort request" class="mes_stop" data-i18n="[title]Abort request">
+                            <i class="fa-solid fa-circle-stop"></i>
+                        </div>
+                        <div id="mes_continue" class="fa-fw fa-solid fa-arrow-right displayNone" title="Continue the last message" data-i18n="[title]Continue the last message"></div>
+                        <div id="send_but" class="fa-solid fa-paper-plane displayNone" title="Send a message" data-i18n="[title]Send a message"></div>
+                    </div>
                 </div>
             </form>
         </div>
