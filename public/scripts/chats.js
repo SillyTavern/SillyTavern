@@ -4,7 +4,7 @@ import {
     chat,
     getCurrentChatId,
     hideSwipeButtons,
-    saveChatConditional,
+    saveChatDebounced,
     showSwipeButtons,
 } from "../script.js";
 
@@ -30,7 +30,7 @@ export async function hideChatMessage(messageId, messageBlock) {
     hideSwipeButtons();
     showSwipeButtons();
 
-    await saveChatConditional();
+    saveChatDebounced();
 }
 
 /**
@@ -55,7 +55,7 @@ export async function unhideChatMessage(messageId, messageBlock) {
     hideSwipeButtons();
     showSwipeButtons();
 
-    await saveChatConditional();
+    saveChatDebounced();
 }
 
 jQuery(function() {

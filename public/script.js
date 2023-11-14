@@ -4685,7 +4685,7 @@ async function renamePastChats(newAvatar, newValue) {
     }
 }
 
-function saveChatDebounced() {
+export function saveChatDebounced() {
     const chid = this_chid;
     const selectedGroup = selected_group;
 

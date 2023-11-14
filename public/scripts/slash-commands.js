@@ -32,6 +32,7 @@ import { chat_styles, power_user } from "./power-user.js";
 import { autoSelectPersona } from "./personas.js";
 import { getContext } from "./extensions.js";
 import { hideChatMessage, unhideChatMessage } from "./chats.js";
+import { stringToRange } from "./utils.js";
 export {
     executeSlashCommands,
     registerSlashCommand,
@@ -145,8 +146,8 @@ parser.addCommand('ask', askCharacter, [], '<span class="monospace">(prompt)</sp
 parser.addCommand('delname', deleteMessagesByNameCallback, ['cancel'], '<span class="monospace">(name)</span> – deletes all messages attributed to a specified name', true, true);
 parser.addCommand('send', sendUserMessageCallback, ['add'], '<span class="monospace">(text)</span> – adds a user message to the chat log without triggering a generation', true, true);
 parser.addCommand('trigger', triggerGroupMessageCallback, [], '<span class="monospace">(member index or name)</span> – triggers a message generation for the specified group member', true, true);
-parser.addCommand('hide', hideMessageCallback, [], '<span class="monospace">(message index)</span> – hides a chat message from the prompt', true, true);
-parser.addCommand('unhide', unhideMessageCallback, [], '<span class="monospace">(message index)</span> – unhides a message from the prompt', true, true);
+parser.addCommand('hide', hideMessageCallback, [], '<span class="monospace">(message index or range)</span> – hides a chat message from the prompt', true, true);
+parser.addCommand('unhide', unhideMessageCallback, [], '<span class="monospace">(message index or range)</span> – unhides a message from the prompt', true, true);
 
 const NARRATOR_NAME_KEY = 'narrator_name';
 const NARRATOR_NAME_DEFAULT = 'System';
@@ -240,15 +241,23 @@ async function hideMessageCallback(_, arg) {
         return;
     }
 
-    const messageId = Number(arg);
-    const messageBlock = $(`.mes[mesid="${messageId}"]`);
+    const range = stringToRange(arg, 0, chat.length - 1);
 
-    if (!messageBlock.length) {
-        console.warn(`WARN: No message found with ID ${messageId}`);
+    if (!range) {
+        console.warn(`WARN: Invalid range provided for /hide command: ${arg}`);
         return;
     }
 
-    await hideChatMessage(messageId, messageBlock);
+    for (let messageId = range.start; messageId <= range.end; messageId++) {
+        const messageBlock = $(`.mes[mesid="${messageId}"]`);
+
+        if (!messageBlock.length) {
+            console.warn(`WARN: No message found with ID ${messageId}`);
+            return;
+        }
+
+        await hideChatMessage(messageId, messageBlock);
+    }
 }
 
 async function unhideMessageCallback(_, arg) {
@@ -257,15 +266,23 @@ async function unhideMessageCallback(_, arg) {
         return;
     }
 
-    const messageId = Number(arg);
-    const messageBlock = $(`.mes[mesid="${messageId}"]`);
+    const range = stringToRange(arg, 0, chat.length - 1);
 
-    if (!messageBlock.length) {
-        console.warn(`WARN: No message found with ID ${messageId}`);
+    if (!range) {
+        console.warn(`WARN: Invalid range provided for /unhide command: ${arg}`);
         return;
     }
 
-    await unhideChatMessage(messageId, messageBlock);
+    for (let messageId = range.start; messageId <= range.end; messageId++) {
+        const messageBlock = $(`.mes[mesid="${messageId}"]`);
+
+        if (!messageBlock.length) {
+            console.warn(`WARN: No message found with ID ${messageId}`);
+            return;
+        }
+
+        await unhideChatMessage(messageId, messageBlock);
+    }
 }
 
 async function triggerGroupMessageCallback(_, arg) {
