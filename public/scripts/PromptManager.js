@@ -179,6 +179,13 @@ class PromptCollection {
 }
 
 function PromptManagerModule() {
+    this.systemPrompts = [
+        'main',
+        'nsfw',
+        'jailbreak',
+        'enhanceDefinitions',
+    ];
+
     this.configuration = {
         version: 1,
         prefix: '',
@@ -398,6 +405,10 @@ PromptManagerModule.prototype.init = function (moduleConfiguration, serviceSetti
         document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_position').value = prompt.injection_position ?? 0;
         document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_depth').value = prompt.injection_depth ?? DEFAULT_DEPTH;
         document.getElementById(this.configuration.prefix + 'prompt_manager_depth_block').style.visibility = prompt.injection_position === INJECTION_POSITION.ABSOLUTE ? 'visible' : 'hidden';
+
+        if (!this.systemPrompts.includes(promptId)) {
+            document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_injection_position').removeAttribute('disabled');
+        }
     }
 
     // Append prompt to selected character
@@ -1121,6 +1132,11 @@ PromptManagerModule.prototype.loadPromptIntoEditForm = function (prompt) {
     injectionPositionField.value = prompt.injection_position ?? INJECTION_POSITION.RELATIVE;
     injectionDepthField.value = prompt.injection_depth ?? DEFAULT_DEPTH;
     injectionDepthBlock.style.visibility = prompt.injection_position === INJECTION_POSITION.ABSOLUTE ? 'visible' : 'hidden';
+    injectionPositionField.removeAttribute('disabled');
+
+    if (this.systemPrompts.includes(prompt.identifier)) {
+        injectionPositionField.setAttribute('disabled', 'disabled');
+    }
 
     const resetPromptButton = document.getElementById(this.configuration.prefix + 'prompt_manager_popup_entry_form_reset');
     if (true === prompt.system_prompt) {
@@ -1205,6 +1221,7 @@ PromptManagerModule.prototype.clearEditForm = function () {
     roleField.selectedIndex = 0;
     promptField.value = '';
     injectionPositionField.selectedIndex = 0;
+    injectionPositionField.removeAttribute('disabled');
     injectionDepthField.value = DEFAULT_DEPTH;
     injectionDepthBlock.style.visibility = 'unset';
 
