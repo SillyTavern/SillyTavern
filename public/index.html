@@ -1383,6 +1383,17 @@
                                             </span>
                                         </div>
                                     </div>
+                                    <div class="range-block" data-source="openai,openrouter">
+                                        <label for="openai_image_inlining" class="checkbox_label flexWrap widthFreeExpand">
+                                            <input id="openai_image_inlining" type="checkbox" />
+                                            <span data-i18n="Send inline images">Send inline images (only GPT-4V model)</span>
+                                            <div id="image_inlining_hint" class="flexBasis100p toggle-description justifyLeft">
+                                                Natively replaces captioning if the model supports it.
+                                                Use the <code><i class="fa-solid fa-image"></i></code> action on any message or the
+                                                <code><i class="fa-solid fa-wand-magic-sparkles"></i></code> menu to attach an image to the chat.
+                                            </div>
+                                        </label>
+                                    </div>
                                     <div class="range-block" data-source="ai21">
                                         <label for="use_ai21_tokenizer" title="Use AI21 Tokenizer" class="checkbox_label widthFreeExpand">
                                             <input id="use_ai21_tokenizer" type="checkbox" /><span data-i18n="Use AI21 Tokenizer">Use AI21 Tokenizer</span>
@@ -1749,17 +1760,6 @@
                                 <label for="openai_show_external_models" class="checkbox_label">
                                     <input id="openai_show_external_models" type="checkbox" />
                                     <span data-i18n="Show External models (provided by API)">Show "External" models (provided by API)</span>
-                                </label>
-                                <label for="openai_image_inlining" class="checkbox_label flexWrap">
-                                    <input id="openai_image_inlining" type="checkbox" />
-                                    <span data-i18n="Send inline images">Send inline images (only GPT-4V model)</span>
-                                    <div id="image_inlining_hint" class="flexBasis100p">
-                                        <small>
-                                            Natively replaces captioning if the model supports it.<br>
-                                            Use the <code><i class="fa-solid fa-image"></i></code> action on any message or the
-                                            <code><i class="fa-solid fa-wand-magic-sparkles"></i></code> menu to attach an image to the chat.
-                                        </small>
-                                    </div>
                                 </label>
                             </div>
                         </form>
