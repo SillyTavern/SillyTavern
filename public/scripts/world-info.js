@@ -7,6 +7,7 @@ import { getDeviceInfo } from "./RossAscends-mods.js";
 import { FILTER_TYPES, FilterHelper } from "./filters.js";
 import { getTokenCount } from "./tokenizers.js";
 import { power_user } from "./power-user.js";
+import { getTagKeyForCharacter } from "./tags.js";
 
 export {
     world_info,
@@ -640,7 +641,7 @@ function getWorldEntry(name, data, entry) {
         const value = $(this).prop("checked");
         characterFilterLabel.text(value ? "Exclude Character(s)" : "Filter to Character(s)");
         if (data.entries[uid].characterFilter) {
-            if (!value && data.entries[uid].characterFilter.names.length === 0) {
+            if (!value && data.entries[uid].characterFilter.names.length === 0 && data.entries[uid].characterFilter.tags.length === 0) {
                 delete data.entries[uid].characterFilter;
             } else {
                 data.entries[uid].characterFilter.isExclude = value
@@ -651,7 +652,8 @@ function getWorldEntry(name, data, entry) {
                 {
                     characterFilter: {
                         isExclude: true,
-                        names: []
+                        names: [],
+                        tags: [],
                     }
                 }
             );
@@ -673,13 +675,25 @@ function getWorldEntry(name, data, entry) {
             closeOnSelect: false,
         });
     }
+
     const characters = getContext().characters;
     characters.forEach((character) => {
         const option = document.createElement('option');
-        const name = character.avatar.replace(/\.[^/.]+$/, "") ?? character.name
-        option.innerText = name
-        option.selected = entry.characterFilter?.names.includes(name)
-        characterFilter.append(option)
+        const name = character.avatar.replace(/\.[^/.]+$/, "") ?? character.name;
+        option.innerText = name;
+        option.selected = entry.characterFilter?.names?.includes(name);
+        option.setAttribute('data-type', 'character');
+        characterFilter.append(option);
+    });
+
+    const tags = getContext().tags;
+    tags.forEach((tag) => {
+        const option = document.createElement('option');
+        option.innerText = `[Tag] ${tag.name}`;
+        option.selected = entry.characterFilter?.tags?.includes(tag.id);
+        option.value = tag.id;
+        option.setAttribute('data-type', 'tag');
+        characterFilter.append(option);
     });
 
     characterFilter.on('mousedown change', async function (e) {
@@ -690,16 +704,19 @@ function getWorldEntry(name, data, entry) {
         }
 
         const uid = $(this).data("uid");
-        const value = $(this).val();
-        if ((!value || value?.length === 0) && !data.entries[uid].characterFilter?.isExclude) {
+        const selected = $(this).find(':selected');
+        if ((!selected || selected?.length === 0) && !data.entries[uid].characterFilter?.isExclude) {
             delete data.entries[uid].characterFilter;
         } else {
+            const names = selected.filter('[data-type="character"]').map((_, e) => e instanceof HTMLOptionElement && e.innerText).toArray();
+            const tags = selected.filter('[data-type="tag"]').map((_, e) => e instanceof HTMLOptionElement && e.value).toArray();
             Object.assign(
                 data.entries[uid],
                 {
                     characterFilter: {
                         isExclude: data.entries[uid].characterFilter?.isExclude ?? false,
-                        names: value
+                        names: names,
+                        tags: tags,
                     }
                 }
             );
@@ -1465,12 +1482,32 @@ async function checkWorldInfo(chat, maxContext) {
 
         for (let entry of sortedEntries) {
             // Check if this entry applies to the character or if it's excluded
-            if (entry.characterFilter && entry.characterFilter?.names.length > 0) {
+            if (entry.characterFilter && entry.characterFilter?.names?.length > 0) {
                 const nameIncluded = entry.characterFilter.names.includes(getCharaFilename());
                 const filtered = entry.characterFilter.isExclude ? nameIncluded : !nameIncluded
 
                 if (filtered) {
+                    console.debug(`WI entry ${entry.uid} filtered out by character`);
                     continue;
+                }
+            }
+
+            if (entry.characterFilter && entry.characterFilter?.tags?.length > 0) {
+                const tagKey = getTagKeyForCharacter(this_chid);
+
+                if (tagKey) {
+                    const tagMapEntry = context.tagMap[tagKey];
+
+                    if (Array.isArray(tagMapEntry)) {
+                        // If tag map intersects with the tag exclusion list, skip
+                        const includesTag = tagMapEntry.some((tag) => entry.characterFilter.tags.includes(tag));
+                        const filtered = entry.characterFilter.isExclude ? includesTag : !includesTag;
+
+                        if (filtered) {
+                            console.debug(`WI entry ${entry.uid} filtered out by tag`);
+                            continue;
+                        }
+                    }
                 }
             }
 

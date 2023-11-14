@@ -6797,6 +6797,8 @@ window["SillyTavern"].getContext = function () {
         extensionSettings: extension_settings,
         ModuleWorkerWrapper: ModuleWorkerWrapper,
         getTokenizerModel: getTokenizerModel,
+        tags: tags,
+        tagMap: tag_map,
     };
 };
 
