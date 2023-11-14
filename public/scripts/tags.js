@@ -718,7 +718,7 @@ function onTagListHintClick() {
     $(this).siblings(".innerActionable").toggleClass('hidden');
 }
 
-$(document).ready(() => {
+jQuery(() => {
     createTagInput('#tagInput', '#tagList');
     createTagInput('#groupTagInput', '#groupTagList');
 
