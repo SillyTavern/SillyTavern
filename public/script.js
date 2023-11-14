@@ -1907,6 +1907,8 @@ function substituteParams(content, _name1, _name2, _original, _group, _replaceCh
 
     if (_replaceCharacterCard) {
         const fields = getCharacterCardFields();
+        content = content.replace(/{{charPrompt}}/gi, fields.system || '');
+        content = content.replace(/{{charJailbreak}}/gi, fields.jailbreak || '');
         content = content.replace(/{{description}}/gi, fields.description || '');
         content = content.replace(/{{personality}}/gi, fields.personality || '');
         content = content.replace(/{{scenario}}/gi, fields.scenario || '');
