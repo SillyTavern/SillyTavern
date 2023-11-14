@@ -654,7 +654,7 @@ let api_server_textgenerationwebui = "";
 
 let is_send_press = false; //Send generation
 
-let this_del_mes = 0;
+let this_del_mes = -1;
 
 //message editing and chat scroll position persistence
 var this_edit_mes_text = "";
@@ -5548,6 +5548,7 @@ function openMessageDelete(fromSlashCommand) {
             selected_group: ${selected_group}
             is_group_generating: ${is_group_generating}`);
     }
+    this_del_mes = -1;
     is_delete_mode = true;
 }
 
@@ -8169,9 +8170,8 @@ jQuery(async function () {
             $(this).parent().css("background", css_mes_bg);
             $(this).prop("checked", false);
         });
-        this_del_mes = 0;
-        console.debug('canceled del msgs, calling showswipesbtns');
         showSwipeButtons();
+        this_del_mes = -1;
         is_delete_mode = false;
     });
 
@@ -8185,21 +8185,26 @@ jQuery(async function () {
             $(this).parent().css("background", css_mes_bg);
             $(this).prop("checked", false);
         });
-        $(".mes[mesid='" + this_del_mes + "']")
-            .nextAll("div")
-            .remove();
-        $(".mes[mesid='" + this_del_mes + "']").remove();
-        chat.length = this_del_mes;
-        count_view_mes = this_del_mes;
-        await saveChatConditional();
-        var $textchat = $("#chat");
-        $textchat.scrollTop($textchat[0].scrollHeight);
-        eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
-        this_del_mes = 0;
-        $('#chat .mes').last().addClass('last_mes');
-        $('#chat .mes').eq(-2).removeClass('last_mes');
-        console.debug('confirmed del msgs, calling showswipesbtns');
+
+        if (this_del_mes >= 0) {
+            $(".mes[mesid='" + this_del_mes + "']")
+                .nextAll("div")
+                .remove();
+            $(".mes[mesid='" + this_del_mes + "']").remove();
+            chat.length = this_del_mes;
+            count_view_mes = this_del_mes;
+            await saveChatConditional();
+            var $textchat = $("#chat");
+            $textchat.scrollTop($textchat[0].scrollHeight);
+            eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
+            $('#chat .mes').last().addClass('last_mes');
+            $('#chat .mes').eq(-2).removeClass('last_mes');
+        } else {
+            console.log('this_del_mes is not >= 0, not deleting');
+        }
+
         showSwipeButtons();
+        this_del_mes = -1;
         is_delete_mode = false;
     });
 
