@@ -131,7 +131,7 @@ parser.addCommand('?', helpCommandCallback, ['help'], ' – get help on macros, 
 parser.addCommand('name', setNameCallback, ['persona'], '<span class="monospace">(name)</span> – sets user name and persona avatar (if set)', true, true);
 parser.addCommand('sync', syncCallback, [], ' – syncs user name in user-attributed messages in the current chat', true, true);
 parser.addCommand('lock', bindCallback, ['bind'], ' – locks/unlocks a persona (name and avatar) to the current chat', true, true);
-parser.addCommand('bg', setBackgroundCallback, ['background'], '<span class="monospace">(filename)</span> – sets a background according to filename, partial names allowed, will set the first one alphabetically if multiple files begin with the provided argument string', false, true);
+parser.addCommand('bg', setBackgroundCallback, ['background'], '<span class="monospace">(filename)</span> – sets a background according to filename, partial names allowed', false, true);
 parser.addCommand('sendas', sendMessageAs, [], ` – sends message as a specific character. Uses character avatar if it exists in the characters list. Example that will send "Hello, guys!" from "Chloe": <pre><code>/sendas Chloe&#10;Hello, guys!</code></pre>`, true, true);
 parser.addCommand('sys', sendNarratorMessage, ['nar'], '<span class="monospace">(text)</span> – sends message as a system narrator', false, true);
 parser.addCommand('sysname', setNarratorName, [], '<span class="monospace">(name)</span> – sets a name for future system narrator messages in this chat (display only). Default: System. Leave empty to reset.', true, true);
@@ -709,11 +709,23 @@ function setBackgroundCallback(_, bg) {
     if (!bg) {
         return;
     }
-    console.log('Set background to ' + bg);
-    const bgElement = $(`.bg_example[bgfile^="${bg.trim()}"`);
 
-    if (bgElement.length) {
-        bgElement.get(0).click();
+    console.log('Set background to ' + bg);
+
+    const bgElements = Array.from(document.querySelectorAll(`.bg_example`)).map((x) => ({ element: x, bgfile: x.getAttribute('bgfile') }));
+
+    const fuse = new Fuse(bgElements, { keys: ['bgfile'] });
+    const result = fuse.search(bg);
+
+    if (!result.length) {
+        toastr.error(`No background found with name "${bg}"`);
+        return;
+    }
+
+    const bgElement = result[0].item.element;
+
+    if (bgElement instanceof HTMLElement) {
+        bgElement.click();
     }
 }
 
