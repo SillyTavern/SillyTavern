@@ -651,14 +651,12 @@ jQuery(function () {
                             <option value="main">Main API</option>
                             <option value="extras">Extras API</option>
                         </select><br>
-                        
+
                         <div class="flex-container justifyspacebetween alignitemscenter">
-                        
                             <span class="flex1">Current summary:</span>
                             <div id="memory_restore" class="menu_button flex1 margin0"><span>Restore Previous</span></div>
-                        
                         </div>
-                        
+
                         <textarea id="memory_contents" class="text_pole textarea_compact" rows="6" placeholder="Summary will be generated here..."></textarea>
                         <div class="memory_contents_controls">
                             <div id="memory_force_summarize" class="menu_button menu_button_icon">
@@ -669,14 +667,17 @@ jQuery(function () {
                             <label for="memory_skipWIAN"><input id="memory_skipWIAN" type="checkbox" />No WI/AN</label>
                         </div>
                         <div class="memory_contents_controls">
-                            <div id="summarySettingsBlockToggle" class="menu_button">Settings</div>
+                            <div id="summarySettingsBlockToggle" class="menu_button menu_button_icon" title="Edit summarization prompt, insertion position, etc.">
+                                <i class="fa-solid fa-cog"></i>
+                                <span>Summary Settings</span>
+                            </div>
                         </div>
-                        <div id="summarySettingsBlock" style="display:none;">                    
+                        <div id="summarySettingsBlock" style="display:none;">
                             <div class="memory_template">
-                                <label for="memory_template">Insertion string:</label>
+                                <label for="memory_template">Insertion Template</label>
                                 <textarea id="memory_template" class="text_pole textarea_compact" rows="2" placeholder="{{summary}} will resolve to the current summary contents."></textarea>
                             </div>
-                            <label for="memory_position">Position:</label>
+                            <label for="memory_position">Injection Position</label>
                             <div class="radio_group">
                                 <label>
                                     <input type="radio" name="memory_position" value="2" />
