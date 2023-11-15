@@ -1,0 +1,18 @@
+{
+    "configurations": [
+        {
+            "type": "node-terminal",
+            "name": "sillytavern-linux",
+            "request": "launch",
+            "command": "bash start.sh",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "node-terminal",
+            "name": "sillytavern-win",
+            "request": "launch",
+            "command": "./start.bat",
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
