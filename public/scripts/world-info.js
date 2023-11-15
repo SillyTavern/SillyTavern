@@ -1526,6 +1526,9 @@ async function checkWorldInfo(chat, maxContext) {
             }
 
             if (Array.isArray(entry.key) && entry.key.length) { //check for keywords existing
+                // If selectiveLogic isn't found, assume it's AND, only do this once per entry
+                const selectiveLogic = entry.selectiveLogic ?? 0;
+                let notFlag = true;
                 primary: for (let key of entry.key) {
                     const substituted = substituteParams(key);
                     console.debug(`${entry.uid}: ${substituted}`)
@@ -1541,10 +1544,6 @@ async function checkWorldInfo(chat, maxContext) {
                             secondary: for (let keysecondary of entry.keysecondary) {
                                 const secondarySubstituted = substituteParams(keysecondary);
                                 console.debug(`uid:${entry.uid}: filtering ${secondarySubstituted}`);
-
-                                // If selectiveLogic isn't found, assume it's AND
-                                const selectiveLogic = entry.selectiveLogic ?? 0;
-
                                 //AND operator
                                 if (selectiveLogic === 0) {
                                     console.debug('saw AND logic, checking..')
@@ -1559,11 +1558,8 @@ async function checkWorldInfo(chat, maxContext) {
                                     console.debug(`uid ${entry.uid}: checking NOT logic for ${secondarySubstituted}`)
                                     if (secondarySubstituted && matchKeys(textToScan, secondarySubstituted.trim())) {
                                         console.debug(`uid ${entry.uid}: canceled; filtered out by ${secondarySubstituted}`)
+                                        notFlag = false;
                                         break primary;
-                                    } else {
-                                        console.debug(`${entry.uid}: activated; passed NOT filter`)
-                                        activatedNow.add(entry);
-                                        break secondary;
                                     }
                                 }
                             }
@@ -1574,6 +1570,11 @@ async function checkWorldInfo(chat, maxContext) {
                             break primary;
                         }
                     } else { console.debug('no active entries for logic checks yet') }
+                }
+                //for a NOT all entries must be checked, a single match invalidates activation
+                if (selectiveLogic === 1 && notFlag) {
+                    console.debug(`${entry.uid}: activated; passed NOT filter`)
+                    activatedNow.add(entry);                    
                 }
             }
         }
