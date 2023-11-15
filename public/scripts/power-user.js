@@ -2321,6 +2321,27 @@ function setAvgBG() {
 
 }
 
+async function setThemeCallback(_, text) {
+    const fuse = new Fuse(themes, {
+        keys: [
+            { name: 'name', weight: 1 },
+        ],
+    });
+
+    const results = fuse.search(text);
+    console.debug('Theme fuzzy search results for ' + text, results);
+    const theme = results[0]?.item;
+
+    if (!theme) {
+        toastr.warning(`Could not find theme with name: ${text}`);
+        return;
+    }
+
+    power_user.theme = theme.name;
+    applyTheme(theme.name);
+    $("#themes").val(theme.name);
+    saveSettingsDebounced();
+}
 
 /**
  * Gets the custom stopping strings from the power user settings.
@@ -2990,4 +3011,5 @@ $(document).ready(() => {
     registerSlashCommand('cut', doMesCut, [], '<span class="monospace">(number or range)</span> – cuts the specified message or continuous chunk from the chat, e.g. <tt>/cut 0-10</tt>. Ranges are inclusive!', true, true);
     registerSlashCommand('resetpanels', doResetPanels, ['resetui'], '– resets UI panels to original state.', true, true);
     registerSlashCommand('bgcol', setAvgBG, [], '– WIP test of auto-bg avg coloring', true, true);
+    registerSlashCommand('theme', setThemeCallback, [], '<span class="monospace">(name)</span> – sets a UI theme by name', true, true);
 });
