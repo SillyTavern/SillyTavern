@@ -2795,12 +2795,12 @@ app.post("/openai_bias", jsonParser, async function (request, response) {
 
         if (sentencepieceTokenizers.includes(model)) {
             const tokenizer = getSentencepiceTokenizer(model);
-            encodeFunction = (text) => new Uint32Array(tokenizer.encodeIds(text));
+            const instance = await tokenizer?.get();
+            encodeFunction = (text) => new Uint32Array(instance?.encodeIds(text));
         } else {
             const tokenizer = getTiktokenTokenizer(model);
             encodeFunction = (tokenizer.encode.bind(tokenizer));
         }
-
 
         for (const entry of request.body) {
             if (!entry || !entry.text) {
@@ -3640,7 +3640,7 @@ function backupChat(name, chat) {
         // replace non-alphanumeric characters with underscores
         name = sanitize(name).replace(/[^a-z0-9]/gi, '_').toLowerCase();
 
-        const backupFile = path.join(DIRECTORIES.backups, `chat_${name}_${generateTimestamp()}.json`);
+        const backupFile = path.join(DIRECTORIES.backups, `chat_${name}_${generateTimestamp()}.jsonl`);
         writeFileAtomicSync(backupFile, chat, 'utf-8');
 
         removeOldBackups(`chat_${name}_`);

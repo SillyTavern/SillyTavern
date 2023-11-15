@@ -347,14 +347,14 @@ function addExtensionsButtonAndMenu() {
 
     $(document.body).append(extensionsMenuHTML);
 
-    $('#send_but_sheld').prepend(buttonHTML);
+    $('#leftSendForm').prepend(buttonHTML);
 
     const button = $('#extensionsMenuButton');
     const dropdown = $('#extensionsMenu');
     //dropdown.hide();
 
     let popper = Popper.createPopper(button.get(0), dropdown.get(0), {
-        placement: 'top-end',
+        placement: 'top-start',
     });
 
     $(button).on('click', function () {
@@ -592,7 +592,7 @@ function getModuleInformation() {
  * Generates the HTML strings for all extensions and displays them in a popup.
  */
 async function showExtensionsDetails() {
-    try{
+    try {
         showLoader();
         let htmlDefault = '<h3>Built-in Extensions:</h3>';
         let htmlExternal = '<h3>Installed Extensions:</h3>';

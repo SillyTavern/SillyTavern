@@ -750,6 +750,11 @@ async function populateChatCompletion(prompts, chatCompletion, { bias, quietProm
         // We need the prompts array to determine a position for the source.
         if (false === prompts.has(source)) return;
 
+        if (promptManager.isPromptDisabledForActiveCharacter(source)) {
+            promptManager.log(`Skipping prompt ${source} because it is disabled`);
+            return;
+        }
+
         const prompt = prompts.get(source);
         const index = target ? prompts.index(target) : prompts.index(source);
         const collection = new MessageCollection(source);

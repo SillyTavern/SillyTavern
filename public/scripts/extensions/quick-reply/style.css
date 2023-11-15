@@ -12,7 +12,7 @@
     display: none;
     max-width: 100%;
     overflow-x: auto;
-    order: 10;
+    order: 1;
 }
 
 #quickReplies {

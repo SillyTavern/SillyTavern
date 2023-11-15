@@ -1,7 +1,7 @@
 import { callPopup, characters, chat_metadata, default_avatar, eventSource, event_types, getRequestHeaders, getThumbnailUrl, getUserAvatars, name1, saveMetadata, saveSettingsDebounced, setUserName, this_chid, user_avatar } from "../script.js";
 import { persona_description_positions, power_user } from "./power-user.js";
 import { getTokenCount } from "./tokenizers.js";
-import { debounce, delay } from "./utils.js";
+import { debounce, delay, download, parseJsonFile } from "./utils.js";
 
 /**
  * Uploads an avatar file to the server
@@ -486,6 +486,96 @@ function setChatLockedPersona() {
     updateUserLockIcon();
 }
 
+function onBackupPersonas() {
+    const timestamp = new Date().toISOString().split('T')[0].replace(/-/g, '');
+    const filename = `personas_${timestamp}.json`;
+    const data = JSON.stringify({
+        "personas": power_user.personas,
+        "persona_descriptions": power_user.persona_descriptions,
+        "default_persona": power_user.default_persona,
+    }, null, 2);
+
+    const blob = new Blob([data], { type: 'application/json' });
+    download(blob, filename, 'application/json');
+}
+
+async function onPersonasRestoreInput(e) {
+    const file = e.target.files[0];
+
+    if (!file) {
+        console.debug('No file selected');
+        return;
+    }
+
+    const data = await parseJsonFile(file);
+
+    if (!data) {
+        toastr.warning('Invalid file selected', 'Persona Management');
+        console.debug('Invalid file selected');
+        return;
+    }
+
+    if (!data.personas || !data.persona_descriptions || typeof data.personas !== 'object' || typeof data.persona_descriptions !== 'object') {
+        toastr.warning('Invalid file format', 'Persona Management');
+        console.debug('Invalid file selected');
+        return;
+    }
+
+    const avatarsList = await getUserAvatars();
+    const warnings = [];
+
+    // Merge personas with existing ones
+    for (const [key, value] of Object.entries(data.personas)) {
+        if (key in power_user.personas) {
+            warnings.push(`Persona "${key}" (${value}) already exists, skipping`);
+            continue;
+        }
+
+        power_user.personas[key] = value;
+
+        // If the avatar is missing, upload it
+        if (!avatarsList.includes(key)) {
+            warnings.push(`Persona image "${key}" (${value}) is missing, uploading default avatar`);
+            await uploadUserAvatar(default_avatar, key);
+        }
+    }
+
+    // Merge persona descriptions with existing ones
+    for (const [key, value] of Object.entries(data.persona_descriptions)) {
+        if (key in power_user.persona_descriptions) {
+            warnings.push(`Persona description for "${key}" (${power_user.personas[key]}) already exists, skipping`);
+            continue;
+        }
+
+        if (!power_user.personas[key]) {
+            warnings.push(`Persona for "${key}" does not exist, skipping`);
+            continue;
+        }
+
+        power_user.persona_descriptions[key] = value;
+    }
+
+    if (data.default_persona) {
+        if (data.default_persona in power_user.personas) {
+            power_user.default_persona = data.default_persona;
+        } else {
+            warnings.push(`Default persona "${data.default_persona}" does not exist, skipping`);
+        }
+    }
+
+    if (warnings.length) {
+        toastr.success('Personas restored with warnings. Check console for details.');
+        console.warn(`PERSONA RESTORE REPORT\n====================\n${warnings.join('\n')}`);
+    } else {
+        toastr.success('Personas restored successfully.');
+    }
+
+    await getUserAvatars();
+    setPersonaDescription();
+    saveSettingsDebounced();
+    $('#personas_restore_input').val('');
+}
+
 export function initPersonas() {
     $(document).on('click', '.bind_user_name', bindUserNameToPersona);
     $(document).on('click', '.set_default_persona', setDefaultPersona);
@@ -494,6 +584,9 @@ export function initPersonas() {
     $("#create_dummy_persona").on('click', createDummyPersona);
     $('#persona_description').on('input', onPersonaDescriptionInput);
     $('#persona_description_position').on('input', onPersonaDescriptionPositionInput);
+    $('#personas_backup').on('click', onBackupPersonas);
+    $('#personas_restore').on('click', () => $('#personas_restore_input').trigger('click'));
+    $('#personas_restore_input').on('change', onPersonasRestoreInput);
 
     eventSource.on("charManagementDropdown", (target) => {
         if (target === 'convert_to_persona') {

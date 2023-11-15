@@ -32,6 +32,7 @@ import { chat_styles, power_user } from "./power-user.js";
 import { autoSelectPersona } from "./personas.js";
 import { getContext } from "./extensions.js";
 import { hideChatMessage, unhideChatMessage } from "./chats.js";
+import { stringToRange } from "./utils.js";
 export {
     executeSlashCommands,
     registerSlashCommand,
@@ -130,7 +131,7 @@ parser.addCommand('?', helpCommandCallback, ['help'], ' – get help on macros, 
 parser.addCommand('name', setNameCallback, ['persona'], '<span class="monospace">(name)</span> – sets user name and persona avatar (if set)', true, true);
 parser.addCommand('sync', syncCallback, [], ' – syncs user name in user-attributed messages in the current chat', true, true);
 parser.addCommand('lock', bindCallback, ['bind'], ' – locks/unlocks a persona (name and avatar) to the current chat', true, true);
-parser.addCommand('bg', setBackgroundCallback, ['background'], '<span class="monospace">(filename)</span> – sets a background according to filename, partial names allowed, will set the first one alphabetically if multiple files begin with the provided argument string', false, true);
+parser.addCommand('bg', setBackgroundCallback, ['background'], '<span class="monospace">(filename)</span> – sets a background according to filename, partial names allowed', false, true);
 parser.addCommand('sendas', sendMessageAs, [], ` – sends message as a specific character. Uses character avatar if it exists in the characters list. Example that will send "Hello, guys!" from "Chloe": <pre><code>/sendas Chloe&#10;Hello, guys!</code></pre>`, true, true);
 parser.addCommand('sys', sendNarratorMessage, ['nar'], '<span class="monospace">(text)</span> – sends message as a system narrator', false, true);
 parser.addCommand('sysname', setNarratorName, [], '<span class="monospace">(name)</span> – sets a name for future system narrator messages in this chat (display only). Default: System. Leave empty to reset.', true, true);
@@ -145,8 +146,8 @@ parser.addCommand('ask', askCharacter, [], '<span class="monospace">(prompt)</sp
 parser.addCommand('delname', deleteMessagesByNameCallback, ['cancel'], '<span class="monospace">(name)</span> – deletes all messages attributed to a specified name', true, true);
 parser.addCommand('send', sendUserMessageCallback, ['add'], '<span class="monospace">(text)</span> – adds a user message to the chat log without triggering a generation', true, true);
 parser.addCommand('trigger', triggerGroupMessageCallback, [], '<span class="monospace">(member index or name)</span> – triggers a message generation for the specified group member', true, true);
-parser.addCommand('hide', hideMessageCallback, [], '<span class="monospace">(message index)</span> – hides a chat message from the prompt', true, true);
-parser.addCommand('unhide', unhideMessageCallback, [], '<span class="monospace">(message index)</span> – unhides a message from the prompt', true, true);
+parser.addCommand('hide', hideMessageCallback, [], '<span class="monospace">(message index or range)</span> – hides a chat message from the prompt', true, true);
+parser.addCommand('unhide', unhideMessageCallback, [], '<span class="monospace">(message index or range)</span> – unhides a message from the prompt', true, true);
 
 const NARRATOR_NAME_KEY = 'narrator_name';
 const NARRATOR_NAME_DEFAULT = 'System';
@@ -240,15 +241,23 @@ async function hideMessageCallback(_, arg) {
         return;
     }
 
-    const messageId = Number(arg);
-    const messageBlock = $(`.mes[mesid="${messageId}"]`);
+    const range = stringToRange(arg, 0, chat.length - 1);
 
-    if (!messageBlock.length) {
-        console.warn(`WARN: No message found with ID ${messageId}`);
+    if (!range) {
+        console.warn(`WARN: Invalid range provided for /hide command: ${arg}`);
         return;
     }
 
-    await hideChatMessage(messageId, messageBlock);
+    for (let messageId = range.start; messageId <= range.end; messageId++) {
+        const messageBlock = $(`.mes[mesid="${messageId}"]`);
+
+        if (!messageBlock.length) {
+            console.warn(`WARN: No message found with ID ${messageId}`);
+            return;
+        }
+
+        await hideChatMessage(messageId, messageBlock);
+    }
 }
 
 async function unhideMessageCallback(_, arg) {
@@ -257,15 +266,23 @@ async function unhideMessageCallback(_, arg) {
         return;
     }
 
-    const messageId = Number(arg);
-    const messageBlock = $(`.mes[mesid="${messageId}"]`);
+    const range = stringToRange(arg, 0, chat.length - 1);
 
-    if (!messageBlock.length) {
-        console.warn(`WARN: No message found with ID ${messageId}`);
+    if (!range) {
+        console.warn(`WARN: Invalid range provided for /unhide command: ${arg}`);
         return;
     }
 
-    await unhideChatMessage(messageId, messageBlock);
+    for (let messageId = range.start; messageId <= range.end; messageId++) {
+        const messageBlock = $(`.mes[mesid="${messageId}"]`);
+
+        if (!messageBlock.length) {
+            console.warn(`WARN: No message found with ID ${messageId}`);
+            return;
+        }
+
+        await unhideChatMessage(messageId, messageBlock);
+    }
 }
 
 async function triggerGroupMessageCallback(_, arg) {
@@ -692,11 +709,23 @@ function setBackgroundCallback(_, bg) {
     if (!bg) {
         return;
     }
-    console.log('Set background to ' + bg);
-    const bgElement = $(`.bg_example[bgfile^="${bg.trim()}"`);
 
-    if (bgElement.length) {
-        bgElement.get(0).click();
+    console.log('Set background to ' + bg);
+
+    const bgElements = Array.from(document.querySelectorAll(`.bg_example`)).map((x) => ({ element: x, bgfile: x.getAttribute('bgfile') }));
+
+    const fuse = new Fuse(bgElements, { keys: ['bgfile'] });
+    const result = fuse.search(bg);
+
+    if (!result.length) {
+        toastr.error(`No background found with name "${bg}"`);
+        return;
+    }
+
+    const bgElement = result[0].item.element;
+
+    if (bgElement instanceof HTMLElement) {
+        bgElement.click();
     }
 }
 

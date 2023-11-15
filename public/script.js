@@ -654,7 +654,7 @@ let api_server_textgenerationwebui = "";
 
 let is_send_press = false; //Send generation
 
-let this_del_mes = 0;
+let this_del_mes = -1;
 
 //message editing and chat scroll position persistence
 var this_edit_mes_text = "";
@@ -1907,6 +1907,8 @@ function substituteParams(content, _name1, _name2, _original, _group, _replaceCh
 
     if (_replaceCharacterCard) {
         const fields = getCharacterCardFields();
+        content = content.replace(/{{charPrompt}}/gi, fields.system || '');
+        content = content.replace(/{{charJailbreak}}/gi, fields.jailbreak || '');
         content = content.replace(/{{description}}/gi, fields.description || '');
         content = content.replace(/{{personality}}/gi, fields.personality || '');
         content = content.replace(/{{scenario}}/gi, fields.scenario || '');
@@ -4685,7 +4687,7 @@ async function renamePastChats(newAvatar, newValue) {
     }
 }
 
-function saveChatDebounced() {
+export function saveChatDebounced() {
     const chid = this_chid;
     const selectedGroup = selected_group;
 
@@ -5083,11 +5085,10 @@ export async function getUserAvatars() {
         $("#user_avatar_block").append('<div class="avatar_upload">+</div>');
 
         for (var i = 0; i < getData.length; i++) {
-            //console.log(1);
             appendUserAvatar(getData[i]);
         }
-        //var aa = JSON.parse(getData[0]);
-        //const load_ch_coint = Object.getOwnPropertyNames(getData);
+
+        return getData;
     }
 }
 
@@ -5187,7 +5188,7 @@ async function uploadUserAvatar(e) {
                 reloadUserAvatar(true);
             }
 
-            if (data.path) {
+            if (!name && data.path) {
                 await getUserAvatars();
                 await delay(500);
                 await createPersona(data.path);
@@ -5546,6 +5547,7 @@ function openMessageDelete(fromSlashCommand) {
             selected_group: ${selected_group}
             is_group_generating: ${is_group_generating}`);
     }
+    this_del_mes = -1;
     is_delete_mode = true;
 }
 
@@ -6795,6 +6797,8 @@ window["SillyTavern"].getContext = function () {
         extensionSettings: extension_settings,
         ModuleWorkerWrapper: ModuleWorkerWrapper,
         getTokenizerModel: getTokenizerModel,
+        tags: tags,
+        tagMap: tag_map,
     };
 };
 
@@ -8023,14 +8027,14 @@ jQuery(async function () {
         return menu.is(':hover') || button.is(':hover');
     }
 
-    button.on('mouseenter click', function () { showMenu(); });
-    button.on('mouseleave', function () {
+    button.on('click', function () { showMenu(); });
+    button.on('blur', function () {
         //delay to prevent menu hiding when mouse leaves button into menu
         setTimeout(() => {
             if (!isMouseOverButtonOrMenu()) { hideMenu(); }
         }, 100)
     });
-    menu.on('mouseleave', function () {
+    menu.on('blur', function () {
         //delay to prevent menu hide when mouseleaves menu into button
         setTimeout(() => {
             if (!isMouseOverButtonOrMenu()) { hideMenu(); }
@@ -8165,9 +8169,8 @@ jQuery(async function () {
             $(this).parent().css("background", css_mes_bg);
             $(this).prop("checked", false);
         });
-        this_del_mes = 0;
-        console.debug('canceled del msgs, calling showswipesbtns');
         showSwipeButtons();
+        this_del_mes = -1;
         is_delete_mode = false;
     });
 
@@ -8181,21 +8184,26 @@ jQuery(async function () {
             $(this).parent().css("background", css_mes_bg);
             $(this).prop("checked", false);
         });
-        $(".mes[mesid='" + this_del_mes + "']")
-            .nextAll("div")
-            .remove();
-        $(".mes[mesid='" + this_del_mes + "']").remove();
-        chat.length = this_del_mes;
-        count_view_mes = this_del_mes;
-        await saveChatConditional();
-        var $textchat = $("#chat");
-        $textchat.scrollTop($textchat[0].scrollHeight);
-        eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
-        this_del_mes = 0;
-        $('#chat .mes').last().addClass('last_mes');
-        $('#chat .mes').eq(-2).removeClass('last_mes');
-        console.debug('confirmed del msgs, calling showswipesbtns');
+
+        if (this_del_mes >= 0) {
+            $(".mes[mesid='" + this_del_mes + "']")
+                .nextAll("div")
+                .remove();
+            $(".mes[mesid='" + this_del_mes + "']").remove();
+            chat.length = this_del_mes;
+            count_view_mes = this_del_mes;
+            await saveChatConditional();
+            var $textchat = $("#chat");
+            $textchat.scrollTop($textchat[0].scrollHeight);
+            eventSource.emit(event_types.MESSAGE_DELETED, chat.length);
+            $('#chat .mes').last().addClass('last_mes');
+            $('#chat .mes').eq(-2).removeClass('last_mes');
+        } else {
+            console.log('this_del_mes is not >= 0, not deleting');
+        }
+
         showSwipeButtons();
+        this_del_mes = -1;
         is_delete_mode = false;
     });
 

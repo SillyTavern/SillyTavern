@@ -74,8 +74,8 @@
     color-scheme: only light;
 
     /* Send form variables */
-    --bottomFormBlockPadding: calc(var(--mainFontSize) / 3);
-    --bottomFormIconSize: calc(var(--mainFontSize) * 2);
+    --bottomFormBlockPadding: calc(var(--mainFontSize) / 2.5);
+    --bottomFormIconSize: calc(var(--mainFontSize) * 1.9);
     --bottomFormBlockSize: calc(var(--bottomFormIconSize) + var(--bottomFormBlockPadding));
 
     /*Top Bar Scaling Variables*/
@@ -559,10 +559,9 @@ hr {
     background-color: var(--crimson70a) !important;
 }
 
-#send_but_sheld {
+#nonQRFormItems {
     padding: 0;
     border: 0;
-    height: var(--bottomFormBlockSize);
     position: relative;
     background-position: center;
     display: flex;
@@ -570,10 +569,28 @@ hr {
     column-gap: 5px;
     font-size: var(--bottomFormIconSize);
     overflow: hidden;
-    order: 1003;
+    order: 25;
+    width: 100%;
 }
 
-#send_but_sheld>div {
+#leftSendForm,
+#rightSendForm {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+#leftSendForm {
+    order: 1;
+    padding-left: 2px;
+
+}
+
+#rightSendForm {
+    order: 3;
+    padding-right: 2px;
+}
+
+#send_form>#nonQRFormItems>div>div:not(.mes_stop) {
     width: var(--bottomFormBlockSize);
     height: var(--bottomFormBlockSize);
     margin: 0;
@@ -585,25 +602,26 @@ hr {
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: all 300ms;
 }
 
-#options_button:hover,
-#send_but_sheld>div:hover {
+#send_form>#nonQRFormItems>div>div:hover {
     opacity: 1;
     filter: brightness(1.2);
 }
 
 #send_but {
-    order: 99999;
+    order: 2;
 }
 
 #mes_continue {
-    order: 99998;
+    order: 1;
 }
 
-#send_but_sheld .mes_stop {
+#send_form .mes_stop {
     display: none;
-    order: 99997;
+    order: 2;
+    padding-right: 2px;
 }
 
 #options_button {
@@ -622,7 +640,7 @@ hr {
     transition: 0.3s;
     display: flex;
     align-items: center;
-    order: 1001;
+    order: 2;
 }
 
 .font-family-reset {
@@ -670,7 +688,7 @@ hr {
 }
 
 #extensionsMenuButton {
-    order: 100;
+    order: 4;
     padding: 1px;
 }
 
@@ -963,12 +981,12 @@ select {
     background-color: rgba(255, 0, 0, 0);
     border: 0;
     box-shadow: none;
-    padding-top: 6px;
+    padding: 6px;
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
     margin: 0;
     text-shadow: 0px 0px calc(var(--shadowWidth) * 1px) var(--SmartThemeShadowColor);
     flex: 1;
-    order: 1002;
+    order: 3;
 }
 
 .text_pole::placeholder {
