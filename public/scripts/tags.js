@@ -524,13 +524,13 @@ async function onTagRestoreFileSelect(e) {
     const data = await parseJsonFile(file);
 
     if (!data) {
-        toastr.warning('Tag restore: Empty file data.');
+        toastr.warning('Empty file data', 'Tag restore');
         console.log('Tag restore: File data empty.');
         return;
     }
 
     if (!data.tags || !data.tag_map || !Array.isArray(data.tags) || typeof data.tag_map !== 'object') {
-        toastr.warning('Tag restore: Invalid file format.');
+        toastr.warning('Invalid file format', 'Tag restore');
         console.log('Tag restore: Invalid file format.');
         return;
     }

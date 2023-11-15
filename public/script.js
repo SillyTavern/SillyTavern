@@ -5085,11 +5085,10 @@ export async function getUserAvatars() {
         $("#user_avatar_block").append('<div class="avatar_upload">+</div>');
 
         for (var i = 0; i < getData.length; i++) {
-            //console.log(1);
             appendUserAvatar(getData[i]);
         }
-        //var aa = JSON.parse(getData[0]);
-        //const load_ch_coint = Object.getOwnPropertyNames(getData);
+
+        return getData;
     }
 }
 

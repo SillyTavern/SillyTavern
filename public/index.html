@@ -3093,8 +3093,33 @@
             </div>
             <div class="drawer-content closedDrawer">
                 <div class="flex-container wide100p alignitemscenter spaceBetween">
-                    <h3 class="margin0"><span data-i18n="Persona Management">Persona Management</span></h3>
-                    <a href="https://docs.sillytavern.app/usage/core-concepts/personas/" target="_blank" data-i18n="How do I use this?">How do I use this?</a>
+                    <div class="flex-container alignItemsBaseline wide100p">
+                        <div class="flex1 flex-container alignItemsBaseline">
+                            <h3 class="margin0" data-i18n="Persona Management">Persona Management</h3>
+                            <a href="https://docs.sillytavern.app/usage/core-concepts/personas/" target="_blank" data-i18n="How do I use this?">
+                                <span class="fa-solid fa-circle-question note-link-span"></span>
+                            </a>
+                        </div>
+                        <div class="flex-container">
+                            <div class="menu_button menu_button_icon user_stats_button" title="Click for stats!">
+                                <i class="fa-solid fa-ranking-star"></i>
+                                <span data-i18n="Usage Stats">Usage Stats</span>
+                            </div>
+                            <div id="personas_backup" class="menu_button menu_button_icon" title="Backup your personas to a file">
+                                <i class="fa-solid fa-file-export"></i>
+                                <span data-i18n="Backup">Backup</span>
+                            </div>
+                            <div id="personas_restore" class="menu_button menu_button_icon" title="Restore your personas from a file">
+                                <i class="fa-solid fa-file-import"></i>
+                                <span data-i18n="Restore">Restore</span>
+                            </div>
+                            <div id="create_dummy_persona" class="menu_button menu_button_icon" title="Create a dummy persona" data-i18n="[title]Create a dummy persona">
+                                <i class="fa-solid fa-person-circle-question fa-fw"></i>
+                                <span data-i18n="Create">Create</span>
+                            </div>
+                            <input id="personas_restore_input" type="file" accept=".json" hidden>
+                        </div>
+                    </div>
                     <div id="persona-management-block" class="flex-container wide100p">
                         <div class="flex1">
                             <h4 data-i18n="Name">Name</h4>
@@ -3134,13 +3159,6 @@
                         <div class="flex1">
                             <h4 class="title_restorable">
                                 <span data-i18n="Your Persona">Your Persona</span>
-                                <div class="menu_button menu_button_icon user_stats_button" title="Click for stats!">
-                                    <i class="fa-solid fa-ranking-star"></i><span data-i18n="Usage Stats">Usage Stats</span>
-                                </div>
-                                <div id="create_dummy_persona" class="menu_button menu_button_icon" title="Create a dummy persona" data-i18n="[title]Create a dummy persona">
-                                    <i class="fa-solid fa-person-circle-question fa-fw"></i>
-                                    <span data-i18n="Create">Create</span>
-                                </div>
                             </h4>
                             <div id="user_avatar_block">
                                 <div class="avatar_upload">+</div>
