@@ -2795,12 +2795,12 @@ app.post("/openai_bias", jsonParser, async function (request, response) {
 
         if (sentencepieceTokenizers.includes(model)) {
             const tokenizer = getSentencepiceTokenizer(model);
-            encodeFunction = (text) => new Uint32Array(tokenizer.encodeIds(text));
+            const instance = await tokenizer?.get();
+            encodeFunction = (text) => new Uint32Array(instance?.encodeIds(text));
         } else {
             const tokenizer = getTiktokenTokenizer(model);
             encodeFunction = (tokenizer.encode.bind(tokenizer));
         }
-
 
         for (const entry of request.body) {
             if (!entry || !entry.text) {
