@@ -721,11 +721,11 @@ async function CreateZenSliders(elmnt) {
         offVal = Number(offVal).toFixed(decimals);
         //console.log(numVal, sliderMin, sliderMax, numVal > sliderMax, numVal < sliderMin)
         if (numVal > sliderMax) {
-            console.log('clamping numVal to sliderMax')
+            //console.log('clamping numVal to sliderMax')
             numVal = sliderMax
         }
         if (numVal < sliderMin) {
-            console.log('clamping numVal to sliderMin')
+            //console.log('clamping numVal to sliderMin')
             numVal = sliderMin
         }
         var sliderValRange = sliderMax - sliderMin
