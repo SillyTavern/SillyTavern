@@ -1758,6 +1758,11 @@ class Message {
         this.role = role;
         this.content = content;
 
+        if (!this.role) {
+            console.log(`Message role not set, defaulting to 'system' for identifier '${this.identifier}'`);
+            this.role = 'system';
+        }
+
         if (typeof this.content === 'string' && this.content.length > 0) {
             this.tokens = tokenHandler.count({ role: this.role, content: this.content });
         } else {
