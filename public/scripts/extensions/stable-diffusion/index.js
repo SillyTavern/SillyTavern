@@ -1181,6 +1181,10 @@ async function loadNovelModels() {
 
     return [
         {
+            value: 'nai-diffusion-3',
+            text: 'NAI Diffusion Anime V3',
+        },
+        {
             value: 'nai-diffusion-2',
             text: 'NAI Diffusion Anime V2',
         },
