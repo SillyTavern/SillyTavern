@@ -27,7 +27,7 @@ function registerEndpoints(app, jsonParser) {
                         ]
                     }
                 ],
-                max_tokens: 300
+                max_tokens: 500
             };
 
             console.log('OpenAI request', body);

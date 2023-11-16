@@ -303,6 +303,7 @@ window.debugTtsPlayback = debugTtsPlayback
 //##################//
 
 let audioElement = new Audio()
+audioElement.id = 'tts_audio'
 audioElement.autoplay = true
 
 let audioJobQueue = []
@@ -989,4 +990,5 @@ $(document).ready(function () {
     eventSource.on(event_types.MESSAGE_DELETED, onChatDeleted);
     eventSource.on(event_types.GROUP_UPDATED, onChatChanged)
     registerSlashCommand('speak', onNarrateText, ['narrate', 'tts'], `<span class="monospace">(text)</span>  – narrate any text using currently selected character's voice. Use voice="Character Name" argument to set other voice from the voice map, example: <tt>/speak voice="Donald Duck" Quack!</tt>`, true, true);
+    document.body.appendChild(audioElement);
 })

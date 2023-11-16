@@ -103,7 +103,7 @@ class ModuleWorkerWrapper {
     }
 
     // Called by the extension
-    async update() {
+    async update(...args) {
         // Don't touch me I'm busy...
         if (this.isBusy) {
             return;
@@ -112,7 +112,7 @@ class ModuleWorkerWrapper {
         // I'm free. Let's update!
         try {
             this.isBusy = true;
-            await this.callback();
+            await this.callback(...args);
         }
         finally {
             this.isBusy = false;
