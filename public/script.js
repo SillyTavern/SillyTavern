@@ -1879,6 +1879,20 @@ function getLastMessageId() {
 }
 
 /**
+ * Returns the last message in the chat.
+ * @returns {string} The last message in the chat.
+ */
+function getLastMessage() {
+    const index = chat?.length - 1;
+
+    if (!isNaN(index) && index >= 0) {
+        return chat[index].mes;
+    }
+
+    return '';
+}
+
+/**
  * Substitutes {{macro}} parameters in a string.
  * @param {string} content - The string to substitute parameters in.
  * @param {*} _name1 - The name of the user. Uses global name1 if not provided.
@@ -1920,6 +1934,7 @@ function substituteParams(content, _name1, _name2, _original, _group, _replaceCh
     content = content.replace(/{{char}}/gi, _name2);
     content = content.replace(/{{charIfNotGroup}}/gi, _group);
     content = content.replace(/{{group}}/gi, _group);
+    content = content.replace(/{{lastMessage}}/gi, getLastMessage());
     content = content.replace(/{{lastMessageId}}/gi, getLastMessageId());
 
     content = content.replace(/<USER>/gi, _name1);

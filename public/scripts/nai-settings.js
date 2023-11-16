@@ -4,7 +4,8 @@ import {
     getStoppingStrings,
     novelai_setting_names,
     saveSettingsDebounced,
-    setGenerationParamsFromPreset
+    setGenerationParamsFromPreset,
+    substituteParams,
 } from "../script.js";
 import { getCfgPrompt } from "./cfg-scale.js";
 import { MAX_CONTEXT_DEFAULT } from "./power-user.js";
@@ -454,7 +455,7 @@ export function getNovelGenerationData(finalPrompt, this_settings, this_amount_g
         "mirostat_lr": Number(nai_settings.mirostat_lr),
         "mirostat_tau": Number(nai_settings.mirostat_tau),
         "cfg_scale": cfgValues?.guidanceScale?.value ?? Number(nai_settings.cfg_scale),
-        "cfg_uc": cfgValues?.negativePrompt ?? nai_settings.cfg_uc ?? "",
+        "cfg_uc": cfgValues?.negativePrompt ?? substituteParams(nai_settings.cfg_uc) ?? "",
         "phrase_rep_pen": nai_settings.phrase_rep_pen,
         "stop_sequences": stopSequences,
         "bad_words_ids": badWordIds,
