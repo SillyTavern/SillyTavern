@@ -28,6 +28,7 @@ export const textgen_types = {
     OOBA: 'ooba',
     MANCER: 'mancer',
     APHRODITE: 'aphrodite',
+    TABBY: 'tabby'
 };
 
 // Maybe let it be configurable in the future?
@@ -283,6 +284,10 @@ export function isAphrodite() {
     return textgenerationwebui_settings.type === textgen_types.APHRODITE;
 }
 
+export function isTabby() {
+    return textgenerationwebui_settings.type === textgen_types.TABBY;
+}
+
 export function isOoba() {
     return textgenerationwebui_settings.type === textgen_types.OOBA;
 }
@@ -293,6 +298,8 @@ export function getTextGenUrlSourceId() {
             return "#textgenerationwebui_api_url_text";
         case textgen_types.APHRODITE:
             return "#aphrodite_api_url_text";
+        case textgen_types.TABBY:
+            return "#tabby_api_url_text";
     }
 }
 
@@ -551,6 +558,7 @@ export function getTextGenGenerationData(finalPrompt, this_amount_gen, isImperso
         'custom_token_bans': isAphrodite() ? toIntArray(getCustomTokenBans()) : getCustomTokenBans(),
         'use_mancer': isMancer(),
         'use_aphrodite': isAphrodite(),
+        'use_tabby': isTabby(),
         'use_ooba': isOoba(),
         'api_server': isMancer() ? MANCER_SERVER : api_server_textgenerationwebui,
         'legacy_api': textgenerationwebui_settings.legacy_api && !isMancer(),

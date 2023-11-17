@@ -1599,6 +1599,7 @@
                                     <option value="ooba">Default (oobabooga)</option>
                                     <option value="mancer">Mancer</option>
                                     <option value="aphrodite">Aphrodite</option>
+                                    <option value="tabby">TabbyAPI</option>
                                 </select>
                             </div>
                             <div data-tg-type="mancer" class="flex-container flexFlowColumn">
@@ -1659,8 +1660,29 @@
                                     <input id="aphrodite_api_url_text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="aphrodite">
                                 </div>
                             </div>
+                            <div data-tg-type="tabby">
+                                <div class="flex-container flexFlowColumn">
+                                    <a href="https://github.com/theroyallab/tabbyAPI" target="_blank">
+                                        theroyallab/tabbyAPI
+                                    </a>
+                                </div>
+                                <h4 data-i18n="Tabby API key">Tabby API key</h4>
+                                <div class="flex-container">
+                                    <input id="api_key_tabby" name="api_key_tabby" class="text_pole flex1 wide100p" maxlength="500" size="35" type="text" autocomplete="off">
+                                    <div title="Clear your API key" data-i18n="[title]Clear your API key" class="menu_button fa-solid fa-circle-xmark clear-api-key" data-key="api_key_tabby">
+                                    </div>
+                                </div>
+                                <div data-for="api_key_tabby" class="neutral_warning" data-i18n="For privacy reasons, your API key will be hidden after you reload the page.">
+                                    For privacy reasons, your API key will be hidden after you reload the page.
+                                </div>
+                                <div class="flex1">
+                                    <h4 data-i18n="API url">API URL</h4>
+                                    <small data-i18n="Example: http://127.0.0.1:5000">Example: http://127.0.0.1:5000</small>
+                                    <input id="tabby_api_url_text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="tabby">
+                                </div>
+                            </div>
                             <div class="flex-container">
-                                <div id="api_button_textgenerationwebui" class="api_button menu_button" type="submit" data-i18n="Connect" data-server-connect="ooba_blocking,aphrodite">Connect</div>
+                                <div id="api_button_textgenerationwebui" class="api_button menu_button" type="submit" data-i18n="Connect" data-server-connect="ooba_blocking,aphrodite,tabby">Connect</div>
                                 <div class="api_loading menu_button" data-i18n="Cancel">Cancel</div>
                             </div>
                             <label class="checkbox_label margin-bot-10px" for="legacy_api_textgenerationwebui">
