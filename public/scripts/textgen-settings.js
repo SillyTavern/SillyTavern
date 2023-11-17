@@ -7,6 +7,7 @@ import {
     saveSettingsDebounced,
     setGenerationParamsFromPreset,
     setOnlineStatus,
+    substituteParams,
 } from "../script.js";
 
 import {
@@ -563,7 +564,7 @@ export function getTextGenGenerationData(finalPrompt, this_amount_gen, isImperso
         'do_sample': textgenerationwebui_settings.do_sample,
         'seed': textgenerationwebui_settings.seed,
         'guidance_scale': cfgValues?.guidanceScale?.value ?? textgenerationwebui_settings.guidance_scale ?? 1,
-        'negative_prompt': cfgValues?.negativePrompt ?? textgenerationwebui_settings.negative_prompt ?? '',
+        'negative_prompt': cfgValues?.negativePrompt ?? substituteParams(textgenerationwebui_settings.negative_prompt) ?? '',
         'grammar_string': textgenerationwebui_settings.grammar_string,
     }
     let aphroditeFlags = {

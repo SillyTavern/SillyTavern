@@ -742,9 +742,10 @@ function getPromptPosition(position) {
  * @param {Object} options - An object with optional settings.
  * @param {string} options.bias - A bias to be added in the conversation.
  * @param {string} options.quietPrompt - Instruction prompt for extras
+ * @param {string} options.quietImage - Image prompt for extras
  * @param {string} options.type - The type of the chat, can be 'impersonate'.
  */
-async function populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, type, cyclePrompt } = {}) {
+async function populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, quietImage, type, cyclePrompt } = {}) {
     // Helper function for preparing a prompt, that already exists within the prompt collection, for completion
     const addToChatCompletion = (source, target = null) => {
         // We need the prompts array to determine a position for the source.
@@ -781,7 +782,13 @@ async function populateChatCompletion(prompts, chatCompletion, { bias, quietProm
     // Add quiet prompt to control prompts
     // This should always be last, even in control prompts. Add all further control prompts BEFORE this prompt
     const quietPromptMessage = Message.fromPrompt(prompts.get('quietPrompt')) ?? null;
-    if (quietPromptMessage && quietPromptMessage.content) controlPrompts.add(quietPromptMessage);
+    if (quietPromptMessage && quietPromptMessage.content) {
+        if (isImageInliningSupported() && quietImage) {
+            await quietPromptMessage.addImage(quietImage);
+        }
+
+        controlPrompts.add(quietPromptMessage);
+    }
 
     chatCompletion.reserveBudget(controlPrompts);
 
@@ -1004,6 +1011,7 @@ export async function prepareOpenAIMessages({
     bias,
     type,
     quietPrompt,
+    quietImage,
     extensionPrompts,
     cyclePrompt,
     systemPromptOverride,
@@ -1029,6 +1037,7 @@ export async function prepareOpenAIMessages({
             worldInfoAfter,
             charDescription,
             quietPrompt,
+            quietImage,
             bias,
             extensionPrompts,
             systemPromptOverride,
@@ -1037,7 +1046,7 @@ export async function prepareOpenAIMessages({
         });
 
         // Fill the chat completion with as much context as the budget allows
-        await populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, type, cyclePrompt });
+        await populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, quietImage, type, cyclePrompt });
     } catch (error) {
         if (error instanceof TokenBudgetExceededError) {
             toastr.error('An error occurred while counting tokens: Token budget exceeded.')
@@ -1757,6 +1766,11 @@ class Message {
         this.identifier = identifier;
         this.role = role;
         this.content = content;
+
+        if (!this.role) {
+            console.log(`Message role not set, defaulting to 'system' for identifier '${this.identifier}'`);
+            this.role = 'system';
+        }
 
         if (typeof this.content === 'string' && this.content.length > 0) {
             this.tokens = tokenHandler.count({ role: this.role, content: this.content });

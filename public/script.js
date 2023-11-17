@@ -1879,6 +1879,20 @@ function getLastMessageId() {
 }
 
 /**
+ * Returns the last message in the chat.
+ * @returns {string} The last message in the chat.
+ */
+function getLastMessage() {
+    const index = chat?.length - 1;
+
+    if (!isNaN(index) && index >= 0) {
+        return chat[index].mes;
+    }
+
+    return '';
+}
+
+/**
  * Substitutes {{macro}} parameters in a string.
  * @param {string} content - The string to substitute parameters in.
  * @param {*} _name1 - The name of the user. Uses global name1 if not provided.
@@ -1920,6 +1934,7 @@ function substituteParams(content, _name1, _name2, _original, _group, _replaceCh
     content = content.replace(/{{char}}/gi, _name2);
     content = content.replace(/{{charIfNotGroup}}/gi, _group);
     content = content.replace(/{{group}}/gi, _group);
+    content = content.replace(/{{lastMessage}}/gi, getLastMessage());
     content = content.replace(/{{lastMessageId}}/gi, getLastMessageId());
 
     content = content.replace(/<USER>/gi, _name1);
@@ -2089,16 +2104,17 @@ function getStoppingStrings(isImpersonate) {
  * @param {string} quiet_prompt Instruction prompt for the AI
  * @param {boolean} quietToLoud Whether the message should be sent in a foreground (loud) or background (quiet) mode
  * @param {boolean} skipWIAN whether to skip addition of World Info and Author's Note into the prompt
+ * @param {string} quietImage Image to use for the quiet prompt
  * @returns
  */
-export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN) {
+export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, quietImage = null) {
     console.log('got into genQuietPrompt')
     const skipWIANvalue = skipWIAN
     return await new Promise(
         async function promptPromise(resolve, reject) {
             if (quietToLoud === true) {
                 try {
-                    await Generate('quiet', { resolve, reject, quiet_prompt, quietToLoud: true, skipWIAN: skipWIAN, force_name2: true, });
+                    await Generate('quiet', { resolve, reject, quiet_prompt, quietToLoud: true, skipWIAN: skipWIAN, force_name2: true, quietImage: quietImage });
                 }
                 catch {
                     reject();
@@ -2107,7 +2123,7 @@ export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN) {
             else {
                 try {
                     console.log('going to generate non-QuietToLoud')
-                    await Generate('quiet', { resolve, reject, quiet_prompt, quietToLoud: false, skipWIAN: skipWIAN, force_name2: true, });
+                    await Generate('quiet', { resolve, reject, quiet_prompt, quietToLoud: false, skipWIAN: skipWIAN, force_name2: true, quietImage: quietImage });
                 }
                 catch {
                     reject();
@@ -2656,7 +2672,7 @@ export async function generateRaw(prompt, api) {
     return message;
 }
 
-async function Generate(type, { automatic_trigger, force_name2, resolve, reject, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal } = {}, dryRun = false) {
+async function Generate(type, { automatic_trigger, force_name2, resolve, reject, quiet_prompt, quietToLoud, skipWIAN, force_chid, signal, quietImage } = {}, dryRun = false) {
     console.log('Generate entered');
     setGenerationProgress(0);
     generation_started = new Date();
@@ -2711,7 +2727,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     }
 
     if (selected_group && !is_group_generating && !dryRun) {
-        generateGroupWrapper(false, type, { resolve, reject, quiet_prompt, force_chid, signal: abortController.signal });
+        generateGroupWrapper(false, type, { resolve, reject, quiet_prompt, force_chid, signal: abortController.signal, quietImage });
         return;
     } else if (selected_group && !is_group_generating && dryRun) {
         const characterIndexMap = new Map(characters.map((char, index) => [char.avatar, index]));
@@ -3417,6 +3433,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     bias: promptBias,
                     type: type,
                     quietPrompt: quiet_prompt,
+                    quietImage: quietImage,
                     cyclePrompt: cyclePrompt,
                     systemPromptOverride: system,
                     jailbreakPromptOverride: jailbreak,
@@ -6797,6 +6814,7 @@ window["SillyTavern"].getContext = function () {
         extensionSettings: extension_settings,
         ModuleWorkerWrapper: ModuleWorkerWrapper,
         getTokenizerModel: getTokenizerModel,
+        generateQuietPrompt: generateQuietPrompt,
         tags: tags,
         tagMap: tag_map,
     };
