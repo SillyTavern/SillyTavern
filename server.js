@@ -560,21 +560,37 @@ app.post("/api/textgenerationwebui/status", jsonParser, async function (request,
         // Set result to the first model ID
         result = modelIds[0] || 'Valid';
 
-        if (request.body.use_ooba || request.body.use_tabby) {
+        if (request.body.use_ooba) {
             try {
-                const modelInfoPath = request.body.use_ooba ? "/v1/internal/model/info" : "/v1/model"
-                const modelInfoUrl = baseUrl + modelInfoPath;
+                const modelInfoUrl = baseUrl + "/v1/internal/model/info";
                 const modelInfoReply = await fetch(modelInfoUrl, args);
 
                 if (modelInfoReply.ok) {
                     const modelInfo = await modelInfoReply.json();
-                    console.log(`${request.body.use_ooba ? "Ooba" : "Tabby"} model info: ${modelInfo}`);
+                    console.log(`Ooba model info: ${modelInfo}`);
 
-                    const modelName = request.body.use_ooba ? modelInfo?.model_name : modelInfo?.id;
+                    const modelName = modelInfo?.model_name;
                     result = modelName || result;
                 }
             } catch (error) {
-                console.error(`Failed to get ${request.body.use_ooba ? "Ooba" : "Tabby"} model info: ${error}`);
+                console.error(`Failed to get Ooba model info: ${error}`);
+            }
+        }
+
+        if (request.body.use_tabby) {
+            try {
+                const modelInfoUrl = baseUrl + "/v1/model";
+                const modelInfoReply = await fetch(modelInfoUrl, args);
+
+                if (modelInfoReply.ok) {
+                    const modelInfo = await modelInfoReply.json();
+                    console.log(`Tabby model info: ${modelInfo}`);
+
+                    const modelName = modelInfo?.id;
+                    result = modelName || result;
+                }
+            } catch (error) {
+                console.error(`Failed to get TabbyAPI model info: ${error}`);
             }
         }
 
@@ -3423,8 +3439,11 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
             if (legacyApi) {
                 url += '/v1/token-count';
                 args.body = JSON.stringify({ "prompt": text });
+            } else if (request.body.use_tabby) {
+                url += '/v1/token/encode';
+                args.body = JSON.stringify({ "text": text });
             } else {
-                url += request.body.use_tabby ? '/v1/token/encode' : '/v1/internal/encode';
+                url += '/v1/internal/encode';
                 args.body = JSON.stringify({ "text": text });
             }
 
