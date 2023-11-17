@@ -164,6 +164,15 @@ function getAphroditeHeaders() {
     }) : {};
 }
 
+function getTabbyHeaders() {
+    const apiKey = readSecret(SECRET_KEYS.TABBY)
+
+    return apiKey ? ({
+        "x-api-key": apiKey,
+        "Authorization": `Bearer ${apiKey}`,
+    }) : {};
+}
+
 function getOverrideHeaders(urlHost) {
     const overrideHeaders = config.requestOverrides?.find((e) => e.hosts?.includes(urlHost))?.headers;
     if (overrideHeaders && urlHost) {
@@ -186,6 +195,8 @@ function setAdditionalHeaders(request, args, server) {
         headers = getMancerHeaders();
     } else if (request.body.use_aphrodite) {
         headers = getAphroditeHeaders();
+    } else if (request.body.use_tabby) {
+        headers = getTabbyHeaders();
     } else {
         headers = server ? getOverrideHeaders((new URL(server))?.host) : {};
     }
@@ -520,6 +531,9 @@ app.post("/api/textgenerationwebui/status", jsonParser, async function (request,
         else if (request.body.use_mancer) {
             url += "/oai/v1/models";
         }
+        else if (request.body.use_tabby) {
+            url += "/v1/model/list"
+        }
 
         const modelsReply = await fetch(url, args);
 
@@ -546,20 +560,21 @@ app.post("/api/textgenerationwebui/status", jsonParser, async function (request,
         // Set result to the first model ID
         result = modelIds[0] || 'Valid';
 
-        if (request.body.use_ooba) {
+        if (request.body.use_ooba || request.body.use_tabby) {
             try {
-                const modelInfoUrl = baseUrl + '/v1/internal/model/info';
+                const modelInfoPath = request.body.use_ooba ? "/v1/internal/model/info" : "/v1/model"
+                const modelInfoUrl = baseUrl + modelInfoPath;
                 const modelInfoReply = await fetch(modelInfoUrl, args);
 
                 if (modelInfoReply.ok) {
                     const modelInfo = await modelInfoReply.json();
-                    console.log('Ooba model info:', modelInfo);
+                    console.log(`${request.body.use_ooba ? "Ooba" : "Tabby"} model info: ${modelInfo}`);
 
-                    const modelName = modelInfo?.model_name;
+                    const modelName = request.body.use_ooba ? modelInfo?.model_name : modelInfo?.id;
                     result = modelName || result;
                 }
             } catch (error) {
-                console.error('Failed to get Ooba model info:', error);
+                console.error(`Failed to get ${request.body.use_ooba ? "Ooba" : "Tabby"} model info: ${error}`);
             }
         }
 
@@ -593,7 +608,7 @@ app.post("/api/textgenerationwebui/generate", jsonParser, async function (reques
         if (request.body.legacy_api) {
             url += "/v1/generate";
         }
-        else if (request.body.use_aphrodite || request.body.use_ooba) {
+        else if (request.body.use_aphrodite || request.body.use_ooba || request.body.use_tabby) {
             url += "/v1/completions";
         }
         else if (request.body.use_mancer) {

@@ -19,6 +19,7 @@ import {
     getTextGenUrlSourceId,
     isMancer,
     isAphrodite,
+    isTabby,
     textgen_types,
     textgenerationwebui_banned_in_macros,
     isOoba,
@@ -882,6 +883,7 @@ async function getStatus() {
                 use_mancer: main_api == "textgenerationwebui" ? isMancer() : false,
                 use_aphrodite: main_api == "textgenerationwebui" ? isAphrodite() : false,
                 use_ooba: main_api == "textgenerationwebui" ? isOoba() : false,
+                use_tabby: main_api == "textgenerationwebui" ? isTabby() : false,
                 legacy_api: main_api == "textgenerationwebui" ? textgenerationwebui_settings.legacy_api && !isMancer() : false,
             }),
             signal: abortStatusCheck.signal,
@@ -5411,6 +5413,7 @@ async function getSettings() {
         api_server_textgenerationwebui = settings.api_server_textgenerationwebui;
         $("#textgenerationwebui_api_url_text").val(api_server_textgenerationwebui);
         $("#aphrodite_api_url_text").val(api_server_textgenerationwebui);
+        $("#tabby_api_url_text").val(api_server_textgenerationwebui);
 
         selected_button = settings.selected_button;
 
@@ -8006,6 +8009,11 @@ jQuery(async function () {
         const aphroditeKey = String($("#api_key_aphrodite").val()).trim();
         if (aphroditeKey.length) {
             await writeSecret(SECRET_KEYS.APHRODITE, aphroditeKey);
+        }
+
+        const tabbyKey = String($("#api_key_tabby").val()).trim();
+        if (tabbyKey.length) {
+            await writeSecret(SECRET_KEYS.TABBY, tabbyKey)
         }
 
         const urlSourceId = getTextGenUrlSourceId();
