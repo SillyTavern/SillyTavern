@@ -3424,7 +3424,7 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
                 url += '/v1/token-count';
                 args.body = JSON.stringify({ "prompt": text });
             } else {
-                url += '/v1/internal/encode';
+                url += request.body.use_tabby ? '/v1/token/encode' : '/v1/internal/encode';
                 args.body = JSON.stringify({ "text": text });
             }
 
