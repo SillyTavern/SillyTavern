@@ -3402,7 +3402,8 @@ export function isImageInliningSupported() {
         return false;
     }
 
-    const modelId = 'gpt-4-vision';
+    const gpt4v = 'gpt-4-vision';
+    const llava13b = 'llava-13b';
 
     if (!oai_settings.image_inlining) {
         return false;
@@ -3410,9 +3411,9 @@ export function isImageInliningSupported() {
 
     switch (oai_settings.chat_completion_source) {
         case chat_completion_sources.OPENAI:
-            return oai_settings.openai_model.includes(modelId);
+            return oai_settings.openai_model.includes(gpt4v);
         case chat_completion_sources.OPENROUTER:
-            return oai_settings.openrouter_model.includes(modelId);
+            return oai_settings.openrouter_model.includes(gpt4v) || oai_settings.openrouter_model.includes(llava13b);
         default:
             return false;
     }
