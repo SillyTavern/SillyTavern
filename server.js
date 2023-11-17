@@ -567,7 +567,7 @@ app.post("/api/textgenerationwebui/status", jsonParser, async function (request,
 
                 if (modelInfoReply.ok) {
                     const modelInfo = await modelInfoReply.json();
-                    console.log(`Ooba model info: ${modelInfo}`);
+                    console.log('Ooba model info:', modelInfo);
 
                     const modelName = modelInfo?.model_name;
                     result = modelName || result;
@@ -584,7 +584,7 @@ app.post("/api/textgenerationwebui/status", jsonParser, async function (request,
 
                 if (modelInfoReply.ok) {
                     const modelInfo = await modelInfoReply.json();
-                    console.log(`Tabby model info: ${modelInfo}`);
+                    console.log('Tabby model info:', modelInfo);
 
                     const modelName = modelInfo?.id;
                     result = modelName || result;
