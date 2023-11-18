@@ -365,7 +365,7 @@ async function sendUserMessageCallback(_, text) {
 
     text = text.trim();
     const bias = extractMessageBias(text);
-    sendMessageAsUser(text, bias);
+    await sendMessageAsUser(text, bias);
 }
 
 async function deleteMessagesByNameCallback(_, name) {

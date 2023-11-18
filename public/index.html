@@ -1388,9 +1388,9 @@
                                             <input id="openai_image_inlining" type="checkbox" />
                                             <span data-i18n="Send inline images">Send inline images</span>
                                             <div id="image_inlining_hint" class="flexBasis100p toggle-description justifyLeft">
-                                                Natively replaces captioning if the model supports it (e.g. GPT-4V or Llava 13B).
-                                                Use the <code><i class="fa-solid fa-image"></i></code> action on any message or the
-                                                <code><i class="fa-solid fa-wand-magic-sparkles"></i></code> menu to attach an image to the chat.
+                                                Sends images in prompts if the model supports it (e.g. GPT-4V or Llava 13B).
+                                                Use the <code><i class="fa-solid fa-paperclip"></i></code> action on any message or the
+                                                <code><i class="fa-solid fa-wand-magic-sparkles"></i></code> menu to attach an image file to the chat.
                                             </div>
                                         </label>
                                     </div>
@@ -4140,7 +4140,7 @@
                             <div title="Prompt" class="mes_prompt fa-solid fa-square-poll-horizontal " data-i18n="[title]Prompt"></div>
                             <div title="Exclude message from prompts" class="mes_hide fa-solid fa-eye" data-i18n="[title]Exclude message from prompts"></div>
                             <div title="Include message in prompts" class="mes_unhide fa-solid fa-eye-slash" data-i18n="[title]Include message in prompts"></div>
-                            <div title="Embed image" class="mes_embed fa-solid fa-image" data-i18n="[title]Embed image"></div>
+                            <div title="Embed file or image" class="mes_embed fa-solid fa-paperclip" data-i18n="[title]Embed file or image"></div>
                             <div title="Create bookmark" class="mes_create_bookmark fa-regular fa-solid fa-book-bookmark" data-i18n="[title]Create Bookmark"></div>
                             <div title="Create branch" class="mes_create_branch fa-regular fa-code-branch" data-i18n="[title]Create Branch"></div>
                             <div title="Copy" class="mes_copy fa-solid fa-copy " data-i18n="[title]Copy"></div>
@@ -4319,6 +4319,15 @@
     <!-- chat and input bar -->
     <div id="typing_indicator_template" class="template_element">
         <div class="typing_indicator"><span class="typing_indicator_name">CHAR</span> is typing</div>
+    </div>
+    <div id="message_file_template" class="template_element">
+        <div class="mes_file_container">
+            <div class="fa-lg fa-solid fa-file-alt mes_file_icon"></div>
+            <div class="mes_file_name"></div>
+            <div class="mes_file_size"></div>
+            <div class="right_menu_button mes_file_open fa-solid fa-magnifying-glass" title="View contents" data-i18n="[title]View contents"></div>
+            <div class="right_menu_button mes_file_delete fa-solid fa-trash-can" title="Remove the file" data-i18n="[title]Remove the file"></div>
+        </div>
     </div>
     <div id="movingDivs">
         <div id="floatingPrompt" class="drawer-content flexGap5">
@@ -4607,7 +4616,19 @@
                 <div id="dialogue_del_mes_ok" class="menu_button">Delete</div>
                 <div id="dialogue_del_mes_cancel" class="menu_button">Cancel</div>
             </div>
-            <form id="send_form" class="no-connection">
+            <div id="send_form" class="no-connection">
+                <form id="file_form" class="wide100p displayNone">
+                    <div class="file_attached">
+                        <input id="file_form_input" type="file" hidden>
+                        <input id="embed_file_input" type="file" hidden>
+                        <i class="fa-solid fa-file-alt"></i>
+                        <span class="file_name">File Name</span>
+                        <span class="file_size">File Size</span>
+                        <button id="file_form_reset" type="reset" class="menu_button" title="Remove the file" data-i18n="[title]Remove the file">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    </div>
+                </form>
                 <div id="nonQRFormItems">
                     <div id="leftSendForm" class="alignContentCenter">
                         <div id="options_button" class="fa-solid fa-bars"></div>
@@ -4621,7 +4642,7 @@
                         <div id="send_but" class="fa-solid fa-paper-plane displayNone" title="Send a message" data-i18n="[title]Send a message"></div>
                     </div>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
     <!-- popups live outside sheld to avoid blur conflicts -->

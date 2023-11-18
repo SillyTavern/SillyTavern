@@ -3,6 +3,7 @@
 @import url(css/promptmanager.css);
 @import url(css/loader.css);
 @import url(css/character-group-overlay.css);
+@import url(css/file-form.css);
 
 :root {
     --doc-height: 100%;
@@ -757,6 +758,10 @@ hr {
     /*only affects bubblechat to make it sit nicely at the bottom*/
 }
 
+.last_mes .mes_text {
+    padding-right: 30px;
+}
+
 /* SWIPE RELATED STYLES*/
 
 .swipe_right,
@@ -925,6 +930,7 @@ hr {
     padding-top: 0;
     padding-left: 10px;
     width: 100%;
+    overflow-x: hidden;
 }
 
 .mes_text {
@@ -2483,14 +2489,6 @@ input[type="range"]::-webkit-slider-thumb {
 
 .extraMesButtons {
     display: none;
-}
-
-.last_mes .mes_buttons {
-    right: -30px;
-}
-
-.last_mes .mes_block {
-    margin-right: 30px;
 }
 
 .mes_buttons .mes_edit,
