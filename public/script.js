@@ -3148,7 +3148,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         console.debug('calling runGenerate');
 
         if (!dryRun) {
-            streamingProcessor = isStreamingEnabled() ? new StreamingProcessor(type, force_name2, generation_started) : false;
+            streamingProcessor = isStreamingEnabled() && type !== 'quiet' ? new StreamingProcessor(type, force_name2, generation_started) : false;
         }
 
         if (isContinue) {
@@ -3729,6 +3729,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 activateSendButtons();
                 showSwipeButtons();
                 setGenerationProgress(0);
+                streamingProcessor = null;
 
                 if (type !== 'quiet') {
                     triggerAutoContinue(messageChunk, isImpersonate);
@@ -3748,6 +3749,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 showSwipeButtons();
                 setGenerationProgress(0);
                 console.log(exception);
+                streamingProcessor = null;
             };
 
         } //rungenerate ends
