@@ -325,7 +325,7 @@ jQuery(function () {
                     <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                 </div>
                 <div class="inline-drawer-content">
-                    <label for="caption_source">Source:</label>
+                    <label for="caption_source">Source</label>
                     <select id="caption_source" class="text_pole">
                         <option value="local">Local</option>
                         <option value="multimodal">Multimodal (OpenAI / OpenRouter)</option>
@@ -350,14 +350,14 @@ jQuery(function () {
                         </div>
                     </div>
                     <div id="caption_prompt_block">
-                        <label for="caption_prompt">Caption Prompt (Multimodal):</label>
+                        <label for="caption_prompt">Caption Prompt</label>
                         <textarea id="caption_prompt" class="text_pole" rows="1" placeholder="&lt; Use default &gt;">${PROMPT_DEFAULT}</textarea>
                     </div>
-                    <label for="caption_template">Message Template: <small>(use <tt>{{caption}}</tt> macro)</small></label>
+                    <label for="caption_template">Message Template <small>(use <code>{{caption}}</code> macro)</small></label>
                     <textarea id="caption_template" class="text_pole" rows="2" placeholder="&lt; Use default &gt;">${TEMPLATE_DEFAULT}</textarea>
                     <label class="checkbox_label margin-bot-10px" for="caption_refine_mode">
                         <input id="caption_refine_mode" type="checkbox" class="checkbox">
-                        Edit captions before generation
+                        Edit captions before saving
                     </label>
                 </div>
             </div>

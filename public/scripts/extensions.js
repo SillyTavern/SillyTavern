@@ -1,4 +1,4 @@
-import { callPopup, eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, substituteParams, renderTemplate } from "../script.js";
+import { callPopup, eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, substituteParams, renderTemplate, animation_duration } from "../script.js";
 import { hideLoader, showLoader } from "./loader.js";
 import { isSubsetOf } from "./utils.js";
 export {
@@ -359,15 +359,17 @@ function addExtensionsButtonAndMenu() {
 
     $(button).on('click', function () {
         popper.update()
-        dropdown.fadeIn(250);
+        if (!dropdown.is(':visible')) {
+            dropdown.fadeIn(animation_duration);
+        }
     });
 
     $("html").on('touchstart mousedown', function (e) {
-        let clickTarget = $(e.target);
+        // let clickTarget = $(e.target);
         if (dropdown.is(':visible')
-            && clickTarget.closest(button).length == 0
-            && clickTarget.closest(dropdown).length == 0) {
-            $(dropdown).fadeOut(250);
+            /*&& clickTarget.closest(button).length == 0
+            && clickTarget.closest(dropdown).length == 0*/) {
+            $(dropdown).fadeOut(animation_duration);
         }
     });
 }

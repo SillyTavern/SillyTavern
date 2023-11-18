@@ -646,7 +646,7 @@ let create_save = {
 };
 
 //animation right menu
-let animation_duration = 125;
+export let animation_duration = 125;
 let animation_easing = "ease-in-out";
 let popup_type = "";
 let chat_file_for_del = "";
@@ -8099,12 +8099,14 @@ jQuery(async function () {
 
     function showMenu() {
         showBookmarksButtons();
-        menu.stop().fadeIn(250);
+        // menu.stop()
+        menu.fadeIn(animation_duration);
         optionsPopper.update();
     }
 
     function hideMenu() {
-        menu.stop().fadeOut(250);
+        // menu.stop();
+        menu.fadeOut(animation_duration);
         optionsPopper.update();
     }
 
@@ -8112,7 +8114,13 @@ jQuery(async function () {
         return menu.is(':hover') || button.is(':hover');
     }
 
-    button.on('click', function () { showMenu(); });
+    button.on('click', function () {
+        if (menu.is(':visible')) {
+            hideMenu();
+        } else {
+            showMenu();
+        }
+    });
     button.on('blur', function () {
         //delay to prevent menu hiding when mouse leaves button into menu
         setTimeout(() => {
