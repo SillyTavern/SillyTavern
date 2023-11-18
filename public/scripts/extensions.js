@@ -365,10 +365,9 @@ function addExtensionsButtonAndMenu() {
     });
 
     $("html").on('touchstart mousedown', function (e) {
-        // let clickTarget = $(e.target);
-        if (dropdown.is(':visible')
-            /*&& clickTarget.closest(button).length == 0
-            && clickTarget.closest(dropdown).length == 0*/) {
+        const clickTarget = $(e.target);
+        const noCloseTargets = ['#sd_gen'];
+        if (dropdown.is(':visible') && !noCloseTargets.some(id => clickTarget.closest(id).length > 0)) {
             $(dropdown).fadeOut(animation_duration);
         }
     });
