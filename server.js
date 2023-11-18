@@ -72,6 +72,11 @@ if (process.versions && process.versions.node && process.versions.node.match(/20
 dns.setDefaultResultOrder('ipv4first');
 
 const cliArguments = yargs(hideBin(process.argv))
+    .option('autorun', {
+        type: 'boolean',
+        default: null,
+        describe: 'Automatically launch SillyTavern in the browser.'
+    })
     .option('disableCsrf', {
         type: 'boolean',
         default: false,
@@ -116,7 +121,7 @@ if (fs.existsSync(whitelistPath)) {
 }
 
 const whitelistMode = config.whitelistMode;
-const autorun = config.autorun && !cliArguments.ssl;
+const autorun = config.autorun && cliArguments.autorun!==false && !cliArguments.ssl;
 const enableExtensions = config.enableExtensions;
 const listen = config.listen;
 
