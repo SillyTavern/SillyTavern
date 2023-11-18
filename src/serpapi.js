@@ -1,5 +1,5 @@
 const fetch = require('node-fetch').default;
-const { readSecret } = require('./secrets');
+const { readSecret, SECRET_KEYS } = require('./secrets');
 
 /**
  * Registers the SerpApi endpoints.
@@ -9,7 +9,7 @@ const { readSecret } = require('./secrets');
 function registerEndpoints(app, jsonParser) {
     app.post('/api/serpapi/search', jsonParser, async (request, response) => {
         try {
-            const key = readSecret('serpapi_key');
+            const key = readSecret(SECRET_KEYS.SERPAPI);
 
             if (!key) {
                 console.log('No SerpApi key found');
