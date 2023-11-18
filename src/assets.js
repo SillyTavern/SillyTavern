@@ -4,6 +4,7 @@ const sanitize = require('sanitize-filename');
 const fetch = require('node-fetch').default;
 const { finished } = require('stream/promises');
 const { DIRECTORIES, UNSAFE_EXTENSIONS } = require('./constants');
+const { isMacOSMetadataFile } = require('./util');
 
 const VALID_CATEGORIES = ["bgm", "ambient", "blip", "live2d"];
 
@@ -39,18 +40,21 @@ function checkAssetFileName(inputFilename) {
 
 // Recursive function to get files
 function getFiles(dir, files = []) {
-    // Get an array of all files and directories in the passed directory using fs.readdirSync
+    // Get all files and subdirectories of dir
     const fileList = fs.readdirSync(dir);
-    // Create the full path of the file/directory by concatenating the passed directory and file/directory name
+
     for (const file of fileList) {
-        const name = `${dir}/${file}`;
-        // Check if the current file/directory is a directory using fs.statSync
-        if (fs.statSync(name).isDirectory()) {
-            // If it is a directory, recursively call the getFiles function with the directory path and the files array
-            getFiles(name, files);
+        // Get the full path of the current file
+        const fullPath = path.join(dir, file);
+        // Skip macOS metadata files
+        if (isMacOSMetadataFile(dir, file)) continue;
+        
+        // If it is a directory, recursively call getFiles with the directory path and the files array.
+        // Else it is a file, push the full path to the files array
+        if (fs.statSync(fullPath).isDirectory()) {
+            getFiles(fullPath, files);
         } else {
-            // If it is a file, push the full path to the files array
-            files.push(name);
+            files.push(fullPath);
         }
     }
     return files;
