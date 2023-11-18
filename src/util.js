@@ -217,11 +217,26 @@ function deepMerge(target, source) {
     return output;
 }
 
+/**
+ * Checks if this is a macOS metadata file that corresponds to a companion file/directory.
+ * @param {string} dir Directory of the file
+ * @param {string} fileName Name of the file
+ * @returns {boolean} 
+ */
+function isMacOSMetadataFile(dir, fileName) {
+    if (fileName.startsWith('._')) {
+        const companionName = fileName.substring(2);
+        return fs.existsSync(path.join(dir, companionName));
+    }
+    return false;
+}
+
 module.exports = {
     getConfig,
     getConfigValue,
     getVersion,
     getBasicAuthHeader,
+    isMacOSMetadataFile,
     extractFileFromZipBuffer,
     getImageBuffers,
     readAllChunks,
