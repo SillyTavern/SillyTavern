@@ -512,8 +512,8 @@ async function generateExtensionHtml(name, manifest, isActive, isDisabled, isExt
         isUpToDate = data.isUpToDate;
         displayVersion = ` (${branch}-${commitHash.substring(0, 7)})`;
         updateButton = isUpToDate ?
-            `<span class="update-button"><button class="btn_update menu_button" data-name="${name.replace('third-party', '')}" title="Up to date"><i class="fa-solid fa-code-commit"></i></button></span>` :
-            `<span class="update-button"><button class="btn_update menu_button" data-name="${name.replace('third-party', '')}" title="Update available"><i class="fa-solid fa-download"></i></button></span>`;
+            `<span class="update-button"><button class="btn_update menu_button" data-name="${name.replace('third-party', '')}" title="Up to date"><i class="fa-solid fa-code-commit fa-fw"></i></button></span>` :
+            `<span class="update-button"><button class="btn_update menu_button" data-name="${name.replace('third-party', '')}" title="Update available"><i class="fa-solid fa-download fa-fw"></i></button></span>`;
         originHtml = `<a href="${origin}" target="_blank" rel="noopener noreferrer">`;
     }
 
@@ -641,6 +641,7 @@ async function showExtensionsDetails() {
  */
 async function onUpdateClick() {
     const extensionName = $(this).data('name');
+    $(this).find('i').addClass('fa-spin');
     await updateExtension(extensionName, false);
 }
 
@@ -658,16 +659,17 @@ async function updateExtension(extensionName, quiet) {
         });
 
         const data = await response.json();
+
+        if (!quiet) {
+            showExtensionsDetails();
+        }
+
         if (data.isUpToDate) {
             if (!quiet) {
                 toastr.success('Extension is already up to date');
             }
         } else {
             toastr.success(`Extension ${extensionName} updated to ${data.shortCommitHash}`);
-        }
-
-        if (!quiet) {
-            showExtensionsDetails();
         }
     } catch (error) {
         console.error('Error:', error);
