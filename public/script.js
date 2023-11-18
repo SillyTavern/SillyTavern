@@ -19,6 +19,7 @@ import {
     getTextGenUrlSourceId,
     isMancer,
     isAphrodite,
+    isTabby,
     textgen_types,
     textgenerationwebui_banned_in_macros,
     isOoba,
@@ -144,6 +145,7 @@ import {
     resetScrollHeight,
     onlyUnique,
     getBase64Async,
+    humanFileSize,
 } from "./scripts/utils.js";
 
 import { ModuleWorkerWrapper, doDailyExtensionUpdatesCheck, extension_settings, getContext, loadExtensionSettings, processExtensionHelpers, registerExtensionHelper, renderExtensionTemplate, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
@@ -190,6 +192,7 @@ import { getBackgrounds, initBackgrounds } from "./scripts/backgrounds.js";
 import { hideLoader, showLoader } from "./scripts/loader.js";
 import { CharacterContextMenu, BulkEditOverlay } from "./scripts/BulkEditOverlay.js";
 import { loadMancerModels } from "./scripts/mancer-settings.js";
+import { hasPendingFileAttachment, populateFileAttachment } from "./scripts/chats.js";
 
 //exporting functions and vars for mods
 export {
@@ -882,6 +885,7 @@ async function getStatus() {
                 use_mancer: main_api == "textgenerationwebui" ? isMancer() : false,
                 use_aphrodite: main_api == "textgenerationwebui" ? isAphrodite() : false,
                 use_ooba: main_api == "textgenerationwebui" ? isOoba() : false,
+                use_tabby: main_api == "textgenerationwebui" ? isTabby() : false,
                 legacy_api: main_api == "textgenerationwebui" ? textgenerationwebui_settings.legacy_api && !isMancer() : false,
             }),
             signal: abortStatusCheck.signal,
@@ -1327,6 +1331,28 @@ async function printMessages() {
         const item = chat[i];
         addOneMessage(item, { scroll: i === chat.length - 1 });
     }
+
+    // Scroll to bottom when all images are loaded
+    const images = document.querySelectorAll('#chat .mes img');
+    let imagesLoaded = 0;
+
+    for (let i = 0; i < images.length; i++) {
+        const image = images[i];
+        if (image instanceof HTMLImageElement) {
+            if (image.complete) {
+                incrementAndCheck();
+            } else {
+                image.addEventListener('load', incrementAndCheck);
+            }
+        }
+    }
+
+    function incrementAndCheck() {
+        imagesLoaded++;
+        if (imagesLoaded === images.length) {
+            scrollChatToBottom();
+        }
+    }
 }
 
 async function clearChat() {
@@ -1567,10 +1593,11 @@ export function updateMessageBlock(messageId, message) {
     const text = message?.extra?.display_text ?? message.mes;
     messageElement.find('.mes_text').html(messageFormatting(text, message.name, message.is_system, message.is_user));
     addCopyToCodeBlocks(messageElement)
-    appendImageToMessage(message, messageElement);
+    appendMediaToMessage(message, messageElement);
 }
 
-export function appendImageToMessage(mes, messageElement) {
+export function appendMediaToMessage(mes, messageElement) {
+    // Add image to message
     if (mes.extra?.image) {
         const image = messageElement.find('.mes_img');
         const text = messageElement.find('.mes_text');
@@ -1581,6 +1608,27 @@ export function appendImageToMessage(mes, messageElement) {
         image.toggleClass("img_inline", isInline);
         text.toggleClass('displayNone', !isInline);
     }
+
+    // Add file to message
+    if (mes.extra?.file) {
+        messageElement.find(".mes_file_container").remove();
+        const messageId = messageElement.attr('mesid');
+        const template = $('#message_file_template .mes_file_container').clone();
+        template.find('.mes_file_name').text(mes.extra.file.name);
+        template.find('.mes_file_size').text(humanFileSize(mes.extra.file.size));
+        template.find('.mes_file_download').attr('mesid', messageId);
+        template.find('.mes_file_delete').attr('mesid', messageId);
+        messageElement.find(".mes_block").append(template);
+    } else {
+        messageElement.find(".mes_file_container").remove();
+    }
+}
+
+/**
+ * @deprecated Use appendMediaToMessage instead.
+ */
+export function appendImageToMessage(mes, messageElement) {
+    appendMediaToMessage(mes, messageElement);
 }
 
 export function addCopyToCodeBlocks(messageElement) {
@@ -1772,7 +1820,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         const swipeMessage = $("#chat").find(`[mesid="${count_view_mes - 1}"]`);
         swipeMessage.find('.mes_text').html('');
         swipeMessage.find('.mes_text').append(messageText);
-        appendImageToMessage(mes, swipeMessage);
+        appendMediaToMessage(mes, swipeMessage);
         swipeMessage.attr('title', title);
         swipeMessage.find('.timestamp').text(timestamp).attr('title', `${params.extra.api} - ${params.extra.model}`);
         if (power_user.timestamp_model_icon && params.extra?.api) {
@@ -1789,12 +1837,12 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         }
     } else if (typeof forceId == 'number') {
         $("#chat").find(`[mesid="${forceId}"]`).find('.mes_text').append(messageText);
-        appendImageToMessage(mes, newMessage);
+        appendMediaToMessage(mes, newMessage);
         hideSwipeButtons();
         showSwipeButtons();
     } else {
         $("#chat").find(`[mesid="${count_view_mes}"]`).find('.mes_text').append(messageText);
-        appendImageToMessage(mes, newMessage);
+        appendMediaToMessage(mes, newMessage);
         hideSwipeButtons();
         count_view_mes++;
     }
@@ -2812,7 +2860,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         //*********************************
 
         //for normal messages sent from user..
-        if (textareaText != "" && !automatic_trigger && type !== 'quiet') {
+        if ((textareaText != "" || hasPendingFileAttachment()) && !automatic_trigger && type !== 'quiet') {
             // If user message contains no text other than bias - send as a system message
             if (messageBias && replaceBiasMarkup(textareaText).trim().length === 0) {
                 sendSystemMessage(system_message_types.GENERIC, ' ', { bias: messageBias });
@@ -2884,12 +2932,22 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             coreChat.pop();
         }
 
-        coreChat = coreChat.map(x => ({
-            ...x,
-            mes: getRegexedString(x.mes, x.is_user ? regex_placement.USER_INPUT : regex_placement.AI_OUTPUT, {
-                isPrompt: true,
-            }),
-        }))
+        coreChat = coreChat.map(chatItem => {
+            let message = chatItem.mes;
+            let regexType = chatItem.is_user ? regex_placement.USER_INPUT : regex_placement.AI_OUTPUT;
+            let options = { isPrompt: true };
+
+            let regexedMessage = getRegexedString(message, regexType, options);
+
+            if (chatItem.extra?.file?.text) {
+                regexedMessage += `\n\n${chatItem.extra.file.text}`;
+            }
+
+            return {
+                ...chatItem,
+                mes: regexedMessage,
+            };
+        });
 
         // Determine token limit
         let this_max_context = getMaxContextSize();
@@ -3860,6 +3918,7 @@ export async function sendMessageAsUser(textareaText, messageBias) {
         console.debug('checking bias');
         chat[chat.length - 1]['extra']['bias'] = messageBias;
     }
+    await populateFileAttachment(chat[chat.length - 1]);
     statMesProcess(chat[chat.length - 1], 'user', characters, this_chid, '');
     // Wait for all handlers to finish before continuing with the prompt
     const chat_id = (chat.length - 1);
@@ -5411,6 +5470,7 @@ async function getSettings() {
         api_server_textgenerationwebui = settings.api_server_textgenerationwebui;
         $("#textgenerationwebui_api_url_text").val(api_server_textgenerationwebui);
         $("#aphrodite_api_url_text").val(api_server_textgenerationwebui);
+        $("#tabby_api_url_text").val(api_server_textgenerationwebui);
 
         selected_button = settings.selected_button;
 
@@ -5600,7 +5660,7 @@ async function messageEditDone(div) {
     );
     mesBlock.find(".mes_bias").empty();
     mesBlock.find(".mes_bias").append(messageFormatting(bias));
-    appendImageToMessage(mes, div.closest(".mes"));
+    appendMediaToMessage(mes, div.closest(".mes"));
     addCopyToCodeBlocks(div.closest(".mes"));
     await eventSource.emit(event_types.MESSAGE_EDITED, this_edit_mes_id);
 
@@ -6433,6 +6493,8 @@ function enlargeMessageImage() {
     imgContainer.prepend(img);
     imgContainer.addClass('img_enlarged_container');
     imgContainer.find('code').addClass('txt').text(title);
+    const titleEmpty = !title || title.trim().length === 0;
+    imgContainer.find('pre').toggle(!titleEmpty);
     addCopyToCodeBlocks(imgContainer);
     callPopup(imgContainer, 'text', '', { wide: true, large: true });
 }
@@ -8008,6 +8070,11 @@ jQuery(async function () {
             await writeSecret(SECRET_KEYS.APHRODITE, aphroditeKey);
         }
 
+        const tabbyKey = String($("#api_key_tabby").val()).trim();
+        if (tabbyKey.length) {
+            await writeSecret(SECRET_KEYS.TABBY, tabbyKey)
+        }
+
         const urlSourceId = getTextGenUrlSourceId();
 
         if (urlSourceId && $(urlSourceId).val() !== "") {
@@ -8530,7 +8597,7 @@ jQuery(async function () {
                 chat[this_edit_mes_id].is_system,
                 chat[this_edit_mes_id].is_user,
             ));
-        appendImageToMessage(chat[this_edit_mes_id], $(this).closest(".mes"));
+        appendMediaToMessage(chat[this_edit_mes_id], $(this).closest(".mes"));
         addCopyToCodeBlocks($(this).closest(".mes"));
         this_edit_mes_id = undefined;
     });

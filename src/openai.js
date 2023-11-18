@@ -9,15 +9,23 @@ const fetch = require('node-fetch').default;
 function registerEndpoints(app, jsonParser) {
     app.post('/api/openai/caption-image', jsonParser, async (request, response) => {
         try {
-            const key = readSecret(SECRET_KEYS.OPENAI);
+            let key = '';
+
+            if (request.body.api === 'openai') {
+                key = readSecret(SECRET_KEYS.OPENAI);
+            }
+
+            if (request.body.api === 'openrouter') {
+                key = readSecret(SECRET_KEYS.OPENROUTER);
+            }
 
             if (!key) {
-                console.log('No OpenAI key found');
+                console.log('No key found for API', request.body.api);
                 return response.sendStatus(401);
             }
 
             const body = {
-                model: "gpt-4-vision-preview",
+                model: request.body.model,
                 messages: [
                     {
                         role: "user",
@@ -30,12 +38,26 @@ function registerEndpoints(app, jsonParser) {
                 max_tokens: 500
             };
 
-            console.log('OpenAI request', body);
-            const result = await fetch('https://api.openai.com/v1/chat/completions', {
+            console.log('Multimodal captioning request', body);
+
+            let apiUrl = '';
+            let headers = {};
+
+            if (request.body.api === 'openrouter') {
+                apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
+                headers['HTTP-Referer'] = request.headers.referer;
+            }
+
+            if (request.body.api === 'openai') {
+                apiUrl = 'https://api.openai.com/v1/chat/completions';
+            }
+
+            const result = await fetch(apiUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${key}`,
+                    ...headers,
                 },
                 body: JSON.stringify(body),
                 timeout: 0,
@@ -43,12 +65,12 @@ function registerEndpoints(app, jsonParser) {
 
             if (!result.ok) {
                 const text = await result.text();
-                console.log('OpenAI request failed', result.statusText, text);
+                console.log('Multimodal captioning request failed', result.statusText, text);
                 return response.status(500).send(text);
             }
 
             const data = await result.json();
-            console.log('OpenAI response', data);
+            console.log('Multimodal captioning response', data);
             const caption = data?.choices[0]?.message?.content;
 
             if (!caption) {

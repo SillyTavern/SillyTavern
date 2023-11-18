@@ -72,6 +72,11 @@ if (process.versions && process.versions.node && process.versions.node.match(/20
 dns.setDefaultResultOrder('ipv4first');
 
 const cliArguments = yargs(hideBin(process.argv))
+    .option('autorun', {
+        type: 'boolean',
+        default: null,
+        describe: 'Automatically launch SillyTavern in the browser.'
+    })
     .option('disableCsrf', {
         type: 'boolean',
         default: false,
@@ -116,7 +121,7 @@ if (fs.existsSync(whitelistPath)) {
 }
 
 const whitelistMode = config.whitelistMode;
-const autorun = config.autorun && !cliArguments.ssl;
+const autorun = config.autorun && cliArguments.autorun!==false && !cliArguments.ssl;
 const enableExtensions = config.enableExtensions;
 const listen = config.listen;
 
@@ -164,6 +169,15 @@ function getAphroditeHeaders() {
     }) : {};
 }
 
+function getTabbyHeaders() {
+    const apiKey = readSecret(SECRET_KEYS.TABBY)
+
+    return apiKey ? ({
+        "x-api-key": apiKey,
+        "Authorization": `Bearer ${apiKey}`,
+    }) : {};
+}
+
 function getOverrideHeaders(urlHost) {
     const overrideHeaders = config.requestOverrides?.find((e) => e.hosts?.includes(urlHost))?.headers;
     if (overrideHeaders && urlHost) {
@@ -186,6 +200,8 @@ function setAdditionalHeaders(request, args, server) {
         headers = getMancerHeaders();
     } else if (request.body.use_aphrodite) {
         headers = getAphroditeHeaders();
+    } else if (request.body.use_tabby) {
+        headers = getTabbyHeaders();
     } else {
         headers = server ? getOverrideHeaders((new URL(server))?.host) : {};
     }
@@ -520,6 +536,9 @@ app.post("/api/textgenerationwebui/status", jsonParser, async function (request,
         else if (request.body.use_mancer) {
             url += "/oai/v1/models";
         }
+        else if (request.body.use_tabby) {
+            url += "/v1/model/list"
+        }
 
         const modelsReply = await fetch(url, args);
 
@@ -548,7 +567,7 @@ app.post("/api/textgenerationwebui/status", jsonParser, async function (request,
 
         if (request.body.use_ooba) {
             try {
-                const modelInfoUrl = baseUrl + '/v1/internal/model/info';
+                const modelInfoUrl = baseUrl + "/v1/internal/model/info";
                 const modelInfoReply = await fetch(modelInfoUrl, args);
 
                 if (modelInfoReply.ok) {
@@ -559,7 +578,24 @@ app.post("/api/textgenerationwebui/status", jsonParser, async function (request,
                     result = modelName || result;
                 }
             } catch (error) {
-                console.error('Failed to get Ooba model info:', error);
+                console.error(`Failed to get Ooba model info: ${error}`);
+            }
+        }
+
+        if (request.body.use_tabby) {
+            try {
+                const modelInfoUrl = baseUrl + "/v1/model";
+                const modelInfoReply = await fetch(modelInfoUrl, args);
+
+                if (modelInfoReply.ok) {
+                    const modelInfo = await modelInfoReply.json();
+                    console.log('Tabby model info:', modelInfo);
+
+                    const modelName = modelInfo?.id;
+                    result = modelName || result;
+                }
+            } catch (error) {
+                console.error(`Failed to get TabbyAPI model info: ${error}`);
             }
         }
 
@@ -593,7 +629,7 @@ app.post("/api/textgenerationwebui/generate", jsonParser, async function (reques
         if (request.body.legacy_api) {
             url += "/v1/generate";
         }
-        else if (request.body.use_aphrodite || request.body.use_ooba) {
+        else if (request.body.use_aphrodite || request.body.use_ooba || request.body.use_tabby) {
             url += "/v1/completions";
         }
         else if (request.body.use_mancer) {
@@ -3408,6 +3444,9 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
             if (legacyApi) {
                 url += '/v1/token-count';
                 args.body = JSON.stringify({ "prompt": text });
+            } else if (request.body.use_tabby) {
+                url += '/v1/token/encode';
+                args.body = JSON.stringify({ "text": text });
             } else {
                 url += '/v1/internal/encode';
                 args.body = JSON.stringify({ "text": text });

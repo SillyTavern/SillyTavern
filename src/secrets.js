@@ -8,6 +8,7 @@ const SECRET_KEYS = {
     HORDE: 'api_key_horde',
     MANCER: 'api_key_mancer',
     APHRODITE: 'api_key_aphrodite',
+    TABBY: 'api_key_tabby',
     OPENAI: 'api_key_openai',
     NOVEL: 'api_key_novel',
     CLAUDE: 'api_key_claude',
