@@ -348,91 +348,90 @@ function registerEndpoints(app, jsonParser) {
         }
     });
 
+    app.post('/api/sd/comfy/ping', jsonParser, async (request, response) => {
+        try {
+            const url = new URL(request.body.url);
+            url.pathname = '/system_stats'
 
-    app.post('/api/sd/comfy/ping', jsonParser, async(request, response)=>{
-		try {
-			const url = new URL(request.body.url);
-			url.pathname = '/system_stats'
+            const result = await fetch(url);
+            if (!result.ok) {
+                throw new Error('ComfyUI returned an error.');
+            }
 
-			const result = await fetch(url);
-			if (!result.ok) {
-				throw new Error('ComfyUI returned an error.');
-			}
-			
-			return response.sendStatus(200);
-		} catch (error) {
-			console.log(error);
-			return response.sendStatus(500);
-		}
-	});
+            return response.sendStatus(200);
+        } catch (error) {
+            console.log(error);
+            return response.sendStatus(500);
+        }
+    });
 
-    app.post('/api/sd/comfy/samplers', jsonParser, async(request, response)=>{
-		try {
-			const url = new URL(request.body.url);
-			url.pathname = '/object_info'
+    app.post('/api/sd/comfy/samplers', jsonParser, async (request, response) => {
+        try {
+            const url = new URL(request.body.url);
+            url.pathname = '/object_info'
 
-			const result = await fetch(url);
-			if (!result.ok) {
-				throw new Error('ComfyUI returned an error.');
-			}
+            const result = await fetch(url);
+            if (!result.ok) {
+                throw new Error('ComfyUI returned an error.');
+            }
 
-			const data = await result.json();
-			return response.send(data.KSampler.input.required.sampler_name[0]);
-		} catch (error) {
-			console.log(error);
-			return response.sendStatus(500);
-		}
-	});
-
-    app.post('/api/sd/comfy/models', jsonParser, async(request, response)=>{
-		try {
-			const url = new URL(request.body.url);
-			url.pathname = '/object_info'
-
-			const result = await fetch(url);
-			if (!result.ok) {
-				throw new Error('ComfyUI returned an error.');
-			}
             const data = await result.json();
-			return response.send(data.CheckpointLoaderSimple.input.required.ckpt_name[0].map(it=>({value:it,text:it})));
-		} catch (error) {
-			console.log(error);
-			return response.sendStatus(500);
-		}
-	});
+            return response.send(data.KSampler.input.required.sampler_name[0]);
+        } catch (error) {
+            console.log(error);
+            return response.sendStatus(500);
+        }
+    });
 
-    app.post('/api/sd/comfy/schedulers', jsonParser, async(request, response)=>{
-		try {
-			const url = new URL(request.body.url);
-			url.pathname = '/object_info'
+    app.post('/api/sd/comfy/models', jsonParser, async (request, response) => {
+        try {
+            const url = new URL(request.body.url);
+            url.pathname = '/object_info'
 
-			const result = await fetch(url);
-			if (!result.ok) {
-				throw new Error('ComfyUI returned an error.');
-			}
+            const result = await fetch(url);
+            if (!result.ok) {
+                throw new Error('ComfyUI returned an error.');
+            }
+            const data = await result.json();
+            return response.send(data.CheckpointLoaderSimple.input.required.ckpt_name[0].map(it => ({ value: it, text: it })));
+        } catch (error) {
+            console.log(error);
+            return response.sendStatus(500);
+        }
+    });
 
-			const data = await result.json();
-			return response.send(data.KSampler.input.required.scheduler[0]);
-		} catch (error) {
-			console.log(error);
-			return response.sendStatus(500);
-		}
-	});
+    app.post('/api/sd/comfy/schedulers', jsonParser, async (request, response) => {
+        try {
+            const url = new URL(request.body.url);
+            url.pathname = '/object_info'
 
-    app.post('/api/sd/comfy/generate', jsonParser, async(request, response)=>{
-		try {
-			const url = new URL(request.body.url);
-			url.pathname = '/prompt'
+            const result = await fetch(url);
+            if (!result.ok) {
+                throw new Error('ComfyUI returned an error.');
+            }
 
-			const promptResult = await fetch(url, {
+            const data = await result.json();
+            return response.send(data.KSampler.input.required.scheduler[0]);
+        } catch (error) {
+            console.log(error);
+            return response.sendStatus(500);
+        }
+    });
+
+    app.post('/api/sd/comfy/generate', jsonParser, async (request, response) => {
+        try {
+            const url = new URL(request.body.url);
+            url.pathname = '/prompt'
+
+            const promptResult = await fetch(url, {
                 method: 'POST',
                 body: request.body.prompt,
             });
-			if (!promptResult.ok) {
-				throw new Error('ComfyUI returned an error.');
-			}
+            if (!promptResult.ok) {
+                throw new Error('ComfyUI returned an error.');
+            }
 
-			const data = await promptResult.json();
+            const data = await promptResult.json();
             const id = data.prompt_id;
             let item;
             const historyUrl = new URL(request.body.url);
@@ -449,7 +448,7 @@ function registerEndpoints(app, jsonParser) {
                 }
                 await delay(100);
             }
-            const imgInfo = Object.keys(item.outputs).map(it=>item.outputs[it].images).flat()[0];
+            const imgInfo = Object.keys(item.outputs).map(it => item.outputs[it].images).flat()[0];
             const imgUrl = new URL(request.body.url);
             imgUrl.pathname = '/view';
             imgUrl.search = `?filename=${imgInfo.filename}&subfolder=${imgInfo.subfolder}&type=${imgInfo.type}`;
@@ -459,10 +458,10 @@ function registerEndpoints(app, jsonParser) {
             }
             const imgBuffer = await imgResponse.buffer();
             return response.send(imgBuffer.toString('base64'));
-		} catch (error) {
-			return response.sendStatus(500);
-		}
-	});
+        } catch (error) {
+            return response.sendStatus(500);
+        }
+    });
 }
 
 module.exports = {

@@ -906,7 +906,6 @@ async function validateComfyUrl() {
             throw new Error('URL is not set.');
         }
 
-        
         const result = await fetch(`/api/sd/comfy/ping`, {
             method: 'POST',
             headers: getRequestHeaders(),
@@ -1180,7 +1179,6 @@ async function loadComfySamplers() {
     }
 
     try {
-        
         const result = await fetch(`/api/sd/comfy/samplers`, {
             method: 'POST',
             headers: getRequestHeaders(),
@@ -2037,7 +2035,7 @@ async function generateOpenAiImage(prompt) {
 
 /**
  * Generates an image in ComfyUI using the provided prompt and configuration settings.
- * 
+ *
  * @param {string} prompt - The main instruction used to guide the image generation.
  * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
  */
@@ -2054,8 +2052,8 @@ async function generateComfyImage(prompt) {
     ];
 
     let workflow = extension_settings.sd.comfy_workflow.replace('"%prompt%"', JSON.stringify(prompt));
-    workflow = workflow.replace('"%seed%"', JSON.stringify(Math.round(Math.random()*Number.MAX_SAFE_INTEGER)));
-    placeholders.forEach(ph=>{
+    workflow = workflow.replace('"%seed%"', JSON.stringify(Math.round(Math.random() * Number.MAX_SAFE_INTEGER)));
+    placeholders.forEach(ph => {
         workflow = workflow.replace(`"%${ph}%"`, JSON.stringify(extension_settings.sd[ph]));
     });
     console.log(`{
@@ -2071,18 +2069,18 @@ async function generateComfyImage(prompt) {
             }`,
         })
     });
-    return {format:'png', data:await promptResult.text()};
+    return { format: 'png', data: await promptResult.text() };
 }
 
 async function onComfyOpenWorkflowEditorClick() {
     const editorHtml = $(await $.get('scripts/extensions/stable-diffusion/comfyWorkflowEditor.html'));
-    const popupResult = callPopup(editorHtml, "confirm", undefined, {okButton: "Save", wide:true, large:true, rows:1 });
-    const checkPlaceholders = ()=>{
+    const popupResult = callPopup(editorHtml, "confirm", undefined, { okButton: "Save", wide: true, large: true, rows: 1 });
+    const checkPlaceholders = () => {
         const workflow = $('#sd_comfy_workflow_editor_workflow').val().toString();
-        $('.sd_comfy_workflow_editor_placeholder_list > li[data-placeholder]').each(function(idx) {
+        $('.sd_comfy_workflow_editor_placeholder_list > li[data-placeholder]').each(function (idx) {
             const key = this.getAttribute('data-placeholder');
             const found = workflow.search(`"%${key}%"`) != -1;
-            this.classList[found?'remove':'add']('sd_comfy_workflow_editor_not_found');
+            this.classList[found ? 'remove' : 'add']('sd_comfy_workflow_editor_not_found');
         });
     };
     $('#sd_comfy_workflow_editor_workflow').val(extension_settings.sd.comfy_workflow);
