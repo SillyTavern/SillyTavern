@@ -30,6 +30,7 @@
                 <option value="vlad">SD.Next (vladmandic)</option>
                 <option value="novel">NovelAI Diffusion</option>
                 <option value="openai">OpenAI (DALL-E)</option>
+                <option value="comfy">ComfyUI</option>
             </select>
             <div data-sd-source="auto">
                 <label for="sd_auto_url">SD Web UI URL</label>
@@ -112,6 +113,23 @@
                     </select>
                 </div>
             </div>
+            <div data-sd-source="comfy">
+                <label for="sd_comfy_url">ComfyUI URL</label>
+                <div class="flex-container flexnowrap">
+                    <input id="sd_comfy_url" type="text" class="text_pole" placeholder="Example: {{comfy_url}}" value="{{comfy_url}}" />
+                    <div id="sd_comfy_validate" class="menu_button menu_button_icon">
+                        <i class="fa-solid fa-check"></i>
+                        <span data-i18n="Connect">
+                            Connect
+                        </span>
+                    </div>
+                </div>
+                <div id="sd_comfy_open_workflow_editor" class="menu_button">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <span>Open Workflow Editor</span>
+                </div>
+                <p><i><b>Important:</b> run ComfyUI with the <code>--enable-cors-header http://127.0.0.1:8000</code> argument (adjust URL according to your SillyTavern setup)! The server must be accessible from the SillyTavern host machine.</i></p>
+            </div>
             <label for="sd_scale">CFG Scale (<span id="sd_scale_value"></span>)</label>
             <input id="sd_scale" type="range" min="{{scale_min}}" max="{{scale_max}}" step="{{scale_step}}" value="{{scale}}" />
             <label for="sd_steps">Sampling steps (<span id="sd_steps_value"></span>)</label>
@@ -124,6 +142,10 @@
             <select id="sd_model"></select>
             <label for="sd_sampler">Sampling method</label>
             <select id="sd_sampler"></select>
+            <div data-sd-source="comfy">
+                <label for="sd_scheduler">Scheduler</label>
+                <select id="sd_scheduler"></select>
+            </div>
             <div class="flex-container marginTop10 margin-bot-10px">
                 <label class="flex1 checkbox_label">
                     <input id="sd_restore_faces" type="checkbox" />

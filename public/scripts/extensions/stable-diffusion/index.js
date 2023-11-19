@@ -38,6 +38,7 @@ const sources = {
     novel: 'novel',
     vlad: 'vlad',
     openai: 'openai',
+    comfy: 'comfy',
 }
 
 const generationMode = {
@@ -151,6 +152,9 @@ const defaultSettings = {
     steps_step: 1,
     steps: 20,
 
+    // Scheduler
+    scheduler: 'normal',
+
     // Image dimensions (Width & Height)
     dimension_min: 64,
     dimension_max: 2048,
@@ -214,6 +218,97 @@ const defaultSettings = {
 
     style: 'Default',
     styles: defaultStyles,
+
+    // ComyUI settings
+    comfy_url: 'http://127.0.0.1:8188',
+    comfy_workflow: `
+        {
+            "3": {
+                "class_type": "KSampler",
+                "inputs": {
+                    "cfg": "%scale%",
+                    "denoise": 1,
+                    "latent_image": [
+                        "5",
+                        0
+                    ],
+                    "model": [
+                        "4",
+                        0
+                    ],
+                    "negative": [
+                        "7",
+                        0
+                    ],
+                    "positive": [
+                        "6",
+                        0
+                    ],
+                    "sampler_name": "%sampler%",
+                    "scheduler": "%scheduler%",
+                    "seed": 8566257,
+                    "steps": "%steps%"
+                }
+            },
+            "4": {
+                "class_type": "CheckpointLoaderSimple",
+                "inputs": {
+                    "ckpt_name": "%model%"
+                }
+            },
+            "5": {
+                "class_type": "EmptyLatentImage",
+                "inputs": {
+                    "batch_size": 1,
+                    "height": "%height%",
+                    "width": "%width%"
+                }
+            },
+            "6": {
+                "class_type": "CLIPTextEncode",
+                "inputs": {
+                    "clip": [
+                        "4",
+                        1
+                    ],
+                    "text": "%prompt%"
+                }
+            },
+            "7": {
+                "class_type": "CLIPTextEncode",
+                "inputs": {
+                    "clip": [
+                        "4",
+                        1
+                    ],
+                    "text": "%negative_prompt%"
+                }
+            },
+            "8": {
+                "class_type": "VAEDecode",
+                "inputs": {
+                    "samples": [
+                        "3",
+                        0
+                    ],
+                    "vae": [
+                        "4",
+                        2
+                    ]
+                }
+            },
+            "9": {
+                "class_type": "SaveImage",
+                "inputs": {
+                    "filename_prefix": "SillyTavern",
+                    "images": [
+                        "8",
+                        0
+                    ]
+                }
+            }
+        }
+    `,
 }
 
 function processTriggers(chat, _, abort) {
@@ -349,6 +444,8 @@ async function loadSettings() {
     $('#sd_interactive_mode').prop('checked', extension_settings.sd.interactive_mode);
     $('#sd_openai_style').val(extension_settings.sd.openai_style);
     $('#sd_openai_quality').val(extension_settings.sd.openai_quality);
+    $('#sd_comfy_url').val(extension_settings.sd.comfy_url);
+    $('#sd_comfy_prompt').val(extension_settings.sd.comfy_prompt);
 
     for (const style of extension_settings.sd.styles) {
         const option = document.createElement('option');
@@ -361,7 +458,7 @@ async function loadSettings() {
     toggleSourceControls();
     addPromptTemplates();
 
-    await Promise.all([loadSamplers(), loadModels()]);
+    await Promise.all([loadSamplers(), loadModels(), loadSchedulers()]);
 }
 
 function addPromptTemplates() {
@@ -588,6 +685,11 @@ function onSamplerChange() {
     saveSettingsDebounced();
 }
 
+function onSchedulerChange() {
+    extension_settings.sd.scheduler = $('#sd_scheduler').find(':selected').val();
+    saveSettingsDebounced();
+}
+
 function onWidthInput() {
     extension_settings.sd.width = Number($('#sd_width').val());
     $('#sd_width_value').text(extension_settings.sd.width);
@@ -712,6 +814,17 @@ function onHrSecondPassStepsInput() {
     saveSettingsDebounced();
 }
 
+function onComfyUrlInput() {
+    extension_settings.sd.comfy_url = $('#sd_comfy_url').val();
+    saveSettingsDebounced();
+}
+
+function onComfyPromptInput() {
+    extension_settings.sd.comfy_prompt = $('#sd_comfy_prompt').val();
+    resetScrollHeight($(this));
+    saveSettingsDebounced();
+}
+
 async function validateAutoUrl() {
     try {
         if (!extension_settings.sd.auto_url) {
@@ -757,6 +870,26 @@ async function validateVladUrl() {
         toastr.success('SD.Next API connected.');
     } catch (error) {
         toastr.error(`Could not validate SD.Next API: ${error.message}`);
+    }
+}
+
+async function validateComfyUrl() {
+    try {
+        if (!extension_settings.sd.comfy_url) {
+            throw new Error('URL is not set.');
+        }
+
+        const result = await fetch(`${extension_settings.sd.comfy_url}/system_stats`);
+        if (!result.ok) {
+            throw new Error('ComfyUI returned an error.');
+        }
+
+        await loadSamplers();
+        await loadSchedulers();
+        await loadModels();
+        toastr.success('ComfyUI API connected.');
+    } catch (error) {
+        toastr.error(`Could not validate ComfyUI API: ${error.message}`);
     }
 }
 
@@ -895,6 +1028,9 @@ async function loadSamplers() {
         case sources.openai:
             samplers = await loadOpenAiSamplers();
             break;
+        case sources.comfy:
+            samplers = await loadComfySamplers();
+            break;
     }
 
     for (const sampler of samplers) {
@@ -1004,6 +1140,23 @@ async function loadNovelSamplers() {
     ];
 }
 
+async function loadComfySamplers() {
+    if (!extension_settings.sd.comfy_url) {
+        return [];
+    }
+
+    try {
+        const result = await fetch(`${extension_settings.sd.comfy_url}/object_info`);
+        if (!result.ok) {
+            throw new Error('ComfyUI returned an error.');
+        }
+        const data = await result.json();
+        return data.KSampler.input.required.sampler_name[0];
+    } catch (error) {
+        return [];
+    }
+}
+
 async function loadModels() {
     $('#sd_model').empty();
     let models = [];
@@ -1026,6 +1179,9 @@ async function loadModels() {
             break;
         case sources.openai:
             models = await loadOpenAiModels();
+            break;
+        case sources.comfy:
+            models = await loadComfyModels();
             break;
     }
 
@@ -1202,6 +1358,77 @@ async function loadNovelModels() {
             text: 'NAI Diffusion Furry',
         },
     ];
+}
+
+async function loadComfyModels() {
+    if (!extension_settings.sd.comfy_url) {
+        return [];
+    }
+
+    try {
+        const result = await fetch(`${extension_settings.sd.comfy_url}/object_info`);
+        if (!result.ok) {
+            throw new Error('ComfyUI returned an error.');
+        }
+        const data = await result.json();
+        return data.CheckpointLoaderSimple.input.required.ckpt_name[0].map(it=>({value:it,text:it}));
+    } catch (error) {
+        return [];
+    }
+}
+
+async function loadSchedulers() {
+    $('#sd_scheduler').empty();
+    let schedulers = [];
+
+    switch (extension_settings.sd.source) {
+        case sources.extras:
+            schedulers = ['N/A'];
+            break;
+        case sources.horde:
+            schedulers = ['N/A'];
+            break;
+        case sources.auto:
+            schedulers = ['N/A'];
+            break;
+        case sources.novel:
+            schedulers = ['N/A'];
+            break;
+        case sources.vlad:
+            schedulers = ['N/A'];
+            break;
+        case sources.openai:
+            schedulers = ['N/A'];
+            break;
+        case sources.comfy:
+            schedulers = await loadComfySchedulers();
+            break;
+    }
+
+    for (const scheduler of schedulers) {
+        const option = document.createElement('option');
+        option.innerText = scheduler;
+        option.value = scheduler;
+        option.selected = scheduler === extension_settings.sd.scheduler;
+        $('#sd_scheduler').append(option);
+    }
+}
+
+async function loadComfySchedulers() {
+    if (!extension_settings.sd.comfy_url) {
+        return [];
+    }
+
+    try {
+        const result = await fetch(`${extension_settings.sd.comfy_url}/object_info`);
+        if (!result.ok) {
+            throw new Error('ComfyUI returned an error.');
+        }
+        const data = await result.json();
+        return data.KSampler.input.required.scheduler[0];
+    } catch (error) {
+        return [];
+    }
 }
 
 function getGenerationType(prompt) {
@@ -1409,6 +1636,9 @@ async function sendGenerationRequest(generationType, prompt, characterName = nul
                 break;
             case sources.openai:
                 result = await generateOpenAiImage(prefixedPrompt);
+                break;
+            case sources.comfy:
+                result = await generateComfyImage(prefixedPrompt);
                 break;
         }
 
@@ -1694,6 +1924,102 @@ async function generateOpenAiImage(prompt) {
     }
 }
 
+/**
+ * Generates an image in ComfyUI using the provided prompt and configuration settings.
+ * 
+ * @param {string} prompt - The main instruction used to guide the image generation.
+ * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
+ */
+async function generateComfyImage(prompt) {
+    const placeholders = [
+        'negative_prompt',
+        'model',
+        'sampler',
+        'scheduler',
+        'steps',
+        'scale',
+        'width',
+        'height',
+    ];
+
+    let workflow = extension_settings.sd.comfy_workflow.replace('"%prompt%"', JSON.stringify(prompt));
+    workflow = workflow.replace('"%seed%"', JSON.stringify(Math.round(Math.random()*Number.MAX_SAFE_INTEGER)));
+    placeholders.forEach(ph=>{
+        workflow = workflow.replace(`"%${ph}%"`, JSON.stringify(extension_settings.sd[ph]));
+    });
+    console.log(`{
+        "prompt": ${workflow}
+    }`);
+    const promptResult = await fetch(`${extension_settings.sd.comfy_url}/prompt`, {
+        method: 'POST',
+        body: `{
+            "prompt": ${workflow}
+        }`
+    });
+    if (promptResult.ok) {
+        const id = (await promptResult.json()).prompt_id;
+        let item;
+        while (true) {
+            const result = await fetch(`${extension_settings.sd.comfy_url}/history`);
+            if (result.ok) {
+                const history = await result.json();
+                item = history[id];
+                if (item) {
+                    break;
+                }
+                await new Promise(resolve=>window.setTimeout(resolve, 100));
+            } else {
+                const text = await result.text();
+                throw new Error(text);
+            }
+        }
+        const imgInfo = Object.keys(item.outputs).map(it=>item.outputs[it].images).flat()[0];
+        let img;
+        await new Promise(resolve=>{
+            img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.addEventListener('load', resolve);
+            img.addEventListener('error', (...v)=>{
+                throw new Error('failed to load image');
+            });
+            img.src = `${extension_settings.sd.comfy_url}/view?filename=${imgInfo.filename}&subfolder=${imgInfo.subfolder}&type=${imgInfo.type}`;
+        });
+        const canvas = new OffscreenCanvas(extension_settings.sd.width, extension_settings.sd.height);
+        const con = canvas.getContext('2d');
+        con.drawImage(img, 0,0);
+        const imgBlob = await canvas.convertToBlob();
+        const dataUrl = await new Promise(resolve=>{
+            const reader = new FileReader();
+            reader.addEventListener('load', ()=>resolve(reader.result));
+            reader.readAsDataURL(imgBlob);
+        });
+        return {format:'png', data:dataUrl.split(',').pop()};
+    } else {
+        const text = await promptResult.text();
+        throw new Error(text);
+    }
+}
+
+async function onComfyOpenWorkflowEditorClick() {
+    const editorHtml = $(await $.get('scripts/extensions/stable-diffusion/comfyWorkflowEditor.html'));
+    const popupResult = callPopup(editorHtml, "confirm", undefined, {okButton: "Save", wide:true, large:true, rows:1 });
+    const checkPlaceholders = ()=>{
+        const workflow = $('#sd_comfy_workflow_editor_workflow').val().toString();
+        $('.sd_comfy_workflow_editor_placeholder_list > li[data-placeholder]').each(function(idx) {
+            const key = this.getAttribute('data-placeholder');
+            const found = workflow.search(`"%${key}%"`) != -1;
+            this.classList[found?'remove':'add']('sd_comfy_workflow_editor_not_found');
+        });
+    };
+    $('#sd_comfy_workflow_editor_workflow').val(extension_settings.sd.comfy_workflow);
+    checkPlaceholders();
+    $('#sd_comfy_workflow_editor_workflow').on('input', checkPlaceholders);
+    if (await popupResult) {
+        extension_settings.sd.comfy_workflow = $('#sd_comfy_workflow_editor_workflow').val().toString();
+        saveSettingsDebounced();
+    }
+}
+
 async function sendMessage(prompt, image, generationType) {
     const context = getContext();
     const messageText = `[${context.name2} sends a picture that contains: ${prompt}]`;
@@ -1787,6 +2113,8 @@ function isValidState() {
             return secret_state[SECRET_KEYS.NOVEL];
         case sources.openai:
             return secret_state[SECRET_KEYS.OPENAI];
+        case sources.comfy:
+            return true;
     }
 }
 
@@ -1901,6 +2229,7 @@ jQuery(async () => {
     $('#sd_steps').on('input', onStepsInput);
     $('#sd_model').on('change', onModelChange);
     $('#sd_sampler').on('change', onSamplerChange);
+    $('#sd_scheduler').on('change', onSchedulerChange);
     $('#sd_prompt_prefix').on('input', onPromptPrefixInput);
     $('#sd_negative_prompt').on('input', onNegativePromptInput);
     $('#sd_width').on('input', onWidthInput);
@@ -1925,6 +2254,9 @@ jQuery(async () => {
     $('#sd_novel_upscale_ratio').on('input', onNovelUpscaleRatioInput);
     $('#sd_novel_anlas_guard').on('input', onNovelAnlasGuardInput);
     $('#sd_novel_view_anlas').on('click', onViewAnlasClick);
+    $('#sd_comfy_validate').on('click', validateComfyUrl);
+    $('#sd_comfy_url').on('input', onComfyUrlInput);
+    $('#sd_comfy_open_workflow_editor').on('click', onComfyOpenWorkflowEditorClick);
     $('#sd_expand').on('input', onExpandInput);
     $('#sd_style').on('change', onStyleSelect);
     $('#sd_save_style').on('click', onSaveStyleClick);
