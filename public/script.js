@@ -9060,7 +9060,7 @@ jQuery(async function () {
         const charsPath = '/characters/'
         const targetAvatarImg = thumbURL.substring(thumbURL.lastIndexOf("=") + 1);
         const charname = targetAvatarImg.replace('.png', '');
-        const isValidCharacter = characters.some(x => x.avatar === targetAvatarImg);
+        const isValidCharacter = characters.some(x => x.avatar === decodeURIComponent(targetAvatarImg));
 
         // Remove existing zoomed avatars for characters that are not the clicked character when moving UI is not enabled
         if (!power_user.movingUI) {
