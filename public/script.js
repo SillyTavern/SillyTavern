@@ -1867,8 +1867,33 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     }
 }
 
-function getUserAvatar(avatarImg) {
+/**
+ * Returns the URL of the avatar for the given user avatar Id.
+ * @param {string} avatarImg User avatar Id
+ * @returns {string} User avatar URL
+ */
+export function getUserAvatar(avatarImg) {
     return `User Avatars/${avatarImg}`;
+}
+
+/**
+ * Returns the URL of the avatar for the given character Id.
+ * @param {number} characterId Character Id
+ * @returns {string} Avatar URL
+ */
+export function getCharacterAvatar(characterId) {
+    const character = characters[characterId];
+    const avatarImg = character?.avatar;
+
+    if (!avatarImg || avatarImg === 'none') {
+        return default_avatar;
+    }
+
+    return formatCharacterAvatar(avatarImg);
+}
+
+export function formatCharacterAvatar(characterAvatar) {
+    return `characters/${characterAvatar}`;
 }
 
 /**
