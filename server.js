@@ -3530,7 +3530,7 @@ async function fetchJSON(url, args = {}) {
 // ** END **
 
 // OpenAI API
-require('./src/openai').registerEndpoints(app, jsonParser);
+require('./src/openai').registerEndpoints(app, jsonParser, urlencodedParser);
 
 // Tokenizers
 require('./src/tokenizers').registerEndpoints(app, jsonParser);
