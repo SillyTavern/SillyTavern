@@ -167,42 +167,43 @@ async function moduleWorker() {
     }
 
     // take the count of messages
-    let lastMessageNumber = context.chat.length ? context.chat.length : 0
+    let lastMessageNumber = context.chat.length ? context.chat.length : 0;
 
     // There's no new messages
-    let diff = lastMessageNumber - currentMessageNumber
-    let hashNew = getStringHash((chat.length && chat[chat.length - 1].mes) ?? '')
+    let diff = lastMessageNumber - currentMessageNumber;
+    let hashNew = getStringHash((chat.length && chat[chat.length - 1].mes) ?? '');
 
     // if messages got deleted, diff will be < 0
     if (diff < 0) {
         // necessary actions will be taken by the onChatDeleted() handler
-        return
+        return;
     }
 
+    // if no new messages, or same message, or same message hash, do nothing
     if (diff == 0 && hashNew === lastMessageHash) {
-        return
+        return;
+    }
+
+    // If streaming, wait for streaming to finish before processing new messages
+    if (context.streamingProcessor && !context.streamingProcessor.isFinished) {
+        return;
     }
 
     // clone message object, as things go haywire if message object is altered below (it's passed by reference)
-    const message = structuredClone(chat[chat.length - 1])
+    const message = structuredClone(chat[chat.length - 1]);
 
     // if last message within current message, message got extended. only send diff to TTS.
     if (ttsLastMessage !== null && message.mes.indexOf(ttsLastMessage) !== -1) {
-        let tmp = message.mes
-        message.mes = message.mes.replace(ttsLastMessage, '')
-        ttsLastMessage = tmp
+        let tmp = message.mes;
+        message.mes = message.mes.replace(ttsLastMessage, '');
+        ttsLastMessage = tmp;
     } else {
-        ttsLastMessage = message.mes
+        ttsLastMessage = message.mes;
     }
 
-    // We're currently swiping or streaming. Don't generate voice
-    if (
-        !message ||
-        message.mes === '...' ||
-        message.mes === '' ||
-        (context.streamingProcessor && !context.streamingProcessor.isFinished)
-    ) {
-        return
+    // We're currently swiping. Don't generate voice
+    if (!message || message.mes === '...' || message.mes === '') {
+        return;
     }
 
     // Don't generate if message doesn't have a display text
@@ -454,7 +455,7 @@ let currentTtsJob // Null if nothing is currently being processed
 let currentMessageNumber = 0
 
 function completeTtsJob() {
-    console.info(`Current TTS job for ${currentTtsJob.name} completed.`)
+    console.info(`Current TTS job for ${currentTtsJob?.name} completed.`)
     currentTtsJob = null
 }
 

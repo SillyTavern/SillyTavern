@@ -24,6 +24,7 @@ import {
     textgenerationwebui_banned_in_macros,
     isOoba,
     MANCER_SERVER,
+    isKoboldCpp,
 } from "./scripts/textgen-settings.js";
 
 import {
@@ -886,6 +887,7 @@ async function getStatus() {
                 use_aphrodite: main_api == "textgenerationwebui" ? isAphrodite() : false,
                 use_ooba: main_api == "textgenerationwebui" ? isOoba() : false,
                 use_tabby: main_api == "textgenerationwebui" ? isTabby() : false,
+                use_koboldcpp: main_api == "textgenerationwebui" ? isKoboldCpp() : false,
                 legacy_api: main_api == "textgenerationwebui" ? textgenerationwebui_settings.legacy_api && !isMancer() : false,
             }),
             signal: abortStatusCheck.signal,
@@ -1295,11 +1297,9 @@ async function replaceCurrentChat() {
     }
 }
 
-const TRUNCATION_THRESHOLD = 100;
-
 export function showMoreMessages() {
     let messageId = Number($('#chat').children('.mes').first().attr('mesid'));
-    let count = TRUNCATION_THRESHOLD;
+    let count = power_user.chat_truncation || Number.MAX_SAFE_INTEGER;
 
     console.debug('Inserting messages before', messageId, 'count', count, 'chat length', chat.length);
     const prevHeight = $('#chat').prop('scrollHeight');
@@ -1320,9 +1320,10 @@ export function showMoreMessages() {
 
 async function printMessages() {
     let startIndex = 0;
+    let count = power_user.chat_truncation || Number.MAX_SAFE_INTEGER;
 
-    if (chat.length > TRUNCATION_THRESHOLD) {
-        count_view_mes = chat.length - TRUNCATION_THRESHOLD;
+    if (chat.length > count) {
+        count_view_mes = chat.length - count;
         startIndex = count_view_mes;
         $('#chat').append('<div id="show_more_messages">Show more messages</div>');
     }
@@ -1358,6 +1359,9 @@ async function printMessages() {
 async function clearChat() {
     count_view_mes = 0;
     extension_prompts = {};
+    if (is_delete_mode) {
+        $("#dialogue_del_mes_cancel").trigger('click');
+    }
     $("#chat").children().remove();
     if ($('.zoomed_avatar[forChar]').length) {
         console.debug('saw avatars to remove')
@@ -1599,9 +1603,16 @@ export function updateMessageBlock(messageId, message) {
 export function appendMediaToMessage(mes, messageElement) {
     // Add image to message
     if (mes.extra?.image) {
+        const chatHeight = $('#chat').prop('scrollHeight');
         const image = messageElement.find('.mes_img');
         const text = messageElement.find('.mes_text');
         const isInline = !!mes.extra?.inline_image;
+        image.on('load', function () {
+            const scrollPosition = $('#chat').scrollTop();
+            const newChatHeight = $('#chat').prop('scrollHeight');
+            const diff = newChatHeight - chatHeight;
+            $('#chat').scrollTop(scrollPosition + diff);
+        });
         image.attr('src', mes.extra?.image);
         image.attr('title', mes.extra?.title || mes.title || '');
         messageElement.find(".mes_img_container").addClass("img_extra");
@@ -1860,8 +1871,33 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     }
 }
 
-function getUserAvatar(avatarImg) {
+/**
+ * Returns the URL of the avatar for the given user avatar Id.
+ * @param {string} avatarImg User avatar Id
+ * @returns {string} User avatar URL
+ */
+export function getUserAvatar(avatarImg) {
     return `User Avatars/${avatarImg}`;
+}
+
+/**
+ * Returns the URL of the avatar for the given character Id.
+ * @param {number} characterId Character Id
+ * @returns {string} Avatar URL
+ */
+export function getCharacterAvatar(characterId) {
+    const character = characters[characterId];
+    const avatarImg = character?.avatar;
+
+    if (!avatarImg || avatarImg === 'none') {
+        return default_avatar;
+    }
+
+    return formatCharacterAvatar(avatarImg);
+}
+
+export function formatCharacterAvatar(characterAvatar) {
+    return `characters/${characterAvatar}`;
 }
 
 /**
@@ -3743,11 +3779,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
 
                 reject(exception);
-                $("#send_textarea").removeAttr('disabled');
-                is_send_press = false;
-                activateSendButtons();
-                showSwipeButtons();
-                setGenerationProgress(0);
+                unblockGeneration();
                 console.log(exception);
                 streamingProcessor = null;
             };
@@ -5473,6 +5505,7 @@ async function getSettings() {
         $("#textgenerationwebui_api_url_text").val(api_server_textgenerationwebui);
         $("#aphrodite_api_url_text").val(api_server_textgenerationwebui);
         $("#tabby_api_url_text").val(api_server_textgenerationwebui);
+        $('#koboldcpp_api_url_text').val(api_server_textgenerationwebui);
 
         selected_button = settings.selected_button;
 
@@ -9060,7 +9093,7 @@ jQuery(async function () {
         const charsPath = '/characters/'
         const targetAvatarImg = thumbURL.substring(thumbURL.lastIndexOf("=") + 1);
         const charname = targetAvatarImg.replace('.png', '');
-        const isValidCharacter = characters.some(x => x.avatar === targetAvatarImg);
+        const isValidCharacter = characters.some(x => x.avatar === decodeURIComponent(targetAvatarImg));
 
         // Remove existing zoomed avatars for characters that are not the clicked character when moving UI is not enabled
         if (!power_user.movingUI) {

@@ -3730,11 +3730,15 @@ a {
 
 #show_more_messages {
     text-align: center;
-    margin: 10px 0;
+    margin: 10px auto;
     font-weight: 500;
-    text-decoration: underline;
     order: -1;
     cursor: pointer;
+    padding: 0.5em 1em;
+    background-color: var(--SmartThemeBlurTintColor);
+    width: fit-content;
+    border-radius: 10px;
+    outline: 1px solid var(--SmartThemeBorderColor);
 }
 
 .draggable img {

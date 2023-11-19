@@ -107,6 +107,7 @@ let power_user = {
         target_length: 400,
     },
     markdown_escape_strings: '',
+    chat_truncation: 100,
 
     ui_mode: ui_mode.POWER,
     fast_ui_mode: true,
@@ -1373,6 +1374,9 @@ function loadPowerUserSettings(settings, data) {
     $("#token_padding").val(power_user.token_padding);
     $("#aux_field").val(power_user.aux_field);
 
+    $("#chat_truncation").val(power_user.chat_truncation);
+    $('#chat_truncation_counter').val(power_user.chat_truncation);
+
     $("#font_scale").val(power_user.font_scale);
     $("#font_scale_counter").val(power_user.font_scale);
 
@@ -2557,6 +2561,12 @@ $(document).ready(() => {
         localStorage.setItem(storage_keys.chat_width, power_user.chat_width);
         applyChatWidth();
         setHotswapsDebounced();
+    });
+
+    $('#chat_truncation').on('input', function () {
+        power_user.chat_truncation = Number($('#chat_truncation').val());
+        $('#chat_truncation_counter').val(power_user.chat_truncation);
+        saveSettingsDebounced();
     });
 
     $(`input[name="font_scale"]`).on('input', async function (e) {

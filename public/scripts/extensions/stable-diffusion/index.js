@@ -12,13 +12,18 @@ import {
     getCurrentChatId,
     animation_duration,
     appendMediaToMessage,
+    getUserAvatar,
+    user_avatar,
+    getCharacterAvatar,
+    formatCharacterAvatar,
 } from "../../../script.js";
 import { getApiUrl, getContext, extension_settings, doExtrasFetch, modules, renderExtensionTemplate } from "../../extensions.js";
 import { selected_group } from "../../group-chats.js";
-import { stringFormat, initScrollHeight, resetScrollHeight, getCharaFilename, saveBase64AsFile } from "../../utils.js";
+import { stringFormat, initScrollHeight, resetScrollHeight, getCharaFilename, saveBase64AsFile, getBase64Async } from "../../utils.js";
 import { getMessageTimeStamp, humanizedDateTime } from "../../RossAscends-mods.js";
 import { SECRET_KEYS, secret_state } from "../../secrets.js";
 import { getNovelUnlimitedImageGeneration, getNovelAnlas, loadNovelSubscriptionData } from "../../nai-settings.js";
+import { getMultimodalCaption } from "../shared.js";
 export { MODULE_NAME };
 
 // Wraps a string into monospace font-face span
@@ -38,6 +43,7 @@ const sources = {
     novel: 'novel',
     vlad: 'vlad',
     openai: 'openai',
+    comfy: 'comfy',
 }
 
 const generationMode = {
@@ -49,6 +55,15 @@ const generationMode = {
     FACE: 5,
     FREE: 6,
     BACKGROUND: 7,
+    CHARACTER_MULTIMODAL: 8,
+    USER_MULTIMODAL: 9,
+    FACE_MULTIMODAL: 10,
+}
+
+const multimodalMap = {
+    [generationMode.CHARACTER]: generationMode.CHARACTER_MULTIMODAL,
+    [generationMode.USER]: generationMode.USER_MULTIMODAL,
+    [generationMode.FACE]: generationMode.FACE_MULTIMODAL,
 }
 
 const modeLabels = {
@@ -59,6 +74,9 @@ const modeLabels = {
     [generationMode.NOW]: 'Last Message',
     [generationMode.RAW_LAST]: 'Raw Last Message',
     [generationMode.BACKGROUND]: 'Background',
+    [generationMode.CHARACTER_MULTIMODAL]: 'Character (Multimodal Mode)',
+    [generationMode.FACE_MULTIMODAL]: 'Portrait (Multimodal Mode)',
+    [generationMode.USER_MULTIMODAL]: 'User (Multimodal Mode)',
 }
 
 const triggerWords = {
@@ -118,6 +136,9 @@ const promptTemplates = {
 
     [generationMode.RAW_LAST]: "[Pause your roleplay and provide ONLY the last chat message string back to me verbatim. Do not write anything after the string. Do not roleplay at all in your response. Do not continue the roleplay story.]",
     [generationMode.BACKGROUND]: "[Pause your roleplay and provide a detailed description of {{char}}'s surroundings in the form of a comma-delimited list of keywords and phrases. The list must include all of the following items in this order: location, time of day, weather, lighting, and any other relevant details. Do not include descriptions of characters and non-visual qualities such as names, personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase 'background,'. Ignore the rest of the story when crafting this description. Do not roleplay as {{user}} when writing this description, and do not attempt to continue the story.]",
+    [generationMode.FACE_MULTIMODAL]: `Provide an exhaustive comma-separated list of tags describing the appearance of the character on this image in great detail. Start with "close-up portrait".`,
+    [generationMode.CHARACTER_MULTIMODAL]: `Provide an exhaustive comma-separated list of tags describing the appearance of the character on this image in great detail. Start with "full body portrait".`,
+    [generationMode.USER_MULTIMODAL]: `Provide an exhaustive comma-separated list of tags describing the appearance of the character on this image in great detail. Start with "full body portrait".`,
 }
 
 const helpString = [
@@ -151,6 +172,9 @@ const defaultSettings = {
     steps_step: 1,
     steps: 20,
 
+    // Scheduler
+    scheduler: 'normal',
+
     // Image dimensions (Width & Height)
     dimension_min: 64,
     dimension_max: 2048,
@@ -177,6 +201,7 @@ const defaultSettings = {
     refine_mode: false,
     expand: false,
     interactive_mode: false,
+    multimodal_captioning: false,
 
     prompts: promptTemplates,
 
@@ -214,6 +239,97 @@ const defaultSettings = {
 
     style: 'Default',
     styles: defaultStyles,
+
+    // ComyUI settings
+    comfy_url: 'http://127.0.0.1:8188',
+    comfy_workflow: `
+        {
+            "3": {
+                "class_type": "KSampler",
+                "inputs": {
+                    "cfg": "%scale%",
+                    "denoise": 1,
+                    "latent_image": [
+                        "5",
+                        0
+                    ],
+                    "model": [
+                        "4",
+                        0
+                    ],
+                    "negative": [
+                        "7",
+                        0
+                    ],
+                    "positive": [
+                        "6",
+                        0
+                    ],
+                    "sampler_name": "%sampler%",
+                    "scheduler": "%scheduler%",
+                    "seed": 8566257,
+                    "steps": "%steps%"
+                }
+            },
+            "4": {
+                "class_type": "CheckpointLoaderSimple",
+                "inputs": {
+                    "ckpt_name": "%model%"
+                }
+            },
+            "5": {
+                "class_type": "EmptyLatentImage",
+                "inputs": {
+                    "batch_size": 1,
+                    "height": "%height%",
+                    "width": "%width%"
+                }
+            },
+            "6": {
+                "class_type": "CLIPTextEncode",
+                "inputs": {
+                    "clip": [
+                        "4",
+                        1
+                    ],
+                    "text": "%prompt%"
+                }
+            },
+            "7": {
+                "class_type": "CLIPTextEncode",
+                "inputs": {
+                    "clip": [
+                        "4",
+                        1
+                    ],
+                    "text": "%negative_prompt%"
+                }
+            },
+            "8": {
+                "class_type": "VAEDecode",
+                "inputs": {
+                    "samples": [
+                        "3",
+                        0
+                    ],
+                    "vae": [
+                        "4",
+                        2
+                    ]
+                }
+            },
+            "9": {
+                "class_type": "SaveImage",
+                "inputs": {
+                    "filename_prefix": "SillyTavern",
+                    "images": [
+                        "8",
+                        0
+                    ]
+                }
+            }
+        }
+    `,
 }
 
 function processTriggers(chat, _, abort) {
@@ -342,6 +458,7 @@ async function loadSettings() {
     $('#sd_enable_hr').prop('checked', extension_settings.sd.enable_hr);
     $('#sd_refine_mode').prop('checked', extension_settings.sd.refine_mode);
     $('#sd_expand').prop('checked', extension_settings.sd.expand);
+    $('#sd_multimodal_captioning').prop('checked', extension_settings.sd.multimodal_captioning);
     $('#sd_auto_url').val(extension_settings.sd.auto_url);
     $('#sd_auto_auth').val(extension_settings.sd.auto_auth);
     $('#sd_vlad_url').val(extension_settings.sd.vlad_url);
@@ -349,6 +466,8 @@ async function loadSettings() {
     $('#sd_interactive_mode').prop('checked', extension_settings.sd.interactive_mode);
     $('#sd_openai_style').val(extension_settings.sd.openai_style);
     $('#sd_openai_quality').val(extension_settings.sd.openai_quality);
+    $('#sd_comfy_url').val(extension_settings.sd.comfy_url);
+    $('#sd_comfy_prompt').val(extension_settings.sd.comfy_prompt);
 
     for (const style of extension_settings.sd.styles) {
         const option = document.createElement('option');
@@ -361,7 +480,7 @@ async function loadSettings() {
     toggleSourceControls();
     addPromptTemplates();
 
-    await Promise.all([loadSamplers(), loadModels()]);
+    await Promise.all([loadSamplers(), loadModels(), loadSchedulers()]);
 }
 
 function addPromptTemplates() {
@@ -398,6 +517,11 @@ function addPromptTemplates() {
 
 function onInteractiveModeInput() {
     extension_settings.sd.interactive_mode = !!$(this).prop('checked');
+    saveSettingsDebounced();
+}
+
+function onMultimodalCaptioningInput() {
+    extension_settings.sd.multimodal_captioning = !!$(this).prop('checked');
     saveSettingsDebounced();
 }
 
@@ -588,6 +712,11 @@ function onSamplerChange() {
     saveSettingsDebounced();
 }
 
+function onSchedulerChange() {
+    extension_settings.sd.scheduler = $('#sd_scheduler').find(':selected').val();
+    saveSettingsDebounced();
+}
+
 function onWidthInput() {
     extension_settings.sd.width = Number($('#sd_width').val());
     $('#sd_width_value').text(extension_settings.sd.width);
@@ -712,6 +841,17 @@ function onHrSecondPassStepsInput() {
     saveSettingsDebounced();
 }
 
+function onComfyUrlInput() {
+    extension_settings.sd.comfy_url = $('#sd_comfy_url').val();
+    saveSettingsDebounced();
+}
+
+function onComfyPromptInput() {
+    extension_settings.sd.comfy_prompt = $('#sd_comfy_prompt').val();
+    resetScrollHeight($(this));
+    saveSettingsDebounced();
+}
+
 async function validateAutoUrl() {
     try {
         if (!extension_settings.sd.auto_url) {
@@ -757,6 +897,32 @@ async function validateVladUrl() {
         toastr.success('SD.Next API connected.');
     } catch (error) {
         toastr.error(`Could not validate SD.Next API: ${error.message}`);
+    }
+}
+
+async function validateComfyUrl() {
+    try {
+        if (!extension_settings.sd.comfy_url) {
+            throw new Error('URL is not set.');
+        }
+
+        const result = await fetch(`/api/sd/comfy/ping`, {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                url: extension_settings.sd.comfy_url,
+            })
+        });
+        if (!result.ok) {
+            throw new Error('ComfyUI returned an error.');
+        }
+
+        await loadSamplers();
+        await loadSchedulers();
+        await loadModels();
+        toastr.success('ComfyUI API connected.');
+    } catch (error) {
+        toastr.error(`Could not validate ComfyUI API: ${error.message}`);
     }
 }
 
@@ -895,6 +1061,9 @@ async function loadSamplers() {
         case sources.openai:
             samplers = await loadOpenAiSamplers();
             break;
+        case sources.comfy:
+            samplers = await loadComfySamplers();
+            break;
     }
 
     for (const sampler of samplers) {
@@ -1004,6 +1173,28 @@ async function loadNovelSamplers() {
     ];
 }
 
+async function loadComfySamplers() {
+    if (!extension_settings.sd.comfy_url) {
+        return [];
+    }
+
+    try {
+        const result = await fetch(`/api/sd/comfy/samplers`, {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                url: extension_settings.sd.comfy_url,
+            })
+        });
+        if (!result.ok) {
+            throw new Error('ComfyUI returned an error.');
+        }
+        return await result.json();
+    } catch (error) {
+        return [];
+    }
+}
+
 async function loadModels() {
     $('#sd_model').empty();
     let models = [];
@@ -1026,6 +1217,9 @@ async function loadModels() {
             break;
         case sources.openai:
             models = await loadOpenAiModels();
+            break;
+        case sources.comfy:
+            models = await loadComfyModels();
             break;
     }
 
@@ -1204,16 +1398,104 @@ async function loadNovelModels() {
     ];
 }
 
+async function loadComfyModels() {
+    if (!extension_settings.sd.comfy_url) {
+        return [];
+    }
+
+    try {
+        const result = await fetch(`/api/sd/comfy/models`, {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                url: extension_settings.sd.comfy_url,
+            })
+        });
+        if (!result.ok) {
+            throw new Error('ComfyUI returned an error.');
+        }
+        return await result.json();
+    } catch (error) {
+        return [];
+    }
+}
+
+async function loadSchedulers() {
+    $('#sd_scheduler').empty();
+    let schedulers = [];
+
+    switch (extension_settings.sd.source) {
+        case sources.extras:
+            schedulers = ['N/A'];
+            break;
+        case sources.horde:
+            schedulers = ['N/A'];
+            break;
+        case sources.auto:
+            schedulers = ['N/A'];
+            break;
+        case sources.novel:
+            schedulers = ['N/A'];
+            break;
+        case sources.vlad:
+            schedulers = ['N/A'];
+            break;
+        case sources.openai:
+            schedulers = ['N/A'];
+            break;
+        case sources.comfy:
+            schedulers = await loadComfySchedulers();
+            break;
+    }
+
+    for (const scheduler of schedulers) {
+        const option = document.createElement('option');
+        option.innerText = scheduler;
+        option.value = scheduler;
+        option.selected = scheduler === extension_settings.sd.scheduler;
+        $('#sd_scheduler').append(option);
+    }
+}
+
+async function loadComfySchedulers() {
+    if (!extension_settings.sd.comfy_url) {
+        return [];
+    }
+
+    try {
+        const result = await fetch(`/api/sd/comfy/schedulers`, {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                url: extension_settings.sd.comfy_url,
+            })
+        });
+        if (!result.ok) {
+            throw new Error('ComfyUI returned an error.');
+        }
+        return await result.json();
+    } catch (error) {
+        return [];
+    }
+}
+
 function getGenerationType(prompt) {
+    let mode = generationMode.FREE;
+
     for (const [key, values] of Object.entries(triggerWords)) {
         for (const value of values) {
             if (value.toLowerCase() === prompt.toLowerCase().trim()) {
-                return Number(key);
+                mode = Number(key);
+                break;
             }
         }
     }
 
-    return generationMode.FREE;
+    if (extension_settings.sd.multimodal_captioning && multimodalMap[mode] !== undefined) {
+        mode = multimodalMap[mode];
+    }
+
+    return mode;
 }
 
 function getQuietPrompt(mode, trigger) {
@@ -1284,7 +1566,7 @@ async function generatePicture(_, trigger, message, callback) {
     trigger = trigger.trim();
     const generationType = getGenerationType(trigger);
     console.log('Generation mode', generationType, 'triggered with', trigger);
-    const quiet_prompt = getQuietPrompt(generationType, trigger);
+    const quietPrompt = getQuietPrompt(generationType, trigger);
     const context = getContext();
 
     // if context.characterId is not null, then we get context.characters[context.characterId].avatar, else we get groupId and context.groups[groupId].id
@@ -1308,7 +1590,7 @@ async function generatePicture(_, trigger, message, callback) {
     const dimensions = setTypeSpecificDimensions(generationType);
 
     try {
-        const prompt = await getPrompt(generationType, message, trigger, quiet_prompt);
+        const prompt = await getPrompt(generationType, message, trigger, quietPrompt);
         console.log('Processed image prompt:', prompt);
 
         context.deactivateSendButtons();
@@ -1353,7 +1635,7 @@ function restoreOriginalDimensions(savedParams) {
     extension_settings.sd.width = savedParams.width;
 }
 
-async function getPrompt(generationType, message, trigger, quiet_prompt) {
+async function getPrompt(generationType, message, trigger, quietPrompt) {
     let prompt;
 
     switch (generationType) {
@@ -1363,8 +1645,13 @@ async function getPrompt(generationType, message, trigger, quiet_prompt) {
         case generationMode.FREE:
             prompt = trigger.trim();
             break;
+        case generationMode.FACE_MULTIMODAL:
+        case generationMode.CHARACTER_MULTIMODAL:
+        case generationMode.USER_MULTIMODAL:
+            prompt = await generateMultimodalPrompt(generationType, quietPrompt);
+            break;
         default:
-            prompt = await generatePrompt(quiet_prompt);
+            prompt = await generatePrompt(quietPrompt);
             break;
     }
 
@@ -1375,8 +1662,57 @@ async function getPrompt(generationType, message, trigger, quiet_prompt) {
     return prompt;
 }
 
-async function generatePrompt(quiet_prompt) {
-    const reply = await generateQuietPrompt(quiet_prompt, false, false);
+/**
+ * Generates a prompt using multimodal captioning.
+ * @param {number} generationType - The type of image generation to perform.
+ * @param {string} quietPrompt - The prompt to use for the image generation.
+ */
+async function generateMultimodalPrompt(generationType, quietPrompt) {
+    let avatarUrl;
+
+    if (generationType == generationMode.USER_MULTIMODAL) {
+        avatarUrl = getUserAvatar(user_avatar);
+    }
+
+    if (generationType == generationMode.CHARACTER_MULTIMODAL || generationType === generationMode.FACE_MULTIMODAL) {
+        const context = getContext();
+
+        if (context.groupId) {
+            const groupMembers = context.groups.find(x => x.id === context.groupId)?.members;
+            const lastMessageAvatar = context.chat?.filter(x => !x.is_system && !x.is_user)?.slice(-1)[0]?.original_avatar;
+            const randomMemberAvatar = Array.isArray(groupMembers) ? groupMembers[Math.floor(Math.random() * groupMembers.length)]?.avatar : null;
+            const avatarToUse = lastMessageAvatar || randomMemberAvatar;
+            avatarUrl = formatCharacterAvatar(avatarToUse);
+        } else {
+            avatarUrl = getCharacterAvatar(context.characterId);
+        }
+    }
+
+    const response = await fetch(avatarUrl);
+
+    if (!response.ok) {
+        throw new Error('Could not fetch avatar image.');
+    }
+
+    const avatarBlob = await response.blob();
+    const avatarBase64 = await getBase64Async(avatarBlob);
+
+    const caption = await getMultimodalCaption(avatarBase64, quietPrompt);
+
+    if (!caption) {
+        throw new Error('Multimodal captioning failed.');
+    }
+
+    return caption;
+}
+
+/**
+ * Generates a prompt using the main LLM API.
+ * @param {string} quietPrompt - The prompt to use for the image generation.
+ * @returns {Promise<string>} - A promise that resolves when the prompt generation completes.
+ */
+async function generatePrompt(quietPrompt) {
+    const reply = await generateQuietPrompt(quietPrompt, false, false);
     return processReply(reply);
 }
 
@@ -1409,6 +1745,9 @@ async function sendGenerationRequest(generationType, prompt, characterName = nul
                 break;
             case sources.openai:
                 result = await generateOpenAiImage(prefixedPrompt);
+                break;
+            case sources.comfy:
+                result = await generateComfyImage(prefixedPrompt);
                 break;
         }
 
@@ -1694,6 +2033,65 @@ async function generateOpenAiImage(prompt) {
     }
 }
 
+/**
+ * Generates an image in ComfyUI using the provided prompt and configuration settings.
+ *
+ * @param {string} prompt - The main instruction used to guide the image generation.
+ * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
+ */
+async function generateComfyImage(prompt) {
+    const placeholders = [
+        'negative_prompt',
+        'model',
+        'sampler',
+        'scheduler',
+        'steps',
+        'scale',
+        'width',
+        'height',
+    ];
+
+    let workflow = extension_settings.sd.comfy_workflow.replace('"%prompt%"', JSON.stringify(prompt));
+    workflow = workflow.replace('"%seed%"', JSON.stringify(Math.round(Math.random() * Number.MAX_SAFE_INTEGER)));
+    placeholders.forEach(ph => {
+        workflow = workflow.replace(`"%${ph}%"`, JSON.stringify(extension_settings.sd[ph]));
+    });
+    console.log(`{
+        "prompt": ${workflow}
+    }`);
+    const promptResult = await fetch(`/api/sd/comfy/generate`, {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+            url: extension_settings.sd.comfy_url,
+            prompt: `{
+                "prompt": ${workflow}
+            }`,
+        })
+    });
+    return { format: 'png', data: await promptResult.text() };
+}
+
+async function onComfyOpenWorkflowEditorClick() {
+    const editorHtml = $(await $.get('scripts/extensions/stable-diffusion/comfyWorkflowEditor.html'));
+    const popupResult = callPopup(editorHtml, "confirm", undefined, { okButton: "Save", wide: true, large: true, rows: 1 });
+    const checkPlaceholders = () => {
+        const workflow = $('#sd_comfy_workflow_editor_workflow').val().toString();
+        $('.sd_comfy_workflow_editor_placeholder_list > li[data-placeholder]').each(function (idx) {
+            const key = this.getAttribute('data-placeholder');
+            const found = workflow.search(`"%${key}%"`) != -1;
+            this.classList[found ? 'remove' : 'add']('sd_comfy_workflow_editor_not_found');
+        });
+    };
+    $('#sd_comfy_workflow_editor_workflow').val(extension_settings.sd.comfy_workflow);
+    checkPlaceholders();
+    $('#sd_comfy_workflow_editor_workflow').on('input', checkPlaceholders);
+    if (await popupResult) {
+        extension_settings.sd.comfy_workflow = $('#sd_comfy_workflow_editor_workflow').val().toString();
+        saveSettingsDebounced();
+    }
+}
+
 async function sendMessage(prompt, image, generationType) {
     const context = getContext();
     const messageText = `[${context.name2} sends a picture that contains: ${prompt}]`;
@@ -1787,6 +2185,8 @@ function isValidState() {
             return secret_state[SECRET_KEYS.NOVEL];
         case sources.openai:
             return secret_state[SECRET_KEYS.OPENAI];
+        case sources.comfy:
+            return true;
     }
 }
 
@@ -1901,6 +2301,7 @@ jQuery(async () => {
     $('#sd_steps').on('input', onStepsInput);
     $('#sd_model').on('change', onModelChange);
     $('#sd_sampler').on('change', onSamplerChange);
+    $('#sd_scheduler').on('change', onSchedulerChange);
     $('#sd_prompt_prefix').on('input', onPromptPrefixInput);
     $('#sd_negative_prompt').on('input', onNegativePromptInput);
     $('#sd_width').on('input', onWidthInput);
@@ -1925,6 +2326,9 @@ jQuery(async () => {
     $('#sd_novel_upscale_ratio').on('input', onNovelUpscaleRatioInput);
     $('#sd_novel_anlas_guard').on('input', onNovelAnlasGuardInput);
     $('#sd_novel_view_anlas').on('click', onViewAnlasClick);
+    $('#sd_comfy_validate').on('click', validateComfyUrl);
+    $('#sd_comfy_url').on('input', onComfyUrlInput);
+    $('#sd_comfy_open_workflow_editor').on('click', onComfyOpenWorkflowEditorClick);
     $('#sd_expand').on('input', onExpandInput);
     $('#sd_style').on('change', onStyleSelect);
     $('#sd_save_style').on('click', onSaveStyleClick);
@@ -1932,6 +2336,7 @@ jQuery(async () => {
     $('#sd_interactive_mode').on('input', onInteractiveModeInput);
     $('#sd_openai_style').on('change', onOpenAiStyleSelect);
     $('#sd_openai_quality').on('change', onOpenAiQualitySelect);
+    $('#sd_multimodal_captioning').on('input', onMultimodalCaptioningInput);
 
     $('.sd_settings .inline-drawer-toggle').on('click', function () {
         initScrollHeight($("#sd_prompt_prefix"));
