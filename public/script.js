@@ -1360,6 +1360,9 @@ async function printMessages() {
 async function clearChat() {
     count_view_mes = 0;
     extension_prompts = {};
+    if (is_delete_mode) {
+        $("#dialogue_del_mes_cancel").trigger('click');
+    }
     $("#chat").children().remove();
     if ($('.zoomed_avatar[forChar]').length) {
         console.debug('saw avatars to remove')
