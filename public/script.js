@@ -1599,9 +1599,16 @@ export function updateMessageBlock(messageId, message) {
 export function appendMediaToMessage(mes, messageElement) {
     // Add image to message
     if (mes.extra?.image) {
+        const chatHeight = $('#chat').prop('scrollHeight');
         const image = messageElement.find('.mes_img');
         const text = messageElement.find('.mes_text');
         const isInline = !!mes.extra?.inline_image;
+        image.on('load', function () {
+            const scrollPosition = $('#chat').scrollTop();
+            const newChatHeight = $('#chat').prop('scrollHeight');
+            const diff = newChatHeight - chatHeight;
+            $('#chat').scrollTop(scrollPosition + diff);
+        });
         image.attr('src', mes.extra?.image);
         image.attr('title', mes.extra?.title || mes.title || '');
         messageElement.find(".mes_img_container").addClass("img_extra");
