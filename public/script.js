@@ -1297,11 +1297,9 @@ async function replaceCurrentChat() {
     }
 }
 
-const TRUNCATION_THRESHOLD = 100;
-
 export function showMoreMessages() {
     let messageId = Number($('#chat').children('.mes').first().attr('mesid'));
-    let count = TRUNCATION_THRESHOLD;
+    let count = power_user.chat_truncation || Number.MAX_SAFE_INTEGER;
 
     console.debug('Inserting messages before', messageId, 'count', count, 'chat length', chat.length);
     const prevHeight = $('#chat').prop('scrollHeight');
@@ -1322,9 +1320,10 @@ export function showMoreMessages() {
 
 async function printMessages() {
     let startIndex = 0;
+    let count = power_user.chat_truncation || Number.MAX_SAFE_INTEGER;
 
-    if (chat.length > TRUNCATION_THRESHOLD) {
-        count_view_mes = chat.length - TRUNCATION_THRESHOLD;
+    if (chat.length > count) {
+        count_view_mes = chat.length - count;
         startIndex = count_view_mes;
         $('#chat').append('<div id="show_more_messages">Show more messages</div>');
     }
