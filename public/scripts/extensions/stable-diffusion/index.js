@@ -879,7 +879,14 @@ async function validateComfyUrl() {
             throw new Error('URL is not set.');
         }
 
-        const result = await fetch(`${extension_settings.sd.comfy_url}/system_stats`);
+        
+        const result = await fetch(`/api/sd/comfy/ping`, {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                url: extension_settings.sd.comfy_url,
+            })
+        });
         if (!result.ok) {
             throw new Error('ComfyUI returned an error.');
         }
@@ -1146,12 +1153,18 @@ async function loadComfySamplers() {
     }
 
     try {
-        const result = await fetch(`${extension_settings.sd.comfy_url}/object_info`);
+        
+        const result = await fetch(`/api/sd/comfy/samplers`, {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                url: extension_settings.sd.comfy_url,
+            })
+        });
         if (!result.ok) {
             throw new Error('ComfyUI returned an error.');
         }
-        const data = await result.json();
-        return data.KSampler.input.required.sampler_name[0];
+        return await result.json();
     } catch (error) {
         return [];
     }
@@ -1366,12 +1379,17 @@ async function loadComfyModels() {
     }
 
     try {
-        const result = await fetch(`${extension_settings.sd.comfy_url}/object_info`);
+        const result = await fetch(`/api/sd/comfy/models`, {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                url: extension_settings.sd.comfy_url,
+            })
+        });
         if (!result.ok) {
             throw new Error('ComfyUI returned an error.');
         }
-        const data = await result.json();
-        return data.CheckpointLoaderSimple.input.required.ckpt_name[0].map(it=>({value:it,text:it}));
+        return await result.json();
     } catch (error) {
         return [];
     }
@@ -1420,12 +1438,17 @@ async function loadComfySchedulers() {
     }
 
     try {
-        const result = await fetch(`${extension_settings.sd.comfy_url}/object_info`);
+        const result = await fetch(`/api/sd/comfy/schedulers`, {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                url: extension_settings.sd.comfy_url,
+            })
+        });
         if (!result.ok) {
             throw new Error('ComfyUI returned an error.');
         }
-        const data = await result.json();
-        return data.KSampler.input.required.scheduler[0];
+        return await result.json();
     } catch (error) {
         return [];
     }
@@ -1950,54 +1973,17 @@ async function generateComfyImage(prompt) {
     console.log(`{
         "prompt": ${workflow}
     }`);
-    const promptResult = await fetch(`${extension_settings.sd.comfy_url}/prompt`, {
+    const promptResult = await fetch(`/api/sd/comfy/generate`, {
         method: 'POST',
-        body: `{
-            "prompt": ${workflow}
-        }`
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+            url: extension_settings.sd.comfy_url,
+            prompt: `{
+                "prompt": ${workflow}
+            }`,
+        })
     });
-    if (promptResult.ok) {
-        const id = (await promptResult.json()).prompt_id;
-        let item;
-        while (true) {
-            const result = await fetch(`${extension_settings.sd.comfy_url}/history`);
-            if (result.ok) {
-                const history = await result.json();
-                item = history[id];
-                if (item) {
-                    break;
-                }
-                await new Promise(resolve=>window.setTimeout(resolve, 100));
-            } else {
-                const text = await result.text();
-                throw new Error(text);
-            }
-        }
-        const imgInfo = Object.keys(item.outputs).map(it=>item.outputs[it].images).flat()[0];
-        let img;
-        await new Promise(resolve=>{
-            img = new Image();
-            img.crossOrigin = 'anonymous';
-            img.addEventListener('load', resolve);
-            img.addEventListener('error', (...v)=>{
-                throw new Error('failed to load image');
-            });
-            img.src = `${extension_settings.sd.comfy_url}/view?filename=${imgInfo.filename}&subfolder=${imgInfo.subfolder}&type=${imgInfo.type}`;
-        });
-        const canvas = new OffscreenCanvas(extension_settings.sd.width, extension_settings.sd.height);
-        const con = canvas.getContext('2d');
-        con.drawImage(img, 0,0);
-        const imgBlob = await canvas.convertToBlob();
-        const dataUrl = await new Promise(resolve=>{
-            const reader = new FileReader();
-            reader.addEventListener('load', ()=>resolve(reader.result));
-            reader.readAsDataURL(imgBlob);
-        });
-        return {format:'png', data:dataUrl.split(',').pop()};
-    } else {
-        const text = await promptResult.text();
-        throw new Error(text);
-    }
+    return {format:'png', data:await promptResult.text()};
 }
 
 async function onComfyOpenWorkflowEditorClick() {
