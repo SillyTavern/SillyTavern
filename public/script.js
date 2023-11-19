@@ -3777,11 +3777,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
 
                 reject(exception);
-                $("#send_textarea").removeAttr('disabled');
-                is_send_press = false;
-                activateSendButtons();
-                showSwipeButtons();
-                setGenerationProgress(0);
+                unblockGeneration();
                 console.log(exception);
                 streamingProcessor = null;
             };
