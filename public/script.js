@@ -24,6 +24,7 @@ import {
     textgenerationwebui_banned_in_macros,
     isOoba,
     MANCER_SERVER,
+    isKoboldCpp,
 } from "./scripts/textgen-settings.js";
 
 import {
@@ -886,6 +887,7 @@ async function getStatus() {
                 use_aphrodite: main_api == "textgenerationwebui" ? isAphrodite() : false,
                 use_ooba: main_api == "textgenerationwebui" ? isOoba() : false,
                 use_tabby: main_api == "textgenerationwebui" ? isTabby() : false,
+                use_koboldcpp: main_api == "textgenerationwebui" ? isKoboldCpp() : false,
                 legacy_api: main_api == "textgenerationwebui" ? textgenerationwebui_settings.legacy_api && !isMancer() : false,
             }),
             signal: abortStatusCheck.signal,
@@ -5505,6 +5507,7 @@ async function getSettings() {
         $("#textgenerationwebui_api_url_text").val(api_server_textgenerationwebui);
         $("#aphrodite_api_url_text").val(api_server_textgenerationwebui);
         $("#tabby_api_url_text").val(api_server_textgenerationwebui);
+        $('#koboldcpp_api_url_text').val(api_server_textgenerationwebui);
 
         selected_button = settings.selected_button;
 

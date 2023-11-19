@@ -539,6 +539,9 @@ app.post("/api/textgenerationwebui/status", jsonParser, async function (request,
         else if (request.body.use_tabby) {
             url += "/v1/model/list"
         }
+        else if (request.body.use_koboldcpp) {
+            url += "/v1/models";
+        }
 
         const modelsReply = await fetch(url, args);
 
@@ -629,7 +632,7 @@ app.post("/api/textgenerationwebui/generate", jsonParser, async function (reques
         if (request.body.legacy_api) {
             url += "/v1/generate";
         }
-        else if (request.body.use_aphrodite || request.body.use_ooba || request.body.use_tabby) {
+        else if (request.body.use_aphrodite || request.body.use_ooba || request.body.use_tabby || request.body.use_koboldcpp) {
             url += "/v1/completions";
         }
         else if (request.body.use_mancer) {
@@ -3445,10 +3448,16 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
             if (legacyApi) {
                 url += '/v1/token-count';
                 args.body = JSON.stringify({ "prompt": text });
-            } else if (request.body.use_tabby) {
+            }
+            else if (request.body.use_tabby) {
                 url += '/v1/token/encode';
                 args.body = JSON.stringify({ "text": text });
-            } else {
+            }
+            else if (request.body.use_koboldcpp) {
+                url += '/api/extra/tokencount';
+                args.body = JSON.stringify({ "prompt": text });
+            }
+            else {
                 url += '/v1/internal/encode';
                 args.body = JSON.stringify({ "text": text });
             }
@@ -3461,8 +3470,8 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
             }
 
             const data = await result.json();
-            const count = legacyApi ? data?.results[0]?.tokens : data?.length;
-            const ids = legacyApi ? [] : data?.tokens;
+            const count = legacyApi ? data?.results[0]?.tokens : (data?.length ?? data?.value);
+            const ids = legacyApi ? [] : (data?.tokens ?? []);
 
             return response.send({ count, ids });
         }

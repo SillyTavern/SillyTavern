@@ -1467,10 +1467,10 @@
                 <div class="flex-container flexFlowColumn">
                     <div id="main-API-selector-block">
                         <select id="main_api">
-                            <option value="kobold"><span data-i18n="KoboldAI">KoboldAI</span></option>
+                            <option value="kobold"><span data-i18n="KoboldAI">KoboldAI Classic</span></option>
                             <option value="koboldhorde"><span data-i18n="KoboldAI Horde">KoboldAI Horde</span></option>
                             <option value="novel"><span data-i18n="NovelAI">NovelAI</span></option>
-                            <option value="textgenerationwebui"><span data-i18n="Text Completion">Text Completion (ooba, Mancer, Aphrodite)</span></option>
+                            <option value="textgenerationwebui"><span data-i18n="Text Completion">Text Completion (ooba, Mancer, Aphrodite, KoboldCpp)</span></option>
                             <option value="openai"><span data-i18n="Chat Completion (OpenAI, Claude, Window/OpenRouter, Scale, AI21)">Chat Completion (OpenAI, Claude, Window, OpenRouter, Scale, AI21, PaLM)</span></option>
                         </select>
                     </div>
@@ -1600,6 +1600,7 @@
                                     <option value="mancer">Mancer</option>
                                     <option value="aphrodite">Aphrodite</option>
                                     <option value="tabby">TabbyAPI</option>
+                                    <option value="koboldcpp">KoboldCpp</option>
                                 </select>
                             </div>
                             <div data-tg-type="mancer" class="flex-container flexFlowColumn">
@@ -1681,8 +1682,20 @@
                                     <input id="tabby_api_url_text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="tabby">
                                 </div>
                             </div>
+                            <div data-tg-type="koboldcpp">
+                                <div class="flex-container flexFlowColumn">
+                                    <a href="https://github.com/LostRuins/koboldcpp" target="_blank">
+                                        LostRuins/koboldcpp
+                                    </a>
+                                </div>
+                                <div class="flex1">
+                                    <h4 data-i18n="API url">API URL</h4>
+                                    <small data-i18n="Example: http://127.0.0.1:5001">Example: http://127.0.0.1:5001</small>
+                                    <input id="koboldcpp_api_url_text" class="text_pole wide100p" maxlength="500" value="" autocomplete="off" data-server-history="koboldcpp">
+                                </div>
+                            </div>
                             <div class="flex-container">
-                                <div id="api_button_textgenerationwebui" class="api_button menu_button" type="submit" data-i18n="Connect" data-server-connect="ooba_blocking,aphrodite,tabby">Connect</div>
+                                <div id="api_button_textgenerationwebui" class="api_button menu_button" type="submit" data-i18n="Connect" data-server-connect="ooba_blocking,aphrodite,tabby,koboldcpp">Connect</div>
                                 <div class="api_loading menu_button" data-i18n="Cancel">Cancel</div>
                             </div>
                             <label class="checkbox_label margin-bot-10px" for="legacy_api_textgenerationwebui">
