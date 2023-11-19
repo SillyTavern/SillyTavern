@@ -7,10 +7,11 @@ import {
     getRequestHeaders,
     event_types,
     eventSource,
-    appendImageToMessage,
     generateQuietPrompt,
     this_chid,
     getCurrentChatId,
+    animation_duration,
+    appendMediaToMessage,
 } from "../../../script.js";
 import { getApiUrl, getContext, extension_settings, doExtrasFetch, modules, renderExtensionTemplate } from "../../extensions.js";
 import { selected_group } from "../../group-chats.js";
@@ -1764,10 +1765,10 @@ function addSDGenButtons() {
         if (target.is(button) && !dropdown.is(":visible") && $("#send_but").is(":visible")) {
             e.preventDefault();
 
-            dropdown.fadeIn(250);
+            dropdown.fadeIn(animation_duration);
             popper.update();
         } else {
-            dropdown.fadeOut(250);
+            dropdown.fadeOut(animation_duration);
         }
     });
 }
@@ -1865,7 +1866,7 @@ async function sdMessageButton(e) {
         message.extra.image = image;
         message.extra.title = prompt;
         message.extra.generationType = generationType;
-        appendImageToMessage(message, $mes);
+        appendMediaToMessage(message, $mes);
 
         context.saveChat();
     }

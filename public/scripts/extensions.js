@@ -1,4 +1,4 @@
-import { callPopup, eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, substituteParams, renderTemplate } from "../script.js";
+import { callPopup, eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, substituteParams, renderTemplate, animation_duration } from "../script.js";
 import { hideLoader, showLoader } from "./loader.js";
 import { isSubsetOf } from "./utils.js";
 export {
@@ -359,15 +359,16 @@ function addExtensionsButtonAndMenu() {
 
     $(button).on('click', function () {
         popper.update()
-        dropdown.fadeIn(250);
+        if (!dropdown.is(':visible')) {
+            dropdown.fadeIn(animation_duration);
+        }
     });
 
     $("html").on('touchstart mousedown', function (e) {
-        let clickTarget = $(e.target);
-        if (dropdown.is(':visible')
-            && clickTarget.closest(button).length == 0
-            && clickTarget.closest(dropdown).length == 0) {
-            $(dropdown).fadeOut(250);
+        const clickTarget = $(e.target);
+        const noCloseTargets = ['#sd_gen'];
+        if (dropdown.is(':visible') && !noCloseTargets.some(id => clickTarget.closest(id).length > 0)) {
+            $(dropdown).fadeOut(animation_duration);
         }
     });
 }
@@ -511,8 +512,8 @@ async function generateExtensionHtml(name, manifest, isActive, isDisabled, isExt
         isUpToDate = data.isUpToDate;
         displayVersion = ` (${branch}-${commitHash.substring(0, 7)})`;
         updateButton = isUpToDate ?
-            `<span class="update-button"><button class="btn_update menu_button" data-name="${name.replace('third-party', '')}" title="Up to date"><i class="fa-solid fa-code-commit"></i></button></span>` :
-            `<span class="update-button"><button class="btn_update menu_button" data-name="${name.replace('third-party', '')}" title="Update available"><i class="fa-solid fa-download"></i></button></span>`;
+            `<span class="update-button"><button class="btn_update menu_button" data-name="${name.replace('third-party', '')}" title="Up to date"><i class="fa-solid fa-code-commit fa-fw"></i></button></span>` :
+            `<span class="update-button"><button class="btn_update menu_button" data-name="${name.replace('third-party', '')}" title="Update available"><i class="fa-solid fa-download fa-fw"></i></button></span>`;
         originHtml = `<a href="${origin}" target="_blank" rel="noopener noreferrer">`;
     }
 
@@ -640,6 +641,7 @@ async function showExtensionsDetails() {
  */
 async function onUpdateClick() {
     const extensionName = $(this).data('name');
+    $(this).find('i').addClass('fa-spin');
     await updateExtension(extensionName, false);
 }
 
@@ -657,16 +659,17 @@ async function updateExtension(extensionName, quiet) {
         });
 
         const data = await response.json();
+
+        if (!quiet) {
+            showExtensionsDetails();
+        }
+
         if (data.isUpToDate) {
             if (!quiet) {
                 toastr.success('Extension is already up to date');
             }
         } else {
             toastr.success(`Extension ${extensionName} updated to ${data.shortCommitHash}`);
-        }
-
-        if (!quiet) {
-            showExtensionsDetails();
         }
     } catch (error) {
         console.error('Error:', error);

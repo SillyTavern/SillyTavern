@@ -646,7 +646,7 @@ let create_save = {
 };
 
 //animation right menu
-let animation_duration = 125;
+export let animation_duration = 125;
 let animation_easing = "ease-in-out";
 let popup_type = "";
 let chat_file_for_del = "";
@@ -3148,7 +3148,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         console.debug('calling runGenerate');
 
         if (!dryRun) {
-            streamingProcessor = isStreamingEnabled() ? new StreamingProcessor(type, force_name2, generation_started) : false;
+            streamingProcessor = isStreamingEnabled() && type !== 'quiet' ? new StreamingProcessor(type, force_name2, generation_started) : false;
         }
 
         if (isContinue) {
@@ -3729,6 +3729,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 activateSendButtons();
                 showSwipeButtons();
                 setGenerationProgress(0);
+                streamingProcessor = null;
 
                 if (type !== 'quiet') {
                     triggerAutoContinue(messageChunk, isImpersonate);
@@ -3748,6 +3749,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 showSwipeButtons();
                 setGenerationProgress(0);
                 console.log(exception);
+                streamingProcessor = null;
             };
 
         } //rungenerate ends
@@ -8099,12 +8101,14 @@ jQuery(async function () {
 
     function showMenu() {
         showBookmarksButtons();
-        menu.stop().fadeIn(250);
+        // menu.stop()
+        menu.fadeIn(animation_duration);
         optionsPopper.update();
     }
 
     function hideMenu() {
-        menu.stop().fadeOut(250);
+        // menu.stop();
+        menu.fadeOut(animation_duration);
         optionsPopper.update();
     }
 
@@ -8112,7 +8116,13 @@ jQuery(async function () {
         return menu.is(':hover') || button.is(':hover');
     }
 
-    button.on('click', function () { showMenu(); });
+    button.on('click', function () {
+        if (menu.is(':visible')) {
+            hideMenu();
+        } else {
+            showMenu();
+        }
+    });
     button.on('blur', function () {
         //delay to prevent menu hiding when mouse leaves button into menu
         setTimeout(() => {
@@ -9045,19 +9055,12 @@ jQuery(async function () {
     });
 
     $(document).on('click', '.mes .avatar', function () {
-
-        //console.log(isMobile());
-        //console.log($('body').hasClass('waifuMode'));
-
-        /* if (isMobile() === true && !$('body').hasClass('waifuMode')) {
-            console.debug('saw mobile regular mode, returning');
-            return;
-        } else { console.debug('saw valid env for zoomed display') } */
-
-        let thumbURL = $(this).children('img').attr('src');
-        let charsPath = '/characters/'
-        let targetAvatarImg = thumbURL.substring(thumbURL.lastIndexOf("=") + 1);
-        let charname = targetAvatarImg.replace('.png', '');
+        const messageElement = $(this).closest('.mes');
+        const thumbURL = $(this).children('img').attr('src');
+        const charsPath = '/characters/'
+        const targetAvatarImg = thumbURL.substring(thumbURL.lastIndexOf("=") + 1);
+        const charname = targetAvatarImg.replace('.png', '');
+        const isValidCharacter = characters.some(x => x.avatar === targetAvatarImg);
 
         // Remove existing zoomed avatars for characters that are not the clicked character when moving UI is not enabled
         if (!power_user.movingUI) {
@@ -9070,7 +9073,7 @@ jQuery(async function () {
             });
         }
 
-        let avatarSrc = isDataURL(thumbURL) ? thumbURL : charsPath + targetAvatarImg;
+        const avatarSrc = isDataURL(thumbURL) ? thumbURL : charsPath + targetAvatarImg;
         if ($(`.zoomed_avatar[forChar="${charname}"]`).length) {
             console.debug('removing container as it already existed')
             $(`.zoomed_avatar[forChar="${charname}"]`).remove();
@@ -9084,11 +9087,11 @@ jQuery(async function () {
             newElement.find('.drag-grabber').attr('id', `zoomFor_${charname}header`);
 
             $('body').append(newElement);
-            if ($(this).parent().parent().attr('is_user') == 'true') { //handle user avatars
+            if (messageElement.attr('is_user') == 'true') { //handle user avatars
                 $(`.zoomed_avatar[forChar="${charname}"] img`).attr('src', thumbURL);
-            } else if ($(this).parent().parent().attr('is_system') == 'true') { //handle system avatars
+            } else if (messageElement.attr('is_system') == 'true' && !isValidCharacter) { //handle system avatars
                 $(`.zoomed_avatar[forChar="${charname}"] img`).attr('src', thumbURL);
-            } else if ($(this).parent().parent().attr('is_user') == 'false') { //handle char avatars
+            } else if (messageElement.attr('is_user') == 'false') { //handle char avatars
                 $(`.zoomed_avatar[forChar="${charname}"] img`).attr('src', avatarSrc);
             }
             loadMovingUIState();

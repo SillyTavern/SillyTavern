@@ -2493,27 +2493,28 @@ app.post('/uploadimage', jsonParser, async (request, response) => {
         return response.status(400).send({ error: "No image data provided" });
     }
 
-    // Extracting the base64 data and the image format
-    const match = request.body.image.match(/^data:image\/(png|jpg|webp|jpeg|gif);base64,(.+)$/);
-    if (!match) {
-        return response.status(400).send({ error: "Invalid image format" });
-    }
-
-    const [, format, base64Data] = match;
-
-    // Constructing filename and path
-    let filename = `${Date.now()}.${format}`;
-    if (request.body.filename) {
-        filename = `${request.body.filename}.${format}`;
-    }
-
-    // if character is defined, save to a sub folder for that character
-    let pathToNewFile = path.join(DIRECTORIES.userImages, filename);
-    if (request.body.ch_name) {
-        pathToNewFile = path.join(DIRECTORIES.userImages, request.body.ch_name, filename);
-    }
-
     try {
+        // Extracting the base64 data and the image format
+        const splitParts = request.body.image.split(',');
+        const format = splitParts[0].split(';')[0].split('/')[1];
+        const base64Data = splitParts[1];
+        const validFormat = ['png', 'jpg', 'webp', 'jpeg', 'gif'].includes(format);
+        if (!validFormat) {
+            return response.status(400).send({ error: "Invalid image format" });
+        }
+
+        // Constructing filename and path
+        let filename = `${Date.now()}.${format}`;
+        if (request.body.filename) {
+            filename = `${request.body.filename}.${format}`;
+        }
+
+        // if character is defined, save to a sub folder for that character
+        let pathToNewFile = path.join(DIRECTORIES.userImages, filename);
+        if (request.body.ch_name) {
+            pathToNewFile = path.join(DIRECTORIES.userImages, request.body.ch_name, filename);
+        }
+
         ensureDirectoryExistence(pathToNewFile);
         const imageBuffer = Buffer.from(base64Data, 'base64');
         await fs.promises.writeFile(pathToNewFile, imageBuffer);
