@@ -204,6 +204,69 @@ export async function getGroupChat(groupId) {
 }
 
 /**
+ * Finds the character ID for a group member.
+ * @param {string} arg 1-based member index or character name
+ * @returns {number} 0-based character ID
+ */
+export function findGroupMemberId(arg) {
+    arg = arg?.trim();
+
+    if (!arg) {
+        console.warn('WARN: No argument provided for findGroupMemberId');
+        return;
+    }
+
+    const group = groups.find(x => x.id == selected_group);
+
+    if (!group || !Array.isArray(group.members)) {
+        console.warn('WARN: No group found for selected group ID');
+        return;
+    }
+
+    // Index is 1-based
+    const index = parseInt(arg) - 1;
+    const searchByName = isNaN(index);
+
+    if (searchByName) {
+        const memberNames = group.members.map(x => ({ name: characters.find(y => y.avatar === x)?.name, index: characters.findIndex(y => y.avatar === x) }));
+        const fuse = new Fuse(memberNames, { keys: ['name'] });
+        const result = fuse.search(arg);
+
+        if (!result.length) {
+            console.warn(`WARN: No group member found with name ${arg}`);
+            return;
+        }
+
+        const chid = result[0].item.index;
+
+        if (chid === -1) {
+            console.warn(`WARN: No character found for group member ${arg}`);
+            return;
+        }
+
+        console.log(`Triggering group member ${chid} (${arg}) from search result`, result[0]);
+        return chid;
+    } else {
+        const memberAvatar = group.members[index];
+
+        if (memberAvatar === undefined) {
+            console.warn(`WARN: No group member found at index ${index}`);
+            return;
+        }
+
+        const chid = characters.findIndex(x => x.avatar === memberAvatar);
+
+        if (chid === -1) {
+            console.warn(`WARN: No character found for group member ${memberAvatar} at index ${index}`);
+            return;
+        }
+
+        console.log(`Triggering group member ${memberAvatar} at index ${index}`);
+        return chid;
+    }
+}
+
+/**
  * Gets depth prompts for group members.
  * @param {string} groupId Group ID
  * @param {number} characterId Current Character ID

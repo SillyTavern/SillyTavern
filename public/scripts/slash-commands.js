@@ -26,7 +26,7 @@ import {
     setCharacterName,
 } from "../script.js";
 import { getMessageTimeStamp } from "./RossAscends-mods.js";
-import { groups, is_group_generating, resetSelectedGroup, selected_group } from "./group-chats.js";
+import { findGroupMemberId, is_group_generating, resetSelectedGroup, selected_group } from "./group-chats.js";
 import { getRegexedString, regex_placement } from "./extensions/regex/engine.js";
 import { chat_styles, power_user } from "./power-user.js";
 import { autoSelectPersona } from "./personas.js";
@@ -148,6 +148,8 @@ parser.addCommand('send', sendUserMessageCallback, ['add'], '<span class="monosp
 parser.addCommand('trigger', triggerGroupMessageCallback, [], '<span class="monospace">(member index or name)</span> – triggers a message generation for the specified group member', true, true);
 parser.addCommand('hide', hideMessageCallback, [], '<span class="monospace">(message index or range)</span> – hides a chat message from the prompt', true, true);
 parser.addCommand('unhide', unhideMessageCallback, [], '<span class="monospace">(message index or range)</span> – unhides a message from the prompt', true, true);
+parser.addCommand('disable', disableGroupMemberCallback, [], '<span class="monospace">(member index or name)</span> – disables a group member from being drafted for replies', true, true);
+parser.addCommand('enable', enableGroupMemberCallback, [], '<span class="monospace">(member index or name)</span> – enables a group member to be drafted for replies', true, true);
 
 const NARRATOR_NAME_KEY = 'narrator_name';
 const NARRATOR_NAME_DEFAULT = 'System';
@@ -285,9 +287,41 @@ async function unhideMessageCallback(_, arg) {
     }
 }
 
+async function disableGroupMemberCallback(_, arg) {
+    if (!selected_group) {
+        toastr.warning("Cannot run /disable command outside of a group chat.");
+        return;
+    }
+
+    const chid = findGroupMemberId(arg);
+
+    if (chid === undefined) {
+        console.warn(`WARN: No group member found for argument ${arg}`);
+        return;
+    }
+
+    $(`.group_member[chid="${chid}"] [data-action="disable"]`).trigger('click');
+}
+
+async function enableGroupMemberCallback(_, arg) {
+    if (!selected_group) {
+        toastr.warning("Cannot run /enable command outside of a group chat.");
+        return;
+    }
+
+    const chid = findGroupMemberId(arg);
+
+    if (chid === undefined) {
+        console.warn(`WARN: No group member found for argument ${arg}`);
+        return;
+    }
+
+    $(`.group_member[chid="${chid}"] [data-action="enable"]`).trigger('click');
+}
+
 async function triggerGroupMessageCallback(_, arg) {
     if (!selected_group) {
-        toastr.warning("Cannot run trigger command outside of a group chat.");
+        toastr.warning("Cannot run /trigger command outside of a group chat.");
         return;
     }
 
@@ -296,65 +330,17 @@ async function triggerGroupMessageCallback(_, arg) {
         return;
     }
 
-    arg = arg?.trim();
-
-    if (!arg) {
-        console.warn('WARN: No argument provided for /trigger command');
-        return;
-    }
-
-    const group = groups.find(x => x.id == selected_group);
-
-    if (!group || !Array.isArray(group.members)) {
-        console.warn('WARN: No group found for selected group ID');
-        return;
-    }
-
     // Prevent generate recursion
     $('#send_textarea').val('');
 
-    // Index is 1-based
-    const index = parseInt(arg) - 1;
-    const searchByName = isNaN(index);
+    const chid = findGroupMemberId(arg);
 
-    if (searchByName) {
-        const memberNames = group.members.map(x => ({ name: characters.find(y => y.avatar === x)?.name, index: characters.findIndex(y => y.avatar === x) }));
-        const fuse = new Fuse(memberNames, { keys: ['name'] });
-        const result = fuse.search(arg);
-
-        if (!result.length) {
-            console.warn(`WARN: No group member found with name ${arg}`);
-            return;
-        }
-
-        const chid = result[0].item.index;
-
-        if (chid === -1) {
-            console.warn(`WARN: No character found for group member ${arg}`);
-            return;
-        }
-
-        console.log(`Triggering group member ${chid} (${arg}) from search result`, result[0]);
-
-        Generate('normal', { force_chid: chid });
-    } else {
-        const memberAvatar = group.members[index];
-
-        if (memberAvatar === undefined) {
-            console.warn(`WARN: No group member found at index ${index}`);
-            return;
-        }
-
-        const chid = characters.findIndex(x => x.avatar === memberAvatar);
-
-        if (chid === -1) {
-            console.warn(`WARN: No character found for group member ${memberAvatar} at index ${index}`);
-            return;
-        }
-
-        console.log(`Triggering group member ${memberAvatar} at index ${index}`);
-        Generate('normal', { force_chid: chid });
+    if (chid === undefined) {
+        console.warn(`WARN: No group member found for argument ${arg}`);
+        return;
     }
+
+    Generate('normal', { force_chid: chid });
 }
 
 async function sendUserMessageCallback(_, text) {
