@@ -2115,7 +2115,7 @@ async function onComfyOpenWorkflowEditorClick() {
     checkPlaceholders();
     $('#sd_comfy_workflow_editor_workflow').on('input', checkPlaceholders);
     if (await popupResult) {
-        const response = await fetch(`/api/sd/comfy/saveWorkflow`, {
+        const response = await fetch(`/api/sd/comfy/save-workflow`, {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({
@@ -2139,7 +2139,7 @@ async function onComfyNewWorkflowClick() {
         name += '.json';
     }
     extension_settings.sd.comfy_workflow = name;
-    const response = await fetch(`/api/sd/comfy/saveWorkflow`, {
+    const response = await fetch(`/api/sd/comfy/save-workflow`, {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
@@ -2162,7 +2162,7 @@ async function onComfyDeleteWorkflowClick() {
     if (!confirm) {
         return;
     }
-    const response = await fetch('/api/sd/comfy/deleteWorkflow', {
+    const response = await fetch('/api/sd/comfy/delete-workflow', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({

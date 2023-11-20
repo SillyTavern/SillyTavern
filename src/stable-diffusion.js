@@ -474,7 +474,7 @@ function registerEndpoints(app, jsonParser) {
         }
     });
 
-    app.post('/api/sd/comfy/saveWorkflow', jsonParser, async (request, response) => {
+    app.post('/api/sd/comfy/save-workflow', jsonParser, async (request, response) => {
         try {
             writeFileAtomicSync(
                 `${DIRECTORIES.comfyWorkflows}/${sanitize(String(request.body.file_name))}`,
@@ -489,7 +489,7 @@ function registerEndpoints(app, jsonParser) {
         }
     });
 
-    app.post('/api/sd/comfy/deleteWorkflow', jsonParser, async (request, response) => {
+    app.post('/api/sd/comfy/delete-workflow', jsonParser, async (request, response) => {
         try {
             let path = `${DIRECTORIES.comfyWorkflows}/${sanitize(String(request.body.file_name))}`;
             if (fs.existsSync(path)) {
