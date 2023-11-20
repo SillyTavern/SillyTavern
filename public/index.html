@@ -1866,7 +1866,7 @@
                                     <option data-i18n="Connect to the API">-- Connect to the API --</option>
                                 </select>
                             </div>
-                            <div class="marginTopBot5">
+                            <div>
                                 <div class="inline-drawer wide100p">
                                     <div class="inline-drawer-toggle inline-drawer-header">
                                         <b data-i18n="Model Order">OpenRouter Model Sorting</b>
@@ -1896,30 +1896,57 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="marginTopBot5">
-                                <label for="openrouter_use_fallback" class="checkbox_label">
-                                    <input id="openrouter_use_fallback" type="checkbox" />
-                                    <span data-i18n="Allow fallback routes">Allow fallback routes</span>
-                                </label>
-                                <div class="toggle-description justifyLeft wide100p">
-                                    <span data-i18n="Allow fallback routes Description">
-                                        Automatically chooses an alternative model if the chosen model can't serve your request.
-                                    </span>
+                            <div>
+                                <div class="inline-drawer wide100p">
+                                    <div class="inline-drawer-toggle inline-drawer-header">
+                                        <b data-i18n="OpenRouter Settings">OpenRouter Settings</b>
+                                        <div class="fa-solid fa-circle-chevron-up inline-drawer-icon up"></div>
+                                    </div>
+                                    <div class="inline-drawer-content m-b-1" style="display:block;">
+                                        <div class="marginTopBot5">
+                                            <label for="openrouter_force_instruct" class="checkbox_label">
+                                                <input id="openrouter_force_instruct" type="checkbox"/>
+                                                <span data-i18n="Force Instruct Mode formatting">Force Instruct Mode formatting</span>
+                                            </label>
+                                            <div class="toggle-description justifyLeft wide100p">
+                                        <span data-i18n="Force Instruct Mode formatting Description">
+                                            If both Instruct Mode and this are enabled, the prompt will be formatted by SillyTavern using the current
+                                            advanced formatting settings (except instruct System Prompt). If disabled, the prompt will be formatted by OpenRouter.
+                                        </span>
+                                            </div>
+                                        </div>
+                                        <div class="marginTopBot5">
+                                            <label for="openrouter_instruct_autoselect" class="checkbox_label">
+                                                <input id="openrouter_instruct_autoselect" type="checkbox"/>
+                                                <span data-i18n="Auto-Select instruct template">Auto-Select instruct template</span>
+                                            </label>
+                                            <div class="toggle-description justifyLeft wide100p">
+                                        <span data-i18n="If automatic selection is enabled, the preset for the instruction template is set according to OpenRouter's recommendation. For this to work, a preset with the specified name must exist.">
+                                            If both Force Instruct Mode formatting and Auto-Select are enabled, the preset for the instruction template is set according to OpenRouter's recommendation. For this to work, a preset with the specified name must exist.
+                                        </span>
+                                            </div>
+                                        </div>
+                                        <div class="marginTopBot5">
+                                            <div id="openrouter_instruct_status"></div>
+                                            <div id="openrouter_instruct_error"></div>
+                                        </div>
+                                        <div class="marginTopBot5">
+                                            <label for="openrouter_use_fallback" class="checkbox_label">
+                                                <input id="openrouter_use_fallback" type="checkbox"/>
+                                                <span data-i18n="Allow fallback routes">Allow fallback routes</span>
+                                            </label>
+                                            <div class="toggle-description justifyLeft wide100p">
+                                        <span data-i18n="Allow fallback routes Description">
+                                            Automatically chooses an alternative model if the chosen model can't serve your request.
+                                        </span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="marginTopBot5">
-                                <label for="openrouter_force_instruct" class="checkbox_label">
-                                    <input id="openrouter_force_instruct" type="checkbox" />
-                                    <span data-i18n="Force Instruct Mode formatting">Force Instruct Mode formatting</span>
-                                </label>
-                                <div class="toggle-description justifyLeft wide100p">
-                                    <span data-i18n="Force Instruct Mode formatting Description">
-                                        If both Instruct Mode and this are enabled, the prompt will be formatted by SillyTavern using the current
-                                        advanced formatting settings (except instruct System Prompt). If disabled, the prompt will be formatted by OpenRouter.
-                                    </span>
-                                </div>
+                            <div>
+                                <h4 data-i18n="OpenRouter API Key">OpenRouter API Key</h4>
                             </div>
-                            <h4 data-i18n="OpenRouter API Key">OpenRouter API Key</h4>
                             <div>
                                 <small data-i18n="Click Authorize below or get the key from">
                                     Click "Authorize" below or get the key from </small> <a target="_blank" href="https://openrouter.ai/keys/">OpenRouter</a>.

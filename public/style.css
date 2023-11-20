@@ -3747,6 +3747,10 @@ a {
     object-fit: cover;
 }
 
+#openrouter_instruct_error {
+    color: var(--fullred);
+}
+
 /* Jank mobile support for gallery and future draggables */
 @media screen and (max-width: 1000px) {
     #gallery {
