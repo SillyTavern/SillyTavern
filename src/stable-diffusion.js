@@ -431,35 +431,35 @@ function registerEndpoints(app, jsonParser) {
         }
     });
 
-    app.post('/api/sd/comfy/vaes', jsonParser, async(request, response)=>{
-		try {
-			const url = new URL(request.body.url);
-			url.pathname = '/object_info'
+    app.post('/api/sd/comfy/vaes', jsonParser, async (request, response) => {
+        try {
+            const url = new URL(request.body.url);
+            url.pathname = '/object_info'
 
-			const result = await fetch(url);
-			if (!result.ok) {
-				throw new Error('ComfyUI returned an error.');
-			}
+            const result = await fetch(url);
+            if (!result.ok) {
+                throw new Error('ComfyUI returned an error.');
+            }
 
-			const data = await result.json();
-			return response.send(data.VAELoader.input.required.vae_name[0]);
-		} catch (error) {
-			console.log(error);
-			return response.sendStatus(500);
-		}
-	});
+            const data = await result.json();
+            return response.send(data.VAELoader.input.required.vae_name[0]);
+        } catch (error) {
+            console.log(error);
+            return response.sendStatus(500);
+        }
+    });
 
-    app.post('/api/sd/comfy/workflows', jsonParser, async(request, response) => {
+    app.post('/api/sd/comfy/workflows', jsonParser, async (request, response) => {
         try {
             const data = getComfyWorkflows();
             return response.send(data);
         } catch (error) {
-			console.log(error);
-			return response.sendStatus(500);
-		}
+            console.log(error);
+            return response.sendStatus(500);
+        }
     });
 
-    app.post('/api/sd/comfy/workflow', jsonParser, async(request, response)=>{
+    app.post('/api/sd/comfy/workflow', jsonParser, async (request, response) => {
         try {
             let path = `public/user/workflows/${sanitize(String(request.body.file_name))}`;
             if (!fs.existsSync(path)) {
@@ -471,12 +471,12 @@ function registerEndpoints(app, jsonParser) {
             );
             return response.send(JSON.stringify(data));
         } catch (error) {
-			console.log(error);
-			return response.sendStatus(500);
-		}
+            console.log(error);
+            return response.sendStatus(500);
+        }
     });
 
-    app.post('/api/sd/comfy/saveWorkflow', jsonParser, async(request, response)=>{
+    app.post('/api/sd/comfy/saveWorkflow', jsonParser, async (request, response) => {
         try {
             if (!fs.existsSync('public/user/workflows')) {
                 fs.mkdirSync('public/user/workflows');
@@ -489,12 +489,12 @@ function registerEndpoints(app, jsonParser) {
             const data = getComfyWorkflows();
             return response.send(data);
         } catch (error) {
-			console.log(error);
-			return response.sendStatus(500);
-		}
+            console.log(error);
+            return response.sendStatus(500);
+        }
     });
 
-    app.post('/api/sd/comfy/deleteWorkflow', jsonParser, async(request, response)=>{
+    app.post('/api/sd/comfy/deleteWorkflow', jsonParser, async (request, response) => {
         try {
             let path = `public/user/workflows/${sanitize(String(request.body.file_name))}`;
             if (fs.existsSync(path)) {
@@ -502,22 +502,22 @@ function registerEndpoints(app, jsonParser) {
             }
             return response.sendStatus(200);
         } catch (error) {
-			console.log(error);
-			return response.sendStatus(500);
-		}
+            console.log(error);
+            return response.sendStatus(500);
+        }
     });
 
-    app.post('/api/sd/comfy/workflows', jsonParser, async (request, response)=>{
+    app.post('/api/sd/comfy/workflows', jsonParser, async (request, response) => {
         try {
             const data = getComfyWorkflows();
             return response.send(data);
         } catch (error) {
-			console.log(error);
-			return response.sendStatus(500);
-		}
+            console.log(error);
+            return response.sendStatus(500);
+        }
     });
 
-    app.post('/api/sd/comfy/workflow', jsonParser, async(request, response)=>{
+    app.post('/api/sd/comfy/workflow', jsonParser, async (request, response) => {
         try {
             let path = `public/user/workflows/${sanitize(String(request.body.file_name))}`;
             if (!fs.existsSync(path)) {
@@ -529,12 +529,12 @@ function registerEndpoints(app, jsonParser) {
             );
             return response.send(JSON.stringify(data));
         } catch (error) {
-			console.log(error);
-			return response.sendStatus(500);
-		}
+            console.log(error);
+            return response.sendStatus(500);
+        }
     });
 
-    app.post('/api/sd/comfy/saveWorkflow', jsonParser, async(request, response)=>{
+    app.post('/api/sd/comfy/saveWorkflow', jsonParser, async (request, response) => {
         try {
             if (!fs.existsSync('public/user/workflows')) {
                 fs.mkdirSync('public/user/workflows');
@@ -547,12 +547,12 @@ function registerEndpoints(app, jsonParser) {
             const data = getComfyWorkflows();
             return response.send(data);
         } catch (error) {
-			console.log(error);
-			return response.sendStatus(500);
-		}
+            console.log(error);
+            return response.sendStatus(500);
+        }
     });
 
-    app.post('/api/sd/comfy/deleteWorkflow', jsonParser, async(request, response)=>{
+    app.post('/api/sd/comfy/deleteWorkflow', jsonParser, async (request, response) => {
         try {
             let path = `public/user/workflows/${sanitize(String(request.body.file_name))}`;
             if (fs.existsSync(path)) {
@@ -560,9 +560,9 @@ function registerEndpoints(app, jsonParser) {
             }
             return response.sendStatus(200);
         } catch (error) {
-			console.log(error);
-			return response.sendStatus(500);
-		}
+            console.log(error);
+            return response.sendStatus(500);
+        }
     });
 
     app.post('/api/sd/comfy/generate', jsonParser, async (request, response) => {
