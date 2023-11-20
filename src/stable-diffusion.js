@@ -1,5 +1,8 @@
 const fetch = require('node-fetch').default;
+const sanitize = require('sanitize-filename');
 const { getBasicAuthHeader, delay } = require('./util');
+const fs = require('fs');
+const writeFileAtomicSync = require('write-file-atomic').sync;
 
 /**
  * Sanitizes a string.
@@ -36,6 +39,16 @@ function removePattern(x, pattern) {
         x = x.replace(regex, '');
     }
     return x;
+}
+
+function getComfyWorkflows() {
+    if (!fs.existsSync('public/user/workflows')) {
+        return [];
+    }
+    return fs
+        .readdirSync('public/user/workflows')
+        .filter(file => file[0]!='.' && file.toLowerCase().endsWith('.json'))
+        .sort(Intl.Collator().compare);
 }
 
 /**
@@ -435,6 +448,122 @@ function registerEndpoints(app, jsonParser) {
 			return response.sendStatus(500);
 		}
 	});
+
+    app.post('/api/sd/comfy/workflows', jsonParser, async(request, response) => {
+        try {
+            const data = getComfyWorkflows();
+            return response.send(data);
+        } catch (error) {
+			console.log(error);
+			return response.sendStatus(500);
+		}
+    });
+
+    app.post('/api/sd/comfy/workflow', jsonParser, async(request, response)=>{
+        try {
+            let path = `public/user/workflows/${sanitize(String(request.body.file_name))}`;
+            if (!fs.existsSync(path)) {
+                path = 'public/user/workflows/Default.json';
+            }
+            const data = fs.readFileSync(
+                path,
+                {encoding:'utf-8'}
+            );
+            return response.send(JSON.stringify(data));
+        } catch (error) {
+			console.log(error);
+			return response.sendStatus(500);
+		}
+    });
+
+    app.post('/api/sd/comfy/saveWorkflow', jsonParser, async(request, response)=>{
+        try {
+            if (!fs.existsSync('public/user/workflows')) {
+                fs.mkdirSync('public/user/workflows');
+            }
+            writeFileAtomicSync(
+                `public/user/workflows/${sanitize(String(request.body.file_name))}`,
+                request.body.workflow,
+                'utf8'
+            );
+            const data = getComfyWorkflows();
+            return response.send(data);
+        } catch (error) {
+			console.log(error);
+			return response.sendStatus(500);
+		}
+    });
+
+    app.post('/api/sd/comfy/deleteWorkflow', jsonParser, async(request, response)=>{
+        try {
+            let path = `public/user/workflows/${sanitize(String(request.body.file_name))}`;
+            if (fs.existsSync(path)) {
+                fs.unlinkSync(path);
+            }
+            return response.sendStatus(200);
+        } catch (error) {
+			console.log(error);
+			return response.sendStatus(500);
+		}
+    });
+
+    app.post('/api/sd/comfy/workflows', jsonParser, async (request, response)=>{
+        try {
+            const data = getComfyWorkflows();
+            return response.send(data);
+        } catch (error) {
+			console.log(error);
+			return response.sendStatus(500);
+		}
+    });
+
+    app.post('/api/sd/comfy/workflow', jsonParser, async(request, response)=>{
+        try {
+            let path = `public/user/workflows/${sanitize(String(request.body.file_name))}`;
+            if (!fs.existsSync(path)) {
+                path = 'public/user/workflows/Default.json';
+            }
+            const data = fs.readFileSync(
+                path,
+                {encoding:'utf-8'}
+            );
+            return response.send(JSON.stringify(data));
+        } catch (error) {
+			console.log(error);
+			return response.sendStatus(500);
+		}
+    });
+
+    app.post('/api/sd/comfy/saveWorkflow', jsonParser, async(request, response)=>{
+        try {
+            if (!fs.existsSync('public/user/workflows')) {
+                fs.mkdirSync('public/user/workflows');
+            }
+            writeFileAtomicSync(
+                `public/user/workflows/${sanitize(String(request.body.file_name))}`,
+                request.body.workflow,
+                'utf8'
+            );
+            const data = getComfyWorkflows();
+            return response.send(data);
+        } catch (error) {
+			console.log(error);
+			return response.sendStatus(500);
+		}
+    });
+
+    app.post('/api/sd/comfy/deleteWorkflow', jsonParser, async(request, response)=>{
+        try {
+            let path = `public/user/workflows/${sanitize(String(request.body.file_name))}`;
+            if (fs.existsSync(path)) {
+                fs.unlinkSync(path);
+            }
+            return response.sendStatus(200);
+        } catch (error) {
+			console.log(error);
+			return response.sendStatus(500);
+		}
+    });
 
     app.post('/api/sd/comfy/generate', jsonParser, async (request, response) => {
         try {

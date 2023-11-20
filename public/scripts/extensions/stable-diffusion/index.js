@@ -19,7 +19,7 @@ import {
 } from "../../../script.js";
 import { getApiUrl, getContext, extension_settings, doExtrasFetch, modules, renderExtensionTemplate } from "../../extensions.js";
 import { selected_group } from "../../group-chats.js";
-import { stringFormat, initScrollHeight, resetScrollHeight, getCharaFilename, saveBase64AsFile, getBase64Async } from "../../utils.js";
+import { stringFormat, initScrollHeight, resetScrollHeight, getCharaFilename, saveBase64AsFile, getBase64Async, delay } from "../../utils.js";
 import { getMessageTimeStamp, humanizedDateTime } from "../../RossAscends-mods.js";
 import { SECRET_KEYS, secret_state } from "../../secrets.js";
 import { getNovelUnlimitedImageGeneration, getNovelAnlas, loadNovelSubscriptionData } from "../../nai-settings.js";
@@ -243,94 +243,7 @@ const defaultSettings = {
 
     // ComyUI settings
     comfy_url: 'http://127.0.0.1:8188',
-    comfy_workflow: `
-        {
-            "3": {
-                "class_type": "KSampler",
-                "inputs": {
-                    "cfg": "%scale%",
-                    "denoise": 1,
-                    "latent_image": [
-                        "5",
-                        0
-                    ],
-                    "model": [
-                        "4",
-                        0
-                    ],
-                    "negative": [
-                        "7",
-                        0
-                    ],
-                    "positive": [
-                        "6",
-                        0
-                    ],
-                    "sampler_name": "%sampler%",
-                    "scheduler": "%scheduler%",
-                    "seed": 8566257,
-                    "steps": "%steps%"
-                }
-            },
-            "4": {
-                "class_type": "CheckpointLoaderSimple",
-                "inputs": {
-                    "ckpt_name": "%model%"
-                }
-            },
-            "5": {
-                "class_type": "EmptyLatentImage",
-                "inputs": {
-                    "batch_size": 1,
-                    "height": "%height%",
-                    "width": "%width%"
-                }
-            },
-            "6": {
-                "class_type": "CLIPTextEncode",
-                "inputs": {
-                    "clip": [
-                        "4",
-                        1
-                    ],
-                    "text": "%prompt%"
-                }
-            },
-            "7": {
-                "class_type": "CLIPTextEncode",
-                "inputs": {
-                    "clip": [
-                        "4",
-                        1
-                    ],
-                    "text": "%negative_prompt%"
-                }
-            },
-            "8": {
-                "class_type": "VAEDecode",
-                "inputs": {
-                    "samples": [
-                        "3",
-                        0
-                    ],
-                    "vae": [
-                        "4",
-                        2
-                    ]
-                }
-            },
-            "9": {
-                "class_type": "SaveImage",
-                "inputs": {
-                    "filename_prefix": "SillyTavern",
-                    "images": [
-                        "8",
-                        0
-                    ]
-                }
-            }
-        }
-    `,
+    comfy_workflow: 'Default.json',
 }
 
 function processTriggers(chat, _, abort) {
@@ -481,7 +394,7 @@ async function loadSettings() {
     toggleSourceControls();
     addPromptTemplates();
 
-    await Promise.all([loadSamplers(), loadModels(), loadSchedulers(), loadVaes()]);
+    await Promise.all([loadSamplers(), loadModels(), loadSchedulers(), loadVaes(), loadComfyWorkflows()]);
 }
 
 function addPromptTemplates() {
@@ -847,6 +760,11 @@ function onComfyUrlInput() {
     saveSettingsDebounced();
 }
 
+function onComfyWorkflowChange() {
+    extension_settings.sd.comfy_workflow = $('#sd_comfy_workflow').find(':selected').val();
+    saveSettingsDebounced();
+}
+
 async function validateAutoUrl() {
     try {
         if (!extension_settings.sd.auto_url) {
@@ -916,6 +834,7 @@ async function validateComfyUrl() {
         await loadSchedulers();
         await loadModels();
         await loadVaes();
+        await loadComfyWorkflows();
         toastr.success('ComfyUI API connected.');
     } catch (error) {
         toastr.error(`Could not validate ComfyUI API: ${error.message}`);
@@ -1538,6 +1457,36 @@ async function loadComfyVaes() {
     }
 }
 
+async function loadComfyWorkflows() {
+    if (!extension_settings.sd.comfy_url) {
+        return;
+    }
+
+    try {
+        $('#sd_comfy_workflow').empty();
+        const result = await fetch(`/api/sd/comfy/workflows`, {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                url: extension_settings.sd.comfy_url,
+            })
+        });
+        if (!result.ok) {
+            throw new Error('ComfyUI returned an error.');
+        }
+        const workflows = await result.json();
+        for (const workflow of workflows) {
+            const option = document.createElement('option');
+            option.innerText = workflow;
+            option.value = workflow;
+            option.selected = workflow === extension_settings.sd.comfy_workflow;
+            $('#sd_comfy_workflow').append(option);
+        }
+    } catch (error) {
+        return;
+    }
+}
+
 function getGenerationType(prompt) {
     let mode = generationMode.FREE;
 
@@ -2133,23 +2082,88 @@ async function generateComfyImage(prompt) {
 }
 
 async function onComfyOpenWorkflowEditorClick() {
+    let workflow = await (await fetch(`/api/sd/comfy/workflow`, {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+            file_name: extension_settings.sd.comfy_workflow,
+        }),
+    })).json();
     const editorHtml = $(await $.get('scripts/extensions/stable-diffusion/comfyWorkflowEditor.html'));
     const popupResult = callPopup(editorHtml, "confirm", undefined, { okButton: "Save", wide: true, large: true, rows: 1 });
     const checkPlaceholders = () => {
-        const workflow = $('#sd_comfy_workflow_editor_workflow').val().toString();
+        workflow = $('#sd_comfy_workflow_editor_workflow').val().toString();
         $('.sd_comfy_workflow_editor_placeholder_list > li[data-placeholder]').each(function (idx) {
             const key = this.getAttribute('data-placeholder');
             const found = workflow.search(`"%${key}%"`) != -1;
             this.classList[found ? 'remove' : 'add']('sd_comfy_workflow_editor_not_found');
         });
     };
-    $('#sd_comfy_workflow_editor_workflow').val(extension_settings.sd.comfy_workflow);
+    $('#sd_comfy_workflow_editor_name').text(extension_settings.sd.comfy_workflow);
+    $('#sd_comfy_workflow_editor_workflow').val(workflow);
     checkPlaceholders();
     $('#sd_comfy_workflow_editor_workflow').on('input', checkPlaceholders);
     if (await popupResult) {
-        extension_settings.sd.comfy_workflow = $('#sd_comfy_workflow_editor_workflow').val().toString();
-        saveSettingsDebounced();
+        const response = await fetch(`/api/sd/comfy/saveWorkflow`, {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                file_name: extension_settings.sd.comfy_workflow,
+                workflow: $('#sd_comfy_workflow_editor_workflow').val().toString(),
+            }),
+        });
+        if (!response.ok) {
+            const text = await response.text();
+            toastr.error(`Failed to save workflow.\n\n${text}`);
+        }
     }
+}
+
+async function onComfyNewWorkflowClick() {
+    let name = await callPopup('<h3>Workflow name:</h3>', 'input');
+    if (!name) {
+        return;
+    }
+    if (!name.toLowerCase().endsWith('.json')) {
+        name += '.json';
+    }
+    extension_settings.sd.comfy_workflow = name;
+    const response = await fetch(`/api/sd/comfy/saveWorkflow`, {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+            file_name: extension_settings.sd.comfy_workflow,
+            workflow: '',
+        }),
+    });
+    if (!response.ok) {
+        const text = await response.text();
+        toastr.error(`Failed to save workflow.\n\n${text}`);
+    }
+    saveSettingsDebounced();
+    await loadComfyWorkflows();
+    await delay(200);
+    await onComfyOpenWorkflowEditorClick();
+}
+
+async function onComfyDeleteWorkflowClick() {
+    const confirm = await callPopup('Delete the workflow? This action is irreversible.', 'confirm');
+    if (!confirm) {
+        return;
+    }
+    const response = await fetch('/api/sd/comfy/deleteWorkflow', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+            file_name: extension_settings.sd.comfy_workflow,
+        }),
+    });
+    if (!response.ok) {
+        const text = await response.text();
+        toastr.error(`Failed to save workflow.\n\n${text}`);
+    }
+    await loadComfyWorkflows();
+    onComfyWorkflowChange();
 }
 
 async function sendMessage(prompt, image, generationType) {
@@ -2389,7 +2403,10 @@ jQuery(async () => {
     $('#sd_novel_view_anlas').on('click', onViewAnlasClick);
     $('#sd_comfy_validate').on('click', validateComfyUrl);
     $('#sd_comfy_url').on('input', onComfyUrlInput);
+    $('#sd_comfy_workflow').on('change', onComfyWorkflowChange);
     $('#sd_comfy_open_workflow_editor').on('click', onComfyOpenWorkflowEditorClick);
+    $('#sd_comfy_new_workflow').on('click', onComfyNewWorkflowClick);
+    $('#sd_comfy_delete_workflow').on('click', onComfyDeleteWorkflowClick);
     $('#sd_expand').on('input', onExpandInput);
     $('#sd_style').on('change', onStyleSelect);
     $('#sd_save_style').on('click', onSaveStyleClick);
