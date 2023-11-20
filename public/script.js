@@ -3294,12 +3294,14 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
 
                 // Add character's name
-                // Force name append on continue
+                // Force name append on continue (if not continuing on user message)
                 if (!isInstruct && force_name2) {
                     if (!lastMesString.endsWith('\n')) {
                         lastMesString += '\n';
                     }
-                    lastMesString += `${name2}:`;
+                    if (!isContinue || !(chat[chat.length - 1]?.is_user)) {
+                        lastMesString += `${name2}:`;
+                    }
                 }
 
                 return lastMesString;
