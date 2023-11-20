@@ -6226,13 +6226,9 @@ function callPopup(text, type, inputValue = '', { okButton, rows, wide, large } 
         popup_type = type;
     }
 
-    if (wide) {
-        $("#dialogue_popup").addClass("wide_dialogue_popup");
-    }
+    $('#dialogue_popup').toggleClass('wide_dialogue_popup', !!wide);
 
-    if (large) {
-        $("#dialogue_popup").addClass("large_dialogue_popup");
-    }
+    $('#dialogue_popup').toggleClass('large_dialogue_popup', !!large);
 
     $("#dialogue_popup_cancel").css("display", "inline-block");
     switch (popup_type) {
