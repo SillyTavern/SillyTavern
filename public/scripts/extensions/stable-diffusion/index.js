@@ -394,7 +394,17 @@ async function loadSettings() {
     toggleSourceControls();
     addPromptTemplates();
 
-    await Promise.all([loadSamplers(), loadModels(), loadSchedulers(), loadVaes(), loadComfyWorkflows()]);
+    await loadSettingOptions();
+}
+
+async function loadSettingOptions() {
+    return Promise.all([
+        loadSamplers(),
+        loadModels(),
+        loadSchedulers(),
+        loadVaes(),
+        loadComfyWorkflows()
+    ]);
 }
 
 function addPromptTemplates() {
