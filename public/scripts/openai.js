@@ -60,7 +60,8 @@ import {
     formatInstructModeChat,
     formatInstructModeExamples,
     formatInstructModePrompt,
-    formatInstructModeSystemPrompt
+    formatInstructModeSystemPrompt,
+    instruct_presets
 } from "./instruct-mode.js";
 
 export {
@@ -2421,6 +2422,7 @@ function loadOpenAISettings(data, settings) {
     $('#scale-alt').prop('checked', oai_settings.use_alt_scale);
     $('#openrouter_use_fallback').prop('checked', oai_settings.openrouter_use_fallback);
     $('#openrouter_force_instruct').prop('checked', oai_settings.openrouter_force_instruct);
+    $('#openrouter_instruct_autoselect').prop('checked', oai_settings.openrouter_instruct_autoselect);
     $('#openrouter_group_models').prop('checked', oai_settings.openrouter_group_models);
     $('#squash_system_messages').prop('checked', oai_settings.squash_system_messages);
     if (settings.impersonation_prompt !== undefined) oai_settings.impersonation_prompt = settings.impersonation_prompt;
@@ -3177,9 +3179,11 @@ async function onModelChange() {
             $('#temp_openai').attr('max', oai_max_temp).val(oai_settings.temp_openai).trigger('input');
         }
 
+        // Get meta-information provided by OpenRouter
         const modelMetaInformation = model_list.find((model) => model.id?.toLowerCase() === oai_settings.openrouter_model?.toLowerCase());
         const statusContainer = document.getElementById('openrouter_instruct_status');
         const errorContainer = document.getElementById('openrouter_instruct_error');
+
         statusContainer.textContent = '';
         errorContainer.textContent = '';
 
@@ -3195,12 +3199,17 @@ async function onModelChange() {
             statusContainer.textContent = `Recommended prompt format: ${instructType}`;
 
             if (presetOption) {
-                presetSelect.value = instructType;
-                presetOption.selected = true;
+                // Recommended preset present, activate if there's no regex present.
+                const hasRegex = '' === instruct_presets.find((preset) => preset.name === instructType);
+                if (!hasRegex) {
+                    presetSelect.value = instructType;
+                    presetOption.selected = true;
+                }
             } else {
                 errorContainer.textContent = 'No preset with this name exists.';
             }
         } else if (true === power_user.instruct.enabled && true === oai_settings.openrouter_instruct_autoselect) {
+            // OpenRouter has no infos on the instruct type
             statusContainer.textContent = 'No prompt format recommended.';
         }
 
@@ -3790,7 +3799,6 @@ $(document).ready(async function () {
 
     $('#openrouter_instruct_autoselect').on('input', function () {
         oai_settings.openrouter_instruct_autoselect = !!$(this).prop('checked');
-        console.log(oai_settings.openrouter_instruct_autoselect )
         saveSettingsDebounced();
     });
 
