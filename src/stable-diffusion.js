@@ -507,64 +507,6 @@ function registerEndpoints(app, jsonParser) {
         }
     });
 
-    app.post('/api/sd/comfy/workflows', jsonParser, async (request, response) => {
-        try {
-            const data = getComfyWorkflows();
-            return response.send(data);
-        } catch (error) {
-            console.log(error);
-            return response.sendStatus(500);
-        }
-    });
-
-    app.post('/api/sd/comfy/workflow', jsonParser, async (request, response) => {
-        try {
-            let path = `public/user/workflows/${sanitize(String(request.body.file_name))}`;
-            if (!fs.existsSync(path)) {
-                path = 'public/user/workflows/Default.json';
-            }
-            const data = fs.readFileSync(
-                path,
-                {encoding:'utf-8'}
-            );
-            return response.send(JSON.stringify(data));
-        } catch (error) {
-            console.log(error);
-            return response.sendStatus(500);
-        }
-    });
-
-    app.post('/api/sd/comfy/saveWorkflow', jsonParser, async (request, response) => {
-        try {
-            if (!fs.existsSync('public/user/workflows')) {
-                fs.mkdirSync('public/user/workflows');
-            }
-            writeFileAtomicSync(
-                `public/user/workflows/${sanitize(String(request.body.file_name))}`,
-                request.body.workflow,
-                'utf8'
-            );
-            const data = getComfyWorkflows();
-            return response.send(data);
-        } catch (error) {
-            console.log(error);
-            return response.sendStatus(500);
-        }
-    });
-
-    app.post('/api/sd/comfy/deleteWorkflow', jsonParser, async (request, response) => {
-        try {
-            let path = `public/user/workflows/${sanitize(String(request.body.file_name))}`;
-            if (fs.existsSync(path)) {
-                fs.unlinkSync(path);
-            }
-            return response.sendStatus(200);
-        } catch (error) {
-            console.log(error);
-            return response.sendStatus(500);
-        }
-    });
-
     app.post('/api/sd/comfy/generate', jsonParser, async (request, response) => {
         try {
             const url = new URL(request.body.url);
