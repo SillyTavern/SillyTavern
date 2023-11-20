@@ -2060,7 +2060,18 @@ async function generateComfyImage(prompt) {
         'height',
     ];
 
-    let workflow = extension_settings.sd.comfy_workflow.replace('"%prompt%"', JSON.stringify(prompt));
+    const workflowResponse = await fetch('/api/sd/comfy/workflow', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+            file_name: extension_settings.sd.comfy_workflow,
+        }),
+    });
+    if (!workflowResponse.ok) {
+        const text = await workflowResponse.text();
+        toastr.error(`Failed to load workflow.\n\n${text}`);
+    }
+    let workflow = (await workflowResponse.json()).replace('"%prompt%"', JSON.stringify(prompt));
     workflow = workflow.replace('"%seed%"', JSON.stringify(Math.round(Math.random() * Number.MAX_SAFE_INTEGER)));
     placeholders.forEach(ph => {
         workflow = workflow.replace(`"%${ph}%"`, JSON.stringify(extension_settings.sd[ph]));
