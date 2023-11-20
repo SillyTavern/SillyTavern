@@ -6230,10 +6230,14 @@ function callPopup(text, type, inputValue = '', { okButton, rows, wide, large } 
 
     if (wide) {
         $("#dialogue_popup").addClass("wide_dialogue_popup");
+    } else {
+        $("#dialogue_popup").removeClass("wide_dialogue_popup");
     }
 
     if (large) {
         $("#dialogue_popup").addClass("large_dialogue_popup");
+    } else {
+        $("#dialogue_popup").removeClass("large_dialogue_popup");
     }
 
     $("#dialogue_popup_cancel").css("display", "inline-block");
