@@ -239,8 +239,8 @@ const sliders = [
     },
     {
         name: "typical",
-        sliderId: "#typical",
-        counterId: "#typical_counter",
+        sliderId: "#typical_p",
+        counterId: "#typical_p_counter",
         format: (val) => val,
         setValue: (val) => { kai_settings.typical = Number(val); },
     },
