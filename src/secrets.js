@@ -190,6 +190,30 @@ function registerEndpoints(app, jsonParser) {
             return response.sendStatus(500);
         }
     });
+
+    app.post('/api/secrets/find', jsonParser, (request, response) => {
+        const allowKeysExposure = getConfigValue('allowKeysExposure', false);
+
+        if (!allowKeysExposure) {
+            console.error('Cannot fetch secrets unless allowKeysExposure in config.conf is set to true');
+            return response.sendStatus(403);
+        }
+
+        const key = request.body.key
+
+        try {
+            const secret = readSecret(key)
+
+            if (!secret) {
+                response.sendStatus(404);
+            }
+
+            return response.send({ value: secret });
+        } catch (error) {
+            console.error(error);
+            return response.sendStatus(500);
+        }
+    });
 }
 
 module.exports = {
