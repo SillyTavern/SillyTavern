@@ -76,6 +76,7 @@ const spp_llama = new SentencePieceTokenizer('src/sentencepiece/llama.model');
 const spp_nerd = new SentencePieceTokenizer('src/sentencepiece/nerdstash.model');
 const spp_nerd_v2 = new SentencePieceTokenizer('src/sentencepiece/nerdstash_v2.model');
 const spp_mistral = new SentencePieceTokenizer('src/sentencepiece/mistral.model');
+const spp_yi = new SentencePieceTokenizer('src/sentencepiece/yi.model');
 let claude_tokenizer;
 
 const sentencepieceTokenizers = [
@@ -181,18 +182,6 @@ async function getWebTokenizersChunks(tokenizer, ids) {
  * @returns {string} Tokenizer model to use
  */
 function getTokenizerModel(requestModel) {
-    if (requestModel.includes('claude')) {
-        return 'claude';
-    }
-
-    if (requestModel.includes('llama')) {
-        return 'llama';
-    }
-
-    if (requestModel.includes('mistral')) {
-        return 'mistral';
-    }
-
     if (requestModel.includes('gpt-4-32k')) {
         return 'gpt-4-32k';
     }
@@ -211,6 +200,22 @@ function getTokenizerModel(requestModel) {
 
     if (TEXT_COMPLETION_MODELS.includes(requestModel)) {
         return requestModel;
+    }
+
+    if (requestModel.includes('claude')) {
+        return 'claude';
+    }
+
+    if (requestModel.includes('llama')) {
+        return 'llama';
+    }
+
+    if (requestModel.includes('mistral')) {
+        return 'mistral';
+    }
+
+    if (requestModel.includes('yi')) {
+        return 'yi';
     }
 
     // default
@@ -386,11 +391,13 @@ function registerEndpoints(app, jsonParser) {
     app.post("/api/tokenize/nerdstash", jsonParser, createSentencepieceEncodingHandler(spp_nerd));
     app.post("/api/tokenize/nerdstash_v2", jsonParser, createSentencepieceEncodingHandler(spp_nerd_v2));
     app.post("/api/tokenize/mistral", jsonParser, createSentencepieceEncodingHandler(spp_mistral));
+    app.post("/api/tokenize/yi", jsonParser, createSentencepieceEncodingHandler(spp_yi));
     app.post("/api/tokenize/gpt2", jsonParser, createTiktokenEncodingHandler('gpt2'));
     app.post("/api/decode/llama", jsonParser, createSentencepieceDecodingHandler(spp_llama));
     app.post("/api/decode/nerdstash", jsonParser, createSentencepieceDecodingHandler(spp_nerd));
     app.post("/api/decode/nerdstash_v2", jsonParser, createSentencepieceDecodingHandler(spp_nerd_v2));
     app.post("/api/decode/mistral", jsonParser, createSentencepieceDecodingHandler(spp_mistral));
+    app.post("/api/decode/yi", jsonParser, createSentencepieceDecodingHandler(spp_yi));
     app.post("/api/decode/gpt2", jsonParser, createTiktokenDecodingHandler('gpt2'));
 
     app.post("/api/tokenize/openai-encode", jsonParser, async function (req, res) {
@@ -404,6 +411,11 @@ function registerEndpoints(app, jsonParser) {
 
             if (queryModel.includes('mistral')) {
                 const handler = createSentencepieceEncodingHandler(spp_mistral);
+                return handler(req, res);
+            }
+
+            if (queryModel.includes('yi')) {
+                const handler = createSentencepieceEncodingHandler(spp_yi);
                 return handler(req, res);
             }
 
@@ -431,18 +443,23 @@ function registerEndpoints(app, jsonParser) {
             const queryModel = String(req.query.model || '');
             const model = getTokenizerModel(queryModel);
 
-            if (model == 'claude') {
+            if (model === 'claude') {
                 num_tokens = countClaudeTokens(claude_tokenizer, req.body);
                 return res.send({ "token_count": num_tokens });
             }
 
-            if (model == 'llama') {
+            if (model === 'llama') {
                 num_tokens = await countSentencepieceArrayTokens(spp_llama, req.body);
                 return res.send({ "token_count": num_tokens });
             }
 
-            if (model == 'mistral') {
+            if (model === 'mistral') {
                 num_tokens = await countSentencepieceArrayTokens(spp_mistral, req.body);
+                return res.send({ "token_count": num_tokens });
+            }
+
+            if (model === 'yi') {
+                num_tokens = await countSentencepieceArrayTokens(spp_yi, req.body);
                 return res.send({ "token_count": num_tokens });
             }
 
