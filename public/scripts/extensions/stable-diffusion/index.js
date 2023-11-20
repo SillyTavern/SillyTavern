@@ -846,12 +846,6 @@ function onComfyUrlInput() {
     saveSettingsDebounced();
 }
 
-function onComfyPromptInput() {
-    extension_settings.sd.comfy_prompt = $('#sd_comfy_prompt').val();
-    resetScrollHeight($(this));
-    saveSettingsDebounced();
-}
-
 async function validateAutoUrl() {
     try {
         if (!extension_settings.sd.auto_url) {
