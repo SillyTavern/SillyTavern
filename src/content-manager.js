@@ -71,6 +71,8 @@ function getTargetByType(type) {
             return 'public/User Avatars';
         case 'theme':
             return 'public/themes';
+        case 'workflow':
+            return 'public/user/workflows';
         default:
             return null;
     }

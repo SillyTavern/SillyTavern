@@ -128,11 +128,20 @@
                         </span>
                     </div>
                 </div>
-                <div id="sd_comfy_open_workflow_editor" class="menu_button">
-                    <i class="fa-solid fa-pen-to-square"></i>
-                    <span>Open Workflow Editor</span>
-                </div>
                 <p><i><b>Important:</b> The server must be accessible from the SillyTavern host machine.</i></p>
+                <label for="sd_comfy_workflow">ComfyUI Workflow</label>
+                <div class="flex-container flexnowrap">
+                    <select id="sd_comfy_workflow" class="flex1 text_pole"></select>
+                    <div id="sd_comfy_open_workflow_editor" class="menu_button menu_button_icon" title="Open workflow editor">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </div>
+                    <div id="sd_comfy_new_workflow" class="menu_button menu_button_icon" title="Create new workflow">
+                        <i class="fa-solid fa-plus"></i>
+                    </div>
+                    <div id="sd_comfy_delete_workflow" class="menu_button menu_button_icon" title="Delete workflow">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </div>
+                </div>
             </div>
             <label for="sd_scale">CFG Scale (<span id="sd_scale_value"></span>)</label>
             <input id="sd_scale" type="range" min="{{scale_min}}" max="{{scale_max}}" step="{{scale_step}}" value="{{scale}}" />
@@ -149,6 +158,10 @@
             <div data-sd-source="comfy">
                 <label for="sd_scheduler">Scheduler</label>
                 <select id="sd_scheduler"></select>
+            </div>
+            <div data-sd-source="comfy">
+                <label for="sd_vae">VAE</label>
+                <select id="sd_vae"></select>
             </div>
             <div class="flex-container marginTop10 margin-bot-10px">
                 <label class="flex1 checkbox_label">
