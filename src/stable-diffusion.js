@@ -463,7 +463,7 @@ function registerEndpoints(app, jsonParser) {
         try {
             let path = `public/user/workflows/${sanitize(String(request.body.file_name))}`;
             if (!fs.existsSync(path)) {
-                path = 'public/user/workflows/Default.json';
+                path = 'public/user/workflows/Default_Comfy_Workflow.json';
             }
             const data = fs.readFileSync(
                 path,

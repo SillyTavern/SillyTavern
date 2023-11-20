@@ -243,7 +243,7 @@ const defaultSettings = {
 
     // ComyUI settings
     comfy_url: 'http://127.0.0.1:8188',
-    comfy_workflow: 'Default.json',
+    comfy_workflow: 'Default_Comfy_Workflow.json',
 }
 
 function processTriggers(chat, _, abort) {
