@@ -2,6 +2,7 @@ const fetch = require('node-fetch').default;
 const sanitize = require('sanitize-filename');
 const { getBasicAuthHeader, delay } = require('./util');
 const fs = require('fs');
+const { DIRECTORIES } = require('./constants.js');
 const writeFileAtomicSync = require('write-file-atomic').sync;
 
 /**
@@ -42,11 +43,8 @@ function removePattern(x, pattern) {
 }
 
 function getComfyWorkflows() {
-    if (!fs.existsSync('public/user/workflows')) {
-        return [];
-    }
     return fs
-        .readdirSync('public/user/workflows')
+        .readdirSync(DIRECTORIES.comfyWorkflows)
         .filter(file => file[0]!='.' && file.toLowerCase().endsWith('.json'))
         .sort(Intl.Collator().compare);
 }
@@ -461,9 +459,9 @@ function registerEndpoints(app, jsonParser) {
 
     app.post('/api/sd/comfy/workflow', jsonParser, async (request, response) => {
         try {
-            let path = `public/user/workflows/${sanitize(String(request.body.file_name))}`;
+            let path = `${DIRECTORIES.comfyWorkflows}/${sanitize(String(request.body.file_name))}`;
             if (!fs.existsSync(path)) {
-                path = 'public/user/workflows/Default_Comfy_Workflow.json';
+                path = `${DIRECTORIES.comfyWorkflows}/Default_Comfy_Workflow.json`;
             }
             const data = fs.readFileSync(
                 path,
@@ -478,11 +476,8 @@ function registerEndpoints(app, jsonParser) {
 
     app.post('/api/sd/comfy/saveWorkflow', jsonParser, async (request, response) => {
         try {
-            if (!fs.existsSync('public/user/workflows')) {
-                fs.mkdirSync('public/user/workflows');
-            }
             writeFileAtomicSync(
-                `public/user/workflows/${sanitize(String(request.body.file_name))}`,
+                `${DIRECTORIES.comfyWorkflows}/${sanitize(String(request.body.file_name))}`,
                 request.body.workflow,
                 'utf8'
             );
@@ -496,7 +491,7 @@ function registerEndpoints(app, jsonParser) {
 
     app.post('/api/sd/comfy/deleteWorkflow', jsonParser, async (request, response) => {
         try {
-            let path = `public/user/workflows/${sanitize(String(request.body.file_name))}`;
+            let path = `${DIRECTORIES.comfyWorkflows}/${sanitize(String(request.body.file_name))}`;
             if (fs.existsSync(path)) {
                 fs.unlinkSync(path);
             }
