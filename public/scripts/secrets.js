@@ -116,6 +116,23 @@ export async function readSecretState() {
     }
 }
 
+export async function findSecret(key) {
+    try {
+        const response = await fetch('/api/secrets/find', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ key }),
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            return data.value
+        }
+    } catch {
+        console.error('Could not find secret value: ', key);
+    }
+}
+
 function authorizeOpenRouter() {
     const openRouterUrl = `https://openrouter.ai/auth?callback_url=${encodeURIComponent(location.origin)}`;
     location.href = openRouterUrl;
