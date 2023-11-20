@@ -1928,6 +1928,10 @@ function formatGenerationTimer(gen_started, gen_finished, tokenCount) {
         tokenCount > 0 ? `Token rate: ${Number(tokenCount / seconds).toFixed(1)} t/s` : '',
     ].join('\n');
 
+    if (isNaN(seconds)) {
+        return { timerValue: '', timerTitle };
+    }
+
     return { timerValue, timerTitle };
 }
 
