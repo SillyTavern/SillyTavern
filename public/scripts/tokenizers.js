@@ -22,6 +22,15 @@ export const tokenizers = {
     BEST_MATCH: 99,
 };
 
+export const SENTENCEPIECE_TOKENIZERS = [
+    tokenizers.LLAMA,
+    tokenizers.MISTRAL,
+    tokenizers.YI,
+    // uncomment when NovelAI releases Kayra and Clio weights, lol
+    //tokenizers.NERD,
+    //tokenizers.NERD2,
+];
+
 const objectStore = new localforage.createInstance({ name: "SillyTavern_ChatCompletions" });
 
 let tokenCache = {};

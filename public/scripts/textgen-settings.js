@@ -14,7 +14,7 @@ import {
     power_user,
     registerDebugFunction,
 } from "./power-user.js";
-import { getTextTokens, tokenizers } from "./tokenizers.js";
+import { SENTENCEPIECE_TOKENIZERS, getTextTokens, tokenizers } from "./tokenizers.js";
 import { onlyUnique } from "./utils.js";
 
 export {
@@ -187,6 +187,7 @@ function getCustomTokenBans() {
         return '';
     }
 
+    const tokenizer = SENTENCEPIECE_TOKENIZERS.includes(power_user.tokenizer) ? power_user.tokenizer : tokenizers.LLAMA;
     const result = [];
     const sequences = textgenerationwebui_settings.banned_tokens
         .split('\n')
@@ -218,7 +219,7 @@ function getCustomTokenBans() {
             }
         } else {
             try {
-                const tokens = getTextTokens(tokenizers.LLAMA, line);
+                const tokens = getTextTokens(tokenizer, line);
                 result.push(...tokens);
             } catch {
                 console.log(`Could not tokenize raw text: ${line}`);
