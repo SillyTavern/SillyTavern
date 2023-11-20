@@ -15,7 +15,7 @@ import {
     registerDebugFunction,
 } from "./power-user.js";
 import { SENTENCEPIECE_TOKENIZERS, getTextTokens, tokenizers } from "./tokenizers.js";
-import { onlyUnique } from "./utils.js";
+import { getSortableDelay, onlyUnique } from "./utils.js";
 
 export {
     textgenerationwebui_settings,
@@ -38,6 +38,7 @@ const MANCER_SERVER_KEY = 'mancer_server';
 const MANCER_SERVER_DEFAULT = 'https://neuro.mancer.tech';
 export let MANCER_SERVER = localStorage.getItem(MANCER_SERVER_KEY) ?? MANCER_SERVER_DEFAULT;
 
+const KOBOLDCPP_ORDER = [6, 0, 1, 3, 4, 2, 5];
 const textgenerationwebui_settings = {
     temp: 0.7,
     temperature_last: true,
@@ -86,6 +87,7 @@ const textgenerationwebui_settings = {
     type: textgen_types.OOBA,
     mancer_model: 'mytholite',
     legacy_api: false,
+    sampler_order: KOBOLDCPP_ORDER,
 };
 
 export let textgenerationwebui_banned_in_macros = [];
@@ -136,6 +138,7 @@ const setting_names = [
     //'logits_processors_aphrodite',
     //'log_probs_aphrodite',
     //'prompt_log_probs_aphrodite'
+    "sampler_order",
 ];
 
 async function selectPreset(name) {
@@ -311,7 +314,41 @@ export function getTextGenUrlSourceId() {
     }
 }
 
+/**
+ * Sorts the sampler items by the given order.
+ * @param {any[]} orderArray Sampler order array.
+ */
+function sortItemsByOrder(orderArray) {
+    console.debug('Preset samplers order: ' + orderArray);
+    const $draggableItems = $("#koboldcpp_order");
+
+    for (let i = 0; i < orderArray.length; i++) {
+        const index = orderArray[i];
+        const $item = $draggableItems.find(`[data-id="${index}"]`).detach();
+        $draggableItems.append($item);
+    }
+}
+
 jQuery(function () {
+    $('#koboldcpp_order').sortable({
+        delay: getSortableDelay(),
+        stop: function () {
+            const order = [];
+            $('#koboldcpp_order').children().each(function () {
+                order.push($(this).data('id'));
+            });
+            textgenerationwebui_settings.sampler_order = order;
+            console.log('Samplers reordered:', textgenerationwebui_settings.sampler_order);
+            saveSettingsDebounced();
+        },
+    });
+
+    $('#koboldcpp_default_order').on('click', function () {
+        textgenerationwebui_settings.sampler_order = KOBOLDCPP_ORDER;
+        sortItemsByOrder(textgenerationwebui_settings.sampler_order);
+        saveSettingsDebounced();
+    });
+
     $('#textgen_type').on('change', function () {
         const type = String($(this).val());
         textgenerationwebui_settings.type = type;
@@ -399,26 +436,33 @@ function showTypeSpecificControls(type) {
     });
 }
 
-function setSettingByName(i, value, trigger) {
+function setSettingByName(setting, value, trigger) {
     if (value === null || value === undefined) {
         return;
     }
 
-    const isCheckbox = $(`#${i}_textgenerationwebui`).attr('type') == 'checkbox';
-    const isText = $(`#${i}_textgenerationwebui`).attr('type') == 'text' || $(`#${i}_textgenerationwebui`).is('textarea');
+    if ('sampler_order' === setting) {
+        value = Array.isArray(value) ? value : KOBOLDCPP_ORDER;
+        sortItemsByOrder(value);
+        textgenerationwebui_settings.sampler_order = value;
+        return;
+    }
+
+    const isCheckbox = $(`#${setting}_textgenerationwebui`).attr('type') == 'checkbox';
+    const isText = $(`#${setting}_textgenerationwebui`).attr('type') == 'text' || $(`#${setting}_textgenerationwebui`).is('textarea');
     if (isCheckbox) {
         const val = Boolean(value);
-        $(`#${i}_textgenerationwebui`).prop('checked', val);
+        $(`#${setting}_textgenerationwebui`).prop('checked', val);
     }
     else if (isText) {
-        $(`#${i}_textgenerationwebui`).val(value);
+        $(`#${setting}_textgenerationwebui`).val(value);
     }
     else {
         const val = parseFloat(value);
-        $(`#${i}_textgenerationwebui`).val(val);
-        $(`#${i}_counter_textgenerationwebui`).val(val);
+        $(`#${setting}_textgenerationwebui`).val(val);
+        $(`#${setting}_counter_textgenerationwebui`).val(val);
         if (power_user.enableZenSliders) {
-            let zenSlider = $(`#${i}_textgenerationwebui_zenslider`).slider()
+            let zenSlider = $(`#${setting}_textgenerationwebui_zenslider`).slider()
             zenSlider.slider('option', 'value', val)
             zenSlider.slider('option', 'slide')
                 .call(zenSlider, null, {
@@ -428,7 +472,7 @@ function setSettingByName(i, value, trigger) {
     }
 
     if (trigger) {
-        $(`#${i}_textgenerationwebui`).trigger('input');
+        $(`#${setting}_textgenerationwebui`).trigger('input');
     }
 }
 
@@ -571,6 +615,7 @@ export function getTextGenGenerationData(finalPrompt, this_amount_gen, isImperso
         'use_ooba': isOoba(),
         'api_server': isMancer() ? MANCER_SERVER : api_server_textgenerationwebui,
         'legacy_api': textgenerationwebui_settings.legacy_api && !isMancer(),
+        'sampler_order': isKoboldCpp() ? textgenerationwebui_settings.sampler_order : undefined,
     };
     let aphroditeExclusionFlags = {
         'repetition_penalty_range': textgenerationwebui_settings.rep_pen_range,

@@ -1345,6 +1345,49 @@
                                         </h4>
                                         <textarea id="grammar_string_textgenerationwebui" rows="4" class="text_pole textarea_compact monospace" placeholder="Type in the desired custom grammar"></textarea>
                                     </div>
+                                    <div data-newbie-hidden data-tg-type="koboldcpp" class="range-block flexFlowColumn">
+                                        <hr class="wide100p">
+                                        <div class="range-block-title">
+                                            <span data-i18n="Samplers Order">Samplers Order</span>
+                                        </div>
+                                        <div class="toggle-description widthUnset" data-i18n="Samplers will be applied in a top-down order. Use with caution.">
+                                            Samplers will be applied in a top-down order.
+                                            Use with caution.
+                                        </div>
+                                        <div id="koboldcpp_order" class="prompt_order">
+                                            <div data-id="0">
+                                                <span data-i18n="Top K">Top K</span>
+                                                <small>0</small>
+                                            </div>
+                                            <div data-id="1">
+                                                <span data-i18n="Top A">Top A</span>
+                                                <small>1</small>
+                                            </div>
+                                            <div data-id="2">
+                                                <span data-i18n="Top P">Top P & Min P</span>
+                                                <small>2</small>
+                                            </div>
+                                            <div data-id="3">
+                                                <span data-i18n="Tail Free Sampling">Tail Free Sampling</span>
+                                                <small>3</small>
+                                            </div>
+                                            <div data-id="4">
+                                                <span data-i18n="Typical P">Typical P</span>
+                                                <small>4</small>
+                                            </div>
+                                            <div data-id="5">
+                                                <span data-i18n="Temperature">Temperature</span>
+                                                <small>5</small>
+                                            </div>
+                                            <div data-id="6">
+                                                <span data-i18n="Repetition Penalty">Repetition Penalty</span>
+                                                <small>6</small>
+                                            </div>
+                                        </div>
+                                        <div id="koboldcpp_default_order" class="menu_button menu_button_icon">
+                                            <span data-i18n="Load default order">Load default order</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div><!-- end of textgen settings-->
                             <div id="openai_settings">
