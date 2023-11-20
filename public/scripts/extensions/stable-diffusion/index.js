@@ -186,6 +186,7 @@ const defaultSettings = {
     negative_prompt: defaultNegative,
     sampler: 'DDIM',
     model: '',
+    vae: '',
 
     // Automatic1111/Horde exclusives
     restore_faces: false,
@@ -480,7 +481,7 @@ async function loadSettings() {
     toggleSourceControls();
     addPromptTemplates();
 
-    await Promise.all([loadSamplers(), loadModels(), loadSchedulers()]);
+    await Promise.all([loadSamplers(), loadModels(), loadSchedulers(), loadVaes()]);
 }
 
 function addPromptTemplates() {
@@ -914,6 +915,7 @@ async function validateComfyUrl() {
         await loadSamplers();
         await loadSchedulers();
         await loadModels();
+        await loadVaes();
         toastr.success('ComfyUI API connected.');
     } catch (error) {
         toastr.error(`Could not validate ComfyUI API: ${error.message}`);
@@ -958,6 +960,10 @@ async function getAutoRemoteModel() {
         console.error(error);
         return null;
     }
+}
+
+async function onVaeChange() {
+    extension_settings.sd.vae = $('#sd_vae').find(':selected').val();
 }
 
 async function getAutoRemoteUpscalers() {
@@ -1458,6 +1464,65 @@ async function loadComfySchedulers() {
 
     try {
         const result = await fetch(`/api/sd/comfy/schedulers`, {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                url: extension_settings.sd.comfy_url,
+            })
+        });
+        if (!result.ok) {
+            throw new Error('ComfyUI returned an error.');
+        }
+        return await result.json();
+    } catch (error) {
+        return [];
+    }
+}
+
+async function loadVaes() {
+    $('#sd_vae').empty();
+    let vaes = [];
+
+    switch (extension_settings.sd.source) {
+        case sources.extras:
+            vaes = ['N/A'];
+            break;
+        case sources.horde:
+            vaes = ['N/A'];
+            break;
+        case sources.auto:
+            vaes = ['N/A'];
+            break;
+        case sources.novel:
+            vaes = ['N/A'];
+            break;
+        case sources.vlad:
+            vaes = ['N/A'];
+            break;
+        case sources.openai:
+            vaes = ['N/A'];
+            break;
+        case sources.comfy:
+            vaes = await loadComfyVaes();
+            break;
+    }
+
+    for (const vae of vaes) {
+        const option = document.createElement('option');
+        option.innerText = vae;
+        option.value = vae;
+        option.selected = vae === extension_settings.sd.vae;
+        $('#sd_vae').append(option);
+    }
+}
+
+async function loadComfyVaes() {
+    if (!extension_settings.sd.comfy_url) {
+        return [];
+    }
+
+    try {
+        const result = await fetch(`/api/sd/comfy/vaes`, {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({
@@ -2037,6 +2102,7 @@ async function generateComfyImage(prompt) {
     const placeholders = [
         'negative_prompt',
         'model',
+        'vae',
         'sampler',
         'scheduler',
         'steps',
@@ -2294,6 +2360,7 @@ jQuery(async () => {
     $('#sd_scale').on('input', onScaleInput);
     $('#sd_steps').on('input', onStepsInput);
     $('#sd_model').on('change', onModelChange);
+    $('#sd_vae').on('change', onVaeChange);
     $('#sd_sampler').on('change', onSamplerChange);
     $('#sd_scheduler').on('change', onSchedulerChange);
     $('#sd_prompt_prefix').on('input', onPromptPrefixInput);

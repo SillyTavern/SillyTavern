@@ -418,6 +418,24 @@ function registerEndpoints(app, jsonParser) {
         }
     });
 
+    app.post('/api/sd/comfy/vaes', jsonParser, async(request, response)=>{
+		try {
+			const url = new URL(request.body.url);
+			url.pathname = '/object_info'
+
+			const result = await fetch(url);
+			if (!result.ok) {
+				throw new Error('ComfyUI returned an error.');
+			}
+
+			const data = await result.json();
+			return response.send(data.VAELoader.input.required.vae_name[0]);
+		} catch (error) {
+			console.log(error);
+			return response.sendStatus(500);
+		}
+	});
+
     app.post('/api/sd/comfy/generate', jsonParser, async (request, response) => {
         try {
             const url = new URL(request.body.url);
