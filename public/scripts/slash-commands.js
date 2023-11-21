@@ -176,6 +176,12 @@ async function deleteSwipeCallback(_, arg) {
     }
 
     const swipeId = arg && !isNaN(Number(arg)) ? (Number(arg) - 1) : lastMessage.swipe_id;
+
+    if (swipeId < 0 || swipeId >= lastMessage.swipes.length) {
+        toastr.warning(`Invalid swipe ID: ${swipeId + 1}`);
+        return;
+    }
+
     lastMessage.swipes.splice(swipeId, 1);
 
     if (Array.isArray(lastMessage.swipe_info) && lastMessage.swipe_info.length) {
