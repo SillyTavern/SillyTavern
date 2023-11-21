@@ -2220,8 +2220,8 @@ export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, q
         });
 }
 
-async function processCommands(message, type) {
-    if (type == "regenerate" || type == "swipe" || type == 'quiet') {
+async function processCommands(message, type, dryRun) {
+    if (dryRun || type == "regenerate" || type == "swipe" || type == 'quiet') {
         return null;
     }
 
@@ -2776,7 +2776,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
     message_already_generated = isImpersonate ? `${name1}: ` : `${name2}: `;
 
-    const interruptedByCommand = await processCommands($("#send_textarea").val(), type);
+    const interruptedByCommand = await processCommands($("#send_textarea").val(), type, dryRun);
 
     if (interruptedByCommand) {
         $("#send_textarea").val('').trigger('input');
