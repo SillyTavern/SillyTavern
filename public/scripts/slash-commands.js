@@ -940,7 +940,7 @@ async function executeSlashCommands(text) {
         }
 
         console.debug('Slash command executing:', result);
-        const unnamedArg = pipeResult || result.value;
+        const unnamedArg = result.value || pipeResult;
         pipeResult = await result.command.callback(result.args, unnamedArg);
 
         if (result.command.interruptsGeneration) {
