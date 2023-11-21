@@ -917,6 +917,11 @@ function applyChatWidth(type) {
 async function applyThemeColor(type) {
     if (type === 'main') {
         document.documentElement.style.setProperty('--SmartThemeBodyColor', power_user.main_text_color);
+        const color = power_user.main_text_color.split('(')[1].split(')')[0].split(',');
+        document.documentElement.style.setProperty('--SmartThemeCheckboxBgColorR', color[0]);
+        document.documentElement.style.setProperty('--SmartThemeCheckboxBgColorG', color[1]);
+        document.documentElement.style.setProperty('--SmartThemeCheckboxBgColorB', color[2]);
+        document.documentElement.style.setProperty('--SmartThemeCheckboxBgColorA', color[3]);
     }
     if (type === 'italics') {
         document.documentElement.style.setProperty('--SmartThemeEmColor', power_user.italics_text_color);
