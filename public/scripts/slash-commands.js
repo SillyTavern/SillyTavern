@@ -77,21 +77,22 @@ class SlashCommandParser {
         let unnamedArg;
 
         if (args.length > 0) {
-            const argsArray = args.split(' ');
-            for (let arg of argsArray) {
-                const equalsIndex = arg.indexOf('=');
-                if (equalsIndex !== -1) {
-                    const key = arg.substring(0, equalsIndex);
-                    const value = arg.substring(equalsIndex + 1);
-                    // Replace "wrapping quotes" used for escaping spaces
-                    argObj[key] = value.replace(/(^")|("$)/g, '');
-                }
-                else {
-                    break;
-                }
+            // Match named arguments
+            const namedArgPattern = /(\w+)=("(?:\\.|[^"\\])*"|\S+)/g;
+            let match;
+            while ((match = namedArgPattern.exec(args)) !== null) {
+                const key = match[1];
+                const value = match[2];
+                // Remove the quotes around the value, if any
+                argObj[key] = value.replace(/(^")|("$)/g, '');
             }
 
-            unnamedArg = argsArray.slice(Object.keys(argObj).length).join(' ');
+            // Match unnamed argument
+            const unnamedArgPattern = /(?:\w+=(?:"(?:\\.|[^"\\])*"|\S+)\s*)*(.*)/s;
+            match = unnamedArgPattern.exec(args);
+            if (match !== null) {
+                unnamedArg = match[1].trim();
+            }
 
             // Excluded commands format in their own function
             if (!excludedFromRegex.includes(command)) {
@@ -132,7 +133,7 @@ parser.addCommand('name', setNameCallback, ['persona'], '<span class="monospace"
 parser.addCommand('sync', syncCallback, [], ' – syncs user name in user-attributed messages in the current chat', true, true);
 parser.addCommand('lock', bindCallback, ['bind'], ' – locks/unlocks a persona (name and avatar) to the current chat', true, true);
 parser.addCommand('bg', setBackgroundCallback, ['background'], '<span class="monospace">(filename)</span> – sets a background according to filename, partial names allowed', false, true);
-parser.addCommand('sendas', sendMessageAs, [], ` – sends message as a specific character. Uses character avatar if it exists in the characters list. Example that will send "Hello, guys!" from "Chloe": <pre><code>/sendas Chloe&#10;Hello, guys!</code></pre>`, true, true);
+parser.addCommand('sendas', sendMessageAs, [], ` – sends message as a specific character. Uses character avatar if it exists in the characters list. Example that will send "Hello, guys!" from "Chloe": <code>/sendas name="Chloe" Hello, guys!</code>`, true, true);
 parser.addCommand('sys', sendNarratorMessage, ['nar'], '<span class="monospace">(text)</span> – sends message as a system narrator', false, true);
 parser.addCommand('sysname', setNarratorName, [], '<span class="monospace">(name)</span> – sets a name for future system narrator messages in this chat (display only). Default: System. Leave empty to reset.', true, true);
 parser.addCommand('comment', sendCommentMessage, [], '<span class="monospace">(text)</span> – adds a note/comment message not part of the chat', false, true);
@@ -499,19 +500,32 @@ async function setNarratorName(_, text) {
     await saveChatConditional();
 }
 
-export async function sendMessageAs(_, text) {
+export async function sendMessageAs(namedArgs, text) {
     if (!text) {
         return;
     }
 
-    const parts = text.split('\n');
-    if (parts.length <= 1) {
-        toastr.warning('Both character name and message are required. Separate them with a new line.');
-        return;
-    }
+    let name;
+    let mesText;
 
-    const name = parts.shift().trim();
-    let mesText = parts.join('\n').trim();
+    if (namedArgs.name) {
+        name = namedArgs.name.trim();
+        mesText = text.trim();
+
+        if (!name && !text) {
+            toastr.warning('You must specify a name and text to send as');
+            return;
+        }
+    } else {
+        const parts = text.split('\n');
+        if (parts.length <= 1) {
+            toastr.warning('Both character name and message are required. Separate them with a new line.');
+            return;
+        }
+
+        name = parts.shift().trim();
+        mesText = parts.join('\n').trim();
+    }
 
     // Requires a regex check after the slash command is pushed to output
     mesText = getRegexedString(mesText, regex_placement.SLASH_COMMAND, { characterOverride: name });
