@@ -84,7 +84,7 @@ class SlashCommandParser {
                 const key = match[1];
                 const value = match[2];
                 // Remove the quotes around the value, if any
-                argObj[key] = value.replace(/(^")|("$)/g, '');
+                argObj[key] = substituteParams(value.replace(/(^")|("$)/g, ''));
             }
 
             // Match unnamed argument
@@ -157,10 +157,35 @@ parser.addCommand('memberup', moveGroupMemberUpCallback, ['upmember'], '<span cl
 parser.addCommand('memberdown', moveGroupMemberDownCallback, ['downmember'], '<span class="monospace">(member index or name)</span> – moves a group member down in the group chat list', true, true);
 parser.addCommand('peek', peekCallback, [], '<span class="monospace">(message index or range)</span> – shows a group member character card without switching chats', true, true);
 parser.addCommand('delswipe', deleteSwipeCallback, [], '<span class="monospace">(optional 1-based id)</span> – deletes a swipe from the last chat message. If swipe id not provided - deletes the current swipe.', true, true);
+parser.addCommand('echo', echoCallback, [], '<span class="monospace">(text)</span> – echoes the text to toast message. Useful for pipes debugging.', true, true);
+parser.addCommand('gen', generateCallback, [], '<span class="monospace">(prompt)</span> – generates text using the provided prompt and passes it to the next command through the pipe.', true, true);
 
 const NARRATOR_NAME_KEY = 'narrator_name';
 const NARRATOR_NAME_DEFAULT = 'System';
 export const COMMENT_NAME_DEFAULT = 'Note';
+
+async function generateCallback(_, arg) {
+    if (!arg) {
+        console.warn('WARN: No argument provided for /gen command');
+        return;
+    }
+
+    // Prevent generate recursion
+    $('#send_textarea').val('');
+
+    const result = await generateQuietPrompt(arg, false, false, '');
+    return result;
+}
+
+async function echoCallback(_, arg) {
+    if (!arg) {
+        console.warn('WARN: No argument provided for /echo command');
+        return;
+    }
+
+    toastr.info(arg);
+    return arg;
+}
 
 async function deleteSwipeCallback(_, arg) {
     const lastMessage = chat[chat.length - 1];
@@ -176,6 +201,12 @@ async function deleteSwipeCallback(_, arg) {
     }
 
     const swipeId = arg && !isNaN(Number(arg)) ? (Number(arg) - 1) : lastMessage.swipe_id;
+
+    if (swipeId < 0 || swipeId >= lastMessage.swipes.length) {
+        toastr.warning(`Invalid swipe ID: ${swipeId + 1}`);
+        return;
+    }
+
     lastMessage.swipes.splice(swipeId, 1);
 
     if (Array.isArray(lastMessage.swipe_info) && lastMessage.swipe_info.length) {
@@ -889,6 +920,7 @@ async function executeSlashCommands(text) {
     const linesToRemove = [];
 
     let interrupt = false;
+    let pipeResult = '';
 
     for (let index = 0; index < lines.length; index++) {
         const trimmedLine = lines[index].trim();
@@ -908,7 +940,8 @@ async function executeSlashCommands(text) {
         }
 
         console.debug('Slash command executing:', result);
-        await result.command.callback(result.args, result.value);
+        const unnamedArg = result.value || pipeResult;
+        pipeResult = await result.command.callback(result.args, unnamedArg);
 
         if (result.command.interruptsGeneration) {
             interrupt = true;
