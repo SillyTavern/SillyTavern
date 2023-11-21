@@ -156,10 +156,39 @@ parser.addCommand('memberremove', removeGroupMemberCallback, ['removemember'], '
 parser.addCommand('memberup', moveGroupMemberUpCallback, ['upmember'], '<span class="monospace">(member index or name)</span> – moves a group member up in the group chat list', true, true);
 parser.addCommand('memberdown', moveGroupMemberDownCallback, ['downmember'], '<span class="monospace">(member index or name)</span> – moves a group member down in the group chat list', true, true);
 parser.addCommand('peek', peekCallback, [], '<span class="monospace">(message index or range)</span> – shows a group member character card without switching chats', true, true);
+parser.addCommand('delswipe', deleteSwipeCallback, [], '<span class="monospace">(optional 1-based id)</span> – deletes a swipe from the last chat message. If swipe id not provided - deletes the current swipe.', true, true);
 
 const NARRATOR_NAME_KEY = 'narrator_name';
 const NARRATOR_NAME_DEFAULT = 'System';
 export const COMMENT_NAME_DEFAULT = 'Note';
+
+async function deleteSwipeCallback(_, arg) {
+    const lastMessage = chat[chat.length - 1];
+
+    if (!lastMessage || !Array.isArray(lastMessage.swipes) || !lastMessage.swipes.length) {
+        toastr.warning("No messages to delete swipes from.");
+        return;
+    }
+
+    if (lastMessage.swipes.length <= 1) {
+        toastr.warning("Can't delete the last swipe.");
+        return;
+    }
+
+    const swipeId = arg && !isNaN(Number(arg)) ? (Number(arg) - 1) : lastMessage.swipe_id;
+    lastMessage.swipes.splice(swipeId, 1);
+
+    if (Array.isArray(lastMessage.swipe_info) && lastMessage.swipe_info.length) {
+        lastMessage.swipe_info.splice(swipeId, 1);
+    }
+
+    const newSwipeId = Math.min(swipeId, lastMessage.swipes.length - 1);
+    lastMessage.swipe_id = newSwipeId;
+    lastMessage.mes = lastMessage.swipes[newSwipeId];
+
+    await saveChatConditional();
+    await reloadCurrentChat();
+}
 
 async function askCharacter(_, text) {
     // Prevent generate recursion
