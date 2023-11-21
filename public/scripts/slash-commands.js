@@ -26,7 +26,7 @@ import {
     setCharacterName,
 } from "../script.js";
 import { getMessageTimeStamp } from "./RossAscends-mods.js";
-import { findGroupMemberId, is_group_generating, resetSelectedGroup, selected_group } from "./group-chats.js";
+import { findGroupMemberId, groups, is_group_generating, resetSelectedGroup, saveGroupChat, selected_group } from "./group-chats.js";
 import { getRegexedString, regex_placement } from "./extensions/regex/engine.js";
 import { chat_styles, power_user } from "./power-user.js";
 import { autoSelectPersona } from "./personas.js";
@@ -151,6 +151,11 @@ parser.addCommand('hide', hideMessageCallback, [], '<span class="monospace">(mes
 parser.addCommand('unhide', unhideMessageCallback, [], '<span class="monospace">(message index or range)</span> – unhides a message from the prompt', true, true);
 parser.addCommand('disable', disableGroupMemberCallback, [], '<span class="monospace">(member index or name)</span> – disables a group member from being drafted for replies', true, true);
 parser.addCommand('enable', enableGroupMemberCallback, [], '<span class="monospace">(member index or name)</span> – enables a group member to be drafted for replies', true, true);
+parser.addCommand('memberadd', addGroupMemberCallback, ['addmember'], '<span class="monospace">(character name)</span> – adds a new group member to the group chat', true, true);
+parser.addCommand('memberremove', removeGroupMemberCallback, ['removemember'], '<span class="monospace">(member index or name)</span> – removes a group member from the group chat', true, true);
+parser.addCommand('memberup', moveGroupMemberUpCallback, ['upmember'], '<span class="monospace">(member index or name)</span> – moves a group member up in the group chat list', true, true);
+parser.addCommand('memberdown', moveGroupMemberDownCallback, ['downmember'], '<span class="monospace">(member index or name)</span> – moves a group member down in the group chat list', true, true);
+parser.addCommand('peek', peekCallback, [], '<span class="monospace">(message index or range)</span> – shows a group member character card without switching chats', true, true);
 
 const NARRATOR_NAME_KEY = 'narrator_name';
 const NARRATOR_NAME_DEFAULT = 'System';
@@ -318,6 +323,121 @@ async function enableGroupMemberCallback(_, arg) {
     }
 
     $(`.group_member[chid="${chid}"] [data-action="enable"]`).trigger('click');
+}
+
+async function moveGroupMemberUpCallback(_, arg) {
+    if (!selected_group) {
+        toastr.warning("Cannot run /memberup command outside of a group chat.");
+        return;
+    }
+
+    const chid = findGroupMemberId(arg);
+
+    if (chid === undefined) {
+        console.warn(`WARN: No group member found for argument ${arg}`);
+        return;
+    }
+
+    $(`.group_member[chid="${chid}"] [data-action="up"]`).trigger('click');
+}
+
+async function moveGroupMemberDownCallback(_, arg) {
+    if (!selected_group) {
+        toastr.warning("Cannot run /memberdown command outside of a group chat.");
+        return;
+    }
+
+    const chid = findGroupMemberId(arg);
+
+    if (chid === undefined) {
+        console.warn(`WARN: No group member found for argument ${arg}`);
+        return;
+    }
+
+    $(`.group_member[chid="${chid}"] [data-action="down"]`).trigger('click');
+}
+
+async function peekCallback(_, arg) {
+    if (!selected_group) {
+        toastr.warning("Cannot run /peek command outside of a group chat.");
+        return;
+    }
+
+    if (is_group_generating) {
+        toastr.warning("Cannot run /peek command while the group reply is generating.");
+        return;
+    }
+
+    const chid = findGroupMemberId(arg);
+
+    if (chid === undefined) {
+        console.warn(`WARN: No group member found for argument ${arg}`);
+        return;
+    }
+
+    $(`.group_member[chid="${chid}"] [data-action="view"]`).trigger('click');
+}
+
+async function removeGroupMemberCallback(_, arg) {
+    if (!selected_group) {
+        toastr.warning("Cannot run /memberremove command outside of a group chat.");
+        return;
+    }
+
+    if (is_group_generating) {
+        toastr.warning("Cannot run /memberremove command while the group reply is generating.");
+        return;
+    }
+
+    const chid = findGroupMemberId(arg);
+
+    if (chid === undefined) {
+        console.warn(`WARN: No group member found for argument ${arg}`);
+        return;
+    }
+
+    $(`.group_member[chid="${chid}"] [data-action="remove"]`).trigger('click');
+}
+
+async function addGroupMemberCallback(_, arg) {
+    if (!selected_group) {
+        toastr.warning("Cannot run /memberadd command outside of a group chat.");
+        return;
+    }
+
+    if (!arg) {
+        console.warn('WARN: No argument provided for /memberadd command');
+        return;
+    }
+
+    arg = arg.trim();
+    const chid = findCharacterIndex(arg);
+
+    if (chid === -1) {
+        console.warn(`WARN: No character found for argument ${arg}`);
+        return;
+    }
+
+    const character = characters[chid];
+    const group = groups.find(x => x.id === selected_group);
+
+    if (!group || !Array.isArray(group.members)) {
+        console.warn(`WARN: No group found for ID ${selected_group}`);
+        return;
+    }
+
+    const avatar = character.avatar;
+
+    if (group.members.includes(avatar)) {
+        toastr.warning(`${character.name} is already a member of this group.`);
+        return;
+    }
+
+    group.members.push(avatar);
+    await saveGroupChat(selected_group, true);
+
+    // Trigger to reload group UI
+    $('#rm_button_selected_ch').trigger('click');
 }
 
 async function triggerGroupMessageCallback(_, arg) {
