@@ -45,7 +45,7 @@ function removePattern(x, pattern) {
 function getComfyWorkflows() {
     return fs
         .readdirSync(DIRECTORIES.comfyWorkflows)
-        .filter(file => file[0]!='.' && file.toLowerCase().endsWith('.json'))
+        .filter(file => file[0] != '.' && file.toLowerCase().endsWith('.json'))
         .sort(Intl.Collator().compare);
 }
 
@@ -465,7 +465,7 @@ function registerEndpoints(app, jsonParser) {
             }
             const data = fs.readFileSync(
                 path,
-                {encoding:'utf-8'}
+                { encoding: 'utf-8' }
             );
             return response.send(JSON.stringify(data));
         } catch (error) {

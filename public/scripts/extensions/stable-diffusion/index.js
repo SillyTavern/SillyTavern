@@ -659,7 +659,7 @@ async function onSourceChange() {
     extension_settings.sd.sampler = null;
     toggleSourceControls();
     saveSettingsDebounced();
-    await Promise.all([loadModels(), loadSamplers()]);
+    await loadSettingOptions();
 }
 
 async function onOpenAiStyleSelect() {
@@ -791,8 +791,7 @@ async function validateAutoUrl() {
             throw new Error('SD WebUI returned an error.');
         }
 
-        await loadSamplers();
-        await loadModels();
+        await loadSettingOptions();
         toastr.success('SD WebUI API connected.');
     } catch (error) {
         toastr.error(`Could not validate SD WebUI API: ${error.message}`);
@@ -815,8 +814,7 @@ async function validateVladUrl() {
             throw new Error('SD.Next returned an error.');
         }
 
-        await loadSamplers();
-        await loadModels();
+        await loadSettingOptions();
         toastr.success('SD.Next API connected.');
     } catch (error) {
         toastr.error(`Could not validate SD.Next API: ${error.message}`);
@@ -840,11 +838,7 @@ async function validateComfyUrl() {
             throw new Error('ComfyUI returned an error.');
         }
 
-        await loadSamplers();
-        await loadSchedulers();
-        await loadModels();
-        await loadVaes();
-        await loadComfyWorkflows();
+        await loadSettingOptions();
         toastr.success('ComfyUI API connected.');
     } catch (error) {
         toastr.error(`Could not validate ComfyUI API: ${error.message}`);
@@ -2444,7 +2438,7 @@ jQuery(async () => {
     })
 
     eventSource.on(event_types.EXTRAS_CONNECTED, async () => {
-        await Promise.all([loadSamplers(), loadModels()]);
+        await loadSettingOptions();
     });
 
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
