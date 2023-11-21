@@ -108,6 +108,7 @@ const max_8k = 8191;
 const max_16k = 16383;
 const max_32k = 32767;
 const max_128k = 128 * 1000;
+const max_200k = 200 * 1000;
 const scale_max = 8191;
 const claude_max = 9000; // We have a proper tokenizer, so theoretically could be larger (up to 9k)
 const palm2_max = 7500; // The real context window is 8192, spare some for padding due to using turbo tokenizer
@@ -3127,7 +3128,10 @@ async function onModelChange() {
 
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
         if (oai_settings.max_context_unlocked) {
-            $('#openai_max_context').attr('max', unlocked_max);
+            $('#openai_max_context').attr('max', max_200k);
+        }
+        else if (value == 'claude-2.1' || value == 'claude-2') {
+            $('#openai_max_context').attr('max', max_200k);
         }
         else if (value.endsWith('100k') || value.startsWith('claude-2') || value === 'claude-instant-1.2') {
             $('#openai_max_context').attr('max', claude_100k_max);
