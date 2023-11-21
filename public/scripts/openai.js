@@ -64,7 +64,6 @@ import {
 } from "./instruct-mode.js";
 
 export {
-    openai_msgs,
     openai_messages_count,
     oai_settings,
     loadOpenAISettings,
@@ -79,8 +78,6 @@ export {
     MessageCollection
 }
 
-let openai_msgs = [];
-let openai_msgs_example = [];
 let openai_messages_count = 0;
 let openai_narrator_messages_count = 0;
 
@@ -388,10 +385,15 @@ function convertChatCompletionToInstruct(messages, type) {
     return prompt;
 }
 
+/**
+ * Formats chat messages into chat completion messages.
+ * @param {object[]} chat - Array containing all messages.
+ * @returns {object[]} - Array containing all messages formatted for chat completion.
+ */
 function setOpenAIMessages(chat) {
     let j = 0;
     // clean openai msgs
-    openai_msgs = [];
+    const messages = [];
     openai_narrator_messages_count = 0;
     for (let i = chat.length - 1; i >= 0; i--) {
         let role = chat[j]['is_user'] ? 'user' : 'assistant';
@@ -418,21 +420,29 @@ function setOpenAIMessages(chat) {
         if (role == 'user' && oai_settings.wrap_in_quotes) content = `"${content}"`;
         const name = chat[j]['name'];
         const image = chat[j]?.extra?.image;
-        openai_msgs[i] = { "role": role, "content": content, name: name, "image": image };
+        messages[i] = { "role": role, "content": content, name: name, "image": image };
         j++;
     }
+
+    return messages
 }
 
+/**
+ * Formats chat messages into chat completion messages.
+ * @param {string[]} mesExamplesArray - Array containing all examples.
+ * @returns {object[]} - Array containing all examples formatted for chat completion.
+ */
 function setOpenAIMessageExamples(mesExamplesArray) {
     // get a nice array of all blocks of all example messages = array of arrays (important!)
-    openai_msgs_example = [];
+    const examples = [];
     for (let item of mesExamplesArray) {
         // remove <START> {Example Dialogue:} and replace \r\n with just \n
         let replaced = item.replace(/<START>/i, "{Example Dialogue:}").replace(/\r/gm, '');
         let parsed = parseExampleIntoIndividual(replaced);
         // add to the example message blocks array
-        openai_msgs_example.push(parsed);
+        examples.push(parsed);
     }
+    return examples;
 }
 
 /**
@@ -554,8 +564,9 @@ function formatWorldInfo(value) {
  * This function populates the injections in the conversation.
  *
  * @param {Prompt[]} prompts - Array containing injection prompts.
+ * @param {Object[]} messages - Array containing all messages.
  */
-function populationInjectionPrompts(prompts) {
+function populationInjectionPrompts(prompts, messages) {
     let totalInsertedMessages = 0;
 
     for (let i = 0; i <= MAX_INJECTION_DEPTH; i++) {
@@ -581,12 +592,13 @@ function populationInjectionPrompts(prompts) {
 
         if (roleMessages.length) {
             const injectIdx = i + totalInsertedMessages;
-            openai_msgs.splice(injectIdx, 0, ...roleMessages);
+            messages.splice(injectIdx, 0, ...roleMessages);
             totalInsertedMessages += roleMessages.length;
         }
     }
 
-    openai_msgs = openai_msgs.reverse();
+    messages = messages.reverse();
+    return messages;
 }
 
 export function isOpenRouterWithInstruct() {
@@ -595,13 +607,13 @@ export function isOpenRouterWithInstruct() {
 
 /**
  * Populates the chat history of the conversation.
- *
+ * @param {object[]} messages - Array containing all messages.
  * @param {PromptCollection} prompts - Map object containing all prompts where the key is the prompt identifier and the value is the prompt object.
  * @param {ChatCompletion} chatCompletion - An instance of ChatCompletion class that will be populated with the prompts.
  * @param type
  * @param cyclePrompt
  */
-async function populateChatHistory(prompts, chatCompletion, type = null, cyclePrompt = null) {
+async function populateChatHistory(messages, prompts, chatCompletion, type = null, cyclePrompt = null) {
     chatCompletion.add(new MessageCollection('chatHistory'), prompts.index('chatHistory'));
 
     let names = (selected_group && groups.find(x => x.id === selected_group)?.members.map(member => characters.find(c => c.avatar === member)?.name).filter(Boolean).join(', ')) || '';
@@ -632,7 +644,7 @@ async function populateChatHistory(prompts, chatCompletion, type = null, cyclePr
         chatCompletion.reserveBudget(continueMessage);
     }
 
-    const lastChatPrompt = openai_msgs[openai_msgs.length - 1];
+    const lastChatPrompt = messages[messages.length - 1];
     const message = new Message('user', oai_settings.send_if_empty, 'emptyUserMessageReplacement');
     if (lastChatPrompt && lastChatPrompt.role === 'assistant' && oai_settings.send_if_empty && chatCompletion.canAfford(message)) {
         chatCompletion.insert(message, 'chatHistory');
@@ -641,13 +653,13 @@ async function populateChatHistory(prompts, chatCompletion, type = null, cyclePr
     const imageInlining = isImageInliningSupported();
 
     // Insert chat messages as long as there is budget available
-    const chatPool = [...openai_msgs].reverse();
+    const chatPool = [...messages].reverse();
     for (let index = 0; index < chatPool.length; index++) {
         const chatPrompt = chatPool[index];
 
         // We do not want to mutate the prompt
         const prompt = new Prompt(chatPrompt);
-        prompt.identifier = `chatHistory-${openai_msgs.length - index}`;
+        prompt.identifier = `chatHistory-${messages.length - index}`;
         const chatMessage = Message.fromPrompt(promptManager.preparePrompt(prompt));
 
         if (true === promptManager.serviceSettings.names_in_completion && prompt.name) {
@@ -688,12 +700,13 @@ async function populateChatHistory(prompts, chatCompletion, type = null, cyclePr
  *
  * @param {PromptCollection} prompts - Map object containing all prompts where the key is the prompt identifier and the value is the prompt object.
  * @param {ChatCompletion} chatCompletion - An instance of ChatCompletion class that will be populated with the prompts.
+ * @param {Object[]} messageExamples - Array containing all message examples.
  */
-function populateDialogueExamples(prompts, chatCompletion) {
+function populateDialogueExamples(prompts, chatCompletion, messageExamples) {
     chatCompletion.add(new MessageCollection('dialogueExamples'), prompts.index('dialogueExamples'));
-    if (openai_msgs_example.length) {
+    if (Array.isArray(messageExamples) && messageExamples.length) {
         const newExampleChat = new Message('system', oai_settings.new_example_chat_prompt, 'newChat');
-        [...openai_msgs_example].forEach((dialogue, dialogueIndex) => {
+        [...messageExamples].forEach((dialogue, dialogueIndex) => {
             let examplesAdded = 0;
 
             if (chatCompletion.canAfford(newExampleChat)) chatCompletion.insert(newExampleChat, 'dialogueExamples');
@@ -744,8 +757,12 @@ function getPromptPosition(position) {
  * @param {string} options.quietPrompt - Instruction prompt for extras
  * @param {string} options.quietImage - Image prompt for extras
  * @param {string} options.type - The type of the chat, can be 'impersonate'.
+ * @param {string} options.cyclePrompt - The last prompt in the conversation.
+ * @param {object[]} options.messages - Array containing all messages.
+ * @param {object[]} options.messageExamples - Array containing all message examples.
+ * @returns {Promise<void>}
  */
-async function populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, quietImage, type, cyclePrompt } = {}) {
+async function populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, quietImage, type, cyclePrompt, messages, messageExamples } = {}) {
     // Helper function for preparing a prompt, that already exists within the prompt collection, for completion
     const addToChatCompletion = (source, target = null) => {
         // We need the prompts array to determine a position for the source.
@@ -852,15 +869,15 @@ async function populateChatCompletion(prompts, chatCompletion, { bias, quietProm
     }
 
     // Add in-chat injections
-    populationInjectionPrompts(userAbsolutePrompts);
+    messages = populationInjectionPrompts(userAbsolutePrompts, messages);
 
     // Decide whether dialogue examples should always be added
     if (power_user.pin_examples) {
-        populateDialogueExamples(prompts, chatCompletion);
-        await populateChatHistory(prompts, chatCompletion, type, cyclePrompt);
+        populateDialogueExamples(prompts, chatCompletion, messageExamples);
+        await populateChatHistory(messages, prompts, chatCompletion, type, cyclePrompt);
     } else {
-        await populateChatHistory(prompts, chatCompletion, type, cyclePrompt);
-        populateDialogueExamples(prompts, chatCompletion);
+        await populateChatHistory(messages, prompts, chatCompletion, type, cyclePrompt);
+        populateDialogueExamples(prompts, chatCompletion, messageExamples);
     }
 
     chatCompletion.freeBudget(controlPrompts);
@@ -998,6 +1015,8 @@ function preparePromptsForChatCompletion({ Scenario, charPersonality, name2, wor
  * @param {string} content.quietPrompt - The quiet prompt to be used in the conversation.
  * @param {string} content.cyclePrompt - The last prompt used for chat message continuation.
  * @param {Array} content.extensionPrompts - An array of additional prompts.
+ * @param {object[]} content.messages - An array of messages to be used as chat history.
+ * @param {string[]} content.messageExamples - An array of messages to be used as dialogue examples.
  * @param dryRun - Whether this is a live call or not.
  * @returns {(*[]|boolean)[]} An array where the first element is the prepared chat and the second element is a boolean flag.
  */
@@ -1016,7 +1035,9 @@ export async function prepareOpenAIMessages({
     cyclePrompt,
     systemPromptOverride,
     jailbreakPromptOverride,
-    personaDescription
+    personaDescription,
+    messages,
+    messageExamples,
 } = {}, dryRun) {
     // Without a character selected, there is no way to accurately calculate tokens
     if (!promptManager.activeCharacter && dryRun) return [null, false];
@@ -1042,11 +1063,13 @@ export async function prepareOpenAIMessages({
             extensionPrompts,
             systemPromptOverride,
             jailbreakPromptOverride,
-            personaDescription
+            personaDescription,
+            messages,
+            messageExamples,
         });
 
         // Fill the chat completion with as much context as the budget allows
-        await populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, quietImage, type, cyclePrompt });
+        await populateChatCompletion(prompts, chatCompletion, { bias, quietPrompt, quietImage, type, cyclePrompt, messages, messageExamples });
     } catch (error) {
         if (error instanceof TokenBudgetExceededError) {
             toastr.error('An error occurred while counting tokens: Token budget exceeded.')
@@ -1117,7 +1140,7 @@ function checkQuotaError(data) {
     }
 }
 
-async function sendWindowAIRequest(openai_msgs_tosend, signal, stream) {
+async function sendWindowAIRequest(messages, signal, stream) {
     if (!('ai' in window)) {
         return showWindowExtensionError();
     }
@@ -1172,7 +1195,7 @@ async function sendWindowAIRequest(openai_msgs_tosend, signal, stream) {
 
     const generatePromise = window.ai.generateText(
         {
-            messages: openai_msgs_tosend,
+            messages: messages,
         },
         {
             temperature: temperature,
@@ -1349,11 +1372,11 @@ function openRouterGroupByVendor(array) {
     }, new Map());
 }
 
-async function sendAltScaleRequest(openai_msgs_tosend, logit_bias, signal, type) {
+async function sendAltScaleRequest(messages, logit_bias, signal, type) {
     const generate_url = '/generate_altscale';
 
     let firstSysMsgs = []
-    for (let msg of openai_msgs_tosend) {
+    for (let msg of messages) {
         if (msg.role === 'system') {
             firstSysMsgs.push(substituteParams(msg.name ? msg.name + ": " + msg.content : msg.content));
         } else {
@@ -1361,20 +1384,20 @@ async function sendAltScaleRequest(openai_msgs_tosend, logit_bias, signal, type)
         }
     }
 
-    let subsequentMsgs = openai_msgs_tosend.slice(firstSysMsgs.length);
+    let subsequentMsgs = messages.slice(firstSysMsgs.length);
 
     const joinedSysMsgs = substituteParams(firstSysMsgs.join("\n"));
     const joinedSubsequentMsgs = subsequentMsgs.reduce((acc, obj) => {
         return acc + obj.role + ": " + obj.content + "\n";
     }, "");
 
-    openai_msgs_tosend = substituteParams(joinedSubsequentMsgs);
+    messages = substituteParams(joinedSubsequentMsgs);
     const messageId = getNextMessageId(type);
-    replaceItemizedPromptText(messageId, openai_msgs_tosend);
+    replaceItemizedPromptText(messageId, messages);
 
     const generate_data = {
         sysprompt: joinedSysMsgs,
-        prompt: openai_msgs_tosend,
+        prompt: messages,
         temp: Number(oai_settings.temp_openai),
         top_p: Number(oai_settings.top_p_openai),
         max_tokens: Number(oai_settings.openai_max_tokens),
@@ -1392,18 +1415,18 @@ async function sendAltScaleRequest(openai_msgs_tosend, logit_bias, signal, type)
     return data.output;
 }
 
-async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
+async function sendOpenAIRequest(type, messages, signal) {
     // Provide default abort signal
     if (!signal) {
         signal = new AbortController().signal;
     }
 
     // HACK: Filter out null and non-object messages
-    if (!Array.isArray(openai_msgs_tosend)) {
-        throw new Error('openai_msgs_tosend must be an array');
+    if (!Array.isArray(messages)) {
+        throw new Error('messages must be an array');
     }
 
-    openai_msgs_tosend = openai_msgs_tosend.filter(msg => msg && typeof msg === 'object');
+    messages = messages.filter(msg => msg && typeof msg === 'object');
 
     let logit_bias = {};
     const messageId = getNextMessageId(type);
@@ -1419,23 +1442,23 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
     const stream = oai_settings.stream_openai && !isQuiet && !isScale && !isAI21 && !isPalm;
 
     if (isTextCompletion && isOpenRouter) {
-        openai_msgs_tosend = convertChatCompletionToInstruct(openai_msgs_tosend, type);
-        replaceItemizedPromptText(messageId, openai_msgs_tosend);
+        messages = convertChatCompletionToInstruct(messages, type);
+        replaceItemizedPromptText(messageId, messages);
     }
 
     if (isAI21 || isPalm) {
-        const joinedMsgs = openai_msgs_tosend.reduce((acc, obj) => {
+        const joinedMsgs = messages.reduce((acc, obj) => {
             const prefix = prefixMap[obj.role];
             return acc + (prefix ? (selected_group ? "\n" : prefix + " ") : "") + obj.content + "\n";
         }, "");
-        openai_msgs_tosend = substituteParams(joinedMsgs) + (isImpersonate ? `${name1}:` : `${name2}:`);
-        replaceItemizedPromptText(messageId, openai_msgs_tosend);
+        messages = substituteParams(joinedMsgs) + (isImpersonate ? `${name1}:` : `${name2}:`);
+        replaceItemizedPromptText(messageId, messages);
     }
 
     // If we're using the window.ai extension, use that instead
     // Doesn't support logit bias yet
     if (oai_settings.chat_completion_source == chat_completion_sources.WINDOWAI) {
-        return sendWindowAIRequest(openai_msgs_tosend, signal, stream);
+        return sendWindowAIRequest(messages, signal, stream);
     }
 
     const logitBiasSources = [chat_completion_sources.OPENAI, chat_completion_sources.OPENROUTER, chat_completion_sources.SCALE];
@@ -1448,12 +1471,12 @@ async function sendOpenAIRequest(type, openai_msgs_tosend, signal) {
     }
 
     if (isScale && oai_settings.use_alt_scale) {
-        return sendAltScaleRequest(openai_msgs_tosend, logit_bias, signal, type);
+        return sendAltScaleRequest(messages, logit_bias, signal, type);
     }
 
     const model = getChatCompletionModel();
     const generate_data = {
-        "messages": openai_msgs_tosend,
+        "messages": messages,
         "model": model,
         "temperature": Number(oai_settings.temp_openai),
         "frequency_penalty": Number(oai_settings.freq_pen_openai),

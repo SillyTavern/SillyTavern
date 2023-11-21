@@ -3105,10 +3105,13 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
         const storyString = renderStoryString(storyStringParams);
 
+        let oaiMessages = [];
+        let oaiMessageExamples = [];
+
         if (main_api === 'openai') {
             message_already_generated = '';
-            setOpenAIMessages(coreChat);
-            setOpenAIMessageExamples(mesExamplesArray);
+            oaiMessages = setOpenAIMessages(coreChat);
+            oaiMessageExamples = setOpenAIMessageExamples(mesExamplesArray);
         }
 
         // hack for regeneration of the first message
@@ -3537,7 +3540,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     cyclePrompt: cyclePrompt,
                     systemPromptOverride: system,
                     jailbreakPromptOverride: jailbreak,
-                    personaDescription: persona
+                    personaDescription: persona,
+                    messages: oaiMessages,
+                    messageExamples: oaiMessageExamples,
                 }, dryRun);
                 generate_data = { prompt: prompt };
 
