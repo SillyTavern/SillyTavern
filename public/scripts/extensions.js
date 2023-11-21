@@ -846,12 +846,15 @@ async function checkForExtensionUpdates(force) {
 }
 
 async function autoUpdateExtensions() {
+    toastr.info('Auto-updating extensions. This may take several minutes.', 'Please wait...', { timeOut: 10000, extendedTimeOut: 20000 });
+    const promises = [];
     for (const [id, manifest] of Object.entries(manifests)) {
         if (manifest.auto_update && id.startsWith('third-party')) {
             console.debug(`Auto-updating 3rd-party extension: ${manifest.display_name} (${id})`);
-            await updateExtension(id.replace('third-party', ''), true);
+            promises.push(updateExtension(id.replace('third-party', ''), true));
         }
     }
+    await Promise.allSettled(promises);
 }
 
 /**
