@@ -133,7 +133,7 @@ parser.addCommand('name', setNameCallback, ['persona'], '<span class="monospace"
 parser.addCommand('sync', syncCallback, [], ' – syncs user name in user-attributed messages in the current chat', true, true);
 parser.addCommand('lock', bindCallback, ['bind'], ' – locks/unlocks a persona (name and avatar) to the current chat', true, true);
 parser.addCommand('bg', setBackgroundCallback, ['background'], '<span class="monospace">(filename)</span> – sets a background according to filename, partial names allowed', false, true);
-parser.addCommand('sendas', sendMessageAs, [], ` – sends message as a specific character. Uses character avatar if it exists in the characters list. Example that will send "Hello, guys!" from "Chloe": <code>/sendas name="Chloe" Hello, guys!</code>`, true, true);
+parser.addCommand('sendas', sendMessageAs, [], ` – sends message as a specific character. Uses character avatar if it exists in the characters list. Example that will send "Hello, guys!" from "Chloe": <tt>/sendas name="Chloe" Hello, guys!</tt>`, true, true);
 parser.addCommand('sys', sendNarratorMessage, ['nar'], '<span class="monospace">(text)</span> – sends message as a system narrator', false, true);
 parser.addCommand('sysname', setNarratorName, [], '<span class="monospace">(name)</span> – sets a name for future system narrator messages in this chat (display only). Default: System. Leave empty to reset.', true, true);
 parser.addCommand('comment', sendCommentMessage, [], '<span class="monospace">(text)</span> – adds a note/comment message not part of the chat', false, true);
@@ -156,9 +156,10 @@ parser.addCommand('memberremove', removeGroupMemberCallback, ['removemember'], '
 parser.addCommand('memberup', moveGroupMemberUpCallback, ['upmember'], '<span class="monospace">(member index or name)</span> – moves a group member up in the group chat list', true, true);
 parser.addCommand('memberdown', moveGroupMemberDownCallback, ['downmember'], '<span class="monospace">(member index or name)</span> – moves a group member down in the group chat list', true, true);
 parser.addCommand('peek', peekCallback, [], '<span class="monospace">(message index or range)</span> – shows a group member character card without switching chats', true, true);
-parser.addCommand('delswipe', deleteSwipeCallback, [], '<span class="monospace">(optional 1-based id)</span> – deletes a swipe from the last chat message. If swipe id not provided - deletes the current swipe.', true, true);
+parser.addCommand('delswipe', deleteSwipeCallback, ['swipedel'], '<span class="monospace">(optional 1-based id)</span> – deletes a swipe from the last chat message. If swipe id not provided - deletes the current swipe.', true, true);
 parser.addCommand('echo', echoCallback, [], '<span class="monospace">(text)</span> – echoes the text to toast message. Useful for pipes debugging.', true, true);
 parser.addCommand('gen', generateCallback, [], '<span class="monospace">(prompt)</span> – generates text using the provided prompt and passes it to the next command through the pipe.', true, true);
+parser.addCommand('addswipe', addSwipeCallback, ['swipeadd'], '<span class="monospace">(text)</span> – adds a swipe to the last chat message.', true, true);
 
 const NARRATOR_NAME_KEY = 'narrator_name';
 const NARRATOR_NAME_DEFAULT = 'System';
@@ -185,6 +186,57 @@ async function echoCallback(_, arg) {
 
     toastr.info(arg);
     return arg;
+}
+
+async function addSwipeCallback(_, arg) {
+    const lastMessage = chat[chat.length - 1];
+
+    if (!lastMessage) {
+        toastr.warning("No messages to add swipes to.");
+        return;
+    }
+
+    if (!arg) {
+        console.warn('WARN: No argument provided for /addswipe command');
+        return;
+    }
+
+    if (lastMessage.is_user) {
+        toastr.warning("Can't add swipes to user messages.");
+        return;
+    }
+
+    if (lastMessage.is_system) {
+        toastr.warning("Can't add swipes to system messages.");
+        return;
+    }
+
+    if (lastMessage.extra?.image) {
+        toastr.warning("Can't add swipes to message containing an image.");
+        return;
+    }
+
+    if (!Array.isArray(lastMessage.swipes)) {
+        lastMessage.swipes = [lastMessage.mes];
+        lastMessage.swipe_info = [{}];
+        lastMessage.swipe_id = 0;
+    }
+
+    lastMessage.swipes.push(arg);
+    lastMessage.swipe_info.push({
+        send_date: getMessageTimeStamp(),
+        gen_started: null,
+        gen_finished: null,
+        extra: {
+            bias: extractMessageBias(arg),
+            gen_id: Date.now(),
+            api: 'manual',
+            model: 'slash command',
+        }
+     });
+
+    await saveChatConditional();
+    await reloadCurrentChat();
 }
 
 async function deleteSwipeCallback(_, arg) {

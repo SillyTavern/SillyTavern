@@ -1394,6 +1394,9 @@ export async function reloadCurrentChat() {
         await printMessages();
         await eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
     }
+
+    hideSwipeButtons();
+    showSwipeButtons();
 }
 
 function messageFormatting(mes, ch_name, isSystem, isUser) {
