@@ -4,6 +4,7 @@ import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper
 import { loadMovingUIState, power_user } from "../../power-user.js";
 import { registerSlashCommand } from "../../slash-commands.js";
 import { onlyUnique, debounce, getCharaFilename, trimToEndSentence, trimToStartSentence } from "../../utils.js";
+import { hideMutedSprites } from "../../group-chats.js";
 export { MODULE_NAME };
 
 const MODULE_NAME = 'expressions';
@@ -118,7 +119,7 @@ async function visualNovelSetCharacterSprites(container, name, expression) {
         const isDisabled = group.disabled_members.includes(avatar);
 
         // skip disabled characters
-        if (isDisabled) {
+        if (isDisabled && hideMutedSprites) {
             continue;
         }
 
