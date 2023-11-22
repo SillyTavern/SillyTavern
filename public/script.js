@@ -3340,7 +3340,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
 
                 // Add a space if prompt cache doesn't start with one
-                if (!/^\s/.test(promptCache) && !isInstruct) {
+                if (!/^\s/.test(promptCache) && !isInstruct && !isContinue) {
                     promptCache = ' ' + promptCache;
                 }
 
