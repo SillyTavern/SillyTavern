@@ -502,6 +502,10 @@ async function processTtsQueue() {
         const partJoiner = (ttsProvider?.separator || ' ... ');
         text = matches ? matches.join(partJoiner) : text;
     }
+
+    // Collapse newlines and spaces into single space
+    text = text.replace(/\s+/g, ' ');
+
     console.log(`TTS: ${text}`)
     const char = currentTtsJob.name
 
