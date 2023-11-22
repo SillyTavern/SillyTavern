@@ -3703,7 +3703,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     }
 
                     //Formating
-                    const displayIncomplete = type == 'quiet';
+                    const displayIncomplete = type === 'quiet' && !quietToLoud;
                     getMessage = cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete);
 
                     if (getMessage.length > 0) {
