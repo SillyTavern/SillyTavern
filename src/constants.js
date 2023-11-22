@@ -105,10 +105,6 @@ const UNSAFE_EXTENSIONS = [
 
 const PALM_SAFETY = [
     {
-        category: "HARM_CATEGORY_UNSPECIFIED",
-        threshold: "BLOCK_NONE"
-    },
-    {
         category: "HARM_CATEGORY_DEROGATORY",
         threshold: "BLOCK_NONE"
     },
