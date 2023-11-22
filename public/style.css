@@ -65,8 +65,8 @@
         (
             (
                 (
-                    (var(--SmartThemeCheckboxBgColorR) * 299) + 
-                    (var(--SmartThemeCheckboxBgColorG) * 587) + 
+                    (var(--SmartThemeCheckboxBgColorR) * 299) +
+                    (var(--SmartThemeCheckboxBgColorG) * 587) +
                     (var(--SmartThemeCheckboxBgColorB) * 114)
                 ) / 1000
             ) - 128
@@ -138,6 +138,7 @@ body {
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
     font-size: var(--mainFontSize);
     color: var(--SmartThemeBodyColor);
+    overflow: hidden;
 }
 
 ::-webkit-scrollbar {
