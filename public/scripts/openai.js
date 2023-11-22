@@ -3118,15 +3118,14 @@ async function onModelChange() {
             modelMetaInformation.architecture.instruct_type) {
             const presetSelect = document.getElementById('instruct_presets');
 
-            const promptFormatMap = getOpenRouterPromptFormats();
-            const instructType = promptFormatMap.has(modelMetaInformation.architecture.instruct_type) ? promptFormatMap.get(modelMetaInformation.architecture.instruct_type) : modelMetaInformation.architecture.instruct_type;
-            const presetOption = presetSelect.querySelector(`option[value="${instructType}" i]`);
+            const preset = getDefaultPresetForInstructType(modelMetaInformation.architecture.instruct_type);
+            const presetOption = presetSelect.querySelector(`option[value="${preset}" i]`);
 
-            statusContainer.textContent = `Recommended prompt format: ${instructType}`;
+            statusContainer.textContent = `Recommended prompt format: ${preset}`;
 
             if (presetOption) {
                 // Recommended preset present, activate if there's no regex present.
-                const hasRegex = '' === instruct_presets.find((preset) => preset.name === instructType);
+                const hasRegex = '' === instruct_presets.find((preset) => preset.name === preset);
                 if (!hasRegex) {
                     presetOption.selected = true;
                 }
@@ -3227,11 +3226,13 @@ async function onModelChange() {
     eventSource.emit(event_types.CHATCOMPLETION_MODEL_CHANGED, value);
 }
 
-function getOpenRouterPromptFormats() {
-    return new Map([
+function getDefaultPresetForInstructType(instructType) {
+    const promptFormatMap = new Map([
         ['llama2', 'Llama 2 Chat'],
         ['vicuna', 'Vicuna 1.1'],
     ]);
+
+    return promptFormatMap.has(instructType) ? promptFormatMap.get(instructType) : instructType;
 }
 
 async function onOpenrouterModelSortChange() {
