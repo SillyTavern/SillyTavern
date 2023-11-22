@@ -575,12 +575,12 @@ function getModel() {
     return undefined;
 }
 
-export function getTextGenGenerationData(finalPrompt, this_amount_gen, isImpersonate, cfgValues) {
+export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, isContinue, cfgValues) {
     let APIflags = {
         'prompt': finalPrompt,
         'model': getModel(),
-        'max_new_tokens': this_amount_gen,
-        'max_tokens': this_amount_gen,
+        'max_new_tokens': maxTokens,
+        'max_tokens': maxTokens,
         'temperature': textgenerationwebui_settings.temp,
         'top_p': textgenerationwebui_settings.top_p,
         'typical_p': textgenerationwebui_settings.typical_p,
@@ -595,8 +595,8 @@ export function getTextGenGenerationData(finalPrompt, this_amount_gen, isImperso
         'length_penalty': textgenerationwebui_settings.length_penalty,
         'early_stopping': textgenerationwebui_settings.early_stopping,
         'add_bos_token': textgenerationwebui_settings.add_bos_token,
-        'stopping_strings': getStoppingStrings(isImpersonate),
-        'stop': getStoppingStrings(isImpersonate),
+        'stopping_strings': getStoppingStrings(isImpersonate, isContinue),
+        'stop': getStoppingStrings(isImpersonate, isContinue),
         'truncation_length': max_context,
         'ban_eos_token': textgenerationwebui_settings.ban_eos_token,
         'skip_special_tokens': textgenerationwebui_settings.skip_special_tokens,

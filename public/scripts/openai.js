@@ -1440,6 +1440,7 @@ async function sendOpenAIRequest(type, messages, signal) {
     const isTextCompletion = (isOAI && textCompletionModels.includes(oai_settings.openai_model)) || (isOpenRouter && oai_settings.openrouter_force_instruct && power_user.instruct.enabled);
     const isQuiet = type === 'quiet';
     const isImpersonate = type === 'impersonate';
+    const isContinue = type === 'continue';
     const stream = oai_settings.stream_openai && !isQuiet && !isScale && !isAI21 && !isPalm;
 
     if (isTextCompletion && isOpenRouter) {
@@ -1523,7 +1524,7 @@ async function sendOpenAIRequest(type, messages, signal) {
         generate_data['use_fallback'] = oai_settings.openrouter_use_fallback;
 
         if (isTextCompletion) {
-            generate_data['stop'] = getStoppingStrings(isImpersonate);
+            generate_data['stop'] = getStoppingStrings(isImpersonate, isContinue);
         }
     }
 

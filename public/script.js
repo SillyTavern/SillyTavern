@@ -2156,12 +2156,22 @@ function diceRollReplace(input, invalidRollPlaceholder = '') {
     });
 }
 
-function getStoppingStrings(isImpersonate) {
+/**
+ * Gets stopping sequences for the prompt.
+ * @param {boolean} isImpersonate A request is made to impersonate a user
+ * @param {boolean} isContinue A request is made to continue the message
+ * @returns {string[]} Array of stopping strings
+ */
+function getStoppingStrings(isImpersonate, isContinue) {
     const charString = `\n${name2}:`;
     const userString = `\n${name1}:`;
     const result = isImpersonate ? [charString] : [userString];
 
     result.push(userString);
+
+    if (isContinue && Array.isArray(chat) && chat[chat.length - 1]?.is_user) {
+        result.push(charString);
+    }
 
     // Add other group members as the stopping strings
     if (selected_group) {
@@ -2717,10 +2727,10 @@ export async function generateRaw(prompt, api) {
             break;
         case 'novel':
             const novelSettings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
-            generateData = getNovelGenerationData(prompt, novelSettings, amount_gen, false, null);
+            generateData = getNovelGenerationData(prompt, novelSettings, amount_gen, false, false, null);
             break;
         case 'textgenerationwebui':
-            generateData = getTextGenGenerationData(prompt, amount_gen, false, null);
+            generateData = getTextGenGenerationData(prompt, amount_gen, false, false, null);
             break;
         case 'openai':
             generateData = [{ role: 'user', content: prompt.trim() }];
@@ -3521,11 +3531,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
             }
             else if (main_api == 'textgenerationwebui') {
-                generate_data = getTextGenGenerationData(finalPrompt, maxLength, isImpersonate, cfgValues);
+                generate_data = getTextGenGenerationData(finalPrompt, maxLength, isImpersonate, isContinue, cfgValues);
             }
             else if (main_api == 'novel') {
                 const presetSettings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
-                generate_data = getNovelGenerationData(finalPrompt, presetSettings, maxLength, isImpersonate, cfgValues);
+                generate_data = getNovelGenerationData(finalPrompt, presetSettings, maxLength, isImpersonate, isContinue, cfgValues);
             }
             else if (main_api == 'openai') {
                 let [prompt, counts] = await prepareOpenAIMessages({
@@ -4328,7 +4338,7 @@ function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete
         getMessage = substituteParams(power_user.user_prompt_bias) + getMessage;
     }
 
-    const stoppingStrings = getStoppingStrings(isImpersonate);
+    const stoppingStrings = getStoppingStrings(isImpersonate, isContinue);
 
     for (const stoppingString of stoppingStrings) {
         if (stoppingString.length) {
@@ -4370,13 +4380,13 @@ function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete
     }
 
     if (nameToTrim && getMessage.indexOf(`${nameToTrim}:`) == 0) {
-        getMessage = getMessage.substr(0, getMessage.indexOf(`${nameToTrim}:`));
+        getMessage = getMessage.substring(0, getMessage.indexOf(`${nameToTrim}:`));
     }
     if (nameToTrim && getMessage.indexOf(`\n${nameToTrim}:`) >= 0) {
-        getMessage = getMessage.substr(0, getMessage.indexOf(`\n${nameToTrim}:`));
+        getMessage = getMessage.substring(0, getMessage.indexOf(`\n${nameToTrim}:`));
     }
     if (getMessage.indexOf('<|endoftext|>') != -1) {
-        getMessage = getMessage.substr(0, getMessage.indexOf('<|endoftext|>'));
+        getMessage = getMessage.substring(0, getMessage.indexOf('<|endoftext|>'));
     }
     const isInstruct = power_user.instruct.enabled && main_api !== 'openai';
     if (isInstruct && power_user.instruct.stop_sequence) {
@@ -4421,7 +4431,8 @@ function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete
     }
 
     if (!power_user.allow_name2_display) {
-        getMessage = getMessage.replace(new RegExp(`(^|\n)${name2}:`, 'g'), "$1");
+        const name2Escaped = escapeRegex(name2);
+        getMessage = getMessage.replace(new RegExp(`(^|\n)${name2Escaped}:\\s*`, 'g'), "$1");
     }
 
     if (isImpersonate) {
