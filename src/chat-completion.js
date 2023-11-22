@@ -3,15 +3,28 @@
  * @param {object[]} messages Array of messages
  * @param {boolean} addHumanPrefix Add Human prefix
  * @param {boolean} addAssistantPostfix Add Assistant postfix
+ * @param {boolean} withSystemPrompt Build system prompt before "\n\nHuman: "
  * @returns {string} Prompt for Claude
  * @copyright Prompt Conversion script taken from RisuAI by kwaroran (GPLv3).
  */
-function convertClaudePrompt(messages, addHumanPrefix, addAssistantPostfix) {
+function convertClaudePrompt(messages, addHumanPrefix, addAssistantPostfix, withSystemPrompt) {
     // Claude doesn't support message names, so we'll just add them to the message content.
     for (const message of messages) {
         if (message.name && message.role !== "system") {
             message.content = message.name + ": " + message.content;
             delete message.name;
+        }
+    }
+
+    let systemPrompt = '';
+    if (withSystemPrompt) {
+        for (const message of messages) {
+            if (message.role === "system" && !message.name) {
+                systemPrompt += message.content + '\n\n';
+                messages.splice(messages.indexOf(message), 1);
+            } else {
+                break;
+            }
         }
     }
 
@@ -44,6 +57,10 @@ function convertClaudePrompt(messages, addHumanPrefix, addAssistantPostfix) {
 
     if (addAssistantPostfix) {
         requestPrompt = requestPrompt + '\n\nAssistant: ';
+    }
+
+    if (withSystemPrompt) {
+        requestPrompt = systemPrompt + requestPrompt;
     }
 
     return requestPrompt;

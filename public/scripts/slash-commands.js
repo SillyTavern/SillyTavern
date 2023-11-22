@@ -26,7 +26,7 @@ import {
     setCharacterName,
 } from "../script.js";
 import { getMessageTimeStamp } from "./RossAscends-mods.js";
-import { groups, is_group_generating, resetSelectedGroup, selected_group } from "./group-chats.js";
+import { findGroupMemberId, groups, is_group_generating, resetSelectedGroup, saveGroupChat, selected_group } from "./group-chats.js";
 import { getRegexedString, regex_placement } from "./extensions/regex/engine.js";
 import { chat_styles, power_user } from "./power-user.js";
 import { autoSelectPersona } from "./personas.js";
@@ -77,21 +77,22 @@ class SlashCommandParser {
         let unnamedArg;
 
         if (args.length > 0) {
-            const argsArray = args.split(' ');
-            for (let arg of argsArray) {
-                const equalsIndex = arg.indexOf('=');
-                if (equalsIndex !== -1) {
-                    const key = arg.substring(0, equalsIndex);
-                    const value = arg.substring(equalsIndex + 1);
-                    // Replace "wrapping quotes" used for escaping spaces
-                    argObj[key] = value.replace(/(^")|("$)/g, '');
-                }
-                else {
-                    break;
-                }
+            // Match named arguments
+            const namedArgPattern = /(\w+)=("(?:\\.|[^"\\])*"|\S+)/g;
+            let match;
+            while ((match = namedArgPattern.exec(args)) !== null) {
+                const key = match[1];
+                const value = match[2];
+                // Remove the quotes around the value, if any
+                argObj[key] = substituteParams(value.replace(/(^")|("$)/g, ''));
             }
 
-            unnamedArg = argsArray.slice(Object.keys(argObj).length).join(' ');
+            // Match unnamed argument
+            const unnamedArgPattern = /(?:\w+=(?:"(?:\\.|[^"\\])*"|\S+)\s*)*(.*)/s;
+            match = unnamedArgPattern.exec(args);
+            if (match !== null) {
+                unnamedArg = match[1].trim();
+            }
 
             // Excluded commands format in their own function
             if (!excludedFromRegex.includes(command)) {
@@ -132,7 +133,7 @@ parser.addCommand('name', setNameCallback, ['persona'], '<span class="monospace"
 parser.addCommand('sync', syncCallback, [], ' – syncs user name in user-attributed messages in the current chat', true, true);
 parser.addCommand('lock', bindCallback, ['bind'], ' – locks/unlocks a persona (name and avatar) to the current chat', true, true);
 parser.addCommand('bg', setBackgroundCallback, ['background'], '<span class="monospace">(filename)</span> – sets a background according to filename, partial names allowed', false, true);
-parser.addCommand('sendas', sendMessageAs, [], ` – sends message as a specific character. Uses character avatar if it exists in the characters list. Example that will send "Hello, guys!" from "Chloe": <pre><code>/sendas Chloe&#10;Hello, guys!</code></pre>`, true, true);
+parser.addCommand('sendas', sendMessageAs, [], ` – sends message as a specific character. Uses character avatar if it exists in the characters list. Example that will send "Hello, guys!" from "Chloe": <tt>/sendas name="Chloe" Hello, guys!</tt>`, true, true);
 parser.addCommand('sys', sendNarratorMessage, ['nar'], '<span class="monospace">(text)</span> – sends message as a system narrator', false, true);
 parser.addCommand('sysname', setNarratorName, [], '<span class="monospace">(name)</span> – sets a name for future system narrator messages in this chat (display only). Default: System. Leave empty to reset.', true, true);
 parser.addCommand('comment', sendCommentMessage, [], '<span class="monospace">(text)</span> – adds a note/comment message not part of the chat', false, true);
@@ -148,10 +149,129 @@ parser.addCommand('send', sendUserMessageCallback, ['add'], '<span class="monosp
 parser.addCommand('trigger', triggerGroupMessageCallback, [], '<span class="monospace">(member index or name)</span> – triggers a message generation for the specified group member', true, true);
 parser.addCommand('hide', hideMessageCallback, [], '<span class="monospace">(message index or range)</span> – hides a chat message from the prompt', true, true);
 parser.addCommand('unhide', unhideMessageCallback, [], '<span class="monospace">(message index or range)</span> – unhides a message from the prompt', true, true);
+parser.addCommand('disable', disableGroupMemberCallback, [], '<span class="monospace">(member index or name)</span> – disables a group member from being drafted for replies', true, true);
+parser.addCommand('enable', enableGroupMemberCallback, [], '<span class="monospace">(member index or name)</span> – enables a group member to be drafted for replies', true, true);
+parser.addCommand('memberadd', addGroupMemberCallback, ['addmember'], '<span class="monospace">(character name)</span> – adds a new group member to the group chat', true, true);
+parser.addCommand('memberremove', removeGroupMemberCallback, ['removemember'], '<span class="monospace">(member index or name)</span> – removes a group member from the group chat', true, true);
+parser.addCommand('memberup', moveGroupMemberUpCallback, ['upmember'], '<span class="monospace">(member index or name)</span> – moves a group member up in the group chat list', true, true);
+parser.addCommand('memberdown', moveGroupMemberDownCallback, ['downmember'], '<span class="monospace">(member index or name)</span> – moves a group member down in the group chat list', true, true);
+parser.addCommand('peek', peekCallback, [], '<span class="monospace">(message index or range)</span> – shows a group member character card without switching chats', true, true);
+parser.addCommand('delswipe', deleteSwipeCallback, ['swipedel'], '<span class="monospace">(optional 1-based id)</span> – deletes a swipe from the last chat message. If swipe id not provided - deletes the current swipe.', true, true);
+parser.addCommand('echo', echoCallback, [], '<span class="monospace">(text)</span> – echoes the text to toast message. Useful for pipes debugging.', true, true);
+parser.addCommand('gen', generateCallback, [], '<span class="monospace">(prompt)</span> – generates text using the provided prompt and passes it to the next command through the pipe.', true, true);
+parser.addCommand('addswipe', addSwipeCallback, ['swipeadd'], '<span class="monospace">(text)</span> – adds a swipe to the last chat message.', true, true);
 
 const NARRATOR_NAME_KEY = 'narrator_name';
 const NARRATOR_NAME_DEFAULT = 'System';
 export const COMMENT_NAME_DEFAULT = 'Note';
+
+async function generateCallback(_, arg) {
+    if (!arg) {
+        console.warn('WARN: No argument provided for /gen command');
+        return;
+    }
+
+    // Prevent generate recursion
+    $('#send_textarea').val('');
+
+    const result = await generateQuietPrompt(arg, false, false, '');
+    return result;
+}
+
+async function echoCallback(_, arg) {
+    if (!arg) {
+        console.warn('WARN: No argument provided for /echo command');
+        return;
+    }
+
+    toastr.info(arg);
+    return arg;
+}
+
+async function addSwipeCallback(_, arg) {
+    const lastMessage = chat[chat.length - 1];
+
+    if (!lastMessage) {
+        toastr.warning("No messages to add swipes to.");
+        return;
+    }
+
+    if (!arg) {
+        console.warn('WARN: No argument provided for /addswipe command');
+        return;
+    }
+
+    if (lastMessage.is_user) {
+        toastr.warning("Can't add swipes to user messages.");
+        return;
+    }
+
+    if (lastMessage.is_system) {
+        toastr.warning("Can't add swipes to system messages.");
+        return;
+    }
+
+    if (lastMessage.extra?.image) {
+        toastr.warning("Can't add swipes to message containing an image.");
+        return;
+    }
+
+    if (!Array.isArray(lastMessage.swipes)) {
+        lastMessage.swipes = [lastMessage.mes];
+        lastMessage.swipe_info = [{}];
+        lastMessage.swipe_id = 0;
+    }
+
+    lastMessage.swipes.push(arg);
+    lastMessage.swipe_info.push({
+        send_date: getMessageTimeStamp(),
+        gen_started: null,
+        gen_finished: null,
+        extra: {
+            bias: extractMessageBias(arg),
+            gen_id: Date.now(),
+            api: 'manual',
+            model: 'slash command',
+        }
+     });
+
+    await saveChatConditional();
+    await reloadCurrentChat();
+}
+
+async function deleteSwipeCallback(_, arg) {
+    const lastMessage = chat[chat.length - 1];
+
+    if (!lastMessage || !Array.isArray(lastMessage.swipes) || !lastMessage.swipes.length) {
+        toastr.warning("No messages to delete swipes from.");
+        return;
+    }
+
+    if (lastMessage.swipes.length <= 1) {
+        toastr.warning("Can't delete the last swipe.");
+        return;
+    }
+
+    const swipeId = arg && !isNaN(Number(arg)) ? (Number(arg) - 1) : lastMessage.swipe_id;
+
+    if (swipeId < 0 || swipeId >= lastMessage.swipes.length) {
+        toastr.warning(`Invalid swipe ID: ${swipeId + 1}`);
+        return;
+    }
+
+    lastMessage.swipes.splice(swipeId, 1);
+
+    if (Array.isArray(lastMessage.swipe_info) && lastMessage.swipe_info.length) {
+        lastMessage.swipe_info.splice(swipeId, 1);
+    }
+
+    const newSwipeId = Math.min(swipeId, lastMessage.swipes.length - 1);
+    lastMessage.swipe_id = newSwipeId;
+    lastMessage.mes = lastMessage.swipes[newSwipeId];
+
+    await saveChatConditional();
+    await reloadCurrentChat();
+}
 
 async function askCharacter(_, text) {
     // Prevent generate recursion
@@ -285,9 +405,156 @@ async function unhideMessageCallback(_, arg) {
     }
 }
 
+async function disableGroupMemberCallback(_, arg) {
+    if (!selected_group) {
+        toastr.warning("Cannot run /disable command outside of a group chat.");
+        return;
+    }
+
+    const chid = findGroupMemberId(arg);
+
+    if (chid === undefined) {
+        console.warn(`WARN: No group member found for argument ${arg}`);
+        return;
+    }
+
+    $(`.group_member[chid="${chid}"] [data-action="disable"]`).trigger('click');
+}
+
+async function enableGroupMemberCallback(_, arg) {
+    if (!selected_group) {
+        toastr.warning("Cannot run /enable command outside of a group chat.");
+        return;
+    }
+
+    const chid = findGroupMemberId(arg);
+
+    if (chid === undefined) {
+        console.warn(`WARN: No group member found for argument ${arg}`);
+        return;
+    }
+
+    $(`.group_member[chid="${chid}"] [data-action="enable"]`).trigger('click');
+}
+
+async function moveGroupMemberUpCallback(_, arg) {
+    if (!selected_group) {
+        toastr.warning("Cannot run /memberup command outside of a group chat.");
+        return;
+    }
+
+    const chid = findGroupMemberId(arg);
+
+    if (chid === undefined) {
+        console.warn(`WARN: No group member found for argument ${arg}`);
+        return;
+    }
+
+    $(`.group_member[chid="${chid}"] [data-action="up"]`).trigger('click');
+}
+
+async function moveGroupMemberDownCallback(_, arg) {
+    if (!selected_group) {
+        toastr.warning("Cannot run /memberdown command outside of a group chat.");
+        return;
+    }
+
+    const chid = findGroupMemberId(arg);
+
+    if (chid === undefined) {
+        console.warn(`WARN: No group member found for argument ${arg}`);
+        return;
+    }
+
+    $(`.group_member[chid="${chid}"] [data-action="down"]`).trigger('click');
+}
+
+async function peekCallback(_, arg) {
+    if (!selected_group) {
+        toastr.warning("Cannot run /peek command outside of a group chat.");
+        return;
+    }
+
+    if (is_group_generating) {
+        toastr.warning("Cannot run /peek command while the group reply is generating.");
+        return;
+    }
+
+    const chid = findGroupMemberId(arg);
+
+    if (chid === undefined) {
+        console.warn(`WARN: No group member found for argument ${arg}`);
+        return;
+    }
+
+    $(`.group_member[chid="${chid}"] [data-action="view"]`).trigger('click');
+}
+
+async function removeGroupMemberCallback(_, arg) {
+    if (!selected_group) {
+        toastr.warning("Cannot run /memberremove command outside of a group chat.");
+        return;
+    }
+
+    if (is_group_generating) {
+        toastr.warning("Cannot run /memberremove command while the group reply is generating.");
+        return;
+    }
+
+    const chid = findGroupMemberId(arg);
+
+    if (chid === undefined) {
+        console.warn(`WARN: No group member found for argument ${arg}`);
+        return;
+    }
+
+    $(`.group_member[chid="${chid}"] [data-action="remove"]`).trigger('click');
+}
+
+async function addGroupMemberCallback(_, arg) {
+    if (!selected_group) {
+        toastr.warning("Cannot run /memberadd command outside of a group chat.");
+        return;
+    }
+
+    if (!arg) {
+        console.warn('WARN: No argument provided for /memberadd command');
+        return;
+    }
+
+    arg = arg.trim();
+    const chid = findCharacterIndex(arg);
+
+    if (chid === -1) {
+        console.warn(`WARN: No character found for argument ${arg}`);
+        return;
+    }
+
+    const character = characters[chid];
+    const group = groups.find(x => x.id === selected_group);
+
+    if (!group || !Array.isArray(group.members)) {
+        console.warn(`WARN: No group found for ID ${selected_group}`);
+        return;
+    }
+
+    const avatar = character.avatar;
+
+    if (group.members.includes(avatar)) {
+        toastr.warning(`${character.name} is already a member of this group.`);
+        return;
+    }
+
+    group.members.push(avatar);
+    await saveGroupChat(selected_group, true);
+
+    // Trigger to reload group UI
+    $('#rm_button_selected_ch').trigger('click');
+}
+
 async function triggerGroupMessageCallback(_, arg) {
     if (!selected_group) {
-        toastr.warning("Cannot run trigger command outside of a group chat.");
+        toastr.warning("Cannot run /trigger command outside of a group chat.");
         return;
     }
 
@@ -296,65 +563,17 @@ async function triggerGroupMessageCallback(_, arg) {
         return;
     }
 
-    arg = arg?.trim();
-
-    if (!arg) {
-        console.warn('WARN: No argument provided for /trigger command');
-        return;
-    }
-
-    const group = groups.find(x => x.id == selected_group);
-
-    if (!group || !Array.isArray(group.members)) {
-        console.warn('WARN: No group found for selected group ID');
-        return;
-    }
-
     // Prevent generate recursion
     $('#send_textarea').val('');
 
-    // Index is 1-based
-    const index = parseInt(arg) - 1;
-    const searchByName = isNaN(index);
+    const chid = findGroupMemberId(arg);
 
-    if (searchByName) {
-        const memberNames = group.members.map(x => ({ name: characters.find(y => y.avatar === x)?.name, index: characters.findIndex(y => y.avatar === x) }));
-        const fuse = new Fuse(memberNames, { keys: ['name'] });
-        const result = fuse.search(arg);
-
-        if (!result.length) {
-            console.warn(`WARN: No group member found with name ${arg}`);
-            return;
-        }
-
-        const chid = result[0].item.index;
-
-        if (chid === -1) {
-            console.warn(`WARN: No character found for group member ${arg}`);
-            return;
-        }
-
-        console.log(`Triggering group member ${chid} (${arg}) from search result`, result[0]);
-
-        Generate('normal', { force_chid: chid });
-    } else {
-        const memberAvatar = group.members[index];
-
-        if (memberAvatar === undefined) {
-            console.warn(`WARN: No group member found at index ${index}`);
-            return;
-        }
-
-        const chid = characters.findIndex(x => x.avatar === memberAvatar);
-
-        if (chid === -1) {
-            console.warn(`WARN: No character found for group member ${memberAvatar} at index ${index}`);
-            return;
-        }
-
-        console.log(`Triggering group member ${memberAvatar} at index ${index}`);
-        Generate('normal', { force_chid: chid });
+    if (chid === undefined) {
+        console.warn(`WARN: No group member found for argument ${arg}`);
+        return;
     }
+
+    Generate('normal', { force_chid: chid });
 }
 
 async function sendUserMessageCallback(_, text) {
@@ -513,19 +732,32 @@ async function setNarratorName(_, text) {
     await saveChatConditional();
 }
 
-export async function sendMessageAs(_, text) {
+export async function sendMessageAs(namedArgs, text) {
     if (!text) {
         return;
     }
 
-    const parts = text.split('\n');
-    if (parts.length <= 1) {
-        toastr.warning('Both character name and message are required. Separate them with a new line.');
-        return;
-    }
+    let name;
+    let mesText;
 
-    const name = parts.shift().trim();
-    let mesText = parts.join('\n').trim();
+    if (namedArgs.name) {
+        name = namedArgs.name.trim();
+        mesText = text.trim();
+
+        if (!name && !text) {
+            toastr.warning('You must specify a name and text to send as');
+            return;
+        }
+    } else {
+        const parts = text.split('\n');
+        if (parts.length <= 1) {
+            toastr.warning('Both character name and message are required. Separate them with a new line.');
+            return;
+        }
+
+        name = parts.shift().trim();
+        mesText = parts.join('\n').trim();
+    }
 
     // Requires a regex check after the slash command is pushed to output
     mesText = getRegexedString(mesText, regex_placement.SLASH_COMMAND, { characterOverride: name });
@@ -740,6 +972,7 @@ async function executeSlashCommands(text) {
     const linesToRemove = [];
 
     let interrupt = false;
+    let pipeResult = '';
 
     for (let index = 0; index < lines.length; index++) {
         const trimmedLine = lines[index].trim();
@@ -759,7 +992,8 @@ async function executeSlashCommands(text) {
         }
 
         console.debug('Slash command executing:', result);
-        await result.command.callback(result.args, result.value);
+        const unnamedArg = result.value || pipeResult;
+        pipeResult = await result.command.callback(result.args, unnamedArg);
 
         if (result.command.interruptsGeneration) {
             interrupt = true;

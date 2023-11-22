@@ -1394,6 +1394,9 @@ export async function reloadCurrentChat() {
         await printMessages();
         await eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
     }
+
+    hideSwipeButtons();
+    showSwipeButtons();
 }
 
 function messageFormatting(mes, ch_name, isSystem, isUser) {
@@ -1928,6 +1931,10 @@ function formatGenerationTimer(gen_started, gen_finished, tokenCount) {
         tokenCount > 0 ? `Token rate: ${Number(tokenCount / seconds).toFixed(1)} t/s` : '',
     ].join('\n');
 
+    if (isNaN(seconds)) {
+        return { timerValue: '', timerTitle };
+    }
+
     return { timerValue, timerTitle };
 }
 
@@ -2216,8 +2223,8 @@ export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, q
         });
 }
 
-async function processCommands(message, type) {
-    if (type == "regenerate" || type == "swipe" || type == 'quiet') {
+async function processCommands(message, type, dryRun) {
+    if (dryRun || type == "regenerate" || type == "swipe" || type == 'quiet') {
         return null;
     }
 
@@ -2772,7 +2779,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
     message_already_generated = isImpersonate ? `${name1}: ` : `${name2}: `;
 
-    const interruptedByCommand = await processCommands($("#send_textarea").val(), type);
+    const interruptedByCommand = await processCommands($("#send_textarea").val(), type, dryRun);
 
     if (interruptedByCommand) {
         $("#send_textarea").val('').trigger('input');
@@ -3101,10 +3108,13 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
         const storyString = renderStoryString(storyStringParams);
 
+        let oaiMessages = [];
+        let oaiMessageExamples = [];
+
         if (main_api === 'openai') {
             message_already_generated = '';
-            setOpenAIMessages(coreChat);
-            setOpenAIMessageExamples(mesExamplesArray);
+            oaiMessages = setOpenAIMessages(coreChat);
+            oaiMessageExamples = setOpenAIMessageExamples(mesExamplesArray);
         }
 
         // hack for regeneration of the first message
@@ -3294,12 +3304,14 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
 
                 // Add character's name
-                // Force name append on continue
+                // Force name append on continue (if not continuing on user message)
                 if (!isInstruct && force_name2) {
                     if (!lastMesString.endsWith('\n')) {
                         lastMesString += '\n';
                     }
-                    lastMesString += `${name2}:`;
+                    if (!isContinue || !(chat[chat.length - 1]?.is_user)) {
+                        lastMesString += `${name2}:`;
+                    }
                 }
 
                 return lastMesString;
@@ -3531,7 +3543,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     cyclePrompt: cyclePrompt,
                     systemPromptOverride: system,
                     jailbreakPromptOverride: jailbreak,
-                    personaDescription: persona
+                    personaDescription: persona,
+                    messages: oaiMessages,
+                    messageExamples: oaiMessageExamples,
                 }, dryRun);
                 generate_data = { prompt: prompt };
 
