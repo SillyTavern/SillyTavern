@@ -1,5 +1,5 @@
-import { chat_metadata, getCurrentChatId, sendSystemMessage, system_message_types } from "../script.js";
-import { extension_settings } from "./extensions.js";
+import { chat_metadata, getCurrentChatId, saveSettingsDebounced, sendSystemMessage, system_message_types } from "../script.js";
+import { extension_settings, saveMetadataDebounced } from "./extensions.js";
 import { executeSlashCommands, registerSlashCommand } from "./slash-commands.js";
 
 function getLocalVariable(name) {
@@ -18,6 +18,7 @@ function setLocalVariable(name, value) {
     }
 
     chat_metadata.variables[name] = value;
+    saveMetadataDebounced();
     return value;
 }
 
@@ -29,6 +30,7 @@ function getGlobalVariable(name) {
 
 function setGlobalVariable(name, value) {
     extension_settings.variables.global[name] = value;
+    saveSettingsDebounced();
 }
 
 function addLocalVariable(name, value) {

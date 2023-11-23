@@ -1,4 +1,4 @@
-import { saveSettingsDebounced, callPopup, getRequestHeaders, substituteParams } from "../../../script.js";
+import { saveSettingsDebounced, callPopup, getRequestHeaders, substituteParams, eventSource, event_types } from "../../../script.js";
 import { getContext, extension_settings } from "../../extensions.js";
 import { initScrollHeight, resetScrollHeight, getSortableDelay } from "../../utils.js";
 import { executeSlashCommands, registerSlashCommand } from "../../slash-commands.js";
@@ -113,7 +113,7 @@ async function onQuickReplyContextMenuChange(id) {
 
 async function onQuickReplyCtxButtonClick(id) {
     const editorHtml = $(await $.get('scripts/extensions/quick-reply/contextMenuEditor.html'));
-    const popupResult = callPopup(editorHtml, "confirm", undefined, { okButton: "Save", wide:false, large:false, rows: 1 });
+    const popupResult = callPopup(editorHtml, "confirm", undefined, { okButton: "Save", wide: false, large: false, rows: 1 });
     const qr = extension_settings.quickReply.quickReplySlots[id - 1];
     if (!qr.contextMenu) {
         qr.contextMenu = [];
@@ -121,7 +121,7 @@ async function onQuickReplyCtxButtonClick(id) {
     /**@type {HTMLTemplateElement}*/
     const tpl = document.querySelector('#quickReply_contextMenuEditor_itemTemplate');
     const fillPresetSelect = (select, item) => {
-        [{name:'Select a preset', value:''}, ...presets].forEach(preset=>{
+        [{ name: 'Select a preset', value: '' }, ...presets].forEach(preset => {
             const opt = document.createElement('option'); {
                 opt.value = preset.value ?? preset.name;
                 opt.textContent = preset.name;
@@ -137,28 +137,43 @@ async function onQuickReplyCtxButtonClick(id) {
         const select = ctxItem.querySelector('.quickReply_contextMenuEditor_preset');
         fillPresetSelect(select, item);
         dom.querySelector('.quickReply_contextMenuEditor_chaining').checked = item.chain;
-        $('.quickReply_contextMenuEditor_remove', ctxItem).on('click', ()=>ctxItem.remove());
+        $('.quickReply_contextMenuEditor_remove', ctxItem).on('click', () => ctxItem.remove());
         document.querySelector('#quickReply_contextMenuEditor_content').append(ctxItem);
     }
-    [...qr.contextMenu, {}].forEach((item,idx)=>{
+    [...qr.contextMenu, {}].forEach((item, idx) => {
         addCtxItem(item, idx)
     });
-    $('#quickReply_contextMenuEditor_addPreset').on('click', ()=>{
+    $('#quickReply_contextMenuEditor_addPreset').on('click', () => {
         addCtxItem({}, document.querySelector('#quickReply_contextMenuEditor_content').children.length);
     });
 
     $('#quickReply_contextMenuEditor_content').sortable({
         delay: getSortableDelay(),
-        stop: ()=>{},
+        stop: () => { },
+    });
+
+    $('#quickReply_autoExecute_userMessage').prop('checked', qr.autoExecute_userMessage ?? false);
+    $('#quickReply_autoExecute_botMessage').prop('checked', qr.autoExecute_botMessage ?? false);
+
+    $('#quickReply_autoExecute_userMessage').on('input', () => {
+        const state = !!$('#quickReply_autoExecute_userMessage').prop('checked');
+        qr.autoExecute_userMessage = state;
+        saveSettingsDebounced();
+    });
+
+    $('#quickReply_autoExecute_botMessage').on('input', () => {
+        const state = !!$('#quickReply_autoExecute_botMessage').prop('checked');
+        qr.autoExecute_botMessage = state;
+        saveSettingsDebounced();
     });
 
     if (await popupResult) {
         qr.contextMenu = Array.from(document.querySelectorAll('#quickReply_contextMenuEditor_content > .quickReplyContextMenuEditor_item'))
-            .map(item=>({
+            .map(item => ({
                 preset: item.querySelector('.quickReply_contextMenuEditor_preset').value,
                 chain: item.querySelector('.quickReply_contextMenuEditor_chaining').checked,
             }))
-            .filter(item=>item.preset);
+            .filter(item => item.preset);
         $(`#quickReplyContainer[data-order="${id}"]`).attr('data-contextMenu', JSON.stringify(qr.contextMenu));
         updateQuickReplyPreset();
         onQuickReplyLabelInput(id);
@@ -234,30 +249,30 @@ async function performQuickReply(prompt, index) {
 }
 
 
-function buildContextMenu(qr, chainMes=null, hierarchy=[], labelHierarchy=[]) {
+function buildContextMenu(qr, chainMes = null, hierarchy = [], labelHierarchy = []) {
     const tree = {
         label: qr.label,
-        mes: (chainMes&&qr.mes ? `${chainMes} | ` : '') + qr.mes,
+        mes: (chainMes && qr.mes ? `${chainMes} | ` : '') + qr.mes,
         children: [],
     };
-    qr.contextMenu?.forEach(ctxItem=>{
+    qr.contextMenu?.forEach(ctxItem => {
         let chain = ctxItem.chain;
         let subName = ctxItem.preset;
-        const sub = presets.find(it=>it.name == subName);
+        const sub = presets.find(it => it.name == subName);
         if (sub) {
             // prevent circular references
             if (hierarchy.indexOf(sub.name) == -1) {
                 const nextHierarchy = [...hierarchy, sub.name];
                 const nextLabelHierarchy = [...labelHierarchy, tree.label];
                 tree.children.push(new MenuHeader(sub.name));
-                sub.quickReplySlots.forEach(subQr=>{
-                    const subInfo = buildContextMenu(subQr, chain?tree.mes:null, nextHierarchy, nextLabelHierarchy);
+                sub.quickReplySlots.forEach(subQr => {
+                    const subInfo = buildContextMenu(subQr, chain ? tree.mes : null, nextHierarchy, nextLabelHierarchy);
                     tree.children.push(new MenuItem(
                         subInfo.label,
                         subInfo.mes,
-                        (evt)=>{
+                        (evt) => {
                             evt.stopPropagation();
-                            performQuickReply(subInfo.mes.replace(/%%parent(-\d+)?%%/g, (_, index)=>{
+                            performQuickReply(subInfo.mes.replace(/%%parent(-\d+)?%%/g, (_, index) => {
                                 return nextLabelHierarchy.slice(parseInt(index ?? '-1'))[0];
                             }));
                         },
@@ -476,7 +491,7 @@ function generateQuickReplyElements() {
         $(`#quickReply${i}Mes`).on('input', function () { onQuickReplyInput(i); });
         $(`#quickReply${i}Label`).on('input', function () { onQuickReplyLabelInput(i); });
         $(`#quickReply${i}CtxButton`).on('click', function () { onQuickReplyCtxButtonClick(i); });
-        $(`#quickReplyContainer > [data-order="${i}"]`).attr('data-contextMenu', JSON.stringify(extension_settings.quickReply.quickReplySlots[i-1]?.contextMenu??[]));
+        $(`#quickReplyContainer > [data-order="${i}"]`).attr('data-contextMenu', JSON.stringify(extension_settings.quickReply.quickReplySlots[i - 1]?.contextMenu ?? []));
     }
 
     $('.quickReplySettings .inline-drawer-toggle').off('click').on('click', function () {
@@ -543,6 +558,24 @@ function saveQROrder() {
         onQuickReplyInput(i)
         i++
     });
+}
+
+async function onMessageReceived() {
+    for (let i = 0; i < extension_settings.quickReply.numberOfSlots; i++) {
+        const qr = extension_settings.quickReply.quickReplySlots[i];
+        if (qr?.autoExecute_botMessage) {
+            await sendQuickReply(i);
+        }
+    }
+}
+
+async function onMessageSent() {
+    for (let i = 0; i < extension_settings.quickReply.numberOfSlots; i++) {
+        const qr = extension_settings.quickReply.quickReplySlots[i];
+        if (qr?.autoExecute_userMessage) {
+            await sendQuickReply(i);
+        }
+    }
 }
 
 jQuery(async () => {
@@ -625,6 +658,9 @@ jQuery(async () => {
 
     await loadSettings('init');
     addQuickReplyBar();
+
+    eventSource.on(event_types.MESSAGE_RECEIVED, onMessageReceived);
+    eventSource.on(event_types.MESSAGE_SENT, onMessageSent);
 });
 
 jQuery(() => {
