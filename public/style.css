@@ -61,22 +61,10 @@
     --SmartThemeCheckboxBgColorR: 220;
     --SmartThemeCheckboxBgColorG: 220;
     --SmartThemeCheckboxBgColorB: 210;
-    --SmartThemeCheckboxTickColorValue: calc(
-        (
-            (
-                (
-                    (var(--SmartThemeCheckboxBgColorR) * 299) +
-                    (var(--SmartThemeCheckboxBgColorG) * 587) +
-                    (var(--SmartThemeCheckboxBgColorB) * 114)
-                ) / 1000
-            ) - 128
-        ) * -1000
-    );
-    --SmartThemeCheckboxTickColor: rgb(
-        var(--SmartThemeCheckboxTickColorValue),
-        var(--SmartThemeCheckboxTickColorValue),
-        var(--SmartThemeCheckboxTickColorValue)
-    );
+    --SmartThemeCheckboxTickColorValue: calc(((((var(--SmartThemeCheckboxBgColorR) * 299) + (var(--SmartThemeCheckboxBgColorG) * 587) + (var(--SmartThemeCheckboxBgColorB) * 114)) / 1000) - 128) * -1000);
+    --SmartThemeCheckboxTickColor: rgb(var(--SmartThemeCheckboxTickColorValue),
+            var(--SmartThemeCheckboxTickColorValue),
+            var(--SmartThemeCheckboxTickColorValue));
 
 
     --sheldWidth: 50vw;
@@ -679,6 +667,7 @@ hr {
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
     flex-flow: column;
+    border-radius: 10px;
 }
 
 .options-content,
