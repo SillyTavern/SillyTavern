@@ -7833,20 +7833,22 @@ jQuery(async function () {
 
         if (popup_type == "del_chat") {
             //close past chat popup
-            $("#select_chat_cross").click();
-
+            $("#select_chat_cross").trigger('click');
+            showLoader()
             if (selected_group) {
                 await deleteGroupChat(selected_group, chat_file_for_del);
             } else {
                 await delChat(chat_file_for_del);
             }
 
-            //open the history view again after 100ms
+            //open the history view again after 2seconds (delay to avoid edge cases for deleting last chat)
             //hide option popup menu
             setTimeout(function () {
                 $("#option_select_chat").click();
                 $("#options").hide();
+                hideLoader()
             }, 2000);
+
         }
         if (popup_type == "del_ch") {
             const deleteChats = !!$("#del_char_checkbox").prop("checked");
@@ -8305,6 +8307,17 @@ jQuery(async function () {
         }
         hideMenu();
     });
+
+    $("#newChatFromManageScreenButton").on('click', function () {
+        setTimeout(() => {
+            $("#option_start_new_chat").trigger('click');
+        }, 1);
+        setTimeout(() => {
+            $("#dialogue_popup_ok").trigger('click');
+        }, 1);
+        $("#select_chat_cross").trigger('click')
+
+    })
 
     //////////////////////////////////////////////////////////////////////////////////////////////
 
