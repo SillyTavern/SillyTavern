@@ -596,6 +596,10 @@ app.post("/api/textgenerationwebui/status", jsonParser, async function (request,
 
                     const modelName = modelInfo?.id;
                     result = modelName || result;
+                } else {
+                    // TabbyAPI returns an error 400 if a model isn't loaded
+
+                    result = "None"
                 }
             } catch (error) {
                 console.error(`Failed to get TabbyAPI model info: ${error}`);
