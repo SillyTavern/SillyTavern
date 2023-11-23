@@ -223,7 +223,7 @@ If the ST-hosting device is on the same wifi network, you will use the ST-host's
 
 If you (or someone else) want to connect to your hosted ST while not being on the same network, you will need the public IP of your ST-hosting device.
 
-* While using the ST-hosting device, access [this page](https://whatismyipaddress.com/) and look for for `IPv4`. This is what you would use to connect from the remote device.
+* While using the ST-hosting device, access [this page](https://whatismyipaddress.com/) and look for `IPv4`. This is what you would use to connect from the remote device.
 
 ### 3. Connect the remote device to the ST host machine
 
