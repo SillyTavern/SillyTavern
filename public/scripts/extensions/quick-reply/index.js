@@ -479,7 +479,7 @@ function generateQuickReplyElements() {
         <div class="flex-container alignitemscenter" data-order="${i}">
             <span class="drag-handle ui-sortable-handle">☰</span>
             <input class="text_pole wide30p" id="quickReply${i}Label" placeholder="(Button label)">
-            <span class="menu_button menu_button_icon" id="quickReply${i}CtxButton" title="Configure context menu">⋮</span>
+            <span class="menu_button menu_button_icon" id="quickReply${i}CtxButton" title="Additional options: context menu, auto-execution">⋮</span>
             <textarea id="quickReply${i}Mes" placeholder="(Custom message or /command)" class="text_pole widthUnset flex1 autoSetHeight" rows="2"></textarea>
         </div>
         `;
