@@ -1,4 +1,6 @@
-System-wide Replacement Macros (in order of evaluation):
+<div>
+    System-wide Replacement Macros (in order of evaluation):
+</div>
 <ul>
     <li><tt>&lcub;&lcub;original&rcub;&rcub;</tt> – global prompts defined in API settings. Only valid in Advanced Definitions prompt overrides.</li>
     <li><tt>&lcub;&lcub;input&rcub;&rcub;</tt> – the user input</li>
@@ -26,4 +28,17 @@ System-wide Replacement Macros (in order of evaluation):
     <li><tt>&lcub;&lcub;random:(args)&rcub;&rcub;</tt> – returns a random item from the list. (ex: &lcub;&lcub;random:1,2,3,4&rcub;&rcub; will return 1 of the 4 numbers at random. Works with text lists too.</li>
     <li><tt>&lcub;&lcub;roll:(formula)&rcub;&rcub;</tt> – rolls a dice. (ex: &lcub;&lcub;roll:1d6&rcub;&rcub; will roll a 6-    sided dice and return a number between 1 and 6)</li>
     <li><tt>&lcub;&lcub;banned "text here"&rcub;&rcub;</tt> – dynamically add text in the quotes to banned words sequences, if Text Generation WebUI backend used. Do nothing for others backends. Can be used anywhere (Character description, WI, AN, etc.) Quotes around the text are important.</li>
+</ul>
+<div>
+    Chat variables Macros:
+</div>
+<div><small>Local variables = unique to the current chat</small></div>
+<div><small>Global variables = works in any chat for any character</small></div>
+<ul>
+    <li><tt>&lcub;&lcub;getvar::name&rcub;&rcub;</tt> – replaced with the value of the local variable "name"</li>
+    <li><tt>&lcub;&lcub;setvar::name::value&rcub;&rcub;</tt> – replaced with empty string, sets the local variable "name" to "value"</li>
+    <li><tt>&lcub;&lcub;addvar::name::increment&rcub;&rcub;</tt> – replaced with the result of addition numeric value of "increment" to the local variable "name"</li>
+    <li><tt>&lcub;&lcub;getglobalvar::name&rcub;&rcub;</tt> – replaced with the value of the global variable "name"</li>
+    <li><tt>&lcub;&lcub;setglobalvar::name::value&rcub;&rcub;</tt> – replaced with empty string, sets the global variable "name" to "value"</li>
+    <li><tt>&lcub;&lcub;addglobalvar::name::value&rcub;&rcub;</tt> – replaced with the result of addition numeric value of "increment" to the global variable "name"</li>
 </ul>

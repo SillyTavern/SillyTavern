@@ -33,6 +33,7 @@ import { autoSelectPersona } from "./personas.js";
 import { getContext } from "./extensions.js";
 import { hideChatMessage, unhideChatMessage } from "./chats.js";
 import { stringToRange } from "./utils.js";
+import { registerVariableCommands } from "./variables.js";
 export {
     executeSlashCommands,
     registerSlashCommand,
@@ -160,6 +161,7 @@ parser.addCommand('delswipe', deleteSwipeCallback, ['swipedel'], '<span class="m
 parser.addCommand('echo', echoCallback, [], '<span class="monospace">(text)</span> – echoes the text to toast message. Useful for pipes debugging.', true, true);
 parser.addCommand('gen', generateCallback, [], '<span class="monospace">(prompt)</span> – generates text using the provided prompt and passes it to the next command through the pipe.', true, true);
 parser.addCommand('addswipe', addSwipeCallback, ['swipeadd'], '<span class="monospace">(text)</span> – adds a swipe to the last chat message.', true, true);
+registerVariableCommands();
 
 const NARRATOR_NAME_KEY = 'narrator_name';
 const NARRATOR_NAME_DEFAULT = 'System';
@@ -179,12 +181,12 @@ async function generateCallback(_, arg) {
 }
 
 async function echoCallback(_, arg) {
-    if (!arg) {
+    if (!String(arg)) {
         console.warn('WARN: No argument provided for /echo command');
         return;
     }
 
-    toastr.info(arg);
+    toastr.info(String(arg));
     return arg;
 }
 
@@ -961,6 +963,11 @@ function setBackgroundCallback(_, bg) {
     }
 }
 
+/**
+ * Executes slash commands in the provided text
+ * @param {string} text Slash command text
+ * @returns {Promise<{interrupt: boolean, newText: string, pipe: string} | boolean>}
+ */
 async function executeSlashCommands(text) {
     if (!text) {
         return false;
@@ -1006,7 +1013,7 @@ async function executeSlashCommands(text) {
 
     const newText = lines.filter(x => linesToRemove.indexOf(x) === -1).join('\n');
 
-    return { interrupt, newText };
+    return { interrupt, newText, pipe: pipeResult };
 }
 
 function setSlashCommandAutocomplete(textarea) {

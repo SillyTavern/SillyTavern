@@ -194,6 +194,7 @@ import { hideLoader, showLoader } from "./scripts/loader.js";
 import { CharacterContextMenu, BulkEditOverlay } from "./scripts/BulkEditOverlay.js";
 import { loadMancerModels } from "./scripts/mancer-settings.js";
 import { hasPendingFileAttachment, populateFileAttachment } from "./scripts/chats.js";
+import { replaceVariableMacros } from "./scripts/variables.js";
 
 //exporting functions and vars for mods
 export {
@@ -2008,6 +2009,7 @@ function substituteParams(content, _name1, _name2, _original, _group, _replaceCh
         content = content.replace(/{{original}}/i, _original);
     }
 
+    content = replaceVariableMacros(content);
     content = content.replace(/{{input}}/gi, String($('#send_textarea').val()));
 
     if (_replaceCharacterCard) {
