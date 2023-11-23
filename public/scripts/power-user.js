@@ -2421,11 +2421,6 @@ export function getCustomStoppingStrings(limit = undefined) {
                 strings = strings.map(x => substituteParams(x));
             }
 
-            // Apply the limit. If limit is 0, return all strings.
-            if (limit > 0) {
-                strings = strings.slice(0, limit);
-            }
-
             return strings;
         } catch (error) {
             // If there's an error, return an empty array
@@ -2436,7 +2431,14 @@ export function getCustomStoppingStrings(limit = undefined) {
 
     const permanent = getPermanent();
     const ephemeral = EPHEMERAL_STOPPING_STRINGS;
-    return [...permanent, ...ephemeral];
+    const strings = [...permanent, ...ephemeral];
+
+    // Apply the limit. If limit is 0, return all strings.
+    if (limit > 0) {
+        return strings.slice(0, limit);
+    }
+
+    return strings;
 }
 
 $(document).ready(() => {
