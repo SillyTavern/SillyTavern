@@ -34,10 +34,10 @@ export class ContextMenu {
 
 
 
-	show({screenX, screenY}) {
+	show({clientX, clientY}) {
 		this.render();
-		this.menu.style.bottom = `${window.innerHeight - screenY}px`;
-		this.menu.style.left = `${screenX}px`;
+		this.menu.style.bottom = `${window.innerHeight - clientY}px`;
+		this.menu.style.left = `${clientX}px`;
 		document.body.append(this.root);
 	}
 	hide() {
