@@ -45,3 +45,37 @@
     filter: brightness(1.2);
     cursor: pointer;
 }
+
+
+.ctx-blocker {
+    backdrop-filter: blur(1px);
+    background-color: rgba(0 0 0 / 10%);
+    bottom: 0;
+    left: 0;
+    position: fixed;
+    right: 0;
+    top: 0;
+    z-index: 999;
+}
+.ctx-menu {
+    position: fixed;
+    overflow: visible;
+}
+.list-group .list-group-item.ctx-header {
+    font-weight: bold;
+    cursor: default;
+}
+.ctx-item + .ctx-header {
+    border-top: 1px solid;
+}
+.ctx-item {
+    position: relative;
+}
+.ctx-item.ctx-has-children:after {
+    content: " >";
+}
+.ctx-sub-menu {
+    position: absolute;
+    top: 0;
+    left: 100%;
+}

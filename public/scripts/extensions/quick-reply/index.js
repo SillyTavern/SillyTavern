@@ -2,6 +2,9 @@ import { saveSettingsDebounced, callPopup, getRequestHeaders, substituteParams }
 import { getContext, extension_settings } from "../../extensions.js";
 import { initScrollHeight, resetScrollHeight } from "../../utils.js";
 import { executeSlashCommands, registerSlashCommand } from "../../slash-commands.js";
+import { ContextMenu } from "./src/ContextMenu.js";
+import { MenuItem } from "./src/MenuItem.js";
+import { MenuHeader } from "./src/MenuHeader.js";
 
 export { MODULE_NAME };
 
@@ -99,7 +102,12 @@ function onQuickReplyInput(id) {
 
 function onQuickReplyLabelInput(id) {
     extension_settings.quickReply.quickReplySlots[id - 1].label = $(`#quickReply${id}Label`).val();
-    $(`#quickReply${id}`).text(String($(`#quickReply${id}Label`).val()));
+    let quickReplyLabel = extension_settings.quickReply.quickReplySlots[id - 1]?.label || '';
+    const parts = quickReplyLabel.split('...');
+    if (parts.length > 1) {
+        quickReplyLabel = `${parts.shift()}…`;
+    }
+    $(`#quickReply${id}`).text(quickReplyLabel);
     saveSettingsDebounced();
 }
 
@@ -129,13 +137,15 @@ async function onAutoInputInject() {
 }
 
 async function sendQuickReply(index) {
-    const existingText = $("#send_textarea").val();
     const prompt = extension_settings.quickReply.quickReplySlots[index]?.mes || '';
-
+    await performQuickReply(prompt, index);
+}
+async function performQuickReply(prompt, index) {
     if (!prompt) {
         console.warn(`Quick reply slot ${index} is empty! Aborting.`);
         return;
     }
+    const existingText = $("#send_textarea").val();
 
     let newText;
 
@@ -170,6 +180,44 @@ async function sendQuickReply(index) {
 }
 
 
+function buildContextMenu(qr, chainMes=null, hierarchy=[]) {
+    const tree = {
+        label: qr.label,
+        mes: (chainMes&&qr.mes ? `${chainMes} | ` : '') + qr.mes,
+        children: [],
+    };
+    const parts = qr.label.split('...');
+    if (parts.length > 1) {
+        tree.label = parts.shift();
+        parts.forEach(subName=>{
+            let chain = false;
+            if (subName[0] == '!') {
+                chain = true;
+                subName = subName.substring(1);
+            }
+            const sub = presets.find(it=>it.name == subName);
+            if (sub) {
+                // prevent circular references
+                if (hierarchy.indexOf(sub.name) == -1) {
+                    tree.children.push(new MenuHeader(sub.name));
+                    sub.quickReplySlots.forEach(subQr=>{
+                        const subInfo = buildContextMenu(subQr, chain?tree.mes:null, [...hierarchy, sub.name]);
+                        tree.children.push(new MenuItem(
+                            subInfo.label,
+                            subInfo.mes,
+                            (evt)=>{
+                                evt.stopPropagation();
+                                performQuickReply(subInfo.mes);
+                            },
+                            subInfo.children,
+                        ));
+                    });
+                }
+            }
+        });
+    }
+    return tree;
+}
 function addQuickReplyBar() {
     $('#quickReplyBar').remove();
     let quickReplyButtonHtml = '';
@@ -177,6 +225,10 @@ function addQuickReplyBar() {
     for (let i = 0; i < extension_settings.quickReply.numberOfSlots; i++) {
         let quickReplyMes = extension_settings.quickReply.quickReplySlots[i]?.mes || '';
         let quickReplyLabel = extension_settings.quickReply.quickReplySlots[i]?.label || '';
+        const parts = quickReplyLabel.split('...');
+        if (parts.length > 1) {
+            quickReplyLabel = `${parts.shift()}…`;
+        }
         quickReplyButtonHtml += `<div title="${quickReplyMes}" class="quickReplyButton" data-index="${i}" id="quickReply${i + 1}">${quickReplyLabel}</div>`;
     }
 
@@ -193,6 +245,14 @@ function addQuickReplyBar() {
     $('.quickReplyButton').on('click', function () {
         let index = $(this).data('index');
         sendQuickReply(index);
+    });
+    $('.quickReplyButton').on('contextmenu', function (evt) {
+        evt.preventDefault();
+        let index = $(this).data('index');
+        const qr = extension_settings.quickReply.quickReplySlots[index];
+        const tree = buildContextMenu(qr);
+        const menu = new ContextMenu(tree.children);
+        menu.show(evt);
     });
 }
 
