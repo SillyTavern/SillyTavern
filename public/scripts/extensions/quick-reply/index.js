@@ -180,7 +180,7 @@ async function performQuickReply(prompt, index) {
 }
 
 
-function buildContextMenu(qr, chainMes=null, hierarchy=[]) {
+function buildContextMenu(qr, chainMes=null, hierarchy=[], labelHierarchy=[]) {
     const tree = {
         label: qr.label,
         mes: (chainMes&&qr.mes ? `${chainMes} | ` : '') + qr.mes,
@@ -199,15 +199,19 @@ function buildContextMenu(qr, chainMes=null, hierarchy=[]) {
             if (sub) {
                 // prevent circular references
                 if (hierarchy.indexOf(sub.name) == -1) {
+                    const nextHierarchy = [...hierarchy, sub.name];
+                    const nextLabelHierarchy = [...labelHierarchy, tree.label];
                     tree.children.push(new MenuHeader(sub.name));
                     sub.quickReplySlots.forEach(subQr=>{
-                        const subInfo = buildContextMenu(subQr, chain?tree.mes:null, [...hierarchy, sub.name]);
+                        const subInfo = buildContextMenu(subQr, chain?tree.mes:null, nextHierarchy, nextLabelHierarchy);
                         tree.children.push(new MenuItem(
                             subInfo.label,
                             subInfo.mes,
                             (evt)=>{
                                 evt.stopPropagation();
-                                performQuickReply(subInfo.mes);
+                                performQuickReply(subInfo.mes.replace(/%%parent(-\d+)?%%/g, (_, index)=>{
+                                    return nextLabelHierarchy.slice(parseInt(index ?? '-1'))[0];
+                                }));
                             },
                             subInfo.children,
                         ));
