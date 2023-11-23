@@ -29,7 +29,7 @@ import {
 import { getMessageTimeStamp } from "./RossAscends-mods.js";
 import { findGroupMemberId, groups, is_group_generating, resetSelectedGroup, saveGroupChat, selected_group } from "./group-chats.js";
 import { getRegexedString, regex_placement } from "./extensions/regex/engine.js";
-import { chat_styles, power_user } from "./power-user.js";
+import { addEphemeralStoppingString, chat_styles, power_user } from "./power-user.js";
 import { autoSelectPersona } from "./personas.js";
 import { getContext } from "./extensions.js";
 import { hideChatMessage, unhideChatMessage } from "./chats.js";
@@ -161,7 +161,7 @@ parser.addCommand('peek', peekCallback, [], '<span class="monospace">(message in
 parser.addCommand('delswipe', deleteSwipeCallback, ['swipedel'], '<span class="monospace">(optional 1-based id)</span> – deletes a swipe from the last chat message. If swipe id not provided - deletes the current swipe.', true, true);
 parser.addCommand('echo', echoCallback, [], '<span class="monospace">(text)</span> – echoes the text to toast message. Useful for pipes debugging.', true, true);
 parser.addCommand('gen', generateCallback, [], '<span class="monospace">(prompt)</span> – generates text using the provided prompt and passes it to the next command through the pipe.', true, true);
-parser.addCommand('genraw', generateRawCallback, [], '<span class="monospace">(prompt)</span> – generates text using the provided prompt and passes it to the next command through the pipe. Does not include chat history or character card. Use instruct=off to skip instruct formatting, e.g. <tt>/genraw instruct=off Why is the sky blue?</tt>', true, true);
+parser.addCommand('genraw', generateRawCallback, [], '<span class="monospace">(prompt)</span> – generates text using the provided prompt and passes it to the next command through the pipe. Does not include chat history or character card. Use instruct=off to skip instruct formatting, e.g. <tt>/genraw instruct=off Why is the sky blue?</tt>. Use stop=... with a JSON-serializer array to add one-time custom stop strings, e.g. <tt>/genraw stop=["\\n"] Say hi</tt>', true, true);
 parser.addCommand('addswipe', addSwipeCallback, ['swipeadd'], '<span class="monospace">(text)</span> – adds a swipe to the last chat message.', true, true);
 parser.addCommand('abort', abortCallback, [], ' – aborts the slash command batch execution', true, true);
 registerVariableCommands();
@@ -183,6 +183,19 @@ async function generateRawCallback(args, value) {
 
     // Prevent generate recursion
     $('#send_textarea').val('');
+
+    if (typeof args.stop === 'string' && args.stop.length) {
+        try {
+            const stopStrings = JSON.parse(args.stop);
+            if (Array.isArray(stopStrings)) {
+                for (const stopString of stopStrings) {
+                    addEphemeralStoppingString(stopString);
+                }
+            }
+        } catch {
+            // Do nothing
+        }
+    }
 
     const result = await generateRaw(value, '', args.instruct);
     return result;

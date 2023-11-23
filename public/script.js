@@ -82,6 +82,7 @@ import {
     registerDebugFunction,
     ui_mode,
     switchSimpleMode,
+    flushEphemeralStoppingStrings,
 } from "./scripts/power-user.js";
 
 import {
@@ -3837,6 +3838,7 @@ function unblockGeneration() {
     activateSendButtons();
     showSwipeButtons();
     setGenerationProgress(0);
+    flushEphemeralStoppingStrings();
     $("#send_textarea").removeAttr('disabled');
 }
 
