@@ -86,7 +86,7 @@ class SlashCommandParser {
                 const key = match[1];
                 const value = match[2];
                 // Remove the quotes around the value, if any
-                argObj[key] = substituteParams(value.replace(/(^")|("$)/g, ''));
+                argObj[key] = value.replace(/(^")|("$)/g, '');
             }
 
             // Match unnamed argument
@@ -1048,10 +1048,14 @@ async function executeSlashCommands(text, unescape = false) {
         console.debug('Slash command executing:', result);
         let unnamedArg = result.value || pipeResult;
 
-        if (pipeResult && typeof result.args === 'object') {
+        if (typeof result.args === 'object') {
             for (const [key, value] of Object.entries(result.args)) {
-                if (typeof value === 'string' && /{{pipe}}/i.test(value)) {
-                    result.args[key] = value.replace(/{{pipe}}/i, pipeResult);
+                if (typeof value === 'string') {
+                    if (pipeResult && /{{pipe}}/i.test(value)) {
+                        result.args[key] = value.replace(/{{pipe}}/i, pipeResult);
+                    }
+
+                    result.args[key] = substituteParams(value.trim());
                 }
             }
         }

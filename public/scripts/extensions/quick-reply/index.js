@@ -229,13 +229,13 @@ async function performQuickReply(prompt, index) {
         newText = `${prompt} `;
     }
 
-    newText = substituteParams(newText);
-
     // the prompt starts with '/' - execute slash commands natively
     if (prompt.startsWith('/')) {
         await executeSlashCommands(newText);
         return;
     }
+
+    newText = substituteParams(newText);
 
     $("#send_textarea").val(newText);
 
@@ -560,20 +560,26 @@ function saveQROrder() {
     });
 }
 
-async function onMessageReceived() {
+async function onMessageReceived(index) {
     for (let i = 0; i < extension_settings.quickReply.numberOfSlots; i++) {
         const qr = extension_settings.quickReply.quickReplySlots[i];
         if (qr?.autoExecute_botMessage) {
-            await sendQuickReply(i);
+            const message = getContext().chat[index];
+            if (message?.mes && message?.mes !== '...') {
+                await sendQuickReply(i);
+            }
         }
     }
 }
 
-async function onMessageSent() {
+async function onMessageSent(index) {
     for (let i = 0; i < extension_settings.quickReply.numberOfSlots; i++) {
         const qr = extension_settings.quickReply.quickReplySlots[i];
         if (qr?.autoExecute_userMessage) {
-            await sendQuickReply(i);
+            const message = getContext().chat[index];
+            if (message?.mes && message?.mes !== '...') {
+                await sendQuickReply(i);
+            }
         }
     }
 }
