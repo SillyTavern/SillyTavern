@@ -161,7 +161,7 @@ parser.addCommand('peek', peekCallback, [], '<span class="monospace">(message in
 parser.addCommand('delswipe', deleteSwipeCallback, ['swipedel'], '<span class="monospace">(optional 1-based id)</span> – deletes a swipe from the last chat message. If swipe id not provided - deletes the current swipe.', true, true);
 parser.addCommand('echo', echoCallback, [], '<span class="monospace">(text)</span> – echoes the text to toast message. Useful for pipes debugging.', true, true);
 parser.addCommand('gen', generateCallback, [], '<span class="monospace">(prompt)</span> – generates text using the provided prompt and passes it to the next command through the pipe.', true, true);
-parser.addCommand('genraw', generateRawCallback, [], '<span class="monospace">(prompt)</span> – generates text using the provided prompt and passes it to the next command through the pipe. Does not include chat history or character card.', true, true);
+parser.addCommand('genraw', generateRawCallback, [], '<span class="monospace">(prompt)</span> – generates text using the provided prompt and passes it to the next command through the pipe. Does not include chat history or character card. Use instruct=off to skip instruct formatting, e.g. <tt>/genraw instruct=off Why is the sky blue?</tt>', true, true);
 parser.addCommand('addswipe', addSwipeCallback, ['swipeadd'], '<span class="monospace">(text)</span> – adds a swipe to the last chat message.', true, true);
 parser.addCommand('abort', abortCallback, [], ' – aborts the slash command batch execution', true, true);
 registerVariableCommands();
@@ -175,8 +175,8 @@ function abortCallback() {
     throw new Error('/abort command executed');
 }
 
-async function generateRawCallback(_, arg) {
-    if (!arg) {
+async function generateRawCallback(args, value) {
+    if (!value) {
         console.warn('WARN: No argument provided for /genraw command');
         return;
     }
@@ -184,7 +184,7 @@ async function generateRawCallback(_, arg) {
     // Prevent generate recursion
     $('#send_textarea').val('');
 
-    const result = await generateRaw(arg, '');
+    const result = await generateRaw(value, '', args.instruct);
     return result;
 }
 

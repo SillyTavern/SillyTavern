@@ -2701,14 +2701,17 @@ class StreamingProcessor {
  * Generates a message using the provided prompt.
  * @param {string} prompt Prompt to generate a message from
  * @param {string} api API to use. Main API is used if not specified.
+ * @param {string} instructOverride If 0, false or off, disables instruct formatting
+ * @returns {Promise<string>} Generated message
  */
-export async function generateRaw(prompt, api) {
+export async function generateRaw(prompt, api, instructOverride) {
     if (!api) {
         api = main_api;
     }
 
     const abortController = new AbortController();
-    const isInstruct = power_user.instruct.enabled && main_api !== 'openai' && main_api !== 'novel';
+    const instructDisabled = instructOverride === '0' || instructOverride === 'false' || instructOverride === 'off';
+    const isInstruct = power_user.instruct.enabled && main_api !== 'openai' && main_api !== 'novel' && !instructDisabled;
 
     prompt = substituteParams(prompt);
     prompt = api == 'novel' ? adjustNovelInstructionPrompt(prompt) : prompt;
@@ -7564,7 +7567,7 @@ function addDebugFunctions() {
     registerDebugFunction('generationTest', 'Send a generation request', 'Generates text using the currently selected API.', async () => {
         const text = prompt('Input text:', 'Hello');
         toastr.info('Working on it...');
-        const message = await generateRaw(text, null);
+        const message = await generateRaw(text, null, '');
         alert(message);
     });
 
