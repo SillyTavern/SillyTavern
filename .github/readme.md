@@ -162,7 +162,7 @@ Installing via ZIP download (discouraged)
 
 ### Linux
 
-  1. Ensure you have Node.js v14 or higher installed by running `node -v`.
+  1. Ensure you have Node.js v18 or higher (the latest [LTS release](https://nodejs.org/en/download/) is recommended) installed by running `node -v`.
   2. Run the `start.sh` script.
   3. Enjoy.
 
