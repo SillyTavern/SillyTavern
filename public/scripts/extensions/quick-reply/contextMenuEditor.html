@@ -1,0 +1,21 @@
+<div id="quickReply_contextMenuEditor_template">
+    <div class="quickReply_contextMenuEditor">
+        <h3><strong>Quick Reply Context Menu Editor</strong></h3>
+        <div id="quickReply_contextMenuEditor_content">
+            <template id="quickReply_contextMenuEditor_itemTemplate">
+				<div class="quickReplyContextMenuEditor_item flex-container alignitemscenter" data-order="0">
+					<span class="drag-handle ui-sortable-handle">☰</span>
+					<select class="quickReply_contextMenuEditor_preset"></select>
+					<label class="flex-container" title="When enabled, the current Quick Reply will be sent together with (before) the clicked QR from the context menu.">
+						Chaining: 
+						<input type="checkbox" class="quickReply_contextMenuEditor_chaining">
+					</label>
+					<span class="quickReply_contextMenuEditor_remove menu_button menu_button_icon fa-solid fa-trash-can" title="Remove entry"></span>
+				</div>
+			</template>
+        </div>
+        <div class="quickReply_contextMenuEditor_actions">
+			<span id="quickReply_contextMenuEditor_addPreset" class="menu_button menu_button_icon fa-solid fa-plus" title="Add preset to context menu"></span>
+		</div>
+    </div>
+</div>
