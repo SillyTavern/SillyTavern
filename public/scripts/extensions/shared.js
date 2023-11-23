@@ -23,7 +23,7 @@ export async function getMultimodalCaption(base64Img, prompt) {
     const compressionLimit = 2 * 1024 * 1024;
     if (extension_settings.caption.multimodal_api === 'openrouter' && base64Bytes > compressionLimit) {
         const maxSide = 1024;
-        base64Img = await createThumbnail(base64Img, maxSide, maxSide);
+        base64Img = await createThumbnail(base64Img, maxSide, maxSide, 'image/jpeg');
     }
 
     const apiResult = await fetch('/api/openai/caption-image', {
