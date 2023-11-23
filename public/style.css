@@ -58,6 +58,13 @@
     --SmartThemeBlurStrength: calc(var(--blurStrength) * 1px);
     --SmartThemeShadowColor: rgba(0, 0, 0, 0.5);
     --SmartThemeBorderColor: rgba(0, 0, 0, 0.5);
+    --SmartThemeCheckboxBgColorR: 220;
+    --SmartThemeCheckboxBgColorG: 220;
+    --SmartThemeCheckboxBgColorB: 210;
+    --SmartThemeCheckboxTickColorValue: calc(((((var(--SmartThemeCheckboxBgColorR) * 299) + (var(--SmartThemeCheckboxBgColorG) * 587) + (var(--SmartThemeCheckboxBgColorB) * 114)) / 1000) - 128) * -1000);
+    --SmartThemeCheckboxTickColor: rgb(var(--SmartThemeCheckboxTickColorValue),
+            var(--SmartThemeCheckboxTickColorValue),
+            var(--SmartThemeCheckboxTickColorValue));
 
 
     --sheldWidth: 50vw;
@@ -119,6 +126,7 @@ body {
     font-family: "Noto Sans", "Noto Color Emoji", sans-serif;
     font-size: var(--mainFontSize);
     color: var(--SmartThemeBodyColor);
+    overflow: hidden;
 }
 
 ::-webkit-scrollbar {
@@ -659,6 +667,7 @@ hr {
     backdrop-filter: blur(var(--SmartThemeBlurStrength));
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
     flex-flow: column;
+    border-radius: 10px;
 }
 
 .options-content,
@@ -2242,7 +2251,7 @@ input[type="checkbox"]:not(#nav-toggle):not(#rm_button_panel_pin):not(#lm_button
     height: 0.65em;
     transform: scale(0);
     transition: 120ms transform ease-in-out;
-    box-shadow: inset 1em 1em var(--SmartThemeBlurTintColor);
+    box-shadow: inset 1em 1em var(--SmartThemeCheckboxTickColor);
     transform-origin: bottom left;
     clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
 }

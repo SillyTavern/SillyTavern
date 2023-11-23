@@ -1,6 +1,6 @@
 import { saveSettingsDebounced, callPopup, getRequestHeaders, substituteParams } from "../../../script.js";
 import { getContext, extension_settings } from "../../extensions.js";
-import { initScrollHeight, resetScrollHeight } from "../../utils.js";
+import { initScrollHeight, resetScrollHeight, getSortableDelay } from "../../utils.js";
 import { executeSlashCommands, registerSlashCommand } from "../../slash-commands.js";
 
 export { MODULE_NAME };
@@ -248,6 +248,50 @@ async function saveQuickReplyPreset() {
     }
 }
 
+//just a copy of save function with the name hardcoded to currently selected preset
+async function updateQuickReplyPreset() {
+    const name = $("#quickReplyPresets").val()
+
+    if (!name) {
+        return;
+    }
+
+    const quickReplyPreset = {
+        name: name,
+        quickReplyEnabled: extension_settings.quickReply.quickReplyEnabled,
+        quickReplySlots: extension_settings.quickReply.quickReplySlots,
+        numberOfSlots: extension_settings.quickReply.numberOfSlots,
+        AutoInputInject: extension_settings.quickReply.AutoInputInject,
+        selectedPreset: name,
+    }
+
+    const response = await fetch('/savequickreply', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify(quickReplyPreset)
+    });
+
+    if (response.ok) {
+        const quickReplyPresetIndex = presets.findIndex(x => x.name == name);
+
+        if (quickReplyPresetIndex == -1) {
+            presets.push(quickReplyPreset);
+            const option = document.createElement('option');
+            option.selected = true;
+            option.value = name;
+            option.innerText = name;
+            $('#quickReplyPresets').append(option);
+        }
+        else {
+            presets[quickReplyPresetIndex] = quickReplyPreset;
+            $(`#quickReplyPresets option[value="${name}"]`).prop('selected', true);
+        }
+        saveSettingsDebounced();
+    } else {
+        toastr.warning('Failed to save Quick Reply Preset.')
+    }
+}
+
 async function onQuickReplyNumberOfSlotsInput() {
     const $input = $('#quickReplyNumberOfSlots');
     let numberOfSlots = Number($input.val());
@@ -291,8 +335,10 @@ function generateQuickReplyElements() {
     let quickReplyHtml = '';
 
     for (let i = 1; i <= extension_settings.quickReply.numberOfSlots; i++) {
+        let itemNumber = i + 1
         quickReplyHtml += `
-        <div class="flex-container alignitemsflexstart">
+        <div class="flex-container alignitemscenter" data-order="${i}"}>
+            <span class="drag-handle ui-sortable-handle">☰</span>
             <input class="text_pole wide30p" id="quickReply${i}Label" placeholder="(Button label)">
             <textarea id="quickReply${i}Mes" placeholder="(Custom message or /command)" class="text_pole widthUnset flex1 autoSetHeight" rows="2"></textarea>
         </div>
@@ -352,6 +398,25 @@ async function doQR(_, text) {
     whichQR.trigger('click')
 }
 
+function saveQROrder() {
+    //update html-level order data to match new sort
+    let i = 1
+    $('#quickReplyContainer').children().each(function () {
+        $(this).attr('data-order', i)
+        $(this).find('input').attr('id', `quickReply${i}Label`)
+        $(this).find('textarea').attr('id', `quickReply${i}Mes`)
+        i++
+    });
+
+    //rebuild the extension_Settings array based on new order
+    i = 1
+    $('#quickReplyContainer').children().each(function () {
+        onQuickReplyLabelInput(i)
+        onQuickReplyInput(i)
+        i++
+    });
+}
+
 jQuery(async () => {
     moduleWorker();
     setInterval(moduleWorker, UPDATE_INTERVAL);
@@ -386,7 +451,10 @@ jQuery(async () => {
                     </select>
                     <div id="quickReplyPresetSaveButton" class="menu_button menu_button_icon">
                         <div class="fa-solid fa-save"></div>
-                        <span>Save</span>
+                        <span>Save New</span>
+                    </div>
+                    <div id="quickReplyPresetUpdateButton" class="menu_button menu_button_icon">
+                        <span>Update</span>
                     </div>
                 </div>
                 <label for="quickReplyNumberOfSlots">Number of slots:</label>
@@ -413,6 +481,12 @@ jQuery(async () => {
     $('#quickReplyEnabled').on('input', onQuickReplyEnabledInput);
     $('#quickReplyNumberOfSlotsApply').on('click', onQuickReplyNumberOfSlotsInput);
     $("#quickReplyPresetSaveButton").on('click', saveQuickReplyPreset);
+    $("#quickReplyPresetUpdateButton").on('click', updateQuickReplyPreset);
+
+    $('#quickReplyContainer').sortable({
+        delay: getSortableDelay(),
+        stop: saveQROrder,
+    });
 
     $("#quickReplyPresets").on('change', async function () {
         const quickReplyPresetSelected = $(this).find(':selected').val();

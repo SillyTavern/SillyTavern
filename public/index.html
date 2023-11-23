@@ -1228,8 +1228,8 @@
                                         <div class="flex-container flexFlowRow alignitemscenter gap10px flexShrink">
                                             <div class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0">
                                                 <small data-i18n="Number of Beams"># of Beams</small>
-                                                <input class="neo-range-slider" type="range" id="num_beams_textgenerationwebui" name="volume" min="1" max="20" step="1" />
-                                                <input class="neo-range-input" type="number" min="1" max="20" step="1" data-for="num_beams_textgenerationwebui" id="num_beams_counter_textgenerationwebui">
+                                                <input class="neo-range-slider" type="range" id="num_beams_textgenerationwebui" name="volume" min="0" max="20" step="1" />
+                                                <input class="neo-range-input" type="number" min="0" max="20" step="1" data-for="num_beams_textgenerationwebui" id="num_beams_counter_textgenerationwebui">
                                             </div>
                                             <div class="alignitemscenter flex-container marginBot5 flexFlowColumn flexGrow flexShrink gap0">
                                                 <small data-i18n="Length Penalty">Length Penalty</small>
@@ -1513,7 +1513,7 @@
                             <option value="kobold"><span data-i18n="KoboldAI">KoboldAI Classic</span></option>
                             <option value="koboldhorde"><span data-i18n="KoboldAI Horde">KoboldAI Horde</span></option>
                             <option value="novel"><span data-i18n="NovelAI">NovelAI</span></option>
-                            <option value="textgenerationwebui"><span data-i18n="Text Completion">Text Completion (ooba, Mancer, Aphrodite, KoboldCpp)</span></option>
+                            <option value="textgenerationwebui"><span data-i18n="Text Completion">Text Completion (ooba, Mancer, Aphrodite, TabbyAPI, KoboldCpp)</span></option>
                             <option value="openai"><span data-i18n="Chat Completion (OpenAI, Claude, Window/OpenRouter, Scale, AI21)">Chat Completion (OpenAI, Claude, Window, OpenRouter, Scale, AI21, PaLM)</span></option>
                         </select>
                     </div>
@@ -3789,6 +3789,7 @@
                     <span id="ChatHistoryCharName"></span><span data-i18n="Chat History">Chat History</span>
                     <a href="https://docs.sillytavern.app/usage/core-concepts/chatfilemanagement/#chat-import" class="notes-link" target="_blank"><span class="fa-solid fa-circle-question note-link-span"></span></a>
                 </div>
+                <div class="fa-solid fa-plus menu_button" title="New Chat" id="newChatFromManageScreenButton"></div>
                 <input type="text" id="select_chat_search" class="menu_button" placeholder="Search..." autocomplete="off">
                 <div id="select_chat_cross" class="opacity50p hoverglow fa-solid fa-circle-xmark fontsize120p" alt="Close Past Chat Popup"></div>
             </div>

@@ -917,6 +917,11 @@ function applyChatWidth(type) {
 async function applyThemeColor(type) {
     if (type === 'main') {
         document.documentElement.style.setProperty('--SmartThemeBodyColor', power_user.main_text_color);
+        const color = power_user.main_text_color.split('(')[1].split(')')[0].split(',');
+        document.documentElement.style.setProperty('--SmartThemeCheckboxBgColorR', color[0]);
+        document.documentElement.style.setProperty('--SmartThemeCheckboxBgColorG', color[1]);
+        document.documentElement.style.setProperty('--SmartThemeCheckboxBgColorB', color[2]);
+        document.documentElement.style.setProperty('--SmartThemeCheckboxBgColorA', color[3]);
     }
     if (type === 'italics') {
         document.documentElement.style.setProperty('--SmartThemeEmColor', power_user.italics_text_color);
@@ -2347,6 +2352,28 @@ async function setThemeCallback(_, text) {
     saveSettingsDebounced();
 }
 
+async function setmovingUIPreset(_, text) {
+    const fuse = new Fuse(movingUIPresets, {
+        keys: [
+            { name: 'name', weight: 1 },
+        ],
+    });
+
+    const results = fuse.search(text);
+    console.debug('movingUI preset fuzzy search results for ' + text, results);
+    const preset = results[0]?.item;
+
+    if (!preset) {
+        toastr.warning(`Could not find preset with name: ${text}`);
+        return;
+    }
+
+    power_user.movingUIPreset = preset.name;
+    applyMovingUIPreset(preset.name);
+    $("#movingUIPresets").val(preset.name);
+    saveSettingsDebounced();
+}
+
 /**
  * Gets the custom stopping strings from the power user settings.
  * @param {number | undefined} limit Number of strings to return. If 0 or undefined, returns all strings.
@@ -3022,4 +3049,5 @@ $(document).ready(() => {
     registerSlashCommand('resetpanels', doResetPanels, ['resetui'], '– resets UI panels to original state.', true, true);
     registerSlashCommand('bgcol', setAvgBG, [], '– WIP test of auto-bg avg coloring', true, true);
     registerSlashCommand('theme', setThemeCallback, [], '<span class="monospace">(name)</span> – sets a UI theme by name', true, true);
+    registerSlashCommand('movingui', setmovingUIPreset, [], '<span class="monospace">(name)</span> – activates a movingUI preset by name', true, true);
 });
