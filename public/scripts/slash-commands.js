@@ -1014,7 +1014,12 @@ async function executeSlashCommands(text) {
         }
 
         console.debug('Slash command executing:', result);
-        const unnamedArg = result.value || pipeResult;
+        let unnamedArg = result.value || pipeResult;
+
+        if (typeof unnamedArg === 'string' && /{{pipe}}/i.test(unnamedArg)) {
+            unnamedArg = unnamedArg.replace(/{{pipe}}/i, pipeResult);
+        }
+
         pipeResult = await result.command.callback(result.args, unnamedArg);
 
         if (result.command.interruptsGeneration) {

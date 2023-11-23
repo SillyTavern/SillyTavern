@@ -2010,6 +2010,7 @@ function substituteParams(content, _name1, _name2, _original, _group, _replaceCh
     }
 
     content = replaceVariableMacros(content);
+    content = content.replace(/{{newline}}/gi, "\n");
     content = content.replace(/{{input}}/gi, String($('#send_textarea').val()));
 
     if (_replaceCharacterCard) {
