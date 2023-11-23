@@ -5,8 +5,12 @@ export class MenuItem {
 	/**@type {Object}*/ value;
 	/**@type {Function}*/ callback;
 	/**@type {MenuItem[]}*/ childList = [];
+	/**@type {SubMenu}*/ subMenu;
+	/**@type {Boolean}*/ isForceExpanded = false;
 
 	/**@type {HTMLElement}*/ root;
+	
+	/**@type {Function}*/ onExpand;
 
 
 
@@ -29,15 +33,44 @@ export class MenuItem {
 				if (this.callback) {
 					item.addEventListener('click', (evt)=>this.callback(evt, this));
 				}
+				item.append(this.label);
 				if (this.childList.length > 0) {
 					item.classList.add('ctx-has-children');
 					const sub = new SubMenu(this.childList);
-					item.addEventListener('pointerover', ()=>sub.show(item));
-					item.addEventListener('pointerleave', ()=>sub.hide());
+					this.subMenu = sub;
+					const trigger = document.createElement('div'); {
+						trigger.classList.add('ctx-expander');
+						trigger.textContent = '⋮';
+						trigger.addEventListener('click', (evt)=>{
+							evt.stopPropagation();
+							this.toggle();
+						});
+						item.append(trigger);
+					}
+					item.addEventListener('mouseover', ()=>sub.show(item));
+					item.addEventListener('mouseleave', ()=>sub.hide());
+				
 				}
-				item.append(this.label);
 			}
 		}
 		return this.root;
+	}
+
+
+	expand() {
+		this.subMenu?.show(this.root);
+		if (this.onExpand) {
+			this.onExpand();
+		}
+	}
+	collapse() {
+		this.subMenu?.hide();
+	}
+	toggle() {
+		if (this.subMenu.isActive) {
+			this.expand();
+		} else {
+			this.collapse();
+		}
 	}
 }

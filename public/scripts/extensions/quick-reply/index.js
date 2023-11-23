@@ -102,8 +102,7 @@ function onQuickReplyInput(id) {
 
 function onQuickReplyLabelInput(id) {
     extension_settings.quickReply.quickReplySlots[id - 1].label = $(`#quickReply${id}Label`).val();
-    let quickReplyLabel = extension_settings.quickReply.quickReplySlots[id - 1]?.label || '';
-    $(`#quickReply${id}`).text(quickReplyLabel + (extension_settings.quickReply.quickReplySlots[id - 1]?.contextMenu?.length?'…':''));
+    addQuickReplyBar();
     saveSettingsDebounced();
 }
 
@@ -277,10 +276,11 @@ function addQuickReplyBar() {
     for (let i = 0; i < extension_settings.quickReply.numberOfSlots; i++) {
         let quickReplyMes = extension_settings.quickReply.quickReplySlots[i]?.mes || '';
         let quickReplyLabel = extension_settings.quickReply.quickReplySlots[i]?.label || '';
+        let expander = '';
         if (extension_settings.quickReply.quickReplySlots[i]?.contextMenu?.length) {
-            quickReplyLabel = `${quickReplyLabel}…`;
+            expander = '<span class="ctx-expander" title="Open context menu">⋮</span>';
         }
-        quickReplyButtonHtml += `<div title="${quickReplyMes}" class="quickReplyButton" data-index="${i}" id="quickReply${i + 1}">${quickReplyLabel}</div>`;
+        quickReplyButtonHtml += `<div title="${quickReplyMes}" class="quickReplyButton" data-index="${i}" id="quickReply${i + 1}">${quickReplyLabel}${expander}</div>`;
     }
 
     const quickReplyBarFullHtml = `
@@ -297,6 +297,17 @@ function addQuickReplyBar() {
         let index = $(this).data('index');
         sendQuickReply(index);
     });
+    $('.quickReplyButton > .ctx-expander').on('click', function (evt) {
+        evt.stopPropagation();
+        let index = $(this.closest('.quickReplyButton')).data('index');
+        const qr = extension_settings.quickReply.quickReplySlots[index];
+        if (qr.contextMenu?.length) {
+            evt.preventDefault();
+            const tree = buildContextMenu(qr);
+            const menu = new ContextMenu(tree.children);
+            menu.show(evt);
+        }
+    })
     $('.quickReplyButton').on('contextmenu', function (evt) {
         let index = $(this).data('index');
         const qr = extension_settings.quickReply.quickReplySlots[index];

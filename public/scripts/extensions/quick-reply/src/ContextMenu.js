@@ -1,16 +1,23 @@
 import { MenuItem } from "./MenuItem.js";
 
 export class ContextMenu {
+	/**@type {MenuItem[]}*/ itemList = [];
+	/**@type {Boolean}*/ isActive = false;
+	
 	/**@type {HTMLElement}*/ root;
 	/**@type {HTMLElement}*/ menu;
-
-	/**@type {MenuItem[]}*/ itemList = [];
 
 
 
 
 	constructor(/**@type {MenuItem[]}*/items) {
 		this.itemList = items;
+		items.forEach(item=>{
+			item.onExpand = ()=>{
+				items.filter(it=>it!=item)
+					.forEach(it=>it.collapse());
+			};
+		});
 	}
 
 	render() {
@@ -35,12 +42,24 @@ export class ContextMenu {
 
 
 	show({clientX, clientY}) {
+		if (this.isActive) return;
+		this.isActive = true;
 		this.render();
 		this.menu.style.bottom = `${window.innerHeight - clientY}px`;
 		this.menu.style.left = `${clientX}px`;
 		document.body.append(this.root);
 	}
 	hide() {
-		this.root.remove();
+		if (this.root) {
+			this.root.remove();
+		}
+		this.isActive = false;
+	}
+	toggle(/**@type {PointerEvent}*/evt) {
+		if (this.isActive) {
+			this.hide();
+		} else {
+			this.show(evt);
+		}
 	}
 }

@@ -71,11 +71,25 @@
 .ctx-item {
     position: relative;
 }
-.ctx-item.ctx-has-children:after {
-    content: " >";
+.ctx-expander {
+    border-left: 1px solid;
+    margin-left: 1em;
+    text-align: center;
+    width: 2em;
+}
+.ctx-expander:hover {
+    font-weight: bold;
 }
 .ctx-sub-menu {
     position: absolute;
     top: 0;
     left: 100%;
+}
+@media screen and (max-width: 1000px) {
+    .ctx-blocker {
+        position: absolute;
+    }
+    .list-group .list-group-item.ctx-item {
+        padding: 1em;
+    }
 }

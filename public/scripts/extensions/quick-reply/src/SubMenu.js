@@ -47,9 +47,18 @@ export class SubMenu {
 		});
 	}
 	hide() {
-		this.root.remove();
-		this.root.style.top = '';
-		this.root.style.left = '';
+		if (this.root) {
+			this.root.remove();
+			this.root.style.top = '';
+			this.root.style.left = '';
+		}
 		this.isActive = false;
+	}
+	toggle(/**@type {HTMLElement}*/parent) {
+		if (this.isActive) {
+			this.hide();
+		} else {
+			this.show(parent);
+		}
 	}
 }

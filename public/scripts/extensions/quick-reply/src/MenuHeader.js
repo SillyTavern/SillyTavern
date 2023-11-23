@@ -1,15 +1,9 @@
+import { MenuItem } from "./MenuItem.js";
 import { SubMenu } from "./SubMenu.js";
 
-export class MenuHeader {
-	/**@type {String}*/ label;
-
-	/**@type {HTMLElement}*/ root;
-
-
-
-
+export class MenuHeader extends MenuItem {
 	constructor(/**@type {String}*/label) {
-		this.label = label;
+		super(label, null, null);
 	}
 
 
