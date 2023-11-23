@@ -973,9 +973,10 @@ export function loadFileToDocument(url, type) {
  * @param {string} dataUrl The data URL encoded data of the image.
  * @param {number} maxWidth The maximum width of the thumbnail.
  * @param {number} maxHeight The maximum height of the thumbnail.
+ * @param {string} [type='image/jpeg'] The type of the thumbnail.
  * @returns {Promise<string>} A promise that resolves to the thumbnail data URL.
  */
-export function createThumbnail(dataUrl, maxWidth, maxHeight) {
+export function createThumbnail(dataUrl, maxWidth, maxHeight, type = 'image/jpeg') {
     return new Promise((resolve, reject) => {
         const img = new Image();
         img.src = dataUrl;
@@ -1000,7 +1001,7 @@ export function createThumbnail(dataUrl, maxWidth, maxHeight) {
             ctx.drawImage(img, 0, 0, thumbnailWidth, thumbnailHeight);
 
             // Convert the canvas to a data URL and resolve the promise
-            const thumbnailDataUrl = canvas.toDataURL('image/jpeg');
+            const thumbnailDataUrl = canvas.toDataURL(type);
             resolve(thumbnailDataUrl);
         };
 
