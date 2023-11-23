@@ -163,11 +163,17 @@ parser.addCommand('echo', echoCallback, [], '<span class="monospace">(text)</spa
 parser.addCommand('gen', generateCallback, [], '<span class="monospace">(prompt)</span> – generates text using the provided prompt and passes it to the next command through the pipe.', true, true);
 parser.addCommand('genraw', generateRawCallback, [], '<span class="monospace">(prompt)</span> – generates text using the provided prompt and passes it to the next command through the pipe. Does not include chat history or character card.', true, true);
 parser.addCommand('addswipe', addSwipeCallback, ['swipeadd'], '<span class="monospace">(text)</span> – adds a swipe to the last chat message.', true, true);
+parser.addCommand('abort', abortCallback, [], ' – aborts the slash command batch execution', true, true);
 registerVariableCommands();
 
 const NARRATOR_NAME_KEY = 'narrator_name';
 const NARRATOR_NAME_DEFAULT = 'System';
 export const COMMENT_NAME_DEFAULT = 'Note';
+
+function abortCallback() {
+    $('#send_textarea').val('');
+    throw new Error('/abort command executed');
+}
 
 async function generateRawCallback(_, arg) {
     if (!arg) {
@@ -250,7 +256,7 @@ async function addSwipeCallback(_, arg) {
             api: 'manual',
             model: 'slash command',
         }
-     });
+    });
 
     await saveChatConditional();
     await reloadCurrentChat();
@@ -981,16 +987,29 @@ function setBackgroundCallback(_, bg) {
 /**
  * Executes slash commands in the provided text
  * @param {string} text Slash command text
+ * @param {boolean} unescape Whether to unescape the batch separator
  * @returns {Promise<{interrupt: boolean, newText: string, pipe: string} | boolean>}
  */
-async function executeSlashCommands(text) {
+async function executeSlashCommands(text, unescape = false) {
     if (!text) {
         return false;
     }
 
+    // Unescape the pipe character
+    if (unescape) {
+        text = text.replace(/\\\|/g, '|');
+    }
+
     // Hack to allow multi-line slash commands
     // All slash command messages should begin with a slash
-    const lines = text.split('|').map(line => line.trim());
+    const placeholder = '\u200B'; // Use a zero-width space as a placeholder
+    const chars = text.split('');
+    for (let i = 1; i < chars.length; i++) {
+        if (chars[i] === '|' && chars[i - 1] !== '\\') {
+            chars[i] = placeholder;
+        }
+    }
+    const lines = chars.join('').split(placeholder).map(line => line.trim());
     const linesToRemove = [];
 
     let interrupt = false;
@@ -1016,7 +1035,15 @@ async function executeSlashCommands(text) {
         console.debug('Slash command executing:', result);
         let unnamedArg = result.value || pipeResult;
 
-        if (typeof unnamedArg === 'string' && /{{pipe}}/i.test(unnamedArg)) {
+        if (pipeResult && typeof result.args === 'object') {
+            for (const [key, value] of Object.entries(result.args)) {
+                if (typeof value === 'string' && /{{pipe}}/i.test(value)) {
+                    result.args[key] = value.replace(/{{pipe}}/i, pipeResult);
+                }
+            }
+        }
+
+        if (pipeResult && typeof unnamedArg === 'string' && /{{pipe}}/i.test(unnamedArg)) {
             unnamedArg = unnamedArg.replace(/{{pipe}}/i, pipeResult);
         }
 
