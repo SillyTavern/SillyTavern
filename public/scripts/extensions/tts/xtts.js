@@ -29,7 +29,8 @@ class XTTSTtsProvider {
         "Turkish": "tr",
         "Japanese": "ja",
         "Korean": "ko",
-        "Hungarian": "hu"
+        "Hungarian": "hu",
+        "Hindi": "hi",
     }
 
     defaultSettings = {
