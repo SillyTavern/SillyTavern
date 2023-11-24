@@ -37,7 +37,7 @@ import { autoSelectPersona } from "./personas.js";
 import { getContext } from "./extensions.js";
 import { hideChatMessage, unhideChatMessage } from "./chats.js";
 import { delay, isFalseBoolean, isTrueBoolean, stringToRange } from "./utils.js";
-import { registerVariableCommands } from "./variables.js";
+import { registerVariableCommands, resolveVariable } from "./variables.js";
 export {
     executeSlashCommands,
     registerSlashCommand,
@@ -272,7 +272,7 @@ function fuzzyCallback(args, value) {
     }
 
     try {
-        const list = JSON.parse(args.list);
+        const list = JSON.parse(resolveVariable(args.list));
         if (!Array.isArray(list)) {
             console.warn('WARN: Invalid list argument provided for /fuzzy command');
             return '';

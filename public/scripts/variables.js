@@ -69,6 +69,18 @@ function addGlobalVariable(name, value) {
     return newValue;
 }
 
+export function resolveVariable(name) {
+    if (existsLocalVariable(name)) {
+        return getLocalVariable(name);
+    }
+
+    if (existsGlobalVariable(name)) {
+        return getGlobalVariable(name);
+    }
+
+    return name;
+}
+
 export function replaceVariableMacros(str) {
     // Replace {{getvar::name}} with the value of the variable name
     str = str.replace(/{{getvar::([^}]+)}}/gi, (_, name) => {
