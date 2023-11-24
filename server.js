@@ -121,7 +121,7 @@ if (fs.existsSync(whitelistPath)) {
 }
 
 const whitelistMode = config.whitelistMode;
-const autorun = config.autorun && cliArguments.autorun!==false && !cliArguments.ssl;
+const autorun = config.autorun && cliArguments.autorun !== false && !cliArguments.ssl;
 const enableExtensions = config.enableExtensions;
 const listen = config.listen;
 
@@ -1697,7 +1697,7 @@ app.post('/getsettings', jsonParser, (request, response) => {
     // OpenAI Settings
     const { fileContents: openai_settings, fileNames: openai_setting_names }
         = readPresetsFromDirectory(DIRECTORIES.openAI_Settings, {
-            sortFunction: sortByModifiedDate(DIRECTORIES.openAI_Settings), removeFileExtension: true
+            sortFunction: sortByName(DIRECTORIES.openAI_Settings), removeFileExtension: true
         });
 
     // TextGenerationWebUI Settings
