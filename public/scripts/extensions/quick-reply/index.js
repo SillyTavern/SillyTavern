@@ -561,6 +561,8 @@ function saveQROrder() {
 }
 
 async function onMessageReceived(index) {
+    if (!extension_settings.quickReply.quickReplyEnabled) return;
+
     for (let i = 0; i < extension_settings.quickReply.numberOfSlots; i++) {
         const qr = extension_settings.quickReply.quickReplySlots[i];
         if (qr?.autoExecute_botMessage) {
@@ -573,6 +575,8 @@ async function onMessageReceived(index) {
 }
 
 async function onMessageSent(index) {
+    if (!extension_settings.quickReply.quickReplyEnabled) return;
+
     for (let i = 0; i < extension_settings.quickReply.numberOfSlots; i++) {
         const qr = extension_settings.quickReply.quickReplySlots[i];
         if (qr?.autoExecute_userMessage) {
