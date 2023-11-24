@@ -183,12 +183,12 @@ function parseBooleanOperands(args) {
 
         if (existsLocalVariable(operand)) {
             const operandLocalVariable = getLocalVariable(operand);
-            return operandLocalVariable || '';
+            return operandLocalVariable ?? '';
         }
 
         if (existsGlobalVariable(operand)) {
             const operandGlobalVariable = getGlobalVariable(operand);
-            return operandGlobalVariable || '';
+            return operandGlobalVariable ?? '';
         }
 
         const stringLiteral = String(operand);
