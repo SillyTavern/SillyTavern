@@ -2393,7 +2393,7 @@ export function flushEphemeralStoppingStrings() {
     }
 
     console.debug('Flushing ephemeral stopping strings:', EPHEMERAL_STOPPING_STRINGS);
-    EPHEMERAL_STOPPING_STRINGS.length = 0;
+    EPHEMERAL_STOPPING_STRINGS.splice(0, EPHEMERAL_STOPPING_STRINGS.length);
 }
 
 /**
