@@ -174,6 +174,7 @@ parser.addCommand('input', inputCallback, ['prompt'], '<span class="monospace">(
 parser.addCommand('run', runCallback, ['call', 'exec'], '<span class="monospace">(QR label)</span> – runs a Quick Reply with the specified name from the current preset.', true, true);
 parser.addCommand('messages', getMessagesCallback, ['message'], '<span class="monospace">(names=off/on [message index or range])</span> – returns the specified message or range of messages as a string.', true, true);
 parser.addCommand('setinput', setInputCallback, [], '<span class="monospace">(text)</span> – sets the user input to the specified text and passes it to the next command through the pipe.', true, true);
+parser.addCommand('popup', popupCallback, [], '<span class="monospace">(text)</span> – shows a blocking popup with the specified text.', true, true);
 registerVariableCommands();
 
 const NARRATOR_NAME_KEY = 'narrator_name';
@@ -182,6 +183,14 @@ export const COMMENT_NAME_DEFAULT = 'Note';
 
 function setInputCallback(_, value) {
     $('#send_textarea').val(value || '').trigger('input');
+    return value;
+}
+
+async function popupCallback(_, value) {
+    const safeValue = DOMPurify.sanitize(value || '');
+    await delay(1);
+    await callPopup(safeValue, 'text');
+    await delay(1);
     return value;
 }
 
