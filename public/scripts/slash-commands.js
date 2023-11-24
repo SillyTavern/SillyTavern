@@ -32,7 +32,7 @@ import {
 import { getMessageTimeStamp } from "./RossAscends-mods.js";
 import { findGroupMemberId, groups, is_group_generating, resetSelectedGroup, saveGroupChat, selected_group } from "./group-chats.js";
 import { getRegexedString, regex_placement } from "./extensions/regex/engine.js";
-import { addEphemeralStoppingString, chat_styles, power_user } from "./power-user.js";
+import { addEphemeralStoppingString, chat_styles, flushEphemeralStoppingStrings, power_user } from "./power-user.js";
 import { autoSelectPersona } from "./personas.js";
 import { getContext } from "./extensions.js";
 import { hideChatMessage, unhideChatMessage } from "./chats.js";
@@ -292,6 +292,21 @@ function fuzzyCallback(args, value) {
     }
 }
 
+function setEphemeralStopStrings(value) {
+    if (typeof value === 'string' && value.length) {
+        try {
+            const stopStrings = JSON.parse(value);
+            if (Array.isArray(stopStrings)) {
+                for (const stopString of stopStrings) {
+                    addEphemeralStoppingString(stopString);
+                }
+            }
+        } catch {
+            // Do nothing
+        }
+    }
+}
+
 async function generateRawCallback(args, value) {
     if (!value) {
         console.warn('WARN: No argument provided for /genraw command');
@@ -302,30 +317,19 @@ async function generateRawCallback(args, value) {
     $('#send_textarea').val('').trigger('input');
     const lock = isTrueBoolean(args?.lock);
 
-    if (typeof args.stop === 'string' && args.stop.length) {
-        try {
-            const stopStrings = JSON.parse(args.stop);
-            if (Array.isArray(stopStrings)) {
-                for (const stopString of stopStrings) {
-                    addEphemeralStoppingString(stopString);
-                }
-            }
-        } catch {
-            // Do nothing
-        }
-    }
-
     try {
         if (lock) {
             deactivateSendButtons();
         }
 
+        setEphemeralStopStrings(args?.stop);
         const result = await generateRaw(value, '', isFalseBoolean(args?.instruct));
         return result;
     } finally {
         if (lock) {
             activateSendButtons();
         }
+        flushEphemeralStoppingStrings();
     }
 }
 
@@ -344,12 +348,14 @@ async function generateCallback(args, value) {
             deactivateSendButtons();
         }
 
+        setEphemeralStopStrings(args?.stop);
         const result = await generateQuietPrompt(value, false, false, '');
         return result;
     } finally {
         if (lock) {
             activateSendButtons();
         }
+        flushEphemeralStoppingStrings();
     }
 }
 
