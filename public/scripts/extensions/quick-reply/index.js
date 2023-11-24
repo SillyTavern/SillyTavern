@@ -154,6 +154,7 @@ async function onQuickReplyCtxButtonClick(id) {
 
     $('#quickReply_autoExecute_userMessage').prop('checked', qr.autoExecute_userMessage ?? false);
     $('#quickReply_autoExecute_botMessage').prop('checked', qr.autoExecute_botMessage ?? false);
+    $('#quickReply_autoExecute_chatLoad').prop('checked', qr.autoExecute_chatLoad ?? false);
     $('#quickReply_hidden').prop('checked', qr.hidden ?? false);
 
     $('#quickReply_hidden').on('input', () => {
@@ -171,6 +172,12 @@ async function onQuickReplyCtxButtonClick(id) {
     $('#quickReply_autoExecute_botMessage').on('input', () => {
         const state = !!$('#quickReply_autoExecute_botMessage').prop('checked');
         qr.autoExecute_botMessage = state;
+        saveSettingsDebounced();
+    });
+
+    $('#quickReply_autoExecute_chatLoad').on('input', () => {
+        const state = !!$('#quickReply_autoExecute_chatLoad').prop('checked');
+        qr.autoExecute_chatLoad = state;
         saveSettingsDebounced();
     });
 
@@ -569,6 +576,11 @@ function saveQROrder() {
     });
 }
 
+/**
+ * Executes quick replies on message received.
+ * @param {number} index New message index
+ * @returns {Promise<void>}
+ */
 async function onMessageReceived(index) {
     if (!extension_settings.quickReply.quickReplyEnabled) return;
 
@@ -583,6 +595,11 @@ async function onMessageReceived(index) {
     }
 }
 
+/**
+ * Executes quick replies on message sent.
+ * @param {number} index New message index
+ * @returns {Promise<void>}
+ */
 async function onMessageSent(index) {
     if (!extension_settings.quickReply.quickReplyEnabled) return;
 
@@ -593,6 +610,22 @@ async function onMessageSent(index) {
             if (message?.mes && message?.mes !== '...') {
                 await sendQuickReply(i);
             }
+        }
+    }
+}
+
+/**
+ * Executes quick replies on chat changed.
+ * @param {string} chatId New chat id
+ * @returns {Promise<void>}
+ */
+async function onChatChanged(chatId) {
+    if (!extension_settings.quickReply.quickReplyEnabled) return;
+
+    for (let i = 0; i < extension_settings.quickReply.numberOfSlots; i++) {
+        const qr = extension_settings.quickReply.quickReplySlots[i];
+        if (qr?.autoExecute_chatLoad && chatId) {
+            await sendQuickReply(i);
         }
     }
 }
@@ -680,6 +713,7 @@ jQuery(async () => {
 
     eventSource.on(event_types.MESSAGE_RECEIVED, onMessageReceived);
     eventSource.on(event_types.MESSAGE_SENT, onMessageSent);
+    eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
 });
 
 jQuery(() => {

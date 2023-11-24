@@ -19,6 +19,10 @@
         </div>
         <h3><strong>Auto-Execute</strong></h3>
         <div class="flex-container flexFlowColumn">
+            <label class="checkbox_label" for="quickReply_hidden">
+                <input type="checkbox" id="quickReply_hidden" >
+                <span><i class="fa-solid fa-fw fa-eye-slash"></i> Invisible (auto-execute only)</span>
+            </label>
             <label class="checkbox_label" for="quickReply_autoExecute_userMessage">
                 <input type="checkbox" id="quickReply_autoExecute_userMessage" >
                 <span><i class="fa-solid fa-fw fa-user"></i> Execute on user message</span>
@@ -27,9 +31,9 @@
                 <input type="checkbox" id="quickReply_autoExecute_botMessage" >
                 <span><i class="fa-solid fa-fw fa-robot"></i> Execute on AI message</span>
             </label>
-            <label class="checkbox_label" for="quickReply_hidden">
-                <input type="checkbox" id="quickReply_hidden" >
-                <span><i class="fa-solid fa-fw fa-eye-slash"></i> Invisible (auto-execute only)</span>
+            <label class="checkbox_label" for="quickReply_autoExecute_chatLoad">
+                <input type="checkbox" id="quickReply_autoExecute_chatLoad" >
+                <span><i class="fa-solid fa-fw fa-message"></i> Execute on opening chat</span>
             </label>
         </div>
     </div>
