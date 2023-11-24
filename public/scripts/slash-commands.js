@@ -164,6 +164,8 @@ parser.addCommand('gen', generateCallback, [], '<span class="monospace">(prompt)
 parser.addCommand('genraw', generateRawCallback, [], '<span class="monospace">(prompt)</span> – generates text using the provided prompt and passes it to the next command through the pipe. Does not include chat history or character card. Use instruct=off to skip instruct formatting, e.g. <tt>/genraw instruct=off Why is the sky blue?</tt>. Use stop=... with a JSON-serialized array to add one-time custom stop strings, e.g. <tt>/genraw stop=["\\n"] Say hi</tt>', true, true);
 parser.addCommand('addswipe', addSwipeCallback, ['swipeadd'], '<span class="monospace">(text)</span> – adds a swipe to the last chat message.', true, true);
 parser.addCommand('abort', abortCallback, [], ' – aborts the slash command batch execution', true, true);
+parser.addCommand('fuzzy', fuzzyCallback, [], 'list=["a","b","c"] (search value) – performs a fuzzy match of the provided search using the provided list of value and passes the closest match to the next command through the pipe.', true, true);
+parser.addCommand('pass', (_, arg) => arg, [], '<span class="monospace">(text)</span> – passes the text to the next command through the pipe.', true, true);
 registerVariableCommands();
 
 const NARRATOR_NAME_KEY = 'narrator_name';
@@ -173,6 +175,38 @@ export const COMMENT_NAME_DEFAULT = 'Note';
 function abortCallback() {
     $('#send_textarea').val('');
     throw new Error('/abort command executed');
+}
+
+function fuzzyCallback(args, value) {
+    if (!value) {
+        console.warn('WARN: No argument provided for /fuzzy command');
+        return '';
+    }
+
+    if (!args.list) {
+        console.warn('WARN: No list argument provided for /fuzzy command');
+        return '';
+    }
+
+    try {
+        const list = JSON.parse(args.list);
+        if (!Array.isArray(list)) {
+            console.warn('WARN: Invalid list argument provided for /fuzzy command');
+            return '';
+        }
+
+        const fuse = new Fuse(list, {
+            includeScore: true,
+            findAllMatches: true,
+            ignoreLocation: true,
+            threshold: 0.7,
+        });
+        const result = fuse.search(value);
+        return result[0]?.item;
+    } catch {
+        console.warn('WARN: Invalid list argument provided for /fuzzy command');
+        return '';
+    }
 }
 
 async function generateRawCallback(args, value) {
