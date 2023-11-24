@@ -154,6 +154,13 @@ async function onQuickReplyCtxButtonClick(id) {
 
     $('#quickReply_autoExecute_userMessage').prop('checked', qr.autoExecute_userMessage ?? false);
     $('#quickReply_autoExecute_botMessage').prop('checked', qr.autoExecute_botMessage ?? false);
+    $('#quickReply_hidden').prop('checked', qr.hidden ?? false);
+
+    $('#quickReply_hidden').on('input', () => {
+        const state = !!$('#quickReply_hidden').prop('checked');
+        qr.hidden = state;
+        saveSettingsDebounced();
+    });
 
     $('#quickReply_autoExecute_userMessage').on('input', () => {
         const state = !!$('#quickReply_autoExecute_userMessage').prop('checked');
@@ -289,13 +296,15 @@ function addQuickReplyBar() {
     let quickReplyButtonHtml = '';
 
     for (let i = 0; i < extension_settings.quickReply.numberOfSlots; i++) {
-        let quickReplyMes = extension_settings.quickReply.quickReplySlots[i]?.mes || '';
-        let quickReplyLabel = extension_settings.quickReply.quickReplySlots[i]?.label || '';
+        const qr = extension_settings.quickReply.quickReplySlots[i];
+        const quickReplyMes = qr?.mes || '';
+        const quickReplyLabel = qr?.label || '';
+        const hidden = qr?.hidden ?? false;
         let expander = '';
         if (extension_settings.quickReply.quickReplySlots[i]?.contextMenu?.length) {
             expander = '<span class="ctx-expander" title="Open context menu">⋮</span>';
         }
-        quickReplyButtonHtml += `<div title="${quickReplyMes}" class="quickReplyButton" data-index="${i}" id="quickReply${i + 1}">${quickReplyLabel}${expander}</div>`;
+        quickReplyButtonHtml += `<div title="${quickReplyMes}" class="quickReplyButton ${hidden ? 'displayNone' : ''}" data-index="${i}" id="quickReply${i + 1}">${quickReplyLabel}${expander}</div>`;
     }
 
     const quickReplyBarFullHtml = `
