@@ -636,6 +636,37 @@ function onSamplerChange() {
     saveSettingsDebounced();
 }
 
+const resolutionOptions = {
+    sd_res_512x512: { width: 512, height: 512 },
+    sd_res_600x600: { width: 600, height: 600 },
+    sd_res_512x768: { width: 512, height: 768 },
+    sd_res_768x512: { width: 768, height: 512 },
+    sd_res_960x540: { width: 960, height: 540 },
+    sd_res_540x960: { width: 540, height: 960 },
+    sd_res_1920x1088: { width: 1920, height: 1088 },
+    sd_res_1088x1920: { width: 1088, height: 1920 },
+    sd_res_1280x720: { width: 1280, height: 720 },
+    sd_res_720x1280: { width: 720, height: 1280 },
+    sd_res_1024x1024: { width: 1024, height: 1024 },
+    sd_res_1152x896: { width: 1152, height: 896 },
+    sd_res_896x1152: { width: 896, height: 1152 },
+    sd_res_1216x832: { width: 1216, height: 832 },
+    sd_res_832x1216: { width: 832, height: 1216 },
+    sd_res_1344x768: { width: 1344, height: 768 },
+    sd_res_768x1344: { width: 768, height: 1344 },
+    sd_res_1536x640: { width: 1536, height: 640 },
+    sd_res_640x1536: { width: 640, height: 1536 },
+};
+
+function onResolutionChange() {
+    const selectedOption = $("#sd_resolution").val();
+    const selectedResolution = resolutionOptions[selectedOption];
+        $("#sd_width_value").text(selectedResolution.width);
+        $("#sd_height_value").text(selectedResolution.height);
+        $("#sd_height").val(selectedResolution.height);
+        $("#sd_width").val(selectedResolution.width);
+}
+
 function onSchedulerChange() {
     extension_settings.sd.scheduler = $('#sd_scheduler').find(':selected').val();
     saveSettingsDebounced();
@@ -2391,6 +2422,7 @@ jQuery(async () => {
     $('#sd_model').on('change', onModelChange);
     $('#sd_vae').on('change', onVaeChange);
     $('#sd_sampler').on('change', onSamplerChange);
+    $('#sd_resolution').on('change', onResolutionChange);
     $('#sd_scheduler').on('change', onSchedulerChange);
     $('#sd_prompt_prefix').on('input', onPromptPrefixInput);
     $('#sd_negative_prompt').on('input', onNegativePromptInput);
