@@ -72,39 +72,39 @@ function addGlobalVariable(name, value) {
 export function replaceVariableMacros(str) {
     // Replace {{getvar::name}} with the value of the variable name
     str = str.replace(/{{getvar::([^}]+)}}/gi, (_, name) => {
-        name = name.toLowerCase().trim();
+        name = name.trim();
         return getLocalVariable(name);
     });
 
     // Replace {{setvar::name::value}} with empty string and set the variable name to value
     str = str.replace(/{{setvar::([^:]+)::([^}]+)}}/gi, (_, name, value) => {
-        name = name.toLowerCase().trim();
+        name = name.trim();
         setLocalVariable(name, value);
         return '';
     });
 
     // Replace {{addvar::name::value}} with empty string and add value to the variable value
     str = str.replace(/{{addvar::([^:]+)::([^}]+)}}/gi, (_, name, value) => {
-        name = name.toLowerCase().trim();
+        name = name.trim();
         return addLocalVariable(name, value);;
     });
 
     // Replace {{getglobalvar::name}} with the value of the global variable name
     str = str.replace(/{{getglobalvar::([^}]+)}}/gi, (_, name) => {
-        name = name.toLowerCase().trim();
+        name = name.trim();
         return getGlobalVariable(name);
     });
 
     // Replace {{setglobalvar::name::value}} with empty string and set the global variable name to value
     str = str.replace(/{{setglobalvar::([^:]+)::([^}]+)}}/gi, (_, name, value) => {
-        name = name.toLowerCase().trim();
+        name = name.trim();
         setGlobalVariable(name, value);
         return '';
     });
 
     // Replace {{addglobalvar::name::value}} with empty string and add value to the global variable value
     str = str.replace(/{{addglobalvar::([^:]+)::([^}]+)}}/gi, (_, name, value) => {
-        name = name.toLowerCase().trim();
+        name = name.trim();
         return addGlobalVariable(name, value);
     });
 

@@ -172,11 +172,46 @@ parser.addCommand('pass', (_, arg) => arg, [], '<span class="monospace">(text)</
 parser.addCommand('delay', delayCallback, ['wait', 'sleep'], '<span class="monospace">(milliseconds)</span> – delays the next command in the pipe by the specified number of milliseconds.', true, true);
 parser.addCommand('input', inputCallback, ['prompt'], '<span class="monospace">(prompt)</span> – shows a popup with the provided prompt and passes the user input to the next command through the pipe.', true, true);
 parser.addCommand('run', runCallback, ['call', 'exec'], '<span class="monospace">(QR label)</span> – runs a Quick Reply with the specified name from the current preset.', true, true);
+parser.addCommand('messages', getMessagesCallback, ['message'], '<span class="monospace">(names=off/on [message index or range])</span> – returns the specified message or range of messages as a string.', true, true);
+parser.addCommand('setinput', setInputCallback, [], '<span class="monospace">(text)</span> – sets the user input to the specified text and passes it to the next command through the pipe.', true, true);
 registerVariableCommands();
 
 const NARRATOR_NAME_KEY = 'narrator_name';
 const NARRATOR_NAME_DEFAULT = 'System';
 export const COMMENT_NAME_DEFAULT = 'Note';
+
+function setInputCallback(_, value) {
+    $('#send_textarea').val(value || '').trigger('input');
+    return value;
+}
+
+function getMessagesCallback(args, value) {
+    const includeNames = !isFalseBoolean(args?.names);
+    const range = stringToRange(value, 0, chat.length - 1);
+
+    if (!range) {
+        console.warn(`WARN: Invalid range provided for /getmessages command: ${value}`);
+        return '';
+    }
+
+    const messages = [];
+
+    for (let messageId = range.start; messageId <= range.end; messageId++) {
+        const message = chat[messageId];
+        if (!message) {
+            console.warn(`WARN: No message found with ID ${messageId}`);
+            continue;
+        }
+
+        if (includeNames) {
+            messages.push(`${message.name}: ${message.mes}`);
+        } else {
+            messages.push(message.mes);
+        }
+    }
+
+    return messages.join('\n\n');
+}
 
 async function runCallback(_, name) {
     if (!name) {
@@ -199,7 +234,7 @@ async function runCallback(_, name) {
 }
 
 function abortCallback() {
-    $('#send_textarea').val('');
+    $('#send_textarea').val('').trigger('input');
     throw new Error('/abort command executed');
 }
 
@@ -264,7 +299,7 @@ async function generateRawCallback(args, value) {
     }
 
     // Prevent generate recursion
-    $('#send_textarea').val('');
+    $('#send_textarea').val('').trigger('input');
     const lock = isTrueBoolean(args?.lock);
 
     if (typeof args.stop === 'string' && args.stop.length) {
@@ -301,7 +336,7 @@ async function generateCallback(args, value) {
     }
 
     // Prevent generate recursion
-    $('#send_textarea').val('');
+    $('#send_textarea').val('').trigger('input');
     const lock = isTrueBoolean(args?.lock);
 
     try {
@@ -415,7 +450,7 @@ async function deleteSwipeCallback(_, arg) {
 
 async function askCharacter(_, text) {
     // Prevent generate recursion
-    $('#send_textarea').val('');
+    $('#send_textarea').val('').trigger('input');
 
     // Not supported in group chats
     // TODO: Maybe support group chats?
@@ -704,7 +739,7 @@ async function triggerGroupMessageCallback(_, arg) {
     }
 
     // Prevent generate recursion
-    $('#send_textarea').val('');
+    $('#send_textarea').val('').trigger('input');
 
     const chid = findGroupMemberId(arg);
 
@@ -804,12 +839,12 @@ function openChat(id) {
 
 function continueChatCallback() {
     // Prevent infinite recursion
-    $('#send_textarea').val('');
+    $('#send_textarea').val('').trigger('input');
     $('#option_continue').trigger('click', { fromSlashCommand: true });
 }
 
 export async function generateSystemMessage(_, prompt) {
-    $('#send_textarea').val('');
+    $('#send_textarea').val('').trigger('input');
 
     if (!prompt) {
         console.warn('WARN: No prompt provided for /sysgen command');

@@ -2242,15 +2242,25 @@ async function processCommands(message, type, dryRun) {
         return null;
     }
 
+    const previousText = String($("#send_textarea").val());
     const result = await executeSlashCommands(message);
-    $("#send_textarea").val(result.newText).trigger('input');
+
+    if (!result || typeof result !== 'object') {
+        return null;
+    }
+
+    const currentText = String($("#send_textarea").val());
+
+    if (previousText === currentText) {
+        $("#send_textarea").val(result.newText).trigger('input');
+    }
 
     // interrupt generation if the input was nothing but a command
-    if (message.length > 0 && result.newText.length === 0) {
+    if (message.length > 0 && result?.newText.length === 0) {
         return true;
     }
 
-    return result.interrupt;
+    return result?.interrupt;
 }
 
 function sendSystemMessage(type, text, extra = {}) {
@@ -2798,7 +2808,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     const interruptedByCommand = await processCommands($("#send_textarea").val(), type, dryRun);
 
     if (interruptedByCommand) {
-        $("#send_textarea").val('').trigger('input');
+        //$("#send_textarea").val('').trigger('input');
         unblockGeneration();
         return;
     }
