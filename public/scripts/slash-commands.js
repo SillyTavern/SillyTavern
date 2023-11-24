@@ -171,11 +171,32 @@ parser.addCommand('fuzzy', fuzzyCallback, [], 'list=["a","b","c"] (search value)
 parser.addCommand('pass', (_, arg) => arg, [], '<span class="monospace">(text)</span> – passes the text to the next command through the pipe.', true, true);
 parser.addCommand('delay', delayCallback, ['wait', 'sleep'], '<span class="monospace">(milliseconds)</span> – delays the next command in the pipe by the specified number of milliseconds.', true, true);
 parser.addCommand('input', inputCallback, ['prompt'], '<span class="monospace">(prompt)</span> – shows a popup with the provided prompt and passes the user input to the next command through the pipe.', true, true);
+parser.addCommand('run', runCallback, ['call', 'exec'], '<span class="monospace">(QR label)</span> – runs a Quick Reply with the specified name from the current preset.', true, true);
 registerVariableCommands();
 
 const NARRATOR_NAME_KEY = 'narrator_name';
 const NARRATOR_NAME_DEFAULT = 'System';
 export const COMMENT_NAME_DEFAULT = 'Note';
+
+async function runCallback(_, name) {
+    if (!name) {
+        toastr.warning('No name provided for /run command');
+        return '';
+    }
+
+    if (typeof window['executeQuickReplyByName'] !== 'function') {
+        toastr.warning('Quick Reply extension is not loaded');
+        return '';
+    }
+
+    try {
+        name = name.trim();
+        return await window['executeQuickReplyByName'](name);
+    } catch (error) {
+        toastr.error(`Error running Quick Reply "${name}": ${error.message}`, 'Error');
+        return '';
+    }
+}
 
 function abortCallback() {
     $('#send_textarea').val('');

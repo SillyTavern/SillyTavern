@@ -221,8 +221,25 @@ async function onAutoInputInject() {
 
 async function sendQuickReply(index) {
     const prompt = extension_settings.quickReply.quickReplySlots[index]?.mes || '';
-    await performQuickReply(prompt, index);
+    return await performQuickReply(prompt, index);
 }
+
+async function executeQuickReplyByName(name) {
+    if (!extension_settings.quickReply.quickReplyEnabled) {
+        throw new Error('Quick Reply is disabled');
+    }
+
+    const qr = extension_settings.quickReply.quickReplySlots.find(x => x.label == name);
+
+    if (!qr) {
+        throw new Error(`Quick Reply "${name}" not found`);
+    }
+
+    return await performQuickReply(qr.mes);
+}
+
+window['executeQuickReplyByName'] = executeQuickReplyByName;
+
 async function performQuickReply(prompt, index) {
     if (!prompt) {
         console.warn(`Quick reply slot ${index} is empty! Aborting.`);
@@ -245,8 +262,8 @@ async function performQuickReply(prompt, index) {
 
     // the prompt starts with '/' - execute slash commands natively
     if (prompt.startsWith('/')) {
-        await executeSlashCommands(newText);
-        return;
+        const result = await executeSlashCommands(newText);
+        return result?.pipe;
     }
 
     newText = substituteParams(newText);
