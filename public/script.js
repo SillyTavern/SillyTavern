@@ -82,6 +82,7 @@ import {
     registerDebugFunction,
     ui_mode,
     switchSimpleMode,
+    flushEphemeralStoppingStrings,
 } from "./scripts/power-user.js";
 
 import {
@@ -2241,15 +2242,25 @@ async function processCommands(message, type, dryRun) {
         return null;
     }
 
+    const previousText = String($("#send_textarea").val());
     const result = await executeSlashCommands(message);
-    $("#send_textarea").val(result.newText).trigger('input');
+
+    if (!result || typeof result !== 'object') {
+        return null;
+    }
+
+    const currentText = String($("#send_textarea").val());
+
+    if (previousText === currentText) {
+        $("#send_textarea").val(result.newText).trigger('input');
+    }
 
     // interrupt generation if the input was nothing but a command
-    if (message.length > 0 && result.newText.length === 0) {
+    if (message.length > 0 && result?.newText.length === 0) {
         return true;
     }
 
-    return result.interrupt;
+    return result?.interrupt;
 }
 
 function sendSystemMessage(type, text, extra = {}) {
@@ -2701,14 +2712,16 @@ class StreamingProcessor {
  * Generates a message using the provided prompt.
  * @param {string} prompt Prompt to generate a message from
  * @param {string} api API to use. Main API is used if not specified.
+ * @param {boolean} instructOverride true to override instruct mode, false to use the default value
+ * @returns {Promise<string>} Generated message
  */
-export async function generateRaw(prompt, api) {
+export async function generateRaw(prompt, api, instructOverride) {
     if (!api) {
         api = main_api;
     }
 
     const abortController = new AbortController();
-    const isInstruct = power_user.instruct.enabled && main_api !== 'openai' && main_api !== 'novel';
+    const isInstruct = power_user.instruct.enabled && main_api !== 'openai' && main_api !== 'novel' && !instructOverride;
 
     prompt = substituteParams(prompt);
     prompt = api == 'novel' ? adjustNovelInstructionPrompt(prompt) : prompt;
@@ -2795,7 +2808,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     const interruptedByCommand = await processCommands($("#send_textarea").val(), type, dryRun);
 
     if (interruptedByCommand) {
-        $("#send_textarea").val('').trigger('input');
+        //$("#send_textarea").val('').trigger('input');
         unblockGeneration();
         return;
     }
@@ -3834,6 +3847,7 @@ function unblockGeneration() {
     activateSendButtons();
     showSwipeButtons();
     setGenerationProgress(0);
+    flushEphemeralStoppingStrings();
     $("#send_textarea").removeAttr('disabled');
 }
 
@@ -7564,7 +7578,7 @@ function addDebugFunctions() {
     registerDebugFunction('generationTest', 'Send a generation request', 'Generates text using the currently selected API.', async () => {
         const text = prompt('Input text:', 'Hello');
         toastr.info('Working on it...');
-        const message = await generateRaw(text, null);
+        const message = await generateRaw(text, null, '');
         alert(message);
     });
 

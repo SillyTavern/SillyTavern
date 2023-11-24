@@ -2374,45 +2374,71 @@ async function setmovingUIPreset(_, text) {
     saveSettingsDebounced();
 }
 
+const EPHEMERAL_STOPPING_STRINGS = [];
+
+/**
+ * Adds a stopping string to the list of stopping strings that are only used for the next generation.
+ * @param {string} value The stopping string to add
+ */
+export function addEphemeralStoppingString(value) {
+    if (!EPHEMERAL_STOPPING_STRINGS.includes(value)) {
+        console.debug('Adding ephemeral stopping string:', value);
+        EPHEMERAL_STOPPING_STRINGS.push(value);
+    }
+}
+
+export function flushEphemeralStoppingStrings() {
+    console.debug('Flushing ephemeral stopping strings:', EPHEMERAL_STOPPING_STRINGS);
+    EPHEMERAL_STOPPING_STRINGS.length = 0;
+}
+
 /**
  * Gets the custom stopping strings from the power user settings.
  * @param {number | undefined} limit Number of strings to return. If 0 or undefined, returns all strings.
  * @returns {string[]} An array of custom stopping strings
  */
 export function getCustomStoppingStrings(limit = undefined) {
-    try {
-        // If there's no custom stopping strings, return an empty array
-        if (!power_user.custom_stopping_strings) {
+    function getPermanent() {
+        try {
+            // If there's no custom stopping strings, return an empty array
+            if (!power_user.custom_stopping_strings) {
+                return [];
+            }
+
+            // Parse the JSON string
+            let strings = JSON.parse(power_user.custom_stopping_strings);
+
+            // Make sure it's an array
+            if (!Array.isArray(strings)) {
+                return [];
+            }
+
+            // Make sure all the elements are strings and non-empty.
+            strings = strings.filter(s => typeof s === 'string' && s.length > 0);
+
+            // Substitute params if necessary
+            if (power_user.custom_stopping_strings_macro) {
+                strings = strings.map(x => substituteParams(x));
+            }
+
+            return strings;
+        } catch (error) {
+            // If there's an error, return an empty array
+            console.warn('Error parsing custom stopping strings:', error);
             return [];
         }
-
-        // Parse the JSON string
-        let strings = JSON.parse(power_user.custom_stopping_strings);
-
-        // Make sure it's an array
-        if (!Array.isArray(strings)) {
-            return [];
-        }
-
-        // Make sure all the elements are strings and non-empty.
-        strings = strings.filter(s => typeof s === 'string' && s.length > 0);
-
-        // Substitute params if necessary
-        if (power_user.custom_stopping_strings_macro) {
-            strings = strings.map(x => substituteParams(x));
-        }
-
-        // Apply the limit. If limit is 0, return all strings.
-        if (limit > 0) {
-            strings = strings.slice(0, limit);
-        }
-
-        return strings;
-    } catch (error) {
-        // If there's an error, return an empty array
-        console.warn('Error parsing custom stopping strings:', error);
-        return [];
     }
+
+    const permanent = getPermanent();
+    const ephemeral = EPHEMERAL_STOPPING_STRINGS;
+    const strings = [...permanent, ...ephemeral];
+
+    // Apply the limit. If limit is 0, return all strings.
+    if (limit > 0) {
+        return strings.slice(0, limit);
+    }
+
+    return strings;
 }
 
 $(document).ready(() => {
