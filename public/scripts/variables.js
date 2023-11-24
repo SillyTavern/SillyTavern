@@ -9,7 +9,7 @@ function getLocalVariable(name) {
 
     const localVariable = chat_metadata?.variables[name];
 
-    return isNaN(Number(localVariable)) ? (localVariable || '') : Number(localVariable);
+    return (localVariable === '' || isNaN(Number(localVariable))) ? (localVariable || '') : Number(localVariable);
 }
 
 function setLocalVariable(name, value) {
@@ -25,7 +25,7 @@ function setLocalVariable(name, value) {
 function getGlobalVariable(name) {
     const globalVariable = extension_settings.variables.global[name];
 
-    return isNaN(Number(globalVariable)) ? (globalVariable || '') : Number(globalVariable);
+    return (globalVariable === '' || isNaN(Number(globalVariable))) ? (globalVariable || '') : Number(globalVariable);
 }
 
 function setGlobalVariable(name, value) {
@@ -160,37 +160,44 @@ async function ifCallback(args, command) {
     return '';
 }
 
+function existsLocalVariable(name) {
+    return chat_metadata.variables && chat_metadata.variables[name] !== undefined;
+}
+
+function existsGlobalVariable(name) {
+    return extension_settings.variables.global && extension_settings.variables.global[name] !== undefined;
+}
+
 function parseBooleanOperands(args) {
     // Resultion order: numeric literal, local variable, global variable, string literal
     function getOperand(operand) {
+        if (operand === undefined) {
+            return '';
+        }
+
         const operandNumber = Number(operand);
-        const operandLocalVariable = getLocalVariable(operand);
-        const operandGlobalVariable = getGlobalVariable(operand);
-        const stringLiteral = String(operand);
 
         if (!isNaN(operandNumber)) {
             return operandNumber;
         }
 
-        if (operandLocalVariable !== undefined && operandLocalVariable !== null && operandLocalVariable !== '') {
-            return operandLocalVariable;
+        if (existsLocalVariable(operand)) {
+            const operandLocalVariable = getLocalVariable(operand);
+            return operandLocalVariable || '';
         }
 
-        if (operandGlobalVariable !== undefined && operandGlobalVariable !== null && operandGlobalVariable !== '') {
-            return operandGlobalVariable;
+        if (existsGlobalVariable(operand)) {
+            const operandGlobalVariable = getGlobalVariable(operand);
+            return operandGlobalVariable || '';
         }
 
+        const stringLiteral = String(operand);
         return stringLiteral || '';
     }
 
     const left = getOperand(args.a || args.left || args.first || args.x);
     const right = getOperand(args.b || args.right || args.second || args.y);
     const rule = args.rule;
-
-    if ((typeof left === 'number' && isNaN(left)) || (typeof left === 'string' && left === '')) {
-        toastr.warning('The left operand must be a number, string or a variable name.', 'Invalid command');
-        throw new Error('Invalid command.');
-    }
 
     return { a: left, b: right, rule };
 }
