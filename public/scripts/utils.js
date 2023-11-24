@@ -566,6 +566,24 @@ export function countOccurrences(string, character) {
 }
 
 /**
+ * Checks if a string is "true" value.
+ * @param {string} arg String to check
+ * @returns {boolean} True if the string is true, false otherwise.
+ */
+export function isTrueBoolean(arg) {
+    return ['on', 'true', '1'].includes(arg);
+}
+
+/**
+ * Checks if a string is "false" value.
+ * @param {string} arg String to check
+ * @returns {boolean} True if the string is false, false otherwise.
+ */
+export function isFalseBoolean(arg) {
+    return ['off', 'false', '0'].includes(arg);
+}
+
+/**
  * Checks if a number is odd.
  * @param {number} number The number to check.
  * @returns {boolean} True if the number is odd, false otherwise.

@@ -26,6 +26,8 @@ import {
     setCharacterName,
     generateRaw,
     callPopup,
+    deactivateSendButtons,
+    activateSendButtons,
 } from "../script.js";
 import { getMessageTimeStamp } from "./RossAscends-mods.js";
 import { findGroupMemberId, groups, is_group_generating, resetSelectedGroup, saveGroupChat, selected_group } from "./group-chats.js";
@@ -34,7 +36,7 @@ import { addEphemeralStoppingString, chat_styles, power_user } from "./power-use
 import { autoSelectPersona } from "./personas.js";
 import { getContext } from "./extensions.js";
 import { hideChatMessage, unhideChatMessage } from "./chats.js";
-import { delay, stringToRange } from "./utils.js";
+import { delay, isFalseBoolean, isTrueBoolean, stringToRange } from "./utils.js";
 import { registerVariableCommands } from "./variables.js";
 export {
     executeSlashCommands,
@@ -161,8 +163,8 @@ parser.addCommand('memberdown', moveGroupMemberDownCallback, ['downmember'], '<s
 parser.addCommand('peek', peekCallback, [], '<span class="monospace">(message index or range)</span> – shows a group member character card without switching chats', true, true);
 parser.addCommand('delswipe', deleteSwipeCallback, ['swipedel'], '<span class="monospace">(optional 1-based id)</span> – deletes a swipe from the last chat message. If swipe id not provided - deletes the current swipe.', true, true);
 parser.addCommand('echo', echoCallback, [], '<span class="monospace">(text)</span> – echoes the text to toast message. Useful for pipes debugging.', true, true);
-parser.addCommand('gen', generateCallback, [], '<span class="monospace">(prompt)</span> – generates text using the provided prompt and passes it to the next command through the pipe.', true, true);
-parser.addCommand('genraw', generateRawCallback, [], '<span class="monospace">(prompt)</span> – generates text using the provided prompt and passes it to the next command through the pipe. Does not include chat history or character card. Use instruct=off to skip instruct formatting, e.g. <tt>/genraw instruct=off Why is the sky blue?</tt>. Use stop=... with a JSON-serialized array to add one-time custom stop strings, e.g. <tt>/genraw stop=["\\n"] Say hi</tt>', true, true);
+parser.addCommand('gen', generateCallback, [], '<span class="monospace">(lock=on/off [prompt])</span> – generates text using the provided prompt and passes it to the next command through the pipe, optionally locking user input while generating.', true, true);
+parser.addCommand('genraw', generateRawCallback, [], '<span class="monospace">(lock=on/off [prompt])</span> – generates text using the provided prompt and passes it to the next command through the pipe, optionally locking user input while generating. Does not include chat history or character card. Use instruct=off to skip instruct formatting, e.g. <tt>/genraw instruct=off Why is the sky blue?</tt>. Use stop=... with a JSON-serialized array to add one-time custom stop strings, e.g. <tt>/genraw stop=["\\n"] Say hi</tt>', true, true);
 parser.addCommand('addswipe', addSwipeCallback, ['swipeadd'], '<span class="monospace">(text)</span> – adds a swipe to the last chat message.', true, true);
 parser.addCommand('abort', abortCallback, [], ' – aborts the slash command batch execution', true, true);
 parser.addCommand('fuzzy', fuzzyCallback, [], 'list=["a","b","c"] (search value) – performs a fuzzy match of the provided search using the provided list of value and passes the closest match to the next command through the pipe.', true, true);
@@ -242,6 +244,7 @@ async function generateRawCallback(args, value) {
 
     // Prevent generate recursion
     $('#send_textarea').val('');
+    const lock = isTrueBoolean(args?.lock);
 
     if (typeof args.stop === 'string' && args.stop.length) {
         try {
@@ -256,21 +259,42 @@ async function generateRawCallback(args, value) {
         }
     }
 
-    const result = await generateRaw(value, '', args.instruct);
-    return result;
+    try {
+        if (lock) {
+            deactivateSendButtons();
+        }
+
+        const result = await generateRaw(value, '', isFalseBoolean(args?.instruct));
+        return result;
+    } finally {
+        if (lock) {
+            activateSendButtons();
+        }
+    }
 }
 
-async function generateCallback(_, arg) {
-    if (!arg) {
+async function generateCallback(args, value) {
+    if (!value) {
         console.warn('WARN: No argument provided for /gen command');
         return;
     }
 
     // Prevent generate recursion
     $('#send_textarea').val('');
+    const lock = isTrueBoolean(args?.lock);
 
-    const result = await generateQuietPrompt(arg, false, false, '');
-    return result;
+    try {
+        if (lock) {
+            deactivateSendButtons();
+        }
+
+        const result = await generateQuietPrompt(value, false, false, '');
+        return result;
+    } finally {
+        if (lock) {
+            activateSendButtons();
+        }
+    }
 }
 
 async function echoCallback(_, arg) {

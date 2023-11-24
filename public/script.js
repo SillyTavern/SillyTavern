@@ -2702,7 +2702,7 @@ class StreamingProcessor {
  * Generates a message using the provided prompt.
  * @param {string} prompt Prompt to generate a message from
  * @param {string} api API to use. Main API is used if not specified.
- * @param {string} instructOverride If 0, false or off, disables instruct formatting
+ * @param {boolean} instructOverride true to override instruct mode, false to use the default value
  * @returns {Promise<string>} Generated message
  */
 export async function generateRaw(prompt, api, instructOverride) {
@@ -2711,8 +2711,7 @@ export async function generateRaw(prompt, api, instructOverride) {
     }
 
     const abortController = new AbortController();
-    const instructDisabled = instructOverride === '0' || instructOverride === 'false' || instructOverride === 'off';
-    const isInstruct = power_user.instruct.enabled && main_api !== 'openai' && main_api !== 'novel' && !instructDisabled;
+    const isInstruct = power_user.instruct.enabled && main_api !== 'openai' && main_api !== 'novel' && !instructOverride;
 
     prompt = substituteParams(prompt);
     prompt = api == 'novel' ? adjustNovelInstructionPrompt(prompt) : prompt;
