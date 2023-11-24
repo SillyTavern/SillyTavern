@@ -25,6 +25,7 @@ import {
     this_chid,
     setCharacterName,
     generateRaw,
+    callPopup,
 } from "../script.js";
 import { getMessageTimeStamp } from "./RossAscends-mods.js";
 import { findGroupMemberId, groups, is_group_generating, resetSelectedGroup, saveGroupChat, selected_group } from "./group-chats.js";
@@ -33,7 +34,7 @@ import { addEphemeralStoppingString, chat_styles, power_user } from "./power-use
 import { autoSelectPersona } from "./personas.js";
 import { getContext } from "./extensions.js";
 import { hideChatMessage, unhideChatMessage } from "./chats.js";
-import { stringToRange } from "./utils.js";
+import { delay, stringToRange } from "./utils.js";
 import { registerVariableCommands } from "./variables.js";
 export {
     executeSlashCommands,
@@ -166,6 +167,8 @@ parser.addCommand('addswipe', addSwipeCallback, ['swipeadd'], '<span class="mono
 parser.addCommand('abort', abortCallback, [], ' – aborts the slash command batch execution', true, true);
 parser.addCommand('fuzzy', fuzzyCallback, [], 'list=["a","b","c"] (search value) – performs a fuzzy match of the provided search using the provided list of value and passes the closest match to the next command through the pipe.', true, true);
 parser.addCommand('pass', (_, arg) => arg, [], '<span class="monospace">(text)</span> – passes the text to the next command through the pipe.', true, true);
+parser.addCommand('delay', delayCallback, ['wait', 'sleep'], '<span class="monospace">(milliseconds)</span> – delays the next command in the pipe by the specified number of milliseconds.', true, true);
+parser.addCommand('input', inputCallback, ['prompt'], '<span class="monospace">(prompt)</span> – shows a popup with the provided prompt and passes the user input to the next command through the pipe.', true, true);
 registerVariableCommands();
 
 const NARRATOR_NAME_KEY = 'narrator_name';
@@ -175,6 +178,28 @@ export const COMMENT_NAME_DEFAULT = 'Note';
 function abortCallback() {
     $('#send_textarea').val('');
     throw new Error('/abort command executed');
+}
+
+async function delayCallback(_, amount) {
+    if (!amount) {
+        console.warn('WARN: No amount provided for /delay command');
+        return;
+    }
+
+    amount = Number(amount);
+    if (isNaN(amount)) {
+        amount = 0;
+    }
+
+    await delay(amount);
+}
+
+async function inputCallback(_, prompt) {
+    // Do not remove this delay, otherwise the prompt will not show up
+    await delay(1);
+    const result = await callPopup(prompt || '', 'input');
+    await delay(1);
+    return result || '';
 }
 
 function fuzzyCallback(args, value) {
@@ -1042,9 +1067,11 @@ async function executeSlashCommands(text, unescape = false) {
         return false;
     }
 
-    // Unescape the pipe character
+    // Unescape the pipe character and macro braces
     if (unescape) {
         text = text.replace(/\\\|/g, '|');
+        text = text.replace(/\\\{/g, '{');
+        text = text.replace(/\\\}/g, '}');
     }
 
     // Hack to allow multi-line slash commands
@@ -1085,8 +1112,8 @@ async function executeSlashCommands(text, unescape = false) {
         if (typeof result.args === 'object') {
             for (const [key, value] of Object.entries(result.args)) {
                 if (typeof value === 'string') {
-                    if (pipeResult && /{{pipe}}/i.test(value)) {
-                        result.args[key] = value.replace(/{{pipe}}/i, pipeResult);
+                    if (/{{pipe}}/i.test(value)) {
+                        result.args[key] = value.replace(/{{pipe}}/i, pipeResult || '');
                     }
 
                     result.args[key] = substituteParams(value.trim());
@@ -1094,8 +1121,8 @@ async function executeSlashCommands(text, unescape = false) {
             }
         }
 
-        if (pipeResult && typeof unnamedArg === 'string' && /{{pipe}}/i.test(unnamedArg)) {
-            unnamedArg = unnamedArg.replace(/{{pipe}}/i, pipeResult);
+        if (typeof unnamedArg === 'string' && /{{pipe}}/i.test(unnamedArg)) {
+            unnamedArg = unnamedArg.replace(/{{pipe}}/i, pipeResult || '');
         }
 
         pipeResult = await result.command.callback(result.args, unnamedArg);

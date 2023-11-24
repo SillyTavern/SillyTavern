@@ -9,7 +9,7 @@ function getLocalVariable(name) {
 
     const localVariable = chat_metadata?.variables[name];
 
-    return localVariable || '';
+    return isNaN(Number(localVariable)) ? (localVariable || '') : Number(localVariable);
 }
 
 function setLocalVariable(name, value) {
@@ -25,7 +25,7 @@ function setLocalVariable(name, value) {
 function getGlobalVariable(name) {
     const globalVariable = extension_settings.variables.global[name];
 
-    return globalVariable || '';
+    return isNaN(Number(globalVariable)) ? (globalVariable || '') : Number(globalVariable);
 }
 
 function setGlobalVariable(name, value) {
@@ -130,25 +130,80 @@ function listVariablesCallback() {
     sendSystemMessage(system_message_types.GENERIC, htmlMessage);
 }
 
-async function ifCallback(args, command) {
-    // Resultion order: numeric literal, local variable, global variable, string literal
-    const a = isNaN(Number(args.a)) ? (getLocalVariable(args.a) || getGlobalVariable(args.a) || args.a || '') : Number(args.a);
-    const b = isNaN(Number(args.b)) ? (getLocalVariable(args.b) || getGlobalVariable(args.b) || args.b || '') : Number(args.b);
-    const rule = args.rule;
+async function whileCallback(args, command) {
+    const MAX_LOOPS = 100;
+    const isGuardOff = ['off', 'false', '0'].includes(args.guard?.toLowerCase());
+    const iterations = isGuardOff ? Number.MAX_SAFE_INTEGER : MAX_LOOPS;
 
-    if (!rule) {
-        toastr.warning('Both operands and the rule must be specified for the /if command.', 'Invalid /if command');
-        return '';
+    for (let i = 0; i < iterations; i++) {
+        const { a, b, rule } = parseBooleanOperands(args);
+        const result = evalBoolean(rule, a, b);
+
+        if (result && command) {
+            await executeSubCommands(command);
+        } else {
+            break;
+        }
+    }
+}
+
+async function ifCallback(args, command) {
+    const { a, b, rule } = parseBooleanOperands(args);
+    const result = evalBoolean(rule, a, b);
+
+    if (result && command) {
+        return await executeSubCommands(command);
+    } else if (!result && args.else && typeof args.else === 'string' && args.else !== '') {
+        return await executeSubCommands(args.else);
     }
 
-    if ((typeof a === 'number' && isNaN(a)) || (typeof a === 'string' && a === '')) {
-        toastr.warning('The first operand must be a number, string or a variable name for the /if command.', 'Invalid /if command');
-        return '';
+    return '';
+}
+
+function parseBooleanOperands(args) {
+    // Resultion order: numeric literal, local variable, global variable, string literal
+    function getOperand(operand) {
+        const operandNumber = Number(operand);
+        const operandLocalVariable = getLocalVariable(operand);
+        const operandGlobalVariable = getGlobalVariable(operand);
+        const stringLiteral = String(operand);
+
+        if (!isNaN(operandNumber)) {
+            return operandNumber;
+        }
+
+        if (operandLocalVariable !== undefined && operandLocalVariable !== null && operandLocalVariable !== '') {
+            return operandLocalVariable;
+        }
+
+        if (operandGlobalVariable !== undefined && operandGlobalVariable !== null && operandGlobalVariable !== '') {
+            return operandGlobalVariable;
+        }
+
+        return stringLiteral || '';
+    }
+
+    const left = getOperand(args.a || args.left || args.first || args.x);
+    const right = getOperand(args.b || args.right || args.second || args.y);
+    const rule = args.rule;
+
+    if ((typeof left === 'number' && isNaN(left)) || (typeof left === 'string' && left === '')) {
+        toastr.warning('The left operand must be a number, string or a variable name.', 'Invalid command');
+        throw new Error('Invalid command.');
+    }
+
+    return { a: left, b: right, rule };
+}
+
+function evalBoolean(rule, a, b) {
+    if (!rule) {
+        toastr.warning('The rule must be specified for the boolean comparison.', 'Invalid command');
+        throw new Error('Invalid command.');
     }
 
     let result = false;
 
-    if (typeof a === 'string') {
+    if (typeof a === 'string' && typeof b !== 'number') {
         const aString = String(a).toLowerCase();
         const bString = String(b).toLowerCase();
 
@@ -166,14 +221,17 @@ async function ifCallback(args, command) {
                 result = aString !== bString;
                 break;
             default:
-                toastr.warning('Unknown rule for the /if command for type string.', 'Invalid /if command');
-                return '';
+                toastr.error('Unknown boolean comparison rule for type string.', 'Invalid /if command');
+                throw new Error('Invalid command.');
         }
     } else if (typeof a === 'number') {
         const aNumber = Number(a);
         const bNumber = Number(b);
 
         switch (rule) {
+            case 'not':
+                result = !aNumber;
+                break;
             case 'gt':
                 result = aNumber > bNumber;
                 break;
@@ -193,18 +251,12 @@ async function ifCallback(args, command) {
                 result = aNumber !== bNumber;
                 break;
             default:
-                toastr.warning('Unknown rule for the /if command for type number.', 'Invalid /if command');
-                return '';
+                toastr.error('Unknown boolean comparison rule for type number.', 'Invalid command');
+                throw new Error('Invalid command.');
         }
     }
 
-    if (result && command) {
-        return await executeSubCommands(command);
-    } else if (!result && args.else && typeof args.else === 'string' && args.else !== '') {
-        return await executeSubCommands(args.else);
-    }
-
-    return '';
+    return result;
 }
 
 async function executeSubCommands(command) {
@@ -234,5 +286,6 @@ export function registerVariableCommands() {
     registerSlashCommand('setglobalvar', (args, value) => setGlobalVariable(args.key || args.name, value), [], '<span class="monospace">key=varname (value)</span> – set a global variable value and pass it down the pipe, e.g. <tt>/setglobalvar key=color green</tt>', true, true);
     registerSlashCommand('getglobalvar', (_, value) => getGlobalVariable(value), [], '<span class="monospace">(key)</span> – get a global variable value and pass it down the pipe, e.g. <tt>/getglobalvar height</tt>', true, true);
     registerSlashCommand('addglobalvar', (args, value) => addGlobalVariable(args.key || args.name, value), [], '<span class="monospace">key=varname (increment)</span> – add a value to a global variable and pass the result down the pipe, e.g. <tt>/addglobalvar score 10</tt>', true, true);
-    registerSlashCommand('if', ifCallback, [], '<span class="monospace">a=varname1 b=varname2 rule=comparison else="(alt.command)" "(command)"</span> – compare the value of variable "a" with the value of variable "b", and if the condition yields true, then execute any valid slash command enclosed in quotes and pass the result of the command execution down the pipe. Numeric values and string literals for "a" and "b" supported. Available rules: gt => a > b, gte => a >= b, lt => a < b, lte => a <= b, eq => a == b, neq => a != b, in (strings) => a includes b, nin (strings) => a not includes b, e.g. <tt>/if a=score a=10 rule=gte "/speak You win"</tt> triggers a /speak command if the value of "score" is greater or equals 10.', true, true);
+    registerSlashCommand('if', ifCallback, [], '<span class="monospace">a=varname1 b=varname2 rule=comparison else="(alt.command)" "(command)"</span> – compare the value of variable "a" with the value of variable "b", and if the condition yields true, then execute any valid slash command enclosed in quotes and pass the result of the command execution down the pipe. Numeric values and string literals for "a" and "b" supported. Available rules: gt => a > b, gte => a >= b, lt => a < b, lte => a <= b, eq => a == b, neq => a != b, not => !a, in (strings) => a includes b, nin (strings) => a not includes b, e.g. <tt>/if a=score a=10 rule=gte "/speak You win"</tt> triggers a /speak command if the value of "score" is greater or equals 10.', true, true);
+    registerSlashCommand('while', whileCallback, [], '<span class="monospace">a=varname1 b=varname2 rule=comparison "(command)"</span> – compare the value of variable "a" with the value of variable "b", and if the condition yields true, then execute any valid slash command enclosed in quotes. Numeric values and string literals for "a" and "b" supported. Available rules: gt => a > b, gte => a >= b, lt => a < b, lte => a <= b, eq => a == b, neq => a != b, not => !a, in (strings) => a includes b, nin (strings) => a not includes b, e.g. <tt>/while a=i a=10 rule=let "/addvar i 1"</tt> adds 1 to the value of "i" until it reaches 10. Loops are limited to 100 iterations by default, pass guard=off to disable.', true, true);
 }
