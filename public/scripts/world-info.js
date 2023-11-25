@@ -1574,7 +1574,7 @@ async function checkWorldInfo(chat, maxContext) {
                 //for a NOT all entries must be checked, a single match invalidates activation
                 if (selectiveLogic === 1 && notFlag) {
                     console.debug(`${entry.uid}: activated; passed NOT filter`)
-                    activatedNow.add(entry);                    
+                    activatedNow.add(entry);
                 }
             }
         }
@@ -1931,7 +1931,7 @@ export async function importEmbeddedWorldInfo(skipPopup = false) {
 
 function onWorldInfoChange(_, text) {
     if (_ !== '__notSlashCommand__') { // if it's a slash command
-        if (text !== undefined) { // and args are provided
+        if (text.trim() !== '') { // and args are provided
             const slashInputSplitText = text.trim().toLowerCase().split(",");
 
             slashInputSplitText.forEach((worldName) => {
@@ -1948,7 +1948,7 @@ function onWorldInfoChange(_, text) {
         } else { // if no args, unset all worlds
             toastr.success('Deactivated all worlds');
             selected_world_info = [];
-            $("#world_info").val("");
+            $("#world_info").val(null).trigger('change');
         }
     } else { //if it's a pointer selection
         let tempWorldInfo = [];
