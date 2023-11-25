@@ -76,8 +76,11 @@ const cliArguments = yargs(hideBin(process.argv))
         type: 'boolean',
         default: null,
         describe: 'Automatically launch SillyTavern in the browser.'
-    })
-    .option('disableCsrf', {
+    }).option('corsProxy', {
+        type: 'boolean',
+        default: false,
+        describe: 'Enables CORS proxy',
+    }).option('disableCsrf', {
         type: 'boolean',
         default: false,
         describe: 'Disables CSRF protection'
@@ -319,6 +322,44 @@ app.use(function (req, res, next) {
     next();
 });
 
+if (config.enableCorsProxy === true || cliArguments.corsProxy === true) {
+    console.log('Enabling CORS proxy');
+
+    app.use('/proxy/:url', async (req, res) => {
+        const url = req.params.url; // get the url from the request path
+
+        // Disallow circular requests
+        const serverUrl = req.protocol + '://' + req.get('host');
+        if (url.startsWith(serverUrl)) {
+            return res.status(400).send('Circular requests are not allowed');
+        }
+
+        try {
+            const headers = JSON.parse(JSON.stringify(req.headers));
+            delete headers['x-csrf-token'];
+            delete headers['host'];
+            delete headers['referer'];
+            delete headers['origin'];
+            delete headers['cookie'];
+            delete headers['sec-fetch-mode'];
+            delete headers['sec-fetch-site'];
+            delete headers['sec-fetch-dest'];
+
+            const bodyMethods = ['POST', 'PUT', 'PATCH'];
+
+            const response = await fetch(url, {
+                method: req.method,
+                headers: headers,
+                body: bodyMethods.includes(req.method) ? JSON.stringify(req.body) : undefined,
+            });
+
+            response.body.pipe(res); // pipe the response to the proxy response
+
+        } catch (error) {
+            res.status(500).send('Error occurred while trying to proxy to: ' + url + ' ' + error);
+        }
+    });
+}
 
 app.use(express.static(process.cwd() + "/public", {}));
 
