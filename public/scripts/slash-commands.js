@@ -1206,13 +1206,15 @@ async function executeSlashCommands(text, unescape = false) {
         let unnamedArg = result.value || pipeResult;
 
         if (typeof result.args === 'object') {
-            for (const [key, value] of Object.entries(result.args)) {
+            for (let [key, value] of Object.entries(result.args)) {
                 if (typeof value === 'string') {
+                    value = substituteParams(value.trim());
+
                     if (/{{pipe}}/i.test(value)) {
-                        result.args[key] = value.replace(/{{pipe}}/i, pipeResult || '');
+                        value = value.replace(/{{pipe}}/i, pipeResult || '');
                     }
 
-                    result.args[key] = substituteParams(value.trim());
+                    result.args[key] = value;
                 }
             }
         }
