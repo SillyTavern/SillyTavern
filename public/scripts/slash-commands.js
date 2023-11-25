@@ -264,7 +264,8 @@ async function delayCallback(_, amount) {
 async function inputCallback(_, prompt) {
     // Do not remove this delay, otherwise the prompt will not show up
     await delay(1);
-    const result = await callPopup(prompt || '', 'input');
+    const safeValue = DOMPurify.sanitize(prompt || '');
+    const result = await callPopup(safeValue, 'input');
     await delay(1);
     return result || '';
 }
@@ -1205,13 +1206,15 @@ async function executeSlashCommands(text, unescape = false) {
         let unnamedArg = result.value || pipeResult;
 
         if (typeof result.args === 'object') {
-            for (const [key, value] of Object.entries(result.args)) {
+            for (let [key, value] of Object.entries(result.args)) {
                 if (typeof value === 'string') {
+                    value = substituteParams(value.trim());
+
                     if (/{{pipe}}/i.test(value)) {
-                        result.args[key] = value.replace(/{{pipe}}/i, pipeResult || '');
+                        value = value.replace(/{{pipe}}/i, pipeResult || '');
                     }
 
-                    result.args[key] = substituteParams(value.trim());
+                    result.args[key] = value;
                 }
             }
         }
