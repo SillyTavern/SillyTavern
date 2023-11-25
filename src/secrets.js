@@ -173,7 +173,7 @@ function registerEndpoints(app, jsonParser) {
         const allowKeysExposure = getConfigValue('allowKeysExposure', false);
 
         if (!allowKeysExposure) {
-            console.error('secrets.json could not be viewed unless the value of allowKeysExposure in config.conf is set to true');
+            console.error('secrets.json could not be viewed unless the value of allowKeysExposure in config.yaml is set to true');
             return response.sendStatus(403);
         }
 
@@ -195,7 +195,7 @@ function registerEndpoints(app, jsonParser) {
         const allowKeysExposure = getConfigValue('allowKeysExposure', false);
 
         if (!allowKeysExposure) {
-            console.error('Cannot fetch secrets unless allowKeysExposure in config.conf is set to true');
+            console.error('Cannot fetch secrets unless allowKeysExposure in config.yaml is set to true');
             return response.sendStatus(403);
         }
 
