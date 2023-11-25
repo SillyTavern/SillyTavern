@@ -2009,7 +2009,8 @@ function substituteParams(content, _name1, _name2, _original, _group, _replaceCh
     if (typeof _original === 'string') {
         content = content.replace(/{{original}}/i, _original);
     }
-
+    content = diceRollReplace(content);
+    content = randomReplace(content);
     content = replaceVariableMacros(content);
     content = content.replace(/{{newline}}/gi, "\n");
     content = content.replace(/{{input}}/gi, String($('#send_textarea').val()));
@@ -2055,8 +2056,6 @@ function substituteParams(content, _name1, _name2, _original, _group, _replaceCh
         const utcTime = moment().utc().utcOffset(utcOffset).format('LT');
         return utcTime;
     });
-    content = diceRollReplace(content);
-    content = randomReplace(content);
     content = bannedWordsReplace(content);
     return content;
 }
