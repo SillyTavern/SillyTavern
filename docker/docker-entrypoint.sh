@@ -26,6 +26,9 @@ fi
 
 CONFIG_FILE="config.yaml"
 
+echo "Starting with the following config:"
+cat $CONFIG_FILE
+
 if grep -q "listen: false" $CONFIG_FILE; then
   echo -e "\033[1;31mThe listen parameter is set to false. If you can't connect to the server, edit the \"docker/config/config.yaml\" file and restart the container.\033[0m"
   sleep 5
