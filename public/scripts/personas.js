@@ -254,6 +254,7 @@ export function selectCurrentPersona() {
         }
 
         setPersonaDescription();
+        $("#firstmessage_textarea").trigger('input')
     }
 }
 
