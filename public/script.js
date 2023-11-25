@@ -2055,8 +2055,8 @@ function substituteParams(content, _name1, _name2, _original, _group, _replaceCh
         const utcTime = moment().utc().utcOffset(utcOffset).format('LT');
         return utcTime;
     });
-    content = randomReplace(content);
     content = diceRollReplace(content);
+    content = randomReplace(content);
     content = bannedWordsReplace(content);
     return content;
 }
@@ -8575,7 +8575,7 @@ jQuery(async function () {
         if (this_chid !== undefined || selected_group) {
             // Previously system messages we're allowed to be edited
             /*const message = $(this).closest(".mes");
- 
+
             if (message.data("isSystem")) {
                 return;
             }*/
