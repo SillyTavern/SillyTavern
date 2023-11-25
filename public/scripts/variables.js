@@ -176,6 +176,8 @@ async function whileCallback(args, command) {
             break;
         }
     }
+
+    return '';
 }
 
 async function ifCallback(args, command) {
