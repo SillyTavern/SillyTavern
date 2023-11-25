@@ -846,6 +846,10 @@ async function checkForExtensionUpdates(force) {
 }
 
 async function autoUpdateExtensions() {
+    if (!Object.values(manifests).some(x => x.auto_update)) {
+        return;
+    }
+
     toastr.info('Auto-updating extensions. This may take several minutes.', 'Please wait...', { timeOut: 10000, extendedTimeOut: 20000 });
     const promises = [];
     for (const [id, manifest] of Object.entries(manifests)) {
