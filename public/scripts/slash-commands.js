@@ -264,7 +264,8 @@ async function delayCallback(_, amount) {
 async function inputCallback(_, prompt) {
     // Do not remove this delay, otherwise the prompt will not show up
     await delay(1);
-    const result = await callPopup(prompt || '', 'input');
+    const safeValue = DOMPurify.sanitize(prompt || '');
+    const result = await callPopup(safeValue, 'input');
     await delay(1);
     return result || '';
 }
