@@ -212,6 +212,10 @@ function getMessagesCallback(args, value) {
             continue;
         }
 
+        if (message.is_system) {
+            continue;
+        }
+
         if (includeNames) {
             messages.push(`${message.name}: ${message.mes}`);
         } else {
