@@ -332,7 +332,7 @@ async function generateRawCallback(args, value) {
             deactivateSendButtons();
         }
 
-        setEphemeralStopStrings(args?.stop);
+        setEphemeralStopStrings(resolveVariable(args?.stop));
         const result = await generateRaw(value, '', isFalseBoolean(args?.instruct));
         return result;
     } finally {
@@ -358,7 +358,7 @@ async function generateCallback(args, value) {
             deactivateSendButtons();
         }
 
-        setEphemeralStopStrings(args?.stop);
+        setEphemeralStopStrings(resolveVariable(args?.stop));
         const result = await generateQuietPrompt(value, false, false, '');
         return result;
     } finally {
