@@ -18,13 +18,19 @@ function convertClaudePrompt(messages, addHumanPrefix, addAssistantPostfix, with
 
     let systemPrompt = '';
     if (withSystemPrompt) {
-        for (const message of messages) {
+        let lastSystemIdx = -1;
+
+        for (let i = 0; i < messages.length - 1; i++) {
+            const message = messages[i];
             if (message.role === "system" && !message.name) {
                 systemPrompt += message.content + '\n\n';
-                messages.splice(messages.indexOf(message), 1);
             } else {
+                lastSystemIdx = i - 1;
                 break;
             }
+        }
+        if (lastSystemIdx >= 0) {
+            messages.splice(0, lastSystemIdx + 1);
         }
     }
 

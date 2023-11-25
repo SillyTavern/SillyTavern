@@ -32,7 +32,7 @@ import {
 import { getMessageTimeStamp } from "./RossAscends-mods.js";
 import { findGroupMemberId, groups, is_group_generating, resetSelectedGroup, saveGroupChat, selected_group } from "./group-chats.js";
 import { getRegexedString, regex_placement } from "./extensions/regex/engine.js";
-import { addEphemeralStoppingString, chat_styles, power_user } from "./power-user.js";
+import { addEphemeralStoppingString, chat_styles, flushEphemeralStoppingStrings, power_user } from "./power-user.js";
 import { autoSelectPersona } from "./personas.js";
 import { getContext } from "./extensions.js";
 import { hideChatMessage, unhideChatMessage } from "./chats.js";
@@ -174,6 +174,7 @@ parser.addCommand('input', inputCallback, ['prompt'], '<span class="monospace">(
 parser.addCommand('run', runCallback, ['call', 'exec'], '<span class="monospace">(QR label)</span> – runs a Quick Reply with the specified name from the current preset.', true, true);
 parser.addCommand('messages', getMessagesCallback, ['message'], '<span class="monospace">(names=off/on [message index or range])</span> – returns the specified message or range of messages as a string.', true, true);
 parser.addCommand('setinput', setInputCallback, [], '<span class="monospace">(text)</span> – sets the user input to the specified text and passes it to the next command through the pipe.', true, true);
+parser.addCommand('popup', popupCallback, [], '<span class="monospace">(text)</span> – shows a blocking popup with the specified text.', true, true);
 registerVariableCommands();
 
 const NARRATOR_NAME_KEY = 'narrator_name';
@@ -182,6 +183,14 @@ export const COMMENT_NAME_DEFAULT = 'Note';
 
 function setInputCallback(_, value) {
     $('#send_textarea').val(value || '').trigger('input');
+    return value;
+}
+
+async function popupCallback(_, value) {
+    const safeValue = DOMPurify.sanitize(value || '');
+    await delay(1);
+    await callPopup(safeValue, 'text');
+    await delay(1);
     return value;
 }
 
@@ -292,6 +301,21 @@ function fuzzyCallback(args, value) {
     }
 }
 
+function setEphemeralStopStrings(value) {
+    if (typeof value === 'string' && value.length) {
+        try {
+            const stopStrings = JSON.parse(value);
+            if (Array.isArray(stopStrings)) {
+                for (const stopString of stopStrings) {
+                    addEphemeralStoppingString(stopString);
+                }
+            }
+        } catch {
+            // Do nothing
+        }
+    }
+}
+
 async function generateRawCallback(args, value) {
     if (!value) {
         console.warn('WARN: No argument provided for /genraw command');
@@ -302,30 +326,19 @@ async function generateRawCallback(args, value) {
     $('#send_textarea').val('').trigger('input');
     const lock = isTrueBoolean(args?.lock);
 
-    if (typeof args.stop === 'string' && args.stop.length) {
-        try {
-            const stopStrings = JSON.parse(args.stop);
-            if (Array.isArray(stopStrings)) {
-                for (const stopString of stopStrings) {
-                    addEphemeralStoppingString(stopString);
-                }
-            }
-        } catch {
-            // Do nothing
-        }
-    }
-
     try {
         if (lock) {
             deactivateSendButtons();
         }
 
+        setEphemeralStopStrings(args?.stop);
         const result = await generateRaw(value, '', isFalseBoolean(args?.instruct));
         return result;
     } finally {
         if (lock) {
             activateSendButtons();
         }
+        flushEphemeralStoppingStrings();
     }
 }
 
@@ -344,12 +357,14 @@ async function generateCallback(args, value) {
             deactivateSendButtons();
         }
 
+        setEphemeralStopStrings(args?.stop);
         const result = await generateQuietPrompt(value, false, false, '');
         return result;
     } finally {
         if (lock) {
             activateSendButtons();
         }
+        flushEphemeralStoppingStrings();
     }
 }
 

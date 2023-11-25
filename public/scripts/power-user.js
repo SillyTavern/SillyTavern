@@ -2388,8 +2388,12 @@ export function addEphemeralStoppingString(value) {
 }
 
 export function flushEphemeralStoppingStrings() {
+    if (EPHEMERAL_STOPPING_STRINGS.length === 0) {
+        return;
+    }
+
     console.debug('Flushing ephemeral stopping strings:', EPHEMERAL_STOPPING_STRINGS);
-    EPHEMERAL_STOPPING_STRINGS.length = 0;
+    EPHEMERAL_STOPPING_STRINGS.splice(0, EPHEMERAL_STOPPING_STRINGS.length);
 }
 
 /**
