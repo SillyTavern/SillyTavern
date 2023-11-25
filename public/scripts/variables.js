@@ -301,6 +301,28 @@ async function executeSubCommands(command) {
     return result?.pipe || '';
 }
 
+function deleteLocalVariable(name) {
+    if (!existsLocalVariable(name)) {
+        console.warn(`The local variable "${name}" does not exist.`);
+        return '';
+    }
+
+    delete chat_metadata.variables[name];
+    saveMetadataDebounced();
+    return '';
+}
+
+function deleteGlobalVariable(name) {
+    if (!existsGlobalVariable(name)) {
+        console.warn(`The global variable "${name}" does not exist.`);
+        return '';
+    }
+
+    delete extension_settings.variables.global[name];
+    saveSettingsDebounced();
+    return '';
+}
+
 export function registerVariableCommands() {
     registerSlashCommand('listvar', listVariablesCallback, [''], ' – list registered chat variables', true, true);
     registerSlashCommand('setvar', (args, value) => setLocalVariable(args.key || args.name, value), [], '<span class="monospace">key=varname (value)</span> – set a local variable value and pass it down the pipe, e.g. <tt>/setvar key=color green</tt>', true, true);
@@ -311,4 +333,6 @@ export function registerVariableCommands() {
     registerSlashCommand('addglobalvar', (args, value) => addGlobalVariable(args.key || args.name, value), [], '<span class="monospace">key=varname (increment)</span> – add a value to a global variable and pass the result down the pipe, e.g. <tt>/addglobalvar score 10</tt>', true, true);
     registerSlashCommand('if', ifCallback, [], '<span class="monospace">a=varname1 b=varname2 rule=comparison else="(alt.command)" "(command)"</span> – compare the value of variable "a" with the value of variable "b", and if the condition yields true, then execute any valid slash command enclosed in quotes and pass the result of the command execution down the pipe. Numeric values and string literals for "a" and "b" supported. Available rules: gt => a > b, gte => a >= b, lt => a < b, lte => a <= b, eq => a == b, neq => a != b, not => !a, in (strings) => a includes b, nin (strings) => a not includes b, e.g. <tt>/if a=score a=10 rule=gte "/speak You win"</tt> triggers a /speak command if the value of "score" is greater or equals 10.', true, true);
     registerSlashCommand('while', whileCallback, [], '<span class="monospace">a=varname1 b=varname2 rule=comparison "(command)"</span> – compare the value of variable "a" with the value of variable "b", and if the condition yields true, then execute any valid slash command enclosed in quotes. Numeric values and string literals for "a" and "b" supported. Available rules: gt => a > b, gte => a >= b, lt => a < b, lte => a <= b, eq => a == b, neq => a != b, not => !a, in (strings) => a includes b, nin (strings) => a not includes b, e.g. <tt>/while a=i a=10 rule=let "/addvar i 1"</tt> adds 1 to the value of "i" until it reaches 10. Loops are limited to 100 iterations by default, pass guard=off to disable.', true, true);
+    registerSlashCommand('flushvar', (_, value) => deleteLocalVariable(value), [], '<span class="monospace">(key)</span> – delete a local variable, e.g. <tt>/flushvar score</tt>', true, true);
+    registerSlashCommand('flushglobalvar', (_, value) => deleteGlobalVariable(value), [], '<span class="monospace">(key)</span> – delete a global variable, e.g. <tt>/flushglobalvar score</tt>', true, true);
 }
