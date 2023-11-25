@@ -2124,8 +2124,8 @@ function randomReplace(input, emptyListPlaceholder = '') {
     const randomPattern = /{{random[ : ]([^}]+)}}/gi;
 
     return input.replace(randomPattern, (match, listString) => {
-        const list = listString.split(',').map(item => item.trim()).filter(item => item.length > 0);
-
+        //split on double colons instead of commas to allow for commas inside random items
+        const list = listString.split('::').filter(item => item.length > 0);
         if (list.length === 0) {
             return emptyListPlaceholder;
         }
@@ -2134,7 +2134,8 @@ function randomReplace(input, emptyListPlaceholder = '') {
         const randomIndex = Math.floor(rng() * list.length);
 
         //const randomIndex = Math.floor(Math.random() * list.length);
-        return list[randomIndex];
+        //trim() at the end to allow for empty random values
+        return list[randomIndex].trim();
     });
 }
 
