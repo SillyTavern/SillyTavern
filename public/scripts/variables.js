@@ -102,7 +102,8 @@ export function replaceVariableMacros(str) {
     // Replace {{addvar::name::value}} with empty string and add value to the variable value
     str = str.replace(/{{addvar::([^:]+)::([^}]+)}}/gi, (_, name, value) => {
         name = name.trim();
-        return addLocalVariable(name, value);;
+        addLocalVariable(name, value);;
+        return '';
     });
 
     // Replace {{getglobalvar::name}} with the value of the global variable name
@@ -121,7 +122,8 @@ export function replaceVariableMacros(str) {
     // Replace {{addglobalvar::name::value}} with empty string and add value to the global variable value
     str = str.replace(/{{addglobalvar::([^:]+)::([^}]+)}}/gi, (_, name, value) => {
         name = name.trim();
-        return addGlobalVariable(name, value);
+        addGlobalVariable(name, value);
+        return '';
     });
 
     return str;
