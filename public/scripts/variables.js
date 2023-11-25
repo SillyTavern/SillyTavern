@@ -96,17 +96,17 @@ export function replaceVariableMacros(input) {
             continue;
         }
 
+        // Replace {{getvar::name}} with the value of the variable name
+        line = line.replace(/{{getvar::([^}]+)}}/gi, (_, name) => {
+            name = name.trim();
+            return getLocalVariable(name);
+        });
+
         // Replace {{setvar::name::value}} with empty string and set the variable name to value
         line = line.replace(/{{setvar::([^:]+)::([^}]+)}}/gi, (_, name, value) => {
             name = name.trim();
             setLocalVariable(name, value);
             return '';
-        });
-
-        // Replace {{getvar::name}} with the value of the variable name
-        line = line.replace(/{{getvar::([^}]+)}}/gi, (_, name) => {
-            name = name.trim();
-            return getLocalVariable(name);
         });
 
         // Replace {{addvar::name::value}} with empty string and add value to the variable value
@@ -116,17 +116,17 @@ export function replaceVariableMacros(input) {
             return '';
         });
 
+        // Replace {{getglobalvar::name}} with the value of the global variable name
+        line = line.replace(/{{getglobalvar::([^}]+)}}/gi, (_, name) => {
+            name = name.trim();
+            return getGlobalVariable(name);
+        });
+
         // Replace {{setglobalvar::name::value}} with empty string and set the global variable name to value
         line = line.replace(/{{setglobalvar::([^:]+)::([^}]+)}}/gi, (_, name, value) => {
             name = name.trim();
             setGlobalVariable(name, value);
             return '';
-        });
-
-        // Replace {{getglobalvar::name}} with the value of the global variable name
-        line = line.replace(/{{getglobalvar::([^}]+)}}/gi, (_, name) => {
-            name = name.trim();
-            return getGlobalVariable(name);
         });
 
         // Replace {{addglobalvar::name::value}} with empty string and add value to the global variable value
