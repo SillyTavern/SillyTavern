@@ -2121,22 +2121,34 @@ function getTimeSinceLastMessage() {
 }
 
 function randomReplace(input, emptyListPlaceholder = '') {
-    const randomPattern = /{{random[ : ]([^}]+)}}/gi;
+    const randomPatternNew = /{{random\s?::\s?([^}]+)}}/gi;
+    const randomPatternOld = /{{random\s?:\s?([^}]+)}}/gi;
 
-    return input.replace(randomPattern, (match, listString) => {
-        //split on double colons instead of commas to allow for commas inside random items
-        const list = listString.split('::').filter(item => item.length > 0);
-        if (list.length === 0) {
-            return emptyListPlaceholder;
-        }
-
-        var rng = new Math.seedrandom('added entropy.', { entropy: true });
-        const randomIndex = Math.floor(rng() * list.length);
-
-        //const randomIndex = Math.floor(Math.random() * list.length);
-        //trim() at the end to allow for empty random values
-        return list[randomIndex].trim();
-    });
+    if (randomPatternNew.test(input)) {
+        return input.replace(randomPatternNew, (match, listString) => {
+            //split on double colons instead of commas to allow for commas inside random items
+            const list = listString.split('::').filter(item => item.length > 0);
+            if (list.length === 0) {
+                return emptyListPlaceholder;
+            }
+            var rng = new Math.seedrandom('added entropy.', { entropy: true });
+            const randomIndex = Math.floor(rng() * list.length);
+            //trim() at the end to allow for empty random values
+            return list[randomIndex].trim();
+        });
+    } else if (randomPatternOld.test(input)) {
+        return input.replace(randomPatternOld, (match, listString) => {
+            const list = listString.split(',').map(item => item.trim()).filter(item => item.length > 0);
+            if (list.length === 0) {
+                return emptyListPlaceholder;
+            }
+            var rng = new Math.seedrandom('added entropy.', { entropy: true });
+            const randomIndex = Math.floor(rng() * list.length);
+            return list[randomIndex];
+        });
+    } else {
+        return input
+    }
 }
 
 function diceRollReplace(input, invalidRollPlaceholder = '') {
@@ -8563,7 +8575,7 @@ jQuery(async function () {
         if (this_chid !== undefined || selected_group) {
             // Previously system messages we're allowed to be edited
             /*const message = $(this).closest(".mes");
-
+ 
             if (message.data("isSystem")) {
                 return;
             }*/
