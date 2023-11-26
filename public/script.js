@@ -186,6 +186,7 @@ import {
     getInstructStoppingSequences,
     autoSelectInstructPreset,
     formatInstructModeSystemPrompt,
+    replaceInstructMacros,
 } from "./scripts/instruct-mode.js";
 import { applyLocale } from "./scripts/i18n.js";
 import { getFriendlyTokenizerName, getTokenCount, getTokenizerModel, initTokenizers, saveTokenCache } from "./scripts/tokenizers.js";
@@ -2013,6 +2014,7 @@ function substituteParams(content, _name1, _name2, _original, _group, _replaceCh
     }
     content = diceRollReplace(content);
     content = randomReplace(content);
+    content = replaceInstructMacros(content);
     content = replaceVariableMacros(content);
     content = content.replace(/{{newline}}/gi, "\n");
     content = content.replace(/{{input}}/gi, String($('#send_textarea').val()));

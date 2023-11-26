@@ -358,6 +358,31 @@ function selectMatchingContextTemplate(name) {
     }
 }
 
+/**
+ * Replaces instruct mode macros in the given input string.
+ * @param {string} input Input string.
+ * @returns {string} String with macros replaced.
+ */
+export function replaceInstructMacros(input) {
+    if (!input) {
+        return '';
+    }
+
+    input = input.replace(/{{instructSystem}}/gi, power_user.instruct.enabled ? power_user.instruct.system_prompt : '');
+    input = input.replace(/{{instructSystemPrefix}}/gi, power_user.instruct.enabled ? power_user.instruct.system_sequence_prefix : '');
+    input = input.replace(/{{instructSystemSuffix}}/gi, power_user.instruct.enabled ? power_user.instruct.system_sequence_suffix : '');
+    input = input.replace(/{{instructInput}}/gi, power_user.instruct.enabled ? power_user.instruct.input_sequence : '');
+    input = input.replace(/{{instructOutput}}/gi, power_user.instruct.enabled ? power_user.instruct.output_sequence : '');
+    input = input.replace(/{{instructFirstOutput}}/gi, power_user.instruct.enabled ? (power_user.instruct.first_output_sequence || power_user.instruct.output_sequence) : '');
+    input = input.replace(/{{instructLastOutput}}/gi, power_user.instruct.enabled ? (power_user.instruct.last_output_sequence || power_user.instruct.output_sequence) : '');
+    input = input.replace(/{{instructSeparator}}/gi, power_user.instruct.enabled ? power_user.instruct.separator_sequence : '');
+    input = input.replace(/{{instructStop}}/gi, power_user.instruct.enabled ? power_user.instruct.stop_sequence : '');
+    input = input.replace(/{{exampleSeparator}}/gi, power_user.context.example_separator);
+    input = input.replace(/{{chatStart}}/gi, power_user.context.chat_start);
+
+    return input;
+}
+
 jQuery(() => {
     $('#instruct_set_default').on('click', function () {
         if (power_user.instruct.preset === power_user.default_instruct) {
