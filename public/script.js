@@ -3146,6 +3146,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             wiAfter: worldInfoAfter,
             loreBefore: worldInfoBefore,
             loreAfter: worldInfoAfter,
+            mesExamples: mesExamplesArray.join(''),
         };
 
         const storyString = renderStoryString(storyStringParams);
