@@ -391,6 +391,25 @@ async function loadSettings() {
         $('#sd_style').append(option);
     }
 
+    // Find a closest resolution option match for the current width and height
+    let resolutionId = null, minAspectDiff = Infinity, minResolutionDiff = Infinity;
+    for (const [id, resolution] of Object.entries(resolutionOptions)) {
+        const aspectDiff = Math.abs((resolution.width / resolution.height) - (extension_settings.sd.width / extension_settings.sd.height));
+        const resolutionDiff = Math.abs(resolution.width * resolution.height - extension_settings.sd.width * extension_settings.sd.height);
+
+        if (resolutionDiff < minResolutionDiff || (resolutionDiff === minResolutionDiff && aspectDiff < minAspectDiff)) {
+            resolutionId = id;
+            minAspectDiff = aspectDiff;
+            minResolutionDiff = resolutionDiff;
+        }
+
+        if (resolutionDiff === 0 && aspectDiff === 0) {
+            break;
+        }
+    }
+
+    $('#sd_resolution').val(resolutionId);
+
     toggleSourceControls();
     addPromptTemplates();
 
@@ -637,34 +656,38 @@ function onSamplerChange() {
 }
 
 const resolutionOptions = {
-    sd_res_512x512: { width: 512, height: 512 },
-    sd_res_600x600: { width: 600, height: 600 },
-    sd_res_512x768: { width: 512, height: 768 },
-    sd_res_768x512: { width: 768, height: 512 },
-    sd_res_960x540: { width: 960, height: 540 },
-    sd_res_540x960: { width: 540, height: 960 },
-    sd_res_1920x1088: { width: 1920, height: 1088 },
-    sd_res_1088x1920: { width: 1088, height: 1920 },
-    sd_res_1280x720: { width: 1280, height: 720 },
-    sd_res_720x1280: { width: 720, height: 1280 },
-    sd_res_1024x1024: { width: 1024, height: 1024 },
-    sd_res_1152x896: { width: 1152, height: 896 },
-    sd_res_896x1152: { width: 896, height: 1152 },
-    sd_res_1216x832: { width: 1216, height: 832 },
-    sd_res_832x1216: { width: 832, height: 1216 },
-    sd_res_1344x768: { width: 1344, height: 768 },
-    sd_res_768x1344: { width: 768, height: 1344 },
-    sd_res_1536x640: { width: 1536, height: 640 },
-    sd_res_640x1536: { width: 640, height: 1536 },
+    sd_res_512x512: { width: 512, height: 512, name: '512x512 (1:1, icons, profile pictures)' },
+    sd_res_600x600: { width: 600, height: 600, name: '600x600 (1:1, icons, profile pictures)' },
+    sd_res_512x768: { width: 512, height: 768, name: '512x768 (2:3, vertical character card)' },
+    sd_res_768x512: { width: 768, height: 512, name: '768x512 (3:2, horizontal 35-mm movie film)' },
+    sd_res_960x540: { width: 960, height: 540, name: '960x540 (16:9, horizontal wallpaper)' },
+    sd_res_540x960: { width: 540, height: 960, name: '540x960 (9:16, vertical wallpaper)' },
+    sd_res_1920x1088: { width: 1920, height: 1088, name: '1920x1088 (16:9, 1080p, horizontal wallpaper)' },
+    sd_res_1088x1920: { width: 1088, height: 1920, name: '1088x1920 (9:16, 1080p, vertical wallpaper)' },
+    sd_res_1280x720: { width: 1280, height: 720, name: '1280x720 (16:9, 720p, horizontal wallpaper)' },
+    sd_res_720x1280: { width: 720, height: 1280, name: '720x1280 (9:16, 720p, vertical wallpaper)' },
+    sd_res_1024x1024: { width: 1024, height: 1024, name: '1024x1024 (1:1, SDXL)' },
+    sd_res_1152x896: { width: 1152, height: 896, name: '1152x896 (9:7, SDXL)' },
+    sd_res_896x1152: { width: 896, height: 1152, name: '896x1152 (7:9, SDXL)' },
+    sd_res_1216x832: { width: 1216, height: 832, name: '1216x832 (19:13, SDXL)' },
+    sd_res_832x1216: { width: 832, height: 1216, name: '832x1216 (13:19, SDXL)' },
+    sd_res_1344x768: { width: 1344, height: 768, name: '1344x768 (4:3, SDXL)' },
+    sd_res_768x1344: { width: 768, height: 1344, name: '768x1344 (3:4, SDXL)' },
+    sd_res_1536x640: { width: 1536, height: 640, name: '1536x640 (24:10, SDXL)' },
+    sd_res_640x1536: { width: 640, height: 1536, name: '640x1536 (10:24, SDXL)' },
 };
 
 function onResolutionChange() {
     const selectedOption = $("#sd_resolution").val();
     const selectedResolution = resolutionOptions[selectedOption];
-        $("#sd_width_value").text(selectedResolution.width);
-        $("#sd_height_value").text(selectedResolution.height);
-        $("#sd_height").val(selectedResolution.height);
-        $("#sd_width").val(selectedResolution.width);
+
+    if (!selectedResolution) {
+        console.warn(`Could not find resolution option for ${selectedOption}`);
+        return;
+    }
+
+    $("#sd_height").val(selectedResolution.height).trigger('input');
+    $("#sd_width").val(selectedResolution.width).trigger('input');
 }
 
 function onSchedulerChange() {
@@ -2468,6 +2491,13 @@ jQuery(async () => {
         initScrollHeight($("#sd_negative_prompt"));
         initScrollHeight($("#sd_character_prompt"));
     })
+
+    for (const [key, value] of Object.entries(resolutionOptions)) {
+        const option = document.createElement('option');
+        option.value = key;
+        option.text = value.name;
+        $('#sd_resolution').append(option);
+    }
 
     eventSource.on(event_types.EXTRAS_CONNECTED, async () => {
         await loadSettingOptions();
