@@ -65,7 +65,7 @@ function getModelForTask(task) {
         const model = getConfigValue(tasks[task].configField, null);
         return model || defaultModel;
     } catch (error) {
-        console.warn('Failed to read config.conf, using default classification model.');
+        console.warn('Failed to read config.yaml, using default classification model.');
         return defaultModel;
     }
 }
