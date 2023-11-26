@@ -178,6 +178,9 @@ function parseChubUrl(str) {
 
 // Warning: Some characters might not exist in JannyAI.me
 async function downloadJannyCharacter(uuid) {
+    // This endpoint is being guarded behind Bot Fight Mode of Cloudflare
+    // So hosted ST on Azure/AWS/GCP/Collab might get blocked by IP
+    // Should work normally on self-host PC/Android
     const result = await fetch('https://api.janitorai.me/api/v1/download', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json'},
@@ -238,7 +241,7 @@ function registerEndpoints(app, jsonParser) {
                 if (!uuid) {
                     return response.sendStatus(404);
                 }
-                
+
                 type = 'character';
                 result = await downloadJannyCharacter(uuid);
             } else {
