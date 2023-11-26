@@ -17,6 +17,13 @@ body.no-modelIcons .icon-svg {
     display: none !important;
 }
 
+body.square-avatars .avatar,
+body.square-avatars .avatar img,
+body.square-avatars .hotswapAvatar,
+body.square-avatars .hotswapAvatar img {
+    border-radius: 2px !important;
+}
+
 /*char list grid mode*/
 
 body.charListGrid #rm_print_characters_block {
@@ -359,10 +366,10 @@ body.expandMessageActions .mes .mes_buttons .extraMesButtonsHint {
     display: none !important;
 }
 
-#openai_image_inlining:not(:checked) ~ #image_inlining_hint {
+#openai_image_inlining:not(:checked)~#image_inlining_hint {
     display: none;
 }
 
-#openai_image_inlining:checked ~ #image_inlining_hint {
+#openai_image_inlining:checked~#image_inlining_hint {
     display: block;
 }

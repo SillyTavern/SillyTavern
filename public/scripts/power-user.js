@@ -66,6 +66,7 @@ export const ui_mode = {
 const avatar_styles = {
     ROUND: 0,
     RECTANGULAR: 1,
+    SQUARE: 2,
 }
 
 export const chat_styles = {
@@ -856,6 +857,7 @@ function noShadows() {
 function applyAvatarStyle() {
     power_user.avatar_style = Number(localStorage.getItem(storage_keys.avatar_style) ?? avatar_styles.ROUND);
     $("body").toggleClass("big-avatars", power_user.avatar_style === avatar_styles.RECTANGULAR);
+    $("body").toggleClass("square-avatars", power_user.avatar_style === avatar_styles.SQUARE);
     $("#avatar_style").val(power_user.avatar_style).prop("selected", true);
     //$(`input[name="avatar_style"][value="${power_user.avatar_style}"]`).prop("checked", true);
 
