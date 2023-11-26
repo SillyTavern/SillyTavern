@@ -28,6 +28,7 @@ import {
     callPopup,
     deactivateSendButtons,
     activateSendButtons,
+    main_api,
 } from "../script.js";
 import { getMessageTimeStamp } from "./RossAscends-mods.js";
 import { findGroupMemberId, groups, is_group_generating, resetSelectedGroup, saveGroupChat, selected_group } from "./group-chats.js";
@@ -36,8 +37,9 @@ import { addEphemeralStoppingString, chat_styles, flushEphemeralStoppingStrings,
 import { autoSelectPersona } from "./personas.js";
 import { getContext } from "./extensions.js";
 import { hideChatMessage, unhideChatMessage } from "./chats.js";
-import { delay, isFalseBoolean, isTrueBoolean, stringToRange } from "./utils.js";
+import { delay, isFalseBoolean, isTrueBoolean, stringToRange, trimToEndSentence, trimToStartSentence } from "./utils.js";
 import { registerVariableCommands, resolveVariable } from "./variables.js";
+import { decodeTextTokens, getFriendlyTokenizerName, getTextTokens, getTokenCount } from "./tokenizers.js";
 export {
     executeSlashCommands,
     registerSlashCommand,
@@ -175,6 +177,9 @@ parser.addCommand('run', runCallback, ['call', 'exec'], '<span class="monospace"
 parser.addCommand('messages', getMessagesCallback, ['message'], '<span class="monospace">(names=off/on [message index or range])</span> – returns the specified message or range of messages as a string.', true, true);
 parser.addCommand('setinput', setInputCallback, [], '<span class="monospace">(text)</span> – sets the user input to the specified text and passes it to the next command through the pipe.', true, true);
 parser.addCommand('popup', popupCallback, [], '<span class="monospace">(text)</span> – shows a blocking popup with the specified text.', true, true);
+parser.addCommand('trimtokens', trimTokensCallback, [], '<span class="monospace">(direction=start/end limit=number [text])</span> – trims the start or end of text to the specified number of tokens.', true, true);
+parser.addCommand('trimstart', trimStartCallback, [], '<span class="monospace">(text)</span> – trims the text to the start of the first full sentence.', true, true);
+parser.addCommand('trimend', trimEndCallback, [], '<span class="monospace">(text)</span> – trims the text to the end of the last full sentence.', true, true);
 registerVariableCommands();
 
 const NARRATOR_NAME_KEY = 'narrator_name';
@@ -184,6 +189,70 @@ export const COMMENT_NAME_DEFAULT = 'Note';
 function setInputCallback(_, value) {
     $('#send_textarea').val(value || '').trigger('input');
     return value;
+}
+
+function trimStartCallback(_, value) {
+    if (!value) {
+        return '';
+    }
+
+    return trimToStartSentence(value);
+}
+
+function trimEndCallback(_, value) {
+    if (!value) {
+        return '';
+    }
+
+    return trimToEndSentence(value);
+}
+
+function trimTokensCallback(arg, value) {
+    if (!value) {
+        console.warn('WARN: No argument provided for /trimtokens command');
+        return '';
+    }
+
+    const limit = Number(resolveVariable(arg.limit));
+
+    if (isNaN(limit)) {
+        console.warn(`WARN: Invalid limit provided for /trimtokens command: ${limit}`);
+        return value;
+    }
+
+    if (limit <= 0) {
+        return '';
+    }
+
+    const direction = arg.direction || 'end';
+    const tokenCount = getTokenCount(value)
+
+    // Token count is less than the limit, do nothing
+    if (tokenCount <= limit) {
+        return value;
+    }
+
+    const { tokenizerName, tokenizerId } = getFriendlyTokenizerName(main_api);
+    console.debug('Requesting tokenization for /trimtokens command', tokenizerName);
+
+    try {
+        const textTokens = getTextTokens(tokenizerId, value);
+
+        if (!Array.isArray(textTokens) || !textTokens.length) {
+            console.warn('WARN: No tokens returned for /trimtokens command, falling back to estimation');
+            const percentage = limit / tokenCount;
+            const trimIndex = Math.floor(value.length * percentage);
+            const trimmedText = direction === 'start' ? value.substring(trimIndex) : value.substring(0, value.length - trimIndex);
+            return trimmedText;
+        }
+
+        const sliceTokens = direction === 'start' ? textTokens.slice(0, limit) : textTokens.slice(-limit);
+        const decodedText = decodeTextTokens(tokenizerId, sliceTokens);
+        return decodedText;
+    } catch (error) {
+        console.warn('WARN: Tokenization failed for /trimtokens command, returning original', error);
+        return value;
+    }
 }
 
 async function popupCallback(_, value) {

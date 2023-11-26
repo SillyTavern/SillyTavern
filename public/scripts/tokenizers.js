@@ -467,7 +467,11 @@ function getTextTokensRemote(endpoint, str, model = '') {
  * @param {string} endpoint API endpoint.
  * @param {number[]} ids Array of token ids
  */
-function decodeTextTokensRemote(endpoint, ids) {
+function decodeTextTokensRemote(endpoint, ids, model = '') {
+    if (model) {
+        endpoint += `?model=${model}`;
+    }
+
     let text = '';
     jQuery.ajax({
         async: false,
@@ -533,6 +537,9 @@ export function decodeTextTokens(tokenizerType, ids) {
             return decodeTextTokensRemote('/api/decode/mistral', ids);
         case tokenizers.YI:
             return decodeTextTokensRemote('/api/decode/yi', ids);
+        case tokenizers.OPENAI:
+            const model = getTokenizerModel();
+            return decodeTextTokensRemote('/api/decode/openai', ids, model);
         default:
             console.warn("Calling decodeTextTokens with unsupported tokenizer type", tokenizerType);
             return '';

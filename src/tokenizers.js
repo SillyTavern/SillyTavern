@@ -245,7 +245,7 @@ async function loadClaudeTokenizer(modelPath) {
 }
 
 function countClaudeTokens(tokenizer, messages) {
-    const convertedPrompt = convertClaudePrompt(messages, false, false);
+    const convertedPrompt = convertClaudePrompt(messages, false, false, false);
 
     // Fallback to strlen estimation
     if (!tokenizer) {
@@ -432,6 +432,40 @@ function registerEndpoints(app, jsonParser) {
         } catch (error) {
             console.log(error);
             return res.send({ ids: [], count: 0, chunks: [] });
+        }
+    });
+
+    app.post('/api/decode/openai', jsonParser, async function (req, res) {
+        try {
+            const queryModel = String(req.query.model || '');
+
+            if (queryModel.includes('llama')) {
+                const handler = createSentencepieceDecodingHandler(spp_llama);
+                return handler(req, res);
+            }
+
+            if (queryModel.includes('mistral')) {
+                const handler = createSentencepieceDecodingHandler(spp_mistral);
+                return handler(req, res);
+            }
+
+            if (queryModel.includes('yi')) {
+                const handler = createSentencepieceDecodingHandler(spp_yi);
+                return handler(req, res);
+            }
+
+            if (queryModel.includes('claude')) {
+                const ids = req.body.ids || [];
+                const chunkText = await claude_tokenizer.decode(new Uint32Array(ids));
+                return res.send({ text: chunkText });
+            }
+
+            const model = getTokenizerModel(queryModel);
+            const handler = createTiktokenDecodingHandler(model);
+            return handler(req, res);
+        } catch (error) {
+            console.log(error);
+            return res.send({ text: '' });
         }
     });
 
