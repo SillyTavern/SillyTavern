@@ -285,6 +285,7 @@ window["SillyTavern"] = {};
 
 // Event source init
 export const event_types = {
+    APP_READY: 'app_ready',
     EXTRAS_CONNECTED: 'extras_connected',
     MESSAGE_SWIPED: 'message_swiped',
     MESSAGE_SENT: 'message_sent',
@@ -744,6 +745,7 @@ async function firstLoadInit() {
     initCfg();
     doDailyExtensionUpdatesCheck();
     hideLoader();
+    await eventSource.emit(event_types.APP_READY);
 }
 
 function cancelStatusCheck() {
