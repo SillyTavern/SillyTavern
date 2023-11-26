@@ -4,7 +4,8 @@ import {
     getStoppingStrings,
     novelai_setting_names,
     saveSettingsDebounced,
-    setGenerationParamsFromPreset
+    setGenerationParamsFromPreset,
+    substituteParams,
 } from "../script.js";
 import { getCfgPrompt } from "./cfg-scale.js";
 import { MAX_CONTEXT_DEFAULT } from "./power-user.js";
@@ -408,7 +409,7 @@ function getBadWordPermutations(text) {
     return result.filter(onlyUnique);
 }
 
-export function getNovelGenerationData(finalPrompt, this_settings, this_amount_gen, isImpersonate, cfgValues) {
+export function getNovelGenerationData(finalPrompt, settings, maxLength, isImpersonate, isContinue, cfgValues) {
     if (cfgValues && cfgValues.guidanceScale && cfgValues.guidanceScale?.value !== 1) {
         cfgValues.negativePrompt = (getCfgPrompt(cfgValues.guidanceScale, true))?.value;
     }
@@ -418,7 +419,7 @@ export function getNovelGenerationData(finalPrompt, this_settings, this_amount_g
 
     const tokenizerType = kayra ? tokenizers.NERD2 : (clio ? tokenizers.NERD : tokenizers.NONE);
     const stopSequences = (tokenizerType !== tokenizers.NONE)
-        ? getStoppingStrings(isImpersonate)
+        ? getStoppingStrings(isImpersonate, isContinue)
             .map(t => getTextTokens(tokenizerType, t))
         : undefined;
 
@@ -439,7 +440,7 @@ export function getNovelGenerationData(finalPrompt, this_settings, this_amount_g
         "model": nai_settings.model_novel,
         "use_string": true,
         "temperature": Number(nai_settings.temperature),
-        "max_length": this_amount_gen < maximum_output_length ? this_amount_gen : maximum_output_length,
+        "max_length": maxLength < maximum_output_length ? maxLength : maximum_output_length,
         "min_length": Number(nai_settings.min_length),
         "tail_free_sampling": Number(nai_settings.tail_free_sampling),
         "repetition_penalty": Number(nai_settings.repetition_penalty),
@@ -454,7 +455,7 @@ export function getNovelGenerationData(finalPrompt, this_settings, this_amount_g
         "mirostat_lr": Number(nai_settings.mirostat_lr),
         "mirostat_tau": Number(nai_settings.mirostat_tau),
         "cfg_scale": cfgValues?.guidanceScale?.value ?? Number(nai_settings.cfg_scale),
-        "cfg_uc": cfgValues?.negativePrompt ?? nai_settings.cfg_uc ?? "",
+        "cfg_uc": cfgValues?.negativePrompt ?? substituteParams(nai_settings.cfg_uc) ?? "",
         "phrase_rep_pen": nai_settings.phrase_rep_pen,
         "stop_sequences": stopSequences,
         "bad_words_ids": badWordIds,
@@ -463,7 +464,7 @@ export function getNovelGenerationData(finalPrompt, this_settings, this_amount_g
         "use_cache": false,
         "return_full_text": false,
         "prefix": prefix,
-        "order": nai_settings.order || this_settings.order || default_order,
+        "order": nai_settings.order || settings.order || default_order,
     };
 }
 

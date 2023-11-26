@@ -18,6 +18,10 @@
                 <input id="sd_interactive_mode" type="checkbox" />
                 Interactive mode
             </label>
+            <label for="sd_multimodal_captioning" class="checkbox_label" title="Use multimodal captioning to generate prompts for user and character portraits based on their avatars.">
+                <input id="sd_multimodal_captioning" type="checkbox" />
+                Use multimodal captioning for portraits
+            </label>
             <label for="sd_expand" class="checkbox_label" title="Automatically extend prompts using text generation model">
                 <input id="sd_expand" type="checkbox" />
                 Auto-enhance prompts
@@ -30,6 +34,7 @@
                 <option value="vlad">SD.Next (vladmandic)</option>
                 <option value="novel">NovelAI Diffusion</option>
                 <option value="openai">OpenAI (DALL-E)</option>
+                <option value="comfy">ComfyUI</option>
             </select>
             <div data-sd-source="auto">
                 <label for="sd_auto_url">SD Web UI URL</label>
@@ -112,6 +117,32 @@
                     </select>
                 </div>
             </div>
+            <div data-sd-source="comfy">
+                <label for="sd_comfy_url">ComfyUI URL</label>
+                <div class="flex-container flexnowrap">
+                    <input id="sd_comfy_url" type="text" class="text_pole" placeholder="Example: {{comfy_url}}" value="{{comfy_url}}" />
+                    <div id="sd_comfy_validate" class="menu_button menu_button_icon">
+                        <i class="fa-solid fa-check"></i>
+                        <span data-i18n="Connect">
+                            Connect
+                        </span>
+                    </div>
+                </div>
+                <p><i><b>Important:</b> The server must be accessible from the SillyTavern host machine.</i></p>
+                <label for="sd_comfy_workflow">ComfyUI Workflow</label>
+                <div class="flex-container flexnowrap">
+                    <select id="sd_comfy_workflow" class="flex1 text_pole"></select>
+                    <div id="sd_comfy_open_workflow_editor" class="menu_button menu_button_icon" title="Open workflow editor">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </div>
+                    <div id="sd_comfy_new_workflow" class="menu_button menu_button_icon" title="Create new workflow">
+                        <i class="fa-solid fa-plus"></i>
+                    </div>
+                    <div id="sd_comfy_delete_workflow" class="menu_button menu_button_icon" title="Delete workflow">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </div>
+                </div>
+            </div>
             <label for="sd_scale">CFG Scale (<span id="sd_scale_value"></span>)</label>
             <input id="sd_scale" type="range" min="{{scale_min}}" max="{{scale_max}}" step="{{scale_step}}" value="{{scale}}" />
             <label for="sd_steps">Sampling steps (<span id="sd_steps_value"></span>)</label>
@@ -124,6 +155,16 @@
             <select id="sd_model"></select>
             <label for="sd_sampler">Sampling method</label>
             <select id="sd_sampler"></select>
+            <label for="sd_resolution">Resolution</label>
+            <select id="sd_resolution"><!-- Populated in JS --></select>
+            <div data-sd-source="comfy">
+                <label for="sd_scheduler">Scheduler</label>
+                <select id="sd_scheduler"></select>
+            </div>
+            <div data-sd-source="comfy">
+                <label for="sd_vae">VAE</label>
+                <select id="sd_vae"></select>
+            </div>
             <div class="flex-container marginTop10 margin-bot-10px">
                 <label class="flex1 checkbox_label">
                     <input id="sd_restore_faces" type="checkbox" />

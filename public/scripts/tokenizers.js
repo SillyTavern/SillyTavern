@@ -4,7 +4,7 @@ import { chat_completion_sources, model_list, oai_settings } from "./openai.js";
 import { groups, selected_group } from "./group-chats.js";
 import { getStringHash } from "./utils.js";
 import { kai_flags } from "./kai-settings.js";
-import { isMancer, textgenerationwebui_settings } from "./textgen-settings.js";
+import { isKoboldCpp, isMancer, isTabby, textgenerationwebui_settings } from "./textgen-settings.js";
 
 export const CHARACTERS_PER_TOKEN_RATIO = 3.35;
 const TOKENIZER_WARNING_KEY = 'tokenizationWarningShown';
@@ -18,8 +18,18 @@ export const tokenizers = {
     NERD2: 5,
     API: 6,
     MISTRAL: 7,
+    YI: 8,
     BEST_MATCH: 99,
 };
+
+export const SENTENCEPIECE_TOKENIZERS = [
+    tokenizers.LLAMA,
+    tokenizers.MISTRAL,
+    tokenizers.YI,
+    // uncomment when NovelAI releases Kayra and Clio weights, lol
+    //tokenizers.NERD,
+    //tokenizers.NERD2,
+];
 
 const objectStore = new localforage.createInstance({ name: "SillyTavern_ChatCompletions" });
 
@@ -148,6 +158,8 @@ function callTokenizer(type, str, padding) {
             return countTokensRemote('/api/tokenize/nerdstash_v2', str, padding);
         case tokenizers.MISTRAL:
             return countTokensRemote('/api/tokenize/mistral', str, padding);
+        case tokenizers.YI:
+            return countTokensRemote('/api/tokenize/yi', str, padding);
         case tokenizers.API:
             return countTokensRemote('/tokenize_via_api', str, padding);
         default:
@@ -229,6 +241,7 @@ export function getTokenizerModel() {
     const claudeTokenizer = 'claude';
     const llamaTokenizer = 'llama';
     const mistralTokenizer = 'mistral';
+    const yiTokenizer = 'yi';
 
     // Assuming no one would use it for different models.. right?
     if (oai_settings.chat_completion_source == chat_completion_sources.SCALE) {
@@ -263,6 +276,9 @@ export function getTokenizerModel() {
         }
         else if (model?.architecture?.tokenizer === 'Mistral') {
             return mistralTokenizer;
+        }
+        else if (model?.architecture?.tokenizer === 'Yi') {
+            return yiTokenizer;
         }
         else if (oai_settings.openrouter_model.includes('gpt-4')) {
             return gpt4Tokenizer;
@@ -369,6 +385,8 @@ function getRemoteTokenizationParams(str) {
         api: main_api,
         url: getAPIServerUrl(),
         legacy_api: main_api === 'textgenerationwebui' && textgenerationwebui_settings.legacy_api && !isMancer(),
+        use_tabby: main_api === 'textgenerationwebui' && isTabby(),
+        use_koboldcpp: main_api === 'textgenerationwebui' && isKoboldCpp(),
     };
 }
 
@@ -449,7 +467,11 @@ function getTextTokensRemote(endpoint, str, model = '') {
  * @param {string} endpoint API endpoint.
  * @param {number[]} ids Array of token ids
  */
-function decodeTextTokensRemote(endpoint, ids) {
+function decodeTextTokensRemote(endpoint, ids, model = '') {
+    if (model) {
+        endpoint += `?model=${model}`;
+    }
+
     let text = '';
     jQuery.ajax({
         async: false,
@@ -483,6 +505,8 @@ export function getTextTokens(tokenizerType, str) {
             return getTextTokensRemote('/api/tokenize/nerdstash_v2', str);
         case tokenizers.MISTRAL:
             return getTextTokensRemote('/api/tokenize/mistral', str);
+        case tokenizers.YI:
+            return getTextTokensRemote('/api/tokenize/yi', str);
         case tokenizers.OPENAI:
             const model = getTokenizerModel();
             return getTextTokensRemote('/api/tokenize/openai-encode', str, model);
@@ -511,6 +535,11 @@ export function decodeTextTokens(tokenizerType, ids) {
             return decodeTextTokensRemote('/api/decode/nerdstash_v2', ids);
         case tokenizers.MISTRAL:
             return decodeTextTokensRemote('/api/decode/mistral', ids);
+        case tokenizers.YI:
+            return decodeTextTokensRemote('/api/decode/yi', ids);
+        case tokenizers.OPENAI:
+            const model = getTokenizerModel();
+            return decodeTextTokensRemote('/api/decode/openai', ids, model);
         default:
             console.warn("Calling decodeTextTokens with unsupported tokenizer type", tokenizerType);
             return '';

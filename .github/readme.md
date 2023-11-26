@@ -175,7 +175,7 @@ By default, they will not be exposed to a frontend after you enter them and relo
 
 In order to enable viewing your keys by clicking a button in the API block:
 
-1. Set the value of `allowKeysExposure` to `true` in `config.conf` file.
+1. Set the value of `allowKeysExposure` to `true` in `config.yaml` file.
 2. Restart the SillyTavern server.
 
 ## Remote connections
@@ -213,7 +213,7 @@ CIDR masks are also accepted (eg. 10.0.0.0/24).
 
 Now devices which have the IP specified in the file will be able to connect.
 
-*Note: `config.conf` also has a `whitelist` array, which you can use in the same way, but this array will be ignored if `whitelist.txt` exists.*
+*Note: `config.yaml` also has a `whitelist` array, which you can use in the same way, but this array will be ignored if `whitelist.txt` exists.*
 
 ### 2. Getting the IP for the ST host machine
 
@@ -239,19 +239,19 @@ Use http:// NOT https://
 
 ### Opening your ST to all IPs
 
-We do not recommend doing this, but you can open `config.conf` and change `whitelist` to `false`.
+We do not recommend doing this, but you can open `config.yaml` and change `whitelistMode` to `false`.
 
 You must remove (or rename) `whitelist.txt` in the SillyTavern base install folder if it exists.
 
 This is usually an insecure practice, so we require you to set a username and password when you do this.
 
-The username and password are set in `config.conf`.
+The username and password are set in `config.yaml`.
 
 After restarting your ST server, any device will be able to connect to it, regardless of their IP as long as they know the username and password.
 
 ### Still Unable To Connect?
 
-* Create an inbound/outbound firewall rule for the port found in `config.conf`. Do NOT mistake this for port-forwarding on your router, otherwise, someone could find your chat logs and that's a big no-no.
+* Create an inbound/outbound firewall rule for the port found in `config.yaml`. Do NOT mistake this for port-forwarding on your router, otherwise, someone could find your chat logs and that's a big no-no.
 * Enable the Private Network profile type in Settings > Network and Internet > Ethernet. This is VERY important for Windows 11, otherwise, you would be unable to connect even with the aforementioned firewall rules.
 
 ## Performance issues?

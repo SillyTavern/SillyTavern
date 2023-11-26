@@ -7,13 +7,15 @@ import {
     saveSettingsDebounced,
     setGenerationParamsFromPreset,
     setOnlineStatus,
+    substituteParams,
 } from "../script.js";
 
 import {
     power_user,
+    registerDebugFunction,
 } from "./power-user.js";
-import { getTextTokens, tokenizers } from "./tokenizers.js";
-import { onlyUnique } from "./utils.js";
+import { SENTENCEPIECE_TOKENIZERS, getTextTokens, tokenizers } from "./tokenizers.js";
+import { getSortableDelay, onlyUnique } from "./utils.js";
 
 export {
     textgenerationwebui_settings,
@@ -26,11 +28,17 @@ export const textgen_types = {
     OOBA: 'ooba',
     MANCER: 'mancer',
     APHRODITE: 'aphrodite',
+    TABBY: 'tabby',
+    KOBOLDCPP: 'koboldcpp',
 };
 
 // Maybe let it be configurable in the future?
-export const MANCER_SERVER = 'https://neuro.mancer.tech';
+// (7 days later) The future has come.
+const MANCER_SERVER_KEY = 'mancer_server';
+const MANCER_SERVER_DEFAULT = 'https://neuro.mancer.tech';
+export let MANCER_SERVER = localStorage.getItem(MANCER_SERVER_KEY) ?? MANCER_SERVER_DEFAULT;
 
+const KOBOLDCPP_ORDER = [6, 0, 1, 3, 4, 2, 5];
 const textgenerationwebui_settings = {
     temp: 0.7,
     temperature_last: true,
@@ -71,14 +79,15 @@ const textgenerationwebui_settings = {
     banned_tokens: '',
     //n_aphrodite: 1,
     //best_of_aphrodite: 1,
-    //ignore_eos_token_aphrodite: false,
-    //spaces_between_special_tokens_aphrodite: true,
+    ignore_eos_token_aphrodite: false,
+    spaces_between_special_tokens_aphrodite: true,
     //logits_processors_aphrodite: [],
     //log_probs_aphrodite: 0,
     //prompt_log_probs_aphrodite: 0,
     type: textgen_types.OOBA,
     mancer_model: 'mytholite',
     legacy_api: false,
+    sampler_order: KOBOLDCPP_ORDER,
 };
 
 export let textgenerationwebui_banned_in_macros = [];
@@ -124,11 +133,12 @@ const setting_names = [
     "legacy_api",
     //'n_aphrodite',
     //'best_of_aphrodite',
-    //'ignore_eos_token_aphrodite',
-    //'spaces_between_special_tokens_aphrodite',
+    'ignore_eos_token_aphrodite',
+    'spaces_between_special_tokens_aphrodite',
     //'logits_processors_aphrodite',
     //'log_probs_aphrodite',
     //'prompt_log_probs_aphrodite'
+    "sampler_order",
 ];
 
 async function selectPreset(name) {
@@ -180,6 +190,7 @@ function getCustomTokenBans() {
         return '';
     }
 
+    const tokenizer = SENTENCEPIECE_TOKENIZERS.includes(power_user.tokenizer) ? power_user.tokenizer : tokenizers.LLAMA;
     const result = [];
     const sequences = textgenerationwebui_settings.banned_tokens
         .split('\n')
@@ -211,7 +222,7 @@ function getCustomTokenBans() {
             }
         } else {
             try {
-                const tokens = getTextTokens(tokenizers.LLAMA, line);
+                const tokens = getTextTokens(tokenizer, line);
                 result.push(...tokens);
             } catch {
                 console.log(`Could not tokenize raw text: ${line}`);
@@ -249,6 +260,25 @@ function loadTextGenSettings(data, settings) {
 
     $('#textgen_type').val(textgenerationwebui_settings.type);
     showTypeSpecificControls(textgenerationwebui_settings.type);
+    //this is needed because showTypeSpecificControls() does not handle NOT declarations
+    if (isAphrodite()) {
+        $('[data-forAphro=False]').each(function () {
+            $(this).hide()
+        })
+    } else {
+        $('[data-forAphro=False]').each(function () {
+            $(this).show()
+        })
+    }
+
+    registerDebugFunction('change-mancer-url', 'Change Mancer base URL', 'Change Mancer API server base URL', () => {
+        const result = prompt(`Enter Mancer base URL\nDefault: ${MANCER_SERVER_DEFAULT}`, MANCER_SERVER);
+
+        if (result) {
+            localStorage.setItem(MANCER_SERVER_KEY, result);
+            MANCER_SERVER = result;
+        }
+    });
 }
 
 export function isMancer() {
@@ -259,8 +289,16 @@ export function isAphrodite() {
     return textgenerationwebui_settings.type === textgen_types.APHRODITE;
 }
 
+export function isTabby() {
+    return textgenerationwebui_settings.type === textgen_types.TABBY;
+}
+
 export function isOoba() {
     return textgenerationwebui_settings.type === textgen_types.OOBA;
+}
+
+export function isKoboldCpp() {
+    return textgenerationwebui_settings.type === textgen_types.KOBOLDCPP;
 }
 
 export function getTextGenUrlSourceId() {
@@ -269,33 +307,79 @@ export function getTextGenUrlSourceId() {
             return "#textgenerationwebui_api_url_text";
         case textgen_types.APHRODITE:
             return "#aphrodite_api_url_text";
+        case textgen_types.TABBY:
+            return "#tabby_api_url_text";
+        case textgen_types.KOBOLDCPP:
+            return "#koboldcpp_api_url_text";
+    }
+}
+
+/**
+ * Sorts the sampler items by the given order.
+ * @param {any[]} orderArray Sampler order array.
+ */
+function sortItemsByOrder(orderArray) {
+    console.debug('Preset samplers order: ' + orderArray);
+    const $draggableItems = $("#koboldcpp_order");
+
+    for (let i = 0; i < orderArray.length; i++) {
+        const index = orderArray[i];
+        const $item = $draggableItems.find(`[data-id="${index}"]`).detach();
+        $draggableItems.append($item);
     }
 }
 
 jQuery(function () {
+    $('#koboldcpp_order').sortable({
+        delay: getSortableDelay(),
+        stop: function () {
+            const order = [];
+            $('#koboldcpp_order').children().each(function () {
+                order.push($(this).data('id'));
+            });
+            textgenerationwebui_settings.sampler_order = order;
+            console.log('Samplers reordered:', textgenerationwebui_settings.sampler_order);
+            saveSettingsDebounced();
+        },
+    });
+
+    $('#koboldcpp_default_order').on('click', function () {
+        textgenerationwebui_settings.sampler_order = KOBOLDCPP_ORDER;
+        sortItemsByOrder(textgenerationwebui_settings.sampler_order);
+        saveSettingsDebounced();
+    });
+
     $('#textgen_type').on('change', function () {
         const type = String($(this).val());
         textgenerationwebui_settings.type = type;
 
-        /*         if (type === 'aphrodite') {
-                    $('[data-forAphro=False]').each(function () {
-                        $(this).hide()
-                    })
-                    $('[data-forAphro=True]').each(function () {
-                        $(this).show()
-                    })
-                    $('#mirostat_mode_textgenerationwebui').attr('step', 2) //Aphro disallows mode 1
-                    $("#do_sample_textgenerationwebui").prop('checked', true) //Aphro should always do sample; 'otherwise set temp to 0 to mimic no sample'
-                    $("#ban_eos_token_textgenerationwebui").prop('checked', false) //Aphro should not ban EOS, just ignore it; 'add token '2' to ban list do to this'
-                } else {
-                    $('[data-forAphro=False]').each(function () {
-                        $(this).show()
-                    })
-                    $('[data-forAphro=True]').each(function () {
-                        $(this).hide()
-                    })
-                    $('#mirostat_mode_textgenerationwebui').attr('step', 1)
-                } */
+        if (isAphrodite()) {
+            //this is needed because showTypeSpecificControls() does not handle NOT declarations
+            $('[data-forAphro=False]').each(function () {
+                $(this).hide()
+            })
+            $('#mirostat_mode_textgenerationwebui').attr('step', 2) //Aphro disallows mode 1
+            $("#do_sample_textgenerationwebui").prop('checked', true) //Aphro should always do sample; 'otherwise set temp to 0 to mimic no sample'
+            $("#ban_eos_token_textgenerationwebui").prop('checked', false) //Aphro should not ban EOS, just ignore it; 'add token '2' to ban list do to this'
+            //special handling for Aphrodite topK -1 disable state
+            $('#top_k_textgenerationwebui').attr('min', -1)
+            if ($('#top_k_textgenerationwebui').val() === '0' || textgenerationwebui_settings['top_k'] === 0) {
+                textgenerationwebui_settings['top_k'] = -1
+                $('#top_k_textgenerationwebui').val('-1').trigger('input')
+            }
+        } else {
+            //this is needed because showTypeSpecificControls() does not handle NOT declarations
+            $('[data-forAphro=False]').each(function () {
+                $(this).show()
+            })
+            $('#mirostat_mode_textgenerationwebui').attr('step', 1)
+            //undo special Aphrodite setup for topK
+            $('#top_k_textgenerationwebui').attr('min', 0)
+            if ($('#top_k_textgenerationwebui').val() === '-1' || textgenerationwebui_settings['top_k'] === -1) {
+                textgenerationwebui_settings['top_k'] = 0
+                $('#top_k_textgenerationwebui').val('0').trigger('input')
+            }
+        }
 
         showTypeSpecificControls(type);
         setOnlineStatus('no_connection');
@@ -330,8 +414,12 @@ jQuery(function () {
                 const value = Number($(this).val());
                 $(`#${id}_counter_textgenerationwebui`).val(value);
                 textgenerationwebui_settings[id] = value;
+                //special handling for aphrodite using -1 as disabled instead of 0
+                if ($(this).attr('id') === 'top_k_textgenerationwebui' && isAphrodite() && value === 0) {
+                    textgenerationwebui_settings[id] = -1
+                    $(this).val(-1)
+                }
             }
-
             saveSettingsDebounced();
         });
     }
@@ -348,26 +436,33 @@ function showTypeSpecificControls(type) {
     });
 }
 
-function setSettingByName(i, value, trigger) {
+function setSettingByName(setting, value, trigger) {
     if (value === null || value === undefined) {
         return;
     }
 
-    const isCheckbox = $(`#${i}_textgenerationwebui`).attr('type') == 'checkbox';
-    const isText = $(`#${i}_textgenerationwebui`).attr('type') == 'text' || $(`#${i}_textgenerationwebui`).is('textarea');
+    if ('sampler_order' === setting) {
+        value = Array.isArray(value) ? value : KOBOLDCPP_ORDER;
+        sortItemsByOrder(value);
+        textgenerationwebui_settings.sampler_order = value;
+        return;
+    }
+
+    const isCheckbox = $(`#${setting}_textgenerationwebui`).attr('type') == 'checkbox';
+    const isText = $(`#${setting}_textgenerationwebui`).attr('type') == 'text' || $(`#${setting}_textgenerationwebui`).is('textarea');
     if (isCheckbox) {
         const val = Boolean(value);
-        $(`#${i}_textgenerationwebui`).prop('checked', val);
+        $(`#${setting}_textgenerationwebui`).prop('checked', val);
     }
     else if (isText) {
-        $(`#${i}_textgenerationwebui`).val(value);
+        $(`#${setting}_textgenerationwebui`).val(value);
     }
     else {
         const val = parseFloat(value);
-        $(`#${i}_textgenerationwebui`).val(val);
-        $(`#${i}_counter_textgenerationwebui`).val(val);
+        $(`#${setting}_textgenerationwebui`).val(val);
+        $(`#${setting}_counter_textgenerationwebui`).val(val);
         if (power_user.enableZenSliders) {
-            let zenSlider = $(`#${i}_textgenerationwebui_zenslider`).slider()
+            let zenSlider = $(`#${setting}_textgenerationwebui_zenslider`).slider()
             zenSlider.slider('option', 'value', val)
             zenSlider.slider('option', 'slide')
                 .call(zenSlider, null, {
@@ -377,7 +472,7 @@ function setSettingByName(i, value, trigger) {
     }
 
     if (trigger) {
-        $(`#${i}_textgenerationwebui`).trigger('input');
+        $(`#${setting}_textgenerationwebui`).trigger('input');
     }
 }
 
@@ -480,37 +575,28 @@ function getModel() {
     return undefined;
 }
 
-export function getTextGenGenerationData(finalPrompt, this_amount_gen, isImpersonate, cfgValues) {
-    return {
+export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, isContinue, cfgValues) {
+    let APIflags = {
         'prompt': finalPrompt,
         'model': getModel(),
-        'max_new_tokens': this_amount_gen,
-        'max_tokens': this_amount_gen,
-        'do_sample': textgenerationwebui_settings.do_sample,
+        'max_new_tokens': maxTokens,
+        'max_tokens': maxTokens,
         'temperature': textgenerationwebui_settings.temp,
-        'temperature_last': textgenerationwebui_settings.temperature_last,
         'top_p': textgenerationwebui_settings.top_p,
         'typical_p': textgenerationwebui_settings.typical_p,
         'min_p': textgenerationwebui_settings.min_p,
         'repetition_penalty': textgenerationwebui_settings.rep_pen,
-        'repetition_penalty_range': textgenerationwebui_settings.rep_pen_range,
-        'encoder_repetition_penalty': textgenerationwebui_settings.encoder_rep_pen,
         'frequency_penalty': textgenerationwebui_settings.freq_pen,
         'presence_penalty': textgenerationwebui_settings.presence_pen,
         'top_k': textgenerationwebui_settings.top_k,
         'min_length': textgenerationwebui_settings.min_length,
         'min_tokens': textgenerationwebui_settings.min_length,
-        'no_repeat_ngram_size': textgenerationwebui_settings.no_repeat_ngram_size,
         'num_beams': textgenerationwebui_settings.num_beams,
-        'penalty_alpha': textgenerationwebui_settings.penalty_alpha,
         'length_penalty': textgenerationwebui_settings.length_penalty,
         'early_stopping': textgenerationwebui_settings.early_stopping,
-        'guidance_scale': cfgValues?.guidanceScale?.value ?? textgenerationwebui_settings.guidance_scale ?? 1,
-        'negative_prompt': cfgValues?.negativePrompt ?? textgenerationwebui_settings.negative_prompt ?? '',
-        'seed': textgenerationwebui_settings.seed,
         'add_bos_token': textgenerationwebui_settings.add_bos_token,
-        'stopping_strings': getStoppingStrings(isImpersonate),
-        'stop': getStoppingStrings(isImpersonate),
+        'stopping_strings': getStoppingStrings(isImpersonate, isContinue),
+        'stop': getStoppingStrings(isImpersonate, isContinue),
         'truncation_length': max_context,
         'ban_eos_token': textgenerationwebui_settings.ban_eos_token,
         'skip_special_tokens': textgenerationwebui_settings.skip_special_tokens,
@@ -521,20 +607,43 @@ export function getTextGenGenerationData(finalPrompt, this_amount_gen, isImperso
         'mirostat_mode': textgenerationwebui_settings.mirostat_mode,
         'mirostat_tau': textgenerationwebui_settings.mirostat_tau,
         'mirostat_eta': textgenerationwebui_settings.mirostat_eta,
-        'grammar_string': textgenerationwebui_settings.grammar_string,
         'custom_token_bans': isAphrodite() ? toIntArray(getCustomTokenBans()) : getCustomTokenBans(),
         'use_mancer': isMancer(),
         'use_aphrodite': isAphrodite(),
+        'use_tabby': isTabby(),
+        'use_koboldcpp': isKoboldCpp(),
         'use_ooba': isOoba(),
         'api_server': isMancer() ? MANCER_SERVER : api_server_textgenerationwebui,
         'legacy_api': textgenerationwebui_settings.legacy_api && !isMancer(),
+        'sampler_order': isKoboldCpp() ? textgenerationwebui_settings.sampler_order : undefined,
+    };
+    let aphroditeExclusionFlags = {
+        'repetition_penalty_range': textgenerationwebui_settings.rep_pen_range,
+        'encoder_repetition_penalty': textgenerationwebui_settings.encoder_rep_pen,
+        'no_repeat_ngram_size': textgenerationwebui_settings.no_repeat_ngram_size,
+        'penalty_alpha': textgenerationwebui_settings.penalty_alpha,
+        'temperature_last': textgenerationwebui_settings.temperature_last,
+        'do_sample': textgenerationwebui_settings.do_sample,
+        'seed': textgenerationwebui_settings.seed,
+        'guidance_scale': cfgValues?.guidanceScale?.value ?? textgenerationwebui_settings.guidance_scale ?? 1,
+        'negative_prompt': cfgValues?.negativePrompt ?? substituteParams(textgenerationwebui_settings.negative_prompt) ?? '',
+        'grammar_string': textgenerationwebui_settings.grammar_string,
+    }
+    let aphroditeFlags = {
         //'n': textgenerationwebui_settings.n_aphrodite,
         //'best_of': textgenerationwebui_settings.n_aphrodite, //n must always == best_of and vice versa
-        //'ignore_eos': textgenerationwebui_settings.ignore_eos_token_aphrodite,
-        //'spaces_between_special_tokens': textgenerationwebui_settings.spaces_between_special_tokens_aphrodite,
-        // 'logits_processors': textgenerationwebui_settings.logits_processors_aphrodite,
+        'ignore_eos': textgenerationwebui_settings.ignore_eos_token_aphrodite,
+        'spaces_between_special_tokens': textgenerationwebui_settings.spaces_between_special_tokens_aphrodite,
+        //'logits_processors': textgenerationwebui_settings.logits_processors_aphrodite,
         //'logprobs': textgenerationwebui_settings.log_probs_aphrodite,
         //'prompt_logprobs': textgenerationwebui_settings.prompt_log_probs_aphrodite,
-    };
+    }
+    if (isAphrodite()) {
+        APIflags = Object.assign(APIflags, aphroditeFlags);
+    } else {
+        APIflags = Object.assign(APIflags, aphroditeExclusionFlags);
+    }
+
+    return APIflags
 }
 

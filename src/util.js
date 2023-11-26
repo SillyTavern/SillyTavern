@@ -4,20 +4,46 @@ const commandExistsSync = require('command-exists').sync;
 const _ = require('lodash');
 const yauzl = require('yauzl');
 const mime = require('mime-types');
+const yaml = require('yaml');
 const { default: simpleGit } = require('simple-git');
 
 /**
- * Returns the config object from the config.conf file.
+ * Returns the config object from the config.yaml file.
  * @returns {object} Config object
  */
 function getConfig() {
-    try {
-        const config = require(path.join(process.cwd(), './config.conf'));
-        return config;
-    } catch (error) {
-        console.warn('Failed to read config.conf');
-        return {};
+    function getNewConfig() {
+        try {
+            const config = yaml.parse(fs.readFileSync(path.join(process.cwd(), './config.yaml'), 'utf8'));
+            return config;
+        } catch (error) {
+            console.warn('Failed to read config.yaml');
+            return {};
+        }
     }
+
+    function getLegacyConfig() {
+        try {
+            console.log(color.yellow('WARNING: config.conf is deprecated. Please run "npm run postinstall" to convert to config.yaml'));
+            const config = require(path.join(process.cwd(), './config.conf'));
+            return config;
+        } catch (error) {
+            console.warn('Failed to read config.conf');
+            return {};
+        }
+    }
+
+    if (fs.existsSync('./config.yaml')) {
+        return getNewConfig();
+    }
+
+    if (fs.existsSync('./config.conf')) {
+        return getLegacyConfig();
+    }
+
+    console.error(color.red('No config file found. Please create a config.yaml file. The default config file can be found in the /default folder.'));
+    console.error(color.red('The program will now exit.'));
+    process.exit(1);
 }
 
 /**
@@ -217,6 +243,22 @@ function deepMerge(target, source) {
     return output;
 }
 
+const color = {
+    byNum: (mess, fgNum) => {
+        mess = mess || '';
+        fgNum = fgNum === undefined ? 31 : fgNum;
+        return '\u001b[' + fgNum + 'm' + mess + '\u001b[39m';
+    },
+    black: (mess) => color.byNum(mess, 30),
+    red: (mess) => color.byNum(mess, 31),
+    green: (mess) => color.byNum(mess, 32),
+    yellow: (mess) => color.byNum(mess, 33),
+    blue: (mess) => color.byNum(mess, 34),
+    magenta: (mess) => color.byNum(mess, 35),
+    cyan: (mess) => color.byNum(mess, 36),
+    white: (mess) => color.byNum(mess, 37)
+};
+
 module.exports = {
     getConfig,
     getConfigValue,
@@ -227,4 +269,5 @@ module.exports = {
     readAllChunks,
     delay,
     deepMerge,
+    color,
 };

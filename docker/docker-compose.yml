@@ -4,7 +4,7 @@ services:
     build: ..
     container_name: sillytavern
     hostname: sillytavern
-    image: sillytavern/sillytavern:latest
+    image: ghcr.io/sillytavern/sillytavern:latest
     ports:
       - "8000:8000"
     volumes:

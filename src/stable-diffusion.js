@@ -1,5 +1,9 @@
 const fetch = require('node-fetch').default;
+const sanitize = require('sanitize-filename');
 const { getBasicAuthHeader, delay } = require('./util');
+const fs = require('fs');
+const { DIRECTORIES } = require('./constants.js');
+const writeFileAtomicSync = require('write-file-atomic').sync;
 
 /**
  * Sanitizes a string.
@@ -36,6 +40,13 @@ function removePattern(x, pattern) {
         x = x.replace(regex, '');
     }
     return x;
+}
+
+function getComfyWorkflows() {
+    return fs
+        .readdirSync(DIRECTORIES.comfyWorkflows)
+        .filter(file => file[0] != '.' && file.toLowerCase().endsWith('.json'))
+        .sort(Intl.Collator().compare);
 }
 
 /**
@@ -345,6 +356,194 @@ function registerEndpoints(app, jsonParser) {
         } catch {
             console.warn('Failed to load transformers.js pipeline.');
             return response.send({ prompt: originalPrompt });
+        }
+    });
+
+    app.post('/api/sd/comfy/ping', jsonParser, async (request, response) => {
+        try {
+            const url = new URL(request.body.url);
+            url.pathname = '/system_stats'
+
+            const result = await fetch(url);
+            if (!result.ok) {
+                throw new Error('ComfyUI returned an error.');
+            }
+
+            return response.sendStatus(200);
+        } catch (error) {
+            console.log(error);
+            return response.sendStatus(500);
+        }
+    });
+
+    app.post('/api/sd/comfy/samplers', jsonParser, async (request, response) => {
+        try {
+            const url = new URL(request.body.url);
+            url.pathname = '/object_info'
+
+            const result = await fetch(url);
+            if (!result.ok) {
+                throw new Error('ComfyUI returned an error.');
+            }
+
+            const data = await result.json();
+            return response.send(data.KSampler.input.required.sampler_name[0]);
+        } catch (error) {
+            console.log(error);
+            return response.sendStatus(500);
+        }
+    });
+
+    app.post('/api/sd/comfy/models', jsonParser, async (request, response) => {
+        try {
+            const url = new URL(request.body.url);
+            url.pathname = '/object_info'
+
+            const result = await fetch(url);
+            if (!result.ok) {
+                throw new Error('ComfyUI returned an error.');
+            }
+            const data = await result.json();
+            return response.send(data.CheckpointLoaderSimple.input.required.ckpt_name[0].map(it => ({ value: it, text: it })));
+        } catch (error) {
+            console.log(error);
+            return response.sendStatus(500);
+        }
+    });
+
+    app.post('/api/sd/comfy/schedulers', jsonParser, async (request, response) => {
+        try {
+            const url = new URL(request.body.url);
+            url.pathname = '/object_info'
+
+            const result = await fetch(url);
+            if (!result.ok) {
+                throw new Error('ComfyUI returned an error.');
+            }
+
+            const data = await result.json();
+            return response.send(data.KSampler.input.required.scheduler[0]);
+        } catch (error) {
+            console.log(error);
+            return response.sendStatus(500);
+        }
+    });
+
+    app.post('/api/sd/comfy/vaes', jsonParser, async (request, response) => {
+        try {
+            const url = new URL(request.body.url);
+            url.pathname = '/object_info'
+
+            const result = await fetch(url);
+            if (!result.ok) {
+                throw new Error('ComfyUI returned an error.');
+            }
+
+            const data = await result.json();
+            return response.send(data.VAELoader.input.required.vae_name[0]);
+        } catch (error) {
+            console.log(error);
+            return response.sendStatus(500);
+        }
+    });
+
+    app.post('/api/sd/comfy/workflows', jsonParser, async (request, response) => {
+        try {
+            const data = getComfyWorkflows();
+            return response.send(data);
+        } catch (error) {
+            console.log(error);
+            return response.sendStatus(500);
+        }
+    });
+
+    app.post('/api/sd/comfy/workflow', jsonParser, async (request, response) => {
+        try {
+            let path = `${DIRECTORIES.comfyWorkflows}/${sanitize(String(request.body.file_name))}`;
+            if (!fs.existsSync(path)) {
+                path = `${DIRECTORIES.comfyWorkflows}/Default_Comfy_Workflow.json`;
+            }
+            const data = fs.readFileSync(
+                path,
+                { encoding: 'utf-8' }
+            );
+            return response.send(JSON.stringify(data));
+        } catch (error) {
+            console.log(error);
+            return response.sendStatus(500);
+        }
+    });
+
+    app.post('/api/sd/comfy/save-workflow', jsonParser, async (request, response) => {
+        try {
+            writeFileAtomicSync(
+                `${DIRECTORIES.comfyWorkflows}/${sanitize(String(request.body.file_name))}`,
+                request.body.workflow,
+                'utf8'
+            );
+            const data = getComfyWorkflows();
+            return response.send(data);
+        } catch (error) {
+            console.log(error);
+            return response.sendStatus(500);
+        }
+    });
+
+    app.post('/api/sd/comfy/delete-workflow', jsonParser, async (request, response) => {
+        try {
+            let path = `${DIRECTORIES.comfyWorkflows}/${sanitize(String(request.body.file_name))}`;
+            if (fs.existsSync(path)) {
+                fs.unlinkSync(path);
+            }
+            return response.sendStatus(200);
+        } catch (error) {
+            console.log(error);
+            return response.sendStatus(500);
+        }
+    });
+
+    app.post('/api/sd/comfy/generate', jsonParser, async (request, response) => {
+        try {
+            const url = new URL(request.body.url);
+            url.pathname = '/prompt'
+
+            const promptResult = await fetch(url, {
+                method: 'POST',
+                body: request.body.prompt,
+            });
+            if (!promptResult.ok) {
+                throw new Error('ComfyUI returned an error.');
+            }
+
+            const data = await promptResult.json();
+            const id = data.prompt_id;
+            let item;
+            const historyUrl = new URL(request.body.url);
+            historyUrl.pathname = '/history';
+            while (true) {
+                const result = await fetch(historyUrl);
+                if (!result.ok) {
+                    throw new Error('ComfyUI returned an error.');
+                }
+                const history = await result.json();
+                item = history[id];
+                if (item) {
+                    break;
+                }
+                await delay(100);
+            }
+            const imgInfo = Object.keys(item.outputs).map(it => item.outputs[it].images).flat()[0];
+            const imgUrl = new URL(request.body.url);
+            imgUrl.pathname = '/view';
+            imgUrl.search = `?filename=${imgInfo.filename}&subfolder=${imgInfo.subfolder}&type=${imgInfo.type}`;
+            const imgResponse = await fetch(imgUrl);
+            if (!imgResponse.ok) {
+                throw new Error('ComfyUI returned an error.');
+            }
+            const imgBuffer = await imgResponse.buffer();
+            return response.send(imgBuffer.toString('base64'));
+        } catch (error) {
+            return response.sendStatus(500);
         }
     });
 }

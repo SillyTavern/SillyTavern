@@ -8,6 +8,7 @@ const SECRET_KEYS = {
     HORDE: 'api_key_horde',
     MANCER: 'api_key_mancer',
     APHRODITE: 'api_key_aphrodite',
+    TABBY: 'api_key_tabby',
     OPENAI: 'api_key_openai',
     NOVEL: 'api_key_novel',
     CLAUDE: 'api_key_claude',
@@ -21,6 +22,7 @@ const SECRET_KEYS = {
     ONERING_URL: 'oneringtranslator_url',
     DEEPLX_URL: 'deeplx_url',
     PALM: 'api_key_palm',
+    SERPAPI: 'api_key_serpapi',
 }
 
 /**
@@ -171,7 +173,7 @@ function registerEndpoints(app, jsonParser) {
         const allowKeysExposure = getConfigValue('allowKeysExposure', false);
 
         if (!allowKeysExposure) {
-            console.error('secrets.json could not be viewed unless the value of allowKeysExposure in config.conf is set to true');
+            console.error('secrets.json could not be viewed unless the value of allowKeysExposure in config.yaml is set to true');
             return response.sendStatus(403);
         }
 
@@ -183,6 +185,30 @@ function registerEndpoints(app, jsonParser) {
             }
 
             return response.send(secrets);
+        } catch (error) {
+            console.error(error);
+            return response.sendStatus(500);
+        }
+    });
+
+    app.post('/api/secrets/find', jsonParser, (request, response) => {
+        const allowKeysExposure = getConfigValue('allowKeysExposure', false);
+
+        if (!allowKeysExposure) {
+            console.error('Cannot fetch secrets unless allowKeysExposure in config.yaml is set to true');
+            return response.sendStatus(403);
+        }
+
+        const key = request.body.key
+
+        try {
+            const secret = readSecret(key)
+
+            if (!secret) {
+                response.sendStatus(404);
+            }
+
+            return response.send({ value: secret });
         } catch (error) {
             console.error(error);
             return response.sendStatus(500);

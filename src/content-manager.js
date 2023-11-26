@@ -2,14 +2,14 @@ const fs = require('fs');
 const path = require('path');
 const fetch = require('node-fetch').default;
 const sanitize = require('sanitize-filename');
-const config = require(path.join(process.cwd(), './config.conf'));
+const { getConfigValue } = require('./util');
 const contentDirectory = path.join(process.cwd(), 'default/content');
 const contentLogPath = path.join(contentDirectory, 'content.log');
 const contentIndexPath = path.join(contentDirectory, 'index.json');
 
 function checkForNewContent() {
     try {
-        if (config.skipContentCheck) {
+        if (getConfigValue('skipContentCheck', false)) {
             return;
         }
 
@@ -71,6 +71,8 @@ function getTargetByType(type) {
             return 'public/User Avatars';
         case 'theme':
             return 'public/themes';
+        case 'workflow':
+            return 'public/user/workflows';
         default:
             return null;
     }

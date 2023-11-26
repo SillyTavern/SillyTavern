@@ -55,7 +55,7 @@ const characterCardParser = require('./src/character-card-parser.js');
 const contentManager = require('./src/content-manager');
 const statsHelpers = require('./statsHelpers.js');
 const { readSecret, migrateSecrets, SECRET_KEYS } = require('./src/secrets');
-const { delay, getVersion, deepMerge } = require('./src/util');
+const { delay, getVersion, deepMerge, getConfigValue, color } = require('./src/util');
 const { invalidateThumbnail, ensureThumbnailCache } = require('./src/thumbnails');
 const { getTokenizerModel, getTiktokenTokenizer, loadTokenizers, TEXT_COMPLETION_MODELS, getSentencepiceTokenizer, sentencepieceTokenizers } = require('./src/tokenizers');
 const { convertClaudePrompt } = require('./src/chat-completion');
@@ -72,7 +72,15 @@ if (process.versions && process.versions.node && process.versions.node.match(/20
 dns.setDefaultResultOrder('ipv4first');
 
 const cliArguments = yargs(hideBin(process.argv))
-    .option('disableCsrf', {
+    .option('autorun', {
+        type: 'boolean',
+        default: null,
+        describe: 'Automatically launch SillyTavern in the browser.'
+    }).option('corsProxy', {
+        type: 'boolean',
+        default: false,
+        describe: 'Enables CORS proxy',
+    }).option('disableCsrf', {
         type: 'boolean',
         default: false,
         describe: 'Disables CSRF protection'
@@ -101,12 +109,10 @@ app.use(responseTime());
 
 // impoort from statsHelpers.js
 
-const config = require(path.join(process.cwd(), './config.conf'));
-
-const server_port = process.env.SILLY_TAVERN_PORT || config.port;
+const server_port = process.env.SILLY_TAVERN_PORT || getConfigValue('port', 8000);
 
 const whitelistPath = path.join(process.cwd(), "./whitelist.txt");
-let whitelist = config.whitelist;
+let whitelist = getConfigValue('whitelist', []);
 
 if (fs.existsSync(whitelistPath)) {
     try {
@@ -115,10 +121,10 @@ if (fs.existsSync(whitelistPath)) {
     } catch (e) { }
 }
 
-const whitelistMode = config.whitelistMode;
-const autorun = config.autorun && !cliArguments.ssl;
-const enableExtensions = config.enableExtensions;
-const listen = config.listen;
+const whitelistMode = getConfigValue('whitelistMode', true);
+const autorun = getConfigValue('autorun', false) && cliArguments.autorun !== false && !cliArguments.ssl;
+const enableExtensions = getConfigValue('enableExtensions', true);
+const listen = getConfigValue('listen', false);
 
 const API_OPENAI = "https://api.openai.com/v1";
 const API_CLAUDE = "https://api.anthropic.com/v1";
@@ -129,22 +135,6 @@ let main_api = "kobold";
 
 let characters = {};
 let response_dw_bg;
-
-let color = {
-    byNum: (mess, fgNum) => {
-        mess = mess || '';
-        fgNum = fgNum === undefined ? 31 : fgNum;
-        return '\u001b[' + fgNum + 'm' + mess + '\u001b[39m';
-    },
-    black: (mess) => color.byNum(mess, 30),
-    red: (mess) => color.byNum(mess, 31),
-    green: (mess) => color.byNum(mess, 32),
-    yellow: (mess) => color.byNum(mess, 33),
-    blue: (mess) => color.byNum(mess, 34),
-    magenta: (mess) => color.byNum(mess, 35),
-    cyan: (mess) => color.byNum(mess, 36),
-    white: (mess) => color.byNum(mess, 37)
-};
 
 function getMancerHeaders() {
     const apiKey = readSecret(SECRET_KEYS.MANCER);
@@ -164,8 +154,18 @@ function getAphroditeHeaders() {
     }) : {};
 }
 
+function getTabbyHeaders() {
+    const apiKey = readSecret(SECRET_KEYS.TABBY)
+
+    return apiKey ? ({
+        "x-api-key": apiKey,
+        "Authorization": `Bearer ${apiKey}`,
+    }) : {};
+}
+
 function getOverrideHeaders(urlHost) {
-    const overrideHeaders = config.requestOverrides?.find((e) => e.hosts?.includes(urlHost))?.headers;
+    const requestOverrides = getConfigValue('requestOverrides', []);
+    const overrideHeaders = requestOverrides?.find((e) => e.hosts?.includes(urlHost))?.headers;
     if (overrideHeaders && urlHost) {
         return overrideHeaders;
     } else {
@@ -186,6 +186,8 @@ function setAdditionalHeaders(request, args, server) {
         headers = getMancerHeaders();
     } else if (request.body.use_aphrodite) {
         headers = getAphroditeHeaders();
+    } else if (request.body.use_tabby) {
+        headers = getTabbyHeaders();
     } else {
         headers = server ? getOverrideHeaders((new URL(server))?.host) : {};
     }
@@ -258,7 +260,7 @@ const CORS = cors({
 
 app.use(CORS);
 
-if (listen && config.basicAuthMode) app.use(basicAuthMiddleware);
+if (listen && getConfigValue('basicAuthMode', false)) app.use(basicAuthMiddleware);
 
 // IP Whitelist //
 let knownIPs = new Set();
@@ -297,12 +299,50 @@ app.use(function (req, res, next) {
 
     //clientIp = req.connection.remoteAddress.split(':').pop();
     if (whitelistMode === true && !whitelist.some(x => ipMatching.matches(clientIp, ipMatching.getMatch(x)))) {
-        console.log(color.red('Forbidden: Connection attempt from ' + clientIp + '. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.conf in root of SillyTavern folder.\n'));
-        return res.status(403).send('<b>Forbidden</b>: Connection attempt from <b>' + clientIp + '</b>. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.conf in root of SillyTavern folder.');
+        console.log(color.red('Forbidden: Connection attempt from ' + clientIp + '. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.yaml in root of SillyTavern folder.\n'));
+        return res.status(403).send('<b>Forbidden</b>: Connection attempt from <b>' + clientIp + '</b>. If you are attempting to connect, please add your IP address in whitelist or disable whitelist mode in config.yaml in root of SillyTavern folder.');
     }
     next();
 });
 
+if (getConfigValue('enableCorsProxy', false) === true || cliArguments.corsProxy === true) {
+    console.log('Enabling CORS proxy');
+
+    app.use('/proxy/:url', async (req, res) => {
+        const url = req.params.url; // get the url from the request path
+
+        // Disallow circular requests
+        const serverUrl = req.protocol + '://' + req.get('host');
+        if (url.startsWith(serverUrl)) {
+            return res.status(400).send('Circular requests are not allowed');
+        }
+
+        try {
+            const headers = JSON.parse(JSON.stringify(req.headers));
+            delete headers['x-csrf-token'];
+            delete headers['host'];
+            delete headers['referer'];
+            delete headers['origin'];
+            delete headers['cookie'];
+            delete headers['sec-fetch-mode'];
+            delete headers['sec-fetch-site'];
+            delete headers['sec-fetch-dest'];
+
+            const bodyMethods = ['POST', 'PUT', 'PATCH'];
+
+            const response = await fetch(url, {
+                method: req.method,
+                headers: headers,
+                body: bodyMethods.includes(req.method) ? JSON.stringify(req.body) : undefined,
+            });
+
+            response.body.pipe(res); // pipe the response to the proxy response
+
+        } catch (error) {
+            res.status(500).send('Error occurred while trying to proxy to: ' + url + ' ' + error);
+        }
+    });
+}
 
 app.use(express.static(process.cwd() + "/public", {}));
 
@@ -520,6 +560,12 @@ app.post("/api/textgenerationwebui/status", jsonParser, async function (request,
         else if (request.body.use_mancer) {
             url += "/oai/v1/models";
         }
+        else if (request.body.use_tabby) {
+            url += "/v1/model/list"
+        }
+        else if (request.body.use_koboldcpp) {
+            url += "/v1/models";
+        }
 
         const modelsReply = await fetch(url, args);
 
@@ -548,7 +594,7 @@ app.post("/api/textgenerationwebui/status", jsonParser, async function (request,
 
         if (request.body.use_ooba) {
             try {
-                const modelInfoUrl = baseUrl + '/v1/internal/model/info';
+                const modelInfoUrl = baseUrl + "/v1/internal/model/info";
                 const modelInfoReply = await fetch(modelInfoUrl, args);
 
                 if (modelInfoReply.ok) {
@@ -559,7 +605,28 @@ app.post("/api/textgenerationwebui/status", jsonParser, async function (request,
                     result = modelName || result;
                 }
             } catch (error) {
-                console.error('Failed to get Ooba model info:', error);
+                console.error(`Failed to get Ooba model info: ${error}`);
+            }
+        }
+
+        if (request.body.use_tabby) {
+            try {
+                const modelInfoUrl = baseUrl + "/v1/model";
+                const modelInfoReply = await fetch(modelInfoUrl, args);
+
+                if (modelInfoReply.ok) {
+                    const modelInfo = await modelInfoReply.json();
+                    console.log('Tabby model info:', modelInfo);
+
+                    const modelName = modelInfo?.id;
+                    result = modelName || result;
+                } else {
+                    // TabbyAPI returns an error 400 if a model isn't loaded
+
+                    result = "None"
+                }
+            } catch (error) {
+                console.error(`Failed to get TabbyAPI model info: ${error}`);
             }
         }
 
@@ -593,7 +660,7 @@ app.post("/api/textgenerationwebui/generate", jsonParser, async function (reques
         if (request.body.legacy_api) {
             url += "/v1/generate";
         }
-        else if (request.body.use_aphrodite || request.body.use_ooba) {
+        else if (request.body.use_aphrodite || request.body.use_ooba || request.body.use_tabby || request.body.use_koboldcpp) {
             url += "/v1/completions";
         }
         else if (request.body.use_mancer) {
@@ -1654,7 +1721,7 @@ app.post('/getsettings', jsonParser, (request, response) => {
     // OpenAI Settings
     const { fileContents: openai_settings, fileNames: openai_setting_names }
         = readPresetsFromDirectory(DIRECTORIES.openAI_Settings, {
-            sortFunction: sortByModifiedDate(DIRECTORIES.openAI_Settings), removeFileExtension: true
+            sortFunction: sortByName(DIRECTORIES.openAI_Settings), removeFileExtension: true
         });
 
     // TextGenerationWebUI Settings
@@ -2457,27 +2524,28 @@ app.post('/uploadimage', jsonParser, async (request, response) => {
         return response.status(400).send({ error: "No image data provided" });
     }
 
-    // Extracting the base64 data and the image format
-    const match = request.body.image.match(/^data:image\/(png|jpg|webp|jpeg|gif);base64,(.+)$/);
-    if (!match) {
-        return response.status(400).send({ error: "Invalid image format" });
-    }
-
-    const [, format, base64Data] = match;
-
-    // Constructing filename and path
-    let filename = `${Date.now()}.${format}`;
-    if (request.body.filename) {
-        filename = `${request.body.filename}.${format}`;
-    }
-
-    // if character is defined, save to a sub folder for that character
-    let pathToNewFile = path.join(DIRECTORIES.userImages, filename);
-    if (request.body.ch_name) {
-        pathToNewFile = path.join(DIRECTORIES.userImages, request.body.ch_name, filename);
-    }
-
     try {
+        // Extracting the base64 data and the image format
+        const splitParts = request.body.image.split(',');
+        const format = splitParts[0].split(';')[0].split('/')[1];
+        const base64Data = splitParts[1];
+        const validFormat = ['png', 'jpg', 'webp', 'jpeg', 'gif'].includes(format);
+        if (!validFormat) {
+            return response.status(400).send({ error: "Invalid image format" });
+        }
+
+        // Constructing filename and path
+        let filename = `${Date.now()}.${format}`;
+        if (request.body.filename) {
+            filename = `${request.body.filename}.${format}`;
+        }
+
+        // if character is defined, save to a sub folder for that character
+        let pathToNewFile = path.join(DIRECTORIES.userImages, filename);
+        if (request.body.ch_name) {
+            pathToNewFile = path.join(DIRECTORIES.userImages, request.body.ch_name, filename);
+        }
+
         ensureDirectoryExistence(pathToNewFile);
         const imageBuffer = Buffer.from(base64Data, 'base64');
         await fs.promises.writeFile(pathToNewFile, imageBuffer);
@@ -2795,12 +2863,12 @@ app.post("/openai_bias", jsonParser, async function (request, response) {
 
         if (sentencepieceTokenizers.includes(model)) {
             const tokenizer = getSentencepiceTokenizer(model);
-            encodeFunction = (text) => new Uint32Array(tokenizer.encodeIds(text));
+            const instance = await tokenizer?.get();
+            encodeFunction = (text) => new Uint32Array(instance?.encodeIds(text));
         } else {
             const tokenizer = getTiktokenTokenizer(model);
             encodeFunction = (tokenizer.encode.bind(tokenizer));
         }
-
 
         for (const entry of request.body) {
             if (!entry || !entry.text) {
@@ -3003,7 +3071,8 @@ async function sendClaudeRequest(request, response) {
             controller.abort();
         });
 
-        let requestPrompt = convertClaudePrompt(request.body.messages, true, !request.body.exclude_assistant);
+        let doSystemPrompt = request.body.model === 'claude-2' || request.body.model === 'claude-2.1';
+        let requestPrompt = convertClaudePrompt(request.body.messages, true, !request.body.exclude_assistant, doSystemPrompt);
 
         if (request.body.assistant_prefill && !request.body.exclude_assistant) {
             requestPrompt += request.body.assistant_prefill;
@@ -3408,7 +3477,16 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
             if (legacyApi) {
                 url += '/v1/token-count';
                 args.body = JSON.stringify({ "prompt": text });
-            } else {
+            }
+            else if (request.body.use_tabby) {
+                url += '/v1/token/encode';
+                args.body = JSON.stringify({ "text": text });
+            }
+            else if (request.body.use_koboldcpp) {
+                url += '/api/extra/tokencount';
+                args.body = JSON.stringify({ "prompt": text });
+            }
+            else {
                 url += '/v1/internal/encode';
                 args.body = JSON.stringify({ "text": text });
             }
@@ -3421,8 +3499,8 @@ app.post("/tokenize_via_api", jsonParser, async function (request, response) {
             }
 
             const data = await result.json();
-            const count = legacyApi ? data?.results[0]?.tokens : data?.length;
-            const ids = legacyApi ? [] : data?.tokens;
+            const count = legacyApi ? data?.results[0]?.tokens : (data?.length ?? data?.value);
+            const ids = legacyApi ? [] : (data?.tokens ?? []);
 
             return response.send({ count, ids });
         }
@@ -3481,7 +3559,7 @@ async function fetchJSON(url, args = {}) {
 // ** END **
 
 // OpenAI API
-require('./src/openai').registerEndpoints(app, jsonParser);
+require('./src/openai').registerEndpoints(app, jsonParser, urlencodedParser);
 
 // Tokenizers
 require('./src/tokenizers').registerEndpoints(app, jsonParser);
@@ -3528,6 +3606,9 @@ require('./src/classify').registerEndpoints(app, jsonParser);
 // Image captioning
 require('./src/caption').registerEndpoints(app, jsonParser);
 
+// Web search extension
+require('./src/serpapi').registerEndpoints(app, jsonParser);
+
 const tavernUrl = new URL(
     (cliArguments.ssl ? 'https://' : 'http://') +
     (listen ? '0.0.0.0' : '127.0.0.1') +
@@ -3572,12 +3653,12 @@ const setupTasks = async function () {
     console.log(color.green('SillyTavern is listening on: ' + tavernUrl));
 
     if (listen) {
-        console.log('\n0.0.0.0 means SillyTavern is listening on all network interfaces (Wi-Fi, LAN, localhost). If you want to limit it only to internal localhost (127.0.0.1), change the setting in config.conf to "listen=false". Check "access.log" file in the SillyTavern directory if you want to inspect incoming connections.\n');
+        console.log('\n0.0.0.0 means SillyTavern is listening on all network interfaces (Wi-Fi, LAN, localhost). If you want to limit it only to internal localhost (127.0.0.1), change the setting in config.yaml to "listen: false". Check "access.log" file in the SillyTavern directory if you want to inspect incoming connections.\n');
     }
 }
 
-if (listen && !config.whitelistMode && !config.basicAuthMode) {
-    if (config.securityOverride) {
+if (listen && !getConfigValue('whitelistMode', true) && !getConfigValue('basicAuthMode', false)) {
+    if (getConfigValue('securityOverride', false)) {
         console.warn(color.red("Security has been overridden. If it's not a trusted network, change the settings."));
     }
     else {
@@ -3624,7 +3705,7 @@ function generateTimestamp() {
  */
 function backupChat(name, chat) {
     try {
-        const isBackupDisabled = config.disableChatBackup;
+        const isBackupDisabled = getConfigValue('disableChatBackup', false);
 
         if (isBackupDisabled) {
             return;
@@ -3637,7 +3718,7 @@ function backupChat(name, chat) {
         // replace non-alphanumeric characters with underscores
         name = sanitize(name).replace(/[^a-z0-9]/gi, '_').toLowerCase();
 
-        const backupFile = path.join(DIRECTORIES.backups, `chat_${name}_${generateTimestamp()}.json`);
+        const backupFile = path.join(DIRECTORIES.backups, `chat_${name}_${generateTimestamp()}.jsonl`);
         writeFileAtomicSync(backupFile, chat, 'utf-8');
 
         removeOldBackups(`chat_${name}_`);

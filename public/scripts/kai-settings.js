@@ -105,6 +105,7 @@ export function loadKoboldSettings(preset) {
  */
 export function getKoboldGenerationData(finalPrompt, settings, maxLength, maxContextLength, isHorde, type) {
     const isImpersonate = type === 'impersonate';
+    const isContinue = type === 'continue';
     const sampler_order = kai_settings.sampler_order || settings.sampler_order;
 
     let generate_data = {
@@ -132,7 +133,7 @@ export function getKoboldGenerationData(finalPrompt, settings, maxLength, maxCon
         s7: sampler_order[6],
         use_world_info: false,
         singleline: false,
-        stop_sequence: (kai_flags.can_use_stop_sequence || isHorde) ? getStoppingStrings(isImpersonate) : undefined,
+        stop_sequence: (kai_flags.can_use_stop_sequence || isHorde) ? getStoppingStrings(isImpersonate, isContinue) : undefined,
         streaming: kai_settings.streaming_kobold && kai_flags.can_use_streaming && type !== 'quiet',
         can_abort: kai_flags.can_use_streaming,
         mirostat: (kai_flags.can_use_mirostat || isHorde) ? kai_settings.mirostat : undefined,

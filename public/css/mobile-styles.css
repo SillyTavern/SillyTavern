@@ -369,6 +369,18 @@
         top: unset;
         bottom: unset;
     }
+
+
+    #leftSendForm,
+    #rightSendForm {
+        width: 1.15em;
+        flex-wrap: wrap;
+        height: unset;
+    }
+
+    #extensionsMenuButton {
+        order: 1;
+    }
 }
 
 /*iOS specific*/

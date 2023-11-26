@@ -10,6 +10,7 @@ import { NovelTtsProvider } from './novel.js'
 import { power_user } from '../../power-user.js'
 import { registerSlashCommand } from '../../slash-commands.js'
 import { OpenAITtsProvider } from './openai.js'
+import {XTTSTtsProvider} from "./xtts.js"
 export { talkingAnimation };
 
 const UPDATE_INTERVAL = 1000
@@ -70,6 +71,7 @@ export function getPreviewString(lang) {
 let ttsProviders = {
     ElevenLabs: ElevenLabsTtsProvider,
     Silero: SileroTtsProvider,
+    XTTSv2: XTTSTtsProvider,
     System: SystemTtsProvider,
     Coqui: CoquiTtsProvider,
     Edge: EdgeTtsProvider,
@@ -167,42 +169,43 @@ async function moduleWorker() {
     }
 
     // take the count of messages
-    let lastMessageNumber = context.chat.length ? context.chat.length : 0
+    let lastMessageNumber = context.chat.length ? context.chat.length : 0;
 
     // There's no new messages
-    let diff = lastMessageNumber - currentMessageNumber
-    let hashNew = getStringHash((chat.length && chat[chat.length - 1].mes) ?? '')
+    let diff = lastMessageNumber - currentMessageNumber;
+    let hashNew = getStringHash((chat.length && chat[chat.length - 1].mes) ?? '');
 
     // if messages got deleted, diff will be < 0
     if (diff < 0) {
         // necessary actions will be taken by the onChatDeleted() handler
-        return
+        return;
     }
 
+    // if no new messages, or same message, or same message hash, do nothing
     if (diff == 0 && hashNew === lastMessageHash) {
-        return
+        return;
+    }
+
+    // If streaming, wait for streaming to finish before processing new messages
+    if (context.streamingProcessor && !context.streamingProcessor.isFinished) {
+        return;
     }
 
     // clone message object, as things go haywire if message object is altered below (it's passed by reference)
-    const message = structuredClone(chat[chat.length - 1])
+    const message = structuredClone(chat[chat.length - 1]);
 
     // if last message within current message, message got extended. only send diff to TTS.
     if (ttsLastMessage !== null && message.mes.indexOf(ttsLastMessage) !== -1) {
-        let tmp = message.mes
-        message.mes = message.mes.replace(ttsLastMessage, '')
-        ttsLastMessage = tmp
+        let tmp = message.mes;
+        message.mes = message.mes.replace(ttsLastMessage, '');
+        ttsLastMessage = tmp;
     } else {
-        ttsLastMessage = message.mes
+        ttsLastMessage = message.mes;
     }
 
-    // We're currently swiping or streaming. Don't generate voice
-    if (
-        !message ||
-        message.mes === '...' ||
-        message.mes === '' ||
-        (context.streamingProcessor && !context.streamingProcessor.isFinished)
-    ) {
-        return
+    // We're currently swiping. Don't generate voice
+    if (!message || message.mes === '...' || message.mes === '') {
+        return;
     }
 
     // Don't generate if message doesn't have a display text
@@ -303,6 +306,7 @@ window.debugTtsPlayback = debugTtsPlayback
 //##################//
 
 let audioElement = new Audio()
+audioElement.id = 'tts_audio'
 audioElement.autoplay = true
 
 let audioJobQueue = []
@@ -453,7 +457,7 @@ let currentTtsJob // Null if nothing is currently being processed
 let currentMessageNumber = 0
 
 function completeTtsJob() {
-    console.info(`Current TTS job for ${currentTtsJob.name} completed.`)
+    console.info(`Current TTS job for ${currentTtsJob?.name} completed.`)
     currentTtsJob = null
 }
 
@@ -498,6 +502,10 @@ async function processTtsQueue() {
         const partJoiner = (ttsProvider?.separator || ' ... ');
         text = matches ? matches.join(partJoiner) : text;
     }
+
+    // Collapse newlines and spaces into single space
+    text = text.replace(/\s+/g, ' ');
+
     console.log(`TTS: ${text}`)
     const char = currentTtsJob.name
 
@@ -989,4 +997,5 @@ $(document).ready(function () {
     eventSource.on(event_types.MESSAGE_DELETED, onChatDeleted);
     eventSource.on(event_types.GROUP_UPDATED, onChatChanged)
     registerSlashCommand('speak', onNarrateText, ['narrate', 'tts'], `<span class="monospace">(text)</span>  – narrate any text using currently selected character's voice. Use voice="Character Name" argument to set other voice from the voice map, example: <tt>/speak voice="Donald Duck" Quack!</tt>`, true, true);
+    document.body.appendChild(audioElement);
 })

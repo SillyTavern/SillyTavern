@@ -268,12 +268,20 @@ function registerEndpoints(app, jsonParser) {
                         // NAI handholding for prompts
                         ucPreset: 0,
                         qualityToggle: false,
+                        add_original_image: false,
+                        controlnet_strength: 1,
+                        dynamic_thresholding: false,
+                        legacy: false,
+                        sm: false,
+                        sm_dyn: false,
+                        uncond_scale: 1,
                     },
                 }),
             });
 
             if (!generateResult.ok) {
-                console.log('NovelAI returned an error.', generateResult.statusText);
+                const text = await generateResult.text();
+                console.log('NovelAI returned an error.', generateResult.statusText, text);
                 return response.sendStatus(500);
             }
 
