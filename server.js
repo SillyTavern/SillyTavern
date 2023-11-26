@@ -109,7 +109,7 @@ app.use(responseTime());
 
 // impoort from statsHelpers.js
 
-const server_port = process.env.SILLY_TAVERN_PORT || getConfigValue('port');
+const server_port = process.env.SILLY_TAVERN_PORT || getConfigValue('port', 8000);
 
 const whitelistPath = path.join(process.cwd(), "./whitelist.txt");
 let whitelist = getConfigValue('whitelist', []);
@@ -122,7 +122,7 @@ if (fs.existsSync(whitelistPath)) {
 }
 
 const whitelistMode = getConfigValue('whitelistMode', true);
-const autorun = getConfigValue('autorun') && cliArguments.autorun !== false && !cliArguments.ssl;
+const autorun = getConfigValue('autorun', false) && cliArguments.autorun !== false && !cliArguments.ssl;
 const enableExtensions = getConfigValue('enableExtensions', true);
 const listen = getConfigValue('listen', false);
 
