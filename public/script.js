@@ -9366,6 +9366,7 @@ jQuery(async function () {
         <ul class="justifyLeft">
             <li>Chub characters (direct link or id)<br>Example: <tt>Anonymous/example-character</tt></li>
             <li>Chub lorebooks (direct link or id)<br>Example: <tt>lorebooks/bartleby/example-lorebook</tt></li>
+            <li>JanitorAI character (direct link or id)<br>Example: <tt>https://janitorai.com/characters/ddd1498a-a370-4136-b138-a8cd9461fdfe_character-aqua-the-useless-goddess</tt></li>
             <li>More coming soon...</li>
         <ul>`
         const input = await callPopup(html, 'input');
