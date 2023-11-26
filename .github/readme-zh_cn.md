@@ -233,7 +233,7 @@ SillyTavern 会将 API 密钥保存在目录中的 `secrets.json` 文件内。
 
 ### 向所有 IP 开放您的 SillyTavern 服务
 
-我们不建议这样做，但您可以打开 `config.yaml` 并将里面的 `whitelist` 设置改为 `false`。
+我们不建议这样做，但您可以打开 `config.yaml` 并将里面的 `whitelistMode` 设置改为 `false`。
 
 你必须删除（或重命名）SillyTavern 文件夹中的 `whitelist.txt` 文件（如果有的话）。
 
