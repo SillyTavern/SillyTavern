@@ -1,4 +1,21 @@
-import { callPopup, characters, chat_metadata, default_avatar, eventSource, event_types, getRequestHeaders, getThumbnailUrl, getUserAvatars, name1, saveMetadata, saveSettingsDebounced, setUserName, this_chid, user_avatar } from "../script.js";
+import {
+    callPopup,
+    characters,
+    chat_metadata,
+    default_avatar,
+    eventSource,
+    event_types,
+    getRequestHeaders,
+    getThumbnailUrl,
+    getUserAvatars,
+    name1,
+    saveMetadata,
+    saveSettingsDebounced,
+    setUserName,
+    this_chid,
+    user_avatar,
+} from "../script.js";
+import { getContext } from "./extensions.js";
 import { persona_description_positions, power_user } from "./power-user.js";
 import { getTokenCount } from "./tokenizers.js";
 import { debounce, delay, download, parseJsonFile } from "./utils.js";
@@ -254,7 +271,12 @@ export function selectCurrentPersona() {
         }
 
         setPersonaDescription();
-        $("#firstmessage_textarea").trigger('input')
+
+        // force firstMes {{user}} update on persona switch
+        const context = getContext();
+        if (context.characterId >= 0 && !context.groupId && context.chat.length === 1) {
+            $("#firstmessage_textarea").trigger('input')
+        }
     }
 }
 
