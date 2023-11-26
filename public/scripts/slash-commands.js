@@ -170,14 +170,14 @@ parser.addCommand('genraw', generateRawCallback, [], '<span class="monospace">(l
 parser.addCommand('addswipe', addSwipeCallback, ['swipeadd'], '<span class="monospace">(text)</span> – adds a swipe to the last chat message.', true, true);
 parser.addCommand('abort', abortCallback, [], ' – aborts the slash command batch execution', true, true);
 parser.addCommand('fuzzy', fuzzyCallback, [], 'list=["a","b","c"] (search value) – performs a fuzzy match of the provided search using the provided list of value and passes the closest match to the next command through the pipe.', true, true);
-parser.addCommand('pass', (_, arg) => arg, [], '<span class="monospace">(text)</span> – passes the text to the next command through the pipe.', true, true);
+parser.addCommand('pass', (_, arg) => arg, ['return'], '<span class="monospace">(text)</span> – passes the text to the next command through the pipe.', true, true);
 parser.addCommand('delay', delayCallback, ['wait', 'sleep'], '<span class="monospace">(milliseconds)</span> – delays the next command in the pipe by the specified number of milliseconds.', true, true);
 parser.addCommand('input', inputCallback, ['prompt'], '<span class="monospace">(prompt)</span> – shows a popup with the provided prompt and passes the user input to the next command through the pipe.', true, true);
 parser.addCommand('run', runCallback, ['call', 'exec'], '<span class="monospace">(QR label)</span> – runs a Quick Reply with the specified name from the current preset.', true, true);
 parser.addCommand('messages', getMessagesCallback, ['message'], '<span class="monospace">(names=off/on [message index or range])</span> – returns the specified message or range of messages as a string.', true, true);
 parser.addCommand('setinput', setInputCallback, [], '<span class="monospace">(text)</span> – sets the user input to the specified text and passes it to the next command through the pipe.', true, true);
 parser.addCommand('popup', popupCallback, [], '<span class="monospace">(text)</span> – shows a blocking popup with the specified text.', true, true);
-parser.addCommand('trimtokens', trimTokensCallback, [], '<span class="monospace">(direction=start/end limit=number [text])</span> – trims the start or end of text to the specified number of tokens.', true, true);
+parser.addCommand('trimtokens', trimTokensCallback, [], '<span class="monospace">limit=number (direction=start/end [text])</span> – trims the start or end of text to the specified number of tokens.', true, true);
 parser.addCommand('trimstart', trimStartCallback, [], '<span class="monospace">(text)</span> – trims the text to the start of the first full sentence.', true, true);
 parser.addCommand('trimend', trimEndCallback, [], '<span class="monospace">(text)</span> – trims the text to the end of the last full sentence.', true, true);
 registerVariableCommands();
@@ -258,7 +258,7 @@ function trimTokensCallback(arg, value) {
 async function popupCallback(_, value) {
     const safeValue = DOMPurify.sanitize(value || '');
     await delay(1);
-    await callPopup(safeValue, 'text');
+    await callPopup(safeValue, 'text', '');
     await delay(1);
     return value;
 }
@@ -338,7 +338,7 @@ async function inputCallback(_, prompt) {
     // Do not remove this delay, otherwise the prompt will not show up
     await delay(1);
     const safeValue = DOMPurify.sanitize(prompt || '');
-    const result = await callPopup(safeValue, 'input');
+    const result = await callPopup(safeValue, 'input', '', { okButton: 'Ok' });
     await delay(1);
     return result || '';
 }
