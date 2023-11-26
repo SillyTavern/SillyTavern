@@ -177,6 +177,7 @@ parser.addCommand('run', runCallback, ['call', 'exec'], '<span class="monospace"
 parser.addCommand('messages', getMessagesCallback, ['message'], '<span class="monospace">(names=off/on [message index or range])</span> – returns the specified message or range of messages as a string.', true, true);
 parser.addCommand('setinput', setInputCallback, [], '<span class="monospace">(text)</span> – sets the user input to the specified text and passes it to the next command through the pipe.', true, true);
 parser.addCommand('popup', popupCallback, [], '<span class="monospace">(text)</span> – shows a blocking popup with the specified text.', true, true);
+parser.addCommand('buttons', buttonsCallback, [], '<span class="monospace">labels=["a","b"] (text)</span> – shows a blocking popup with the specified text and buttons. Returns the clicked button label into the pipe or empty string if canceled.', true, true);
 parser.addCommand('trimtokens', trimTokensCallback, [], '<span class="monospace">limit=number (direction=start/end [text])</span> – trims the start or end of text to the specified number of tokens.', true, true);
 parser.addCommand('trimstart', trimStartCallback, [], '<span class="monospace">(text)</span> – trims the text to the start of the first full sentence.', true, true);
 parser.addCommand('trimend', trimEndCallback, [], '<span class="monospace">(text)</span> – trims the text to the end of the last full sentence.', true, true);
@@ -252,6 +253,44 @@ function trimTokensCallback(arg, value) {
     } catch (error) {
         console.warn('WARN: Tokenization failed for /trimtokens command, returning original', error);
         return value;
+    }
+}
+
+async function buttonsCallback(args, text) {
+    try {
+        const buttons = JSON.parse(resolveVariable(args?.labels));
+
+        if (!Array.isArray(buttons) || !buttons.length) {
+            console.warn('WARN: Invalid labels provided for /buttons command');
+            return '';
+        }
+
+        return new Promise(async (resolve) => {
+            const safeValue = DOMPurify.sanitize(text || '');
+
+            const buttonContainer = document.createElement('div');
+            buttonContainer.classList.add('flex-container', 'flexFlowColumn', 'wide100p', 'm-t-1');
+
+            for (const button of buttons) {
+                const buttonElement = document.createElement('div');
+                buttonElement.classList.add('menu_button', 'wide100p');
+                buttonElement.addEventListener('click', () => {
+                    resolve(button);
+                    $('#dialogue_popup_ok').trigger('click');
+                });
+                buttonElement.innerText = button;
+                buttonContainer.appendChild(buttonElement);
+            }
+
+            const popupContainer = document.createElement('div');
+            popupContainer.innerHTML = safeValue;
+            popupContainer.appendChild(buttonContainer);
+            callPopup(popupContainer, 'text', '', { okButton: 'Cancel' })
+                .then(() => resolve(''))
+                .catch(() => resolve(''));
+        })
+    } catch {
+        return '';
     }
 }
 
