@@ -37,7 +37,7 @@ function addLocalVariable(name, value) {
     const currentValue = getLocalVariable(name) || 0;
     const increment = Number(value);
 
-    if (isNaN(increment)) {
+    if (isNaN(increment) || isNaN(Number(currentValue))) {
         const stringValue = String(currentValue || '') + value;
         setLocalVariable(name, stringValue);
         return stringValue;
@@ -57,7 +57,7 @@ function addGlobalVariable(name, value) {
     const currentValue = getGlobalVariable(name) || 0;
     const increment = Number(value);
 
-    if (isNaN(increment)) {
+    if (isNaN(increment)|| isNaN(Number(currentValue))) {
         const stringValue = String(currentValue || '') + value;
         setGlobalVariable(name, stringValue);
         return stringValue;
