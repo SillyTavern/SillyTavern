@@ -603,17 +603,19 @@ function getCharacterPrefix() {
  * @returns {string} Combined string with a comma between them
  */
 function combinePrefixes(str1, str2, macro = '') {
+    // Remove leading/trailing white spaces and commas from the strings
+    const process = (s) => s.trim().replace(/^,|,$/g, '').trim();
+
     if (!str2) {
         return str1;
     }
 
-    // Remove leading/trailing white spaces and commas from the strings
-    str1 = str1.trim().replace(/^,|,$/g, '');
-    str2 = str2.trim().replace(/^,|,$/g, '');
+    str1 = process(str1)
+    str2 = process(str2);
 
     // Combine the strings with a comma between them)
     const result = macro && str1.includes(macro) ? str1.replace(macro, str2) : `${str1}, ${str2},`;
-    return result;
+    return process(result);
 }
 
 function onExpandInput() {
@@ -1297,8 +1299,8 @@ async function loadAutoModels() {
 
 async function loadOpenAiModels() {
     return [
-        { value: 'dall-e-2', text: 'DALL-E 2' },
         { value: 'dall-e-3', text: 'DALL-E 3' },
+        { value: 'dall-e-2', text: 'DALL-E 2' },
     ];
 }
 
@@ -1783,9 +1785,10 @@ async function generatePrompt(quietPrompt) {
 }
 
 async function sendGenerationRequest(generationType, prompt, characterName = null, callback) {
-    const prefix = (generationType !== generationMode.BACKGROUND && generationType !== generationMode.FREE)
-        ? combinePrefixes(extension_settings.sd.prompt_prefix, getCharacterPrefix())
-        : extension_settings.sd.prompt_prefix;
+    const noCharPrefix = [generationMode.FREE, generationMode.BACKGROUND, generationMode.USER, generationMode.USER_MULTIMODAL];
+    const prefix = noCharPrefix.includes(generationType)
+        ? extension_settings.sd.prompt_prefix
+        : combinePrefixes(extension_settings.sd.prompt_prefix, getCharacterPrefix());
 
     const prefixedPrompt = combinePrefixes(prefix, prompt, '{prompt}');
 
