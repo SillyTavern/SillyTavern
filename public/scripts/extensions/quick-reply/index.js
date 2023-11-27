@@ -354,6 +354,27 @@ async function doQuickReplyBarPopout() {
             let index = $(this).data('index');
             sendQuickReply(index);
         });
+        $('.quickReplyButton > .ctx-expander').on('click', function (evt) {
+            evt.stopPropagation();
+            let index = $(this.closest('.quickReplyButton')).data('index');
+            const qr = extension_settings.quickReply.quickReplySlots[index];
+            if (qr.contextMenu?.length) {
+                evt.preventDefault();
+                const tree = buildContextMenu(qr);
+                const menu = new ContextMenu(tree.children);
+                menu.show(evt);
+            }
+        })
+        $('.quickReplyButton').on('contextmenu', function (evt) {
+            let index = $(this).data('index');
+            const qr = extension_settings.quickReply.quickReplySlots[index];
+            if (qr.contextMenu?.length) {
+                evt.preventDefault();
+                const tree = buildContextMenu(qr);
+                const menu = new ContextMenu(tree.children);
+                menu.show(evt);
+            }
+        });
 
         loadMovingUIState();
         $("#quickReplyBarPopout").fadeIn(250)
@@ -369,6 +390,27 @@ async function doQuickReplyBarPopout() {
             $('.quickReplyButton').on('click', function () {
                 let index = $(this).data('index');
                 sendQuickReply(index);
+            });
+            $('.quickReplyButton > .ctx-expander').on('click', function (evt) {
+                evt.stopPropagation();
+                let index = $(this.closest('.quickReplyButton')).data('index');
+                const qr = extension_settings.quickReply.quickReplySlots[index];
+                if (qr.contextMenu?.length) {
+                    evt.preventDefault();
+                    const tree = buildContextMenu(qr);
+                    const menu = new ContextMenu(tree.children);
+                    menu.show(evt);
+                }
+            })
+            $('.quickReplyButton').on('contextmenu', function (evt) {
+                let index = $(this).data('index');
+                const qr = extension_settings.quickReply.quickReplySlots[index];
+                if (qr.contextMenu?.length) {
+                    evt.preventDefault();
+                    const tree = buildContextMenu(qr);
+                    const menu = new ContextMenu(tree.children);
+                    menu.show(evt);
+                }
             });
             $("#quickReplyPopoutButton").off('click').on('click', doQuickReplyBarPopout)
         })
