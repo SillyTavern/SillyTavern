@@ -4,16 +4,16 @@ listen: true
 # Server port
 port: 8000
 # Toggle whitelist mode
-whitelistMode: true
+whitelistMode: false
 # Whitelist of allowed IP addresses
 whitelist:
   - 127.0.0.1
 # Toggle basic authentication for endpoints
-basicAuthMode: false
+basicAuthMode: true
 # Basic authentication credentials
 basicAuthUser:
-  username: user
-  password: password
+  username: ${process.env.username}
+  password: ${process.env.password}
 # Enables CORS proxy middleware
 enableCorsProxy: false
 # Disable security checks - NOT RECOMMENDED
