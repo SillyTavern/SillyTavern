@@ -22,5 +22,9 @@
     {
         "filename": "user-default.png",
         "type": "avatar"
+    },
+    {
+        "filename": "Default_Comfy_Workflow.json",
+        "type": "workflow"
     }
 ]

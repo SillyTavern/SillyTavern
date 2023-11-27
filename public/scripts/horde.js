@@ -31,8 +31,8 @@ let horde_settings = {
     trusted_workers_only: false,
 };
 
-const MAX_RETRIES = 240;
-const CHECK_INTERVAL = 5000;
+const MAX_RETRIES = 480;
+const CHECK_INTERVAL = 2500;
 const MIN_LENGTH = 16;
 const getRequestArgs = () => ({
     method: "GET",
@@ -152,7 +152,7 @@ async function generateHorde(prompt, params, signal, reportProgress) {
 
     for (let retryNumber = 0; retryNumber < MAX_RETRIES; retryNumber++) {
         if (signal.aborted) {
-            await fetch(`https://horde.koboldai.net/api/v2/generate/text/status/${task_id}`, {
+            fetch(`https://horde.koboldai.net/api/v2/generate/text/status/${task_id}`, {
                 method: 'DELETE',
                 headers: {
                     "Client-Agent": CLIENT_VERSION,

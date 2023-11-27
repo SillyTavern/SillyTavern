@@ -10,8 +10,8 @@ import {
 } from "../script.js";
 import { FILTER_TYPES, FilterHelper } from "./filters.js";
 
-import { groupCandidatesFilter, selected_group } from "./group-chats.js";
-import { onlyUnique, uuidv4 } from "./utils.js";
+import { groupCandidatesFilter, groups, selected_group } from "./group-chats.js";
+import { download, onlyUnique, parseJsonFile, uuidv4 } from "./utils.js";
 
 export {
     tags,
@@ -482,9 +482,20 @@ function onViewTagsListClick() {
     $(list).append(`
     <div class="title_restorable alignItemsBaseline">
         <h3>Tag Management</h3>
-        <div class="menu_button menu_button_icon tag_view_create">
-            <i class="fa-solid fa-plus"></i>
-            <span data-i18n="Create">Create</span>
+        <div class="flex-container alignItemsBaseline">
+            <div class="menu_button menu_button_icon tag_view_backup" title="Save your tags to a file">
+                <i class="fa-solid fa-file-export"></i>
+                <span data-i18n="Backup">Backup</span>
+            </div>
+            <div class="menu_button menu_button_icon tag_view_restore" title="Restore tags from a file">
+                <i class="fa-solid fa-file-import"></i>
+                <span data-i18n="Restore">Restore</span>
+            </div>
+            <div class="menu_button menu_button_icon tag_view_create" title="Create a new tag">
+                <i class="fa-solid fa-plus"></i>
+                <span data-i18n="Create">Create</span>
+            </div>
+            <input type="file" id="tag_view_restore_input" hidden accept=".json">
         </div>
     </div>
     <div class="justifyLeft m-b-1">
@@ -494,11 +505,108 @@ function onViewTagsListClick() {
         </small>
     </div>`);
 
-    for (const tag of tags.slice().sort((a, b) => a?.name?.toLowerCase()?.localeCompare(b?.name?.toLowerCase()))) {
+    const sortedTags = tags.slice().sort((a, b) => a?.name?.toLowerCase()?.localeCompare(b?.name?.toLowerCase()));
+    for (const tag of sortedTags) {
         appendViewTagToList(list, tag, everything);
     }
 
     callPopup(list, 'text');
+}
+
+async function onTagRestoreFileSelect(e) {
+    const file = e.target.files[0];
+
+    if (!file) {
+        console.log('Tag restore: No file selected.');
+        return;
+    }
+
+    const data = await parseJsonFile(file);
+
+    if (!data) {
+        toastr.warning('Empty file data', 'Tag restore');
+        console.log('Tag restore: File data empty.');
+        return;
+    }
+
+    if (!data.tags || !data.tag_map || !Array.isArray(data.tags) || typeof data.tag_map !== 'object') {
+        toastr.warning('Invalid file format', 'Tag restore');
+        console.log('Tag restore: Invalid file format.');
+        return;
+    }
+
+    const warnings = [];
+
+    // Import tags
+    for (const tag of data.tags) {
+        if (!tag.id || !tag.name) {
+            warnings.push(`Tag object is invalid: ${JSON.stringify(tag)}.`);
+            continue;
+        }
+
+        if (tags.find(x => x.id === tag.id)) {
+            warnings.push(`Tag with id ${tag.id} already exists.`);
+            continue;
+        }
+
+        tags.push(tag);
+    }
+
+    // Import tag_map
+    for (const key of Object.keys(data.tag_map)) {
+        const tagIds = data.tag_map[key];
+
+        if (!Array.isArray(tagIds)) {
+            warnings.push(`Tag map for key ${key} is invalid: ${JSON.stringify(tagIds)}.`);
+            continue;
+        }
+
+        // Verify that the key points to a valid character or group.
+        const characterExists = characters.some(x => String(x.avatar) === String(key));
+        const groupExists = groups.some(x => String(x.id) === String(key));
+
+        if (!characterExists && !groupExists) {
+            warnings.push(`Tag map key ${key} does not exist.`);
+            continue;
+        }
+
+        // Get existing tag ids for this key or empty array.
+        const existingTagIds = tag_map[key] || [];
+        // Merge existing and new tag ids. Remove duplicates.
+        tag_map[key] = existingTagIds.concat(tagIds).filter(onlyUnique);
+        // Verify that all tags exist. Remove tags that don't exist.
+        tag_map[key] = tag_map[key].filter(x => tags.some(y => String(y.id) === String(x)));
+    }
+
+    if (warnings.length) {
+        toastr.success('Tags restored with warnings. Check console for details.');
+        console.warn(`TAG RESTORE REPORT\n====================\n${warnings.join('\n')}`);
+    } else {
+        toastr.success('Tags restored successfully.');
+    }
+
+    $('#tag_view_restore_input').val('');
+    saveSettingsDebounced();
+    printCharacters(true);
+    onViewTagsListClick();
+}
+
+function onBackupRestoreClick() {
+    $('#tag_view_restore_input')
+        .off('change')
+        .on('change', onTagRestoreFileSelect)
+        .trigger('click');
+}
+
+function onTagsBackupClick() {
+    const timestamp = new Date().toISOString().split('T')[0].replace(/-/g, '');
+    const filename = `tags_${timestamp}.json`;
+    const data = {
+        tags: tags,
+        tag_map: tag_map,
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    download(blob, filename, 'application/json');
 }
 
 function onTagCreateClick() {
@@ -609,7 +717,7 @@ function onTagListHintClick() {
     $(this).siblings(".innerActionable").toggleClass('hidden');
 }
 
-$(document).ready(() => {
+jQuery(() => {
     createTagInput('#tagInput', '#tagList');
     createTagInput('#groupTagInput', '#groupTagList');
 
@@ -623,4 +731,6 @@ $(document).ready(() => {
     $(document).on("click", ".tag_delete", onTagDeleteClick);
     $(document).on("input", ".tag_view_name", onTagRenameInput);
     $(document).on("click", ".tag_view_create", onTagCreateClick);
+    $(document).on("click", ".tag_view_backup", onTagsBackupClick);
+    $(document).on("click", ".tag_view_restore", onBackupRestoreClick);
 });

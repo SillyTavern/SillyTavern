@@ -31,7 +31,8 @@ RUN \
   echo "*** Create symbolic links to config directory ***" && \
   for R in $RESOURCES; do ln -s "../config/$R" "public/$R"; done || true && \
   \
-  ln -s "./config/config.conf" "config.conf" || true && \
+  rm -f "config.yaml" "public/settings.json" "public/css/bg_load.css" || true && \
+  ln -s "./config/config.yaml" "config.yaml" || true && \
   ln -s "../config/settings.json" "public/settings.json" || true && \
   ln -s "../../config/bg_load.css" "public/css/bg_load.css" || true && \
   mkdir "config" || true

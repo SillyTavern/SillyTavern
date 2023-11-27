@@ -170,7 +170,7 @@ SillyTavern 会将 API 密钥保存在目录中的 `secrets.json` 文件内。
 
 如果要想通过点击 API 输入框旁边的按钮来查看密钥，请按照以下设置：
 
-1. 打开 `config.conf` 文件，将里面的 `allowKeysExposure` 设置为 `true`。
+1. 打开 `config.yaml` 文件，将里面的 `allowKeysExposure` 设置为 `true`。
 2. 然后重启 SillyTavern 服务。
 
 ## 远程访问
@@ -207,7 +207,7 @@ SillyTavern 会将 API 密钥保存在目录中的 `secrets.json` 文件内。
 
 然后，文件中设置的 IP 就可以访问 SillyTavern 了。
 
-*注意："config.conf" 文件内也有一个 "whitelist" 设置，你可以用同样的方法设置它，但如果 "whitelist.txt" 文件存在，这个设置将被忽略。
+*注意："config.yaml" 文件内也有一个 "whitelist" 设置，你可以用同样的方法设置它，但如果 "whitelist.txt" 文件存在，这个设置将被忽略。
 
 ### 2.获取 SillyTavern 服务的 IP 地址
 
@@ -233,19 +233,19 @@ SillyTavern 会将 API 密钥保存在目录中的 `secrets.json` 文件内。
 
 ### 向所有 IP 开放您的 SillyTavern 服务
 
-我们不建议这样做，但您可以打开 `config.conf` 并将里面的 `whitelist` 设置改为 `false`。
+我们不建议这样做，但您可以打开 `config.yaml` 并将里面的 `whitelistMode` 设置改为 `false`。
 
 你必须删除（或重命名）SillyTavern 文件夹中的 `whitelist.txt` 文件（如果有的话）。
 
 这通常是不安全的做法，所以我们要求在这样做时必须设置用户名和密码。
 
-用户名和密码在`config.conf`文件中设置。
+用户名和密码在`config.yaml`文件中设置。
 
 重启 SillyTavern 服务后，只要知道用户名和密码，任何设备都可以访问。
 
 ### 还是无法访问？
 
-* 为 `config.conf` 文件中的端口创建一条入站/出站防火墙规则。切勿将此误认为是路由器上的端口转发，否则，有人可能会发现你的聊天隐私，那就大错特错了。
+* 为 `config.yaml` 文件中的端口创建一条入站/出站防火墙规则。切勿将此误认为是路由器上的端口转发，否则，有人可能会发现你的聊天隐私，那就大错特错了。
 * 在 "设置" > "网络和 Internet" > "以太网" 中启用 "专用网络" 配置。这对 Windows 11 非常重要，否则即使添加了上述防火墙规则也无法连接。
 
 ### 性能问题？

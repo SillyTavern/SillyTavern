@@ -297,6 +297,10 @@
     align-content: flex-start;
 }
 
+.alignContentCenter {
+    align-content: center;
+}
+
 .overflowHidden {
     overflow: hidden;
 }

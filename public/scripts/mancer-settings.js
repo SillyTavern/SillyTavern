@@ -38,9 +38,13 @@ function getMancerModelTemplate(option) {
         return option.text;
     }
 
+    const creditsPerPrompt = (model.limits?.context - model.limits?.completion) * model.pricing?.prompt;
+    const creditsPerCompletion = model.limits?.completion * model.pricing?.completion;
+    const creditsTotal = Math.round(creditsPerPrompt + creditsPerCompletion).toFixed(0);
+
     return $((`
         <div class="flex-container flexFlowColumn">
-            <div><strong>${DOMPurify.sanitize(model.name)}</strong> | <span>${model.limits?.context} ctx</span></div>
+            <div><strong>${DOMPurify.sanitize(model.name)}</strong> | <span>${model.limits?.context} ctx</span> / <span>${model.limits?.completion} res</span> | <small>Credits per request (max): ${creditsTotal}</small></div>
         </div>
     `));
 }
