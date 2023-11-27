@@ -13,6 +13,19 @@ class XTTSTtsProvider {
     voices = []
     separator = '. '
 
+    /**
+     * Perform any text processing before passing to TTS engine.
+     * @param {string} text Input text
+     * @returns {string} Processed text
+     */
+    processText(text) {
+        // Replace fancy ellipsis with "..."
+        text = text.replace(/…/g, '...')
+        // Replace multiple "." with single "."
+        text = text.replace(/\.+/g, '.')
+        return text
+    }
+
     languageLabels = {
         "Arabic": "ar",
         "Brazilian Portuguese": "pt",

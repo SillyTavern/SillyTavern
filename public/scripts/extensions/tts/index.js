@@ -503,6 +503,10 @@ async function processTtsQueue() {
         text = matches ? matches.join(partJoiner) : text;
     }
 
+    if (typeof ttsProvider?.processText === 'function') {
+        text = await ttsProvider.processText(text);
+    }
+
     // Collapse newlines and spaces into single space
     text = text.replace(/\s+/g, ' ');
 
