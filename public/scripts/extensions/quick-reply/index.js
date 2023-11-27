@@ -5,6 +5,8 @@ import { executeSlashCommands, registerSlashCommand } from "../../slash-commands
 import { ContextMenu } from "./src/ContextMenu.js";
 import { MenuItem } from "./src/MenuItem.js";
 import { MenuHeader } from "./src/MenuHeader.js";
+import { loadMovingUIState } from "../../power-user.js";
+import { dragElement } from "../../RossAscends-mods.js";
 
 export { MODULE_NAME };
 
@@ -322,9 +324,67 @@ function buildContextMenu(qr, chainMes = null, hierarchy = [], labelHierarchy = 
     });
     return tree;
 }
+
+async function doQuickReplyBarPopout() {
+    //shared elements
+    const newQuickRepliesDiv = `<div id="quickReplies"></div>`
+    const popoutButtonClone = $("#quickReplyPopoutButton")
+
+    if ($("#quickReplyBarPopout").length === 0) {
+        console.debug('did not see popout yet, creating')
+        const template = $('#zoomed_avatar_template').html();
+        const controlBarHtml = `<div class="panelControlBar flex-container">
+        <div id="quickReplyBarPopoutheader" class="fa-solid fa-grip drag-grabber hoverglow"></div>
+        <div id="quickReplyBarPopoutClose" class="fa-solid fa-circle-xmark hoverglow"></div>
+        </div>`
+        const newElement = $(template);
+        let quickRepliesClone = $('#quickReplies').html()
+        newElement.attr('id', 'quickReplyBarPopout')
+            .removeClass('zoomed_avatar')
+            .addClass('draggable scrollY')
+            .empty()
+            .append(controlBarHtml)
+            .append(newQuickRepliesDiv)
+        //empty original bar
+        $("#quickReplyBar").empty()
+        //add clone in popout
+        $('body').append(newElement);
+        $("#quickReplies").append(quickRepliesClone).css('margin-top', '1em')
+        $('.quickReplyButton').on('click', function () {
+            let index = $(this).data('index');
+            sendQuickReply(index);
+        });
+
+        loadMovingUIState();
+        $("#quickReplyBarPopout").fadeIn(250)
+        dragElement(newElement)
+
+        $('#quickReplyBarPopoutClose').off('click').on('click', function () {
+            console.debug('saw existing popout, removing')
+            let quickRepliesClone = $('#quickReplies').html()
+            $("#quickReplyBar").append(newQuickRepliesDiv)
+            $("#quickReplies").prepend(quickRepliesClone)
+            $("#quickReplyBar").append(popoutButtonClone).fadeIn(250)
+            $("#quickReplyBarPopout").fadeOut(250, () => { $("#quickReplyBarPopout").remove() });
+            $('.quickReplyButton').on('click', function () {
+                let index = $(this).data('index');
+                sendQuickReply(index);
+            });
+            $("#quickReplyPopoutButton").off('click').on('click', doQuickReplyBarPopout)
+        })
+
+    }
+}
+
 function addQuickReplyBar() {
-    $('#quickReplyBar').remove();
     let quickReplyButtonHtml = '';
+    var targetContainer;
+    if ($("#quickReplyBarPopout").length !== 0) {
+        targetContainer = 'popout'
+    } else {
+        targetContainer = 'bar'
+        $("#quickReplyBar").remove();
+    }
 
     for (let i = 0; i < extension_settings.quickReply.numberOfSlots; i++) {
         const qr = extension_settings.quickReply.quickReplySlots[i];
@@ -343,15 +403,22 @@ function addQuickReplyBar() {
             <div id="quickReplies">
                 ${quickReplyButtonHtml}
             </div>
+            <div id="quickReplyPopoutButton" class="fa-solid fa-window-restore menu_button"></div>
         </div>
     `;
+    console.log(targetContainer)
+    if (targetContainer === 'bar') {
+        $('#send_form').prepend(quickReplyBarFullHtml);
+    } else {
+        $("#quickReplies").empty().append(quickReplyButtonHtml)
+    }
 
-    $('#send_form').prepend(quickReplyBarFullHtml);
 
     $('.quickReplyButton').on('click', function () {
         let index = $(this).data('index');
         sendQuickReply(index);
     });
+    $("#quickReplyPopoutButton").off('click').on('click', doQuickReplyBarPopout)
     $('.quickReplyButton > .ctx-expander').on('click', function (evt) {
         evt.stopPropagation();
         let index = $(this.closest('.quickReplyButton')).data('index');

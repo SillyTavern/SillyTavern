@@ -135,7 +135,7 @@ body {
 }
 
 .scrollY {
-    overflow-y: auto;
+    overflow-y: auto !important;
 }
 
 ::-webkit-scrollbar-thumb {

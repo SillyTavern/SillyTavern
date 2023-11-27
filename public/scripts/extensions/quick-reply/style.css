@@ -27,6 +27,12 @@
     width: 100%;
 }
 
+#quickReplyPopoutButton {
+    position: absolute;
+    right: 5px;
+    top: 0px;
+}
+
 #quickReplies div {
     color: var(--SmartThemeBodyColor);
     background-color: var(--black50a);
@@ -34,7 +40,7 @@
     border-radius: 10px;
     padding: 3px 5px;
     margin: 3px 0;
-    width: min-content;
+    /* width: min-content; */
     cursor: pointer;
     transition: 0.3s;
     display: flex;
