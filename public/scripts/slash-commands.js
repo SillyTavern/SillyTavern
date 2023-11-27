@@ -686,14 +686,14 @@ async function hideMessageCallback(_, arg) {
 async function unhideMessageCallback(_, arg) {
     if (!arg) {
         console.warn('WARN: No argument provided for /unhide command');
-        return;
+        return '';
     }
 
     const range = stringToRange(arg, 0, chat.length - 1);
 
     if (!range) {
         console.warn(`WARN: Invalid range provided for /unhide command: ${arg}`);
-        return;
+        return '';
     }
 
     for (let messageId = range.start; messageId <= range.end; messageId++) {
@@ -701,128 +701,136 @@ async function unhideMessageCallback(_, arg) {
 
         if (!messageBlock.length) {
             console.warn(`WARN: No message found with ID ${messageId}`);
-            return;
+            return '';
         }
 
         await unhideChatMessage(messageId, messageBlock);
     }
+
+    return '';
 }
 
 async function disableGroupMemberCallback(_, arg) {
     if (!selected_group) {
         toastr.warning("Cannot run /disable command outside of a group chat.");
-        return;
+        return '';
     }
 
     const chid = findGroupMemberId(arg);
 
     if (chid === undefined) {
         console.warn(`WARN: No group member found for argument ${arg}`);
-        return;
+        return '';
     }
 
     $(`.group_member[chid="${chid}"] [data-action="disable"]`).trigger('click');
+    return '';
 }
 
 async function enableGroupMemberCallback(_, arg) {
     if (!selected_group) {
         toastr.warning("Cannot run /enable command outside of a group chat.");
-        return;
+        return '';
     }
 
     const chid = findGroupMemberId(arg);
 
     if (chid === undefined) {
         console.warn(`WARN: No group member found for argument ${arg}`);
-        return;
+        return '';
     }
 
     $(`.group_member[chid="${chid}"] [data-action="enable"]`).trigger('click');
+    return '';
 }
 
 async function moveGroupMemberUpCallback(_, arg) {
     if (!selected_group) {
         toastr.warning("Cannot run /memberup command outside of a group chat.");
-        return;
+        return '';
     }
 
     const chid = findGroupMemberId(arg);
 
     if (chid === undefined) {
         console.warn(`WARN: No group member found for argument ${arg}`);
-        return;
+        return '';
     }
 
     $(`.group_member[chid="${chid}"] [data-action="up"]`).trigger('click');
+    return '';
 }
 
 async function moveGroupMemberDownCallback(_, arg) {
     if (!selected_group) {
         toastr.warning("Cannot run /memberdown command outside of a group chat.");
-        return;
+        return '';
     }
 
     const chid = findGroupMemberId(arg);
 
     if (chid === undefined) {
         console.warn(`WARN: No group member found for argument ${arg}`);
-        return;
+        return '';
     }
 
     $(`.group_member[chid="${chid}"] [data-action="down"]`).trigger('click');
+    return '';
 }
 
 async function peekCallback(_, arg) {
     if (!selected_group) {
         toastr.warning("Cannot run /peek command outside of a group chat.");
-        return;
+        return '';
     }
 
     if (is_group_generating) {
         toastr.warning("Cannot run /peek command while the group reply is generating.");
-        return;
+        return '';
     }
 
     const chid = findGroupMemberId(arg);
 
     if (chid === undefined) {
         console.warn(`WARN: No group member found for argument ${arg}`);
-        return;
+        return '';
     }
 
     $(`.group_member[chid="${chid}"] [data-action="view"]`).trigger('click');
+    return '';
 }
 
 async function removeGroupMemberCallback(_, arg) {
     if (!selected_group) {
         toastr.warning("Cannot run /memberremove command outside of a group chat.");
-        return;
+        return '';
     }
 
     if (is_group_generating) {
         toastr.warning("Cannot run /memberremove command while the group reply is generating.");
-        return;
+        return '';
     }
 
     const chid = findGroupMemberId(arg);
 
     if (chid === undefined) {
         console.warn(`WARN: No group member found for argument ${arg}`);
-        return;
+        return '';
     }
 
     $(`.group_member[chid="${chid}"] [data-action="remove"]`).trigger('click');
+    return '';
 }
 
 async function addGroupMemberCallback(_, arg) {
     if (!selected_group) {
         toastr.warning("Cannot run /memberadd command outside of a group chat.");
-        return;
+        return '';
     }
 
     if (!arg) {
         console.warn('WARN: No argument provided for /memberadd command');
-        return;
+        return '';
     }
 
     arg = arg.trim();
@@ -830,7 +838,7 @@ async function addGroupMemberCallback(_, arg) {
 
     if (chid === -1) {
         console.warn(`WARN: No character found for argument ${arg}`);
-        return;
+        return '';
     }
 
     const character = characters[chid];
@@ -838,14 +846,14 @@ async function addGroupMemberCallback(_, arg) {
 
     if (!group || !Array.isArray(group.members)) {
         console.warn(`WARN: No group found for ID ${selected_group}`);
-        return;
+        return '';
     }
 
     const avatar = character.avatar;
 
     if (group.members.includes(avatar)) {
         toastr.warning(`${character.name} is already a member of this group.`);
-        return;
+        return '';
     }
 
     group.members.push(avatar);
@@ -853,17 +861,18 @@ async function addGroupMemberCallback(_, arg) {
 
     // Trigger to reload group UI
     $('#rm_button_selected_ch').trigger('click');
+    return character.name;
 }
 
 async function triggerGroupMessageCallback(_, arg) {
     if (!selected_group) {
         toastr.warning("Cannot run /trigger command outside of a group chat.");
-        return;
+        return '';
     }
 
     if (is_group_generating) {
         toastr.warning("Cannot run trigger command while the group reply is generating.");
-        return;
+        return '';
     }
 
     // Prevent generate recursion
@@ -873,10 +882,11 @@ async function triggerGroupMessageCallback(_, arg) {
 
     if (chid === undefined) {
         console.warn(`WARN: No group member found for argument ${arg}`);
-        return;
+        return '';
     }
 
     Generate('normal', { force_chid: chid });
+    return '';
 }
 
 async function sendUserMessageCallback(_, text) {
@@ -888,6 +898,7 @@ async function sendUserMessageCallback(_, text) {
     text = text.trim();
     const bias = extractMessageBias(text);
     await sendMessageAsUser(text, bias);
+    return '';
 }
 
 async function deleteMessagesByNameCallback(_, name) {
@@ -922,6 +933,7 @@ async function deleteMessagesByNameCallback(_, name) {
     await reloadCurrentChat();
 
     toastr.info(`Deleted ${messagesToDelete.length} messages from ${name}`);
+    return '';
 }
 
 function findCharacterIndex(name) {
@@ -941,7 +953,7 @@ function findCharacterIndex(name) {
     return -1;
 }
 
-function goToCharacterCallback(_, name) {
+async function goToCharacterCallback(_, name) {
     if (!name) {
         console.warn('WARN: No character name provided for /go command');
         return;
@@ -951,18 +963,19 @@ function goToCharacterCallback(_, name) {
     const characterIndex = findCharacterIndex(name);
 
     if (characterIndex !== -1) {
-        openChat(new String(characterIndex));
+        await openChat(new String(characterIndex));
+        return characters[characterIndex]?.name;
     } else {
         console.warn(`No matches found for name "${name}"`);
+        return '';
     }
 }
 
-function openChat(id) {
+async function openChat(id) {
     resetSelectedGroup();
     setCharacterId(id);
-    setTimeout(() => {
-        reloadCurrentChat();
-    }, 1);
+    await delay(1);
+    await reloadCurrentChat();
 }
 
 function continueChatCallback() {
@@ -1096,9 +1109,9 @@ export async function sendMessageAs(namedArgs, text) {
     };
 
     chat.push(message);
-    await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
+    await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
     addOneMessage(message);
-    await eventSource.emit(event_types.USER_MESSAGE_RENDERED, (chat.length - 1));
+    await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, (chat.length - 1));
     await saveChatConditional();
 }
 

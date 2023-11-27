@@ -600,6 +600,10 @@ function saveQROrder() {
     });
 }
 
+let onMessageSentExecuting = false;
+let onMessageReceivedExecuting = false;
+let onChatChangedExecuting = false;
+
 /**
  * Executes quick replies on message received.
  * @param {number} index New message index
@@ -608,14 +612,21 @@ function saveQROrder() {
 async function onMessageReceived(index) {
     if (!extension_settings.quickReply.quickReplyEnabled) return;
 
-    for (let i = 0; i < extension_settings.quickReply.numberOfSlots; i++) {
-        const qr = extension_settings.quickReply.quickReplySlots[i];
-        if (qr?.autoExecute_botMessage) {
-            const message = getContext().chat[index];
-            if (message?.mes && message?.mes !== '...') {
-                await sendQuickReply(i);
+    if (onMessageReceivedExecuting) return;
+
+    try {
+        onMessageReceivedExecuting = true;
+        for (let i = 0; i < extension_settings.quickReply.numberOfSlots; i++) {
+            const qr = extension_settings.quickReply.quickReplySlots[i];
+            if (qr?.autoExecute_botMessage) {
+                const message = getContext().chat[index];
+                if (message?.mes && message?.mes !== '...') {
+                    await sendQuickReply(i);
+                }
             }
         }
+    } finally {
+        onMessageReceivedExecuting = false;
     }
 }
 
@@ -627,14 +638,21 @@ async function onMessageReceived(index) {
 async function onMessageSent(index) {
     if (!extension_settings.quickReply.quickReplyEnabled) return;
 
-    for (let i = 0; i < extension_settings.quickReply.numberOfSlots; i++) {
-        const qr = extension_settings.quickReply.quickReplySlots[i];
-        if (qr?.autoExecute_userMessage) {
-            const message = getContext().chat[index];
-            if (message?.mes && message?.mes !== '...') {
-                await sendQuickReply(i);
+    if (onMessageSentExecuting) return;
+
+    try {
+        onMessageSentExecuting = true;
+        for (let i = 0; i < extension_settings.quickReply.numberOfSlots; i++) {
+            const qr = extension_settings.quickReply.quickReplySlots[i];
+            if (qr?.autoExecute_userMessage) {
+                const message = getContext().chat[index];
+                if (message?.mes && message?.mes !== '...') {
+                    await sendQuickReply(i);
+                }
             }
         }
+    } finally {
+        onMessageSentExecuting = false;
     }
 }
 
@@ -646,11 +664,18 @@ async function onMessageSent(index) {
 async function onChatChanged(chatId) {
     if (!extension_settings.quickReply.quickReplyEnabled) return;
 
-    for (let i = 0; i < extension_settings.quickReply.numberOfSlots; i++) {
-        const qr = extension_settings.quickReply.quickReplySlots[i];
-        if (qr?.autoExecute_chatLoad && chatId) {
-            await sendQuickReply(i);
+    if (onChatChangedExecuting) return;
+
+    try {
+        onChatChangedExecuting = true;
+        for (let i = 0; i < extension_settings.quickReply.numberOfSlots; i++) {
+            const qr = extension_settings.quickReply.quickReplySlots[i];
+            if (qr?.autoExecute_chatLoad && chatId) {
+                await sendQuickReply(i);
+            }
         }
+    } finally {
+        onChatChangedExecuting = false;
     }
 }
 
