@@ -3987,37 +3987,54 @@ export function replaceBiasMarkup(str) {
     return (str ?? '').replace(/\{\{[\s\S]*?\}\}/gm, '');
 }
 
-export async function sendMessageAsUser(textareaText, messageBias) {
-    textareaText = getRegexedString(textareaText, regex_placement.USER_INPUT);
+/**
+ * Inserts a user message into the chat history.
+ * @param {string} messageText Message text.
+ * @param {string} messageBias Message bias.
+ * @param {number} [insertAt] Optional index to insert the message at.
+ * @returns {Promise<void>} A promise that resolves when the message is inserted.
+ */
+export async function sendMessageAsUser(messageText, messageBias, insertAt = null) {
+    messageText = getRegexedString(messageText, regex_placement.USER_INPUT);
 
-    chat[chat.length] = {};
-    chat[chat.length - 1]['name'] = name1;
-    chat[chat.length - 1]['is_user'] = true;
-    chat[chat.length - 1]['send_date'] = getMessageTimeStamp();
-    chat[chat.length - 1]['mes'] = substituteParams(textareaText);
-    chat[chat.length - 1]['extra'] = {};
+    const message = {
+        name: name1,
+        is_user: true,
+        is_system: false,
+        send_date: getMessageTimeStamp(),
+        mes: substituteParams(messageText),
+        extra: {},
+    };
 
     if (power_user.message_token_count_enabled) {
-        chat[chat.length - 1]['extra']['token_count'] = getTokenCount(chat[chat.length - 1]['mes'], 0);
+        message.extra.token_count = getTokenCount(message.mes, 0);
     }
 
     // Lock user avatar to a persona.
     if (user_avatar in power_user.personas) {
-        chat[chat.length - 1]['force_avatar'] = getUserAvatar(user_avatar);
+        message.force_avatar = getUserAvatar(user_avatar);
     }
 
     if (messageBias) {
-        console.debug('checking bias');
-        chat[chat.length - 1]['extra']['bias'] = messageBias;
+        message.extra.bias = messageBias;
     }
-    await populateFileAttachment(chat[chat.length - 1]);
-    statMesProcess(chat[chat.length - 1], 'user', characters, this_chid, '');
-    // Wait for all handlers to finish before continuing with the prompt
-    const chat_id = (chat.length - 1);
-    await eventSource.emit(event_types.MESSAGE_SENT, chat_id);
-    addOneMessage(chat[chat_id]);
-    await eventSource.emit(event_types.USER_MESSAGE_RENDERED, chat_id);
-    console.debug('message sent as user');
+
+    await populateFileAttachment(message);
+    statMesProcess(message, 'user', characters, this_chid, '');
+
+    if (typeof insertAt === 'number' && insertAt >= 0 && insertAt <= chat.length) {
+        chat.splice(insertAt, 0, message);
+        await saveChatConditional();
+        await eventSource.emit(event_types.MESSAGE_SENT, insertAt);
+        await reloadCurrentChat();
+        await eventSource.emit(event_types.USER_MESSAGE_RENDERED, insertAt);
+    } else {
+        chat.push(message);
+        const chat_id = (chat.length - 1);
+        await eventSource.emit(event_types.MESSAGE_SENT, chat_id);
+        addOneMessage(message);
+        await eventSource.emit(event_types.USER_MESSAGE_RENDERED, chat_id);
+    }
 }
 
 function getMaxContextSize() {

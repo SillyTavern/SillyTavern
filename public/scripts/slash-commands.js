@@ -628,7 +628,7 @@ async function askCharacter(_, text) {
 
     setCharacterName(character.name);
 
-    sendMessageAsUser(mesText)
+    await sendMessageAsUser(mesText, '');
 
     const restoreCharacter = () => {
         setCharacterId(prevChId);
@@ -888,7 +888,7 @@ async function triggerGenerationCallback(_, arg) {
     return '';
 }
 
-async function sendUserMessageCallback(_, text) {
+async function sendUserMessageCallback(args, text) {
     if (!text) {
         console.warn('WARN: No text provided for /send command');
         return;
@@ -896,7 +896,8 @@ async function sendUserMessageCallback(_, text) {
 
     text = text.trim();
     const bias = extractMessageBias(text);
-    await sendMessageAsUser(text, bias);
+    const insertAt = Number(resolveVariable(args?.at));
+    await sendMessageAsUser(text, bias, insertAt);
     return '';
 }
 
@@ -1047,7 +1048,7 @@ async function setNarratorName(_, text) {
     await saveChatConditional();
 }
 
-export async function sendMessageAs(namedArgs, text) {
+export async function sendMessageAs(args, text) {
     if (!text) {
         return;
     }
@@ -1055,8 +1056,8 @@ export async function sendMessageAs(namedArgs, text) {
     let name;
     let mesText;
 
-    if (namedArgs.name) {
-        name = namedArgs.name.trim();
+    if (args.name) {
+        name = args.name.trim();
         mesText = text.trim();
 
         if (!name && !text) {
@@ -1107,14 +1108,24 @@ export async function sendMessageAs(namedArgs, text) {
         }
     };
 
-    chat.push(message);
-    await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
-    addOneMessage(message);
-    await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, (chat.length - 1));
-    await saveChatConditional();
+    const insertAt = Number(resolveVariable(args.at));
+
+    if (!isNaN(insertAt) && insertAt >= 0 && insertAt <= chat.length) {
+        chat.splice(insertAt, 0, message);
+        await saveChatConditional();
+        await eventSource.emit(event_types.MESSAGE_RECEIVED, insertAt);
+        await reloadCurrentChat();
+        await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, insertAt);
+    } else {
+        chat.push(message);
+        await eventSource.emit(event_types.MESSAGE_RECEIVED, (chat.length - 1));
+        addOneMessage(message);
+        await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, (chat.length - 1));
+        await saveChatConditional();
+    }
 }
 
-export async function sendNarratorMessage(_, text) {
+export async function sendNarratorMessage(args, text) {
     if (!text) {
         return;
     }
@@ -1138,11 +1149,21 @@ export async function sendNarratorMessage(_, text) {
         },
     };
 
-    chat.push(message);
-    await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
-    addOneMessage(message);
-    await eventSource.emit(event_types.USER_MESSAGE_RENDERED, (chat.length - 1));
-    await saveChatConditional();
+    const insertAt = Number(resolveVariable(args.at));
+
+    if (!isNaN(insertAt) && insertAt >= 0 && insertAt <= chat.length) {
+        chat.splice(insertAt, 0, message);
+        await saveChatConditional();
+        await eventSource.emit(event_types.MESSAGE_SENT, insertAt);
+        await reloadCurrentChat();
+        await eventSource.emit(event_types.USER_MESSAGE_RENDERED, insertAt);
+    } else {
+        chat.push(message);
+        await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
+        addOneMessage(message);
+        await eventSource.emit(event_types.USER_MESSAGE_RENDERED, (chat.length - 1));
+        await saveChatConditional();
+    }
 }
 
 export async function promptQuietForLoudResponse(who, text) {
@@ -1184,7 +1205,7 @@ export async function promptQuietForLoudResponse(who, text) {
 
 }
 
-async function sendCommentMessage(_, text) {
+async function sendCommentMessage(args, text) {
     if (!text) {
         return;
     }
@@ -1202,11 +1223,21 @@ async function sendCommentMessage(_, text) {
         },
     };
 
-    chat.push(message);
-    await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
-    addOneMessage(message);
-    await eventSource.emit(event_types.USER_MESSAGE_RENDERED, (chat.length - 1));
-    await saveChatConditional();
+    const insertAt = Number(resolveVariable(args.at));
+
+    if (!isNaN(insertAt) && insertAt >= 0 && insertAt <= chat.length) {
+        chat.splice(insertAt, 0, message);
+        await saveChatConditional();
+        await eventSource.emit(event_types.MESSAGE_SENT, insertAt);
+        await reloadCurrentChat();
+        await eventSource.emit(event_types.USER_MESSAGE_RENDERED, insertAt);
+    } else {
+        chat.push(message);
+        await eventSource.emit(event_types.MESSAGE_SENT, (chat.length - 1));
+        addOneMessage(message);
+        await eventSource.emit(event_types.USER_MESSAGE_RENDERED, (chat.length - 1));
+        await saveChatConditional();
+    }
 }
 
 /**
