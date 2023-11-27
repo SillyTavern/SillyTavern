@@ -1981,13 +1981,13 @@ function doNewChat() {
     }, 1);
 }
 
-function doRandomChat() {
+async function doRandomChat() {
     resetSelectedGroup();
-    setCharacterId(Math.floor(Math.random() * characters.length).toString());
-    setTimeout(() => {
-        reloadCurrentChat();
-    }, 1);
-
+    const characterId = Math.floor(Math.random() * characters.length).toString();
+    setCharacterId(characterId);
+    await delay(1);
+    await reloadCurrentChat();
+    return characters[characterId]?.name;
 }
 
 /**
