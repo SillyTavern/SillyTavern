@@ -105,7 +105,7 @@ function addLanguagesToDropdown() {
     }
 }
 
-jQuery(async () => {
+export function initLocales() {
     waitUntilCondition(() => !!localeData);
     applyLocale();
     addLanguagesToDropdown();
@@ -124,4 +124,4 @@ jQuery(async () => {
 
     registerDebugFunction('getMissingTranslations', 'Get missing translations', 'Detects missing localization data and dumps the data into the browser console.', getMissingTranslations);
     registerDebugFunction('applyLocale', 'Apply locale', 'Reapplies the currently selected locale to the page.', applyLocale);
-});
+};

@@ -151,7 +151,7 @@ import {
 } from "./scripts/utils.js";
 
 import { ModuleWorkerWrapper, doDailyExtensionUpdatesCheck, extension_settings, getContext, loadExtensionSettings, processExtensionHelpers, registerExtensionHelper, renderExtensionTemplate, runGenerationInterceptors, saveMetadataDebounced } from "./scripts/extensions.js";
-import { COMMENT_NAME_DEFAULT, executeSlashCommands, getSlashCommandsHelp, registerSlashCommand } from "./scripts/slash-commands.js";
+import { COMMENT_NAME_DEFAULT, executeSlashCommands, getSlashCommandsHelp, processChatSlashCommands, registerSlashCommand } from "./scripts/slash-commands.js";
 import {
     tag_map,
     tags,
@@ -188,7 +188,7 @@ import {
     formatInstructModeSystemPrompt,
     replaceInstructMacros,
 } from "./scripts/instruct-mode.js";
-import { applyLocale } from "./scripts/i18n.js";
+import { applyLocale, initLocales } from "./scripts/i18n.js";
 import { getFriendlyTokenizerName, getTokenCount, getTokenizerModel, initTokenizers, saveTokenCache } from "./scripts/tokenizers.js";
 import { createPersona, initPersonas, selectCurrentPersona, setPersonaDescription } from "./scripts/personas.js";
 import { getBackgrounds, initBackgrounds } from "./scripts/backgrounds.js";
@@ -324,6 +324,7 @@ export const eventSource = new EventEmitter();
 
 eventSource.on(event_types.MESSAGE_RECEIVED, processExtensionHelpers);
 eventSource.on(event_types.MESSAGE_SENT, processExtensionHelpers);
+eventSource.on(event_types.CHAT_CHANGED, processChatSlashCommands);
 
 const characterGroupOverlay = new BulkEditOverlay();
 const characterContextMenu = new CharacterContextMenu(characterGroupOverlay);
@@ -731,6 +732,7 @@ async function firstLoadInit() {
 
     getSystemMessages();
     sendSystemMessage(system_message_types.WELCOME);
+    initLocales();
     await readSecretState();
     await getClientVersion();
     await getSettings();

@@ -30,13 +30,15 @@ import {
     activateSendButtons,
     main_api,
     is_send_press,
+    extension_prompt_types,
+    setExtensionPrompt,
 } from "../script.js";
 import { getMessageTimeStamp } from "./RossAscends-mods.js";
 import { findGroupMemberId, groups, is_group_generating, resetSelectedGroup, saveGroupChat, selected_group } from "./group-chats.js";
 import { getRegexedString, regex_placement } from "./extensions/regex/engine.js";
 import { addEphemeralStoppingString, chat_styles, flushEphemeralStoppingStrings, power_user } from "./power-user.js";
 import { autoSelectPersona } from "./personas.js";
-import { getContext } from "./extensions.js";
+import { getContext, saveMetadataDebounced } from "./extensions.js";
 import { hideChatMessage, unhideChatMessage } from "./chats.js";
 import { delay, isFalseBoolean, isTrueBoolean, stringToRange, trimToEndSentence, trimToStartSentence } from "./utils.js";
 import { registerVariableCommands, resolveVariable } from "./variables.js";
@@ -153,7 +155,7 @@ parser.addCommand('go', goToCharacterCallback, ['char'], '<span class="monospace
 parser.addCommand('sysgen', generateSystemMessage, [], '<span class="monospace">(prompt)</span> – generates a system message using a specified prompt', true, true);
 parser.addCommand('ask', askCharacter, [], '<span class="monospace">(prompt)</span> – asks a specified character card a prompt', true, true);
 parser.addCommand('delname', deleteMessagesByNameCallback, ['cancel'], '<span class="monospace">(name)</span> – deletes all messages attributed to a specified name', true, true);
-parser.addCommand('send', sendUserMessageCallback, ['add'], '<span class="monospace">(text)</span> – adds a user message to the chat log without triggering a generation', true, true);
+parser.addCommand('send', sendUserMessageCallback, [], '<span class="monospace">(text)</span> – adds a user message to the chat log without triggering a generation', true, true);
 parser.addCommand('trigger', triggerGenerationCallback, [], ' – triggers a message generation. If in group, can trigger a message for the specified group member index or name.', true, true);
 parser.addCommand('hide', hideMessageCallback, [], '<span class="monospace">(message index or range)</span> – hides a chat message from the prompt', true, true);
 parser.addCommand('unhide', unhideMessageCallback, [], '<span class="monospace">(message index or range)</span> – unhides a message from the prompt', true, true);
@@ -182,11 +184,114 @@ parser.addCommand('buttons', buttonsCallback, [], '<span class="monospace">label
 parser.addCommand('trimtokens', trimTokensCallback, [], '<span class="monospace">limit=number (direction=start/end [text])</span> – trims the start or end of text to the specified number of tokens.', true, true);
 parser.addCommand('trimstart', trimStartCallback, [], '<span class="monospace">(text)</span> – trims the text to the start of the first full sentence.', true, true);
 parser.addCommand('trimend', trimEndCallback, [], '<span class="monospace">(text)</span> – trims the text to the end of the last full sentence.', true, true);
+parser.addCommand('inject', injectCallback, [], '<span class="monospace">id=injectId (position=before/after/chat depth=number [text])</span> – injects a text into the LLM prompt for the current chat. Requires a unique injection ID. Positions: "before" main prompt, "after" main prompt, in-"chat" (default: after). Depth: injection depth for the prompt (default: 4).', true, true);
+parser.addCommand('listinjects', listInjectsCallback, [], ' – lists all script injections for the current chat.', true, true);
+parser.addCommand('flushinjects', flushInjectsCallback, [], ' – removes all script injections for the current chat.', true, true);
 registerVariableCommands();
 
 const NARRATOR_NAME_KEY = 'narrator_name';
 const NARRATOR_NAME_DEFAULT = 'System';
 export const COMMENT_NAME_DEFAULT = 'Note';
+const SCRIPT_PROMPT_KEY = 'script_inject_';
+
+function injectCallback(args, value) {
+    const positions = {
+        'before': extension_prompt_types.BEFORE_PROMPT,
+        'after': extension_prompt_types.IN_PROMPT,
+        'chat': extension_prompt_types.IN_CHAT,
+    };
+
+    const id = resolveVariable(args?.id);
+
+    if (!id) {
+        console.warn('WARN: No ID provided for /inject command');
+        toastr.warning('No ID provided for /inject command');
+        return '';
+    }
+
+    const defaultPosition = 'after';
+    const defaultDepth = 4;
+    const positionValue = args?.position ?? defaultPosition;
+    const position = positions[positionValue] ?? positions[defaultPosition];
+    const depthValue = Number(args?.depth) ?? defaultDepth;
+    const depth = isNaN(depthValue) ? defaultDepth : depthValue;
+    value = value || '';
+
+    const prefixedId = `${SCRIPT_PROMPT_KEY}${id}`;
+
+    if (!chat_metadata.script_injects) {
+        chat_metadata.script_injects = {};
+    }
+
+    chat_metadata.script_injects[id] = {
+        value,
+        position,
+        depth,
+    };
+
+    setExtensionPrompt(prefixedId, value, position, depth);
+    saveMetadataDebounced();
+    return '';
+}
+
+function listInjectsCallback() {
+    if (!chat_metadata.script_injects) {
+        toastr.info('No script injections for the current chat');
+        return '';
+    }
+
+    const injects = Object.entries(chat_metadata.script_injects)
+        .map(([id, inject]) => {
+            const position = Object.entries(extension_prompt_types);
+            const positionName = position.find(([_, value]) => value === inject.position)?.[0] ?? 'unknown';
+            return `* **${id}**: <code>${inject.value}</code> (${positionName}, depth: ${inject.depth})`;
+        })
+        .join('\n');
+
+    const converter = new showdown.Converter();
+    const messageText = `### Script injections:\n${injects}`;
+    const htmlMessage = DOMPurify.sanitize(converter.makeHtml(messageText));
+
+    sendSystemMessage(system_message_types.GENERIC, htmlMessage);
+}
+
+function flushInjectsCallback() {
+    if (!chat_metadata.script_injects) {
+        return '';
+    }
+
+    for (const [id, inject] of Object.entries(chat_metadata.script_injects)) {
+        const prefixedId = `${SCRIPT_PROMPT_KEY}${id}`;
+        setExtensionPrompt(prefixedId, '', inject.position, inject.depth);
+    }
+
+    chat_metadata.script_injects = {};
+    saveMetadataDebounced();
+    return '';
+}
+
+export function processChatSlashCommands() {
+    const context = getContext();
+
+    if (!(context.chatMetadata.script_injects)) {
+        return;
+    }
+
+    for (const id of Object.keys(context.extensionPrompts)) {
+        if (!id.startsWith(SCRIPT_PROMPT_KEY)) {
+            continue;
+        }
+
+        console.log('Removing script injection', id);
+        delete context.extensionPrompts[id];
+    }
+
+    for (const [id, inject] of Object.entries(context.chatMetadata.script_injects)) {
+        const prefixedId = `${SCRIPT_PROMPT_KEY}${id}`;
+        console.log('Adding script injection', id);
+        setExtensionPrompt(prefixedId, inject.value, inject.position, inject.depth);
+    }
+}
 
 function setInputCallback(_, value) {
     $('#send_textarea').val(value || '').trigger('input');
