@@ -460,6 +460,22 @@ function OpenNavPanels() {
     }
 }
 
+function restoreUserInput() {
+    if (!power_user.restore_user_input) {
+        console.debug('restoreUserInput disabled');
+        return;
+    }
+
+    const userInput = LoadLocal("userInput");
+    if (userInput) {
+        $("#send_textarea").val(userInput).trigger('input');
+    }
+}
+
+function saveUserInput() {
+    const userInput = String($("#send_textarea").val());
+    SaveLocal("userInput", userInput);
+}
 
 // Make the DIV element draggable:
 
@@ -895,10 +911,13 @@ export function initRossMods() {
         const chatBlock = $('#chat');
         const originalScrollBottom = chatBlock[0].scrollHeight - (chatBlock.scrollTop() + chatBlock.outerHeight());
         this.style.height = window.getComputedStyle(this).getPropertyValue('min-height');
-        this.style.height = (this.scrollHeight) + 'px';
+        this.style.height = this.scrollHeight + 0.1 + 'px';
         const newScrollTop = Math.round(chatBlock[0].scrollHeight - (chatBlock.outerHeight() + originalScrollBottom));
         chatBlock.scrollTop(newScrollTop);
+        saveUserInput();
     });
+
+    restoreUserInput();
 
     //Regenerate if user swipes on the last mesage in chat
 
