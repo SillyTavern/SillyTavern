@@ -29,6 +29,7 @@ import {
     deactivateSendButtons,
     activateSendButtons,
     main_api,
+    is_send_press,
 } from "../script.js";
 import { getMessageTimeStamp } from "./RossAscends-mods.js";
 import { findGroupMemberId, groups, is_group_generating, resetSelectedGroup, saveGroupChat, selected_group } from "./group-chats.js";
@@ -153,7 +154,7 @@ parser.addCommand('sysgen', generateSystemMessage, [], '<span class="monospace">
 parser.addCommand('ask', askCharacter, [], '<span class="monospace">(prompt)</span> – asks a specified character card a prompt', true, true);
 parser.addCommand('delname', deleteMessagesByNameCallback, ['cancel'], '<span class="monospace">(name)</span> – deletes all messages attributed to a specified name', true, true);
 parser.addCommand('send', sendUserMessageCallback, ['add'], '<span class="monospace">(text)</span> – adds a user message to the chat log without triggering a generation', true, true);
-parser.addCommand('trigger', triggerGroupMessageCallback, [], '<span class="monospace">(member index or name)</span> – triggers a message generation for the specified group member', true, true);
+parser.addCommand('trigger', triggerGenerationCallback, [], ' – triggers a message generation. If in group, can trigger a message for the specified group member index or name.', true, true);
 parser.addCommand('hide', hideMessageCallback, [], '<span class="monospace">(message index or range)</span> – hides a chat message from the prompt', true, true);
 parser.addCommand('unhide', unhideMessageCallback, [], '<span class="monospace">(message index or range)</span> – unhides a message from the prompt', true, true);
 parser.addCommand('disable', disableGroupMemberCallback, [], '<span class="monospace">(member index or name)</span> – disables a group member from being drafted for replies', true, true);
@@ -864,28 +865,26 @@ async function addGroupMemberCallback(_, arg) {
     return character.name;
 }
 
-async function triggerGroupMessageCallback(_, arg) {
-    if (!selected_group) {
-        toastr.warning("Cannot run /trigger command outside of a group chat.");
-        return '';
-    }
-
-    if (is_group_generating) {
-        toastr.warning("Cannot run trigger command while the group reply is generating.");
+async function triggerGenerationCallback(_, arg) {
+    if (is_send_press || is_group_generating) {
+        toastr.warning("Cannot run trigger command while the reply is being generated.");
         return '';
     }
 
     // Prevent generate recursion
     $('#send_textarea').val('').trigger('input');
 
-    const chid = findGroupMemberId(arg);
+    let chid = undefined;
 
-    if (chid === undefined) {
-        console.warn(`WARN: No group member found for argument ${arg}`);
-        return '';
+    if (selected_group && arg) {
+        chid = findGroupMemberId(arg);
+
+        if (chid === undefined) {
+            console.warn(`WARN: No group member found for argument ${arg}`);
+        }
     }
 
-    Generate('normal', { force_chid: chid });
+    setTimeout(() => Generate('normal', { force_chid: chid }), 100);
     return '';
 }
 

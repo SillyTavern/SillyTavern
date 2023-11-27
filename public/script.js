@@ -7692,7 +7692,9 @@ jQuery(async function () {
 
     $("#send_but").on('click', function () {
         if (is_send_press == false) {
-            is_send_press = true;
+            // This prevents from running /trigger command with a send button
+            // But send on Enter doesn't set is_send_press (it is done by the Generate itself)
+            // is_send_press = true;
             Generate();
         }
     });
