@@ -308,7 +308,7 @@ app.use(function (req, res, next) {
 if (getConfigValue('enableCorsProxy', false) === true || cliArguments.corsProxy === true) {
     console.log('Enabling CORS proxy');
 
-    app.use('/proxy/:url', async (req, res) => {
+    app.use('/proxy/:url(*)', async (req, res) => {
         const url = req.params.url; // get the url from the request path
 
         // Disallow circular requests
