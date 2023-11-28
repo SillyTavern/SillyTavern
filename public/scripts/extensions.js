@@ -358,15 +358,17 @@ function addExtensionsButtonAndMenu() {
     });
 
     $(button).on('click', function () {
-        popper.update()
-        if (!dropdown.is(':visible')) {
+        if (dropdown.is(':visible')) {
+            dropdown.fadeOut(animation_duration);
+        } else {
             dropdown.fadeIn(animation_duration);
         }
+        popper.update();
     });
 
-    $("html").on('touchstart mousedown', function (e) {
+    $("html").on('click', function (e) {
         const clickTarget = $(e.target);
-        const noCloseTargets = ['#sd_gen'];
+        const noCloseTargets = ['#sd_gen', '#extensionsMenuButton'];
         if (dropdown.is(':visible') && !noCloseTargets.some(id => clickTarget.closest(id).length > 0)) {
             $(dropdown).fadeOut(animation_duration);
         }
