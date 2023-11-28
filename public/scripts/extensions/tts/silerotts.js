@@ -32,6 +32,7 @@ class SileroTtsProvider {
         // Used when provider settings are updated from UI
         this.settings.provider_endpoint = $('#silero_tts_endpoint').val()
         saveTtsProviderSettings()
+        this.refreshSession()
     }
 
     async loadSettings(settings) {
@@ -43,8 +44,8 @@ class SileroTtsProvider {
         // Only accept keys defined in defaultSettings
         this.settings = this.defaultSettings
 
-        for (const key in settings){
-            if (key in this.settings){
+        for (const key in settings) {
+            if (key in this.settings) {
                 this.settings[key] = settings[key]
             } else {
                 throw `Invalid setting passed to TTS Provider: ${key}`
@@ -63,7 +64,8 @@ class SileroTtsProvider {
         }, 2000);
 
         $('#silero_tts_endpoint').val(this.settings.provider_endpoint)
-        $('#silero_tts_endpoint').on("input", () => {this.onSettingsChange()})
+        $('#silero_tts_endpoint').on("input", () => { this.onSettingsChange() })
+        this.refreshSession()
 
         await this.checkReady()
 
@@ -71,12 +73,16 @@ class SileroTtsProvider {
     }
 
     // Perform a simple readiness check by trying to fetch voiceIds
-    async checkReady(){
+    async checkReady() {
         await this.fetchTtsVoiceObjects()
     }
 
     async onRefreshClick() {
         return
+    }
+
+    async refreshSession() {
+        await this.initSession()
     }
 
     //#################//
@@ -96,7 +102,7 @@ class SileroTtsProvider {
         return match
     }
 
-    async generateTts(text, voiceId){
+    async generateTts(text, voiceId) {
         const response = await this.fetchTtsGeneration(text, voiceId)
         return response
     }
@@ -121,11 +127,12 @@ class SileroTtsProvider {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-					'Cache-Control': 'no-cache'  // Added this line to disable caching of file so new files are always played - Rolyat 7/7/23
+                    'Cache-Control': 'no-cache'  // Added this line to disable caching of file so new files are always played - Rolyat 7/7/23
                 },
                 body: JSON.stringify({
                     "text": inputText,
-                    "speaker": voiceId
+                    "speaker": voiceId,
+                    "session": "sillytavern"
                 })
             }
         )
@@ -134,6 +141,31 @@ class SileroTtsProvider {
             throw new Error(`HTTP ${response.status}: ${await response.text()}`);
         }
         return response
+    }
+
+    async initSession() {
+        console.info(`Silero TTS: requesting new session`);
+        try {
+            const response = await doExtrasFetch(
+                `${this.settings.provider_endpoint}/session`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache',
+                    },
+                    body: JSON.stringify({
+                        "path": "sillytavern",
+                    }),
+                }
+            )
+
+            if (!response.ok && response.status !== 404) {
+                throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+            }
+        } catch (error) {
+            console.info('Silero TTS: endpoint not available', error);
+        }
     }
 
     // Interface not used by Silero TTS
