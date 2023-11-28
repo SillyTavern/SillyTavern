@@ -57,7 +57,7 @@ function addGlobalVariable(name, value) {
     const currentValue = getGlobalVariable(name) || 0;
     const increment = Number(value);
 
-    if (isNaN(increment)|| isNaN(Number(currentValue))) {
+    if (isNaN(increment) || isNaN(Number(currentValue))) {
         const stringValue = String(currentValue || '') + value;
         setGlobalVariable(name, stringValue);
         return stringValue;
@@ -73,6 +73,27 @@ function addGlobalVariable(name, value) {
     return newValue;
 }
 
+function incrementLocalVariable(name) {
+    return addLocalVariable(name, 1);
+}
+
+function incrementGlobalVariable(name) {
+    return addGlobalVariable(name, 1);
+}
+
+function decrementLocalVariable(name) {
+    return addLocalVariable(name, -1);
+}
+
+function decrementGlobalVariable(name) {
+    return addGlobalVariable(name, -1);
+}
+
+/**
+ * Resolves a variable name to its value or returns the string as is if the variable does not exist.
+ * @param {string} name Variable name
+ * @returns {string} Variable value or the string literal
+ */
 export function resolveVariable(name) {
     if (existsLocalVariable(name)) {
         return getLocalVariable(name);
@@ -193,16 +214,34 @@ async function ifCallback(args, command) {
     return '';
 }
 
+/**
+ * Checks if a local variable exists.
+ * @param {string} name Local variable name
+ * @returns {boolean} True if the local variable exists, false otherwise
+ */
 function existsLocalVariable(name) {
     return chat_metadata.variables && chat_metadata.variables[name] !== undefined;
 }
 
+/**
+ * Checks if a global variable exists.
+ * @param {string} name Global variable name
+ * @returns {boolean} True if the global variable exists, false otherwise
+ */
 function existsGlobalVariable(name) {
     return extension_settings.variables.global && extension_settings.variables.global[name] !== undefined;
 }
 
+/**
+ * Parses boolean operands from command arguments.
+ * @param {object} args Command arguments
+ * @returns {{a: string | number, b: string | number, rule: string}} Boolean operands
+ */
 function parseBooleanOperands(args) {
-    // Resultion order: numeric literal, local variable, global variable, string literal
+    // Resolution order: numeric literal, local variable, global variable, string literal
+    /**
+     * @param {string} operand Boolean operand candidate
+     */
     function getOperand(operand) {
         if (operand === undefined) {
             return '';
@@ -235,6 +274,13 @@ function parseBooleanOperands(args) {
     return { a: left, b: right, rule };
 }
 
+/**
+ * Evaluates a boolean comparison rule.
+ * @param {string} rule Boolean comparison rule
+ * @param {string|number} a The left operand
+ * @param {string|number} b The right operand
+ * @returns {boolean} True if the rule yields true, false otherwise
+ */
 function evalBoolean(rule, a, b) {
     if (!rule) {
         toastr.warning('The rule must be specified for the boolean comparison.', 'Invalid command');
@@ -299,6 +345,11 @@ function evalBoolean(rule, a, b) {
     return result;
 }
 
+/**
+ * Executes a slash command from a string (may be enclosed in quotes) and returns the result.
+ * @param {string} command Command to execute. May contain escaped macro and batch separators.
+ * @returns {Promise<string>} Pipe result
+ */
 async function executeSubCommands(command) {
     if (command.startsWith('"')) {
         command = command.slice(1);
@@ -318,6 +369,11 @@ async function executeSubCommands(command) {
     return result?.pipe || '';
 }
 
+/**
+ * Deletes a local variable.
+ * @param {string} name Variable name to delete
+ * @returns {string} Empty string
+ */
 function deleteLocalVariable(name) {
     if (!existsLocalVariable(name)) {
         console.warn(`The local variable "${name}" does not exist.`);
@@ -329,6 +385,11 @@ function deleteLocalVariable(name) {
     return '';
 }
 
+/**
+ * Deletes a global variable.
+ * @param {string} name Variable name to delete
+ * @returns {string} Empty string
+ */
 function deleteGlobalVariable(name) {
     if (!existsGlobalVariable(name)) {
         console.warn(`The global variable "${name}" does not exist.`);
@@ -340,6 +401,11 @@ function deleteGlobalVariable(name) {
     return '';
 }
 
+/**
+ * Parses a series of numeric values from a string.
+ * @param {string} value A space-separated list of numeric values or variable names
+ * @returns {number[]} An array of numeric values
+ */
 function parseNumericSeries(value) {
     if (typeof value === 'number') {
         return [value];
@@ -349,7 +415,7 @@ function parseNumericSeries(value) {
         .split(' ')
         .map(i => i.trim())
         .filter(i => i !== '')
-        .map(i => isNaN(Number(i)) ? resolveVariable(i) : Number(i))
+        .map(i => isNaN(Number(i)) ? Number(resolveVariable(i)) : Number(i))
         .filter(i => !isNaN(i));
 
     return array;
@@ -451,6 +517,10 @@ export function registerVariableCommands() {
     registerSlashCommand('setglobalvar', (args, value) => setGlobalVariable(args.key || args.name, value), [], '<span class="monospace">key=varname (value)</span> – set a global variable value and pass it down the pipe, e.g. <tt>/setglobalvar key=color green</tt>', true, true);
     registerSlashCommand('getglobalvar', (_, value) => getGlobalVariable(value), [], '<span class="monospace">(key)</span> – get a global variable value and pass it down the pipe, e.g. <tt>/getglobalvar height</tt>', true, true);
     registerSlashCommand('addglobalvar', (args, value) => addGlobalVariable(args.key || args.name, value), [], '<span class="monospace">key=varname (increment)</span> – add a value to a global variable and pass the result down the pipe, e.g. <tt>/addglobalvar score 10</tt>', true, true);
+    registerSlashCommand('incvar', (_, value) => incrementLocalVariable(value), [], '<span class="monospace">(key)</span> – increment a local variable by 1 and pass the result down the pipe, e.g. <tt>/incvar score</tt>', true, true);
+    registerSlashCommand('decvar', (_, value) => decrementLocalVariable(value), [], '<span class="monospace">(key)</span> – decrement a local variable by 1 and pass the result down the pipe, e.g. <tt>/decvar score</tt>', true, true);
+    registerSlashCommand('incglobalvar', (_, value) => incrementGlobalVariable(value), [], '<span class="monospace">(key)</span> – increment a global variable by 1 and pass the result down the pipe, e.g. <tt>/incglobalvar score</tt>', true, true);
+    registerSlashCommand('decglobalvar', (_, value) => decrementGlobalVariable(value), [], '<span class="monospace">(key)</span> – decrement a global variable by 1 and pass the result down the pipe, e.g. <tt>/decglobalvar score</tt>', true, true);
     registerSlashCommand('if', ifCallback, [], '<span class="monospace">left=varname1 right=varname2 rule=comparison else="(alt.command)" "(command)"</span> – compare the value of the left operand "a" with the value of the right operand "b", and if the condition yields true, then execute any valid slash command enclosed in quotes and pass the result of the command execution down the pipe. Numeric values and string literals for left and right operands supported. Available rules: gt => a > b, gte => a >= b, lt => a < b, lte => a <= b, eq => a == b, neq => a != b, not => !a, in (strings) => a includes b, nin (strings) => a not includes b, e.g. <tt>/if left=score right=10 rule=gte "/speak You win"</tt> triggers a /speak command if the value of "score" is greater or equals 10.', true, true);
     registerSlashCommand('while', whileCallback, [], '<span class="monospace">left=varname1 right=varname2 rule=comparison "(command)"</span> – compare the value of the left operand "a" with the value of the right operand "b", and if the condition yields true, then execute any valid slash command enclosed in quotes. Numeric values and string literals for left and right operands supported. Available rules: gt => a > b, gte => a >= b, lt => a < b, lte => a <= b, eq => a == b, neq => a != b, not => !a, in (strings) => a includes b, nin (strings) => a not includes b, e.g. <tt>/setvar key=i 0 | /while left=i right=10 rule=let "/addvar key=i 1"</tt> adds 1 to the value of "i" until it reaches 10. Loops are limited to 100 iterations by default, pass guard=off to disable.', true, true);
     registerSlashCommand('flushvar', (_, value) => deleteLocalVariable(value), [], '<span class="monospace">(key)</span> – delete a local variable, e.g. <tt>/flushvar score</tt>', true, true);
