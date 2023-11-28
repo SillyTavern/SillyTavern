@@ -68,7 +68,7 @@
 }
 
 .ctx-menu {
-    position: fixed;
+    position: absolute;
     overflow: visible;
 }
 

@@ -508,7 +508,7 @@ async function processTtsQueue() {
     }
 
     // Collapse newlines and spaces into single space
-    text = text.replace(/\s+/g, ' ');
+    text = text.replace(/\s+/g, ' ').trim();
 
     console.log(`TTS: ${text}`)
     const char = currentTtsJob.name

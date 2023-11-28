@@ -209,7 +209,7 @@ async function visualNovelUpdateLayers(container) {
     const containerWidth = container.width();
     const pivotalPoint = containerWidth * 0.5;
 
-    let images = $('.expression-holder');
+    let images = $('#visual-novel-wrapper .expression-holder');
     let imagesWidth = [];
 
     images.sort(sortFunction).each(function () {
