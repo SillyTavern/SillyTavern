@@ -20,10 +20,12 @@ class XTTSTtsProvider {
      */
     processText(text) {
         // Replace fancy ellipsis with "..."
-        text = text.replace(/…/g, '...')
+        text = text.replace(/…/g, '...');
+        // Remove quotes
+        text = text.replace(/["“”‘’]/g, '');
         // Replace multiple "." with single "."
-        text = text.replace(/\.+/g, '.')
-        return text
+        text = text.replace(/\.+/g, '.');
+        return text;
     }
 
     languageLabels = {
