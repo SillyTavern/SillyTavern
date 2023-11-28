@@ -6,11 +6,12 @@ import {
     menu_type,
     getCharacters,
     entitiesFilter,
+    printCharacters,
 } from "../script.js";
 import { FILTER_TYPES, FilterHelper } from "./filters.js";
 
-import { groupCandidatesFilter, selected_group } from "./group-chats.js";
-import { uuidv4 } from "./utils.js";
+import { groupCandidatesFilter, groups, selected_group } from "./group-chats.js";
+import { download, onlyUnique, parseJsonFile, uuidv4 } from "./utils.js";
 
 export {
     tags,
@@ -37,23 +38,22 @@ export const tag_filter_types = {
 };
 
 const ACTIONABLE_TAGS = {
-
     FAV: { id: 1, name: 'Show only favorites', color: 'rgba(255, 255, 0, 0.5)', action: applyFavFilter, icon: 'fa-solid fa-star', class: 'filterByFavorites' },
     GROUP: { id: 0, name: 'Show only groups', color: 'rgba(100, 100, 100, 0.5)', action: filterByGroups, icon: 'fa-solid fa-users', class: 'filterByGroups' },
+    VIEW: { id: 2, name: 'Manage tags', color: 'rgba(150, 100, 100, 0.5)', action: onViewTagsListClick, icon: 'fa-solid fa-gear', class: 'manageTags' },
     HINT: { id: 3, name: 'Show Tag List', color: 'rgba(150, 100, 100, 0.5)', action: onTagListHintClick, icon: 'fa-solid fa-tags', class: 'showTagList' },
 }
 
 const InListActionable = {
-    VIEW: { id: 2, name: 'Manage tags', color: 'rgba(150, 100, 100, 0.5)', action: onViewTagsListClick, icon: 'fa-solid fa-gear' },
 }
 
 const DEFAULT_TAGS = [
-    { id: uuidv4(), name: "Plain Text" },
-    { id: uuidv4(), name: "OpenAI" },
-    { id: uuidv4(), name: "W++" },
-    { id: uuidv4(), name: "Boostyle" },
-    { id: uuidv4(), name: "PList" },
-    { id: uuidv4(), name: "AliChat" },
+    { id: uuidv4(), name: "Plain Text", create_date: Date.now() },
+    { id: uuidv4(), name: "OpenAI", create_date: Date.now() },
+    { id: uuidv4(), name: "W++", create_date: Date.now() },
+    { id: uuidv4(), name: "Boostyle", create_date: Date.now() },
+    { id: uuidv4(), name: "PList", create_date: Date.now() },
+    { id: uuidv4(), name: "AliChat", create_date: Date.now() },
 ];
 
 let tags = [];
@@ -137,8 +137,12 @@ function getTagKey() {
     return null;
 }
 
-function addTagToMap(tagId) {
-    const key = getTagKey();
+export function getTagKeyForCharacter(characterId = null) {
+    return characters[characterId]?.avatar;
+}
+
+function addTagToMap(tagId, characterId = null) {
+    const key = getTagKey() ?? getTagKeyForCharacter(characterId);
 
     if (!key) {
         return;
@@ -149,11 +153,12 @@ function addTagToMap(tagId) {
     }
     else {
         tag_map[key].push(tagId);
+        tag_map[key] = tag_map[key].filter(onlyUnique);
     }
 }
 
-function removeTagFromMap(tagId) {
-    const key = getTagKey();
+function removeTagFromMap(tagId, characterId = null) {
+    const key = getTagKey() ?? getTagKeyForCharacter(characterId);
 
     if (!key) {
         return;
@@ -197,7 +202,17 @@ function selectTag(event, ui, listSelector) {
     // add tag to the UI and internal map
     appendTagToList(listSelector, tag, { removable: true });
     appendTagToList(getInlineListSelector(), tag, { removable: false });
-    addTagToMap(tag.id);
+
+    // Optional, check for multiple character ids being present.
+    const characterData = event.target.closest('#bulk_tags_div')?.dataset.characters;
+    const characterIds = characterData ? JSON.parse(characterData).characterIds : null;
+
+    if (characterIds) {
+        characterIds.forEach((characterId) => addTagToMap(tag.id, characterId));
+    } else {
+        addTagToMap(tag.id);
+    }
+
     saveSettingsDebounced();
     printTagFilters(tag_filter_types.character);
     printTagFilters(tag_filter_types.group_member);
@@ -216,7 +231,6 @@ function getExistingTags(new_tags) {
     }
     return existing_tags
 }
-
 
 async function importTags(imported_char) {
     let imported_tags = imported_char.tags.filter(t => t !== "ROOT" && t !== "TAVERN");
@@ -257,13 +271,13 @@ async function importTags(imported_char) {
     return false;
 }
 
-
 function createNewTag(tagName) {
     const tag = {
         id: uuidv4(),
         name: tagName,
         color: '',
         color2: '',
+        create_date: Date.now(),
     };
     tags.push(tag);
     return tag;
@@ -306,9 +320,9 @@ function appendTagToList(listElement, tag, { removable, selectable, action, isGe
         tagElement.on('click', () => action.bind(tagElement)(filter));
         tagElement.addClass('actionable');
     }
-    if (action && tag.id === 2) {
+    /*if (action && tag.id === 2) {
         tagElement.addClass('innerActionable hidden');
-    }
+    }*/
 
     $(listElement).append(tagElement);
 }
@@ -383,8 +397,19 @@ function onTagRemoveClick(event) {
     event.stopPropagation();
     const tag = $(this).closest(".tag");
     const tagId = tag.attr("id");
+
+    // Optional, check for multiple character ids being present.
+    const characterData = event.target.closest('#bulk_tags_div')?.dataset.characters;
+    const characterIds = characterData ? JSON.parse(characterData).characterIds : null;
+
     tag.remove();
-    removeTagFromMap(tagId);
+
+    if (characterIds) {
+        characterIds.forEach((characterId) => removeTagFromMap(tagId, characterId));
+    } else {
+        removeTagFromMap(tagId);
+    }
+
     $(`${getInlineListSelector()} .tag[id="${tagId}"]`).remove();
 
     printTagFilters(tag_filter_types.character);
@@ -439,7 +464,7 @@ function applyTagsOnGroupSelect() {
     }
 }
 
-function createTagInput(inputSelector, listSelector) {
+export function createTagInput(inputSelector, listSelector) {
     $(inputSelector)
         .autocomplete({
             source: (i, o) => findTag(i, o, listSelector),
@@ -451,55 +476,186 @@ function createTagInput(inputSelector, listSelector) {
 
 function onViewTagsListClick() {
     $('#dialogue_popup').addClass('large_dialogue_popup');
-    const list = document.createElement('div');
+    const list = $(document.createElement('div'));
+    list.attr('id', 'tag_view_list');
     const everything = Object.values(tag_map).flat();
-    $(list).append('<h3>Tags</h3><i>Click on the tag name to edit it.</i><br>');
-    $(list).append('<i>Click on color box to assign new color.</i><br><br>');
+    $(list).append(`
+    <div class="title_restorable alignItemsBaseline">
+        <h3>Tag Management</h3>
+        <div class="flex-container alignItemsBaseline">
+            <div class="menu_button menu_button_icon tag_view_backup" title="Save your tags to a file">
+                <i class="fa-solid fa-file-export"></i>
+                <span data-i18n="Backup">Backup</span>
+            </div>
+            <div class="menu_button menu_button_icon tag_view_restore" title="Restore tags from a file">
+                <i class="fa-solid fa-file-import"></i>
+                <span data-i18n="Restore">Restore</span>
+            </div>
+            <div class="menu_button menu_button_icon tag_view_create" title="Create a new tag">
+                <i class="fa-solid fa-plus"></i>
+                <span data-i18n="Create">Create</span>
+            </div>
+            <input type="file" id="tag_view_restore_input" hidden accept=".json">
+        </div>
+    </div>
+    <div class="justifyLeft m-b-1">
+        <small>
+            Click on the tag name to edit it.<br>
+            Click on color box to assign new color.
+        </small>
+    </div>`);
 
-    for (const tag of tags.slice().sort((a, b) => a?.name?.toLowerCase()?.localeCompare(b?.name?.toLowerCase()))) {
-        const count = everything.filter(x => x == tag.id).length;
-        const template = $('#tag_view_template .tag_view_item').clone();
-        template.attr('id', tag.id);
-        template.find('.tag_view_counter_value').text(count);
-        template.find('.tag_view_name').text(tag.name);
-        template.find('.tag_view_name').addClass('tag');
-
-        template.find('.tag_view_name').css('background-color', tag.color);
-        template.find('.tag_view_name').css('color', tag.color2);
-
-        const colorPickerId = tag.id + "-tag-color";
-        const colorPicker2Id = tag.id + "-tag-color2";
-
-        template.find('.tagColorPickerHolder').html(
-            `<toolcool-color-picker id="${colorPickerId}" color="${tag.color}" class="tag-color"></toolcool-color-picker>`
-        );
-        template.find('.tagColorPicker2Holder').html(
-            `<toolcool-color-picker id="${colorPicker2Id}" color="${tag.color2}" class="tag-color2"></toolcool-color-picker>`
-        );
-
-        template.find('.tag-color').attr('id', colorPickerId);
-        template.find('.tag-color2').attr('id', colorPicker2Id);
-
-        list.appendChild(template.get(0));
-
-        setTimeout(function () {
-            document.querySelector(`.tag-color[id="${colorPickerId}"`).addEventListener('change', (evt) => {
-                onTagColorize(evt);
-            });
-
-        }, 100);
-
-        setTimeout(function () {
-            document.querySelector(`.tag-color2[id="${colorPicker2Id}"`).addEventListener('change', (evt) => {
-                onTagColorize2(evt);
-            });
-        }, 100);
-
-        $(colorPickerId).color = tag.color;
-        $(colorPicker2Id).color = tag.color2;
-
+    const sortedTags = tags.slice().sort((a, b) => a?.name?.toLowerCase()?.localeCompare(b?.name?.toLowerCase()));
+    for (const tag of sortedTags) {
+        appendViewTagToList(list, tag, everything);
     }
-    callPopup(list.outerHTML, 'text');
+
+    callPopup(list, 'text');
+}
+
+async function onTagRestoreFileSelect(e) {
+    const file = e.target.files[0];
+
+    if (!file) {
+        console.log('Tag restore: No file selected.');
+        return;
+    }
+
+    const data = await parseJsonFile(file);
+
+    if (!data) {
+        toastr.warning('Empty file data', 'Tag restore');
+        console.log('Tag restore: File data empty.');
+        return;
+    }
+
+    if (!data.tags || !data.tag_map || !Array.isArray(data.tags) || typeof data.tag_map !== 'object') {
+        toastr.warning('Invalid file format', 'Tag restore');
+        console.log('Tag restore: Invalid file format.');
+        return;
+    }
+
+    const warnings = [];
+
+    // Import tags
+    for (const tag of data.tags) {
+        if (!tag.id || !tag.name) {
+            warnings.push(`Tag object is invalid: ${JSON.stringify(tag)}.`);
+            continue;
+        }
+
+        if (tags.find(x => x.id === tag.id)) {
+            warnings.push(`Tag with id ${tag.id} already exists.`);
+            continue;
+        }
+
+        tags.push(tag);
+    }
+
+    // Import tag_map
+    for (const key of Object.keys(data.tag_map)) {
+        const tagIds = data.tag_map[key];
+
+        if (!Array.isArray(tagIds)) {
+            warnings.push(`Tag map for key ${key} is invalid: ${JSON.stringify(tagIds)}.`);
+            continue;
+        }
+
+        // Verify that the key points to a valid character or group.
+        const characterExists = characters.some(x => String(x.avatar) === String(key));
+        const groupExists = groups.some(x => String(x.id) === String(key));
+
+        if (!characterExists && !groupExists) {
+            warnings.push(`Tag map key ${key} does not exist.`);
+            continue;
+        }
+
+        // Get existing tag ids for this key or empty array.
+        const existingTagIds = tag_map[key] || [];
+        // Merge existing and new tag ids. Remove duplicates.
+        tag_map[key] = existingTagIds.concat(tagIds).filter(onlyUnique);
+        // Verify that all tags exist. Remove tags that don't exist.
+        tag_map[key] = tag_map[key].filter(x => tags.some(y => String(y.id) === String(x)));
+    }
+
+    if (warnings.length) {
+        toastr.success('Tags restored with warnings. Check console for details.');
+        console.warn(`TAG RESTORE REPORT\n====================\n${warnings.join('\n')}`);
+    } else {
+        toastr.success('Tags restored successfully.');
+    }
+
+    $('#tag_view_restore_input').val('');
+    saveSettingsDebounced();
+    printCharacters(true);
+    onViewTagsListClick();
+}
+
+function onBackupRestoreClick() {
+    $('#tag_view_restore_input')
+        .off('change')
+        .on('change', onTagRestoreFileSelect)
+        .trigger('click');
+}
+
+function onTagsBackupClick() {
+    const timestamp = new Date().toISOString().split('T')[0].replace(/-/g, '');
+    const filename = `tags_${timestamp}.json`;
+    const data = {
+        tags: tags,
+        tag_map: tag_map,
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    download(blob, filename, 'application/json');
+}
+
+function onTagCreateClick() {
+    const tag = createNewTag('New Tag');
+    appendViewTagToList($('#tag_view_list'), tag, []);
+    printCharacters(false);
+    saveSettingsDebounced();
+}
+
+function appendViewTagToList(list, tag, everything) {
+    const count = everything.filter(x => x == tag.id).length;
+    const template = $('#tag_view_template .tag_view_item').clone();
+    template.attr('id', tag.id);
+    template.find('.tag_view_counter_value').text(count);
+    template.find('.tag_view_name').text(tag.name);
+    template.find('.tag_view_name').addClass('tag');
+
+    template.find('.tag_view_name').css('background-color', tag.color);
+    template.find('.tag_view_name').css('color', tag.color2);
+
+    const colorPickerId = tag.id + "-tag-color";
+    const colorPicker2Id = tag.id + "-tag-color2";
+
+    template.find('.tagColorPickerHolder').html(
+        `<toolcool-color-picker id="${colorPickerId}" color="${tag.color}" class="tag-color"></toolcool-color-picker>`
+    );
+    template.find('.tagColorPicker2Holder').html(
+        `<toolcool-color-picker id="${colorPicker2Id}" color="${tag.color2}" class="tag-color2"></toolcool-color-picker>`
+    );
+
+    template.find('.tag-color').attr('id', colorPickerId);
+    template.find('.tag-color2').attr('id', colorPicker2Id);
+
+    list.append(template);
+
+    setTimeout(function () {
+        document.querySelector(`.tag-color[id="${colorPickerId}"`).addEventListener('change', (evt) => {
+            onTagColorize(evt);
+        });
+    }, 100);
+
+    setTimeout(function () {
+        document.querySelector(`.tag-color2[id="${colorPicker2Id}"`).addEventListener('change', (evt) => {
+            onTagColorize2(evt);
+        });
+    }, 100);
+
+    $(colorPickerId).color = tag.color;
+    $(colorPicker2Id).color = tag.color2;
 }
 
 function onTagDeleteClick() {
@@ -515,6 +671,7 @@ function onTagDeleteClick() {
     tags.splice(index, 1);
     $(`.tag[id="${id}"]`).remove();
     $(`.tag_view_item[id="${id}"]`).remove();
+    printCharacters(false);
     saveSettingsDebounced();
 }
 
@@ -533,6 +690,7 @@ function onTagColorize(evt) {
     const newColor = evt.detail.rgba;
     $(evt.target).parent().parent().find('.tag_view_name').css('background-color', newColor);
     $(`.tag[id="${id}"]`).css('background-color', newColor);
+    $(`.bogus_folder_select[tagid="${id}"] .avatar`).css('background-color', newColor);
     const tag = tags.find(x => x.id === id);
     tag.color = newColor;
     console.debug(tag);
@@ -545,6 +703,7 @@ function onTagColorize2(evt) {
     const newColor = evt.detail.rgba;
     $(evt.target).parent().parent().find('.tag_view_name').css('color', newColor);
     $(`.tag[id="${id}"]`).css('color', newColor);
+    $(`.bogus_folder_select[tagid="${id}"] .avatar`).css('color', newColor);
     const tag = tags.find(x => x.id === id);
     tag.color2 = newColor;
     console.debug(tag);
@@ -558,7 +717,7 @@ function onTagListHintClick() {
     $(this).siblings(".innerActionable").toggleClass('hidden');
 }
 
-$(document).ready(() => {
+jQuery(() => {
     createTagInput('#tagInput', '#tagList');
     createTagInput('#groupTagInput', '#groupTagList');
 
@@ -571,4 +730,7 @@ $(document).ready(() => {
     $(document).on("click", ".tags_view", onViewTagsListClick);
     $(document).on("click", ".tag_delete", onTagDeleteClick);
     $(document).on("input", ".tag_view_name", onTagRenameInput);
+    $(document).on("click", ".tag_view_create", onTagCreateClick);
+    $(document).on("click", ".tag_view_backup", onTagsBackupClick);
+    $(document).on("click", ".tag_view_restore", onBackupRestoreClick);
 });

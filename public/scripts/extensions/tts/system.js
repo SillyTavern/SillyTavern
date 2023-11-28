@@ -146,8 +146,8 @@ class SystemTtsProvider {
         $('#system_tts_pitch').val(this.settings.pitch || this.defaultSettings.pitch);
 
         // Trigger updates
-        $('#system_tts_rate').on("input", () =>{this.onSettingsChange()})
-        $('#system_tts_rate').on("input", () => {this.onSettingsChange()})
+        $('#system_tts_rate').on("input", () => { this.onSettingsChange() })
+        $('#system_tts_rate').on("input", () => { this.onSettingsChange() })
 
         $('#system_tts_pitch_output').text(this.settings.pitch);
         $('#system_tts_rate_output').text(this.settings.rate);
@@ -155,7 +155,7 @@ class SystemTtsProvider {
     }
 
     // Perform a simple readiness check by trying to fetch voiceIds
-    async checkReady(){
+    async checkReady() {
         await this.fetchTtsVoiceObjects()
     }
 
@@ -171,10 +171,16 @@ class SystemTtsProvider {
             return [];
         }
 
-        return speechSynthesis
-            .getVoices()
-            .sort((a, b) => a.lang.localeCompare(b.lang) || a.name.localeCompare(b.name))
-            .map(x => ({ name: x.name, voice_id: x.voiceURI, preview_url: false, lang: x.lang }));
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                const voices = speechSynthesis
+                    .getVoices()
+                    .sort((a, b) => a.lang.localeCompare(b.lang) || a.name.localeCompare(b.name))
+                    .map(x => ({ name: x.name, voice_id: x.voiceURI, preview_url: false, lang: x.lang }));
+
+                resolve(voices);
+            }, 1);
+        });
     }
 
     previewTtsVoice(voiceId) {

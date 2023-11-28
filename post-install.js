@@ -4,6 +4,102 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const yaml = require('yaml');
+const _ = require('lodash');
+
+/**
+ * Colorizes console output.
+ */
+const color = {
+    byNum: (mess, fgNum) => {
+        mess = mess || '';
+        fgNum = fgNum === undefined ? 31 : fgNum;
+        return '\u001b[' + fgNum + 'm' + mess + '\u001b[39m';
+    },
+    black: (mess) => color.byNum(mess, 30),
+    red: (mess) => color.byNum(mess, 31),
+    green: (mess) => color.byNum(mess, 32),
+    yellow: (mess) => color.byNum(mess, 33),
+    blue: (mess) => color.byNum(mess, 34),
+    magenta: (mess) => color.byNum(mess, 35),
+    cyan: (mess) => color.byNum(mess, 36),
+    white: (mess) => color.byNum(mess, 37)
+};
+
+/**
+ * Gets all keys from an object recursively.
+ * @param {object} obj Object to get all keys from
+ * @param {string} prefix Prefix to prepend to all keys
+ * @returns {string[]} Array of all keys in the object
+ */
+function getAllKeys(obj, prefix = '') {
+    if (typeof obj !== 'object' || Array.isArray(obj)) {
+        return [];
+    }
+
+    return _.flatMap(Object.keys(obj), key => {
+        const newPrefix = prefix ? `${prefix}.${key}` : key;
+        if (typeof obj[key] === 'object' && !Array.isArray(obj[key])) {
+            return getAllKeys(obj[key], newPrefix);
+        } else {
+            return [newPrefix];
+        }
+    });
+}
+
+/**
+ * Converts the old config.conf file to the new config.yaml format.
+ */
+function convertConfig() {
+    if (fs.existsSync('./config.conf')) {
+        if (fs.existsSync('./config.yaml')) {
+            console.log(color.yellow('Both config.conf and config.yaml exist. Please delete config.conf manually.'));
+            return;
+        }
+
+        try {
+            console.log(color.blue('Converting config.conf to config.yaml. Your old config.conf will be renamed to config.conf.bak'));
+            const config = require(path.join(process.cwd(), './config.conf'));
+            fs.renameSync('./config.conf', './config.conf.bak');
+            fs.writeFileSync('./config.yaml', yaml.stringify(config));
+            console.log(color.green('Conversion successful. Please check your config.yaml and fix it if necessary.'));
+        } catch (error) {
+            console.error(color.red('FATAL: Config conversion failed. Please check your config.conf file and try again.'));
+            return;
+        }
+    }
+}
+
+/**
+ * Compares the current config.yaml with the default config.yaml and adds any missing values.
+ */
+function addMissingConfigValues() {
+    try  {
+        const defaultConfig = yaml.parse(fs.readFileSync(path.join(process.cwd(), './default/config.yaml'), 'utf8'));
+        let config = yaml.parse(fs.readFileSync(path.join(process.cwd(), './config.yaml'), 'utf8'));
+
+        // Get all keys from the original config
+        const originalKeys = getAllKeys(config);
+
+        // Use lodash's defaultsDeep function to recursively apply default properties
+        config = _.defaultsDeep(config, defaultConfig);
+
+        // Get all keys from the updated config
+        const updatedKeys = getAllKeys(config);
+
+        // Find the keys that were added
+        const addedKeys = _.difference(updatedKeys, originalKeys);
+
+        if (addedKeys.length === 0) {
+            return;
+        }
+
+        console.log('Adding missing config values to config.yaml:', addedKeys);
+        fs.writeFileSync('./config.yaml', yaml.stringify(config));
+    } catch (error) {
+        console.error(color.red('FATAL: Could not add missing config values to config.yaml'), error);
+    }
+}
 
 /**
  * Creates the default config files if they don't exist yet.
@@ -12,7 +108,8 @@ function createDefaultFiles() {
     const files = {
         settings: './public/settings.json',
         bg_load: './public/css/bg_load.css',
-        config: './config.conf',
+        config: './config.yaml',
+        user: './public/css/user.css',
     };
 
     for (const file of Object.values(files)) {
@@ -20,10 +117,10 @@ function createDefaultFiles() {
             if (!fs.existsSync(file)) {
                 const defaultFilePath = path.join('./default', path.parse(file).base);
                 fs.copyFileSync(defaultFilePath, file);
-                console.log(`Created default file: ${file}`);
+                console.log(color.green(`Created default file: ${file}`));
             }
         } catch (error) {
-            console.error(`FATAL: Could not write default file: ${file}`, error);
+            console.error(color.red(`FATAL: Could not write default file: ${file}`), error);
         }
     }
 }
@@ -72,10 +169,14 @@ function copyWasmFiles() {
 }
 
 try {
+    // 0. Convert config.conf to config.yaml
+    convertConfig();
     // 1. Create default config files
     createDefaultFiles();
     // 2. Copy transformers WASM binaries from node_modules
     copyWasmFiles();
+    // 3. Add missing config values
+    addMissingConfigValues();
 } catch (error) {
     console.error(error);
 }

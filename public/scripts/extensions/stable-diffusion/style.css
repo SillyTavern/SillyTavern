@@ -27,3 +27,58 @@
     z-index: 30000;
     backdrop-filter: blur(--SmartThemeBlurStrength);
 }
+
+#sd_comfy_open_workflow_editor {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    width: fit-content;
+}
+
+#sd_comfy_workflow_editor_template {
+    height: 100%;
+}
+
+.sd_comfy_workflow_editor {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.sd_comfy_workflow_editor_content {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: row;
+}
+
+.sd_comfy_workflow_editor_workflow_container {
+    flex: 1 1 auto;
+}
+
+#sd_comfy_workflow_editor_workflow {
+    font-family: monospace;
+}
+
+.sd_comfy_workflow_editor_placeholder_container {
+    flex: 0 0 auto;
+}
+
+.sd_comfy_workflow_editor_placeholder_list {
+    font-size: x-small;
+    list-style: none;
+    margin: 5px 0;
+    padding: 3px 5px;
+    text-align: left;
+}
+
+.sd_comfy_workflow_editor_placeholder_list>li[data-placeholder]:before {
+    content: "✅ ";
+}
+
+.sd_comfy_workflow_editor_placeholder_list>li.sd_comfy_workflow_editor_not_found:before {
+    content: "❌ ";
+}
+
+.sd_comfy_workflow_editor_placeholder_list>li>.notes-link {
+    cursor: help;
+}

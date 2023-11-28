@@ -110,6 +110,58 @@ function registerEndpoints(app, jsonParser) {
         }
     });
 
+    app.post('/api/horde/caption-image', jsonParser, async (request, response) => {
+        try {
+            const api_key_horde = readSecret(SECRET_KEYS.HORDE) || ANONYMOUS_KEY;
+            const ai_horde = await getHordeClient();
+            const result = await ai_horde.postAsyncInterrogate({
+                source_image: request.body.image,
+                forms: [{ name: AIHorde.ModelInterrogationFormTypes.caption }],
+            }, { token: api_key_horde });
+
+            if (!result.id) {
+                console.error('Image interrogation request is not satisfyable:', result.message || 'unknown error');
+                return response.sendStatus(400);
+            }
+
+            const MAX_ATTEMPTS = 200;
+            const CHECK_INTERVAL = 3000;
+
+            for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+                await delay(CHECK_INTERVAL);
+                const status = await ai_horde.getInterrogationStatus(result.id);
+                console.log(status);
+
+                if (status.state === AIHorde.HordeAsyncRequestStates.done) {
+
+                    if (status.forms === undefined) {
+                        console.error('Image interrogation request failed: no forms found.');
+                        return response.sendStatus(500);
+                    }
+
+                    console.log('Image interrogation result:', status);
+                    const caption = status?.forms[0]?.result?.caption || '';
+
+                    if (!caption) {
+                        console.error('Image interrogation request failed: no caption found.');
+                        return response.sendStatus(500);
+                    }
+
+                    return response.send({ caption });
+                }
+
+                if (status.state === AIHorde.HordeAsyncRequestStates.faulted || status.state === AIHorde.HordeAsyncRequestStates.cancelled) {
+                    console.log('Image interrogation request is not successful.');
+                    return response.sendStatus(503);
+                }
+            }
+
+        } catch (error) {
+            console.error(error);
+            response.sendStatus(500);
+        }
+    });
+
     app.post('/api/horde/user-info', jsonParser, async (_, response) => {
         const api_key_horde = readSecret(SECRET_KEYS.HORDE);
 

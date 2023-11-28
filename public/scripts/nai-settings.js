@@ -1,9 +1,11 @@
 import {
+    abortStatusCheck,
     getRequestHeaders,
     getStoppingStrings,
     novelai_setting_names,
     saveSettingsDebounced,
-    setGenerationParamsFromPreset
+    setGenerationParamsFromPreset,
+    substituteParams,
 } from "../script.js";
 import { getCfgPrompt } from "./cfg-scale.js";
 import { MAX_CONTEXT_DEFAULT } from "./power-user.js";
@@ -91,6 +93,7 @@ export async function loadNovelSubscriptionData() {
     const result = await fetch('/api/novelai/status', {
         method: 'POST',
         headers: getRequestHeaders(),
+        signal: abortStatusCheck.signal,
     });
 
     if (result.ok) {
@@ -184,9 +187,9 @@ function loadNovelSettingsUi(ui_settings) {
     $("#rep_pen_slope_novel").val(ui_settings.repetition_penalty_slope);
     $("#rep_pen_slope_counter_novel").val(Number(`${ui_settings.repetition_penalty_slope}`).toFixed(2));
     $("#rep_pen_freq_novel").val(ui_settings.repetition_penalty_frequency);
-    $("#rep_pen_freq_counter_novel").val(Number(ui_settings.repetition_penalty_frequency).toFixed(2));
+    $("#rep_pen_freq_counter_novel").val(Number(ui_settings.repetition_penalty_frequency).toFixed(3));
     $("#rep_pen_presence_novel").val(ui_settings.repetition_penalty_presence);
-    $("#rep_pen_presence_counter_novel").val(Number(ui_settings.repetition_penalty_presence).toFixed(2));
+    $("#rep_pen_presence_counter_novel").val(Number(ui_settings.repetition_penalty_presence).toFixed(3));
     $("#tail_free_sampling_novel").val(ui_settings.tail_free_sampling);
     $("#tail_free_sampling_counter_novel").val(Number(ui_settings.tail_free_sampling).toFixed(3));
     $("#top_k_novel").val(ui_settings.top_k);
@@ -194,9 +197,9 @@ function loadNovelSettingsUi(ui_settings) {
     $("#top_p_novel").val(ui_settings.top_p);
     $("#top_p_counter_novel").val(Number(ui_settings.top_p).toFixed(3));
     $("#top_a_novel").val(ui_settings.top_a);
-    $("#top_a_counter_novel").val(Number(ui_settings.top_a).toFixed(2));
+    $("#top_a_counter_novel").val(Number(ui_settings.top_a).toFixed(3));
     $("#typical_p_novel").val(ui_settings.typical_p);
-    $("#typical_p_counter_novel").val(Number(ui_settings.typical_p).toFixed(2));
+    $("#typical_p_counter_novel").val(Number(ui_settings.typical_p).toFixed(3));
     $("#cfg_scale_novel").val(ui_settings.cfg_scale);
     $("#cfg_scale_counter_novel").val(Number(ui_settings.cfg_scale).toFixed(2));
     $("#phrase_rep_pen_novel").val(ui_settings.phrase_rep_pen || "off");
@@ -245,13 +248,13 @@ const sliders = [
         sliderId: "#rep_pen_freq_novel",
         counterId: "#rep_pen_freq_counter_novel",
         format: (val) => Number(val).toFixed(2),
-        setValue: (val) => { nai_settings.repetition_penalty_frequency = Number(val).toFixed(2); },
+        setValue: (val) => { nai_settings.repetition_penalty_frequency = Number(val).toFixed(3); },
     },
     {
         sliderId: "#rep_pen_presence_novel",
         counterId: "#rep_pen_presence_counter_novel",
         format: (val) => `${val}`,
-        setValue: (val) => { nai_settings.repetition_penalty_presence = Number(val).toFixed(2); },
+        setValue: (val) => { nai_settings.repetition_penalty_presence = Number(val).toFixed(3); },
     },
     {
         sliderId: "#tail_free_sampling_novel",
@@ -275,13 +278,13 @@ const sliders = [
         sliderId: "#top_a_novel",
         counterId: "#top_a_counter_novel",
         format: (val) => Number(val).toFixed(2),
-        setValue: (val) => { nai_settings.top_a = Number(val).toFixed(2); },
+        setValue: (val) => { nai_settings.top_a = Number(val).toFixed(3); },
     },
     {
         sliderId: "#typical_p_novel",
         counterId: "#typical_p_counter_novel",
-        format: (val) => Number(val).toFixed(2),
-        setValue: (val) => { nai_settings.typical_p = Number(val).toFixed(2); },
+        format: (val) => Number(val).toFixed(3),
+        setValue: (val) => { nai_settings.typical_p = Number(val).toFixed(3); },
     },
     {
         sliderId: "#mirostat_tau_novel",
@@ -406,7 +409,7 @@ function getBadWordPermutations(text) {
     return result.filter(onlyUnique);
 }
 
-export function getNovelGenerationData(finalPrompt, this_settings, this_amount_gen, isImpersonate, cfgValues) {
+export function getNovelGenerationData(finalPrompt, settings, maxLength, isImpersonate, isContinue, cfgValues) {
     if (cfgValues && cfgValues.guidanceScale && cfgValues.guidanceScale?.value !== 1) {
         cfgValues.negativePrompt = (getCfgPrompt(cfgValues.guidanceScale, true))?.value;
     }
@@ -416,7 +419,7 @@ export function getNovelGenerationData(finalPrompt, this_settings, this_amount_g
 
     const tokenizerType = kayra ? tokenizers.NERD2 : (clio ? tokenizers.NERD : tokenizers.NONE);
     const stopSequences = (tokenizerType !== tokenizers.NONE)
-        ? getStoppingStrings(isImpersonate)
+        ? getStoppingStrings(isImpersonate, isContinue)
             .map(t => getTextTokens(tokenizerType, t))
         : undefined;
 
@@ -437,7 +440,7 @@ export function getNovelGenerationData(finalPrompt, this_settings, this_amount_g
         "model": nai_settings.model_novel,
         "use_string": true,
         "temperature": Number(nai_settings.temperature),
-        "max_length": this_amount_gen < maximum_output_length ? this_amount_gen : maximum_output_length,
+        "max_length": maxLength < maximum_output_length ? maxLength : maximum_output_length,
         "min_length": Number(nai_settings.min_length),
         "tail_free_sampling": Number(nai_settings.tail_free_sampling),
         "repetition_penalty": Number(nai_settings.repetition_penalty),
@@ -452,7 +455,7 @@ export function getNovelGenerationData(finalPrompt, this_settings, this_amount_g
         "mirostat_lr": Number(nai_settings.mirostat_lr),
         "mirostat_tau": Number(nai_settings.mirostat_tau),
         "cfg_scale": cfgValues?.guidanceScale?.value ?? Number(nai_settings.cfg_scale),
-        "cfg_uc": cfgValues?.negativePrompt ?? nai_settings.cfg_uc ?? "",
+        "cfg_uc": cfgValues?.negativePrompt ?? substituteParams(nai_settings.cfg_uc) ?? "",
         "phrase_rep_pen": nai_settings.phrase_rep_pen,
         "stop_sequences": stopSequences,
         "bad_words_ids": badWordIds,
@@ -461,7 +464,7 @@ export function getNovelGenerationData(finalPrompt, this_settings, this_amount_g
         "use_cache": false,
         "return_full_text": false,
         "prefix": prefix,
-        "order": nai_settings.order || this_settings.order || default_order,
+        "order": nai_settings.order || settings.order || default_order,
     };
 }
 
@@ -757,9 +760,9 @@ jQuery(function () {
 
         // Update the selected preset to something appropriate
         const default_preset = default_presets[nai_settings.model_novel];
-        $(`#settings_perset_novel`).val(novelai_setting_names[default_preset]);
-        $(`#settings_perset_novel option[value=${novelai_setting_names[default_preset]}]`).attr("selected", "true")
-        $(`#settings_perset_novel`).trigger("change");
+        $(`#settings_preset_novel`).val(novelai_setting_names[default_preset]);
+        $(`#settings_preset_novel option[value=${novelai_setting_names[default_preset]}]`).attr("selected", "true")
+        $(`#settings_preset_novel`).trigger("change");
     });
 
     $("#nai_prefix").on('change', function () {

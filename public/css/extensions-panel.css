@@ -3,11 +3,6 @@
     display: block;
 }
 
-#extensions_status {
-    /* margin-bottom: 10px; */
-    font-weight: 700;
-}
-
 .extensions_block input[type="submit"]:hover {
     background-color: green;
 }
@@ -103,8 +98,9 @@ input.extension_missing[type="checkbox"] {
 }
 
 /** LEFT COLUMN **/
+/* Must be always on top */
 #extensions_settings>#assets_ui {
-    order: 1;
+    order: -1;
 }
 
 #extensions_settings>.expression_settings {

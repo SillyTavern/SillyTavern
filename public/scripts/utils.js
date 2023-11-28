@@ -28,6 +28,33 @@ export function isValidUrl(value) {
 }
 
 /**
+ * Parses ranges like 10-20 or 10.
+ * Range is inclusive. Start must be less than end.
+ * Returns null if invalid.
+ * @param {string} input The input string.
+ * @param {number} min The minimum value.
+ * @param {number} max The maximum value.
+ * @returns {{ start: number, end: number }} The parsed range.
+ */
+export function stringToRange(input, min, max) {
+    let start, end;
+
+    if (input.includes('-')) {
+        const parts = input.split('-');
+        start = parts[0] ? parseInt(parts[0], 10) : NaN;
+        end = parts[1] ? parseInt(parts[1], 10) : NaN;
+    } else {
+        start = end = parseInt(input, 10);
+    }
+
+    if (isNaN(start) || isNaN(end) || start > end || start < min || end > max) {
+        return null;
+    }
+
+    return { start, end };
+}
+
+/**
  * Determines if a value is unique in an array.
  * @param {any} value Current value.
  * @param {number} index Current index.
@@ -486,6 +513,38 @@ export function trimToStartSentence(input) {
 }
 
 /**
+ * Format bytes as human-readable text.
+ *
+ * @param bytes Number of bytes.
+ * @param si True to use metric (SI) units, aka powers of 1000. False to use
+ *           binary (IEC), aka powers of 1024.
+ * @param dp Number of decimal places to display.
+ *
+ * @return Formatted string.
+ */
+export function humanFileSize(bytes, si = false, dp = 1) {
+    const thresh = si ? 1000 : 1024;
+
+    if (Math.abs(bytes) < thresh) {
+        return bytes + ' B';
+    }
+
+    const units = si
+        ? ['kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
+        : ['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
+    let u = -1;
+    const r = 10 ** dp;
+
+    do {
+        bytes /= thresh;
+        ++u;
+    } while (Math.round(Math.abs(bytes) * r) / r >= thresh && u < units.length - 1);
+
+
+    return bytes.toFixed(dp) + ' ' + units[u];
+}
+
+/**
  * Counts the number of occurrences of a character in a string.
  * @param {string} string The string to count occurrences in.
  * @param {string} character The character to count occurrences of.
@@ -507,6 +566,24 @@ export function countOccurrences(string, character) {
 }
 
 /**
+ * Checks if a string is "true" value.
+ * @param {string} arg String to check
+ * @returns {boolean} True if the string is true, false otherwise.
+ */
+export function isTrueBoolean(arg) {
+    return ['on', 'true', '1'].includes(arg);
+}
+
+/**
+ * Checks if a string is "false" value.
+ * @param {string} arg String to check
+ * @returns {boolean} True if the string is false, false otherwise.
+ */
+export function isFalseBoolean(arg) {
+    return ['off', 'false', '0'].includes(arg);
+}
+
+/**
  * Checks if a number is odd.
  * @param {number} number The number to check.
  * @returns {boolean} True if the number is odd, false otherwise.
@@ -523,7 +600,7 @@ export function timestampToMoment(timestamp) {
         return moment.invalid();
     }
 
-    // Unix time (legacy TAI)
+    // Unix time (legacy TAI / tags)
     if (typeof timestamp === 'number') {
         return moment(timestamp);
     }
@@ -914,9 +991,10 @@ export function loadFileToDocument(url, type) {
  * @param {string} dataUrl The data URL encoded data of the image.
  * @param {number} maxWidth The maximum width of the thumbnail.
  * @param {number} maxHeight The maximum height of the thumbnail.
+ * @param {string} [type='image/jpeg'] The type of the thumbnail.
  * @returns {Promise<string>} A promise that resolves to the thumbnail data URL.
  */
-export function createThumbnail(dataUrl, maxWidth, maxHeight) {
+export function createThumbnail(dataUrl, maxWidth, maxHeight, type = 'image/jpeg') {
     return new Promise((resolve, reject) => {
         const img = new Image();
         img.src = dataUrl;
@@ -941,7 +1019,7 @@ export function createThumbnail(dataUrl, maxWidth, maxHeight) {
             ctx.drawImage(img, 0, 0, thumbnailWidth, thumbnailHeight);
 
             // Convert the canvas to a data URL and resolve the promise
-            const thumbnailDataUrl = canvas.toDataURL('image/jpeg');
+            const thumbnailDataUrl = canvas.toDataURL(type);
             resolve(thumbnailDataUrl);
         };
 

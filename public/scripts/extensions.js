@@ -1,4 +1,5 @@
-import { callPopup, eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, substituteParams, renderTemplate } from "../script.js";
+import { callPopup, eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, substituteParams, renderTemplate, animation_duration } from "../script.js";
+import { hideLoader, showLoader } from "./loader.js";
 import { isSubsetOf } from "./utils.js";
 export {
     getContext,
@@ -102,7 +103,7 @@ class ModuleWorkerWrapper {
     }
 
     // Called by the extension
-    async update() {
+    async update(...args) {
         // Don't touch me I'm busy...
         if (this.isBusy) {
             return;
@@ -111,7 +112,7 @@ class ModuleWorkerWrapper {
         // I'm free. Let's update!
         try {
             this.isBusy = true;
-            await this.callback();
+            await this.callback(...args);
         }
         finally {
             this.isBusy = false;
@@ -159,6 +160,9 @@ const extension_settings = {
     rvc: {},
     hypebot: {},
     vectors: {},
+    variables: {
+        global: {},
+    },
 };
 
 let modules = [];
@@ -343,27 +347,30 @@ function addExtensionsButtonAndMenu() {
 
     $(document.body).append(extensionsMenuHTML);
 
-    $('#send_but_sheld').prepend(buttonHTML);
+    $('#leftSendForm').prepend(buttonHTML);
 
     const button = $('#extensionsMenuButton');
     const dropdown = $('#extensionsMenu');
     //dropdown.hide();
 
     let popper = Popper.createPopper(button.get(0), dropdown.get(0), {
-        placement: 'top-end',
+        placement: 'top-start',
     });
 
     $(button).on('click', function () {
-        popper.update()
-        dropdown.fadeIn(250);
+        if (dropdown.is(':visible')) {
+            dropdown.fadeOut(animation_duration);
+        } else {
+            dropdown.fadeIn(animation_duration);
+        }
+        popper.update();
     });
 
-    $("html").on('touchstart mousedown', function (e) {
-        let clickTarget = $(e.target);
-        if (dropdown.is(':visible')
-            && clickTarget.closest(button).length == 0
-            && clickTarget.closest(dropdown).length == 0) {
-            $(dropdown).fadeOut(250);
+    $("html").on('click', function (e) {
+        const clickTarget = $(e.target);
+        const noCloseTargets = ['#sd_gen', '#extensionsMenuButton'];
+        if (dropdown.is(':visible') && !noCloseTargets.some(id => clickTarget.closest(id).length > 0)) {
+            $(dropdown).fadeOut(animation_duration);
         }
     });
 }
@@ -507,8 +514,8 @@ async function generateExtensionHtml(name, manifest, isActive, isDisabled, isExt
         isUpToDate = data.isUpToDate;
         displayVersion = ` (${branch}-${commitHash.substring(0, 7)})`;
         updateButton = isUpToDate ?
-            `<span class="update-button"><button class="btn_update menu_button" data-name="${name.replace('third-party', '')}" title="Up to date"><i class="fa-solid fa-code-commit"></i></button></span>` :
-            `<span class="update-button"><button class="btn_update menu_button" data-name="${name.replace('third-party', '')}" title="Update available"><i class="fa-solid fa-download"></i></button></span>`;
+            `<span class="update-button"><button class="btn_update menu_button" data-name="${name.replace('third-party', '')}" title="Up to date"><i class="fa-solid fa-code-commit fa-fw"></i></button></span>` :
+            `<span class="update-button"><button class="btn_update menu_button" data-name="${name.replace('third-party', '')}" title="Update available"><i class="fa-solid fa-download fa-fw"></i></button></span>`;
         originHtml = `<a href="${origin}" target="_blank" rel="noopener noreferrer">`;
     }
 
@@ -579,7 +586,7 @@ async function getExtensionData(extension) {
 function getModuleInformation() {
     let moduleInfo = modules.length ? `<p>${DOMPurify.sanitize(modules.join(', '))}</p>` : '<p class="failure">Not connected to the API!</p>';
     return `
-        <h3>Modules provided by your Extensions API:</h3>
+        <h3>Modules provided by your Extras API:</h3>
         ${moduleInfo}
     `;
 }
@@ -588,35 +595,43 @@ function getModuleInformation() {
  * Generates the HTML strings for all extensions and displays them in a popup.
  */
 async function showExtensionsDetails() {
-    let htmlDefault = '<h3>Default Extensions:</h3>';
-    let htmlExternal = '<h3>External Extensions:</h3>';
+    try {
+        showLoader();
+        let htmlDefault = '<h3>Built-in Extensions:</h3>';
+        let htmlExternal = '<h3>Installed Extensions:</h3>';
 
-    const extensions = Object.entries(manifests).sort((a, b) => a[1].loading_order - b[1].loading_order);
-    const promises = [];
+        const extensions = Object.entries(manifests).sort((a, b) => a[1].loading_order - b[1].loading_order);
+        const promises = [];
 
-    for (const extension of extensions) {
-        promises.push(getExtensionData(extension));
-    }
-
-    const settledPromises = await Promise.allSettled(promises);
-
-    settledPromises.forEach(promise => {
-        if (promise.status === 'fulfilled') {
-            const { isExternal, extensionHtml } = promise.value;
-            if (isExternal) {
-                htmlExternal += extensionHtml;
-            } else {
-                htmlDefault += extensionHtml;
-            }
+        for (const extension of extensions) {
+            promises.push(getExtensionData(extension));
         }
-    });
 
-    const html = `
-        ${getModuleInformation()}
-        ${htmlDefault}
-        ${htmlExternal}
-    `;
-    callPopup(`<div class="extensions_info">${html}</div>`, 'text');
+        const settledPromises = await Promise.allSettled(promises);
+
+        settledPromises.forEach(promise => {
+            if (promise.status === 'fulfilled') {
+                const { isExternal, extensionHtml } = promise.value;
+                if (isExternal) {
+                    htmlExternal += extensionHtml;
+                } else {
+                    htmlDefault += extensionHtml;
+                }
+            }
+        });
+
+        const html = `
+            ${getModuleInformation()}
+            ${htmlDefault}
+            ${htmlExternal}
+        `;
+        callPopup(`<div class="extensions_info">${html}</div>`, 'text');
+    } catch (error) {
+        toastr.error('Error loading extensions. See browser console for details.');
+        console.error(error);
+    } finally {
+        hideLoader();
+    }
 }
 
 
@@ -628,6 +643,7 @@ async function showExtensionsDetails() {
  */
 async function onUpdateClick() {
     const extensionName = $(this).data('name');
+    $(this).find('i').addClass('fa-spin');
     await updateExtension(extensionName, false);
 }
 
@@ -645,16 +661,17 @@ async function updateExtension(extensionName, quiet) {
         });
 
         const data = await response.json();
+
+        if (!quiet) {
+            showExtensionsDetails();
+        }
+
         if (data.isUpToDate) {
             if (!quiet) {
                 toastr.success('Extension is already up to date');
             }
         } else {
             toastr.success(`Extension ${extensionName} updated to ${data.shortCommitHash}`);
-        }
-
-        if (!quiet) {
-            showExtensionsDetails();
         }
     } catch (error) {
         console.error('Error:', error);
@@ -831,25 +848,52 @@ async function checkForExtensionUpdates(force) {
 }
 
 async function autoUpdateExtensions() {
+    if (!Object.values(manifests).some(x => x.auto_update)) {
+        return;
+    }
+
+    toastr.info('Auto-updating extensions. This may take several minutes.', 'Please wait...', { timeOut: 10000, extendedTimeOut: 20000 });
+    const promises = [];
     for (const [id, manifest] of Object.entries(manifests)) {
         if (manifest.auto_update && id.startsWith('third-party')) {
             console.debug(`Auto-updating 3rd-party extension: ${manifest.display_name} (${id})`);
-            await updateExtension(id.replace('third-party', ''), true);
+            promises.push(updateExtension(id.replace('third-party', ''), true));
         }
     }
+    await Promise.allSettled(promises);
 }
 
+/**
+ * Runs the generate interceptors for all extensions.
+ * @param {any[]} chat Chat array
+ * @param {number} contextSize Context size
+ * @returns {Promise<boolean>} True if generation should be aborted
+ */
 async function runGenerationInterceptors(chat, contextSize) {
+    let aborted = false;
+    let exitImmediately = false;
+
+    const abort = (/** @type {boolean} */ immediately) => {
+        aborted = true;
+        exitImmediately = immediately;
+    };
+
     for (const manifest of Object.values(manifests)) {
         const interceptorKey = manifest.generate_interceptor;
         if (typeof window[interceptorKey] === 'function') {
             try {
-                await window[interceptorKey](chat, contextSize);
+                await window[interceptorKey](chat, contextSize, abort);
             } catch (e) {
                 console.error(`Failed running interceptor for ${manifest.display_name}`, e);
             }
         }
+
+        if (exitImmediately) {
+            break;
+        }
     }
+
+    return aborted;
 }
 
 jQuery(function () {

@@ -20,6 +20,8 @@ public/stats.json
 /uploads/
 *.jsonl
 /config.conf
+/config.yaml
+/config.conf.bak
 /docker/config
 .DS_Store
 public/settings.json
@@ -38,3 +40,4 @@ public/assets/
 access.log
 /vectors/
 /cache/
+public/css/user.css

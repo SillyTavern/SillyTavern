@@ -1,7 +1,9 @@
 #quickReplyBar {
     outline: none;
+    /*
     padding: 5px 0;
     border-bottom: 1px solid var(--SmartThemeBorderColor);
+    */
     margin: 0;
     transition: 0.3s;
     opacity: 0.7;
@@ -12,7 +14,7 @@
     display: none;
     max-width: 100%;
     overflow-x: auto;
-    order: 10;
+    order: 1;
 }
 
 #quickReplies {
@@ -25,13 +27,20 @@
     width: 100%;
 }
 
+#quickReplyPopoutButton {
+    position: absolute;
+    right: 5px;
+    top: 0px;
+}
+
 #quickReplies div {
     color: var(--SmartThemeBodyColor);
     background-color: var(--black50a);
     border: 1px solid var(--SmartThemeBorderColor);
     border-radius: 10px;
     padding: 3px 5px;
-    width: min-content;
+    margin: 3px 0;
+    /* width: min-content; */
     cursor: pointer;
     transition: 0.3s;
     display: flex;
@@ -44,4 +53,61 @@
     opacity: 1;
     filter: brightness(1.2);
     cursor: pointer;
+}
+
+
+.ctx-blocker {
+    /* backdrop-filter: blur(1px); */
+    /* background-color: rgba(0 0 0 / 10%); */
+    bottom: 0;
+    left: 0;
+    position: fixed;
+    right: 0;
+    top: 0;
+    z-index: 999;
+}
+
+.ctx-menu {
+    position: absolute;
+    overflow: visible;
+}
+
+.list-group .list-group-item.ctx-header {
+    font-weight: bold;
+    cursor: default;
+}
+
+.ctx-item+.ctx-header {
+    border-top: 1px solid;
+}
+
+.ctx-item {
+    position: relative;
+}
+
+.ctx-expander {
+    border-left: 1px solid;
+    margin-left: 1em;
+    text-align: center;
+    width: 2em;
+}
+
+.ctx-expander:hover {
+    font-weight: bold;
+}
+
+.ctx-sub-menu {
+    position: absolute;
+    top: 0;
+    left: 100%;
+}
+
+@media screen and (max-width: 1000px) {
+    .ctx-blocker {
+        position: absolute;
+    }
+
+    .list-group .list-group-item.ctx-item {
+        padding: 1em;
+    }
 }

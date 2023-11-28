@@ -7,11 +7,14 @@ import { getDeviceInfo } from "./RossAscends-mods.js";
 import { FILTER_TYPES, FilterHelper } from "./filters.js";
 import { getTokenCount } from "./tokenizers.js";
 import { power_user } from "./power-user.js";
+import { getTagKeyForCharacter } from "./tags.js";
 
 export {
     world_info,
     world_info_budget,
     world_info_depth,
+    world_info_min_activations,
+    world_info_min_activations_depth_max,
     world_info_recursive,
     world_info_overflow_alert,
     world_info_case_sensitive,
@@ -35,6 +38,9 @@ let world_info = {};
 let selected_world_info = [];
 let world_names;
 let world_info_depth = 2;
+let world_info_min_activations = 0; // if > 0, will continue seeking chat until minimum world infos are activated
+let world_info_min_activations_depth_max = 0; // used when (world_info_min_activations > 0)
+
 let world_info_budget = 25;
 let world_info_recursive = false;
 let world_info_overflow_alert = false;
@@ -55,14 +61,14 @@ const worldInfoFilter = new FilterHelper(() => updateEditor());
 const SORT_ORDER_KEY = 'world_info_sort_order';
 const METADATA_KEY = 'world_info';
 
-const InputWidthReference = $("#WIInputWidthReference");
-
 const DEFAULT_DEPTH = 4;
 
 export function getWorldInfoSettings() {
     return {
         world_info,
         world_info_depth,
+        world_info_min_activations,
+        world_info_min_activations_depth_max,
         world_info_budget,
         world_info_recursive,
         world_info_overflow_alert,
@@ -102,6 +108,10 @@ async function getWorldInfoPrompt(chat2, maxContext) {
 function setWorldInfoSettings(settings, data) {
     if (settings.world_info_depth !== undefined)
         world_info_depth = Number(settings.world_info_depth);
+    if (settings.world_info_min_activations !== undefined)
+        world_info_min_activations = Number(settings.world_info_min_activations);
+    if (settings.world_info_min_activations_depth_max !== undefined)
+        world_info_min_activations_depth_max = Number(settings.world_info_min_activations_depth_max);
     if (settings.world_info_budget !== undefined)
         world_info_budget = Number(settings.world_info_budget);
     if (settings.world_info_recursive !== undefined)
@@ -137,6 +147,12 @@ function setWorldInfoSettings(settings, data) {
 
     $("#world_info_depth_counter").val(world_info_depth);
     $("#world_info_depth").val(world_info_depth);
+
+    $("#world_info_min_activations_counter").val(world_info_min_activations);
+    $("#world_info_min_activations").val(world_info_min_activations);
+
+    $("#world_info_min_activations_depth_max_counter").val(world_info_min_activations_depth_max);
+    $("#world_info_min_activations_depth_max").val(world_info_min_activations_depth_max);
 
     $("#world_info_budget_counter").val(world_info_budget);
     $("#world_info_budget").val(world_info_budget);
@@ -212,7 +228,7 @@ async function loadWorldInfoData(name) {
 }
 
 async function updateWorldInfoList() {
-    var result = await fetch("/getsettings", {
+    const result = await fetch("/getsettings", {
         method: "POST",
         headers: getRequestHeaders(),
         body: JSON.stringify({}),
@@ -254,7 +270,15 @@ function sortEntries(data) {
     const sortRule = option.data('rule');
     const orderSign = sortOrder === 'asc' ? 1 : -1;
 
-    if (sortRule === 'priority') {
+    if (sortRule === 'custom') {
+        // First by display index, then by order, then by uid
+        data.sort((a, b) => {
+            const aValue = a.displayIndex;
+            const bValue = b.displayIndex;
+
+            return (aValue - bValue || b.order - a.order || a.uid - b.uid);
+        });
+    } else if (sortRule === 'priority') {
         // First constant, then normal, then disabled. Then sort by order
         data.sort((a, b) => {
             const aValue = a.constant ? 0 : a.disable ? 2 : 1;
@@ -360,31 +384,36 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
         nextText: '>',
         formatNavigator: PAGINATION_TEMPLATE,
         showNavigator: true,
-        callback: function (page) {
+        callback: function (/** @type {object[]} */ page) {
             $("#world_popup_entries_list").empty();
             const keywordHeaders = `
             <div id="WIEntryHeaderTitlesPC" class="flex-container wide100p spaceBetween justifyCenter textAlignCenter" style="padding:0 2.5em;">
             <small class="flex1">
             Title/Memo
         </small>
-                <small style="width:${InputWidthReference.width() + 5 + 'px'}">
+                <small style="width: calc(3.5em + 5px)">
                     Status
                 </small>
-                <small style="width:${InputWidthReference.width() + 20 + 'px'}">
+                <small style="width: calc(3.5em + 20px)">
                     Position
                 </small>
-                <small style="width:${InputWidthReference.width() + 15 + 'px'}">
+                <small style="width: calc(3.5em + 15px)">
                     Depth
                 </small>
-                <small style="width:${InputWidthReference.width() + 15 + 'px'}">
+                <small style="width: calc(3.5em + 15px)">
                     Order
                 </small>
-                <small style="width:${InputWidthReference.width() + 15 + 'px'}">
+                <small style="width: calc(3.5em + 15px)">
                     Trigger %
                 </small>
-
             </div>`
-            const blocks = page.map(entry => getWorldEntry(name, data, entry));
+            const blocks = page.map(entry => getWorldEntry(name, data, entry)).filter(x => x);
+            const isCustomOrder = $('#world_info_sort_order').find(':selected').data('rule') === 'custom';
+            if (!isCustomOrder) {
+                blocks.forEach(block => {
+                    block.find('.drag-handle').remove();
+                });
+            }
             $("#world_popup_entries_list").append(keywordHeaders);
             $("#world_popup_entries_list").append(blocks);
         },
@@ -486,6 +515,8 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
         delay: getSortableDelay(),
         handle: ".drag-handle",
         stop: async function (event, ui) {
+            const firstEntryUid = $('#world_popup_entries_list .world_entry').first().data('uid');
+            const minDisplayIndex = data?.entries[firstEntryUid]?.displayIndex ?? 0;
             $('#world_popup_entries_list .world_entry').each(function (index) {
                 const uid = $(this).data('uid');
 
@@ -497,8 +528,8 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
                     return;
                 }
 
-                item.displayIndex = index;
-                setOriginalDataValue(data, uid, 'extensions.display_index', index);
+                item.displayIndex = minDisplayIndex + index;
+                setOriginalDataValue(data, uid, 'extensions.display_index', item.displayIndex);
             });
 
             console.table(Object.keys(data.entries).map(uid => data.entries[uid]).map(x => ({ uid: x.uid, key: x.key.join(','), displayIndex: x.displayIndex })));
@@ -545,6 +576,10 @@ function deleteOriginalDataValue(data, uid) {
 }
 
 function getWorldEntry(name, data, entry) {
+    if (!data.entries[entry.uid]) {
+        return;
+    }
+
     const template = $("#entry_edit_template .world_entry").clone();
     template.data("uid", entry.uid);
     template.attr("uid", entry.uid);
@@ -569,7 +604,7 @@ function getWorldEntry(name, data, entry) {
         setOriginalDataValue(data, uid, "keys", data.entries[uid].key);
         saveWorldInfo(name, data);
     });
-    keyInput.val(entry.key.join(",")).trigger("input");
+    keyInput.val(entry.key.join(", ")).trigger("input");
     //initScrollHeight(keyInput);
 
     // logic AND/NOT
@@ -606,7 +641,7 @@ function getWorldEntry(name, data, entry) {
         const value = $(this).prop("checked");
         characterFilterLabel.text(value ? "Exclude Character(s)" : "Filter to Character(s)");
         if (data.entries[uid].characterFilter) {
-            if (!value && data.entries[uid].characterFilter.names.length === 0) {
+            if (!value && data.entries[uid].characterFilter.names.length === 0 && data.entries[uid].characterFilter.tags.length === 0) {
                 delete data.entries[uid].characterFilter;
             } else {
                 data.entries[uid].characterFilter.isExclude = value
@@ -617,7 +652,8 @@ function getWorldEntry(name, data, entry) {
                 {
                     characterFilter: {
                         isExclude: true,
-                        names: []
+                        names: [],
+                        tags: [],
                     }
                 }
             );
@@ -639,13 +675,25 @@ function getWorldEntry(name, data, entry) {
             closeOnSelect: false,
         });
     }
+
     const characters = getContext().characters;
     characters.forEach((character) => {
         const option = document.createElement('option');
-        const name = character.avatar.replace(/\.[^/.]+$/, "") ?? character.name
-        option.innerText = name
-        option.selected = entry.characterFilter?.names.includes(name)
-        characterFilter.append(option)
+        const name = character.avatar.replace(/\.[^/.]+$/, "") ?? character.name;
+        option.innerText = name;
+        option.selected = entry.characterFilter?.names?.includes(name);
+        option.setAttribute('data-type', 'character');
+        characterFilter.append(option);
+    });
+
+    const tags = getContext().tags;
+    tags.forEach((tag) => {
+        const option = document.createElement('option');
+        option.innerText = `[Tag] ${tag.name}`;
+        option.selected = entry.characterFilter?.tags?.includes(tag.id);
+        option.value = tag.id;
+        option.setAttribute('data-type', 'tag');
+        characterFilter.append(option);
     });
 
     characterFilter.on('mousedown change', async function (e) {
@@ -656,16 +704,19 @@ function getWorldEntry(name, data, entry) {
         }
 
         const uid = $(this).data("uid");
-        const value = $(this).val();
-        if ((!value || value?.length === 0) && !data.entries[uid].characterFilter?.isExclude) {
+        const selected = $(this).find(':selected');
+        if ((!selected || selected?.length === 0) && !data.entries[uid].characterFilter?.isExclude) {
             delete data.entries[uid].characterFilter;
         } else {
+            const names = selected.filter('[data-type="character"]').map((_, e) => e instanceof HTMLOptionElement && e.innerText).toArray();
+            const tags = selected.filter('[data-type="tag"]').map((_, e) => e instanceof HTMLOptionElement && e.value).toArray();
             Object.assign(
                 data.entries[uid],
                 {
                     characterFilter: {
                         isExclude: data.entries[uid].characterFilter?.isExclude ?? false,
-                        names: value
+                        names: names,
+                        tags: tags,
                     }
                 }
             );
@@ -690,7 +741,7 @@ function getWorldEntry(name, data, entry) {
         saveWorldInfo(name, data);
     });
 
-    keySecondaryInput.val(entry.keysecondary.join(",")).trigger("input");
+    keySecondaryInput.val(entry.keysecondary.join(", ")).trigger("input");
     initScrollHeight(keySecondaryInput);
 
     // comment
@@ -819,7 +870,7 @@ function getWorldEntry(name, data, entry) {
         saveWorldInfo(name, data);
     });
     orderInput.val(entry.order).trigger("input");
-    orderInput.width(InputWidthReference.width() + 15 + 'px')
+    orderInput.css('width', 'calc(3em + 15px)');
 
     // probability
     if (entry.probability === undefined) {
@@ -840,7 +891,7 @@ function getWorldEntry(name, data, entry) {
         saveWorldInfo(name, data);
     });
     depthInput.val(entry.depth ?? DEFAULT_DEPTH).trigger("input");
-    depthInput.width(InputWidthReference.width() + 15 + 'px');
+    depthInput.css('width', 'calc(3em + 15px)');
 
     // Hide by default unless depth is specified
     if (entry.position === world_info_position.atDepth) {
@@ -868,7 +919,7 @@ function getWorldEntry(name, data, entry) {
         saveWorldInfo(name, data);
     });
     probabilityInput.val(entry.probability).trigger("input");
-    probabilityInput.width(InputWidthReference.width() + 15 + 'px')
+    probabilityInput.css('width', 'calc(3em + 15px)');
 
     // probability toggle
     if (entry.useProbability === undefined) {
@@ -1379,6 +1430,7 @@ async function checkWorldInfo(chat, maxContext) {
 
     // Combine the chat
     let textToScan = chat.slice(0, messagesToLookBack).join("");
+    let minActivationMsgIndex = messagesToLookBack; // tracks chat index to satisfy `world_info_min_activations`
 
     // Add the depth or AN if enabled
     // Put this code here since otherwise, the chat reference is modified
@@ -1402,6 +1454,7 @@ async function checkWorldInfo(chat, maxContext) {
     textToScan = transformString(textToScan);
 
     let needsToScan = true;
+    let token_budget_overflowed = false;
     let count = 0;
     let allActivatedEntries = new Set();
     let failedProbabilityChecks = new Set();
@@ -1429,12 +1482,32 @@ async function checkWorldInfo(chat, maxContext) {
 
         for (let entry of sortedEntries) {
             // Check if this entry applies to the character or if it's excluded
-            if (entry.characterFilter && entry.characterFilter?.names.length > 0) {
+            if (entry.characterFilter && entry.characterFilter?.names?.length > 0) {
                 const nameIncluded = entry.characterFilter.names.includes(getCharaFilename());
                 const filtered = entry.characterFilter.isExclude ? nameIncluded : !nameIncluded
 
                 if (filtered) {
+                    console.debug(`WI entry ${entry.uid} filtered out by character`);
                     continue;
+                }
+            }
+
+            if (entry.characterFilter && entry.characterFilter?.tags?.length > 0) {
+                const tagKey = getTagKeyForCharacter(this_chid);
+
+                if (tagKey) {
+                    const tagMapEntry = context.tagMap[tagKey];
+
+                    if (Array.isArray(tagMapEntry)) {
+                        // If tag map intersects with the tag exclusion list, skip
+                        const includesTag = tagMapEntry.some((tag) => entry.characterFilter.tags.includes(tag));
+                        const filtered = entry.characterFilter.isExclude ? includesTag : !includesTag;
+
+                        if (filtered) {
+                            console.debug(`WI entry ${entry.uid} filtered out by tag`);
+                            continue;
+                        }
+                    }
                 }
             }
 
@@ -1453,6 +1526,9 @@ async function checkWorldInfo(chat, maxContext) {
             }
 
             if (Array.isArray(entry.key) && entry.key.length) { //check for keywords existing
+                // If selectiveLogic isn't found, assume it's AND, only do this once per entry
+                const selectiveLogic = entry.selectiveLogic ?? 0;
+                let notFlag = true;
                 primary: for (let key of entry.key) {
                     const substituted = substituteParams(key);
                     console.debug(`${entry.uid}: ${substituted}`)
@@ -1468,10 +1544,6 @@ async function checkWorldInfo(chat, maxContext) {
                             secondary: for (let keysecondary of entry.keysecondary) {
                                 const secondarySubstituted = substituteParams(keysecondary);
                                 console.debug(`uid:${entry.uid}: filtering ${secondarySubstituted}`);
-
-                                // If selectiveLogic isn't found, assume it's AND
-                                const selectiveLogic = entry.selectiveLogic ?? 0;
-
                                 //AND operator
                                 if (selectiveLogic === 0) {
                                     console.debug('saw AND logic, checking..')
@@ -1486,11 +1558,8 @@ async function checkWorldInfo(chat, maxContext) {
                                     console.debug(`uid ${entry.uid}: checking NOT logic for ${secondarySubstituted}`)
                                     if (secondarySubstituted && matchKeys(textToScan, secondarySubstituted.trim())) {
                                         console.debug(`uid ${entry.uid}: canceled; filtered out by ${secondarySubstituted}`)
+                                        notFlag = false;
                                         break primary;
-                                    } else {
-                                        console.debug(`${entry.uid}: activated; passed NOT filter`)
-                                        activatedNow.add(entry);
-                                        break secondary;
                                     }
                                 }
                             }
@@ -1501,6 +1570,11 @@ async function checkWorldInfo(chat, maxContext) {
                             break primary;
                         }
                     } else { console.debug('no active entries for logic checks yet') }
+                }
+                //for a NOT all entries must be checked, a single match invalidates activation
+                if (selectiveLogic === 1 && notFlag) {
+                    console.debug(`${entry.uid}: activated; passed NOT filter`)
+                    activatedNow.add(entry);
                 }
             }
         }
@@ -1531,6 +1605,7 @@ async function checkWorldInfo(chat, maxContext) {
                     toastr.warning(`World info budget reached after ${allActivatedEntries.size} entries.`, 'World Info');
                 }
                 needsToScan = false;
+                token_budget_overflowed = true;
                 break;
             }
 
@@ -1552,6 +1627,22 @@ async function checkWorldInfo(chat, maxContext) {
             const currentlyActivatedText = transformString(text);
             textToScan = (currentlyActivatedText + '\n' + textToScan);
             allActivatedText = (currentlyActivatedText + '\n' + allActivatedText);
+        }
+
+        // world_info_min_activations
+        if (!needsToScan && !token_budget_overflowed) {
+            if (world_info_min_activations > 0 && (allActivatedEntries.size < world_info_min_activations)) {
+                let over_max = false
+                over_max = (
+                    world_info_min_activations_depth_max > 0 &&
+                    minActivationMsgIndex > world_info_min_activations_depth_max
+                ) || (minActivationMsgIndex >= chat.length)
+                if (!over_max) {
+                    needsToScan = true
+                    textToScan = transformString(chat.slice(minActivationMsgIndex, minActivationMsgIndex + 1).join(""));
+                    minActivationMsgIndex += 1
+                }
+            }
         }
     }
 
@@ -1736,6 +1827,7 @@ function convertCharacterBook(characterBook) {
             probability: entry.extensions?.probability ?? null,
             useProbability: entry.extensions?.useProbability ?? false,
             depth: entry.extensions?.depth ?? DEFAULT_DEPTH,
+            selectiveLogic: entry.extensions?.selectiveLogic ?? 0,
         };
     });
 
@@ -1839,7 +1931,7 @@ export async function importEmbeddedWorldInfo(skipPopup = false) {
 
 function onWorldInfoChange(_, text) {
     if (_ !== '__notSlashCommand__') { // if it's a slash command
-        if (text !== undefined) { // and args are provided
+        if (text.trim() !== '') { // and args are provided
             const slashInputSplitText = text.trim().toLowerCase().split(",");
 
             slashInputSplitText.forEach((worldName) => {
@@ -1856,7 +1948,7 @@ function onWorldInfoChange(_, text) {
         } else { // if no args, unset all worlds
             toastr.success('Deactivated all worlds');
             selected_world_info = [];
-            $("#world_info").val("");
+            $("#world_info").val(null).trigger('change');
         }
     } else { //if it's a pointer selection
         let tempWorldInfo = [];
@@ -2026,7 +2118,7 @@ jQuery(() => {
     $("#world_editor_select").on('change', async () => {
         $("#world_info_search").val('');
         worldInfoFilter.setFilterData(FILTER_TYPES.WORLD_INFO_SEARCH, '', true);
-        const selectedIndex = $("#world_editor_select").find(":selected").val();
+        const selectedIndex = String($("#world_editor_select").find(":selected").val());
 
         if (selectedIndex === "") {
             hideWorldEditor();
@@ -2041,27 +2133,39 @@ jQuery(() => {
         eventSource.emit(event_types.WORLDINFO_SETTINGS_UPDATED);
     }
 
-    $(document).on("input", "#world_info_depth", function () {
+    $("#world_info_depth").on('input', function () {
         world_info_depth = Number($(this).val());
         $("#world_info_depth_counter").val($(this).val());
         saveSettings();
     });
 
-    $(document).on("input", "#world_info_budget", function () {
+    $("#world_info_min_activations").on('input', function () {
+        world_info_min_activations = Number($(this).val());
+        $("#world_info_min_activations_counter").val($(this).val());
+        saveSettings();
+    });
+
+    $("#world_info_min_activations_depth_max").on('input', function () {
+        world_info_min_activations_depth_max = Number($(this).val());
+        $("#world_info_min_activations_depth_max_counter").val($(this).val());
+        saveSettings();
+    });
+
+    $("#world_info_budget").on('input', function () {
         world_info_budget = Number($(this).val());
         $("#world_info_budget_counter").val($(this).val());
         saveSettings();
     });
 
-    $(document).on("input", "#world_info_recursive", function () {
+    $("#world_info_recursive").on('input', function () {
         world_info_recursive = !!$(this).prop('checked');
         saveSettings();
-    })
+    });
 
     $('#world_info_case_sensitive').on('input', function () {
         world_info_case_sensitive = !!$(this).prop('checked');
         saveSettings();
-    })
+    });
 
     $('#world_info_match_whole_words').on('input', function () {
         world_info_match_whole_words = !!$(this).prop('checked');
@@ -2115,11 +2219,9 @@ jQuery(() => {
         updateEditor(navigation_option.previous);
     });
 
-    $('#world_info_sort_order').on('change', function (e) {
-        if (e.target instanceof HTMLOptionElement) {
-            localStorage.setItem(SORT_ORDER_KEY, e.target.value);
-        }
-
+    $('#world_info_sort_order').on('change', function () {
+        const value = String($(this).find(":selected").val());
+        localStorage.setItem(SORT_ORDER_KEY, value);
         updateEditor(navigation_option.none);
     })
 

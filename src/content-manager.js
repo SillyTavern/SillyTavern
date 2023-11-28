@@ -2,14 +2,14 @@ const fs = require('fs');
 const path = require('path');
 const fetch = require('node-fetch').default;
 const sanitize = require('sanitize-filename');
-const config = require(path.join(process.cwd(), './config.conf'));
+const { getConfigValue } = require('./util');
 const contentDirectory = path.join(process.cwd(), 'default/content');
 const contentLogPath = path.join(contentDirectory, 'content.log');
 const contentIndexPath = path.join(contentDirectory, 'index.json');
 
 function checkForNewContent() {
     try {
-        if (config.skipContentCheck) {
+        if (getConfigValue('skipContentCheck', false)) {
             return;
         }
 
@@ -71,6 +71,8 @@ function getTargetByType(type) {
             return 'public/User Avatars';
         case 'theme':
             return 'public/themes';
+        case 'workflow':
+            return 'public/user/workflows';
         default:
             return null;
     }
@@ -174,6 +176,49 @@ function parseChubUrl(str) {
     return null;
 }
 
+// Warning: Some characters might not exist in JannyAI.me
+async function downloadJannyCharacter(uuid) {
+    // This endpoint is being guarded behind Bot Fight Mode of Cloudflare
+    // So hosted ST on Azure/AWS/GCP/Collab might get blocked by IP
+    // Should work normally on self-host PC/Android
+    const result = await fetch('https://api.janitorai.me/api/v1/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            "characterId": uuid,
+        })
+    });
+
+    if (result.ok) {
+        const downloadResult = await result.json();
+        if (downloadResult.status === 'ok') {
+            const imageResult = await fetch(downloadResult.downloadUrl)
+            const buffer = await imageResult.buffer();
+            const fileName = `${sanitize(uuid)}.png`;
+            const fileType = result.headers.get('content-type');
+    
+            return { buffer, fileName, fileType };
+        }  
+    }
+
+    console.log('Janny returned error', result.statusText, await result.text());
+    throw new Error('Failed to download character');
+}
+
+/**
+* @param {String} url
+* @returns {String | null } UUID of the character
+*/
+function parseJannyUrl(url) {
+   // Extract UUID from URL
+    const uuidRegex = /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/;
+    const matches = url.match(uuidRegex);
+
+    // Check if UUID is found
+    const uuid = matches ? matches[0] : null;
+    return uuid
+}
+
 /**
  * Registers endpoints for custom content management
  * @param {import('express').Express} app Express app
@@ -188,24 +233,37 @@ function registerEndpoints(app, jsonParser) {
         try {
             const url = request.body.url;
             let result;
+            let type;
 
-            const chubParsed = parseChubUrl(url);
+            const isJannnyContent = url.includes('janitorai')
+            if (isJannnyContent) {
+                const uuid = parseJannyUrl(url);
+                if (!uuid) {
+                    return response.sendStatus(404);
+                }
 
-            if (chubParsed?.type === 'character') {
-                console.log('Downloading chub character:', chubParsed.id);
-                result = await downloadChubCharacter(chubParsed.id);
-            }
-            else if (chubParsed?.type === 'lorebook') {
-                console.log('Downloading chub lorebook:', chubParsed.id);
-                result = await downloadChubLorebook(chubParsed.id);
-            }
-            else {
-                return response.sendStatus(404);
-            }
+                type = 'character';
+                result = await downloadJannyCharacter(uuid);
+            } else {
+                const chubParsed = parseChubUrl(url);
+                type = chubParsed?.type;
 
+                if (chubParsed?.type === 'character') {
+                    console.log('Downloading chub character:', chubParsed.id);
+                    result = await downloadChubCharacter(chubParsed.id);
+                }
+                else if (chubParsed?.type === 'lorebook') {
+                    console.log('Downloading chub lorebook:', chubParsed.id);
+                    result = await downloadChubLorebook(chubParsed.id);
+                }
+                else {
+                    return response.sendStatus(404);
+                }
+            }
+            
             if (result.fileType) response.set('Content-Type', result.fileType)
             response.set('Content-Disposition', `attachment; filename="${result.fileName}"`);
-            response.set('X-Custom-Content-Type', chubParsed?.type);
+            response.set('X-Custom-Content-Type', type);
             return response.send(result.buffer);
         } catch (error) {
             console.log('Importing custom content failed', error);

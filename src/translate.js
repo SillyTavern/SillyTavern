@@ -58,34 +58,44 @@ function registerEndpoints(app, jsonParser) {
     });
 
     app.post('/api/translate/google', jsonParser, async (request, response) => {
-        const { generateRequestUrl, normaliseResponse } = require('google-translate-api-browser');
-        const text = request.body.text;
-        const lang = request.body.lang;
+        try {
+            const { generateRequestUrl, normaliseResponse } = require('google-translate-api-browser');
+            const text = request.body.text;
+            const lang = request.body.lang;
 
-        if (!text || !lang) {
-            return response.sendStatus(400);
-        }
+            if (!text || !lang) {
+                return response.sendStatus(400);
+            }
 
-        console.log('Input text: ' + text);
+            console.log('Input text: ' + text);
 
-        const url = generateRequestUrl(text, { to: lang });
+            const url = generateRequestUrl(text, { to: lang });
 
-        https.get(url, (resp) => {
-            let data = '';
+            https.get(url, (resp) => {
+                let data = '';
 
-            resp.on('data', (chunk) => {
-                data += chunk;
+                resp.on('data', (chunk) => {
+                    data += chunk;
+                });
+
+                resp.on('end', () => {
+                    try {
+                        const result = normaliseResponse(JSON.parse(data));
+                        console.log('Translated text: ' + result.text);
+                        return response.send(result.text);
+                    } catch (error) {
+                        console.log("Translation error", error);
+                        return response.sendStatus(500);
+                    }
+                });
+            }).on("error", (err) => {
+                console.log("Translation error: " + err.message);
+                return response.sendStatus(500);
             });
-
-            resp.on('end', () => {
-                const result = normaliseResponse(JSON.parse(data));
-                console.log('Translated text: ' + result.text);
-                return response.send(result.text);
-            });
-        }).on("error", (err) => {
-            console.log("Translation error: " + err.message);
+        } catch (error) {
+            console.log("Translation error", error);
             return response.sendStatus(500);
-        });
+        }
     });
 
     app.post('/api/translate/deepl', jsonParser, async (request, response) => {
@@ -203,7 +213,10 @@ function registerEndpoints(app, jsonParser) {
         }
 
         const text = request.body.text;
-        const lang = request.body.lang;
+        let lang = request.body.lang;
+        if (request.body.lang === 'zh-CN') {
+            lang = 'ZH'
+        }
 
         if (!text || !lang) {
             return response.sendStatus(400);

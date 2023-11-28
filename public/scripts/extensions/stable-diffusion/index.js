@@ -7,17 +7,23 @@ import {
     getRequestHeaders,
     event_types,
     eventSource,
-    appendImageToMessage,
     generateQuietPrompt,
     this_chid,
     getCurrentChatId,
+    animation_duration,
+    appendMediaToMessage,
+    getUserAvatar,
+    user_avatar,
+    getCharacterAvatar,
+    formatCharacterAvatar,
 } from "../../../script.js";
 import { getApiUrl, getContext, extension_settings, doExtrasFetch, modules, renderExtensionTemplate } from "../../extensions.js";
 import { selected_group } from "../../group-chats.js";
-import { stringFormat, initScrollHeight, resetScrollHeight, getCharaFilename, saveBase64AsFile } from "../../utils.js";
+import { stringFormat, initScrollHeight, resetScrollHeight, getCharaFilename, saveBase64AsFile, getBase64Async, delay } from "../../utils.js";
 import { getMessageTimeStamp, humanizedDateTime } from "../../RossAscends-mods.js";
 import { SECRET_KEYS, secret_state } from "../../secrets.js";
 import { getNovelUnlimitedImageGeneration, getNovelAnlas, loadNovelSubscriptionData } from "../../nai-settings.js";
+import { getMultimodalCaption } from "../shared.js";
 export { MODULE_NAME };
 
 // Wraps a string into monospace font-face span
@@ -36,6 +42,8 @@ const sources = {
     auto: 'auto',
     novel: 'novel',
     vlad: 'vlad',
+    openai: 'openai',
+    comfy: 'comfy',
 }
 
 const generationMode = {
@@ -47,6 +55,15 @@ const generationMode = {
     FACE: 5,
     FREE: 6,
     BACKGROUND: 7,
+    CHARACTER_MULTIMODAL: 8,
+    USER_MULTIMODAL: 9,
+    FACE_MULTIMODAL: 10,
+}
+
+const multimodalMap = {
+    [generationMode.CHARACTER]: generationMode.CHARACTER_MULTIMODAL,
+    [generationMode.USER]: generationMode.USER_MULTIMODAL,
+    [generationMode.FACE]: generationMode.FACE_MULTIMODAL,
 }
 
 const modeLabels = {
@@ -57,6 +74,9 @@ const modeLabels = {
     [generationMode.NOW]: 'Last Message',
     [generationMode.RAW_LAST]: 'Raw Last Message',
     [generationMode.BACKGROUND]: 'Background',
+    [generationMode.CHARACTER_MULTIMODAL]: 'Character (Multimodal Mode)',
+    [generationMode.FACE_MULTIMODAL]: 'Portrait (Multimodal Mode)',
+    [generationMode.USER_MULTIMODAL]: 'User (Multimodal Mode)',
 }
 
 const triggerWords = {
@@ -67,6 +87,18 @@ const triggerWords = {
     [generationMode.NOW]: ['last'],
     [generationMode.FACE]: ['face'],
     [generationMode.BACKGROUND]: ['background'],
+}
+
+const messageTrigger = {
+    activationRegex: /\b(send|mail|imagine|generate|make|create|draw|paint|render)\b.*\b(pic|picture|image|drawing|painting|photo|photograph)\b(?:\s+of)?(?:\s+(?:a|an|the|this|that|those)?)?(.+)/i,
+    specialCases: {
+        [generationMode.CHARACTER]: ['you', 'yourself'],
+        [generationMode.USER]: ['me', 'myself'],
+        [generationMode.SCENARIO]: ['story', 'scenario', 'whole story'],
+        [generationMode.NOW]: ['last message'],
+        [generationMode.FACE]: ['your face', 'your portrait', 'your selfie'],
+        [generationMode.BACKGROUND]: ['background', 'scene background', 'scene', 'scenery', 'surroundings', 'environment'],
+    },
 }
 
 const promptTemplates = {
@@ -104,22 +136,15 @@ const promptTemplates = {
 
     [generationMode.RAW_LAST]: "[Pause your roleplay and provide ONLY the last chat message string back to me verbatim. Do not write anything after the string. Do not roleplay at all in your response. Do not continue the roleplay story.]",
     [generationMode.BACKGROUND]: "[Pause your roleplay and provide a detailed description of {{char}}'s surroundings in the form of a comma-delimited list of keywords and phrases. The list must include all of the following items in this order: location, time of day, weather, lighting, and any other relevant details. Do not include descriptions of characters and non-visual qualities such as names, personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase 'background,'. Ignore the rest of the story when crafting this description. Do not roleplay as {{user}} when writing this description, and do not attempt to continue the story.]",
+    [generationMode.FACE_MULTIMODAL]: `Provide an exhaustive comma-separated list of tags describing the appearance of the character on this image in great detail. Start with "close-up portrait".`,
+    [generationMode.CHARACTER_MULTIMODAL]: `Provide an exhaustive comma-separated list of tags describing the appearance of the character on this image in great detail. Start with "full body portrait".`,
+    [generationMode.USER_MULTIMODAL]: `Provide an exhaustive comma-separated list of tags describing the appearance of the character on this image in great detail. Start with "full body portrait".`,
 }
 
 const helpString = [
-    `${m('(argument)')} – requests SD to make an image. Supported arguments:`,
-    '<ul>',
-    `<li>${m(j(triggerWords[generationMode.CHARACTER]))} – AI character full body selfie</li>`,
-    `<li>${m(j(triggerWords[generationMode.FACE]))} – AI character face-only selfie</li>`,
-    `<li>${m(j(triggerWords[generationMode.USER]))} – user character full body selfie</li>`,
-    `<li>${m(j(triggerWords[generationMode.SCENARIO]))} – visual recap of the whole chat scenario</li>`,
-    `<li>${m(j(triggerWords[generationMode.NOW]))} – visual recap of the last chat message</li>`,
-    `<li>${m(j(triggerWords[generationMode.RAW_LAST]))} – visual recap of the last chat message with no summary</li>`,
-    `<li>${m(j(triggerWords[generationMode.BACKGROUND]))} – generate a background for this chat based on the chat's context</li>`,
-    '</ul>',
-    `Anything else would trigger a "free mode" to make SD generate whatever you prompted.<Br>
-    example: '/sd apple tree' would generate a picture of an apple tree.`,
-].join('<br>');
+    `${m('(argument)')} – requests to generate an image. Supported arguments: ${m(j(Object.values(triggerWords).flat()))}.`,
+    `Anything else would trigger a "free mode" to make generate whatever you prompted. Example: '/imagine apple tree' would generate a picture of an apple tree.`,
+].join(' ');
 
 const defaultPrefix = 'best quality, absurdres, aesthetic,';
 const defaultNegative = 'lowres, bad anatomy, bad hands, text, error, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry';
@@ -147,6 +172,9 @@ const defaultSettings = {
     steps_step: 1,
     steps: 20,
 
+    // Scheduler
+    scheduler: 'normal',
+
     // Image dimensions (Width & Height)
     dimension_min: 64,
     dimension_max: 2048,
@@ -158,6 +186,7 @@ const defaultSettings = {
     negative_prompt: defaultNegative,
     sampler: 'DDIM',
     model: '',
+    vae: '',
 
     // Automatic1111/Horde exclusives
     restore_faces: false,
@@ -172,6 +201,8 @@ const defaultSettings = {
     // Refine mode
     refine_mode: false,
     expand: false,
+    interactive_mode: false,
+    multimodal_captioning: false,
 
     prompts: promptTemplates,
 
@@ -203,9 +234,73 @@ const defaultSettings = {
     novel_upscale_ratio: 1.0,
     novel_anlas_guard: false,
 
+    // OpenAI settings
+    openai_style: 'vivid',
+    openai_quality: 'standard',
+
     style: 'Default',
     styles: defaultStyles,
+
+    // ComyUI settings
+    comfy_url: 'http://127.0.0.1:8188',
+    comfy_workflow: 'Default_Comfy_Workflow.json',
 }
+
+function processTriggers(chat, _, abort) {
+    if (!extension_settings.sd.interactive_mode) {
+        return;
+    }
+
+    const lastMessage = chat[chat.length - 1];
+
+    if (!lastMessage) {
+        return;
+    }
+
+    const message = lastMessage.mes;
+    const isUser = lastMessage.is_user;
+
+    if (!message || !isUser) {
+        return;
+    }
+
+    const messageLower = message.toLowerCase();
+
+    try {
+        const activationRegex = new RegExp(messageTrigger.activationRegex, 'i');
+        const activationMatch = messageLower.match(activationRegex);
+
+        if (!activationMatch) {
+            return;
+        }
+
+        let subject = activationMatch[3].trim();
+
+        if (!subject) {
+            return;
+        }
+
+        console.log(`SD: Triggered by "${message}", detected subject: ${subject}"`);
+
+        outer: for (const [specialMode, triggers] of Object.entries(messageTrigger.specialCases)) {
+            for (const trigger of triggers) {
+                if (subject === trigger) {
+                    subject = triggerWords[specialMode][0];
+                    console.log(`SD: Detected special case "${trigger}", switching to mode ${specialMode}`);
+                    break outer;
+                }
+            }
+        }
+
+        abort(true);
+        setTimeout(() => generatePicture('sd', subject, message), 1);
+    } catch {
+        console.log('SD: Failed to process triggers.');
+        return;
+    }
+}
+
+window['SD_ProcessTriggers'] = processTriggers;
 
 function getSdRequestBody() {
     switch (extension_settings.sd.source) {
@@ -277,10 +372,16 @@ async function loadSettings() {
     $('#sd_enable_hr').prop('checked', extension_settings.sd.enable_hr);
     $('#sd_refine_mode').prop('checked', extension_settings.sd.refine_mode);
     $('#sd_expand').prop('checked', extension_settings.sd.expand);
+    $('#sd_multimodal_captioning').prop('checked', extension_settings.sd.multimodal_captioning);
     $('#sd_auto_url').val(extension_settings.sd.auto_url);
     $('#sd_auto_auth').val(extension_settings.sd.auto_auth);
     $('#sd_vlad_url').val(extension_settings.sd.vlad_url);
     $('#sd_vlad_auth').val(extension_settings.sd.vlad_auth);
+    $('#sd_interactive_mode').prop('checked', extension_settings.sd.interactive_mode);
+    $('#sd_openai_style').val(extension_settings.sd.openai_style);
+    $('#sd_openai_quality').val(extension_settings.sd.openai_quality);
+    $('#sd_comfy_url').val(extension_settings.sd.comfy_url);
+    $('#sd_comfy_prompt').val(extension_settings.sd.comfy_prompt);
 
     for (const style of extension_settings.sd.styles) {
         const option = document.createElement('option');
@@ -290,10 +391,39 @@ async function loadSettings() {
         $('#sd_style').append(option);
     }
 
+    // Find a closest resolution option match for the current width and height
+    let resolutionId = null, minAspectDiff = Infinity, minResolutionDiff = Infinity;
+    for (const [id, resolution] of Object.entries(resolutionOptions)) {
+        const aspectDiff = Math.abs((resolution.width / resolution.height) - (extension_settings.sd.width / extension_settings.sd.height));
+        const resolutionDiff = Math.abs(resolution.width * resolution.height - extension_settings.sd.width * extension_settings.sd.height);
+
+        if (resolutionDiff < minResolutionDiff || (resolutionDiff === minResolutionDiff && aspectDiff < minAspectDiff)) {
+            resolutionId = id;
+            minAspectDiff = aspectDiff;
+            minResolutionDiff = resolutionDiff;
+        }
+
+        if (resolutionDiff === 0 && aspectDiff === 0) {
+            break;
+        }
+    }
+
+    $('#sd_resolution').val(resolutionId);
+
     toggleSourceControls();
     addPromptTemplates();
 
-    await Promise.all([loadSamplers(), loadModels()]);
+    await loadSettingOptions();
+}
+
+async function loadSettingOptions() {
+    return Promise.all([
+        loadSamplers(),
+        loadModels(),
+        loadSchedulers(),
+        loadVaes(),
+        loadComfyWorkflows()
+    ]);
 }
 
 function addPromptTemplates() {
@@ -306,7 +436,7 @@ function addPromptTemplates() {
         const textarea = $('<textarea></textarea>')
             .addClass('textarea_compact text_pole')
             .attr('id', `sd_prompt_${name}`)
-            .attr('rows', 6)
+            .attr('rows', 3)
             .val(prompt).on('input', () => {
                 extension_settings.sd.prompts[name] = textarea.val();
                 saveSettingsDebounced();
@@ -326,6 +456,16 @@ function addPromptTemplates() {
         $('#sd_prompt_templates').append(container);
         $('#sd_prompt_templates').append(textarea);
     }
+}
+
+function onInteractiveModeInput() {
+    extension_settings.sd.interactive_mode = !!$(this).prop('checked');
+    saveSettingsDebounced();
+}
+
+function onMultimodalCaptioningInput() {
+    extension_settings.sd.multimodal_captioning = !!$(this).prop('checked');
+    saveSettingsDebounced();
 }
 
 function onStyleSelect() {
@@ -463,17 +603,19 @@ function getCharacterPrefix() {
  * @returns {string} Combined string with a comma between them
  */
 function combinePrefixes(str1, str2, macro = '') {
+    // Remove leading/trailing white spaces and commas from the strings
+    const process = (s) => s.trim().replace(/^,|,$/g, '').trim();
+
     if (!str2) {
         return str1;
     }
 
-    // Remove leading/trailing white spaces and commas from the strings
-    str1 = str1.trim().replace(/^,|,$/g, '');
-    str2 = str2.trim().replace(/^,|,$/g, '');
+    str1 = process(str1)
+    str2 = process(str2);
 
     // Combine the strings with a comma between them)
     const result = macro && str1.includes(macro) ? str1.replace(macro, str2) : `${str1}, ${str2},`;
-    return result;
+    return process(result);
 }
 
 function onExpandInput() {
@@ -515,6 +657,46 @@ function onSamplerChange() {
     saveSettingsDebounced();
 }
 
+const resolutionOptions = {
+    sd_res_512x512: { width: 512, height: 512, name: '512x512 (1:1, icons, profile pictures)' },
+    sd_res_600x600: { width: 600, height: 600, name: '600x600 (1:1, icons, profile pictures)' },
+    sd_res_512x768: { width: 512, height: 768, name: '512x768 (2:3, vertical character card)' },
+    sd_res_768x512: { width: 768, height: 512, name: '768x512 (3:2, horizontal 35-mm movie film)' },
+    sd_res_960x540: { width: 960, height: 540, name: '960x540 (16:9, horizontal wallpaper)' },
+    sd_res_540x960: { width: 540, height: 960, name: '540x960 (9:16, vertical wallpaper)' },
+    sd_res_1920x1088: { width: 1920, height: 1088, name: '1920x1088 (16:9, 1080p, horizontal wallpaper)' },
+    sd_res_1088x1920: { width: 1088, height: 1920, name: '1088x1920 (9:16, 1080p, vertical wallpaper)' },
+    sd_res_1280x720: { width: 1280, height: 720, name: '1280x720 (16:9, 720p, horizontal wallpaper)' },
+    sd_res_720x1280: { width: 720, height: 1280, name: '720x1280 (9:16, 720p, vertical wallpaper)' },
+    sd_res_1024x1024: { width: 1024, height: 1024, name: '1024x1024 (1:1, SDXL)' },
+    sd_res_1152x896: { width: 1152, height: 896, name: '1152x896 (9:7, SDXL)' },
+    sd_res_896x1152: { width: 896, height: 1152, name: '896x1152 (7:9, SDXL)' },
+    sd_res_1216x832: { width: 1216, height: 832, name: '1216x832 (19:13, SDXL)' },
+    sd_res_832x1216: { width: 832, height: 1216, name: '832x1216 (13:19, SDXL)' },
+    sd_res_1344x768: { width: 1344, height: 768, name: '1344x768 (4:3, SDXL)' },
+    sd_res_768x1344: { width: 768, height: 1344, name: '768x1344 (3:4, SDXL)' },
+    sd_res_1536x640: { width: 1536, height: 640, name: '1536x640 (24:10, SDXL)' },
+    sd_res_640x1536: { width: 640, height: 1536, name: '640x1536 (10:24, SDXL)' },
+};
+
+function onResolutionChange() {
+    const selectedOption = $("#sd_resolution").val();
+    const selectedResolution = resolutionOptions[selectedOption];
+
+    if (!selectedResolution) {
+        console.warn(`Could not find resolution option for ${selectedOption}`);
+        return;
+    }
+
+    $("#sd_height").val(selectedResolution.height).trigger('input');
+    $("#sd_width").val(selectedResolution.width).trigger('input');
+}
+
+function onSchedulerChange() {
+    extension_settings.sd.scheduler = $('#sd_scheduler').find(':selected').val();
+    saveSettingsDebounced();
+}
+
 function onWidthInput() {
     extension_settings.sd.width = Number($('#sd_width').val());
     $('#sd_width_value').text(extension_settings.sd.width);
@@ -533,7 +715,17 @@ async function onSourceChange() {
     extension_settings.sd.sampler = null;
     toggleSourceControls();
     saveSettingsDebounced();
-    await Promise.all([loadModels(), loadSamplers()]);
+    await loadSettingOptions();
+}
+
+async function onOpenAiStyleSelect() {
+    extension_settings.sd.openai_style = String($('#sd_openai_style').find(':selected').val());
+    saveSettingsDebounced();
+}
+
+async function onOpenAiQualitySelect() {
+    extension_settings.sd.openai_quality = String($('#sd_openai_quality').find(':selected').val());
+    saveSettingsDebounced();
 }
 
 async function onViewAnlasClick() {
@@ -629,6 +821,16 @@ function onHrSecondPassStepsInput() {
     saveSettingsDebounced();
 }
 
+function onComfyUrlInput() {
+    extension_settings.sd.comfy_url = $('#sd_comfy_url').val();
+    saveSettingsDebounced();
+}
+
+function onComfyWorkflowChange() {
+    extension_settings.sd.comfy_workflow = $('#sd_comfy_workflow').find(':selected').val();
+    saveSettingsDebounced();
+}
+
 async function validateAutoUrl() {
     try {
         if (!extension_settings.sd.auto_url) {
@@ -645,8 +847,7 @@ async function validateAutoUrl() {
             throw new Error('SD WebUI returned an error.');
         }
 
-        await loadSamplers();
-        await loadModels();
+        await loadSettingOptions();
         toastr.success('SD WebUI API connected.');
     } catch (error) {
         toastr.error(`Could not validate SD WebUI API: ${error.message}`);
@@ -669,11 +870,34 @@ async function validateVladUrl() {
             throw new Error('SD.Next returned an error.');
         }
 
-        await loadSamplers();
-        await loadModels();
+        await loadSettingOptions();
         toastr.success('SD.Next API connected.');
     } catch (error) {
         toastr.error(`Could not validate SD.Next API: ${error.message}`);
+    }
+}
+
+async function validateComfyUrl() {
+    try {
+        if (!extension_settings.sd.comfy_url) {
+            throw new Error('URL is not set.');
+        }
+
+        const result = await fetch(`/api/sd/comfy/ping`, {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                url: extension_settings.sd.comfy_url,
+            })
+        });
+        if (!result.ok) {
+            throw new Error('ComfyUI returned an error.');
+        }
+
+        await loadSettingOptions();
+        toastr.success('ComfyUI API connected.');
+    } catch (error) {
+        toastr.error(`Could not validate ComfyUI API: ${error.message}`);
     }
 }
 
@@ -681,7 +905,7 @@ async function onModelChange() {
     extension_settings.sd.model = $('#sd_model').find(':selected').val();
     saveSettingsDebounced();
 
-    const cloudSources = [sources.horde, sources.novel];
+    const cloudSources = [sources.horde, sources.novel, sources.openai];
 
     if (cloudSources.includes(extension_settings.sd.source)) {
         return;
@@ -694,7 +918,7 @@ async function onModelChange() {
     if (extension_settings.sd.source === sources.auto || extension_settings.sd.source === sources.vlad) {
         await updateAutoRemoteModel();
     }
-    toastr.success('Model successfully loaded!', 'Stable Diffusion');
+    toastr.success('Model successfully loaded!', 'Image Generation');
 }
 
 async function getAutoRemoteModel() {
@@ -715,6 +939,10 @@ async function getAutoRemoteModel() {
         console.error(error);
         return null;
     }
+}
+
+async function onVaeChange() {
+    extension_settings.sd.vae = $('#sd_vae').find(':selected').val();
 }
 
 async function getAutoRemoteUpscalers() {
@@ -809,6 +1037,12 @@ async function loadSamplers() {
         case sources.vlad:
             samplers = await loadVladSamplers();
             break;
+        case sources.openai:
+            samplers = await loadOpenAiSamplers();
+            break;
+        case sources.comfy:
+            samplers = await loadComfySamplers();
+            break;
     }
 
     for (const sampler of samplers) {
@@ -874,6 +1108,10 @@ async function loadAutoSamplers() {
     }
 }
 
+async function loadOpenAiSamplers() {
+    return ['N/A'];
+}
+
 async function loadVladSamplers() {
     if (!extension_settings.sd.vlad_url) {
         return [];
@@ -914,6 +1152,28 @@ async function loadNovelSamplers() {
     ];
 }
 
+async function loadComfySamplers() {
+    if (!extension_settings.sd.comfy_url) {
+        return [];
+    }
+
+    try {
+        const result = await fetch(`/api/sd/comfy/samplers`, {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                url: extension_settings.sd.comfy_url,
+            })
+        });
+        if (!result.ok) {
+            throw new Error('ComfyUI returned an error.');
+        }
+        return await result.json();
+    } catch (error) {
+        return [];
+    }
+}
+
 async function loadModels() {
     $('#sd_model').empty();
     let models = [];
@@ -933,6 +1193,12 @@ async function loadModels() {
             break;
         case sources.vlad:
             models = await loadVladModels();
+            break;
+        case sources.openai:
+            models = await loadOpenAiModels();
+            break;
+        case sources.comfy:
+            models = await loadComfyModels();
             break;
     }
 
@@ -1031,6 +1297,13 @@ async function loadAutoModels() {
     }
 }
 
+async function loadOpenAiModels() {
+    return [
+        { value: 'dall-e-3', text: 'DALL-E 3' },
+        { value: 'dall-e-2', text: 'DALL-E 2' },
+    ];
+}
+
 async function loadVladModels() {
     if (!extension_settings.sd.vlad_url) {
         return [];
@@ -1082,6 +1355,10 @@ async function loadNovelModels() {
 
     return [
         {
+            value: 'nai-diffusion-3',
+            text: 'NAI Diffusion Anime V3',
+        },
+        {
             value: 'nai-diffusion-2',
             text: 'NAI Diffusion Anime V2',
         },
@@ -1100,16 +1377,193 @@ async function loadNovelModels() {
     ];
 }
 
+async function loadComfyModels() {
+    if (!extension_settings.sd.comfy_url) {
+        return [];
+    }
+
+    try {
+        const result = await fetch(`/api/sd/comfy/models`, {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                url: extension_settings.sd.comfy_url,
+            })
+        });
+        if (!result.ok) {
+            throw new Error('ComfyUI returned an error.');
+        }
+        return await result.json();
+    } catch (error) {
+        return [];
+    }
+}
+
+async function loadSchedulers() {
+    $('#sd_scheduler').empty();
+    let schedulers = [];
+
+    switch (extension_settings.sd.source) {
+        case sources.extras:
+            schedulers = ['N/A'];
+            break;
+        case sources.horde:
+            schedulers = ['N/A'];
+            break;
+        case sources.auto:
+            schedulers = ['N/A'];
+            break;
+        case sources.novel:
+            schedulers = ['N/A'];
+            break;
+        case sources.vlad:
+            schedulers = ['N/A'];
+            break;
+        case sources.openai:
+            schedulers = ['N/A'];
+            break;
+        case sources.comfy:
+            schedulers = await loadComfySchedulers();
+            break;
+    }
+
+    for (const scheduler of schedulers) {
+        const option = document.createElement('option');
+        option.innerText = scheduler;
+        option.value = scheduler;
+        option.selected = scheduler === extension_settings.sd.scheduler;
+        $('#sd_scheduler').append(option);
+    }
+}
+
+async function loadComfySchedulers() {
+    if (!extension_settings.sd.comfy_url) {
+        return [];
+    }
+
+    try {
+        const result = await fetch(`/api/sd/comfy/schedulers`, {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                url: extension_settings.sd.comfy_url,
+            })
+        });
+        if (!result.ok) {
+            throw new Error('ComfyUI returned an error.');
+        }
+        return await result.json();
+    } catch (error) {
+        return [];
+    }
+}
+
+async function loadVaes() {
+    $('#sd_vae').empty();
+    let vaes = [];
+
+    switch (extension_settings.sd.source) {
+        case sources.extras:
+            vaes = ['N/A'];
+            break;
+        case sources.horde:
+            vaes = ['N/A'];
+            break;
+        case sources.auto:
+            vaes = ['N/A'];
+            break;
+        case sources.novel:
+            vaes = ['N/A'];
+            break;
+        case sources.vlad:
+            vaes = ['N/A'];
+            break;
+        case sources.openai:
+            vaes = ['N/A'];
+            break;
+        case sources.comfy:
+            vaes = await loadComfyVaes();
+            break;
+    }
+
+    for (const vae of vaes) {
+        const option = document.createElement('option');
+        option.innerText = vae;
+        option.value = vae;
+        option.selected = vae === extension_settings.sd.vae;
+        $('#sd_vae').append(option);
+    }
+}
+
+async function loadComfyVaes() {
+    if (!extension_settings.sd.comfy_url) {
+        return [];
+    }
+
+    try {
+        const result = await fetch(`/api/sd/comfy/vaes`, {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                url: extension_settings.sd.comfy_url,
+            })
+        });
+        if (!result.ok) {
+            throw new Error('ComfyUI returned an error.');
+        }
+        return await result.json();
+    } catch (error) {
+        return [];
+    }
+}
+
+async function loadComfyWorkflows() {
+    if (!extension_settings.sd.comfy_url) {
+        return;
+    }
+
+    try {
+        $('#sd_comfy_workflow').empty();
+        const result = await fetch(`/api/sd/comfy/workflows`, {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                url: extension_settings.sd.comfy_url,
+            })
+        });
+        if (!result.ok) {
+            throw new Error('ComfyUI returned an error.');
+        }
+        const workflows = await result.json();
+        for (const workflow of workflows) {
+            const option = document.createElement('option');
+            option.innerText = workflow;
+            option.value = workflow;
+            option.selected = workflow === extension_settings.sd.comfy_workflow;
+            $('#sd_comfy_workflow').append(option);
+        }
+    } catch (error) {
+        return;
+    }
+}
+
 function getGenerationType(prompt) {
+    let mode = generationMode.FREE;
+
     for (const [key, values] of Object.entries(triggerWords)) {
         for (const value of values) {
             if (value.toLowerCase() === prompt.toLowerCase().trim()) {
-                return Number(key);
+                mode = Number(key);
+                break;
             }
         }
     }
 
-    return generationMode.FREE;
+    if (extension_settings.sd.multimodal_captioning && multimodalMap[mode] !== undefined) {
+        mode = multimodalMap[mode];
+    }
+
+    return mode;
 }
 
 function getQuietPrompt(mode, trigger) {
@@ -1152,7 +1606,7 @@ function getRawLastMessage() {
             return message.mes;
         }
 
-        toastr.warning('No usable messages found.', 'Stable Diffusion');
+        toastr.warning('No usable messages found.', 'Image Generation');
         throw new Error('No usable messages found.');
     }
 
@@ -1180,13 +1634,49 @@ async function generatePicture(_, trigger, message, callback) {
     trigger = trigger.trim();
     const generationType = getGenerationType(trigger);
     console.log('Generation mode', generationType, 'triggered with', trigger);
-    const quiet_prompt = getQuietPrompt(generationType, trigger);
+    const quietPrompt = getQuietPrompt(generationType, trigger);
     const context = getContext();
 
     // if context.characterId is not null, then we get context.characters[context.characterId].avatar, else we get groupId and context.groups[groupId].id
     // sadly, groups is not an array, but is a dict with keys being index numbers, so we have to filter it
     const characterName = context.characterId ? context.characters[context.characterId].name : context.groups[Object.keys(context.groups).filter(x => context.groups[x].id === context.groupId)[0]]?.id?.toString();
 
+    if (generationType == generationMode.BACKGROUND) {
+        const callbackOriginal = callback;
+        callback = async function (prompt, imagePath, generationType) {
+            const imgUrl = `url("${encodeURI(imagePath)}")`;
+            eventSource.emit(event_types.FORCE_SET_BACKGROUND, { url: imgUrl, path: imagePath });
+
+            if (typeof callbackOriginal === 'function') {
+                callbackOriginal(prompt, imagePath, generationType);
+            } else {
+                sendMessage(prompt, imagePath, generationType);
+            }
+        }
+    }
+
+    const dimensions = setTypeSpecificDimensions(generationType);
+
+    try {
+        const prompt = await getPrompt(generationType, message, trigger, quietPrompt);
+        console.log('Processed image prompt:', prompt);
+
+        context.deactivateSendButtons();
+        hideSwipeButtons();
+
+        await sendGenerationRequest(generationType, prompt, characterName, callback);
+    } catch (err) {
+        console.trace(err);
+        throw new Error('SD prompt text generation failed.')
+    }
+    finally {
+        restoreOriginalDimensions(dimensions);
+        context.activateSendButtons();
+        showSwipeButtons();
+    }
+}
+
+function setTypeSpecificDimensions(generationType) {
     const prevSDHeight = extension_settings.sd.height;
     const prevSDWidth = extension_settings.sd.width;
     const aspectRatio = extension_settings.sd.width / extension_settings.sd.height;
@@ -1203,40 +1693,17 @@ async function generatePicture(_, trigger, message, callback) {
             // Round to nearest multiple of 64
             extension_settings.sd.width = Math.round(extension_settings.sd.height * 1.8 / 64) * 64;
         }
-        const callbackOriginal = callback;
-        callback = async function (prompt, imagePath) {
-            const imgUrl = `url("${encodeURI(imagePath)}")`;
-            eventSource.emit(event_types.FORCE_SET_BACKGROUND, { url: imgUrl, path: imagePath });
-
-            if (typeof callbackOriginal === 'function') {
-                callbackOriginal(prompt, imagePath);
-            } else {
-                sendMessage(prompt, imagePath);
-            }
-        }
     }
 
-    try {
-        const prompt = await getPrompt(generationType, message, trigger, quiet_prompt);
-        console.log('Processed Stable Diffusion prompt:', prompt);
-
-        context.deactivateSendButtons();
-        hideSwipeButtons();
-
-        await sendGenerationRequest(generationType, prompt, characterName, callback);
-    } catch (err) {
-        console.trace(err);
-        throw new Error('SD prompt text generation failed.')
-    }
-    finally {
-        extension_settings.sd.height = prevSDHeight;
-        extension_settings.sd.width = prevSDWidth;
-        context.activateSendButtons();
-        showSwipeButtons();
-    }
+    return { height: prevSDHeight, width: prevSDWidth };
 }
 
-async function getPrompt(generationType, message, trigger, quiet_prompt) {
+function restoreOriginalDimensions(savedParams) {
+    extension_settings.sd.height = savedParams.height;
+    extension_settings.sd.width = savedParams.width;
+}
+
+async function getPrompt(generationType, message, trigger, quietPrompt) {
     let prompt;
 
     switch (generationType) {
@@ -1246,8 +1713,13 @@ async function getPrompt(generationType, message, trigger, quiet_prompt) {
         case generationMode.FREE:
             prompt = trigger.trim();
             break;
+        case generationMode.FACE_MULTIMODAL:
+        case generationMode.CHARACTER_MULTIMODAL:
+        case generationMode.USER_MULTIMODAL:
+            prompt = await generateMultimodalPrompt(generationType, quietPrompt);
+            break;
         default:
-            prompt = await generatePrompt(quiet_prompt);
+            prompt = await generatePrompt(quietPrompt);
             break;
     }
 
@@ -1258,15 +1730,65 @@ async function getPrompt(generationType, message, trigger, quiet_prompt) {
     return prompt;
 }
 
-async function generatePrompt(quiet_prompt) {
-    const reply = await generateQuietPrompt(quiet_prompt, false, false);
+/**
+ * Generates a prompt using multimodal captioning.
+ * @param {number} generationType - The type of image generation to perform.
+ * @param {string} quietPrompt - The prompt to use for the image generation.
+ */
+async function generateMultimodalPrompt(generationType, quietPrompt) {
+    let avatarUrl;
+
+    if (generationType == generationMode.USER_MULTIMODAL) {
+        avatarUrl = getUserAvatar(user_avatar);
+    }
+
+    if (generationType == generationMode.CHARACTER_MULTIMODAL || generationType === generationMode.FACE_MULTIMODAL) {
+        const context = getContext();
+
+        if (context.groupId) {
+            const groupMembers = context.groups.find(x => x.id === context.groupId)?.members;
+            const lastMessageAvatar = context.chat?.filter(x => !x.is_system && !x.is_user)?.slice(-1)[0]?.original_avatar;
+            const randomMemberAvatar = Array.isArray(groupMembers) ? groupMembers[Math.floor(Math.random() * groupMembers.length)]?.avatar : null;
+            const avatarToUse = lastMessageAvatar || randomMemberAvatar;
+            avatarUrl = formatCharacterAvatar(avatarToUse);
+        } else {
+            avatarUrl = getCharacterAvatar(context.characterId);
+        }
+    }
+
+    const response = await fetch(avatarUrl);
+
+    if (!response.ok) {
+        throw new Error('Could not fetch avatar image.');
+    }
+
+    const avatarBlob = await response.blob();
+    const avatarBase64 = await getBase64Async(avatarBlob);
+
+    const caption = await getMultimodalCaption(avatarBase64, quietPrompt);
+
+    if (!caption) {
+        throw new Error('Multimodal captioning failed.');
+    }
+
+    return caption;
+}
+
+/**
+ * Generates a prompt using the main LLM API.
+ * @param {string} quietPrompt - The prompt to use for the image generation.
+ * @returns {Promise<string>} - A promise that resolves when the prompt generation completes.
+ */
+async function generatePrompt(quietPrompt) {
+    const reply = await generateQuietPrompt(quietPrompt, false, false);
     return processReply(reply);
 }
 
 async function sendGenerationRequest(generationType, prompt, characterName = null, callback) {
-    const prefix = generationType !== generationMode.BACKGROUND
-        ? combinePrefixes(extension_settings.sd.prompt_prefix, getCharacterPrefix())
-        : extension_settings.sd.prompt_prefix;
+    const noCharPrefix = [generationMode.FREE, generationMode.BACKGROUND, generationMode.USER, generationMode.USER_MULTIMODAL];
+    const prefix = noCharPrefix.includes(generationType)
+        ? extension_settings.sd.prompt_prefix
+        : combinePrefixes(extension_settings.sd.prompt_prefix, getCharacterPrefix());
 
     const prefixedPrompt = combinePrefixes(prefix, prompt, '{prompt}');
 
@@ -1290,25 +1812,32 @@ async function sendGenerationRequest(generationType, prompt, characterName = nul
             case sources.novel:
                 result = await generateNovelImage(prefixedPrompt);
                 break;
+            case sources.openai:
+                result = await generateOpenAiImage(prefixedPrompt);
+                break;
+            case sources.comfy:
+                result = await generateComfyImage(prefixedPrompt);
+                break;
         }
 
         if (!result.data) {
-            throw new Error();
+            throw new Error('Endpoint did not return image data.');
         }
     } catch (err) {
-        toastr.error('Image generation failed. Please try again', 'Stable Diffusion');
+        console.error(err);
+        toastr.error('Image generation failed. Please try again.' + '\n\n' + String(err), 'Image Generation');
         return;
     }
 
     if (currentChatId !== getCurrentChatId()) {
         console.warn('Chat changed, aborting SD result saving');
-        toastr.warning('Chat changed, generated image discarded.', 'Stable Diffusion');
+        toastr.warning('Chat changed, generated image discarded.', 'Image Generation');
         return;
     }
 
     const filename = `${characterName}_${humanizedDateTime()}`;
     const base64Image = await saveBase64AsFile(result.data, characterName, filename, result.format);
-    callback ? callback(prompt, base64Image) : sendMessage(prompt, base64Image);
+    callback ? callback(prompt, base64Image, generationType) : sendMessage(prompt, base64Image, generationType);
 }
 
 /**
@@ -1347,7 +1876,8 @@ async function generateExtrasImage(prompt) {
         const data = await result.json();
         return { format: 'jpg', data: data.image };
     } else {
-        throw new Error();
+        const text = await result.text();
+        throw new Error(text);
     }
 }
 
@@ -1381,7 +1911,8 @@ async function generateHordeImage(prompt) {
         const data = await result.text();
         return { format: 'webp', data: data };
     } else {
-        throw new Error();
+        const text = await result.text();
+        throw new Error(text);
     }
 }
 
@@ -1422,7 +1953,8 @@ async function generateAutoImage(prompt) {
         const data = await result.json();
         return { format: 'png', data: data.images[0] };
     } else {
-        throw new Error();
+        const text = await result.text();
+        throw new Error(text);
     }
 }
 
@@ -1455,7 +1987,8 @@ async function generateNovelImage(prompt) {
         const data = await result.text();
         return { format: 'png', data: data };
     } else {
-        throw new Error();
+        const text = await result.text();
+        throw new Error(text);
     }
 }
 
@@ -1514,7 +2047,198 @@ function getNovelParams() {
     return { steps, width, height };
 }
 
-async function sendMessage(prompt, image) {
+async function generateOpenAiImage(prompt) {
+    const dalle2PromptLimit = 1000;
+    const dalle3PromptLimit = 4000;
+
+    const isDalle2 = extension_settings.sd.model === 'dall-e-2';
+    const isDalle3 = extension_settings.sd.model === 'dall-e-3';
+
+    if (isDalle2 && prompt.length > dalle2PromptLimit) {
+        prompt = prompt.substring(0, dalle2PromptLimit);
+    }
+
+    if (isDalle3 && prompt.length > dalle3PromptLimit) {
+        prompt = prompt.substring(0, dalle3PromptLimit);
+    }
+
+    let width = 1024;
+    let height = 1024;
+    let aspectRatio = extension_settings.sd.width / extension_settings.sd.height;
+
+    if (isDalle3 && aspectRatio < 1) {
+        height = 1792;
+    }
+
+    if (isDalle3 && aspectRatio > 1) {
+        width = 1792;
+    }
+
+    if (isDalle2 && (extension_settings.sd.width <= 512 && extension_settings.sd.height <= 512)) {
+        width = 512;
+        height = 512;
+    }
+
+    const result = await fetch('/api/openai/generate-image', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+            prompt: prompt,
+            model: extension_settings.sd.model,
+            size: `${width}x${height}`,
+            n: 1,
+            quality: isDalle3 ? extension_settings.sd.openai_quality : undefined,
+            style: isDalle3 ? extension_settings.sd.openai_style : undefined,
+            response_format: 'b64_json',
+        }),
+    });
+
+    if (result.ok) {
+        const data = await result.json();
+        return { format: 'png', data: data?.data[0]?.b64_json };
+    } else {
+        const text = await result.text();
+        throw new Error(text);
+    }
+}
+
+/**
+ * Generates an image in ComfyUI using the provided prompt and configuration settings.
+ *
+ * @param {string} prompt - The main instruction used to guide the image generation.
+ * @returns {Promise<{format: string, data: string}>} - A promise that resolves when the image generation and processing are complete.
+ */
+async function generateComfyImage(prompt) {
+    const placeholders = [
+        'negative_prompt',
+        'model',
+        'vae',
+        'sampler',
+        'scheduler',
+        'steps',
+        'scale',
+        'width',
+        'height',
+    ];
+
+    const workflowResponse = await fetch('/api/sd/comfy/workflow', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+            file_name: extension_settings.sd.comfy_workflow,
+        }),
+    });
+    if (!workflowResponse.ok) {
+        const text = await workflowResponse.text();
+        toastr.error(`Failed to load workflow.\n\n${text}`);
+    }
+    let workflow = (await workflowResponse.json()).replace('"%prompt%"', JSON.stringify(prompt));
+    workflow = workflow.replace('"%seed%"', JSON.stringify(Math.round(Math.random() * Number.MAX_SAFE_INTEGER)));
+    placeholders.forEach(ph => {
+        workflow = workflow.replace(`"%${ph}%"`, JSON.stringify(extension_settings.sd[ph]));
+    });
+    console.log(`{
+        "prompt": ${workflow}
+    }`);
+    const promptResult = await fetch(`/api/sd/comfy/generate`, {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+            url: extension_settings.sd.comfy_url,
+            prompt: `{
+                "prompt": ${workflow}
+            }`,
+        })
+    });
+    return { format: 'png', data: await promptResult.text() };
+}
+
+async function onComfyOpenWorkflowEditorClick() {
+    let workflow = await (await fetch(`/api/sd/comfy/workflow`, {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+            file_name: extension_settings.sd.comfy_workflow,
+        }),
+    })).json();
+    const editorHtml = $(await $.get('scripts/extensions/stable-diffusion/comfyWorkflowEditor.html'));
+    const popupResult = callPopup(editorHtml, "confirm", undefined, { okButton: "Save", wide: true, large: true, rows: 1 });
+    const checkPlaceholders = () => {
+        workflow = $('#sd_comfy_workflow_editor_workflow').val().toString();
+        $('.sd_comfy_workflow_editor_placeholder_list > li[data-placeholder]').each(function (idx) {
+            const key = this.getAttribute('data-placeholder');
+            const found = workflow.search(`"%${key}%"`) != -1;
+            this.classList[found ? 'remove' : 'add']('sd_comfy_workflow_editor_not_found');
+        });
+    };
+    $('#sd_comfy_workflow_editor_name').text(extension_settings.sd.comfy_workflow);
+    $('#sd_comfy_workflow_editor_workflow').val(workflow);
+    checkPlaceholders();
+    $('#sd_comfy_workflow_editor_workflow').on('input', checkPlaceholders);
+    if (await popupResult) {
+        const response = await fetch(`/api/sd/comfy/save-workflow`, {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({
+                file_name: extension_settings.sd.comfy_workflow,
+                workflow: $('#sd_comfy_workflow_editor_workflow').val().toString(),
+            }),
+        });
+        if (!response.ok) {
+            const text = await response.text();
+            toastr.error(`Failed to save workflow.\n\n${text}`);
+        }
+    }
+}
+
+async function onComfyNewWorkflowClick() {
+    let name = await callPopup('<h3>Workflow name:</h3>', 'input');
+    if (!name) {
+        return;
+    }
+    if (!name.toLowerCase().endsWith('.json')) {
+        name += '.json';
+    }
+    extension_settings.sd.comfy_workflow = name;
+    const response = await fetch(`/api/sd/comfy/save-workflow`, {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+            file_name: extension_settings.sd.comfy_workflow,
+            workflow: '',
+        }),
+    });
+    if (!response.ok) {
+        const text = await response.text();
+        toastr.error(`Failed to save workflow.\n\n${text}`);
+    }
+    saveSettingsDebounced();
+    await loadComfyWorkflows();
+    await delay(200);
+    await onComfyOpenWorkflowEditorClick();
+}
+
+async function onComfyDeleteWorkflowClick() {
+    const confirm = await callPopup('Delete the workflow? This action is irreversible.', 'confirm');
+    if (!confirm) {
+        return;
+    }
+    const response = await fetch('/api/sd/comfy/delete-workflow', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({
+            file_name: extension_settings.sd.comfy_workflow,
+        }),
+    });
+    if (!response.ok) {
+        const text = await response.text();
+        toastr.error(`Failed to save workflow.\n\n${text}`);
+    }
+    await loadComfyWorkflows();
+    onComfyWorkflowChange();
+}
+
+async function sendMessage(prompt, image, generationType) {
     const context = getContext();
     const messageText = `[${context.name2} sends a picture that contains: ${prompt}]`;
     const message = {
@@ -1526,6 +2250,7 @@ async function sendMessage(prompt, image) {
         extra: {
             image: image,
             title: prompt,
+            generationType: generationType,
         },
     };
     context.chat.push(message);
@@ -1538,7 +2263,7 @@ function addSDGenButtons() {
     const buttonHtml = `
     <div id="sd_gen" class="list-group-item flex-container flexGap5">
         <div class="fa-solid fa-paintbrush extensionsMenuExtensionButton" title="Trigger Stable Diffusion" /></div>
-        Stable Diffusion
+        Generate Image
     </div>
         `;
 
@@ -1584,10 +2309,10 @@ function addSDGenButtons() {
         if (target.is(button) && !dropdown.is(":visible") && $("#send_but").is(":visible")) {
             e.preventDefault();
 
-            dropdown.fadeIn(250);
+            dropdown.fadeIn(animation_duration);
             popper.update();
         } else {
-            dropdown.fadeOut(250);
+            dropdown.fadeOut(animation_duration);
         }
     });
 }
@@ -1604,6 +2329,10 @@ function isValidState() {
             return !!extension_settings.sd.vlad_url;
         case sources.novel:
             return secret_state[SECRET_KEYS.NOVEL];
+        case sources.openai:
+            return secret_state[SECRET_KEYS.OPENAI];
+        case sources.comfy:
+            return true;
     }
 }
 
@@ -1643,14 +2372,18 @@ async function sdMessageButton(e) {
         return;
     }
 
+    let dimensions = null;
+
     try {
         setBusyIcon(true);
         if (hasSavedImage) {
             const prompt = await refinePrompt(message.extra.title, false);
             message.extra.title = prompt;
 
+            const generationType = message?.extra?.generationType ?? generationMode.FREE;
             console.log('Regenerating an image, using existing prompt:', prompt);
-            await sendGenerationRequest(generationMode.FREE, prompt, characterFileName, saveGeneratedImage);
+            dimensions = setTypeSpecificDimensions(generationType);
+            await sendGenerationRequest(generationType, prompt, characterFileName, saveGeneratedImage);
         }
         else {
             console.log("doing /sd raw last");
@@ -1662,9 +2395,13 @@ async function sdMessageButton(e) {
     }
     finally {
         setBusyIcon(false);
+
+        if (dimensions) {
+            restoreOriginalDimensions(dimensions);
+        }
     }
 
-    function saveGeneratedImage(prompt, image) {
+    function saveGeneratedImage(prompt, image, generationType) {
         // Some message sources may not create the extra object
         if (typeof message.extra !== 'object') {
             message.extra = {};
@@ -1674,7 +2411,8 @@ async function sdMessageButton(e) {
         message.extra.inline_image = message.extra.image && !message.extra.inline_image ? false : true;
         message.extra.image = image;
         message.extra.title = prompt;
-        appendImageToMessage(message, $mes);
+        message.extra.generationType = generationType;
+        appendMediaToMessage(message, $mes);
 
         context.saveChat();
     }
@@ -1701,14 +2439,17 @@ $("#sd_dropdown [id]").on("click", function () {
 });
 
 jQuery(async () => {
-    getContext().registerSlashCommand('sd', generatePicture, [], helpString, true, true);
+    getContext().registerSlashCommand('imagine', generatePicture, ['sd', 'img', 'image'], helpString, true, true);
 
     $('#extensions_settings').append(renderExtensionTemplate('stable-diffusion', 'settings', defaultSettings));
     $('#sd_source').on('change', onSourceChange);
     $('#sd_scale').on('input', onScaleInput);
     $('#sd_steps').on('input', onStepsInput);
     $('#sd_model').on('change', onModelChange);
+    $('#sd_vae').on('change', onVaeChange);
     $('#sd_sampler').on('change', onSamplerChange);
+    $('#sd_resolution').on('change', onResolutionChange);
+    $('#sd_scheduler').on('change', onSchedulerChange);
     $('#sd_prompt_prefix').on('input', onPromptPrefixInput);
     $('#sd_negative_prompt').on('input', onNegativePromptInput);
     $('#sd_width').on('input', onWidthInput);
@@ -1733,10 +2474,20 @@ jQuery(async () => {
     $('#sd_novel_upscale_ratio').on('input', onNovelUpscaleRatioInput);
     $('#sd_novel_anlas_guard').on('input', onNovelAnlasGuardInput);
     $('#sd_novel_view_anlas').on('click', onViewAnlasClick);
+    $('#sd_comfy_validate').on('click', validateComfyUrl);
+    $('#sd_comfy_url').on('input', onComfyUrlInput);
+    $('#sd_comfy_workflow').on('change', onComfyWorkflowChange);
+    $('#sd_comfy_open_workflow_editor').on('click', onComfyOpenWorkflowEditorClick);
+    $('#sd_comfy_new_workflow').on('click', onComfyNewWorkflowClick);
+    $('#sd_comfy_delete_workflow').on('click', onComfyDeleteWorkflowClick);
     $('#sd_expand').on('input', onExpandInput);
     $('#sd_style').on('change', onStyleSelect);
     $('#sd_save_style').on('click', onSaveStyleClick);
     $('#sd_character_prompt_block').hide();
+    $('#sd_interactive_mode').on('input', onInteractiveModeInput);
+    $('#sd_openai_style').on('change', onOpenAiStyleSelect);
+    $('#sd_openai_quality').on('change', onOpenAiQualitySelect);
+    $('#sd_multimodal_captioning').on('input', onMultimodalCaptioningInput);
 
     $('.sd_settings .inline-drawer-toggle').on('click', function () {
         initScrollHeight($("#sd_prompt_prefix"));
@@ -1744,8 +2495,15 @@ jQuery(async () => {
         initScrollHeight($("#sd_character_prompt"));
     })
 
+    for (const [key, value] of Object.entries(resolutionOptions)) {
+        const option = document.createElement('option');
+        option.value = key;
+        option.text = value.name;
+        $('#sd_resolution').append(option);
+    }
+
     eventSource.on(event_types.EXTRAS_CONNECTED, async () => {
-        await Promise.all([loadSamplers(), loadModels()]);
+        await loadSettingOptions();
     });
 
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);

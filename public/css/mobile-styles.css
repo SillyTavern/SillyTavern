@@ -256,6 +256,14 @@
         bottom: 0 !important;
     }
 
+    body:not(.waifuMode) #expression-wrapper {
+        visibility: hidden;
+    }
+
+    #visual-novel-wrapper {
+        position: unset !important;
+    }
+
     body.waifuMode .expression-holder {
         /*display: inline;*/
 
@@ -267,7 +275,7 @@
         left: 0;
         right: 0;
         filter: drop-shadow(2px 2px 2px #51515199);
-        z-index: 1;
+        z-index: 1 !important;
     }
 
     body.waifuMode img.expression {
@@ -368,6 +376,18 @@
     .tag.excluded:after {
         top: unset;
         bottom: unset;
+    }
+
+
+    #leftSendForm,
+    #rightSendForm {
+        width: 1.15em;
+        flex-wrap: wrap;
+        height: unset;
+    }
+
+    #extensionsMenuButton {
+        order: 1;
     }
 }
 

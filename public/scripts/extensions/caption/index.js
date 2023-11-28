@@ -1,17 +1,57 @@
 import { getBase64Async, saveBase64AsFile } from "../../utils.js";
 import { getContext, getApiUrl, doExtrasFetch, extension_settings, modules } from "../../extensions.js";
-import { callPopup, getRequestHeaders, saveSettingsDebounced } from "../../../script.js";
+import { callPopup, getRequestHeaders, saveSettingsDebounced, substituteParams } from "../../../script.js";
 import { getMessageTimeStamp } from "../../RossAscends-mods.js";
+import { SECRET_KEYS, secret_state } from "../../secrets.js";
+import { getMultimodalCaption } from "../shared.js";
 export { MODULE_NAME };
 
 const MODULE_NAME = 'caption';
-const UPDATE_INTERVAL = 1000;
 
-async function moduleWorker() {
-    const hasConnection = getContext().onlineStatus !== 'no_connection';
-    $('#send_picture').toggle(hasConnection);
+const PROMPT_DEFAULT = 'What’s in this image?';
+const TEMPLATE_DEFAULT = '[{{user}} sends {{char}} a picture that contains: {{caption}}]';
+
+/**
+ * Migrates old extension settings to the new format.
+ * Must keep this function for compatibility with old settings.
+ */
+function migrateSettings() {
+    if (extension_settings.caption.local !== undefined) {
+        extension_settings.caption.source = extension_settings.caption.local ? 'local' : 'extras';
+    }
+
+    delete extension_settings.caption.local;
+
+    if (!extension_settings.caption.source) {
+        extension_settings.caption.source = 'extras';
+    }
+
+    if (extension_settings.caption.source === 'openai') {
+        extension_settings.caption.source = 'multimodal';
+        extension_settings.caption.multimodal_api = 'openai';
+        extension_settings.caption.multimodal_model = 'gpt-4-vision-preview';
+    }
+
+    if (!extension_settings.caption.multimodal_api) {
+        extension_settings.caption.multimodal_api = 'openai';
+    }
+
+    if (!extension_settings.caption.multimodal_model) {
+        extension_settings.caption.multimodal_model = 'gpt-4-vision-preview';
+    }
+
+    if (!extension_settings.caption.prompt) {
+        extension_settings.caption.prompt = PROMPT_DEFAULT;
+    }
+
+    if (!extension_settings.caption.template) {
+        extension_settings.caption.template = TEMPLATE_DEFAULT;
+    }
 }
 
+/**
+ * Sets an image icon for the send button.
+ */
 async function setImageIcon() {
     try {
         const sendButton = $('#send_picture .extensionsMenuExtensionButton');
@@ -23,6 +63,9 @@ async function setImageIcon() {
     }
 }
 
+/**
+ * Sets a spinner icon for the send button.
+ */
 async function setSpinnerIcon() {
     try {
         const sendButton = $('#send_picture .extensionsMenuExtensionButton');
@@ -34,9 +77,21 @@ async function setSpinnerIcon() {
     }
 }
 
+/**
+ * Sends a captioned message to the chat.
+ * @param {string} caption Caption text
+ * @param {string} image Image URL
+ */
 async function sendCaptionedMessage(caption, image) {
     const context = getContext();
-    let messageText = `[${context.name1} sends ${context.name2 ?? ''} a picture that contains: ${caption}]`;
+    let template = extension_settings.caption.template || TEMPLATE_DEFAULT;
+
+    if (!/{{caption}}/i.test(template)) {
+        console.warn('Poka-yoke: Caption template does not contain {{caption}}. Appending it.')
+        template += ' {{caption}}';
+    }
+
+    let messageText = substituteParams(template).replace(/{{caption}}/i, caption);
 
     if (extension_settings.caption.refine_mode) {
         messageText = await callPopup(
@@ -62,45 +117,108 @@ async function sendCaptionedMessage(caption, image) {
     };
     context.chat.push(message);
     context.addOneMessage(message);
-    await context.generate('caption');
 }
 
-async function doCaptionRequest(base64Img) {
-    if (extension_settings.caption.local) {
-        const apiResult = await fetch('/api/extra/caption', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            body: JSON.stringify({ image: base64Img })
-        });
+/**
+ * Generates a caption for an image using a selected source.
+ * @param {string} base64Img Base64 encoded image without the data:image/...;base64, prefix
+ * @param {string} fileData Base64 encoded image with the data:image/...;base64, prefix
+ * @returns {Promise<{caption: string}>} Generated caption
+ */
+async function doCaptionRequest(base64Img, fileData) {
+    switch (extension_settings.caption.source) {
+        case 'local':
+            return await captionLocal(base64Img);
+        case 'extras':
+            return await captionExtras(base64Img);
+        case 'horde':
+            return await captionHorde(base64Img);
+        case 'multimodal':
+            return await captionMultimodal(fileData);
+        default:
+            throw new Error('Unknown caption source.');
+    }
+}
 
-        if (!apiResult.ok) {
-            throw new Error('Failed to caption image via local pipeline.');
-        }
-
-        const data = await apiResult.json();
-        return data;
-    } else if (modules.includes('caption')) {
-        const url = new URL(getApiUrl());
-        url.pathname = '/api/caption';
-
-        const apiResult = await doExtrasFetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Bypass-Tunnel-Reminder': 'bypass',
-            },
-            body: JSON.stringify({ image: base64Img })
-        });
-
-        if (!apiResult.ok) {
-            throw new Error('Failed to caption image via Extras.');
-        }
-
-        const data = await apiResult.json();
-        return data;
-    } else {
+/**
+ * Generates a caption for an image using Extras API.
+ * @param {string} base64Img Base64 encoded image without the data:image/...;base64, prefix
+ * @returns {Promise<{caption: string}>} Generated caption
+ */
+async function captionExtras(base64Img) {
+    if (!modules.includes('caption')) {
         throw new Error('No captioning module is available.');
     }
+
+    const url = new URL(getApiUrl());
+    url.pathname = '/api/caption';
+
+    const apiResult = await doExtrasFetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Bypass-Tunnel-Reminder': 'bypass',
+        },
+        body: JSON.stringify({ image: base64Img })
+    });
+
+    if (!apiResult.ok) {
+        throw new Error('Failed to caption image via Extras.');
+    }
+
+    const data = await apiResult.json();
+    return data;
+}
+
+/**
+ * Generates a caption for an image using a local model.
+ * @param {string} base64Img Base64 encoded image without the data:image/...;base64, prefix
+ * @returns {Promise<{caption: string}>} Generated caption
+ */
+async function captionLocal(base64Img) {
+    const apiResult = await fetch('/api/extra/caption', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ image: base64Img })
+    });
+
+    if (!apiResult.ok) {
+        throw new Error('Failed to caption image via local pipeline.');
+    }
+
+    const data = await apiResult.json();
+    return data;
+}
+
+/**
+ * Generates a caption for an image using a Horde model.
+ * @param {string} base64Img Base64 encoded image without the data:image/...;base64, prefix
+ * @returns {Promise<{caption: string}>} Generated caption
+ */
+async function captionHorde(base64Img) {
+    const apiResult = await fetch('/api/horde/caption-image', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ image: base64Img })
+    });
+
+    if (!apiResult.ok) {
+        throw new Error('Failed to caption image via Horde.');
+    }
+
+    const data = await apiResult.json();
+    return data;
+}
+
+/**
+ * Generates a caption for an image using a multimodal model.
+ * @param {string} base64Img Base64 encoded image with the data:image/...;base64, prefix
+ * @returns {Promise<{caption: string}>} Generated caption
+ */
+async function captionMultimodal(base64Img) {
+    const prompt = extension_settings.caption.prompt || PROMPT_DEFAULT;
+    const caption = await getMultimodalCaption(base64Img, prompt);
+    return { caption };
 }
 
 async function onSelectImage(e) {
@@ -116,11 +234,8 @@ async function onSelectImage(e) {
         const fileData = await getBase64Async(file);
         const base64Format = fileData.split(',')[0].split(';')[0].split('/')[1];
         const base64Data = fileData.split(',')[1];
-        const data = await doCaptionRequest(base64Data);
-        const caption = data.caption;
-        const imageToSave = data.thumbnail ? data.thumbnail : base64Data;
-        const format = data.thumbnail ? 'jpeg' : base64Format;
-        const imagePath = await saveBase64AsFile(imageToSave, context.name2, '', format);
+        const { caption } = await doCaptionRequest(base64Data, fileData);
+        const imagePath = await saveBase64AsFile(base64Data, context.name2, '', base64Format);
         await sendCaptionedMessage(caption, imagePath);
     }
     catch (error) {
@@ -143,16 +258,26 @@ jQuery(function () {
         const sendButton = $(`
         <div id="send_picture" class="list-group-item flex-container flexGap5">
             <div class="fa-solid fa-image extensionsMenuExtensionButton"></div>
-            Send a Picture
+            Generate Caption
+        </div>`);
+        const attachFileButton = $(`
+        <div id="attachFile" class="list-group-item flex-container flexGap5">
+            <div class="fa-solid fa-paperclip extensionsMenuExtensionButton"></div>
+            Attach a File
         </div>`);
 
         $('#extensionsMenu').prepend(sendButton);
-        $(sendButton).hide();
+        $('#extensionsMenu').prepend(attachFileButton);
         $(sendButton).on('click', () => {
-            const hasCaptionModule = modules.includes('caption') || extension_settings.caption.local;
+            const hasCaptionModule =
+                (modules.includes('caption') && extension_settings.caption.source === 'extras') ||
+                (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'openai' && secret_state[SECRET_KEYS.OPENAI]) ||
+                (extension_settings.caption.source === 'multimodal' && extension_settings.caption.multimodal_api === 'openrouter' && secret_state[SECRET_KEYS.OPENROUTER]) ||
+                extension_settings.caption.source === 'local' ||
+                extension_settings.caption.source === 'horde';
 
             if (!hasCaptionModule) {
-                toastr.error('No captioning module is available. Either enable the local captioning pipeline or connect to Extras.');
+                toastr.error('Choose other captioning source in the extension settings.', 'Captioning is not available');
                 return;
             }
 
@@ -160,13 +285,36 @@ jQuery(function () {
         });
     }
     function addPictureSendForm() {
-        const inputHtml = `<input id="img_file" type="file" accept="image/*">`;
+        const inputHtml = `<input id="img_file" type="file" hidden accept="image/*">`;
         const imgForm = document.createElement('form');
         imgForm.id = 'img_form';
         $(imgForm).append(inputHtml);
         $(imgForm).hide();
         $('#form_sheld').append(imgForm);
         $('#img_file').on('change', onSelectImage);
+    }
+    function switchMultimodalBlocks() {
+        const isMultimodal = extension_settings.caption.source === 'multimodal';
+        $('#caption_multimodal_block').toggle(isMultimodal);
+        $('#caption_prompt_block').toggle(isMultimodal);
+        $('#caption_multimodal_api').val(extension_settings.caption.multimodal_api);
+        $('#caption_multimodal_model').val(extension_settings.caption.multimodal_model);
+        $('#caption_multimodal_model option').each(function () {
+            const type = $(this).data('type');
+            $(this).toggle(type === extension_settings.caption.multimodal_api);
+        });
+        $('#caption_multimodal_api').on('change', () => {
+            const api = String($('#caption_multimodal_api').val());
+            const model = String($(`#caption_multimodal_model option[data-type="${api}"]`).first().val());
+            extension_settings.caption.multimodal_api = api;
+            extension_settings.caption.multimodal_model = model;
+            saveSettingsDebounced();
+            switchMultimodalBlocks();
+        });
+        $('#caption_multimodal_model').on('change', () => {
+            extension_settings.caption.multimodal_model = String($('#caption_multimodal_model').val());
+            saveSettingsDebounced();
+        });
     }
     function addSettings() {
         const html = `
@@ -177,13 +325,39 @@ jQuery(function () {
                     <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
                 </div>
                 <div class="inline-drawer-content">
-                    <label class="checkbox_label" for="caption_local">
-                        <input id="caption_local" type="checkbox" class="checkbox">
-                        Use local captioning pipeline
-                    </label>
-                    <label class="checkbox_label" for="caption_refine_mode">
+                    <label for="caption_source">Source</label>
+                    <select id="caption_source" class="text_pole">
+                        <option value="local">Local</option>
+                        <option value="multimodal">Multimodal (OpenAI / OpenRouter)</option>
+                        <option value="extras">Extras</option>
+                        <option value="horde">Horde</option>
+                    </select>
+                    <div id="caption_multimodal_block" class="flex-container wide100p">
+                        <div class="flex1 flex-container flexFlowColumn flexNoGap">
+                            <label for="caption_multimodal_api">API</label>
+                            <select id="caption_multimodal_api" class="flex1 text_pole">
+                                <option value="openai">OpenAI</option>
+                                <option value="openrouter">OpenRouter</option>
+                            </select>
+                        </div>
+                        <div class="flex1 flex-container flexFlowColumn flexNoGap">
+                            <label for="caption_multimodal_model">Model</label>
+                            <select id="caption_multimodal_model" class="flex1 text_pole">
+                                <option data-type="openai" value="gpt-4-vision-preview">gpt-4-vision-preview</option>
+                                <option data-type="openrouter" value="openai/gpt-4-vision-preview">openai/gpt-4-vision-preview</option>
+                                <option data-type="openrouter" value="haotian-liu/llava-13b">haotian-liu/llava-13b</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="caption_prompt_block">
+                        <label for="caption_prompt">Caption Prompt</label>
+                        <textarea id="caption_prompt" class="text_pole" rows="1" placeholder="&lt; Use default &gt;">${PROMPT_DEFAULT}</textarea>
+                    </div>
+                    <label for="caption_template">Message Template <small>(use <code>{{caption}}</code> macro)</small></label>
+                    <textarea id="caption_template" class="text_pole" rows="2" placeholder="&lt; Use default &gt;">${TEMPLATE_DEFAULT}</textarea>
+                    <label class="checkbox_label margin-bot-10px" for="caption_refine_mode">
                         <input id="caption_refine_mode" type="checkbox" class="checkbox">
-                        Edit captions before generation
+                        Edit captions before saving
                     </label>
                 </div>
             </div>
@@ -196,13 +370,25 @@ jQuery(function () {
     addPictureSendForm();
     addSendPictureButton();
     setImageIcon();
-    moduleWorker();
+    migrateSettings();
+    switchMultimodalBlocks();
+
     $('#caption_refine_mode').prop('checked', !!(extension_settings.caption.refine_mode));
-    $('#caption_local').prop('checked', !!(extension_settings.caption.local));
+    $('#caption_source').val(extension_settings.caption.source);
+    $('#caption_prompt').val(extension_settings.caption.prompt);
+    $('#caption_template').val(extension_settings.caption.template);
     $('#caption_refine_mode').on('input', onRefineModeInput);
-    $('#caption_local').on('input', () => {
-        extension_settings.caption.local = !!$('#caption_local').prop('checked');
+    $('#caption_source').on('change', () => {
+        extension_settings.caption.source = String($('#caption_source').val());
+        switchMultimodalBlocks();
         saveSettingsDebounced();
     });
-    setInterval(moduleWorker, UPDATE_INTERVAL);
+    $('#caption_prompt').on('input', () => {
+        extension_settings.caption.prompt = String($('#caption_prompt').val());
+        saveSettingsDebounced();
+    });
+    $('#caption_template').on('input', () => {
+        extension_settings.caption.template = String($('#caption_template').val());
+        saveSettingsDebounced();
+    });
 });

@@ -23,6 +23,7 @@ const DIRECTORIES = {
     backups: 'backups/',
     quickreplies: 'public/QuickReplies',
     assets: 'public/assets',
+    comfyWorkflows: 'public/user/workflows',
 };
 
 const UNSAFE_EXTENSIONS = [
@@ -103,10 +104,6 @@ const UNSAFE_EXTENSIONS = [
 ];
 
 const PALM_SAFETY = [
-    {
-        category: "HARM_CATEGORY_UNSPECIFIED",
-        threshold: "BLOCK_NONE"
-    },
     {
         category: "HARM_CATEGORY_DEROGATORY",
         threshold: "BLOCK_NONE"

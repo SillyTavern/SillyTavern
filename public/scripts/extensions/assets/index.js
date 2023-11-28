@@ -67,7 +67,7 @@ function downloadAssetsList(url) {
                         const asset = availableAssets[assetType][i];
                         const elemId = `assets_install_${assetType}_${i}`;
                         let element = $('<button />', { id: elemId, type: "button", class: "asset-download-button menu_button" })
-                        const label = $("<i class=\"fa-solid fa-download fa-xl\"></i>");
+                        const label = $("<i class=\"fa-fw fa-solid fa-download fa-xl\"></i>");
                         element.append(label);
 
                         //if (DEBUG_TONY_SAMA_FORK_MODE)

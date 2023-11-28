@@ -19,6 +19,17 @@ class NovelTtsProvider {
         customVoices: []
     }
 
+    /**
+     * Perform any text processing before passing to TTS engine.
+     * @param {string} text Input text
+     * @returns {string} Processed text
+     */
+    processText(text) {
+        // Novel reads tilde as a word. Replace with full stop
+        text = text.replace(/~/g, '.');
+        return text;
+    }
+
     get settingsHtml() {
         let html = `
         <div class="novel_tts_hints">

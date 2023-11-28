@@ -4,6 +4,7 @@ import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper
 import { loadMovingUIState, power_user } from "../../power-user.js";
 import { registerSlashCommand } from "../../slash-commands.js";
 import { onlyUnique, debounce, getCharaFilename, trimToEndSentence, trimToStartSentence } from "../../utils.js";
+import { hideMutedSprites } from "../../group-chats.js";
 export { MODULE_NAME };
 
 const MODULE_NAME = 'expressions';
@@ -118,7 +119,7 @@ async function visualNovelSetCharacterSprites(container, name, expression) {
         const isDisabled = group.disabled_members.includes(avatar);
 
         // skip disabled characters
-        if (isDisabled) {
+        if (isDisabled && hideMutedSprites) {
             continue;
         }
 
@@ -208,7 +209,7 @@ async function visualNovelUpdateLayers(container) {
     const containerWidth = container.width();
     const pivotalPoint = containerWidth * 0.5;
 
-    let images = $('.expression-holder');
+    let images = $('#visual-novel-wrapper .expression-holder');
     let imagesWidth = [];
 
     images.sort(sortFunction).each(function () {
@@ -1475,22 +1476,19 @@ function setExpressionOverrideHtml(forceClear = false) {
     dragElement($("#expression-holder"))
     eventSource.on(event_types.CHAT_CHANGED, () => {
         // character changed
-        const context = getContext();
-        if (context.groupId !== lastCharacter && context.characterId !== lastCharacter) {
-            removeExpression();
-            spriteCache = {};
+        removeExpression();
+        spriteCache = {};
 
-            //clear expression
-            let imgElement = document.getElementById('expression-image');
-            if (imgElement && imgElement instanceof HTMLImageElement) {
-                imgElement.src = "";
-            }
+        //clear expression
+        let imgElement = document.getElementById('expression-image');
+        if (imgElement && imgElement instanceof HTMLImageElement) {
+            imgElement.src = "";
+        }
 
-            //set checkbox to global var
-            $('#image_type_toggle').prop('checked', extension_settings.expressions.talkinghead);
-            if (extension_settings.expressions.talkinghead) {
-                setTalkingHeadState(extension_settings.expressions.talkinghead);
-            }
+        //set checkbox to global var
+        $('#image_type_toggle').prop('checked', extension_settings.expressions.talkinghead);
+        if (extension_settings.expressions.talkinghead) {
+            setTalkingHeadState(extension_settings.expressions.talkinghead);
         }
 
         setExpressionOverrideHtml();

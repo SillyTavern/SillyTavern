@@ -1,0 +1,53 @@
+# -- NETWORK CONFIGURATION --
+# Listen for incoming connections
+listen: true
+# Server port
+port: 8000
+# Toggle whitelist mode
+whitelistMode: true
+# Whitelist of allowed IP addresses
+whitelist:
+  - 127.0.0.1
+# Toggle basic authentication for endpoints
+basicAuthMode: false
+# Basic authentication credentials
+basicAuthUser:
+  username: user
+  password: password
+# Enables CORS proxy middleware
+enableCorsProxy: false
+# Disable security checks - NOT RECOMMENDED
+securityOverride: false
+# -- ADVANCED CONFIGURATION --
+# Open the browser automatically
+autorun: true
+# Disable thumbnail generation
+disableThumbnails: false
+# Thumbnail quality (0-100)
+thumbnailsQuality: 95
+# Allow secret keys exposure via API
+allowKeysExposure: false
+# Skip new default content checks
+skipContentCheck: false
+# Disable automatic chats backup
+disableChatBackup: false
+# API request overrides (for KoboldAI and Text Completion APIs)
+## Format is an array of objects:
+## - hosts:
+##   - example.com
+##   headers:
+##     Content-Type: application/json
+requestOverrides: []
+# -- PLUGIN CONFIGURATION --
+# Enable UI extensions
+enableExtensions: true
+# Extension settings
+extras:
+  # Disables automatic model download from HuggingFace
+  disableAutoDownload: false
+  # Extra models for plugins. Expects model IDs from HuggingFace model hub in ONNX format
+  classificationModel: Cohee/distilbert-base-uncased-go-emotions-onnx
+  captioningModel: Xenova/vit-gpt2-image-captioning
+  embeddingModel: Xenova/all-mpnet-base-v2
+  promptExpansionModel: Cohee/fooocus_expansion-onnx
+
