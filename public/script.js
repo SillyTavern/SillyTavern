@@ -195,7 +195,7 @@ import { getBackgrounds, initBackgrounds } from "./scripts/backgrounds.js";
 import { hideLoader, showLoader } from "./scripts/loader.js";
 import { CharacterContextMenu, BulkEditOverlay } from "./scripts/BulkEditOverlay.js";
 import { loadMancerModels } from "./scripts/mancer-settings.js";
-import { hasPendingFileAttachment, populateFileAttachment } from "./scripts/chats.js";
+import { getFileAttachment, hasPendingFileAttachment, populateFileAttachment } from "./scripts/chats.js";
 import { replaceVariableMacros } from "./scripts/variables.js";
 
 //exporting functions and vars for mods
@@ -3019,22 +3019,27 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             coreChat.pop();
         }
 
-        coreChat = coreChat.map(chatItem => {
+        coreChat = await Promise.all(coreChat.map(async (chatItem) => {
             let message = chatItem.mes;
             let regexType = chatItem.is_user ? regex_placement.USER_INPUT : regex_placement.AI_OUTPUT;
             let options = { isPrompt: true };
 
             let regexedMessage = getRegexedString(message, regexType, options);
 
-            if (chatItem.extra?.file?.text) {
-                regexedMessage += `\n\n${chatItem.extra.file.text}`;
+            if (chatItem.extra?.file) {
+                const fileText = chatItem.extra.file.text || (await getFileAttachment(chatItem.extra.file.url));
+
+                if (fileText) {
+                    chatItem.extra.fileStart = regexedMessage.length;
+                    regexedMessage += `\n\n${fileText}`;
+                }
             }
 
             return {
                 ...chatItem,
                 mes: regexedMessage,
             };
-        });
+        }));
 
         // Determine token limit
         let this_max_context = getMaxContextSize();

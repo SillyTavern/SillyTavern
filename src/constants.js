@@ -24,6 +24,7 @@ const DIRECTORIES = {
     quickreplies: 'public/QuickReplies',
     assets: 'public/assets',
     comfyWorkflows: 'public/user/workflows',
+    files: 'public/user/files',
 };
 
 const UNSAFE_EXTENSIONS = [

@@ -1,6 +1,7 @@
 import { getContext } from "./extensions.js";
 import { getRequestHeaders } from "../script.js";
 import { isMobile } from "./RossAscends-mods.js";
+import { collapseNewlines } from "./power-user.js";
 
 /**
  * Pagination status string template.
@@ -1065,4 +1066,100 @@ export function uuidv4() {
         const v = c === 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
     });
+}
+
+function postProcessText(text) {
+    // Collapse multiple newlines into one
+    text = collapseNewlines(text);
+    // Trim leading and trailing whitespace, and remove empty lines
+    text = text.split('\n').map(l => l.trim()).filter(Boolean).join('\n');
+    // Remove carriage returns
+    text = text.replace(/\r/g, '');
+    // Normalize unicode spaces
+    text = text.replace(/\u00A0/g, ' ');
+    // Collapse multiple spaces into one (except for newlines)
+    text = text.replace(/ {2,}/g, ' ');
+    // Remove leading and trailing spaces
+    text = text.trim();
+    return text;
+}
+
+/**
+ * Use pdf.js to load and parse text from PDF pages
+ * @param {Blob} blob PDF file blob
+ * @returns {Promise<string>} A promise that resolves to the parsed text.
+ */
+export async function extractTextFromPDF(blob) {
+    async function initPdfJs() {
+        const promises = [];
+
+        const workerPromise = new Promise((resolve, reject) => {
+            const workerScript = document.createElement('script');
+            workerScript.type = 'module';
+            workerScript.async = true;
+            workerScript.src = 'lib/pdf.worker.mjs';
+            workerScript.onload = resolve;
+            workerScript.onerror = reject;
+            document.head.appendChild(workerScript);
+        });
+
+        promises.push(workerPromise);
+
+        const pdfjsPromise = new Promise((resolve, reject) => {
+            const pdfjsScript = document.createElement('script');
+            pdfjsScript.type = 'module';
+            pdfjsScript.async = true;
+            pdfjsScript.src = 'lib/pdf.mjs';
+            pdfjsScript.onload = resolve;
+            pdfjsScript.onerror = reject;
+            document.head.appendChild(pdfjsScript);
+        });
+
+        promises.push(pdfjsPromise);
+
+        return Promise.all(promises);
+    }
+
+    if (!('pdfjsLib' in window)) {
+        await initPdfJs();
+    }
+
+    const buffer = await getFileBuffer(blob);
+    const pdf = await pdfjsLib.getDocument(buffer).promise;
+    const pages = [];
+    for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const text = textContent.items.map(item => item.str).join(' ');
+        pages.push(text);
+    }
+    return postProcessText(pages.join('\n'));
+}
+
+/**
+ * Use DOMParser to load and parse text from HTML
+ * @param {Blob} blob HTML content blob
+ * @returns {Promise<string>} A promise that resolves to the parsed text.
+ */
+export async function extractTextFromHTML(blob) {
+    const html = await blob.text();
+    const domParser = new DOMParser();
+    const document = domParser.parseFromString(DOMPurify.sanitize(html), 'text/html');
+    const text = postProcessText(document.body.textContent);
+    return text;
+}
+
+/**
+ * Use showdown to load and parse text from Markdown
+ * @param {Blob} blob Markdown content blob
+ * @returns {Promise<string>} A promise that resolves to the parsed text.
+ */
+export async function extractTextFromMarkdown(blob) {
+    const markdown = await blob.text();
+    const converter = new showdown.Converter();
+    const html = converter.makeHtml(markdown);
+    const domParser = new DOMParser();
+    const document = domParser.parseFromString(DOMPurify.sanitize(html), 'text/html');
+    const text = postProcessText(document.body.textContent);
+    return text;
 }
