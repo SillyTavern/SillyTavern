@@ -448,7 +448,7 @@ function addQuickReplyBar() {
             <div id="quickReplyPopoutButton" class="fa-solid fa-window-restore menu_button"></div>
         </div>
     `;
-    console.log(targetContainer)
+
     if (targetContainer === 'bar') {
         $('#send_form').prepend(quickReplyBarFullHtml);
     } else {

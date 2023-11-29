@@ -50,9 +50,9 @@ export {
 
 export const MAX_CONTEXT_DEFAULT = 8192;
 const MAX_CONTEXT_UNLOCKED = 200 * 1000;
-const unlockedMaxContextStep = 256;
+const unlockedMaxContextStep = 1024;
 const maxContextMin = 512;
-const maxContextStep = 1;
+const maxContextStep = 256;
 
 const defaultStoryString = "{{#if system}}{{system}}\n{{/if}}{{#if description}}{{description}}\n{{/if}}{{#if personality}}{{char}}'s personality: {{personality}}\n{{/if}}{{#if scenario}}Scenario: {{scenario}}\n{{/if}}{{#if persona}}{{persona}}\n{{/if}}";
 const defaultExampleSeparator = '***';
@@ -494,10 +494,9 @@ async function switchZenSliders() {
         $(`#textgenerationwebui_api-settings :input[type='number']:not([id^='seed']),
             #kobold_api-settings :input[type='number']:not([id^='seed'])`).hide()
         //hide original sliders
-        //exclude max context because its creation is handled by switchMaxContext()
         $(`#textgenerationwebui_api-settings input[type='range'],
             #kobold_api-settings input[type='range'],
-            #pro-settings-block input[type='range']:not(#max_context)`)
+            #pro-settings-block input[type='range']:not(#max_context)`) //exclude max context because its creation is handled by switchMaxContext()
             .hide()
             .each(function () {
                 //make a zen slider for each original slider
@@ -533,7 +532,8 @@ async function CreateZenSliders(elmnt) {
     var sliderRange = sliderMax - sliderMin
     var numSteps = 10
     var decimals = 2
-    var offVal
+    var offVal, allVal
+    var stepScale
     if (sliderID == 'amount_gen') {
         decimals = 0
         var steps = [16, 50, 100, 150, 200, 256, 300, 400, 512, 1024];
@@ -546,20 +546,21 @@ async function CreateZenSliders(elmnt) {
     }
     if (sliderID == 'rep_pen_range_textgenerationwebui') {
         if (power_user.max_context_unlocked) {
-            var steps = [-1, 0, 256, 512, 768, 1024, 2048, 4096, 8192, 16355, 24576, 32768, 49152, 65536];
-            numSteps = 14
+            var steps = [0, 256, 512, 768, 1024, 2048, 4096, 8192, 16355, 24576, 32768, 49152, 65536, -1];
+            numSteps = 13
+            allVal = 13
         } else {
-            var steps = [-1, 0, 256, 512, 768, 1024, 2048, 4096, 8192];
-            numSteps = 9
+            var steps = [0, 256, 512, 768, 1024, 2048, 4096, 8192, -1];
+            numSteps = 8
+            allVal = 8
         }
         decimals = 0
         offVal = 0
         sliderMin = 0
         sliderMax = steps.length - 1
         stepScale = 1;
-
         sliderValue = steps.indexOf(Number(sliderValue))
-        if (sliderValue === -1) { sliderValue = 1 } // default to '-1 (off)' if origSlider has value we can't use
+        if (sliderValue === -1) { sliderValue = allVal } // default to allValue if origSlider has value we can't use
     }
     //customize decimals
     if (sliderID == 'max_context' ||
@@ -637,7 +638,6 @@ async function CreateZenSliders(elmnt) {
         sliderID == 'tfs' ||
         sliderID == 'top_p_textgenerationwebui' ||
         sliderID == 'top_p' ||
-        sliderID == 'num_beams_textgenerationwebui' ||
         sliderID == 'typical_p_textgenerationwebui' ||
         sliderID == 'typical_p' ||
         sliderID == 'encoder_rep_pen_textgenerationwebui' ||
@@ -652,7 +652,7 @@ async function CreateZenSliders(elmnt) {
     }
     //customize amt gen steps
     if (sliderID !== 'amount_gen' && sliderID !== 'rep_pen_range_textgenerationwebui') {
-        var stepScale = sliderRange / numSteps
+        stepScale = sliderRange / numSteps
     }
     var newSlider = $("<div>")
         .attr('id', `${sliderID}_zenslider`)
@@ -679,17 +679,25 @@ async function CreateZenSliders(elmnt) {
                 //handling creation of rep_pen_range for ooba
             } else if (newSlider.attr('id') == 'rep_pen_range_textgenerationwebui_zenslider') {
                 if ($('#rep_pen_range_textgenerationwebui_zensliders').length !== 0) {
-                    console.log('removing previous rep pen slider')
                     $('#rep_pen_range_textgenerationwebui_zensliders').remove()
                 }
-
-                console.log(`using custom process for ${newSlider.attr('id')}`)
                 var handleText = steps[sliderValue]
                 var stepNumber = sliderValue
                 var leftMargin = ((stepNumber) / numSteps) * 50 * -1
+
+                if (sliderValue === offVal) {
+                    handleText = 'Off'
+                    handle.css('color', 'rgba(128,128,128,0.5');
+                }
+                else if (sliderValue === allVal) { handleText = 'All' }
+                else { handle.css('color', ''); }
                 handle.text(handleText)
                     .css('margin-left', `${leftMargin}px`)
-                console.log(`${newSlider.attr('id')} initial value:${handleText}, stepNum:${stepNumber}, numSteps:${numSteps}, left-margin:${leftMargin}`)
+                //console.log(sliderValue, handleText, offVal, allVal)
+                //console.log(`${newSlider.attr('id')} sliderValue = ${sliderValue}, handleText:${handleText}, stepNum:${stepNumber}, numSteps:${numSteps}, left-margin:${leftMargin}`)
+                originalSlider.val(steps[sliderValue]);
+                originalSlider.trigger('input');
+                originalSlider.trigger('change');
             } else {
                 //handling creation for all other sliders
                 var numVal = Number(sliderValue).toFixed(decimals)
@@ -705,6 +713,7 @@ async function CreateZenSliders(elmnt) {
                 var isManualInput = false
                 var valueBeforeManualInput
                 handle.css('margin-left', `${leftMargin}px`)
+
                     .attr('contenteditable', 'true')
                     .on('click', function () {
                         //this just selects all the text in the handle so user can overwrite easily
@@ -743,15 +752,20 @@ async function CreateZenSliders(elmnt) {
                         }
                         isManualInput = false
                     })
-                console.debug(sliderID, sliderValue, handleText, stepNumber, stepScale)
+                console.debug(sliderID, sliderValue, stepNumber, stepScale)
+                originalSlider.val(numVal);
+                originalSlider.trigger('input');
+                originalSlider.trigger('change');
             }
         },
         slide: handleSlideEvent
     });
+
     function handleSlideEvent(event, ui, type) {
         var handle = $(this).find(".ui-slider-handle");
         var numVal = Number(ui.value).toFixed(decimals);
         offVal = Number(offVal).toFixed(decimals);
+        allVal = Number(allVal).toFixed(decimals);
         console.log(numVal, sliderMin, sliderMax, numVal > sliderMax, numVal < sliderMin)
         if (numVal > sliderMax) {
             //console.log('clamping numVal to sliderMax')
@@ -768,33 +782,37 @@ async function CreateZenSliders(elmnt) {
         var percentOfMax = Number((ui.value / sliderMax)) //what % our value is of the max
         var perStepPercent = 1 / numSteps //how far in % each step should be on the slider
         var leftPos = newSlider.width() * (stepNumber * perStepPercent) //how big of a left margin to give the slider for manual inputs
-        console.log(`
-        numVal: ${numVal},
-        sliderMax: ${sliderMax}
-        sliderMin: ${sliderMin}
-        sliderValRange: ${sliderValRange}
-        stepScale: ${stepScale}
-        Step: ${stepNumber} of ${numSteps}
-        offVal: ${offVal}
-        initial value: ${handleText}
-        left-margin: ${leftMargin}
-        width: ${newSlider.width()}
-        percent of max: ${percentOfMax}
-        left: ${leftPos}`)
+        /*         console.log(`
+                numVal: ${numVal},
+                sliderMax: ${sliderMax}
+                sliderMin: ${sliderMin}
+                sliderValRange: ${sliderValRange}
+                stepScale: ${stepScale}
+                Step: ${stepNumber} of ${numSteps}
+                offVal: ${offVal}
+                allVal = ${allVal}
+                initial value: ${handleText}
+                left-margin: ${leftMargin}
+                width: ${newSlider.width()}
+                percent of max: ${percentOfMax}
+                left: ${leftPos}`) */
         //special handling for response length slider, pulls text aliases for step values from an array
         if (newSlider.attr('id') == 'amount_gen_zenslider') {
             handleText = steps[stepNumber]
             handle.text(handleText);
             newSlider.val(stepNumber)
         }
+        //special handling for TextCompletion rep pen range slider, pulls text aliases for step values from an array
         else if (newSlider.attr('id') == 'rep_pen_range_textgenerationwebui_zenslider') {
             handleText = steps[stepNumber]
             handle.text(handleText);
             newSlider.val(stepNumber)
             if (numVal === offVal) { handle.text('Off').css('color', 'rgba(128,128,128,0.5'); }
+            else if (numVal === allVal) { handle.text('All') }
             else { handle.css('color', ''); }
         }
         //everything else uses the flat slider value
+        //also note: the above sliders are not custom inputtable due to the array aliasing
         else {
             //show 'off' if disabled value is set
             if (numVal === offVal) { handle.text('Off').css('color', 'rgba(128,128,128,0.5'); }
@@ -1522,18 +1540,18 @@ function loadMaxContextUnlocked() {
 }
 
 function switchMaxContextSize() {
-    const elements = [$('#max_context'), $('#max_context_counter'), $('#rep_pen_range'), $('#rep_pen_range_textgenerationwebui')];
+    const elements = [$('#max_context'), $('#max_context_counter'), $('#rep_pen_range'), $('#rep_pen_range_counter'), $('#rep_pen_range_textgenerationwebui'), $("#rep_pen_range_counter_textgenerationwebui")];
     const maxValue = power_user.max_context_unlocked ? MAX_CONTEXT_UNLOCKED : MAX_CONTEXT_DEFAULT;
     const minValue = power_user.max_context_unlocked ? maxContextMin : maxContextMin;
     const steps = power_user.max_context_unlocked ? unlockedMaxContextStep : maxContextStep;
-    $("#rep_pen_range_textgenerationwebui_zenslider").remove()
+    $("#rep_pen_range_textgenerationwebui_zenslider").remove() //unsure why, but this is necessary.
     for (const element of elements) {
         const id = element.attr('id');
         element.attr('max', maxValue);
-        element.attr('step', steps);
 
         if (typeof id === 'string' && id?.indexOf('max_context') !== -1) {
             element.attr('min', minValue);
+            element.attr('step', steps) //only change setps for max context, because rep pen range needs step of 1 due to important values of -1 and 0
         }
         const value = Number(element.val());
 
@@ -1544,9 +1562,7 @@ function switchMaxContextSize() {
     if (power_user.enableZenSliders) {
         $("#max_context_zenslider").remove()
         CreateZenSliders($("#max_context"))
-        console.log('removing rep pen range for unlock')
         $("#rep_pen_range_textgenerationwebui_zenslider").remove()
-        console.log('recreating rep pen range with new unlock')
         CreateZenSliders($("#rep_pen_range_textgenerationwebui"))
     }
 }
