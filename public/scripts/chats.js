@@ -119,7 +119,7 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
                     const fileText = await converter(file);
                     base64Data = window.btoa(unescape(encodeURIComponent(fileText)));
                 } catch (error) {
-                    toastr.error(error, 'Could not convert file');
+                    toastr.error(String(error), 'Could not convert file');
                     console.error('Could not convert file', error);
                 }
             }
@@ -169,7 +169,7 @@ export async function uploadFileAttachment(fileName, base64Data) {
         const responseData = await result.json();
         return responseData.path.replace(/\\/g, '/');
     } catch (error) {
-        toastr.error(error, 'Could not upload file');
+        toastr.error(String(error), 'Could not upload file');
         console.error('Could not upload file', error);
     }
 }

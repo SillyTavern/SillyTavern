@@ -9062,6 +9062,7 @@ jQuery(async function () {
             hideStopButton();
         }
         eventSource.emit(event_types.GENERATION_STOPPED);
+        activateSendButtons();
     });
 
     $('.drawer-toggle').on('click', function () {

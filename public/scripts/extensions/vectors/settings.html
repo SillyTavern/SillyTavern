@@ -5,72 +5,119 @@
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
-            <label class="checkbox_label" for="vectors_enabled">
-                <input id="vectors_enabled" type="checkbox" class="checkbox">
-                Enabled
-            </label>
-            <label for="vectors_source">
-                Vectorization Source
-            </label>
-            <select id="vectors_source" class="select">
-                <option value="transformers">Local (Transformers)</option>
-                <option value="openai">OpenAI</option>
-                <option value="palm">Google MakerSuite (PaLM)</option>
-            </select>
-            <div id="vectors_advanced_settings" data-newbie-hidden>
-                <label for="vectors_template">
-                    Insertion Template
+            <div class="flex-container flexFlowColumn">
+                <label for="vectors_source">
+                    Vectorization Source
                 </label>
-                <textarea id="vectors_template" class="text_pole textarea_compact autoSetHeight" rows="2" placeholder="Use {{text}} macro to specify the position of retrieved text."></textarea>
-                <label for="vectors_position">Injection Position</label>
-                <div class="radio_group">
-                    <label>
-                        <input type="radio" name="vectors_position" value="2" />
-                        Before Main Prompt / Story String
-                    </label>
-                    <!--Keep these as 0 and 1 to interface with the setExtensionPrompt function-->
-                    <label>
-                        <input type="radio" name="vectors_position" value="0" />
-                        After Main Prompt / Story String
-                    </label>
-                    <label>
-                        <input type="radio" name="vectors_position" value="1" />
-                        In-chat @ Depth <input id="vectors_depth" class="text_pole widthUnset" type="number" min="0" max="999" />
-                    </label>
-                </div>
+                <select id="vectors_source" class="text_pole">
+                    <option value="transformers">Local (Transformers)</option>
+                    <option value="openai">OpenAI</option>
+                    <option value="palm">Google MakerSuite (PaLM)</option>
+                </select>
+            </div>
+
+            <div class="flex-container flexFlowColumn" title="How many last messages will be matched for relevance.">
+                <label for="vectors_query">
+                    <span>Query messages</span>
+                </label>
+                <input type="number" id="vectors_query" class="text_pole widthUnset" min="1" max="99" />
+            </div>
+
+            <hr>
+
+            <h4>
+                File vectorization settings
+            </h4>
+
+            <label class="checkbox_label" for="vectors_enabled_files">
+                <input id="vectors_enabled_files" type="checkbox" class="checkbox">
+                Enabled for files
+            </label>
+
+            <div id="vectors_files_settings">
+
                 <div class="flex-container">
-                    <div class="flex1" title="Prevents last N messages from being placed out of order.">
-                        <label for="vectors_protect">
-                            <small>Retain#</small>
+                    <div class="flex1" title="Only files past this size will be vectorized.">
+                        <label for="vectors_size_threshold">
+                            <small>Size threshold (KB)</small>
                         </label>
-                        <input type="number" id="vectors_protect" class="text_pole widthUnset" min="1" max="99" />
+                        <input id="vectors_size_threshold" type="number" class="text_pole widthUnset" min="1" max="99999" />
                     </div>
-                    <div class="flex1" title="How many last messages will be matched for relevance.">
-                        <label for="vectors_query">
-                            <small>Query#</small>
+                    <div class="flex1" title="Chunk size for file splitting.">
+                        <label for="vectors_chunk_size">
+                            <small>Chunk size (chars)</small>
                         </label>
-                        <input type="number" id="vectors_query" class="text_pole widthUnset" min="1" max="99" />
+                        <input id="vectors_chunk_size" type="number" class="text_pole widthUnset" min="1" max="99999" />
                     </div>
-                    <div class="flex1" title="How many past messages to insert as memories.">
-                        <label for="vectors_insert">
-                            <small>Insert#</small>
+                    <div class="flex1" title="How many chunks to retrieve when querying.">
+                        <label for="vectors_chunk_count">
+                            <small>Retrieve chunks</small>
                         </label>
-                        <input type="number" id="vectors_insert" class="text_pole widthUnset" min="1" max="99" />
+                        <input id="vectors_chunk_count" type="number" class="text_pole widthUnset" min="1" max="99999" />
                     </div>
                 </div>
             </div>
-            <small>
-                Old messages are vectorized gradually as you chat.
-                To process all previous messages, click the button below.
-            </small>
-            <div id="vectors_vectorize_all" class="menu_button menu_button_icon">
-                Vectorize All
-            </div>
-            <div id="vectorize_progress" style="display: none;">
+
+            <hr>
+
+            <h4>
+                Chat vectorization settings
+            </h4>
+            <label class="checkbox_label" for="vectors_enabled_chats">
+                <input id="vectors_enabled_chats" type="checkbox" class="checkbox">
+                Enabled for chat messages
+            </label>
+
+            <div id="vectors_chats_settings">
+                <div id="vectors_advanced_settings" data-newbie-hidden>
+                    <label for="vectors_template">
+                        Insertion Template
+                    </label>
+                    <textarea id="vectors_template" class="text_pole textarea_compact" rows="3" placeholder="Use {{text}} macro to specify the position of retrieved text."></textarea>
+                    <label for="vectors_position">Injection Position</label>
+                    <div class="radio_group">
+                        <label>
+                            <input type="radio" name="vectors_position" value="2" />
+                            Before Main Prompt / Story String
+                        </label>
+                        <!--Keep these as 0 and 1 to interface with the setExtensionPrompt function-->
+                        <label>
+                            <input type="radio" name="vectors_position" value="0" />
+                            After Main Prompt / Story String
+                        </label>
+                        <label>
+                            <input type="radio" name="vectors_position" value="1" />
+                            In-chat @ Depth <input id="vectors_depth" class="text_pole widthUnset" type="number" min="0" max="999" />
+                        </label>
+                    </div>
+                    <div class="flex-container">
+                        <div class="flex1" title="Prevents last N messages from being placed out of order.">
+                            <label for="vectors_protect">
+                                <small>Retain#</small>
+                            </label>
+                            <input type="number" id="vectors_protect" class="text_pole widthUnset" min="1" max="99" />
+                        </div>
+                        <div class="flex1" title="How many past messages to insert as memories.">
+                            <label for="vectors_insert">
+                                <small>Insert#</small>
+                            </label>
+                            <input type="number" id="vectors_insert" class="text_pole widthUnset" min="1" max="99" />
+                        </div>
+                    </div>
+                </div>
                 <small>
-                    Processed <span id="vectorize_progress_percent">0</span>% of messages.
-                    ETA: <span id="vectorize_progress_eta">...</span> seconds.
+                    Old messages are vectorized gradually as you chat.
+                    To process all previous messages, click the button below.
                 </small>
+                <div id="vectors_vectorize_all" class="menu_button menu_button_icon">
+                    Vectorize All
+                </div>
+                <div id="vectorize_progress" style="display: none;">
+                    <small>
+                        Processed <span id="vectorize_progress_percent">0</span>% of messages.
+                        ETA: <span id="vectorize_progress_eta">...</span> seconds.
+                    </small>
+                </div>
             </div>
         </div>
     </div>

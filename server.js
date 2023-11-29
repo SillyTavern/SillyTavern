@@ -213,8 +213,8 @@ var chatsPath = 'public/chats/';
 const SETTINGS_FILE = './public/settings.json';
 const AVATAR_WIDTH = 400;
 const AVATAR_HEIGHT = 600;
-const jsonParser = express.json({ limit: '100mb' });
-const urlencodedParser = express.urlencoded({ extended: true, limit: '100mb' });
+const jsonParser = express.json({ limit: '200mb' });
+const urlencodedParser = express.urlencoded({ extended: true, limit: '200mb' });
 const { DIRECTORIES, UPLOADS_PATH, PALM_SAFETY } = require('./src/constants');
 const { TavernCardValidator } = require("./src/validator/TavernCardValidator");
 
