@@ -2387,7 +2387,7 @@ async function sdMessageButton(e) {
         }
         else {
             console.log("doing /sd raw last");
-            await generatePicture('sd', 'raw_last', `${characterName} said: ${messageText}`, saveGeneratedImage);
+            await generatePicture('sd', 'raw_last', messageText, saveGeneratedImage);
         }
     }
     catch (error) {
