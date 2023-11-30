@@ -767,16 +767,16 @@
                             <div id="kobold_api-settings">
                                 <div class="flex-container gap10h5v justifyCenter">
                                     <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                        <small data-i18n="temperature">
-                                            Temperature
+                                        <small>
+                                            <span data-i18n="temperature"Temperature></span>
                                             <div class="fa-solid fa-circle-info opacity50p" title="Temperature controls the randomness in token selection:&#13;- low temperature (<1.0) leads to more predictable text, favoring higher probability tokens.&#13;- high temperature (>1.0) increases creativity and diversity in the output by giving lower probability tokens a better chance.&#13;Set to 1.0 for the original probabilities."></div>
                                         </small>
                                         <input class="neo-range-slider" type="range" id="temp" name="volume" min="0.0" max="4.0" step="0.01">
                                         <input class="neo-range-input" type="number" min="0.0" max="4.0" step="0.01" data-for="temp" id="temp_counter">
                                     </div>
                                     <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                        <small data-i18n="Top K">
-                                            Top K
+                                        <small>
+                                            <span data-i18n="Top K">Top K</span>
                                             <div class="fa-solid fa-circle-info opacity50p" title="Top K sets a maximum amount of top tokens that can be chosen from.&#13;E.g Top K is 20, this means only the 20 highest ranking tokens will be kept (regardless of their probabilities being diverse or limited).&#13;Set to 0 to disable."></div>
                                         </small>
                                         <input class="neo-range-slider" type="range" id="top_k" name="volume" min="0" max="100" step="1">
@@ -791,54 +791,54 @@
                                         <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="top_p" id="top_p_counter">
                                     </div>
                                     <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                        <small data-i18n="Typical P">
-                                            Typical P
+                                        <small>
+                                            <span data-i18n="Typical P">Typical P</span>
                                             <div class="fa-solid fa-circle-info opacity50p" title="Typical P Sampling prioritizes tokens based on their deviation from the average entropy of the set.&#13;It maintains tokens whose cumulative probability is close to a predefined threshold (e.g., 0.5), emphasizing those with average information content.&#13;Set to 1.0 to disable."></div>
                                         </small>
                                         <input class="neo-range-slider" type="range" id="typical_p" name="volume" min="0" max="1" step="0.001">
                                         <input class="neo-range-input" type="number" min="0" max="1" step="0.001" data-for="typical_p" id="typical_p_counter">
                                     </div>
-                                    <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                        <small data-i18n="Min P">
-                                            Min P
+                                    <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                        <small>
+                                            <span data-i18n="Min P">Min P</span>
                                             <div class="fa-solid fa-circle-info opacity50p" title="Min P sets a base minimum probability.&#13;This is scaled according to the top token's probability.&#13;E.g If Top token is 80% probability, and Min P is 0.1, only tokens higher than 8% would be considered.&#13;Set to 0 to disable."></div>
                                         </small>
                                         <input class="neo-range-slider" type="range" id="min_p" name="volume" min="0" max="1" step="0.001">
                                         <input class="neo-range-input" type="number" min="0" max="1" step="0.001" data-for="min_p" id="min_p_counter">
                                     </div>
                                     <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                        <small data-i18n="Top A">
-                                            Top A
+                                        <small>
+                                            <span data-i18n="Top A">Top A</span>
                                             <div class="fa-solid fa-circle-info opacity50p" title="Top A sets a threshold for token selection based on the square of the highest token probability.&#13;E.g if the Top-A value is 0.2 and the top token's probability is 50%, tokens with probabilities below 5% (0.2 * 0.5^2) are excluded.&#13;Set to 0 to disable."></div>
                                         </small>
                                         <input class="neo-range-slider" type="range" id="top_a" name="volume" min="0" max="1" step="0.001">
                                         <input class="neo-range-input" type="number" min="0" max="1" step="0.001" data-for="top_a" id="top_a_counter">
                                     </div>
                                     <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                        <small data-i18n="Tail Free Sampling">
-                                            Tail Free Sampling
+                                        <small>
+                                            <span data-i18n="Tail Free Sampling">Tail Free Sampling</span>
                                             <div class="fa-solid fa-circle-info opacity50p" title="Tail-Free Sampling (TFS) analyzes the rate of change in token probabilities using derivatives.&#13;It retains tokens up to a threshold (e.g., 0.3) based on the normalized second derivative.&#13;Set to 1.0 to disable."></div>
                                         </small>
                                         <input class="neo-range-slider" type="range" id="tfs" name="volume" min="0" max="1" step="0.001">
                                         <input class="neo-range-input" type="number" min="0" max="1" step="0.001" data-for="tfs" id="tfs_counter">
                                     </div>
                                     <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                        <small data-i18n="rep.pen">
-                                            Repetition Penalty
+                                        <small>
+                                            <span data-i18n="rep.pen">Repetition Penalty</span>
                                         </small>
                                         <input class="neo-range-slider" type="range" id="rep_pen" name="volume" min="1" max="1.5" step="0.01">
                                         <input class="neo-range-input" type="number" min="1" max="1.5" step="0.01" data-for="rep_pen" id="rep_pen_counter">
                                     </div>
                                     <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                        <small data-i18n="rep.pen range">
-                                            Repetition Penalty Range
+                                        <small>
+                                            <span data-i18n="rep.pen range">Repetition Penalty Range</span>
                                         </small>
                                         <input class="neo-range-slider" type="range" id="rep_pen_range" name="volume" min="0" max="4096" step="1">
                                         <input class="neo-range-input" type="number" min="0" max="4096" step="1" data-for="rep_pen_range" id="rep_pen_range_counter">
                                     </div>
                                     <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                        <small data-i18n="Rep. Pen. Slope">
-                                            Repetition Penalty Slope
+                                        <small>
+                                            <span data-i18n="Rep. Pen. Slope">Repetition Penalty Slope</span>
                                         </small>
                                         <input class="neo-range-slider" type="range" id="rep_pen_slope" name="volume" min="0" max="10" step="0.01">
                                         <input class="neo-range-input" type="number" min="0" max="10" step="0.01" data-for="rep_pen_slope" id="rep_pen_slope_counter">
@@ -873,8 +873,8 @@
                                     <div data-newbie-hidden class="alignitemscenter justifyCenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
                                         <label class="checkbox_label alignItemsBaseline" for="use_default_badwordsids">
                                             <input id="use_default_badwordsids" type="checkbox" />
-                                            <span data-i18n="Ban EOS Token">
-                                                Ban EOS Token
+                                            <span>
+                                                <span data-i18n="Ban EOS Token">Ban EOS Token</span>
                                                 <small class="fa-solid fa-circle-info opacity50p" title="Ban the End-of-Sequence (EOS) token with KoboldCpp (and possibly also other tokens with KoboldAI).&#13;Good for story writing, but should not be used for chat and instruct mode."></small>
                                             </span>
                                         </label>
@@ -887,7 +887,7 @@
                                     </div>
                                     <div data-newbie-hidden id="grammar_block" class="wide100p">
                                         <hr class="wide100p">
-                                        <h4 class="wide100p textAlignCenter" data-i18n="GBNF Grammar">GBNF Grammar
+                                        <h4 class="wide100p textAlignCenter"><span data-i18n="GBNF Grammar">GBNF Grammar</span>
                                             <a href="https://github.com/ggerganov/llama.cpp/blob/master/grammars/README.md" target="_blank">
                                                 <small>
                                                     <div class="fa-solid fa-circle-question note-link-span"></div>
@@ -1154,17 +1154,26 @@
                             <div id="textgenerationwebui_api-settings">
                                 <div class="flex-container gap10h5v justifyCenter">
                                     <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                        <small data-i18n="temperature">Temperature</small>
+                                        <small>
+                                            <span data-i18n="temperature">Temperature</span>
+                                            <div class="fa-solid fa-circle-info opacity50p" title="Temperature controls the randomness in token selection:&#13;- low temperature (<1.0) leads to more predictable text, favoring higher probability tokens.&#13;- high temperature (>1.0) increases creativity and diversity in the output by giving lower probability tokens a better chance.&#13;Set to 1.0 for the original probabilities."></div>
+                                        </small>
                                         <input class="neo-range-slider" type="range" id="temp_textgenerationwebui" name="volume" min="0.0" max="4.0" step="0.01" x-setting-id="temp">
                                         <input class="neo-range-input" type="number" min="0.0" max="4.0" step="0.01" data-for="temp_textgenerationwebui" id="temp_counter_textgenerationwebui">
                                     </div>
                                     <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                        <small data-i18n="Top K">Top K</small>
+                                        <small>
+                                            <span data-i18n="Top K">Top K</span>
+                                            <div class="fa-solid fa-circle-info opacity50p" title="Top K sets a maximum amount of top tokens that can be chosen from.&#13;E.g Top K is 20, this means only the 20 highest ranking tokens will be kept (regardless of their probabilities being diverse or limited).&#13;Set to 0 to disable."></div>
+                                        </small>
                                         <input class="neo-range-slider" type="range" id="top_k_textgenerationwebui" name="volume" min="0" max="200" step="1">
                                         <input class="neo-range-input" type="number" min="0" max="200" step="1" data-for="top_k_textgenerationwebui" id="top_k_counter_textgenerationwebui">
                                     </div>
                                     <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                        <small data-i18n="Top P">Top P</small>
+                                        <small>
+                                            <span data-i18n="Top P">Top P</span>
+                                            <div class="fa-solid fa-circle-info opacity50p" title="Top P adds up all the top tokens required to add up to the target percentage.&#13;E.g If the Top 2 tokens are both 25%, and Top P is 0.50, only the Top 2 tokens are considered.&#13;Set to 1.0 to disable."></div>
+                                        </small>
                                         <input class="neo-range-slider" type="range" id="top_p_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
                                         <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="top_p_textgenerationwebui" id="top_p_counter_textgenerationwebui">
                                     </div>
@@ -1173,8 +1182,11 @@
                                         <input class="neo-range-slider" type="range" id="typical_p_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
                                         <input class="neo-range-input" type="number" min="0" max="1" step="0.01" data-for="typical_p_textgenerationwebui" id="typical_p_counter_textgenerationwebui">
                                     </div>
-                                    <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
-                                        <small data-i18n="Min P">Min P</small>
+                                    <div class="alignitemscenter flex-container flexFlowColumn flexBasis48p flexGrow flexShrink gap0">
+                                        <small>
+                                            <span data-i18n="Min P">Min P</span>
+                                            <div class="fa-solid fa-circle-info opacity50p" title="Min P sets a base minimum probability.&#13;This is scaled according to the top token's probability.&#13;E.g If Top token is 80% probability, and Min P is 0.1, only tokens higher than 8% would be considered.&#13;Set to 0 to disable."></div>
+                                        </small>
                                         <input class="neo-range-slider" type="range" id="min_p_textgenerationwebui" name="volume" min="0" max="1" step="0.01">
                                         <input class="neo-range-input" type="number" min="0" max="1" step="0.05" data-for="min_p_textgenerationwebui" id="min_p_counter_textgenerationwebui">
                                     </div>
@@ -1368,17 +1380,17 @@
                                             <textarea id="banned_tokens_textgenerationwebui" class="text_pole textarea_compact" name="banned_tokens_textgenerationwebui" rows="3" placeholder="Example:&#10;some text&#10;[42, 69, 1337]"></textarea>
                                         </div>
                                     </div>
-                                    <div data-forAphro=False class="wide100p">
-                                        <hr data-newbie-hidden class="width100p">
+                                    <div data-newbie-hidden data-forAphro=False class="wide100p">
+                                        <hr  class="width100p">
                                         <h4 data-i18n="CFG" class="textAlignCenter">CFG
                                             <div class="margin5 fa-solid fa-circle-info opacity50p " title="Helpful tip coming soon."></div>
                                         </h4>
-                                        <div data-newbie-hidden class="alignitemscenter flex-container flexFlowColumn flexShrink gap0">
+                                        <div class="alignitemscenter flex-container flexFlowColumn flexShrink gap0">
                                             <small>Scale</small>
                                             <input class="neo-range-slider" type="range" id="guidance_scale_textgenerationwebui" name="volume" min="0.1" max="4" step="0.05">
                                             <input class="neo-range-input" type="number" min="0.1" max="4" step="0.05" data-for="guidance_scale_textgenerationwebui" id="guidance_scale_counter_textgenerationwebui">
                                         </div>
-                                        <div data-newbie-hidden class="range-block">
+                                        <div class="range-block">
                                             <div class="range-block-title justifyLeft">
                                                 <span data-i18n="Negative Prompt">Negative Prompt</span>
                                                 <small>
@@ -3986,7 +3998,7 @@
                             <span class="flex-container alignitemscenter wide100p">
                                 <div class="WIEntryTitleAndStatus flex-container flex1 alignitemscenter">
                                     <div class="flex-container flex1">
-                                        <textarea class="text_pole" name="comment" maxlength="5000" data-i18n="[placeholder]Entry Title/Memo" placeholder="Entry Title/Memo"></textarea>
+                                        <textarea class="text_pole autoSetHeight" name="comment" maxlength="5000" data-i18n="[placeholder]Entry Title/Memo" placeholder="Entry Title/Memo"></textarea>
                                     </div>
                                     <!-- <span class="world_entry_form_position_value"></span> -->
                                     <select title="WI Entry Status:&#13;🔵 Constant&#13;🟢 Normal&#13;❌ Disabled" name="entryStateSelector" class="widthNatural margin0">
