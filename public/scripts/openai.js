@@ -114,7 +114,7 @@ const max_128k = 128 * 1000;
 const max_200k = 200 * 1000;
 const scale_max = 8191;
 const claude_max = 9000; // We have a proper tokenizer, so theoretically could be larger (up to 9k)
-const palm2_max = 7500; // The real context window is 8192, spare some for padding due to using turbo tokenizer
+const palm2_max = 7400; // The real context window is 8192, spare some for padding due to using turbo tokenizer
 const claude_100k_max = 99000;
 let ai21_max = 9200; //can easily fit 9k gpt tokens because j2's tokenizer is efficient af
 const unlocked_max = 100 * 1024;
@@ -2970,7 +2970,7 @@ function onSettingsPresetChange() {
     const preset = structuredClone(openai_settings[openai_setting_names[oai_settings.preset_settings_openai]]);
 
     const updateInput = (selector, value) => $(selector).val(value).trigger('input');
-    const updateCheckbox = (selector, value) => $(selector).prop('checked', value).trigger('input');
+    const updateCheckbox = (selector, value) => $(selector).prop('checked', value).trigger('input').trigger('change');
 
     // Allow subscribers to alter the preset before applying deltas
     eventSource.emit(event_types.OAI_PRESET_CHANGED_BEFORE, {
