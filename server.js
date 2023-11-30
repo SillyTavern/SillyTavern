@@ -3303,6 +3303,7 @@ app.post("/generate_openai", jsonParser, function (request, response_generate_op
             "top_k": request.body.top_k,
             "stop": isTextCompletion === false ? request.body.stop : undefined,
             "logit_bias": request.body.logit_bias,
+            "seed": request.body.seed,
             ...bodyParams,
         }),
         signal: controller.signal,

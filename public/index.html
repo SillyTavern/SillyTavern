@@ -737,6 +737,17 @@
                                         <div id="openai_proxy_password_show" title="Peek a password" class="menu_button fa-solid fa-eye-slash fa-fw"></div>
                                     </div>
                                 </div>
+                                <div data-newbie-hidden class="range-block" data-source="openai,openrouter">
+                                    <div class="range-block-title justifyLeft" data-i18n="Seed">
+                                        Seed
+                                    </div>
+                                    <div class="toggle-description justifyLeft" data-i18n="Set to get deterministic results. Use -1 for random seed.">
+                                        Set to get deterministic results. Use -1 for random seed.
+                                    </div>
+                                    <div class="wide100p">
+                                        <input type="number" id="seed_openai" name="seed_openai" class="text_pole" min="-1" max="2147483647" value="-1">
+                                    </div>
+                                </div>
                                 <div data-newbie-hidden class="range-block" data-source="openai,claude">
                                     <div class="range-block-title justifyLeft">
                                         <label for="legacy_streaming" class="checkbox_label">
