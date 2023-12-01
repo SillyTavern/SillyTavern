@@ -95,10 +95,6 @@ function decrementGlobalVariable(name) {
  * @returns {string} Variable value or the string literal
  */
 export function resolveVariable(name) {
-    if (name === undefined) {
-        return '';
-    }
-
     if (existsLocalVariable(name)) {
         return getLocalVariable(name);
     }
