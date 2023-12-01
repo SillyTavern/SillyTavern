@@ -9306,77 +9306,133 @@ jQuery(async function () {
         }
     });
 
-    let manualInputTimeout;
 
-    $(document).on('input', '.range-block-counter input, .neo-range-input', function () {
-        clearTimeout(manualInputTimeout);
-        manualInputTimeout = setTimeout(() => {
-            const caretPosition = saveCaretPosition($(this).get(0));
-            const myText = $(this).val().trim();
-            $(this).val(myText); // trim line breaks and spaces
-            const masterSelector = $(this).data('for');
-            const masterElement = document.getElementById(masterSelector);
+    var isManualInput = false
+    var valueBeforeManualInput
 
-            if (masterElement == null) {
-                console.error('Master input element not found for the editable label', masterSelector);
-                return;
+    $('.range-block-counter input, .neo-range-input').on('click', function () {
+        valueBeforeManualInput = $(this).val()
+        console.log(valueBeforeManualInput)
+    })
+        .on('keydown', function (e) {
+            const masterSelector = "#" + $(this).data('for');
+            const masterElement = $(masterSelector);
+            if (e.key === 'Enter') {
+                let manualInput = parseFloat($(this).val())
+                if (isManualInput) {
+                    //disallow manual inputs outside acceptable range
+                    if (manualInput >= $(this).attr('min') && manualInput <= $(this).attr('max')) {
+                        //if value is ok, assign to slider and update handle text and position
+                        //newSlider.val(manualInput)
+                        //handleSlideEvent.call(newSlider, null, { value: parseFloat(manualInput) }, 'manual');
+                        valueBeforeManualInput = manualInput
+                        $(masterElement).val($(this).val()).trigger('input')
+                    } else {
+                        //if value not ok, warn and reset to last known valid value
+                        toastr.warning(`Invalid value. Must be between ${$(this).attr('min')} and ${$(this).attr('max')}`)
+                        console.log(valueBeforeManualInput)
+                        //newSlider.val(valueBeforeManualInput)
+                        $(this).val(valueBeforeManualInput)
+                    }
+                }
             }
-
-            const myValue = Number(myText);
-            const masterStep = Number(masterElement.getAttribute('step'))
-            const masterMin = Number($(masterElement).attr('min'));
-            const masterMax = Number($(masterElement).attr('max'));
-            const rawStepCompare = myValue / masterStep
-            const closestStep = Math.round(rawStepCompare)
-            const closestStepRaw = (closestStep) * masterStep
-
-            //yolo anything for Lab Mode
-            if (power_user.enableLabMode) {
-                //console.log($(masterElement).attr('id'), myValue)
-                $(masterElement).val(myValue).trigger('input')
-                return
+        })
+        .on('keyup', function () {
+            valueBeforeManualInput = $(this).val()
+            console.log(valueBeforeManualInput)
+            isManualInput = true
+        })
+        //trigger slider changes when user clicks away
+        .on('mouseup blur', function () {
+            const masterSelector = "#" + $(this).data('for');
+            const masterElement = $(masterSelector);
+            let manualInput = parseFloat($(this).val())
+            if (isManualInput) {
+                //if value is between correct range for the slider
+                if (manualInput >= $(this).attr('min') && manualInput <= $(this).attr('max')) {
+                    valueBeforeManualInput = manualInput
+                    //set the slider value to input value
+                    $(masterElement).val($(this).val()).trigger('input')
+                } else {
+                    //if value not ok, warn and reset to last known valid value
+                    toastr.warning(`Invalid value. Must be between ${$(this).attr('min')} and ${$(this).attr('max')}`)
+                    console.log(valueBeforeManualInput)
+                    $(this).val(valueBeforeManualInput)
+                }
             }
-
-            //if text box val is not a number, reset slider val to its previous and wait for better input
-            if (Number.isNaN(myValue)) {
-                console.warn('Label input is not a valid number. Resetting the value to match slider', myText);
-                $(masterElement).trigger('input');
+            isManualInput = false
+        })
+    /*
+        let manualInputTimeout;
+             .on('input', '.range-block-counter input, .neo-range-input', function () {
+            clearTimeout(manualInputTimeout);
+            manualInputTimeout = setTimeout(() => {
+                const caretPosition = saveCaretPosition($(this).get(0));
+                const myText = $(this).val().trim();
+                $(this).val(myText); // trim line breaks and spaces
+                const masterSelector = $(this).data('for');
+                const masterElement = document.getElementById(masterSelector);
+    
+                if (masterElement == null) {
+                    console.error('Master input element not found for the editable label', masterSelector);
+                    return;
+                }
+    
+                const myValue = Number(myText);
+                const masterStep = Number(masterElement.getAttribute('step'))
+                const masterMin = Number($(masterElement).attr('min'));
+                const masterMax = Number($(masterElement).attr('max'));
+                const rawStepCompare = myValue / masterStep
+                const closestStep = Math.round(rawStepCompare)
+                const closestStepRaw = (closestStep) * masterStep
+    
+                //yolo anything for Lab Mode
+                if (power_user.enableLabMode) {
+                    //console.log($(masterElement).attr('id'), myValue)
+                    $(masterElement).val(myValue).trigger('input')
+                    return
+                }
+    
+                //if text box val is not a number, reset slider val to its previous and wait for better input
+                if (Number.isNaN(myValue)) {
+                    console.warn('Label input is not a valid number. Resetting the value to match slider', myText);
+                    $(masterElement).trigger('input');
+                    restoreCaretPosition($(this).get(0), caretPosition);
+                    return;
+                }
+    
+                //if textbox val is less than min, set slider to min
+                //PROBLEM: the moment slider gets set to min, textbox also auto-sets to min.
+                //if min = 0, this prevents further typing and locks input at 0 unless users pastes
+                //a multi-character number which is between min and max. adding delay was necessary.
+                if (myValue < masterMin) {
+                    console.warn('Label input is less than minimum.', myText, '<', masterMin);
+                    $(masterElement).val(masterMin).trigger('input').trigger('mouseup');
+                    $(masterElement).val(myValue)
+                    restoreCaretPosition($(this).get(0), caretPosition);
+                    return;
+                }
+                //Same as above but in reverse. Not a problem because max value has multiple
+                //characters which can be edited.
+                if (myValue > masterMax) {
+                    console.warn('Label input is more than maximum.', myText, '>', masterMax);
+                    $(masterElement).val(masterMax).trigger('input').trigger('mouseup');
+                    $(masterElement).val(myValue)
+                    restoreCaretPosition($(this).get(0), caretPosition);
+                    return;
+                }
+    
+                //round input value to nearest step if between min and max
+                if (!(myValue < masterMin) && !(myValue > masterMax)) {
+                    console.debug(`Label value ${myText} is OK, setting slider to closest step (${closestStepRaw})`);
+                    $(masterElement).val(closestStepRaw).trigger('input').trigger('mouseup');
+                    restoreCaretPosition($(this).get(0), caretPosition);
+                    return;
+                }
+    
                 restoreCaretPosition($(this).get(0), caretPosition);
-                return;
-            }
-
-            //if textbox val is less than min, set slider to min
-            //PROBLEM: the moment slider gets set to min, textbox also auto-sets to min.
-            //if min = 0, this prevents further typing and locks input at 0 unless users pastes
-            //a multi-character number which is between min and max. adding delay was necessary.
-            if (myValue < masterMin) {
-                console.warn('Label input is less than minimum.', myText, '<', masterMin);
-                $(masterElement).val(masterMin).trigger('input').trigger('mouseup');
-                $(masterElement).val(myValue)
-                restoreCaretPosition($(this).get(0), caretPosition);
-                return;
-            }
-            //Same as above but in reverse. Not a problem because max value has multiple
-            //characters which can be edited.
-            if (myValue > masterMax) {
-                console.warn('Label input is more than maximum.', myText, '>', masterMax);
-                $(masterElement).val(masterMax).trigger('input').trigger('mouseup');
-                $(masterElement).val(myValue)
-                restoreCaretPosition($(this).get(0), caretPosition);
-                return;
-            }
-
-            //round input value to nearest step if between min and max
-            if (!(myValue < masterMin) && !(myValue > masterMax)) {
-                console.debug(`Label value ${myText} is OK, setting slider to closest step (${closestStepRaw})`);
-                $(masterElement).val(closestStepRaw).trigger('input').trigger('mouseup');
-                restoreCaretPosition($(this).get(0), caretPosition);
-                return;
-            }
-
-            restoreCaretPosition($(this).get(0), caretPosition);
-        }, 2000);
-    });
+            }, 2000); */
+    //});
 
     $(".user_stats_button").on('click', function () {
         userStatsHandler();
