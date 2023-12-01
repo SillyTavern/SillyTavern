@@ -2209,11 +2209,7 @@ function getStoppingStrings(isImpersonate, isContinue) {
     }
 
     result.push(...getInstructStoppingSequences());
-
-    if (power_user.custom_stopping_strings) {
-        const customStoppingStrings = getCustomStoppingStrings();
-        result.push(...customStoppingStrings);
-    }
+    result.push(...getCustomStoppingStrings());
 
     if (power_user.single_line) {
         result.unshift('\n');
@@ -9382,12 +9378,12 @@ jQuery(async function () {
                 $(this).val(myText); // trim line breaks and spaces
                 const masterSelector = $(this).data('for');
                 const masterElement = document.getElementById(masterSelector);
-    
+
                 if (masterElement == null) {
                     console.error('Master input element not found for the editable label', masterSelector);
                     return;
                 }
-    
+
                 const myValue = Number(myText);
                 const masterStep = Number(masterElement.getAttribute('step'))
                 const masterMin = Number($(masterElement).attr('min'));
@@ -9395,14 +9391,14 @@ jQuery(async function () {
                 const rawStepCompare = myValue / masterStep
                 const closestStep = Math.round(rawStepCompare)
                 const closestStepRaw = (closestStep) * masterStep
-    
+
                 //yolo anything for Lab Mode
                 if (power_user.enableLabMode) {
                     //console.log($(masterElement).attr('id'), myValue)
                     $(masterElement).val(myValue).trigger('input')
                     return
                 }
-    
+
                 //if text box val is not a number, reset slider val to its previous and wait for better input
                 if (Number.isNaN(myValue)) {
                     console.warn('Label input is not a valid number. Resetting the value to match slider', myText);
@@ -9410,7 +9406,7 @@ jQuery(async function () {
                     restoreCaretPosition($(this).get(0), caretPosition);
                     return;
                 }
-    
+
                 //if textbox val is less than min, set slider to min
                 //PROBLEM: the moment slider gets set to min, textbox also auto-sets to min.
                 //if min = 0, this prevents further typing and locks input at 0 unless users pastes
@@ -9431,7 +9427,7 @@ jQuery(async function () {
                     restoreCaretPosition($(this).get(0), caretPosition);
                     return;
                 }
-    
+
                 //round input value to nearest step if between min and max
                 if (!(myValue < masterMin) && !(myValue > masterMax)) {
                     console.debug(`Label value ${myText} is OK, setting slider to closest step (${closestStepRaw})`);
@@ -9439,7 +9435,7 @@ jQuery(async function () {
                     restoreCaretPosition($(this).get(0), caretPosition);
                     return;
                 }
-    
+
                 restoreCaretPosition($(this).get(0), caretPosition);
             }, 2000); */
     //});
