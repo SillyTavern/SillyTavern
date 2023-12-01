@@ -4399,7 +4399,7 @@ function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete
 
     for (const stoppingString of stoppingStrings) {
         if (stoppingString.length) {
-            for (let j = stoppingString.length - 1; j > 0; j--) {
+            for (let j = stoppingString.length; j > 0; j--) {
                 if (getMessage.slice(-j) === stoppingString.slice(0, j)) {
                     getMessage = getMessage.slice(0, -j);
                     break;
