@@ -5406,9 +5406,10 @@ async function doOnboarding(avatarId) {
     template.find('input[name="enable_simple_mode"]').on('input', function () {
         simpleUiMode = $(this).is(':checked');
     });
-    const userName = await callPopup(template, 'input', name1);
+    var userName = await callPopup(template, 'input', name1);
 
     if (userName) {
+        userName = userName.replace('\n', ' ')
         setUserName(userName);
         console.log(`Binding persona ${avatarId} to name ${userName}`);
         power_user.personas[avatarId] = userName;
