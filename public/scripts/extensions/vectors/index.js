@@ -23,9 +23,9 @@ const settings = {
 
     // For files
     enabled_files: false,
-    size_threshold: 5,
-    chunk_size: 1000,
-    chunk_count: 4,
+    size_threshold: 10,
+    chunk_size: 5000,
+    chunk_count: 2,
 };
 
 const moduleWorker = new ModuleWorkerWrapper(synchronizeChat);
@@ -176,7 +176,9 @@ async function processFiles(chat) {
             }
 
             // Trim file inserted by the script
-            const fileText = message.mes.substring(message.extra.fileStart).trim();
+            const fileText = String(message.mes)
+                .substring(0, message.extra.fileLength).trim()
+                .replace(/^```/, '').replace(/```$/, '').trim();
 
             // Convert kilobytes to string length
             const thresholdLength = settings.size_threshold * 1024;
@@ -186,7 +188,7 @@ async function processFiles(chat) {
                 continue;
             }
 
-            message.mes = message.mes.substring(0, message.extra.fileStart);
+            message.mes = message.mes.substring(message.extra.fileLength);
 
             const fileName = message.extra.file.name;
             const collectionId = `file_${getStringHash(fileName)}`;
@@ -200,7 +202,8 @@ async function processFiles(chat) {
             const queryText = getQueryText(chat);
             const fileChunks = await retrieveFileChunks(queryText, collectionId);
 
-            message.mes += '\n\n' + fileChunks;
+            // Wrap it back in a code block
+            message.mes = `\`\`\`\n${fileChunks}\n\`\`\`\n\n${message.mes}`;
         }
     } catch (error) {
         console.error('Vectors: Failed to retrieve files', error);

@@ -3027,8 +3027,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 const fileText = chatItem.extra.file.text || (await getFileAttachment(chatItem.extra.file.url));
 
                 if (fileText) {
-                    chatItem.extra.fileStart = regexedMessage.length;
-                    regexedMessage += `\n\n${fileText}`;
+                    const fileWrapped = `\`\`\`\n${fileText}\n\`\`\`\n\n`;
+                    chatItem.extra.fileLength = fileWrapped.length;
+                    regexedMessage = fileWrapped + regexedMessage;
                 }
             }
 
