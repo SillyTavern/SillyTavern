@@ -1,5 +1,5 @@
 import { saveSettings, callPopup, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types, getExtensionPrompt, MAX_INJECTION_DEPTH, extension_prompt_types, getExtensionPromptByName, saveMetadata, getCurrentChatId } from "../script.js";
-import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition } from "./utils.js";
+import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean } from "./utils.js";
 import { extension_settings, getContext } from "./extensions.js";
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from "./authors-note.js";
 import { registerSlashCommand } from "./slash-commands.js";
@@ -196,6 +196,13 @@ function setWorldInfoSettings(settings, data) {
 }
 
 function registerWorldInfoSlashCommands() {
+    function reloadEditor(file) {
+        const selectedIndex = world_names.indexOf(file);
+        if (selectedIndex !== -1) {
+            $('#world_editor_select').val(selectedIndex).trigger('change');
+        }
+    }
+
     async function getEntriesFromFile(file) {
         if (!file || !world_names.includes(file)) {
             toastr.warning('Valid World Info file name is required');
@@ -285,6 +292,12 @@ function registerWorldInfoSlashCommands() {
         const entry = entries.find(x => x.uid === uid);
 
         if (!entry) {
+            toastr.warning('Valid UID is required');
+            return '';
+        }
+
+        if (newEntryTemplate[field] === undefined) {
+            toastr.warning('Valid field name is required');
             return '';
         }
 
@@ -298,7 +311,7 @@ function registerWorldInfoSlashCommands() {
             return fieldValue.map(x => substituteParams(x)).join(', ');
         }
 
-        return substituteParams(fieldValue);
+        return substituteParams(String(fieldValue));
     }
 
     async function createEntryCallback(args, content) {
@@ -325,19 +338,64 @@ function registerWorldInfoSlashCommands() {
         }
 
         await saveWorldInfo(file, data, true);
-
-        const selectedIndex = world_names.indexOf(file);
-        if (selectedIndex !== -1) {
-            $('#world_editor_select').val(selectedIndex).trigger('change');
-        }
+        reloadEditor(file);
 
         return entry.uid;
+    }
+
+    async function setEntryFieldCallback(args, value) {
+        const file = resolveVariable(args.file);
+        const uid = resolveVariable(args.uid);
+        const field = args.field || 'content';
+
+        if (value === undefined) {
+            toastr.warning('Value is required');
+            return '';
+        }
+
+        const data = await loadWorldInfoData(file);
+
+        if (!data || !("entries" in data)) {
+            toastr.warning('Valid World Info file name is required');
+            return '';
+        }
+
+        const entry = data.entries[uid];
+
+        if (!entry) {
+            toastr.warning('Valid UID is required');
+            return '';
+        }
+
+        if (newEntryTemplate[field] === undefined) {
+            toastr.warning('Valid field name is required');
+            return '';
+        }
+
+        if (Array.isArray(entry[field])) {
+            entry[field] = value.split(',').map(x => x.trim()).filter(x => x);
+        } else if (typeof entry[field] === 'boolean') {
+            entry[field] = isTrueBoolean(value);
+        } else if (typeof entry[field] === 'number') {
+            entry[field] = Number(value);
+        } else {
+            entry[field] = value;
+        }
+
+        if (originalDataKeyMap[field]) {
+            setOriginalDataValue(data, uid, originalDataKeyMap[field], entry[field]);
+        }
+
+        await saveWorldInfo(file, data, true);
+        reloadEditor(file);
+        return '';
     }
 
     registerSlashCommand('getchatbook', getChatBookCallback, ['getchatlore', 'getchatwi'], '– get a name of the chat-bound lorebook or create a new one if was unbound, and pass it down the pipe', true, true);
     registerSlashCommand('findentry', findBookEntryCallback, ['findlore', 'findwi'], `<span class="monospace">(file=bookName field=field [texts])</span> – find a UID of the record from the specified book using the fuzzy match of a field value (default: key) and pass it down the pipe, e.g. <tt>/findentry file=chatLore field=key Shadowfang</tt>`, true, true);
     registerSlashCommand('getentryfield', getEntryFieldCallback, ['getlorefield', 'getwifield'], '<span class="monospace">(file=bookName field=field [UID])</span> – get a field value (default: content) of the record with the UID from the specified book and pass it down the pipe, e.g. <tt>/getentryfield file=chatLore field=content 123</tt>', true, true);
     registerSlashCommand('createentry', createEntryCallback, ['createlore', 'createwi'], '<span class="monospace">(file=bookName key=key [content])</span> – create a new record in the specified book with the key and content (both are optional) and pass the UID down the pipe, e.g. <tt>/createentry file=chatLore key=Shadowfang The sword of the king</tt>', true, true);
+    registerSlashCommand('setentryfield', setEntryFieldCallback, ['setlorefield', 'setwifield'], '<span class="monospace">(file=bookName uid=UID field=field [value])</span> – set a field value (default: content) of the record with the UID from the specified book. To set multiple values for key fields, use comma-delimited list as a value, e.g. <tt>/setentryfield file=chatLore uid=123 field=key Shadowfang,sword,weapon</tt>', true, true);
 }
 
 // World Info Editor
@@ -687,6 +745,23 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
         }
     });
     //$("#world_popup_entries_list").disableSelection();
+}
+
+const originalDataKeyMap = {
+    'displayIndex': 'extensions.display_index',
+    'excludeRecursion': 'extensions.exclude_recursion',
+    'selectiveLogic': 'selectiveLogic',
+    'comment': 'comment',
+    'constant': 'constant',
+    'order': 'insertion_order',
+    'depth': 'extensions.depth',
+    'probability': 'extensions.probability',
+    'position': 'extensions.position',
+    'content': 'content',
+    'enabled': 'enabled',
+    'key': 'keys',
+    'keysecondary': 'secondary_keys',
+    'selective': 'selective',
 }
 
 function setOriginalDataValue(data, uid, key, value) {
@@ -1283,23 +1358,24 @@ async function deleteWorldInfoEntry(data, uid) {
     delete data.entries[uid];
 }
 
+const newEntryTemplate = {
+    key: [],
+    keysecondary: [],
+    comment: "",
+    content: "",
+    constant: false,
+    selective: true,
+    selectiveLogic: 0,
+    addMemo: false,
+    order: 100,
+    position: 0,
+    disable: false,
+    excludeRecursion: false,
+    probability: 100,
+    useProbability: true,
+};
+
 function createWorldInfoEntry(name, data, fromSlashCommand = false) {
-    const newEntryTemplate = {
-        key: [],
-        keysecondary: [],
-        comment: "",
-        content: "",
-        constant: false,
-        selective: true,
-        selectiveLogic: 0,
-        addMemo: false,
-        order: 100,
-        position: 0,
-        disable: false,
-        excludeRecursion: false,
-        probability: 100,
-        useProbability: true,
-    };
     const newUid = getFreeWorldEntryUid(data);
 
     if (!Number.isInteger(newUid)) {
@@ -1307,7 +1383,7 @@ function createWorldInfoEntry(name, data, fromSlashCommand = false) {
         return;
     }
 
-    const newEntry = { uid: newUid, ...newEntryTemplate };
+    const newEntry = { uid: newUid, ...structuredClone(newEntryTemplate) };
     data.entries[newUid] = newEntry;
 
     if (!fromSlashCommand) {
