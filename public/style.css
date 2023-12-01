@@ -3585,10 +3585,18 @@ a {
 }
 
 .zoomed_avatar {
+    /* Max height with 2/3 aspect ratio */
+    --maxWidth: calc(90vh * 0.666);
+    /* Left gap between the left corner and chat */
+    --leftGapWidth: calc((100vw - var(--sheldWidth)) / 2);
+    /* Left position of the avatar (half of the gap minus half of the avatar width) */
+    --leftPosition: max(0px, calc((var(--leftGapWidth) - var(--maxWidth)) / 2));
     aspect-ratio: 2 / 3;
     padding: 0;
     border: 0;
     background-color: transparent;
+    max-width: var(--maxWidth);
+    left: var(--leftPosition);
 }
 
 .zoomed_avatar img {
