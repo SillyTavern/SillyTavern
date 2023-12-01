@@ -1373,6 +1373,7 @@ const newEntryTemplate = {
     excludeRecursion: false,
     probability: 100,
     useProbability: true,
+    depth: DEFAULT_DEPTH,
 };
 
 function createWorldInfoEntry(name, data, fromSlashCommand = false) {
