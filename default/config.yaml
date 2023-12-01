@@ -54,3 +54,7 @@ extras:
 openai:
   # Will send a random user ID to OpenAI completion API
   randomizeUserId: false
+# -- DEEPL TRANSLATION CONFIGURATION --
+deepl:
+  # Available options: default, more, less, prefer_more, prefer_less
+  formality: default

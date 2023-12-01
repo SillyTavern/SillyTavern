@@ -1,6 +1,7 @@
 const fetch = require('node-fetch').default;
 const https = require('https');
 const { readSecret, SECRET_KEYS } = require('./secrets');
+const { getConfigValue } = require('./util');
 
 const DEEPLX_URL_DEFAULT = 'http://127.0.0.1:1188/translate';
 const ONERING_URL_DEFAULT = 'http://127.0.0.1:4990/translate';
@@ -107,6 +108,7 @@ function registerEndpoints(app, jsonParser) {
 
         const text = request.body.text;
         const lang = request.body.lang;
+        const formality = getConfigValue('deepl.formality', 'default');
 
         if (!text || !lang) {
             return response.sendStatus(400);
@@ -117,6 +119,7 @@ function registerEndpoints(app, jsonParser) {
         const params = new URLSearchParams();
         params.append('text', text);
         params.append('target_lang', lang);
+        params.append('formality', formality);
 
         try {
             const result = await fetch('https://api-free.deepl.com/v2/translate', {
