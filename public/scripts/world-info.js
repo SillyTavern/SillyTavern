@@ -198,18 +198,21 @@ function setWorldInfoSettings(settings, data) {
 function registerWorldInfoSlashCommands() {
     async function getEntriesFromFile(file) {
         if (!file || !world_names.includes(file)) {
+            toastr.warning('Valid World Info file name is required');
             return '';
         }
 
         const data = await loadWorldInfoData(file);
 
         if (!data || !("entries" in data)) {
+            toastr.warning('World Info file has an invalid format');
             return '';
         }
 
         const entries = Object.values(data.entries);
 
         if (!entries || entries.length === 0) {
+            toastr.warning('World Info file has no entries');
             return '';
         }
 
@@ -220,6 +223,7 @@ function registerWorldInfoSlashCommands() {
         const chatId = getCurrentChatId();
 
         if (!chatId) {
+            toastr.warning('Open a chat to get a name of the chat-bound lorebook');
             return '';
         }
 
@@ -304,6 +308,7 @@ function registerWorldInfoSlashCommands() {
         const data = await loadWorldInfoData(file);
 
         if (!data || !("entries" in data)) {
+            toastr.warning('Valid World Info file name is required');
             return '';
         }
 
@@ -330,7 +335,7 @@ function registerWorldInfoSlashCommands() {
     }
 
     registerSlashCommand('getchatbook', getChatBookCallback, ['getchatlore', 'getchatwi'], '– get a name of the chat-bound lorebook or create a new one if was unbound, and pass it down the pipe', true, true);
-    registerSlashCommand('findentry', findBookEntryCallback, ['findlore', 'findwi'], `<span class="monospace">(file=bookName field=field [texts])</span> – find a UID of the record from the specified book using the fuzzy match of a field value (default: key) and pass it down the pipe, e.g. <tt>/findentry file=chatLore by=key Shadowfang</tt>`, true, true);
+    registerSlashCommand('findentry', findBookEntryCallback, ['findlore', 'findwi'], `<span class="monospace">(file=bookName field=field [texts])</span> – find a UID of the record from the specified book using the fuzzy match of a field value (default: key) and pass it down the pipe, e.g. <tt>/findentry file=chatLore field=key Shadowfang</tt>`, true, true);
     registerSlashCommand('getentryfield', getEntryFieldCallback, ['getlorefield', 'getwifield'], '<span class="monospace">(file=bookName field=field [UID])</span> – get a field value (default: content) of the record with the UID from the specified book and pass it down the pipe, e.g. <tt>/getentryfield file=chatLore field=content 123</tt>', true, true);
     registerSlashCommand('createentry', createEntryCallback, ['createlore', 'createwi'], '<span class="monospace">(file=bookName key=key [content])</span> – create a new record in the specified book with the key and content (both are optional) and pass the UID down the pipe, e.g. <tt>/createentry file=chatLore key=Shadowfang The sword of the king</tt>', true, true);
 }
