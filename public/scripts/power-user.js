@@ -206,6 +206,7 @@ let power_user = {
         story_string: defaultStoryString,
         chat_start: defaultChatStart,
         example_separator: defaultExampleSeparator,
+        use_stop_strings: true,
     },
 
     personas: {},
@@ -271,6 +272,7 @@ const contextControls = [
     { id: "context_story_string", property: "story_string", isCheckbox: false, isGlobalSetting: false },
     { id: "context_example_separator", property: "example_separator", isCheckbox: false, isGlobalSetting: false },
     { id: "context_chat_start", property: "chat_start", isCheckbox: false, isGlobalSetting: false },
+    { id: "context_use_stop_strings", property: "use_stop_strings", isCheckbox: true, isGlobalSetting: false, defaultValue: true },
 
     // Existing power user settings
     { id: "always-force-name2-checkbox", property: "always_force_name2", isCheckbox: true, isGlobalSetting: true, defaultValue: true },
@@ -1593,6 +1595,10 @@ function loadContextSettings() {
 
         if (control.isGlobalSetting) {
             return;
+        }
+
+        if (control.defaultValue !== undefined && power_user.context[control.property] === undefined) {
+            power_user.context[control.property] = control.defaultValue;
         }
 
         if (control.isCheckbox) {

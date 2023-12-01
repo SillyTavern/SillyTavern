@@ -214,12 +214,14 @@ export function getInstructStoppingSequences() {
         combined_sequence.split('\n').filter((line, index, self) => self.indexOf(line) === index).forEach(addInstructSequence);
     }
 
-    if (power_user.context.chat_start) {
-        result.push(`\n${substituteParams(power_user.context.chat_start)}`);
-    }
+    if (power_user.context.use_stop_strings) {
+        if (power_user.context.chat_start) {
+            result.push(`\n${substituteParams(power_user.context.chat_start)}`);
+        }
 
-    if (power_user.context.example_separator) {
-        result.push(`\n${substituteParams(power_user.context.example_separator)}`);
+        if (power_user.context.example_separator) {
+            result.push(`\n${substituteParams(power_user.context.example_separator)}`);
+        }
     }
 
     return result;
