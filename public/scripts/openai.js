@@ -2970,7 +2970,7 @@ function onSettingsPresetChange() {
     const preset = structuredClone(openai_settings[openai_setting_names[oai_settings.preset_settings_openai]]);
 
     const updateInput = (selector, value) => $(selector).val(value).trigger('input');
-    const updateCheckbox = (selector, value) => $(selector).prop('checked', value).trigger('input').trigger('change');
+    const updateCheckbox = (selector, value) => $(selector).prop('checked', value).trigger('input');
 
     // Allow subscribers to alter the preset before applying deltas
     eventSource.emit(event_types.OAI_PRESET_CHANGED_BEFORE, {
