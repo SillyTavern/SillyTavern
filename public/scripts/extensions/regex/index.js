@@ -1,7 +1,9 @@
 import { callPopup, getCurrentChatId, reloadCurrentChat, saveSettingsDebounced } from "../../../script.js";
 import { extension_settings } from "../../extensions.js";
+import { registerSlashCommand } from "../../slash-commands.js";
 import { getSortableDelay, uuidv4 } from "../../utils.js";
-import { regex_placement } from "./engine.js";
+import { resolveVariable } from "../../variables.js";
+import { regex_placement, runRegexScript } from "./engine.js";
 
 async function saveRegexScript(regexScript, existingScriptIndex) {
     // If not editing
@@ -242,6 +244,36 @@ function migrateSettings() {
     }
 }
 
+/**
+ * /regex slash command callback
+ * @param {object} args Named arguments
+ * @param {string} value Unnamed argument
+ * @returns {string} The regexed string
+ */
+function runRegexCallback(args, value) {
+    if (!args.name) {
+        toastr.warning("No regex script name provided.");
+        return value;
+    }
+
+    const scriptName = String(resolveVariable(args.name));
+
+    for (const script of extension_settings.regex) {
+        if (String(script.scriptName).toLowerCase() === String(scriptName).toLowerCase()) {
+            if (script.disabled) {
+                toastr.warning(`Regex script "${scriptName}" is disabled.`);
+                return value;
+            }
+
+            console.debug(`Running regex callback for ${scriptName}`);
+            return runRegexScript(script, value);
+        }
+    }
+
+    toastr.warning(`Regex script "${scriptName}" not found.`);
+    return value;
+}
+
 // Workaround for loading in sequence with other extensions
 // NOTE: Always puts extension at the top of the list, but this is fine since it's static
 jQuery(async () => {
@@ -282,4 +314,6 @@ jQuery(async () => {
 
     await loadRegexScripts();
     $("#saved_regex_scripts").sortable("enable");
+
+    registerSlashCommand('regex', runRegexCallback, [], '(name=scriptName [input]) – runs a Regex extension script by name on the provided string. The script must be enabled.', true, true);
 });

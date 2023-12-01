@@ -59,8 +59,12 @@
 <ul>
     <li><tt>&lcub;&lcub;getvar::name&rcub;&rcub;</tt> – replaced with the value of the local variable "name"</li>
     <li><tt>&lcub;&lcub;setvar::name::value&rcub;&rcub;</tt> – replaced with empty string, sets the local variable "name" to "value"</li>
-    <li><tt>&lcub;&lcub;addvar::name::increment&rcub;&rcub;</tt> – replaced with the result of addition numeric value of "increment" to the local variable "name"</li>
+    <li><tt>&lcub;&lcub;addvar::name::increment&rcub;&rcub;</tt> – replaced with empty strings, adds a numeric value of "increment" to the local variable "name"</li>
+    <li><tt>&lcub;&lcub;incvar::name&rcub;&rcub;</tt> – replaced with the result of the increment of value of the variable "name" by 1</li>
+    <li><tt>&lcub;&lcub;decvar::name&rcub;&rcub;</tt> – replaced with the result of the decrement of value of the variable "name" by 1</li>
     <li><tt>&lcub;&lcub;getglobalvar::name&rcub;&rcub;</tt> – replaced with the value of the global variable "name"</li>
     <li><tt>&lcub;&lcub;setglobalvar::name::value&rcub;&rcub;</tt> – replaced with empty string, sets the global variable "name" to "value"</li>
-    <li><tt>&lcub;&lcub;addglobalvar::name::value&rcub;&rcub;</tt> – replaced with the result of addition numeric value of "increment" to the global variable "name"</li>
+    <li><tt>&lcub;&lcub;addglobalvar::name::value&rcub;&rcub;</tt> – replaced with empty string, adds a numeric value of "increment" to the global variable "name"</li>
+    <li><tt>&lcub;&lcub;incglobalvar::name&rcub;&rcub;</tt> – replaced with the result of the increment of value of the global variable "name" by 1</li>
+    <li><tt>&lcub;&lcub;decglobalvar::name&rcub;&rcub;</tt> – replaced with the result of the decrement of value of the global variable "name" by 1</li>
 </ul>

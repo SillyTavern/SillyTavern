@@ -114,7 +114,7 @@ const max_128k = 128 * 1000;
 const max_200k = 200 * 1000;
 const scale_max = 8191;
 const claude_max = 9000; // We have a proper tokenizer, so theoretically could be larger (up to 9k)
-const palm2_max = 7500; // The real context window is 8192, spare some for padding due to using turbo tokenizer
+const palm2_max = 7400; // The real context window is 8192, spare some for padding due to using turbo tokenizer
 const claude_100k_max = 99000;
 let ai21_max = 9200; //can easily fit 9k gpt tokens because j2's tokenizer is efficient af
 const unlocked_max = 100 * 1024;
@@ -229,6 +229,7 @@ const default_settings = {
     squash_system_messages: false,
     image_inlining: false,
     bypass_status_check: false,
+    seed: -1,
 };
 
 const oai_settings = {
@@ -282,6 +283,7 @@ const oai_settings = {
     squash_system_messages: false,
     image_inlining: false,
     bypass_status_check: false,
+    seed: -1,
 };
 
 let openai_setting_names;
@@ -1557,6 +1559,10 @@ async function sendOpenAIRequest(type, messages, signal) {
         generate_data['stop_tokens'] = [name1 + ':', oai_settings.new_chat_prompt, oai_settings.new_group_chat_prompt];
     }
 
+    if ((isOAI || isOpenRouter) && oai_settings.seed >= 0) {
+        generate_data['seed'] = oai_settings.seed;
+    }
+
     const generate_url = '/generate_openai';
     const response = await fetch(generate_url, {
         method: 'POST',
@@ -2415,6 +2421,7 @@ function loadOpenAISettings(data, settings) {
 
     $('#top_k_openai').val(oai_settings.top_k_openai);
     $('#top_k_counter_openai').val(Number(oai_settings.top_k_openai).toFixed(0));
+    $('#seed_openai').val(oai_settings.seed);
 
     if (settings.reverse_proxy !== undefined) oai_settings.reverse_proxy = settings.reverse_proxy;
     $('#openai_reverse_proxy').val(oai_settings.reverse_proxy);
@@ -2594,6 +2601,7 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         use_alt_scale: settings.use_alt_scale,
         squash_system_messages: settings.squash_system_messages,
         image_inlining: settings.image_inlining,
+        seed: settings.seed,
     };
 
     const savePresetSettings = await fetch(`/api/presets/save-openai?name=${name}`, {
@@ -2953,6 +2961,7 @@ function onSettingsPresetChange() {
         use_alt_scale: ['#use_alt_scale', 'use_alt_scale', true],
         squash_system_messages: ['#squash_system_messages', 'squash_system_messages', true],
         image_inlining: ['#openai_image_inlining', 'image_inlining', true],
+        seed: ['#seed_openai', 'seed', false],
     };
 
     const presetName = $('#settings_preset_openai').find(":selected").text();
@@ -2961,7 +2970,7 @@ function onSettingsPresetChange() {
     const preset = structuredClone(openai_settings[openai_setting_names[oai_settings.preset_settings_openai]]);
 
     const updateInput = (selector, value) => $(selector).val(value).trigger('input');
-    const updateCheckbox = (selector, value) => $(selector).prop('checked', value).trigger('input');
+    const updateCheckbox = (selector, value) => $(selector).prop('checked', value).trigger('input').trigger('change');
 
     // Allow subscribers to alter the preset before applying deltas
     eventSource.emit(event_types.OAI_PRESET_CHANGED_BEFORE, {
@@ -3765,6 +3774,11 @@ $(document).ready(async function () {
 
     $('#openai_image_inlining').on('input', function () {
         oai_settings.image_inlining = !!$(this).prop('checked');
+        saveSettingsDebounced();
+    });
+
+    $('#seed_openai').on('input', function () {
+        oai_settings.seed = Number($(this).val());
         saveSettingsDebounced();
     });
 

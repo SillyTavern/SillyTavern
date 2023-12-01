@@ -8,6 +8,7 @@ import { FILTER_TYPES, FilterHelper } from "./filters.js";
 import { getTokenCount } from "./tokenizers.js";
 import { power_user } from "./power-user.js";
 import { getTagKeyForCharacter } from "./tags.js";
+import { resolveVariable } from "./variables.js";
 
 export {
     world_info,
@@ -189,6 +190,154 @@ function setWorldInfoSettings(settings, data) {
         const hasWorldInfo = !!chat_metadata[METADATA_KEY] && world_names.includes(chat_metadata[METADATA_KEY]);
         $('.chat_lorebook_button').toggleClass('world_set', hasWorldInfo);
     });
+
+    // Add slash commands
+    registerWorldInfoSlashCommands();
+}
+
+function registerWorldInfoSlashCommands() {
+    async function getEntriesFromFile(file) {
+        if (!file || !world_names.includes(file)) {
+            toastr.warning('Valid World Info file name is required');
+            return '';
+        }
+
+        const data = await loadWorldInfoData(file);
+
+        if (!data || !("entries" in data)) {
+            toastr.warning('World Info file has an invalid format');
+            return '';
+        }
+
+        const entries = Object.values(data.entries);
+
+        if (!entries || entries.length === 0) {
+            toastr.warning('World Info file has no entries');
+            return '';
+        }
+
+        return entries;
+    }
+
+    async function getChatBookCallback() {
+        const chatId = getCurrentChatId();
+
+        if (!chatId) {
+            toastr.warning('Open a chat to get a name of the chat-bound lorebook');
+            return '';
+        }
+
+        if (chat_metadata[METADATA_KEY] && world_names.includes(chat_metadata[METADATA_KEY])) {
+            return chat_metadata[METADATA_KEY];
+        }
+
+        // Replace non-alphanumeric characters with underscores, cut to 64 characters
+        const name = `Chat Book ${getCurrentChatId()}`.replace(/[^a-z0-9]/gi, '_').replace(/_{2,}/g, '_').substring(0, 64);
+        await createNewWorldInfo(name);
+
+        chat_metadata[METADATA_KEY] = name;
+        await saveMetadata();
+        $('.chat_lorebook_button').addClass('world_set');
+        return name;
+    }
+
+    async function findBookEntryCallback(args, value) {
+        const file = resolveVariable(args.file);
+        const field = args.field || 'key';
+
+        const entries = await getEntriesFromFile(file);
+
+        if (!entries) {
+            return '';
+        }
+
+        const fuse = new Fuse(entries, {
+            keys: [{ name: field, weight: 1 }],
+            includeScore: true,
+            threshold: 0.3,
+        });
+
+        const results = fuse.search(value);
+
+        if (!results || results.length === 0) {
+            return '';
+        }
+
+        const result = results[0]?.item?.uid;
+
+        if (result === undefined) {
+            return '';
+        }
+
+        return result;
+    }
+
+    async function getEntryFieldCallback(args, uid) {
+        const file = resolveVariable(args.file);
+        const field = args.field || 'content';
+
+        const entries = await getEntriesFromFile(file);
+
+        if (!entries) {
+            return '';
+        }
+
+        const entry = entries.find(x => x.uid === uid);
+
+        if (!entry) {
+            return '';
+        }
+
+        const fieldValue = entry[field];
+
+        if (fieldValue === undefined) {
+            return '';
+        }
+
+        if (Array.isArray(fieldValue)) {
+            return fieldValue.map(x => substituteParams(x)).join(', ');
+        }
+
+        return substituteParams(fieldValue);
+    }
+
+    async function createEntryCallback(args, content) {
+        const file = resolveVariable(args.file);
+        const key = args.key;
+
+        const data = await loadWorldInfoData(file);
+
+        if (!data || !("entries" in data)) {
+            toastr.warning('Valid World Info file name is required');
+            return '';
+        }
+
+        const entry = createWorldInfoEntry(file, data, true);
+
+        if (key) {
+            entry.key.push(key);
+            entry.addMemo = true;
+            entry.comment = key;
+        }
+
+        if (content) {
+            entry.content = content;
+        }
+
+        await saveWorldInfo(file, data, true);
+
+        const selectedIndex = world_names.indexOf(file);
+        if (selectedIndex !== -1) {
+            $('#world_editor_select').val(selectedIndex).trigger('change');
+        }
+
+        return entry.uid;
+    }
+
+    registerSlashCommand('getchatbook', getChatBookCallback, ['getchatlore', 'getchatwi'], '– get a name of the chat-bound lorebook or create a new one if was unbound, and pass it down the pipe', true, true);
+    registerSlashCommand('findentry', findBookEntryCallback, ['findlore', 'findwi'], `<span class="monospace">(file=bookName field=field [texts])</span> – find a UID of the record from the specified book using the fuzzy match of a field value (default: key) and pass it down the pipe, e.g. <tt>/findentry file=chatLore field=key Shadowfang</tt>`, true, true);
+    registerSlashCommand('getentryfield', getEntryFieldCallback, ['getlorefield', 'getwifield'], '<span class="monospace">(file=bookName field=field [UID])</span> – get a field value (default: content) of the record with the UID from the specified book and pass it down the pipe, e.g. <tt>/getentryfield file=chatLore field=content 123</tt>', true, true);
+    registerSlashCommand('createentry', createEntryCallback, ['createlore', 'createwi'], '<span class="monospace">(file=bookName key=key [content])</span> – create a new record in the specified book with the key and content (both are optional) and pass the UID down the pipe, e.g. <tt>/createentry file=chatLore key=Shadowfang The sword of the king</tt>', true, true);
 }
 
 // World Info Editor
@@ -1134,7 +1283,7 @@ async function deleteWorldInfoEntry(data, uid) {
     delete data.entries[uid];
 }
 
-function createWorldInfoEntry(name, data) {
+function createWorldInfoEntry(name, data, fromSlashCommand = false) {
     const newEntryTemplate = {
         key: [],
         keysecondary: [],
@@ -1161,7 +1310,11 @@ function createWorldInfoEntry(name, data) {
     const newEntry = { uid: newUid, ...newEntryTemplate };
     data.entries[newUid] = newEntry;
 
-    updateEditor(newUid);
+    if (!fromSlashCommand) {
+        updateEditor(newUid);
+    }
+
+    return newEntry;
 }
 
 async function _save(name, data) {

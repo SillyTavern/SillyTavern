@@ -30,34 +30,35 @@ async function getVector(source, text) {
  * @returns {Promise<vectra.LocalIndex>} - The index for the collection
  */
 async function getIndex(collectionId, source, create = true) {
-    const index = new vectra.LocalIndex(path.join(process.cwd(), 'vectors', sanitize(source), sanitize(collectionId)));
+    const store = new vectra.LocalIndex(path.join(process.cwd(), 'vectors', sanitize(source), sanitize(collectionId)));
 
-    if (create && !await index.isIndexCreated()) {
-        await index.createIndex();
+    if (create && !await store.isIndexCreated()) {
+        await store.createIndex();
     }
 
-    return index;
+    return store;
 }
 
 /**
  * Inserts items into the vector collection
  * @param {string} collectionId - The collection ID
  * @param {string} source - The source of the vector
- * @param {{ hash: number; text: string; }[]} items - The items to insert
+ * @param {{ hash: number; text: string; index: number; }[]} items - The items to insert
  */
 async function insertVectorItems(collectionId, source, items) {
-    const index = await getIndex(collectionId, source);
+    const store = await getIndex(collectionId, source);
 
-    await index.beginUpdate();
+    await store.beginUpdate();
 
     for (const item of items) {
         const text = item.text;
         const hash = item.hash;
+        const index = item.index;
         const vector = await getVector(source, text);
-        await index.upsertItem({ vector: vector, metadata: { hash, text } });
+        await store.upsertItem({ vector: vector, metadata: { hash, text, index } });
     }
 
-    await index.endUpdate();
+    await store.endUpdate();
 }
 
 /**
@@ -67,9 +68,9 @@ async function insertVectorItems(collectionId, source, items) {
  * @returns {Promise<number[]>} - The hashes of the items in the collection
  */
 async function getSavedHashes(collectionId, source) {
-    const index = await getIndex(collectionId, source);
+    const store = await getIndex(collectionId, source);
 
-    const items = await index.listItems();
+    const items = await store.listItems();
     const hashes = items.map(x => Number(x.metadata.hash));
 
     return hashes;
@@ -82,16 +83,16 @@ async function getSavedHashes(collectionId, source) {
  * @param {number[]} hashes - The hashes of the items to delete
  */
 async function deleteVectorItems(collectionId, source, hashes) {
-    const index = await getIndex(collectionId, source);
-    const items = await index.listItemsByMetadata({ hash: { '$in': hashes } });
+    const store = await getIndex(collectionId, source);
+    const items = await store.listItemsByMetadata({ hash: { '$in': hashes } });
 
-    await index.beginUpdate();
+    await store.beginUpdate();
 
     for (const item of items) {
-        await index.deleteItem(item.id);
+        await store.deleteItem(item.id);
     }
 
-    await index.endUpdate();
+    await store.endUpdate();
 }
 
 /**
@@ -100,15 +101,16 @@ async function deleteVectorItems(collectionId, source, hashes) {
  * @param {string} source - The source of the vector
  * @param {string} searchText - The text to search for
  * @param {number} topK - The number of results to return
- * @returns {Promise<number[]>} - The hashes of the items that match the search text
+ * @returns {Promise<{hashes: number[], metadata: object[]}>} - The metadata of the items that match the search text
  */
 async function queryCollection(collectionId, source, searchText, topK) {
-    const index = await getIndex(collectionId, source);
+    const store = await getIndex(collectionId, source);
     const vector = await getVector(source, searchText);
 
-    const result = await index.queryItems(vector, topK);
+    const result = await store.queryItems(vector, topK);
+    const metadata = result.map(x => x.item.metadata);
     const hashes = result.map(x => Number(x.item.metadata.hash));
-    return hashes;
+    return { metadata, hashes };
 }
 
 /**
@@ -143,7 +145,7 @@ async function registerEndpoints(app, jsonParser) {
             }
 
             const collectionId = String(req.body.collectionId);
-            const items = req.body.items.map(x => ({ hash: x.hash, text: x.text }));
+            const items = req.body.items.map(x => ({ hash: x.hash, text: x.text, index: x.index }));
             const source = String(req.body.source) || 'transformers';
 
             await insertVectorItems(collectionId, source, items);

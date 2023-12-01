@@ -95,6 +95,10 @@ function decrementGlobalVariable(name) {
  * @returns {string} Variable value or the string literal
  */
 export function resolveVariable(name) {
+    if (name === undefined) {
+        return '';
+    }
+
     if (existsLocalVariable(name)) {
         return getLocalVariable(name);
     }
@@ -137,6 +141,18 @@ export function replaceVariableMacros(input) {
             return '';
         });
 
+        // Replace {{incvar::name}} with empty string and increment the variable name by 1
+        line = line.replace(/{{incvar::([^}]+)}}/gi, (_, name) => {
+            name = name.trim();
+            return incrementLocalVariable(name);
+        });
+
+        // Replace {{decvar::name}} with empty string and decrement the variable name by 1
+        line = line.replace(/{{decvar::([^}]+)}}/gi, (_, name) => {
+            name = name.trim();
+            return decrementLocalVariable(name);
+        });
+
         // Replace {{getglobalvar::name}} with the value of the global variable name
         line = line.replace(/{{getglobalvar::([^}]+)}}/gi, (_, name) => {
             name = name.trim();
@@ -155,6 +171,18 @@ export function replaceVariableMacros(input) {
             name = name.trim();
             addGlobalVariable(name, value);
             return '';
+        });
+
+        // Replace {{incglobalvar::name}} with empty string and increment the global variable name by 1
+        line = line.replace(/{{incglobalvar::([^}]+)}}/gi, (_, name) => {
+            name = name.trim();
+            return incrementGlobalVariable(name);
+        });
+
+        // Replace {{decglobalvar::name}} with empty string and decrement the global variable name by 1
+        line = line.replace(/{{decglobalvar::([^}]+)}}/gi, (_, name) => {
+            name = name.trim();
+            return decrementGlobalVariable(name);
         });
 
         lines[i] = line;

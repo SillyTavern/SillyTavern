@@ -195,7 +195,7 @@ import { getBackgrounds, initBackgrounds } from "./scripts/backgrounds.js";
 import { hideLoader, showLoader } from "./scripts/loader.js";
 import { CharacterContextMenu, BulkEditOverlay } from "./scripts/BulkEditOverlay.js";
 import { loadMancerModels } from "./scripts/mancer-settings.js";
-import { hasPendingFileAttachment, populateFileAttachment } from "./scripts/chats.js";
+import { getFileAttachment, hasPendingFileAttachment, populateFileAttachment } from "./scripts/chats.js";
 import { replaceVariableMacros } from "./scripts/variables.js";
 
 //exporting functions and vars for mods
@@ -3005,9 +3005,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         const blockHeading = main_api === 'openai' ? '<START>\n' : exampleSeparator;
         let mesExamplesArray = mesExamples.split(/<START>/gi).slice(1).map(block => `${blockHeading}${block.trim()}\n`);
 
-        if (power_user.strip_examples)
-            mesExamplesArray = []
-
         // First message in fresh 1-on-1 chat reacts to user/character settings changes
         if (chat.length) {
             chat[0].mes = substituteParams(chat[0].mes);
@@ -3019,22 +3016,28 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             coreChat.pop();
         }
 
-        coreChat = coreChat.map(chatItem => {
+        coreChat = await Promise.all(coreChat.map(async (chatItem) => {
             let message = chatItem.mes;
             let regexType = chatItem.is_user ? regex_placement.USER_INPUT : regex_placement.AI_OUTPUT;
             let options = { isPrompt: true };
 
             let regexedMessage = getRegexedString(message, regexType, options);
 
-            if (chatItem.extra?.file?.text) {
-                regexedMessage += `\n\n${chatItem.extra.file.text}`;
+            if (chatItem.extra?.file) {
+                const fileText = chatItem.extra.file.text || (await getFileAttachment(chatItem.extra.file.url));
+
+                if (fileText) {
+                    const fileWrapped = `\`\`\`\n${fileText}\n\`\`\`\n\n`;
+                    chatItem.extra.fileLength = fileWrapped.length;
+                    regexedMessage = fileWrapped + regexedMessage;
+                }
             }
 
             return {
                 ...chatItem,
                 mes: regexedMessage,
             };
-        });
+        }));
 
         // Determine token limit
         let this_max_context = getMaxContextSize();
@@ -3152,6 +3155,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         };
 
         const storyString = renderStoryString(storyStringParams);
+
+        // Story string rendered, safe to remove
+        if (power_user.strip_examples) {
+            mesExamplesArray = [];
+        }
 
         let oaiMessages = [];
         let oaiMessageExamples = [];
@@ -9057,6 +9065,7 @@ jQuery(async function () {
             hideStopButton();
         }
         eventSource.emit(event_types.GENERATION_STOPPED);
+        activateSendButtons();
     });
 
     $('.drawer-toggle').on('click', function () {
