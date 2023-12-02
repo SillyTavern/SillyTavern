@@ -763,7 +763,7 @@ function sampleClassifyText(text) {
     }
 
     // Remove asterisks and quotes
-    let result = text.replace(/[\*\"]/g, '');
+    let result = text.replace(/[*"]/g, '');
 
     const SAMPLE_THRESHOLD = 500;
     const HALF_SAMPLE_THRESHOLD = SAMPLE_THRESHOLD / 2;

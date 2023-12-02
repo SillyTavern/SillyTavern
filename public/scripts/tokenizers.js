@@ -517,9 +517,10 @@ export function getTextTokens(tokenizerType, str) {
             return getTextTokensRemote('/api/tokenize/mistral', str);
         case tokenizers.YI:
             return getTextTokensRemote('/api/tokenize/yi', str);
-        case tokenizers.OPENAI:
+        case tokenizers.OPENAI: {
             const model = getTokenizerModel();
             return getTextTokensRemote('/api/tokenize/openai-encode', str, model);
+        }
         case tokenizers.API:
             return getTextTokensRemote('/tokenize_via_api', str);
         default:
@@ -547,9 +548,10 @@ export function decodeTextTokens(tokenizerType, ids) {
             return decodeTextTokensRemote('/api/decode/mistral', ids);
         case tokenizers.YI:
             return decodeTextTokensRemote('/api/decode/yi', ids);
-        case tokenizers.OPENAI:
+        case tokenizers.OPENAI: {
             const model = getTokenizerModel();
             return decodeTextTokensRemote('/api/decode/openai', ids, model);
+        }
         default:
             console.warn("Calling decodeTextTokens with unsupported tokenizer type", tokenizerType);
             return '';

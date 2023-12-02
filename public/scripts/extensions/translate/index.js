@@ -151,7 +151,7 @@ function showKeysButton() {
 
 function loadSettings() {
     for (const key in defaultSettings) {
-        if (!extension_settings.translate.hasOwnProperty(key)) {
+        if (!Object.hasOwn(extension_settings.translate, key)) {
             extension_settings.translate[key] = defaultSettings[key];
         }
     }

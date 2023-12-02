@@ -24,7 +24,7 @@ function registerEndpoints(app, jsonParser) {
             const { text } = req.body;
 
             async function getResult(text) {
-                if (cacheObject.hasOwnProperty(text)) {
+                if (Object.hasOwn(cacheObject, text)) {
                     return cacheObject[text];
                 } else {
                     const module = await import('./transformers.mjs');

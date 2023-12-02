@@ -1860,7 +1860,7 @@ class Message {
      * Returns the number of tokens in the message.
      * @returns {number} Number of tokens in the message.
      */
-    getTokens() { return this.tokens };
+    getTokens() { return this.tokens }
 }
 
 /**
@@ -2239,14 +2239,14 @@ class ChatCompletion {
     reserveBudget(message) {
         const tokens = typeof message === 'number' ? message : message.getTokens();
         this.decreaseTokenBudgetBy(tokens);
-    };
+    }
 
     /**
      * Frees up the tokens used by the given message from the token budget.
      *
      * @param {Message|MessageCollection} message - The message whose tokens to free.
      */
-    freeBudget(message) { this.increaseTokenBudgetBy(message.getTokens()) };
+    freeBudget(message) { this.increaseTokenBudgetBy(message.getTokens()) }
 
     /**
      * Increases the token budget by the given number of tokens.
@@ -2832,7 +2832,8 @@ async function onLogitBiasPresetImportFileChange(e) {
 
     for (const entry of importedFile) {
         if (typeof entry == 'object' && entry !== null) {
-            if (entry.hasOwnProperty('text') && entry.hasOwnProperty('value')) {
+            if (Object.hasOwn(entry, 'text') &&
+                Object.hasOwn(entry, 'value')) {
                 validEntries.push(entry);
             }
         }

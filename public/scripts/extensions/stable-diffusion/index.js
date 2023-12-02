@@ -2416,7 +2416,7 @@ async function sdMessageButton(e) {
 
         context.saveChat();
     }
-};
+}
 
 $("#sd_dropdown [id]").on("click", function () {
     const id = $(this).attr("id");

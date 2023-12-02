@@ -145,7 +145,7 @@ const hashCache = {};
  */
 function getStringHash(str) {
     // Check if the hash is already in the cache
-    if (hashCache.hasOwnProperty(str)) {
+    if (Object.hasOwn(hashCache, str)) {
         return hashCache[str];
     }
 

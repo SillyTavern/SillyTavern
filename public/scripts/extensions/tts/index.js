@@ -492,7 +492,7 @@ async function processTtsQueue() {
     currentTtsJob = ttsJobQueue.shift()
     let text = extension_settings.tts.narrate_translated_only ? (currentTtsJob?.extra?.display_text || currentTtsJob.mes) : currentTtsJob.mes
     text = extension_settings.tts.narrate_dialogues_only
-        ? text.replace(/\*[^\*]*?(\*|$)/g, '').trim() // remove asterisks content
+        ? text.replace(/\*[^*]*?(\*|$)/g, '').trim() // remove asterisks content
         : text.replaceAll('*', '').trim() // remove just the asterisks
 
     if (extension_settings.tts.narrate_quoted_only) {

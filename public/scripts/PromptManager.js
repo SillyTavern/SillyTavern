@@ -1643,7 +1643,7 @@ PromptManagerModule.prototype.import = function (importData) {
  */
 PromptManagerModule.prototype.validateObject = function (controlObj, object) {
     for (let key in controlObj) {
-        if (!object.hasOwnProperty(key)) {
+        if (!Object.hasOwn(object, key)) {
             if (controlObj[key] === null) continue;
             else return false;
         }
@@ -1818,7 +1818,7 @@ const chatCompletionDefaultPrompts = {
             "identifier": "enhanceDefinitions",
             "role": "system",
             "name": "Enhance Definitions",
-            "content": "If you have more knowledge of {{char}}, add to the character\'s lore and personality to enhance them but keep the Character Sheet\'s definitions absolute.",
+            "content": "If you have more knowledge of {{char}}, add to the character's lore and personality to enhance them but keep the Character Sheet's definitions absolute.",
             "system_prompt": true,
             "marker": false,
         },

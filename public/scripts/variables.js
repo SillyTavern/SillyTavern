@@ -133,7 +133,7 @@ export function replaceVariableMacros(input) {
         // Replace {{addvar::name::value}} with empty string and add value to the variable value
         line = line.replace(/{{addvar::([^:]+)::([^}]+)}}/gi, (_, name, value) => {
             name = name.trim();
-            addLocalVariable(name, value);;
+            addLocalVariable(name, value);
             return '';
         });
 

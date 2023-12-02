@@ -1460,9 +1460,9 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
             .replace(/\*\*(.+?)\*\*/g, "<b>$1</b>")
             .replace(/\n/g, "<br/>");
     } else if (!isSystem) {
-        mes = mes.replace(/```[\s\S]*?```|``[\s\S]*?``|`[\s\S]*?`|(\".+?\")|(\u201C.+?\u201D)/gm, function (match, p1, p2) {
+        mes = mes.replace(/```[\s\S]*?```|``[\s\S]*?``|`[\s\S]*?`|(".+?")|(\u201C.+?\u201D)/gm, function (match, p1, p2) {
             if (p1) {
-                return '<q>"' + p1.replace(/\"/g, "") + '"</q>';
+                return '<q>"' + p1.replace(/"/g, "") + '"</q>';
             } else if (p2) {
                 return '<q>“' + p2.replace(/\u201C|\u201D/g, "") + '”</q>';
             } else {
@@ -1686,10 +1686,6 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         mes.swipes = [mes.mes];
     }
 
-    if (mes.name === name1) {
-        var characterName = name1; //set to user's name by default
-    } else { var characterName = mes.name }
-
     var avatarImg = getUserAvatar(user_avatar);
     const isSystem = mes.is_system;
     const title = mes.title;
@@ -1722,7 +1718,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     }
     messageText = messageFormatting(
         messageText,
-        characterName,
+        mes.name,
         isSystem,
         mes.is_user,
     );
@@ -1741,7 +1737,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     }*/
     let params = {
         mesId: forceId ?? count_view_mes,
-        characterName: characterName,
+        characterName: mes.name,
         isUser: mes.is_user,
         avatarImg: avatarImg,
         bias: bias,
@@ -2755,10 +2751,11 @@ export async function generateRaw(prompt, api, instructOverride) {
                 generateData = getKoboldGenerationData(prompt, koboldSettings, amount_gen, max_context, isHorde, 'quiet');
             }
             break;
-        case 'novel':
+        case 'novel': {
             const novelSettings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
             generateData = getNovelGenerationData(prompt, novelSettings, amount_gen, false, false, null);
             break;
+        }
         case 'textgenerationwebui':
             generateData = getTextGenGenerationData(prompt, amount_gen, false, false, null);
             break;
@@ -3834,7 +3831,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     triggerAutoContinue(messageChunk, isImpersonate);
                     resolve();
                 }
-            };
+            }
 
             function onError(exception) {
                 if (typeof exception?.error?.message === 'string') {
@@ -3845,7 +3842,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 unblockGeneration();
                 console.log(exception);
                 streamingProcessor = null;
-            };
+            }
 
         } //rungenerate ends
     } else {    //generate's primary loop ends, after this is error handling for no-connection or safety-id
@@ -7889,7 +7886,7 @@ jQuery(async function () {
 
         if (popup_type == 'avatarToCrop') {
             dialogueResolve($("#avatarToCrop").data('cropper').getCroppedCanvas().toDataURL('image/jpeg'));
-        };
+        }
 
         if (popup_type == "del_chat") {
             //close past chat popup
@@ -9170,7 +9167,7 @@ jQuery(async function () {
     $(document).on('click', '.inline-drawer-toggle', function (e) {
         if ($(e.target).hasClass('text_pole')) {
             return;
-        };
+        }
         var icon = $(this).find('.inline-drawer-icon');
         icon.toggleClass('down up');
         icon.toggleClass('fa-circle-chevron-down fa-circle-chevron-up');

@@ -691,7 +691,7 @@ async function onDeleteClick() {
     if (confirmation) {
         await deleteExtension(extensionName);
     }
-};
+}
 
 export async function deleteExtension(extensionName) {
     try {

@@ -655,7 +655,7 @@ function calculateLogitBias() {
  * @returns Processed prompt
  */
 export function adjustNovelInstructionPrompt(prompt) {
-    const stripedPrompt = prompt.replace(/[\[\]]/g, '').trim();
+    const stripedPrompt = prompt.replace(/[[\]]/g, '').trim();
     if (!stripedPrompt.includes('{ ')) {
         return `{ ${stripedPrompt} }`;
     }

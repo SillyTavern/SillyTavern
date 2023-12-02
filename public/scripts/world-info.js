@@ -778,7 +778,7 @@ function setOriginalDataValue(data, uid, key, value) {
         for (let i = 0; i < keyParts.length - 1; i++) {
             const part = keyParts[i];
 
-            if (!currentObject.hasOwnProperty(part)) {
+            if (!Object.hasOwn(currentObject, part)) {
                 currentObject[part] = {};
             }
 
@@ -855,7 +855,7 @@ function getWorldEntry(name, data, entry) {
 
     // Character filter
     const characterFilterLabel = template.find(`label[for="characterFilter"] > small`);
-    characterFilterLabel.text(!!(entry.characterFilter?.isExclude) ? "Exclude Character(s)" : "Filter to Character(s)");
+    characterFilterLabel.text(entry.characterFilter?.isExclude ? "Exclude Character(s)" : "Filter to Character(s)");
 
     // exclude characters checkbox
     const characterExclusionInput = template.find(`input[name="character_exclusion"]`);
@@ -1898,7 +1898,7 @@ async function checkWorldInfo(chat, maxContext) {
             case world_info_position.ANBottom:
                 ANBottomEntries.unshift(entry.content);
                 break;
-            case world_info_position.atDepth:
+            case world_info_position.atDepth: {
                 const existingDepthIndex = WIDepthEntries.findIndex((e) => e.depth === entry.depth ?? DEFAULT_DEPTH);
                 if (existingDepthIndex !== -1) {
                     WIDepthEntries[existingDepthIndex].entries.unshift(entry.content);
@@ -1909,6 +1909,7 @@ async function checkWorldInfo(chat, maxContext) {
                     });
                 }
                 break;
+            }
             default:
                 break;
         }

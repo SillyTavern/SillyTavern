@@ -20,7 +20,7 @@ function checkAssetFileName(inputFilename) {
         return '';
     }
 
-    if (!/^[a-zA-Z0-9_\-\.]+$/.test(inputFilename)) {
+    if (!/^[a-zA-Z0-9_\-.]+$/.test(inputFilename)) {
         console.debug("Bad request: illegal character in filename, only alphanumeric, '_', '-' are accepted.");
         return '';
     }
@@ -35,7 +35,7 @@ function checkAssetFileName(inputFilename) {
         return '';
     }
 
-    return path.normalize(inputFilename).replace(/^(\.\.(\/|\\|$))+/, '');;
+    return path.normalize(inputFilename).replace(/^(\.\.(\/|\\|$))+/, '');
 }
 
 // Recursive function to get files
