@@ -25,6 +25,7 @@ const compression = require('compression');
 const cookieParser = require('cookie-parser');
 const multer = require("multer");
 const responseTime = require('response-time');
+const bodyParser = require('body-parser');
 
 // net related library imports
 const net = require("net");
@@ -106,6 +107,7 @@ process.chdir(directory);
 const app = express();
 app.use(compression());
 app.use(responseTime());
+app.use(bodyParser.json());
 
 // impoort from statsHelpers.js
 
@@ -336,7 +338,10 @@ if (getConfigValue('enableCorsProxy', false) === true || cliArguments.corsProxy 
                 body: bodyMethods.includes(req.method) ? JSON.stringify(req.body) : undefined,
             });
 
-            response.body.pipe(res); // pipe the response to the proxy response
+            // Copy over relevant response params to the proxy response
+            res.statusCode = response.status;
+            res.statusMessage = response.statusText;
+            response.body.pipe(res);
 
         } catch (error) {
             res.status(500).send('Error occurred while trying to proxy to: ' + url + ' ' + error);
