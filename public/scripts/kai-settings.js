@@ -3,6 +3,8 @@ import {
     saveSettingsDebounced,
     getStoppingStrings,
     substituteParams,
+    api_server,
+    main_api,
 } from "../script.js";
 
 import {
@@ -142,6 +144,9 @@ export function getKoboldGenerationData(finalPrompt, settings, maxLength, maxCon
         use_default_badwordsids: (kai_flags.can_use_default_badwordsids || isHorde) ? kai_settings.use_default_badwordsids : undefined,
         grammar: (kai_flags.can_use_grammar || isHorde) ? substituteParams(kai_settings.grammar) : undefined,
         sampler_seed: kai_settings.seed >= 0 ? kai_settings.seed : undefined,
+
+        api_server,
+        main_api,
     };
     return generate_data;
 }
