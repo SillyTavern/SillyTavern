@@ -1643,7 +1643,7 @@ PromptManagerModule.prototype.import = function (importData) {
  */
 PromptManagerModule.prototype.validateObject = function (controlObj, object) {
     for (let key in controlObj) {
-        if (!object.hasOwnProperty(key)) {
+        if (!Object.hasOwn(object, key)) {
             if (controlObj[key] === null) continue;
             else return false;
         }

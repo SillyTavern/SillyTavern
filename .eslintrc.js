@@ -56,7 +56,6 @@ module.exports = {
         'no-async-promise-executor': 'off',
         'no-inner-declarations': 'off',
         'no-undef': 'off',
-        'no-prototype-builtins': 'off',
         'require-yield': 'off',
         'no-constant-condition': ['error', {checkLoops: false}]
     }

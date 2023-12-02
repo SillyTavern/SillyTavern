@@ -778,7 +778,7 @@ function setOriginalDataValue(data, uid, key, value) {
         for (let i = 0; i < keyParts.length - 1; i++) {
             const part = keyParts[i];
 
-            if (!currentObject.hasOwnProperty(part)) {
+            if (!Object.hasOwn(currentObject, part)) {
                 currentObject[part] = {};
             }
 

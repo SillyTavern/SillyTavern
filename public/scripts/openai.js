@@ -2832,7 +2832,8 @@ async function onLogitBiasPresetImportFileChange(e) {
 
     for (const entry of importedFile) {
         if (typeof entry == 'object' && entry !== null) {
-            if (entry.hasOwnProperty('text') && entry.hasOwnProperty('value')) {
+            if (Object.hasOwn(entry, 'text') &&
+                Object.hasOwn(entry, 'value')) {
                 validEntries.push(entry);
             }
         }

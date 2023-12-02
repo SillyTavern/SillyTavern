@@ -270,7 +270,7 @@ class PresetManager {
         const settings = Object.assign({}, getSettingsByApiId(this.apiId));
 
         for (const key of filteredKeys) {
-            if (settings.hasOwnProperty(key)) {
+            if (Object.hasOwn(settings, key)) {
                 delete settings[key];
             }
         }

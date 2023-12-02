@@ -46,7 +46,7 @@ var speechUtteranceChunker = function (utt, settings, callback) {
         newUtt = new SpeechSynthesisUtterance(chunk);
         var x;
         for (x in utt) {
-            if (utt.hasOwnProperty(x) && x !== 'text') {
+            if (Object.hasOwn(utt, x) && x !== 'text') {
                 newUtt[x] = utt[x];
             }
         }

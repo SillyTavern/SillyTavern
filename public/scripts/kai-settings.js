@@ -87,11 +87,11 @@ export function loadKoboldSettings(preset) {
         $(slider.counterId).val(formattedValue);
     }
 
-    if (preset.hasOwnProperty('streaming_kobold')) {
+    if (Object.hasOwn(preset, 'streaming_kobold')) {
         kai_settings.streaming_kobold = preset.streaming_kobold;
         $('#streaming_kobold').prop('checked', kai_settings.streaming_kobold);
     }
-    if (preset.hasOwnProperty('use_default_badwordsids')) {
+    if (Object.hasOwn(preset, 'use_default_badwordsids')) {
         kai_settings.use_default_badwordsids = preset.use_default_badwordsids;
         $('#use_default_badwordsids').prop('checked', kai_settings.use_default_badwordsids);
     }
