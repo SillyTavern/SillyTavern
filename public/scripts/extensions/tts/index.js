@@ -425,7 +425,7 @@ function completeCurrentAudioJob() {
  */
 async function addAudioJob(response) {
     const audioData = await response.blob()
-    if (!audioData.type in ['audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/wave', 'audio/webm']) {
+    if (!(audioData.type in ['audio/mpeg', 'audio/wav', 'audio/x-wav', 'audio/wave', 'audio/webm'])) {
         throw `TTS received HTTP response with invalid data format. Expecting audio/mpeg, got ${audioData.type}`
     }
     audioJobQueue.push(audioData)

@@ -65,7 +65,6 @@ module.exports = {
         'no-case-declarations': 'off',
         'use-isnan': 'off',
         'no-self-assign': 'off',
-        'no-unsafe-negation': 'off',
         'no-constant-condition': ['error', {checkLoops: false}]
     }
 };
