@@ -512,7 +512,7 @@ async function saveQuickReplyPreset() {
     const response = await fetch('/savequickreply', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify(quickReplyPreset)
+        body: JSON.stringify(quickReplyPreset),
     });
 
     if (response.ok) {
@@ -556,7 +556,7 @@ async function updateQuickReplyPreset() {
     const response = await fetch('/savequickreply', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify(quickReplyPreset)
+        body: JSON.stringify(quickReplyPreset),
     });
 
     if (response.ok) {

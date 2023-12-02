@@ -79,7 +79,7 @@ class EdgeTtsProvider {
             this.voices = await this.fetchTtsVoiceObjects();
         }
         const match = this.voices.filter(
-            voice => voice.name == voiceName
+            voice => voice.name == voiceName,
         )[0];
         if (!match) {
             throw `TTS Voice name ${voiceName} not found`;
@@ -142,8 +142,8 @@ class EdgeTtsProvider {
                     'text': inputText,
                     'voice': voiceId,
                     'rate': Number(this.settings.rate),
-                })
-            }
+                }),
+            },
         );
         if (!response.ok) {
             toastr.error(response.statusText, 'TTS Generation Failed');

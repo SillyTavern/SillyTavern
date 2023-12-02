@@ -354,7 +354,7 @@ export function countTokensOpenAI(messages, full = false) {
                 success: function (data) {
                     token_count += Number(data.token_count);
                     cacheObject[cacheKey] = Number(data.token_count);
-                }
+                },
             });
         }
     }
@@ -434,7 +434,7 @@ function countTokensRemote(endpoint, str, padding) {
                     sessionStorage.setItem(TOKENIZER_WARNING_KEY, String(true));
                 }
             }
-        }
+        },
     });
 
     return tokenCount + padding;
@@ -467,7 +467,7 @@ function getTextTokensRemote(endpoint, str, model = '') {
             if (Array.isArray(data.chunks)) {
                 Object.defineProperty(ids, 'chunks', { value: data.chunks });
             }
-        }
+        },
     });
     return ids;
 }
@@ -492,7 +492,7 @@ function decodeTextTokensRemote(endpoint, ids, model = '') {
         contentType: 'application/json',
         success: function (data) {
             text = data.text;
-        }
+        },
     });
     return text;
 }

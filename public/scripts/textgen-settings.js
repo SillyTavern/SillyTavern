@@ -468,7 +468,7 @@ function setSettingByName(setting, value, trigger) {
             zenSlider.slider('option', 'value', val);
             zenSlider.slider('option', 'slide')
                 .call(zenSlider, null, {
-                    handle: $('.ui-slider-handle', zenSlider), value: val
+                    handle: $('.ui-slider-handle', zenSlider), value: val,
                 });
         }
     }

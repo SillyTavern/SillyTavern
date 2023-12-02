@@ -35,6 +35,6 @@ export const markdownExclusionExt = () => {
     return [{
         type: 'lang',
         regex: replaceRegex,
-        replace: ((match) => match.replace(replaceRegex, `\u0000${match} \n`))
+        replace: ((match) => match.replace(replaceRegex, `\u0000${match} \n`)),
     }];
 };

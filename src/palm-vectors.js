@@ -21,7 +21,7 @@ async function getPaLMVector(text) {
         },
         body: JSON.stringify({
             text: text,
-        })
+        }),
     });
 
     if (!response.ok) {

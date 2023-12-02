@@ -118,7 +118,7 @@ async function downloadChubCharacter(id) {
         body: JSON.stringify({
             'format': 'tavern',
             'fullPath': id,
-        })
+        }),
     });
 
     if (!result.ok) {
@@ -164,12 +164,12 @@ function parseChubUrl(str) {
         const id = type === 'character' ? lastTwo.slice(1).join('/') : lastTwo.join('/');
         return {
             id: id,
-            type: type
+            type: type,
         };
     } else if (length === 2) {
         return {
             id: lastTwo.join('/'),
-            type: 'character'
+            type: 'character',
         };
     }
 
@@ -186,7 +186,7 @@ async function downloadJannyCharacter(uuid) {
         headers: { 'Content-Type': 'application/json'},
         body: JSON.stringify({
             'characterId': uuid,
-        })
+        }),
     });
 
     if (result.ok) {

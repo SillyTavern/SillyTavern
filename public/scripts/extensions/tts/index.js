@@ -220,7 +220,7 @@ async function moduleWorker() {
     currentMessageNumber = lastMessageNumber;
 
     console.debug(
-        `Adding message from ${message.name} for TTS processing: "${message.mes}"`
+        `Adding message from ${message.name} for TTS processing: "${message.mes}"`,
     );
     ttsJobQueue.push(message);
 }
@@ -292,8 +292,8 @@ function debugTtsPlayback() {
             'audioQueueProcessorReady': audioQueueProcessorReady,
             'ttsJobQueue': ttsJobQueue,
             'currentTtsJob': currentTtsJob,
-            'ttsConfig': extension_settings.tts
-        }
+            'ttsConfig': extension_settings.tts,
+        },
     ));
 }
 window.debugTtsPlayback = debugTtsPlayback;
@@ -458,7 +458,7 @@ function saveLastValues() {
     const context = getContext();
     lastChatId = context.chatId;
     lastMessageHash = getStringHash(
-        (context.chat.length && context.chat[context.chat.length - 1].mes) ?? ''
+        (context.chat.length && context.chat[context.chat.length - 1].mes) ?? '',
     );
 }
 
@@ -559,7 +559,7 @@ function loadSettings() {
     $('#tts_provider').val(extension_settings.tts.currentProvider);
     $('#tts_enabled').prop(
         'checked',
-        extension_settings.tts.enabled
+        extension_settings.tts.enabled,
     );
     $('#tts_narrate_dialogues').prop('checked', extension_settings.tts.narrate_dialogues_only);
     $('#tts_narrate_quoted').prop('checked', extension_settings.tts.narrate_quoted_only);
@@ -605,7 +605,7 @@ function onRefreshClick() {
 
 function onEnableClick() {
     extension_settings.tts.enabled = $('#tts_enabled').is(
-        ':checked'
+        ':checked',
     );
     updateUiAudioPlayState();
     saveSettingsDebounced();

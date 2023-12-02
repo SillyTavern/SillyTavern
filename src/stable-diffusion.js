@@ -463,7 +463,7 @@ function registerEndpoints(app, jsonParser) {
             }
             const data = fs.readFileSync(
                 path,
-                { encoding: 'utf-8' }
+                { encoding: 'utf-8' },
             );
             return response.send(JSON.stringify(data));
         } catch (error) {
@@ -477,7 +477,7 @@ function registerEndpoints(app, jsonParser) {
             writeFileAtomicSync(
                 `${DIRECTORIES.comfyWorkflows}/${sanitize(String(request.body.file_name))}`,
                 request.body.workflow,
-                'utf8'
+                'utf8',
             );
             const data = getComfyWorkflows();
             return response.send(data);

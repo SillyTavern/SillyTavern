@@ -422,7 +422,7 @@ async function loadSettingOptions() {
         loadModels(),
         loadSchedulers(),
         loadVaes(),
-        loadComfyWorkflows()
+        loadComfyWorkflows(),
     ]);
 }
 
@@ -888,7 +888,7 @@ async function validateComfyUrl() {
             headers: getRequestHeaders(),
             body: JSON.stringify({
                 url: extension_settings.sd.comfy_url,
-            })
+            }),
         });
         if (!result.ok) {
             throw new Error('ComfyUI returned an error.');
@@ -1163,7 +1163,7 @@ async function loadComfySamplers() {
             headers: getRequestHeaders(),
             body: JSON.stringify({
                 url: extension_settings.sd.comfy_url,
-            })
+            }),
         });
         if (!result.ok) {
             throw new Error('ComfyUI returned an error.');
@@ -1388,7 +1388,7 @@ async function loadComfyModels() {
             headers: getRequestHeaders(),
             body: JSON.stringify({
                 url: extension_settings.sd.comfy_url,
-            })
+            }),
         });
         if (!result.ok) {
             throw new Error('ComfyUI returned an error.');
@@ -1447,7 +1447,7 @@ async function loadComfySchedulers() {
             headers: getRequestHeaders(),
             body: JSON.stringify({
                 url: extension_settings.sd.comfy_url,
-            })
+            }),
         });
         if (!result.ok) {
             throw new Error('ComfyUI returned an error.');
@@ -1506,7 +1506,7 @@ async function loadComfyVaes() {
             headers: getRequestHeaders(),
             body: JSON.stringify({
                 url: extension_settings.sd.comfy_url,
-            })
+            }),
         });
         if (!result.ok) {
             throw new Error('ComfyUI returned an error.');
@@ -1529,7 +1529,7 @@ async function loadComfyWorkflows() {
             headers: getRequestHeaders(),
             body: JSON.stringify({
                 url: extension_settings.sd.comfy_url,
-            })
+            }),
         });
         if (!result.ok) {
             throw new Error('ComfyUI returned an error.');
@@ -2148,7 +2148,7 @@ async function generateComfyImage(prompt) {
             prompt: `{
                 "prompt": ${workflow}
             }`,
-        })
+        }),
     });
     return { format: 'png', data: await promptResult.text() };
 }
@@ -2426,7 +2426,7 @@ $('#sd_dropdown [id]').on('click', function () {
         'sd_world': 'scene',
         'sd_last': 'last',
         'sd_raw_last': 'raw_last',
-        'sd_background': 'background'
+        'sd_background': 'background',
     };
 
     const param = idParamMap[id];

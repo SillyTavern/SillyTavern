@@ -15,14 +15,14 @@ const extensionName = 'cfg';
 const defaultSettings = {
     global: {
         'guidance_scale': 1,
-        'negative_prompt': ''
+        'negative_prompt': '',
     },
-    chara: []
+    chara: [],
 };
 const settingType = {
     guidance_scale: 0,
     negative_prompt: 1,
-    positive_prompt: 2
+    positive_prompt: 2,
 };
 
 // Used for character and chat CFG values
@@ -36,7 +36,7 @@ function setCharCfg(tempValue, setting) {
 
     // Assign temp object
     let tempCharaCfg = {
-        name: avatarName
+        name: avatarName,
     };
 
     switch(setting) {
@@ -384,7 +384,7 @@ export function initCfg() {
 export const cfgType = {
     chat: 0,
     chara: 1,
-    global: 2
+    global: 2,
 };
 
 export const metadataKeys = {
@@ -394,7 +394,7 @@ export const metadataKeys = {
     prompt_combine: 'cfg_prompt_combine',
     groupchat_individual_chars: 'cfg_groupchat_individual_chars',
     prompt_insertion_depth: 'cfg_prompt_insertion_depth',
-    prompt_separator: 'cfg_prompt_separator'
+    prompt_separator: 'cfg_prompt_separator',
 };
 
 // Gets the CFG guidance scale
@@ -412,21 +412,21 @@ export function getGuidanceScale() {
     if (chatGuidanceScale && chatGuidanceScale !== 1 && !groupchatCharOverride) {
         return {
             type: cfgType.chat,
-            value: chatGuidanceScale
+            value: chatGuidanceScale,
         };
     }
 
     if ((!selected_group && charaCfg || groupchatCharOverride) && charaCfg?.guidance_scale !== 1) {
         return {
             type: cfgType.chara,
-            value: charaCfg.guidance_scale
+            value: charaCfg.guidance_scale,
         };
     }
 
     if (extension_settings.cfg.global && extension_settings.cfg.global?.guidance_scale !== 1) {
         return {
             type: cfgType.global,
-            value: extension_settings.cfg.global.guidance_scale
+            value: extension_settings.cfg.global.guidance_scale,
         };
     }
 }
@@ -458,8 +458,8 @@ export function getCfgPrompt(guidanceScale, isNegative) {
     if (guidanceScale.type === cfgType.chat || cfgPromptCombine.includes(cfgType.chat)) {
         splitCfgPrompt.unshift(
             substituteParams(
-                chat_metadata[isNegative ? metadataKeys.negative_prompt : metadataKeys.positive_prompt]
-            )
+                chat_metadata[isNegative ? metadataKeys.negative_prompt : metadataKeys.positive_prompt],
+            ),
         );
     }
 
@@ -467,16 +467,16 @@ export function getCfgPrompt(guidanceScale, isNegative) {
     if (guidanceScale.type === cfgType.chara || cfgPromptCombine.includes(cfgType.chara)) {
         splitCfgPrompt.unshift(
             substituteParams(
-                isNegative ? charaCfg.negative_prompt : charaCfg.positive_prompt
-            )
+                isNegative ? charaCfg.negative_prompt : charaCfg.positive_prompt,
+            ),
         );
     }
 
     if (guidanceScale.type === cfgType.global || cfgPromptCombine.includes(cfgType.global)) {
         splitCfgPrompt.unshift(
             substituteParams(
-                isNegative ? extension_settings.cfg.global.negative_prompt : extension_settings.cfg.global.positive_prompt
-            )
+                isNegative ? extension_settings.cfg.global.negative_prompt : extension_settings.cfg.global.positive_prompt,
+            ),
         );
     }
 
@@ -487,6 +487,6 @@ export function getCfgPrompt(guidanceScale, isNegative) {
 
     return {
         value: combinedCfgPrompt,
-        depth: insertionDepth
+        depth: insertionDepth,
     };
 }

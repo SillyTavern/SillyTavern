@@ -1,4 +1,4 @@
-import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods, } from './scripts/RossAscends-mods.js';
+import { humanizedDateTime, favsToHotswap, getMessageTimeStamp, dragElement, isMobile, initRossMods } from './scripts/RossAscends-mods.js';
 import { userStatsHandler, statMesProcess, initStats } from './scripts/stats.js';
 import {
     generateKoboldWithStreaming,
@@ -165,7 +165,7 @@ import {
     SECRET_KEYS,
     readSecretState,
     secret_state,
-    writeSecret
+    writeSecret,
 } from './scripts/secrets.js';
 import { EventEmitter } from './lib/eventemitter.js';
 import { markdownExclusionExt } from './scripts/showdown-exclusion.js';
@@ -264,7 +264,7 @@ export {
     mesForShowdownParse,
     printCharacters,
     isOdd,
-    countOccurrences
+    countOccurrences,
 };
 
 // Cohee: Uncomment when we decide to use loader
@@ -371,13 +371,13 @@ export const system_avatar = 'img/five.png';
 export const comment_avatar = 'img/quill.png';
 export let CLIENT_VERSION = 'SillyTavern:UNKNOWN:Cohee#1207'; // For Horde header
 let optionsPopper = Popper.createPopper(document.getElementById('options_button'), document.getElementById('options'), {
-    placement: 'top-start'
+    placement: 'top-start',
 });
 let exportPopper = Popper.createPopper(document.getElementById('export_button'), document.getElementById('export_format_popup'), {
-    placement: 'left'
+    placement: 'left',
 });
 let rawPromptPopper = Popper.createPopper(document.getElementById('dialogue_popup'), document.getElementById('rawPromptPopup'), {
-    placement: 'right'
+    placement: 'right',
 });
 
 let dialogueResolve = null;
@@ -412,7 +412,7 @@ const system_message_types = {
 const extension_prompt_types = {
     IN_PROMPT: 0,
     IN_CHAT: 1,
-    BEFORE_PROMPT: 2
+    BEFORE_PROMPT: 2,
 };
 
 export const MAX_INJECTION_DEPTH = 1000;
@@ -521,7 +521,7 @@ function getUrlSync(url, cache = true) {
         type: 'GET',
         url: url,
         cache: cache,
-        async: false
+        async: false,
     }).responseText;
 }
 
@@ -582,8 +582,8 @@ function reloadMarkdownProcessor(render_formulas = false) {
                         delimiters: [
                             { left: '$$', right: '$$', display: true, asciimath: false },
                             { left: '$', right: '$', display: false, asciimath: true },
-                        ]
-                    }
+                        ],
+                    },
                 )],
         });
     }
@@ -1275,7 +1275,7 @@ async function replaceCurrentChat() {
     const chatsResponse = await fetch('/getallchatsofcharacter', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify({ avatar_url: characters[this_chid].avatar })
+        body: JSON.stringify({ avatar_url: characters[this_chid].avatar }),
     });
 
     if (chatsResponse.ok) {
@@ -1438,7 +1438,7 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
         // Always override the character name
         mes = getRegexedString(mes, regexPlacement, {
             characterOverride: ch_name,
-            isMarkdown: true
+            isMarkdown: true,
         });
     }
 
@@ -2738,7 +2738,7 @@ export async function generateRaw(prompt, api, instructOverride) {
         case 'kobold':
         case 'koboldhorde':
             if (preset_settings === 'gui') {
-                generateData = { prompt: prompt, gui_settings: true, max_length: amount_gen, max_context_length: max_context, };
+                generateData = { prompt: prompt, gui_settings: true, max_length: amount_gen, max_context_length: max_context };
             } else {
                 const isHorde = api === 'koboldhorde';
                 const koboldSettings = koboldai_settings[koboldai_setting_names[preset_settings]];
@@ -2819,13 +2819,13 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     }
 
     if (main_api == 'kobold' && kai_settings.streaming_kobold && !kai_flags.can_use_streaming) {
-        toastr.error('Streaming is enabled, but the version of Kobold used does not support token streaming.', undefined, { timeOut: 10000, preventDuplicates: true, });
+        toastr.error('Streaming is enabled, but the version of Kobold used does not support token streaming.', undefined, { timeOut: 10000, preventDuplicates: true });
         unblockGeneration();
         return;
     }
 
     if (main_api === 'textgenerationwebui' && textgenerationwebui_settings.streaming && textgenerationwebui_settings.legacy_api && !isMancer()) {
-        toastr.error('Streaming is not supported for the Legacy API. Update Ooba and use --extensions openai to enable streaming.', undefined, { timeOut: 10000, preventDuplicates: true, });
+        toastr.error('Streaming is not supported for the Legacy API. Update Ooba and use --extensions openai to enable streaming.', undefined, { timeOut: 10000, preventDuplicates: true });
         unblockGeneration();
         return;
     }
@@ -4186,7 +4186,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         afterScenarioAnchorTokens: getTokenCount(itemizedPrompts[thisPromptSet].afterScenarioAnchor),
         zeroDepthAnchorTokens: getTokenCount(itemizedPrompts[thisPromptSet].zeroDepthAnchor), // TODO: unused
         thisPrompt_padding: itemizedPrompts[thisPromptSet].padding,
-        this_main_api: itemizedPrompts[thisPromptSet].main_api
+        this_main_api: itemizedPrompts[thisPromptSet].main_api,
     };
 
     if (params.this_main_api == 'openai') {
@@ -4957,7 +4957,7 @@ async function read_avatar_load(input) {
             headers: {
                 'pragma': 'no-cache',
                 'cache-control': 'no-cache',
-            }
+            },
         });
 
         $('.mes').each(async function () {
@@ -5001,7 +5001,7 @@ async function getChat() {
             data: JSON.stringify({
                 ch_name: characters[this_chid].name,
                 file_name: characters[this_chid].chat,
-                avatar_url: characters[this_chid].avatar
+                avatar_url: characters[this_chid].avatar,
             }),
             dataType: 'json',
             contentType: 'application/json',
@@ -5125,7 +5125,7 @@ function changeMainAPI() {
             apiRanges: $('#range_block_openai'),
             maxContextElem: $('#max_context_block'),
             amountGenElem: $('#amount_gen_block'),
-        }
+        },
     };
     //console.log('--- apiElements--- ');
     //console.log(apiElements);
@@ -5413,7 +5413,7 @@ async function getSettings() {
 
         $('#settings_preset').empty();
         $('#settings_preset').append(
-            '<option value="gui">GUI KoboldAI Settings</option>'
+            '<option value="gui">GUI KoboldAI Settings</option>',
         ); //adding in the GUI settings, since it is not loaded dynamically
 
         koboldai_setting_names.forEach(function (item, i, arr) {
@@ -5509,7 +5509,7 @@ async function getSettings() {
         $('#main_api').val(main_api);
         $('#main_api option[value=' + main_api + ']').attr(
             'selected',
-            'true'
+            'true',
         );
         changeMainAPI();
 
@@ -5650,7 +5650,7 @@ function updateMessage(div) {
     text = getRegexedString(
         text,
         regexPlacement,
-        { characterOverride: mes.extra?.type === 'narrator' ? undefined : mes.name }
+        { characterOverride: mes.extra?.type === 'narrator' ? undefined : mes.name },
     );
 
 
@@ -5728,7 +5728,7 @@ async function messageEditDone(div) {
             this_edit_mes_chname,
             mes.is_system,
             mes.is_user,
-        )
+        ),
     );
     mesBlock.find('.mes_bias').empty();
     mesBlock.find('.mes_bias').append(messageFormatting(bias));
@@ -5764,7 +5764,7 @@ export async function getChatsFromFiles(data, isGroupChat) {
                     : JSON.stringify({
                         ch_name: characters[context.characterId].name,
                         file_name: file_name.replace('.jsonl', ''),
-                        avatar_url: characters[context.characterId].avatar
+                        avatar_url: characters[context.characterId].avatar,
                     });
 
                 const chatResponse = await fetch(endpoint, {
@@ -6320,7 +6320,7 @@ function callPopup(text, type, inputValue = '', { okButton, rows, wide, large } 
             crop: function (event) {
                 crop_data = event.detail;
                 crop_data.want_resize = !power_user.never_resize_avatars;
-            }
+            },
         });
     }
     $('#shadow_popup').transition({
@@ -6506,7 +6506,7 @@ function setGenerationProgress(progress) {
     else {
         $('#send_textarea').css({
             'background': `linear-gradient(90deg, #008000d6 ${progress}%, transparent ${progress}%)`,
-            'transition': '0.25s ease-in-out'
+            'transition': '0.25s ease-in-out',
         });
     }
 }
@@ -6627,7 +6627,7 @@ function openCharacterWorldPopup() {
         if (existingCharIndex === -1) {
             const newCharLoreEntry = {
                 name: fileName,
-                extraBooks: tempExtraBooks
+                extraBooks: tempExtraBooks,
             };
 
             charLore.push(newCharLoreEntry);
@@ -6815,7 +6815,7 @@ async function createOrEditCharacter(e) {
 
                     $('#create_button').removeAttr('disabled');
                     $('#add_avatar_button').replaceWith(
-                        $('#add_avatar_button').val('').clone(true)
+                        $('#add_avatar_button').val('').clone(true),
                     );
 
                     $('#create_button').attr('value', '✅');
@@ -6872,7 +6872,7 @@ async function createOrEditCharacter(e) {
                 favsToHotswap(); // Update fav state
 
                 $('#add_avatar_button').replaceWith(
-                    $('#add_avatar_button').val('').clone(true)
+                    $('#add_avatar_button').val('').clone(true),
                 );
                 $('#create_button').attr('value', 'Save');
                 crop_data = undefined;
@@ -7028,7 +7028,7 @@ function swipe_left() {      // when we swipe left..but no generation.
                         this_mes_div.css('height', 'auto');
                         // Scroll the chat down to the bottom once the animation is complete
                         if (is_animation_scroll) $('#chat').scrollTop($('#chat')[0].scrollHeight);
-                    }
+                    },
                 });
                 $(this).parent().children('.mes_block').transition({
                     x: '-' + swipe_range,
@@ -7044,11 +7044,11 @@ function swipe_left() {      // when we swipe left..but no generation.
                             complete: async function () {
                                 await eventSource.emit(event_types.MESSAGE_SWIPED, (chat.length - 1));
                                 saveChatDebounced();
-                            }
+                            },
                         });
-                    }
+                    },
                 });
-            }
+            },
         });
 
         $(this).parent().children('.avatar').transition({
@@ -7070,11 +7070,11 @@ function swipe_left() {      // when we swipe left..but no generation.
                             queue: false,
                             complete: function () {
 
-                            }
+                            },
                         });
-                    }
+                    },
                 });
-            }
+            },
         });
     }
     if (chat[chat.length - 1]['swipe_id'] < 0) {
@@ -7220,7 +7220,7 @@ const swipe_right = () => {
                         this_mes_div.css('height', 'auto');
                         // Scroll the chat down to the bottom once the animation is complete
                         if (is_animation_scroll) $('#chat').scrollTop($('#chat')[0].scrollHeight);
-                    }
+                    },
                 });
                 this_mes_div.children('.mes_block').transition({
                     x: swipe_range,
@@ -7245,11 +7245,11 @@ const swipe_right = () => {
                                         saveChatDebounced();
                                     }
                                 }
-                            }
+                            },
                         });
-                    }
+                    },
                 });
-            }
+            },
         });
         this_mes_div.children('.avatar').transition({ // moves avatar along with swipe
             x: '-' + swipe_range,
@@ -7270,11 +7270,11 @@ const swipe_right = () => {
                             queue: false,
                             complete: function () {
 
-                            }
+                            },
                         });
-                    }
+                    },
                 });
-            }
+            },
         });
     }
 };
@@ -7948,7 +7948,7 @@ jQuery(async function () {
                 <label for="del_char_checkbox" class="checkbox_label justifyCenter">
                     <input type="checkbox" id="del_char_checkbox" />
                     <span>Also delete the chat files</span>
-                </label><br></b>`
+                </label><br></b>`,
         );
     });
 
@@ -8457,7 +8457,7 @@ jQuery(async function () {
             counterId: '#max_context_counter',
             format: (val) => `${val}`,
             setValue: (val) => { max_context = Number(val); },
-        }
+        },
     ];
 
     sliders.forEach(slider => {
@@ -8594,7 +8594,7 @@ jQuery(async function () {
                 .closest('.mes_block')
                 .find('.mes_text')
                 .append(
-                    '<textarea id=\'curEditTextarea\' class=\'edit_textarea\' style=\'max-width:auto;\'></textarea>'
+                    '<textarea id=\'curEditTextarea\' class=\'edit_textarea\' style=\'max-width:auto;\'></textarea>',
                 );
             $('#curEditTextarea').val(text);
             let edit_textarea = $(this)
@@ -8605,7 +8605,7 @@ jQuery(async function () {
             edit_textarea.focus();
             edit_textarea[0].setSelectionRange(     //this sets the cursor at the end of the text
                 edit_textarea.val().length,
-                edit_textarea.val().length
+                edit_textarea.val().length,
             );
             if (this_edit_mes_id == count_view_mes - 1) {
                 $('#chat').scrollTop(chatScrollPosition);
@@ -8660,9 +8660,9 @@ jQuery(async function () {
                     $('.extraMesButtonsHint:not(:visible)').show().transition({
                         opacity: .2,
                         duration: 150,
-                        easing: 'ease-in-out'
+                        easing: 'ease-in-out',
                     });
-                }
+                },
             });
         }
     });
@@ -9043,7 +9043,7 @@ jQuery(async function () {
                         await delay(50);
                         $(this).closest('.drawer-content').removeClass('resizing');
                         $('#rm_print_characters_block').trigger('scroll');
-                    }
+                    },
                 });
             } else {
                 $(this).closest('.drawer').find('.drawer-content').addClass('resizing').slideToggle(200, 'swing', async function () {

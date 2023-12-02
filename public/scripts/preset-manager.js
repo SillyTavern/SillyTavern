@@ -137,7 +137,7 @@ class PresetManager {
         const res = await fetch('/api/presets/save', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify({ preset, name, apiId: this.apiId })
+            body: JSON.stringify({ preset, name, apiId: this.apiId }),
         });
 
         if (!res.ok) {

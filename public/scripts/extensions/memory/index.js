@@ -484,8 +484,8 @@ async function summarizeChatExtras(context) {
                     repetition_penalty: extension_settings.memory.repetitionPenalty,
                     temperature: extension_settings.memory.temperature,
                     length_penalty: extension_settings.memory.lengthPenalty,
-                }
-            })
+                },
+            }),
         });
 
         if (apiResult.ok) {

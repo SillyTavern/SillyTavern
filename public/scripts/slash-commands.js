@@ -108,7 +108,7 @@ class SlashCommandParser {
             if (!excludedFromRegex.includes(command)) {
                 unnamedArg = getRegexedString(
                     unnamedArg,
-                    regex_placement.SLASH_COMMAND
+                    regex_placement.SLASH_COMMAND,
                 );
             }
         }
@@ -641,7 +641,7 @@ async function addSwipeCallback(_, arg) {
             gen_id: Date.now(),
             api: 'manual',
             model: 'slash command',
-        }
+        },
     });
 
     await saveChatConditional();
@@ -1222,7 +1222,7 @@ export async function sendMessageAs(args, text) {
         extra: {
             bias: bias.trim().length ? bias : null,
             gen_id: Date.now(),
-        }
+        },
     };
 
     const insertAt = Number(resolveVariable(args.at));

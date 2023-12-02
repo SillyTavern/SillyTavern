@@ -22,7 +22,7 @@ const default_order = [1, 5, 0, 2, 3, 4];
 const maximum_output_length = 150;
 const default_presets = {
     'clio-v1': 'Talker-Chat-Clio',
-    'kayra-v1': 'Carefree-Kayra'
+    'kayra-v1': 'Carefree-Kayra',
 };
 
 export const nai_settings = {
@@ -321,7 +321,7 @@ const sliders = [
         counterId: '#nai_banned_tokens_counter',
         format: (val) => val,
         setValue: (val) => { nai_settings.banned_tokens = val; },
-    }
+    },
 ];
 
 function getBadWordIds(banned_tokens, tokenizerType) {
@@ -599,7 +599,7 @@ function calculateLogitBias() {
             bias: bias,
             ensure_sequence_finish: false,
             generate_once: false,
-            sequence: sequence
+            sequence: sequence,
         };
     }
 

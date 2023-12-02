@@ -75,7 +75,7 @@ const cliArguments = yargs(hideBin(process.argv))
     .option('autorun', {
         type: 'boolean',
         default: null,
-        describe: 'Automatically launch SillyTavern in the browser.'
+        describe: 'Automatically launch SillyTavern in the browser.',
     }).option('corsProxy', {
         type: 'boolean',
         default: false,
@@ -83,19 +83,19 @@ const cliArguments = yargs(hideBin(process.argv))
     }).option('disableCsrf', {
         type: 'boolean',
         default: false,
-        describe: 'Disables CSRF protection'
+        describe: 'Disables CSRF protection',
     }).option('ssl', {
         type: 'boolean',
         default: false,
-        describe: 'Enables SSL'
+        describe: 'Enables SSL',
     }).option('certPath', {
         type: 'string',
         default: 'certs/cert.pem',
-        describe: 'Path to your certificate file.'
+        describe: 'Path to your certificate file.',
     }).option('keyPath', {
         type: 'string',
         default: 'certs/privkey.pem',
-        describe: 'Path to your private key file.'
+        describe: 'Path to your private key file.',
     }).parseSync();
 
 // change all relative paths
@@ -227,15 +227,15 @@ if (cliArguments.disableCsrf === false) {
         cookieOptions: {
             httpOnly: true,
             sameSite: 'strict',
-            secure: false
+            secure: false,
         },
         size: 64,
-        getTokenFromRequest: (req) => req.headers['x-csrf-token']
+        getTokenFromRequest: (req) => req.headers['x-csrf-token'],
     });
 
     app.get('/csrf-token', (req, res) => {
         res.json({
-            'token': generateToken(res, req)
+            'token': generateToken(res, req),
         });
     });
 
@@ -245,7 +245,7 @@ if (cliArguments.disableCsrf === false) {
     console.warn('\nCSRF protection is disabled. This will make your server vulnerable to CSRF attacks.\n');
     app.get('/csrf-token', (req, res) => {
         res.json({
-            'token': 'disabled'
+            'token': 'disabled',
         });
     });
 }
@@ -253,7 +253,7 @@ if (cliArguments.disableCsrf === false) {
 // CORS Settings //
 const CORS = cors({
     origin: 'null',
-    methods: ['OPTIONS']
+    methods: ['OPTIONS'],
 });
 
 app.use(CORS);
@@ -474,7 +474,7 @@ app.post('/generate', jsonParser, async function (request, response_generate) {
         body: JSON.stringify(this_settings),
         headers: Object.assign(
             { 'Content-Type': 'application/json' },
-            getOverrideHeaders((new URL(request.body.api_server))?.host)
+            getOverrideHeaders((new URL(request.body.api_server))?.host),
         ),
         signal: controller.signal,
     };
@@ -800,7 +800,7 @@ app.post('/getstatus', jsonParser, async function (request, response) {
     }
 
     const args = {
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
     };
 
     setAdditionalHeaders(request, args, api_server);
@@ -1223,7 +1223,7 @@ app.post('/v2/editcharacterattribute', jsonParser, async function (request, resp
                 JSON.stringify(character),
                 (update.avatar).replace('.png', ''),
                 response,
-                'Character saved'
+                'Character saved',
             );
         } else {
             console.log(validator.lastValidationError);
@@ -1392,7 +1392,7 @@ const processCharacter = async (item, i) => {
         characters[i] = {
             date_added: 0,
             date_last_chat: 0,
-            chat_size: 0
+            chat_size: 0,
         };
 
         console.log(`Could not process character: ${item}`);
@@ -1688,7 +1688,7 @@ function sortByName(_) {
 function readPresetsFromDirectory(directoryPath, options = {}) {
     const {
         sortFunction,
-        removeFileExtension = false
+        removeFileExtension = false,
     } = options;
 
     const files = fs.readdirSync(directoryPath).sort(sortFunction);
@@ -1723,25 +1723,25 @@ app.post('/getsettings', jsonParser, (request, response) => {
     const { fileContents: novelai_settings, fileNames: novelai_setting_names }
         = readPresetsFromDirectory(DIRECTORIES.novelAI_Settings, {
             sortFunction: sortByName(DIRECTORIES.novelAI_Settings),
-            removeFileExtension: true
+            removeFileExtension: true,
         });
 
     // OpenAI Settings
     const { fileContents: openai_settings, fileNames: openai_setting_names }
         = readPresetsFromDirectory(DIRECTORIES.openAI_Settings, {
-            sortFunction: sortByName(DIRECTORIES.openAI_Settings), removeFileExtension: true
+            sortFunction: sortByName(DIRECTORIES.openAI_Settings), removeFileExtension: true,
         });
 
     // TextGenerationWebUI Settings
     const { fileContents: textgenerationwebui_presets, fileNames: textgenerationwebui_preset_names }
         = readPresetsFromDirectory(DIRECTORIES.textGen_Settings, {
-            sortFunction: sortByName(DIRECTORIES.textGen_Settings), removeFileExtension: true
+            sortFunction: sortByName(DIRECTORIES.textGen_Settings), removeFileExtension: true,
         });
 
     //Kobold
     const { fileContents: koboldai_settings, fileNames: koboldai_setting_names }
         = readPresetsFromDirectory(DIRECTORIES.koboldAI_Settings, {
-            sortFunction: sortByName(DIRECTORIES.koboldAI_Settings), removeFileExtension: true
+            sortFunction: sortByName(DIRECTORIES.koboldAI_Settings), removeFileExtension: true,
         });
 
     const worldFiles = fs
@@ -1932,7 +1932,7 @@ app.post('/getallchatsofcharacter', jsonParser, async function (request, respons
 
                 const rl = readline.createInterface({
                     input: fileStream,
-                    crlfDelay: Infinity
+                    crlfDelay: Infinity,
                 });
 
                 let lastLine;
@@ -2187,7 +2187,7 @@ app.post('/exportchat', jsonParser, async function (request, response) {
     let exportfilename = request.body.exportfilename;
     if (!fs.existsSync(filename)) {
         const errorMessage = {
-            message: `Could not find JSONL file to export. Source chat file: ${filename}.`
+            message: `Could not find JSONL file to export. Source chat file: ${filename}.`,
         };
         console.log(errorMessage.message);
         return response.status(404).json(errorMessage);
@@ -2208,7 +2208,7 @@ app.post('/exportchat', jsonParser, async function (request, response) {
             catch (err) {
                 console.error(err);
                 const errorMessage = {
-                    message: `Could not read JSONL file to export. Source chat file: ${filename}.`
+                    message: `Could not read JSONL file to export. Source chat file: ${filename}.`,
                 };
                 console.log(errorMessage.message);
                 return response.status(500).json(errorMessage);
@@ -2328,9 +2328,9 @@ app.post('/importchat', urlencodedParser, function (request, response) {
                                     is_user: message.src.is_human,
                                     send_date: humanizedISO8601DateTime(),
                                     mes: message.text,
-                                })
+                                }),
                             )];
-                    }
+                    },
                 };
 
                 const newChats = [];
@@ -2983,7 +2983,7 @@ async function sendScaleRequest(request, response) {
         const generateResponseJson = await generateResponse.json();
         console.log('Scale response:', generateResponseJson);
 
-        const reply = { choices: [{ 'message': { 'content': generateResponseJson.output, } }] };
+        const reply = { choices: [{ 'message': { 'content': generateResponseJson.output } }] };
         return response.send(reply);
     } catch (error) {
         console.log(error);
@@ -3007,14 +3007,14 @@ app.post('/generate_altscale', jsonParser, function (request, response_generate_
                 variant: {
                     name: 'New Variant',
                     appId: '',
-                    taxonomy: null
+                    taxonomy: null,
                 },
                 prompt: {
                     id: '',
                     template: '{{input}}\n',
                     exampleVariables: {},
                     variablesSourceDataId: null,
-                    systemMessage: request.body.sysprompt
+                    systemMessage: request.body.sysprompt,
                 },
                 modelParameters: {
                     id: '',
@@ -3026,16 +3026,16 @@ app.post('/generate_altscale', jsonParser, function (request, response_generate_
                     suffix: null,
                     topP: request.body.top_p,
                     logprobs: null,
-                    logitBias: request.body.logit_bias
+                    logitBias: request.body.logit_bias,
                 },
                 inputs: [
                     {
                         index: '-1',
                         valueByName: {
-                            input: request.body.prompt
-                        }
-                    }
-                ]
+                            input: request.body.prompt,
+                        },
+                    },
+                ],
             },
             meta: {
                 values: {
@@ -3043,9 +3043,9 @@ app.post('/generate_altscale', jsonParser, function (request, response_generate_
                     'prompt.variablesSourceDataId': ['undefined'],
                     'modelParameters.suffix': ['undefined'],
                     'modelParameters.logprobs': ['undefined'],
-                }
-            }
-        })
+                },
+            },
+        }),
     })
         .then(response => response.json())
         .then(data => {
@@ -3139,7 +3139,7 @@ async function sendClaudeRequest(request, response) {
             console.log('Claude response:', responseText);
 
             // Wrap it back to OAI format
-            const reply = { choices: [{ 'message': { 'content': responseText, } }] };
+            const reply = { choices: [{ 'message': { 'content': responseText } }] };
             return response.send(reply);
         }
     } catch (error) {
@@ -3187,7 +3187,7 @@ async function sendPalmRequest(request, response) {
             body: JSON.stringify(body),
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
             },
             signal: controller.signal,
             timeout: 0,
@@ -3216,7 +3216,7 @@ async function sendPalmRequest(request, response) {
         console.log('Palm response:', responseText);
 
         // Wrap it back to OAI format
-        const reply = { choices: [{ 'message': { 'content': responseText, } }] };
+        const reply = { choices: [{ 'message': { 'content': responseText } }] };
         return response.send(reply);
     } catch (error) {
         console.log('Error communicating with Palm API: ', error);
@@ -3409,7 +3409,7 @@ async function sendAI21Request(request, response) {
         headers: {
             accept: 'application/json',
             'content-type': 'application/json',
-            Authorization: `Bearer ${readSecret(SECRET_KEYS.AI21)}`
+            Authorization: `Bearer ${readSecret(SECRET_KEYS.AI21)}`,
         },
         body: JSON.stringify({
             numResults: 1,
@@ -3425,7 +3425,7 @@ async function sendAI21Request(request, response) {
                 applyToPunctuations: false,
                 applyToNumbers: false,
                 applyToStopwords: false,
-                applyToEmojis: false
+                applyToEmojis: false,
             },
             presencePenalty: {
                 scale: request.body.presence_penalty,
@@ -3433,7 +3433,7 @@ async function sendAI21Request(request, response) {
                 applyToPunctuations: false,
                 applyToNumbers: false,
                 applyToStopwords: false,
-                applyToEmojis: false
+                applyToEmojis: false,
             },
             countPenalty: {
                 scale: request.body.count_pen,
@@ -3441,9 +3441,9 @@ async function sendAI21Request(request, response) {
                 applyToPunctuations: false,
                 applyToNumbers: false,
                 applyToStopwords: false,
-                applyToEmojis: false
+                applyToEmojis: false,
             },
-            prompt: request.body.messages
+            prompt: request.body.messages,
         }),
         signal: controller.signal,
     };
@@ -3456,7 +3456,7 @@ async function sendAI21Request(request, response) {
             } else {
                 console.log(r.completions[0].data.text);
             }
-            const reply = { choices: [{ 'message': { 'content': r.completions[0].data.text, } }] };
+            const reply = { choices: [{ 'message': { 'content': r.completions[0].data.text } }] };
             return response.send(reply);
         })
         .catch(err => {
@@ -3522,7 +3522,7 @@ app.post('/tokenize_via_api', jsonParser, async function (request, response) {
             const args = {
                 method: 'POST',
                 body: JSON.stringify({ 'prompt': text }),
-                headers: { 'Content-Type': 'application/json' }
+                headers: { 'Content-Type': 'application/json' },
             };
 
             let url = String(baseUrl).replace(/\/$/, '');
@@ -3625,13 +3625,13 @@ require('./src/serpapi').registerEndpoints(app, jsonParser);
 const tavernUrl = new URL(
     (cliArguments.ssl ? 'https://' : 'http://') +
     (listen ? '0.0.0.0' : '127.0.0.1') +
-    (':' + server_port)
+    (':' + server_port),
 );
 
 const autorunUrl = new URL(
     (cliArguments.ssl ? 'https://' : 'http://') +
     ('127.0.0.1') +
-    (':' + server_port)
+    (':' + server_port),
 );
 
 const setupTasks = async function () {
@@ -3684,18 +3684,18 @@ if (true === cliArguments.ssl) {
     https.createServer(
         {
             cert: fs.readFileSync(cliArguments.certPath),
-            key: fs.readFileSync(cliArguments.keyPath)
+            key: fs.readFileSync(cliArguments.keyPath),
         }, app)
         .listen(
             Number(tavernUrl.port) || 443,
             tavernUrl.hostname,
-            setupTasks
+            setupTasks,
         );
 } else {
     http.createServer(app).listen(
         Number(tavernUrl.port) || 80,
         tavernUrl.hostname,
-        setupTasks
+        setupTasks,
     );
 }
 

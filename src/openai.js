@@ -34,11 +34,11 @@ function registerEndpoints(app, jsonParser, urlencodedParser) {
                         role: 'user',
                         content: [
                             { type: 'text', text: request.body.prompt },
-                            { type: 'image_url', image_url: { 'url': request.body.image } }
-                        ]
-                    }
+                            { type: 'image_url', image_url: { 'url': request.body.image } },
+                        ],
+                    },
                 ],
-                max_tokens: 500
+                max_tokens: 500,
             };
 
             console.log('Multimodal captioning request', body);

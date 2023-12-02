@@ -984,7 +984,7 @@ export function initRossMods() {
             let contextLine = $('.lastInContext');
             if (contextLine.length !== 0) {
                 $('#chat').animate({
-                    scrollTop: contextLine.offset().top - $('#chat').offset().top + $('#chat').scrollTop()
+                    scrollTop: contextLine.offset().top - $('#chat').offset().top + $('#chat').scrollTop(),
                 }, 300);
             } else { toastr.warning('Context line not found, send a message first!'); }
         }
@@ -992,7 +992,7 @@ export function initRossMods() {
         if (event.shiftKey && event.ctrlKey && event.key == 'ArrowDown') {
             event.preventDefault();
             $('#chat').animate({
-                scrollTop: $('#chat').prop('scrollHeight')
+                scrollTop: $('#chat').prop('scrollHeight'),
             }, 300);
         }
 

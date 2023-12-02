@@ -15,7 +15,7 @@ class SileroTtsProvider {
 
     defaultSettings = {
         provider_endpoint: 'http://localhost:8001/tts',
-        voiceMap: {}
+        voiceMap: {},
     };
 
     get settingsHtml() {
@@ -94,7 +94,7 @@ class SileroTtsProvider {
             this.voices = await this.fetchTtsVoiceObjects();
         }
         const match = this.voices.filter(
-            sileroVoice => sileroVoice.name == voiceName
+            sileroVoice => sileroVoice.name == voiceName,
         )[0];
         if (!match) {
             throw `TTS Voice name ${voiceName} not found`;
@@ -127,14 +127,14 @@ class SileroTtsProvider {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Cache-Control': 'no-cache'  // Added this line to disable caching of file so new files are always played - Rolyat 7/7/23
+                    'Cache-Control': 'no-cache',  // Added this line to disable caching of file so new files are always played - Rolyat 7/7/23
                 },
                 body: JSON.stringify({
                     'text': inputText,
                     'speaker': voiceId,
-                    'session': 'sillytavern'
-                })
-            }
+                    'session': 'sillytavern',
+                }),
+            },
         );
         if (!response.ok) {
             toastr.error(response.statusText, 'TTS Generation Failed');
@@ -157,7 +157,7 @@ class SileroTtsProvider {
                     body: JSON.stringify({
                         'path': 'sillytavern',
                     }),
-                }
+                },
             );
 
             if (!response.ok && response.status !== 404) {

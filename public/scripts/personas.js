@@ -250,7 +250,7 @@ export function selectCurrentPersona() {
             toastr.info(
                 `To permanently set "${personaName}" as the selected persona, unlock and relock it using the "Lock" button. Otherwise, the selection resets upon reloading the chat.`,
                 `This chat is locked to a different persona (${power_user.personas[lockedPersona]}).`,
-                { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true }
+                { timeOut: 10000, extendedTimeOut: 20000, preventDuplicates: true },
             );
         }
 
@@ -298,7 +298,7 @@ async function lockUserNameToChat() {
             toastr.info(
                 'Creating a new persona for currently selected user name and avatar...',
                 'Persona not set for this avatar',
-                { timeOut: 10000, extendedTimeOut: 20000, },
+                { timeOut: 10000, extendedTimeOut: 20000 },
             );
         }
         power_user.personas[user_avatar] = name1;
@@ -389,7 +389,7 @@ function onPersonaDescriptionInput() {
 
 function onPersonaDescriptionPositionInput() {
     power_user.persona_description_position = Number(
-        $('#persona_description_position').find(':selected').val()
+        $('#persona_description_position').find(':selected').val(),
     );
 
     if (power_user.personas[user_avatar]) {

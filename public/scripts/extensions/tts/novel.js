@@ -16,7 +16,7 @@ class NovelTtsProvider {
 
     defaultSettings = {
         voiceMap: {},
-        customVoices: []
+        customVoices: [],
     };
 
     /**
@@ -155,7 +155,7 @@ class NovelTtsProvider {
 
         // Add in custom voices to the map
         let addVoices = this.settings.customVoices.map(voice =>
-            ({ name: voice, voice_id: voice, lang: 'en-US', preview_url: false })
+            ({ name: voice, voice_id: voice, lang: 'en-US', preview_url: false }),
         );
         voices = voices.concat(addVoices);
 
@@ -188,8 +188,8 @@ class NovelTtsProvider {
                 body: JSON.stringify({
                     'text': inputText,
                     'voice': voiceId,
-                })
-            }
+                }),
+            },
         );
         if (!response.ok) {
             toastr.error(response.statusText, 'TTS Generation Failed');

@@ -71,7 +71,7 @@ function registerEndpoints(app, jsonParser) {
                     'Content-Type': 'application/json',
                     'apikey': api_key_horde,
                     'Client-Agent': String(request.header('Client-Agent')),
-                }
+                },
             });
 
             if (!result.ok) {

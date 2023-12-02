@@ -3,7 +3,7 @@ import { extension_settings } from '../../extensions.js';
 export {
     regex_placement,
     getRegexedString,
-    runRegexScript
+    runRegexScript,
 };
 
 const regex_placement = {
@@ -11,12 +11,12 @@ const regex_placement = {
     MD_DISPLAY: 0,
     USER_INPUT: 1,
     AI_OUTPUT: 2,
-    SLASH_COMMAND: 3
+    SLASH_COMMAND: 3,
 };
 
 const regex_replace_strategy = {
     REPLACE: 0,
-    OVERLAY: 1
+    OVERLAY: 1,
 };
 
 // Originally from: https://github.com/IonicaBizau/regex-parser.js/blob/master/lib/index.js
@@ -98,8 +98,8 @@ function runRegexScript(regexScript, rawString, { characterOverride } = {}) {
             trimCapturedMatch ?? trimFencedMatch,
             {
                 characterOverride,
-                replaceStrategy: regexScript.replaceStrategy ?? regex_replace_strategy.REPLACE
-            }
+                replaceStrategy: regexScript.replaceStrategy ?? regex_replace_strategy.REPLACE,
+            },
         );
         if (!newString) {
             newString = rawString.replace(fencedMatch, subReplaceString);

@@ -631,10 +631,10 @@ function appendViewTagToList(list, tag, everything) {
     const colorPicker2Id = tag.id + '-tag-color2';
 
     template.find('.tagColorPickerHolder').html(
-        `<toolcool-color-picker id="${colorPickerId}" color="${tag.color}" class="tag-color"></toolcool-color-picker>`
+        `<toolcool-color-picker id="${colorPickerId}" color="${tag.color}" class="tag-color"></toolcool-color-picker>`,
     );
     template.find('.tagColorPicker2Holder').html(
-        `<toolcool-color-picker id="${colorPicker2Id}" color="${tag.color2}" class="tag-color2"></toolcool-color-picker>`
+        `<toolcool-color-picker id="${colorPicker2Id}" color="${tag.color2}" class="tag-color2"></toolcool-color-picker>`,
     );
 
     template.find('.tag-color').attr('id', colorPickerId);

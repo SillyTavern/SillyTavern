@@ -16,7 +16,7 @@ class ElevenLabsTtsProvider {
         similarity_boost: 0.75,
         apiKey: '',
         model: 'eleven_monolingual_v1',
-        voiceMap: {}
+        voiceMap: {},
     };
 
     get settingsHtml() {
@@ -129,7 +129,7 @@ class ElevenLabsTtsProvider {
             this.voices = await this.fetchTtsVoiceObjects();
         }
         const match = this.voices.filter(
-            elevenVoice => elevenVoice.name == voiceName
+            elevenVoice => elevenVoice.name == voiceName,
         )[0];
         if (!match) {
             throw `TTS Voice name ${voiceName} not found in ElevenLabs account`;
@@ -175,10 +175,10 @@ class ElevenLabsTtsProvider {
     //###########//
     async fetchTtsVoiceObjects() {
         const headers = {
-            'xi-api-key': this.settings.apiKey
+            'xi-api-key': this.settings.apiKey,
         };
         const response = await fetch('https://api.elevenlabs.io/v1/voices', {
-            headers: headers
+            headers: headers,
         });
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${await response.text()}`);
@@ -189,13 +189,13 @@ class ElevenLabsTtsProvider {
 
     async fetchTtsVoiceSettings() {
         const headers = {
-            'xi-api-key': this.settings.apiKey
+            'xi-api-key': this.settings.apiKey,
         };
         const response = await fetch(
             'https://api.elevenlabs.io/v1/voices/settings/default',
             {
-                headers: headers
-            }
+                headers: headers,
+            },
         );
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${await response.text()}`);
@@ -212,7 +212,7 @@ class ElevenLabsTtsProvider {
                 method: 'POST',
                 headers: {
                     'xi-api-key': this.settings.apiKey,
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
                     model_id: model,
@@ -221,8 +221,8 @@ class ElevenLabsTtsProvider {
                         stability: Number(this.settings.stability),
                         similarity_boost: Number(this.settings.similarity_boost),
                     },
-                })
-            }
+                }),
+            },
         );
         if (!response.ok) {
             toastr.error(response.statusText, 'TTS Generation Failed');
@@ -237,9 +237,9 @@ class ElevenLabsTtsProvider {
             `https://api.elevenlabs.io/v1/history/${history_item_id}/audio`,
             {
                 headers: {
-                    'xi-api-key': this.settings.apiKey
-                }
-            }
+                    'xi-api-key': this.settings.apiKey,
+                },
+            },
         );
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${await response.text()}`);
@@ -249,10 +249,10 @@ class ElevenLabsTtsProvider {
 
     async fetchTtsHistory() {
         const headers = {
-            'xi-api-key': this.settings.apiKey
+            'xi-api-key': this.settings.apiKey,
         };
         const response = await fetch('https://api.elevenlabs.io/v1/history', {
-            headers: headers
+            headers: headers,
         });
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${await response.text()}`);

@@ -5,7 +5,7 @@ import {
     CLIENT_VERSION,
     getRequestHeaders,
     max_context,
-    amount_gen
+    amount_gen,
 } from '../script.js';
 import { SECRET_KEYS, writeSecret } from './secrets.js';
 import { delay } from './utils.js';
@@ -38,7 +38,7 @@ const getRequestArgs = () => ({
     method: 'GET',
     headers: {
         'Client-Agent': CLIENT_VERSION,
-    }
+    },
 });
 
 async function getWorkers() {
@@ -130,7 +130,7 @@ async function generateHorde(prompt, params, signal, reportProgress) {
             ...getRequestHeaders(),
             'Client-Agent': CLIENT_VERSION,
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
@@ -156,7 +156,7 @@ async function generateHorde(prompt, params, signal, reportProgress) {
                 method: 'DELETE',
                 headers: {
                     'Client-Agent': CLIENT_VERSION,
-                }
+                },
             });
             throw new Error('Request aborted');
         }

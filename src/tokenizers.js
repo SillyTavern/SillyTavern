@@ -124,7 +124,7 @@ async function countSentencepieceTokens(tokenizer, text) {
     if (!instance) {
         return {
             ids: [],
-            count: Math.ceil(text.length / CHARS_PER_TOKEN)
+            count: Math.ceil(text.length / CHARS_PER_TOKEN),
         };
     }
 
@@ -133,7 +133,7 @@ async function countSentencepieceTokens(tokenizer, text) {
     let ids = instance.encodeIds(cleaned);
     return {
         ids,
-        count: ids.length
+        count: ids.length,
     };
 }
 
@@ -372,9 +372,9 @@ function registerEndpoints(app, jsonParser) {
             headers: {
                 accept: 'application/json',
                 'content-type': 'application/json',
-                Authorization: `Bearer ${readSecret(SECRET_KEYS.AI21)}`
+                Authorization: `Bearer ${readSecret(SECRET_KEYS.AI21)}`,
             },
-            body: JSON.stringify({ text: req.body[0].content })
+            body: JSON.stringify({ text: req.body[0].content }),
         };
 
         try {

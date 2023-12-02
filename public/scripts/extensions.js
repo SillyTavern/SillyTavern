@@ -657,7 +657,7 @@ async function updateExtension(extensionName, quiet) {
         const response = await fetch('/api/extensions/update', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify({ extensionName })
+            body: JSON.stringify({ extensionName }),
         });
 
         const data = await response.json();
@@ -698,7 +698,7 @@ export async function deleteExtension(extensionName) {
         await fetch('/api/extensions/delete', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify({ extensionName })
+            body: JSON.stringify({ extensionName }),
         });
     } catch (error) {
         console.error('Error:', error);
@@ -723,7 +723,7 @@ async function getExtensionVersion(extensionName) {
         const response = await fetch('/api/extensions/version', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify({ extensionName })
+            body: JSON.stringify({ extensionName }),
         });
 
         const data = await response.json();

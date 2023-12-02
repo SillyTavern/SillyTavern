@@ -23,7 +23,7 @@ async function getOpenAIVector(text) {
         body: JSON.stringify({
             input: text,
             model: 'text-embedding-ada-002',
-        })
+        }),
     });
 
     if (!response.ok) {

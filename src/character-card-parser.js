@@ -30,5 +30,5 @@ const parse = async (cardUrl, format) => {
 };
 
 module.exports = {
-    parse: parse
+    parse: parse,
 };

@@ -154,7 +154,7 @@ function onExtensionFloatingCharaPromptInput() {
     const avatarName = getCharaFilename();
     let tempCharaNote = {
         name: avatarName,
-        prompt: tempPrompt
+        prompt: tempPrompt,
     };
 
     setCharaPromptTokenCounterDebounced(tempPrompt);

@@ -13,7 +13,10 @@ export const PAGINATION_TEMPLATE = '<%= rangeStart %>-<%= rangeEnd %> of <%= tot
  * Navigation options for pagination.
  * @enum {number}
  */
-export const navigation_option = { none: -2000, previous: -1000, };
+export const navigation_option = {
+    none: -2000,
+    previous: -1000,
+};
 
 export function escapeHtml(str) {
     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -387,7 +390,7 @@ export function saveCaretPosition(element) {
     // Return an object with the start and end offsets of the range
     const position = {
         start: range.startOffset,
-        end: range.endOffset
+        end: range.endOffset,
     };
 
     console.debug('Caret saved', position);
@@ -854,7 +857,7 @@ export function extractDataFromPng(data, identifier = 'chara') {
             ended = true;
             chunks.push({
                 name: name,
-                data: new Uint8Array(0)
+                data: new Uint8Array(0),
             });
             break;
         }
@@ -878,7 +881,7 @@ export function extractDataFromPng(data, identifier = 'chara') {
 
         chunks.push({
             name: name,
-            data: chunkData
+            data: chunkData,
         });
     }
 
@@ -931,7 +934,7 @@ export async function saveBase64AsFile(base64Data, characterName, filename = '',
     const requestBody = {
         image: dataURL,
         ch_name: characterName,
-        filename: filename
+        filename: filename,
     };
 
     // Send the data URL to your backend using fetch
@@ -940,7 +943,7 @@ export async function saveBase64AsFile(base64Data, characterName, filename = '',
         body: JSON.stringify(requestBody),
         headers: {
             ...getRequestHeaders(),
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
         },
     });
 

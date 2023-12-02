@@ -37,7 +37,7 @@ const languageLabels = {
     'en': 'English',
     'fr': 'French',
     'es': 'Spanish',
-    'ja': 'Japanese'
+    'ja': 'Japanese',
 };
 
 function throwIfModuleMissing() {
@@ -64,7 +64,7 @@ class CoquiTtsProvider {
         voiceMap: {},
         customVoices: {},
         voiceIds: [],
-        voiceMapDict: {}
+        voiceMapDict: {},
     };
 
     get settingsHtml() {
@@ -341,7 +341,7 @@ class CoquiTtsProvider {
     async getVoice(voiceName) {
         let match = await this.fetchTtsVoiceObjects();
         match = match.filter(
-            voice => voice.name == voiceName
+            voice => voice.name == voiceName,
         )[0];
         if (!match) {
             throw `TTS Voice name ${voiceName} not found in CoquiTTS Provider voice list`;
@@ -603,11 +603,11 @@ class CoquiTtsProvider {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Cache-Control': 'no-cache'
+                'Cache-Control': 'no-cache',
             },
             body: JSON.stringify({
                 'model_id': model_id,
-            })
+            }),
         });
 
         if (!apiResult.ok) {
@@ -627,12 +627,12 @@ class CoquiTtsProvider {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Cache-Control': 'no-cache'
+                'Cache-Control': 'no-cache',
             },
             body: JSON.stringify({
                 'model_id': model_id,
-                'action': action
-            })
+                'action': action,
+            }),
         });
 
         if (!apiResult.ok) {
@@ -655,12 +655,12 @@ class CoquiTtsProvider {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Cache-Control': 'no-cache'
+                'Cache-Control': 'no-cache',
             },
             body: JSON.stringify({
                 'model_id': 'model_id',
-                'action': 'action'
-            })
+                'action': 'action',
+            }),
         });
 
         if (!apiResult.ok) {
@@ -708,14 +708,14 @@ class CoquiTtsProvider {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Cache-Control': 'no-cache'
+                'Cache-Control': 'no-cache',
             },
             body: JSON.stringify({
                 'text': text,
                 'model_id': model_id,
                 'language_id': parseInt(language),
-                'speaker_id': parseInt(speaker)
-            })
+                'speaker_id': parseInt(speaker),
+            }),
         });
 
         if (!apiResult.ok) {

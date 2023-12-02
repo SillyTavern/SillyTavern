@@ -760,7 +760,7 @@ async function CreateZenSliders(elmnt) {
                 originalSlider.trigger('change');
             }
         },
-        slide: handleSlideEvent
+        slide: handleSlideEvent,
     });
 
     function handleSlideEvent(event, ui, type) {
@@ -1088,63 +1088,63 @@ async function applyTheme(name) {
             action: async () => {
                 localStorage.setItem(storage_keys.blur_strength, power_user.blur_strength);
                 await applyBlurStrength();
-            }
+            },
         },
         {
             key: 'custom_css',
             action: async () => {
                 localStorage.setItem(storage_keys.custom_css, power_user.custom_css);
                 await applyCustomCSS();
-            }
+            },
         },
         {
             key: 'shadow_width',
             action: async () => {
                 localStorage.setItem(storage_keys.shadow_width, power_user.shadow_width);
                 await applyShadowWidth();
-            }
+            },
         },
         {
             key: 'font_scale',
             action: async () => {
                 localStorage.setItem(storage_keys.font_scale, power_user.font_scale);
                 await applyFontScale('forced');
-            }
+            },
         },
         {
             key: 'fast_ui_mode',
             action: async () => {
                 localStorage.setItem(storage_keys.fast_ui_mode, power_user.fast_ui_mode);
                 switchUiMode();
-            }
+            },
         },
         {
             key: 'waifuMode',
             action: async () => {
                 localStorage.setItem(storage_keys.waifuMode, power_user.waifuMode);
                 switchWaifuMode();
-            }
+            },
         },
         {
             key: 'chat_display',
             action: async () => {
                 localStorage.setItem(storage_keys.chat_display, power_user.chat_display);
                 applyChatDisplay();
-            }
+            },
         },
         {
             key: 'avatar_style',
             action: async () => {
                 localStorage.setItem(storage_keys.avatar_style, power_user.avatar_style);
                 applyAvatarStyle();
-            }
+            },
         },
         {
             key: 'noShadows',
             action: async () => {
                 localStorage.setItem(storage_keys.noShadows, power_user.noShadows);
                 noShadows();
-            }
+            },
         },
         {
             key: 'chat_width',
@@ -1156,70 +1156,70 @@ async function applyTheme(name) {
 
                 localStorage.setItem(storage_keys.chat_width, String(power_user.chat_width));
                 applyChatWidth('forced');
-            }
+            },
         },
         {
             key: 'timer_enabled',
             action: async () => {
                 localStorage.setItem(storage_keys.timer_enabled, Boolean(power_user.timer_enabled));
                 switchTimer();
-            }
+            },
         },
         {
             key: 'timestamps_enabled',
             action: async () => {
                 localStorage.setItem(storage_keys.timestamps_enabled, Boolean(power_user.timestamps_enabled));
                 switchTimestamps();
-            }
+            },
         },
         {
             key: 'timestamp_model_icon',
             action: async () => {
                 localStorage.setItem(storage_keys.timestamp_model_icon, Boolean(power_user.timestamp_model_icon));
                 switchIcons();
-            }
+            },
         },
         {
             key: 'message_token_count_enabled',
             action: async () => {
                 localStorage.setItem(storage_keys.message_token_count_enabled, Boolean(power_user.message_token_count_enabled));
                 switchTokenCount();
-            }
+            },
         },
         {
             key: 'mesIDDisplay_enabled',
             action: async () => {
                 localStorage.setItem(storage_keys.mesIDDisplay_enabled, Boolean(power_user.mesIDDisplay_enabled));
                 switchMesIDDisplay();
-            }
+            },
         },
         {
             key: 'expand_message_actions',
             action: async () => {
                 localStorage.setItem(storage_keys.expand_message_actions, Boolean(power_user.expand_message_actions));
                 switchMessageActions();
-            }
+            },
         },
         {
             key: 'enableZenSliders',
             action: async () => {
                 localStorage.setItem(storage_keys.enableZenSliders, Boolean(power_user.enableZenSliders));
                 switchMessageActions();
-            }
+            },
         },
         {
             key: 'enableLabMode',
             action: async () => {
                 localStorage.setItem(storage_keys.enableLabMode, Boolean(power_user.enableLabMode));
                 switchMessageActions();
-            }
+            },
         },
         {
             key: 'hotswap_enabled',
             action: async () => {
                 localStorage.setItem(storage_keys.hotswap_enabled, Boolean(power_user.hotswap_enabled));
                 switchHotswap();
-            }
+            },
         },
         {
             key: 'bogus_folders',
@@ -1711,7 +1711,7 @@ export function fuzzySearchCharacters(searchValue) {
             { name: 'data.creator_notes', weight: 2 },
             { name: 'data.creator', weight: 1 },
             { name: 'data.tags', weight: 1 },
-            { name: 'data.alternate_greetings', weight: 1 }
+            { name: 'data.alternate_greetings', weight: 1 },
         ],
         includeScore: true,
         ignoreLocation: true,
@@ -1750,7 +1750,7 @@ export function fuzzySearchTags(searchValue) {
         ],
         includeScore: true,
         ignoreLocation: true,
-        threshold: 0.2
+        threshold: 0.2,
     });
 
     const results = fuse.search(searchValue);
@@ -1902,7 +1902,7 @@ async function saveTheme() {
     const response = await fetch('/savetheme', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify(theme)
+        body: JSON.stringify(theme),
     });
 
     if (response.ok) {
@@ -1935,14 +1935,14 @@ async function saveMovingUI() {
 
     const movingUIPreset = {
         name,
-        movingUIState: power_user.movingUIState
+        movingUIState: power_user.movingUIState,
     };
     console.log(movingUIPreset);
 
     const response = await fetch('/savemovingui', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify(movingUIPreset)
+        body: JSON.stringify(movingUIPreset),
     });
 
     if (response.ok) {
@@ -1978,10 +1978,10 @@ async function resetMovablePanels(type) {
         'expression-holder',
         'groupMemberListPopout',
         'summaryExtensionPopout',
-        'gallery'
+        'gallery',
     ];
 
-    const panelStyles = ['top', 'left', 'right', 'bottom', 'height', 'width', 'margin',];
+    const panelStyles = ['top', 'left', 'right', 'bottom', 'height', 'width', 'margin'];
 
     panelIds.forEach((id) => {
         console.log(id);

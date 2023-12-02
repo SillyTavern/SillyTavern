@@ -41,8 +41,8 @@ import {
     PromptManagerModule as PromptManager,
 } from './PromptManager.js';
 
-import { getCustomStoppingStrings, persona_description_positions, power_user, } from './power-user.js';
-import { SECRET_KEYS, secret_state, writeSecret, } from './secrets.js';
+import { getCustomStoppingStrings, persona_description_positions, power_user } from './power-user.js';
+import { SECRET_KEYS, secret_state, writeSecret } from './secrets.js';
 
 import {
     delay,
@@ -60,7 +60,7 @@ import {
     formatInstructModeChat,
     formatInstructModeExamples,
     formatInstructModePrompt,
-    formatInstructModeSystemPrompt
+    formatInstructModeSystemPrompt,
 } from './instruct-mode.js';
 
 export {
@@ -75,7 +75,7 @@ export {
     TokenHandler,
     IdentifierNotFoundError,
     Message,
-    MessageCollection
+    MessageCollection,
 };
 
 let openai_messages_count = 0;
@@ -101,7 +101,7 @@ const default_bias_presets = {
         { text: ' future', value: -50 },
         { text: ' bonding', value: -50 },
         { text: ' connection', value: -25 },
-    ]
+    ],
 };
 
 const max_2k = 2047;
@@ -169,12 +169,12 @@ export const chat_completion_sources = {
 const prefixMap = selected_group ? {
     assistant: '',
     user: '',
-    system: 'OOC: '
+    system: 'OOC: ',
 }
     : {
         assistant: '{{char}}:',
         user: '{{user}}:',
-        system: ''
+        system: '',
     };
 
 const default_settings = {
@@ -476,11 +476,11 @@ function setupChatCompletionPromptManager(openAiSettings) {
             main: default_main_prompt,
             nsfw: default_nsfw_prompt,
             jailbreak: default_jailbreak_prompt,
-            enhanceDefinitions: default_enhance_definitions_prompt
+            enhanceDefinitions: default_enhance_definitions_prompt,
         },
         promptOrder: {
             strategy: 'global',
-            dummyId: 100001
+            dummyId: 100001,
         },
     };
 
@@ -646,7 +646,7 @@ async function populateChatHistory(messages, prompts, chatCompletion, type = nul
             identifier: 'continueNudge',
             role: 'system',
             content: oai_settings.continue_nudge_prompt.replace('{{lastChatMessage}}', cyclePrompt),
-            system_prompt: true
+            system_prompt: true,
         });
         const preparedPrompt = promptManager.preparePrompt(continuePrompt);
         continueMessage = Message.fromPrompt(preparedPrompt);
@@ -928,7 +928,7 @@ function preparePromptsForChatCompletion({ Scenario, charPersonality, name2, wor
         { role: 'system', content: oai_settings.impersonation_prompt, identifier: 'impersonate' },
         { role: 'system', content: quietPrompt, identifier: 'quietPrompt' },
         { role: 'system', content: bias, identifier: 'bias' },
-        { role: 'system', content: groupNudge, identifier: 'groupNudge' }
+        { role: 'system', content: groupNudge, identifier: 'groupNudge' },
     ];
 
     // Tavern Extras - Summary
@@ -1211,7 +1211,7 @@ async function sendWindowAIRequest(messages, signal, stream) {
             maxTokens: oai_settings.openai_max_tokens,
             model: oai_settings.windowai_model || null,
             onStreamResult: onStreamResult,
-        }
+        },
     );
 
     const handleGeneratePromise = (resolve, reject) => {
@@ -1417,7 +1417,7 @@ async function sendAltScaleRequest(messages, logit_bias, signal, type) {
         method: 'POST',
         body: JSON.stringify(generate_data),
         headers: getRequestHeaders(),
-        signal: signal
+        signal: signal,
     });
 
     const data = await response.json();
@@ -2974,7 +2974,7 @@ function onSettingsPresetChange() {
         presetName: presetName,
         settingsToUpdate: settingsToUpdate,
         settings: oai_settings,
-        savePreset: saveOpenAIPreset
+        savePreset: saveOpenAIPreset,
     }).finally(r => {
         for (const [key, [selector, setting, isCheckbox]] of Object.entries(settingsToUpdate)) {
             if (preset[key] !== undefined) {

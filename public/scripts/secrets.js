@@ -28,7 +28,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.SCALE_COOKIE]: '#scale_cookie',
     [SECRET_KEYS.PALM]: '#api_key_palm',
     [SECRET_KEYS.APHRODITE]: '#api_key_aphrodite',
-    [SECRET_KEYS.TABBY]: '#api_key_tabby'
+    [SECRET_KEYS.TABBY]: '#api_key_tabby',
 };
 
 async function clearSecret() {

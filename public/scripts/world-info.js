@@ -102,7 +102,7 @@ async function getWorldInfoPrompt(chat2, maxContext) {
         worldInfoString,
         worldInfoBefore,
         worldInfoAfter,
-        worldInfoDepth: activatedWorldInfo.WIDepthEntries
+        worldInfoDepth: activatedWorldInfo.WIDepthEntries,
     };
 }
 
@@ -626,7 +626,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
         },
         afterSizeSelectorChange: function (e) {
             localStorage.setItem(storageKey, e.target.value);
-        }
+        },
     });
 
     if (typeof navigation === 'number' && Number(navigation) >= 0) {
@@ -742,7 +742,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
             console.table(Object.keys(data.entries).map(uid => data.entries[uid]).map(x => ({ uid: x.uid, key: x.key.join(','), displayIndex: x.displayIndex })));
 
             await saveWorldInfo(name, data, true);
-        }
+        },
     });
     //$("#world_popup_entries_list").disableSelection();
 }
@@ -878,8 +878,8 @@ function getWorldEntry(name, data, entry) {
                         isExclude: true,
                         names: [],
                         tags: [],
-                    }
-                }
+                    },
+                },
             );
         }
 
@@ -941,8 +941,8 @@ function getWorldEntry(name, data, entry) {
                         isExclude: data.entries[uid].characterFilter?.isExclude ?? false,
                         names: names,
                         tags: tags,
-                    }
-                }
+                    },
+                },
             );
         }
         setOriginalDataValue(data, uid, 'character_filter', data.entries[uid].characterFilter);
@@ -1905,7 +1905,7 @@ async function checkWorldInfo(chat, maxContext) {
                 } else {
                     WIDepthEntries.push({
                         depth: entry.depth,
-                        entries: [entry.content]
+                        entries: [entry.content],
                     });
                 }
                 break;
@@ -2004,7 +2004,7 @@ function convertRisuLorebook(inputObj) {
 
 function convertNovelLorebook(inputObj) {
     const outputObj = {
-        entries: {}
+        entries: {},
     };
 
     inputObj.entries.forEach((entry, index) => {
@@ -2106,7 +2106,7 @@ export function checkEmbeddedWorld(chid) {
                         importEmbeddedWorldInfo(true);
                     }
                 };
-                callPopup(html, 'confirm', '', { okButton: 'Yes', }).then(checkResult);
+                callPopup(html, 'confirm', '', { okButton: 'Yes' }).then(checkResult);
             }
             else {
                 toastr.info(

@@ -70,7 +70,7 @@ async function initGallery(items, url) {
             navigationPagination: { background: '#111', color: '#fff', colorHover: '#ccc', borderRadius: '4px' },
             thumbnail: { background: '#444', backgroundImage: 'linear-gradient(315deg, #111 0%, #445 90%)', borderColor: '#000', borderRadius: '0px', labelOpacity: 1, labelBackground: 'rgba(34, 34, 34, 0)', titleColor: '#fff', titleBgColor: 'transparent', titleShadow: '', descriptionColor: '#ccc', descriptionBgColor: 'transparent', descriptionShadow: '', stackBackground: '#aaa' },
             thumbnailIcon: { padding: '5px', color: '#fff', shadow: '' },
-            pagination: { background: '#181818', backgroundSelected: '#666', color: '#fff', borderRadius: '2px', shapeBorder: '3px solid var(--SmartThemeQuoteColor)', shapeColor: '#444', shapeSelectedColor: '#aaa' }
+            pagination: { background: '#181818', backgroundSelected: '#666', color: '#fff', borderRadius: '2px', shapeBorder: '3px solid var(--SmartThemeQuoteColor)', shapeColor: '#444', shapeSelectedColor: '#aaa' },
         },
         galleryDisplayMode: 'pagination',
         fnThumbnailOpen: viewWithDragbox,
@@ -135,11 +135,11 @@ async function showCharGallery() {
     if (firstTime) {
         await loadFileToDocument(
             `${extensionFolderPath}nanogallery2.woff.min.css`,
-            'css'
+            'css',
         );
         await loadFileToDocument(
             `${extensionFolderPath}jquery.nanogallery2.min.js`,
-            'js'
+            'js',
         );
         firstTime = false;
         toastr.info('Images can also be found in the folder `user/images`', 'Drag and drop images onto the gallery to upload them', { timeOut: 6000 });
@@ -187,7 +187,7 @@ async function uploadFile(file, url) {
 
         // Create the payload
         const payload = {
-            image: base64Data
+            image: base64Data,
         };
 
         // Add the ch_name from the provided URL (assuming it's the character name)
@@ -198,13 +198,13 @@ async function uploadFile(file, url) {
 
             // Merge headers with content-type for JSON
             Object.assign(headers, {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
             });
 
             const response = await fetch('/uploadimage', {
                 method: 'POST',
                 headers: headers,
-                body: JSON.stringify(payload)
+                body: JSON.stringify(payload),
             });
 
             if (!response.ok) {
@@ -244,7 +244,7 @@ $(document).ready(function () {
         $('<option>', {
             id: 'show_char_gallery',
             text: 'Show Gallery',
-        })
+        }),
     );
 });
 

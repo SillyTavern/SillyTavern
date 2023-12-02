@@ -159,7 +159,7 @@ async function captionExtras(base64Img) {
             'Content-Type': 'application/json',
             'Bypass-Tunnel-Reminder': 'bypass',
         },
-        body: JSON.stringify({ image: base64Img })
+        body: JSON.stringify({ image: base64Img }),
     });
 
     if (!apiResult.ok) {
@@ -179,7 +179,7 @@ async function captionLocal(base64Img) {
     const apiResult = await fetch('/api/extra/caption', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify({ image: base64Img })
+        body: JSON.stringify({ image: base64Img }),
     });
 
     if (!apiResult.ok) {
@@ -199,7 +199,7 @@ async function captionHorde(base64Img) {
     const apiResult = await fetch('/api/horde/caption-image', {
         method: 'POST',
         headers: getRequestHeaders(),
-        body: JSON.stringify({ image: base64Img })
+        body: JSON.stringify({ image: base64Img }),
     });
 
     if (!apiResult.ok) {

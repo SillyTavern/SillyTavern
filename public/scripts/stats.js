@@ -1,7 +1,7 @@
 // statsHelper.js
 import { getRequestHeaders, callPopup, characters, this_chid } from '../script.js';
 import { humanizeGenTime } from './RossAscends-mods.js';
-import {registerDebugFunction,} from './power-user.js';
+import { registerDebugFunction } from './power-user.js';
 
 let charStats = {};
 
@@ -50,26 +50,26 @@ function calculateTotalStats() {
         totalStats.total_gen_time += verifyStatValue(stats.total_gen_time);
         totalStats.user_msg_count += verifyStatValue(stats.user_msg_count);
         totalStats.non_user_msg_count += verifyStatValue(
-            stats.non_user_msg_count
+            stats.non_user_msg_count,
         );
         totalStats.user_word_count += verifyStatValue(stats.user_word_count);
         totalStats.non_user_word_count += verifyStatValue(
-            stats.non_user_word_count
+            stats.non_user_word_count,
         );
         totalStats.total_swipe_count += verifyStatValue(
-            stats.total_swipe_count
+            stats.total_swipe_count,
         );
 
         if (verifyStatValue(stats.date_last_chat) != 0) {
             totalStats.date_last_chat = Math.max(
                 totalStats.date_last_chat,
-                stats.date_last_chat
+                stats.date_last_chat,
             );
         }
         if (verifyStatValue(stats.date_first_chat) != 0) {
             totalStats.date_first_chat = Math.min(
                 totalStats.date_first_chat,
-                stats.date_first_chat
+                stats.date_first_chat,
             );
         }
     }
@@ -116,7 +116,7 @@ function createHtml(statsType, stats) {
     html += createStatBlock('User Messages', stats.user_msg_count);
     html += createStatBlock(
         'Character Messages',
-        stats.non_user_msg_count - stats.total_swipe_count
+        stats.non_user_msg_count - stats.total_swipe_count,
     );
     html += createStatBlock('User Words', stats.user_word_count);
     html += createStatBlock('Character Words', stats.non_user_word_count);
@@ -296,7 +296,7 @@ async function statMesProcess(line, type, characters, this_chid, oldMesssage) {
 
     stat.total_gen_time += calculateGenTime(
         line.gen_started,
-        line.gen_finished
+        line.gen_finished,
     );
     if (line.is_user) {
         if (type != 'append' && type != 'continue' && type != 'appendFinal') {
@@ -324,7 +324,7 @@ async function statMesProcess(line, type, characters, this_chid, oldMesssage) {
     stat.date_last_chat = Date.now();
     stat.date_first_chat = Math.min(
         stat.date_first_chat ?? new Date('9999-12-31T23:59:59.999Z').getTime(),
-        Date.now()
+        Date.now(),
     );
     updateStats();
 }

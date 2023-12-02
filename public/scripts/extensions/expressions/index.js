@@ -40,7 +40,7 @@ const DEFAULT_EXPRESSIONS = [
     'remorse',
     'sadness',
     'surprise',
-    'neutral'
+    'neutral',
 ];
 
 let expressionsList = null;
@@ -325,14 +325,14 @@ async function setImage(img, path) {
             expressionClone.addClass('expression-animating');
             //fade the clone in
             expressionClone.css({
-                opacity: 0
+                opacity: 0,
             }).animate({
-                opacity: 1
+                opacity: 1,
             }, duration)
                 //when finshed fading in clone, fade out the original
                 .promise().done(function () {
                     img.animate({
-                        opacity: 0
+                        opacity: 0,
                     }, duration);
                     //remove old expression
                     img.remove();
@@ -1057,14 +1057,14 @@ async function setExpression(character, expression, force) {
                 expressionClone.addClass('expression-animating');
                 //fade the clone in
                 expressionClone.css({
-                    opacity: 0
+                    opacity: 0,
                 }).animate({
-                    opacity: 1
+                    opacity: 1,
                 }, duration)
                     //when finshed fading in clone, fade out the original
                     .promise().done(function () {
                         img.animate({
-                            opacity: 0
+                            opacity: 0,
                         }, duration);
                         //remove old expression
                         img.remove();
@@ -1268,7 +1268,7 @@ async function onClickExpressionOverrideButton() {
 
     const overridePath = String($('#expression_override').val());
     const existingOverrideIndex = extension_settings.expressionOverrides.findIndex((e) =>
-        e.name == avatarFileName
+        e.name == avatarFileName,
     );
 
     // If the path is empty, delete the entry from overrides
@@ -1397,7 +1397,7 @@ function setExpressionOverrideHtml(forceClear = false) {
     }
 
     const expressionOverride = extension_settings.expressionOverrides.find((e) =>
-        e.name == avatarFileName
+        e.name == avatarFileName,
     );
 
     if (expressionOverride && expressionOverride.path) {

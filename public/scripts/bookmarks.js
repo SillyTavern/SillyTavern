@@ -45,7 +45,7 @@ async function getExistingChatNames() {
         const response = await fetch('/getallchatsofcharacter', {
             method: 'POST',
             headers: getRequestHeaders(),
-            body: JSON.stringify({ avatar_url: characters[this_chid].avatar })
+            body: JSON.stringify({ avatar_url: characters[this_chid].avatar }),
         });
 
         if (response.ok) {
@@ -290,7 +290,7 @@ async function convertSoloToGroupChat() {
         const newMessage = {
             ...system_messages[system_message_types.GROUP],
             send_date: humanizedDateTime(),
-            extra: { type: system_message_types.GROUP }
+            extra: { type: system_message_types.GROUP },
         };
         groupChat.push(newMessage);
     }

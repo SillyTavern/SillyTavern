@@ -37,9 +37,9 @@ function registerEndpoints(app, jsonParser) {
                     source: 'auto',
                     target: lang,
                     format: 'text',
-                    api_key: key
+                    api_key: key,
                 }),
-                headers: { 'Content-Type': 'application/json' }
+                headers: { 'Content-Type': 'application/json' },
             });
 
             if (!result.ok) {

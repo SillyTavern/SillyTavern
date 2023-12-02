@@ -478,7 +478,7 @@ export async function renameGroupMember(oldAvatar, newAvatar, newName) {
 async function getGroups() {
     const response = await fetch('/getgroups', {
         method: 'POST',
-        headers: getRequestHeaders()
+        headers: getRequestHeaders(),
     });
 
     if (response.ok) {
@@ -644,7 +644,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
 
         if (typingIndicator.length === 0 && !isStreamingEnabled()) {
             typingIndicator = $(
-                '#typing_indicator_template .typing_indicator'
+                '#typing_indicator_template .typing_indicator',
             ).clone();
             typingIndicator.hide();
             $('#chat').append(typingIndicator);

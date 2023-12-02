@@ -9,7 +9,7 @@ import {
     getCharacters,
     getRequestHeaders,
     printCharacters,
-    this_chid
+    this_chid,
 } from '../script.js';
 
 import { favsToHotswap } from './RossAscends-mods.js';
@@ -76,9 +76,9 @@ class CharacterContextMenu {
             avatar: character.avatar,
             data: {
                 extensions: {
-                    fav: !character.data.extensions.fav
-                }
-            }
+                    fav: !character.data.extensions.fav,
+                },
+            },
         };
 
         return fetch('/v2/editcharacterattribute', {
@@ -187,7 +187,7 @@ class CharacterContextMenu {
             { id: 'character_context_menu_duplicate', callback: characterGroupOverlay.handleContextMenuDuplicate },
             { id: 'character_context_menu_delete', callback: characterGroupOverlay.handleContextMenuDelete },
             { id: 'character_context_menu_persona', callback: characterGroupOverlay.handleContextMenuPersona },
-            { id: 'character_context_menu_tag', callback: characterGroupOverlay.handleContextMenuTag }
+            { id: 'character_context_menu_tag', callback: characterGroupOverlay.handleContextMenuTag },
         ];
 
         contextMenuItems.forEach(contextMenuItem => document.getElementById(contextMenuItem.id).addEventListener('click', contextMenuItem.callback));
@@ -621,7 +621,7 @@ class BulkEditOverlay {
                     .then(() => getCharacters())
                     .then(() => this.browseState())
                     .finally(() => hideLoader());
-            }
+            },
             );
     };
 

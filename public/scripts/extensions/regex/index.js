@@ -203,7 +203,7 @@ async function onRegexEditorOpenClick(existingId) {
                 parseInt(editorHtml
                     .find('select[name="replace_strategy_select"]')
                     .find(':selected')
-                    .val()) ?? 0
+                    .val()) ?? 0,
         };
 
         saveRegexScript(newRegexScript, existingScriptIndex);

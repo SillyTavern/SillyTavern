@@ -51,7 +51,7 @@ class XTTSTtsProvider {
     defaultSettings = {
         provider_endpoint: 'http://localhost:8020',
         language: 'en',
-        voiceMap: {}
+        voiceMap: {},
     };
 
     get settingsHtml() {
@@ -149,7 +149,7 @@ class XTTSTtsProvider {
             this.voices = await this.fetchTtsVoiceObjects();
         }
         const match = this.voices.filter(
-            XTTSVoice => XTTSVoice.name == voiceName
+            XTTSVoice => XTTSVoice.name == voiceName,
         )[0];
         if (!match) {
             throw `TTS Voice name ${voiceName} not found`;
@@ -182,14 +182,14 @@ class XTTSTtsProvider {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Cache-Control': 'no-cache'  // Added this line to disable caching of file so new files are always played - Rolyat 7/7/23
+                    'Cache-Control': 'no-cache',  // Added this line to disable caching of file so new files are always played - Rolyat 7/7/23
                 },
                 body: JSON.stringify({
                     'text': inputText,
                     'speaker_wav': voiceId,
-                    'language': this.settings.language
-                })
-            }
+                    'language': this.settings.language,
+                }),
+            },
         );
         if (!response.ok) {
             toastr.error(response.statusText, 'TTS Generation Failed');
