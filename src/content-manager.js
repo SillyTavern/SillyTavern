@@ -92,8 +92,8 @@ async function downloadChubLorebook(id) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            "fullPath": id,
-            "format": "SILLYTAVERN",
+            'fullPath': id,
+            'format': 'SILLYTAVERN',
         }),
     });
 
@@ -116,8 +116,8 @@ async function downloadChubCharacter(id) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            "format": "tavern",
-            "fullPath": id,
+            'format': 'tavern',
+            'fullPath': id,
         })
     });
 
@@ -185,7 +185,7 @@ async function downloadJannyCharacter(uuid) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json'},
         body: JSON.stringify({
-            "characterId": uuid,
+            'characterId': uuid,
         })
     });
 

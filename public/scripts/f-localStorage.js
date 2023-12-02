@@ -14,12 +14,12 @@ export function LoadLocalBool(target) {
 	return result;
 }
 export function CheckLocal() {
-	console.log("----------local storage---------");
+	console.log('----------local storage---------');
 	var i;
 	for (i = 0; i < localStorage.length; i++) {
-		console.log(localStorage.key(i) + " : " + localStorage.getItem(localStorage.key(i)));
+		console.log(localStorage.key(i) + ' : ' + localStorage.getItem(localStorage.key(i)));
 	}
-	console.log("------------------------------");
+	console.log('------------------------------');
 }
 
 export function ClearLocal() { localStorage.clear(); console.log('Removed All Local Storage'); }

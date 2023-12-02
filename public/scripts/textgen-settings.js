@@ -8,14 +8,14 @@ import {
     setGenerationParamsFromPreset,
     setOnlineStatus,
     substituteParams,
-} from "../script.js";
+} from '../script.js';
 
 import {
     power_user,
     registerDebugFunction,
-} from "./power-user.js";
-import { SENTENCEPIECE_TOKENIZERS, getTextTokens, tokenizers } from "./tokenizers.js";
-import { getSortableDelay, onlyUnique } from "./utils.js";
+} from './power-user.js';
+import { SENTENCEPIECE_TOKENIZERS, getTextTokens, tokenizers } from './tokenizers.js';
+import { getSortableDelay, onlyUnique } from './utils.js';
 
 export {
     textgenerationwebui_settings,
@@ -96,41 +96,41 @@ export let textgenerationwebui_presets = [];
 export let textgenerationwebui_preset_names = [];
 
 const setting_names = [
-    "temp",
-    "temperature_last",
-    "rep_pen",
-    "rep_pen_range",
-    "no_repeat_ngram_size",
-    "top_k",
-    "top_p",
-    "top_a",
-    "tfs",
-    "epsilon_cutoff",
-    "eta_cutoff",
-    "typical_p",
-    "min_p",
-    "penalty_alpha",
-    "num_beams",
-    "length_penalty",
-    "min_length",
-    "encoder_rep_pen",
-    "freq_pen",
-    "presence_pen",
-    "do_sample",
-    "early_stopping",
-    "seed",
-    "add_bos_token",
-    "ban_eos_token",
-    "skip_special_tokens",
-    "streaming",
-    "mirostat_mode",
-    "mirostat_tau",
-    "mirostat_eta",
-    "guidance_scale",
-    "negative_prompt",
-    "grammar_string",
-    "banned_tokens",
-    "legacy_api",
+    'temp',
+    'temperature_last',
+    'rep_pen',
+    'rep_pen_range',
+    'no_repeat_ngram_size',
+    'top_k',
+    'top_p',
+    'top_a',
+    'tfs',
+    'epsilon_cutoff',
+    'eta_cutoff',
+    'typical_p',
+    'min_p',
+    'penalty_alpha',
+    'num_beams',
+    'length_penalty',
+    'min_length',
+    'encoder_rep_pen',
+    'freq_pen',
+    'presence_pen',
+    'do_sample',
+    'early_stopping',
+    'seed',
+    'add_bos_token',
+    'ban_eos_token',
+    'skip_special_tokens',
+    'streaming',
+    'mirostat_mode',
+    'mirostat_tau',
+    'mirostat_eta',
+    'guidance_scale',
+    'negative_prompt',
+    'grammar_string',
+    'banned_tokens',
+    'legacy_api',
     //'n_aphrodite',
     //'best_of_aphrodite',
     'ignore_eos_token_aphrodite',
@@ -138,7 +138,7 @@ const setting_names = [
     //'logits_processors_aphrodite',
     //'log_probs_aphrodite',
     //'prompt_log_probs_aphrodite'
-    "sampler_order",
+    'sampler_order',
 ];
 
 async function selectPreset(name) {
@@ -166,7 +166,7 @@ function formatTextGenURL(value) {
 
         const url = new URL(value);
         if (url.pathname === '/api' && !textgenerationwebui_settings.legacy_api) {
-            toastr.info(`Enable Legacy API or start Ooba with the OpenAI extension enabled.`, 'Legacy API URL detected. Generation may fail.', { preventDuplicates: true, timeOut: 10000, extendedTimeOut: 20000 });
+            toastr.info('Enable Legacy API or start Ooba with the OpenAI extension enabled.', 'Legacy API URL detected. Generation may fail.', { preventDuplicates: true, timeOut: 10000, extendedTimeOut: 20000 });
             url.pathname = '';
         }
 
@@ -202,7 +202,7 @@ function getCustomTokenBans() {
 
     //debug
     if (textgenerationwebui_banned_in_macros.length) {
-        console.log("=== Found banned word sequences in the macros:", textgenerationwebui_banned_in_macros, "Resulting array of banned sequences (will be used this generation turn):", sequences);
+        console.log('=== Found banned word sequences in the macros:', textgenerationwebui_banned_in_macros, 'Resulting array of banned sequences (will be used this generation turn):', sequences);
     }
 
     //clean old temporary bans found in macros before, for the next generation turn.
@@ -306,13 +306,13 @@ export function isKoboldCpp() {
 export function getTextGenUrlSourceId() {
     switch (textgenerationwebui_settings.type) {
         case textgen_types.OOBA:
-            return "#textgenerationwebui_api_url_text";
+            return '#textgenerationwebui_api_url_text';
         case textgen_types.APHRODITE:
-            return "#aphrodite_api_url_text";
+            return '#aphrodite_api_url_text';
         case textgen_types.TABBY:
-            return "#tabby_api_url_text";
+            return '#tabby_api_url_text';
         case textgen_types.KOBOLDCPP:
-            return "#koboldcpp_api_url_text";
+            return '#koboldcpp_api_url_text';
     }
 }
 
@@ -322,7 +322,7 @@ export function getTextGenUrlSourceId() {
  */
 function sortItemsByOrder(orderArray) {
     console.debug('Preset samplers order: ' + orderArray);
-    const $draggableItems = $("#koboldcpp_order");
+    const $draggableItems = $('#koboldcpp_order');
 
     for (let i = 0; i < orderArray.length; i++) {
         const index = orderArray[i];
@@ -361,8 +361,8 @@ jQuery(function () {
                 $(this).hide()
             })
             $('#mirostat_mode_textgenerationwebui').attr('step', 2) //Aphro disallows mode 1
-            $("#do_sample_textgenerationwebui").prop('checked', true) //Aphro should always do sample; 'otherwise set temp to 0 to mimic no sample'
-            $("#ban_eos_token_textgenerationwebui").prop('checked', false) //Aphro should not ban EOS, just ignore it; 'add token '2' to ban list do to this'
+            $('#do_sample_textgenerationwebui').prop('checked', true) //Aphro should always do sample; 'otherwise set temp to 0 to mimic no sample'
+            $('#ban_eos_token_textgenerationwebui').prop('checked', false) //Aphro should not ban EOS, just ignore it; 'add token '2' to ban list do to this'
             //special handling for Aphrodite topK -1 disable state
             $('#top_k_textgenerationwebui').attr('min', -1)
             if ($('#top_k_textgenerationwebui').val() === '0' || textgenerationwebui_settings['top_k'] === 0) {
@@ -398,11 +398,11 @@ jQuery(function () {
     });
 
     for (const i of setting_names) {
-        $(`#${i}_textgenerationwebui`).attr("x-setting-id", i);
-        $(document).on("input", `#${i}_textgenerationwebui`, function () {
+        $(`#${i}_textgenerationwebui`).attr('x-setting-id', i);
+        $(document).on('input', `#${i}_textgenerationwebui`, function () {
             const isCheckbox = $(this).attr('type') == 'checkbox';
             const isText = $(this).attr('type') == 'text' || $(this).is('textarea');
-            const id = $(this).attr("x-setting-id");
+            const id = $(this).attr('x-setting-id');
 
             if (isCheckbox) {
                 const value = $(this).prop('checked');
@@ -494,32 +494,32 @@ async function generateTextGenWithStreaming(generate_data, signal) {
         const decoder = new TextDecoder();
         const reader = response.body.getReader();
         let getMessage = '';
-        let messageBuffer = "";
+        let messageBuffer = '';
         while (true) {
             const { done, value } = await reader.read();
             // We don't want carriage returns in our messages
-            let response = decoder.decode(value).replace(/\r/g, "");
+            let response = decoder.decode(value).replace(/\r/g, '');
 
             tryParseStreamingError(response);
 
             let eventList = [];
 
             messageBuffer += response;
-            eventList = messageBuffer.split("\n\n");
+            eventList = messageBuffer.split('\n\n');
             // Last element will be an empty string or a leftover partial message
             messageBuffer = eventList.pop();
 
             for (let event of eventList) {
                 if (event.startsWith('event: completion')) {
-                    event = event.split("\n")[1];
+                    event = event.split('\n')[1];
                 }
 
                 if (typeof event !== 'string' || !event.length)
                     continue;
 
-                if (!event.startsWith("data"))
+                if (!event.startsWith('data'))
                     continue;
-                if (event == "data: [DONE]") {
+                if (event == 'data: [DONE]') {
                     return;
                 }
                 let data = JSON.parse(event.substring(6));

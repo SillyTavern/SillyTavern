@@ -1,6 +1,6 @@
-import { getRequestHeaders, callPopup } from "../../../script.js"
-import { getPreviewString, saveTtsProviderSettings } from "./index.js"
-import { initVoiceMap } from "./index.js"
+import { getRequestHeaders, callPopup } from '../../../script.js'
+import { getPreviewString, saveTtsProviderSettings } from './index.js'
+import { initVoiceMap } from './index.js'
 
 export { NovelTtsProvider }
 
@@ -62,7 +62,7 @@ class NovelTtsProvider {
 
     // Delete selected custom voice from provider
     deleteCustomVoice() {
-        const selected = $("#tts-novel-custom-voices-select").find(':selected').val();
+        const selected = $('#tts-novel-custom-voices-select').find(':selected').val();
         const voiceIndex = this.settings.customVoices.indexOf(selected);
 
         if (voiceIndex !== -1) {
@@ -75,7 +75,7 @@ class NovelTtsProvider {
 
     // Create the UI dropdown list of voices in provider
     populateCustomVoices(){
-        let voiceSelect = $("#tts-novel-custom-voices-select")
+        let voiceSelect = $('#tts-novel-custom-voices-select')
         voiceSelect.empty()
         this.settings.customVoices.forEach(voice => {
             voiceSelect.append(`<option>${voice}</option>`)
@@ -85,10 +85,10 @@ class NovelTtsProvider {
     async loadSettings(settings) {
         // Populate Provider UI given input settings
         if (Object.keys(settings).length == 0) {
-            console.info("Using default TTS Provider settings")
+            console.info('Using default TTS Provider settings')
         }
-        $("#tts-novel-custom-voices-add").on('click', () => (this.addCustomVoice()))
-        $("#tts-novel-custom-voices-delete").on('click',() => (this.deleteCustomVoice()))
+        $('#tts-novel-custom-voices-add').on('click', () => (this.addCustomVoice()))
+        $('#tts-novel-custom-voices-delete').on('click',() => (this.deleteCustomVoice()))
 
         // Only accept keys defined in defaultSettings
         this.settings = this.defaultSettings
@@ -103,7 +103,7 @@ class NovelTtsProvider {
 
         this.populateCustomVoices()
         await this.checkReady()
-        console.debug("NovelTTS: Settings loaded")
+        console.debug('NovelTTS: Settings loaded')
     }
 
     // Perform a simple readiness check by trying to fetch voiceIds
@@ -122,7 +122,7 @@ class NovelTtsProvider {
 
     async getVoice(voiceName) {
         if (!voiceName) {
-            throw `TTS Voice name not provided`
+            throw 'TTS Voice name not provided'
         }
 
         return { name: voiceName, voice_id: voiceName, lang: 'en-US', preview_url: false}
@@ -181,13 +181,13 @@ class NovelTtsProvider {
 
     async fetchTtsGeneration(inputText, voiceId) {
         console.info(`Generating new TTS for voice_id ${voiceId}`)
-        const response = await fetch(`/api/novelai/generate-voice`,
+        const response = await fetch('/api/novelai/generate-voice',
             {
                 method: 'POST',
                 headers: getRequestHeaders(),
                 body: JSON.stringify({
-                    "text": inputText,
-                    "voice": voiceId,
+                    'text': inputText,
+                    'voice': voiceId,
                 })
             }
         )

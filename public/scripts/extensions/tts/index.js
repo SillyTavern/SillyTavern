@@ -10,7 +10,7 @@ import { NovelTtsProvider } from './novel.js'
 import { power_user } from '../../power-user.js'
 import { registerSlashCommand } from '../../slash-commands.js'
 import { OpenAITtsProvider } from './openai.js'
-import {XTTSTtsProvider} from "./xtts.js"
+import {XTTSTtsProvider} from './xtts.js'
 export { talkingAnimation };
 
 const UPDATE_INTERVAL = 1000
@@ -30,13 +30,13 @@ export function getPreviewString(lang) {
         'en-GB': 'Sphinx of black quartz, judge my vow',
         'fr-FR': 'Portez ce vieux whisky au juge blond qui fume',
         'de-DE': 'Victor jagt zwölf Boxkämpfer quer über den großen Sylter Deich',
-        'it-IT': "Pranzo d'acqua fa volti sghembi",
+        'it-IT': 'Pranzo d\'acqua fa volti sghembi',
         'es-ES': 'Quiere la boca exhausta vid, kiwi, piña y fugaz jamón',
         'es-MX': 'Fabio me exige, sin tapujos, que añada cerveza al whisky',
         'ru-RU': 'В чащах юга жил бы цитрус? Да, но фальшивый экземпляр!',
         'pt-BR': 'Vejo xá gritando que fez show sem playback.',
         'pt-PR': 'Todo pajé vulgar faz boquinha sexy com kiwi.',
-        'uk-UA': "Фабрикуймо гідність, лящім їжею, ґав хапаймо, з'єднавці чаш!",
+        'uk-UA': 'Фабрикуймо гідність, лящім їжею, ґав хапаймо, з\'єднавці чаш!',
         'pl-PL': 'Pchnąć w tę łódź jeża lub ośm skrzyń fig',
         'cs-CZ': 'Příliš žluťoučký kůň úpěl ďábelské ódy',
         'sk-SK': 'Vyhŕňme si rukávy a vyprážajme čínske ryžové cestoviny',
@@ -227,16 +227,16 @@ async function moduleWorker() {
 
 function talkingAnimation(switchValue) {
     if (!modules.includes('talkinghead')) {
-        console.debug("Talking Animation module not loaded");
+        console.debug('Talking Animation module not loaded');
         return;
     }
 
     const apiUrl = getApiUrl();
-    const animationType = switchValue ? "start" : "stop";
+    const animationType = switchValue ? 'start' : 'stop';
 
     if (switchValue !== storedvalue) {
         try {
-            console.log(animationType + " Talking Animation");
+            console.log(animationType + ' Talking Animation');
             doExtrasFetch(`${apiUrl}/api/talkinghead/${animationType}_talking`);
             storedvalue = switchValue; // Update the storedvalue to the current switchValue
         } catch (error) {
@@ -283,16 +283,16 @@ function isTtsProcessing() {
 function debugTtsPlayback() {
     console.log(JSON.stringify(
         {
-            "ttsProviderName": ttsProviderName,
-            "voiceMap": voiceMap,
-            "currentMessageNumber": currentMessageNumber,
-            "audioPaused": audioPaused,
-            "audioJobQueue": audioJobQueue,
-            "currentAudioJob": currentAudioJob,
-            "audioQueueProcessorReady": audioQueueProcessorReady,
-            "ttsJobQueue": ttsJobQueue,
-            "currentTtsJob": currentTtsJob,
-            "ttsConfig": extension_settings.tts
+            'ttsProviderName': ttsProviderName,
+            'voiceMap': voiceMap,
+            'currentMessageNumber': currentMessageNumber,
+            'audioPaused': audioPaused,
+            'audioJobQueue': audioJobQueue,
+            'currentAudioJob': currentAudioJob,
+            'audioQueueProcessorReady': audioQueueProcessorReady,
+            'ttsJobQueue': ttsJobQueue,
+            'currentTtsJob': currentTtsJob,
+            'ttsConfig': extension_settings.tts
         }
     ))
 }
@@ -314,7 +314,7 @@ let audioQueueProcessorReady = true
 async function playAudioData(audioBlob) {
     // Since current audio job can be cancelled, don't playback if it is null
     if (currentAudioJob == null) {
-        console.log("Cancelled TTS playback because currentAudioJob was null")
+        console.log('Cancelled TTS playback because currentAudioJob was null')
     }
     const reader = new FileReader()
     reader.onload = function (e) {
@@ -324,7 +324,7 @@ async function playAudioData(audioBlob) {
     reader.readAsDataURL(audioBlob)
     audioElement.addEventListener('ended', completeCurrentAudioJob)
     audioElement.addEventListener('canplay', () => {
-        console.debug(`Starting TTS playback`)
+        console.debug('Starting TTS playback')
         audioElement.play()
     })
 }
@@ -572,7 +572,7 @@ function loadSettings() {
 const defaultSettings = {
     voiceMap: '',
     ttsEnabled: false,
-    currentProvider: "ElevenLabs",
+    currentProvider: 'ElevenLabs',
     auto_generation: true,
     narrate_user: false,
 }
@@ -645,7 +645,7 @@ function onNarrateTranslatedOnlyClick() {
 
 async function loadTtsProvider(provider) {
     //Clear the current config and add new config
-    $("#tts_provider_settings").html("")
+    $('#tts_provider_settings').html('')
 
     if (!provider) {
         return
@@ -858,7 +858,7 @@ export async function initVoiceMap(unrestricted = false) {
         return
     }
 
-    setTtsStatus("TTS Provider Loaded", true)
+    setTtsStatus('TTS Provider Loaded', true)
 
     // Clear existing voiceMap state
     $('#tts_voicemap_block').empty()
@@ -869,12 +869,12 @@ export async function initVoiceMap(unrestricted = false) {
 
     // Get saved voicemap from provider settings, handling new and old representations
     let voiceMapFromSettings = {}
-    if ("voiceMap" in extension_settings.tts[ttsProviderName]) {
+    if ('voiceMap' in extension_settings.tts[ttsProviderName]) {
         // Handle previous representation
-        if (typeof extension_settings.tts[ttsProviderName].voiceMap === "string") {
+        if (typeof extension_settings.tts[ttsProviderName].voiceMap === 'string') {
             voiceMapFromSettings = parseVoiceMap(extension_settings.tts[ttsProviderName].voiceMap)
             // Handle new representation
-        } else if (typeof extension_settings.tts[ttsProviderName].voiceMap === "object") {
+        } else if (typeof extension_settings.tts[ttsProviderName].voiceMap === 'object') {
             voiceMapFromSettings = extension_settings.tts[ttsProviderName].voiceMap
         }
     }
@@ -885,12 +885,12 @@ export async function initVoiceMap(unrestricted = false) {
         voiceIdsFromProvider = await ttsProvider.fetchTtsVoiceObjects()
     }
     catch {
-        toastr.error("TTS Provider failed to return voice ids.")
+        toastr.error('TTS Provider failed to return voice ids.')
     }
 
     // Build UI using VoiceMapEntry objects
     for (const character of characters) {
-        if (character === "SillyTavern System") {
+        if (character === 'SillyTavern System') {
             continue
         }
         // Check provider settings for voiceIds
@@ -976,7 +976,7 @@ $(document).ready(function () {
         $('#tts_narrate_user').on('click', onNarrateUserClick);
         $('#tts_voices').on('click', onTtsVoicesClick)
         for (const provider in ttsProviders) {
-            $('#tts_provider').append($("<option />").val(provider).text(provider))
+            $('#tts_provider').append($('<option />').val(provider).text(provider))
         }
         $('#tts_provider').on('change', onTtsProviderChange)
         $(document).on('click', '.mes_narrate', onNarrateOneMessage);
@@ -991,6 +991,6 @@ $(document).ready(function () {
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged)
     eventSource.on(event_types.MESSAGE_DELETED, onChatDeleted);
     eventSource.on(event_types.GROUP_UPDATED, onChatChanged)
-    registerSlashCommand('speak', onNarrateText, ['narrate', 'tts'], `<span class="monospace">(text)</span>  – narrate any text using currently selected character's voice. Use voice="Character Name" argument to set other voice from the voice map, example: <tt>/speak voice="Donald Duck" Quack!</tt>`, true, true);
+    registerSlashCommand('speak', onNarrateText, ['narrate', 'tts'], '<span class="monospace">(text)</span>  – narrate any text using currently selected character\'s voice. Use voice="Character Name" argument to set other voice from the voice map, example: <tt>/speak voice="Donald Duck" Quack!</tt>', true, true);
     document.body.appendChild(audioElement);
 })

@@ -1,4 +1,4 @@
-import { saveTtsProviderSettings } from "./index.js"
+import { saveTtsProviderSettings } from './index.js'
 export { ElevenLabsTtsProvider }
 
 class ElevenLabsTtsProvider {
@@ -14,7 +14,7 @@ class ElevenLabsTtsProvider {
     defaultSettings = {
         stability: 0.75,
         similarity_boost: 0.75,
-        apiKey: "",
+        apiKey: '',
         model: 'eleven_monolingual_v1',
         voiceMap: {}
     }
@@ -53,7 +53,7 @@ class ElevenLabsTtsProvider {
     async loadSettings(settings) {
         // Pupulate Provider UI given input settings
         if (Object.keys(settings).length == 0) {
-            console.info("Using default TTS Provider settings")
+            console.info('Using default TTS Provider settings')
         }
 
         // Only accept keys defined in defaultSettings
@@ -86,9 +86,9 @@ class ElevenLabsTtsProvider {
 
         try {
             await this.checkReady()
-            console.debug("ElevenLabs: Settings loaded")
+            console.debug('ElevenLabs: Settings loaded')
         } catch {
-            console.debug("ElevenLabs: Settings loaded, but not ready")
+            console.debug('ElevenLabs: Settings loaded, but not ready')
         }
     }
 
@@ -113,7 +113,7 @@ class ElevenLabsTtsProvider {
         this.settings.apiKey = $('#elevenlabs_tts_api_key').val()
 
         await this.fetchTtsVoiceObjects().catch(error => {
-            throw `TTS API key validation failed`
+            throw 'TTS API key validation failed'
         })
         console.debug(`Saved new API_KEY: ${this.settings.apiKey}`)
         $('#tts_status').text('')
@@ -146,7 +146,7 @@ class ElevenLabsTtsProvider {
             console.debug(`Found existing TTS generation with id ${historyId}`)
             response = await this.fetchTtsFromHistory(historyId)
         } else {
-            console.debug(`No existing TTS generation found, requesting new generation`)
+            console.debug('No existing TTS generation found, requesting new generation')
             response = await this.fetchTtsGeneration(text, voiceId)
         }
         return response
@@ -177,7 +177,7 @@ class ElevenLabsTtsProvider {
         const headers = {
             'xi-api-key': this.settings.apiKey
         }
-        const response = await fetch(`https://api.elevenlabs.io/v1/voices`, {
+        const response = await fetch('https://api.elevenlabs.io/v1/voices', {
             headers: headers
         })
         if (!response.ok) {
@@ -192,7 +192,7 @@ class ElevenLabsTtsProvider {
             'xi-api-key': this.settings.apiKey
         }
         const response = await fetch(
-            `https://api.elevenlabs.io/v1/voices/settings/default`,
+            'https://api.elevenlabs.io/v1/voices/settings/default',
             {
                 headers: headers
             }
@@ -204,7 +204,7 @@ class ElevenLabsTtsProvider {
     }
 
     async fetchTtsGeneration(text, voiceId) {
-        let model = this.settings.model ?? "eleven_monolingual_v1";
+        let model = this.settings.model ?? 'eleven_monolingual_v1';
         console.info(`Generating new TTS for voice_id ${voiceId}, model ${model}`)
         const response = await fetch(
             `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
@@ -251,7 +251,7 @@ class ElevenLabsTtsProvider {
         const headers = {
             'xi-api-key': this.settings.apiKey
         }
-        const response = await fetch(`https://api.elevenlabs.io/v1/history`, {
+        const response = await fetch('https://api.elevenlabs.io/v1/history', {
             headers: headers
         })
         if (!response.ok) {

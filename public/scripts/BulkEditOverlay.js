@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 import {
     callPopup,
@@ -10,12 +10,12 @@ import {
     getRequestHeaders,
     printCharacters,
     this_chid
-} from "../script.js";
+} from '../script.js';
 
-import { favsToHotswap } from "./RossAscends-mods.js";
-import { hideLoader, showLoader } from "./loader.js";
-import { convertCharacterToPersona } from "./personas.js";
-import { createTagInput, getTagKeyForCharacter, tag_map } from "./tags.js";
+import { favsToHotswap } from './RossAscends-mods.js';
+import { hideLoader, showLoader } from './loader.js';
+import { convertCharacterToPersona } from './personas.js';
+import { createTagInput, getTagKeyForCharacter, tag_map } from './tags.js';
 
 // Utility object for popup messages.
 const popupMessage = {
@@ -82,7 +82,7 @@ class CharacterContextMenu {
         };
 
         return fetch('/v2/editcharacterattribute', {
-            method: "POST",
+            method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify(data),
         }).then((response) => {
@@ -124,14 +124,14 @@ class CharacterContextMenu {
             if (response.ok) {
                 deleteCharacter(character.name, character.avatar).then(() => {
                     if (deleteChats) {
-                        fetch("/getallchatsofcharacter", {
+                        fetch('/getallchatsofcharacter', {
                             method: 'POST',
                             body: JSON.stringify({ avatar_url: character.avatar }),
                             headers: getRequestHeaders(),
                         }).then((response) => {
                             let data = response.json();
                             data = Object.values(data);
-                            const pastChats = data.sort((a, b) => a["file_name"].localeCompare(b["file_name"])).reverse();
+                            const pastChats = data.sort((a, b) => a['file_name'].localeCompare(b['file_name'])).reverse();
 
                             for (const chat of pastChats) {
                                 const name = chat.file_name.replace('.jsonl', '');
@@ -616,7 +616,7 @@ class BulkEditOverlay {
                 const deleteChats = document.getElementById('del_char_checkbox').checked ?? false;
 
                 showLoader();
-                toastr.info("We're deleting your characters, please wait...", 'Working on it');
+                toastr.info('We\'re deleting your characters, please wait...', 'Working on it');
                 Promise.all(this.selectedCharacters.map(async characterId => CharacterContextMenu.delete(characterId, deleteChats)))
                     .then(() => getCharacters())
                     .then(() => this.browseState())

@@ -1,8 +1,8 @@
-import { eventSource, event_types, extension_prompt_types, getCurrentChatId, getRequestHeaders, is_send_press, saveSettingsDebounced, setExtensionPrompt, substituteParams } from "../../../script.js";
-import { ModuleWorkerWrapper, extension_settings, getContext, renderExtensionTemplate } from "../../extensions.js";
-import { collapseNewlines, power_user, ui_mode } from "../../power-user.js";
-import { SECRET_KEYS, secret_state } from "../../secrets.js";
-import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive } from "../../utils.js";
+import { eventSource, event_types, extension_prompt_types, getCurrentChatId, getRequestHeaders, is_send_press, saveSettingsDebounced, setExtensionPrompt, substituteParams } from '../../../script.js';
+import { ModuleWorkerWrapper, extension_settings, getContext, renderExtensionTemplate } from '../../extensions.js';
+import { collapseNewlines, power_user, ui_mode } from '../../power-user.js';
+import { SECRET_KEYS, secret_state } from '../../secrets.js';
+import { debounce, getStringHash as calculateHash, waitUntilCondition, onlyUnique, splitRecursive } from '../../utils.js';
 
 const MODULE_NAME = 'vectors';
 
@@ -14,7 +14,7 @@ const settings = {
 
     // For chats
     enabled_chats: false,
-    template: `Past events: {{text}}`,
+    template: 'Past events: {{text}}',
     depth: 2,
     position: extension_prompt_types.IN_PROMPT,
     protect: 5,
@@ -234,7 +234,7 @@ async function retrieveFileChunks(queryText, collectionId) {
  */
 async function vectorizeFile(fileText, fileName, collectionId) {
     try {
-        toastr.info("Vectorization may take some time, please wait...", `Ingesting file ${fileName}`);
+        toastr.info('Vectorization may take some time, please wait...', `Ingesting file ${fileName}`);
         const chunks = splitRecursive(fileText, settings.chunk_size);
         console.debug(`Vectors: Split file ${fileName} into ${chunks.length} chunks`, chunks);
 

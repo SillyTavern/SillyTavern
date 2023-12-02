@@ -1,9 +1,9 @@
 const fetch = require('node-fetch').default;
-const AIHorde = require("./ai_horde");
-const { getVersion, delay } = require("./util");
-const { readSecret, SECRET_KEYS } = require("./secrets");
+const AIHorde = require('./ai_horde');
+const { getVersion, delay } = require('./util');
+const { readSecret, SECRET_KEYS } = require('./secrets');
 
-const ANONYMOUS_KEY = "0000000000";
+const ANONYMOUS_KEY = '0000000000';
 
 /**
  * Returns the AIHorde client.
@@ -26,27 +26,27 @@ async function getHordeClient() {
  */
 function sanitizeHordeImagePrompt(prompt) {
     if (!prompt) {
-        return "";
+        return '';
     }
 
     //to avoid flagging from some image models, always swap these words
-    prompt = prompt.replace(/\b(girl)\b/gmi, "woman");
-    prompt = prompt.replace(/\b(boy)\b/gmi, "man");
-    prompt = prompt.replace(/\b(girls)\b/gmi, "women");
-    prompt = prompt.replace(/\b(boys)\b/gmi, "men");
+    prompt = prompt.replace(/\b(girl)\b/gmi, 'woman');
+    prompt = prompt.replace(/\b(boy)\b/gmi, 'man');
+    prompt = prompt.replace(/\b(girls)\b/gmi, 'women');
+    prompt = prompt.replace(/\b(boys)\b/gmi, 'men');
 
     //always remove these high risk words from prompt, as they add little value to image gen while increasing the risk the prompt gets flagged
-    prompt = prompt.replace(/\b(under.age|under.aged|underage|underaged|loli|pedo|pedophile|(\w+).year.old|(\w+).years.old|minor|prepubescent|minors|shota)\b/gmi, "");
+    prompt = prompt.replace(/\b(under.age|under.aged|underage|underaged|loli|pedo|pedophile|(\w+).year.old|(\w+).years.old|minor|prepubescent|minors|shota)\b/gmi, '');
 
     //if nsfw is detected, do not remove it but apply additional precautions
     let isNsfw = prompt.match(/\b(cock|ahegao|hentai|uncensored|lewd|cocks|deepthroat|deepthroating|dick|dicks|cumshot|lesbian|fuck|fucked|fucking|sperm|naked|nipples|tits|boobs|breasts|boob|breast|topless|ass|butt|fingering|masturbate|masturbating|bitch|blowjob|pussy|piss|asshole|dildo|dildos|vibrator|erection|foreskin|handjob|nude|penis|porn|vibrator|virgin|vagina|vulva|threesome|orgy|bdsm|hickey|condom|testicles|anal|bareback|bukkake|creampie|stripper|strap-on|missionary|clitoris|clit|clitty|cowgirl|fleshlight|sex|buttplug|milf|oral|sucking|bondage|orgasm|scissoring|railed|slut|sluts|slutty|cumming|cunt|faggot|sissy|anal|anus|cum|semen|scat|nsfw|xxx|explicit|erotic|horny|aroused|jizz|moan|rape|raped|raping|throbbing|humping)\b/gmi);
 
     if (isNsfw) {
         //replace risky subject nouns with person
-        prompt = prompt.replace(/\b(youngster|infant|baby|toddler|child|teen|kid|kiddie|kiddo|teenager|student|preteen|pre.teen)\b/gmi, "person");
+        prompt = prompt.replace(/\b(youngster|infant|baby|toddler|child|teen|kid|kiddie|kiddo|teenager|student|preteen|pre.teen)\b/gmi, 'person');
 
         //remove risky adjectives and related words
-        prompt = prompt.replace(/\b(young|younger|youthful|youth|small|smaller|smallest|girly|boyish|lil|tiny|teenaged|lit[tl]le|school.aged|school|highschool|kindergarten|teens|children|kids)\b/gmi, "");
+        prompt = prompt.replace(/\b(young|younger|youthful|youth|small|smaller|smallest|girly|boyish|lil|tiny|teenaged|lit[tl]le|school.aged|school|highschool|kindergarten|teens|children|kids)\b/gmi, '');
     }
 
     return prompt;
@@ -68,8 +68,8 @@ function registerEndpoints(app, jsonParser) {
                 method: 'POST',
                 body: JSON.stringify(request.body),
                 headers: {
-                    "Content-Type": "application/json",
-                    "apikey": api_key_horde,
+                    'Content-Type': 'application/json',
+                    'apikey': api_key_horde,
                     'Client-Agent': String(request.header('Client-Agent')),
                 }
             });

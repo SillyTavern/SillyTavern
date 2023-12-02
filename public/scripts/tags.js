@@ -7,11 +7,11 @@ import {
     getCharacters,
     entitiesFilter,
     printCharacters,
-} from "../script.js";
-import { FILTER_TYPES } from "./filters.js";
+} from '../script.js';
+import { FILTER_TYPES } from './filters.js';
 
-import { groupCandidatesFilter, groups, selected_group } from "./group-chats.js";
-import { download, onlyUnique, parseJsonFile, uuidv4 } from "./utils.js";
+import { groupCandidatesFilter, groups, selected_group } from './group-chats.js';
+import { download, onlyUnique, parseJsonFile, uuidv4 } from './utils.js';
 
 export {
     tags,
@@ -48,12 +48,12 @@ const InListActionable = {
 }
 
 const DEFAULT_TAGS = [
-    { id: uuidv4(), name: "Plain Text", create_date: Date.now() },
-    { id: uuidv4(), name: "OpenAI", create_date: Date.now() },
-    { id: uuidv4(), name: "W++", create_date: Date.now() },
-    { id: uuidv4(), name: "Boostyle", create_date: Date.now() },
-    { id: uuidv4(), name: "PList", create_date: Date.now() },
-    { id: uuidv4(), name: "AliChat", create_date: Date.now() },
+    { id: uuidv4(), name: 'Plain Text', create_date: Date.now() },
+    { id: uuidv4(), name: 'OpenAI', create_date: Date.now() },
+    { id: uuidv4(), name: 'W++', create_date: Date.now() },
+    { id: uuidv4(), name: 'Boostyle', create_date: Date.now() },
+    { id: uuidv4(), name: 'PList', create_date: Date.now() },
+    { id: uuidv4(), name: 'AliChat', create_date: Date.now() },
 ];
 
 let tags = [];
@@ -96,7 +96,7 @@ function renameTagKey(oldKey, newKey) {
 }
 
 function createTagMapFromList(listElement, key) {
-    const tagIds = [...($(listElement).find(".tag").map((_, el) => $(el).attr("id")))];
+    const tagIds = [...($(listElement).find('.tag').map((_, el) => $(el).attr('id')))];
     tag_map[key] = tagIds;
     saveSettingsDebounced();
 }
@@ -114,11 +114,11 @@ function getTagsList(key) {
 }
 
 function getInlineListSelector() {
-    if (selected_group && menu_type === "group_edit") {
+    if (selected_group && menu_type === 'group_edit') {
         return `.group_select[grid="${selected_group}"] .tags`;
     }
 
-    if (this_chid && menu_type === "character_edit") {
+    if (this_chid && menu_type === 'character_edit') {
         return `.character_select[chid="${this_chid}"] .tags`;
     }
 
@@ -126,11 +126,11 @@ function getInlineListSelector() {
 }
 
 function getTagKey() {
-    if (selected_group && menu_type === "group_edit") {
+    if (selected_group && menu_type === 'group_edit') {
         return selected_group;
     }
 
-    if (this_chid && menu_type === "character_edit") {
+    if (this_chid && menu_type === 'character_edit') {
         return characters[this_chid].avatar;
     }
 
@@ -174,7 +174,7 @@ function removeTagFromMap(tagId, characterId = null) {
 }
 
 function findTag(request, resolve, listSelector) {
-    const skipIds = [...($(listSelector).find(".tag").map((_, el) => $(el).attr("id")))];
+    const skipIds = [...($(listSelector).find('.tag').map((_, el) => $(el).attr('id')))];
     const haystack = tags.filter(t => !skipIds.includes(t.id)).map(t => t.name).sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()));
     const needle = request.term.toLowerCase();
     const hasExactMatch = haystack.findIndex(x => x.toLowerCase() == needle) !== -1;
@@ -197,7 +197,7 @@ function selectTag(event, ui, listSelector) {
     }
 
     // unfocus and clear the input
-    $(event.target).val("").trigger('input');
+    $(event.target).val('').trigger('input');
 
     // add tag to the UI and internal map
     appendTagToList(listSelector, tag, { removable: true });
@@ -233,11 +233,11 @@ function getExistingTags(new_tags) {
 }
 
 async function importTags(imported_char) {
-    let imported_tags = imported_char.tags.filter(t => t !== "ROOT" && t !== "TAVERN");
+    let imported_tags = imported_char.tags.filter(t => t !== 'ROOT' && t !== 'TAVERN');
     let existingTags = await getExistingTags(imported_tags);
     //make this case insensitive
     let newTags = imported_tags.filter(t => !existingTags.some(existingTag => existingTag.toLowerCase() === t.toLowerCase()));
-    let selected_tags = "";
+    let selected_tags = '';
     const existingTagsString = existingTags.length ? (': ' + existingTags.join(', ')) : '';
     if (newTags.length === 0) {
         await callPopup(`<h3>Importing Tags For ${imported_char.name}</h3><p>${existingTags.length} existing tags have been found${existingTagsString}.</p>`, 'text');
@@ -245,7 +245,7 @@ async function importTags(imported_char) {
         selected_tags = await callPopup(`<h3>Importing Tags For ${imported_char.name}</h3><p>${existingTags.length} existing tags have been found${existingTagsString}.</p><p>The following ${newTags.length} new tags will be imported.</p>`, 'input', newTags.join(', '));
     }
     selected_tags = existingTags.concat(selected_tags.split(','));
-    selected_tags = selected_tags.map(t => t.trim()).filter(t => t !== "");
+    selected_tags = selected_tags.map(t => t.trim()).filter(t => t !== '');
     //Anti-troll measure
     if (selected_tags.length > 15) {
         selected_tags = selected_tags.slice(0, 15);
@@ -296,7 +296,7 @@ function appendTagToList(listElement, tag, { removable, selectable, action, isGe
     tagElement.css('color', tag.color2);
 
     tagElement.find('.tag_name').text(tag.name);
-    const removeButton = tagElement.find(".tag_remove");
+    const removeButton = tagElement.find('.tag_remove');
     removable ? removeButton.show() : removeButton.hide();
 
     if (tag.class) {
@@ -357,15 +357,15 @@ function onTagFilterClick(listElement) {
 }
 
 function runTagFilters(listElement) {
-    const tagIds = [...($(listElement).find(".tag.selected:not(.actionable)").map((_, el) => $(el).attr("id")))];
-    const excludedTagIds = [...($(listElement).find(".tag.excluded:not(.actionable)").map((_, el) => $(el).attr("id")))];
+    const tagIds = [...($(listElement).find('.tag.selected:not(.actionable)').map((_, el) => $(el).attr('id')))];
+    const excludedTagIds = [...($(listElement).find('.tag.excluded:not(.actionable)').map((_, el) => $(el).attr('id')))];
     const filterHelper = getFilterHelper($(listElement));
     filterHelper.setFilterData(FILTER_TYPES.TAG, { excluded: excludedTagIds, selected: tagIds });
 }
 
 function printTagFilters(type = tag_filter_types.character) {
     const FILTER_SELECTOR = type === tag_filter_types.character ? CHARACTER_FILTER_SELECTOR : GROUP_FILTER_SELECTOR;
-    const selectedTagIds = [...($(FILTER_SELECTOR).find(".tag.selected").map((_, el) => $(el).attr("id")))];
+    const selectedTagIds = [...($(FILTER_SELECTOR).find('.tag.selected').map((_, el) => $(el).attr('id')))];
     $(FILTER_SELECTOR).empty();
     const characterTagIds = Object.values(tag_map).flat();
     const tagsToDisplay = tags
@@ -395,8 +395,8 @@ function printTagFilters(type = tag_filter_types.character) {
 
 function onTagRemoveClick(event) {
     event.stopPropagation();
-    const tag = $(this).closest(".tag");
-    const tagId = tag.attr("id");
+    const tag = $(this).closest('.tag');
+    const tagId = tag.attr('id');
 
     // Optional, check for multiple character ids being present.
     const characterData = event.target.closest('#bulk_tags_div')?.dataset.characters;
@@ -420,7 +420,7 @@ function onTagRemoveClick(event) {
 function onTagInput(event) {
     let val = $(this).val();
     if (tags.find(t => t.name === val)) return;
-    $(this).autocomplete("search", val);
+    $(this).autocomplete('search', val);
 }
 
 function onTagInputFocus() {
@@ -428,11 +428,11 @@ function onTagInputFocus() {
 }
 
 function onCharacterCreateClick() {
-    $("#tagList").empty();
+    $('#tagList').empty();
 }
 
 function onGroupCreateClick() {
-    $("#groupTagList").empty();
+    $('#groupTagList').empty();
     printTagFilters(tag_filter_types.character);
     printTagFilters(tag_filter_types.group_member);
 }
@@ -443,10 +443,10 @@ export function applyTagsOnCharacterSelect() {
     const key = characters[chid].avatar;
     const tags = getTagsList(key);
 
-    $("#tagList").empty();
+    $('#tagList').empty();
 
     for (const tag of tags) {
-        appendTagToList("#tagList", tag, { removable: true });
+        appendTagToList('#tagList', tag, { removable: true });
     }
 }
 
@@ -455,12 +455,12 @@ function applyTagsOnGroupSelect() {
     const key = $(this).attr('grid');
     const tags = getTagsList(key);
 
-    $("#groupTagList").empty();
+    $('#groupTagList').empty();
     printTagFilters(tag_filter_types.character);
     printTagFilters(tag_filter_types.group_member);
 
     for (const tag of tags) {
-        appendTagToList("#groupTagList", tag, { removable: true });
+        appendTagToList('#groupTagList', tag, { removable: true });
     }
 }
 
@@ -627,8 +627,8 @@ function appendViewTagToList(list, tag, everything) {
     template.find('.tag_view_name').css('background-color', tag.color);
     template.find('.tag_view_name').css('color', tag.color2);
 
-    const colorPickerId = tag.id + "-tag-color";
-    const colorPicker2Id = tag.id + "-tag-color2";
+    const colorPickerId = tag.id + '-tag-color';
+    const colorPicker2Id = tag.id + '-tag-color2';
 
     template.find('.tagColorPickerHolder').html(
         `<toolcool-color-picker id="${colorPickerId}" color="${tag.color}" class="tag-color"></toolcool-color-picker>`
@@ -659,7 +659,7 @@ function appendViewTagToList(list, tag, everything) {
 }
 
 function onTagDeleteClick() {
-    if (!confirm("Are you sure?")) {
+    if (!confirm('Are you sure?')) {
         return;
     }
 
@@ -713,24 +713,24 @@ function onTagColorize2(evt) {
 function onTagListHintClick() {
     console.log($(this));
     $(this).toggleClass('selected');
-    $(this).siblings(".tag:not(.actionable)").toggle(100);
-    $(this).siblings(".innerActionable").toggleClass('hidden');
+    $(this).siblings('.tag:not(.actionable)').toggle(100);
+    $(this).siblings('.innerActionable').toggleClass('hidden');
 }
 
 jQuery(() => {
     createTagInput('#tagInput', '#tagList');
     createTagInput('#groupTagInput', '#groupTagList');
 
-    $(document).on("click", "#rm_button_create", onCharacterCreateClick);
-    $(document).on("click", "#rm_button_group_chats", onGroupCreateClick);
-    $(document).on("click", ".character_select", applyTagsOnCharacterSelect);
-    $(document).on("click", ".group_select", applyTagsOnGroupSelect);
-    $(document).on("click", ".tag_remove", onTagRemoveClick);
-    $(document).on("input", ".tag_input", onTagInput);
-    $(document).on("click", ".tags_view", onViewTagsListClick);
-    $(document).on("click", ".tag_delete", onTagDeleteClick);
-    $(document).on("input", ".tag_view_name", onTagRenameInput);
-    $(document).on("click", ".tag_view_create", onTagCreateClick);
-    $(document).on("click", ".tag_view_backup", onTagsBackupClick);
-    $(document).on("click", ".tag_view_restore", onBackupRestoreClick);
+    $(document).on('click', '#rm_button_create', onCharacterCreateClick);
+    $(document).on('click', '#rm_button_group_chats', onGroupCreateClick);
+    $(document).on('click', '.character_select', applyTagsOnCharacterSelect);
+    $(document).on('click', '.group_select', applyTagsOnGroupSelect);
+    $(document).on('click', '.tag_remove', onTagRemoveClick);
+    $(document).on('input', '.tag_input', onTagInput);
+    $(document).on('click', '.tags_view', onViewTagsListClick);
+    $(document).on('click', '.tag_delete', onTagDeleteClick);
+    $(document).on('input', '.tag_view_name', onTagRenameInput);
+    $(document).on('click', '.tag_view_create', onTagCreateClick);
+    $(document).on('click', '.tag_view_backup', onTagsBackupClick);
+    $(document).on('click', '.tag_view_restore', onBackupRestoreClick);
 });

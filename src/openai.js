@@ -1,4 +1,4 @@
-const { readSecret, SECRET_KEYS } = require("./secrets");
+const { readSecret, SECRET_KEYS } = require('./secrets');
 const fetch = require('node-fetch').default;
 const FormData = require('form-data');
 const fs = require('fs');
@@ -31,10 +31,10 @@ function registerEndpoints(app, jsonParser, urlencodedParser) {
                 model: request.body.model,
                 messages: [
                     {
-                        role: "user",
+                        role: 'user',
                         content: [
-                            { type: "text", text: request.body.prompt },
-                            { type: "image_url", image_url: { "url": request.body.image } }
+                            { type: 'text', text: request.body.prompt },
+                            { type: 'image_url', image_url: { 'url': request.body.image } }
                         ]
                     }
                 ],

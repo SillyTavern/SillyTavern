@@ -1,4 +1,4 @@
-import { SubMenu } from "./SubMenu.js";
+import { SubMenu } from './SubMenu.js';
 
 export class MenuItem {
     /**@type {String}*/ label;

@@ -1,7 +1,7 @@
-import { getRequestHeaders } from "../../script.js";
-import { extension_settings } from "../extensions.js";
-import { SECRET_KEYS, secret_state } from "../secrets.js";
-import { createThumbnail } from "../utils.js";
+import { getRequestHeaders } from '../../script.js';
+import { extension_settings } from '../extensions.js';
+import { SECRET_KEYS, secret_state } from '../secrets.js';
+import { createThumbnail } from '../utils.js';
 
 /**
  * Generates a caption for an image using a multimodal model.

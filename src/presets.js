@@ -35,7 +35,7 @@ function getPresetSettingsByAPI(apiId) {
  * @param {any} jsonParser JSON parser middleware
  */
 function registerEndpoints(app, jsonParser) {
-    app.post("/api/presets/save", jsonParser, function (request, response) {
+    app.post('/api/presets/save', jsonParser, function (request, response) {
         const name = sanitize(request.body.name);
         if (!request.body.preset || !name) {
             return response.sendStatus(400);
@@ -53,7 +53,7 @@ function registerEndpoints(app, jsonParser) {
         return response.send({ name });
     });
 
-    app.post("/api/presets/delete", jsonParser, function (request, response) {
+    app.post('/api/presets/delete', jsonParser, function (request, response) {
         const name = sanitize(request.body.name);
         if (!name) {
             return response.sendStatus(400);
@@ -77,7 +77,7 @@ function registerEndpoints(app, jsonParser) {
     });
 
     // TODO: Merge with /api/presets/save
-    app.post("/api/presets/save-openai", jsonParser, function (request, response) {
+    app.post('/api/presets/save-openai', jsonParser, function (request, response) {
         if (!request.body || typeof request.query.name !== 'string') return response.sendStatus(400);
         const name = sanitize(request.query.name);
         if (!name) return response.sendStatus(400);
@@ -89,7 +89,7 @@ function registerEndpoints(app, jsonParser) {
     });
 
     // TODO: Merge with /api/presets/delete
-    app.post("/api/presets/delete-openai", jsonParser, function (request, response) {
+    app.post('/api/presets/delete-openai', jsonParser, function (request, response) {
         if (!request.body || !request.body.name) {
             return response.sendStatus(400);
         }

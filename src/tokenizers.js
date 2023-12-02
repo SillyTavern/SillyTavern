@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { SentencePieceProcessor } = require("@agnai/sentencepiece-js");
+const { SentencePieceProcessor } = require('@agnai/sentencepiece-js');
 const tiktoken = require('@dqbd/tiktoken');
 const { Tokenizer } = require('@agnai/web-tokenizers');
 const { convertClaudePrompt } = require('./chat-completion');
@@ -15,31 +15,31 @@ const tokenizersCache = {};
  * @type {string[]}
  */
 const TEXT_COMPLETION_MODELS = [
-    "gpt-3.5-turbo-instruct",
-    "gpt-3.5-turbo-instruct-0914",
-    "text-davinci-003",
-    "text-davinci-002",
-    "text-davinci-001",
-    "text-curie-001",
-    "text-babbage-001",
-    "text-ada-001",
-    "code-davinci-002",
-    "code-davinci-001",
-    "code-cushman-002",
-    "code-cushman-001",
-    "text-davinci-edit-001",
-    "code-davinci-edit-001",
-    "text-embedding-ada-002",
-    "text-similarity-davinci-001",
-    "text-similarity-curie-001",
-    "text-similarity-babbage-001",
-    "text-similarity-ada-001",
-    "text-search-davinci-doc-001",
-    "text-search-curie-doc-001",
-    "text-search-babbage-doc-001",
-    "text-search-ada-doc-001",
-    "code-search-babbage-code-001",
-    "code-search-ada-code-001",
+    'gpt-3.5-turbo-instruct',
+    'gpt-3.5-turbo-instruct-0914',
+    'text-davinci-003',
+    'text-davinci-002',
+    'text-davinci-001',
+    'text-curie-001',
+    'text-babbage-001',
+    'text-ada-001',
+    'code-davinci-002',
+    'code-davinci-001',
+    'code-cushman-002',
+    'code-cushman-001',
+    'text-davinci-edit-001',
+    'code-davinci-edit-001',
+    'text-embedding-ada-002',
+    'text-similarity-davinci-001',
+    'text-similarity-curie-001',
+    'text-similarity-babbage-001',
+    'text-similarity-ada-001',
+    'text-search-davinci-doc-001',
+    'text-search-curie-doc-001',
+    'text-search-babbage-doc-001',
+    'text-search-ada-doc-001',
+    'code-search-babbage-code-001',
+    'code-search-ada-code-001',
 ];
 
 const CHARS_PER_TOKEN = 3.35;
@@ -66,7 +66,7 @@ class SentencePieceTokenizer {
             console.log('Instantiated the tokenizer for', path.parse(this.#model).name);
             return this.#instance;
         } catch (error) {
-            console.error("Sentencepiece tokenizer failed to load: " + this.#model, error);
+            console.error('Sentencepiece tokenizer failed to load: ' + this.#model, error);
             return null;
         }
     }
@@ -239,7 +239,7 @@ async function loadClaudeTokenizer(modelPath) {
         const instance = await Tokenizer.fromJSON(arrayBuffer);
         return instance;
     } catch (error) {
-        console.error("Claude tokenizer failed to load: " + modelPath, error);
+        console.error('Claude tokenizer failed to load: ' + modelPath, error);
         return null;
     }
 }
@@ -365,7 +365,7 @@ async function loadTokenizers() {
  * @param {any} jsonParser JSON parser middleware
  */
 function registerEndpoints(app, jsonParser) {
-    app.post("/api/tokenize/ai21", jsonParser, async function (req, res) {
+    app.post('/api/tokenize/ai21', jsonParser, async function (req, res) {
         if (!req.body) return res.sendStatus(400);
         const options = {
             method: 'POST',
@@ -380,27 +380,27 @@ function registerEndpoints(app, jsonParser) {
         try {
             const response = await fetch('https://api.ai21.com/studio/v1/tokenize', options);
             const data = await response.json();
-            return res.send({ "token_count": data?.tokens?.length || 0 });
+            return res.send({ 'token_count': data?.tokens?.length || 0 });
         } catch (err) {
             console.error(err);
-            return res.send({ "token_count": 0 });
+            return res.send({ 'token_count': 0 });
         }
     });
 
-    app.post("/api/tokenize/llama", jsonParser, createSentencepieceEncodingHandler(spp_llama));
-    app.post("/api/tokenize/nerdstash", jsonParser, createSentencepieceEncodingHandler(spp_nerd));
-    app.post("/api/tokenize/nerdstash_v2", jsonParser, createSentencepieceEncodingHandler(spp_nerd_v2));
-    app.post("/api/tokenize/mistral", jsonParser, createSentencepieceEncodingHandler(spp_mistral));
-    app.post("/api/tokenize/yi", jsonParser, createSentencepieceEncodingHandler(spp_yi));
-    app.post("/api/tokenize/gpt2", jsonParser, createTiktokenEncodingHandler('gpt2'));
-    app.post("/api/decode/llama", jsonParser, createSentencepieceDecodingHandler(spp_llama));
-    app.post("/api/decode/nerdstash", jsonParser, createSentencepieceDecodingHandler(spp_nerd));
-    app.post("/api/decode/nerdstash_v2", jsonParser, createSentencepieceDecodingHandler(spp_nerd_v2));
-    app.post("/api/decode/mistral", jsonParser, createSentencepieceDecodingHandler(spp_mistral));
-    app.post("/api/decode/yi", jsonParser, createSentencepieceDecodingHandler(spp_yi));
-    app.post("/api/decode/gpt2", jsonParser, createTiktokenDecodingHandler('gpt2'));
+    app.post('/api/tokenize/llama', jsonParser, createSentencepieceEncodingHandler(spp_llama));
+    app.post('/api/tokenize/nerdstash', jsonParser, createSentencepieceEncodingHandler(spp_nerd));
+    app.post('/api/tokenize/nerdstash_v2', jsonParser, createSentencepieceEncodingHandler(spp_nerd_v2));
+    app.post('/api/tokenize/mistral', jsonParser, createSentencepieceEncodingHandler(spp_mistral));
+    app.post('/api/tokenize/yi', jsonParser, createSentencepieceEncodingHandler(spp_yi));
+    app.post('/api/tokenize/gpt2', jsonParser, createTiktokenEncodingHandler('gpt2'));
+    app.post('/api/decode/llama', jsonParser, createSentencepieceDecodingHandler(spp_llama));
+    app.post('/api/decode/nerdstash', jsonParser, createSentencepieceDecodingHandler(spp_nerd));
+    app.post('/api/decode/nerdstash_v2', jsonParser, createSentencepieceDecodingHandler(spp_nerd_v2));
+    app.post('/api/decode/mistral', jsonParser, createSentencepieceDecodingHandler(spp_mistral));
+    app.post('/api/decode/yi', jsonParser, createSentencepieceDecodingHandler(spp_yi));
+    app.post('/api/decode/gpt2', jsonParser, createTiktokenDecodingHandler('gpt2'));
 
-    app.post("/api/tokenize/openai-encode", jsonParser, async function (req, res) {
+    app.post('/api/tokenize/openai-encode', jsonParser, async function (req, res) {
         try {
             const queryModel = String(req.query.model || '');
 
@@ -469,7 +469,7 @@ function registerEndpoints(app, jsonParser) {
         }
     });
 
-    app.post("/api/tokenize/openai", jsonParser, async function (req, res) {
+    app.post('/api/tokenize/openai', jsonParser, async function (req, res) {
         try {
             if (!req.body) return res.sendStatus(400);
 
@@ -479,22 +479,22 @@ function registerEndpoints(app, jsonParser) {
 
             if (model === 'claude') {
                 num_tokens = countClaudeTokens(claude_tokenizer, req.body);
-                return res.send({ "token_count": num_tokens });
+                return res.send({ 'token_count': num_tokens });
             }
 
             if (model === 'llama') {
                 num_tokens = await countSentencepieceArrayTokens(spp_llama, req.body);
-                return res.send({ "token_count": num_tokens });
+                return res.send({ 'token_count': num_tokens });
             }
 
             if (model === 'mistral') {
                 num_tokens = await countSentencepieceArrayTokens(spp_mistral, req.body);
-                return res.send({ "token_count": num_tokens });
+                return res.send({ 'token_count': num_tokens });
             }
 
             if (model === 'yi') {
                 num_tokens = await countSentencepieceArrayTokens(spp_yi, req.body);
-                return res.send({ "token_count": num_tokens });
+                return res.send({ 'token_count': num_tokens });
             }
 
             const tokensPerName = queryModel.includes('gpt-3.5-turbo-0301') ? -1 : 1;
@@ -508,12 +508,12 @@ function registerEndpoints(app, jsonParser) {
                     num_tokens += tokensPerMessage;
                     for (const [key, value] of Object.entries(msg)) {
                         num_tokens += tokenizer.encode(value).length;
-                        if (key == "name") {
+                        if (key == 'name') {
                             num_tokens += tokensPerName;
                         }
                     }
                 } catch {
-                    console.warn("Error tokenizing message:", msg);
+                    console.warn('Error tokenizing message:', msg);
                 }
             }
             num_tokens += tokensPadding;
@@ -527,12 +527,12 @@ function registerEndpoints(app, jsonParser) {
             // not needed for cached tokenizers
             //tokenizer.free();
 
-            res.send({ "token_count": num_tokens });
+            res.send({ 'token_count': num_tokens });
         } catch (error) {
             console.error('An error counting tokens, using fallback estimation method', error);
             const jsonBody = JSON.stringify(req.body);
             const num_tokens = Math.ceil(jsonBody.length / CHARS_PER_TOKEN);
-            res.send({ "token_count": num_tokens });
+            res.send({ 'token_count': num_tokens });
         }
     });
 }

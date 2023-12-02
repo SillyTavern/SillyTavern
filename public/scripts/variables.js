@@ -1,6 +1,6 @@
-import { chat_metadata, getCurrentChatId, saveSettingsDebounced, sendSystemMessage, system_message_types } from "../script.js";
-import { extension_settings, saveMetadataDebounced } from "./extensions.js";
-import { executeSlashCommands, registerSlashCommand } from "./slash-commands.js";
+import { chat_metadata, getCurrentChatId, saveSettingsDebounced, sendSystemMessage, system_message_types } from '../script.js';
+import { extension_settings, saveMetadataDebounced } from './extensions.js';
+import { executeSlashCommands, registerSlashCommand } from './slash-commands.js';
 
 function getLocalVariable(name) {
     if (!chat_metadata.variables) {

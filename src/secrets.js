@@ -33,13 +33,13 @@ const SECRET_KEYS = {
 function writeSecret(key, value) {
     if (!fs.existsSync(SECRETS_FILE)) {
         const emptyFile = JSON.stringify({});
-        writeFileAtomicSync(SECRETS_FILE, emptyFile, "utf-8");
+        writeFileAtomicSync(SECRETS_FILE, emptyFile, 'utf-8');
     }
 
     const fileContents = fs.readFileSync(SECRETS_FILE, 'utf-8');
     const secrets = JSON.parse(fileContents);
     secrets[key] = value;
-    writeFileAtomicSync(SECRETS_FILE, JSON.stringify(secrets, null, 4), "utf-8");
+    writeFileAtomicSync(SECRETS_FILE, JSON.stringify(secrets, null, 4), 'utf-8');
 }
 
 /**
@@ -120,7 +120,7 @@ function migrateSecrets(settingsFile) {
         if (modified) {
             console.log('Writing updated settings.json...');
             const settingsContent = JSON.stringify(settings, null, 4);
-            writeFileAtomicSync(settingsFile, settingsContent, "utf-8");
+            writeFileAtomicSync(settingsFile, settingsContent, 'utf-8');
         }
     }
     catch (error) {

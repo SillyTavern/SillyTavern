@@ -1,10 +1,10 @@
-import { getStringHash, debounce, waitUntilCondition, extractAllWords } from "../../utils.js";
-import { getContext, getApiUrl, extension_settings, doExtrasFetch, modules } from "../../extensions.js";
-import { eventSource, event_types, extension_prompt_types, generateQuietPrompt, is_send_press, saveSettingsDebounced, substituteParams } from "../../../script.js";
-import { is_group_generating, selected_group } from "../../group-chats.js";
-import { registerSlashCommand } from "../../slash-commands.js";
+import { getStringHash, debounce, waitUntilCondition, extractAllWords } from '../../utils.js';
+import { getContext, getApiUrl, extension_settings, doExtrasFetch, modules } from '../../extensions.js';
+import { eventSource, event_types, extension_prompt_types, generateQuietPrompt, is_send_press, saveSettingsDebounced, substituteParams } from '../../../script.js';
+import { is_group_generating, selected_group } from '../../group-chats.js';
+import { registerSlashCommand } from '../../slash-commands.js';
 import { loadMovingUIState } from '../../power-user.js';
-import { dragElement } from "../../RossAscends-mods.js";
+import { dragElement } from '../../RossAscends-mods.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = '1_memory';
@@ -564,7 +564,7 @@ function setMemoryContext(value, saveToMessage) {
 function doPopout(e) {
     const target = e.target;
     //repurposes the zoomed avatar template to server as a floating div
-    if ($("#summaryExtensionPopout").length === 0) {
+    if ($('#summaryExtensionPopout').length === 0) {
         console.debug('did not see popout yet, creating')
         const originalHTMLClone = $(target).parent().parent().parent().find('.inline-drawer-content').html()
         const originalElement = $(target).parent().parent().parent().find('.inline-drawer-content')
@@ -580,32 +580,32 @@ function doPopout(e) {
             .empty()
         const prevSummaryBoxContents = $('#memory_contents').val(); //copy summary box before emptying
         originalElement.empty();
-        originalElement.html(`<div class="flex-container alignitemscenter justifyCenter wide100p"><small>Currently popped out</small></div>`)
+        originalElement.html('<div class="flex-container alignitemscenter justifyCenter wide100p"><small>Currently popped out</small></div>')
         newElement.append(controlBarHtml).append(originalHTMLClone)
         $('body').append(newElement);
-        $("#summaryExtensionDrawerContents").addClass('scrollableInnerFull')
+        $('#summaryExtensionDrawerContents').addClass('scrollableInnerFull')
         setMemoryContext(prevSummaryBoxContents, false); //paste prev summary box contents into popout box
         setupListeners();
         loadSettings();
         loadMovingUIState();
 
-        $("#summaryExtensionPopout").fadeIn(250);
+        $('#summaryExtensionPopout').fadeIn(250);
         dragElement(newElement);
 
         //setup listener for close button to restore extensions menu
         $('#summaryExtensionPopoutClose').off('click').on('click', function () {
-            $("#summaryExtensionDrawerContents").removeClass('scrollableInnerFull')
-            const summaryPopoutHTML = $("#summaryExtensionDrawerContents")
-            $("#summaryExtensionPopout").fadeOut(250, () => {
+            $('#summaryExtensionDrawerContents').removeClass('scrollableInnerFull')
+            const summaryPopoutHTML = $('#summaryExtensionDrawerContents')
+            $('#summaryExtensionPopout').fadeOut(250, () => {
                 originalElement.empty();
                 originalElement.html(summaryPopoutHTML);
-                $("#summaryExtensionPopout").remove()
+                $('#summaryExtensionPopout').remove()
             })
             loadSettings();
         })
     } else {
         console.debug('saw existing popout, removing')
-        $("#summaryExtensionPopout").fadeOut(250, () => { $("#summaryExtensionPopoutClose").trigger('click') });
+        $('#summaryExtensionPopout').fadeOut(250, () => { $('#summaryExtensionPopoutClose').trigger('click') });
     }
 }
 
@@ -629,9 +629,9 @@ function setupListeners() {
     $('#memory_depth').off('click').on('input', onMemoryDepthInput);
     $('input[name="memory_position"]').off('click').on('change', onMemoryPositionChange);
     $('#memory_prompt_words_force').off('click').on('input', onMemoryPromptWordsForceInput);
-    $("#summarySettingsBlockToggle").off('click').on('click', function () {
+    $('#summarySettingsBlockToggle').off('click').on('click', function () {
         console.log('saw settings button click')
-        $("#summarySettingsBlock").slideToggle(200, "swing"); //toggleClass("hidden");
+        $('#summarySettingsBlock').slideToggle(200, 'swing'); //toggleClass("hidden");
     });
 }
 
@@ -730,7 +730,7 @@ jQuery(function () {
         `;
         $('#extensions_settings2').append(settingsHtml);
         setupListeners();
-        $("#summaryExtensionPopoutButton").off('click').on('click', function (e) {
+        $('#summaryExtensionPopoutButton').off('click').on('click', function (e) {
             doPopout(e);
             e.stopPropagation();
         });
