@@ -4177,143 +4177,101 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         return null;
     }
 
-    //these happen regardless of API
-    var charDescriptionTokens = getTokenCount(itemizedPrompts[thisPromptSet].charDescription);
-    var charPersonalityTokens = getTokenCount(itemizedPrompts[thisPromptSet].charPersonality);
-    var scenarioTextTokens = getTokenCount(itemizedPrompts[thisPromptSet].scenarioText);
-    var userPersonaStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].userPersona);
-    var worldInfoStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].worldInfoString);
-    var allAnchorsTokens = getTokenCount(itemizedPrompts[thisPromptSet].allAnchors);
-    var summarizeStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].summarizeString);
-    var authorsNoteStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].authorsNoteString);
-    var smartContextStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].smartContextString);
-    var beforeScenarioAnchorTokens = getTokenCount(itemizedPrompts[thisPromptSet].beforeScenarioAnchor);
-    var afterScenarioAnchorTokens = getTokenCount(itemizedPrompts[thisPromptSet].afterScenarioAnchor);
-    var zeroDepthAnchorTokens = getTokenCount(itemizedPrompts[thisPromptSet].zeroDepthAnchor);
-    var thisPrompt_max_context = itemizedPrompts[thisPromptSet].this_max_context;
-    var thisPrompt_padding = itemizedPrompts[thisPromptSet].padding;
-    var this_main_api = itemizedPrompts[thisPromptSet].main_api;
+    const params = {
+        charDescriptionTokens: getTokenCount(itemizedPrompts[thisPromptSet].charDescription),
+        charPersonalityTokens: getTokenCount(itemizedPrompts[thisPromptSet].charPersonality),
+        scenarioTextTokens: getTokenCount(itemizedPrompts[thisPromptSet].scenarioText),
+        userPersonaStringTokens: getTokenCount(itemizedPrompts[thisPromptSet].userPersona),
+        worldInfoStringTokens: getTokenCount(itemizedPrompts[thisPromptSet].worldInfoString),
+        allAnchorsTokens: getTokenCount(itemizedPrompts[thisPromptSet].allAnchors),
+        summarizeStringTokens: getTokenCount(itemizedPrompts[thisPromptSet].summarizeString),
+        authorsNoteStringTokens: getTokenCount(itemizedPrompts[thisPromptSet].authorsNoteString),
+        smartContextStringTokens: getTokenCount(itemizedPrompts[thisPromptSet].smartContextString),
+        beforeScenarioAnchorTokens: getTokenCount(itemizedPrompts[thisPromptSet].beforeScenarioAnchor),
+        afterScenarioAnchorTokens: getTokenCount(itemizedPrompts[thisPromptSet].afterScenarioAnchor),
+        zeroDepthAnchorTokens: getTokenCount(itemizedPrompts[thisPromptSet].zeroDepthAnchor), // TODO: unused
+        thisPrompt_padding: itemizedPrompts[thisPromptSet].padding,
+        this_main_api: itemizedPrompts[thisPromptSet].main_api
+    };
 
-    if (this_main_api == 'openai') {
+    if (params.this_main_api == 'openai') {
         //for OAI API
         //console.log('-- Counting OAI Tokens');
 
-        //var finalPromptTokens = itemizedPrompts[thisPromptSet].oaiTotalTokens;
-        var oaiMainTokens = itemizedPrompts[thisPromptSet].oaiMainTokens;
-        var oaiStartTokens = itemizedPrompts[thisPromptSet].oaiStartTokens;
-        var ActualChatHistoryTokens = itemizedPrompts[thisPromptSet].oaiConversationTokens;
-        var examplesStringTokens = itemizedPrompts[thisPromptSet].oaiExamplesTokens;
-        var oaiPromptTokens = itemizedPrompts[thisPromptSet].oaiPromptTokens - (afterScenarioAnchorTokens + beforeScenarioAnchorTokens) + examplesStringTokens;
-        var oaiBiasTokens = itemizedPrompts[thisPromptSet].oaiBiasTokens;
-        var oaiJailbreakTokens = itemizedPrompts[thisPromptSet].oaiJailbreakTokens;
-        var oaiNudgeTokens = itemizedPrompts[thisPromptSet].oaiNudgeTokens;
-        var oaiImpersonateTokens = itemizedPrompts[thisPromptSet].oaiImpersonateTokens;
-        var oaiNsfwTokens = itemizedPrompts[thisPromptSet].oaiNsfwTokens;
-        var finalPromptTokens =
-            oaiStartTokens +
-            oaiPromptTokens +
-            oaiMainTokens +
-            oaiNsfwTokens +
-            oaiBiasTokens +
-            oaiImpersonateTokens +
-            oaiJailbreakTokens +
-            oaiNudgeTokens +
-            ActualChatHistoryTokens +
+        //params.finalPromptTokens = itemizedPrompts[thisPromptSet].oaiTotalTokens;
+        params.oaiMainTokens = itemizedPrompts[thisPromptSet].oaiMainTokens;
+        params.oaiStartTokens = itemizedPrompts[thisPromptSet].oaiStartTokens;
+        params.ActualChatHistoryTokens = itemizedPrompts[thisPromptSet].oaiConversationTokens;
+        params.examplesStringTokens = itemizedPrompts[thisPromptSet].oaiExamplesTokens;
+        params.oaiPromptTokens = itemizedPrompts[thisPromptSet].oaiPromptTokens - (params.afterScenarioAnchorTokens + params.beforeScenarioAnchorTokens) + params.examplesStringTokens;
+        params.oaiBiasTokens = itemizedPrompts[thisPromptSet].oaiBiasTokens;
+        params.oaiJailbreakTokens = itemizedPrompts[thisPromptSet].oaiJailbreakTokens;
+        params.oaiNudgeTokens = itemizedPrompts[thisPromptSet].oaiNudgeTokens;
+        params.oaiImpersonateTokens = itemizedPrompts[thisPromptSet].oaiImpersonateTokens;
+        params.oaiNsfwTokens = itemizedPrompts[thisPromptSet].oaiNsfwTokens;
+        params.finalPromptTokens =
+            params.oaiStartTokens +
+            params.oaiPromptTokens +
+            params.oaiMainTokens +
+            params.oaiNsfwTokens +
+            params.oaiBiasTokens +
+            params.oaiImpersonateTokens +
+            params.oaiJailbreakTokens +
+            params.oaiNudgeTokens +
+            params.ActualChatHistoryTokens +
             //charDescriptionTokens +
             //charPersonalityTokens +
             //allAnchorsTokens +
-            worldInfoStringTokens +
-            beforeScenarioAnchorTokens +
-            afterScenarioAnchorTokens;
-        // OAI doesn't use padding
-        thisPrompt_padding = 0;
+            params.worldInfoStringTokens +
+            params.beforeScenarioAnchorTokens +
+            params.afterScenarioAnchorTokens;
         // Max context size - max completion tokens
-        thisPrompt_max_context = (oai_settings.openai_max_context - oai_settings.openai_max_tokens);
+        params.thisPrompt_max_context = (oai_settings.openai_max_context - oai_settings.openai_max_tokens);
+
+        //console.log('-- applying % on OAI tokens');
+        params.oaiStartTokensPercentage = ((params.oaiStartTokens / (params.finalPromptTokens)) * 100).toFixed(2);
+        params.storyStringTokensPercentage = (((params.afterScenarioAnchorTokens + params.beforeScenarioAnchorTokens + params.oaiPromptTokens) / (params.finalPromptTokens)) * 100).toFixed(2);
+        params.ActualChatHistoryTokensPercentage = ((params.ActualChatHistoryTokens / (params.finalPromptTokens)) * 100).toFixed(2);
+        params.promptBiasTokensPercentage = ((params.oaiBiasTokens / (params.finalPromptTokens)) * 100).toFixed(2);
+        params.worldInfoStringTokensPercentage = ((params.worldInfoStringTokens / (params.finalPromptTokens)) * 100).toFixed(2);
+        params.allAnchorsTokensPercentage = ((params.allAnchorsTokens / (params.finalPromptTokens)) * 100).toFixed(2);
+        params.selectedTokenizer = getFriendlyTokenizerName(params.this_main_api).tokenizerName;
+        params.oaiSystemTokens = params.oaiImpersonateTokens + params.oaiJailbreakTokens + params.oaiNudgeTokens + params.oaiStartTokens + params.oaiNsfwTokens + params.oaiMainTokens;
+        params.oaiSystemTokensPercentage = ((params.oaiSystemTokens / (params.finalPromptTokens)) * 100).toFixed(2);
     } else {
         //for non-OAI APIs
         //console.log('-- Counting non-OAI Tokens');
-        var finalPromptTokens = getTokenCount(itemizedPrompts[thisPromptSet].finalPrompt);
-        var storyStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].storyString) - worldInfoStringTokens;
-        var examplesStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].examplesString);
-        var mesSendStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].mesSendString)
-        var ActualChatHistoryTokens = mesSendStringTokens - (allAnchorsTokens - (beforeScenarioAnchorTokens + afterScenarioAnchorTokens)) + power_user.token_padding;
-        var instructionTokens = getTokenCount(itemizedPrompts[thisPromptSet].instruction);
-        var promptBiasTokens = getTokenCount(itemizedPrompts[thisPromptSet].promptBias);
+        params.finalPromptTokens = getTokenCount(itemizedPrompts[thisPromptSet].finalPrompt);
+        params.storyStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].storyString) - params.worldInfoStringTokens;
+        params.examplesStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].examplesString);
+        params.mesSendStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].mesSendString)
+        params.ActualChatHistoryTokens = params.mesSendStringTokens - (params.allAnchorsTokens - (params.beforeScenarioAnchorTokens + params.afterScenarioAnchorTokens)) + power_user.token_padding;
+        params.instructionTokens = getTokenCount(itemizedPrompts[thisPromptSet].instruction);
+        params.promptBiasTokens = getTokenCount(itemizedPrompts[thisPromptSet].promptBias);
 
-        var totalTokensInPrompt =
-            storyStringTokens +     //chardefs total
-            worldInfoStringTokens +
-            examplesStringTokens + // example messages
-            ActualChatHistoryTokens +  //chat history
-            allAnchorsTokens +      // AN and/or legacy anchors
+        params.totalTokensInPrompt =
+            params.storyStringTokens +     //chardefs total
+            params.worldInfoStringTokens +
+            params.examplesStringTokens + // example messages
+            params.ActualChatHistoryTokens +  //chat history
+            params.allAnchorsTokens +      // AN and/or legacy anchors
             //afterScenarioAnchorTokens +       //only counts if AN is set to 'after scenario'
             //zeroDepthAnchorTokens +           //same as above, even if AN not on 0 depth
-            promptBiasTokens;       //{{}}
+            params.promptBiasTokens;       //{{}}
         //- thisPrompt_padding;  //not sure this way of calculating is correct, but the math results in same value as 'finalPrompt'
-    }
+        params.thisPrompt_max_context = itemizedPrompts[thisPromptSet].this_max_context;
+        params.thisPrompt_actual = params.thisPrompt_max_context - params.thisPrompt_padding;
 
-    if (this_main_api == 'openai') {
-        //console.log('-- applying % on OAI tokens');
-        var oaiStartTokensPercentage = ((oaiStartTokens / (finalPromptTokens)) * 100).toFixed(2);
-        var storyStringTokensPercentage = (((afterScenarioAnchorTokens + beforeScenarioAnchorTokens + oaiPromptTokens) / (finalPromptTokens)) * 100).toFixed(2);
-        var ActualChatHistoryTokensPercentage = ((ActualChatHistoryTokens / (finalPromptTokens)) * 100).toFixed(2);
-        var promptBiasTokensPercentage = ((oaiBiasTokens / (finalPromptTokens)) * 100).toFixed(2);
-        var worldInfoStringTokensPercentage = ((worldInfoStringTokens / (finalPromptTokens)) * 100).toFixed(2);
-        var allAnchorsTokensPercentage = ((allAnchorsTokens / (finalPromptTokens)) * 100).toFixed(2);
-        var selectedTokenizer = getFriendlyTokenizerName(this_main_api).tokenizerName;
-        var oaiSystemTokens = oaiImpersonateTokens + oaiJailbreakTokens + oaiNudgeTokens + oaiStartTokens + oaiNsfwTokens + oaiMainTokens;
-        var oaiSystemTokensPercentage = ((oaiSystemTokens / (finalPromptTokens)) * 100).toFixed(2);
-    } else {
         //console.log('-- applying % on non-OAI tokens');
-        var storyStringTokensPercentage = ((storyStringTokens / (totalTokensInPrompt)) * 100).toFixed(2);
-        var ActualChatHistoryTokensPercentage = ((ActualChatHistoryTokens / (totalTokensInPrompt)) * 100).toFixed(2);
-        var promptBiasTokensPercentage = ((promptBiasTokens / (totalTokensInPrompt)) * 100).toFixed(2);
-        var worldInfoStringTokensPercentage = ((worldInfoStringTokens / (totalTokensInPrompt)) * 100).toFixed(2);
-        var allAnchorsTokensPercentage = ((allAnchorsTokens / (totalTokensInPrompt)) * 100).toFixed(2);
-        var selectedTokenizer = getFriendlyTokenizerName(this_main_api).tokenizerName;
+        params.storyStringTokensPercentage = ((params.storyStringTokens / (params.totalTokensInPrompt)) * 100).toFixed(2);
+        params.ActualChatHistoryTokensPercentage = ((params.ActualChatHistoryTokens / (params.totalTokensInPrompt)) * 100).toFixed(2);
+        params.promptBiasTokensPercentage = ((params.promptBiasTokens / (params.totalTokensInPrompt)) * 100).toFixed(2);
+        params.worldInfoStringTokensPercentage = ((params.worldInfoStringTokens / (params.totalTokensInPrompt)) * 100).toFixed(2);
+        params.allAnchorsTokensPercentage = ((params.allAnchorsTokens / (params.totalTokensInPrompt)) * 100).toFixed(2);
+        params.selectedTokenizer = getFriendlyTokenizerName(params.this_main_api).tokenizerName;
     }
 
-    const params = {
-        selectedTokenizer,
-        this_main_api,
-        storyStringTokensPercentage,
-        worldInfoStringTokensPercentage,
-        ActualChatHistoryTokensPercentage,
-        allAnchorsTokensPercentage,
-        promptBiasTokensPercentage,
-        storyStringTokens,
-        charDescriptionTokens,
-        charPersonalityTokens,
-        scenarioTextTokens,
-        examplesStringTokens,
-        userPersonaStringTokens,
-        instructionTokens,
-        worldInfoStringTokens,
-        ActualChatHistoryTokens,
-        allAnchorsTokens,
-        summarizeStringTokens,
-        authorsNoteStringTokens,
-        smartContextStringTokens,
-        promptBiasTokens,
-        totalTokensInPrompt,
-        finalPromptTokens,
-        thisPrompt_max_context,
-        thisPrompt_padding,
-        thisPrompt_actual: thisPrompt_max_context - thisPrompt_padding,
-        oaiSystemTokensPercentage,
-        oaiStartTokensPercentage,
-        oaiSystemTokens,
-        oaiStartTokens,
-        oaiJailbreakTokens,
-        oaiNudgeTokens,
-        oaiImpersonateTokens,
-        oaiPromptTokens,
-        oaiBiasTokens,
-        oaiNsfwTokens,
-        oaiMainTokens,
-    };
-
-    if (this_main_api == 'openai') {
+    if (params.this_main_api == 'openai') {
         callPopup(renderTemplate('itemizationChat', params), 'text');
 
     } else {
