@@ -694,7 +694,7 @@ export function splitRecursive(input, length, delimiters = ['\n\n', '\n', ' ', '
  * isDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUA...'); // true
  */
 export function isDataURL(str) {
-    const regex = /^data:([a-z]+\/[a-z0-9-+.]+(;[a-z-]+=[a-z0-9-]+)*;?)?(base64)?,([a-z0-9!$&',()*+;=\-_%.~:@\/?#]+)?$/i;
+    const regex = /^data:([a-z]+\/[a-z0-9-+.]+(;[a-z-]+=[a-z0-9-]+)*;?)?(base64)?,([a-z0-9!$&',()*+;=\-_%.~:@/?#]+)?$/i;
     return regex.test(str);
 }
 

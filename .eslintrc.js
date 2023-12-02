@@ -51,7 +51,6 @@ module.exports = {
     // linting passes.
     rules: {
         'no-unused-vars': 'off',
-        'no-useless-escape': 'off',
         'no-control-regex': 'off',
         'no-redeclare': 'off',
         'no-async-promise-executor': 'off',

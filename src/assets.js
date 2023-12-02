@@ -20,7 +20,7 @@ function checkAssetFileName(inputFilename) {
         return '';
     }
 
-    if (!/^[a-zA-Z0-9_\-\.]+$/.test(inputFilename)) {
+    if (!/^[a-zA-Z0-9_\-.]+$/.test(inputFilename)) {
         console.debug("Bad request: illegal character in filename, only alphanumeric, '_', '-' are accepted.");
         return '';
     }

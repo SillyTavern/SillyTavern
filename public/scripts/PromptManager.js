@@ -1818,7 +1818,7 @@ const chatCompletionDefaultPrompts = {
             "identifier": "enhanceDefinitions",
             "role": "system",
             "name": "Enhance Definitions",
-            "content": "If you have more knowledge of {{char}}, add to the character\'s lore and personality to enhance them but keep the Character Sheet\'s definitions absolute.",
+            "content": "If you have more knowledge of {{char}}, add to the character's lore and personality to enhance them but keep the Character Sheet's definitions absolute.",
             "system_prompt": true,
             "marker": false,
         },
