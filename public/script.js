@@ -2023,6 +2023,7 @@ function substituteParams(content, _name1, _name2, _original, _group, _replaceCh
         content = content.replace(/{{mesExamples}}/gi, fields.mesExamples || '');
     }
 
+    content = content.replace(/{{maxPrompt}}/gi, () => String(getMaxContextSize()));
     content = content.replace(/{{user}}/gi, _name1);
     content = content.replace(/{{char}}/gi, _name2);
     content = content.replace(/{{charIfNotGroup}}/gi, _group);
@@ -4056,7 +4057,7 @@ function getMaxContextSize() {
         this_max_context = this_max_context - amount_gen;
     }
     if (main_api == 'openai') {
-        this_max_context = oai_settings.openai_max_context;
+        this_max_context = oai_settings.openai_max_context - oai_settings.openai_max_tokens;
     }
     return this_max_context;
 }
@@ -4129,7 +4130,7 @@ async function DupeChar() {
     const confirm = await callPopup(`
         <h3>Are you sure you want to duplicate this character?</h3>
         <span>If you just want to start a new chat with the same character, use "Start new chat" option in the bottom-left options menu.</span><br><br>`,
-    'confirm',
+        'confirm',
     );
 
     if (!confirm) {
@@ -7553,22 +7554,22 @@ function addDebugFunctions() {
         `Recalculates token counts of all messages in the current chat to refresh the counters.
         Useful when you switch between models that have different tokenizers.
         This is a visual change only. Your chat will be reloaded.`, async () => {
-            for (const message of chat) {
+        for (const message of chat) {
             // System messages are not counted
-                if (message.is_system) {
-                    continue;
-                }
-
-                if (!message.extra) {
-                    message.extra = {};
-                }
-
-                message.extra.token_count = getTokenCount(message.mes, 0);
+            if (message.is_system) {
+                continue;
             }
 
-            await saveChatConditional();
-            await reloadCurrentChat();
-        });
+            if (!message.extra) {
+                message.extra = {};
+            }
+
+            message.extra.token_count = getTokenCount(message.mes, 0);
+        }
+
+        await saveChatConditional();
+        await reloadCurrentChat();
+    });
 
     registerDebugFunction('generationTest', 'Send a generation request', 'Generates text using the currently selected API.', async () => {
         const text = prompt('Input text:', 'Hello');
