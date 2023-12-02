@@ -302,6 +302,8 @@ app.use(function (req, res, next) {
 });
 
 if (getConfigValue('enableCorsProxy', false) === true || cliArguments.corsProxy === true) {
+    const bodyParser = require('body-parser');
+    app.use(bodyParser.json());
     console.log('Enabling CORS proxy');
 
     app.use('/proxy/:url(*)', async (req, res) => {
@@ -332,7 +334,10 @@ if (getConfigValue('enableCorsProxy', false) === true || cliArguments.corsProxy 
                 body: bodyMethods.includes(req.method) ? JSON.stringify(req.body) : undefined,
             });
 
-            response.body.pipe(res); // pipe the response to the proxy response
+            // Copy over relevant response params to the proxy response
+            res.statusCode = response.status;
+            res.statusMessage = response.statusText;
+            response.body.pipe(res);
 
         } catch (error) {
             res.status(500).send('Error occurred while trying to proxy to: ' + url + ' ' + error);
