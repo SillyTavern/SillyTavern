@@ -1,4 +1,4 @@
-import { callPopup, eventSource, event_types, getRequestHeaders, saveSettingsDebounced, this_chid } from "../../../script.js";
+import { callPopup, eventSource, event_types, getRequestHeaders, saveSettingsDebounced } from "../../../script.js";
 import { dragElement, isMobile } from "../../RossAscends-mods.js";
 import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch, renderExtensionTemplate } from "../../extensions.js";
 import { loadMovingUIState, power_user } from "../../power-user.js";
@@ -393,7 +393,6 @@ async function unloadLiveChar() {
         if (!loadResponse.ok) {
             throw new Error(loadResponse.statusText);
         }
-        const loadResponseText = await loadResponse.text();
         //console.log(`Response: ${loadResponseText}`);
     } catch (error) {
         //console.error(`Error unloading - ${error}`);

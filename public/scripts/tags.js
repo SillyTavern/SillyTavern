@@ -8,7 +8,7 @@ import {
     entitiesFilter,
     printCharacters,
 } from "../script.js";
-import { FILTER_TYPES, FilterHelper } from "./filters.js";
+import { FILTER_TYPES } from "./filters.js";
 
 import { groupCandidatesFilter, groups, selected_group } from "./group-chats.js";
 import { download, onlyUnique, parseJsonFile, uuidv4 } from "./utils.js";

@@ -2362,7 +2362,6 @@ async function sdMessageButton(e) {
     const $mes = $icon.closest('.mes');
     const message_id = $mes.attr('mesid');
     const message = context.chat[message_id];
-    const characterName = message?.name || context.name2;
     const characterFileName = context.characterId ? context.characters[context.characterId].name : context.groups[Object.keys(context.groups).filter(x => context.groups[x].id === context.groupId)[0]]?.id?.toString();
     const messageText = message?.mes;
     const hasSavedImage = message?.extra?.image && message?.extra?.title;

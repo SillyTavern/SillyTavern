@@ -1,4 +1,4 @@
-import { saveSettings, callPopup, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types, getExtensionPrompt, MAX_INJECTION_DEPTH, extension_prompt_types, getExtensionPromptByName, saveMetadata, getCurrentChatId } from "../script.js";
+import { saveSettings, callPopup, substituteParams, getRequestHeaders, chat_metadata, this_chid, characters, saveCharacterDebounced, menu_type, eventSource, event_types, getExtensionPromptByName, saveMetadata, getCurrentChatId } from "../script.js";
 import { download, debounce, initScrollHeight, resetScrollHeight, parseJsonFile, extractDataFromPng, getFileBuffer, getCharaFilename, getSortableDelay, escapeRegex, PAGINATION_TEMPLATE, navigation_option, waitUntilCondition, isTrueBoolean } from "./utils.js";
 import { extension_settings, getContext } from "./extensions.js";
 import { NOTE_MODULE_NAME, metadata_keys, shouldWIAddPrompt } from "./authors-note.js";
@@ -1395,7 +1395,7 @@ function createWorldInfoEntry(name, data, fromSlashCommand = false) {
 }
 
 async function _save(name, data) {
-    const response = await fetch("/editworldinfo", {
+    await fetch("/editworldinfo", {
         method: "POST",
         headers: getRequestHeaders(),
         body: JSON.stringify({ name: name, data: data }),

@@ -28,7 +28,6 @@ import { createTagMapFromList } from "./tags.js";
 import {
     delay,
     getUniqueName,
-    stringFormat,
 } from "./utils.js";
 
 export {

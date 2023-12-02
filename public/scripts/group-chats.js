@@ -70,7 +70,7 @@ import {
     depth_prompt_depth_default,
     loadItemizedPrompts,
 } from "../script.js";
-import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect, tag_map, printTagFilters } from './tags.js';
+import { appendTagToList, createTagMapFromList, getTagsList, applyTagsOnCharacterSelect, tag_map } from './tags.js';
 import { FILTER_TYPES, FilterHelper } from './filters.js';
 
 export {
@@ -112,7 +112,7 @@ export const group_generation_mode = {
 }
 
 export const groupCandidatesFilter = new FilterHelper(debounce(printGroupCandidates, 100));
-const groupAutoModeInterval = setInterval(groupChatAutoModeWorker, 5000);
+setInterval(groupChatAutoModeWorker, 5000);
 const saveGroupDebounced = debounce(async (group, reload) => await _save(group, reload), 500);
 
 async function _save(group, reload = true) {

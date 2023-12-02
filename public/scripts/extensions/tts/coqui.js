@@ -4,17 +4,15 @@ TODO:
  - Delete useless call
 */
 
-import { doExtrasFetch, extension_settings, getApiUrl, getContext, modules, ModuleWorkerWrapper } from "../../extensions.js"
+import { doExtrasFetch, extension_settings, getApiUrl, modules } from "../../extensions.js"
 import { callPopup } from "../../../script.js"
 import { initVoiceMap } from "./index.js"
 
 export { CoquiTtsProvider }
 
 const DEBUG_PREFIX = "<Coqui TTS module> ";
-const UPDATE_INTERVAL = 1000;
 
 let inApiCall = false;
-let voiceIdList = []; // Updated with module worker
 let coquiApiModels = {}; // Initialized only once
 let coquiApiModelsFull = {}; // Initialized only once
 let coquiLocalModels = []; // Initialized only once
@@ -495,7 +493,7 @@ class CoquiTtsProvider {
                 .append('<option value="none">Select language</option>')
                 .val('none');
 
-            for (var i = 0; i < model_settings["languages"].length; i++) {
+            for (let i = 0; i < model_settings["languages"].length; i++) {
                 const language_label = JSON.stringify(model_settings["languages"][i]).replaceAll("\"", "");
                 $("#coqui_api_model_settings_language").append(new Option(language_label, i));
             }
@@ -514,7 +512,7 @@ class CoquiTtsProvider {
                 .append('<option value="none">Select speaker</option>')
                 .val('none');
 
-            for (var i = 0; i < model_settings["speakers"].length; i++) {
+            for (let i = 0; i < model_settings["speakers"].length; i++) {
                 const speaker_label = JSON.stringify(model_settings["speakers"][i]).replaceAll("\"", "");
                 $("#coqui_api_model_settings_speaker").append(new Option(speaker_label, i));
             }

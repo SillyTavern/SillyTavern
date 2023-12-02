@@ -50,12 +50,10 @@ module.exports = {
     // Most, if not all, of these rules should eventually be enabled and the code changed. They're disabled so that
     // linting passes.
     rules: {
-        'no-unused-vars': 'off',
+        'no-unused-vars': ['error', {args: 'none'}],
         'no-control-regex': 'off',
-        'no-redeclare': 'off',
         'no-async-promise-executor': 'off',
         'no-inner-declarations': 'off',
-        'no-undef': 'off',
         'require-yield': 'off',
         'no-constant-condition': ['error', {checkLoops: false}]
     }

@@ -2,7 +2,6 @@ const path = require('path');
 const fs = require('fs');
 const { default: simpleGit } = require('simple-git');
 const sanitize = require('sanitize-filename');
-const commandExistsSync = require('command-exists').sync;
 const { DIRECTORIES } = require('./constants');
 
 /**

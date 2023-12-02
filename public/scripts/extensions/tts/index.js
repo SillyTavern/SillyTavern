@@ -17,10 +17,7 @@ const UPDATE_INTERVAL = 1000
 
 let voiceMapEntries = []
 let voiceMap = {} // {charName:voiceid, charName2:voiceid2}
-let audioControl
 let storedvalue = false;
-let lastCharacterId = null
-let lastGroupId = null
 let lastChatId = null
 let lastMessageHash = null
 
@@ -314,8 +311,6 @@ let currentAudioJob
 let audioPaused = false
 let audioQueueProcessorReady = true
 
-let lastAudioPosition = 0
-
 async function playAudioData(audioBlob) {
     // Since current audio job can be cancelled, don't playback if it is null
     if (currentAudioJob == null) {
@@ -407,14 +402,12 @@ function addAudioControl() {
             TTS Playback
         </div>`)
     $('#ttsExtensionMenuItem').attr('title', 'TTS play/pause').on('click', onAudioControlClicked)
-    audioControl = document.getElementById('tts_media_control')
     updateUiAudioPlayState()
 }
 
 function completeCurrentAudioJob() {
     audioQueueProcessorReady = true
     currentAudioJob = null
-    lastAudioPosition = 0
     talkingAnimation(false) //stop lip animation
     // updateUiPlayState();
 }
@@ -463,8 +456,6 @@ function completeTtsJob() {
 
 function saveLastValues() {
     const context = getContext()
-    lastGroupId = context.groupId
-    lastCharacterId = context.characterId
     lastChatId = context.chatId
     lastMessageHash = getStringHash(
         (context.chat.length && context.chat[context.chat.length - 1].mes) ?? ''

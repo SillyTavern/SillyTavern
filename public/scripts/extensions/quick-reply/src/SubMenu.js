@@ -1,4 +1,6 @@
-import { MenuItem } from "./MenuItem.js";
+/**
+ * @typedef {import('./MenuItem.js').MenuItem} MenuItem
+ */
 
 export class SubMenu {
     /**@type {MenuItem[]}*/ itemList = [];
