@@ -25,7 +25,6 @@ const compression = require('compression');
 const cookieParser = require('cookie-parser');
 const multer = require("multer");
 const responseTime = require('response-time');
-const bodyParser = require('body-parser');
 
 // net related library imports
 const net = require("net");
@@ -107,7 +106,6 @@ process.chdir(directory);
 const app = express();
 app.use(compression());
 app.use(responseTime());
-app.use(bodyParser.json());
 
 // impoort from statsHelpers.js
 
@@ -308,6 +306,8 @@ app.use(function (req, res, next) {
 });
 
 if (getConfigValue('enableCorsProxy', false) === true || cliArguments.corsProxy === true) {
+    const bodyParser = require('body-parser');
+    app.use(bodyParser.json());
     console.log('Enabling CORS proxy');
 
     app.use('/proxy/:url(*)', async (req, res) => {
