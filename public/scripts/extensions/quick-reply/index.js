@@ -1,6 +1,6 @@
 import { saveSettingsDebounced, callPopup, getRequestHeaders, substituteParams, eventSource, event_types } from "../../../script.js";
 import { getContext, extension_settings } from "../../extensions.js";
-import { initScrollHeight, resetScrollHeight, getSortableDelay } from "../../utils.js";
+import { initScrollHeight, resetScrollHeight, getSortableDelay, escapeHtml } from "../../utils.js";
 import { executeSlashCommands, registerSlashCommand } from "../../slash-commands.js";
 import { ContextMenu } from "./src/ContextMenu.js";
 import { MenuItem } from "./src/MenuItem.js";
@@ -437,7 +437,7 @@ function addQuickReplyBar() {
         if (extension_settings.quickReply.quickReplySlots[i]?.contextMenu?.length) {
             expander = '<span class="ctx-expander" title="Open context menu">⋮</span>';
         }
-        quickReplyButtonHtml += `<div title="${quickReplyMes}" class="quickReplyButton ${hidden ? 'displayNone' : ''}" data-index="${i}" id="quickReply${i + 1}">${quickReplyLabel}${expander}</div>`;
+        quickReplyButtonHtml += `<div title="${escapeHtml(quickReplyMes)}" class="quickReplyButton ${hidden ? 'displayNone' : ''}" data-index="${i}" id="quickReply${i + 1}">${DOMPurify.sanitize(quickReplyLabel)}${expander}</div>`;
     }
 
     const quickReplyBarFullHtml = `
