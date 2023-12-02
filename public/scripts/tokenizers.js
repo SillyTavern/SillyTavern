@@ -4,7 +4,7 @@ import { chat_completion_sources, model_list, oai_settings } from "./openai.js";
 import { groups, selected_group } from "./group-chats.js";
 import { getStringHash } from "./utils.js";
 import { kai_flags } from "./kai-settings.js";
-import { isKoboldCpp, isMancer, isTabby, textgenerationwebui_settings } from "./textgen-settings.js";
+import { isKoboldCpp, isMancer, isOoba, isTabby, textgenerationwebui_settings } from "./textgen-settings.js";
 
 export const CHARACTERS_PER_TOKEN_RATIO = 3.35;
 const TOKENIZER_WARNING_KEY = 'tokenizationWarningShown';
@@ -127,8 +127,18 @@ export function getTokenizerBestMatch(forApi) {
         // - API must be connected
         // - Kobold must pass a version check
         // - Tokenizer haven't reported an error previously
-        if (kai_flags.can_use_tokenization && !sessionStorage.getItem(TOKENIZER_WARNING_KEY) && online_status !== 'no_connection') {
-            return tokenizers.API;
+        const hasTokenizerError = sessionStorage.getItem(TOKENIZER_WARNING_KEY);
+        const isConnected = online_status !== 'no_connection';
+        const isTokenizerSupported = isOoba() || isTabby() || isKoboldCpp();
+
+        if (!hasTokenizerError && isConnected) {
+            if (forApi === 'kobold' && kai_flags.can_use_tokenization) {
+                return tokenizers.API;
+            }
+
+            if (forApi === 'textgenerationwebui' && isTokenizerSupported) {
+                return tokenizers.API;
+            }
         }
 
         return tokenizers.LLAMA;
