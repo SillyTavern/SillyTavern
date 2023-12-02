@@ -536,9 +536,10 @@ async function CreateZenSliders(elmnt) {
     var decimals = 2
     var offVal, allVal
     var stepScale
+    var steps
     if (sliderID == 'amount_gen') {
         decimals = 0
-        var steps = [16, 50, 100, 150, 200, 256, 300, 400, 512, 1024];
+        steps = [16, 50, 100, 150, 200, 256, 300, 400, 512, 1024];
         sliderMin = 0
         sliderMax = steps.length - 1
         stepScale = 1;
@@ -548,11 +549,11 @@ async function CreateZenSliders(elmnt) {
     }
     if (sliderID == 'rep_pen_range_textgenerationwebui') {
         if (power_user.max_context_unlocked) {
-            var steps = [0, 256, 512, 768, 1024, 2048, 4096, 8192, 16355, 24576, 32768, 49152, 65536, -1];
+            steps = [0, 256, 512, 768, 1024, 2048, 4096, 8192, 16355, 24576, 32768, 49152, 65536, -1];
             numSteps = 13
             allVal = 13
         } else {
-            var steps = [0, 256, 512, 768, 1024, 2048, 4096, 8192, -1];
+            steps = [0, 256, 512, 768, 1024, 2048, 4096, 8192, -1];
             numSteps = 8
             allVal = 8
         }
@@ -667,13 +668,14 @@ async function CreateZenSliders(elmnt) {
         max: sliderMax,
         create: function () {
             var handle = $(this).find(".ui-slider-handle");
+            var handleText, stepNumber, leftMargin;
 
             //handling creation of amt_gen
             if (newSlider.attr('id') == 'amount_gen_zenslider') {
                 //console.log(`using custom process for ${newSlider.attr('id')}`)
-                var handleText = steps[sliderValue]
-                var stepNumber = sliderValue
-                var leftMargin = ((stepNumber) / numSteps) * 50 * -1
+                handleText = steps[sliderValue]
+                stepNumber = sliderValue
+                leftMargin = ((stepNumber) / numSteps) * 50 * -1
                 handle.text(handleText)
                     .css('margin-left', `${leftMargin}px`)
                 //console.log(`${newSlider.attr('id')} initial value:${handleText}, stepNum:${stepNumber}, numSteps:${numSteps}, left-margin:${leftMargin}`)
@@ -683,9 +685,9 @@ async function CreateZenSliders(elmnt) {
                 if ($('#rep_pen_range_textgenerationwebui_zensliders').length !== 0) {
                     $('#rep_pen_range_textgenerationwebui_zensliders').remove()
                 }
-                var handleText = steps[sliderValue]
-                var stepNumber = sliderValue
-                var leftMargin = ((stepNumber) / numSteps) * 50 * -1
+                handleText = steps[sliderValue]
+                stepNumber = sliderValue
+                leftMargin = ((stepNumber) / numSteps) * 50 * -1
 
                 if (sliderValue === offVal) {
                     handleText = 'Off'
@@ -710,8 +712,8 @@ async function CreateZenSliders(elmnt) {
                 } else {
                     handle.text(numVal).css('color', '');
                 }
-                var stepNumber = ((sliderValue - sliderMin) / stepScale)
-                var leftMargin = (stepNumber / numSteps) * 50 * -1
+                stepNumber = ((sliderValue - sliderMin) / stepScale)
+                leftMargin = (stepNumber / numSteps) * 50 * -1
                 var isManualInput = false
                 var valueBeforeManualInput
                 handle.css('margin-left', `${leftMargin}px`)

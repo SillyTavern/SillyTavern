@@ -495,7 +495,7 @@ class CoquiTtsProvider {
                 .append('<option value="none">Select language</option>')
                 .val('none');
 
-            for (var i = 0; i < model_settings["languages"].length; i++) {
+            for (let i = 0; i < model_settings["languages"].length; i++) {
                 const language_label = JSON.stringify(model_settings["languages"][i]).replaceAll("\"", "");
                 $("#coqui_api_model_settings_language").append(new Option(language_label, i));
             }
@@ -514,7 +514,7 @@ class CoquiTtsProvider {
                 .append('<option value="none">Select speaker</option>')
                 .val('none');
 
-            for (var i = 0; i < model_settings["speakers"].length; i++) {
+            for (let i = 0; i < model_settings["speakers"].length; i++) {
                 const speaker_label = JSON.stringify(model_settings["speakers"][i]).replaceAll("\"", "");
                 $("#coqui_api_model_settings_speaker").append(new Option(speaker_label, i));
             }

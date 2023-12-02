@@ -52,7 +52,6 @@ module.exports = {
     rules: {
         'no-unused-vars': 'off',
         'no-control-regex': 'off',
-        'no-redeclare': 'off',
         'no-async-promise-executor': 'off',
         'no-inner-declarations': 'off',
         'no-undef': 'off',
