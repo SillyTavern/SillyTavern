@@ -272,7 +272,7 @@ const contextControls = [
     { id: "context_story_string", property: "story_string", isCheckbox: false, isGlobalSetting: false },
     { id: "context_example_separator", property: "example_separator", isCheckbox: false, isGlobalSetting: false },
     { id: "context_chat_start", property: "chat_start", isCheckbox: false, isGlobalSetting: false },
-    { id: "context_use_stop_strings", property: "use_stop_strings", isCheckbox: true, isGlobalSetting: false, defaultValue: true },
+    { id: "context_use_stop_strings", property: "use_stop_strings", isCheckbox: true, isGlobalSetting: false, defaultValue: false },
 
     // Existing power user settings
     { id: "always-force-name2-checkbox", property: "always_force_name2", isCheckbox: true, isGlobalSetting: true, defaultValue: true },
