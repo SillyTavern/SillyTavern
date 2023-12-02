@@ -119,7 +119,11 @@ function registerEndpoints(app, jsonParser) {
         const params = new URLSearchParams();
         params.append('text', text);
         params.append('target_lang', lang);
-        params.append('formality', formality);
+
+        if (['de', 'fr', 'it', 'es', 'nl', 'ja', 'ru'].includes(lang)) {
+            // We don't specify a Portuguese variant, so ignore formality for it.
+            params.append('formality', formality);
+        }
 
         try {
             const result = await fetch('https://api-free.deepl.com/v2/translate', {
