@@ -59,7 +59,6 @@ module.exports = {
         'no-extra-semi': 'off',
         'no-undef': 'off',
         'no-prototype-builtins': 'off',
-        'no-unused-labels': 'off',
         'no-extra-boolean-cast': 'off',
         'require-yield': 'off',
         'no-case-declarations': 'off',
