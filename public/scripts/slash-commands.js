@@ -40,7 +40,7 @@ import { addEphemeralStoppingString, chat_styles, flushEphemeralStoppingStrings,
 import { autoSelectPersona } from "./personas.js";
 import { getContext, saveMetadataDebounced } from "./extensions.js";
 import { hideChatMessage, unhideChatMessage } from "./chats.js";
-import { delay, isFalseBoolean, isTrueBoolean, stringToRange, trimToEndSentence, trimToStartSentence } from "./utils.js";
+import { delay, isFalseBoolean, isTrueBoolean, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from "./utils.js";
 import { registerVariableCommands, resolveVariable } from "./variables.js";
 import { decodeTextTokens, getFriendlyTokenizerName, getTextTokens, getTokenCount } from "./tokenizers.js";
 export {
@@ -971,8 +971,11 @@ async function addGroupMemberCallback(_, arg) {
 }
 
 async function triggerGenerationCallback(_, arg) {
-    if (is_send_press || is_group_generating) {
-        toastr.warning("Cannot run trigger command while the reply is being generated.");
+    try {
+        await waitUntilCondition(() => !is_send_press && !is_group_generating, 10000, 100);
+    } catch {
+        console.warn('Timeout waiting for generation unlock');
+        toastr.warning("Cannot run /trigger command while the reply is being generated.");
         return '';
     }
 
@@ -1083,10 +1086,19 @@ async function openChat(id) {
     await reloadCurrentChat();
 }
 
-function continueChatCallback() {
+async function continueChatCallback() {
+    try {
+        await waitUntilCondition(() => !is_send_press && !is_group_generating, 10000, 100);
+    } catch {
+        console.warn('Timeout waiting for generation unlock');
+        toastr.warning("Cannot run /continue command while the reply is being generated.");
+        return '';
+    }
+
     // Prevent infinite recursion
     $('#send_textarea').val('').trigger('input');
     $('#option_continue').trigger('click', { fromSlashCommand: true });
+    return '';
 }
 
 export async function generateSystemMessage(_, prompt) {

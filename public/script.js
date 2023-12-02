@@ -4335,6 +4335,10 @@ function extractMessageFromData(data) {
 }
 
 function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncompleteSentences = false) {
+    if (!getMessage) {
+        return '';
+    }
+
     // Add the prompt bias before anything else
     if (
         power_user.user_prompt_bias &&
