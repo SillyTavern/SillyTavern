@@ -244,7 +244,7 @@ function registerEndpoints(app, jsonParser) {
             for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
                 const progressState = await getProgress();
 
-                const progress = progressState['progress']
+                const progress = progressState['progress'];
                 const jobCount = progressState['state']['job_count'];
                 if (progress == 0.0 && jobCount === 0) {
                     break;
@@ -360,7 +360,7 @@ function registerEndpoints(app, jsonParser) {
     app.post('/api/sd/comfy/ping', jsonParser, async (request, response) => {
         try {
             const url = new URL(request.body.url);
-            url.pathname = '/system_stats'
+            url.pathname = '/system_stats';
 
             const result = await fetch(url);
             if (!result.ok) {
@@ -377,7 +377,7 @@ function registerEndpoints(app, jsonParser) {
     app.post('/api/sd/comfy/samplers', jsonParser, async (request, response) => {
         try {
             const url = new URL(request.body.url);
-            url.pathname = '/object_info'
+            url.pathname = '/object_info';
 
             const result = await fetch(url);
             if (!result.ok) {
@@ -395,7 +395,7 @@ function registerEndpoints(app, jsonParser) {
     app.post('/api/sd/comfy/models', jsonParser, async (request, response) => {
         try {
             const url = new URL(request.body.url);
-            url.pathname = '/object_info'
+            url.pathname = '/object_info';
 
             const result = await fetch(url);
             if (!result.ok) {
@@ -412,7 +412,7 @@ function registerEndpoints(app, jsonParser) {
     app.post('/api/sd/comfy/schedulers', jsonParser, async (request, response) => {
         try {
             const url = new URL(request.body.url);
-            url.pathname = '/object_info'
+            url.pathname = '/object_info';
 
             const result = await fetch(url);
             if (!result.ok) {
@@ -430,7 +430,7 @@ function registerEndpoints(app, jsonParser) {
     app.post('/api/sd/comfy/vaes', jsonParser, async (request, response) => {
         try {
             const url = new URL(request.body.url);
-            url.pathname = '/object_info'
+            url.pathname = '/object_info';
 
             const result = await fetch(url);
             if (!result.ok) {
@@ -503,7 +503,7 @@ function registerEndpoints(app, jsonParser) {
     app.post('/api/sd/comfy/generate', jsonParser, async (request, response) => {
         try {
             const url = new URL(request.body.url);
-            url.pathname = '/prompt'
+            url.pathname = '/prompt';
 
             const promptResult = await fetch(url, {
                 method: 'POST',

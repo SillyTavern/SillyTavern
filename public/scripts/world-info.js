@@ -27,7 +27,7 @@ export {
     deleteWorldInfo,
     setWorldInfoSettings,
     getWorldInfoPrompt,
-}
+};
 
 const world_info_insertion_strategy = {
     evenly: 0,
@@ -51,8 +51,8 @@ let world_info_character_strategy = world_info_insertion_strategy.character_firs
 let world_info_budget_cap = 0;
 const saveWorldDebounced = debounce(async (name, data) => await _save(name, data), 1000);
 const saveSettingsDebounced = debounce(() => {
-    Object.assign(world_info, { globalSelect: selected_world_info })
-    saveSettings()
+    Object.assign(world_info, { globalSelect: selected_world_info });
+    saveSettings();
 }, 1000);
 const sortFn = (a, b) => b.order - a.order;
 let updateEditor = (navigation) => { navigation; };
@@ -77,7 +77,7 @@ export function getWorldInfoSettings() {
         world_info_match_whole_words,
         world_info_character_strategy,
         world_info_budget_cap,
-    }
+    };
 }
 
 const world_info_position = {
@@ -144,7 +144,7 @@ function setWorldInfoSettings(settings, data) {
         selected_world_info = existingWorldInfo;
     }
 
-    world_info = settings.world_info ?? {}
+    world_info = settings.world_info ?? {};
 
     $('#world_info_depth_counter').val(world_info_depth);
     $('#world_info_depth').val(world_info_depth);
@@ -460,7 +460,7 @@ function hideWorldEditor() {
 
 function getWIElement(name) {
     const wiElement = $('#world_info').children().filter(function () {
-        return $(this).text().toLowerCase() === name.toLowerCase()
+        return $(this).text().toLowerCase() === name.toLowerCase();
     });
 
     return wiElement;
@@ -613,7 +613,7 @@ function displayWorldEntries(name, data, navigation = navigation_option.none) {
                 <small style="width: calc(3.5em + 15px)">
                     Trigger %
                 </small>
-            </div>`
+            </div>`;
             const blocks = page.map(entry => getWorldEntry(name, data, entry)).filter(x => x);
             const isCustomOrder = $('#world_info_sort_order').find(':selected').data('rule') === 'custom';
             if (!isCustomOrder) {
@@ -762,7 +762,7 @@ const originalDataKeyMap = {
     'key': 'keys',
     'keysecondary': 'secondary_keys',
     'selective': 'selective',
-}
+};
 
 function setOriginalDataValue(data, uid, key, value) {
     if (data.originalData && Array.isArray(data.originalData.entries)) {
@@ -837,12 +837,12 @@ function getWorldEntry(name, data, entry) {
 
     selectiveLogicDropdown.on('click', function (event) {
         event.stopPropagation();
-    })
+    });
 
     selectiveLogicDropdown.on('input', function () {
         const uid = $(this).data('uid');
         const value = Number($(this).val());
-        console.debug(`logic for ${entry.uid} set to ${value}`)
+        console.debug(`logic for ${entry.uid} set to ${value}`);
         data.entries[uid].selectiveLogic = !isNaN(value) ? value : 0;
         setOriginalDataValue(data, uid, 'selectiveLogic', data.entries[uid].selectiveLogic);
         saveWorldInfo(name, data);
@@ -868,7 +868,7 @@ function getWorldEntry(name, data, entry) {
             if (!value && data.entries[uid].characterFilter.names.length === 0 && data.entries[uid].characterFilter.tags.length === 0) {
                 delete data.entries[uid].characterFilter;
             } else {
-                data.entries[uid].characterFilter.isExclude = value
+                data.entries[uid].characterFilter.isExclude = value;
             }
         } else if (value) {
             Object.assign(
@@ -889,7 +889,7 @@ function getWorldEntry(name, data, entry) {
     characterExclusionInput.prop('checked', entry.characterFilter?.isExclude ?? false).trigger('input');
 
     const characterFilter = template.find('select[name="characterFilter"]');
-    characterFilter.data('uid', entry.uid)
+    characterFilter.data('uid', entry.uid);
     const deviceInfo = getDeviceInfo();
     if (deviceInfo && deviceInfo.device.type === 'desktop') {
         $(characterFilter).select2({
@@ -997,7 +997,7 @@ function getWorldEntry(name, data, entry) {
     commentInput.val(entry.comment).trigger('input');
     initScrollHeight(commentInput);
     commentToggle.prop('checked', true /* entry.addMemo */).trigger('input');
-    commentToggle.parent().hide()
+    commentToggle.parent().hide();
 
     // content
     const counter = template.find('.world_entry_form_token_counter');
@@ -1089,7 +1089,7 @@ function getWorldEntry(name, data, entry) {
         const value = Number($(this).val());
 
         data.entries[uid].order = !isNaN(value) ? value : 0;
-        updatePosOrdDisplay(uid)
+        updatePosOrdDisplay(uid);
         setOriginalDataValue(data, uid, 'insertion_order', data.entries[uid].order);
         saveWorldInfo(name, data);
     });
@@ -1110,7 +1110,7 @@ function getWorldEntry(name, data, entry) {
         const value = Number($(this).val());
 
         data.entries[uid].depth = !isNaN(value) ? value : 0;
-        updatePosOrdDisplay(uid)
+        updatePosOrdDisplay(uid);
         setOriginalDataValue(data, uid, 'extensions.depth', data.entries[uid].depth);
         saveWorldInfo(name, data);
     });
@@ -1194,14 +1194,14 @@ function getWorldEntry(name, data, entry) {
         data.entries[uid].position = !isNaN(value) ? value : 0;
         if (value === world_info_position.atDepth) {
             depthInput.prop('disabled', false);
-            depthInput.css('visibility', 'visible')
+            depthInput.css('visibility', 'visible');
             //depthInput.parent().show();
         } else {
             depthInput.prop('disabled', true);
-            depthInput.css('visibility', 'hidden')
+            depthInput.css('visibility', 'hidden');
             //depthInput.parent().hide();
         }
-        updatePosOrdDisplay(uid)
+        updatePosOrdDisplay(uid);
         // Spec v2 only supports before_char and after_char
         setOriginalDataValue(data, uid, 'position', data.entries[uid].position == 0 ? 'before_char' : 'after_char');
         // Write the original value as extensions field
@@ -1234,7 +1234,7 @@ function getWorldEntry(name, data, entry) {
     //new tri-state selector for constant/normal/disabled
     const entryStateSelector = template.find('select[name="entryStateSelector"]');
     entryStateSelector.data('uid', entry.uid);
-    console.log(entry.uid)
+    console.log(entry.uid);
     entryStateSelector.on('click', function (event) {
         // Prevent closing the drawer on clicking the input
         event.stopPropagation();
@@ -1249,44 +1249,44 @@ function getWorldEntry(name, data, entry) {
                 setOriginalDataValue(data, uid, 'enabled', true);
                 setOriginalDataValue(data, uid, 'constant', true);
                 template.removeClass('disabledWIEntry');
-                console.debug('set to constant')
-                break
+                console.debug('set to constant');
+                break;
             case 'normal':
                 data.entries[uid].constant = false;
                 data.entries[uid].disable = false;
                 setOriginalDataValue(data, uid, 'enabled', true);
                 setOriginalDataValue(data, uid, 'constant', false);
                 template.removeClass('disabledWIEntry');
-                console.debug('set to normal')
-                break
+                console.debug('set to normal');
+                break;
             case 'disabled':
                 data.entries[uid].constant = false;
                 data.entries[uid].disable = true;
                 setOriginalDataValue(data, uid, 'enabled', false);
                 setOriginalDataValue(data, uid, 'constant', false);
                 template.addClass('disabledWIEntry');
-                console.debug('set to disabled')
-                break
+                console.debug('set to disabled');
+                break;
         }
         saveWorldInfo(name, data);
 
-    })
+    });
 
     const entryState = function () {
 
-        console.log(`constant: ${entry.constant},  disabled: ${entry.disable}`)
+        console.log(`constant: ${entry.constant},  disabled: ${entry.disable}`);
         if (entry.constant === true) {
-            console.debug('found constant')
-            return 'constant'
+            console.debug('found constant');
+            return 'constant';
         } else if (entry.disable === true) {
-            console.debug('found disabled')
-            return 'disabled'
+            console.debug('found disabled');
+            return 'disabled';
         } else {
-            console.debug('found normal')
-            return 'normal'
+            console.debug('found normal');
+            return 'normal';
         }
 
-    }
+    };
     template
         .find(`select[name="entryStateSelector"] option[value=${entryState()}]`)
         .prop('selected', true)
@@ -1321,24 +1321,24 @@ function getWorldEntry(name, data, entry) {
 
     function updatePosOrdDisplay(uid) {
         // display position/order info left of keyword box
-        let entry = data.entries[uid]
-        let posText = entry.position
+        let entry = data.entries[uid];
+        let posText = entry.position;
         switch (entry.position) {
             case 0:
                 posText = '↑CD';
-                break
+                break;
             case 1:
                 posText = 'CD↓';
-                break
+                break;
             case 2:
                 posText = '↑AN';
-                break
+                break;
             case 3:
                 posText = 'AN↓';
-                break
+                break;
             case 4:
                 posText = `@D${entry.depth}`;
-                break
+                break;
         }
         template.find('.world_entry_form_position_value').text(`(${posText} ${entry.order})`);
     }
@@ -1544,7 +1544,7 @@ async function getCharacterLore() {
     if (baseWorldName) {
         worldsToSearch.add(baseWorldName);
     } else {
-        console.debug(`Character ${name}'s base world could not be found or is empty! Skipping...`)
+        console.debug(`Character ${name}'s base world could not be found or is empty! Skipping...`);
         return [];
     }
 
@@ -1623,15 +1623,15 @@ async function getSortedEntries() {
 
         switch (Number(world_info_character_strategy)) {
             case world_info_insertion_strategy.evenly:
-                console.debug('WI using evenly')
+                console.debug('WI using evenly');
                 entries = [...globalLore, ...characterLore].sort(sortFn);
                 break;
             case world_info_insertion_strategy.character_first:
-                console.debug('WI using char first')
+                console.debug('WI using char first');
                 entries = [...characterLore.sort(sortFn), ...globalLore.sort(sortFn)];
                 break;
             case world_info_insertion_strategy.global_first:
-                console.debug('WI using global first')
+                console.debug('WI using global first');
                 entries = [...globalLore.sort(sortFn), ...characterLore.sort(sortFn)];
                 break;
             default:
@@ -1667,16 +1667,16 @@ async function checkWorldInfo(chat, maxContext) {
     if (extension_settings.note.allowWIScan) {
         for (const key of Object.keys(context.extensionPrompts)) {
             if (key.startsWith('DEPTH_PROMPT')) {
-                const depthPrompt = getExtensionPromptByName(key)
+                const depthPrompt = getExtensionPromptByName(key);
                 if (depthPrompt) {
-                    textToScan = `${depthPrompt}\n${textToScan}`
+                    textToScan = `${depthPrompt}\n${textToScan}`;
                 }
             }
         }
 
         const anPrompt = getExtensionPromptByName(NOTE_MODULE_NAME);
         if (anPrompt) {
-            textToScan = `${anPrompt}\n${textToScan}`
+            textToScan = `${anPrompt}\n${textToScan}`;
         }
     }
 
@@ -1714,7 +1714,7 @@ async function checkWorldInfo(chat, maxContext) {
             // Check if this entry applies to the character or if it's excluded
             if (entry.characterFilter && entry.characterFilter?.names?.length > 0) {
                 const nameIncluded = entry.characterFilter.names.includes(getCharaFilename());
-                const filtered = entry.characterFilter.isExclude ? nameIncluded : !nameIncluded
+                const filtered = entry.characterFilter.isExclude ? nameIncluded : !nameIncluded;
 
                 if (filtered) {
                     console.debug(`WI entry ${entry.uid} filtered out by character`);
@@ -1750,7 +1750,7 @@ async function checkWorldInfo(chat, maxContext) {
             }
 
             if (entry.constant) {
-                entry.content = substituteParams(entry.content)
+                entry.content = substituteParams(entry.content);
                 activatedNow.add(entry);
                 continue;
             }
@@ -1761,33 +1761,33 @@ async function checkWorldInfo(chat, maxContext) {
                 let notFlag = true;
                 primary: for (let key of entry.key) {
                     const substituted = substituteParams(key);
-                    console.debug(`${entry.uid}: ${substituted}`)
+                    console.debug(`${entry.uid}: ${substituted}`);
                     if (substituted && matchKeys(textToScan, substituted.trim())) {
-                        console.debug(`${entry.uid}: got primary match`)
+                        console.debug(`${entry.uid}: got primary match`);
                         //selective logic begins
                         if (
                             entry.selective && //all entries are selective now
                             Array.isArray(entry.keysecondary) && //always true
                             entry.keysecondary.length //ignore empties
                         ) {
-                            console.debug(`uid:${entry.uid}: checking logic: ${entry.selectiveLogic}`)
+                            console.debug(`uid:${entry.uid}: checking logic: ${entry.selectiveLogic}`);
                             secondary: for (let keysecondary of entry.keysecondary) {
                                 const secondarySubstituted = substituteParams(keysecondary);
                                 console.debug(`uid:${entry.uid}: filtering ${secondarySubstituted}`);
                                 //AND operator
                                 if (selectiveLogic === 0) {
-                                    console.debug('saw AND logic, checking..')
+                                    console.debug('saw AND logic, checking..');
                                     if (secondarySubstituted && matchKeys(textToScan, secondarySubstituted.trim())) {
-                                        console.debug(`activating entry ${entry.uid} with AND found`)
+                                        console.debug(`activating entry ${entry.uid} with AND found`);
                                         activatedNow.add(entry);
                                         break secondary;
                                     }
                                 }
                                 //NOT operator
                                 if (selectiveLogic === 1) {
-                                    console.debug(`uid ${entry.uid}: checking NOT logic for ${secondarySubstituted}`)
+                                    console.debug(`uid ${entry.uid}: checking NOT logic for ${secondarySubstituted}`);
                                     if (secondarySubstituted && matchKeys(textToScan, secondarySubstituted.trim())) {
-                                        console.debug(`uid ${entry.uid}: canceled; filtered out by ${secondarySubstituted}`)
+                                        console.debug(`uid ${entry.uid}: canceled; filtered out by ${secondarySubstituted}`);
                                         notFlag = false;
                                         break primary;
                                     }
@@ -1795,15 +1795,15 @@ async function checkWorldInfo(chat, maxContext) {
                             }
                             //handle cases where secondary is empty
                         } else {
-                            console.debug(`uid ${entry.uid}: activated without filter logic`)
+                            console.debug(`uid ${entry.uid}: activated without filter logic`);
                             activatedNow.add(entry);
                             break primary;
                         }
-                    } else { console.debug('no active entries for logic checks yet') }
+                    } else { console.debug('no active entries for logic checks yet'); }
                 }
                 //for a NOT all entries must be checked, a single match invalidates activation
                 if (selectiveLogic === 1 && notFlag) {
-                    console.debug(`${entry.uid}: activated; passed NOT filter`)
+                    console.debug(`${entry.uid}: activated; passed NOT filter`);
                     activatedNow.add(entry);
                 }
             }
@@ -1815,7 +1815,7 @@ async function checkWorldInfo(chat, maxContext) {
         let newContent = '';
         const textToScanTokens = getTokenCount(allActivatedText);
         const probabilityChecksBefore = failedProbabilityChecks.size;
-        console.debug('-- PROBABILITY CHECKS BEGIN --')
+        console.debug('-- PROBABILITY CHECKS BEGIN --');
         for (const entry of newEntries) {
             const rollValue = Math.random() * 100;
 
@@ -1824,7 +1824,7 @@ async function checkWorldInfo(chat, maxContext) {
                 console.debug(`WI entry ${entry.uid} ${entry.key} failed probability check, skipping`);
                 failedProbabilityChecks.add(entry);
                 continue;
-            } else { console.debug(`uid:${entry.uid} passed probability check, inserting to prompt`) }
+            } else { console.debug(`uid:${entry.uid} passed probability check, inserting to prompt`); }
 
             newContent += `${substituteParams(entry.content)}\n`;
 
@@ -1862,15 +1862,15 @@ async function checkWorldInfo(chat, maxContext) {
         // world_info_min_activations
         if (!needsToScan && !token_budget_overflowed) {
             if (world_info_min_activations > 0 && (allActivatedEntries.size < world_info_min_activations)) {
-                let over_max = false
+                let over_max = false;
                 over_max = (
                     world_info_min_activations_depth_max > 0 &&
                     minActivationMsgIndex > world_info_min_activations_depth_max
-                ) || (minActivationMsgIndex >= chat.length)
+                ) || (minActivationMsgIndex >= chat.length);
                 if (!over_max) {
-                    needsToScan = true
+                    needsToScan = true;
                     textToScan = transformString(chat.slice(minActivationMsgIndex, minActivationMsgIndex + 1).join(''));
-                    minActivationMsgIndex += 1
+                    minActivationMsgIndex += 1;
                 }
             }
         }
@@ -1920,7 +1920,7 @@ async function checkWorldInfo(chat, maxContext) {
 
     if (shouldWIAddPrompt) {
         const originalAN = context.extensionPrompts[NOTE_MODULE_NAME].value;
-        const ANWithWI = `${ANTopEntries.join('\n')}\n${originalAN}\n${ANBottomEntries.join('\n')}`
+        const ANWithWI = `${ANTopEntries.join('\n')}\n${originalAN}\n${ANBottomEntries.join('\n')}`;
         context.setExtensionPrompt(NOTE_MODULE_NAME, ANWithWI, chat_metadata[metadata_keys.position], chat_metadata[metadata_keys.depth]);
     }
 
@@ -2311,7 +2311,7 @@ jQuery(() => {
 
     $(document).ready(function () {
         registerSlashCommand('world', onWorldInfoChange, [], '<span class="monospace">(optional name)</span> – sets active World, or unsets if no args provided', true, true);
-    })
+    });
 
 
     $('#world_info').on('mousedown change', async function (e) {
@@ -2361,9 +2361,9 @@ jQuery(() => {
     });
 
     const saveSettings = () => {
-        saveSettingsDebounced()
+        saveSettingsDebounced();
         eventSource.emit(event_types.WORLDINFO_SETTINGS_UPDATED);
-    }
+    };
 
     $('#world_info_depth').on('input', function () {
         world_info_depth = Number($(this).val());
@@ -2455,7 +2455,7 @@ jQuery(() => {
         const value = String($(this).find(':selected').val());
         localStorage.setItem(SORT_ORDER_KEY, value);
         updateEditor(navigation_option.none);
-    })
+    });
 
     $(document).on('click', '.chat_lorebook_button', assignLorebookToChat);
 
@@ -2469,4 +2469,4 @@ jQuery(() => {
             closeOnSelect: false,
         });
     }
-})
+});

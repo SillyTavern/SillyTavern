@@ -275,7 +275,7 @@ export function selectCurrentPersona() {
         // force firstMes {{user}} update on persona switch
         const context = getContext();
         if (context.characterId >= 0 && !context.groupId && context.chat.length === 1) {
-            $('#firstmessage_textarea').trigger('input')
+            $('#firstmessage_textarea').trigger('input');
         }
     }
 }

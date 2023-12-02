@@ -104,7 +104,7 @@ class PresetManager {
 
     async updatePreset() {
         const selected = $(this.select).find('option:selected');
-        console.log(selected)
+        console.log(selected);
 
         if (selected.val() == 'gui') {
             toastr.info('Cannot update GUI preset');
@@ -420,4 +420,4 @@ jQuery(async () => {
         await presetManager.deleteCurrentPreset();
         saveSettingsDebounced();
     });
-})
+});

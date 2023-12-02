@@ -23,7 +23,7 @@ const SECRET_KEYS = {
     DEEPLX_URL: 'deeplx_url',
     PALM: 'api_key_palm',
     SERPAPI: 'api_key_serpapi',
-}
+};
 
 /**
  * Writes a secret to the secrets file
@@ -199,10 +199,10 @@ function registerEndpoints(app, jsonParser) {
             return response.sendStatus(403);
         }
 
-        const key = request.body.key
+        const key = request.body.key;
 
         try {
-            const secret = readSecret(key)
+            const secret = readSecret(key);
 
             if (!secret) {
                 response.sendStatus(404);

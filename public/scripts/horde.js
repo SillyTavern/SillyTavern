@@ -20,7 +20,7 @@ export {
     adjustHordeGenerationParams,
     getHordeModels,
     MIN_LENGTH,
-}
+};
 
 let models = [];
 
@@ -59,7 +59,7 @@ function validateHordeModel() {
 }
 
 async function adjustHordeGenerationParams(max_context_length, max_length) {
-    console.log(max_context_length, max_length)
+    console.log(max_context_length, max_length);
     const workers = await getWorkers();
     let maxContextLength = max_context_length;
     let maxLength = max_length;
@@ -92,8 +92,8 @@ async function adjustHordeGenerationParams(max_context_length, max_length) {
             maxLength = Math.min(worker.max_length, maxLength);
         }
     }
-    console.log(maxContextLength, maxLength)
-    $('#adjustedHordeParams').text(`Context: ${maxContextLength}, Response: ${maxLength}`)
+    console.log(maxContextLength, maxLength);
+    $('#adjustedHordeParams').text(`Context: ${maxContextLength}, Response: ${maxLength}`);
     return { maxContextLength, maxLength };
 }
 
@@ -254,7 +254,7 @@ async function showKudos() {
     const data = await response.json();
 
     if (data.anonymous) {
-        toastr.info('You are in anonymous mode. Set your personal Horde API key to see kudos.')
+        toastr.info('You are in anonymous mode. Set your personal Horde API key to see kudos.');
         return;
     }
 
@@ -270,9 +270,9 @@ jQuery(function () {
         // Try select instruct preset
         autoSelectInstructPreset(horde_settings.models.join(' '));
         if (horde_settings.models.length) {
-            adjustHordeGenerationParams(max_context, amount_gen)
+            adjustHordeGenerationParams(max_context, amount_gen);
         } else {
-            $('#adjustedHordeParams').text('Context: --, Response: --')
+            $('#adjustedHordeParams').text('Context: --, Response: --');
         }
     });
 
@@ -292,7 +292,7 @@ jQuery(function () {
         horde_settings.trusted_workers_only = !!$(this).prop('checked');
         setContextSizePreview();
         saveSettingsDebounced();
-    })
+    });
 
     $('#horde_api_key').on('input', async function () {
         const key = String($(this).val()).trim();
@@ -320,5 +320,5 @@ jQuery(function () {
             },
         });
     }
-})
+});
 

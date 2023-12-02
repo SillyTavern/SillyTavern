@@ -347,7 +347,7 @@ export async function favsToHotswap() {
 
     await Promise.allSettled(promises);
     //helpful instruction message if no characters are favorited
-    if (count === 0) { container.html('<small><span><i class="fa-solid fa-star"></i> Favorite characters to add them to HotSwaps</span></small>') }
+    if (count === 0) { container.html('<small><span><i class="fa-solid fa-star"></i> Favorite characters to add them to HotSwaps</span></small>'); }
     //otherwise replace with fav'd characters
     if (count > 0) {
         container.replaceWith(newContainer);
@@ -491,14 +491,14 @@ export function dragElement(elmnt) {
 
     if (elmntHeader.length) {
         elmntHeader.off('mousedown').on('mousedown', (e) => {
-            hasBeenDraggedByUser = true
+            hasBeenDraggedByUser = true;
             observer.observe(elmnt.get(0), { attributes: true, attributeFilter: ['style'] });
             dragMouseDown(e);
         });
         $(elmnt).off('mousedown').on('mousedown', () => {
-            isMouseDown = true
+            isMouseDown = true;
             observer.observe(elmnt.get(0), { attributes: true, attributeFilter: ['style'] });
-        })
+        });
     }
 
     const observer = new MutationObserver((mutations) => {
@@ -510,8 +510,8 @@ export function dragElement(elmnt) {
             || power_user.movingUI === false
             || isMobile() === true
         ) {
-            console.debug('aborting mutator')
-            return
+            console.debug('aborting mutator');
+            return;
         }
         //console.debug(left + width, winWidth, hasBeenDraggedByUser, isMouseDown)
         const style = getComputedStyle(target); //use computed values because not all CSS are set by default
@@ -526,9 +526,9 @@ export function dragElement(elmnt) {
         winWidth = window.innerWidth;
         winHeight = window.innerHeight;
 
-        topbar = document.getElementById('top-bar')
-        const topbarstyle = getComputedStyle(topbar)
-        topBarFirstX = parseInt(topbarstyle.marginInline)
+        topbar = document.getElementById('top-bar');
+        const topbarstyle = getComputedStyle(topbar);
+        topBarFirstX = parseInt(topbarstyle.marginInline);
         topBarLastY = parseInt(topbarstyle.height);
 
         /*console.log(`
@@ -546,7 +546,7 @@ export function dragElement(elmnt) {
 
         //prepare an empty poweruser object for the item being altered if we don't have one already
         if (!power_user.movingUIState[elmntName]) {
-            console.debug(`adding config property for ${elmntName}`)
+            console.debug(`adding config property for ${elmntName}`);
             power_user.movingUIState[elmntName] = {};
         }
 
@@ -561,44 +561,44 @@ export function dragElement(elmnt) {
 
         //handle resizing
         if (!hasBeenDraggedByUser && isMouseDown) {
-            console.debug('saw resize, NOT header drag')
+            console.debug('saw resize, NOT header drag');
 
             //prevent resizing offscreen
             if (top + elmnt.height() >= winHeight) {
-                console.debug('resizing height to prevent offscreen')
+                console.debug('resizing height to prevent offscreen');
                 elmnt.css('height', winHeight - top - 1 + 'px');
             }
 
             if (left + elmnt.width() >= winWidth) {
-                console.debug('resizing width to prevent offscreen')
+                console.debug('resizing width to prevent offscreen');
                 elmnt.css('width', winWidth - left - 1 + 'px');
             }
 
             //prevent resizing from top left into the top bar
             if (top < topBarLastY && maxX >= topBarFirstX && left <= topBarFirstX
             ) {
-                console.debug('prevent topbar underlap resize')
+                console.debug('prevent topbar underlap resize');
                 elmnt.css('width', width - 1 + 'px');
             }
 
             //set css to prevent weird resize behavior (does not save)
-            elmnt.css('left', left)
-            elmnt.css('top', top)
+            elmnt.css('left', left);
+            elmnt.css('top', top);
 
             //set a listener for mouseup to save new width/height
             elmnt.off('mouseup').on('mouseup', () => {
-                console.debug(`Saving ${elmntName} Height/Width`)
+                console.debug(`Saving ${elmntName} Height/Width`);
                 // check if the height or width actually changed
                 if (power_user.movingUIState[elmntName].width === width && power_user.movingUIState[elmntName].height === height) {
-                    console.debug('no change detected, aborting save')
-                    return
+                    console.debug('no change detected, aborting save');
+                    return;
                 }
 
                 power_user.movingUIState[elmntName].width = width;
                 power_user.movingUIState[elmntName].height = height;
                 eventSource.emit('resizeUI', elmntName);
                 saveSettingsDebounced();
-            })
+            });
         }
 
         //handle dragging hit detection
@@ -632,7 +632,7 @@ export function dragElement(elmnt) {
         // Check if the element header exists and set the listener on the grabber
         if (elmntHeader.length) {
             elmntHeader.off('mousedown').on('mousedown', (e) => {
-                console.debug('listener started from header')
+                console.debug('listener started from header');
                 dragMouseDown(e);
             });
         } else {
@@ -681,8 +681,8 @@ export function dragElement(elmnt) {
         // Height/Width here are for visuals only, and are not saved to settings
         // required because some divs do hot have a set width/height..
         // and will defaults to shrink to min value of 100px set in CSS file
-        elmnt.css('height', height)
-        elmnt.css('width', width)
+        elmnt.css('height', height);
+        elmnt.css('width', width);
         /*
                 console.log(`
                              winWidth: ${winWidth}, winHeight: ${winHeight}
@@ -697,11 +697,11 @@ export function dragElement(elmnt) {
                              `);
                              */
 
-        return
+        return;
     }
 
     function closeDragElement() {
-        console.debug('drag finished')
+        console.debug('drag finished');
         hasBeenDraggedByUser = false;
         isMouseDown = false;
         $(document).off('mouseup', closeDragElement);
@@ -709,22 +709,22 @@ export function dragElement(elmnt) {
         $('body').css('overflow', '');
         // Clear the "data-dragged" attribute
         elmnt.attr('data-dragged', 'false');
-        observer.disconnect()
-        console.debug(`Saving ${elmntName} UI position`)
+        observer.disconnect();
+        console.debug(`Saving ${elmntName} UI position`);
         saveSettingsDebounced();
     }
 }
 
 export async function initMovingUI() {
     if (isMobile() === false && power_user.movingUI === true) {
-        console.debug('START MOVING UI')
+        console.debug('START MOVING UI');
         dragElement($('#sheld'));
         dragElement($('#left-nav-panel'));
         dragElement($('#right-nav-panel'));
         dragElement($('#WorldInfo'));
-        await delay(1000)
-        console.debug('loading AN draggable function')
-        dragElement($('#floatingPrompt'))
+        await delay(1000);
+        console.debug('loading AN draggable function');
+        dragElement($('#floatingPrompt'));
     }
 }
 
@@ -913,10 +913,10 @@ export function initRossMods() {
 
     document.addEventListener('swiped-left', function (e) {
         if (power_user.gestures === false) {
-            return
+            return;
         }
         if ($('.mes_edit_buttons, .drawer-content, #character_popup, #dialogue_popup, #WorldInfo, #right-nav-panel, #left-nav-panel, #select_chat_popup, #floatingPrompt').is(':visible')) {
-            return
+            return;
         }
         var SwipeButR = $('.swipe_right:last');
         var SwipeTargetMesClassParent = $(e.target).closest('.last_mes');
@@ -928,10 +928,10 @@ export function initRossMods() {
     });
     document.addEventListener('swiped-right', function (e) {
         if (power_user.gestures === false) {
-            return
+            return;
         }
         if ($('.mes_edit_buttons, .drawer-content, #character_popup, #dialogue_popup, #WorldInfo, #right-nav-panel, #left-nav-panel, #select_chat_popup, #floatingPrompt').is(':visible')) {
-            return
+            return;
         }
         var SwipeButL = $('.swipe_left:last');
         var SwipeTargetMesClassParent = $(e.target).closest('.last_mes');
@@ -1090,28 +1090,28 @@ export function initRossMods() {
             //dont override Escape hotkey functions from script.js
             //"close edit box" and "cancel stream generation".
             if ($('#curEditTextarea').is(':visible') || $('#mes_stop').is(':visible')) {
-                console.debug('escape key, but deferring to script.js routines')
-                return
+                console.debug('escape key, but deferring to script.js routines');
+                return;
             }
 
             if ($('#dialogue_popup').is(':visible')) {
                 if ($('#dialogue_popup_cancel').is(':visible')) {
                     $('#dialogue_popup_cancel').trigger('click');
-                    return
+                    return;
                 } else {
-                    $('#dialogue_popup_ok').trigger('click')
-                    return
+                    $('#dialogue_popup_ok').trigger('click');
+                    return;
                 }
             }
 
             if ($('#select_chat_popup').is(':visible')) {
                 $('#select_chat_cross').trigger('click');
-                return
+                return;
             }
 
             if ($('#character_popup').is(':visible')) {
                 $('#character_cross').trigger('click');
-                return
+                return;
             }
 
             if ($('.drawer-content')
@@ -1124,31 +1124,31 @@ export function initRossMods() {
                     .not('#WorldInfo')
                     .not('#left-nav-panel')
                     .not('#right-nav-panel')
-                    .not('#floatingPrompt')
+                    .not('#floatingPrompt');
                 $(visibleDrawerContent).parent().find('.drawer-icon').trigger('click');
-                return
+                return;
             }
 
             if ($('#floatingPrompt').is(':visible')) {
                 $('#ANClose').trigger('click');
-                return
+                return;
             }
 
             if ($('#WorldInfo').is(':visible')) {
                 $('#WIDrawerIcon').trigger('click');
-                return
+                return;
             }
 
             if ($('#left-nav-panel').is(':visible') &&
                 $(LPanelPin).prop('checked') === false) {
                 $('#leftNavDrawerIcon').trigger('click');
-                return
+                return;
             }
 
             if ($('#right-nav-panel').is(':visible') &&
                 $(RPanelPin).prop('checked') === false) {
                 $('#rightNavDrawerIcon').trigger('click');
-                return
+                return;
             }
             if ($('.draggable').is(':visible')) {
                 // Remove the first matched element

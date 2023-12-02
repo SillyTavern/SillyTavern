@@ -22,7 +22,7 @@ export {
     loadTextGenSettings,
     generateTextGenWithStreaming,
     formatTextGenURL,
-}
+};
 
 export const textgen_types = {
     OOBA: 'ooba',
@@ -265,12 +265,12 @@ function loadTextGenSettings(data, settings) {
     //this is needed because showTypeSpecificControls() does not handle NOT declarations
     if (isAphrodite()) {
         $('[data-forAphro=False]').each(function () {
-            $(this).hide()
-        })
+            $(this).hide();
+        });
     } else {
         $('[data-forAphro=False]').each(function () {
-            $(this).show()
-        })
+            $(this).show();
+        });
     }
 
     registerDebugFunction('change-mancer-url', 'Change Mancer base URL', 'Change Mancer API server base URL', () => {
@@ -358,28 +358,28 @@ jQuery(function () {
         if (isAphrodite()) {
             //this is needed because showTypeSpecificControls() does not handle NOT declarations
             $('[data-forAphro=False]').each(function () {
-                $(this).hide()
-            })
-            $('#mirostat_mode_textgenerationwebui').attr('step', 2) //Aphro disallows mode 1
-            $('#do_sample_textgenerationwebui').prop('checked', true) //Aphro should always do sample; 'otherwise set temp to 0 to mimic no sample'
-            $('#ban_eos_token_textgenerationwebui').prop('checked', false) //Aphro should not ban EOS, just ignore it; 'add token '2' to ban list do to this'
+                $(this).hide();
+            });
+            $('#mirostat_mode_textgenerationwebui').attr('step', 2); //Aphro disallows mode 1
+            $('#do_sample_textgenerationwebui').prop('checked', true); //Aphro should always do sample; 'otherwise set temp to 0 to mimic no sample'
+            $('#ban_eos_token_textgenerationwebui').prop('checked', false); //Aphro should not ban EOS, just ignore it; 'add token '2' to ban list do to this'
             //special handling for Aphrodite topK -1 disable state
-            $('#top_k_textgenerationwebui').attr('min', -1)
+            $('#top_k_textgenerationwebui').attr('min', -1);
             if ($('#top_k_textgenerationwebui').val() === '0' || textgenerationwebui_settings['top_k'] === 0) {
-                textgenerationwebui_settings['top_k'] = -1
-                $('#top_k_textgenerationwebui').val('-1').trigger('input')
+                textgenerationwebui_settings['top_k'] = -1;
+                $('#top_k_textgenerationwebui').val('-1').trigger('input');
             }
         } else {
             //this is needed because showTypeSpecificControls() does not handle NOT declarations
             $('[data-forAphro=False]').each(function () {
-                $(this).show()
-            })
-            $('#mirostat_mode_textgenerationwebui').attr('step', 1)
+                $(this).show();
+            });
+            $('#mirostat_mode_textgenerationwebui').attr('step', 1);
             //undo special Aphrodite setup for topK
-            $('#top_k_textgenerationwebui').attr('min', 0)
+            $('#top_k_textgenerationwebui').attr('min', 0);
             if ($('#top_k_textgenerationwebui').val() === '-1' || textgenerationwebui_settings['top_k'] === -1) {
-                textgenerationwebui_settings['top_k'] = 0
-                $('#top_k_textgenerationwebui').val('0').trigger('input')
+                textgenerationwebui_settings['top_k'] = 0;
+                $('#top_k_textgenerationwebui').val('0').trigger('input');
             }
         }
 
@@ -418,14 +418,14 @@ jQuery(function () {
                 textgenerationwebui_settings[id] = value;
                 //special handling for aphrodite using -1 as disabled instead of 0
                 if ($(this).attr('id') === 'top_k_textgenerationwebui' && isAphrodite() && value === 0) {
-                    textgenerationwebui_settings[id] = -1
-                    $(this).val(-1)
+                    textgenerationwebui_settings[id] = -1;
+                    $(this).val(-1);
                 }
             }
             saveSettingsDebounced();
         });
     }
-})
+});
 
 function showTypeSpecificControls(type) {
     $('[data-tg-type]').each(function () {
@@ -464,8 +464,8 @@ function setSettingByName(setting, value, trigger) {
         $(`#${setting}_textgenerationwebui`).val(val);
         $(`#${setting}_counter_textgenerationwebui`).val(val);
         if (power_user.enableZenSliders) {
-            let zenSlider = $(`#${setting}_textgenerationwebui_zenslider`).slider()
-            zenSlider.slider('option', 'value', val)
+            let zenSlider = $(`#${setting}_textgenerationwebui_zenslider`).slider();
+            zenSlider.slider('option', 'value', val);
             zenSlider.slider('option', 'slide')
                 .call(zenSlider, null, {
                     handle: $('.ui-slider-handle', zenSlider), value: val
@@ -532,7 +532,7 @@ async function generateTextGenWithStreaming(generate_data, signal) {
                 return;
             }
         }
-    }
+    };
 }
 
 /**
@@ -630,7 +630,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'guidance_scale': cfgValues?.guidanceScale?.value ?? textgenerationwebui_settings.guidance_scale ?? 1,
         'negative_prompt': cfgValues?.negativePrompt ?? substituteParams(textgenerationwebui_settings.negative_prompt) ?? '',
         'grammar_string': textgenerationwebui_settings.grammar_string,
-    }
+    };
     let aphroditeFlags = {
         //'n': textgenerationwebui_settings.n_aphrodite,
         //'best_of': textgenerationwebui_settings.n_aphrodite, //n must always == best_of and vice versa
@@ -639,13 +639,13 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         //'logits_processors': textgenerationwebui_settings.logits_processors_aphrodite,
         //'logprobs': textgenerationwebui_settings.log_probs_aphrodite,
         //'prompt_logprobs': textgenerationwebui_settings.prompt_log_probs_aphrodite,
-    }
+    };
     if (isAphrodite()) {
         APIflags = Object.assign(APIflags, aphroditeFlags);
     } else {
         APIflags = Object.assign(APIflags, aphroditeExclusionFlags);
     }
 
-    return APIflags
+    return APIflags;
 }
 

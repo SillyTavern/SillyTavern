@@ -59,7 +59,8 @@
         "start-multi": "node server.js --disableCsrf",
         "pkg": "pkg --compress Gzip --no-bytecode --public .",
         "postinstall": "node post-install.js",
-        "lint": "eslint \"src/**/*.js\" \"public/**/*.js\" ./server.js"
+        "lint": "eslint \"src/**/*.js\" \"public/**/*.js\" ./server.js",
+        "lint-fix": "eslint \"src/**/*.js\" \"public/**/*.js\" ./server.js --fix"
     },
     "bin": {
         "sillytavern": "./server.js"

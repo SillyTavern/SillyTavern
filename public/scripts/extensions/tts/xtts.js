@@ -1,17 +1,17 @@
-import { doExtrasFetch, getApiUrl, modules } from '../../extensions.js'
-import { saveTtsProviderSettings } from './index.js'
+import { doExtrasFetch, getApiUrl, modules } from '../../extensions.js';
+import { saveTtsProviderSettings } from './index.js';
 
-export { XTTSTtsProvider }
+export { XTTSTtsProvider };
 
 class XTTSTtsProvider {
     //########//
     // Config //
     //########//
 
-    settings
-    ready = false
-    voices = []
-    separator = '. '
+    settings;
+    ready = false;
+    voices = [];
+    separator = '. ';
 
     /**
      * Perform any text processing before passing to TTS engine.
@@ -46,13 +46,13 @@ class XTTSTtsProvider {
         'Korean': 'ko',
         'Hungarian': 'hu',
         'Hindi': 'hi',
-    }
+    };
 
     defaultSettings = {
         provider_endpoint: 'http://localhost:8020',
         language: 'en',
         voiceMap: {}
-    }
+    };
 
     get settingsHtml() {
         let html = `
@@ -64,7 +64,7 @@ class XTTSTtsProvider {
 
             if (this.languageLabels[language] == this.settings?.language) {
                 html += `<option value="${this.languageLabels[language]}" selected="selected">${language}</option>`;
-                continue
+                continue;
             }
 
             html += `<option value="${this.languageLabels[language]}">${language}</option>`;
@@ -88,25 +88,25 @@ class XTTSTtsProvider {
     }
     onSettingsChange() {
         // Used when provider settings are updated from UI
-        this.settings.provider_endpoint = $('#xtts_tts_endpoint').val()
-        this.settings.language = $('#xtts_api_language').val()
-        saveTtsProviderSettings()
+        this.settings.provider_endpoint = $('#xtts_tts_endpoint').val();
+        this.settings.language = $('#xtts_api_language').val();
+        saveTtsProviderSettings();
     }
 
     async loadSettings(settings) {
         // Pupulate Provider UI given input settings
         if (Object.keys(settings).length == 0) {
-            console.info('Using default TTS Provider settings')
+            console.info('Using default TTS Provider settings');
         }
 
         // Only accept keys defined in defaultSettings
-        this.settings = this.defaultSettings
+        this.settings = this.defaultSettings;
 
         for (const key in settings) {
             if (key in this.settings) {
-                this.settings[key] = settings[key]
+                this.settings[key] = settings[key];
             } else {
-                throw `Invalid setting passed to TTS Provider: ${key}`
+                throw `Invalid setting passed to TTS Provider: ${key}`;
             }
         }
 
@@ -121,23 +121,23 @@ class XTTSTtsProvider {
             }
         }, 2000);
 
-        $('#xtts_tts_endpoint').val(this.settings.provider_endpoint)
-        $('#xtts_tts_endpoint').on('input', () => { this.onSettingsChange() })
-        $('#xtts_api_language').val(this.settings.language)
-        $('#xtts_api_language').on('change', () => { this.onSettingsChange() })
+        $('#xtts_tts_endpoint').val(this.settings.provider_endpoint);
+        $('#xtts_tts_endpoint').on('input', () => { this.onSettingsChange(); });
+        $('#xtts_api_language').val(this.settings.language);
+        $('#xtts_api_language').on('change', () => { this.onSettingsChange(); });
 
-        await this.checkReady()
+        await this.checkReady();
 
-        console.debug('XTTS: Settings loaded')
+        console.debug('XTTS: Settings loaded');
     }
 
     // Perform a simple readiness check by trying to fetch voiceIds
     async checkReady() {
-        await this.fetchTtsVoiceObjects()
+        await this.fetchTtsVoiceObjects();
     }
 
     async onRefreshClick() {
-        return
+        return;
     }
 
     //#################//
@@ -146,36 +146,36 @@ class XTTSTtsProvider {
 
     async getVoice(voiceName) {
         if (this.voices.length == 0) {
-            this.voices = await this.fetchTtsVoiceObjects()
+            this.voices = await this.fetchTtsVoiceObjects();
         }
         const match = this.voices.filter(
             XTTSVoice => XTTSVoice.name == voiceName
-        )[0]
+        )[0];
         if (!match) {
-            throw `TTS Voice name ${voiceName} not found`
+            throw `TTS Voice name ${voiceName} not found`;
         }
-        return match
+        return match;
     }
 
     async generateTts(text, voiceId) {
-        const response = await this.fetchTtsGeneration(text, voiceId)
-        return response
+        const response = await this.fetchTtsGeneration(text, voiceId);
+        return response;
     }
 
     //###########//
     // API CALLS //
     //###########//
     async fetchTtsVoiceObjects() {
-        const response = await doExtrasFetch(`${this.settings.provider_endpoint}/speakers`)
+        const response = await doExtrasFetch(`${this.settings.provider_endpoint}/speakers`);
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.json()}`)
+            throw new Error(`HTTP ${response.status}: ${await response.json()}`);
         }
-        const responseJson = await response.json()
-        return responseJson
+        const responseJson = await response.json();
+        return responseJson;
     }
 
     async fetchTtsGeneration(inputText, voiceId) {
-        console.info(`Generating new TTS for voice_id ${voiceId}`)
+        console.info(`Generating new TTS for voice_id ${voiceId}`);
         const response = await doExtrasFetch(
             `${this.settings.provider_endpoint}/tts_to_audio/`,
             {
@@ -190,12 +190,12 @@ class XTTSTtsProvider {
                     'language': this.settings.language
                 })
             }
-        )
+        );
         if (!response.ok) {
             toastr.error(response.statusText, 'TTS Generation Failed');
             throw new Error(`HTTP ${response.status}: ${await response.text()}`);
         }
-        return response
+        return response;
     }
 
     // Interface not used by XTTS TTS

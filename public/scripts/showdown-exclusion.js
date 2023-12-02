@@ -4,7 +4,7 @@ import { power_user } from './power-user.js';
 export const markdownExclusionExt = () => {
     if (!power_user) {
         console.log('Showdown-dinkus extension: power_user wasn\'t found! Returning.');
-        return []
+        return [];
     }
 
     let combinedExcludeString = '';
@@ -37,4 +37,4 @@ export const markdownExclusionExt = () => {
         regex: replaceRegex,
         replace: ((match) => match.replace(replaceRegex, `\u0000${match} \n`))
     }];
-}
+};

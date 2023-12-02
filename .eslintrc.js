@@ -12,14 +12,14 @@ module.exports = {
     overrides: [
         {
             // Server-side files (plus this configuration file)
-            files: ["src/**/*.js", "server.js", ".eslintrc.js"],
+            files: ['src/**/*.js', 'server.js', '.eslintrc.js'],
             env: {
                 node: true
             }
         },
         {
             // Browser-side files
-            files: ["public/**/*.js"],
+            files: ['public/**/*.js'],
             env: {
                 browser: true,
                 jquery: true
@@ -48,11 +48,12 @@ module.exports = {
     // There are various vendored libraries that shouldn't be linted
     ignorePatterns: ['public/lib/**/*', '*.min.js', 'src/ai_horde/**/*'],
     rules: {
-        'no-unused-vars': ['error', {args: 'none'}],
+        'no-unused-vars': ['error', { args: 'none' }],
         'no-control-regex': 'off',
-        'no-constant-condition': ['error', {checkLoops: false}],
+        'no-constant-condition': ['error', { checkLoops: false }],
         'require-yield': 'off',
         'quotes': ['error', 'single'],
+        'semi': ['error', 'always'],
 
         // These rules should eventually be enabled.
         'no-async-promise-executor': 'off',

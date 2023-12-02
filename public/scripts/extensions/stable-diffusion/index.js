@@ -31,7 +31,7 @@ const m = x => `<span class="monospace">${x}</span>`;
 // Joins an array of strings with ' / '
 const j = a => a.join(' / ');
 // Wraps a string into paragraph block
-const p = a => `<p>${a}</p>`
+const p = a => `<p>${a}</p>`;
 
 const MODULE_NAME = 'sd';
 const UPDATE_INTERVAL = 1000;
@@ -44,7 +44,7 @@ const sources = {
     vlad: 'vlad',
     openai: 'openai',
     comfy: 'comfy',
-}
+};
 
 const generationMode = {
     CHARACTER: 0,
@@ -58,13 +58,13 @@ const generationMode = {
     CHARACTER_MULTIMODAL: 8,
     USER_MULTIMODAL: 9,
     FACE_MULTIMODAL: 10,
-}
+};
 
 const multimodalMap = {
     [generationMode.CHARACTER]: generationMode.CHARACTER_MULTIMODAL,
     [generationMode.USER]: generationMode.USER_MULTIMODAL,
     [generationMode.FACE]: generationMode.FACE_MULTIMODAL,
-}
+};
 
 const modeLabels = {
     [generationMode.CHARACTER]: 'Character ("Yourself")',
@@ -77,7 +77,7 @@ const modeLabels = {
     [generationMode.CHARACTER_MULTIMODAL]: 'Character (Multimodal Mode)',
     [generationMode.FACE_MULTIMODAL]: 'Portrait (Multimodal Mode)',
     [generationMode.USER_MULTIMODAL]: 'User (Multimodal Mode)',
-}
+};
 
 const triggerWords = {
     [generationMode.CHARACTER]: ['you'],
@@ -87,7 +87,7 @@ const triggerWords = {
     [generationMode.NOW]: ['last'],
     [generationMode.FACE]: ['face'],
     [generationMode.BACKGROUND]: ['background'],
-}
+};
 
 const messageTrigger = {
     activationRegex: /\b(send|mail|imagine|generate|make|create|draw|paint|render)\b.*\b(pic|picture|image|drawing|painting|photo|photograph)\b(?:\s+of)?(?:\s+(?:a|an|the|this|that|those)?)?(.+)/i,
@@ -99,7 +99,7 @@ const messageTrigger = {
         [generationMode.FACE]: ['your face', 'your portrait', 'your selfie'],
         [generationMode.BACKGROUND]: ['background', 'scene background', 'scene', 'scenery', 'surroundings', 'environment'],
     },
-}
+};
 
 const promptTemplates = {
     /*OLD:     [generationMode.CHARACTER]: "Pause your roleplay and provide comma-delimited list of phrases and keywords which describe {{char}}'s physical appearance and clothing. Ignore {{char}}'s personality traits, and chat history when crafting this description. End your response once the comma-delimited list is complete. Do not roleplay when writing this description, and do not attempt to continue the story.", */
@@ -139,7 +139,7 @@ const promptTemplates = {
     [generationMode.FACE_MULTIMODAL]: 'Provide an exhaustive comma-separated list of tags describing the appearance of the character on this image in great detail. Start with "close-up portrait".',
     [generationMode.CHARACTER_MULTIMODAL]: 'Provide an exhaustive comma-separated list of tags describing the appearance of the character on this image in great detail. Start with "full body portrait".',
     [generationMode.USER_MULTIMODAL]: 'Provide an exhaustive comma-separated list of tags describing the appearance of the character on this image in great detail. Start with "full body portrait".',
-}
+};
 
 const helpString = [
     `${m('(argument)')} – requests to generate an image. Supported arguments: ${m(j(Object.values(triggerWords).flat()))}.`,
@@ -244,7 +244,7 @@ const defaultSettings = {
     // ComyUI settings
     comfy_url: 'http://127.0.0.1:8188',
     comfy_workflow: 'Default_Comfy_Workflow.json',
-}
+};
 
 function processTriggers(chat, _, abort) {
     if (!extension_settings.sd.interactive_mode) {
@@ -452,7 +452,7 @@ function addPromptTemplates() {
         const container = $('<div></div>')
             .addClass('title_restorable')
             .append(label)
-            .append(button)
+            .append(button);
         $('#sd_prompt_templates').append(container);
         $('#sd_prompt_templates').append(textarea);
     }
@@ -610,7 +610,7 @@ function combinePrefixes(str1, str2, macro = '') {
         return str1;
     }
 
-    str1 = process(str1)
+    str1 = process(str1);
     str2 = process(str2);
 
     // Combine the strings with a comma between them)
@@ -1579,11 +1579,11 @@ function processReply(str) {
         return '';
     }
 
-    str = str.replaceAll('"', '')
-    str = str.replaceAll('“', '')
-    str = str.replaceAll('.', ',')
-    str = str.replaceAll('\n', ', ')
-    str = str.replace(/[^a-zA-Z0-9,:()]+/g, ' ') // Replace everything except alphanumeric characters and commas with spaces
+    str = str.replaceAll('"', '');
+    str = str.replaceAll('“', '');
+    str = str.replaceAll('.', ',');
+    str = str.replaceAll('\n', ', ');
+    str = str.replace(/[^a-zA-Z0-9,:()]+/g, ' '); // Replace everything except alphanumeric characters and commas with spaces
     str = str.replace(/\s+/g, ' '); // Collapse multiple whitespaces into one
     str = str.trim();
 
@@ -1608,13 +1608,13 @@ function getRawLastMessage() {
 
         toastr.warning('No usable messages found.', 'Image Generation');
         throw new Error('No usable messages found.');
-    }
+    };
 
     const context = getContext();
     const lastMessage = getLastUsableMessage(),
         characterDescription = context.characters[context.characterId].description,
         situation = context.characters[context.characterId].scenario;
-    return `((${processReply(lastMessage)})), (${processReply(situation)}:0.7), (${processReply(characterDescription)}:0.5)`
+    return `((${processReply(lastMessage)})), (${processReply(situation)}:0.7), (${processReply(characterDescription)}:0.5)`;
 }
 
 async function generatePicture(_, trigger, message, callback) {
@@ -1652,7 +1652,7 @@ async function generatePicture(_, trigger, message, callback) {
             } else {
                 sendMessage(prompt, imagePath, generationType);
             }
-        }
+        };
     }
 
     const dimensions = setTypeSpecificDimensions(generationType);
@@ -1667,7 +1667,7 @@ async function generatePicture(_, trigger, message, callback) {
         await sendGenerationRequest(generationType, prompt, characterName, callback);
     } catch (err) {
         console.trace(err);
-        throw new Error('SD prompt text generation failed.')
+        throw new Error('SD prompt text generation failed.');
     }
     finally {
         restoreOriginalDimensions(dimensions);
@@ -2269,7 +2269,7 @@ function addSDGenButtons() {
 
     const waitButtonHtml = `
         <div id="sd_gen_wait" class="fa-solid fa-hourglass-half" /></div>
-    `
+    `;
     const dropdownHtml = `
     <div id="sd_dropdown">
         <ul class="list-group">
@@ -2432,7 +2432,7 @@ $('#sd_dropdown [id]').on('click', function () {
     const param = idParamMap[id];
 
     if (param) {
-        console.log('doing /sd ' + param)
+        console.log('doing /sd ' + param);
         generatePicture('sd', param);
     }
 });
@@ -2492,7 +2492,7 @@ jQuery(async () => {
         initScrollHeight($('#sd_prompt_prefix'));
         initScrollHeight($('#sd_negative_prompt'));
         initScrollHeight($('#sd_character_prompt'));
-    })
+    });
 
     for (const [key, value] of Object.entries(resolutionOptions)) {
         const option = document.createElement('option');

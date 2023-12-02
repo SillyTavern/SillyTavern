@@ -87,7 +87,7 @@ async function sendCaptionedMessage(caption, image) {
     let template = extension_settings.caption.template || TEMPLATE_DEFAULT;
 
     if (!/{{caption}}/i.test(template)) {
-        console.warn('Poka-yoke: Caption template does not contain {{caption}}. Appending it.')
+        console.warn('Poka-yoke: Caption template does not contain {{caption}}. Appending it.');
         template += ' {{caption}}';
     }
 

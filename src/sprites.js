@@ -264,4 +264,4 @@ function registerEndpoints(app, jsonParser, urlencodedParser) {
 module.exports = {
     registerEndpoints,
     importRisuSprites,
-}
+};

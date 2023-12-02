@@ -23,7 +23,7 @@ const maximum_output_length = 150;
 const default_presets = {
     'clio-v1': 'Talker-Chat-Clio',
     'kayra-v1': 'Carefree-Kayra'
-}
+};
 
 export const nai_settings = {
     temperature: 1.5,
@@ -723,7 +723,7 @@ export async function generateNovelWithStreaming(generate_data, signal) {
                 return;
             }
         }
-    }
+    };
 }
 
 $('#nai_preamble_textarea').on('input', function () {
@@ -761,7 +761,7 @@ jQuery(function () {
         // Update the selected preset to something appropriate
         const default_preset = default_presets[nai_settings.model_novel];
         $('#settings_preset_novel').val(novelai_setting_names[default_preset]);
-        $(`#settings_preset_novel option[value=${novelai_setting_names[default_preset]}]`).attr('selected', 'true')
+        $(`#settings_preset_novel option[value=${novelai_setting_names[default_preset]}]`).attr('selected', 'true');
         $('#settings_preset_novel').trigger('change');
     });
 

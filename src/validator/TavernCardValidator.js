@@ -124,4 +124,4 @@ class TavernCardValidator {
     }
 }
 
-module.exports = {TavernCardValidator}
+module.exports = { TavernCardValidator };

@@ -46,7 +46,7 @@ export function guesstimate(str) {
 
 async function loadTokenCache() {
     try {
-        console.debug('Chat Completions: loading token cache')
+        console.debug('Chat Completions: loading token cache');
         tokenCache = await objectStore.getItem('tokenCache') || {};
     } catch (e) {
         console.log('Chat Completions: unable to load token cache, using default value', e);
@@ -56,7 +56,7 @@ async function loadTokenCache() {
 
 export async function saveTokenCache() {
     try {
-        console.debug('Chat Completions: saving token cache')
+        console.debug('Chat Completions: saving token cache');
         await objectStore.setItem('tokenCache', tokenCache);
     } catch (e) {
         console.log('Chat Completions: unable to save token cache', e);

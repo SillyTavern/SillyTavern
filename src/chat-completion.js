@@ -39,10 +39,10 @@ function convertClaudePrompt(messages, addHumanPrefix, addAssistantPostfix, with
         switch (v.role) {
             case 'assistant':
                 prefix = '\n\nAssistant: ';
-                break
+                break;
             case 'user':
                 prefix = '\n\nHuman: ';
-                break
+                break;
             case 'system':
                 // According to the Claude docs, H: and A: should be used for example conversations.
                 if (v.name === 'example_assistant') {
@@ -52,7 +52,7 @@ function convertClaudePrompt(messages, addHumanPrefix, addAssistantPostfix, with
                 } else {
                     prefix = '\n\n';
                 }
-                break
+                break;
         }
         return prefix + v.content;
     }).join('');
@@ -74,4 +74,4 @@ function convertClaudePrompt(messages, addHumanPrefix, addAssistantPostfix, with
 
 module.exports = {
     convertClaudePrompt,
-}
+};

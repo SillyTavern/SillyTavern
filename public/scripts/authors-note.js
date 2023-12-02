@@ -21,13 +21,13 @@ export const metadata_keys = {
     interval: 'note_interval',
     depth: 'note_depth',
     position: 'note_position',
-}
+};
 
 const chara_note_position = {
     replace: 0,
     before: 1,
     after: 2,
-}
+};
 
 function setNoteTextCommand(_, text) {
     $('#extension_floating_prompt').val(text).trigger('input');
@@ -155,7 +155,7 @@ function onExtensionFloatingCharaPromptInput() {
     let tempCharaNote = {
         name: avatarName,
         prompt: tempPrompt
-    }
+    };
 
     setCharaPromptTokenCounterDebounced(tempPrompt);
 
@@ -164,7 +164,7 @@ function onExtensionFloatingCharaPromptInput() {
 
     if (extension_settings.note.chara) {
         existingCharaNoteIndex = extension_settings.note.chara.findIndex((e) => e.name === avatarName);
-        existingCharaNote = extension_settings.note.chara[existingCharaNoteIndex]
+        existingCharaNote = extension_settings.note.chara[existingCharaNoteIndex];
     }
 
     if (tempPrompt.length === 0 &&
@@ -179,9 +179,9 @@ function onExtensionFloatingCharaPromptInput() {
     }
     else if (avatarName && tempPrompt.length > 0) {
         if (!extension_settings.note.chara) {
-            extension_settings.note.chara = []
+            extension_settings.note.chara = [];
         }
-        Object.assign(tempCharaNote, { useChara: false, position: chara_note_position.replace })
+        Object.assign(tempCharaNote, { useChara: false, position: chara_note_position.replace });
 
         extension_settings.note.chara.push(tempCharaNote);
     } else {
@@ -273,7 +273,7 @@ export function setFloatingPrompt() {
     ------
     lastMessageNumber = ${lastMessageNumber}
     metadata_keys.interval = ${chat_metadata[metadata_keys.interval]}
-    `)
+    `);
 
     // interval 1 should be inserted no matter what
     if (chat_metadata[metadata_keys.interval] === 1) {
@@ -320,7 +320,7 @@ function onANMenuItemClick() {
     if (selected_group || this_chid) {
         //show AN if it's hidden
         if ($('#floatingPrompt').css('display') !== 'flex') {
-            $('#floatingPrompt').addClass('resizing')
+            $('#floatingPrompt').addClass('resizing');
             $('#floatingPrompt').css('display', 'flex');
             $('#floatingPrompt').css('opacity', 0.0);
             $('#floatingPrompt').transition({
@@ -328,26 +328,26 @@ function onANMenuItemClick() {
                 duration: 250,
             }, async function () {
                 await delay(50);
-                $('#floatingPrompt').removeClass('resizing')
+                $('#floatingPrompt').removeClass('resizing');
             });
 
             //auto-open the main AN inline drawer
             if ($('#ANBlockToggle')
                 .siblings('.inline-drawer-content')
                 .css('display') !== 'block') {
-                $('#floatingPrompt').addClass('resizing')
+                $('#floatingPrompt').addClass('resizing');
                 $('#ANBlockToggle').click();
             }
         } else {
             //hide AN if it's already displayed
-            $('#floatingPrompt').addClass('resizing')
+            $('#floatingPrompt').addClass('resizing');
             $('#floatingPrompt').transition({
                 opacity: 0.0,
                 duration: 250,
             },
                 async function () {
                     await delay(50);
-                    $('#floatingPrompt').removeClass('resizing')
+                    $('#floatingPrompt').removeClass('resizing');
                 });
             setTimeout(function () {
                 $('#floatingPrompt').hide();
@@ -418,8 +418,8 @@ export function initAuthorsNote() {
             duration: 200,
             easing: 'ease-in-out',
         });
-        setTimeout(function () { $('#floatingPrompt').hide() }, 200);
-    })
+        setTimeout(function () { $('#floatingPrompt').hide(); }, 200);
+    });
     $('#option_toggle_AN').on('click', onANMenuItemClick);
 
     registerSlashCommand('note', setNoteTextCommand, [], '<span class=\'monospace\'>(text)</span> – sets an author\'s note for the currently selected chat', true, true);

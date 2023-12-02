@@ -10,7 +10,7 @@ const enableBulkEdit = () => {
     // show the delete button
     $('#bulkDeleteButton').show();
     is_bulk_edit = true;
-}
+};
 
 const disableBulkEdit = () => {
     disableBulkSelect();
@@ -18,7 +18,7 @@ const disableBulkEdit = () => {
     // hide the delete button
     $('#bulkDeleteButton').hide();
     is_bulk_edit = false;
-}
+};
 
 const toggleBulkEditMode = (isBulkEdit) => {
     if (isBulkEdit) {
@@ -26,7 +26,7 @@ const toggleBulkEditMode = (isBulkEdit) => {
     } else {
         enableBulkEdit();
     }
-}
+};
 
 (new BulkEditOverlay()).addStateChangeCallback((state) => {
     if (state === BulkEditOverlayState.select) enableBulkEdit();

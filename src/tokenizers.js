@@ -324,7 +324,7 @@ function createTiktokenEncodingHandler(modelId) {
             console.log(error);
             return response.send({ ids: [], count: 0, chunks: [] });
         }
-    }
+    };
 }
 
 /**
@@ -348,7 +348,7 @@ function createTiktokenDecodingHandler(modelId) {
             console.log(error);
             return response.send({ text: '' });
         }
-    }
+    };
 }
 
 /**
@@ -546,5 +546,5 @@ module.exports = {
     registerEndpoints,
     getSentencepiceTokenizer,
     sentencepieceTokenizers,
-}
+};
 

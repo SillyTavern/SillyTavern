@@ -229,14 +229,14 @@ async function visualNovelUpdateLayers(container) {
 
     images.sort(sortFunction).each((index, current) => {
         const element = $(current);
-        const elementID = element.attr('id')
+        const elementID = element.attr('id');
 
         // skip repositioning of dragged elements
         if (element.data('dragged')
             || (power_user.movingUIState[elementID]
                 && (typeof power_user.movingUIState[elementID] === 'object')
                 && Object.keys(power_user.movingUIState[elementID]).length > 0)) {
-            loadMovingUIState()
+            loadMovingUIState();
             //currentPosition += imagesWidth[index];
             return;
         }
@@ -298,7 +298,7 @@ async function setImage(img, path) {
         //only swap expressions when necessary
         if (prevExpressionSrc !== path && !img.hasClass('expression-animating')) {
             //clone expression
-            expressionClone.addClass('expression-clone')
+            expressionClone.addClass('expression-clone');
             //make invisible and remove id to prevent double ids
             //must be made invisible to start because they share the same Z-index
             expressionClone.attr('id', '').css({ opacity: 0 });
@@ -855,7 +855,7 @@ async function validateImages(character, forceRedrawCached) {
 
     if (spriteCache[character]) {
         if (forceRedrawCached && $('#image_list').data('name') !== character) {
-            console.debug('force redrawing character sprites list')
+            console.debug('force redrawing character sprites list');
             drawSpritesList(character, labels, spriteCache[character]);
         }
 
@@ -1002,7 +1002,7 @@ async function setExpression(character, expression, force) {
         await validateImages(character);
         const img = $('img.expression');
         const prevExpressionSrc = img.attr('src');
-        const expressionClone = img.clone()
+        const expressionClone = img.clone();
 
         const sprite = (spriteCache[character] && spriteCache[character].find(x => x.label === expression));
         console.debug('checking for expression images to show..');
@@ -1030,14 +1030,14 @@ async function setExpression(character, expression, force) {
             if (prevExpressionSrc !== sprite.path
                 && !img.hasClass('expression-animating')) {
                 //clone expression
-                expressionClone.addClass('expression-clone')
+                expressionClone.addClass('expression-clone');
                 //make invisible and remove id to prevent double ids
                 //must be made invisible to start because they share the same Z-index
                 expressionClone.attr('id', '').css({ opacity: 0 });
                 //add new sprite path to clone src
                 expressionClone.attr('src', sprite.path);
                 //add invisible clone to html
-                expressionClone.appendTo($('#expression-holder'))
+                expressionClone.appendTo($('#expression-holder'));
 
                 const duration = 200;
 
@@ -1426,7 +1426,7 @@ function setExpressionOverrideHtml(forceClear = false) {
     function addVisualNovelMode() {
         const html = `
         <div id="visual-novel-wrapper">
-        </div>`
+        </div>`;
         const element = $(html);
         element.hide();
         $('body').append(element);
@@ -1444,9 +1444,9 @@ function setExpressionOverrideHtml(forceClear = false) {
         });
         $('#expression_override_cleanup_button').on('click', onClickExpressionOverrideRemoveAllButton);
         $(document).on('dragstart', '.expression', (e) => {
-            e.preventDefault()
-            return false
-        })
+            e.preventDefault();
+            return false;
+        });
         $(document).on('click', '.expression_list_item', onClickExpressionImage);
         $(document).on('click', '.expression_list_upload', onClickExpressionUpload);
         $(document).on('click', '.expression_list_delete', onClickExpressionDelete);
@@ -1472,7 +1472,7 @@ function setExpressionOverrideHtml(forceClear = false) {
     const updateFunction = wrapper.update.bind(wrapper);
     setInterval(updateFunction, UPDATE_INTERVAL);
     moduleWorker();
-    dragElement($('#expression-holder'))
+    dragElement($('#expression-holder'));
     eventSource.on(event_types.CHAT_CHANGED, () => {
         // character changed
         removeExpression();

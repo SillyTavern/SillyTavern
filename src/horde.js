@@ -177,7 +177,7 @@ function registerEndpoints(app, jsonParser) {
             console.error(error);
             return response.sendStatus(500);
         }
-    })
+    });
 
     app.post('/api/horde/generate-image', jsonParser, async (request, response) => {
         if (!request.body.prompt) {

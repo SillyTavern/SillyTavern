@@ -153,7 +153,7 @@ function parseChubUrl(str) {
         if (part === 'www.chub.ai' || part === 'chub.ai') {
             domainIndex = index;
         }
-    })
+    });
 
     const lastTwo = domainIndex !== -1 ? splitStr.slice(domainIndex + 1) : splitStr;
 
@@ -192,7 +192,7 @@ async function downloadJannyCharacter(uuid) {
     if (result.ok) {
         const downloadResult = await result.json();
         if (downloadResult.status === 'ok') {
-            const imageResult = await fetch(downloadResult.downloadUrl)
+            const imageResult = await fetch(downloadResult.downloadUrl);
             const buffer = await imageResult.buffer();
             const fileName = `${sanitize(uuid)}.png`;
             const fileType = result.headers.get('content-type');
@@ -216,7 +216,7 @@ function parseJannyUrl(url) {
 
     // Check if UUID is found
     const uuid = matches ? matches[0] : null;
-    return uuid
+    return uuid;
 }
 
 /**
@@ -235,7 +235,7 @@ function registerEndpoints(app, jsonParser) {
             let result;
             let type;
 
-            const isJannnyContent = url.includes('janitorai')
+            const isJannnyContent = url.includes('janitorai');
             if (isJannnyContent) {
                 const uuid = parseJannyUrl(url);
                 if (!uuid) {
@@ -261,7 +261,7 @@ function registerEndpoints(app, jsonParser) {
                 }
             }
             
-            if (result.fileType) response.set('Content-Type', result.fileType)
+            if (result.fileType) response.set('Content-Type', result.fileType);
             response.set('Content-Disposition', `attachment; filename="${result.fileName}"`);
             response.set('X-Custom-Content-Type', type);
             return response.send(result.buffer);
@@ -275,4 +275,4 @@ function registerEndpoints(app, jsonParser) {
 module.exports = {
     checkForNewContent,
     registerEndpoints,
-}
+};

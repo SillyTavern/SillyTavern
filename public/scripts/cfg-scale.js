@@ -6,7 +6,7 @@ import {
     event_types,
     saveSettingsDebounced,
 } from '../script.js';
-import { extension_settings, saveMetadataDebounced } from './extensions.js'
+import { extension_settings, saveMetadataDebounced } from './extensions.js';
 import { selected_group } from './group-chats.js';
 import { getCharaFilename, delay } from './utils.js';
 import { power_user } from './power-user.js';
@@ -23,7 +23,7 @@ const settingType = {
     guidance_scale: 0,
     negative_prompt: 1,
     positive_prompt: 2
-}
+};
 
 // Used for character and chat CFG values
 function updateSettings() {
@@ -74,7 +74,7 @@ function setCharCfg(tempValue, setting) {
         }
     } else if (avatarName && tempValue.length > 0) {
         if (!extension_settings.cfg.chara) {
-            extension_settings.cfg.chara = []
+            extension_settings.cfg.chara = [];
         }
 
         extension_settings.cfg.chara.push(tempCharaCfg);
@@ -115,7 +115,7 @@ function onCfgMenuItemClick() {
     if (selected_group || this_chid) {
         //show CFG config if it's hidden
         if ($('#cfgConfig').css('display') !== 'flex') {
-            $('#cfgConfig').addClass('resizing')
+            $('#cfgConfig').addClass('resizing');
             $('#cfgConfig').css('display', 'flex');
             $('#cfgConfig').css('opacity', 0.0);
             $('#cfgConfig').transition({
@@ -123,26 +123,26 @@ function onCfgMenuItemClick() {
                 duration: 250,
             }, async function () {
                 await delay(50);
-                $('#cfgConfig').removeClass('resizing')
+                $('#cfgConfig').removeClass('resizing');
             });
 
             //auto-open the main AN inline drawer
             if ($('#CFGBlockToggle')
                 .siblings('.inline-drawer-content')
                 .css('display') !== 'block') {
-                $('#floatingPrompt').addClass('resizing')
+                $('#floatingPrompt').addClass('resizing');
                 $('#CFGBlockToggle').click();
             }
         } else {
             //hide AN if it's already displayed
-            $('#cfgConfig').addClass('resizing')
+            $('#cfgConfig').addClass('resizing');
             $('#cfgConfig').transition({
                 opacity: 0.0,
                 duration: 250,
             },
                 async function () {
                     await delay(50);
-                    $('#cfgConfig').removeClass('resizing')
+                    $('#cfgConfig').removeClass('resizing');
                 });
             setTimeout(function () {
                 $('#cfgConfig').hide();
@@ -284,7 +284,7 @@ export function initCfg() {
             duration: 200,
             easing: 'ease-in-out',
         });
-        setTimeout(function () { $('#cfgConfig').hide() }, 200);
+        setTimeout(function () { $('#cfgConfig').hide(); }, 200);
     });
 
     $('#chat_cfg_guidance_scale').on('input', function() {
@@ -338,7 +338,7 @@ export function initCfg() {
     $('input[name="cfg_prompt_combine"]').on('input', function() {
         const values = $('#cfgConfig').find('input[name="cfg_prompt_combine"]')
             .filter(':checked')
-            .map(function() { return Number($(this).val()) })
+            .map(function() { return Number($(this).val()); })
             .get()
             .filter((e) => !Number.isNaN(e)) || [];
 
@@ -358,7 +358,7 @@ export function initCfg() {
 
     $('#groupchat_cfg_use_chara').on('input', function() {
         const checked = !!$(this).prop('checked');
-        chat_metadata[metadataKeys.groupchat_individual_chars] = checked
+        chat_metadata[metadataKeys.groupchat_individual_chars] = checked;
 
         if (checked) {
             toastr.info('You can edit character CFG values in their respective character chats.');
@@ -385,7 +385,7 @@ export const cfgType = {
     chat: 0,
     chara: 1,
     global: 2
-}
+};
 
 export const metadataKeys = {
     guidance_scale: 'cfg_guidance_scale',
@@ -395,7 +395,7 @@ export const metadataKeys = {
     groupchat_individual_chars: 'cfg_groupchat_individual_chars',
     prompt_insertion_depth: 'cfg_prompt_insertion_depth',
     prompt_separator: 'cfg_prompt_separator'
-}
+};
 
 // Gets the CFG guidance scale
 // If the guidance scale is 1, ignore the CFG prompt(s) since it won't be used anyways

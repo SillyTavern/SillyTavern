@@ -230,7 +230,7 @@ export function getInstructStoppingSequences() {
 export const force_output_sequence = {
     FIRST: 1,
     LAST: 2,
-}
+};
 
 /**
  * Formats instruct mode chat message.

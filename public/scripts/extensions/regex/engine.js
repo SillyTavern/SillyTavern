@@ -4,7 +4,7 @@ export {
     regex_placement,
     getRegexedString,
     runRegexScript
-}
+};
 
 const regex_placement = {
     // MD Display is deprecated. Do not use.
@@ -12,12 +12,12 @@ const regex_placement = {
     USER_INPUT: 1,
     AI_OUTPUT: 2,
     SLASH_COMMAND: 3
-}
+};
 
 const regex_replace_strategy = {
     REPLACE: 0,
     OVERLAY: 1
-}
+};
 
 // Originally from: https://github.com/IonicaBizau/regex-parser.js/blob/master/lib/index.js
 function regexFromString(input) {

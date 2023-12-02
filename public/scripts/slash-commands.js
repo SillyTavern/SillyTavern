@@ -47,7 +47,7 @@ export {
     executeSlashCommands,
     registerSlashCommand,
     getSlashCommandsHelp,
-}
+};
 
 class SlashCommandParser {
     constructor() {
@@ -79,7 +79,7 @@ class SlashCommandParser {
     }
 
     parse(text) {
-        const excludedFromRegex = ['sendas']
+        const excludedFromRegex = ['sendas'];
         const firstSpace = text.indexOf(' ');
         const command = firstSpace !== -1 ? text.substring(1, firstSpace) : text.substring(1);
         const args = firstSpace !== -1 ? text.substring(firstSpace + 1) : '';
@@ -332,7 +332,7 @@ function trimTokensCallback(arg, value) {
     }
 
     const direction = arg.direction || 'end';
-    const tokenCount = getTokenCount(value)
+    const tokenCount = getTokenCount(value);
 
     // Token count is less than the limit, do nothing
     if (tokenCount <= limit) {
@@ -394,7 +394,7 @@ async function buttonsCallback(args, text) {
             callPopup(popupContainer, 'text', '', { okButton: 'Cancel' })
                 .then(() => resolve(''))
                 .catch(() => resolve(''));
-        })
+        });
     } catch {
         return '';
     }
@@ -694,7 +694,7 @@ async function askCharacter(_, text) {
     }
 
     if (!text) {
-        console.warn('WARN: No text provided for /ask command')
+        console.warn('WARN: No text provided for /ask command');
     }
 
     const parts = text.split('\n');
@@ -748,15 +748,15 @@ async function askCharacter(_, text) {
         }
 
         // Kill this callback once the event fires
-        eventSource.removeListener(event_types.CHARACTER_MESSAGE_RENDERED, restoreCharacter)
-    }
+        eventSource.removeListener(event_types.CHARACTER_MESSAGE_RENDERED, restoreCharacter);
+    };
 
     // Run generate and restore previous character on error
     try {
         toastr.info(`Asking ${character.name} something...`);
-        await Generate('ask_command')
+        await Generate('ask_command');
     } catch {
-        restoreCharacter()
+        restoreCharacter();
     }
 
     // Restore previous character once message renders
@@ -1140,7 +1140,7 @@ function setFlatModeCallback() {
 
 function setNameCallback(_, name) {
     if (!name) {
-        toastr.warning('you must specify a name to change to')
+        toastr.warning('you must specify a name to change to');
         return;
     }
 
@@ -1548,4 +1548,4 @@ function setSlashCommandAutocomplete(textarea) {
 jQuery(function () {
     const textarea = $('#send_textarea');
     setSlashCommandAutocomplete(textarea);
-})
+});

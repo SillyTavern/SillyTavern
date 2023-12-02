@@ -222,7 +222,7 @@ function registerEndpoints(app, jsonParser) {
         const text = request.body.text;
         let lang = request.body.lang;
         if (request.body.lang === 'zh-CN') {
-            lang = 'ZH'
+            lang = 'ZH';
         }
 
         if (!text || !lang) {
@@ -268,7 +268,7 @@ function registerEndpoints(app, jsonParser) {
         let lang = request.body.lang;
 
         if (request.body.lang === 'zh-CN') {
-            lang = 'zh-Hans'
+            lang = 'zh-Hans';
         }
 
         if (!text || !lang) {

@@ -73,7 +73,7 @@ function registerEndpoints(app, jsonParser) {
      */
     app.post('/api/assets/get', jsonParser, async (_, response) => {
         const folderPath = path.join(DIRECTORIES.assets);
-        let output = {}
+        let output = {};
         //console.info("Checking files into",folderPath);
 
         try {
@@ -150,8 +150,8 @@ function registerEndpoints(app, jsonParser) {
         if (safe_input == '')
             return response.sendStatus(400);
 
-        const temp_path = path.join(DIRECTORIES.assets, 'temp', safe_input)
-        const file_path = path.join(DIRECTORIES.assets, category, safe_input)
+        const temp_path = path.join(DIRECTORIES.assets, 'temp', safe_input);
+        const file_path = path.join(DIRECTORIES.assets, category, safe_input);
         console.debug('Request received to download', url, 'to', file_path);
 
         try {
@@ -209,7 +209,7 @@ function registerEndpoints(app, jsonParser) {
         if (safe_input == '')
             return response.sendStatus(400);
 
-        const file_path = path.join(DIRECTORIES.assets, category, safe_input)
+        const file_path = path.join(DIRECTORIES.assets, category, safe_input);
         console.debug('Request received to delete', category, file_path);
 
         try {
@@ -248,10 +248,10 @@ function registerEndpoints(app, jsonParser) {
         const inputCategory = request.query.category;
 
         // Check category
-        let category = null
+        let category = null;
         for (let i of VALID_CATEGORIES)
             if (i == inputCategory)
-                category = i
+                category = i;
 
         if (category === null) {
             console.debug('Bad request: unsuported asset category.');
@@ -266,7 +266,7 @@ function registerEndpoints(app, jsonParser) {
 
                 // Live2d assets
                 if (category == 'live2d') {
-                    const folders = fs.readdirSync(folderPath)
+                    const folders = fs.readdirSync(folderPath);
                     for (let modelFolder of folders) {
                         const live2dModelPath = path.join(folderPath, modelFolder);
                         if (fs.statSync(live2dModelPath).isDirectory()) {
@@ -326,4 +326,4 @@ function registerEndpoints(app, jsonParser) {
 
 module.exports = {
     registerEndpoints,
-}
+};

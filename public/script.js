@@ -265,7 +265,7 @@ export {
     printCharacters,
     isOdd,
     countOccurrences
-}
+};
 
 // Cohee: Uncomment when we decide to use loader
 showLoader();
@@ -315,7 +315,7 @@ export const event_types = {
     FORCE_SET_BACKGROUND: 'force_set_background',
     CHAT_DELETED: 'chat_deleted',
     GROUP_CHAT_DELETED: 'group_chat_deleted',
-}
+};
 
 export const eventSource = new EventEmitter();
 
@@ -326,7 +326,7 @@ eventSource.on(event_types.CHAT_CHANGED, processChatSlashCommands);
 const characterGroupOverlay = new BulkEditOverlay();
 eventSource.on(event_types.CHARACTER_PAGE_LOADED, characterGroupOverlay.onPageLoad);
 
-hljs.addPlugin({ 'before:highlightElement': ({ el }) => { el.textContent = el.innerText } });
+hljs.addPlugin({ 'before:highlightElement': ({ el }) => { el.textContent = el.innerText; } });
 
 // Markdown converter
 let mesForShowdownParse; //intended to be used as a context to compare showdown strings against
@@ -602,13 +602,13 @@ function reloadMarkdownProcessor(render_formulas = false) {
         if (power_user) {
             converter.addExtension(markdownExclusionExt(), 'exclusion');
         }
-    }, 1)
+    }, 1);
 
     return converter;
 }
 
 function getCurrentChatId() {
-    console.debug(`selectedGroup:${selected_group}, this_chid:${this_chid}`)
+    console.debug(`selectedGroup:${selected_group}, this_chid:${this_chid}`);
     if (selected_group) {
         return groups.find(x => x.id == selected_group)?.chat_id;
     }
@@ -918,7 +918,7 @@ async function getStatus() {
 
         // We didn't get a 200 status code, but the endpoint has an explanation. Which means it DID connect, but I digress.
         if (online_status === 'no_connection' && data.response) {
-            toastr.error(data.response, 'API Error', { timeOut: 5000, preventDuplicates: true })
+            toastr.error(data.response, 'API Error', { timeOut: 5000, preventDuplicates: true });
         }
     } catch (err) {
         console.error('Error getting status', err);
@@ -1366,9 +1366,9 @@ async function clearChat() {
     }
     $('#chat').children().remove();
     if ($('.zoomed_avatar[forChar]').length) {
-        console.debug('saw avatars to remove')
+        console.debug('saw avatars to remove');
         $('.zoomed_avatar[forChar]').remove();
-    } else { console.debug('saw no avatars') }
+    } else { console.debug('saw no avatars'); }
 
     await saveItemizedPrompts(getCurrentChatId());
     itemizedPrompts = [];
@@ -1473,7 +1473,7 @@ function messageFormatting(mes, ch_name, isSystem, isUser) {
         mes = mes.replace(/<code(.*)>[\s\S]*?<\/code>/g, function (match) {
             // Firefox creates extra newlines from <br>s in code blocks, so we replace them before converting newlines to <br>s.
             return match.replace(/\n/gm, '\u0000');
-        })
+        });
         mes = mes.replace(/\n/g, '<br/>');
         mes = mes.replace(/\u0000/g, '\n'); // Restore converted newlines
         mes = mes.trim();
@@ -1601,7 +1601,7 @@ export function updateMessageBlock(messageId, message) {
     const messageElement = $(`#chat [mesid="${messageId}"]`);
     const text = message?.extra?.display_text ?? message.mes;
     messageElement.find('.mes_text').html(messageFormatting(text, message.name, message.is_system, message.is_user));
-    addCopyToCodeBlocks(messageElement)
+    addCopyToCodeBlocks(messageElement);
     appendMediaToMessage(message, messageElement);
 }
 
@@ -2143,7 +2143,7 @@ function randomReplace(input, emptyListPlaceholder = '') {
             return list[randomIndex];
         });
     } else {
-        return input
+        return input;
     }
 }
 
@@ -2218,7 +2218,7 @@ function getStoppingStrings(isImpersonate, isContinue) {
  * @returns
  */
 export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, quietImage = null) {
-    console.log('got into genQuietPrompt')
+    console.log('got into genQuietPrompt');
     return await new Promise(
         async function promptPromise(resolve, reject) {
             if (quietToLoud === true) {
@@ -2231,7 +2231,7 @@ export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, q
             }
             else {
                 try {
-                    console.log('going to generate non-QuietToLoud')
+                    console.log('going to generate non-QuietToLoud');
                     await Generate('quiet', { resolve, reject, quiet_prompt, quietToLoud: false, skipWIAN: skipWIAN, force_name2: true, quietImage: quietImage });
                 }
                 catch {
@@ -2367,7 +2367,7 @@ function addPersonaDescriptionExtensionPrompt() {
     const promptPositions = [persona_description_positions.BOTTOM_AN, persona_description_positions.TOP_AN];
 
     if (promptPositions.includes(power_user.persona_description_position) && shouldWIAddPrompt) {
-        const originalAN = extension_prompts[NOTE_MODULE_NAME].value
+        const originalAN = extension_prompts[NOTE_MODULE_NAME].value;
         const ANWithDesc = power_user.persona_description_position === persona_description_positions.TOP_AN
             ? `${power_user.persona_description}\n${originalAN}`
             : `${originalAN}\n${power_user.persona_description}`;
@@ -2621,23 +2621,23 @@ class StreamingProcessor {
                 if (text) {
                     if (power_user.auto_swipe_minimum_length) {
                         if (text.length < power_user.auto_swipe_minimum_length && text.length !== 0) {
-                            console.log('Generated text size too small')
-                            return true
+                            console.log('Generated text size too small');
+                            return true;
                         }
                     }
                     if (power_user.auto_swipe_blacklist_threshold) {
                         if (containsBlacklistedWords(text, power_user.auto_swipe_blacklist, power_user.auto_swipe_blacklist_threshold)) {
-                            console.log('Generated text has blacklisted words')
-                            return true
+                            console.log('Generated text has blacklisted words');
+                            return true;
                         }
                     }
                 }
-                return false
-            }
+                return false;
+            };
 
             if (generatedTextFiltered(text)) {
-                swipe_right()
-                return
+                swipe_right();
+                return;
             }
         }
         playMessageSound();
@@ -2985,7 +2985,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
             mesExamples = '';
         }
         if (mesExamples && isInstruct) {
-            mesExamples = formatInstructModeExamples(mesExamples, name1, name2)
+            mesExamples = formatInstructModeExamples(mesExamples, name1, name2);
         }
 
         const exampleSeparator = power_user.context.example_separator ? `${substituteParams(power_user.context.example_separator)}\n` : '';
@@ -3106,16 +3106,16 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         let { worldInfoString, worldInfoBefore, worldInfoAfter, worldInfoDepth } = await getWorldInfoPrompt(chat2, this_max_context);
 
         if (skipWIAN !== true) {
-            console.log('skipWIAN not active, adding WIAN')
+            console.log('skipWIAN not active, adding WIAN');
             // Add all depth WI entries to prompt
             if (Array.isArray(worldInfoDepth)) {
                 worldInfoDepth.forEach((e) => {
                     const joinedEntries = e.entries.join('\n');
-                    setExtensionPrompt(`customDepthWI-${e.depth}`, joinedEntries, extension_prompt_types.IN_CHAT, e.depth)
+                    setExtensionPrompt(`customDepthWI-${e.depth}`, joinedEntries, extension_prompt_types.IN_CHAT, e.depth);
                 });
             }
         } else {
-            console.log('skipping WIAN')
+            console.log('skipping WIAN');
         }
 
         // Add persona description to prompt
@@ -3198,7 +3198,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 break;
             }
 
-            tokenCount += getTokenCount(item.replace(/\r/gm, ''))
+            tokenCount += getTokenCount(item.replace(/\r/gm, ''));
             chatString = item + chatString;
             if (tokenCount < this_max_context) {
                 arrMes[arrMes.length] = item;
@@ -3219,7 +3219,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         let count_exm_add = 0;
         if (!power_user.pin_examples) {
             for (let example of mesExamplesArray) {
-                tokenCount += getTokenCount(example.replace(/\r/gm, ''))
+                tokenCount += getTokenCount(example.replace(/\r/gm, ''));
                 examplesString += example;
                 if (tokenCount < this_max_context) {
                     count_exm_add++;
@@ -3408,7 +3408,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 console.debug('---Generated Prompt Cache length: ' + generatedPromptCache.length);
                 checkPromptSize();
             } else {
-                console.debug('---calling setPromptString ' + generatedPromptCache.length)
+                console.debug('---calling setPromptString ' + generatedPromptCache.length);
                 setPromptString();
             }
 
@@ -3427,7 +3427,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
                 // OAI has its own prompt manager. No need to do anything here
                 if (main_api === 'openai') {
-                    return ''
+                    return '';
                 }
 
                 // Deep clone
@@ -3460,7 +3460,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
 
                 // TODO: Move zero-depth anchor append to work like CFG and bias appends
                 if (zeroDepthAnchor?.length && !isContinue) {
-                    console.debug(/\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1)))
+                    console.debug(/\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1)));
                     finalMesSend[finalMesSend.length - 1].message +=
                         /\s/.test(finalMesSend[finalMesSend.length - 1].message.slice(-1))
                             ? zeroDepthAnchor
@@ -3787,18 +3787,18 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         const generatedTextFiltered = (getMessage) => {
                             if (power_user.auto_swipe_blacklist_threshold) {
                                 if (containsBlacklistedWords(getMessage, power_user.auto_swipe_blacklist, power_user.auto_swipe_blacklist_threshold)) {
-                                    console.debug('Generated text has blacklisted words')
-                                    return true
+                                    console.debug('Generated text has blacklisted words');
+                                    return true;
                                 }
                             }
 
-                            return false
-                        }
+                            return false;
+                        };
                         if (generatedTextFiltered(getMessage)) {
                             console.debug('swiping right automatically');
                             is_send_press = false;
                             swipe_right();
-                            return
+                            return;
                         }
                     }
                 } else {
@@ -4122,7 +4122,7 @@ function appendZeroDepthAnchor(force_name2, zeroDepthAnchor, finalPrompt) {
 
 async function DupeChar() {
     if (!this_chid) {
-        toastr.warning('You must first select a character to duplicate!')
+        toastr.warning('You must first select a character to duplicate!');
         return;
     }
 
@@ -4156,7 +4156,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
     var thisPromptSet = undefined;
 
     for (var i = 0; i < itemizedPrompts.length; i++) {
-        console.log(`looking for ${incomingMesId} vs ${itemizedPrompts[i].mesId}`)
+        console.log(`looking for ${incomingMesId} vs ${itemizedPrompts[i].mesId}`);
         if (itemizedPrompts[i].mesId === incomingMesId) {
             console.log(`found matching mesID ${i}`);
             thisPromptSet = i;
@@ -4239,7 +4239,7 @@ function promptItemize(itemizedPrompts, requestedMesId) {
         params.finalPromptTokens = getTokenCount(itemizedPrompts[thisPromptSet].finalPrompt);
         params.storyStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].storyString) - params.worldInfoStringTokens;
         params.examplesStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].examplesString);
-        params.mesSendStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].mesSendString)
+        params.mesSendStringTokens = getTokenCount(itemizedPrompts[thisPromptSet].mesSendString);
         params.ActualChatHistoryTokens = params.mesSendStringTokens - (params.allAnchorsTokens - (params.beforeScenarioAnchorTokens + params.afterScenarioAnchorTokens)) + power_user.token_padding;
         params.instructionTokens = getTokenCount(itemizedPrompts[thisPromptSet].instruction);
         params.promptBiasTokens = getTokenCount(itemizedPrompts[thisPromptSet].promptBias);
@@ -4330,7 +4330,7 @@ function extractMessageFromData(data) {
         case 'openai':
             return data;
         default:
-            return ''
+            return '';
     }
 }
 
@@ -4478,7 +4478,7 @@ async function saveReply(type, getMessage, _, title) {
         chat[chat.length - 1]['extra'] = {};
     }
 
-    let oldMessage = ''
+    let oldMessage = '';
     const generationFinished = new Date();
     const img = extractImageFromMessage(getMessage);
     getMessage = img.getMessage;
@@ -4504,7 +4504,7 @@ async function saveReply(type, getMessage, _, title) {
             chat[chat.length - 1]['mes'] = getMessage;
         }
     } else if (type === 'append' || type === 'continue') {
-        console.debug('Trying to append.')
+        console.debug('Trying to append.');
         oldMessage = chat[chat.length - 1]['mes'];
         chat[chat.length - 1]['title'] = title;
         chat[chat.length - 1]['mes'] += getMessage;
@@ -4522,7 +4522,7 @@ async function saveReply(type, getMessage, _, title) {
         await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, chat_id);
     } else if (type === 'appendFinal') {
         oldMessage = chat[chat.length - 1]['mes'];
-        console.debug('Trying to appendFinal.')
+        console.debug('Trying to appendFinal.');
         chat[chat.length - 1]['title'] = title;
         chat[chat.length - 1]['mes'] = getMessage;
         chat[chat.length - 1]['gen_started'] = generation_started;
@@ -4645,7 +4645,7 @@ function getGeneratingModel(mes) {
             model = kobold_horde_model;
             break;
     }
-    return model
+    return model;
 }
 
 function extractImageFromMessage(getMessage) {
@@ -5164,14 +5164,14 @@ function changeMainAPI() {
 
     //custom because streaming has been moved up under response tokens, which exists inside common settings block
     if (selectedVal === 'textgenerationwebui') {
-        $('#streaming_textgenerationwebui_block').css('display', 'block')
+        $('#streaming_textgenerationwebui_block').css('display', 'block');
     } else {
-        $('#streaming_textgenerationwebui_block').css('display', 'none')
+        $('#streaming_textgenerationwebui_block').css('display', 'none');
     }
     if (selectedVal === 'kobold') {
-        $('#streaming_kobold_block').css('display', 'block')
+        $('#streaming_kobold_block').css('display', 'block');
     } else {
-        $('#streaming_kobold_block').css('display', 'none')
+        $('#streaming_kobold_block').css('display', 'none');
     }
 
     if (selectedVal === 'novel') {
@@ -5254,7 +5254,7 @@ function appendUserAvatar(name) {
         template.attr('title', '[Unnamed Persona]');
     }
     template.find('.avatar').attr('imgfile', name);
-    template.toggleClass('default_persona', name === power_user.default_persona)
+    template.toggleClass('default_persona', name === power_user.default_persona);
     template.find('img').attr('src', getUserAvatar(name));
     $('#user_avatar_block').append(template);
     highlightSelectedAvatar();
@@ -5359,7 +5359,7 @@ async function doOnboarding(avatarId) {
     var userName = await callPopup(template, 'input', name1);
 
     if (userName) {
-        userName = userName.replace('\n', ' ')
+        userName = userName.replace('\n', ' ');
         setUserName(userName);
         console.log(`Binding persona ${avatarId} to name ${userName}`);
         power_user.personas[avatarId] = userName;
@@ -5791,10 +5791,10 @@ export async function getChatsFromFiles(data, isGroupChat) {
             }
 
             return res();
-        })
-    })
+        });
+    });
 
-    await Promise.all(chat_promise)
+    await Promise.all(chat_promise);
 
     return chat_dict;
 }
@@ -5897,7 +5897,7 @@ export async function displayPastChats() {
                 }
             }
         }
-    }
+    };
     displayChats('');  // Display all by default
 
     const debouncedDisplay = debounce((searchQuery) => {
@@ -5948,7 +5948,7 @@ function selectRightMenuWithAnimation(selectedMenuId) {
                 complete: function () { },
             });
         }
-    })
+    });
 }
 
 function select_rm_info(type, charId, previousCharId = null) {
@@ -6319,7 +6319,7 @@ function callPopup(text, type, inputValue = '', { okButton, rows, wide, large } 
             rotatable: false,
             crop: function (event) {
                 crop_data = event.detail;
-                crop_data.want_resize = !power_user.never_resize_avatars
+                crop_data.want_resize = !power_user.never_resize_avatars;
             }
         });
     }
@@ -6628,7 +6628,7 @@ function openCharacterWorldPopup() {
             const newCharLoreEntry = {
                 name: fileName,
                 extraBooks: tempExtraBooks
-            }
+            };
 
             charLore.push(newCharLoreEntry);
         } else if (tempExtraBooks.length === 0) {
@@ -7277,7 +7277,7 @@ const swipe_right = () => {
             }
         });
     }
-}
+};
 
 function connectAPISlash(_, text) {
     if (!text) return;
@@ -7441,33 +7441,33 @@ async function importFromURL(items, files) {
 
 async function doImpersonate() {
     $('#send_textarea').val('');
-    $('#option_impersonate').trigger('click', { fromSlashCommand: true })
+    $('#option_impersonate').trigger('click', { fromSlashCommand: true });
 }
 
 async function doDeleteChat() {
-    $('#option_select_chat').trigger('click', { fromSlashCommand: true })
-    await delay(100)
-    let currentChatDeleteButton = $('.select_chat_block[highlight=\'true\']').parent().find('.PastChat_cross')
-    $(currentChatDeleteButton).trigger('click', { fromSlashCommand: true })
-    await delay(1)
-    $('#dialogue_popup_ok').trigger('click')
+    $('#option_select_chat').trigger('click', { fromSlashCommand: true });
+    await delay(100);
+    let currentChatDeleteButton = $('.select_chat_block[highlight=\'true\']').parent().find('.PastChat_cross');
+    $(currentChatDeleteButton).trigger('click', { fromSlashCommand: true });
+    await delay(1);
+    $('#dialogue_popup_ok').trigger('click');
     //200 delay needed let the past chat view reshow first
-    await delay(200)
-    $('#select_chat_cross').trigger('click')
+    await delay(200);
+    $('#select_chat_cross').trigger('click');
 }
 
 const isPwaMode = window.navigator.standalone;
-if (isPwaMode) { $('body').addClass('PWA') }
+if (isPwaMode) { $('body').addClass('PWA'); }
 
 function doCharListDisplaySwitch() {
-    console.debug('toggling body charListGrid state')
-    $('body').toggleClass('charListGrid')
+    console.debug('toggling body charListGrid state');
+    $('body').toggleClass('charListGrid');
     power_user.charListGrid = $('body').hasClass('charListGrid') ? true : false;
     saveSettingsDebounced();
 }
 
 function doCloseChat() {
-    $('#option_close_chat').trigger('click')
+    $('#option_close_chat').trigger('click');
 }
 
 /**
@@ -7544,7 +7544,7 @@ export async function deleteCharacter(name, avatar) {
 }
 
 function doTogglePanels() {
-    $('#option_settings').trigger('click')
+    $('#option_settings').trigger('click');
 }
 
 function addDebugFunctions() {
@@ -7588,7 +7588,7 @@ function addDebugFunctions() {
 jQuery(async function () {
 
     if (isMobile() === true) {
-        console.debug('hiding movingUI and sheldWidth toggles for mobile')
+        console.debug('hiding movingUI and sheldWidth toggles for mobile');
         $('#sheldWidthToggleBlock').hide();
         $('#movingUIModeCheckBlock').hide();
 
@@ -7841,7 +7841,7 @@ jQuery(async function () {
         if (popup_type == 'del_chat') {
             //close past chat popup
             $('#select_chat_cross').trigger('click');
-            showLoader()
+            showLoader();
             if (selected_group) {
                 await deleteGroupChat(selected_group, chat_file_for_del);
             } else {
@@ -7853,7 +7853,7 @@ jQuery(async function () {
             setTimeout(function () {
                 $('#option_select_chat').click();
                 $('#options').hide();
-                hideLoader()
+                hideLoader();
             }, 2000);
 
         }
@@ -8018,7 +8018,7 @@ jQuery(async function () {
             avatar_url: characters[this_chid]?.avatar,
             original_file: `${old_filename}.jsonl`,
             renamed_file: `${newName}.jsonl`,
-        }
+        };
 
         try {
             const response = await fetch('/renamechat', {
@@ -8072,7 +8072,7 @@ jQuery(async function () {
             file: `${filename}.jsonl`,
             exportfilename: `${filename}.${format}`,
             format: format,
-        }
+        };
         console.log(body);
         try {
             const response = await fetch('/exportchat', {
@@ -8137,7 +8137,7 @@ jQuery(async function () {
 
         const tabbyKey = String($('#api_key_tabby').val()).trim();
         if (tabbyKey.length) {
-            await writeSecret(SECRET_KEYS.TABBY, tabbyKey)
+            await writeSecret(SECRET_KEYS.TABBY, tabbyKey);
         }
 
         const urlSourceId = getTextGenUrlSourceId();
@@ -8190,13 +8190,13 @@ jQuery(async function () {
         //delay to prevent menu hiding when mouse leaves button into menu
         setTimeout(() => {
             if (!isMouseOverButtonOrMenu()) { hideMenu(); }
-        }, 100)
+        }, 100);
     });
     menu.on('blur', function () {
         //delay to prevent menu hide when mouseleaves menu into button
         setTimeout(() => {
             if (!isMouseOverButtonOrMenu()) { hideMenu(); }
-        }, 100)
+        }, 100);
     });
     $(document).on('click', function () {
         if (!isMouseOverButtonOrMenu() && menu.is(':visible')) { hideMenu(); }
@@ -8215,7 +8215,7 @@ jQuery(async function () {
                 //this is just to avoid the shadow for past chat view when using /delchat
                 //however, the dialog popup still gets one..
                 if (!fromSlashCommand) {
-                    console.log('displaying shadow')
+                    console.log('displaying shadow');
                     $('#shadow_select_chat_popup').css('display', 'block');
                     $('#shadow_select_chat_popup').css('opacity', 0.0);
                     $('#shadow_select_chat_popup').transition({
@@ -8322,9 +8322,9 @@ jQuery(async function () {
         setTimeout(() => {
             $('#dialogue_popup_ok').trigger('click');
         }, 1);
-        $('#select_chat_cross').trigger('click')
+        $('#select_chat_cross').trigger('click');
 
-    })
+    });
 
     //////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -8513,7 +8513,7 @@ jQuery(async function () {
         if (itemizedPrompts.length !== undefined && itemizedPrompts.length !== 0) {
             promptItemize(itemizedPrompts, mesIdForItemization);
         }
-    })
+    });
 
     $(document).on('pointerup', '#copyPromptToClipboard', function () {
         let rawPrompt = itemizedPrompts[PromptArrayItemForRawPromptDisplay].rawPrompt;
@@ -8544,7 +8544,7 @@ jQuery(async function () {
         $('#rawPromptWrapper').text(rawPromptValues);
         rawPromptPopper.update();
         $('#rawPromptPopup').toggle();
-    })
+    });
 
     //********************
     //***Message Editor***
@@ -8619,7 +8619,7 @@ jQuery(async function () {
         if (power_user.auto_save_msg_edits === true) {
             messageEditAuto($(this));
         }
-    })
+    });
 
     $(document).on('click', '.extraMesButtonsHint', function (e) {
         const elmnt = e.target;
@@ -8638,7 +8638,7 @@ jQuery(async function () {
                 easing: 'ease-in-out',
             });
         }, 150);
-    })
+    });
 
     $(document).on('click', function (e) {
         // Expanded options don't need to be closed
@@ -8775,7 +8775,7 @@ jQuery(async function () {
         const swipeExists = (!Array.isArray(chat[this_edit_mes_id].swipes) || chat[this_edit_mes_id].swipes.length <= 1 || chat[this_edit_mes_id].is_user || parseInt(this_edit_mes_id) !== chat.length - 1);
         if (power_user.confirm_message_delete && fromSlashCommand !== true) {
             const confirmation = swipeExists ? await callPopup('Are you sure you want to delete this message?', 'confirm')
-                : await callPopup('<h3>Delete this...</h3> <select id=\'del_type\'><option value=\'swipe\'>Swipe</option><option value=\'message\'>Message</option></select>', 'confirm')
+                : await callPopup('<h3>Delete this...</h3> <select id=\'del_type\'><option value=\'swipe\'>Swipe</option><option value=\'message\'>Message</option></select>', 'confirm');
             if (!confirmation) {
                 return;
             }
@@ -8793,7 +8793,7 @@ jQuery(async function () {
             if (swipe_id > 0) {
                 $('.swipe_left:last').click();
             } else {
-                $('.swipe_right:last').click()
+                $('.swipe_right:last').click();
             }
         } else {
             chat.splice(this_edit_mes_id, 1);
@@ -9016,7 +9016,7 @@ jQuery(async function () {
     $('.drawer-toggle').on('click', function () {
         var icon = $(this).find('.drawer-icon');
         var drawer = $(this).parent().find('.drawer-content');
-        if (drawer.hasClass('resizing')) { return }
+        if (drawer.hasClass('resizing')) { return; }
         var drawerWasOpenAlready = $(this).parent().find('.drawer-content').hasClass('openDrawer');
         let targetDrawerID = $(this).parent().find('.drawer-content').attr('id');
         const pinnedDrawerClicked = drawer.hasClass('pinnedOpen');
@@ -9044,7 +9044,7 @@ jQuery(async function () {
                         $(this).closest('.drawer-content').removeClass('resizing');
                         $('#rm_print_characters_block').trigger('scroll');
                     }
-                })
+                });
             } else {
                 $(this).closest('.drawer').find('.drawer-content').addClass('resizing').slideToggle(200, 'swing', async function () {
                     await delay(50); $(this).closest('.drawer-content').removeClass('resizing');
@@ -9105,7 +9105,7 @@ jQuery(async function () {
                 if (targetParentHasOpenDrawer === 0) {
                     //console.log($('.openDrawer').not('.pinnedOpen').length);
                     $('.openDrawer').not('.pinnedOpen').addClass('resizing').slideToggle(200, 'swing', function () {
-                        $(this).closest('.drawer-content').removeClass('resizing')
+                        $(this).closest('.drawer-content').removeClass('resizing');
                     });
                     $('.openIcon').toggleClass('closedIcon openIcon');
                     $('.openDrawer').not('.pinnedOpen').toggleClass('closedDrawer openDrawer');
@@ -9133,7 +9133,7 @@ jQuery(async function () {
     $(document).on('click', '.mes .avatar', function () {
         const messageElement = $(this).closest('.mes');
         const thumbURL = $(this).children('img').attr('src');
-        const charsPath = '/characters/'
+        const charsPath = '/characters/';
         const targetAvatarImg = thumbURL.substring(thumbURL.lastIndexOf('=') + 1);
         const charname = targetAvatarImg.replace('.png', '');
         const isValidCharacter = characters.some(x => x.avatar === decodeURIComponent(targetAvatarImg));
@@ -9151,10 +9151,10 @@ jQuery(async function () {
 
         const avatarSrc = isDataURL(thumbURL) ? thumbURL : charsPath + targetAvatarImg;
         if ($(`.zoomed_avatar[forChar="${charname}"]`).length) {
-            console.debug('removing container as it already existed')
+            console.debug('removing container as it already existed');
             $(`.zoomed_avatar[forChar="${charname}"]`).remove();
         } else {
-            console.debug('making new container from template')
+            console.debug('making new container from template');
             const template = $('#zoomed_avatar_template').html();
             const newElement = $(template);
             newElement.attr('forChar', charname);
@@ -9172,7 +9172,7 @@ jQuery(async function () {
             }
             loadMovingUIState();
             $(`.zoomed_avatar[forChar="${charname}"]`).css('display', 'block');
-            dragElement(newElement)
+            dragElement(newElement);
 
             $(`.zoomed_avatar[forChar="${charname}"] img`).on('dragstart', (e) => {
                 console.log('saw drag on avatar!');
@@ -9183,10 +9183,10 @@ jQuery(async function () {
     });
 
     $(document).on('click', '#OpenAllWIEntries', function () {
-        $('#world_popup_entries_list').children().find('.down').click()
+        $('#world_popup_entries_list').children().find('.down').click();
     });
     $(document).on('click', '#CloseAllWIEntries', function () {
-        $('#world_popup_entries_list').children().find('.up').click()
+        $('#world_popup_entries_list').children().find('.up').click();
     });
     $(document).on('click', '.open_alternate_greetings', openAlternateGreetings);
     /* $('#set_character_world').on('click', openCharacterWorldPopup); */
@@ -9198,7 +9198,7 @@ jQuery(async function () {
                 $('#send_textarea').focus();
             }
             if (power_user.auto_save_msg_edits === true) {
-                $(`#chat .mes[mesid="${this_edit_mes_id}"] .mes_edit_done`).click()
+                $(`#chat .mes[mesid="${this_edit_mes_id}"] .mes_edit_done`).click();
                 $('#send_textarea').focus();
             }
             if (!this_edit_mes_id && $('#mes_stop').is(':visible')) {
@@ -9261,61 +9261,61 @@ jQuery(async function () {
     });
 
 
-    var isManualInput = false
-    var valueBeforeManualInput
+    var isManualInput = false;
+    var valueBeforeManualInput;
 
     $('.range-block-counter input, .neo-range-input').on('click', function () {
-        valueBeforeManualInput = $(this).val()
-        console.log(valueBeforeManualInput)
+        valueBeforeManualInput = $(this).val();
+        console.log(valueBeforeManualInput);
     })
         .on('keydown', function (e) {
             const masterSelector = '#' + $(this).data('for');
             const masterElement = $(masterSelector);
             if (e.key === 'Enter') {
-                let manualInput = parseFloat($(this).val())
+                let manualInput = parseFloat($(this).val());
                 if (isManualInput) {
                     //disallow manual inputs outside acceptable range
                     if (manualInput >= $(this).attr('min') && manualInput <= $(this).attr('max')) {
                         //if value is ok, assign to slider and update handle text and position
                         //newSlider.val(manualInput)
                         //handleSlideEvent.call(newSlider, null, { value: parseFloat(manualInput) }, 'manual');
-                        valueBeforeManualInput = manualInput
-                        $(masterElement).val($(this).val()).trigger('input')
+                        valueBeforeManualInput = manualInput;
+                        $(masterElement).val($(this).val()).trigger('input');
                     } else {
                         //if value not ok, warn and reset to last known valid value
-                        toastr.warning(`Invalid value. Must be between ${$(this).attr('min')} and ${$(this).attr('max')}`)
-                        console.log(valueBeforeManualInput)
+                        toastr.warning(`Invalid value. Must be between ${$(this).attr('min')} and ${$(this).attr('max')}`);
+                        console.log(valueBeforeManualInput);
                         //newSlider.val(valueBeforeManualInput)
-                        $(this).val(valueBeforeManualInput)
+                        $(this).val(valueBeforeManualInput);
                     }
                 }
             }
         })
         .on('keyup', function () {
-            valueBeforeManualInput = $(this).val()
-            console.log(valueBeforeManualInput)
-            isManualInput = true
+            valueBeforeManualInput = $(this).val();
+            console.log(valueBeforeManualInput);
+            isManualInput = true;
         })
         //trigger slider changes when user clicks away
         .on('mouseup blur', function () {
             const masterSelector = '#' + $(this).data('for');
             const masterElement = $(masterSelector);
-            let manualInput = parseFloat($(this).val())
+            let manualInput = parseFloat($(this).val());
             if (isManualInput) {
                 //if value is between correct range for the slider
                 if (manualInput >= $(this).attr('min') && manualInput <= $(this).attr('max')) {
-                    valueBeforeManualInput = manualInput
+                    valueBeforeManualInput = manualInput;
                     //set the slider value to input value
-                    $(masterElement).val($(this).val()).trigger('input')
+                    $(masterElement).val($(this).val()).trigger('input');
                 } else {
                     //if value not ok, warn and reset to last known valid value
-                    toastr.warning(`Invalid value. Must be between ${$(this).attr('min')} and ${$(this).attr('max')}`)
-                    console.log(valueBeforeManualInput)
-                    $(this).val(valueBeforeManualInput)
+                    toastr.warning(`Invalid value. Must be between ${$(this).attr('min')} and ${$(this).attr('max')}`);
+                    console.log(valueBeforeManualInput);
+                    $(this).val(valueBeforeManualInput);
                 }
             }
-            isManualInput = false
-        })
+            isManualInput = false;
+        });
     /*
         let manualInputTimeout;
              .on('input', '.range-block-counter input, .neo-range-input', function () {
@@ -9400,7 +9400,7 @@ jQuery(async function () {
             <li>Chub lorebooks (direct link or id)<br>Example: <tt>lorebooks/bartleby/example-lorebook</tt></li>
             <li>JanitorAI character (direct link or id)<br>Example: <tt>https://janitorai.com/characters/ddd1498a-a370-4136-b138-a8cd9461fdfe_character-aqua-the-useless-goddess</tt></li>
             <li>More coming soon...</li>
-        <ul>`
+        <ul>`;
         const input = await callPopup(html, 'input');
 
         if (!input) {
@@ -9474,7 +9474,7 @@ jQuery(async function () {
     });
 
     $('#hideCharPanelAvatarButton').on('click', () => {
-        $('#avatar-and-name-block').slideToggle()
+        $('#avatar-and-name-block').slideToggle();
     });
 
     $(document).on('mouseup touchend', '#show_more_messages', () => {

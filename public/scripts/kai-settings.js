@@ -192,7 +192,7 @@ export async function generateKoboldWithStreaming(generate_data, signal) {
                 return;
             }
         }
-    }
+    };
 }
 
 const sliders = [

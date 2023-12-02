@@ -53,7 +53,7 @@ function getOriginalFolder(type) {
  */
 function invalidateThumbnail(type, file) {
     const folder = getThumbnailFolder(type);
-    if (folder === undefined) throw new Error('Invalid thumbnail type')
+    if (folder === undefined) throw new Error('Invalid thumbnail type');
 
     const pathToThumbnail = path.join(folder, file);
 
@@ -69,9 +69,9 @@ function invalidateThumbnail(type, file) {
  * @returns
  */
 async function generateThumbnail(type, file) {
-    let thumbnailFolder = getThumbnailFolder(type)
-    let originalFolder = getOriginalFolder(type)
-    if (thumbnailFolder === undefined || originalFolder === undefined) throw new Error('Invalid thumbnail type')
+    let thumbnailFolder = getThumbnailFolder(type);
+    let originalFolder = getOriginalFolder(type);
+    if (thumbnailFolder === undefined || originalFolder === undefined) throw new Error('Invalid thumbnail type');
 
     const pathToCachedFile = path.join(thumbnailFolder, file);
     const pathToOriginalFile = path.join(originalFolder, file);
@@ -199,4 +199,4 @@ module.exports = {
     invalidateThumbnail,
     registerEndpoints,
     ensureThumbnailCache,
-}
+};

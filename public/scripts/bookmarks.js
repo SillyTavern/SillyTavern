@@ -33,7 +33,7 @@ import {
 export {
     createNewBookmark,
     showBookmarksButtons,
-}
+};
 
 const bookmarkNameToken = 'Bookmark #';
 
@@ -146,7 +146,7 @@ export async function createBranch(mesId) {
     const lastMes = chat[mesId];
     const mainChat = selected_group ? groups?.find(x => x.id == selected_group)?.chat_id : characters[this_chid].chat;
     const newMetadata = { main_chat: mainChat };
-    let name = `Branch #${mesId} - ${humanizedDateTime()}`
+    let name = `Branch #${mesId} - ${humanizedDateTime()}`;
 
     if (selected_group) {
         await saveGroupBookmarkChat(selected_group, name, newMetadata, mesId);

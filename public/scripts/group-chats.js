@@ -89,7 +89,7 @@ export {
     resetSelectedGroup,
     select_group_chats,
     getGroupChatNames,
-}
+};
 
 let is_group_generating = false; // Group generation flag
 let is_group_automode_enabled = false;
@@ -109,7 +109,7 @@ export const group_activation_strategy = {
 export const group_generation_mode = {
     SWAP: 0,
     APPEND: 1,
-}
+};
 
 export const groupCandidatesFilter = new FilterHelper(debounce(printGroupCandidates, 100));
 setInterval(groupChatAutoModeWorker, 5000);
@@ -427,7 +427,7 @@ export async function renameGroupMember(oldAvatar, newAvatar, newName) {
             // Replace group member avatar id and save the changes
             group.members[memberIndex] = newAvatar;
             await editGroup(group.id, true, false);
-            console.log(`Renamed character ${newName} in group: ${group.name}`)
+            console.log(`Renamed character ${newName} in group: ${group.name}`);
 
             // Load all chats from this group
             for (const chatId of group.chats) {
@@ -499,7 +499,7 @@ async function getGroups() {
                 group.members = group.members
                     .map(x => characters.find(y => y.name == x)?.avatar)
                     .filter(x => x)
-                    .filter(onlyUnique)
+                    .filter(onlyUnique);
             }
             if (group.past_metadata == undefined) {
                 group.past_metadata = {};
@@ -694,7 +694,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             params.reject = function () {
                 isGenerationDone = true;
                 rejectOriginal.apply(this, arguments);
-            }
+            };
         }
 
         const activationStrategy = Number(group.activation_strategy ?? group_activation_strategy.NATURAL);
@@ -745,7 +745,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             isGenerationDone = false;
             const generateType = type == 'swipe' || type == 'impersonate' || type == 'quiet' || type == 'continue' ? type : 'group_chat';
             setCharacterId(chId);
-            setCharacterName(characters[chId].name)
+            setCharacterName(characters[chId].name);
 
             await Generate(generateType, { automatic_trigger: by_auto_mode, ...(params || {}) });
 
@@ -909,7 +909,7 @@ function activateNaturalOrder(members, input, lastMessage, allowSelfResponses, i
     if (input && input.length) {
         for (let inputWord of extractAllWords(input)) {
             for (let member of members) {
-                const character = characters.find(x => x.avatar === member)
+                const character = characters.find(x => x.avatar === member);
 
                 if (!character || character.name === bannedUser) {
                     continue;
@@ -1264,7 +1264,7 @@ async function onHideMutedSpritesClick(value) {
     if (openGroupId) {
         let _thisGroup = groups.find((x) => x.id == openGroupId);
         _thisGroup.hideMutedSprites = value;
-        console.log(`_thisGroup.hideMutedSprites = ${_thisGroup.hideMutedSprites}`)
+        console.log(`_thisGroup.hideMutedSprites = ${_thisGroup.hideMutedSprites}`);
         await editGroup(openGroupId, false, false);
     }
 }
@@ -1747,13 +1747,13 @@ function stopAutoModeGeneration() {
 function doCurMemberListPopout() {
     //repurposes the zoomed avatar template to server as a floating group member list
     if ($('#groupMemberListPopout').length === 0) {
-        console.debug('did not see popout yet, creating')
-        const memberListClone = $(this).parent().parent().find('.inline-drawer-content').html()
+        console.debug('did not see popout yet, creating');
+        const memberListClone = $(this).parent().parent().find('.inline-drawer-content').html();
         const template = $('#zoomed_avatar_template').html();
         const controlBarHtml = `<div class="panelControlBar flex-container">
         <div id="groupMemberListPopoutheader" class="fa-solid fa-grip drag-grabber hoverglow"></div>
         <div id="groupMemberListPopoutClose" class="fa-solid fa-circle-xmark hoverglow"></div>
-    </div>`
+    </div>`;
         const newElement = $(template);
 
         newElement.attr('id', 'groupMemberListPopout')
@@ -1761,24 +1761,24 @@ function doCurMemberListPopout() {
             .addClass('draggable')
             .empty()
             .append(controlBarHtml)
-            .append(memberListClone)
+            .append(memberListClone);
 
         // Remove pagination from popout
         newElement.find('.group_pagination').empty();
 
         $('body').append(newElement);
         loadMovingUIState();
-        $('#groupMemberListPopout').fadeIn(250)
-        dragElement(newElement)
+        $('#groupMemberListPopout').fadeIn(250);
+        dragElement(newElement);
         $('#groupMemberListPopoutClose').off('click').on('click', function () {
-            $('#groupMemberListPopout').fadeOut(250, () => { $('#groupMemberListPopout').remove() })
-        })
+            $('#groupMemberListPopout').fadeOut(250, () => { $('#groupMemberListPopout').remove(); });
+        });
 
         // Re-add pagination not working in popout
         printGroupMembers();
     } else {
-        console.debug('saw existing popout, removing')
-        $('#groupMemberListPopout').fadeOut(250, () => { $('#groupMemberListPopout').remove() });
+        console.debug('saw existing popout, removing');
+        $('#groupMemberListPopout').fadeOut(250, () => { $('#groupMemberListPopout').remove(); });
     }
 }
 
@@ -1803,7 +1803,7 @@ jQuery(() => {
     });
     $('#send_textarea').on('keyup', onSendTextareaInput);
     $('#groupCurrentMemberPopoutButton').on('click', doCurMemberListPopout);
-    $('#rm_group_chat_name').on('input', onGroupNameInput)
+    $('#rm_group_chat_name').on('input', onGroupNameInput);
     $('#rm_group_delete').off().on('click', onDeleteGroupClick);
     $('#group_favorite_button').on('click', onFavoriteGroupClick);
     $('#rm_group_allow_self_responses').on('input', onGroupSelfResponsesClick);

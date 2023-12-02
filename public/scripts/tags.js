@@ -42,10 +42,10 @@ const ACTIONABLE_TAGS = {
     GROUP: { id: 0, name: 'Show only groups', color: 'rgba(100, 100, 100, 0.5)', action: filterByGroups, icon: 'fa-solid fa-users', class: 'filterByGroups' },
     VIEW: { id: 2, name: 'Manage tags', color: 'rgba(150, 100, 100, 0.5)', action: onViewTagsListClick, icon: 'fa-solid fa-gear', class: 'manageTags' },
     HINT: { id: 3, name: 'Show Tag List', color: 'rgba(150, 100, 100, 0.5)', action: onTagListHintClick, icon: 'fa-solid fa-tags', class: 'showTagList' },
-}
+};
 
 const InListActionable = {
-}
+};
 
 const DEFAULT_TAGS = [
     { id: uuidv4(), name: 'Plain Text', create_date: Date.now() },
@@ -224,12 +224,12 @@ function selectTag(event, ui, listSelector) {
 function getExistingTags(new_tags) {
     let existing_tags = [];
     for (let tag of new_tags) {
-        let foundTag = tags.find(t => t.name.toLowerCase() === tag.toLowerCase())
+        let foundTag = tags.find(t => t.name.toLowerCase() === tag.toLowerCase());
         if (foundTag) {
             existing_tags.push(foundTag.name);
         }
     }
-    return existing_tags
+    return existing_tags;
 }
 
 async function importTags(imported_char) {
@@ -332,7 +332,7 @@ function onTagFilterClick(listElement) {
     if ($(this).hasClass('selected')) {
         $(this).removeClass('selected');
         $(this).addClass('excluded');
-        excludeTag = true
+        excludeTag = true;
     }
     else if ($(this).hasClass('excluded')) {
         $(this).removeClass('excluded');

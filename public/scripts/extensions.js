@@ -190,7 +190,7 @@ const menuInterval = setInterval(showHideExtensionsMenu, 1000);
 
 async function doExtrasFetch(endpoint, args) {
     if (!args) {
-        args = {}
+        args = {};
     }
 
     if (!args.method) {
@@ -198,7 +198,7 @@ async function doExtrasFetch(endpoint, args) {
     }
 
     if (!args.headers) {
-        args.headers = {}
+        args.headers = {};
     }
     Object.assign(args.headers, {
         'Authorization': `Bearer ${extension_settings.apiKey}`,
@@ -445,10 +445,10 @@ function addExtensionStyle(name, manifest) {
                 link.href = url;
                 link.onload = function () {
                     resolve();
-                }
+                };
                 link.onerror = function (e) {
                     reject(e);
-                }
+                };
                 document.head.appendChild(link);
             }
         });
@@ -510,7 +510,7 @@ async function generateExtensionHtml(name, manifest, isActive, isDisabled, isExt
         let data = await getExtensionVersion(name.replace('third-party', ''));
         let branch = data.currentBranchName;
         let commitHash = data.currentCommitHash;
-        let origin = data.remoteUrl
+        let origin = data.remoteUrl;
         isUpToDate = data.isUpToDate;
         displayVersion = ` (${branch}-${commitHash.substring(0, 7)})`;
         updateButton = isUpToDate ?
@@ -781,7 +781,7 @@ async function loadExtensionSettings(settings, versionChanged) {
     // Activate offline extensions
     eventSource.emit(event_types.EXTENSIONS_FIRST_LOAD);
     extensionNames = await discoverExtensions();
-    manifests = await getManifests(extensionNames)
+    manifests = await getManifests(extensionNames);
 
     if (versionChanged) {
         await autoUpdateExtensions();
@@ -925,7 +925,7 @@ jQuery(function () {
     <br>
     <p><b>Disclaimer:</b> Please be aware that using external extensions can have unintended side effects and may pose security risks. Always make sure you trust the source before importing an extension. We are not responsible for any damage caused by third-party extensions.</p>
     <br>
-    <p>Example: <tt> https://github.com/author/extension-name </tt></p>`
+    <p>Example: <tt> https://github.com/author/extension-name </tt></p>`;
         const input = await callPopup(html, 'input');
 
         if (!input) {

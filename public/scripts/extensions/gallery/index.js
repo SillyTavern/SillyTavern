@@ -111,7 +111,7 @@ async function initGallery(items, url) {
     });
 
     //let images populate first
-    await delay(100)
+    await delay(100);
     //unset the height (which must be getting set by the gallery library at some point)
     $('#dragGallery').css('height', 'unset');
     //force a resize to make images display correctly
@@ -227,7 +227,7 @@ async function uploadFile(file, url) {
             // Replacing alert with toastr error notification
             toastr.error('Failed to upload the file.');
         }
-    }
+    };
     reader.readAsDataURL(file);
 }
 
@@ -256,14 +256,14 @@ $(document).ready(function () {
  */
 function makeMovable(id = 'gallery') {
 
-    console.debug('making new container from template')
+    console.debug('making new container from template');
     const template = $('#generic_draggable_template').html();
     const newElement = $(template);
     newElement.css('background-color', 'var(--SmartThemeBlurTintColor)');
     newElement.attr('forChar', id);
     newElement.attr('id', `${id}`);
     newElement.find('.drag-grabber').attr('id', `${id}header`);
-    newElement.find('.dragTitle').text('Image Gallery')
+    newElement.find('.dragTitle').text('Image Gallery');
     //add a div for the gallery
     newElement.append('<div id="dragGallery"></div>');
     // add no-scrollbar class to this element

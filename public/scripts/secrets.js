@@ -14,7 +14,7 @@ export const SECRET_KEYS = {
     SCALE_COOKIE: 'scale_cookie',
     PALM: 'api_key_palm',
     SERPAPI: 'api_key_serpapi',
-}
+};
 
 const INPUT_MAP = {
     [SECRET_KEYS.HORDE]: '#horde_api_key',
@@ -29,7 +29,7 @@ const INPUT_MAP = {
     [SECRET_KEYS.PALM]: '#api_key_palm',
     [SECRET_KEYS.APHRODITE]: '#api_key_aphrodite',
     [SECRET_KEYS.TABBY]: '#api_key_tabby'
-}
+};
 
 async function clearSecret() {
     const key = $(this).data('key');
@@ -126,7 +126,7 @@ export async function findSecret(key) {
 
         if (response.ok) {
             const data = await response.json();
-            return data.value
+            return data.value;
         }
     } catch {
         console.error('Could not find secret value: ', key);

@@ -60,25 +60,25 @@ const defaultChatStart = '***';
 export const ui_mode = {
     SIMPLE: 0,
     POWER: 1,
-}
+};
 
 const avatar_styles = {
     ROUND: 0,
     RECTANGULAR: 1,
     SQUARE: 2,
-}
+};
 
 export const chat_styles = {
     DEFAULT: 0,
     BUBBLES: 1,
     DOCUMENT: 2,
-}
+};
 
 const send_on_enter_options = {
     DISABLED: -1,
     AUTO: 0,
     ENABLED: 1,
-}
+};
 
 export const persona_description_positions = {
     IN_PROMPT: 0,
@@ -88,7 +88,7 @@ export const persona_description_positions = {
     AFTER_CHAR: 1,
     TOP_AN: 2,
     BOTTOM_AN: 3,
-}
+};
 
 let power_user = {
     tokenizer: tokenizers.BEST_MATCH,
@@ -432,7 +432,7 @@ function switchMessageActions() {
     $('.extraMesButtons, .extraMesButtonsHint').removeAttr('style');
 }
 
-var originalSliderValues = []
+var originalSliderValues = [];
 
 async function switchLabMode() {
 
@@ -442,7 +442,7 @@ async function switchLabMode() {
             //$("#enableZenSliders").trigger('click')
         }
      */
-    await delay(100)
+    await delay(100);
     const value = localStorage.getItem(storage_keys.enableLabMode);
     power_user.enableLabMode = value === null ? false : value == 'true';
     $('body').toggleClass('enableLabMode', power_user.enableLabMode);
@@ -451,19 +451,19 @@ async function switchLabMode() {
     if (power_user.enableLabMode) {
         //save all original slider values into an array
         $('#advanced-ai-config-block input').each(function () {
-            let id = $(this).attr('id')
-            let min = $(this).attr('min')
-            let max = $(this).attr('max')
-            let step = $(this).attr('step')
+            let id = $(this).attr('id');
+            let min = $(this).attr('min');
+            let max = $(this).attr('max');
+            let step = $(this).attr('step');
             originalSliderValues.push({ id, min, max, step });
-        })
+        });
         //console.log(originalSliderValues)
         //remove limits on all inputs and hide sliders
         $('#advanced-ai-config-block input')
             .attr('min', '-99999')
             .attr('max', '99999')
-            .attr('step', '0.001')
-        $('#labModeWarning').removeClass('displayNone')
+            .attr('step', '0.001');
+        $('#labModeWarning').removeClass('displayNone');
         //$("#advanced-ai-config-block input[type='range']").hide()
 
     } else {
@@ -473,26 +473,26 @@ async function switchLabMode() {
                 .attr('min', slider.min)
                 .attr('max', slider.max)
                 .attr('step', slider.step)
-                .trigger('input')
+                .trigger('input');
         });
-        $('#advanced-ai-config-block input[type=\'range\']').show()
-        $('#labModeWarning').addClass('displayNone')
+        $('#advanced-ai-config-block input[type=\'range\']').show();
+        $('#labModeWarning').addClass('displayNone');
     }
 }
 
 async function switchZenSliders() {
-    await delay(100)
+    await delay(100);
     const value = localStorage.getItem(storage_keys.enableZenSliders);
     power_user.enableZenSliders = value === null ? false : value == 'true';
     $('body').toggleClass('enableZenSliders', power_user.enableZenSliders);
     $('#enableZenSliders').prop('checked', power_user.enableZenSliders);
 
     if (power_user.enableZenSliders) {
-        $('#clickSlidersTips').hide()
+        $('#clickSlidersTips').hide();
         $('#pro-settings-block input[type=\'number\']').hide();
         //hide number inputs that are not 'seed' inputs
         $(`#textgenerationwebui_api-settings :input[type='number']:not([id^='seed']),
-            #kobold_api-settings :input[type='number']:not([id^='seed'])`).hide()
+            #kobold_api-settings :input[type='number']:not([id^='seed'])`).hide();
         //hide original sliders
         $(`#textgenerationwebui_api-settings input[type='range'],
             #kobold_api-settings input[type='range'],
@@ -500,12 +500,12 @@ async function switchZenSliders() {
             .hide()
             .each(function () {
                 //make a zen slider for each original slider
-                CreateZenSliders($(this))
-            })
+                CreateZenSliders($(this));
+            });
         //this is for when zensliders is toggled after pageload
-        switchMaxContextSize()
+        switchMaxContextSize();
     } else {
-        $('#clickSlidersTips').show()
+        $('#clickSlidersTips').show();
         revertOriginalSliders();
     }
 
@@ -525,43 +525,43 @@ async function switchZenSliders() {
 async function CreateZenSliders(elmnt) {
     //await delay(100)
     var originalSlider = elmnt;
-    var sliderID = originalSlider.attr('id')
-    var sliderMin = Number(originalSlider.attr('min'))
-    var sliderMax = Number(originalSlider.attr('max'))
+    var sliderID = originalSlider.attr('id');
+    var sliderMin = Number(originalSlider.attr('min'));
+    var sliderMax = Number(originalSlider.attr('max'));
     var sliderValue = originalSlider.val();
-    var sliderRange = sliderMax - sliderMin
-    var numSteps = 10
-    var decimals = 2
-    var offVal, allVal
-    var stepScale
-    var steps
+    var sliderRange = sliderMax - sliderMin;
+    var numSteps = 10;
+    var decimals = 2;
+    var offVal, allVal;
+    var stepScale;
+    var steps;
     if (sliderID == 'amount_gen') {
-        decimals = 0
+        decimals = 0;
         steps = [16, 50, 100, 150, 200, 256, 300, 400, 512, 1024];
-        sliderMin = 0
-        sliderMax = steps.length - 1
+        sliderMin = 0;
+        sliderMax = steps.length - 1;
         stepScale = 1;
-        numSteps = 10
-        sliderValue = steps.indexOf(Number(sliderValue))
-        if (sliderValue === -1) { sliderValue = 4 } // default to '200' if origSlider has value we can't use
+        numSteps = 10;
+        sliderValue = steps.indexOf(Number(sliderValue));
+        if (sliderValue === -1) { sliderValue = 4; } // default to '200' if origSlider has value we can't use
     }
     if (sliderID == 'rep_pen_range_textgenerationwebui') {
         if (power_user.max_context_unlocked) {
             steps = [0, 256, 512, 768, 1024, 2048, 4096, 8192, 16355, 24576, 32768, 49152, 65536, -1];
-            numSteps = 13
-            allVal = 13
+            numSteps = 13;
+            allVal = 13;
         } else {
             steps = [0, 256, 512, 768, 1024, 2048, 4096, 8192, -1];
-            numSteps = 8
-            allVal = 8
+            numSteps = 8;
+            allVal = 8;
         }
-        decimals = 0
-        offVal = 0
-        sliderMin = 0
-        sliderMax = steps.length - 1
+        decimals = 0;
+        offVal = 0;
+        sliderMin = 0;
+        sliderMax = steps.length - 1;
         stepScale = 1;
-        sliderValue = steps.indexOf(Number(sliderValue))
-        if (sliderValue === -1) { sliderValue = allVal } // default to allValue if origSlider has value we can't use
+        sliderValue = steps.indexOf(Number(sliderValue));
+        if (sliderValue === -1) { sliderValue = allVal; } // default to allValue if origSlider has value we can't use
     }
     //customize decimals
     if (sliderID == 'max_context' ||
@@ -574,23 +574,23 @@ async function CreateZenSliders(elmnt) {
         sliderID == 'top_k' ||
         sliderID == 'mirostat_mode_kobold' ||
         sliderID == 'rep_pen_range') {
-        decimals = 0
+        decimals = 0;
     }
     if (sliderID == 'eta_cutoff_textgenerationwebui' ||
         sliderID == 'epsilon_cutoff_textgenerationwebui') {
-        numSteps = 50
-        decimals = 1
+        numSteps = 50;
+        decimals = 1;
     }
     //customize steps
     if (sliderID == 'mirostat_mode_textgenerationwebui' ||
         sliderID == 'mirostat_mode_kobold') {
-        numSteps = 2
+        numSteps = 2;
     }
     if (sliderID == 'encoder_rep_pen_textgenerationwebui') {
-        numSteps = 14
+        numSteps = 14;
     }
     if (sliderID == 'max_context') {
-        numSteps = 15
+        numSteps = 15;
     }
     if (sliderID == 'mirostat_tau_textgenerationwebui' ||
         sliderID == 'top_k_textgenerationwebui' ||
@@ -601,12 +601,12 @@ async function CreateZenSliders(elmnt) {
         sliderID == 'min_p_textgenerationwebui' ||
         sliderID == 'temp_textgenerationwebui' ||
         sliderID == 'temp') {
-        numSteps = 20
+        numSteps = 20;
     }
     if (sliderID == 'mirostat_eta_textgenerationwebui' ||
         sliderID == 'penalty_alpha_textgenerationwebui' ||
         sliderID == 'length_penalty_textgenerationwebui') {
-        numSteps = 50
+        numSteps = 50;
     }
     //customize off values
     if (sliderID == 'presence_pen_textgenerationwebui' ||
@@ -631,7 +631,7 @@ async function CreateZenSliders(elmnt) {
         sliderID == 'top_k' ||
         sliderID == 'rep_pen_slope' ||
         sliderID == 'min_length_textgenerationwebui') {
-        offVal = 0
+        offVal = 0;
     }
     if (sliderID == 'rep_pen_textgenerationwebui' ||
         sliderID == 'rep_pen' ||
@@ -646,14 +646,14 @@ async function CreateZenSliders(elmnt) {
         sliderID == 'temp' ||
         sliderID == 'guidance_scale_textgenerationwebui' ||
         sliderID == 'guidance_scale') {
-        offVal = 1
+        offVal = 1;
     }
     if (sliderID == 'guidance_scale_textgenerationwebui') {
-        numSteps = 78
+        numSteps = 78;
     }
     //customize amt gen steps
     if (sliderID !== 'amount_gen' && sliderID !== 'rep_pen_range_textgenerationwebui') {
-        stepScale = sliderRange / numSteps
+        stepScale = sliderRange / numSteps;
     }
     var newSlider = $('<div>')
         .attr('id', `${sliderID}_zenslider`)
@@ -671,30 +671,30 @@ async function CreateZenSliders(elmnt) {
             //handling creation of amt_gen
             if (newSlider.attr('id') == 'amount_gen_zenslider') {
                 //console.log(`using custom process for ${newSlider.attr('id')}`)
-                handleText = steps[sliderValue]
-                stepNumber = sliderValue
-                leftMargin = ((stepNumber) / numSteps) * 50 * -1
+                handleText = steps[sliderValue];
+                stepNumber = sliderValue;
+                leftMargin = ((stepNumber) / numSteps) * 50 * -1;
                 handle.text(handleText)
-                    .css('margin-left', `${leftMargin}px`)
+                    .css('margin-left', `${leftMargin}px`);
                 //console.log(`${newSlider.attr('id')} initial value:${handleText}, stepNum:${stepNumber}, numSteps:${numSteps}, left-margin:${leftMargin}`)
 
                 //handling creation of rep_pen_range for ooba
             } else if (newSlider.attr('id') == 'rep_pen_range_textgenerationwebui_zenslider') {
                 if ($('#rep_pen_range_textgenerationwebui_zensliders').length !== 0) {
-                    $('#rep_pen_range_textgenerationwebui_zensliders').remove()
+                    $('#rep_pen_range_textgenerationwebui_zensliders').remove();
                 }
-                handleText = steps[sliderValue]
-                stepNumber = sliderValue
-                leftMargin = ((stepNumber) / numSteps) * 50 * -1
+                handleText = steps[sliderValue];
+                stepNumber = sliderValue;
+                leftMargin = ((stepNumber) / numSteps) * 50 * -1;
 
                 if (sliderValue === offVal) {
-                    handleText = 'Off'
+                    handleText = 'Off';
                     handle.css('color', 'rgba(128,128,128,0.5');
                 }
-                else if (sliderValue === allVal) { handleText = 'All' }
+                else if (sliderValue === allVal) { handleText = 'All'; }
                 else { handle.css('color', ''); }
                 handle.text(handleText)
-                    .css('margin-left', `${leftMargin}px`)
+                    .css('margin-left', `${leftMargin}px`);
                 //console.log(sliderValue, handleText, offVal, allVal)
                 //console.log(`${newSlider.attr('id')} sliderValue = ${sliderValue}, handleText:${handleText}, stepNum:${stepNumber}, numSteps:${numSteps}, left-margin:${leftMargin}`)
                 originalSlider.val(steps[sliderValue]);
@@ -702,26 +702,26 @@ async function CreateZenSliders(elmnt) {
                 originalSlider.trigger('change');
             } else {
                 //handling creation for all other sliders
-                var numVal = Number(sliderValue).toFixed(decimals)
-                offVal = Number(offVal).toFixed(decimals)
+                var numVal = Number(sliderValue).toFixed(decimals);
+                offVal = Number(offVal).toFixed(decimals);
                 //console.log(`${sliderID}: offVal ${offVal}`)
                 if (numVal === offVal) {
                     handle.text('Off').css('color', 'rgba(128,128,128,0.5');
                 } else {
                     handle.text(numVal).css('color', '');
                 }
-                stepNumber = ((sliderValue - sliderMin) / stepScale)
-                leftMargin = (stepNumber / numSteps) * 50 * -1
-                var isManualInput = false
-                var valueBeforeManualInput
+                stepNumber = ((sliderValue - sliderMin) / stepScale);
+                leftMargin = (stepNumber / numSteps) * 50 * -1;
+                var isManualInput = false;
+                var valueBeforeManualInput;
                 handle.css('margin-left', `${leftMargin}px`)
 
                     .attr('contenteditable', 'true')
                     .on('click', function () {
                         //this just selects all the text in the handle so user can overwrite easily
                         //needed because JQUery UI uses left/right arrow keys as well as home/end to move the slider..
-                        valueBeforeManualInput = newSlider.val()
-                        console.log(valueBeforeManualInput)
+                        valueBeforeManualInput = newSlider.val();
+                        console.log(valueBeforeManualInput);
                         let handleElement = handle.get(0);
                         let range = document.createRange();
                         range.selectNodeContents(handleElement);
@@ -730,31 +730,31 @@ async function CreateZenSliders(elmnt) {
                         selection.addRange(range);
                     })
                     .on('keyup', function () {
-                        valueBeforeManualInput = newSlider.val()
-                        console.log(valueBeforeManualInput)
-                        isManualInput = true
+                        valueBeforeManualInput = newSlider.val();
+                        console.log(valueBeforeManualInput);
+                        isManualInput = true;
                     })
                     //trigger slider changes when user clicks away
                     .on('mouseup blur', function () {
-                        let manualInput = parseFloat(handle.text()).toFixed(decimals)
+                        let manualInput = parseFloat(handle.text()).toFixed(decimals);
                         if (isManualInput) {
                             //disallow manual inputs outside acceptable range
                             if (manualInput >= sliderMin && manualInput <= sliderMax) {
                                 //if value is ok, assign to slider and update handle text and position
-                                newSlider.val(manualInput)
+                                newSlider.val(manualInput);
                                 handleSlideEvent.call(newSlider, null, { value: parseFloat(manualInput) }, 'manual');
-                                valueBeforeManualInput = manualInput
+                                valueBeforeManualInput = manualInput;
                             } else {
                                 //if value not ok, warn and reset to last known valid value
-                                toastr.warning(`Invalid value. Must be between ${sliderMin} and ${sliderMax}`)
-                                console.log(valueBeforeManualInput)
-                                newSlider.val(valueBeforeManualInput)
-                                handle.text(valueBeforeManualInput)
+                                toastr.warning(`Invalid value. Must be between ${sliderMin} and ${sliderMax}`);
+                                console.log(valueBeforeManualInput);
+                                newSlider.val(valueBeforeManualInput);
+                                handle.text(valueBeforeManualInput);
                             }
                         }
-                        isManualInput = false
-                    })
-                console.debug(sliderID, sliderValue, stepNumber, stepScale)
+                        isManualInput = false;
+                    });
+                console.debug(sliderID, sliderValue, stepNumber, stepScale);
                 originalSlider.val(numVal);
                 originalSlider.trigger('input');
                 originalSlider.trigger('change');
@@ -768,20 +768,20 @@ async function CreateZenSliders(elmnt) {
         var numVal = Number(ui.value).toFixed(decimals);
         offVal = Number(offVal).toFixed(decimals);
         allVal = Number(allVal).toFixed(decimals);
-        console.log(numVal, sliderMin, sliderMax, numVal > sliderMax, numVal < sliderMin)
+        console.log(numVal, sliderMin, sliderMax, numVal > sliderMax, numVal < sliderMin);
         if (numVal > sliderMax) {
             //console.log('clamping numVal to sliderMax')
-            numVal = sliderMax
+            numVal = sliderMax;
         }
         if (numVal < sliderMin) {
             //console.log('clamping numVal to sliderMin')
-            numVal = sliderMin
+            numVal = sliderMin;
         }
         var stepNumber = ((ui.value - sliderMin) / stepScale).toFixed(0);
         var handleText = (ui.value);
         var leftMargin = (stepNumber / numSteps) * 50 * -1;
-        var perStepPercent = 1 / numSteps //how far in % each step should be on the slider
-        var leftPos = newSlider.width() * (stepNumber * perStepPercent) //how big of a left margin to give the slider for manual inputs
+        var perStepPercent = 1 / numSteps; //how far in % each step should be on the slider
+        var leftPos = newSlider.width() * (stepNumber * perStepPercent); //how big of a left margin to give the slider for manual inputs
         /*         console.log(`
                 numVal: ${numVal},
                 sliderMax: ${sliderMax}
@@ -798,17 +798,17 @@ async function CreateZenSliders(elmnt) {
                 left: ${leftPos}`) */
         //special handling for response length slider, pulls text aliases for step values from an array
         if (newSlider.attr('id') == 'amount_gen_zenslider') {
-            handleText = steps[stepNumber]
+            handleText = steps[stepNumber];
             handle.text(handleText);
-            newSlider.val(stepNumber)
+            newSlider.val(stepNumber);
         }
         //special handling for TextCompletion rep pen range slider, pulls text aliases for step values from an array
         else if (newSlider.attr('id') == 'rep_pen_range_textgenerationwebui_zenslider') {
-            handleText = steps[stepNumber]
+            handleText = steps[stepNumber];
             handle.text(handleText);
-            newSlider.val(stepNumber)
+            newSlider.val(stepNumber);
             if (numVal === offVal) { handle.text('Off').css('color', 'rgba(128,128,128,0.5'); }
-            else if (numVal === allVal) { handle.text('All') }
+            else if (numVal === allVal) { handle.text('All'); }
             else { handle.css('color', ''); }
         }
         //everything else uses the flat slider value
@@ -817,11 +817,11 @@ async function CreateZenSliders(elmnt) {
             //show 'off' if disabled value is set
             if (numVal === offVal) { handle.text('Off').css('color', 'rgba(128,128,128,0.5'); }
             else { handle.text(ui.value.toFixed(decimals)).css('color', ''); }
-            newSlider.val(handleText)
+            newSlider.val(handleText);
         }
         //for manually typed-in values we must adjust left position because JQUI doesn't do it for us
         //if (type === 'manual') {
-        handle.css('left', leftPos)
+        handle.css('left', leftPos);
         //}
         //adjust a negative left margin to avoid overflowing right side of slider body
         handle.css('margin-left', `${leftMargin}px`);
@@ -830,7 +830,7 @@ async function CreateZenSliders(elmnt) {
         originalSlider.trigger('change');
     }
     originalSlider.data('newSlider', newSlider);
-    await delay(1)
+    await delay(1);
     originalSlider.hide();
 }
 function switchUiMode() {
@@ -839,11 +839,11 @@ function switchUiMode() {
     $('body').toggleClass('no-blur', power_user.fast_ui_mode);
     $('#fast_ui_mode').prop('checked', power_user.fast_ui_mode);
     if (power_user.fast_ui_mode) {
-        $('#blur-strength-block').css('opacity', '0.2')
-        $('#blur_strength').prop('disabled', true)
+        $('#blur-strength-block').css('opacity', '0.2');
+        $('#blur_strength').prop('disabled', true);
     } else {
-        $('#blur-strength-block').css('opacity', '1')
-        $('#blur_strength').prop('disabled', false)
+        $('#blur-strength-block').css('opacity', '1');
+        $('#blur_strength').prop('disabled', false);
     }
 }
 
@@ -888,7 +888,7 @@ function switchMovingUI() {
     power_user.movingUI = movingUI === null ? false : movingUI == 'true';
     $('body').toggleClass('movingUI', power_user.movingUI);
     if (power_user.movingUI === true) {
-        initMovingUI()
+        initMovingUI();
         if (power_user.movingUIState) {
             loadMovingUIState();
         }
@@ -901,11 +901,11 @@ function noShadows() {
     $('body').toggleClass('noShadows', power_user.noShadows);
     $('#noShadowsmode').prop('checked', power_user.noShadows);
     if (power_user.noShadows) {
-        $('#shadow-width-block').css('opacity', '0.2')
-        $('#shadow_width').prop('disabled', true)
+        $('#shadow-width-block').css('opacity', '0.2');
+        $('#shadow_width').prop('disabled', true);
     } else {
-        $('#shadow-width-block').css('opacity', '1')
-        $('#shadow_width').prop('disabled', false)
+        $('#shadow-width-block').css('opacity', '1');
+        $('#shadow_width').prop('disabled', false);
     }
     scrollChatToBottom();
 }
@@ -922,30 +922,30 @@ function applyAvatarStyle() {
 function applyChatDisplay() {
 
     if (!power_user.chat_display === (null || undefined)) {
-        console.debug('applyChatDisplay: saw no chat display type defined')
-        return
+        console.debug('applyChatDisplay: saw no chat display type defined');
+        return;
     }
-    console.debug(`poweruser.chat_display ${power_user.chat_display}`)
+    console.debug(`poweruser.chat_display ${power_user.chat_display}`);
     $('#chat_display').val(power_user.chat_display).prop('selected', true);
 
     switch (power_user.chat_display) {
         case 0: {
-            console.log('applying default chat')
+            console.log('applying default chat');
             $('body').removeClass('bubblechat');
             $('body').removeClass('documentstyle');
-            break
+            break;
         }
         case 1: {
-            console.log('applying bubblechat')
+            console.log('applying bubblechat');
             $('body').addClass('bubblechat');
             $('body').removeClass('documentstyle');
-            break
+            break;
         }
         case 2: {
-            console.log('applying document style')
+            console.log('applying document style');
             $('body').removeClass('bubblechat');
             $('body').addClass('documentstyle');
-            break
+            break;
         }
     }
 }
@@ -966,7 +966,7 @@ function applyChatWidth(type) {
             await delay(1);
             document.documentElement.style.setProperty('--sheldWidth', `${power_user.chat_width}vw`);
             await delay(1);
-        })
+        });
     }
 
     $('#chat_width_slider_counter').val(power_user.chat_width);
@@ -1014,10 +1014,10 @@ async function applyCustomCSS() {
     power_user.custom_css = String(localStorage.getItem(storage_keys.custom_css) ?? '');
 
     if (power_user.custom_css.includes('@import')) {
-        var removeImport = /@import[^;]+;/gm
+        var removeImport = /@import[^;]+;/gm;
         power_user.custom_css = power_user.custom_css.replace(removeImport, '');
         localStorage.setItem(storage_keys.custom_css, power_user.custom_css);
-        toastr.warning('@import not allowed in Custom CSS. @import lines removed.')
+        toastr.warning('@import not allowed in Custom CSS. @import lines removed.');
     }
 
     $('#customCSS').val(power_user.custom_css);
@@ -1059,7 +1059,7 @@ async function applyFontScale(type) {
         //this is to prevent the slider from updating page in real time
         $('#font_scale').off('mouseup touchend').on('mouseup touchend', () => {
             document.documentElement.style.setProperty('--fontScale', power_user.font_scale);
-        })
+        });
     }
 
     $('#font_scale_counter').val(power_user.font_scale);
@@ -1237,7 +1237,7 @@ async function applyTheme(name) {
             if (type) await applyThemeColor(type);
             if (action) await action();
         } else {
-            if (selector) { $(selector).attr('color', 'rgba(0,0,0,0)') }
+            if (selector) { $(selector).attr('color', 'rgba(0,0,0,0)'); }
             console.debug(`Empty theme key: ${key}`);
             power_user[key] = '';
         }
@@ -1247,7 +1247,7 @@ async function applyTheme(name) {
 }
 
 async function applyMovingUIPreset(name) {
-    resetMovablePanels('quiet')
+    resetMovablePanels('quiet');
     const movingUIPreset = movingUIPresets.find(x => x.name == name);
 
     if (!movingUIPreset) {
@@ -1258,7 +1258,7 @@ async function applyMovingUIPreset(name) {
 
 
     console.log('MovingUI Preset applied: ' + name);
-    loadMovingUIState()
+    loadMovingUIState();
 }
 
 /**
@@ -1492,14 +1492,14 @@ function loadPowerUserSettings(settings, data) {
 
 async function loadCharListState() {
     if (document.querySelector('.character_select') !== null) {
-        console.debug('setting charlist state to...')
+        console.debug('setting charlist state to...');
         if (power_user.charListGrid === true) {
-            console.debug('..to grid')
-            $('#charListGridToggle').trigger('click')
-        } else { console.debug('..to list') }
+            console.debug('..to grid');
+            $('#charListGridToggle').trigger('click');
+        } else { console.debug('..to list'); }
     } else {
-        console.debug('charlist not ready yet')
-        await delay(100)
+        console.debug('charlist not ready yet');
+        await delay(100);
         loadCharListState();
     }
 }
@@ -1508,24 +1508,24 @@ function loadMovingUIState() {
     if (isMobile() === false
         && power_user.movingUIState
         && power_user.movingUI === true) {
-        console.debug('loading movingUI state')
+        console.debug('loading movingUI state');
         for (var elmntName of Object.keys(power_user.movingUIState)) {
             var elmntState = power_user.movingUIState[elmntName];
             try {
                 var elmnt = $('#' + $.escapeSelector(elmntName));
                 if (elmnt.length) {
-                    console.debug(`loading state for ${elmntName}`)
+                    console.debug(`loading state for ${elmntName}`);
                     elmnt.css(elmntState);
                 } else {
-                    console.debug(`skipping ${elmntName} because it doesn't exist in the DOM`)
+                    console.debug(`skipping ${elmntName} because it doesn't exist in the DOM`);
                 }
             } catch (err) {
-                console.debug(`error occurred while processing ${elmntName}: ${err}`)
+                console.debug(`error occurred while processing ${elmntName}: ${err}`);
             }
         }
     } else {
-        console.debug('skipping movingUI state load')
-        return
+        console.debug('skipping movingUI state load');
+        return;
     }
 }
 
@@ -1544,14 +1544,14 @@ function switchMaxContextSize() {
     const maxValue = power_user.max_context_unlocked ? MAX_CONTEXT_UNLOCKED : MAX_CONTEXT_DEFAULT;
     const minValue = power_user.max_context_unlocked ? maxContextMin : maxContextMin;
     const steps = power_user.max_context_unlocked ? unlockedMaxContextStep : maxContextStep;
-    $('#rep_pen_range_textgenerationwebui_zenslider').remove() //unsure why, but this is necessary.
+    $('#rep_pen_range_textgenerationwebui_zenslider').remove(); //unsure why, but this is necessary.
     for (const element of elements) {
         const id = element.attr('id');
         element.attr('max', maxValue);
 
         if (typeof id === 'string' && id?.indexOf('max_context') !== -1) {
             element.attr('min', minValue);
-            element.attr('step', steps) //only change setps for max context, because rep pen range needs step of 1 due to important values of -1 and 0
+            element.attr('step', steps); //only change setps for max context, because rep pen range needs step of 1 due to important values of -1 and 0
         }
         const value = Number(element.val());
 
@@ -1560,10 +1560,10 @@ function switchMaxContextSize() {
         }
     }
     if (power_user.enableZenSliders) {
-        $('#max_context_zenslider').remove()
-        CreateZenSliders($('#max_context'))
-        $('#rep_pen_range_textgenerationwebui_zenslider').remove()
-        CreateZenSliders($('#rep_pen_range_textgenerationwebui'))
+        $('#max_context_zenslider').remove();
+        CreateZenSliders($('#max_context'));
+        $('#rep_pen_range_textgenerationwebui_zenslider').remove();
+        CreateZenSliders($('#rep_pen_range_textgenerationwebui'));
     }
 }
 
@@ -1936,8 +1936,8 @@ async function saveMovingUI() {
     const movingUIPreset = {
         name,
         movingUIState: power_user.movingUIState
-    }
-    console.log(movingUIPreset)
+    };
+    console.log(movingUIPreset);
 
     const response = await fetch('/savemovingui', {
         method: 'POST',
@@ -1964,7 +1964,7 @@ async function saveMovingUI() {
         power_user.movingUIPreset = name;
         saveSettingsDebounced();
     } else {
-        toastr.warning('failed to save MovingUI state.')
+        toastr.warning('failed to save MovingUI state.');
     }
 }
 
@@ -1984,7 +1984,7 @@ async function resetMovablePanels(type) {
     const panelStyles = ['top', 'left', 'right', 'bottom', 'height', 'width', 'margin',];
 
     panelIds.forEach((id) => {
-        console.log(id)
+        console.log(id);
         const panel = document.getElementById(id);
 
         if (panel) {
@@ -2006,13 +2006,13 @@ async function resetMovablePanels(type) {
     }
 
     $('[data-dragged="true"]').removeAttr('data-dragged');
-    await delay(50)
+    await delay(50);
 
     power_user.movingUIState = {};
 
     //if user manually resets panels, deselect the current preset
     if (type !== 'quiet' && type !== 'resize') {
-        power_user.movingUIPreset = 'Default'
+        power_user.movingUIPreset = 'Default';
         $('#movingUIPresets option[value="Default"]').prop('selected', true);
     }
 
@@ -2023,7 +2023,7 @@ async function resetMovablePanels(type) {
         $('.resizing').removeClass('resizing');
         //if happening as part of preset application, do it quietly.
         if (type === 'quiet') {
-            return
+            return;
             //if happening due to resize, tell user.
         } else if (type === 'resize') {
             toastr.warning('Panel positions reset due to zoom/resize');
@@ -2072,7 +2072,7 @@ async function loadUntilMesId(mesId) {
     }
 
     if (!target.length) {
-        toastr.error(`Could not find message with ID: ${mesId}`)
+        toastr.error(`Could not find message with ID: ${mesId}`);
         return target;
     }
 
@@ -2080,13 +2080,13 @@ async function loadUntilMesId(mesId) {
 }
 
 async function doMesCut(_, text) {
-    console.debug(`was asked to cut message id #${text}`)
+    console.debug(`was asked to cut message id #${text}`);
     const range = stringToRange(text, 0, chat.length - 1);
 
     //reject invalid args or no args
     if (!range) {
-        toastr.warning('Must provide a Message ID or a range to cut.')
-        return
+        toastr.warning('Must provide a Message ID or a range to cut.');
+        return;
     }
 
     let totalMesToCut = (range.end - range.start) + 1;
@@ -2094,7 +2094,7 @@ async function doMesCut(_, text) {
 
     for (let i = 0; i < totalMesToCut; i++) {
         let done = false;
-        let mesToCut = $('#chat').find(`.mes[mesid=${mesIDToCut}]`)
+        let mesToCut = $('#chat').find(`.mes[mesid=${mesIDToCut}]`);
 
         if (!mesToCut.length) {
             mesToCut = await loadUntilMesId(mesIDToCut);
@@ -2121,26 +2121,26 @@ async function doDelMode(_, text) {
 
     //reject invalid args
     if (text && isNaN(text)) {
-        toastr.warning('Must enter a number or nothing.')
-        await delay(300) //unsure why 300 is neccessary here, but any shorter and it wont see the delmode UI
+        toastr.warning('Must enter a number or nothing.');
+        await delay(300); //unsure why 300 is neccessary here, but any shorter and it wont see the delmode UI
         $('#dialogue_del_mes_cancel').trigger('click');
-        return
+        return;
     }
 
     //parse valid args
     if (text) {
-        await delay(300) //same as above, need event signal for 'entered del mode'
-        console.debug('parsing msgs to del')
+        await delay(300); //same as above, need event signal for 'entered del mode'
+        console.debug('parsing msgs to del');
         let numMesToDel = Number(text);
         let lastMesID = Number($('#chat .mes').last().attr('mesid'));
         let oldestMesIDToDel = lastMesID - numMesToDel + 1;
 
         if (oldestMesIDToDel < 0) {
-            toastr.warning(`Cannot delete more than ${chat.length} messages.`)
+            toastr.warning(`Cannot delete more than ${chat.length} messages.`);
             return;
         }
 
-        let oldestMesToDel = $('#chat').find(`.mes[mesid=${oldestMesIDToDel}]`)
+        let oldestMesToDel = $('#chat').find(`.mes[mesid=${oldestMesIDToDel}]`);
 
         if (!oldestMesIDToDel) {
             oldestMesToDel = await loadUntilMesId(oldestMesIDToDel);
@@ -2152,14 +2152,14 @@ async function doDelMode(_, text) {
 
         let oldestDelMesCheckbox = $(oldestMesToDel).find('.del_checkbox');
         let newLastMesID = oldestMesIDToDel - 1;
-        console.debug(`DelMesReport -- numMesToDel:  ${numMesToDel}, lastMesID: ${lastMesID}, oldestMesIDToDel:${oldestMesIDToDel}, newLastMesID: ${newLastMesID}`)
+        console.debug(`DelMesReport -- numMesToDel:  ${numMesToDel}, lastMesID: ${lastMesID}, oldestMesIDToDel:${oldestMesIDToDel}, newLastMesID: ${newLastMesID}`);
         oldestDelMesCheckbox.trigger('click');
-        let trueNumberOfDeletedMessage = lastMesID - oldestMesIDToDel + 1
+        let trueNumberOfDeletedMessage = lastMesID - oldestMesIDToDel + 1;
 
         //await delay(1)
         $('#dialogue_del_mes_ok').trigger('click');
-        toastr.success(`Deleted ${trueNumberOfDeletedMessage} messages.`)
-        return
+        toastr.success(`Deleted ${trueNumberOfDeletedMessage} messages.`);
+        return;
     }
 }
 
@@ -2198,11 +2198,11 @@ function setAvgBG() {
             .replace('rgb', '')
             .replace('(', '[')
             .replace(')', ']');   //[50, 120, 200, 1]; // Example background color
-        const backgroundColorArray = JSON.parse(backgroundColorString) //[200, 200, 200, 1]
-        console.log(backgroundColorArray)
+        const backgroundColorArray = JSON.parse(backgroundColorString); //[200, 200, 200, 1]
+        console.log(backgroundColorArray);
         $('#main-text-color-picker').attr('color', getReadableTextColor(backgroundColorArray));
         console.log($('#main-text-color-picker').attr('color')); // Output: 'rgba(0, 47, 126, 1)'
-    }
+    };
 
     /*     charAvatar.onload = function () {
             var rgb = getAverageRGB(charAvatar);
@@ -2493,7 +2493,7 @@ $(document).ready(() => {
 
     $(window).on('resize', async () => {
         if (isMobile()) {
-            return
+            return;
         }
 
         //console.log('Window resized!');
@@ -2561,7 +2561,7 @@ $(document).ready(() => {
         power_user.show_user_prompt_bias = !!$(this).prop('checked');
         reloadCurrentChat();
         saveSettingsDebounced();
-    })
+    });
 
     $('#auto_continue_enabled').on('change', function () {
         power_user.auto_continue.enabled = $(this).prop('checked');
@@ -2756,7 +2756,7 @@ $(document).ready(() => {
     });
 
     $('#movingUIPresets').on('change', async function () {
-        console.log('saw MUI preset change')
+        console.log('saw MUI preset change');
         const movingUIPresetSelected = String($(this).find(':selected').val());
         power_user.movingUIPreset = movingUIPresetSelected;
         applyMovingUIPreset(movingUIPresetSelected);
@@ -2815,7 +2815,7 @@ $(document).ready(() => {
             .split(',')
             .map(str => str.trim())
             .filter(str => str);
-        console.log('power_user.auto_swipe_blacklist', power_user.auto_swipe_blacklist)
+        console.log('power_user.auto_swipe_blacklist', power_user.auto_swipe_blacklist);
         saveSettingsDebounced();
     });
 
@@ -2895,7 +2895,7 @@ $(document).ready(() => {
         power_user.allow_name1_display = !!$(this).prop('checked');
         reloadCurrentChat();
         saveSettingsDebounced();
-    })
+    });
 
     $('#allow_name2_display').on('input', function () {
         power_user.allow_name2_display = !!$(this).prop('checked');
@@ -2947,9 +2947,9 @@ $(document).ready(() => {
         const value = !!$(this).prop('checked');
         if (power_user.enableLabMode === true && value === true) {
             //disallow zenSliders while Lab Mode is active
-            toastr.warning('Disable Mad Lab Mode before enabling Zen Sliders')
+            toastr.warning('Disable Mad Lab Mode before enabling Zen Sliders');
             $(this).prop('checked', false).trigger('input');
-            return
+            return;
         }
         power_user.enableZenSliders = value;
         localStorage.setItem(storage_keys.enableZenSliders, Boolean(power_user.enableZenSliders));
@@ -2961,9 +2961,9 @@ $(document).ready(() => {
         const value = !!$(this).prop('checked');
         if (power_user.enableZenSliders === true && value === true) {
             //disallow Lab Mode if ZenSliders are active
-            toastr.warning('Disable Zen Sliders before enabling Mad Lab Mode')
+            toastr.warning('Disable Zen Sliders before enabling Mad Lab Mode');
             $(this).prop('checked', false).trigger('input');
-            return
+            return;
         }
 
         power_user.enableLabMode = value;

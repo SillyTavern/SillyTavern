@@ -22,7 +22,7 @@ const defaultSettings = {
     placeBeforeInputEnabled: false,
     quickActionEnabled: false,
     AutoInputInject: true,
-}
+};
 
 //method from worldinfo
 async function updateQuickReplyPresetList() {
@@ -53,7 +53,7 @@ async function updateQuickReplyPresetList() {
 
 async function loadSettings(type) {
     if (type === 'init') {
-        await updateQuickReplyPresetList()
+        await updateQuickReplyPresetList();
     }
     if (Object.keys(extension_settings.quickReply).length === 0) {
         Object.assign(extension_settings.quickReply, defaultSettings);
@@ -109,7 +109,7 @@ function onQuickReplyLabelInput(id) {
 }
 
 async function onQuickReplyContextMenuChange(id) {
-    extension_settings.quickReply.quickReplySlots[id - 1].contextMenu = JSON.parse($(`#quickReplyContainer > [data-order="${id}"]`).attr('data-contextMenu'))
+    extension_settings.quickReply.quickReplySlots[id - 1].contextMenu = JSON.parse($(`#quickReplyContainer > [data-order="${id}"]`).attr('data-contextMenu'));
     saveSettingsDebounced();
 }
 
@@ -141,9 +141,9 @@ async function onQuickReplyCtxButtonClick(id) {
         dom.querySelector('.quickReply_contextMenuEditor_chaining').checked = item.chain;
         $('.quickReply_contextMenuEditor_remove', ctxItem).on('click', () => ctxItem.remove());
         document.querySelector('#quickReply_contextMenuEditor_content').append(ctxItem);
-    }
+    };
     [...qr.contextMenu, {}].forEach((item, idx) => {
-        addCtxItem(item, idx)
+        addCtxItem(item, idx);
     });
     $('#quickReply_contextMenuEditor_addPreset').on('click', () => {
         addCtxItem({}, document.querySelector('#quickReply_contextMenuEditor_content').children.length);
@@ -204,7 +204,7 @@ async function onQuickReplyCtxButtonClick(id) {
 }
 
 async function onQuickReplyEnabledInput() {
-    let isEnabled = $(this).prop('checked')
+    let isEnabled = $(this).prop('checked');
     extension_settings.quickReply.quickReplyEnabled = !!isEnabled;
     if (isEnabled === true) {
         $('#quickReplyBar').show();
@@ -327,29 +327,29 @@ function buildContextMenu(qr, chainMes = null, hierarchy = [], labelHierarchy = 
 
 async function doQuickReplyBarPopout() {
     //shared elements
-    const newQuickRepliesDiv = '<div id="quickReplies"></div>'
-    const popoutButtonClone = $('#quickReplyPopoutButton')
+    const newQuickRepliesDiv = '<div id="quickReplies"></div>';
+    const popoutButtonClone = $('#quickReplyPopoutButton');
 
     if ($('#quickReplyBarPopout').length === 0) {
-        console.debug('did not see popout yet, creating')
+        console.debug('did not see popout yet, creating');
         const template = $('#zoomed_avatar_template').html();
         const controlBarHtml = `<div class="panelControlBar flex-container">
         <div id="quickReplyBarPopoutheader" class="fa-solid fa-grip drag-grabber hoverglow"></div>
         <div id="quickReplyBarPopoutClose" class="fa-solid fa-circle-xmark hoverglow"></div>
-        </div>`
+        </div>`;
         const newElement = $(template);
-        let quickRepliesClone = $('#quickReplies').html()
+        let quickRepliesClone = $('#quickReplies').html();
         newElement.attr('id', 'quickReplyBarPopout')
             .removeClass('zoomed_avatar')
             .addClass('draggable scrollY')
             .empty()
             .append(controlBarHtml)
-            .append(newQuickRepliesDiv)
+            .append(newQuickRepliesDiv);
         //empty original bar
-        $('#quickReplyBar').empty()
+        $('#quickReplyBar').empty();
         //add clone in popout
         $('body').append(newElement);
-        $('#quickReplies').append(quickRepliesClone).css('margin-top', '1em')
+        $('#quickReplies').append(quickRepliesClone).css('margin-top', '1em');
         $('.quickReplyButton').on('click', function () {
             let index = $(this).data('index');
             sendQuickReply(index);
@@ -364,7 +364,7 @@ async function doQuickReplyBarPopout() {
                 const menu = new ContextMenu(tree.children);
                 menu.show(evt);
             }
-        })
+        });
         $('.quickReplyButton').on('contextmenu', function (evt) {
             let index = $(this).data('index');
             const qr = extension_settings.quickReply.quickReplySlots[index];
@@ -377,16 +377,16 @@ async function doQuickReplyBarPopout() {
         });
 
         loadMovingUIState();
-        $('#quickReplyBarPopout').fadeIn(250)
-        dragElement(newElement)
+        $('#quickReplyBarPopout').fadeIn(250);
+        dragElement(newElement);
 
         $('#quickReplyBarPopoutClose').off('click').on('click', function () {
-            console.debug('saw existing popout, removing')
-            let quickRepliesClone = $('#quickReplies').html()
-            $('#quickReplyBar').append(newQuickRepliesDiv)
-            $('#quickReplies').prepend(quickRepliesClone)
-            $('#quickReplyBar').append(popoutButtonClone).fadeIn(250)
-            $('#quickReplyBarPopout').fadeOut(250, () => { $('#quickReplyBarPopout').remove() });
+            console.debug('saw existing popout, removing');
+            let quickRepliesClone = $('#quickReplies').html();
+            $('#quickReplyBar').append(newQuickRepliesDiv);
+            $('#quickReplies').prepend(quickRepliesClone);
+            $('#quickReplyBar').append(popoutButtonClone).fadeIn(250);
+            $('#quickReplyBarPopout').fadeOut(250, () => { $('#quickReplyBarPopout').remove(); });
             $('.quickReplyButton').on('click', function () {
                 let index = $(this).data('index');
                 sendQuickReply(index);
@@ -401,7 +401,7 @@ async function doQuickReplyBarPopout() {
                     const menu = new ContextMenu(tree.children);
                     menu.show(evt);
                 }
-            })
+            });
             $('.quickReplyButton').on('contextmenu', function (evt) {
                 let index = $(this).data('index');
                 const qr = extension_settings.quickReply.quickReplySlots[index];
@@ -412,8 +412,8 @@ async function doQuickReplyBarPopout() {
                     menu.show(evt);
                 }
             });
-            $('#quickReplyPopoutButton').off('click').on('click', doQuickReplyBarPopout)
-        })
+            $('#quickReplyPopoutButton').off('click').on('click', doQuickReplyBarPopout);
+        });
 
     }
 }
@@ -422,9 +422,9 @@ function addQuickReplyBar() {
     let quickReplyButtonHtml = '';
     var targetContainer;
     if ($('#quickReplyBarPopout').length !== 0) {
-        targetContainer = 'popout'
+        targetContainer = 'popout';
     } else {
-        targetContainer = 'bar'
+        targetContainer = 'bar';
         $('#quickReplyBar').remove();
     }
 
@@ -452,7 +452,7 @@ function addQuickReplyBar() {
     if (targetContainer === 'bar') {
         $('#send_form').prepend(quickReplyBarFullHtml);
     } else {
-        $('#quickReplies').empty().append(quickReplyButtonHtml)
+        $('#quickReplies').empty().append(quickReplyButtonHtml);
     }
 
 
@@ -460,7 +460,7 @@ function addQuickReplyBar() {
         let index = $(this).data('index');
         sendQuickReply(index);
     });
-    $('#quickReplyPopoutButton').off('click').on('click', doQuickReplyBarPopout)
+    $('#quickReplyPopoutButton').off('click').on('click', doQuickReplyBarPopout);
     $('.quickReplyButton > .ctx-expander').on('click', function (evt) {
         evt.stopPropagation();
         let index = $(this.closest('.quickReplyButton')).data('index');
@@ -471,7 +471,7 @@ function addQuickReplyBar() {
             const menu = new ContextMenu(tree.children);
             menu.show(evt);
         }
-    })
+    });
     $('.quickReplyButton').on('contextmenu', function (evt) {
         let index = $(this).data('index');
         const qr = extension_settings.quickReply.quickReplySlots[index];
@@ -507,7 +507,7 @@ async function saveQuickReplyPreset() {
         numberOfSlots: extension_settings.quickReply.numberOfSlots,
         AutoInputInject: extension_settings.quickReply.AutoInputInject,
         selectedPreset: name,
-    }
+    };
 
     const response = await fetch('/savequickreply', {
         method: 'POST',
@@ -532,13 +532,13 @@ async function saveQuickReplyPreset() {
         }
         saveSettingsDebounced();
     } else {
-        toastr.warning('Failed to save Quick Reply Preset.')
+        toastr.warning('Failed to save Quick Reply Preset.');
     }
 }
 
 //just a copy of save function with the name hardcoded to currently selected preset
 async function updateQuickReplyPreset() {
-    const name = $('#quickReplyPresets').val()
+    const name = $('#quickReplyPresets').val();
 
     if (!name) {
         return;
@@ -551,7 +551,7 @@ async function updateQuickReplyPreset() {
         numberOfSlots: extension_settings.quickReply.numberOfSlots,
         AutoInputInject: extension_settings.quickReply.AutoInputInject,
         selectedPreset: name,
-    }
+    };
 
     const response = await fetch('/savequickreply', {
         method: 'POST',
@@ -576,7 +576,7 @@ async function updateQuickReplyPreset() {
         }
         saveSettingsDebounced();
     } else {
-        toastr.warning('Failed to save Quick Reply Preset.')
+        toastr.warning('Failed to save Quick Reply Preset.');
     }
 }
 
@@ -653,14 +653,14 @@ async function applyQuickReplyPreset(name) {
     const quickReplyPreset = presets.find(x => x.name == name);
 
     if (!quickReplyPreset) {
-        toastr.warning(`error, QR preset '${name}' not found. Confirm you are using proper case sensitivity!`)
+        toastr.warning(`error, QR preset '${name}' not found. Confirm you are using proper case sensitivity!`);
         return;
     }
 
     extension_settings.quickReply = quickReplyPreset;
     extension_settings.quickReply.selectedPreset = name;
-    saveSettingsDebounced()
-    loadSettings('init')
+    saveSettingsDebounced();
+    loadSettings('init');
     addQuickReplyBar();
     moduleWorker();
 
@@ -669,42 +669,42 @@ async function applyQuickReplyPreset(name) {
 }
 
 async function doQRPresetSwitch(_, text) {
-    text = String(text)
-    applyQuickReplyPreset(text)
+    text = String(text);
+    applyQuickReplyPreset(text);
 }
 
 async function doQR(_, text) {
     if (!text) {
-        toastr.warning('must specify which QR # to use')
-        return
+        toastr.warning('must specify which QR # to use');
+        return;
     }
 
-    text = Number(text)
+    text = Number(text);
     //use scale starting with 0
     //ex: user inputs "/qr 2" >> qr with data-index 1 (but 2nd item displayed) gets triggered
-    let QRnum = Number(text - 1)
-    if (QRnum <= 0) { QRnum = 0 }
+    let QRnum = Number(text - 1);
+    if (QRnum <= 0) { QRnum = 0; }
     const whichQR = $('#quickReplies').find(`[data-index='${QRnum}']`);
-    whichQR.trigger('click')
+    whichQR.trigger('click');
 }
 
 function saveQROrder() {
     //update html-level order data to match new sort
-    let i = 1
+    let i = 1;
     $('#quickReplyContainer').children().each(function () {
-        $(this).attr('data-order', i)
-        $(this).find('input').attr('id', `quickReply${i}Label`)
-        $(this).find('textarea').attr('id', `quickReply${i}Mes`)
-        i++
+        $(this).attr('data-order', i);
+        $(this).find('input').attr('id', `quickReply${i}Label`);
+        $(this).find('textarea').attr('id', `quickReply${i}Mes`);
+        i++;
     });
 
     //rebuild the extension_Settings array based on new order
-    i = 1
+    i = 1;
     $('#quickReplyContainer').children().each(function () {
-        onQuickReplyContextMenuChange(i)
-        onQuickReplyLabelInput(i)
-        onQuickReplyInput(i)
-        i++
+        onQuickReplyContextMenuChange(i);
+        onQuickReplyLabelInput(i);
+        onQuickReplyInput(i);
+        i++;
     });
 }
 
@@ -892,4 +892,4 @@ jQuery(async () => {
 jQuery(() => {
     registerSlashCommand('qr', doQR, [], '<span class="monospace">(number)</span> – activates the specified Quick Reply', true, true);
     registerSlashCommand('qrset', doQRPresetSwitch, [], '<span class="monospace">(name)</span> – swaps to the specified Quick Reply Preset', true, true);
-})
+});

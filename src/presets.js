@@ -108,4 +108,4 @@ function registerEndpoints(app, jsonParser) {
 
 module.exports = {
     registerEndpoints,
-}
+};

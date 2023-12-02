@@ -138,4 +138,4 @@ module.exports = {
     UNSAFE_EXTENSIONS,
     UPLOADS_PATH,
     PALM_SAFETY,
-}
+};

@@ -30,7 +30,7 @@ const converters = {
     'application/pdf': extractTextFromPDF,
     'text/html': extractTextFromHTML,
     'text/markdown': extractTextFromMarkdown,
-}
+};
 
 function isConvertible(type) {
     return Object.keys(converters).includes(type);
@@ -381,4 +381,4 @@ jQuery(function () {
     $('#file_form').on('reset', function () {
         $('#file_form').addClass('displayNone');
     });
-})
+});

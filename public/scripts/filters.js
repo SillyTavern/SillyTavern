@@ -39,7 +39,7 @@ export class FilterHelper {
         [FILTER_TYPES.FAV]: this.favFilter.bind(this),
         [FILTER_TYPES.TAG]: this.tagFilter.bind(this),
         [FILTER_TYPES.WORLD_INFO_SEARCH]: this.wiSearchFilter.bind(this),
-    }
+    };
 
     /**
      * The filter data.
@@ -51,7 +51,7 @@ export class FilterHelper {
         [FILTER_TYPES.FAV]: false,
         [FILTER_TYPES.TAG]: { excluded: [], selected: [] },
         [FILTER_TYPES.WORLD_INFO_SEARCH]: '',
-    }
+    };
 
     /**
      * Applies a fuzzy search filter to the World Info data.
@@ -111,7 +111,7 @@ export class FilterHelper {
             } else {
                 return true;
             }
-        }
+        };
 
         return data.filter(entity => getIsTagged(entity));
     }

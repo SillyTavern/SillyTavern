@@ -11,7 +11,7 @@ export { MODULE_NAME };
 const MODULE_NAME = 'assets';
 const DEBUG_PREFIX = '<Assets module> ';
 let previewAudio = null;
-let ASSETS_JSON_URL = 'https://raw.githubusercontent.com/SillyTavern/SillyTavern-Content/main/index.json'
+let ASSETS_JSON_URL = 'https://raw.githubusercontent.com/SillyTavern/SillyTavern-Content/main/index.json';
 
 
 // DBG
@@ -49,7 +49,7 @@ function downloadAssetsList(url) {
 
                 for (const assetType of assetTypes) {
                     let assetTypeMenu = $('<div />', { id: 'assets_audio_ambient_div', class: 'assets-list-div' });
-                    assetTypeMenu.append(`<h3>${assetType}</h3>`)
+                    assetTypeMenu.append(`<h3>${assetType}</h3>`);
 
                     if (assetType == 'extension') {
                         assetTypeMenu.append(`
@@ -61,7 +61,7 @@ function downloadAssetsList(url) {
                     for (const i in availableAssets[assetType]) {
                         const asset = availableAssets[assetType][i];
                         const elemId = `assets_install_${assetType}_${i}`;
-                        let element = $('<button />', { id: elemId, type: 'button', class: 'asset-download-button menu_button' })
+                        let element = $('<button />', { id: elemId, type: 'button', class: 'asset-download-button menu_button' });
                         const label = $('<i class="fa-fw fa-solid fa-download fa-xl"></i>');
                         element.append(label);
 
@@ -98,7 +98,7 @@ function downloadAssetsList(url) {
                             label.addClass('fa-download');
                             element.off('mouseenter').off('mouseleave');
                             element.on('click', assetInstall);
-                        }
+                        };
 
                         if (isAssetInstalled(assetType, asset['id'])) {
                             console.debug(DEBUG_PREFIX, 'installed, checked');
@@ -116,12 +116,12 @@ function downloadAssetsList(url) {
                             });
                         }
                         else {
-                            console.debug(DEBUG_PREFIX, 'not installed, unchecked')
+                            console.debug(DEBUG_PREFIX, 'not installed, unchecked');
                             element.prop('checked', false);
                             element.on('click', assetInstall);
                         }
 
-                        console.debug(DEBUG_PREFIX, 'Created element for ', asset['id'])
+                        console.debug(DEBUG_PREFIX, 'Created element for ', asset['id']);
 
                         const displayName = DOMPurify.sanitize(asset['name'] || asset['id']);
                         const description = DOMPurify.sanitize(asset['description'] || '');
@@ -200,9 +200,9 @@ async function installAsset(url, assetType, filename) {
     const category = assetType;
     try {
         if (category === 'extension') {
-            console.debug(DEBUG_PREFIX, 'Installing extension ', url)
+            console.debug(DEBUG_PREFIX, 'Installing extension ', url);
             await installExtension(url);
-            console.debug(DEBUG_PREFIX, 'Extension installed.')
+            console.debug(DEBUG_PREFIX, 'Extension installed.');
             return;
         }
 
@@ -214,7 +214,7 @@ async function installAsset(url, assetType, filename) {
             cache: 'no-cache',
         });
         if (result.ok) {
-            console.debug(DEBUG_PREFIX, 'Download success.')
+            console.debug(DEBUG_PREFIX, 'Download success.');
         }
     }
     catch (err) {
@@ -228,9 +228,9 @@ async function deleteAsset(assetType, filename) {
     const category = assetType;
     try {
         if (category === 'extension') {
-            console.debug(DEBUG_PREFIX, 'Deleting extension ', filename)
+            console.debug(DEBUG_PREFIX, 'Deleting extension ', filename);
             await deleteExtension(filename);
-            console.debug(DEBUG_PREFIX, 'Extension deleted.')
+            console.debug(DEBUG_PREFIX, 'Extension deleted.');
         }
 
         const body = { category, filename };
@@ -241,7 +241,7 @@ async function deleteAsset(assetType, filename) {
             cache: 'no-cache',
         });
         if (result.ok) {
-            console.debug(DEBUG_PREFIX, 'Deletion success.')
+            console.debug(DEBUG_PREFIX, 'Deletion success.');
         }
     }
     catch (err) {
@@ -255,7 +255,7 @@ async function deleteAsset(assetType, filename) {
 //#############################//
 
 async function updateCurrentAssets() {
-    console.debug(DEBUG_PREFIX, 'Checking installed assets...')
+    console.debug(DEBUG_PREFIX, 'Checking installed assets...');
     try {
         const result = await fetch('/api/assets/get', {
             method: 'POST',
@@ -266,7 +266,7 @@ async function updateCurrentAssets() {
     catch (err) {
         console.log(err);
     }
-    console.debug(DEBUG_PREFIX, 'Current assets found:', currentAssets)
+    console.debug(DEBUG_PREFIX, 'Current assets found:', currentAssets);
 }
 
 

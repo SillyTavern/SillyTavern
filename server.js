@@ -153,7 +153,7 @@ function getAphroditeHeaders() {
 }
 
 function getTabbyHeaders() {
-    const apiKey = readSecret(SECRET_KEYS.TABBY)
+    const apiKey = readSecret(SECRET_KEYS.TABBY);
 
     return apiKey ? ({
         'x-api-key': apiKey,
@@ -393,7 +393,7 @@ app.get('/deviceinfo', function (request, response) {
 app.get('/version', async function (_, response) {
     const data = await getVersion();
     response.send(data);
-})
+});
 
 //**************Kobold api
 app.post('/generate', jsonParser, async function (request, response_generate) {
@@ -574,7 +574,7 @@ app.post('/api/textgenerationwebui/status', jsonParser, async function (request,
             url += '/oai/v1/models';
         }
         else if (request.body.use_tabby) {
-            url += '/v1/model/list'
+            url += '/v1/model/list';
         }
         else if (request.body.use_koboldcpp) {
             url += '/v1/models';
@@ -595,7 +595,7 @@ app.post('/api/textgenerationwebui/status', jsonParser, async function (request,
         }
 
         if (!Array.isArray(data.data)) {
-            console.log('Models response is not an array.')
+            console.log('Models response is not an array.');
             return response.status(400);
         }
 
@@ -636,7 +636,7 @@ app.post('/api/textgenerationwebui/status', jsonParser, async function (request,
                 } else {
                     // TabbyAPI returns an error 400 if a model isn't loaded
 
-                    result = 'None'
+                    result = 'None';
                 }
             } catch (error) {
                 console.error(`Failed to get TabbyAPI model info: ${error}`);
@@ -748,7 +748,7 @@ app.post('/savechat', jsonParser, function (request, response) {
         let chat_data = request.body.chat;
         let jsonlData = chat_data.map(JSON.stringify).join('\n');
         writeFileAtomicSync(`${chatsPath + sanitize(dir_name)}/${sanitize(String(request.body.file_name))}.jsonl`, jsonlData, 'utf8');
-        backupChat(dir_name, jsonlData)
+        backupChat(dir_name, jsonlData);
         return response.send({ result: 'ok' });
     } catch (error) {
         response.send(error);
@@ -811,7 +811,7 @@ app.post('/getstatus', jsonParser, async function (request, response) {
 
     if (request.body.main_api == 'kobold') {
         try {
-            version = (await fetchJSON(api_server + '/v1/info/version')).result
+            version = (await fetchJSON(api_server + '/v1/info/version')).result;
         }
         catch {
             version = '0.0.0';
@@ -946,10 +946,10 @@ function charaFormatData(data) {
 
     // Checks if data.alternate_greetings is an array, a string, or neither, and acts accordingly. (expected to be an array of strings)
     const getAlternateGreetings = data => {
-        if (Array.isArray(data.alternate_greetings)) return data.alternate_greetings
-        if (typeof data.alternate_greetings === 'string') return [data.alternate_greetings]
-        return []
-    }
+        if (Array.isArray(data.alternate_greetings)) return data.alternate_greetings;
+        if (typeof data.alternate_greetings === 'string') return [data.alternate_greetings];
+        return [];
+    };
 
     // Spec V1 fields
     _.set(char, 'name', data.ch_name);
@@ -1179,7 +1179,7 @@ app.post('/editcharacterattribute', jsonParser, async function (request, respons
         let charJSON = await charaRead(avatarPath);
         if (typeof charJSON !== 'string') throw new Error('Failed to read character file');
 
-        let char = JSON.parse(charJSON)
+        let char = JSON.parse(charJSON);
         //check if the field exists
         if (char[request.body.field] === undefined && char.data[request.body.field] === undefined) {
             console.error('Error: invalid field.');
@@ -1226,7 +1226,7 @@ app.post('/v2/editcharacterattribute', jsonParser, async function (request, resp
                 'Character saved'
             );
         } else {
-            console.log(validator.lastValidationError)
+            console.log(validator.lastValidationError);
             response.status(400).send({ message: `Validation failed for ${character.name}`, error: validator.lastValidationError });
         }
     } catch (exception) {
@@ -1260,7 +1260,7 @@ app.post('/deletecharacter', jsonParser, async function (request, response) {
 
     if (request.body.delete_chats == true) {
         try {
-            await fs.promises.rm(path.join(chatsPath, sanitize(dir_name)), { recursive: true, force: true })
+            await fs.promises.rm(path.join(chatsPath, sanitize(dir_name)), { recursive: true, force: true });
         } catch (err) {
             console.error(err);
             return response.sendStatus(500);
@@ -1305,15 +1305,15 @@ async function charaWrite(img_url, data, target_img, response = undefined, mes =
 async function tryReadImage(img_url, crop) {
     try {
         let rawImg = await jimp.read(img_url);
-        let final_width = rawImg.bitmap.width, final_height = rawImg.bitmap.height
+        let final_width = rawImg.bitmap.width, final_height = rawImg.bitmap.height;
 
         // Apply crop if defined
         if (typeof crop == 'object' && [crop.x, crop.y, crop.width, crop.height].every(x => typeof x === 'number')) {
             rawImg = rawImg.crop(crop.x, crop.y, crop.width, crop.height);
             // Apply standard resize if requested
             if (crop.want_resize) {
-                final_width = AVATAR_WIDTH
-                final_height = AVATAR_HEIGHT
+                final_width = AVATAR_WIDTH;
+                final_height = AVATAR_HEIGHT;
             } else {
                 final_width = crop.width;
                 final_height = crop.height;
@@ -1355,12 +1355,12 @@ const calculateChatSize = (charDir) => {
     }
 
     return { chatSize, dateLastChat };
-}
+};
 
 // Calculate the total string length of the data object
 const calculateDataSize = (data) => {
     return typeof data === 'object' ? Object.values(data).reduce((acc, val) => acc + new String(val).length, 0) : 0;
-}
+};
 
 /**
  * processCharacter - Process a given character, read its data and calculate its statistics.
@@ -1403,7 +1403,7 @@ const processCharacter = async (item, i) => {
             console.log('An unexpected error occurred: ', err);
         }
     }
-}
+};
 
 
 /**
@@ -1712,7 +1712,7 @@ function readPresetsFromDirectory(directoryPath, options = {}) {
 
 // Wintermute's code
 app.post('/getsettings', jsonParser, (request, response) => {
-    let settings
+    let settings;
     try {
         settings = fs.readFileSync('public/settings.json', 'utf8');
     } catch (e) {
@@ -1742,7 +1742,7 @@ app.post('/getsettings', jsonParser, (request, response) => {
     const { fileContents: koboldai_settings, fileNames: koboldai_setting_names }
         = readPresetsFromDirectory(DIRECTORIES.koboldAI_Settings, {
             sortFunction: sortByName(DIRECTORIES.koboldAI_Settings), removeFileExtension: true
-        })
+        });
 
     const worldFiles = fs
         .readdirSync(DIRECTORIES.worlds)
@@ -2184,11 +2184,11 @@ app.post('/exportchat', jsonParser, async function (request, response) {
         ? DIRECTORIES.groupChats
         : path.join(DIRECTORIES.chats, String(request.body.avatar_url).replace('.png', ''));
     let filename = path.join(pathToFolder, request.body.file);
-    let exportfilename = request.body.exportfilename
+    let exportfilename = request.body.exportfilename;
     if (!fs.existsSync(filename)) {
         const errorMessage = {
             message: `Could not find JSONL file to export. Source chat file: ${filename}.`
-        }
+        };
         console.log(errorMessage.message);
         return response.status(404).json(errorMessage);
     }
@@ -2200,7 +2200,7 @@ app.post('/exportchat', jsonParser, async function (request, response) {
                 const successMessage = {
                     message: `Chat saved to ${exportfilename}`,
                     result: rawFile,
-                }
+                };
 
                 console.log(`Chat exported as ${exportfilename}`);
                 return response.status(200).json(successMessage);
@@ -2209,7 +2209,7 @@ app.post('/exportchat', jsonParser, async function (request, response) {
                 console.error(err);
                 const errorMessage = {
                     message: `Could not read JSONL file to export. Source chat file: ${filename}.`
-                }
+                };
                 console.log(errorMessage.message);
                 return response.status(500).json(errorMessage);
             }
@@ -2232,17 +2232,17 @@ app.post('/exportchat', jsonParser, async function (request, response) {
             const successMessage = {
                 message: `Chat saved to ${exportfilename}`,
                 result: buffer,
-            }
+            };
             console.log(`Chat exported as ${exportfilename}`);
             return response.status(200).json(successMessage);
         });
     }
     catch (err) {
-        console.log('chat export failed.')
+        console.log('chat export failed.');
         console.log(err);
         return response.sendStatus(400);
     }
-})
+});
 
 app.post('/exportcharacter', jsonParser, async function (request, response) {
     if (!request.body.format || !request.body.avatar_url) {
@@ -2263,7 +2263,7 @@ app.post('/exportcharacter', jsonParser, async function (request, response) {
                 let json = await charaRead(filename);
                 if (json === undefined) return response.sendStatus(400);
                 let jsonObject = getCharaCardV2(json5.parse(json));
-                return response.type('json').send(jsonObject)
+                return response.type('json').send(jsonObject);
             }
             catch {
                 return response.sendStatus(400);
@@ -2331,7 +2331,7 @@ app.post('/importchat', urlencodedParser, function (request, response) {
                                 })
                             )];
                     }
-                }
+                };
 
                 const newChats = [];
                 (jsonData.histories.histories ?? []).forEach((history) => {
@@ -2835,7 +2835,7 @@ app.post('/getstatus_openai', jsonParser, async function (request, response_gets
                     const modelIds = models.filter(x => x && typeof x === 'object').map(x => x.id).sort();
                     console.log('Available OpenAI models:', modelIds);
                 } else {
-                    console.log('OpenAI endpoint did not return a list of models.')
+                    console.log('OpenAI endpoint did not return a list of models.');
                 }
             }
         }
@@ -3049,12 +3049,12 @@ app.post('/generate_altscale', jsonParser, function (request, response_generate_
     })
         .then(response => response.json())
         .then(data => {
-            console.log(data.result.data.json.outputs[0])
+            console.log(data.result.data.json.outputs[0]);
             return response_generate_scale.send({ output: data.result.data.json.outputs[0] });
         })
         .catch((error) => {
-            console.error('Error:', error)
-            return response_generate_scale.send({ error: true })
+            console.error('Error:', error);
+            return response_generate_scale.send({ error: true });
         });
 
 });
@@ -3332,7 +3332,7 @@ app.post('/generate_openai', jsonParser, function (request, response_generate_op
      */
     async function makeRequest(config, response_generate_openai, request, retries = 5, timeout = 5000) {
         try {
-            const fetchResponse = await fetch(endpointUrl, config)
+            const fetchResponse = await fetch(endpointUrl, config);
 
             if (fetchResponse.ok) {
                 if (request.body.stream) {
@@ -3343,7 +3343,7 @@ app.post('/generate_openai', jsonParser, function (request, response_generate_op
                         response_generate_openai.end();
                     });
                 } else {
-                    let json = await fetchResponse.json()
+                    let json = await fetchResponse.json();
                     response_generate_openai.send(json);
                     console.log(json);
                     console.log(json?.choices[0]?.message);
@@ -3399,7 +3399,7 @@ app.post('/generate_openai', jsonParser, function (request, response_generate_op
 async function sendAI21Request(request, response) {
     if (!request.body) return response.sendStatus(400);
     const controller = new AbortController();
-    console.log(request.body.messages)
+    console.log(request.body.messages);
     request.socket.removeAllListeners('close');
     request.socket.on('close', function () {
         controller.abort();
@@ -3452,16 +3452,16 @@ async function sendAI21Request(request, response) {
         .then(r => r.json())
         .then(r => {
             if (r.completions === undefined) {
-                console.log(r)
+                console.log(r);
             } else {
-                console.log(r.completions[0].data.text)
+                console.log(r.completions[0].data.text);
             }
             const reply = { choices: [{ 'message': { 'content': r.completions[0].data.text, } }] };
-            return response.send(reply)
+            return response.send(reply);
         })
         .catch(err => {
-            console.error(err)
-            return response.send({ error: true })
+            console.error(err);
+            return response.send({ error: true });
         });
 
 }
@@ -3668,7 +3668,7 @@ const setupTasks = async function () {
     if (listen) {
         console.log('\n0.0.0.0 means SillyTavern is listening on all network interfaces (Wi-Fi, LAN, localhost). If you want to limit it only to internal localhost (127.0.0.1), change the setting in config.yaml to "listen: false". Check "access.log" file in the SillyTavern directory if you want to inspect incoming connections.\n');
     }
-}
+};
 
 if (listen && !getConfigValue('whitelistMode', true) && !getConfigValue('basicAuthMode', false)) {
     if (getConfigValue('securityOverride', false)) {

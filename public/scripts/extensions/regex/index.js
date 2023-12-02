@@ -119,7 +119,7 @@ async function onRegexEditorOpenClick(existingId) {
             if (existingScript.scriptName) {
                 editorHtml.find('.regex_script_name').val(existingScript.scriptName);
             } else {
-                toastr.error('This script doesn\'t have a name! Please delete it.')
+                toastr.error('This script doesn\'t have a name! Please delete it.');
                 return;
             }
 
@@ -176,7 +176,7 @@ async function onRegexEditorOpenClick(existingId) {
                 editorHtml
                     .find('input[name="replace_position"]')
                     .filter(':checked')
-                    .map(function () { return parseInt($(this).val()) })
+                    .map(function () { return parseInt($(this).val()); })
                     .get()
                     .filter((e) => !isNaN(e)) || [],
             disabled:
@@ -222,8 +222,8 @@ function migrateSettings() {
                 Object.values(regex_placement).filter((e) => e !== regex_placement.MD_DISPLAY) :
                 script.placement = script.placement.filter((e) => e !== regex_placement.MD_DISPLAY);
 
-            script.markdownOnly = true
-            script.promptOnly = true
+            script.markdownOnly = true;
+            script.promptOnly = true;
 
             performSave = true;
         }

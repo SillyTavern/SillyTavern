@@ -10,7 +10,7 @@ const API_NOVELAI = 'https://api.novelai.net';
 const badWordsList = [
     [3], [49356], [1431], [31715], [34387], [20765], [30702], [10691], [49333], [1266],
     [19438], [43145], [26523], [41471], [2936], [85, 85], [49332], [7286], [1115]
-]
+];
 
 const hypeBotBadWordsList = [
     [58], [60], [90], [92], [685], [1391], [1782], [2361], [3693], [4083], [4357], [4895],
@@ -37,16 +37,16 @@ const repPenaltyAllowList = [
         1096, 2919, 2072, 7379, 1259, 2110, 620, 526, 487, 16562, 603, 805, 761, 2681, 942, 8917, 653, 3513, 506, 5301,
         562, 5010, 614, 10942, 539, 2976, 462, 5189, 567, 2032, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 588,
         803, 1040, 49209, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-]
+];
 
 // Ban the dinkus and asterism
 const logitBiasExp = [
     { 'sequence': [23], 'bias': -0.08, 'ensure_sequence_finish': false, 'generate_once': false },
     { 'sequence': [21], 'bias': -0.08, 'ensure_sequence_finish': false, 'generate_once': false }
-]
+];
 
 function getBadWordsList(model) {
-    let list = []
+    let list = [];
 
     if (model.includes('hypebot')) {
         list = hypeBotBadWordsList;
@@ -176,7 +176,7 @@ function registerEndpoints(app, jsonParser) {
             }
         };
 
-        console.log(util.inspect(data, { depth: 4 }))
+        console.log(util.inspect(data, { depth: 4 }));
 
         const args = {
             body: JSON.stringify(data),
@@ -317,7 +317,7 @@ function registerEndpoints(app, jsonParser) {
                 return response.send(upscaledBase64);
             } catch (error) {
                 console.warn('NovelAI generated an image, but upscaling failed. Returning original image.');
-                return response.send(originalBase64)
+                return response.send(originalBase64);
             }
         } catch (error) {
             console.log(error);
