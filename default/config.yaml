@@ -1,6 +1,6 @@
 # -- NETWORK CONFIGURATION --
 # Listen for incoming connections
-listen: true
+listen: false
 # Server port
 port: 8000
 # Toggle whitelist mode
