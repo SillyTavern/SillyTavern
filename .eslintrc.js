@@ -66,7 +66,6 @@ module.exports = {
         'use-isnan': 'off',
         'no-self-assign': 'off',
         'no-unsafe-negation': 'off',
-        'no-constant-condition': 'off',
-        'no-empty': 'off'
+        'no-constant-condition': 'off'
     }
 };
