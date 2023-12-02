@@ -1604,9 +1604,7 @@ export async function getGroupPastChats(groupId) {
     } catch (err) {
         console.error(err);
     }
-    finally {
-        return chats;
-    }
+    return chats;
 }
 
 export async function openGroupChat(groupId, chatId) {

@@ -1696,9 +1696,7 @@ async function calculateLogitBias() {
         result = {};
         console.error(err);
     }
-    finally {
-        return result;
-    }
+    return result;
 }
 
 class TokenHandler {

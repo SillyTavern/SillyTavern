@@ -118,9 +118,7 @@ function registerEndpoints(app, jsonParser) {
         catch (err) {
             console.log(err);
         }
-        finally {
-            return response.send(output);
-        }
+        return response.send(output);
     });
 
     /**

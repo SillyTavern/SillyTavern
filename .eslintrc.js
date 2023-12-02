@@ -67,7 +67,6 @@ module.exports = {
         'no-self-assign': 'off',
         'no-unsafe-negation': 'off',
         'no-constant-condition': 'off',
-        'no-empty': 'off',
-        'no-unsafe-finally': 'off'
+        'no-empty': 'off'
     }
 };
