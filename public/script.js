@@ -7920,12 +7920,14 @@ jQuery(async function () {
     });
 
     $('#dialogue_popup_cancel').click(function (e) {
+        dialogueCloseStop = false;
         $('#shadow_popup').transition({
             opacity: 0,
             duration: 200,
             easing: animation_easing,
         });
         setTimeout(function () {
+            if (dialogueCloseStop) return;
             $('#shadow_popup').css('display', 'none');
             $('#dialogue_popup').removeClass('large_dialogue_popup');
         }, 200);
