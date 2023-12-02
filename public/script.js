@@ -381,6 +381,7 @@ let rawPromptPopper = Popper.createPopper(document.getElementById('dialogue_popu
 });
 
 let dialogueResolve = null;
+let dialogueCloseStop = false;
 let chat_metadata = {};
 let streamingProcessor = null;
 let crop_data = undefined;
@@ -6261,6 +6262,7 @@ function onScenarioOverrideRemoveClick() {
 }
 
 function callPopup(text, type, inputValue = '', { okButton, rows, wide, large } = {}) {
+    dialogueCloseStop = true;
     if (type) {
         popup_type = type;
     }
@@ -7823,12 +7825,14 @@ jQuery(async function () {
     });
 
     $('#dialogue_popup_ok').click(async function (e) {
+        dialogueCloseStop = false;
         $('#shadow_popup').transition({
             opacity: 0,
             duration: 200,
             easing: animation_easing,
         });
         setTimeout(function () {
+            if (dialogueCloseStop) return;
             $('#shadow_popup').css('display', 'none');
             $('#dialogue_popup').removeClass('large_dialogue_popup');
             $('#dialogue_popup').removeClass('wide_dialogue_popup');
