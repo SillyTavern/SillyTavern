@@ -834,7 +834,7 @@ async function CreateZenSliders(elmnt) {
     originalSlider.data("newSlider", newSlider);
     await delay(1)
     originalSlider.hide();
-};
+}
 function switchUiMode() {
     const fastUi = localStorage.getItem(storage_keys.fast_ui_mode);
     power_user.fast_ui_mode = fastUi === null ? true : fastUi == "true";
@@ -894,7 +894,7 @@ function switchMovingUI() {
         if (power_user.movingUIState) {
             loadMovingUIState();
         }
-    };
+    }
 }
 
 function noShadows() {
@@ -1239,7 +1239,7 @@ async function applyTheme(name) {
             if (type) await applyThemeColor(type);
             if (action) await action();
         } else {
-            if (selector) { $(selector).attr('color', 'rgba(0,0,0,0)') };
+            if (selector) { $(selector).attr('color', 'rgba(0,0,0,0)') }
             console.debug(`Empty theme key: ${key}`);
             power_user[key] = '';
         }
@@ -2985,7 +2985,7 @@ $(document).ready(() => {
         if (power_user.enableZenSliders === true && value === true) {
             //disallow Lab Mode if ZenSliders are active
             toastr.warning('Disable Zen Sliders before enabling Mad Lab Mode')
-            $(this).prop('checked', false).trigger('input');;
+            $(this).prop('checked', false).trigger('input');
             return
         }
 

@@ -35,7 +35,7 @@ function checkAssetFileName(inputFilename) {
         return '';
     }
 
-    return path.normalize(inputFilename).replace(/^(\.\.(\/|\\|$))+/, '');;
+    return path.normalize(inputFilename).replace(/^(\.\.(\/|\\|$))+/, '');
 }
 
 // Recursive function to get files

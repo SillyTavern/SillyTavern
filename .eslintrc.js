@@ -56,7 +56,6 @@ module.exports = {
         'no-redeclare': 'off',
         'no-async-promise-executor': 'off',
         'no-inner-declarations': 'off',
-        'no-extra-semi': 'off',
         'no-undef': 'off',
         'no-prototype-builtins': 'off',
         'no-extra-boolean-cast': 'off',

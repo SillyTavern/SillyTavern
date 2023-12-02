@@ -261,7 +261,7 @@ async function importTags(imported_char) {
             tag_map[imported_char.avatar].push(tag.id);
             console.debug('added tag to map', tag, imported_char.name);
         }
-    };
+    }
     saveSettingsDebounced();
     await getCharacters();
     printTagFilters(tag_filter_types.character);

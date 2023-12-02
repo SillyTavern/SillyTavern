@@ -3835,7 +3835,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     triggerAutoContinue(messageChunk, isImpersonate);
                     resolve();
                 }
-            };
+            }
 
             function onError(exception) {
                 if (typeof exception?.error?.message === 'string') {
@@ -3846,7 +3846,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 unblockGeneration();
                 console.log(exception);
                 streamingProcessor = null;
-            };
+            }
 
         } //rungenerate ends
     } else {    //generate's primary loop ends, after this is error handling for no-connection or safety-id
@@ -7890,7 +7890,7 @@ jQuery(async function () {
 
         if (popup_type == 'avatarToCrop') {
             dialogueResolve($("#avatarToCrop").data('cropper').getCroppedCanvas().toDataURL('image/jpeg'));
-        };
+        }
 
         if (popup_type == "del_chat") {
             //close past chat popup
@@ -9171,7 +9171,7 @@ jQuery(async function () {
     $(document).on('click', '.inline-drawer-toggle', function (e) {
         if ($(e.target).hasClass('text_pole')) {
             return;
-        };
+        }
         var icon = $(this).find('.inline-drawer-icon');
         icon.toggleClass('down up');
         icon.toggleClass('fa-circle-chevron-down fa-circle-chevron-up');

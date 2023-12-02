@@ -244,7 +244,7 @@ export function getStringHash(str, seed = 0) {
     h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
 
     return 4294967296 * (2097151 & h2) + (h1 >>> 0);
-};
+}
 
 /**
  * Creates a debounced function that delays invoking func until after wait milliseconds have elapsed since the last time the debounced function was invoked.
@@ -344,7 +344,7 @@ export function incrementString(str) {
     // Take the substring up until where the integer was matched
     // Concatenate it to the matched count incremented by 1
     return str.substring(0, count.index) + (Number(count[0]) + 1);
-};
+}
 
 /**
  * Formats a string using the specified arguments.
@@ -361,7 +361,7 @@ export function stringFormat(format) {
             : match
             ;
     });
-};
+}
 
 /**
  * Save the caret position in a contenteditable element.
