@@ -1908,6 +1908,7 @@ async function checkWorldInfo(chat, maxContext) {
                         entries: [entry.content]
                     });
                 }
+                break;
             default:
                 break;
         }
