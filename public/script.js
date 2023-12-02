@@ -2505,7 +2505,7 @@ class StreamingProcessor {
             $('#send_textarea').val('').trigger('input');
         }
         else {
-            await saveReply(this.type, text);
+            await saveReply(this.type, text, true);
             messageId = count_view_mes - 1;
             this.showMessageButtons(messageId);
         }
@@ -3748,10 +3748,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         else {
                             // Without streaming we'll be having a full message on continuation. Treat it as a last chunk.
                             if (originalType !== 'continue') {
-                                ({ type, getMessage } = await saveReply(type, getMessage, true, title));
+                                ({ type, getMessage } = await saveReply(type, getMessage, false, title));
                             }
                             else {
-                                ({ type, getMessage } = await saveReply('appendFinal', getMessage, true, title));
+                                ({ type, getMessage } = await saveReply('appendFinal', getMessage, false, title));
                             }
                         }
                         activateSendButtons();
@@ -4468,7 +4468,7 @@ function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete
     return getMessage;
 }
 
-async function saveReply(type, getMessage, _, title) {
+async function saveReply(type, getMessage, fromStreaming, title) {
     if (type != 'append' && type != 'continue' && type != 'appendFinal' && chat.length && (chat[chat.length - 1]['swipe_id'] === undefined ||
         chat[chat.length - 1]['is_user'])) {
         type = 'normal';
@@ -4572,9 +4572,10 @@ async function saveReply(type, getMessage, _, title) {
 
         saveImageToMessage(img, chat[chat.length - 1]);
         const chat_id = (chat.length - 1);
-        await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id);
+
+        !fromStreaming && await eventSource.emit(event_types.MESSAGE_RECEIVED, chat_id);
         addOneMessage(chat[chat_id]);
-        await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, chat_id);
+        !fromStreaming && await eventSource.emit(event_types.CHARACTER_MESSAGE_RENDERED, chat_id);
     }
 
     const item = chat[chat.length - 1];

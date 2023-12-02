@@ -272,7 +272,7 @@ async function performQuickReply(prompt, index) {
     // the prompt starts with '/' - execute slash commands natively
     if (prompt.startsWith('/')) {
         const result = await executeSlashCommands(newText);
-        return result?.pipe;
+        return typeof result === 'object' ? result?.pipe : '';
     }
 
     newText = substituteParams(newText);

@@ -971,28 +971,31 @@ async function addGroupMemberCallback(_, arg) {
 }
 
 async function triggerGenerationCallback(_, arg) {
-    try {
-        await waitUntilCondition(() => !is_send_press && !is_group_generating, 10000, 100);
-    } catch {
-        console.warn('Timeout waiting for generation unlock');
-        toastr.warning('Cannot run /trigger command while the reply is being generated.');
-        return '';
-    }
-
-    // Prevent generate recursion
-    $('#send_textarea').val('').trigger('input');
-
-    let chid = undefined;
-
-    if (selected_group && arg) {
-        chid = findGroupMemberId(arg);
-
-        if (chid === undefined) {
-            console.warn(`WARN: No group member found for argument ${arg}`);
+    setTimeout(async () => {
+        try {
+            await waitUntilCondition(() => !is_send_press && !is_group_generating, 10000, 100);
+        } catch {
+            console.warn('Timeout waiting for generation unlock');
+            toastr.warning('Cannot run /trigger command while the reply is being generated.');
+            return '';
         }
-    }
 
-    setTimeout(() => Generate('normal', { force_chid: chid }), 100);
+        // Prevent generate recursion
+        $('#send_textarea').val('').trigger('input');
+
+        let chid = undefined;
+
+        if (selected_group && arg) {
+            chid = findGroupMemberId(arg);
+
+            if (chid === undefined) {
+                console.warn(`WARN: No group member found for argument ${arg}`);
+            }
+        }
+
+        setTimeout(() => Generate('normal', { force_chid: chid }), 100);
+    }, 1);
+
     return '';
 }
 
@@ -1086,18 +1089,20 @@ async function openChat(id) {
     await reloadCurrentChat();
 }
 
-async function continueChatCallback() {
-    try {
-        await waitUntilCondition(() => !is_send_press && !is_group_generating, 10000, 100);
-    } catch {
-        console.warn('Timeout waiting for generation unlock');
-        toastr.warning('Cannot run /continue command while the reply is being generated.');
-        return '';
-    }
+function continueChatCallback() {
+    setTimeout(async () => {
+        try {
+            await waitUntilCondition(() => !is_send_press && !is_group_generating, 10000, 100);
+        } catch {
+            console.warn('Timeout waiting for generation unlock');
+            toastr.warning('Cannot run /continue command while the reply is being generated.');
+        }
 
-    // Prevent infinite recursion
-    $('#send_textarea').val('').trigger('input');
-    $('#option_continue').trigger('click', { fromSlashCommand: true });
+        // Prevent infinite recursion
+        $('#send_textarea').val('').trigger('input');
+        $('#option_continue').trigger('click', { fromSlashCommand: true });
+    }, 1);
+
     return '';
 }
 
