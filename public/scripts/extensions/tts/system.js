@@ -191,7 +191,7 @@ class SystemTtsProvider {
         const voice = speechSynthesis.getVoices().find(x => x.voiceURI === voiceId);
 
         if (!voice) {
-            throw `TTS Voice name ${voiceName} not found`
+            throw `TTS Voice id ${voiceId} not found`
         }
 
         speechSynthesis.cancel();

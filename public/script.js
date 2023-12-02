@@ -8569,6 +8569,7 @@ jQuery(async function () {
             if (this_edit_mes_id !== undefined) {
                 let mes_edited = $(`#chat [mesid="${this_edit_mes_id}"]`).find(".mes_edit_done");
                 if (Number(edit_mes_id) == count_view_mes - 1) { //if the generating swipe (...)
+                    let run_edit = true;
                     if (chat[edit_mes_id]['swipe_id'] !== undefined) {
                         if (chat[edit_mes_id]['swipes'].length === chat[edit_mes_id]['swipe_id']) {
                             run_edit = false;
