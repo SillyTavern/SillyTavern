@@ -623,7 +623,6 @@ function generateQuickReplyElements() {
     let quickReplyHtml = '';
 
     for (let i = 1; i <= extension_settings.quickReply.numberOfSlots; i++) {
-        let itemNumber = i + 1
         quickReplyHtml += `
         <div class="flex-container alignitemscenter" data-order="${i}">
             <span class="drag-handle ui-sortable-handle">☰</span>

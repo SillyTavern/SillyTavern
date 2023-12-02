@@ -133,8 +133,7 @@ class XTTSTtsProvider {
 
     // Perform a simple readiness check by trying to fetch voiceIds
     async checkReady() {
-
-        const response = await this.fetchTtsVoiceObjects()
+        await this.fetchTtsVoiceObjects()
     }
 
     async onRefreshClick() {

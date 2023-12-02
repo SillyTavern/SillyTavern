@@ -62,7 +62,6 @@ import {
     renameGroupChat,
     importGroupChat,
     getGroupBlock,
-    getGroupChatNames,
     getGroupCharacterCards,
     getGroupDepthPrompts,
 } from "./scripts/group-chats.js";
@@ -130,8 +129,6 @@ import {
 import {
     debounce,
     delay,
-    restoreCaretPosition,
-    saveCaretPosition,
     trimToEndSentence,
     countOccurrences,
     isOdd,
@@ -193,7 +190,7 @@ import { getFriendlyTokenizerName, getTokenCount, getTokenizerModel, initTokeniz
 import { createPersona, initPersonas, selectCurrentPersona, setPersonaDescription } from "./scripts/personas.js";
 import { getBackgrounds, initBackgrounds } from "./scripts/backgrounds.js";
 import { hideLoader, showLoader } from "./scripts/loader.js";
-import { CharacterContextMenu, BulkEditOverlay } from "./scripts/BulkEditOverlay.js";
+import { BulkEditOverlay } from "./scripts/BulkEditOverlay.js";
 import { loadMancerModels } from "./scripts/mancer-settings.js";
 import { getFileAttachment, hasPendingFileAttachment, populateFileAttachment } from "./scripts/chats.js";
 import { replaceVariableMacros } from "./scripts/variables.js";
@@ -327,7 +324,6 @@ eventSource.on(event_types.MESSAGE_SENT, processExtensionHelpers);
 eventSource.on(event_types.CHAT_CHANGED, processChatSlashCommands);
 
 const characterGroupOverlay = new BulkEditOverlay();
-const characterContextMenu = new CharacterContextMenu(characterGroupOverlay);
 eventSource.on(event_types.CHARACTER_PAGE_LOADED, characterGroupOverlay.onPageLoad);
 
 hljs.addPlugin({ "before:highlightElement": ({ el }) => { el.textContent = el.innerText } });
@@ -666,7 +662,6 @@ let is_send_press = false; //Send generation
 let this_del_mes = -1;
 
 //message editing and chat scroll position persistence
-var this_edit_mes_text = "";
 var this_edit_mes_chname = "";
 var this_edit_mes_id;
 var scroll_holder = 0;
@@ -2224,7 +2219,6 @@ function getStoppingStrings(isImpersonate, isContinue) {
  */
 export async function generateQuietPrompt(quiet_prompt, quietToLoud, skipWIAN, quietImage = null) {
     console.log('got into genQuietPrompt')
-    const skipWIANvalue = skipWIAN
     return await new Promise(
         async function promptPromise(resolve, reject) {
             if (quietToLoud === true) {
@@ -3855,7 +3849,6 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     //prevent custom depth WI entries (which have unique random key names) from duplicating
     for (let key in extension_prompts) {
         if (key.includes('customDepthWI')) {
-            let keyname = extension_prompts[key]
             delete extension_prompts[key];
         }
     }
@@ -4108,6 +4101,8 @@ function addChatsSeparator(mesSendString) {
     }
 }
 
+// There's a TODO related to zero-depth anchors; not removing this function until that's resolved
+// eslint-disable-next-line no-unused-vars
 function appendZeroDepthAnchor(force_name2, zeroDepthAnchor, finalPrompt) {
     const trimBothEnds = !force_name2;
     let trimmedPrompt = (trimBothEnds ? zeroDepthAnchor.trim() : zeroDepthAnchor.trimEnd());
@@ -6754,7 +6749,6 @@ function addAlternateGreeting(template, greeting, index, getArray) {
 
 async function createOrEditCharacter(e) {
     $("#rm_info_avatar").html("");
-    let save_name = create_save.name;
     var formData = new FormData($("#form_create").get(0));
     formData.set('fav', fav_ch_checked);
     if ($("#form_create").attr("actiontype") == "createcharacter") {
@@ -7615,28 +7609,22 @@ jQuery(async function () {
     $(document).on('click', '.api_loading', cancelStatusCheck);
 
     //////////INPUT BAR FOCUS-KEEPING LOGIC/////////////
-    let S_TAFocused = false;
     let S_TAPreviouslyFocused = false;
     $('#send_textarea').on('focusin focus click', () => {
-        S_TAFocused = true;
         S_TAPreviouslyFocused = true;
     });
-    $('#send_textarea').on('focusout blur', () => S_TAFocused = false);
     $('#options_button, #send_but, #option_regenerate, #option_continue, #mes_continue').on('click', () => {
         if (S_TAPreviouslyFocused) {
             $('#send_textarea').focus();
-            S_TAFocused = true;
         }
     });
     $(document).click(event => {
         if ($(':focus').attr('id') !== 'send_textarea') {
             var validIDs = ["options_button", "send_but", "mes_continue", "send_textarea", "option_regenerate", "option_continue"];
             if (!validIDs.includes($(event.target).attr('id'))) {
-                S_TAFocused = false;
                 S_TAPreviouslyFocused = false;
             }
         } else {
-            S_TAFocused = true;
             S_TAPreviouslyFocused = true;
         }
     });

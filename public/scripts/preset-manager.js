@@ -284,7 +284,7 @@ class PresetManager {
     }
 
     async deleteCurrentPreset() {
-        const { presets, preset_names } = this.getPresetList();
+        const { preset_names } = this.getPresetList();
         const value = this.getSelectedPreset();
         const nameToDelete = this.getSelectedPresetName();
 

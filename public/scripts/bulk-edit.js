@@ -89,7 +89,6 @@ async function onDeleteButtonClick() {
  */
 function enableBulkSelect() {
     $("#rm_print_characters_block .character_select").each((i, el) => {
-        const character = $(el).text();
         const checkbox = $("<input type='checkbox' class='bulk_select_checkbox'>");
         checkbox.on("change", () => {
             // Do something when the checkbox is changed

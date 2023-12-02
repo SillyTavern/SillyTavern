@@ -45,11 +45,6 @@ const logitBiasExp = [
     { "sequence": [21], "bias": -0.08, "ensure_sequence_finish": false, "generate_once": false }
 ]
 
-const hypeBotLogitBiasExp = [
-    { "sequence": [8162], "bias": -0.12, "ensure_sequence_finish": false, "generate_once": false },
-    { "sequence": [46256, 224], "bias": -0.12, "ensure_sequence_finish": false, "generate_once": false }
-];
-
 function getBadWordsList(model) {
     let list = []
 

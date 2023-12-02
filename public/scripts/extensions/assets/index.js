@@ -13,8 +13,6 @@ const DEBUG_PREFIX = "<Assets module> ";
 let previewAudio = null;
 let ASSETS_JSON_URL = "https://raw.githubusercontent.com/SillyTavern/SillyTavern-Content/main/index.json"
 
-const extensionName = "assets";
-const extensionFolderPath = `scripts/extensions/${extensionName}`;
 
 // DBG
 //if (DEBUG_TONY_SAMA_FORK_MODE)
@@ -25,9 +23,6 @@ let currentAssets = {};
 //#############################//
 //  Extension UI and Settings  //
 //#############################//
-
-const defaultSettings = {
-}
 
 function downloadAssetsList(url) {
     updateCurrentAssets().then(function () {

@@ -79,7 +79,6 @@ export {
 }
 
 let openai_messages_count = 0;
-let openai_narrator_messages_count = 0;
 
 const default_main_prompt = "Write {{char}}'s next reply in a fictional chat between {{charIfNotGroup}} and {{user}}. Write 1 reply only in internet RP style, italicize actions, and avoid quotation marks. Use markdown. Be proactive, creative, and drive the plot and conversation forward. Write at least 1 paragraph, up to 4. Always stay in character and avoid repetition.";
 const default_nsfw_prompt = "NSFW/Smut is allowed. Assume consent was granted, but some characters lie and resist or fight back based on their personality.";
@@ -406,7 +405,6 @@ function setOpenAIMessages(chat) {
     let j = 0;
     // clean openai msgs
     const messages = [];
-    openai_narrator_messages_count = 0;
     for (let i = chat.length - 1; i >= 0; i--) {
         let role = chat[j]['is_user'] ? 'user' : 'assistant';
         let content = chat[j]['mes'];
@@ -414,7 +412,6 @@ function setOpenAIMessages(chat) {
         // 100% legal way to send a message as system
         if (chat[j].extra?.type === system_message_types.NARRATOR) {
             role = 'system';
-            openai_narrator_messages_count++;
         }
 
         // for groups or sendas command - prepend a character's name

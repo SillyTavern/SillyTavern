@@ -4,17 +4,15 @@ TODO:
  - Delete useless call
 */
 
-import { doExtrasFetch, extension_settings, getApiUrl, getContext, modules, ModuleWorkerWrapper } from "../../extensions.js"
+import { doExtrasFetch, extension_settings, getApiUrl, modules } from "../../extensions.js"
 import { callPopup } from "../../../script.js"
 import { initVoiceMap } from "./index.js"
 
 export { CoquiTtsProvider }
 
 const DEBUG_PREFIX = "<Coqui TTS module> ";
-const UPDATE_INTERVAL = 1000;
 
 let inApiCall = false;
-let voiceIdList = []; // Updated with module worker
 let coquiApiModels = {}; // Initialized only once
 let coquiApiModelsFull = {}; // Initialized only once
 let coquiLocalModels = []; // Initialized only once

@@ -71,16 +71,6 @@ async function doTokenCounter() {
  * @param {number[]} ids
  */
 function drawChunks(chunks, ids) {
-    const main_text_color = rgb2hex((getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBodyColor').trim()))
-    const italics_text_color = rgb2hex((getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeEmColor').trim()))
-    const quote_text_color = rgb2hex((getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeQuoteColor').trim()))
-    const blur_tint_color = rgb2hex((getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBlurTintColor').trim()))
-    const chat_tint_color = rgb2hex((getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeChatTintColor').trim()))
-    const user_mes_blur_tint_color = rgb2hex((getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeUserMesBlurTintColor').trim()))
-    const bot_mes_blur_tint_color = rgb2hex((getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBotMesBlurTintColor').trim()))
-    const shadow_color = rgb2hex((getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeShadowColor').trim()))
-    const border_color = rgb2hex((getComputedStyle(document.documentElement).getPropertyValue('--SmartThemeBorderColor').trim()))
-
     const pastelRainbow = [
         //main_text_color,
         //italics_text_color,

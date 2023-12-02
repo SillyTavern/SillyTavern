@@ -25,13 +25,13 @@ import {
     send_on_enter_options,
 } from "./power-user.js";
 
-import { LoadLocal, SaveLocal, CheckLocal, LoadLocalBool } from "./f-localStorage.js";
+import { LoadLocal, SaveLocal, LoadLocalBool } from "./f-localStorage.js";
 import { selected_group, is_group_generating, getGroupAvatar, groups, openGroupById } from "./group-chats.js";
 import {
     SECRET_KEYS,
     secret_state,
 } from "./secrets.js";
-import { debounce, delay, getStringHash, isValidUrl, waitUntilCondition } from "./utils.js";
+import { debounce, delay, getStringHash, isValidUrl } from "./utils.js";
 import { chat_completion_sources, oai_settings } from "./openai.js";
 import { getTokenCount } from "./tokenizers.js";
 import { isMancer } from "./textgen-settings.js";
@@ -51,7 +51,6 @@ var AutoLoadChatCheckbox = document.getElementById("auto-load-chat-checkbox");
 
 var connection_made = false;
 var retry_delay = 500;
-var RA_AC_retries = 1;
 
 const observerConfig = { childList: true, subtree: true };
 const countTokensDebounced = debounce(RA_CountCharTokens, 1000);
@@ -167,8 +166,6 @@ export function humanizedDateTime() {
         (baseDate.getMinutes() < 10 ? "0" : "") + baseDate.getMinutes();
     let humanSecond =
         (baseDate.getSeconds() < 10 ? "0" : "") + baseDate.getSeconds();
-    let humanMillisecond =
-        (baseDate.getMilliseconds() < 10 ? "0" : "") + baseDate.getMilliseconds();
     let HumanizedDateTime =
         humanYear + "-" + humanMonth + "-" + humanDate + "@" + humanHour + "h" + humanMinute + "m" + humanSecond + "s";
     return HumanizedDateTime;
@@ -375,7 +372,6 @@ function RA_checkOnlineStatus() {
             $("#API-status-top").addClass("fa-plug");
             connection_made = true;
             retry_delay = 100;
-            RA_AC_retries = 1;
 
             if (!is_send_press && !(selected_group && is_group_generating)) {
                 $("#send_but").removeClass("displayNone"); //on connect, send button shows
@@ -427,7 +423,6 @@ function RA_autoconnect(PrevApi) {
         }
 
         if (!connection_made) {
-            RA_AC_retries++;
             retry_delay = Math.min(retry_delay * 2, 30000); // double retry delay up to to 30 secs
             // console.log('connection attempts: ' + RA_AC_retries + ' delay: ' + (retry_delay / 1000) + 's');
             // setTimeout(RA_autoconnect, retry_delay);
@@ -486,7 +481,7 @@ export function dragElement(elmnt) {
     var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     var height, width, top, left, right, bottom,
         maxX, maxY, winHeight, winWidth,
-        topbar, topbarWidth, topBarFirstX, topBarLastX, topBarLastY, sheldWidth;
+        topbar, topBarFirstX, topBarLastY;
 
     var elmntName = elmnt.attr('id');
     console.debug(`dragElement called for ${elmntName}`);
@@ -530,13 +525,10 @@ export function dragElement(elmnt) {
         maxY = parseInt(height + top);
         winWidth = window.innerWidth;
         winHeight = window.innerHeight;
-        sheldWidth = parseInt($('html').css('--sheldWidth').slice(0, -2));
 
         topbar = document.getElementById("top-bar")
         const topbarstyle = getComputedStyle(topbar)
         topBarFirstX = parseInt(topbarstyle.marginInline)
-        topbarWidth = parseInt(topbarstyle.width);
-        topBarLastX = topBarFirstX + topbarWidth;
         topBarLastY = parseInt(topbarstyle.height);
 
         /*console.log(`

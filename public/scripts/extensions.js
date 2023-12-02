@@ -695,7 +695,7 @@ async function onDeleteClick() {
 
 export async function deleteExtension(extensionName) {
     try {
-        const response = await fetch('/api/extensions/delete', {
+        await fetch('/api/extensions/delete', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({ extensionName })

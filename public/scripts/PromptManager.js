@@ -1615,7 +1615,6 @@ PromptManagerModule.prototype.import = function (importData) {
     this.setPrompts(prompts);
     this.log('Prompt import succeeded');
 
-    let promptOrder = [];
     if ('global' === this.configuration.promptOrder.strategy) {
         const promptOrder = this.getPromptOrderForCharacter({ id: this.configuration.promptOrder.dummyId });
         Object.assign(promptOrder, importData.data.prompt_order);

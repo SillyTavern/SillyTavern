@@ -3,7 +3,6 @@ import {
     scrollChatToBottom,
     characters,
     callPopup,
-    getStatus,
     reloadMarkdownProcessor,
     reloadCurrentChat,
     getRequestHeaders,
@@ -416,7 +415,6 @@ function switchTokenCount() {
 
 function switchMesIDDisplay() {
     const value = localStorage.getItem(storage_keys.mesIDDisplay_enabled);
-    let before = power_user.mesIDDisplay_enabled;
     power_user.mesIDDisplay_enabled = value === null ? true : value == "true";
     /*     console.log(`
         localstorage value:${value},
@@ -779,11 +777,9 @@ async function CreateZenSliders(elmnt) {
             //console.log('clamping numVal to sliderMin')
             numVal = sliderMin
         }
-        var sliderValRange = sliderMax - sliderMin
         var stepNumber = ((ui.value - sliderMin) / stepScale).toFixed(0);
         var handleText = (ui.value);
         var leftMargin = (stepNumber / numSteps) * 50 * -1;
-        var percentOfMax = Number((ui.value / sliderMax)) //what % our value is of the max
         var perStepPercent = 1 / numSteps //how far in % each step should be on the slider
         var leftPos = newSlider.width() * (stepNumber * perStepPercent) //how big of a left margin to give the slider for manual inputs
         /*         console.log(`
@@ -2294,27 +2290,6 @@ function setAvgBG() {
         const b = hueToRgb(p, q, h - 1 / 3);
 
         return [r * 255, g * 255, b * 255];
-    }
-
-    function rgbToLuminance(r, g, b) {
-        console.log(r, g, b)
-        const gammaCorrect = (color) => {
-            return color <= 0.03928
-                ? color / 12.92
-                : Math.pow((color + 0.055) / 1.055, 2.4);
-        };
-
-        const rsRGB = r / 255;
-        const gsRGB = g / 255;
-        const bsRGB = b / 255;
-
-        const rLuminance = gammaCorrect(rsRGB).toFixed(2);
-        const gLuminance = gammaCorrect(gsRGB).toFixed(2);
-        const bLuminance = gammaCorrect(bsRGB).toFixed(2);
-
-        console.log(`rLum ${rLuminance}, gLum ${gLuminance}, bLum ${bLuminance}`)
-
-        return 0.2126 * Number(rLuminance) + 0.7152 * Number(gLuminance) + 0.0722 * Number(bLuminance);
     }
 
     //this version keeps BG and main text in same hue

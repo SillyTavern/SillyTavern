@@ -398,7 +398,7 @@ async function setBackground(bg) {
 }
 
 async function delBackground(bg) {
-    const response = await fetch("/delbackground", {
+    await fetch("/delbackground", {
         method: "POST",
         headers: getRequestHeaders(),
         body: JSON.stringify({

@@ -1,4 +1,3 @@
-const express = require('express');
 const vectra = require('vectra');
 const path = require('path');
 const sanitize = require('sanitize-filename');
