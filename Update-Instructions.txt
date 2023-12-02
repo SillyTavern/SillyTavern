@@ -37,7 +37,7 @@ If you insist on installing via a zip, here is the tedious process for doing the
   - Chats
   - Groups
   - Group chats
-  - instructs
+  - instruct
   - KoboldAI Settings
   - NovelAI Settings
   - OpenAI Settings
