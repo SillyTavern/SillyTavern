@@ -64,7 +64,6 @@ module.exports = {
         'require-yield': 'off',
         'no-case-declarations': 'off',
         'use-isnan': 'off',
-        'no-self-assign': 'off',
         'no-constant-condition': ['error', {checkLoops: false}]
     }
 };

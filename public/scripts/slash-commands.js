@@ -1281,7 +1281,7 @@ export async function promptQuietForLoudResponse(who, text) {
     } else if (who === 'char') {
         text = characters[character_id].name + ": " + text;
     } else if (who === 'raw') {
-        text = text;
+        // We don't need to modify the text
     }
 
     //text = `${text}${power_user.instruct.enabled ? '' : '\n'}${(power_user.always_force_name2 && who != 'raw') ? characters[character_id].name + ":" : ""}`
