@@ -12,9 +12,7 @@ const writeFileAtomicSync = require('write-file-atomic').sync;
  */
 function safeStr(x) {
     x = String(x);
-    for (let i = 0; i < 16; i++) {
-        x = x.replace(/  /g, ' ');
-    }
+    x = x.replace(/ +/g, ' ');
     x = x.trim();
     x = x.replace(/^[\s,.]+|[\s,.]+$/g, '');
     return x;

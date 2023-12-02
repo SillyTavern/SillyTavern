@@ -70,7 +70,6 @@ module.exports = {
         'no-empty': 'off',
         'no-unsafe-finally': 'off',
         'no-dupe-keys': 'off',
-        'no-irregular-whitespace': 'off',
-        'no-regex-spaces': 'off'
+        'no-irregular-whitespace': 'off'
     }
 };
