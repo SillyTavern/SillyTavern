@@ -1686,10 +1686,6 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
         mes.swipes = [mes.mes];
     }
 
-    if (mes.name === name1) {
-        var characterName = name1; //set to user's name by default
-    } else { var characterName = mes.name }
-
     var avatarImg = getUserAvatar(user_avatar);
     const isSystem = mes.is_system;
     const title = mes.title;
@@ -1722,7 +1718,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     }
     messageText = messageFormatting(
         messageText,
-        characterName,
+        mes.name,
         isSystem,
         mes.is_user,
     );
@@ -1741,7 +1737,7 @@ function addOneMessage(mes, { type = "normal", insertAfter = null, scroll = true
     }*/
     let params = {
         mesId: forceId ?? count_view_mes,
-        characterName: characterName,
+        characterName: mes.name,
         isUser: mes.is_user,
         avatarImg: avatarImg,
         bias: bias,
