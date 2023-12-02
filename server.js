@@ -343,6 +343,12 @@ if (getConfigValue('enableCorsProxy', false) === true || cliArguments.corsProxy 
             res.status(500).send('Error occurred while trying to proxy to: ' + url + ' ' + error);
         }
     });
+} else {
+    app.use('/proxy/:url(*)', async (_, res) => {
+        const message = 'CORS proxy is disabled. Enable it in config.yaml or use the --corsProxy flag.';
+        console.log(message);
+        res.status(404).send(message);
+    });
 }
 
 app.use(express.static(process.cwd() + "/public", {}));
