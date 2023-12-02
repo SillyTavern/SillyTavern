@@ -236,14 +236,16 @@ class PresetManager {
                     return nai_settings;
                 case "textgenerationwebui":
                     return textgenerationwebui_settings;
-                case "context":
+                case "context": {
                     const context_preset = getContextSettings();
                     context_preset['name'] = name || power_user.context.preset;
                     return context_preset;
-                case "instruct":
+                }
+                case "instruct": {
                     const instruct_preset = structuredClone(power_user.instruct);
                     instruct_preset['name'] = name || power_user.instruct.preset;
                     return instruct_preset;
+                }
                 default:
                     console.warn(`Unknown API ID ${apiId}`);
                     return {};

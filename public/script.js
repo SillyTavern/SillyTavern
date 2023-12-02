@@ -2755,10 +2755,11 @@ export async function generateRaw(prompt, api, instructOverride) {
                 generateData = getKoboldGenerationData(prompt, koboldSettings, amount_gen, max_context, isHorde, 'quiet');
             }
             break;
-        case 'novel':
+        case 'novel': {
             const novelSettings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
             generateData = getNovelGenerationData(prompt, novelSettings, amount_gen, false, false, null);
             break;
+        }
         case 'textgenerationwebui':
             generateData = getTextGenGenerationData(prompt, amount_gen, false, false, null);
             break;

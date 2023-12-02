@@ -1898,7 +1898,7 @@ async function checkWorldInfo(chat, maxContext) {
             case world_info_position.ANBottom:
                 ANBottomEntries.unshift(entry.content);
                 break;
-            case world_info_position.atDepth:
+            case world_info_position.atDepth: {
                 const existingDepthIndex = WIDepthEntries.findIndex((e) => e.depth === entry.depth ?? DEFAULT_DEPTH);
                 if (existingDepthIndex !== -1) {
                     WIDepthEntries[existingDepthIndex].entries.unshift(entry.content);
@@ -1909,6 +1909,7 @@ async function checkWorldInfo(chat, maxContext) {
                     });
                 }
                 break;
+            }
             default:
                 break;
         }

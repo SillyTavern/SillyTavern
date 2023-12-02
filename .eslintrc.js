@@ -61,7 +61,6 @@ module.exports = {
         'no-prototype-builtins': 'off',
         'no-extra-boolean-cast': 'off',
         'require-yield': 'off',
-        'no-case-declarations': 'off',
         'no-constant-condition': ['error', {checkLoops: false}]
     }
 };
