@@ -63,7 +63,6 @@ module.exports = {
         'no-extra-boolean-cast': 'off',
         'require-yield': 'off',
         'no-case-declarations': 'off',
-        'use-isnan': 'off',
         'no-constant-condition': ['error', {checkLoops: false}]
     }
 };

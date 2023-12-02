@@ -178,7 +178,7 @@ async function onRegexEditorOpenClick(existingId) {
                     .filter(":checked")
                     .map(function () { return parseInt($(this).val()) })
                     .get()
-                    .filter((e) => e !== NaN) || [],
+                    .filter((e) => !isNaN(e)) || [],
             disabled:
                 editorHtml
                     .find(`input[name="disabled"]`)
