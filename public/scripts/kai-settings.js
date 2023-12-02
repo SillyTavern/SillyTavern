@@ -66,7 +66,9 @@ export function formatKoboldUrl(value) {
             url.pathname = '/api';
         }
         return url.toString();
-    } catch { } // Just using URL as a validation check
+    } catch {
+        // Just using URL as a validation check
+    }
     return null;
 }
 

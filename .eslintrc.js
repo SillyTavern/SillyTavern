@@ -59,19 +59,9 @@ module.exports = {
         'no-extra-semi': 'off',
         'no-undef': 'off',
         'no-prototype-builtins': 'off',
-        'no-unused-labels': 'off',
         'no-extra-boolean-cast': 'off',
         'require-yield': 'off',
         'no-case-declarations': 'off',
-        'use-isnan': 'off',
-        'no-self-assign': 'off',
-        'no-unsafe-negation': 'off',
-        'no-constant-condition': 'off',
-        'no-empty': 'off',
-        'no-unsafe-finally': 'off',
-        'no-dupe-keys': 'off',
-        'no-irregular-whitespace': 'off',
-        'no-regex-spaces': 'off',
-        'no-fallthrough': 'off'
+        'no-constant-condition': ['error', {checkLoops: false}]
     }
 };

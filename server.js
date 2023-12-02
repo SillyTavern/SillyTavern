@@ -118,7 +118,9 @@ if (fs.existsSync(whitelistPath)) {
     try {
         let whitelistTxt = fs.readFileSync(whitelistPath, 'utf-8');
         whitelist = whitelistTxt.split("\n").filter(ip => ip).map(ip => ip.trim());
-    } catch (e) { }
+    } catch (e) {
+        // Ignore errors that may occur when reading the whitelist (e.g. permissions)
+    }
 }
 
 const whitelistMode = getConfigValue('whitelistMode', true);
@@ -781,7 +783,7 @@ app.post("/getchat", jsonParser, function (request, response) {
         const lines = data.split('\n');
 
         // Iterate through the array of strings and parse each line as JSON
-        const jsonData = lines.map((l) => { try { return JSON.parse(l); } catch (_) { } }).filter(x => x);
+        const jsonData = lines.map((l) => { try { return JSON.parse(l); } catch (_) { return; } }).filter(x => x);
         return response.send(jsonData);
     } catch (error) {
         console.error(error);
@@ -1285,10 +1287,10 @@ async function charaWrite(img_url, data, target_img, response = undefined, mes =
         for (let tEXtChunk of tEXtChunks) {
             chunks.splice(chunks.indexOf(tEXtChunk), 1);
         }
-        // Add new chunks before the IEND chunk
+        // Add new chunks before the IEND chunk
         const base64EncodedData = Buffer.from(data, 'utf8').toString('base64');
         chunks.splice(-1, 0, PNGtext.encode('chara', base64EncodedData));
-        //chunks.splice(-1, 0, text.encode('lorem', 'ipsum'));
+        //chunks.splice(-1, 0, text.encode('lorem', 'ipsum'));
 
         writeFileAtomicSync(charactersPath + target_img + '.png', Buffer.from(encode(chunks)));
         if (response !== undefined) response.send(mes);

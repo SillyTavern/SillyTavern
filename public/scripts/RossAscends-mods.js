@@ -1,5 +1,3 @@
-esversion: 6
-
 import {
     Generate,
     characters,

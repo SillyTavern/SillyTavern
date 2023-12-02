@@ -115,7 +115,6 @@ class ElevenLabsTtsProvider {
         await this.fetchTtsVoiceObjects().catch(error => {
             throw `TTS API key validation failed`
         })
-        this.settings.apiKey = this.settings.apiKey
         console.debug(`Saved new API_KEY: ${this.settings.apiKey}`)
         $('#tts_status').text('')
         this.onSettingsChange()
