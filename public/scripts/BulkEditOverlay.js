@@ -472,19 +472,19 @@ class BulkEditOverlay {
         this.isLongPress = true;
 
         setTimeout(() => {
-                if (this.isLongPress && !cancel) {
-                    if (this.state === BulkEditOverlayState.browse) {
-                        this.selectState();
-                    } else if (this.state === BulkEditOverlayState.select) {
-                        this.#contextMenuOpen = true;
-                        CharacterContextMenu.show(...this.#getContextMenuPosition(event));
-                    }
+            if (this.isLongPress && !cancel) {
+                if (this.state === BulkEditOverlayState.browse) {
+                    this.selectState();
+                } else if (this.state === BulkEditOverlayState.select) {
+                    this.#contextMenuOpen = true;
+                    CharacterContextMenu.show(...this.#getContextMenuPosition(event));
                 }
+            }
 
-                this.container.removeEventListener('mouseup', cancelHold);
-                this.container.removeEventListener('touchend', cancelHold);
-            },
-            BulkEditOverlay.longPressDelay);
+            this.container.removeEventListener('mouseup', cancelHold);
+            this.container.removeEventListener('touchend', cancelHold);
+        },
+        BulkEditOverlay.longPressDelay);
     };
 
     handleLongPressEnd = (event) => {

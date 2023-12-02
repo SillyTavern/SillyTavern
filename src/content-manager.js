@@ -210,7 +210,7 @@ async function downloadJannyCharacter(uuid) {
 * @returns {String | null } UUID of the character
 */
 function parseJannyUrl(url) {
-   // Extract UUID from URL
+    // Extract UUID from URL
     const uuidRegex = /[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}/;
     const matches = url.match(uuidRegex);
 

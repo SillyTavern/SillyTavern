@@ -157,10 +157,10 @@ class CoquiTtsProvider {
 
         // Load coqui-api settings from json file
         await fetch('/scripts/extensions/tts/coqui_api_models_settings.json')
-        .then(response => response.json())
-        .then(json => {
-            coquiApiModels = json;
-            console.debug(DEBUG_PREFIX,'initialized coqui-api model list to', coquiApiModels);
+            .then(response => response.json())
+            .then(json => {
+                coquiApiModels = json;
+                console.debug(DEBUG_PREFIX,'initialized coqui-api model list to', coquiApiModels);
             /*
             $('#coqui_api_language')
                 .find('option')
@@ -173,14 +173,14 @@ class CoquiTtsProvider {
                 $("#coqui_api_language").append(new Option(languageLabels[language],language));
                 console.log(DEBUG_PREFIX,"added language",language);
             }*/
-        });
+            });
 
         // Load coqui-api FULL settings from json file
         await fetch('/scripts/extensions/tts/coqui_api_models_settings_full.json')
-        .then(response => response.json())
-        .then(json => {
-            coquiApiModelsFull = json;
-            console.debug(DEBUG_PREFIX,'initialized coqui-api full model list to', coquiApiModelsFull);
+            .then(response => response.json())
+            .then(json => {
+                coquiApiModelsFull = json;
+                console.debug(DEBUG_PREFIX,'initialized coqui-api full model list to', coquiApiModelsFull);
             /*
             $('#coqui_api_full_language')
                 .find('option')
@@ -193,7 +193,7 @@ class CoquiTtsProvider {
                 $("#coqui_api_full_language").append(new Option(languageLabels[language],language));
                 console.log(DEBUG_PREFIX,"added language",language);
             }*/
-        });
+            });
     }
 
     // Perform a simple readiness check by trying to fetch voiceIds

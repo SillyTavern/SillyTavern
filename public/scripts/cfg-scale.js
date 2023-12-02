@@ -140,10 +140,10 @@ function onCfgMenuItemClick() {
                 opacity: 0.0,
                 duration: 250,
             },
-                async function () {
-                    await delay(50);
-                    $('#cfgConfig').removeClass('resizing');
-                });
+            async function () {
+                await delay(50);
+                $('#cfgConfig').removeClass('resizing');
+            });
             setTimeout(function () {
                 $('#cfgConfig').hide();
             }, 250);

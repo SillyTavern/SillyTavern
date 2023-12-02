@@ -4129,7 +4129,7 @@ async function DupeChar() {
     const confirm = await callPopup(`
         <h3>Are you sure you want to duplicate this character?</h3>
         <span>If you just want to start a new chat with the same character, use "Start new chat" option in the bottom-left options menu.</span><br><br>`,
-        'confirm',
+    'confirm',
     );
 
     if (!confirm) {
@@ -7552,22 +7552,22 @@ function addDebugFunctions() {
         `Recalculates token counts of all messages in the current chat to refresh the counters.
         Useful when you switch between models that have different tokenizers.
         This is a visual change only. Your chat will be reloaded.`, async () => {
-        for (const message of chat) {
+            for (const message of chat) {
             // System messages are not counted
-            if (message.is_system) {
-                continue;
+                if (message.is_system) {
+                    continue;
+                }
+
+                if (!message.extra) {
+                    message.extra = {};
+                }
+
+                message.extra.token_count = getTokenCount(message.mes, 0);
             }
 
-            if (!message.extra) {
-                message.extra = {};
-            }
-
-            message.extra.token_count = getTokenCount(message.mes, 0);
-        }
-
-        await saveChatConditional();
-        await reloadCurrentChat();
-    });
+            await saveChatConditional();
+            await reloadCurrentChat();
+        });
 
     registerDebugFunction('generationTest', 'Send a generation request', 'Generates text using the currently selected API.', async () => {
         const text = prompt('Input text:', 'Hello');

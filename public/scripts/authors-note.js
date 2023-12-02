@@ -345,10 +345,10 @@ function onANMenuItemClick() {
                 opacity: 0.0,
                 duration: 250,
             },
-                async function () {
-                    await delay(50);
-                    $('#floatingPrompt').removeClass('resizing');
-                });
+            async function () {
+                await delay(50);
+                $('#floatingPrompt').removeClass('resizing');
+            });
             setTimeout(function () {
                 $('#floatingPrompt').hide();
             }, 250);

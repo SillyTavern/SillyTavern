@@ -2098,17 +2098,15 @@ export function checkEmbeddedWorld(chid) {
             localStorage.setItem(checkKey, 1);
 
             if (power_user.world_import_dialog) {
-                callPopup(`<h3>This character has an embedded World/Lorebook.</h3>
-                           <h3>Would you like to import it now?</h3>
-                           <div class="m-b-1">If you want to import it later, select "Import Card Lore" in the "More..." dropdown menu on the character panel.</div>`,
-                    'confirm',
-                    '',
-                    { okButton: 'Yes', })
-                    .then((result) => {
-                        if (result) {
-                            importEmbeddedWorldInfo(true);
-                        }
-                    });
+                const html = `<h3>This character has an embedded World/Lorebook.</h3>
+                <h3>Would you like to import it now?</h3>
+                <div class="m-b-1">If you want to import it later, select "Import Card Lore" in the "More..." dropdown menu on the character panel.</div>`;
+                const checkResult = (result) => {
+                    if (result) {
+                        importEmbeddedWorldInfo(true);
+                    }
+                };
+                callPopup(html, 'confirm', '', { okButton: 'Yes', }).then(checkResult);
             }
             else {
                 toastr.info(

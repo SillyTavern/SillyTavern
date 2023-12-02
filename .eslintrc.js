@@ -54,6 +54,7 @@ module.exports = {
         'require-yield': 'off',
         'quotes': ['error', 'single'],
         'semi': ['error', 'always'],
+        'indent': ['error', 4, { SwitchCase: 1, FunctionDeclaration: { parameters: 'first' } }],
 
         // These rules should eventually be enabled.
         'no-async-promise-executor': 'off',

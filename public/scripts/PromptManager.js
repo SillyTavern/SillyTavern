@@ -1379,6 +1379,11 @@ PromptManagerModule.prototype.renderPromptManager = function () {
         footerDiv.querySelector('.menu_button:last-child').addEventListener('click', this.handleNewPrompt);
 
         // Add prompt export dialogue and options
+        const exportForCharacter =`
+        <div class="row">
+            <a class="export-promptmanager-prompts-character list-group-item" data-i18n="Export for character">Export for character</a>
+            <span class="tooltip fa-solid fa-info-circle" title="Export prompts for this character, including their order."></span>
+        </div>`;
         const exportPopup = `
                 <div id="prompt-manager-export-format-popup" class="list-group">
                     <div class="prompt-manager-export-format-popup-flex">
@@ -1386,14 +1391,7 @@ PromptManagerModule.prototype.renderPromptManager = function () {
                             <a class="export-promptmanager-prompts-full list-group-item" data-i18n="Export all">Export all</a>
                             <span class="tooltip fa-solid fa-info-circle" title="Export all your prompts to a file"></span>
                         </div>
-                        ${'global' === this.configuration.promptOrder.strategy
-                ? ''
-                : `<div class="row">
-                                <a class="export-promptmanager-prompts-character list-group-item" data-i18n="Export for character">Export
-                                    for character</a>
-                                <span class="tooltip fa-solid fa-info-circle"
-                                      title="Export prompts for this character, including their order."></span>
-                              </div>` }
+                        ${'global' === this.configuration.promptOrder.strategy ? '' : exportForCharacter }
                     </div>
                </div>
             `;
