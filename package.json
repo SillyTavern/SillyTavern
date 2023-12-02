@@ -58,7 +58,8 @@
         "start": "node server.js",
         "start-multi": "node server.js --disableCsrf",
         "pkg": "pkg --compress Gzip --no-bytecode --public .",
-        "postinstall": "node post-install.js"
+        "postinstall": "node post-install.js",
+        "lint": "eslint \"src/**/*.js\" \"public/**/*.js\" ./server.js"
     },
     "bin": {
         "sillytavern": "./server.js"
@@ -83,6 +84,7 @@
         ]
     },
     "devDependencies": {
+        "eslint": "^8.55.0",
         "jquery": "^3.6.4",
         "pkg": "^5.8.1",
         "pkg-fetch": "^3.5.2"
