@@ -3,14 +3,14 @@ import {
     this_chid,
     characters,
     getRequestHeaders,
-} from "../../../script.js";
-import { selected_group } from "../../group-chats.js";
-import { loadFileToDocument, delay } from "../../utils.js";
+} from '../../../script.js';
+import { selected_group } from '../../group-chats.js';
+import { loadFileToDocument, delay } from '../../utils.js';
 import { loadMovingUIState } from '../../power-user.js';
 import { dragElement } from '../../RossAscends-mods.js';
-import { registerSlashCommand } from "../../slash-commands.js";
+import { registerSlashCommand } from '../../slash-commands.js';
 
-const extensionName = "gallery";
+const extensionName = 'gallery';
 const extensionFolderPath = `scripts/extensions/${extensionName}/`;
 let firstTime = true;
 
@@ -38,7 +38,7 @@ async function getGalleryItems(url) {
     const items = data.map((file) => ({
         src: `user/images/${url}/${file}`,
         srct: `user/images/${url}/${file}`,
-        title: "", // Optional title for each item
+        title: '', // Optional title for each item
     }));
 
     return items;
@@ -54,8 +54,8 @@ async function getGalleryItems(url) {
  * @returns {Promise<void>} - Promise representing the completion of the gallery initialization.
  */
 async function initGallery(items, url) {
-    $("#dragGallery").nanogallery2({
-        "items": items,
+    $('#dragGallery').nanogallery2({
+        'items': items,
         thumbnailWidth: 'auto',
         thumbnailHeight: thumbnailHeight,
         paginationVisiblePages: paginationVisiblePages,
@@ -72,13 +72,13 @@ async function initGallery(items, url) {
             thumbnailIcon: { padding: '5px', color: '#fff', shadow: '' },
             pagination: { background: '#181818', backgroundSelected: '#666', color: '#fff', borderRadius: '2px', shapeBorder: '3px solid var(--SmartThemeQuoteColor)', shapeColor: '#444', shapeSelectedColor: '#aaa' }
         },
-        galleryDisplayMode: "pagination",
+        galleryDisplayMode: 'pagination',
         fnThumbnailOpen: viewWithDragbox,
     });
 
 
     eventSource.on('resizeUI', function (elmntName) {
-        jQuery("#dragGallery").nanogallery2('resize');
+        jQuery('#dragGallery').nanogallery2('resize');
     });
 
     const dropZone = $('#dragGallery');
@@ -113,9 +113,9 @@ async function initGallery(items, url) {
     //let images populate first
     await delay(100)
     //unset the height (which must be getting set by the gallery library at some point)
-    $("#dragGallery").css('height', 'unset');
+    $('#dragGallery').css('height', 'unset');
     //force a resize to make images display correctly
-    jQuery("#dragGallery").nanogallery2('resize');
+    jQuery('#dragGallery').nanogallery2('resize');
 }
 
 /**
@@ -135,27 +135,27 @@ async function showCharGallery() {
     if (firstTime) {
         await loadFileToDocument(
             `${extensionFolderPath}nanogallery2.woff.min.css`,
-            "css"
+            'css'
         );
         await loadFileToDocument(
             `${extensionFolderPath}jquery.nanogallery2.min.js`,
-            "js"
+            'js'
         );
         firstTime = false;
-        toastr.info("Images can also be found in the folder `user/images`", "Drag and drop images onto the gallery to upload them", { timeOut: 6000 });
+        toastr.info('Images can also be found in the folder `user/images`', 'Drag and drop images onto the gallery to upload them', { timeOut: 6000 });
     }
 
     try {
         let url = selected_group || this_chid;
         if (!selected_group && this_chid) {
             const char = characters[this_chid];
-            url = char.avatar.replace(".png", "");
+            url = char.avatar.replace('.png', '');
         }
 
         const items = await getGalleryItems(url);
         // if there already is a gallery, destroy it and place this one in its place
-        if ($(`#dragGallery`).length) {
-            $(`#dragGallery`).nanogallery2("destroy");
+        if ($('#dragGallery').length) {
+            $('#dragGallery').nanogallery2('destroy');
             initGallery(items, url);
         } else {
             makeMovable();
@@ -216,13 +216,13 @@ async function uploadFile(file, url) {
             toastr.success('File uploaded successfully. Saved at: ' + result.path);
 
             // Refresh the gallery
-            $("#dragGallery").nanogallery2("destroy");  // Destroy old gallery
+            $('#dragGallery').nanogallery2('destroy');  // Destroy old gallery
             const newItems = await getGalleryItems(url);  // Fetch the latest items
             initGallery(newItems, url);  // Reinitialize the gallery with new items and pass 'url'
 
 
         } catch (error) {
-            console.error("There was an issue uploading the file:", error);
+            console.error('There was an issue uploading the file:', error);
 
             // Replacing alert with toastr error notification
             toastr.error('Failed to upload the file.');
@@ -233,17 +233,17 @@ async function uploadFile(file, url) {
 
 $(document).ready(function () {
     // Register an event listener
-    eventSource.on("charManagementDropdown", (selectedOptionId) => {
-        if (selectedOptionId === "show_char_gallery") {
+    eventSource.on('charManagementDropdown', (selectedOptionId) => {
+        if (selectedOptionId === 'show_char_gallery') {
             showCharGallery();
         }
     });
 
     // Add an option to the dropdown
-    $("#char-management-dropdown").append(
-        $("<option>", {
-            id: "show_char_gallery",
-            text: "Show Gallery",
+    $('#char-management-dropdown').append(
+        $('<option>', {
+            id: 'show_char_gallery',
+            text: 'Show Gallery',
         })
     );
 });
@@ -254,7 +254,7 @@ $(document).ready(function () {
  * The cloned element has its attributes set, a new child div appended, and is made visible on the body.
  * Additionally, it sets up the element to prevent dragging on its images.
  */
-function makeMovable(id = "gallery") {
+function makeMovable(id = 'gallery') {
 
     console.debug('making new container from template')
     const template = $('#generic_draggable_template').html();
@@ -265,7 +265,7 @@ function makeMovable(id = "gallery") {
     newElement.find('.drag-grabber').attr('id', `${id}header`);
     newElement.find('.dragTitle').text('Image Gallery')
     //add a div for the gallery
-    newElement.append(`<div id="dragGallery"></div>`);
+    newElement.append('<div id="dragGallery"></div>');
     // add no-scrollbar class to this element
     newElement.addClass('no-scrollbar');
 
@@ -274,7 +274,7 @@ function makeMovable(id = "gallery") {
     closeButton.attr('id', `${id}close`);
     closeButton.attr('data-related-id', `${id}`);
 
-    $(`#dragGallery`).css('display', 'block');
+    $('#dragGallery').css('display', 'block');
 
     $('body').append(newElement);
 
@@ -370,7 +370,7 @@ function makeDragImg(id, url) {
             return false;
         });
     } else {
-        console.error("Failed to append the template content or retrieve the appended content.");
+        console.error('Failed to append the template content or retrieve the appended content.');
     }
 
     $('body').on('click', '.dragClose', function () {
@@ -415,7 +415,7 @@ function viewWithDragbox(items) {
 
 
 // Registers a simple command for opening the char gallery.
-registerSlashCommand("show-gallery", showGalleryCommand, ["sg"], "– shows the gallery", true, true);
+registerSlashCommand('show-gallery', showGalleryCommand, ['sg'], '– shows the gallery', true, true);
 
 function showGalleryCommand(args) {
     showCharGallery();

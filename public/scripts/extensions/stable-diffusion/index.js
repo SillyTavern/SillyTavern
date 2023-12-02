@@ -16,14 +16,14 @@ import {
     user_avatar,
     getCharacterAvatar,
     formatCharacterAvatar,
-} from "../../../script.js";
-import { getApiUrl, getContext, extension_settings, doExtrasFetch, modules, renderExtensionTemplate } from "../../extensions.js";
-import { selected_group } from "../../group-chats.js";
-import { stringFormat, initScrollHeight, resetScrollHeight, getCharaFilename, saveBase64AsFile, getBase64Async, delay } from "../../utils.js";
-import { getMessageTimeStamp, humanizedDateTime } from "../../RossAscends-mods.js";
-import { SECRET_KEYS, secret_state } from "../../secrets.js";
-import { getNovelUnlimitedImageGeneration, getNovelAnlas, loadNovelSubscriptionData } from "../../nai-settings.js";
-import { getMultimodalCaption } from "../shared.js";
+} from '../../../script.js';
+import { getApiUrl, getContext, extension_settings, doExtrasFetch, modules, renderExtensionTemplate } from '../../extensions.js';
+import { selected_group } from '../../group-chats.js';
+import { stringFormat, initScrollHeight, resetScrollHeight, getCharaFilename, saveBase64AsFile, getBase64Async, delay } from '../../utils.js';
+import { getMessageTimeStamp, humanizedDateTime } from '../../RossAscends-mods.js';
+import { SECRET_KEYS, secret_state } from '../../secrets.js';
+import { getNovelUnlimitedImageGeneration, getNovelAnlas, loadNovelSubscriptionData } from '../../nai-settings.js';
+import { getMultimodalCaption } from '../shared.js';
 export { MODULE_NAME };
 
 // Wraps a string into monospace font-face span
@@ -103,12 +103,12 @@ const messageTrigger = {
 
 const promptTemplates = {
     /*OLD:     [generationMode.CHARACTER]: "Pause your roleplay and provide comma-delimited list of phrases and keywords which describe {{char}}'s physical appearance and clothing. Ignore {{char}}'s personality traits, and chat history when crafting this description. End your response once the comma-delimited list is complete. Do not roleplay when writing this description, and do not attempt to continue the story.", */
-    [generationMode.CHARACTER]: "[In the next response I want you to provide only a detailed comma-delimited list of keywords and phrases which describe {{char}}. The list must include all of the following items in this order: name, species and race, gender, age, clothing, occupation, physical features and appearances. Do not include descriptions of non-visual qualities such as personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase 'full body portrait,']",
+    [generationMode.CHARACTER]: '[In the next response I want you to provide only a detailed comma-delimited list of keywords and phrases which describe {{char}}. The list must include all of the following items in this order: name, species and race, gender, age, clothing, occupation, physical features and appearances. Do not include descriptions of non-visual qualities such as personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase \'full body portrait,\']',
     //face-specific prompt
-    [generationMode.FACE]: "[In the next response I want you to provide only a detailed comma-delimited list of keywords and phrases which describe {{char}}. The list must include all of the following items in this order: name, species and race, gender, age, facial features and expressions, occupation, hair and hair accessories (if any), what they are wearing on their upper body (if anything). Do not describe anything below their neck. Do not include descriptions of non-visual qualities such as personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase 'close up facial portrait,']",
+    [generationMode.FACE]: '[In the next response I want you to provide only a detailed comma-delimited list of keywords and phrases which describe {{char}}. The list must include all of the following items in this order: name, species and race, gender, age, facial features and expressions, occupation, hair and hair accessories (if any), what they are wearing on their upper body (if anything). Do not describe anything below their neck. Do not include descriptions of non-visual qualities such as personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase \'close up facial portrait,\']',
     //prompt for only the last message
-    [generationMode.USER]: "[Pause your roleplay and provide a detailed description of {{user}}'s physical appearance from the perspective of {{char}} in the form of a comma-delimited list of keywords and phrases. The list must include all of the following items in this order: name, species and race, gender, age, clothing, occupation, physical features and appearances. Do not include descriptions of non-visual qualities such as personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase 'full body portrait,'. Ignore the rest of the story when crafting this description. Do not roleplay as {{char}} when writing this description, and do not attempt to continue the story.]",
-    [generationMode.SCENARIO]: "[Pause your roleplay and provide a detailed description for all of the following: a brief recap of recent events in the story, {{char}}'s appearance, and {{char}}'s surroundings. Do not roleplay while writing this description.]",
+    [generationMode.USER]: '[Pause your roleplay and provide a detailed description of {{user}}\'s physical appearance from the perspective of {{char}} in the form of a comma-delimited list of keywords and phrases. The list must include all of the following items in this order: name, species and race, gender, age, clothing, occupation, physical features and appearances. Do not include descriptions of non-visual qualities such as personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase \'full body portrait,\'. Ignore the rest of the story when crafting this description. Do not roleplay as {{char}} when writing this description, and do not attempt to continue the story.]',
+    [generationMode.SCENARIO]: '[Pause your roleplay and provide a detailed description for all of the following: a brief recap of recent events in the story, {{char}}\'s appearance, and {{char}}\'s surroundings. Do not roleplay while writing this description.]',
 
     [generationMode.NOW]: `[Pause your roleplay. Your next response must be formatted as a single comma-delimited list of concise keywords.  The list will describe of the visual details included in the last chat message.
 
@@ -134,16 +134,16 @@ const promptTemplates = {
     A correctly formatted example response would be:
     '(location),(character list by gender),(primary action), (relative character position) POV, (character 1's description and actions), (character 2's description and actions)']`,
 
-    [generationMode.RAW_LAST]: "[Pause your roleplay and provide ONLY the last chat message string back to me verbatim. Do not write anything after the string. Do not roleplay at all in your response. Do not continue the roleplay story.]",
-    [generationMode.BACKGROUND]: "[Pause your roleplay and provide a detailed description of {{char}}'s surroundings in the form of a comma-delimited list of keywords and phrases. The list must include all of the following items in this order: location, time of day, weather, lighting, and any other relevant details. Do not include descriptions of characters and non-visual qualities such as names, personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase 'background,'. Ignore the rest of the story when crafting this description. Do not roleplay as {{user}} when writing this description, and do not attempt to continue the story.]",
-    [generationMode.FACE_MULTIMODAL]: `Provide an exhaustive comma-separated list of tags describing the appearance of the character on this image in great detail. Start with "close-up portrait".`,
-    [generationMode.CHARACTER_MULTIMODAL]: `Provide an exhaustive comma-separated list of tags describing the appearance of the character on this image in great detail. Start with "full body portrait".`,
-    [generationMode.USER_MULTIMODAL]: `Provide an exhaustive comma-separated list of tags describing the appearance of the character on this image in great detail. Start with "full body portrait".`,
+    [generationMode.RAW_LAST]: '[Pause your roleplay and provide ONLY the last chat message string back to me verbatim. Do not write anything after the string. Do not roleplay at all in your response. Do not continue the roleplay story.]',
+    [generationMode.BACKGROUND]: '[Pause your roleplay and provide a detailed description of {{char}}\'s surroundings in the form of a comma-delimited list of keywords and phrases. The list must include all of the following items in this order: location, time of day, weather, lighting, and any other relevant details. Do not include descriptions of characters and non-visual qualities such as names, personality, movements, scents, mental traits, or anything which could not be seen in a still photograph. Do not write in full sentences. Prefix your description with the phrase \'background,\'. Ignore the rest of the story when crafting this description. Do not roleplay as {{user}} when writing this description, and do not attempt to continue the story.]',
+    [generationMode.FACE_MULTIMODAL]: 'Provide an exhaustive comma-separated list of tags describing the appearance of the character on this image in great detail. Start with "close-up portrait".',
+    [generationMode.CHARACTER_MULTIMODAL]: 'Provide an exhaustive comma-separated list of tags describing the appearance of the character on this image in great detail. Start with "full body portrait".',
+    [generationMode.USER_MULTIMODAL]: 'Provide an exhaustive comma-separated list of tags describing the appearance of the character on this image in great detail. Start with "full body portrait".',
 }
 
 const helpString = [
     `${m('(argument)')} – requests to generate an image. Supported arguments: ${m(j(Object.values(triggerWords).flat()))}.`,
-    `Anything else would trigger a "free mode" to make generate whatever you prompted. Example: '/imagine apple tree' would generate a picture of an apple tree.`,
+    'Anything else would trigger a "free mode" to make generate whatever you prompted. Example: \'/imagine apple tree\' would generate a picture of an apple tree.',
 ].join(' ');
 
 const defaultPrefix = 'best quality, absurdres, aesthetic,';
@@ -680,7 +680,7 @@ const resolutionOptions = {
 };
 
 function onResolutionChange() {
-    const selectedOption = $("#sd_resolution").val();
+    const selectedOption = $('#sd_resolution').val();
     const selectedResolution = resolutionOptions[selectedOption];
 
     if (!selectedResolution) {
@@ -688,8 +688,8 @@ function onResolutionChange() {
         return;
     }
 
-    $("#sd_height").val(selectedResolution.height).trigger('input');
-    $("#sd_width").val(selectedResolution.width).trigger('input');
+    $('#sd_height').val(selectedResolution.height).trigger('input');
+    $('#sd_width').val(selectedResolution.width).trigger('input');
 }
 
 function onSchedulerChange() {
@@ -883,7 +883,7 @@ async function validateComfyUrl() {
             throw new Error('URL is not set.');
         }
 
-        const result = await fetch(`/api/sd/comfy/ping`, {
+        const result = await fetch('/api/sd/comfy/ping', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({
@@ -1158,7 +1158,7 @@ async function loadComfySamplers() {
     }
 
     try {
-        const result = await fetch(`/api/sd/comfy/samplers`, {
+        const result = await fetch('/api/sd/comfy/samplers', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({
@@ -1383,7 +1383,7 @@ async function loadComfyModels() {
     }
 
     try {
-        const result = await fetch(`/api/sd/comfy/models`, {
+        const result = await fetch('/api/sd/comfy/models', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({
@@ -1442,7 +1442,7 @@ async function loadComfySchedulers() {
     }
 
     try {
-        const result = await fetch(`/api/sd/comfy/schedulers`, {
+        const result = await fetch('/api/sd/comfy/schedulers', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({
@@ -1501,7 +1501,7 @@ async function loadComfyVaes() {
     }
 
     try {
-        const result = await fetch(`/api/sd/comfy/vaes`, {
+        const result = await fetch('/api/sd/comfy/vaes', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({
@@ -1524,7 +1524,7 @@ async function loadComfyWorkflows() {
 
     try {
         $('#sd_comfy_workflow').empty();
-        const result = await fetch(`/api/sd/comfy/workflows`, {
+        const result = await fetch('/api/sd/comfy/workflows', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({
@@ -1624,7 +1624,7 @@ async function generatePicture(_, trigger, message, callback) {
     }
 
     if (!isValidState()) {
-        toastr.warning("Extensions API is not connected or doesn't provide SD module. Enable Stable Horde to generate images.");
+        toastr.warning('Extensions API is not connected or doesn\'t provide SD module. Enable Stable Horde to generate images.');
         return;
     }
 
@@ -2140,7 +2140,7 @@ async function generateComfyImage(prompt) {
     console.log(`{
         "prompt": ${workflow}
     }`);
-    const promptResult = await fetch(`/api/sd/comfy/generate`, {
+    const promptResult = await fetch('/api/sd/comfy/generate', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
@@ -2154,7 +2154,7 @@ async function generateComfyImage(prompt) {
 }
 
 async function onComfyOpenWorkflowEditorClick() {
-    let workflow = await (await fetch(`/api/sd/comfy/workflow`, {
+    let workflow = await (await fetch('/api/sd/comfy/workflow', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
@@ -2162,7 +2162,7 @@ async function onComfyOpenWorkflowEditorClick() {
         }),
     })).json();
     const editorHtml = $(await $.get('scripts/extensions/stable-diffusion/comfyWorkflowEditor.html'));
-    const popupResult = callPopup(editorHtml, "confirm", undefined, { okButton: "Save", wide: true, large: true, rows: 1 });
+    const popupResult = callPopup(editorHtml, 'confirm', undefined, { okButton: 'Save', wide: true, large: true, rows: 1 });
     const checkPlaceholders = () => {
         workflow = $('#sd_comfy_workflow_editor_workflow').val().toString();
         $('.sd_comfy_workflow_editor_placeholder_list > li[data-placeholder]').each(function (idx) {
@@ -2176,7 +2176,7 @@ async function onComfyOpenWorkflowEditorClick() {
     checkPlaceholders();
     $('#sd_comfy_workflow_editor_workflow').on('input', checkPlaceholders);
     if (await popupResult) {
-        const response = await fetch(`/api/sd/comfy/save-workflow`, {
+        const response = await fetch('/api/sd/comfy/save-workflow', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({
@@ -2200,7 +2200,7 @@ async function onComfyNewWorkflowClick() {
         name += '.json';
     }
     extension_settings.sd.comfy_workflow = name;
-    const response = await fetch(`/api/sd/comfy/save-workflow`, {
+    const response = await fetch('/api/sd/comfy/save-workflow', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
@@ -2290,7 +2290,7 @@ function addSDGenButtons() {
 
     const messageButton = $('.sd_message_gen');
     const button = $('#sd_gen');
-    const waitButton = $("#sd_gen_wait");
+    const waitButton = $('#sd_gen_wait');
     const dropdown = $('#sd_dropdown');
     waitButton.hide();
     dropdown.hide();
@@ -2306,7 +2306,7 @@ function addSDGenButtons() {
     $(document).on('click touchend', function (e) {
         const target = $(e.target);
         if (target.is(dropdown)) return;
-        if (target.is(button) && !dropdown.is(":visible") && $("#send_but").is(":visible")) {
+        if (target.is(button) && !dropdown.is(':visible') && $('#send_but').is(':visible')) {
             e.preventDefault();
 
             dropdown.fadeIn(animation_duration);
@@ -2385,7 +2385,7 @@ async function sdMessageButton(e) {
             await sendGenerationRequest(generationType, prompt, characterFileName, saveGeneratedImage);
         }
         else {
-            console.log("doing /sd raw last");
+            console.log('doing /sd raw last');
             await generatePicture('sd', 'raw_last', messageText, saveGeneratedImage);
         }
     }
@@ -2417,22 +2417,22 @@ async function sdMessageButton(e) {
     }
 }
 
-$("#sd_dropdown [id]").on("click", function () {
-    const id = $(this).attr("id");
+$('#sd_dropdown [id]').on('click', function () {
+    const id = $(this).attr('id');
     const idParamMap = {
-        "sd_you": "you",
-        "sd_face": "face",
-        "sd_me": "me",
-        "sd_world": "scene",
-        "sd_last": "last",
-        "sd_raw_last": "raw_last",
-        "sd_background": "background"
+        'sd_you': 'you',
+        'sd_face': 'face',
+        'sd_me': 'me',
+        'sd_world': 'scene',
+        'sd_last': 'last',
+        'sd_raw_last': 'raw_last',
+        'sd_background': 'background'
     };
 
     const param = idParamMap[id];
 
     if (param) {
-        console.log("doing /sd " + param)
+        console.log('doing /sd ' + param)
         generatePicture('sd', param);
     }
 });
@@ -2489,9 +2489,9 @@ jQuery(async () => {
     $('#sd_multimodal_captioning').on('input', onMultimodalCaptioningInput);
 
     $('.sd_settings .inline-drawer-toggle').on('click', function () {
-        initScrollHeight($("#sd_prompt_prefix"));
-        initScrollHeight($("#sd_negative_prompt"));
-        initScrollHeight($("#sd_character_prompt"));
+        initScrollHeight($('#sd_prompt_prefix'));
+        initScrollHeight($('#sd_negative_prompt'));
+        initScrollHeight($('#sd_character_prompt'));
     })
 
     for (const [key, value] of Object.entries(resolutionOptions)) {

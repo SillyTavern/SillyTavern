@@ -32,17 +32,17 @@ import {
     is_send_press,
     extension_prompt_types,
     setExtensionPrompt,
-} from "../script.js";
-import { getMessageTimeStamp } from "./RossAscends-mods.js";
-import { findGroupMemberId, groups, is_group_generating, resetSelectedGroup, saveGroupChat, selected_group } from "./group-chats.js";
-import { getRegexedString, regex_placement } from "./extensions/regex/engine.js";
-import { addEphemeralStoppingString, chat_styles, flushEphemeralStoppingStrings, power_user } from "./power-user.js";
-import { autoSelectPersona } from "./personas.js";
-import { getContext, saveMetadataDebounced } from "./extensions.js";
-import { hideChatMessage, unhideChatMessage } from "./chats.js";
-import { delay, isFalseBoolean, isTrueBoolean, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from "./utils.js";
-import { registerVariableCommands, resolveVariable } from "./variables.js";
-import { decodeTextTokens, getFriendlyTokenizerName, getTextTokens, getTokenCount } from "./tokenizers.js";
+} from '../script.js';
+import { getMessageTimeStamp } from './RossAscends-mods.js';
+import { findGroupMemberId, groups, is_group_generating, resetSelectedGroup, saveGroupChat, selected_group } from './group-chats.js';
+import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
+import { addEphemeralStoppingString, chat_styles, flushEphemeralStoppingStrings, power_user } from './power-user.js';
+import { autoSelectPersona } from './personas.js';
+import { getContext, saveMetadataDebounced } from './extensions.js';
+import { hideChatMessage, unhideChatMessage } from './chats.js';
+import { delay, isFalseBoolean, isTrueBoolean, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
+import { registerVariableCommands, resolveVariable } from './variables.js';
+import { decodeTextTokens, getFriendlyTokenizerName, getTextTokens, getTokenCount } from './tokenizers.js';
 export {
     executeSlashCommands,
     registerSlashCommand,
@@ -79,7 +79,7 @@ class SlashCommandParser {
     }
 
     parse(text) {
-        const excludedFromRegex = ["sendas"]
+        const excludedFromRegex = ['sendas']
         const firstSpace = text.indexOf(' ');
         const command = firstSpace !== -1 ? text.substring(1, firstSpace) : text.substring(1);
         const args = firstSpace !== -1 ? text.substring(firstSpace + 1) : '';
@@ -143,7 +143,7 @@ parser.addCommand('name', setNameCallback, ['persona'], '<span class="monospace"
 parser.addCommand('sync', syncCallback, [], ' – syncs user name in user-attributed messages in the current chat', true, true);
 parser.addCommand('lock', bindCallback, ['bind'], ' – locks/unlocks a persona (name and avatar) to the current chat', true, true);
 parser.addCommand('bg', setBackgroundCallback, ['background'], '<span class="monospace">(filename)</span> – sets a background according to filename, partial names allowed', false, true);
-parser.addCommand('sendas', sendMessageAs, [], ` – sends message as a specific character. Uses character avatar if it exists in the characters list. Example that will send "Hello, guys!" from "Chloe": <tt>/sendas name="Chloe" Hello, guys!</tt>`, true, true);
+parser.addCommand('sendas', sendMessageAs, [], ' – sends message as a specific character. Uses character avatar if it exists in the characters list. Example that will send "Hello, guys!" from "Chloe": <tt>/sendas name="Chloe" Hello, guys!</tt>', true, true);
 parser.addCommand('sys', sendNarratorMessage, ['nar'], '<span class="monospace">(text)</span> – sends message as a system narrator', false, true);
 parser.addCommand('sysname', setNarratorName, [], '<span class="monospace">(name)</span> – sets a name for future system narrator messages in this chat (display only). Default: System. Leave empty to reset.', true, true);
 parser.addCommand('comment', sendCommentMessage, [], '<span class="monospace">(text)</span> – adds a note/comment message not part of the chat', false, true);
@@ -601,7 +601,7 @@ async function addSwipeCallback(_, arg) {
     const lastMessage = chat[chat.length - 1];
 
     if (!lastMessage) {
-        toastr.warning("No messages to add swipes to.");
+        toastr.warning('No messages to add swipes to.');
         return;
     }
 
@@ -611,17 +611,17 @@ async function addSwipeCallback(_, arg) {
     }
 
     if (lastMessage.is_user) {
-        toastr.warning("Can't add swipes to user messages.");
+        toastr.warning('Can\'t add swipes to user messages.');
         return;
     }
 
     if (lastMessage.is_system) {
-        toastr.warning("Can't add swipes to system messages.");
+        toastr.warning('Can\'t add swipes to system messages.');
         return;
     }
 
     if (lastMessage.extra?.image) {
-        toastr.warning("Can't add swipes to message containing an image.");
+        toastr.warning('Can\'t add swipes to message containing an image.');
         return;
     }
 
@@ -652,12 +652,12 @@ async function deleteSwipeCallback(_, arg) {
     const lastMessage = chat[chat.length - 1];
 
     if (!lastMessage || !Array.isArray(lastMessage.swipes) || !lastMessage.swipes.length) {
-        toastr.warning("No messages to delete swipes from.");
+        toastr.warning('No messages to delete swipes from.');
         return;
     }
 
     if (lastMessage.swipes.length <= 1) {
-        toastr.warning("Can't delete the last swipe.");
+        toastr.warning('Can\'t delete the last swipe.');
         return;
     }
 
@@ -689,7 +689,7 @@ async function askCharacter(_, text) {
     // Not supported in group chats
     // TODO: Maybe support group chats?
     if (selected_group) {
-        toastr.error("Cannot run this command in a group chat!");
+        toastr.error('Cannot run this command in a group chat!');
         return;
     }
 
@@ -711,7 +711,7 @@ async function askCharacter(_, text) {
     // Find the character
     const chId = characters.findIndex((e) => e.name === name);
     if (!characters[chId] || chId === -1) {
-        toastr.error("Character not found.");
+        toastr.error('Character not found.');
         return;
     }
 
@@ -818,7 +818,7 @@ async function unhideMessageCallback(_, arg) {
 
 async function disableGroupMemberCallback(_, arg) {
     if (!selected_group) {
-        toastr.warning("Cannot run /disable command outside of a group chat.");
+        toastr.warning('Cannot run /disable command outside of a group chat.');
         return '';
     }
 
@@ -835,7 +835,7 @@ async function disableGroupMemberCallback(_, arg) {
 
 async function enableGroupMemberCallback(_, arg) {
     if (!selected_group) {
-        toastr.warning("Cannot run /enable command outside of a group chat.");
+        toastr.warning('Cannot run /enable command outside of a group chat.');
         return '';
     }
 
@@ -852,7 +852,7 @@ async function enableGroupMemberCallback(_, arg) {
 
 async function moveGroupMemberUpCallback(_, arg) {
     if (!selected_group) {
-        toastr.warning("Cannot run /memberup command outside of a group chat.");
+        toastr.warning('Cannot run /memberup command outside of a group chat.');
         return '';
     }
 
@@ -869,7 +869,7 @@ async function moveGroupMemberUpCallback(_, arg) {
 
 async function moveGroupMemberDownCallback(_, arg) {
     if (!selected_group) {
-        toastr.warning("Cannot run /memberdown command outside of a group chat.");
+        toastr.warning('Cannot run /memberdown command outside of a group chat.');
         return '';
     }
 
@@ -886,12 +886,12 @@ async function moveGroupMemberDownCallback(_, arg) {
 
 async function peekCallback(_, arg) {
     if (!selected_group) {
-        toastr.warning("Cannot run /peek command outside of a group chat.");
+        toastr.warning('Cannot run /peek command outside of a group chat.');
         return '';
     }
 
     if (is_group_generating) {
-        toastr.warning("Cannot run /peek command while the group reply is generating.");
+        toastr.warning('Cannot run /peek command while the group reply is generating.');
         return '';
     }
 
@@ -908,12 +908,12 @@ async function peekCallback(_, arg) {
 
 async function removeGroupMemberCallback(_, arg) {
     if (!selected_group) {
-        toastr.warning("Cannot run /memberremove command outside of a group chat.");
+        toastr.warning('Cannot run /memberremove command outside of a group chat.');
         return '';
     }
 
     if (is_group_generating) {
-        toastr.warning("Cannot run /memberremove command while the group reply is generating.");
+        toastr.warning('Cannot run /memberremove command while the group reply is generating.');
         return '';
     }
 
@@ -930,7 +930,7 @@ async function removeGroupMemberCallback(_, arg) {
 
 async function addGroupMemberCallback(_, arg) {
     if (!selected_group) {
-        toastr.warning("Cannot run /memberadd command outside of a group chat.");
+        toastr.warning('Cannot run /memberadd command outside of a group chat.');
         return '';
     }
 
@@ -975,7 +975,7 @@ async function triggerGenerationCallback(_, arg) {
         await waitUntilCondition(() => !is_send_press && !is_group_generating, 10000, 100);
     } catch {
         console.warn('Timeout waiting for generation unlock');
-        toastr.warning("Cannot run /trigger command while the reply is being generated.");
+        toastr.warning('Cannot run /trigger command while the reply is being generated.');
         return '';
     }
 
@@ -1091,7 +1091,7 @@ async function continueChatCallback() {
         await waitUntilCondition(() => !is_send_press && !is_group_generating, 10000, 100);
     } catch {
         console.warn('Timeout waiting for generation unlock');
-        toastr.warning("Cannot run /continue command while the reply is being generated.");
+        toastr.warning('Cannot run /continue command while the reply is being generated.');
         return '';
     }
 
@@ -1287,11 +1287,11 @@ export async function promptQuietForLoudResponse(who, text) {
 
     let character_id = getContext().characterId;
     if (who === 'sys') {
-        text = "System: " + text;
+        text = 'System: ' + text;
     } else if (who === 'user') {
-        text = name1 + ": " + text;
+        text = name1 + ': ' + text;
     } else if (who === 'char') {
-        text = characters[character_id].name + ": " + text;
+        text = characters[character_id].name + ': ' + text;
     } else if (who === 'raw') {
         // We don't need to modify the text
     }
@@ -1407,7 +1407,7 @@ function setBackgroundCallback(_, bg) {
 
     console.log('Set background to ' + bg);
 
-    const bgElements = Array.from(document.querySelectorAll(`.bg_example`)).map((x) => ({ element: x, bgfile: x.getAttribute('bgfile') }));
+    const bgElements = Array.from(document.querySelectorAll('.bg_example')).map((x) => ({ element: x, bgfile: x.getAttribute('bgfile') }));
 
     const fuse = new Fuse(bgElements, { keys: ['bgfile'] });
     const result = fuse.search(bg);
@@ -1535,13 +1535,13 @@ function setSlashCommandAutocomplete(textarea) {
             $(e.target).val(u.item.value);
         },
         minLength: 1,
-        position: { my: "left bottom", at: "left top", collision: "none" },
+        position: { my: 'left bottom', at: 'left top', collision: 'none' },
     });
 
-    textarea.autocomplete("instance")._renderItem = function (ul, item) {
+    textarea.autocomplete('instance')._renderItem = function (ul, item) {
         const width = $(textarea).innerWidth();
         const content = $('<div></div>').html(item.label);
-        return $("<li>").width(width).append(content).appendTo(ul);
+        return $('<li>').width(width).append(content).appendTo(ul);
     };
 }
 

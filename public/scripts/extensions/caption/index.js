@@ -1,9 +1,9 @@
-import { getBase64Async, saveBase64AsFile } from "../../utils.js";
-import { getContext, getApiUrl, doExtrasFetch, extension_settings, modules } from "../../extensions.js";
-import { callPopup, getRequestHeaders, saveSettingsDebounced, substituteParams } from "../../../script.js";
-import { getMessageTimeStamp } from "../../RossAscends-mods.js";
-import { SECRET_KEYS, secret_state } from "../../secrets.js";
-import { getMultimodalCaption } from "../shared.js";
+import { getBase64Async, saveBase64AsFile } from '../../utils.js';
+import { getContext, getApiUrl, doExtrasFetch, extension_settings, modules } from '../../extensions.js';
+import { callPopup, getRequestHeaders, saveSettingsDebounced, substituteParams } from '../../../script.js';
+import { getMessageTimeStamp } from '../../RossAscends-mods.js';
+import { SECRET_KEYS, secret_state } from '../../secrets.js';
+import { getMultimodalCaption } from '../shared.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'caption';
@@ -285,7 +285,7 @@ jQuery(function () {
         });
     }
     function addPictureSendForm() {
-        const inputHtml = `<input id="img_file" type="file" hidden accept="image/*">`;
+        const inputHtml = '<input id="img_file" type="file" hidden accept="image/*">';
         const imgForm = document.createElement('form');
         imgForm.id = 'img_form';
         $(imgForm).append(inputHtml);

@@ -1,5 +1,5 @@
-import { substituteParams } from "../../../script.js";
-import { extension_settings } from "../../extensions.js";
+import { substituteParams } from '../../../script.js';
+import { extension_settings } from '../../extensions.js';
 export {
     regex_placement,
     getRegexedString,
@@ -40,7 +40,7 @@ function regexFromString(input) {
 // Parent function to fetch a regexed version of a raw string
 function getRegexedString(rawString, placement, { characterOverride, isMarkdown, isPrompt } = {}) {
     let finalString = rawString;
-    if (extension_settings.disabledExtensions.includes("regex") || !rawString || placement === undefined) {
+    if (extension_settings.disabledExtensions.includes('regex') || !rawString || placement === undefined) {
         return finalString;
     }
 
@@ -121,7 +121,7 @@ function filterString(rawString, trimStrings, { characterOverride } = {}) {
     let finalString = rawString;
     trimStrings.forEach((trimString) => {
         const subTrimString = substituteParams(trimString, undefined, characterOverride);
-        finalString = finalString.replaceAll(subTrimString, "");
+        finalString = finalString.replaceAll(subTrimString, '');
     });
 
     return finalString;
@@ -135,7 +135,7 @@ function substituteRegexParams(rawString, regexMatch, { characterOverride, repla
     let overlaidMatch = regexMatch;
     // TODO: Maybe move the for loops into a separate function?
     if (replaceStrategy === regex_replace_strategy.OVERLAY) {
-        const splitReplace = finalString.split("{{match}}");
+        const splitReplace = finalString.split('{{match}}');
 
         // There's a prefix
         if (splitReplace[0]) {
@@ -177,7 +177,7 @@ function substituteRegexParams(rawString, regexMatch, { characterOverride, repla
     }
 
     // Only one match is replaced. This is by design
-    finalString = finalString.replace("{{match}}", overlaidMatch) || finalString.replace("{{match}}", regexMatch);
+    finalString = finalString.replace('{{match}}', overlaidMatch) || finalString.replace('{{match}}', regexMatch);
 
     return finalString;
 }

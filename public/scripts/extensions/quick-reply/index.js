@@ -1,12 +1,12 @@
-import { saveSettingsDebounced, callPopup, getRequestHeaders, substituteParams, eventSource, event_types } from "../../../script.js";
-import { getContext, extension_settings } from "../../extensions.js";
-import { initScrollHeight, resetScrollHeight, getSortableDelay, escapeHtml } from "../../utils.js";
-import { executeSlashCommands, registerSlashCommand } from "../../slash-commands.js";
-import { ContextMenu } from "./src/ContextMenu.js";
-import { MenuItem } from "./src/MenuItem.js";
-import { MenuHeader } from "./src/MenuHeader.js";
-import { loadMovingUIState } from "../../power-user.js";
-import { dragElement } from "../../RossAscends-mods.js";
+import { saveSettingsDebounced, callPopup, getRequestHeaders, substituteParams, eventSource, event_types } from '../../../script.js';
+import { getContext, extension_settings } from '../../extensions.js';
+import { initScrollHeight, resetScrollHeight, getSortableDelay, escapeHtml } from '../../utils.js';
+import { executeSlashCommands, registerSlashCommand } from '../../slash-commands.js';
+import { ContextMenu } from './src/ContextMenu.js';
+import { MenuItem } from './src/MenuItem.js';
+import { MenuHeader } from './src/MenuHeader.js';
+import { loadMovingUIState } from '../../power-user.js';
+import { dragElement } from '../../RossAscends-mods.js';
 
 export { MODULE_NAME };
 
@@ -26,8 +26,8 @@ const defaultSettings = {
 
 //method from worldinfo
 async function updateQuickReplyPresetList() {
-    const result = await fetch("/getsettings", {
-        method: "POST",
+    const result = await fetch('/getsettings', {
+        method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({}),
     });
@@ -36,7 +36,7 @@ async function updateQuickReplyPresetList() {
         var data = await result.json();
         presets = data.quickReplyPresets?.length ? data.quickReplyPresets : [];
         console.debug('Quick Reply presets', presets);
-        $("#quickReplyPresets").find('option[value!=""]').remove();
+        $('#quickReplyPresets').find('option[value!=""]').remove();
 
 
         if (presets !== undefined) {
@@ -45,7 +45,7 @@ async function updateQuickReplyPresetList() {
                 option.value = item.name;
                 option.innerText = item.name;
                 option.selected = selected_preset.includes(item.name);
-                $("#quickReplyPresets").append(option);
+                $('#quickReplyPresets').append(option);
             });
         }
     }
@@ -115,7 +115,7 @@ async function onQuickReplyContextMenuChange(id) {
 
 async function onQuickReplyCtxButtonClick(id) {
     const editorHtml = $(await $.get('scripts/extensions/quick-reply/contextMenuEditor.html'));
-    const popupResult = callPopup(editorHtml, "confirm", undefined, { okButton: "Save", wide: false, large: false, rows: 1 });
+    const popupResult = callPopup(editorHtml, 'confirm', undefined, { okButton: 'Save', wide: false, large: false, rows: 1 });
     const qr = extension_settings.quickReply.quickReplySlots[id - 1];
     if (!qr.contextMenu) {
         qr.contextMenu = [];
@@ -207,8 +207,8 @@ async function onQuickReplyEnabledInput() {
     let isEnabled = $(this).prop('checked')
     extension_settings.quickReply.quickReplyEnabled = !!isEnabled;
     if (isEnabled === true) {
-        $("#quickReplyBar").show();
-    } else { $("#quickReplyBar").hide(); }
+        $('#quickReplyBar').show();
+    } else { $('#quickReplyBar').hide(); }
     saveSettingsDebounced();
 }
 
@@ -254,7 +254,7 @@ async function performQuickReply(prompt, index) {
         console.warn(`Quick reply slot ${index} is empty! Aborting.`);
         return;
     }
-    const existingText = $("#send_textarea").val();
+    const existingText = $('#send_textarea').val();
 
     let newText;
 
@@ -277,14 +277,14 @@ async function performQuickReply(prompt, index) {
 
     newText = substituteParams(newText);
 
-    $("#send_textarea").val(newText);
+    $('#send_textarea').val(newText);
 
     // Set the focus back to the textarea
-    $("#send_textarea").trigger('focus');
+    $('#send_textarea').trigger('focus');
 
     // Only trigger send button if quickActionEnabled is not checked or
     if (!extension_settings.quickReply.quickActionEnabled) {
-        $("#send_but").trigger('click');
+        $('#send_but').trigger('click');
     }
 }
 
@@ -327,10 +327,10 @@ function buildContextMenu(qr, chainMes = null, hierarchy = [], labelHierarchy = 
 
 async function doQuickReplyBarPopout() {
     //shared elements
-    const newQuickRepliesDiv = `<div id="quickReplies"></div>`
-    const popoutButtonClone = $("#quickReplyPopoutButton")
+    const newQuickRepliesDiv = '<div id="quickReplies"></div>'
+    const popoutButtonClone = $('#quickReplyPopoutButton')
 
-    if ($("#quickReplyBarPopout").length === 0) {
+    if ($('#quickReplyBarPopout').length === 0) {
         console.debug('did not see popout yet, creating')
         const template = $('#zoomed_avatar_template').html();
         const controlBarHtml = `<div class="panelControlBar flex-container">
@@ -346,10 +346,10 @@ async function doQuickReplyBarPopout() {
             .append(controlBarHtml)
             .append(newQuickRepliesDiv)
         //empty original bar
-        $("#quickReplyBar").empty()
+        $('#quickReplyBar').empty()
         //add clone in popout
         $('body').append(newElement);
-        $("#quickReplies").append(quickRepliesClone).css('margin-top', '1em')
+        $('#quickReplies').append(quickRepliesClone).css('margin-top', '1em')
         $('.quickReplyButton').on('click', function () {
             let index = $(this).data('index');
             sendQuickReply(index);
@@ -377,16 +377,16 @@ async function doQuickReplyBarPopout() {
         });
 
         loadMovingUIState();
-        $("#quickReplyBarPopout").fadeIn(250)
+        $('#quickReplyBarPopout').fadeIn(250)
         dragElement(newElement)
 
         $('#quickReplyBarPopoutClose').off('click').on('click', function () {
             console.debug('saw existing popout, removing')
             let quickRepliesClone = $('#quickReplies').html()
-            $("#quickReplyBar").append(newQuickRepliesDiv)
-            $("#quickReplies").prepend(quickRepliesClone)
-            $("#quickReplyBar").append(popoutButtonClone).fadeIn(250)
-            $("#quickReplyBarPopout").fadeOut(250, () => { $("#quickReplyBarPopout").remove() });
+            $('#quickReplyBar').append(newQuickRepliesDiv)
+            $('#quickReplies').prepend(quickRepliesClone)
+            $('#quickReplyBar').append(popoutButtonClone).fadeIn(250)
+            $('#quickReplyBarPopout').fadeOut(250, () => { $('#quickReplyBarPopout').remove() });
             $('.quickReplyButton').on('click', function () {
                 let index = $(this).data('index');
                 sendQuickReply(index);
@@ -412,7 +412,7 @@ async function doQuickReplyBarPopout() {
                     menu.show(evt);
                 }
             });
-            $("#quickReplyPopoutButton").off('click').on('click', doQuickReplyBarPopout)
+            $('#quickReplyPopoutButton').off('click').on('click', doQuickReplyBarPopout)
         })
 
     }
@@ -421,11 +421,11 @@ async function doQuickReplyBarPopout() {
 function addQuickReplyBar() {
     let quickReplyButtonHtml = '';
     var targetContainer;
-    if ($("#quickReplyBarPopout").length !== 0) {
+    if ($('#quickReplyBarPopout').length !== 0) {
         targetContainer = 'popout'
     } else {
         targetContainer = 'bar'
-        $("#quickReplyBar").remove();
+        $('#quickReplyBar').remove();
     }
 
     for (let i = 0; i < extension_settings.quickReply.numberOfSlots; i++) {
@@ -452,7 +452,7 @@ function addQuickReplyBar() {
     if (targetContainer === 'bar') {
         $('#send_form').prepend(quickReplyBarFullHtml);
     } else {
-        $("#quickReplies").empty().append(quickReplyButtonHtml)
+        $('#quickReplies').empty().append(quickReplyButtonHtml)
     }
 
 
@@ -460,7 +460,7 @@ function addQuickReplyBar() {
         let index = $(this).data('index');
         sendQuickReply(index);
     });
-    $("#quickReplyPopoutButton").off('click').on('click', doQuickReplyBarPopout)
+    $('#quickReplyPopoutButton').off('click').on('click', doQuickReplyBarPopout)
     $('.quickReplyButton > .ctx-expander').on('click', function (evt) {
         evt.stopPropagation();
         let index = $(this.closest('.quickReplyButton')).data('index');
@@ -538,7 +538,7 @@ async function saveQuickReplyPreset() {
 
 //just a copy of save function with the name hardcoded to currently selected preset
 async function updateQuickReplyPreset() {
-    const name = $("#quickReplyPresets").val()
+    const name = $('#quickReplyPresets').val()
 
     if (!name) {
         return;
@@ -684,7 +684,7 @@ async function doQR(_, text) {
     //ex: user inputs "/qr 2" >> qr with data-index 1 (but 2nd item displayed) gets triggered
     let QRnum = Number(text - 1)
     if (QRnum <= 0) { QRnum = 0 }
-    const whichQR = $("#quickReplies").find(`[data-index='${QRnum}']`);
+    const whichQR = $('#quickReplies').find(`[data-index='${QRnum}']`);
     whichQR.trigger('click')
 }
 
@@ -865,15 +865,15 @@ jQuery(async () => {
     $('#AutoInputInject').on('input', onAutoInputInject);
     $('#quickReplyEnabled').on('input', onQuickReplyEnabledInput);
     $('#quickReplyNumberOfSlotsApply').on('click', onQuickReplyNumberOfSlotsInput);
-    $("#quickReplyPresetSaveButton").on('click', saveQuickReplyPreset);
-    $("#quickReplyPresetUpdateButton").on('click', updateQuickReplyPreset);
+    $('#quickReplyPresetSaveButton').on('click', saveQuickReplyPreset);
+    $('#quickReplyPresetUpdateButton').on('click', updateQuickReplyPreset);
 
     $('#quickReplyContainer').sortable({
         delay: getSortableDelay(),
         stop: saveQROrder,
     });
 
-    $("#quickReplyPresets").on('change', async function () {
+    $('#quickReplyPresets').on('change', async function () {
         const quickReplyPresetSelected = $(this).find(':selected').val();
         extension_settings.quickReplyPreset = quickReplyPresetSelected;
         applyQuickReplyPreset(quickReplyPresetSelected);

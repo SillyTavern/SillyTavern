@@ -13,7 +13,7 @@ import {
     name2,
     saveChatDebounced,
     showSwipeButtons,
-} from "../script.js";
+} from '../script.js';
 import {
     extractTextFromHTML,
     extractTextFromMarkdown,
@@ -22,7 +22,7 @@ import {
     getStringHash,
     humanFileSize,
     saveBase64AsFile,
-} from "./utils.js";
+} from './utils.js';
 
 const fileSizeLimit = 1024 * 1024 * 10; // 10 MB
 

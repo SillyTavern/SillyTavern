@@ -1,6 +1,6 @@
-import { callPopup, eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, substituteParams, renderTemplate, animation_duration } from "../script.js";
-import { hideLoader, showLoader } from "./loader.js";
-import { isSubsetOf } from "./utils.js";
+import { callPopup, eventSource, event_types, saveSettings, saveSettingsDebounced, getRequestHeaders, substituteParams, renderTemplate, animation_duration } from '../script.js';
+import { hideLoader, showLoader } from './loader.js';
+import { isSubsetOf } from './utils.js';
 export {
     getContext,
     getApiUrl,
@@ -14,7 +14,7 @@ export {
 
 export let extensionNames = [];
 let manifests = {};
-const defaultUrl = "http://localhost:5100";
+const defaultUrl = 'http://localhost:5100';
 
 let saveMetadataTimeout = null;
 
@@ -321,9 +321,9 @@ async function activateExtensions() {
 }
 
 async function connectClickHandler() {
-    const baseUrl = $("#extensions_url").val();
+    const baseUrl = $('#extensions_url').val();
     extension_settings.apiUrl = String(baseUrl);
-    const testApiKey = $("#extensions_api_key").val();
+    const testApiKey = $('#extensions_api_key').val();
     extension_settings.apiKey = String(testApiKey);
     saveSettingsDebounced();
     await connectToApi(baseUrl);
@@ -334,7 +334,7 @@ function autoConnectInputHandler() {
     extension_settings.autoConnect = !!value;
 
     if (value && !connectedToApi) {
-        $("#extensions_connect").trigger('click');
+        $('#extensions_connect').trigger('click');
     }
 
     saveSettingsDebounced();
@@ -342,8 +342,8 @@ function autoConnectInputHandler() {
 
 function addExtensionsButtonAndMenu() {
     const buttonHTML =
-        `<div id="extensionsMenuButton" style="display: none;" class="fa-solid fa-magic-wand-sparkles" title="Extras Extensions" /></div>`;
-    const extensionsMenuHTML = `<div id="extensionsMenu" class="options-content" style="display: none;"></div>`;
+        '<div id="extensionsMenuButton" style="display: none;" class="fa-solid fa-magic-wand-sparkles" title="Extras Extensions" /></div>';
+    const extensionsMenuHTML = '<div id="extensionsMenu" class="options-content" style="display: none;"></div>';
 
     $(document.body).append(extensionsMenuHTML);
 
@@ -366,7 +366,7 @@ function addExtensionsButtonAndMenu() {
         popper.update();
     });
 
-    $("html").on('click', function (e) {
+    $('html').on('click', function (e) {
         const clickTarget = $(e.target);
         const noCloseTargets = ['#sd_gen', '#extensionsMenuButton'];
         if (dropdown.is(':visible') && !noCloseTargets.some(id => clickTarget.closest(id).length > 0)) {
@@ -440,8 +440,8 @@ function addExtensionStyle(name, manifest) {
             if ($(`link[id="${name}"]`).length === 0) {
                 const link = document.createElement('link');
                 link.id = name;
-                link.rel = "stylesheet";
-                link.type = "text/css";
+                link.rel = 'stylesheet';
+                link.type = 'text/css';
                 link.href = url;
                 link.onload = function () {
                     resolve();
@@ -502,7 +502,7 @@ function addExtensionScript(name, manifest) {
  */
 async function generateExtensionHtml(name, manifest, isActive, isDisabled, isExternal, checkboxClass) {
     const displayName = manifest.display_name;
-    let displayVersion = manifest.version ? ` v${manifest.version}` : "";
+    let displayVersion = manifest.version ? ` v${manifest.version}` : '';
     let isUpToDate = true;
     let updateButton = '';
     let originHtml = '';
@@ -532,7 +532,7 @@ async function generateExtensionHtml(name, manifest, isActive, isDisabled, isExt
             ${updateButton}
             ${deleteButton}
             ${originHtml}
-            <span class="${isActive ? "extension_enabled" : isDisabled ? "extension_disabled" : "extension_missing"}">
+            <span class="${isActive ? 'extension_enabled' : isDisabled ? 'extension_disabled' : 'extension_missing'}">
                 ${DOMPurify.sanitize(displayName)}${displayVersion}
             </span>
             ${isExternal ? '</a>' : ''}
@@ -570,7 +570,7 @@ async function getExtensionData(extension) {
     const isDisabled = extension_settings.disabledExtensions.includes(name);
     const isExternal = name.startsWith('third-party');
 
-    const checkboxClass = isDisabled ? "checkbox_disabled" : "";
+    const checkboxClass = isDisabled ? 'checkbox_disabled' : '';
 
     const extensionHtml = await generateExtensionHtml(name, manifest, isActive, isDisabled, isExternal, checkboxClass);
 
@@ -773,10 +773,10 @@ async function loadExtensionSettings(settings, versionChanged) {
         Object.assign(extension_settings, settings.extension_settings);
     }
 
-    $("#extensions_url").val(extension_settings.apiUrl);
-    $("#extensions_api_key").val(extension_settings.apiKey);
-    $("#extensions_autoconnect").prop('checked', extension_settings.autoConnect);
-    $("#extensions_notify_updates").prop('checked', extension_settings.notifyUpdates);
+    $('#extensions_url').val(extension_settings.apiUrl);
+    $('#extensions_api_key').val(extension_settings.apiKey);
+    $('#extensions_autoconnect').prop('checked', extension_settings.autoConnect);
+    $('#extensions_notify_updates').prop('checked', extension_settings.notifyUpdates);
 
     // Activate offline extensions
     eventSource.emit(event_types.EXTENSIONS_FIRST_LOAD);
@@ -899,12 +899,12 @@ async function runGenerationInterceptors(chat, contextSize) {
 
 jQuery(function () {
     addExtensionsButtonAndMenu();
-    $("#extensionsMenuButton").css("display", "flex");
+    $('#extensionsMenuButton').css('display', 'flex');
 
-    $("#extensions_connect").on('click', connectClickHandler);
-    $("#extensions_autoconnect").on('input', autoConnectInputHandler);
-    $("#extensions_details").on('click', showExtensionsDetails);
-    $("#extensions_notify_updates").on('input', notifyUpdatesInputHandler);
+    $('#extensions_connect').on('click', connectClickHandler);
+    $('#extensions_autoconnect').on('input', autoConnectInputHandler);
+    $('#extensions_details').on('click', showExtensionsDetails);
+    $('#extensions_notify_updates').on('input', notifyUpdatesInputHandler);
     $(document).on('click', '.toggle_disable', onDisableExtensionClick);
     $(document).on('click', '.toggle_enable', onEnableExtensionClick);
     $(document).on('click', '.btn_update', onUpdateClick);

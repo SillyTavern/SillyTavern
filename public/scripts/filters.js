@@ -1,5 +1,5 @@
-import { fuzzySearchCharacters, fuzzySearchGroups, fuzzySearchTags, fuzzySearchWorldInfo, power_user } from "./power-user.js";
-import { tag_map } from "./tags.js";
+import { fuzzySearchCharacters, fuzzySearchGroups, fuzzySearchTags, fuzzySearchWorldInfo, power_user } from './power-user.js';
+import { tag_map } from './tags.js';
 
 /**
  * The filter types.
@@ -126,7 +126,7 @@ export class FilterHelper {
             return data;
         }
 
-        return data.filter(entity => entity.item.fav || entity.item.fav == "true");
+        return data.filter(entity => entity.item.fav || entity.item.fav == 'true');
     }
 
     /**

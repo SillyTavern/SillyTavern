@@ -1,5 +1,5 @@
-import { doExtrasFetch, getApiUrl, modules } from "../../extensions.js"
-import { saveTtsProviderSettings } from "./index.js"
+import { doExtrasFetch, getApiUrl, modules } from '../../extensions.js'
+import { saveTtsProviderSettings } from './index.js'
 
 export { XTTSTtsProvider }
 
@@ -29,28 +29,28 @@ class XTTSTtsProvider {
     }
 
     languageLabels = {
-        "Arabic": "ar",
-        "Brazilian Portuguese": "pt",
-        "Chinese": "zh-cn",
-        "Czech": "cs",
-        "Dutch": "nl",
-        "English": "en",
-        "French": "fr",
-        "German": "de",
-        "Italian": "it",
-        "Polish": "pl",
-        "Russian": "ru",
-        "Spanish": "es",
-        "Turkish": "tr",
-        "Japanese": "ja",
-        "Korean": "ko",
-        "Hungarian": "hu",
-        "Hindi": "hi",
+        'Arabic': 'ar',
+        'Brazilian Portuguese': 'pt',
+        'Chinese': 'zh-cn',
+        'Czech': 'cs',
+        'Dutch': 'nl',
+        'English': 'en',
+        'French': 'fr',
+        'German': 'de',
+        'Italian': 'it',
+        'Polish': 'pl',
+        'Russian': 'ru',
+        'Spanish': 'es',
+        'Turkish': 'tr',
+        'Japanese': 'ja',
+        'Korean': 'ko',
+        'Hungarian': 'hu',
+        'Hindi': 'hi',
     }
 
     defaultSettings = {
-        provider_endpoint: "http://localhost:8020",
-        language: "en",
+        provider_endpoint: 'http://localhost:8020',
+        language: 'en',
         voiceMap: {}
     }
 
@@ -96,7 +96,7 @@ class XTTSTtsProvider {
     async loadSettings(settings) {
         // Pupulate Provider UI given input settings
         if (Object.keys(settings).length == 0) {
-            console.info("Using default TTS Provider settings")
+            console.info('Using default TTS Provider settings')
         }
 
         // Only accept keys defined in defaultSettings
@@ -122,13 +122,13 @@ class XTTSTtsProvider {
         }, 2000);
 
         $('#xtts_tts_endpoint').val(this.settings.provider_endpoint)
-        $('#xtts_tts_endpoint').on("input", () => { this.onSettingsChange() })
+        $('#xtts_tts_endpoint').on('input', () => { this.onSettingsChange() })
         $('#xtts_api_language').val(this.settings.language)
-        $('#xtts_api_language').on("change", () => { this.onSettingsChange() })
+        $('#xtts_api_language').on('change', () => { this.onSettingsChange() })
 
         await this.checkReady()
 
-        console.debug("XTTS: Settings loaded")
+        console.debug('XTTS: Settings loaded')
     }
 
     // Perform a simple readiness check by trying to fetch voiceIds
@@ -185,9 +185,9 @@ class XTTSTtsProvider {
                     'Cache-Control': 'no-cache'  // Added this line to disable caching of file so new files are always played - Rolyat 7/7/23
                 },
                 body: JSON.stringify({
-                    "text": inputText,
-                    "speaker_wav": voiceId,
-                    "language": this.settings.language
+                    'text': inputText,
+                    'speaker_wav': voiceId,
+                    'language': this.settings.language
                 })
             }
         )

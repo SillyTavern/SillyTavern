@@ -10,7 +10,7 @@ export function showLoader() {
 
 export function hideLoader() {
     //Sets up a 2-step animation. Spinner blurs/fades out, and then the loader shadow does the same.
-    $(`#load-spinner`).on("transitionend webkitTransitionEnd oTransitionEnd MSTransitionEnd", function () {
+    $('#load-spinner').on('transitionend webkitTransitionEnd oTransitionEnd MSTransitionEnd', function () {
         //console.log('FADING BLUR SCREEN')
         $(`#${ELEMENT_ID}`)
             .animate({ opacity: 0 }, 300, function () {
@@ -20,7 +20,7 @@ export function hideLoader() {
     })
 
     //console.log('BLURRING SPINNER')
-    $(`#load-spinner`)
+    $('#load-spinner')
         .css({
             'filter': 'blur(15px)',
             'opacity': '0',

@@ -6,11 +6,11 @@ import {
     getRequestHeaders,
     max_context,
     amount_gen
-} from "../script.js";
-import { SECRET_KEYS, writeSecret } from "./secrets.js";
-import { delay } from "./utils.js";
-import { getDeviceInfo } from "./RossAscends-mods.js";
-import { autoSelectInstructPreset } from "./instruct-mode.js";
+} from '../script.js';
+import { SECRET_KEYS, writeSecret } from './secrets.js';
+import { delay } from './utils.js';
+import { getDeviceInfo } from './RossAscends-mods.js';
+import { autoSelectInstructPreset } from './instruct-mode.js';
 
 export {
     horde_settings,
@@ -35,9 +35,9 @@ const MAX_RETRIES = 480;
 const CHECK_INTERVAL = 2500;
 const MIN_LENGTH = 16;
 const getRequestArgs = () => ({
-    method: "GET",
+    method: 'GET',
     headers: {
-        "Client-Agent": CLIENT_VERSION,
+        'Client-Agent': CLIENT_VERSION,
     }
 });
 
@@ -93,7 +93,7 @@ async function adjustHordeGenerationParams(max_context_length, max_length) {
         }
     }
     console.log(maxContextLength, maxLength)
-    $("#adjustedHordeParams").text(`Context: ${maxContextLength}, Response: ${maxLength}`)
+    $('#adjustedHordeParams').text(`Context: ${maxContextLength}, Response: ${maxLength}`)
     return { maxContextLength, maxLength };
 }
 
@@ -101,7 +101,7 @@ function setContextSizePreview() {
     if (horde_settings.models.length) {
         adjustHordeGenerationParams(max_context, amount_gen);
     } else {
-        $("#adjustedHordeParams").text(`Context: --, Response: --`);
+        $('#adjustedHordeParams').text('Context: --, Response: --');
     }
 }
 
@@ -110,25 +110,25 @@ async function generateHorde(prompt, params, signal, reportProgress) {
     delete params.prompt;
 
     // No idea what these do
-    params["n"] = 1;
-    params["frmtadsnsp"] = false;
-    params["frmtrmblln"] = false;
-    params["frmtrmspch"] = false;
-    params["frmttriminc"] = false;
+    params['n'] = 1;
+    params['frmtadsnsp'] = false;
+    params['frmtrmblln'] = false;
+    params['frmtrmspch'] = false;
+    params['frmttriminc'] = false;
 
     const payload = {
-        "prompt": prompt,
-        "params": params,
-        "trusted_workers": horde_settings.trusted_workers_only,
+        'prompt': prompt,
+        'params': params,
+        'trusted_workers': horde_settings.trusted_workers_only,
         //"slow_workers": false,
-        "models": horde_settings.models,
+        'models': horde_settings.models,
     };
 
-    const response = await fetch("/api/horde/generate-text", {
+    const response = await fetch('/api/horde/generate-text', {
         method: 'POST',
         headers: {
             ...getRequestHeaders(),
-            "Client-Agent": CLIENT_VERSION,
+            'Client-Agent': CLIENT_VERSION,
         },
         body: JSON.stringify(payload)
     });
@@ -155,7 +155,7 @@ async function generateHorde(prompt, params, signal, reportProgress) {
             fetch(`https://horde.koboldai.net/api/v2/generate/text/status/${task_id}`, {
                 method: 'DELETE',
                 headers: {
-                    "Client-Agent": CLIENT_VERSION,
+                    'Client-Agent': CLIENT_VERSION,
                 }
             });
             throw new Error('Request aborted');
@@ -168,12 +168,12 @@ async function generateHorde(prompt, params, signal, reportProgress) {
 
         if (statusCheckJson.faulted === true) {
             toastr.error('Horde request faulted. Please try again.');
-            throw new Error(`Horde generation failed: Faulted`);
+            throw new Error('Horde generation failed: Faulted');
         }
 
         if (statusCheckJson.is_possible === false) {
             toastr.error('There are no Horde workers that are able to generate text with your request. Please change the parameters or try again later.');
-            throw new Error(`Horde generation failed: Unsatisfiable request`);
+            throw new Error('Horde generation failed: Unsatisfiable request');
         }
 
         if (statusCheckJson.done && Array.isArray(statusCheckJson.generations) && statusCheckJson.generations.length) {
@@ -235,9 +235,9 @@ function loadHordeSettings(settings) {
         Object.assign(horde_settings, settings.horde_settings);
     }
 
-    $('#horde_auto_adjust_response_length').prop("checked", horde_settings.auto_adjust_response_length);
-    $('#horde_auto_adjust_context_length').prop("checked", horde_settings.auto_adjust_context_length);
-    $("#horde_trusted_workers_only").prop("checked", horde_settings.trusted_workers_only);
+    $('#horde_auto_adjust_response_length').prop('checked', horde_settings.auto_adjust_response_length);
+    $('#horde_auto_adjust_context_length').prop('checked', horde_settings.auto_adjust_context_length);
+    $('#horde_trusted_workers_only').prop('checked', horde_settings.trusted_workers_only);
 }
 
 async function showKudos() {
@@ -263,7 +263,7 @@ async function showKudos() {
 }
 
 jQuery(function () {
-    $("#horde_model").on('mousedown change', async function (e) {
+    $('#horde_model').on('mousedown change', async function (e) {
         horde_settings.models = $('#horde_model').val();
         console.log('Updated Horde models', horde_settings.models);
 
@@ -272,35 +272,35 @@ jQuery(function () {
         if (horde_settings.models.length) {
             adjustHordeGenerationParams(max_context, amount_gen)
         } else {
-            $("#adjustedHordeParams").text(`Context: --, Response: --`)
+            $('#adjustedHordeParams').text('Context: --, Response: --')
         }
     });
 
-    $("#horde_auto_adjust_response_length").on("input", function () {
-        horde_settings.auto_adjust_response_length = !!$(this).prop("checked");
+    $('#horde_auto_adjust_response_length').on('input', function () {
+        horde_settings.auto_adjust_response_length = !!$(this).prop('checked');
         setContextSizePreview();
         saveSettingsDebounced();
     });
 
-    $("#horde_auto_adjust_context_length").on("input", function () {
-        horde_settings.auto_adjust_context_length = !!$(this).prop("checked");
+    $('#horde_auto_adjust_context_length').on('input', function () {
+        horde_settings.auto_adjust_context_length = !!$(this).prop('checked');
         setContextSizePreview();
         saveSettingsDebounced();
     });
 
-    $("#horde_trusted_workers_only").on("input", function () {
-        horde_settings.trusted_workers_only = !!$(this).prop("checked");
+    $('#horde_trusted_workers_only').on('input', function () {
+        horde_settings.trusted_workers_only = !!$(this).prop('checked');
         setContextSizePreview();
         saveSettingsDebounced();
     })
 
-    $("#horde_api_key").on("input", async function () {
+    $('#horde_api_key').on('input', async function () {
         const key = String($(this).val()).trim();
         await writeSecret(SECRET_KEYS.HORDE, key);
     });
 
-    $("#horde_refresh").on("click", getHordeModels);
-    $("#horde_kudos").on("click", showKudos);
+    $('#horde_refresh').on('click', getHordeModels);
+    $('#horde_kudos').on('click', showKudos);
 
     // Not needed on mobile
     const deviceInfo = getDeviceInfo();

@@ -34,7 +34,7 @@ const dangerousPatterns = '[]【】()（）|:：';
 function removePattern(x, pattern) {
     for (let i = 0; i < pattern.length; i++) {
         let p = pattern[i];
-        let regex = new RegExp("\\" + p, 'g');
+        let regex = new RegExp('\\' + p, 'g');
         x = x.replace(regex, '');
     }
     return x;
@@ -244,8 +244,8 @@ function registerEndpoints(app, jsonParser) {
             for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
                 const progressState = await getProgress();
 
-                const progress = progressState["progress"]
-                const jobCount = progressState["state"]["job_count"];
+                const progress = progressState['progress']
+                const jobCount = progressState['state']['job_count'];
                 if (progress == 0.0 && jobCount === 0) {
                     break;
                 }

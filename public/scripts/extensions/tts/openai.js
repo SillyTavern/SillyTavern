@@ -1,5 +1,5 @@
-import { getRequestHeaders } from "../../../script.js"
-import { saveTtsProviderSettings } from "./index.js";
+import { getRequestHeaders } from '../../../script.js'
+import { saveTtsProviderSettings } from './index.js';
 
 export { OpenAITtsProvider }
 
@@ -52,7 +52,7 @@ class OpenAITtsProvider {
     async loadSettings(settings) {
         // Populate Provider UI given input settings
         if (Object.keys(settings).length == 0) {
-            console.info("Using default TTS Provider settings")
+            console.info('Using default TTS Provider settings')
         }
 
         // Only accept keys defined in defaultSettings
@@ -79,7 +79,7 @@ class OpenAITtsProvider {
         $('#openai-tts-speed-output').text(this.settings.speed);
 
         await this.checkReady();
-        console.debug("OpenAI TTS: Settings loaded");
+        console.debug('OpenAI TTS: Settings loaded');
     }
 
     onSettingsChange() {
@@ -100,7 +100,7 @@ class OpenAITtsProvider {
 
     async getVoice(voiceName) {
         if (!voiceName) {
-            throw `TTS Voice name not provided`
+            throw 'TTS Voice name not provided'
         }
 
         const voice = OpenAITtsProvider.voices.find(voice => voice.voice_id === voiceName || voice.name === voiceName);
@@ -127,14 +127,14 @@ class OpenAITtsProvider {
 
     async fetchTtsGeneration(inputText, voiceId) {
         console.info(`Generating new TTS for voice_id ${voiceId}`)
-        const response = await fetch(`/api/openai/generate-voice`, {
+        const response = await fetch('/api/openai/generate-voice', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({
-                "text": inputText,
-                "voice": voiceId,
-                "model": this.settings.model,
-                "speed": this.settings.speed,
+                'text': inputText,
+                'voice': voiceId,
+                'model': this.settings.model,
+                'speed': this.settings.speed,
             }),
         });
 

@@ -31,15 +31,15 @@ function registerEndpoints(app, jsonParser) {
 
         try {
             const result = await fetch(url, {
-                method: "POST",
+                method: 'POST',
                 body: JSON.stringify({
                     q: text,
-                    source: "auto",
+                    source: 'auto',
                     target: lang,
-                    format: "text",
+                    format: 'text',
                     api_key: key
                 }),
-                headers: { "Content-Type": "application/json" }
+                headers: { 'Content-Type': 'application/json' }
             });
 
             if (!result.ok) {
@@ -53,7 +53,7 @@ function registerEndpoints(app, jsonParser) {
 
             return response.send(json.translatedText);
         } catch (error) {
-            console.log("Translation error: " + error.message);
+            console.log('Translation error: ' + error.message);
             return response.sendStatus(500);
         }
     });
@@ -85,16 +85,16 @@ function registerEndpoints(app, jsonParser) {
                         console.log('Translated text: ' + result.text);
                         return response.send(result.text);
                     } catch (error) {
-                        console.log("Translation error", error);
+                        console.log('Translation error', error);
                         return response.sendStatus(500);
                     }
                 });
-            }).on("error", (err) => {
-                console.log("Translation error: " + err.message);
+            }).on('error', (err) => {
+                console.log('Translation error: ' + err.message);
                 return response.sendStatus(500);
             });
         } catch (error) {
-            console.log("Translation error", error);
+            console.log('Translation error', error);
             return response.sendStatus(500);
         }
     });
@@ -148,7 +148,7 @@ function registerEndpoints(app, jsonParser) {
 
             return response.send(json.translations[0].text);
         } catch (error) {
-            console.log("Translation error: " + error.message);
+            console.log('Translation error: ' + error.message);
             return response.sendStatus(500);
         }
     });
@@ -201,7 +201,7 @@ function registerEndpoints(app, jsonParser) {
 
             return response.send(data.result);
         } catch (error) {
-            console.log("Translation error: " + error.message);
+            console.log('Translation error: ' + error.message);
             return response.sendStatus(500);
         }
     });
@@ -257,7 +257,7 @@ function registerEndpoints(app, jsonParser) {
 
             return response.send(json.data);
         } catch (error) {
-            console.log("DeepLX translation error: " + error.message);
+            console.log('DeepLX translation error: ' + error.message);
             return response.sendStatus(500);
         }
     });
@@ -281,7 +281,7 @@ function registerEndpoints(app, jsonParser) {
             console.log('Translated text: ' + result.translation);
             return response.send(result.translation);
         }).catch(err => {
-            console.log("Translation error: " + err.message);
+            console.log('Translation error: ' + err.message);
             return response.sendStatus(500);
         });
     });

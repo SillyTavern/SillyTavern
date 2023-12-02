@@ -1,7 +1,7 @@
-import { isMobile } from "../../RossAscends-mods.js";
-import { getPreviewString } from "./index.js";
+import { isMobile } from '../../RossAscends-mods.js';
+import { getPreviewString } from './index.js';
 import { talkingAnimation } from './index.js';
-import { saveTtsProviderSettings } from "./index.js"
+import { saveTtsProviderSettings } from './index.js'
 export { SystemTtsProvider }
 
 /**
@@ -92,7 +92,7 @@ class SystemTtsProvider {
 
     get settingsHtml() {
         if (!('speechSynthesis' in window)) {
-            return "Your browser or operating system doesn't support speech synthesis";
+            return 'Your browser or operating system doesn\'t support speech synthesis';
         }
 
         return `<p>Uses the voices provided by your operating system</p>
@@ -113,7 +113,7 @@ class SystemTtsProvider {
     async loadSettings(settings) {
         // Populate Provider UI given input settings
         if (Object.keys(settings).length == 0) {
-            console.info("Using default TTS Provider settings");
+            console.info('Using default TTS Provider settings');
         }
 
         // iOS should only allows speech synthesis trigged by user interaction
@@ -146,12 +146,12 @@ class SystemTtsProvider {
         $('#system_tts_pitch').val(this.settings.pitch || this.defaultSettings.pitch);
 
         // Trigger updates
-        $('#system_tts_rate').on("input", () => { this.onSettingsChange() })
-        $('#system_tts_rate').on("input", () => { this.onSettingsChange() })
+        $('#system_tts_rate').on('input', () => { this.onSettingsChange() })
+        $('#system_tts_rate').on('input', () => { this.onSettingsChange() })
 
         $('#system_tts_pitch_output').text(this.settings.pitch);
         $('#system_tts_rate_output').text(this.settings.rate);
-        console.debug("SystemTTS: Settings loaded");
+        console.debug('SystemTTS: Settings loaded');
     }
 
     // Perform a simple readiness check by trying to fetch voiceIds

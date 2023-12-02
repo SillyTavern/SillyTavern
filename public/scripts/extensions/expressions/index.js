@@ -1,10 +1,10 @@
-import { callPopup, eventSource, event_types, getRequestHeaders, saveSettingsDebounced } from "../../../script.js";
-import { dragElement, isMobile } from "../../RossAscends-mods.js";
-import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch, renderExtensionTemplate } from "../../extensions.js";
-import { loadMovingUIState, power_user } from "../../power-user.js";
-import { registerSlashCommand } from "../../slash-commands.js";
-import { onlyUnique, debounce, getCharaFilename, trimToEndSentence, trimToStartSentence } from "../../utils.js";
-import { hideMutedSprites } from "../../group-chats.js";
+import { callPopup, eventSource, event_types, getRequestHeaders, saveSettingsDebounced } from '../../../script.js';
+import { dragElement, isMobile } from '../../RossAscends-mods.js';
+import { getContext, getApiUrl, modules, extension_settings, ModuleWorkerWrapper, doExtrasFetch, renderExtensionTemplate } from '../../extensions.js';
+import { loadMovingUIState, power_user } from '../../power-user.js';
+import { registerSlashCommand } from '../../slash-commands.js';
+import { onlyUnique, debounce, getCharaFilename, trimToEndSentence, trimToStartSentence } from '../../utils.js';
+import { hideMutedSprites } from '../../group-chats.js';
 export { MODULE_NAME };
 
 const MODULE_NAME = 'expressions';
@@ -12,35 +12,35 @@ const UPDATE_INTERVAL = 2000;
 const STREAMING_UPDATE_INTERVAL = 6000;
 const FALLBACK_EXPRESSION = 'joy';
 const DEFAULT_EXPRESSIONS = [
-    "talkinghead",
-    "admiration",
-    "amusement",
-    "anger",
-    "annoyance",
-    "approval",
-    "caring",
-    "confusion",
-    "curiosity",
-    "desire",
-    "disappointment",
-    "disapproval",
-    "disgust",
-    "embarrassment",
-    "excitement",
-    "fear",
-    "gratitude",
-    "grief",
-    "joy",
-    "love",
-    "nervousness",
-    "optimism",
-    "pride",
-    "realization",
-    "relief",
-    "remorse",
-    "sadness",
-    "surprise",
-    "neutral"
+    'talkinghead',
+    'admiration',
+    'amusement',
+    'anger',
+    'annoyance',
+    'approval',
+    'caring',
+    'confusion',
+    'curiosity',
+    'desire',
+    'disappointment',
+    'disapproval',
+    'disgust',
+    'embarrassment',
+    'excitement',
+    'fear',
+    'gratitude',
+    'grief',
+    'joy',
+    'love',
+    'nervousness',
+    'optimism',
+    'pride',
+    'realization',
+    'relief',
+    'remorse',
+    'sadness',
+    'surprise',
+    'neutral'
 ];
 
 let expressionsList = null;
@@ -445,7 +445,7 @@ function handleImageChange() {
     const imgElement = document.querySelector('img#expression-image.expression');
 
     if (!imgElement || !(imgElement instanceof HTMLImageElement)) {
-        console.log("Cannot find addExpressionImage()");
+        console.log('Cannot find addExpressionImage()');
         return;
     }
 
@@ -471,7 +471,7 @@ function handleImageChange() {
             }
         }
     } else {
-        imgElement.src = ""; //remove incase char doesnt have expressions
+        imgElement.src = ''; //remove incase char doesnt have expressions
         setExpression(getContext().name2, FALLBACK_EXPRESSION, true);
     }
 }
@@ -509,7 +509,7 @@ async function moduleWorker() {
     if (vnStateChanged) {
         lastMessage = null;
         $('#visual-novel-wrapper').empty();
-        $("#expression-holder").css({ top: '', left: '', right: '', bottom: '', height: '', width: '', margin: '' });
+        $('#expression-holder').css({ top: '', left: '', right: '', bottom: '', height: '', width: '', margin: '' });
     }
 
     const currentLastMessage = getLastCharacterMessage();
@@ -687,7 +687,7 @@ function getFolderNameByMessage(message) {
         return '';
     }
 
-    const folderName = avatarPath.replace(/\.[^/.]+$/, "");
+    const folderName = avatarPath.replace(/\.[^/.]+$/, '');
     return folderName;
 }
 
@@ -716,7 +716,7 @@ async function setSpriteSetCommand(_, folder) {
         folder = `${currentLastMessage.name}/${folder}`;
     }
 
-    $("#expression_override").val(folder.trim());
+    $('#expression_override').val(folder.trim());
     onClickExpressionOverrideButton();
     removeExpression();
     moduleWorker();
@@ -1037,7 +1037,7 @@ async function setExpression(character, expression, force) {
                 //add new sprite path to clone src
                 expressionClone.attr('src', sprite.path);
                 //add invisible clone to html
-                expressionClone.appendTo($("#expression-holder"))
+                expressionClone.appendTo($('#expression-holder'))
 
                 const duration = 200;
 
@@ -1105,7 +1105,7 @@ async function setExpression(character, expression, force) {
             img.attr('src', defImgUrl);
             img.addClass('default');
         }
-        document.getElementById("expression-holder").style.display = '';
+        document.getElementById('expression-holder').style.display = '';
 
     } else {
 
@@ -1203,7 +1203,7 @@ async function onClickExpressionRemoveCustom() {
 async function handleFileUpload(url, formData) {
     try {
         const data = await jQuery.ajax({
-            type: "POST",
+            type: 'POST',
             url: url,
             data: formData,
             beforeSend: function () { },
@@ -1266,7 +1266,7 @@ async function onClickExpressionOverrideButton() {
         return;
     }
 
-    const overridePath = String($("#expression_override").val());
+    const overridePath = String($('#expression_override').val());
     const existingOverrideIndex = extension_settings.expressionOverrides.findIndex((e) =>
         e.name == avatarFileName
     );
@@ -1317,7 +1317,7 @@ async function onClickExpressionOverrideRemoveAllButton() {
     extension_settings.expressionOverrides = [];
     saveSettingsDebounced();
 
-    console.debug("All expression image overrides have been cleared.");
+    console.debug('All expression image overrides have been cleared.');
 
     // Refresh sprites list to use the default name if applicable
     try {
@@ -1365,7 +1365,7 @@ async function onClickExpressionDelete(event) {
     // Prevents the expression from being set
     event.stopPropagation();
 
-    const confirmation = await callPopup("<h3>Are you sure?</h3>Once deleted, it's gone forever!", 'confirm');
+    const confirmation = await callPopup('<h3>Are you sure?</h3>Once deleted, it\'s gone forever!', 'confirm');
 
     if (!confirmation) {
         return;
@@ -1401,13 +1401,13 @@ function setExpressionOverrideHtml(forceClear = false) {
     );
 
     if (expressionOverride && expressionOverride.path) {
-        $("#expression_override").val(expressionOverride.path);
+        $('#expression_override').val(expressionOverride.path);
     } else if (expressionOverride) {
         delete extension_settings.expressionOverrides[expressionOverride.name];
     }
 
     if (forceClear && !expressionOverride) {
-        $("#expression_override").val("");
+        $('#expression_override').val('');
     }
 }
 
@@ -1450,8 +1450,8 @@ function setExpressionOverrideHtml(forceClear = false) {
         $(document).on('click', '.expression_list_item', onClickExpressionImage);
         $(document).on('click', '.expression_list_upload', onClickExpressionUpload);
         $(document).on('click', '.expression_list_delete', onClickExpressionDelete);
-        $(window).on("resize", updateVisualNovelModeDebounced);
-        $("#open_chat_expressions").hide();
+        $(window).on('resize', updateVisualNovelModeDebounced);
+        $('#open_chat_expressions').hide();
 
         $('#image_type_toggle').on('click', function () {
             if (this instanceof HTMLInputElement) {
@@ -1472,7 +1472,7 @@ function setExpressionOverrideHtml(forceClear = false) {
     const updateFunction = wrapper.update.bind(wrapper);
     setInterval(updateFunction, UPDATE_INTERVAL);
     moduleWorker();
-    dragElement($("#expression-holder"))
+    dragElement($('#expression-holder'))
     eventSource.on(event_types.CHAT_CHANGED, () => {
         // character changed
         removeExpression();
@@ -1481,7 +1481,7 @@ function setExpressionOverrideHtml(forceClear = false) {
         //clear expression
         let imgElement = document.getElementById('expression-image');
         if (imgElement && imgElement instanceof HTMLImageElement) {
-            imgElement.src = "";
+            imgElement.src = '';
         }
 
         //set checkbox to global var

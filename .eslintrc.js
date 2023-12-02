@@ -47,14 +47,15 @@ module.exports = {
     ],
     // There are various vendored libraries that shouldn't be linted
     ignorePatterns: ['public/lib/**/*', '*.min.js', 'src/ai_horde/**/*'],
-    // Most, if not all, of these rules should eventually be enabled and the code changed. They're disabled so that
-    // linting passes.
     rules: {
         'no-unused-vars': ['error', {args: 'none'}],
         'no-control-regex': 'off',
+        'no-constant-condition': ['error', {checkLoops: false}],
+        'require-yield': 'off',
+        'quotes': ['error', 'single'],
+
+        // These rules should eventually be enabled.
         'no-async-promise-executor': 'off',
         'no-inner-declarations': 'off',
-        'require-yield': 'off',
-        'no-constant-condition': ['error', {checkLoops: false}]
     }
 };

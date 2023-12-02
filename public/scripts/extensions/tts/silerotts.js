@@ -1,5 +1,5 @@
-import { doExtrasFetch, getApiUrl, modules } from "../../extensions.js"
-import { saveTtsProviderSettings } from "./index.js"
+import { doExtrasFetch, getApiUrl, modules } from '../../extensions.js'
+import { saveTtsProviderSettings } from './index.js'
 
 export { SileroTtsProvider }
 
@@ -14,7 +14,7 @@ class SileroTtsProvider {
     separator = ' .. '
 
     defaultSettings = {
-        provider_endpoint: "http://localhost:8001/tts",
+        provider_endpoint: 'http://localhost:8001/tts',
         voiceMap: {}
     }
 
@@ -38,7 +38,7 @@ class SileroTtsProvider {
     async loadSettings(settings) {
         // Pupulate Provider UI given input settings
         if (Object.keys(settings).length == 0) {
-            console.info("Using default TTS Provider settings")
+            console.info('Using default TTS Provider settings')
         }
 
         // Only accept keys defined in defaultSettings
@@ -64,12 +64,12 @@ class SileroTtsProvider {
         }, 2000);
 
         $('#silero_tts_endpoint').val(this.settings.provider_endpoint)
-        $('#silero_tts_endpoint').on("input", () => { this.onSettingsChange() })
+        $('#silero_tts_endpoint').on('input', () => { this.onSettingsChange() })
         this.refreshSession()
 
         await this.checkReady()
 
-        console.debug("SileroTTS: Settings loaded")
+        console.debug('SileroTTS: Settings loaded')
     }
 
     // Perform a simple readiness check by trying to fetch voiceIds
@@ -130,9 +130,9 @@ class SileroTtsProvider {
                     'Cache-Control': 'no-cache'  // Added this line to disable caching of file so new files are always played - Rolyat 7/7/23
                 },
                 body: JSON.stringify({
-                    "text": inputText,
-                    "speaker": voiceId,
-                    "session": "sillytavern"
+                    'text': inputText,
+                    'speaker': voiceId,
+                    'session': 'sillytavern'
                 })
             }
         )
@@ -144,7 +144,7 @@ class SileroTtsProvider {
     }
 
     async initSession() {
-        console.info(`Silero TTS: requesting new session`);
+        console.info('Silero TTS: requesting new session');
         try {
             const response = await doExtrasFetch(
                 `${this.settings.provider_endpoint}/session`,
@@ -155,7 +155,7 @@ class SileroTtsProvider {
                         'Cache-Control': 'no-cache',
                     },
                     body: JSON.stringify({
-                        "path": "sillytavern",
+                        'path': 'sillytavern',
                     }),
                 }
             )

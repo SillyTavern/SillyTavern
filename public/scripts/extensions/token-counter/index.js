@@ -1,15 +1,15 @@
-import { callPopup, main_api } from "../../../script.js";
-import { getContext } from "../../extensions.js";
-import { registerSlashCommand } from "../../slash-commands.js";
-import { getFriendlyTokenizerName, getTextTokens, getTokenCount, tokenizers } from "../../tokenizers.js";
-import { resetScrollHeight } from "../../utils.js";
+import { callPopup, main_api } from '../../../script.js';
+import { getContext } from '../../extensions.js';
+import { registerSlashCommand } from '../../slash-commands.js';
+import { getFriendlyTokenizerName, getTextTokens, getTokenCount, tokenizers } from '../../tokenizers.js';
+import { resetScrollHeight } from '../../utils.js';
 
 function rgb2hex(rgb) {
     rgb = rgb.match(/^rgba?[\s+]?\([\s+]?(\d+)[\s+]?,[\s+]?(\d+)[\s+]?,[\s+]?(\d+)[\s+]?/i);
-    return (rgb && rgb.length === 4) ? "#" +
-        ("0" + parseInt(rgb[1], 10).toString(16)).slice(-2) +
-        ("0" + parseInt(rgb[2], 10).toString(16)).slice(-2) +
-        ("0" + parseInt(rgb[3], 10).toString(16)).slice(-2) : '';
+    return (rgb && rgb.length === 4) ? '#' +
+        ('0' + parseInt(rgb[1], 10).toString(16)).slice(-2) +
+        ('0' + parseInt(rgb[2], 10).toString(16)).slice(-2) +
+        ('0' + parseInt(rgb[3], 10).toString(16)).slice(-2) : '';
 }
 
 $('button').click(function () {

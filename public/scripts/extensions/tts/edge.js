@@ -1,8 +1,8 @@
-import { getRequestHeaders } from "../../../script.js"
-import { getApiUrl } from "../../extensions.js"
-import { doExtrasFetch, modules } from "../../extensions.js"
-import { getPreviewString } from "./index.js"
-import { saveTtsProviderSettings } from "./index.js"
+import { getRequestHeaders } from '../../../script.js'
+import { getApiUrl } from '../../extensions.js'
+import { doExtrasFetch, modules } from '../../extensions.js'
+import { getPreviewString } from './index.js'
+import { saveTtsProviderSettings } from './index.js'
 
 export { EdgeTtsProvider }
 
@@ -37,7 +37,7 @@ class EdgeTtsProvider {
     async loadSettings(settings) {
         // Pupulate Provider UI given input settings
         if (Object.keys(settings).length == 0) {
-            console.info("Using default TTS Provider settings")
+            console.info('Using default TTS Provider settings')
         }
 
         // Only accept keys defined in defaultSettings
@@ -53,10 +53,10 @@ class EdgeTtsProvider {
 
         $('#edge_tts_rate').val(this.settings.rate || 0);
         $('#edge_tts_rate_output').text(this.settings.rate || 0);
-        $('#edge_tts_rate').on("input", () => {this.onSettingsChange()})
+        $('#edge_tts_rate').on('input', () => {this.onSettingsChange()})
         await this.checkReady()
 
-        console.debug("EdgeTTS: Settings loaded")
+        console.debug('EdgeTTS: Settings loaded')
     }
 
 
@@ -99,7 +99,7 @@ class EdgeTtsProvider {
         throwIfModuleMissing()
 
         const url = new URL(getApiUrl());
-        url.pathname = `/api/edge-tts/list`
+        url.pathname = '/api/edge-tts/list'
         const response = await doExtrasFetch(url)
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${await response.text()}`)
@@ -133,15 +133,15 @@ class EdgeTtsProvider {
 
         console.info(`Generating new TTS for voice_id ${voiceId}`)
         const url = new URL(getApiUrl());
-        url.pathname = `/api/edge-tts/generate`;
+        url.pathname = '/api/edge-tts/generate';
         const response = await doExtrasFetch(url,
             {
                 method: 'POST',
                 headers: getRequestHeaders(),
                 body: JSON.stringify({
-                    "text": inputText,
-                    "voice": voiceId,
-                    "rate": Number(this.settings.rate),
+                    'text': inputText,
+                    'voice': voiceId,
+                    'rate': Number(this.settings.rate),
                 })
             }
         )
@@ -154,7 +154,7 @@ class EdgeTtsProvider {
 }
 function throwIfModuleMissing() {
     if (!modules.includes('edge-tts')) {
-        const message = `Edge TTS module not loaded. Add edge-tts to enable-modules and restart the Extras API.`
+        const message = 'Edge TTS module not loaded. Add edge-tts to enable-modules and restart the Extras API.'
         // toastr.error(message)
         throw new Error(message)
     }

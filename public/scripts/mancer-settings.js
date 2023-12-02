@@ -1,6 +1,6 @@
-import { setGenerationParamsFromPreset } from "../script.js";
-import { getDeviceInfo } from "./RossAscends-mods.js";
-import { textgenerationwebui_settings } from "./textgen-settings.js";
+import { setGenerationParamsFromPreset } from '../script.js';
+import { getDeviceInfo } from './RossAscends-mods.js';
+import { textgenerationwebui_settings } from './textgen-settings.js';
 
 let models = [];
 

@@ -12,8 +12,8 @@ import {
     getCharacters,
     chat,
     saveChatConditional,
-} from "../script.js";
-import { humanizedDateTime } from "./RossAscends-mods.js";
+} from '../script.js';
+import { humanizedDateTime } from './RossAscends-mods.js';
 import {
     getGroupPastChats,
     group_activation_strategy,
@@ -22,13 +22,13 @@ import {
     openGroupChat,
     saveGroupBookmarkChat,
     selected_group,
-} from "./group-chats.js";
-import { createTagMapFromList } from "./tags.js";
+} from './group-chats.js';
+import { createTagMapFromList } from './tags.js';
 
 import {
     delay,
     getUniqueName,
-} from "./utils.js";
+} from './utils.js';
 
 export {
     createNewBookmark,
@@ -42,7 +42,7 @@ async function getExistingChatNames() {
         const data = await getGroupPastChats(selected_group);
         return data.map(x => x.file_name);
     } else {
-        const response = await fetch("/getallchatsofcharacter", {
+        const response = await fetch('/getallchatsofcharacter', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({ avatar_url: characters[this_chid].avatar })
@@ -97,29 +97,29 @@ function getMainChatName() {
 function showBookmarksButtons() {
     try {
         if (selected_group) {
-            $("#option_convert_to_group").hide();
+            $('#option_convert_to_group').hide();
         } else {
-            $("#option_convert_to_group").show();
+            $('#option_convert_to_group').show();
         }
 
         if (chat_metadata['main_chat']) {
             // In bookmark chat
-            $("#option_back_to_main").show();
-            $("#option_new_bookmark").show();
+            $('#option_back_to_main').show();
+            $('#option_new_bookmark').show();
         } else if (!selected_group && !characters[this_chid].chat) {
             // No chat recorded on character
-            $("#option_back_to_main").hide();
-            $("#option_new_bookmark").hide();
+            $('#option_back_to_main').hide();
+            $('#option_new_bookmark').hide();
         } else {
             // In main chat
-            $("#option_back_to_main").hide();
-            $("#option_new_bookmark").show();
+            $('#option_back_to_main').hide();
+            $('#option_new_bookmark').show();
         }
     }
     catch {
-        $("#option_back_to_main").hide();
-        $("#option_new_bookmark").hide();
-        $("#option_convert_to_group").hide();
+        $('#option_back_to_main').hide();
+        $('#option_new_bookmark').hide();
+        $('#option_convert_to_group').hide();
     }
 }
 
@@ -251,8 +251,8 @@ async function convertSoloToGroupChat() {
     const metadata = Object.assign({}, chat_metadata);
     delete metadata.main_chat;
 
-    const createGroupResponse = await fetch("/creategroup", {
-        method: "POST",
+    const createGroupResponse = await fetch('/creategroup', {
+        method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
             name: name,
@@ -276,7 +276,7 @@ async function convertSoloToGroupChat() {
     const group = await createGroupResponse.json();
 
     // Convert tags list and assign to group
-    createTagMapFromList("#tagList", group.id);
+    createTagMapFromList('#tagList', group.id);
 
     // Update chars list
     await getCharacters();
@@ -320,8 +320,8 @@ async function convertSoloToGroupChat() {
     }
 
     // Save group chat
-    const createChatResponse = await fetch("/savegroupchat", {
-        method: "POST",
+    const createChatResponse = await fetch('/savegroupchat', {
+        method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({ id: chatName, chat: groupChat }),
     });

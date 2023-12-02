@@ -1,7 +1,7 @@
-import { getContext } from "./extensions.js";
-import { getRequestHeaders } from "../script.js";
-import { isMobile } from "./RossAscends-mods.js";
-import { collapseNewlines } from "./power-user.js";
+import { getContext } from './extensions.js';
+import { getRequestHeaders } from '../script.js';
+import { isMobile } from './RossAscends-mods.js';
+import { collapseNewlines } from './power-user.js';
 
 /**
  * Pagination status string template.
@@ -126,7 +126,7 @@ export function shuffle(array) {
  * @param {string} contentType File content type.
  */
 export function download(content, fileName, contentType) {
-    const a = document.createElement("a");
+    const a = document.createElement('a');
     const file = new Blob([content], { type: contentType });
     a.href = URL.createObjectURL(file);
     a.download = fileName;
@@ -283,7 +283,7 @@ export function throttle(func, limit = 300) {
  * @returns {boolean} True if the element is in the viewport, false otherwise.
  */
 export function isElementInViewport(el) {
-    if (typeof jQuery === "function" && el instanceof jQuery) {
+    if (typeof jQuery === 'function' && el instanceof jQuery) {
         el = el[0];
     }
     var rect = el.getBoundingClientRect();
@@ -435,16 +435,16 @@ export async function resetScrollHeight(element) {
 export async function initScrollHeight(element) {
     await delay(1);
 
-    const curHeight = Number($(element).css("height").replace('px', ''));
-    const curScrollHeight = Number($(element).prop("scrollHeight"));
+    const curHeight = Number($(element).css('height').replace('px', ''));
+    const curScrollHeight = Number($(element).prop('scrollHeight'));
     const diff = curScrollHeight - curHeight;
 
     if (diff < 3) { return } //happens when the div isn't loaded yet
 
     const newHeight = curHeight + diff + 3; //the +3 here is to account for padding/line-height on text inputs
     //console.log(`init height to ${newHeight}`);
-    $(element).css("height", "");
-    $(element).css("height", `${newHeight}px`);
+    $(element).css('height', '');
+    $(element).css('height', `${newHeight}px`);
     //resetScrollHeight(element);
 }
 
@@ -494,10 +494,10 @@ export function trimToEndSentence(input, include_newline = false) {
 }
 
 export function trimToStartSentence(input) {
-    let p1 = input.indexOf(".");
-    let p2 = input.indexOf("!");
-    let p3 = input.indexOf("?");
-    let p4 = input.indexOf("\n");
+    let p1 = input.indexOf('.');
+    let p2 = input.indexOf('!');
+    let p3 = input.indexOf('?');
+    let p4 = input.indexOf('\n');
     let first = p1;
     let skip1 = false;
     if (p2 > 0 && p2 < first) { first = p2; }
@@ -609,7 +609,7 @@ export function timestampToMoment(timestamp) {
     // ST "humanized" format pattern
     const pattern1 = /(\d{4})-(\d{1,2})-(\d{1,2}) @(\d{1,2})h (\d{1,2})m (\d{1,2})s (\d{1,3})ms/;
     const replacement1 = (match, year, month, day, hour, minute, second, millisecond) => {
-        return `${year.padStart(4, "0")}-${month.padStart(2, "0")}-${day.padStart(2, "0")}T${hour.padStart(2, "0")}:${minute.padStart(2, "0")}:${second.padStart(2, "0")}.${millisecond.padStart(3, "0")}Z`;
+        return `${year.padStart(4, '0')}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hour.padStart(2, '0')}:${minute.padStart(2, '0')}:${second.padStart(2, '0')}.${millisecond.padStart(3, '0')}Z`;
     };
     const isoTimestamp1 = timestamp.replace(pattern1, replacement1);
     if (moment(isoTimestamp1).isValid()) {
@@ -619,9 +619,9 @@ export function timestampToMoment(timestamp) {
     // New format pattern: "June 19, 2023 4:13pm"
     const pattern2 = /(\w+)\s(\d{1,2}),\s(\d{4})\s(\d{1,2}):(\d{1,2})(am|pm)/i;
     const replacement2 = (match, month, day, year, hour, minute, meridiem) => {
-        const monthNum = moment().month(month).format("MM");
+        const monthNum = moment().month(month).format('MM');
         const hour24 = meridiem.toLowerCase() === 'pm' ? (parseInt(hour, 10) % 12) + 12 : parseInt(hour, 10) % 12;
-        return `${year}-${monthNum}-${day.padStart(2, "0")}T${hour24.toString().padStart(2, "0")}:${minute.padStart(2, "0")}:00`;
+        return `${year}-${monthNum}-${day.padStart(2, '0')}T${hour24.toString().padStart(2, '0')}:${minute.padStart(2, '0')}:00`;
     };
     const isoTimestamp2 = timestamp.replace(pattern2, replacement2);
     if (moment(isoTimestamp2).isValid()) {
@@ -703,7 +703,7 @@ export function getCharaFilename(chid) {
     const fileName = context.characters[chid ?? context.characterId].avatar;
 
     if (fileName) {
-        return fileName.replace(/\.[^/.]+$/, "")
+        return fileName.replace(/\.[^/.]+$/, '')
     }
 }
 
@@ -806,13 +806,13 @@ export class RateLimiter {
  * @returns {object} The extracted JSON object.
  */
 export function extractDataFromPng(data, identifier = 'chara') {
-    console.log("Attempting PNG import...");
+    console.log('Attempting PNG import...');
     let uint8 = new Uint8Array(4);
     let uint32 = new Uint32Array(uint8.buffer);
 
     //check if png header is valid
     if (!data || data[0] !== 0x89 || data[1] !== 0x50 || data[2] !== 0x4E || data[3] !== 0x47 || data[4] !== 0x0D || data[5] !== 0x0A || data[6] !== 0x1A || data[7] !== 0x0A) {
-        console.log("PNG header invalid")
+        console.log('PNG header invalid')
         return null;
     }
 
@@ -889,7 +889,7 @@ export function extractDataFromPng(data, identifier = 'chara') {
 
     //find the chunk with the chara name, just check first and last letter
     let found = chunks.filter(x => (
-        x.name == "tEXt"
+        x.name == 'tEXt'
         && x.data.length > identifier.length
         && x.data.slice(0, identifier.length).every((v, i) => String.fromCharCode(v) == identifier[i])));
 
@@ -898,7 +898,7 @@ export function extractDataFromPng(data, identifier = 'chara') {
         return null;
     } else {
         try {
-            let b64buf = "";
+            let b64buf = '';
             let bytes = found[0].data; //skip the chara
             for (let i = identifier.length + 1; i < bytes.length; i++) {
                 b64buf += String.fromCharCode(bytes[i]);
@@ -907,7 +907,7 @@ export function extractDataFromPng(data, identifier = 'chara') {
             console.log(decoded);
             return decoded;
         } catch (e) {
-            console.log("Error decoding b64 in image: " + e);
+            console.log('Error decoding b64 in image: ' + e);
             return null;
         }
     }
@@ -923,7 +923,7 @@ export function extractDataFromPng(data, identifier = 'chara') {
  * @returns {Promise<string>} - Resolves to the saved image's path on the server.
  *                              Rejects with an error if the upload fails.
  */
-export async function saveBase64AsFile(base64Data, characterName, filename = "", ext) {
+export async function saveBase64AsFile(base64Data, characterName, filename = '', ext) {
     // Construct the full data URL
     const format = ext; // Extract the file extension (jpg, png, webp)
     const dataURL = `data:image/${format};base64,${base64Data}`;
@@ -966,22 +966,22 @@ export function loadFileToDocument(url, type) {
     return new Promise((resolve, reject) => {
         let element;
 
-        if (type === "css") {
-            element = document.createElement("link");
-            element.rel = "stylesheet";
+        if (type === 'css') {
+            element = document.createElement('link');
+            element.rel = 'stylesheet';
             element.href = url;
-        } else if (type === "js") {
-            element = document.createElement("script");
+        } else if (type === 'js') {
+            element = document.createElement('script');
             element.src = url;
         } else {
-            reject("Invalid type specified");
+            reject('Invalid type specified');
             return;
         }
 
         element.onload = resolve;
         element.onerror = reject;
 
-        type === "css"
+        type === 'css'
             ? document.head.appendChild(element)
             : document.body.appendChild(element);
     });
