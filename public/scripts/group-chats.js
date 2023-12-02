@@ -1277,7 +1277,7 @@ function select_group_chats(groupId, skipAnimation) {
     const replyStrategy = Number(group?.activation_strategy ?? group_activation_strategy.NATURAL);
     const generationMode = Number(group?.generation_mode ?? group_generation_mode.SWAP);
 
-    setMenuType(!!group ? 'group_edit' : 'group_create');
+    setMenuType(group ? 'group_edit' : 'group_create');
     $("#group_avatar_preview").empty().append(getGroupAvatar(group));
     $("#rm_group_restore_avatar").toggle(!!group && isValidImageUrl(group.avatar_url));
     $("#rm_group_filter").val("").trigger("input");

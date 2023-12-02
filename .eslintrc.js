@@ -58,7 +58,6 @@ module.exports = {
         'no-inner-declarations': 'off',
         'no-undef': 'off',
         'no-prototype-builtins': 'off',
-        'no-extra-boolean-cast': 'off',
         'require-yield': 'off',
         'no-constant-condition': ['error', {checkLoops: false}]
     }

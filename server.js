@@ -464,7 +464,7 @@ app.post("/generate", jsonParser, async function (request, response_generate) {
             grammar: request.body.grammar,
             sampler_seed: request.body.sampler_seed,
         };
-        if (!!request.body.stop_sequence) {
+        if (request.body.stop_sequence) {
             this_settings['stop_sequence'] = request.body.stop_sequence;
         }
     }

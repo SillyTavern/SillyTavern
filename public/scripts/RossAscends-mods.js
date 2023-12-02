@@ -819,7 +819,7 @@ export function initRossMods() {
         //console.log('setting pin class via local var');
         $(RightNavPanel).addClass('pinnedOpen');
     }
-    if (!!$(RPanelPin).prop('checked')) {
+    if ($(RPanelPin).prop('checked')) {
         console.debug('setting pin class via checkbox state');
         $(RightNavPanel).addClass('pinnedOpen');
     }
@@ -829,7 +829,7 @@ export function initRossMods() {
         //console.log('setting pin class via local var');
         $(LeftNavPanel).addClass('pinnedOpen');
     }
-    if (!!$(LPanelPin).prop('checked')) {
+    if ($(LPanelPin).prop('checked')) {
         console.debug('setting pin class via checkbox state');
         $(LeftNavPanel).addClass('pinnedOpen');
     }
@@ -841,7 +841,7 @@ export function initRossMods() {
         $(WorldInfo).addClass('pinnedOpen');
     }
 
-    if (!!$(WIPanelPin).prop('checked')) {
+    if ($(WIPanelPin).prop('checked')) {
         console.debug('setting pin class via checkbox state');
         $(WorldInfo).addClass('pinnedOpen');
     }

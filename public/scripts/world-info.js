@@ -855,7 +855,7 @@ function getWorldEntry(name, data, entry) {
 
     // Character filter
     const characterFilterLabel = template.find(`label[for="characterFilter"] > small`);
-    characterFilterLabel.text(!!(entry.characterFilter?.isExclude) ? "Exclude Character(s)" : "Filter to Character(s)");
+    characterFilterLabel.text(entry.characterFilter?.isExclude ? "Exclude Character(s)" : "Filter to Character(s)");
 
     // exclude characters checkbox
     const characterExclusionInput = template.find(`input[name="character_exclusion"]`);
