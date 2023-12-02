@@ -1285,10 +1285,10 @@ async function charaWrite(img_url, data, target_img, response = undefined, mes =
         for (let tEXtChunk of tEXtChunks) {
             chunks.splice(chunks.indexOf(tEXtChunk), 1);
         }
-        // Add new chunks before the IEND chunk
+        // Add new chunks before the IEND chunk
         const base64EncodedData = Buffer.from(data, 'utf8').toString('base64');
         chunks.splice(-1, 0, PNGtext.encode('chara', base64EncodedData));
-        //chunks.splice(-1, 0, text.encode('lorem', 'ipsum'));
+        //chunks.splice(-1, 0, text.encode('lorem', 'ipsum'));
 
         writeFileAtomicSync(charactersPath + target_img + '.png', Buffer.from(encode(chunks)));
         if (response !== undefined) response.send(mes);
