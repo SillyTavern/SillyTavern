@@ -129,10 +129,6 @@ const listen = getConfigValue('listen', false);
 const API_OPENAI = "https://api.openai.com/v1";
 const API_CLAUDE = "https://api.anthropic.com/v1";
 
-// These should be gone and come from the frontend. But for now, they're here.
-let api_server = "http://0.0.0.0:5000";
-let main_api = "kobold";
-
 let characters = {};
 let response_dw_bg;
 
@@ -390,6 +386,10 @@ app.get('/version', async function (_, response) {
 app.post("/generate", jsonParser, async function (request, response_generate) {
     if (!request.body) return response_generate.sendStatus(400);
 
+    if (request.body.api_server.indexOf('localhost') != -1) {
+        request.body.api_server = request.body.api_server.replace('localhost', '127.0.0.1');
+    }
+
     const request_prompt = request.body.prompt;
     const controller = new AbortController();
     request.socket.removeAllListeners('close');
@@ -398,7 +398,7 @@ app.post("/generate", jsonParser, async function (request, response_generate) {
             try {
                 console.log('Aborting Kobold generation...');
                 // send abort signal to koboldcpp
-                const abortResponse = await fetch(`${api_server}/extra/abort`, {
+                const abortResponse = await fetch(`${request.body.api_server}/extra/abort`, {
                     method: 'POST',
                 });
 
@@ -461,7 +461,7 @@ app.post("/generate", jsonParser, async function (request, response_generate) {
         body: JSON.stringify(this_settings),
         headers: Object.assign(
             { "Content-Type": "application/json" },
-            getOverrideHeaders((new URL(api_server))?.host)
+            getOverrideHeaders((new URL(request.body.api_server))?.host)
         ),
         signal: controller.signal,
     };
@@ -470,7 +470,7 @@ app.post("/generate", jsonParser, async function (request, response_generate) {
     const delayAmount = 2500;
     for (let i = 0; i < MAX_RETRIES; i++) {
         try {
-            const url = request.body.streaming ? `${api_server}/extra/generate/stream` : `${api_server}/v1/generate`;
+            const url = request.body.streaming ? `${request.body.api_server}/extra/generate/stream` : `${request.body.api_server}/v1/generate`;
             const response = await fetch(url, { method: 'POST', timeout: 0, ...args });
 
             if (request.body.streaming) {
@@ -781,8 +781,7 @@ app.post("/getchat", jsonParser, function (request, response) {
 // Only called for kobold
 app.post("/getstatus", jsonParser, async function (request, response) {
     if (!request.body) return response.sendStatus(400);
-    api_server = request.body.api_server;
-    main_api = request.body.main_api;
+    let api_server = request.body.api_server;
     if (api_server.indexOf('localhost') != -1) {
         api_server = api_server.replace('localhost', '127.0.0.1');
     }
@@ -797,7 +796,7 @@ app.post("/getstatus", jsonParser, async function (request, response) {
     let version = '';
     let koboldVersion = {};
 
-    if (main_api == "kobold") {
+    if (request.body.main_api == "kobold") {
         try {
             version = (await fetchJSON(api_server + "/v1/info/version")).result
         }
