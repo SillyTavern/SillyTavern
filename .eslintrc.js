@@ -68,7 +68,6 @@ module.exports = {
         'no-unsafe-negation': 'off',
         'no-constant-condition': 'off',
         'no-empty': 'off',
-        'no-unsafe-finally': 'off',
-        'no-dupe-keys': 'off'
+        'no-unsafe-finally': 'off'
     }
 };
