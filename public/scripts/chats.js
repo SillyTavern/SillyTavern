@@ -152,7 +152,7 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
  */
 export async function uploadFileAttachment(fileName, base64Data) {
     try {
-        const result = await fetch('/api/file/upload', {
+        const result = await fetch('/api/assets/upload', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({

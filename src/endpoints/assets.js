@@ -297,7 +297,7 @@ function registerEndpoints(app, jsonParser) {
         }
     });
 
-    app.post('/api/file/upload', jsonParser, async (request, response) => {
+    app.post('/api/assets/upload', jsonParser, async (request, response) => {
         try {
             if (!request.body.name) {
                 return response.status(400).send('No upload name specified');
