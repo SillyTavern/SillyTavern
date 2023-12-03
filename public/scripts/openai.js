@@ -1496,6 +1496,7 @@ async function sendOpenAIRequest(type, messages, signal) {
         'stream': stream,
         'logit_bias': logit_bias,
         'stop': getCustomStoppingStrings(openai_max_stop_strings),
+        'chat_completion_source': oai_settings.chat_completion_source,
     };
 
     // Empty array will produce a validation error
@@ -1516,7 +1517,6 @@ async function sendOpenAIRequest(type, messages, signal) {
     }
 
     if (isClaude) {
-        generate_data['use_claude'] = true;
         generate_data['top_k'] = Number(oai_settings.top_k_openai);
         generate_data['exclude_assistant'] = oai_settings.exclude_assistant;
         generate_data['stop'] = getCustomStoppingStrings(); // Claude shouldn't have limits on stop strings.
@@ -1527,7 +1527,6 @@ async function sendOpenAIRequest(type, messages, signal) {
     }
 
     if (isOpenRouter) {
-        generate_data['use_openrouter'] = true;
         generate_data['top_k'] = Number(oai_settings.top_k_openai);
         generate_data['use_fallback'] = oai_settings.openrouter_use_fallback;
 
@@ -1537,20 +1536,17 @@ async function sendOpenAIRequest(type, messages, signal) {
     }
 
     if (isScale) {
-        generate_data['use_scale'] = true;
         generate_data['api_url_scale'] = oai_settings.api_url_scale;
     }
 
     if (isPalm) {
         const nameStopString = isImpersonate ? `\n${name2}:` : `\n${name1}:`;
         const stopStringsLimit = 3; // 5 - 2 (nameStopString and new_chat_prompt)
-        generate_data['use_palm'] = true;
         generate_data['top_k'] = Number(oai_settings.top_k_openai);
         generate_data['stop'] = [nameStopString, oai_settings.new_chat_prompt, ...getCustomStoppingStrings(stopStringsLimit)];
     }
 
     if (isAI21) {
-        generate_data['use_ai21'] = true;
         generate_data['top_k'] = Number(oai_settings.top_k_openai);
         generate_data['count_pen'] = Number(oai_settings.count_pen);
         generate_data['stop_tokens'] = [name1 + ':', oai_settings.new_chat_prompt, oai_settings.new_group_chat_prompt];
@@ -2463,10 +2459,10 @@ async function getStatusOpen() {
     let data = {
         reverse_proxy: oai_settings.reverse_proxy,
         proxy_password: oai_settings.proxy_password,
-        use_openrouter: oai_settings.chat_completion_source == chat_completion_sources.OPENROUTER,
+        chat_completion_source: oai_settings.chat_completion_source,
     };
 
-    if (oai_settings.reverse_proxy && !data.use_openrouter) {
+    if (oai_settings.reverse_proxy && oai_settings.chat_completion_source !== chat_completion_sources.OPENROUTER) {
         validateReverseProxy();
     }
 

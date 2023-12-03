@@ -132,6 +132,16 @@ const PALM_SAFETY = [
     },
 ];
 
+const CHAT_COMPLETION_SOURCES = {
+    OPENAI: 'openai',
+    WINDOWAI: 'windowai',
+    CLAUDE: 'claude',
+    SCALE: 'scale',
+    OPENROUTER: 'openrouter',
+    AI21: 'ai21',
+    PALM: 'palm',
+};
+
 const UPLOADS_PATH = './uploads';
 
 // TODO: this is copied from the client code; there should be a way to de-duplicate it eventually
@@ -149,4 +159,5 @@ module.exports = {
     UPLOADS_PATH,
     PALM_SAFETY,
     TEXTGEN_TYPES,
+    CHAT_COMPLETION_SOURCES,
 };
