@@ -239,12 +239,12 @@ function getCustomTokenBans() {
     return result.filter(onlyUnique).map(x => String(x)).join(',');
 }
 
-function loadTextGenSettings(data, settings) {
+function loadTextGenSettings(data, loadedSettings) {
     textgenerationwebui_presets = convertPresets(data.textgenerationwebui_presets);
     textgenerationwebui_preset_names = data.textgenerationwebui_preset_names ?? [];
-    Object.assign(settings, settings.textgenerationwebui_settings ?? {});
+    Object.assign(settings, loadedSettings.textgenerationwebui_settings ?? {});
 
-    if (settings.api_use_mancer_webui) {
+    if (loadedSettings.api_use_mancer_webui) {
         settings.type = MANCER;
     }
 
