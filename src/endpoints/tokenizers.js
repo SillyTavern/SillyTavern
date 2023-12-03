@@ -365,7 +365,7 @@ async function loadTokenizers() {
  * @param {any} jsonParser JSON parser middleware
  */
 function registerEndpoints(app, jsonParser) {
-    app.post('/api/tokenize/ai21', jsonParser, async function (req, res) {
+    app.post('/api/tokenizers/ai21/count', jsonParser, async function (req, res) {
         if (!req.body) return res.sendStatus(400);
         const options = {
             method: 'POST',
@@ -387,20 +387,20 @@ function registerEndpoints(app, jsonParser) {
         }
     });
 
-    app.post('/api/tokenize/llama', jsonParser, createSentencepieceEncodingHandler(spp_llama));
-    app.post('/api/tokenize/nerdstash', jsonParser, createSentencepieceEncodingHandler(spp_nerd));
-    app.post('/api/tokenize/nerdstash_v2', jsonParser, createSentencepieceEncodingHandler(spp_nerd_v2));
-    app.post('/api/tokenize/mistral', jsonParser, createSentencepieceEncodingHandler(spp_mistral));
-    app.post('/api/tokenize/yi', jsonParser, createSentencepieceEncodingHandler(spp_yi));
-    app.post('/api/tokenize/gpt2', jsonParser, createTiktokenEncodingHandler('gpt2'));
-    app.post('/api/decode/llama', jsonParser, createSentencepieceDecodingHandler(spp_llama));
-    app.post('/api/decode/nerdstash', jsonParser, createSentencepieceDecodingHandler(spp_nerd));
-    app.post('/api/decode/nerdstash_v2', jsonParser, createSentencepieceDecodingHandler(spp_nerd_v2));
-    app.post('/api/decode/mistral', jsonParser, createSentencepieceDecodingHandler(spp_mistral));
-    app.post('/api/decode/yi', jsonParser, createSentencepieceDecodingHandler(spp_yi));
-    app.post('/api/decode/gpt2', jsonParser, createTiktokenDecodingHandler('gpt2'));
+    app.post('/api/tokenizers/llama/encode', jsonParser, createSentencepieceEncodingHandler(spp_llama));
+    app.post('/api/tokenizers/nerdstash/encode', jsonParser, createSentencepieceEncodingHandler(spp_nerd));
+    app.post('/api/tokenizers/nerdstash_v2/encode', jsonParser, createSentencepieceEncodingHandler(spp_nerd_v2));
+    app.post('/api/tokenizers/mistral/encode', jsonParser, createSentencepieceEncodingHandler(spp_mistral));
+    app.post('/api/tokenizers/yi/encode', jsonParser, createSentencepieceEncodingHandler(spp_yi));
+    app.post('/api/tokenizers/gpt2/encode', jsonParser, createTiktokenEncodingHandler('gpt2'));
+    app.post('/api/tokenizers/llama/decode', jsonParser, createSentencepieceDecodingHandler(spp_llama));
+    app.post('/api/tokenizers/nerdstash/decode', jsonParser, createSentencepieceDecodingHandler(spp_nerd));
+    app.post('/api/tokenizers/nerdstash_v2/decode', jsonParser, createSentencepieceDecodingHandler(spp_nerd_v2));
+    app.post('/api/tokenizers/mistral/decode', jsonParser, createSentencepieceDecodingHandler(spp_mistral));
+    app.post('/api/tokenizers/yi/decode', jsonParser, createSentencepieceDecodingHandler(spp_yi));
+    app.post('/api/tokenizers/gpt2/decode', jsonParser, createTiktokenDecodingHandler('gpt2'));
 
-    app.post('/api/tokenize/openai-encode', jsonParser, async function (req, res) {
+    app.post('/api/tokenizers/openai/encode', jsonParser, async function (req, res) {
         try {
             const queryModel = String(req.query.model || '');
 
@@ -435,7 +435,7 @@ function registerEndpoints(app, jsonParser) {
         }
     });
 
-    app.post('/api/decode/openai', jsonParser, async function (req, res) {
+    app.post('/api/tokenizers/openai/decode', jsonParser, async function (req, res) {
         try {
             const queryModel = String(req.query.model || '');
 
@@ -469,7 +469,7 @@ function registerEndpoints(app, jsonParser) {
         }
     });
 
-    app.post('/api/tokenize/openai', jsonParser, async function (req, res) {
+    app.post('/api/tokenizers/openai/count', jsonParser, async function (req, res) {
         try {
             if (!req.body) return res.sendStatus(400);
 
