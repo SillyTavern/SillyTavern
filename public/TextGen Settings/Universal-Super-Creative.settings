@@ -46,7 +46,5 @@
         3,
         4
     ],
-    "rep_pen_size": 0,
-    "genamt": 512,
-    "max_length": 4096
+    "rep_pen_size": 0
 }
