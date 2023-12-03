@@ -3466,8 +3466,9 @@
                             </div>
                         </div>
                         <hr>
-                        <div id="description_div" class="marginBot5">
+                        <div id="description_div" class="marginBot5 flex-container alignitemscenter">
                             <span data-i18n="Character Description">Description</span>
+                            <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="description_textarea" title="Expand the editor"></i>
                             <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#character-description" class="notes-link" target="_blank">
                                 <span class="fa-solid fa-circle-question note-link-span"></span>
                             </a>
@@ -3477,12 +3478,13 @@
                             Tokens: <span data-token-counter="description_textarea" data-token-permanent="true">counting...</span>
                         </div>
                         <div id="first_message_div" class="marginBot5 title_restorable">
-                            <span>
+                            <div class="flex-container alignitemscenter">
                                 <span data-i18n="First message">First message</span>
+                                <i class="editor_maximize fa-solid fa-maximize right_menu_button" data-for="firstmessage_textarea" title="Expand the editor"></i>
                                 <a href="https://docs.sillytavern.app/usage/core-concepts/characterdesign/#first-message" class="notes-link" target="_blank">
                                     <span class="fa-solid fa-circle-question note-link-span"></span>
                                 </a>
-                            </span>
+                            </div>
                             <div class="menu_button menu_button_icon open_alternate_greetings margin0" title="Click to set additional greeting messages" data-i18n="[title]Click to set additional greeting messages">
                                 <span data-i18n="Alt. Greetings">
                                     Alt. Greetings
@@ -4466,7 +4468,7 @@
                 <strong>Alternate Greeting #<span class="greeting_index"></span></strong>
                 <div class="menu_button fa-solid fa-trash-alt delete_alternate_greeting"></div>
             </div>
-            <textarea name="alternate_greetings" data-i18n="[placeholder](This will be the first message from the character that starts every chat)" placeholder="(This will be the first message from the character that starts every chat)" class="text_pole textarea_compact alternate_greeting_text" maxlength="50000" value="" autocomplete="off" rows="4"></textarea>
+            <textarea name="alternate_greetings" data-i18n="[placeholder](This will be the first message from the character that starts every chat)" placeholder="(This will be the first message from the character that starts every chat)" class="text_pole textarea_compact alternate_greeting_text" maxlength="50000" value="" autocomplete="off" rows="12"></textarea>
         </div>
     </div>
     <!-- chat and input bar -->

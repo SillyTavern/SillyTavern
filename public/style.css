@@ -1145,7 +1145,6 @@ input[type="file"] {
     display: block;
     cursor: pointer;
     text-align: center;
-    padding-right: 20px;
     margin-top: 0;
     filter: grayscale(1) brightness(75%);
     -webkit-transition: all 0.5s ease-in-out;

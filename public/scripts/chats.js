@@ -377,6 +377,25 @@ jQuery(function () {
         embedMessageFile(messageId, messageBlock);
     });
 
+    $(document).on('click', '.editor_maximize', function () {
+        const broId = $(this).data('for');
+        const bro = $(`#${broId}`);
+
+        if (!bro.length) {
+            console.error('Could not find editor with id', broId);
+            return;
+        }
+
+        const textarea = document.createElement('textarea');
+        textarea.value = String(bro.val());
+        textarea.classList.add('height100p');
+        textarea.oninput = function () {
+            bro.val(textarea.value).trigger('input');
+        };
+
+        callPopup(textarea, 'text', '', { wide: true, large: true });
+    });
+
     $('#file_form_input').on('change', onFileAttach);
     $('#file_form').on('reset', function () {
         $('#file_form').addClass('displayNone');
