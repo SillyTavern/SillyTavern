@@ -49,7 +49,7 @@ export {
 
 export const MAX_CONTEXT_DEFAULT = 8192;
 const MAX_CONTEXT_UNLOCKED = 200 * 1000;
-const unlockedMaxContextStep = 1024;
+const unlockedMaxContextStep = 512;
 const maxContextMin = 512;
 const maxContextStep = 256;
 

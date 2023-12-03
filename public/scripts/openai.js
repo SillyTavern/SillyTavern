@@ -3238,6 +3238,8 @@ async function onModelChange() {
         $('#top_k_openai').attr('max', 200).val(oai_settings.top_k_openai).trigger('input');
     }
 
+    $('#openai_max_context_counter').attr('max', Number($('#openai_max_context').attr('max')));
+
     saveSettingsDebounced();
     eventSource.emit(event_types.CHATCOMPLETION_MODEL_CHANGED, value);
 }
@@ -3546,6 +3548,7 @@ $(document).ready(async function () {
         oai_settings.use_ai21_tokenizer ? ai21_max = 8191 : ai21_max = 9200;
         oai_settings.openai_max_context = Math.min(ai21_max, oai_settings.openai_max_context);
         $('#openai_max_context').attr('max', ai21_max).val(oai_settings.openai_max_context).trigger('input');
+        $('#openai_max_context_counter').attr('max', Number($('#openai_max_context').attr('max')));
         saveSettingsDebounced();
     });
 
