@@ -38,7 +38,7 @@ import {
     INJECTION_POSITION,
     Prompt,
     promptManagerDefaultPromptOrders,
-    PromptManagerModule as PromptManager,
+    PromptManager,
 } from './PromptManager.js';
 
 import { getCustomStoppingStrings, persona_description_positions, power_user } from './power-user.js';
@@ -458,7 +458,7 @@ function setOpenAIMessageExamples(mesExamplesArray) {
  * One-time setup for prompt manager module.
  *
  * @param openAiSettings
- * @returns {PromptManagerModule|null}
+ * @returns {PromptManager|null}
  */
 function setupChatCompletionPromptManager(openAiSettings) {
     // Do not set up prompt manager more than once
