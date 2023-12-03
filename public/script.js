@@ -4375,7 +4375,7 @@ function extractMultiSwipes(data, type) {
         return swipes;
     }
 
-    if (main_api === 'textgenerationwebui' && textgenerationwebui_settings.type === textgen_types.APHRODITE) {
+    if (main_api === 'textgenerationwebui' && textgen_settings.type === textgen_types.APHRODITE) {
         const multiSwipeCount = data.choices.length - 1;
 
         if (multiSwipeCount <= 0) {
