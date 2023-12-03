@@ -321,4 +321,4 @@ router.post('/upload', jsonParser, async (request, response) => {
     }
 });
 
-module.exports = { router };
+module.exports = { router, checkAssetFileName };

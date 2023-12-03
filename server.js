@@ -3598,6 +3598,9 @@ app.use('/api/extensions', require('./src/endpoints/extensions').router);
 // Asset management
 app.use('/api/assets', require('./src/endpoints/assets').router);
 
+// File management
+app.use('/api/files', require('./src/endpoints/files').router);
+
 // Character sprite management
 app.use('/api/sprites', require('./src/endpoints/sprites').router);
 
