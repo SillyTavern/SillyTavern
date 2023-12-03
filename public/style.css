@@ -1252,10 +1252,6 @@ input[type="file"] {
     align-self: center;
 }
 
-#rm_print_characters_block.bulk_select .wide100pLess70px {
-    width: calc(100% - 85px);
-}
-
 #rm_print_characters_block .empty_block {
     display: flex;
     flex-direction: column;
@@ -1545,6 +1541,7 @@ input[type=search]:focus::-webkit-search-cancel-button {
     padding: 5px;
     border-radius: 10px;
     cursor: pointer;
+    margin-bottom: 1px;
 }
 
 /*applies to char list and mes_text char display name*/
@@ -2509,7 +2506,7 @@ input[type="range"]::-webkit-slider-thumb {
     cursor: pointer;
     transition: 0.3s ease-in-out;
     filter: drop-shadow(0px 0px 2px black);
-    opacity: 0.2;
+    opacity: 0.3;
 }
 
 .mes_buttons .mes_edit:hover,

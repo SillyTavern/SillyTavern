@@ -8673,9 +8673,12 @@ jQuery(async function () {
 
                     // Transition the .extraMesButtonsHint back in
                     $('.extraMesButtonsHint:not(:visible)').show().transition({
-                        opacity: .2,
+                        opacity: .3,
                         duration: 150,
                         easing: 'ease-in-out',
+                        complete: function () {
+                            $(this).css('opacity', '');
+                        },
                     });
                 },
             });
