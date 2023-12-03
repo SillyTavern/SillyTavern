@@ -291,7 +291,7 @@ function registerEndpoints(app, jsonParser) {
         }
     });
 
-    app.post('/api/sd-next/upscalers', jsonParser, async (request, response) => {
+    app.post('/api/sd/next/upscalers', jsonParser, async (request, response) => {
         try {
             const url = new URL(request.body.url);
             url.pathname = '/sdapi/v1/upscalers';
