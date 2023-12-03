@@ -523,7 +523,6 @@ async function switchZenSliders() {
 
 }
 async function CreateZenSliders(elmnt) {
-    //await delay(100)
     var originalSlider = elmnt;
     var sliderID = originalSlider.attr('id');
     var sliderMin = Number(originalSlider.attr('min'));
@@ -664,29 +663,28 @@ async function CreateZenSliders(elmnt) {
         step: stepScale,
         min: sliderMin,
         max: sliderMax,
-        create: function () {
+        create: async function () {
+            await delay(100)
             var handle = $(this).find('.ui-slider-handle');
             var handleText, stepNumber, leftMargin;
 
             //handling creation of amt_gen
             if (newSlider.attr('id') == 'amount_gen_zenslider') {
-                //console.log(`using custom process for ${newSlider.attr('id')}`)
                 handleText = steps[sliderValue];
                 stepNumber = sliderValue;
                 leftMargin = ((stepNumber) / numSteps) * 50 * -1;
                 handle.text(handleText)
                     .css('margin-left', `${leftMargin}px`);
                 //console.log(`${newSlider.attr('id')} initial value:${handleText}, stepNum:${stepNumber}, numSteps:${numSteps}, left-margin:${leftMargin}`)
-
-                //handling creation of rep_pen_range for ooba
-            } else if (newSlider.attr('id') == 'rep_pen_range_textgenerationwebui_zenslider') {
+            }
+            //handling creation of rep_pen_range for ooba
+            else if (newSlider.attr('id') == 'rep_pen_range_textgenerationwebui_zenslider') {
                 if ($('#rep_pen_range_textgenerationwebui_zensliders').length !== 0) {
                     $('#rep_pen_range_textgenerationwebui_zensliders').remove();
                 }
                 handleText = steps[sliderValue];
                 stepNumber = sliderValue;
                 leftMargin = ((stepNumber) / numSteps) * 50 * -1;
-
                 if (sliderValue === offVal) {
                     handleText = 'Off';
                     handle.css('color', 'rgba(128,128,128,0.5');
@@ -698,13 +696,11 @@ async function CreateZenSliders(elmnt) {
                 //console.log(sliderValue, handleText, offVal, allVal)
                 //console.log(`${newSlider.attr('id')} sliderValue = ${sliderValue}, handleText:${handleText}, stepNum:${stepNumber}, numSteps:${numSteps}, left-margin:${leftMargin}`)
                 originalSlider.val(steps[sliderValue]);
-                originalSlider.trigger('input');
-                originalSlider.trigger('change');
-            } else {
-                //handling creation for all other sliders
+            }
+            //create all other sliders
+            else {
                 var numVal = Number(sliderValue).toFixed(decimals);
                 offVal = Number(offVal).toFixed(decimals);
-                //console.log(`${sliderID}: offVal ${offVal}`)
                 if (numVal === offVal) {
                     handle.text('Off').css('color', 'rgba(128,128,128,0.5');
                 } else {
@@ -712,11 +708,15 @@ async function CreateZenSliders(elmnt) {
                 }
                 stepNumber = ((sliderValue - sliderMin) / stepScale);
                 leftMargin = (stepNumber / numSteps) * 50 * -1;
+                originalSlider.val(numVal)
+                    .data('newSlider', newSlider)
+                //console.log(`${newSlider.attr('id')} sliderValue = ${sliderValue}, handleText:${handleText, numVal}, stepNum:${stepNumber}, numSteps:${numSteps}, left-margin:${leftMargin}`)
                 var isManualInput = false;
                 var valueBeforeManualInput;
                 handle.css('margin-left', `${leftMargin}px`)
 
                     .attr('contenteditable', 'true')
+                    //these sliders need listeners for manual inputs
                     .on('click', function () {
                         //this just selects all the text in the handle so user can overwrite easily
                         //needed because JQUery UI uses left/right arrow keys as well as home/end to move the slider..
@@ -729,10 +729,15 @@ async function CreateZenSliders(elmnt) {
                         selection.removeAllRanges();
                         selection.addRange(range);
                     })
-                    .on('keyup', function () {
-                        valueBeforeManualInput = newSlider.val();
-                        console.log(valueBeforeManualInput);
+                    .on('keyup', function (e) {
+                        valueBeforeManualInput = numVal;
+                        //console.log(valueBeforeManualInput, numVal, handleText);
                         isManualInput = true;
+                        //allow enter to trigger slider update
+                        if (e.key === 'Enter') {
+                            e.preventDefault
+                            handle.trigger('blur')
+                        }
                     })
                     //trigger slider changes when user clicks away
                     .on('mouseup blur', function () {
@@ -750,15 +755,14 @@ async function CreateZenSliders(elmnt) {
                                 console.log(valueBeforeManualInput);
                                 newSlider.val(valueBeforeManualInput);
                                 handle.text(valueBeforeManualInput);
+                                handleSlideEvent.call(newSlider, null, { value: parseFloat(valueBeforeManualInput) }, 'manual');
                             }
                         }
                         isManualInput = false;
                     });
-                console.debug(sliderID, sliderValue, stepNumber, stepScale);
-                originalSlider.val(numVal);
-                originalSlider.trigger('input');
-                originalSlider.trigger('change');
             }
+            //zenSlider creation done, hide the original
+            originalSlider.hide();
         },
         slide: handleSlideEvent,
     });
@@ -769,14 +773,8 @@ async function CreateZenSliders(elmnt) {
         offVal = Number(offVal).toFixed(decimals);
         allVal = Number(allVal).toFixed(decimals);
         console.log(numVal, sliderMin, sliderMax, numVal > sliderMax, numVal < sliderMin);
-        if (numVal > sliderMax) {
-            //console.log('clamping numVal to sliderMax')
-            numVal = sliderMax;
-        }
-        if (numVal < sliderMin) {
-            //console.log('clamping numVal to sliderMin')
-            numVal = sliderMin;
-        }
+        if (numVal > sliderMax) { numVal = sliderMax; }
+        if (numVal < sliderMin) { numVal = sliderMin; }
         var stepNumber = ((ui.value - sliderMin) / stepScale).toFixed(0);
         var handleText = (ui.value);
         var leftMargin = (stepNumber / numSteps) * 50 * -1;
@@ -820,18 +818,13 @@ async function CreateZenSliders(elmnt) {
             newSlider.val(handleText);
         }
         //for manually typed-in values we must adjust left position because JQUI doesn't do it for us
-        //if (type === 'manual') {
         handle.css('left', leftPos);
-        //}
         //adjust a negative left margin to avoid overflowing right side of slider body
         handle.css('margin-left', `${leftMargin}px`);
-        originalSlider.val(handleText);
+        originalSlider.val(numVal);
         originalSlider.trigger('input');
         originalSlider.trigger('change');
     }
-    originalSlider.data('newSlider', newSlider);
-    await delay(1);
-    originalSlider.hide();
 }
 function switchUiMode() {
     const fastUi = localStorage.getItem(storage_keys.fast_ui_mode);
