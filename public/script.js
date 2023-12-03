@@ -76,6 +76,7 @@ import {
     loadMovingUIState,
     getCustomStoppingStrings,
     MAX_CONTEXT_DEFAULT,
+    MAX_RESPONSE_DEFAULT,
     renderStoryString,
     sortEntitiesList,
     registerDebugFunction,
@@ -5618,6 +5619,9 @@ async function saveSettings(type) {
 }
 
 export function setGenerationParamsFromPreset(preset) {
+    const needsUnlock = preset.max_length > MAX_CONTEXT_DEFAULT || preset.genamt > MAX_RESPONSE_DEFAULT;
+    $('#max_context_unlocked').prop('checked', needsUnlock).trigger('change');
+
     if (preset.genamt !== undefined) {
         amount_gen = preset.genamt;
         $('#amount_gen').val(amount_gen);
@@ -5625,10 +5629,7 @@ export function setGenerationParamsFromPreset(preset) {
     }
 
     if (preset.max_length !== undefined) {
-        const needsUnlock = preset.max_length > MAX_CONTEXT_DEFAULT;
-        $('#max_context_unlocked').prop('checked', needsUnlock).trigger('change');
         max_context = preset.max_length;
-
         $('#max_context').val(max_context);
         $('#max_context_counter').val(max_context);
     }
