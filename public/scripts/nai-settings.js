@@ -409,7 +409,8 @@ function getBadWordPermutations(text) {
     return result.filter(onlyUnique);
 }
 
-export function getNovelGenerationData(finalPrompt, settings, maxLength, isImpersonate, isContinue, cfgValues) {
+export function getNovelGenerationData(finalPrompt, settings, maxLength, isImpersonate, isContinue, cfgValues, type) {
+    console.debug('NovelAI generation data for', type);
     if (cfgValues && cfgValues.guidanceScale && cfgValues.guidanceScale?.value !== 1) {
         cfgValues.negativePrompt = (getCfgPrompt(cfgValues.guidanceScale, true))?.value;
     }
@@ -714,7 +715,7 @@ export async function generateNovelWithStreaming(generate_data, signal) {
                     if (subEvent.startsWith('data')) {
                         let data = JSON.parse(subEvent.substring(5));
                         getMessage += (data?.token || '');
-                        yield getMessage;
+                        yield { text: getMessage, swipes: [] };
                     }
                 }
             }

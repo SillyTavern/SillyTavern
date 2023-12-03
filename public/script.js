@@ -2536,6 +2536,13 @@ class StreamingProcessor {
     onProgressStreaming(messageId, text, isFinal) {
         const isImpersonate = this.type == 'impersonate';
         const isContinue = this.type == 'continue';
+
+        if (!isImpersonate && !isContinue && Array.isArray(this.swipes) && this.swipes.length > 0) {
+            for (let i = 0; i < this.swipes.length; i++) {
+                this.swipes[i] = cleanUpMessage(this.removePrefix(this.swipes[i]), false, false, true);
+            }
+        }
+
         text = this.removePrefix(text);
         let processedText = cleanUpMessage(text, isImpersonate, isContinue, !isFinal);
 
@@ -2597,6 +2604,21 @@ class StreamingProcessor {
         this.hideMessageButtons(this.messageId);
         this.onProgressStreaming(messageId, text, true);
         addCopyToCodeBlocks($(`#chat .mes[mesid="${messageId}"]`));
+
+        if (Array.isArray(this.swipes) && this.swipes.length > 0) {
+            const message = chat[messageId];
+            const swipeInfo = {
+                send_date: message.send_date,
+                gen_started: message.gen_started,
+                gen_finished: message.gen_finished,
+                extra: structuredClone(message.extra),
+            };
+            const swipeInfoArray = [];
+            swipeInfoArray.length = this.swipes.length;
+            swipeInfoArray.fill(swipeInfo);
+            chat[messageId].swipes.push(...this.swipes);
+            chat[messageId].swipe_info.push(...swipeInfoArray);
+        }
 
         if (this.type !== 'impersonate') {
             await eventSource.emit(event_types.MESSAGE_RECEIVED, this.messageId);
@@ -2683,6 +2705,7 @@ class StreamingProcessor {
         this.abortController = new AbortController();
         this.firstMessageText = '...';
         this.timeStarted = timeStarted;
+        this.swipes = [];
     }
 
     async generate() {
@@ -2693,13 +2716,14 @@ class StreamingProcessor {
         }
 
         try {
-            for await (const text of this.generator()) {
+            for await (const { text, swipes } of this.generator()) {
                 if (this.isStopped) {
                     this.onStopStreaming();
                     return;
                 }
 
                 this.result = text;
+                this.swipes = swipes;
                 this.onProgressStreaming(this.messageId, message_already_generated + text);
             }
         }
@@ -2750,11 +2774,11 @@ export async function generateRaw(prompt, api, instructOverride) {
             break;
         case 'novel': {
             const novelSettings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
-            generateData = getNovelGenerationData(prompt, novelSettings, amount_gen, false, false, null);
+            generateData = getNovelGenerationData(prompt, novelSettings, amount_gen, false, false, null, 'quiet');
             break;
         }
         case 'textgenerationwebui':
-            generateData = getTextGenGenerationData(prompt, amount_gen, false, false, null);
+            generateData = getTextGenGenerationData(prompt, amount_gen, false, false, null, 'quiet');
             break;
         case 'openai':
             generateData = [{ role: 'user', content: prompt.trim() }];
@@ -3564,11 +3588,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
             }
             else if (main_api == 'textgenerationwebui') {
-                generate_data = getTextGenGenerationData(finalPrompt, maxLength, isImpersonate, isContinue, cfgValues);
+                generate_data = getTextGenGenerationData(finalPrompt, maxLength, isImpersonate, isContinue, cfgValues, type);
             }
             else if (main_api == 'novel') {
                 const presetSettings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
-                generate_data = getNovelGenerationData(finalPrompt, presetSettings, maxLength, isImpersonate, isContinue, cfgValues);
+                generate_data = getNovelGenerationData(finalPrompt, presetSettings, maxLength, isImpersonate, isContinue, cfgValues, type);
             }
             else if (main_api == 'openai') {
                 let [prompt, counts] = await prepareOpenAIMessages({
@@ -3729,6 +3753,8 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                     let title = extractTitleFromData(data);
                     kobold_horde_model = title;
 
+                    const swipes = extractMultiSwipes(data, type);
+
                     messageChunk = cleanUpMessage(getMessage, isImpersonate, isContinue, false);
 
                     if (isContinue) {
@@ -3751,10 +3777,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         else {
                             // Without streaming we'll be having a full message on continuation. Treat it as a last chunk.
                             if (originalType !== 'continue') {
-                                ({ type, getMessage } = await saveReply(type, getMessage, false, title));
+                                ({ type, getMessage } = await saveReply(type, getMessage, false, title, swipes));
                             }
                             else {
-                                ({ type, getMessage } = await saveReply('appendFinal', getMessage, false, title));
+                                ({ type, getMessage } = await saveReply('appendFinal', getMessage, false, title, swipes));
                             }
                         }
                         activateSendButtons();
@@ -4337,6 +4363,35 @@ function extractMessageFromData(data) {
     }
 }
 
+/**
+ * Extracts multiswipe swipes from the response data.
+ * @param {Object} data Response data
+ * @param {string} type Type of generation
+ * @returns {string[]} Array of extra swipes
+ */
+function extractMultiSwipes(data, type) {
+    const swipes = [];
+
+    if (type === 'continue' || type === 'impersonate' || type === 'quiet') {
+        return swipes;
+    }
+
+    if (main_api === 'textgenerationwebui' && textgenerationwebui_settings.type === textgen_types.APHRODITE) {
+        const multiSwipeCount = data.choices.length - 1;
+
+        if (multiSwipeCount <= 0) {
+            return swipes;
+        }
+
+        for (let i = 1; i < data.choices.length; i++) {
+            const text = cleanUpMessage(data.choices[i].text, false, false, false);
+            swipes.push(text);
+        }
+    }
+
+    return swipes;
+}
+
 function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncompleteSentences = false) {
     if (!getMessage) {
         return '';
@@ -4471,7 +4526,7 @@ function cleanUpMessage(getMessage, isImpersonate, isContinue, displayIncomplete
     return getMessage;
 }
 
-async function saveReply(type, getMessage, fromStreaming, title) {
+async function saveReply(type, getMessage, fromStreaming, title, swipes) {
     if (type != 'append' && type != 'continue' && type != 'appendFinal' && chat.length && (chat[chat.length - 1]['swipe_id'] === undefined ||
         chat[chat.length - 1]['is_user'])) {
         type = 'normal';
@@ -4605,6 +4660,21 @@ async function saveReply(type, getMessage, fromStreaming, title) {
             extra: JSON.parse(JSON.stringify(chat[chat.length - 1]['extra'])),
         };
     }
+
+    if (Array.isArray(swipes) && swipes.length > 0) {
+        const swipeInfo = {
+            send_date: item.send_date,
+            gen_started: item.gen_started,
+            gen_finished: item.gen_finished,
+            extra: structuredClone(item.extra),
+        };
+        const swipeInfoArray = [];
+        swipeInfoArray.length = swipes.length;
+        swipeInfoArray.fill(swipeInfo, 0, swipes.length);
+        item.swipes.push(...swipes);
+        item.swipe_info.push(...swipeInfoArray);
+    }
+
     statMesProcess(chat[chat.length - 1], type, characters, this_chid, oldMessage);
     return { type, getMessage };
 }

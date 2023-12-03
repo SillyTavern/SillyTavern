@@ -1614,7 +1614,7 @@ async function sendOpenAIRequest(type, messages, signal) {
                     let data = JSON.parse(event.substring(6));
                     // the first and last messages are undefined, protect against that
                     getMessage = getStreamingReply(getMessage, data);
-                    yield getMessage;
+                    yield { text: getMessage, swipes: [] };
                 }
 
                 if (done) {
