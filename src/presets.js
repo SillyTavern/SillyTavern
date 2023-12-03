@@ -3,6 +3,7 @@ const path = require('path');
 const sanitize = require('sanitize-filename');
 const writeFileAtomicSync = require('write-file-atomic').sync;
 const { DIRECTORIES } = require('./constants');
+const { getDefaultPresetFile, getDefaultPresets } = require('./content-manager');
 
 /**
  * Gets the folder and extension for the preset settings based on the API source ID.
@@ -73,6 +74,28 @@ function registerEndpoints(app, jsonParser) {
             return response.sendStatus(200);
         } else {
             return response.sendStatus(404);
+        }
+    });
+
+    app.post('/api/presets/restore', jsonParser, function (request, response) {
+        try {
+            const settings = getPresetSettingsByAPI(request.body.apiId);
+            const name = sanitize(request.body.name);
+            const defaultPresets = getDefaultPresets();
+
+            const defaultPreset = defaultPresets.find(p => p.name === name && p.folder === settings.folder);
+
+            const result = { isDefault: false, preset: {} };
+
+            if (defaultPreset) {
+                result.isDefault = true;
+                result.preset = getDefaultPresetFile(defaultPreset.filename) || {};
+            }
+
+            return response.send(result);
+        } catch (error) {
+            console.log(error);
+            return response.sendStatus(500);
         }
     });
 

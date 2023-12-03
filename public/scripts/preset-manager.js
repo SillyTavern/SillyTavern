@@ -117,10 +117,11 @@ class PresetManager {
     }
 
     async savePresetAs() {
+        const inputValue = this.getSelectedPresetName();
         const popupText = `
             <h3>Preset name:</h3>
             ${!this.isNonGenericApi() ? '<h4>Hint: Use a character/group name to bind preset to a specific chat.</h4>' : ''}`;
-        const name = await callPopup(popupText, 'input');
+        const name = await callPopup(popupText, 'input', inputValue);
 
         if (!name) {
             console.log('Preset name not provided');
@@ -314,11 +315,22 @@ class PresetManager {
             body: JSON.stringify({ name: nameToDelete, apiId: this.apiId }),
         });
 
+        return response.ok;
+    }
+
+    async getDefaultPreset(name) {
+        const response = await fetch('/api/presets/restore', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify({ name, apiId: this.apiId }),
+        });
+
         if (!response.ok) {
-            toastr.warning('Preset was not deleted from server');
-        } else {
-            toastr.success('Preset deleted');
+            toastr.error('Failed to restore default preset');
+            return;
         }
+
+        return await response.json();
     }
 }
 
@@ -417,7 +429,65 @@ jQuery(async () => {
             return;
         }
 
-        await presetManager.deleteCurrentPreset();
+        const result = await presetManager.deleteCurrentPreset();
+
+        if (result) {
+            toastr.success('Preset deleted');
+        } else {
+            toastr.warning('Preset was not deleted from server');
+        }
+
         saveSettingsDebounced();
+    });
+
+    $(document).on('click', '[data-preset-manager-restore]', async function() {
+        const apiId = $(this).data('preset-manager-restore');
+        const presetManager = getPresetManager(apiId);
+
+        if (!presetManager) {
+            console.warn(`Preset Manager not found for API: ${apiId}`);
+            return;
+        }
+
+        const name = presetManager.getSelectedPresetName();
+        const data = await presetManager.getDefaultPreset(name);
+
+        if (name == 'gui') {
+            toastr.info('Cannot restore GUI preset');
+            return;
+        }
+
+        if (!data) {
+            return;
+        }
+
+        if (data.isDefault) {
+            if (Object.keys(data.preset).length === 0) {
+                toastr.error('Default preset cannot be restored');
+                return;
+            }
+
+            const confirm = await callPopup('<h3>Are you sure?</h3>Resetting a <b>default preset</b> will restore the default settings.', 'confirm');
+
+            if (!confirm) {
+                return;
+            }
+
+            await presetManager.deleteCurrentPreset();
+            await presetManager.savePreset(name, data.preset);
+            const option = presetManager.findPreset(name);
+            presetManager.selectPreset(option);
+            toastr.success('Default preset restored');
+        } else {
+            const confirm = await callPopup('<h3>Are you sure?</h3>Resetting a <b>custom preset</b> will restore to the last saved state.', 'confirm');
+
+            if (!confirm) {
+                return;
+            }
+
+            const option = presetManager.findPreset(name);
+            presetManager.selectPreset(option);
+            toastr.success('Preset restored');
+        }
     });
 });

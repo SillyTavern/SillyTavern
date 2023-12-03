@@ -7,11 +7,56 @@ const contentDirectory = path.join(process.cwd(), 'default/content');
 const contentLogPath = path.join(contentDirectory, 'content.log');
 const contentIndexPath = path.join(contentDirectory, 'index.json');
 const { DIRECTORIES } = require('./constants');
+const presetFolders = [DIRECTORIES.koboldAI_Settings, DIRECTORIES.openAI_Settings, DIRECTORIES.novelAI_Settings, DIRECTORIES.textGen_Settings];
 
+/**
+ * Gets the default presets from the content directory.
+ * @returns {object[]} Array of default presets
+ */
+function getDefaultPresets() {
+    try {
+        const contentIndexText = fs.readFileSync(contentIndexPath, 'utf8');
+        const contentIndex = JSON.parse(contentIndexText);
+
+        const presets = [];
+
+        for (const contentItem of contentIndex) {
+            if (contentItem.type.endsWith('_preset')) {
+                contentItem.name = path.parse(contentItem.filename).name;
+                contentItem.folder = getTargetByType(contentItem.type);
+                presets.push(contentItem);
+            }
+        }
+
+        return presets;
+    } catch (err) {
+        console.log('Failed to get default presets', err);
+        return [];
+    }
+}
+
+/**
+ * Gets a default JSON file from the content directory.
+ * @param {string} filename Name of the file to get
+ * @returns {object | null} JSON object or null if the file doesn't exist
+ */
+function getDefaultPresetFile(filename) {
+    try {
+        const contentPath = path.join(contentDirectory, filename);
+
+        if (!fs.existsSync(contentPath)) {
+            return null;
+        }
+
+        const fileContent = fs.readFileSync(contentPath, 'utf8');
+        return JSON.parse(fileContent);
+    } catch (err) {
+        console.log(`Failed to get default file ${filename}`, err);
+        return null;
+    }
+}
 
 function migratePresets() {
-    const presetFolders = [DIRECTORIES.koboldAI_Settings, DIRECTORIES.openAI_Settings, DIRECTORIES.novelAI_Settings, DIRECTORIES.textGen_Settings];
-
     for (const presetFolder of presetFolders) {
         const presetPath = path.join(process.cwd(), presetFolder);
         const presetFiles = fs.readdirSync(presetPath);
@@ -20,9 +65,12 @@ function migratePresets() {
             const presetFilePath = path.join(presetPath, presetFile);
             const newFileName = presetFile.replace('.settings', '.json');
             const newFilePath = path.join(presetPath, newFileName);
+            const backupFileName = presetFolder.replace('/', '_') + '_' + presetFile;
+            const backupFilePath = path.join(DIRECTORIES.backups, backupFileName);
 
             if (presetFilePath.endsWith('.settings')) {
                 if (!fs.existsSync(newFilePath)) {
+                    fs.cpSync(presetFilePath, backupFilePath);
                     fs.cpSync(presetFilePath, newFilePath);
                     console.log(`Migrated ${presetFilePath} to ${newFilePath}`);
                 }
@@ -310,4 +358,6 @@ function registerEndpoints(app, jsonParser) {
 module.exports = {
     checkForNewContent,
     registerEndpoints,
+    getDefaultPresets,
+    getDefaultPresetFile,
 };
