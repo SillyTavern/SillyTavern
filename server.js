@@ -33,7 +33,6 @@ const DeviceDetector = require('device-detector-js');
 const fetch = require('node-fetch').default;
 const ipaddr = require('ipaddr.js');
 const ipMatching = require('ip-matching');
-const json5 = require('json5');
 
 // image processing related library imports
 const encode = require('png-chunks-encode');
@@ -851,7 +850,7 @@ app.post('/getstatus', jsonParser, async function (request, response) {
 
 function tryParse(str) {
     try {
-        return json5.parse(str);
+        return JSON.parse(str);
     } catch {
         return undefined;
     }
@@ -1088,7 +1087,7 @@ app.post('/renamecharacter', jsonParser, async function (request, response) {
         const rawOldData = await charaRead(oldAvatarPath);
         if (rawOldData === undefined) throw new Error('Failed to read character file');
 
-        const oldData = getCharaCardV2(json5.parse(rawOldData));
+        const oldData = getCharaCardV2(JSON.parse(rawOldData));
         _.set(oldData, 'data.name', newName);
         _.set(oldData, 'name', newName);
         const newData = JSON.stringify(oldData);
@@ -1374,7 +1373,7 @@ const processCharacter = async (item, i) => {
         const img_data = await charaRead(charactersPath + item);
         if (img_data === undefined) throw new Error('Failed to read character file');
 
-        let jsonObject = getCharaCardV2(json5.parse(img_data));
+        let jsonObject = getCharaCardV2(JSON.parse(img_data));
         jsonObject.avatar = item;
         characters[i] = jsonObject;
         characters[i]['json_data'] = img_data;
@@ -1671,7 +1670,7 @@ function readAndParseFromDirectory(directoryPath, fileExtension = '.json') {
     files.forEach(item => {
         try {
             const file = fs.readFileSync(path.join(directoryPath, item), 'utf-8');
-            parsedFiles.push(fileExtension == '.json' ? json5.parse(file) : file);
+            parsedFiles.push(fileExtension == '.json' ? JSON.parse(file) : file);
         }
         catch {
             // skip
@@ -1698,7 +1697,7 @@ function readPresetsFromDirectory(directoryPath, options = {}) {
     files.forEach(item => {
         try {
             const file = fs.readFileSync(path.join(directoryPath, item), 'utf8');
-            json5.parse(file);
+            JSON.parse(file);
             fileContents.push(file);
             fileNames.push(removeFileExtension ? item.replace(/\.[^/.]+$/, '') : item);
         } catch {
@@ -1893,7 +1892,7 @@ function readWorldInfoFile(worldInfoName) {
     }
 
     const worldInfoText = fs.readFileSync(pathToWorldInfo, 'utf8');
-    const worldInfo = json5.parse(worldInfoText);
+    const worldInfo = JSON.parse(worldInfoText);
     return worldInfo;
 }
 
@@ -2006,7 +2005,7 @@ app.post('/importcharacter', urlencodedParser, async function (request, response
                     response.send({ error: true });
                 }
 
-                let jsonData = json5.parse(data);
+                let jsonData = JSON.parse(data);
 
                 if (jsonData.spec !== undefined) {
                     console.log('importing from v2 json');
@@ -2077,7 +2076,7 @@ app.post('/importcharacter', urlencodedParser, async function (request, response
                 var img_data = await charaRead(uploadPath, format);
                 if (img_data === undefined) throw new Error('Failed to read character data');
 
-                let jsonData = json5.parse(img_data);
+                let jsonData = JSON.parse(img_data);
 
                 jsonData.name = sanitize(jsonData.data?.name || jsonData.name);
                 png_name = getPngName(jsonData.name);
@@ -2262,7 +2261,7 @@ app.post('/exportcharacter', jsonParser, async function (request, response) {
             try {
                 let json = await charaRead(filename);
                 if (json === undefined) return response.sendStatus(400);
-                let jsonObject = getCharaCardV2(json5.parse(json));
+                let jsonObject = getCharaCardV2(JSON.parse(json));
                 return response.type('json').send(jsonObject);
             }
             catch {
@@ -2311,7 +2310,7 @@ app.post('/importchat', urlencodedParser, function (request, response) {
         const data = fs.readFileSync(path.join(UPLOADS_PATH, filedata.filename), 'utf8');
 
         if (format === 'json') {
-            const jsonData = json5.parse(data);
+            const jsonData = JSON.parse(data);
             if (jsonData.histories !== undefined) {
                 //console.log('/importchat confirms JSON histories are defined');
                 const chat = {
@@ -2399,7 +2398,7 @@ app.post('/importchat', urlencodedParser, function (request, response) {
         if (format === 'jsonl') {
             const line = data.split('\n')[0];
 
-            let jsonData = json5.parse(line);
+            let jsonData = JSON.parse(line);
 
             if (jsonData.user_name !== undefined || jsonData.name !== undefined) {
                 fs.copyFileSync(path.join(UPLOADS_PATH, filedata.filename), (`${chatsPath + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()}.jsonl`));
@@ -2431,7 +2430,7 @@ app.post('/importworldinfo', urlencodedParser, (request, response) => {
     }
 
     try {
-        const worldContent = json5.parse(fileContents);
+        const worldContent = JSON.parse(fileContents);
         if (!('entries' in worldContent)) {
             throw new Error('File must contain a world info entries list');
         }
@@ -2597,7 +2596,7 @@ app.post('/getgroups', jsonParser, (_, response) => {
         try {
             const filePath = path.join(DIRECTORIES.groups, file);
             const fileContents = fs.readFileSync(filePath, 'utf8');
-            const group = json5.parse(fileContents);
+            const group = JSON.parse(fileContents);
             const groupStat = fs.statSync(filePath);
             group['date_added'] = groupStat.birthtimeMs;
             group['create_date'] = humanizedISO8601DateTime(groupStat.birthtimeMs);
@@ -2735,7 +2734,7 @@ app.post('/deletegroup', jsonParser, async (request, response) => {
 
     try {
         // Delete group chats
-        const group = json5.parse(fs.readFileSync(pathToGroup, 'utf8'));
+        const group = JSON.parse(fs.readFileSync(pathToGroup, 'utf8'));
 
         if (group && Array.isArray(group.chats)) {
             for (const chat of group.chats) {
