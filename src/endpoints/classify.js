@@ -9,7 +9,7 @@ function registerEndpoints(app, jsonParser) {
 
     app.post('/api/extra/classify/labels', jsonParser, async (req, res) => {
         try {
-            const module = await import('./transformers.mjs');
+            const module = await import('../transformers.mjs');
             const pipe = await module.default.getPipeline(TASK);
             const result = Object.keys(pipe.model.config.label2id);
             return res.json({ labels: result });
@@ -27,7 +27,7 @@ function registerEndpoints(app, jsonParser) {
                 if (Object.hasOwn(cacheObject, text)) {
                     return cacheObject[text];
                 } else {
-                    const module = await import('./transformers.mjs');
+                    const module = await import('../transformers.mjs');
                     const pipe = await module.default.getPipeline(TASK);
                     const result = await pipe(text, { topk: 5 });
                     result.sort((a, b) => b.score - a.score);
