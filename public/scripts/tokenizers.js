@@ -392,11 +392,10 @@ function getTokenCacheObject() {
 function getRemoteTokenizationParams(str) {
     return {
         text: str,
-        api: main_api,
+        main_api,
+        api_type: textgenerationwebui_settings.type,
         url: getAPIServerUrl(),
         legacy_api: main_api === 'textgenerationwebui' && textgenerationwebui_settings.legacy_api && !isMancer(),
-        use_tabby: main_api === 'textgenerationwebui' && isTabby(),
-        use_koboldcpp: main_api === 'textgenerationwebui' && isKoboldCpp(),
     };
 }
 

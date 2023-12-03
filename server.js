@@ -177,19 +177,24 @@ function getOverrideHeaders(urlHost) {
  * @param {string|null} server API server for new request
  */
 function setAdditionalHeaders(request, args, server) {
-    let headers = {};
+    let headers;
 
-    if (request.body.use_mancer) {
-        headers = getMancerHeaders();
-    } else if (request.body.use_aphrodite) {
-        headers = getAphroditeHeaders();
-    } else if (request.body.use_tabby) {
-        headers = getTabbyHeaders();
-    } else {
-        headers = server ? getOverrideHeaders((new URL(server))?.host) : {};
+    switch (request.body.api_type) {
+        case 'mancer':
+            headers = getMancerHeaders();
+            break;
+        case 'aphrodite':
+            headers = getAphroditeHeaders();
+            break;
+        case 'tabby':
+            headers = getTabbyHeaders();
+            break;
+        default:
+            headers = server ? getOverrideHeaders((new URL(server))?.host) : {};
+            break;
     }
 
-    args.headers = Object.assign(args.headers, headers);
+    Object.assign(args.headers, headers);
 }
 
 function humanizedISO8601DateTime(date) {
@@ -562,21 +567,20 @@ app.post('/api/textgenerationwebui/status', jsonParser, async function (request,
 
         if (request.body.legacy_api) {
             url += '/v1/model';
-        }
-        else if (request.body.use_ooba) {
-            url += '/v1/models';
-        }
-        else if (request.body.use_aphrodite) {
-            url += '/v1/models';
-        }
-        else if (request.body.use_mancer) {
-            url += '/oai/v1/models';
-        }
-        else if (request.body.use_tabby) {
-            url += '/v1/model/list';
-        }
-        else if (request.body.use_koboldcpp) {
-            url += '/v1/models';
+        } else {
+            switch (request.body.api_type) {
+                case 'ooba':
+                case 'aphrodite':
+                case 'koboldcpp':
+                    url += '/v1/models';
+                    break;
+                case 'mancer':
+                    url += '/oai/v1/models';
+                    break;
+                case 'tabby':
+                    url += '/v1/model/list';
+                    break;
+            }
         }
 
         const modelsReply = await fetch(url, args);
@@ -604,7 +608,7 @@ app.post('/api/textgenerationwebui/status', jsonParser, async function (request,
         // Set result to the first model ID
         result = modelIds[0] || 'Valid';
 
-        if (request.body.use_ooba) {
+        if (request.body.api_type === 'ooba') {
             try {
                 const modelInfoUrl = baseUrl + '/v1/internal/model/info';
                 const modelInfoReply = await fetch(modelInfoUrl, args);
@@ -619,9 +623,7 @@ app.post('/api/textgenerationwebui/status', jsonParser, async function (request,
             } catch (error) {
                 console.error(`Failed to get Ooba model info: ${error}`);
             }
-        }
-
-        if (request.body.use_tabby) {
+        } else if (request.body.api_type === 'tabby') {
             try {
                 const modelInfoUrl = baseUrl + '/v1/model';
                 const modelInfoReply = await fetch(modelInfoUrl, args);
@@ -671,12 +673,18 @@ app.post('/api/textgenerationwebui/generate', jsonParser, async function (reques
 
         if (request.body.legacy_api) {
             url += '/v1/generate';
-        }
-        else if (request.body.use_aphrodite || request.body.use_ooba || request.body.use_tabby || request.body.use_koboldcpp) {
-            url += '/v1/completions';
-        }
-        else if (request.body.use_mancer) {
-            url += '/oai/v1/completions';
+        } else {
+            switch (request.body.api_type) {
+                case 'aphrodite':
+                case 'ooba':
+                case 'tabby':
+                case 'koboldcpp':
+                    url += '/v1/completions';
+                    break;
+                case 'mancer':
+                    url += '/oai/v1/completions';
+                    break;
+            }
         }
 
         const args = {
@@ -3471,7 +3479,7 @@ app.post('/tokenize_via_api', jsonParser, async function (request, response) {
         return response.sendStatus(400);
     }
     const text = String(request.body.text) || '';
-    const api = String(request.body.api);
+    const api = String(request.body.main_api);
     const baseUrl = String(request.body.url);
     const legacyApi = Boolean(request.body.legacy_api);
 
@@ -3490,18 +3498,21 @@ app.post('/tokenize_via_api', jsonParser, async function (request, response) {
             if (legacyApi) {
                 url += '/v1/token-count';
                 args.body = JSON.stringify({ 'prompt': text });
-            }
-            else if (request.body.use_tabby) {
-                url += '/v1/token/encode';
-                args.body = JSON.stringify({ 'text': text });
-            }
-            else if (request.body.use_koboldcpp) {
-                url += '/api/extra/tokencount';
-                args.body = JSON.stringify({ 'prompt': text });
-            }
-            else {
-                url += '/v1/internal/encode';
-                args.body = JSON.stringify({ 'text': text });
+            } else {
+                switch (request.body.api_type) {
+                    case 'tabby':
+                        url += '/v1/token/encode';
+                        args.body = JSON.stringify({ 'text': text });
+                        break;
+                    case 'koboldcpp':
+                        url += '/api/extra/tokencount';
+                        args.body = JSON.stringify({ 'prompt': text });
+                        break;
+                    default:
+                        url += '/v1/internal/encode';
+                        args.body = JSON.stringify({ 'text': text });
+                        break;
+                }
             }
 
             const result = await fetch(url, args);
