@@ -11,11 +11,11 @@ const sanitize = require('sanitize-filename');
 async function getVector(source, text) {
     switch (source) {
         case 'openai':
-            return require('./openai-vectors').getOpenAIVector(text);
+            return require('../openai-vectors').getOpenAIVector(text);
         case 'transformers':
-            return require('./embedding').getTransformersVector(text);
+            return require('../embedding').getTransformersVector(text);
         case 'palm':
-            return require('./palm-vectors').getPaLMVector(text);
+            return require('../palm-vectors').getPaLMVector(text);
     }
 
     throw new Error(`Unknown vector source ${source}`);
