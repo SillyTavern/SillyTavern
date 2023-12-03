@@ -6261,6 +6261,15 @@ function onScenarioOverrideRemoveClick() {
     $(this).closest('.scenario_override').find('.chat_scenario').val('').trigger('input');
 }
 
+/**
+ * Displays a blocking popup with a given text and type.
+ * @param {JQuery<HTMLElement>|string|Element} text - Text to display in the popup.
+ * @param {string} type
+ * @param {string} inputValue - Value to set the input to.
+ * @param {PopupOptions} options - Options for the popup.
+ * @typedef {{okButton?: string, rows?: number, wide?: boolean, large?: boolean }} PopupOptions - Options for the popup.
+ * @returns
+ */
 function callPopup(text, type, inputValue = '', { okButton, rows, wide, large } = {}) {
     dialogueCloseStop = true;
     if (type) {

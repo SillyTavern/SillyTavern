@@ -8,7 +8,8 @@ import {
     entitiesFilter,
     printCharacters,
 } from '../script.js';
-import { FILTER_TYPES } from './filters.js';
+// eslint-disable-next-line no-unused-vars
+import { FILTER_TYPES, FilterHelper } from './filters.js';
 
 import { groupCandidatesFilter, groups, selected_group } from './group-chats.js';
 import { download, onlyUnique, parseJsonFile, uuidv4 } from './utils.js';
@@ -283,6 +284,14 @@ function createNewTag(tagName) {
     return tag;
 }
 
+/**
+ * Appends a tag to the list element.
+ * @param {string} listElement List element selector.
+ * @param {object} tag Tag object.
+ * @param {TagOptions} options Options for the tag.
+ * @typedef {{removable?: boolean, selectable?: boolean, action?: function, isGeneralList?: boolean}} TagOptions
+ * @returns {void}
+ */
 function appendTagToList(listElement, tag, { removable, selectable, action, isGeneralList }) {
     if (!listElement) {
         return;

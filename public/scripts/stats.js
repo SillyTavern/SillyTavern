@@ -127,15 +127,13 @@ function createHtml(statsType, stats) {
 
 /**
  * Handles the user stats by getting them from the server, calculating the total and generating the HTML report.
- *
- * @param {Object} charStats - Object containing character statistics.
  */
 async function userStatsHandler() {
     // Get stats from server
     await getStats();
 
     // Calculate total stats
-    let totalStats = calculateTotalStats(charStats);
+    let totalStats = calculateTotalStats();
 
     // Create HTML with stats
     createHtml('User', totalStats);
@@ -144,7 +142,6 @@ async function userStatsHandler() {
 /**
  * Handles the character stats by getting them from the server and generating the HTML report.
  *
- * @param {Object} charStats - Object containing character statistics.
  * @param {Object} characters - Object containing character data.
  * @param {string} this_chid - The character id.
  */
@@ -173,9 +170,6 @@ async function characterStatsHandler(characters, this_chid) {
 
 /**
  * Fetches the character stats from the server.
- *
- * @param {Object} charStats - Object containing character statistics.
- * @returns {Object} - Object containing fetched character statistics.
  */
 async function getStats() {
     const response = await fetch('/getstats', {
@@ -231,13 +225,11 @@ function calculateGenTime(gen_started, gen_finished) {
     }
     let startDate = new Date(gen_started);
     let endDate = new Date(gen_finished);
-    return endDate - startDate;
+    return endDate.getTime() - startDate.getTime();
 }
 
 /**
  * Sends a POST request to the server to update the statistics.
- *
- * @param {Object} stats - The stats data to update.
  */
 async function updateStats() {
     const response = await fetch('/updatestats', {
@@ -248,7 +240,7 @@ async function updateStats() {
 
     if (response.status !== 200) {
         console.error('Failed to update stats');
-        console.log(response).status;
+        console.log(response.status);
     }
 }
 
@@ -271,7 +263,6 @@ function countWords(str) {
  * @param {string} type - The type of the message processing (e.g., 'append', 'continue', 'appendFinal', 'swipe').
  * @param {Object} characters - Object containing character data.
  * @param {string} this_chid - The character id.
- * @param {Object} charStats - Object containing character statistics.
  * @param {string} oldMesssage - The old message that's being processed.
  */
 async function statMesProcess(line, type, characters, this_chid, oldMesssage) {

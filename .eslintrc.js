@@ -1,31 +1,31 @@
 module.exports = {
     root: true,
     extends: [
-        'eslint:recommended'
+        'eslint:recommended',
     ],
     env: {
-        es6: true
+        es6: true,
     },
     parserOptions: {
-        ecmaVersion: 'latest'
+        ecmaVersion: 'latest',
     },
     overrides: [
         {
             // Server-side files (plus this configuration file)
             files: ['src/**/*.js', 'server.js', '.eslintrc.js'],
             env: {
-                node: true
-            }
+                node: true,
+            },
         },
         {
             // Browser-side files
             files: ['public/**/*.js'],
             env: {
                 browser: true,
-                jquery: true
+                jquery: true,
             },
             parserOptions: {
-                sourceType: 'module'
+                sourceType: 'module',
             },
             // These scripts are loaded in HTML; tell ESLint not to complain about them being undefined
             globals: {
@@ -41,9 +41,9 @@ module.exports = {
                 showdown: 'readonly',
                 showdownKatex: 'readonly',
                 SVGInject: 'readonly',
-                toastr: 'readonly'
-            }
-        }
+                toastr: 'readonly',
+            },
+        },
     ],
     // There are various vendored libraries that shouldn't be linted
     ignorePatterns: ['public/lib/**/*', '*.min.js', 'src/ai_horde/**/*'],
@@ -56,9 +56,11 @@ module.exports = {
         'semi': ['error', 'always'],
         'indent': ['error', 4, { SwitchCase: 1, FunctionDeclaration: { parameters: 'first' } }],
         'comma-dangle': ['error', 'always-multiline'],
+        'eol-last': ['error', 'always'],
+        'no-trailing-spaces': 'error',
 
         // These rules should eventually be enabled.
         'no-async-promise-executor': 'off',
         'no-inner-declarations': 'off',
-    }
+    },
 };
