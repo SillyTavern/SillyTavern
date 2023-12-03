@@ -178,7 +178,7 @@ class PromptCollection {
     }
 }
 
-class PromptManagerModule {
+class PromptManager {
     constructor() {
         this.systemPrompts = [
             'main',
@@ -284,13 +284,13 @@ class PromptManagerModule {
 
 
     /**
-     * Initializes the PromptManagerModule with provided configuration and service settings.
+     * Initializes the PromptManager with provided configuration and service settings.
      *
      * Sets up various handlers for user interactions, event listeners and initial rendering of prompts.
      * It is also responsible for preparing prompt edit form buttons, managing popup form close and clear actions.
      *
-     * @param {Object} moduleConfiguration - Configuration object for the PromptManagerModule.
-     * @param {Object} serviceSettings - Service settings object for the PromptManagerModule.
+     * @param {Object} moduleConfiguration - Configuration object for the PromptManager.
+     * @param {Object} serviceSettings - Service settings object for the PromptManager.
      */
     init(moduleConfiguration, serviceSettings) {
         this.configuration = Object.assign(this.configuration, moduleConfiguration);
@@ -1905,7 +1905,7 @@ const promptManagerDefaultPromptOrder = [
 ];
 
 export {
-    PromptManagerModule,
+    PromptManager,
     registerPromptManagerMigration,
     chatCompletionDefaultPrompts,
     promptManagerDefaultPromptOrders,
