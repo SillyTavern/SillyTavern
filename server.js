@@ -180,13 +180,13 @@ function setAdditionalHeaders(request, args, server) {
     let headers;
 
     switch (request.body.api_type) {
-        case 'mancer':
+        case TEXTGEN_TYPES.MANCER:
             headers = getMancerHeaders();
             break;
-        case 'aphrodite':
+        case TEXTGEN_TYPES.APHRODITE:
             headers = getAphroditeHeaders();
             break;
-        case 'tabby':
+        case TEXTGEN_TYPES.TABBY:
             headers = getTabbyHeaders();
             break;
         default:
@@ -217,7 +217,7 @@ const AVATAR_WIDTH = 400;
 const AVATAR_HEIGHT = 600;
 const jsonParser = express.json({ limit: '200mb' });
 const urlencodedParser = express.urlencoded({ extended: true, limit: '200mb' });
-const { DIRECTORIES, UPLOADS_PATH, PALM_SAFETY } = require('./src/constants');
+const { DIRECTORIES, UPLOADS_PATH, PALM_SAFETY, TEXTGEN_TYPES } = require('./src/constants');
 const { TavernCardValidator } = require('./src/validator/TavernCardValidator');
 
 // CSRF Protection //
@@ -569,15 +569,15 @@ app.post('/api/textgenerationwebui/status', jsonParser, async function (request,
             url += '/v1/model';
         } else {
             switch (request.body.api_type) {
-                case 'ooba':
-                case 'aphrodite':
-                case 'koboldcpp':
+                case TEXTGEN_TYPES.OOBA:
+                case TEXTGEN_TYPES.APHRODITE:
+                case TEXTGEN_TYPES.KOBOLDCPP:
                     url += '/v1/models';
                     break;
-                case 'mancer':
+                case TEXTGEN_TYPES.MANCER:
                     url += '/oai/v1/models';
                     break;
-                case 'tabby':
+                case TEXTGEN_TYPES.TABBY:
                     url += '/v1/model/list';
                     break;
             }
@@ -608,7 +608,7 @@ app.post('/api/textgenerationwebui/status', jsonParser, async function (request,
         // Set result to the first model ID
         result = modelIds[0] || 'Valid';
 
-        if (request.body.api_type === 'ooba') {
+        if (request.body.api_type === TEXTGEN_TYPES.OOBA) {
             try {
                 const modelInfoUrl = baseUrl + '/v1/internal/model/info';
                 const modelInfoReply = await fetch(modelInfoUrl, args);
@@ -623,7 +623,7 @@ app.post('/api/textgenerationwebui/status', jsonParser, async function (request,
             } catch (error) {
                 console.error(`Failed to get Ooba model info: ${error}`);
             }
-        } else if (request.body.api_type === 'tabby') {
+        } else if (request.body.api_type === TEXTGEN_TYPES.TABBY) {
             try {
                 const modelInfoUrl = baseUrl + '/v1/model';
                 const modelInfoReply = await fetch(modelInfoUrl, args);
@@ -675,13 +675,13 @@ app.post('/api/textgenerationwebui/generate', jsonParser, async function (reques
             url += '/v1/generate';
         } else {
             switch (request.body.api_type) {
-                case 'aphrodite':
-                case 'ooba':
-                case 'tabby':
-                case 'koboldcpp':
+                case TEXTGEN_TYPES.APHRODITE:
+                case TEXTGEN_TYPES.OOBA:
+                case TEXTGEN_TYPES.TABBY:
+                case TEXTGEN_TYPES.KOBOLDCPP:
                     url += '/v1/completions';
                     break;
-                case 'mancer':
+                case TEXTGEN_TYPES.MANCER:
                     url += '/oai/v1/completions';
                     break;
             }
@@ -3500,11 +3500,11 @@ app.post('/tokenize_via_api', jsonParser, async function (request, response) {
                 args.body = JSON.stringify({ 'prompt': text });
             } else {
                 switch (request.body.api_type) {
-                    case 'tabby':
+                    case TEXTGEN_TYPES.TABBY:
                         url += '/v1/token/encode';
                         args.body = JSON.stringify({ 'text': text });
                         break;
-                    case 'koboldcpp':
+                    case TEXTGEN_TYPES.KOBOLDCPP:
                         url += '/api/extra/tokencount';
                         args.body = JSON.stringify({ 'prompt': text });
                         break;
