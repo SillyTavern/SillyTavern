@@ -1,8 +1,8 @@
 const fetch = require('node-fetch').default;
 const sanitize = require('sanitize-filename');
-const { getBasicAuthHeader, delay } = require('./util');
+const { getBasicAuthHeader, delay } = require('../util.js');
 const fs = require('fs');
-const { DIRECTORIES } = require('./constants.js');
+const { DIRECTORIES } = require('../constants.js');
 const writeFileAtomicSync = require('write-file-atomic').sync;
 
 /**
@@ -341,7 +341,7 @@ function registerEndpoints(app, jsonParser) {
 
         try {
             const task = 'text-generation';
-            const module = await import('./transformers.mjs');
+            const module = await import('../transformers.mjs');
             const pipe = await module.default.getPipeline(task);
 
             const result = await pipe(prompt, { num_beams: 1, max_new_tokens: 256, do_sample: true });
