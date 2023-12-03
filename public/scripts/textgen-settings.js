@@ -586,8 +586,8 @@ function getModel() {
     return undefined;
 }
 
-export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, isContinue, cfgValues) {
-    const canMultiSwipe = !isContinue && !isImpersonate;
+export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, isContinue, cfgValues, type) {
+    const canMultiSwipe = !isContinue && !isImpersonate && type !== 'quiet';
     let APIflags = {
         'prompt': finalPrompt,
         'model': getModel(),

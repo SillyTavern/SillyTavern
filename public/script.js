@@ -2774,11 +2774,11 @@ export async function generateRaw(prompt, api, instructOverride) {
             break;
         case 'novel': {
             const novelSettings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
-            generateData = getNovelGenerationData(prompt, novelSettings, amount_gen, false, false, null);
+            generateData = getNovelGenerationData(prompt, novelSettings, amount_gen, false, false, null, 'quiet');
             break;
         }
         case 'textgenerationwebui':
-            generateData = getTextGenGenerationData(prompt, amount_gen, false, false, null);
+            generateData = getTextGenGenerationData(prompt, amount_gen, false, false, null, 'quiet');
             break;
         case 'openai':
             generateData = [{ role: 'user', content: prompt.trim() }];
@@ -3588,11 +3588,11 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 }
             }
             else if (main_api == 'textgenerationwebui') {
-                generate_data = getTextGenGenerationData(finalPrompt, maxLength, isImpersonate, isContinue, cfgValues);
+                generate_data = getTextGenGenerationData(finalPrompt, maxLength, isImpersonate, isContinue, cfgValues, type);
             }
             else if (main_api == 'novel') {
                 const presetSettings = novelai_settings[novelai_setting_names[nai_settings.preset_settings_novel]];
-                generate_data = getNovelGenerationData(finalPrompt, presetSettings, maxLength, isImpersonate, isContinue, cfgValues);
+                generate_data = getNovelGenerationData(finalPrompt, presetSettings, maxLength, isImpersonate, isContinue, cfgValues, type);
             }
             else if (main_api == 'openai') {
                 let [prompt, counts] = await prepareOpenAIMessages({
@@ -4372,7 +4372,7 @@ function extractMessageFromData(data) {
 function extractMultiSwipes(data, type) {
     const swipes = [];
 
-    if (type === 'continue' || type === 'impersonate') {
+    if (type === 'continue' || type === 'impersonate' || type === 'quiet') {
         return swipes;
     }
 
