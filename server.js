@@ -50,6 +50,7 @@ util.inspect.defaultOptions.maxStringLength = null;
 
 // local library imports
 const basicAuthMiddleware = require('./src/middleware/basicAuthMiddleware');
+const { jsonParser, urlencodedParser } = require('./src/express-common.js');
 const characterCardParser = require('./src/character-card-parser.js');
 const contentManager = require('./src/endpoints/content-manager');
 const statsHelpers = require('./statsHelpers.js');
@@ -215,8 +216,6 @@ var chatsPath = 'public/chats/';
 const SETTINGS_FILE = './public/settings.json';
 const AVATAR_WIDTH = 400;
 const AVATAR_HEIGHT = 600;
-const jsonParser = express.json({ limit: '200mb' });
-const urlencodedParser = express.urlencoded({ extended: true, limit: '200mb' });
 const { DIRECTORIES, UPLOADS_PATH, PALM_SAFETY, TEXTGEN_TYPES, CHAT_COMPLETION_SOURCES } = require('./src/constants');
 const { TavernCardValidator } = require('./src/validator/TavernCardValidator');
 
@@ -3576,55 +3575,55 @@ async function fetchJSON(url, args = {}) {
 // ** END **
 
 // OpenAI API
-require('./src/endpoints/openai').registerEndpoints(app, jsonParser, urlencodedParser);
+app.use('/api/openai', require('./src/endpoints/openai').router);
 
 // Tokenizers
-require('./src/endpoints/tokenizers').registerEndpoints(app, jsonParser);
+app.use('/api/tokenizers', require('./src/endpoints/tokenizers').router);
 
 // Preset management
-require('./src/endpoints/presets').registerEndpoints(app, jsonParser);
+app.use('/api/presets', require('./src/endpoints/presets').router);
 
 // Secrets managemenet
-require('./src/endpoints/secrets').registerEndpoints(app, jsonParser);
+app.use('/api/secrets', require('./src/endpoints/secrets').router);
 
-// Thumbnail generation
-require('./src/endpoints/thumbnails').registerEndpoints(app, jsonParser);
+// Thumbnail generation. These URLs are saved in chat, so this route cannot be renamed!
+app.use('/thumbnail', require('./src/endpoints/thumbnails').router);
 
 // NovelAI generation
-require('./src/endpoints/novelai').registerEndpoints(app, jsonParser);
+app.use('/api/novelai', require('./src/endpoints/novelai').router);
 
 // Third-party extensions
-require('./src/endpoints/extensions').registerEndpoints(app, jsonParser);
+app.use('/api/extensions', require('./src/endpoints/extensions').router);
 
 // Asset management
-require('./src/endpoints/assets').registerEndpoints(app, jsonParser);
+app.use('/api/assets', require('./src/endpoints/assets').router);
 
 // Character sprite management
-require('./src/endpoints/sprites').registerEndpoints(app, jsonParser, urlencodedParser);
+app.use('/api/sprites', require('./src/endpoints/sprites').router);
 
 // Custom content management
-require('./src/endpoints/content-manager').registerEndpoints(app, jsonParser);
+app.use('/api/content', require('./src/endpoints/content-manager').router);
 
 // Stable Diffusion generation
-require('./src/endpoints/stable-diffusion').registerEndpoints(app, jsonParser);
+app.use('/api/sd', require('./src/endpoints/stable-diffusion').router);
 
 // LLM and SD Horde generation
-require('./src/endpoints/horde').registerEndpoints(app, jsonParser);
+app.use('/api/horde', require('./src/endpoints/horde').router);
 
 // Vector storage DB
-require('./src/endpoints/vectors').registerEndpoints(app, jsonParser);
+app.use('/api/vector', require('./src/endpoints/vectors').router);
 
 // Chat translation
-require('./src/endpoints/translate').registerEndpoints(app, jsonParser);
+app.use('/api/translate', require('./src/endpoints/translate').router);
 
 // Emotion classification
-require('./src/endpoints/classify').registerEndpoints(app, jsonParser);
+app.use('/api/extra', require('./src/endpoints/classify').router);
 
 // Image captioning
-require('./src/endpoints/caption').registerEndpoints(app, jsonParser);
+app.use('/api/extra', require('./src/endpoints/caption').router);
 
 // Web search extension
-require('./src/endpoints/serpapi').registerEndpoints(app, jsonParser);
+app.use('/api/serpapi', require('./src/endpoints/serpapi').router);
 
 const tavernUrl = new URL(
     (cliArguments.ssl ? 'https://' : 'http://') +
