@@ -17,14 +17,9 @@ import {
     getTextGenGenerationData,
     formatTextGenURL,
     getTextGenUrlSourceId,
-    isMancer,
-    isAphrodite,
-    isTabby,
     textgen_types,
     textgenerationwebui_banned_in_macros,
-    isOoba,
     MANCER_SERVER,
-    isKoboldCpp,
 } from './scripts/textgen-settings.js';
 
 import {
@@ -888,14 +883,17 @@ async function getStatus() {
                 main_api,
                 api_server: endpoint,
                 api_type: textgenerationwebui_settings.type,
-                legacy_api: main_api == 'textgenerationwebui' ? textgenerationwebui_settings.legacy_api && !isMancer() : false,
+                legacy_api: main_api == 'textgenerationwebui' ?
+                    textgenerationwebui_settings.legacy_api &&
+                        textgenerationwebui_settings.type !== textgen_types.MANCER :
+                    false,
             }),
             signal: abortStatusCheck.signal,
         });
 
         const data = await response.json();
 
-        if (main_api == 'textgenerationwebui' && isMancer()) {
+        if (main_api == 'textgenerationwebui' && textgenerationwebui_settings.type === textgen_types.MANCER) {
             online_status = textgenerationwebui_settings.mancer_model;
             loadMancerModels(data?.data);
         } else {
@@ -943,7 +941,7 @@ export function resultCheckStatus() {
 
 export function getAPIServerUrl() {
     if (main_api == 'textgenerationwebui') {
-        if (isMancer()) {
+        if (textgenerationwebui_settings.type === textgen_types.MANCER) {
             return MANCER_SERVER;
         }
 
@@ -2847,7 +2845,10 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         return;
     }
 
-    if (main_api === 'textgenerationwebui' && textgenerationwebui_settings.streaming && textgenerationwebui_settings.legacy_api && !isMancer()) {
+    if (main_api === 'textgenerationwebui' &&
+        textgenerationwebui_settings.streaming &&
+        textgenerationwebui_settings.legacy_api &&
+        textgenerationwebui_settings.type !== textgen_types.MANCER) {
         toastr.error('Streaming is not supported for the Legacy API. Update Ooba and use --extensions openai to enable streaming.', undefined, { timeOut: 10000, preventDuplicates: true });
         unblockGeneration();
         return;

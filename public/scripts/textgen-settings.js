@@ -162,7 +162,7 @@ async function selectPreset(name) {
 function formatTextGenURL(value) {
     try {
         // Mancer doesn't need any formatting (it's hardcoded)
-        if (isMancer()) {
+        if (textgenerationwebui_settings.type === textgen_types.MANCER) {
             return value;
         }
 
@@ -265,7 +265,7 @@ function loadTextGenSettings(data, settings) {
     $('#textgen_type').val(textgenerationwebui_settings.type);
     showTypeSpecificControls(textgenerationwebui_settings.type);
     //this is needed because showTypeSpecificControls() does not handle NOT declarations
-    if (isAphrodite()) {
+    if (textgenerationwebui_settings.type === textgen_types.APHRODITE) {
         $('[data-forAphro=False]').each(function () {
             $(this).hide();
         });
@@ -283,26 +283,6 @@ function loadTextGenSettings(data, settings) {
             MANCER_SERVER = result;
         }
     });
-}
-
-export function isMancer() {
-    return textgenerationwebui_settings.type === textgen_types.MANCER;
-}
-
-export function isAphrodite() {
-    return textgenerationwebui_settings.type === textgen_types.APHRODITE;
-}
-
-export function isTabby() {
-    return textgenerationwebui_settings.type === textgen_types.TABBY;
-}
-
-export function isOoba() {
-    return textgenerationwebui_settings.type === textgen_types.OOBA;
-}
-
-export function isKoboldCpp() {
-    return textgenerationwebui_settings.type === textgen_types.KOBOLDCPP;
 }
 
 export function getTextGenUrlSourceId() {
@@ -357,7 +337,7 @@ jQuery(function () {
         const type = String($(this).val());
         textgenerationwebui_settings.type = type;
 
-        if (isAphrodite()) {
+        if (textgenerationwebui_settings.type === textgen_types.APHRODITE) {
             //this is needed because showTypeSpecificControls() does not handle NOT declarations
             $('[data-forAphro=False]').each(function () {
                 $(this).hide();
@@ -419,7 +399,9 @@ jQuery(function () {
                 $(`#${id}_counter_textgenerationwebui`).val(value);
                 textgenerationwebui_settings[id] = value;
                 //special handling for aphrodite using -1 as disabled instead of 0
-                if ($(this).attr('id') === 'top_k_textgenerationwebui' && isAphrodite() && value === 0) {
+                if ($(this).attr('id') === 'top_k_textgenerationwebui' &&
+                    textgenerationwebui_settings.type === textgen_types.APHRODITE &&
+                    value === 0) {
                     textgenerationwebui_settings[id] = -1;
                     $(this).val(-1);
                 }
@@ -575,11 +557,11 @@ function toIntArray(string) {
 }
 
 function getModel() {
-    if (isMancer()) {
+    if (textgenerationwebui_settings.type === textgen_types.MANCER) {
         return textgenerationwebui_settings.mancer_model;
     }
 
-    if (isAphrodite()) {
+    if (textgenerationwebui_settings.type === textgen_types.APHRODITE) {
         return online_status;
     }
 
@@ -619,11 +601,17 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'mirostat_mode': textgenerationwebui_settings.mirostat_mode,
         'mirostat_tau': textgenerationwebui_settings.mirostat_tau,
         'mirostat_eta': textgenerationwebui_settings.mirostat_eta,
-        'custom_token_bans': isAphrodite() ? toIntArray(getCustomTokenBans()) : getCustomTokenBans(),
+        'custom_token_bans': textgenerationwebui_settings.type === textgen_types.APHRODITE ?
+            toIntArray(getCustomTokenBans()) :
+            getCustomTokenBans(),
         'api_type': textgenerationwebui_settings.type,
-        'api_server': isMancer() ? MANCER_SERVER : api_server_textgenerationwebui,
-        'legacy_api': textgenerationwebui_settings.legacy_api && !isMancer(),
-        'sampler_order': isKoboldCpp() ? textgenerationwebui_settings.sampler_order : undefined,
+        'api_server': textgenerationwebui_settings.type === textgen_types.MANCER ?
+            MANCER_SERVER :
+            api_server_textgenerationwebui,
+        'legacy_api': textgenerationwebui_settings.legacy_api && textgenerationwebui_settings.type !== textgen_types.MANCER,
+        'sampler_order': textgenerationwebui_settings.type === textgen_types.KOBOLDCPP ?
+            textgenerationwebui_settings.sampler_order :
+            undefined,
     };
     let aphroditeExclusionFlags = {
         'repetition_penalty_range': textgenerationwebui_settings.rep_pen_range,
@@ -646,7 +634,7 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         //'logprobs': textgenerationwebui_settings.log_probs_aphrodite,
         //'prompt_logprobs': textgenerationwebui_settings.prompt_log_probs_aphrodite,
     };
-    if (isAphrodite()) {
+    if (textgenerationwebui_settings.type === textgen_types.APHRODITE) {
         APIflags = Object.assign(APIflags, aphroditeFlags);
     } else {
         APIflags = Object.assign(APIflags, aphroditeExclusionFlags);
