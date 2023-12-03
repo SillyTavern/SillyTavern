@@ -51,12 +51,12 @@ util.inspect.defaultOptions.maxStringLength = null;
 // local library imports
 const basicAuthMiddleware = require('./src/middleware/basicAuthMiddleware');
 const characterCardParser = require('./src/character-card-parser.js');
-const contentManager = require('./src/content-manager');
+const contentManager = require('./src/endpoints/content-manager');
 const statsHelpers = require('./statsHelpers.js');
-const { readSecret, migrateSecrets, SECRET_KEYS } = require('./src/secrets');
+const { readSecret, migrateSecrets, SECRET_KEYS } = require('./src/endpoints/secrets');
 const { delay, getVersion, deepMerge, getConfigValue, color, uuidv4 } = require('./src/util');
-const { invalidateThumbnail, ensureThumbnailCache } = require('./src/thumbnails');
-const { getTokenizerModel, getTiktokenTokenizer, loadTokenizers, TEXT_COMPLETION_MODELS, getSentencepiceTokenizer, sentencepieceTokenizers } = require('./src/tokenizers');
+const { invalidateThumbnail, ensureThumbnailCache } = require('./src/endpoints/thumbnails');
+const { getTokenizerModel, getTiktokenTokenizer, loadTokenizers, TEXT_COMPLETION_MODELS, getSentencepiceTokenizer, sentencepieceTokenizers } = require('./src/endpoints/tokenizers');
 const { convertClaudePrompt } = require('./src/chat-completion');
 
 // Work around a node v20.0.0, v20.1.0, and v20.2.0 bug. The issue was fixed in v20.3.0.
@@ -2002,7 +2002,7 @@ app.post('/importcharacter', urlencodedParser, async function (request, response
     let uploadPath = path.join(UPLOADS_PATH, filedata.filename);
     var format = request.body.file_type;
     const defaultAvatarPath = './public/img/ai4.png';
-    const { importRisuSprites } = require('./src/sprites');
+    const { importRisuSprites } = require('./src/endpoints/sprites');
     //console.log(format);
     if (filedata) {
         if (format == 'json') {
@@ -3576,55 +3576,55 @@ async function fetchJSON(url, args = {}) {
 // ** END **
 
 // OpenAI API
-require('./src/openai').registerEndpoints(app, jsonParser, urlencodedParser);
+require('./src/endpoints/openai').registerEndpoints(app, jsonParser, urlencodedParser);
 
 // Tokenizers
-require('./src/tokenizers').registerEndpoints(app, jsonParser);
+require('./src/endpoints/tokenizers').registerEndpoints(app, jsonParser);
 
 // Preset management
-require('./src/presets').registerEndpoints(app, jsonParser);
+require('./src/endpoints/presets').registerEndpoints(app, jsonParser);
 
 // Secrets managemenet
-require('./src/secrets').registerEndpoints(app, jsonParser);
+require('./src/endpoints/secrets').registerEndpoints(app, jsonParser);
 
 // Thumbnail generation
-require('./src/thumbnails').registerEndpoints(app, jsonParser);
+require('./src/endpoints/thumbnails').registerEndpoints(app, jsonParser);
 
 // NovelAI generation
-require('./src/novelai').registerEndpoints(app, jsonParser);
+require('./src/endpoints/novelai').registerEndpoints(app, jsonParser);
 
 // Third-party extensions
-require('./src/extensions').registerEndpoints(app, jsonParser);
+require('./src/endpoints/extensions').registerEndpoints(app, jsonParser);
 
 // Asset management
-require('./src/assets').registerEndpoints(app, jsonParser);
+require('./src/endpoints/assets').registerEndpoints(app, jsonParser);
 
 // Character sprite management
-require('./src/sprites').registerEndpoints(app, jsonParser, urlencodedParser);
+require('./src/endpoints/sprites').registerEndpoints(app, jsonParser, urlencodedParser);
 
 // Custom content management
-require('./src/content-manager').registerEndpoints(app, jsonParser);
+require('./src/endpoints/content-manager').registerEndpoints(app, jsonParser);
 
 // Stable Diffusion generation
-require('./src/stable-diffusion').registerEndpoints(app, jsonParser);
+require('./src/endpoints/stable-diffusion').registerEndpoints(app, jsonParser);
 
 // LLM and SD Horde generation
-require('./src/horde').registerEndpoints(app, jsonParser);
+require('./src/endpoints/horde').registerEndpoints(app, jsonParser);
 
 // Vector storage DB
-require('./src/vectors').registerEndpoints(app, jsonParser);
+require('./src/endpoints/vectors').registerEndpoints(app, jsonParser);
 
 // Chat translation
-require('./src/translate').registerEndpoints(app, jsonParser);
+require('./src/endpoints/translate').registerEndpoints(app, jsonParser);
 
 // Emotion classification
-require('./src/classify').registerEndpoints(app, jsonParser);
+require('./src/endpoints/classify').registerEndpoints(app, jsonParser);
 
 // Image captioning
-require('./src/caption').registerEndpoints(app, jsonParser);
+require('./src/endpoints/caption').registerEndpoints(app, jsonParser);
 
 // Web search extension
-require('./src/serpapi').registerEndpoints(app, jsonParser);
+require('./src/endpoints/serpapi').registerEndpoints(app, jsonParser);
 
 const tavernUrl = new URL(
     (cliArguments.ssl ? 'https://' : 'http://') +

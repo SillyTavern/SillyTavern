@@ -2,7 +2,7 @@ const fetch = require('node-fetch').default;
 const util = require('util');
 const { Readable } = require('stream');
 const { readSecret, SECRET_KEYS } = require('./secrets');
-const { readAllChunks, extractFileFromZipBuffer } = require('./util');
+const { readAllChunks, extractFileFromZipBuffer } = require('../util');
 
 const API_NOVELAI = 'https://api.novelai.net';
 
