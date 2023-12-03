@@ -11,7 +11,7 @@ import {
 } from './scripts/kai-settings.js';
 
 import {
-    textgenerationwebui_settings,
+    textgenerationwebui_settings as textgen_settings,
     loadTextGenSettings,
     generateTextGenWithStreaming,
     getTextGenGenerationData,
@@ -21,6 +21,8 @@ import {
     textgenerationwebui_banned_in_macros,
     MANCER_SERVER,
 } from './scripts/textgen-settings.js';
+
+const { MANCER } = textgen_types;
 
 import {
     world_info,
@@ -882,10 +884,10 @@ async function getStatus() {
             body: JSON.stringify({
                 main_api,
                 api_server: endpoint,
-                api_type: textgenerationwebui_settings.type,
+                api_type: textgen_settings.type,
                 legacy_api: main_api == 'textgenerationwebui' ?
-                    textgenerationwebui_settings.legacy_api &&
-                        textgenerationwebui_settings.type !== textgen_types.MANCER :
+                    textgen_settings.legacy_api &&
+                        textgen_settings.type !== MANCER :
                     false,
             }),
             signal: abortStatusCheck.signal,
@@ -893,8 +895,8 @@ async function getStatus() {
 
         const data = await response.json();
 
-        if (main_api == 'textgenerationwebui' && textgenerationwebui_settings.type === textgen_types.MANCER) {
-            online_status = textgenerationwebui_settings.mancer_model;
+        if (main_api == 'textgenerationwebui' && textgen_settings.type === MANCER) {
+            online_status = textgen_settings.mancer_model;
             loadMancerModels(data?.data);
         } else {
             online_status = data?.result;
@@ -941,7 +943,7 @@ export function resultCheckStatus() {
 
 export function getAPIServerUrl() {
     if (main_api == 'textgenerationwebui') {
-        if (textgenerationwebui_settings.type === textgen_types.MANCER) {
+        if (textgen_settings.type === MANCER) {
             return MANCER_SERVER;
         }
 
@@ -2465,7 +2467,7 @@ function isStreamingEnabled() {
     return ((main_api == 'openai' && oai_settings.stream_openai && !noStreamSources.includes(oai_settings.chat_completion_source))
         || (main_api == 'kobold' && kai_settings.streaming_kobold && kai_flags.can_use_streaming)
         || (main_api == 'novel' && nai_settings.streaming_novel)
-        || (main_api == 'textgenerationwebui' && textgenerationwebui_settings.streaming));
+        || (main_api == 'textgenerationwebui' && textgen_settings.streaming));
 }
 
 function showStopButton() {
@@ -2846,9 +2848,9 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
     }
 
     if (main_api === 'textgenerationwebui' &&
-        textgenerationwebui_settings.streaming &&
-        textgenerationwebui_settings.legacy_api &&
-        textgenerationwebui_settings.type !== textgen_types.MANCER) {
+        textgen_settings.streaming &&
+        textgen_settings.legacy_api &&
+        textgen_settings.type !== MANCER) {
         toastr.error('Streaming is not supported for the Legacy API. Update Ooba and use --extensions openai to enable streaming.', undefined, { timeOut: 10000, preventDuplicates: true });
         unblockGeneration();
         return;
@@ -4691,7 +4693,7 @@ function getGeneratingApi() {
         case 'openai':
             return oai_settings.chat_completion_source || 'openai';
         case 'textgenerationwebui':
-            return textgenerationwebui_settings.type === textgen_types.OOBA ? 'textgenerationwebui' : textgenerationwebui_settings.type;
+            return textgen_settings.type === textgen_types.OOBA ? 'textgenerationwebui' : textgen_settings.type;
         default:
             return main_api;
     }
@@ -5658,7 +5660,7 @@ async function saveSettings(type) {
             max_context: max_context,
             main_api: main_api,
             world_info_settings: getWorldInfoSettings(),
-            textgenerationwebui_settings: textgenerationwebui_settings,
+            textgenerationwebui_settings: textgen_settings,
             swipes: swipes,
             horde_settings: horde_settings,
             power_user: power_user,

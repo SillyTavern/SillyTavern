@@ -4,7 +4,9 @@ import { chat_completion_sources, model_list, oai_settings } from './openai.js';
 import { groups, selected_group } from './group-chats.js';
 import { getStringHash } from './utils.js';
 import { kai_flags } from './kai-settings.js';
-import { textgen_types, textgenerationwebui_settings } from './textgen-settings.js';
+import { textgen_types, textgenerationwebui_settings as textgen_settings } from './textgen-settings.js';
+
+const { OOBA, TABBY, KOBOLDCPP, MANCER } = textgen_types;
 
 export const CHARACTERS_PER_TOKEN_RATIO = 3.35;
 const TOKENIZER_WARNING_KEY = 'tokenizationWarningShown';
@@ -129,10 +131,7 @@ export function getTokenizerBestMatch(forApi) {
         // - Tokenizer haven't reported an error previously
         const hasTokenizerError = sessionStorage.getItem(TOKENIZER_WARNING_KEY);
         const isConnected = online_status !== 'no_connection';
-        const isTokenizerSupported =
-            textgenerationwebui_settings.type === textgen_types.OOBA ||
-            textgenerationwebui_settings.type === textgen_types.TABBY ||
-            textgenerationwebui_settings.type === textgen_types.KOBOLDCPP;
+        const isTokenizerSupported = textgen_settings.type === OOBA || textgen_settings.type === TABBY || textgen_settings.type === KOBOLDCPP;
 
         if (!hasTokenizerError && isConnected) {
             if (forApi === 'kobold' && kai_flags.can_use_tokenization) {
@@ -396,11 +395,11 @@ function getRemoteTokenizationParams(str) {
     return {
         text: str,
         main_api,
-        api_type: textgenerationwebui_settings.type,
+        api_type: textgen_settings.type,
         url: getAPIServerUrl(),
         legacy_api: main_api === 'textgenerationwebui' &&
-            textgenerationwebui_settings.legacy_api &&
-            textgenerationwebui_settings.type !== textgen_types.MANCER,
+            textgen_settings.legacy_api &&
+            textgen_settings.type !== MANCER,
     };
 }
 
