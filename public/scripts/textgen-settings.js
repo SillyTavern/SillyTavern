@@ -628,13 +628,13 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'grammar_string': settings.grammar_string,
     };
     let aphroditeFlags = {
-        'n': canMultiSwipe ? textgenerationwebui_settings.n : 1,
-        'best_of': canMultiSwipe ? textgenerationwebui_settings.n : 1,
+        'n': canMultiSwipe ? settings.n : 1,
+        'best_of': canMultiSwipe ? settings.n : 1,
         'ignore_eos': settings.ignore_eos_token_aphrodite,
         'spaces_between_special_tokens': settings.spaces_between_special_tokens_aphrodite,
-        //'logits_processors': textgenerationwebui_settings.logits_processors_aphrodite,
-        //'logprobs': textgenerationwebui_settings.log_probs_aphrodite,
-        //'prompt_logprobs': textgenerationwebui_settings.prompt_log_probs_aphrodite,
+        //'logits_processors': settings.logits_processors_aphrodite,
+        //'logprobs': settings.log_probs_aphrodite,
+        //'prompt_logprobs': settings.prompt_log_probs_aphrodite,
     };
     if (settings.type === textgen_types.APHRODITE) {
         APIflags = Object.assign(APIflags, aphroditeFlags);
