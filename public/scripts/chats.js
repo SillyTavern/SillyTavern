@@ -386,14 +386,18 @@ jQuery(function () {
             return;
         }
 
+        const wrapper = document.createElement('div');
+        wrapper.classList.add('height100p', 'wide100p', 'flex-container');
+        wrapper.classList.add('flexFlowColumn', 'justifyCenter', 'alignitemscenter');
         const textarea = document.createElement('textarea');
         textarea.value = String(bro.val());
-        textarea.classList.add('height100p');
+        textarea.classList.add('height100p', 'wide100p');
         textarea.oninput = function () {
             bro.val(textarea.value).trigger('input');
         };
+        wrapper.appendChild(textarea);
 
-        callPopup(textarea, 'text', '', { wide: true, large: true });
+        callPopup(wrapper, 'text', '', { wide: true, large: true });
     });
 
     $('#file_form_input').on('change', onFileAttach);

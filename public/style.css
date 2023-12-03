@@ -1962,6 +1962,7 @@ grammarly-extension {
 .wide_dialogue_popup {
     aspect-ratio: 1 / 1;
     width: unset !important;
+    min-width: var(--sheldWidth);
 }
 
 #bulk_tag_popup_holder,
