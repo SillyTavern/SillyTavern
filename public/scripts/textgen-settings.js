@@ -88,6 +88,7 @@ const textgenerationwebui_settings = {
     mancer_model: 'mytholite',
     legacy_api: false,
     sampler_order: KOBOLDCPP_ORDER,
+    n: 1,
 };
 
 export let textgenerationwebui_banned_in_macros = [];
@@ -139,6 +140,7 @@ const setting_names = [
     //'log_probs_aphrodite',
     //'prompt_log_probs_aphrodite'
     'sampler_order',
+    'n',
 ];
 
 async function selectPreset(name) {
@@ -495,6 +497,7 @@ async function generateTextGenWithStreaming(generate_data, signal) {
         const reader = response.body.getReader();
         let getMessage = '';
         let messageBuffer = '';
+        const swipes = [];
         while (true) {
             const { done, value } = await reader.read();
             // We don't want carriage returns in our messages
@@ -523,9 +526,15 @@ async function generateTextGenWithStreaming(generate_data, signal) {
                     return;
                 }
                 let data = JSON.parse(event.substring(6));
-                // the first and last messages are undefined, protect against that
-                getMessage += data?.choices[0]?.text || '';
-                yield getMessage;
+
+                if (data?.choices[0]?.index > 0) {
+                    const swipeIndex = data.choices[0].index - 1;
+                    swipes[swipeIndex] = (swipes[swipeIndex] || '') + data.choices[0].text;
+                } else {
+                    getMessage += data?.choices[0]?.text || '';
+                }
+
+                yield { text: getMessage, swipes: swipes };
             }
 
             if (done) {
@@ -578,6 +587,7 @@ function getModel() {
 }
 
 export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, isContinue, cfgValues) {
+    const canMultiSwipe = !isContinue && !isImpersonate;
     let APIflags = {
         'prompt': finalPrompt,
         'model': getModel(),
@@ -632,8 +642,8 @@ export function getTextGenGenerationData(finalPrompt, maxTokens, isImpersonate, 
         'grammar_string': textgenerationwebui_settings.grammar_string,
     };
     let aphroditeFlags = {
-        //'n': textgenerationwebui_settings.n_aphrodite,
-        //'best_of': textgenerationwebui_settings.n_aphrodite, //n must always == best_of and vice versa
+        'n': canMultiSwipe ? textgenerationwebui_settings.n : 1,
+        'best_of': canMultiSwipe ? textgenerationwebui_settings.n : 1,
         'ignore_eos': textgenerationwebui_settings.ignore_eos_token_aphrodite,
         'spaces_between_special_tokens': textgenerationwebui_settings.spaces_between_special_tokens_aphrodite,
         //'logits_processors': textgenerationwebui_settings.logits_processors_aphrodite,

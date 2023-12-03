@@ -714,7 +714,7 @@ export async function generateNovelWithStreaming(generate_data, signal) {
                     if (subEvent.startsWith('data')) {
                         let data = JSON.parse(subEvent.substring(5));
                         getMessage += (data?.token || '');
-                        yield getMessage;
+                        yield { text: getMessage, swipes: [] };
                     }
                 }
             }
