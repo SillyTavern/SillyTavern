@@ -2,11 +2,11 @@ const fs = require('fs');
 const path = require('path');
 const fetch = require('node-fetch').default;
 const sanitize = require('sanitize-filename');
-const { getConfigValue } = require('./util');
+const { getConfigValue } = require('../util');
 const contentDirectory = path.join(process.cwd(), 'default/content');
 const contentLogPath = path.join(contentDirectory, 'content.log');
 const contentIndexPath = path.join(contentDirectory, 'index.json');
-const { DIRECTORIES } = require('./constants');
+const { DIRECTORIES } = require('../constants');
 const presetFolders = [DIRECTORIES.koboldAI_Settings, DIRECTORIES.openAI_Settings, DIRECTORIES.novelAI_Settings, DIRECTORIES.textGen_Settings];
 
 /**

@@ -3,7 +3,7 @@ const path = require('path');
 const { SentencePieceProcessor } = require('@agnai/sentencepiece-js');
 const tiktoken = require('@dqbd/tiktoken');
 const { Tokenizer } = require('@agnai/web-tokenizers');
-const { convertClaudePrompt } = require('./chat-completion');
+const { convertClaudePrompt } = require('../chat-completion');
 const { readSecret, SECRET_KEYS } = require('./secrets');
 
 /**
