@@ -6,9 +6,35 @@ const { getConfigValue } = require('./util');
 const contentDirectory = path.join(process.cwd(), 'default/content');
 const contentLogPath = path.join(contentDirectory, 'content.log');
 const contentIndexPath = path.join(contentDirectory, 'index.json');
+const { DIRECTORIES } = require('./constants');
+
+
+function migratePresets() {
+    const presetFolders = [DIRECTORIES.koboldAI_Settings, DIRECTORIES.openAI_Settings, DIRECTORIES.novelAI_Settings, DIRECTORIES.textGen_Settings];
+
+    for (const presetFolder of presetFolders) {
+        const presetPath = path.join(process.cwd(), presetFolder);
+        const presetFiles = fs.readdirSync(presetPath);
+
+        for (const presetFile of presetFiles) {
+            const presetFilePath = path.join(presetPath, presetFile);
+            const newFileName = presetFile.replace('.settings', '.json');
+            const newFilePath = path.join(presetPath, newFileName);
+
+            if (presetFilePath.endsWith('.settings')) {
+                if (!fs.existsSync(newFilePath)) {
+                    fs.cpSync(presetFilePath, newFilePath);
+                    console.log(`Migrated ${presetFilePath} to ${newFilePath}`);
+                }
+            }
+        }
+    }
+}
 
 function checkForNewContent() {
     try {
+        migratePresets();
+
         if (getConfigValue('skipContentCheck', false)) {
             return;
         }
@@ -38,7 +64,8 @@ function checkForNewContent() {
                 continue;
             }
 
-            const targetPath = path.join(process.cwd(), contentTarget, contentItem.filename);
+            const basePath = path.parse(contentItem.filename).base;
+            const targetPath = path.join(process.cwd(), contentTarget, basePath);
 
             if (fs.existsSync(targetPath)) {
                 console.log(`Content file ${contentItem.filename} already exists in ${contentTarget}`);
@@ -58,21 +85,29 @@ function checkForNewContent() {
 function getTargetByType(type) {
     switch (type) {
         case 'character':
-            return 'public/characters';
+            return DIRECTORIES.characters;
         case 'sprites':
-            return 'public/characters';
+            return DIRECTORIES.characters;
         case 'background':
-            return 'public/backgrounds';
+            return DIRECTORIES.backgrounds;
         case 'world':
-            return 'public/worlds';
+            return DIRECTORIES.worlds;
         case 'sound':
-            return 'public/sounds';
+            return DIRECTORIES.sounds;
         case 'avatar':
-            return 'public/User Avatars';
+            return DIRECTORIES.avatars;
         case 'theme':
-            return 'public/themes';
+            return DIRECTORIES.themes;
         case 'workflow':
-            return 'public/user/workflows';
+            return DIRECTORIES.comfyWorkflows;
+        case 'kobold_preset':
+            return DIRECTORIES.koboldAI_Settings;
+        case 'openai_preset':
+            return DIRECTORIES.openAI_Settings;
+        case 'novel_preset':
+            return DIRECTORIES.novelAI_Settings;
+        case 'textgen_preset':
+            return DIRECTORIES.textGen_Settings;
         default:
             return null;
     }
@@ -183,7 +218,7 @@ async function downloadJannyCharacter(uuid) {
     // Should work normally on self-host PC/Android
     const result = await fetch('https://api.janitorai.me/api/v1/download', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json'},
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             'characterId': uuid,
         }),
@@ -196,9 +231,9 @@ async function downloadJannyCharacter(uuid) {
             const buffer = await imageResult.buffer();
             const fileName = `${sanitize(uuid)}.png`;
             const fileType = result.headers.get('content-type');
-    
+
             return { buffer, fileName, fileType };
-        }  
+        }
     }
 
     console.log('Janny returned error', result.statusText, await result.text());
@@ -260,7 +295,7 @@ function registerEndpoints(app, jsonParser) {
                     return response.sendStatus(404);
                 }
             }
-            
+
             if (result.fileType) response.set('Content-Type', result.fileType);
             response.set('Content-Disposition', `attachment; filename="${result.fileName}"`);
             response.set('X-Custom-Content-Type', type);

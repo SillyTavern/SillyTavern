@@ -13,13 +13,13 @@ function getPresetSettingsByAPI(apiId) {
     switch (apiId) {
         case 'kobold':
         case 'koboldhorde':
-            return { folder: DIRECTORIES.koboldAI_Settings, extension: '.settings' };
+            return { folder: DIRECTORIES.koboldAI_Settings, extension: '.json' };
         case 'novel':
-            return { folder: DIRECTORIES.novelAI_Settings, extension: '.settings' };
+            return { folder: DIRECTORIES.novelAI_Settings, extension: '.json' };
         case 'textgenerationwebui':
-            return { folder: DIRECTORIES.textGen_Settings, extension: '.settings' };
+            return { folder: DIRECTORIES.textGen_Settings, extension: '.json' };
         case 'openai':
-            return { folder: DIRECTORIES.openAI_Settings, extension: '.settings' };
+            return { folder: DIRECTORIES.openAI_Settings, extension: '.json' };
         case 'instruct':
             return { folder: DIRECTORIES.instruct, extension: '.json' };
         case 'context':

@@ -25,6 +25,7 @@ const DIRECTORIES = {
     assets: 'public/assets',
     comfyWorkflows: 'public/user/workflows',
     files: 'public/user/files',
+    sounds: 'public/sounds',
 };
 
 const UNSAFE_EXTENSIONS = [

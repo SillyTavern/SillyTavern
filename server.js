@@ -1688,9 +1688,10 @@ function readPresetsFromDirectory(directoryPath, options = {}) {
     const {
         sortFunction,
         removeFileExtension = false,
+        fileExtension = '.json',
     } = options;
 
-    const files = fs.readdirSync(directoryPath).sort(sortFunction);
+    const files = fs.readdirSync(directoryPath).sort(sortFunction).filter(x => path.parse(x).ext == fileExtension);
     const fileContents = [];
     const fileNames = [];
 
