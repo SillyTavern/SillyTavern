@@ -22,7 +22,7 @@ import { context_presets, getContextSettings, power_user } from './power-user.js
 import {
     textgenerationwebui_preset_names,
     textgenerationwebui_presets,
-    textgenerationwebui_settings,
+    textgenerationwebui_settings as textgen_settings,
 } from './textgen-settings.js';
 import { download, parseJsonFile, waitUntilCondition } from './utils.js';
 
@@ -236,7 +236,7 @@ class PresetManager {
                 case 'novel':
                     return nai_settings;
                 case 'textgenerationwebui':
-                    return textgenerationwebui_settings;
+                    return textgen_settings;
                 case 'context': {
                     const context_preset = getContextSettings();
                     context_preset['name'] = name || power_user.context.preset;

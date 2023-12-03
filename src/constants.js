@@ -134,9 +134,19 @@ const PALM_SAFETY = [
 
 const UPLOADS_PATH = './uploads';
 
+// TODO: this is copied from the client code; there should be a way to de-duplicate it eventually
+const TEXTGEN_TYPES = {
+    OOBA: 'ooba',
+    MANCER: 'mancer',
+    APHRODITE: 'aphrodite',
+    TABBY: 'tabby',
+    KOBOLDCPP: 'koboldcpp',
+};
+
 module.exports = {
     DIRECTORIES,
     UNSAFE_EXTENSIONS,
     UPLOADS_PATH,
     PALM_SAFETY,
+    TEXTGEN_TYPES,
 };

@@ -34,7 +34,7 @@ import {
 import { debounce, delay, getStringHash, isValidUrl } from './utils.js';
 import { chat_completion_sources, oai_settings } from './openai.js';
 import { getTokenCount } from './tokenizers.js';
-import { isMancer } from './textgen-settings.js';
+import { textgen_types, textgenerationwebui_settings as textgen_settings } from './textgen-settings.js';
 
 
 var RPanelPin = document.getElementById('rm_button_panel_pin');
@@ -401,7 +401,7 @@ function RA_autoconnect(PrevApi) {
                 }
                 break;
             case 'textgenerationwebui':
-                if (isMancer() && secret_state[SECRET_KEYS.MANCER]) {
+                if (textgen_settings.type === textgen_types.MANCER && secret_state[SECRET_KEYS.MANCER]) {
                     $('#api_button_textgenerationwebui').trigger('click');
                 }
                 else if (api_server_textgenerationwebui && isValidUrl(api_server_textgenerationwebui)) {
