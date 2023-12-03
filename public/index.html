@@ -3900,7 +3900,7 @@
                 <strong>Unique to this chat.</strong>
                 <span data-group="true">All group members will use the following scenario text instead of what is specified in their character cards.</span>
                 <span data-character="true">The following scenario text will be used instead of the value set in the character card.</span>
-                Bookmarks inherit the scenario override from their parent, and can be changed individually after that.
+                Checkpoints inherit the scenario override from their parent, and can be changed individually after that.
             </div>
             <div class="range-block-range wide100p">
                 <textarea class="wide100p chat_scenario" class="text_pole" rows="15" data-i18n="[placeholder]Type here..." placeholder="Type here..."></textarea>
@@ -4296,11 +4296,11 @@
                             <div title="Exclude message from prompts" class="mes_hide fa-solid fa-eye" data-i18n="[title]Exclude message from prompts"></div>
                             <div title="Include message in prompts" class="mes_unhide fa-solid fa-eye-slash" data-i18n="[title]Include message in prompts"></div>
                             <div title="Embed file or image" class="mes_embed fa-solid fa-paperclip" data-i18n="[title]Embed file or image"></div>
-                            <div title="Create bookmark" class="mes_create_bookmark fa-regular fa-solid fa-book-bookmark" data-i18n="[title]Create Bookmark"></div>
+                            <div title="Create checkpoint" class="mes_create_bookmark fa-regular fa-solid fa-flag-checkered" data-i18n="[title]Create checkpoint"></div>
                             <div title="Create branch" class="mes_create_branch fa-regular fa-code-branch" data-i18n="[title]Create Branch"></div>
                             <div title="Copy" class="mes_copy fa-solid fa-copy " data-i18n="[title]Copy"></div>
                         </div>
-                        <div title="Open bookmark chat" class="mes_bookmark fa-solid fa-bookmark" data-i18n="[title]Open bookmark chat"></div>
+                        <div title="Open checkpoint chat" class="mes_bookmark fa-solid fa-flag" data-i18n="[title]Open checkpoint chat"></div>
                         <div title="Edit" class="mes_edit fa-solid fa-pencil " data-i18n="[title]Edit"></div>
                     </div>
                     <div class="mes_edit_buttons">
@@ -4499,7 +4499,7 @@
                     <div class="inline-drawer-content">
                         <small>
                             <b>Unique to this chat</b>.<br>
-                            Bookmarks inherit the Note from their parent, and can be changed individually after that.<br>
+                            Checkpoints inherit the Note from their parent, and can be changed individually after that.<br>
                         </small>
                         <textarea id="extension_floating_prompt" class="text_pole" rows="8" maxlength="50000"></textarea>
                         <div class="extension_token_counter">
@@ -4824,8 +4824,8 @@
                 <span data-i18n="Back to parent chat">Back to parent chat</span>
             </a>
             <a id="option_new_bookmark">
-                <i class="fa-lg fa-solid fa-bookmark"></i>
-                <span data-i18n="Save bookmark">Save bookmark</span>
+                <i class="fa-lg fa-solid fa-flag"></i>
+                <span data-i18n="Save checkpoint">Save checkpoint</span>
             </a>
             <a id="option_convert_to_group">
                 <i class="fa-lg fa-solid fa-people-arrows"></i>

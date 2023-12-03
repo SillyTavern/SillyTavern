@@ -492,7 +492,7 @@ function getSystemMessages() {
             force_avatar: system_avatar,
             is_user: false,
             is_system: true,
-            mes: 'Bookmark created! Click here to open the bookmark chat: <a class="bookmark_link" file_name="{0}" href="javascript:void(null);">{1}</a>',
+            mes: 'Checkpoint created! Click here to open the checkpoint chat: <a class="bookmark_link" file_name="{0}" href="javascript:void(null);">{1}</a>',
         },
         bookmark_back: {
             name: systemUserName,
@@ -8018,7 +8018,7 @@ jQuery(async function () {
 
         const popupText = `<h3>Enter the new name for the chat:<h3>
         <small>!!Using an existing filename will produce an error!!<br>
-        This will break the link between bookmark chats.<br>
+        This will break the link between checkpoint chats.<br>
         No need to add '.jsonl' at the end.<br>
         </small>`;
         const newName = await callPopup(popupText, 'input', old_filename);

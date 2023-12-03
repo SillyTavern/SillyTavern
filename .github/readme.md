@@ -66,7 +66,7 @@ Get in touch with the developers directly:
 * A heavily modified TavernAI 1.2.8 (more than 50% of code rewritten or optimized)
 * Swipes
 * Group chats: multi-bot rooms for characters to talk to you or each other
-* Chat bookmarks / branching (duplicates the dialogue in its current state)
+* Chat checkpoints / branching
 * Advanced KoboldAI / TextGen generation settings with a lot of community-made presets
 * World Info support: create rich lore or save tokens on your character card
 * [OpenRouter](https://openrouter.ai) connection for various APIs (Claude, GPT-4/3.5 and more)

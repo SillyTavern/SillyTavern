@@ -35,7 +35,7 @@ export {
     showBookmarksButtons,
 };
 
-const bookmarkNameToken = 'Bookmark #';
+const bookmarkNameToken = 'Checkpoint #';
 
 async function getExistingChatNames() {
     if (selected_group) {
@@ -57,7 +57,7 @@ async function getExistingChatNames() {
 
 async function getBookmarkName() {
     const chatNames = await getExistingChatNames();
-    const popupText = `<h3>Enter the bookmark name:<h3>
+    const popupText = `<h3>Enter the checkpoint name:<h3>
     <small>Leave empty to auto-generate.</small>`;
     let name = await callPopup(popupText, 'input');
 
@@ -125,7 +125,7 @@ function showBookmarksButtons() {
 
 async function saveBookmarkMenu() {
     if (!chat.length) {
-        toastr.warning('The chat is empty.', 'Bookmark creation failed');
+        toastr.warning('The chat is empty.', 'Checkpoint creation failed');
         return;
     }
 
@@ -167,12 +167,12 @@ export async function createBranch(mesId) {
 
 async function createNewBookmark(mesId) {
     if (!chat.length) {
-        toastr.warning('The chat is empty.', 'Bookmark creation failed');
+        toastr.warning('The chat is empty.', 'Checkpoint creation failed');
         return;
     }
 
     if (mesId < 0 || mesId >= chat.length) {
-        toastr.warning('Invalid message ID.', 'Bookmark creation failed');
+        toastr.warning('Invalid message ID.', 'Checkpoint creation failed');
         return;
     }
 
@@ -183,7 +183,7 @@ async function createNewBookmark(mesId) {
     }
 
     if (lastMes.extra.bookmark_link) {
-        const confirm = await callPopup('Bookmark checkpoint for the last message already exists. Would you like to replace it?', 'confirm');
+        const confirm = await callPopup('Checkpoint for the last message already exists. Would you like to replace it?', 'confirm');
 
         if (!confirm) {
             return;
@@ -210,7 +210,7 @@ async function createNewBookmark(mesId) {
     $(`.mes[mesid="${mesId}"]`).attr('bookmark_link', name);
 
     await saveChatConditional();
-    toastr.success('Click the bookmark icon in the last message to open the checkpoint chat.', 'Bookmark created', { timeOut: 10000 });
+    toastr.success('Click the flag icon in the last message to open the checkpoint chat.', 'Checkpoint created', { timeOut: 10000 });
 }
 
 async function backToMainChat() {
