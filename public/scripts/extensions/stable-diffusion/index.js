@@ -967,7 +967,7 @@ async function getAutoRemoteUpscalers() {
 
 async function getVladRemoteUpscalers() {
     try {
-        const result = await fetch('/api/sd/next/upscalers', {
+        const result = await fetch('/api/sd/sd-next/upscalers', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify(getSdRequestBody()),

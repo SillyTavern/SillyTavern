@@ -289,7 +289,7 @@ router.post('/generate', jsonParser, async (request, response) => {
     }
 });
 
-router.post('/next/upscalers', jsonParser, async (request, response) => {
+router.post('/sd-next/upscalers', jsonParser, async (request, response) => {
     try {
         const url = new URL(request.body.url);
         url.pathname = '/sdapi/v1/upscalers';
