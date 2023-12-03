@@ -9,7 +9,7 @@ function registerEndpoints(app, jsonParser) {
         try {
             const { image } = req.body;
 
-            const module = await import('./transformers.mjs');
+            const module = await import('../transformers.mjs');
             const rawImage = await module.default.getRawImage(image);
 
             if (!rawImage) {

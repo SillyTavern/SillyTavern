@@ -1,6 +1,6 @@
 const fetch = require('node-fetch').default;
-const AIHorde = require('./ai_horde');
-const { getVersion, delay } = require('./util');
+const AIHorde = require('../ai_horde');
+const { getVersion, delay } = require('../util');
 const { readSecret, SECRET_KEYS } = require('./secrets');
 
 const ANONYMOUS_KEY = '0000000000';

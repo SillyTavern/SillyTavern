@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const sanitize = require('sanitize-filename');
 const writeFileAtomicSync = require('write-file-atomic').sync;
-const { DIRECTORIES } = require('./constants');
+const { DIRECTORIES } = require('../constants');
 const { getDefaultPresetFile, getDefaultPresets } = require('./content-manager');
 
 /**

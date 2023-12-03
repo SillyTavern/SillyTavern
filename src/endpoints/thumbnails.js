@@ -3,8 +3,8 @@ const path = require('path');
 const sanitize = require('sanitize-filename');
 const jimp = require('jimp');
 const writeFileAtomicSync = require('write-file-atomic').sync;
-const { DIRECTORIES } = require('./constants');
-const { getConfigValue } = require('./util');
+const { DIRECTORIES } = require('../constants');
+const { getConfigValue } = require('../util');
 
 /**
  * Gets a path to thumbnail folder based on the type.

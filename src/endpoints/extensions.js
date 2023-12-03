@@ -2,7 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const { default: simpleGit } = require('simple-git');
 const sanitize = require('sanitize-filename');
-const { DIRECTORIES } = require('./constants');
+const { DIRECTORIES } = require('../constants');
 
 /**
  * This function extracts the extension information from the manifest file.

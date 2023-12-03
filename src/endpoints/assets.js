@@ -4,7 +4,7 @@ const sanitize = require('sanitize-filename');
 const fetch = require('node-fetch').default;
 const { finished } = require('stream/promises');
 const writeFileSyncAtomic = require('write-file-atomic').sync;
-const { DIRECTORIES, UNSAFE_EXTENSIONS } = require('./constants');
+const { DIRECTORIES, UNSAFE_EXTENSIONS } = require('../constants');
 
 const VALID_CATEGORIES = ['bgm', 'ambient', 'blip', 'live2d'];
 

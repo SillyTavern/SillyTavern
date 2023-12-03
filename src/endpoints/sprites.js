@@ -4,8 +4,8 @@ const path = require('path');
 const mime = require('mime-types');
 const sanitize = require('sanitize-filename');
 const writeFileAtomicSync = require('write-file-atomic').sync;
-const { DIRECTORIES, UPLOADS_PATH } = require('./constants');
-const { getImageBuffers } = require('./util');
+const { DIRECTORIES, UPLOADS_PATH } = require('../constants');
+const { getImageBuffers } = require('../util');
 
 /**
  * Gets the path to the sprites folder for the provided character name
