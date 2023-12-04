@@ -636,9 +636,9 @@ function generateQuickReplyElements() {
     $('#quickReplyContainer').empty().append(quickReplyHtml);
 
     for (let i = 1; i <= extension_settings.quickReply.numberOfSlots; i++) {
-        $(`#quickReply${i}Mes`).on('input', function () { onQuickReplyInput(i); });
-        $(`#quickReply${i}Label`).on('input', function () { onQuickReplyLabelInput(i); });
-        $(`#quickReply${i}CtxButton`).on('click', function () { onQuickReplyCtxButtonClick(i); });
+        $(`#quickReply${i}Mes`).on('input', function () { onQuickReplyInput(this.closest('[data-order]').getAttribute('data-order')); });
+        $(`#quickReply${i}Label`).on('input', function () { onQuickReplyLabelInput(this.closest('[data-order]').getAttribute('data-order')); });
+        $(`#quickReply${i}CtxButton`).on('click', function () { onQuickReplyCtxButtonClick(this.closest('[data-order]').getAttribute('data-order')); });
         $(`#quickReplyContainer > [data-order="${i}"]`).attr('data-contextMenu', JSON.stringify(extension_settings.quickReply.quickReplySlots[i - 1]?.contextMenu ?? []));
     }
 
