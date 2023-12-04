@@ -3582,7 +3582,7 @@ app.use('/api/openai', require('./src/endpoints/openai').router);
 require('./src/endpoints/tokenizers').registerEndpoints(app, jsonParser);
 
 // Preset management
-require('./src/endpoints/presets').registerEndpoints(app, jsonParser);
+app.use('/api/presets', require('./src/endpoints/presets').router);
 
 // Secrets managemenet
 require('./src/endpoints/secrets').registerEndpoints(app, jsonParser);
