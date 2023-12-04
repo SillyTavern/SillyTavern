@@ -216,7 +216,7 @@ router.post('/delete', jsonParser, async (request, response) => {
  * Discover the extension folders
  * If the folder is called third-party, search for subfolders instead
  */
-router.get('/api/extensions/discover', jsonParser, function (_, response) {
+router.get('/discover', jsonParser, function (_, response) {
     // get all folders in the extensions folder, except third-party
     const extensions = fs
         .readdirSync(DIRECTORIES.extensions)
