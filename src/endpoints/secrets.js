@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { getConfigValue } = require('./util');
+const { getConfigValue } = require('../util');
 const writeFileAtomicSync = require('write-file-atomic').sync;
 
 const SECRETS_FILE = path.join(process.cwd(), './secrets.json');
