@@ -3606,7 +3606,7 @@ require('./src/endpoints/sprites').registerEndpoints(app, jsonParser, urlencoded
 require('./src/endpoints/content-manager').registerEndpoints(app, jsonParser);
 
 // Stable Diffusion generation
-require('./src/endpoints/stable-diffusion').registerEndpoints(app, jsonParser);
+app.use('/api/sd', require('./src/endpoints/stable-diffusion').router);
 
 // LLM and SD Horde generation
 require('./src/endpoints/horde').registerEndpoints(app, jsonParser);
