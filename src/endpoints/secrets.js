@@ -1,7 +1,9 @@
 const fs = require('fs');
 const path = require('path');
+const express = require('express');
 const { getConfigValue } = require('../util');
 const writeFileAtomicSync = require('write-file-atomic').sync;
+const { jsonParser } = require('../express-common');
 
 const SECRETS_FILE = path.join(process.cwd(), './secrets.json');
 const SECRET_KEYS = {
@@ -143,78 +145,71 @@ function getAllSecrets() {
     return secrets;
 }
 
-/**
- * Registers endpoints for the secret management API
- * @param {import('express').Express} app Express app
- * @param {any} jsonParser JSON parser middleware
- */
-function registerEndpoints(app, jsonParser) {
+const router = express.Router();
 
-    app.post('/api/secrets/write', jsonParser, (request, response) => {
-        const key = request.body.key;
-        const value = request.body.value;
+router.post('/write', jsonParser, (request, response) => {
+    const key = request.body.key;
+    const value = request.body.value;
 
-        writeSecret(key, value);
-        return response.send('ok');
-    });
+    writeSecret(key, value);
+    return response.send('ok');
+});
 
-    app.post('/api/secrets/read', jsonParser, (_, response) => {
+router.post('/read', jsonParser, (_, response) => {
+    try {
+        const state = readSecretState();
+        return response.send(state);
+    } catch (error) {
+        console.error(error);
+        return response.send({});
+    }
+});
 
-        try {
-            const state = readSecretState();
-            return response.send(state);
-        } catch (error) {
-            console.error(error);
-            return response.send({});
-        }
-    });
+router.post('/view', jsonParser, async (_, response) => {
+    const allowKeysExposure = getConfigValue('allowKeysExposure', false);
 
-    app.post('/api/secrets/view', jsonParser, async (_, response) => {
-        const allowKeysExposure = getConfigValue('allowKeysExposure', false);
+    if (!allowKeysExposure) {
+        console.error('secrets.json could not be viewed unless the value of allowKeysExposure in config.yaml is set to true');
+        return response.sendStatus(403);
+    }
 
-        if (!allowKeysExposure) {
-            console.error('secrets.json could not be viewed unless the value of allowKeysExposure in config.yaml is set to true');
-            return response.sendStatus(403);
-        }
+    try {
+        const secrets = getAllSecrets();
 
-        try {
-            const secrets = getAllSecrets();
-
-            if (!secrets) {
-                return response.sendStatus(404);
-            }
-
-            return response.send(secrets);
-        } catch (error) {
-            console.error(error);
-            return response.sendStatus(500);
-        }
-    });
-
-    app.post('/api/secrets/find', jsonParser, (request, response) => {
-        const allowKeysExposure = getConfigValue('allowKeysExposure', false);
-
-        if (!allowKeysExposure) {
-            console.error('Cannot fetch secrets unless allowKeysExposure in config.yaml is set to true');
-            return response.sendStatus(403);
+        if (!secrets) {
+            return response.sendStatus(404);
         }
 
-        const key = request.body.key;
+        return response.send(secrets);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
 
-        try {
-            const secret = readSecret(key);
+router.post('/find', jsonParser, (request, response) => {
+    const allowKeysExposure = getConfigValue('allowKeysExposure', false);
 
-            if (!secret) {
-                response.sendStatus(404);
-            }
+    if (!allowKeysExposure) {
+        console.error('Cannot fetch secrets unless allowKeysExposure in config.yaml is set to true');
+        return response.sendStatus(403);
+    }
 
-            return response.send({ value: secret });
-        } catch (error) {
-            console.error(error);
-            return response.sendStatus(500);
+    const key = request.body.key;
+
+    try {
+        const secret = readSecret(key);
+
+        if (!secret) {
+            response.sendStatus(404);
         }
-    });
-}
+
+        return response.send({ value: secret });
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
 
 module.exports = {
     writeSecret,
@@ -222,6 +217,6 @@ module.exports = {
     readSecretState,
     migrateSecrets,
     getAllSecrets,
-    registerEndpoints,
     SECRET_KEYS,
+    router,
 };
