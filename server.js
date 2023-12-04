@@ -3587,8 +3587,8 @@ require('./src/endpoints/presets').registerEndpoints(app, jsonParser);
 // Secrets managemenet
 require('./src/endpoints/secrets').registerEndpoints(app, jsonParser);
 
-// Thumbnail generation
-require('./src/endpoints/thumbnails').registerEndpoints(app, jsonParser);
+// Thumbnail generation. These URLs are saved in chat, so this route cannot be renamed!
+app.use('/thumbnail', require('./src/endpoints/thumbnails').router);
 
 // NovelAI generation
 require('./src/endpoints/novelai').registerEndpoints(app, jsonParser);
