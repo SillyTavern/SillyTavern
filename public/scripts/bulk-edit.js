@@ -1,5 +1,5 @@
 import { characters, getCharacters, handleDeleteCharacter, callPopup } from '../script.js';
-import {BulkEditOverlay, BulkEditOverlayState} from './BulkEditOverlay.js';
+import { BulkEditOverlay, BulkEditOverlayState } from './BulkEditOverlay.js';
 
 
 let is_bulk_edit = false;

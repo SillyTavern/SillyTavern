@@ -3576,40 +3576,43 @@ async function fetchJSON(url, args = {}) {
 // ** END **
 
 // OpenAI API
-require('./src/endpoints/openai').registerEndpoints(app, jsonParser, urlencodedParser);
+app.use('/api/openai', require('./src/endpoints/openai').router);
 
 // Tokenizers
 require('./src/endpoints/tokenizers').registerEndpoints(app, jsonParser);
 
 // Preset management
-require('./src/endpoints/presets').registerEndpoints(app, jsonParser);
+app.use('/api/presets', require('./src/endpoints/presets').router);
 
 // Secrets managemenet
-require('./src/endpoints/secrets').registerEndpoints(app, jsonParser);
+app.use('/api/secrets', require('./src/endpoints/secrets').router);
 
 // Thumbnail generation
 require('./src/endpoints/thumbnails').registerEndpoints(app, jsonParser);
 
 // NovelAI generation
-require('./src/endpoints/novelai').registerEndpoints(app, jsonParser);
+app.use('/api/novelai', require('./src/endpoints/novelai').router);
 
 // Third-party extensions
-require('./src/endpoints/extensions').registerEndpoints(app, jsonParser);
+app.use('/api/extensions', require('./src/endpoints/extensions').router);
 
 // Asset management
-require('./src/endpoints/assets').registerEndpoints(app, jsonParser);
+app.use('/api/assets', require('./src/endpoints/assets').router);
+
+// File management
+app.use('/api/files', require('./src/endpoints/files').router);
 
 // Character sprite management
 app.use('/api/sprites', require('./src/endpoints/sprites').router);
 
 // Custom content management
-require('./src/endpoints/content-manager').registerEndpoints(app, jsonParser);
+app.use('/api/content', require('./src/endpoints/content-manager').router);
 
 // Stable Diffusion generation
 require('./src/endpoints/stable-diffusion').registerEndpoints(app, jsonParser);
 
 // LLM and SD Horde generation
-require('./src/endpoints/horde').registerEndpoints(app, jsonParser);
+app.use('/api/horde', require('./src/endpoints/horde').router);
 
 // Vector storage DB
 require('./src/endpoints/vectors').registerEndpoints(app, jsonParser);
@@ -3618,13 +3621,13 @@ require('./src/endpoints/vectors').registerEndpoints(app, jsonParser);
 require('./src/endpoints/translate').registerEndpoints(app, jsonParser);
 
 // Emotion classification
-require('./src/endpoints/classify').registerEndpoints(app, jsonParser);
+app.use('/api/extra/classify', require('./src/endpoints/classify').router);
 
 // Image captioning
-require('./src/endpoints/caption').registerEndpoints(app, jsonParser);
+app.use('/api/extra/caption', require('./src/endpoints/caption').router);
 
 // Web search extension
-require('./src/endpoints/serpapi').registerEndpoints(app, jsonParser);
+app.use('/api/serpapi', require('./src/endpoints/serpapi').router);
 
 const tavernUrl = new URL(
     (cliArguments.ssl ? 'https://' : 'http://') +

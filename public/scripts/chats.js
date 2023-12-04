@@ -152,7 +152,7 @@ export async function populateFileAttachment(message, inputId = 'file_form_input
  */
 export async function uploadFileAttachment(fileName, base64Data) {
     try {
-        const result = await fetch('/api/file/upload', {
+        const result = await fetch('/api/files/upload', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({
@@ -302,7 +302,7 @@ async function viewMessageFile(messageId) {
     modalTemplate.addClass('file_modal');
     addCopyToCodeBlocks(modalTemplate);
 
-    callPopup(modalTemplate, 'text');
+    callPopup(modalTemplate, 'text', '', { wide: true, large: true });
 }
 
 /**
