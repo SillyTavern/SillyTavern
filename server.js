@@ -3579,7 +3579,7 @@ async function fetchJSON(url, args = {}) {
 require('./src/endpoints/openai').registerEndpoints(app, jsonParser, urlencodedParser);
 
 // Tokenizers
-require('./src/endpoints/tokenizers').registerEndpoints(app, jsonParser);
+app.use('/api/tokenizers', require('./src/endpoints/tokenizers').router);
 
 // Preset management
 require('./src/endpoints/presets').registerEndpoints(app, jsonParser);
