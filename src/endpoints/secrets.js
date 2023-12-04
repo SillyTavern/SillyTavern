@@ -169,7 +169,7 @@ function registerEndpoints(app, jsonParser) {
         }
     });
 
-    app.post('/viewsecrets', jsonParser, async (_, response) => {
+    app.post('/api/secrets/view', jsonParser, async (_, response) => {
         const allowKeysExposure = getConfigValue('allowKeysExposure', false);
 
         if (!allowKeysExposure) {

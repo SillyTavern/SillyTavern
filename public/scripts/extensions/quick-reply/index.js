@@ -636,9 +636,9 @@ function generateQuickReplyElements() {
     $('#quickReplyContainer').empty().append(quickReplyHtml);
 
     for (let i = 1; i <= extension_settings.quickReply.numberOfSlots; i++) {
-        $(`#quickReply${i}Mes`).on('input', function () { onQuickReplyInput(i); });
-        $(`#quickReply${i}Label`).on('input', function () { onQuickReplyLabelInput(i); });
-        $(`#quickReply${i}CtxButton`).on('click', function () { onQuickReplyCtxButtonClick(i); });
+        $(`#quickReply${i}Mes`).on('input', function () { onQuickReplyInput(this.closest('[data-order]').getAttribute('data-order')); });
+        $(`#quickReply${i}Label`).on('input', function () { onQuickReplyLabelInput(this.closest('[data-order]').getAttribute('data-order')); });
+        $(`#quickReply${i}CtxButton`).on('click', function () { onQuickReplyCtxButtonClick(this.closest('[data-order]').getAttribute('data-order')); });
         $(`#quickReplyContainer > [data-order="${i}"]`).attr('data-contextMenu', JSON.stringify(extension_settings.quickReply.quickReplySlots[i - 1]?.contextMenu ?? []));
     }
 
@@ -692,9 +692,11 @@ function saveQROrder() {
     //update html-level order data to match new sort
     let i = 1;
     $('#quickReplyContainer').children().each(function () {
+        const oldOrder = $(this).attr('data-order');
         $(this).attr('data-order', i);
         $(this).find('input').attr('id', `quickReply${i}Label`);
         $(this).find('textarea').attr('id', `quickReply${i}Mes`);
+        $(this).find(`#quickReply${oldOrder}CtxButton`).attr('id', `quickReply${i}CtxButton`);
         i++;
     });
 
