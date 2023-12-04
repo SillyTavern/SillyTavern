@@ -58,6 +58,7 @@ module.exports = {
         'comma-dangle': ['error', 'always-multiline'],
         'eol-last': ['error', 'always'],
         'no-trailing-spaces': 'error',
+        'object-curly-spacing': ['error', 'always'],
 
         // These rules should eventually be enabled.
         'no-async-promise-executor': 'off',
