@@ -267,6 +267,27 @@ function uuidv4() {
     });
 }
 
+function humanizedISO8601DateTime(date) {
+    let baseDate = typeof date === 'number' ? new Date(date) : new Date();
+    let humanYear = baseDate.getFullYear();
+    let humanMonth = (baseDate.getMonth() + 1);
+    let humanDate = baseDate.getDate();
+    let humanHour = (baseDate.getHours() < 10 ? '0' : '') + baseDate.getHours();
+    let humanMinute = (baseDate.getMinutes() < 10 ? '0' : '') + baseDate.getMinutes();
+    let humanSecond = (baseDate.getSeconds() < 10 ? '0' : '') + baseDate.getSeconds();
+    let humanMillisecond = (baseDate.getMilliseconds() < 10 ? '0' : '') + baseDate.getMilliseconds();
+    let HumanizedDateTime = (humanYear + '-' + humanMonth + '-' + humanDate + ' @' + humanHour + 'h ' + humanMinute + 'm ' + humanSecond + 's ' + humanMillisecond + 'ms');
+    return HumanizedDateTime;
+}
+
+function tryParse(str) {
+    try {
+        return JSON.parse(str);
+    } catch {
+        return undefined;
+    }
+}
+
 module.exports = {
     getConfig,
     getConfigValue,
@@ -279,4 +300,6 @@ module.exports = {
     deepMerge,
     color,
     uuidv4,
+    humanizedISO8601DateTime,
+    tryParse,
 };

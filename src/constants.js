@@ -153,6 +153,9 @@ const TEXTGEN_TYPES = {
     KOBOLDCPP: 'koboldcpp',
 };
 
+const AVATAR_WIDTH = 400;
+const AVATAR_HEIGHT = 600;
+
 module.exports = {
     DIRECTORIES,
     UNSAFE_EXTENSIONS,
@@ -160,4 +163,6 @@ module.exports = {
     PALM_SAFETY,
     TEXTGEN_TYPES,
     CHAT_COMPLETION_SOURCES,
+    AVATAR_WIDTH,
+    AVATAR_HEIGHT,
 };
