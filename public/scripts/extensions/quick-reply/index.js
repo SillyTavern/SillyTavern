@@ -692,9 +692,11 @@ function saveQROrder() {
     //update html-level order data to match new sort
     let i = 1;
     $('#quickReplyContainer').children().each(function () {
+        const oldOrder = $(this).attr('data-order');
         $(this).attr('data-order', i);
         $(this).find('input').attr('id', `quickReply${i}Label`);
         $(this).find('textarea').attr('id', `quickReply${i}Mes`);
+        $(this).find(`#quickReply${oldOrder}CtxButton`).attr('id', `quickReply${i}CtxButton`);
         i++;
     });
 
