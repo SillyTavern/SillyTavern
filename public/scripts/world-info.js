@@ -1759,53 +1759,44 @@ async function checkWorldInfo(chat, maxContext) {
             if (Array.isArray(entry.key) && entry.key.length) { //check for keywords existing
                 // If selectiveLogic isn't found, assume it's AND, only do this once per entry
                 const selectiveLogic = entry.selectiveLogic ?? 0;
-                let notFlag = true;
+
                 primary: for (let key of entry.key) {
                     const substituted = substituteParams(key);
+
                     console.debug(`${entry.uid}: ${substituted}`);
+
                     if (substituted && matchKeys(textToScan, substituted.trim())) {
-                        console.debug(`${entry.uid}: got primary match`);
+                        console.debug(`WI UID ${entry.uid} found by primary match: ${substituted}.`);
+
                         //selective logic begins
                         if (
                             entry.selective && //all entries are selective now
                             Array.isArray(entry.keysecondary) && //always true
                             entry.keysecondary.length //ignore empties
                         ) {
-                            console.debug(`uid:${entry.uid}: checking logic: ${entry.selectiveLogic}`);
+                            console.debug(`WI UID:${entry.uid} found. Checking logic: ${entry.selectiveLogic}`);
                             secondary: for (let keysecondary of entry.keysecondary) {
                                 const secondarySubstituted = substituteParams(keysecondary);
-                                console.debug(`uid:${entry.uid}: filtering ${secondarySubstituted}`);
-                                //AND operator
-                                if (selectiveLogic === 0) {
-                                    console.debug('saw AND logic, checking..');
-                                    if (secondarySubstituted && matchKeys(textToScan, secondarySubstituted.trim())) {
-                                        console.debug(`activating entry ${entry.uid} with AND found`);
-                                        activatedNow.add(entry);
-                                        break secondary;
+                                console.debug(`WI UID:${entry.uid}: Filtering for secondary keyword - "${secondarySubstituted}".`);
+                                
+                                if (selectiveLogic === 0 && secondarySubstituted && matchKeys(textToScan, secondarySubstituted.trim()) ||
+                                selectiveLogic === 1 && !(secondarySubstituted && matchKeys(textToScan, secondarySubstituted.trim()))) {
+                                    if (selectiveLogic === 0) {
+                                        console.debug(`(AND Check) Activating WI Entry ${entry.uid}. Found match for word: ${substituted} ${secondarySubstituted}`);
+                                    } else {
+                                        console.debug(`(NOT Check) Activating WI Entry ${entry.uid}. Found match for word "${substituted}" without secondary keyword: ${secondarySubstituted}`);
                                     }
-                                }
-                                //NOT operator
-                                if (selectiveLogic === 1) {
-                                    console.debug(`uid ${entry.uid}: checking NOT logic for ${secondarySubstituted}`);
-                                    if (secondarySubstituted && matchKeys(textToScan, secondarySubstituted.trim())) {
-                                        console.debug(`uid ${entry.uid}: canceled; filtered out by ${secondarySubstituted}`);
-                                        notFlag = false;
-                                        break primary;
-                                    }
+                                    activatedNow.add(entry);
+                                    break secondary;
                                 }
                             }
-                            //handle cases where secondary is empty
+                        // Handle cases where secondary is empty
                         } else {
-                            console.debug(`uid ${entry.uid}: activated without filter logic`);
+                            console.debug(`WI UID ${entry.uid}: Activated without filter logic.`);
                             activatedNow.add(entry);
                             break primary;
                         }
-                    } else { console.debug('no active entries for logic checks yet'); }
-                }
-                //for a NOT all entries must be checked, a single match invalidates activation
-                if (selectiveLogic === 1 && notFlag) {
-                    console.debug(`${entry.uid}: activated; passed NOT filter`);
-                    activatedNow.add(entry);
+                    } else { console.debug(`No active entries for logic checks for word: ${substituted}.`); }
                 }
             }
         }
