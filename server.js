@@ -3597,7 +3597,10 @@ require('./src/endpoints/novelai').registerEndpoints(app, jsonParser);
 require('./src/endpoints/extensions').registerEndpoints(app, jsonParser);
 
 // Asset management
-require('./src/endpoints/assets').registerEndpoints(app, jsonParser);
+app.use('/api/assets', require('./src/endpoints/assets').router);
+
+// File management
+app.use('/api/files', require('./src/endpoints/files').router);
 
 // Character sprite management
 require('./src/endpoints/sprites').registerEndpoints(app, jsonParser, urlencodedParser);
