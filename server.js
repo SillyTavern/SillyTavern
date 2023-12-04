@@ -1027,7 +1027,7 @@ function charaFormatData(data) {
     return char;
 }
 
-app.post('/createcharacter', urlencodedParser, async function (request, response) {
+app.post('/api/characters/create', urlencodedParser, async function (request, response) {
     if (!request.body) return response.sendStatus(400);
 
     request.body.ch_name = sanitize(request.body.ch_name);
@@ -1073,7 +1073,7 @@ app.post('/renamechat', jsonParser, async function (request, response) {
     return response.send({ ok: true });
 });
 
-app.post('/renamecharacter', jsonParser, async function (request, response) {
+app.post('/api/characters/rename', jsonParser, async function (request, response) {
     if (!request.body.avatar_url || !request.body.new_name) {
         return response.sendStatus(400);
     }
@@ -1119,7 +1119,7 @@ app.post('/renamecharacter', jsonParser, async function (request, response) {
     }
 });
 
-app.post('/editcharacter', urlencodedParser, async function (request, response) {
+app.post('/api/characters/edit', urlencodedParser, async function (request, response) {
     if (!request.body) {
         console.error('Error: no response body detected');
         response.status(400).send('Error: no response body detected');
@@ -1166,7 +1166,7 @@ app.post('/editcharacter', urlencodedParser, async function (request, response) 
  * @param {Object} response - The HTTP response object.
  * @returns {void}
  */
-app.post('/editcharacterattribute', jsonParser, async function (request, response) {
+app.post('/api/characters/edit-attribute', jsonParser, async function (request, response) {
     console.log(request.body);
     if (!request.body) {
         console.error('Error: no response body detected');
@@ -1212,7 +1212,7 @@ app.post('/editcharacterattribute', jsonParser, async function (request, respons
  *
  * @returns {void}
  * */
-app.post('/v2/editcharacterattribute', jsonParser, async function (request, response) {
+app.post('/api/characters/merge-attributes', jsonParser, async function (request, response) {
     const update = request.body;
     const avatarPath = path.join(charactersPath, update.avatar);
 
@@ -1240,7 +1240,7 @@ app.post('/v2/editcharacterattribute', jsonParser, async function (request, resp
     }
 });
 
-app.post('/deletecharacter', jsonParser, async function (request, response) {
+app.post('/api/characters/delete', jsonParser, async function (request, response) {
     if (!request.body || !request.body.avatar_url) {
         return response.sendStatus(400);
     }
@@ -1413,7 +1413,7 @@ const processCharacter = async (item, i) => {
 
 
 /**
- * HTTP POST endpoint for the "/getcharacters" route.
+ * HTTP POST endpoint for the "/api/characters/all" route.
  *
  * This endpoint is responsible for reading character files from the `charactersPath` directory,
  * parsing character data, calculating stats for each character and responding with the data.
@@ -1426,7 +1426,7 @@ const processCharacter = async (item, i) => {
  * @param  {object}   response The HTTP response object.
  * @return {undefined}         Does not return a value.
  */
-app.post('/getcharacters', jsonParser, function (request, response) {
+app.post('/api/characters/all', jsonParser, function (request, response) {
     fs.readdir(charactersPath, async (err, files) => {
         if (err) {
             console.error(err);
@@ -1449,7 +1449,7 @@ app.post('/getcharacters', jsonParser, function (request, response) {
     });
 });
 
-app.post('/getonecharacter', jsonParser, async function (request, response) {
+app.post('/api/characters/get', jsonParser, async function (request, response) {
     if (!request.body) return response.sendStatus(400);
     const item = request.body.avatar_url;
     const filePath = path.join(charactersPath, item);
@@ -1916,7 +1916,7 @@ function getImages(path) {
         .sort(Intl.Collator().compare);
 }
 
-app.post('/getallchatsofcharacter', jsonParser, async function (request, response) {
+app.post('/api/characters/chats', jsonParser, async function (request, response) {
     if (!request.body) return response.sendStatus(400);
 
     const characterDirectory = (request.body.avatar_url).replace('.png', '');
@@ -1993,7 +1993,7 @@ function getPngName(file) {
     return file;
 }
 
-app.post('/importcharacter', urlencodedParser, async function (request, response) {
+app.post('/api/characters/import', urlencodedParser, async function (request, response) {
 
     if (!request.body || request.file === undefined) return response.sendStatus(400);
 
@@ -2137,7 +2137,7 @@ app.post('/importcharacter', urlencodedParser, async function (request, response
     }
 });
 
-app.post('/dupecharacter', jsonParser, async function (request, response) {
+app.post('/api/characters/duplicate', jsonParser, async function (request, response) {
     try {
         if (!request.body.avatar_url) {
             console.log('avatar URL not found in request body');
@@ -2252,7 +2252,7 @@ app.post('/exportchat', jsonParser, async function (request, response) {
     }
 });
 
-app.post('/exportcharacter', jsonParser, async function (request, response) {
+app.post('/api/characters/export', jsonParser, async function (request, response) {
     if (!request.body.format || !request.body.avatar_url) {
         return response.sendStatus(400);
     }
