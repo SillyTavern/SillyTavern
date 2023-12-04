@@ -211,8 +211,6 @@ function humanizedISO8601DateTime(date) {
     return HumanizedDateTime;
 }
 
-var charactersPath = 'public/characters/';
-var chatsPath = 'public/chats/';
 const SETTINGS_FILE = './public/settings.json';
 const AVATAR_WIDTH = 400;
 const AVATAR_HEIGHT = 600;
@@ -371,7 +369,7 @@ app.use('/backgrounds', (req, res) => {
 });
 
 app.use('/characters', (req, res) => {
-    const filePath = decodeURIComponent(path.join(process.cwd(), charactersPath, req.url.replace(/%20/g, ' ')));
+    const filePath = decodeURIComponent(path.join(process.cwd(), DIRECTORIES.characters, req.url.replace(/%20/g, ' ')));
     fs.readFile(filePath, (err, data) => {
         if (err) {
             res.status(404).send('File not found');
@@ -753,7 +751,7 @@ app.post('/savechat', jsonParser, function (request, response) {
         var dir_name = String(request.body.avatar_url).replace('.png', '');
         let chat_data = request.body.chat;
         let jsonlData = chat_data.map(JSON.stringify).join('\n');
-        writeFileAtomicSync(`${chatsPath + sanitize(dir_name)}/${sanitize(String(request.body.file_name))}.jsonl`, jsonlData, 'utf8');
+        writeFileAtomicSync(`${DIRECTORIES.chats + sanitize(dir_name)}/${sanitize(String(request.body.file_name))}.jsonl`, jsonlData, 'utf8');
         backupChat(dir_name, jsonlData);
         return response.send({ result: 'ok' });
     } catch (error) {
@@ -765,11 +763,11 @@ app.post('/savechat', jsonParser, function (request, response) {
 app.post('/getchat', jsonParser, function (request, response) {
     try {
         const dirName = String(request.body.avatar_url).replace('.png', '');
-        const chatDirExists = fs.existsSync(chatsPath + dirName);
+        const chatDirExists = fs.existsSync(DIRECTORIES.chats + dirName);
 
         //if no chat dir for the character is found, make one with the character name
         if (!chatDirExists) {
-            fs.mkdirSync(chatsPath + dirName);
+            fs.mkdirSync(DIRECTORIES.chats + dirName);
             return response.send({});
         }
 
@@ -778,7 +776,7 @@ app.post('/getchat', jsonParser, function (request, response) {
             return response.send({});
         }
 
-        const fileName = `${chatsPath + dirName}/${sanitize(String(request.body.file_name))}.jsonl`;
+        const fileName = `${DIRECTORIES.chats + dirName}/${sanitize(String(request.body.file_name))}.jsonl`;
         const chatFileExists = fs.existsSync(fileName);
 
         if (!chatFileExists) {
@@ -1084,10 +1082,10 @@ app.post('/api/characters/rename', jsonParser, async function (request, response
     const newInternalName = getPngName(newName);
     const newAvatarName = `${newInternalName}.png`;
 
-    const oldAvatarPath = path.join(charactersPath, oldAvatarName);
+    const oldAvatarPath = path.join(DIRECTORIES.characters, oldAvatarName);
 
-    const oldChatsPath = path.join(chatsPath, oldInternalName);
-    const newChatsPath = path.join(chatsPath, newInternalName);
+    const oldChatsPath = path.join(DIRECTORIES.chats, oldInternalName);
+    const newChatsPath = path.join(DIRECTORIES.chats, newInternalName);
 
     try {
         // Read old file, replace name int it
@@ -1140,7 +1138,7 @@ app.post('/api/characters/edit', urlencodedParser, async function (request, resp
 
     try {
         if (!request.file) {
-            const avatarPath = path.join(charactersPath, request.body.avatar_url);
+            const avatarPath = path.join(DIRECTORIES.characters, request.body.avatar_url);
             await charaWrite(avatarPath, char, target_img, response, 'Character saved');
         } else {
             const crop = tryParse(request.query.crop);
@@ -1181,7 +1179,7 @@ app.post('/api/characters/edit-attribute', jsonParser, async function (request, 
     }
 
     try {
-        const avatarPath = path.join(charactersPath, request.body.avatar_url);
+        const avatarPath = path.join(DIRECTORIES.characters, request.body.avatar_url);
         let charJSON = await charaRead(avatarPath);
         if (typeof charJSON !== 'string') throw new Error('Failed to read character file');
 
@@ -1214,7 +1212,7 @@ app.post('/api/characters/edit-attribute', jsonParser, async function (request, 
  * */
 app.post('/api/characters/merge-attributes', jsonParser, async function (request, response) {
     const update = request.body;
-    const avatarPath = path.join(charactersPath, update.avatar);
+    const avatarPath = path.join(DIRECTORIES.characters, update.avatar);
 
     try {
         let character = JSON.parse(await charaRead(avatarPath));
@@ -1250,7 +1248,7 @@ app.post('/api/characters/delete', jsonParser, async function (request, response
         return response.sendStatus(403);
     }
 
-    const avatarPath = charactersPath + request.body.avatar_url;
+    const avatarPath = DIRECTORIES.characters + request.body.avatar_url;
     if (!fs.existsSync(avatarPath)) {
         return response.sendStatus(400);
     }
@@ -1266,7 +1264,7 @@ app.post('/api/characters/delete', jsonParser, async function (request, response
 
     if (request.body.delete_chats == true) {
         try {
-            await fs.promises.rm(path.join(chatsPath, sanitize(dir_name)), { recursive: true, force: true });
+            await fs.promises.rm(path.join(DIRECTORIES.chats, sanitize(dir_name)), { recursive: true, force: true });
         } catch (err) {
             console.error(err);
             return response.sendStatus(500);
@@ -1298,7 +1296,7 @@ async function charaWrite(img_url, data, target_img, response = undefined, mes =
         chunks.splice(-1, 0, PNGtext.encode('chara', base64EncodedData));
         //chunks.splice(-1, 0, text.encode('lorem', 'ipsum'));
 
-        writeFileAtomicSync(charactersPath + target_img + '.png', Buffer.from(encode(chunks)));
+        writeFileAtomicSync(DIRECTORIES.characters + target_img + '.png', Buffer.from(encode(chunks)));
         if (response !== undefined) response.send(mes);
         return true;
     } catch (err) {
@@ -1377,17 +1375,17 @@ const calculateDataSize = (data) => {
  */
 const processCharacter = async (item, i) => {
     try {
-        const img_data = await charaRead(charactersPath + item);
+        const img_data = await charaRead(DIRECTORIES.characters + item);
         if (img_data === undefined) throw new Error('Failed to read character file');
 
         let jsonObject = getCharaCardV2(JSON.parse(img_data));
         jsonObject.avatar = item;
         characters[i] = jsonObject;
         characters[i]['json_data'] = img_data;
-        const charStat = fs.statSync(path.join(charactersPath, item));
+        const charStat = fs.statSync(path.join(DIRECTORIES.characters, item));
         characters[i]['date_added'] = charStat.birthtimeMs;
         characters[i]['create_date'] = jsonObject['create_date'] || humanizedISO8601DateTime(charStat.birthtimeMs);
-        const char_dir = path.join(chatsPath, item.replace('.png', ''));
+        const char_dir = path.join(DIRECTORIES.chats, item.replace('.png', ''));
 
         const { chatSize, dateLastChat } = calculateChatSize(char_dir);
         characters[i]['chat_size'] = chatSize;
@@ -1415,7 +1413,7 @@ const processCharacter = async (item, i) => {
 /**
  * HTTP POST endpoint for the "/api/characters/all" route.
  *
- * This endpoint is responsible for reading character files from the `charactersPath` directory,
+ * This endpoint is responsible for reading character files from the `DIRECTORIES.characters` directory,
  * parsing character data, calculating stats for each character and responding with the data.
  * Stats are calculated only on the first run, on subsequent runs the stats are fetched from
  * the `charStats` variable.
@@ -1427,7 +1425,7 @@ const processCharacter = async (item, i) => {
  * @return {undefined}         Does not return a value.
  */
 app.post('/api/characters/all', jsonParser, function (request, response) {
-    fs.readdir(charactersPath, async (err, files) => {
+    fs.readdir(DIRECTORIES.characters, async (err, files) => {
         if (err) {
             console.error(err);
             return;
@@ -1452,7 +1450,7 @@ app.post('/api/characters/all', jsonParser, function (request, response) {
 app.post('/api/characters/get', jsonParser, async function (request, response) {
     if (!request.body) return response.sendStatus(400);
     const item = request.body.avatar_url;
-    const filePath = path.join(charactersPath, item);
+    const filePath = path.join(DIRECTORIES.characters, item);
 
     if (!fs.existsSync(filePath)) {
         return response.sendStatus(404);
@@ -1590,7 +1588,7 @@ app.post('/delchat', jsonParser, function (request, response) {
     }
 
     const dirName = String(request.body.avatar_url).replace('.png', '');
-    const fileName = `${chatsPath + dirName}/${sanitize(String(request.body.chatfile))}`;
+    const fileName = `${DIRECTORIES.chats + dirName}/${sanitize(String(request.body.chatfile))}`;
     const chatFileExists = fs.existsSync(fileName);
 
     if (!chatFileExists) {
@@ -1922,7 +1920,7 @@ app.post('/api/characters/chats', jsonParser, async function (request, response)
     const characterDirectory = (request.body.avatar_url).replace('.png', '');
 
     try {
-        const chatsDirectory = path.join(chatsPath, characterDirectory);
+        const chatsDirectory = path.join(DIRECTORIES.chats, characterDirectory);
         const files = fs.readdirSync(chatsDirectory);
         const jsonFiles = files.filter(file => path.extname(file) === '.jsonl');
 
@@ -1933,7 +1931,7 @@ app.post('/api/characters/chats', jsonParser, async function (request, response)
 
         const jsonFilesPromise = jsonFiles.map((file) => {
             return new Promise(async (res) => {
-                const pathToFile = path.join(chatsPath, characterDirectory, file);
+                const pathToFile = path.join(DIRECTORIES.chats, characterDirectory, file);
                 const fileStream = fs.createReadStream(pathToFile);
                 const stats = fs.statSync(pathToFile);
                 const fileSizeInKB = `${(stats.size / 1024).toFixed(2)}kb`;
@@ -1986,7 +1984,7 @@ app.post('/api/characters/chats', jsonParser, async function (request, response)
 function getPngName(file) {
     let i = 1;
     let base_name = file;
-    while (fs.existsSync(charactersPath + file + '.png')) {
+    while (fs.existsSync(DIRECTORIES.characters + file + '.png')) {
         file = base_name + i;
         i++;
     }
@@ -2349,7 +2347,7 @@ app.post('/importchat', urlencodedParser, function (request, response) {
                 const errors = [];
 
                 for (const chat of newChats) {
-                    const filePath = `${chatsPath + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()} imported.jsonl`;
+                    const filePath = `${DIRECTORIES.chats + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()} imported.jsonl`;
                     const fileContent = chat.map(tryParse).filter(x => x).join('\n');
 
                     try {
@@ -2395,7 +2393,7 @@ app.post('/importchat', urlencodedParser, function (request, response) {
                 }
 
                 const chatContent = chat.map(obj => JSON.stringify(obj)).join('\n');
-                writeFileAtomicSync(`${chatsPath + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()} imported.jsonl`, chatContent, 'utf8');
+                writeFileAtomicSync(`${DIRECTORIES.chats + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()} imported.jsonl`, chatContent, 'utf8');
 
                 response.send({ res: true });
             } else {
@@ -2410,7 +2408,7 @@ app.post('/importchat', urlencodedParser, function (request, response) {
             let jsonData = JSON.parse(line);
 
             if (jsonData.user_name !== undefined || jsonData.name !== undefined) {
-                fs.copyFileSync(path.join(UPLOADS_PATH, filedata.filename), (`${chatsPath + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()}.jsonl`));
+                fs.copyFileSync(path.join(UPLOADS_PATH, filedata.filename), (`${DIRECTORIES.chats + avatar_url}/${ch_name} - ${humanizedISO8601DateTime()}.jsonl`));
                 response.send({ res: true });
             } else {
                 console.log('Incorrect chat format .jsonl');
