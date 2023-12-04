@@ -125,7 +125,7 @@ class NovelTtsProvider {
             throw 'TTS Voice name not provided';
         }
 
-        return { name: voiceName, voice_id: voiceName, lang: 'en-US', preview_url: false};
+        return { name: voiceName, voice_id: voiceName, lang: 'en-US', preview_url: false };
     }
 
     async generateTts(text, voiceId) {
