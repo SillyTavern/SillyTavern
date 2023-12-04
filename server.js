@@ -3627,7 +3627,7 @@ app.use('/api/extra/classify', require('./src/endpoints/classify').router);
 app.use('/api/extra/caption', require('./src/endpoints/caption').router);
 
 // Web search extension
-require('./src/endpoints/serpapi').registerEndpoints(app, jsonParser);
+app.use('/api/serpapi', require('./src/endpoints/serpapi').router);
 
 const tavernUrl = new URL(
     (cliArguments.ssl ? 'https://' : 'http://') +
