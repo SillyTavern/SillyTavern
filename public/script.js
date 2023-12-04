@@ -887,7 +887,7 @@ async function getStatus() {
                 api_type: textgen_settings.type,
                 legacy_api: main_api == 'textgenerationwebui' ?
                     textgen_settings.legacy_api &&
-                        textgen_settings.type !== MANCER :
+                    textgen_settings.type !== MANCER :
                     false,
             }),
             signal: abortStatusCheck.signal,
@@ -4154,11 +4154,11 @@ async function DupeChar() {
         return;
     }
 
-    const confirm = await callPopup(`
-        <h3>Are you sure you want to duplicate this character?</h3>
-        <span>If you just want to start a new chat with the same character, use "Start new chat" option in the bottom-left options menu.</span><br><br>`,
-    'confirm',
-    );
+    const confirmMessage = `
+    <h3>Are you sure you want to duplicate this character?</h3>
+    <span>If you just want to start a new chat with the same character, use "Start new chat" option in the bottom-left options menu.</span><br><br>`;
+
+    const confirm = await callPopup(confirmMessage, 'confirm');
 
     if (!confirm) {
         console.log('User cancelled duplication');
@@ -7631,26 +7631,28 @@ function doTogglePanels() {
 }
 
 function addDebugFunctions() {
+    const doBackfill = async () => {
+        for (const message of chat) {
+            // System messages are not counted
+            if (message.is_system) {
+                continue;
+            }
+
+            if (!message.extra) {
+                message.extra = {};
+            }
+
+            message.extra.token_count = getTokenCount(message.mes, 0);
+        }
+
+        await saveChatConditional();
+        await reloadCurrentChat();
+    };
+
     registerDebugFunction('backfillTokenCounts', 'Backfill token counters',
         `Recalculates token counts of all messages in the current chat to refresh the counters.
         Useful when you switch between models that have different tokenizers.
-        This is a visual change only. Your chat will be reloaded.`, async () => {
-            for (const message of chat) {
-            // System messages are not counted
-                if (message.is_system) {
-                    continue;
-                }
-
-                if (!message.extra) {
-                    message.extra = {};
-                }
-
-                message.extra.token_count = getTokenCount(message.mes, 0);
-            }
-
-            await saveChatConditional();
-            await reloadCurrentChat();
-        });
+        This is a visual change only. Your chat will be reloaded.`, doBackfill);
 
     registerDebugFunction('generationTest', 'Send a generation request', 'Generates text using the currently selected API.', async () => {
         const text = prompt('Input text:', 'Hello');
