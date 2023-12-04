@@ -666,7 +666,7 @@ async function CreateZenSliders(elmnt) {
         min: sliderMin,
         max: sliderMax,
         create: async function () {
-            await delay(100)
+            await delay(100);
             var handle = $(this).find('.ui-slider-handle');
             var handleText, stepNumber, leftMargin;
 
@@ -711,7 +711,7 @@ async function CreateZenSliders(elmnt) {
                 stepNumber = ((sliderValue - sliderMin) / stepScale);
                 leftMargin = (stepNumber / numSteps) * 50 * -1;
                 originalSlider.val(numVal)
-                    .data('newSlider', newSlider)
+                    .data('newSlider', newSlider);
                 //console.log(`${newSlider.attr('id')} sliderValue = ${sliderValue}, handleText:${handleText, numVal}, stepNum:${stepNumber}, numSteps:${numSteps}, left-margin:${leftMargin}`)
                 var isManualInput = false;
                 var valueBeforeManualInput;
@@ -737,8 +737,8 @@ async function CreateZenSliders(elmnt) {
                         isManualInput = true;
                         //allow enter to trigger slider update
                         if (e.key === 'Enter') {
-                            e.preventDefault
-                            handle.trigger('blur')
+                            e.preventDefault;
+                            handle.trigger('blur');
                         }
                     })
                     //trigger slider changes when user clicks away

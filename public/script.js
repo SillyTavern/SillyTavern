@@ -887,7 +887,7 @@ async function getStatus() {
                 api_type: textgen_settings.type,
                 legacy_api: main_api == 'textgenerationwebui' ?
                     textgen_settings.legacy_api &&
-                        textgen_settings.type !== MANCER :
+                    textgen_settings.type !== MANCER :
                     false,
             }),
             signal: abortStatusCheck.signal,
@@ -2914,7 +2914,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         let textareaText;
         if (type !== 'regenerate' && type !== 'swipe' && type !== 'quiet' && !isImpersonate && !dryRun) {
             is_send_press = true;
-            textareaText = $('#send_textarea').val();
+            textareaText = String($('#send_textarea').val());
             $('#send_textarea').val('').trigger('input');
         } else {
             textareaText = '';
@@ -2960,7 +2960,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         //*********************************
 
         //for normal messages sent from user..
-        if ((textareaText != '' || hasPendingFileAttachment()) && !automatic_trigger && type !== 'quiet') {
+        if ((textareaText != '' || hasPendingFileAttachment()) && !automatic_trigger && type !== 'quiet' && !dryRun) {
             // If user message contains no text other than bias - send as a system message
             if (messageBias && replaceBiasMarkup(textareaText).trim().length === 0) {
                 sendSystemMessage(system_message_types.GENERIC, ' ', { bias: messageBias });
@@ -2969,7 +2969,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 await sendMessageAsUser(textareaText, messageBias);
             }
         }
-        else if (textareaText == '' && !automatic_trigger && type === undefined && main_api == 'openai' && oai_settings.send_if_empty.trim().length > 0) {
+        else if (textareaText == '' && !automatic_trigger && !dryRun && type === undefined && main_api == 'openai' && oai_settings.send_if_empty.trim().length > 0) {
             // Use send_if_empty if set and the user message is empty. Only when sending messages normally
             await sendMessageAsUser(oai_settings.send_if_empty.trim(), messageBias);
         }
@@ -4154,11 +4154,11 @@ async function DupeChar() {
         return;
     }
 
-    const confirm = await callPopup(`
-        <h3>Are you sure you want to duplicate this character?</h3>
-        <span>If you just want to start a new chat with the same character, use "Start new chat" option in the bottom-left options menu.</span><br><br>`,
-        'confirm',
-    );
+    const confirmMessage = `
+    <h3>Are you sure you want to duplicate this character?</h3>
+    <span>If you just want to start a new chat with the same character, use "Start new chat" option in the bottom-left options menu.</span><br><br>`;
+
+    const confirm = await callPopup(confirmMessage, 'confirm');
 
     if (!confirm) {
         console.log('User cancelled duplication');
@@ -7631,10 +7631,7 @@ function doTogglePanels() {
 }
 
 function addDebugFunctions() {
-    registerDebugFunction('backfillTokenCounts', 'Backfill token counters',
-        `Recalculates token counts of all messages in the current chat to refresh the counters.
-        Useful when you switch between models that have different tokenizers.
-        This is a visual change only. Your chat will be reloaded.`, async () => {
+    const doBackfill = async () => {
         for (const message of chat) {
             // System messages are not counted
             if (message.is_system) {
@@ -7650,7 +7647,12 @@ function addDebugFunctions() {
 
         await saveChatConditional();
         await reloadCurrentChat();
-    });
+    };
+
+    registerDebugFunction('backfillTokenCounts', 'Backfill token counters',
+        `Recalculates token counts of all messages in the current chat to refresh the counters.
+        Useful when you switch between models that have different tokenizers.
+        This is a visual change only. Your chat will be reloaded.`, doBackfill);
 
     registerDebugFunction('generationTest', 'Send a generation request', 'Generates text using the currently selected API.', async () => {
         const text = prompt('Input text:', 'Hello');

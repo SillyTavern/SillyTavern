@@ -1,6 +1,8 @@
 const vectra = require('vectra');
 const path = require('path');
+const express = require('express');
 const sanitize = require('sanitize-filename');
+const { jsonParser } = require('../express-common');
 
 /**
  * Gets the vector for the given text from the given source.
@@ -112,113 +114,108 @@ async function queryCollection(collectionId, source, searchText, topK) {
     return { metadata, hashes };
 }
 
-/**
- * Registers the endpoints for the vector API
- * @param {express.Express} app - Express app
- * @param {any} jsonParser - Express JSON parser
- */
-async function registerEndpoints(app, jsonParser) {
-    app.post('/api/vector/query', jsonParser, async (req, res) => {
-        try {
-            if (!req.body.collectionId || !req.body.searchText) {
-                return res.sendStatus(400);
-            }
+const router = express.Router();
 
-            const collectionId = String(req.body.collectionId);
-            const searchText = String(req.body.searchText);
-            const topK = Number(req.body.topK) || 10;
-            const source = String(req.body.source) || 'transformers';
-
-            const results = await queryCollection(collectionId, source, searchText, topK);
-            return res.json(results);
-        } catch (error) {
-            console.error(error);
-            return res.sendStatus(500);
+router.post('/query', jsonParser, async (req, res) => {
+    try {
+        if (!req.body.collectionId || !req.body.searchText) {
+            return res.sendStatus(400);
         }
-    });
 
-    app.post('/api/vector/insert', jsonParser, async (req, res) => {
-        try {
-            if (!Array.isArray(req.body.items) || !req.body.collectionId) {
-                return res.sendStatus(400);
-            }
+        const collectionId = String(req.body.collectionId);
+        const searchText = String(req.body.searchText);
+        const topK = Number(req.body.topK) || 10;
+        const source = String(req.body.source) || 'transformers';
 
-            const collectionId = String(req.body.collectionId);
-            const items = req.body.items.map(x => ({ hash: x.hash, text: x.text, index: x.index }));
-            const source = String(req.body.source) || 'transformers';
+        const results = await queryCollection(collectionId, source, searchText, topK);
+        return res.json(results);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
 
-            await insertVectorItems(collectionId, source, items);
-            return res.sendStatus(200);
-        } catch (error) {
-            console.error(error);
-            return res.sendStatus(500);
+router.post('/insert', jsonParser, async (req, res) => {
+    try {
+        if (!Array.isArray(req.body.items) || !req.body.collectionId) {
+            return res.sendStatus(400);
         }
-    });
 
-    app.post('/api/vector/list', jsonParser, async (req, res) => {
-        try {
-            if (!req.body.collectionId) {
-                return res.sendStatus(400);
-            }
+        const collectionId = String(req.body.collectionId);
+        const items = req.body.items.map(x => ({ hash: x.hash, text: x.text, index: x.index }));
+        const source = String(req.body.source) || 'transformers';
 
-            const collectionId = String(req.body.collectionId);
-            const source = String(req.body.source) || 'transformers';
+        await insertVectorItems(collectionId, source, items);
+        return res.sendStatus(200);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
 
-            const hashes = await getSavedHashes(collectionId, source);
-            return res.json(hashes);
-        } catch (error) {
-            console.error(error);
-            return res.sendStatus(500);
+router.post('/list', jsonParser, async (req, res) => {
+    try {
+        if (!req.body.collectionId) {
+            return res.sendStatus(400);
         }
-    });
 
-    app.post('/api/vector/delete', jsonParser, async (req, res) => {
-        try {
-            if (!Array.isArray(req.body.hashes) || !req.body.collectionId) {
-                return res.sendStatus(400);
-            }
+        const collectionId = String(req.body.collectionId);
+        const source = String(req.body.source) || 'transformers';
 
-            const collectionId = String(req.body.collectionId);
-            const hashes = req.body.hashes.map(x => Number(x));
-            const source = String(req.body.source) || 'transformers';
+        const hashes = await getSavedHashes(collectionId, source);
+        return res.json(hashes);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
 
-            await deleteVectorItems(collectionId, source, hashes);
-            return res.sendStatus(200);
-        } catch (error) {
-            console.error(error);
-            return res.sendStatus(500);
+router.post('/delete', jsonParser, async (req, res) => {
+    try {
+        if (!Array.isArray(req.body.hashes) || !req.body.collectionId) {
+            return res.sendStatus(400);
         }
-    });
 
-    app.post('/api/vector/purge', jsonParser, async (req, res) => {
-        try {
-            if (!req.body.collectionId) {
-                return res.sendStatus(400);
-            }
+        const collectionId = String(req.body.collectionId);
+        const hashes = req.body.hashes.map(x => Number(x));
+        const source = String(req.body.source) || 'transformers';
 
-            const collectionId = String(req.body.collectionId);
+        await deleteVectorItems(collectionId, source, hashes);
+        return res.sendStatus(200);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
 
-            const sources = ['transformers', 'openai'];
-            for (const source of sources) {
-                const index = await getIndex(collectionId, source, false);
-
-                const exists = await index.isIndexCreated();
-
-                if (!exists) {
-                    continue;
-                }
-
-                const path = index.folderPath;
-                await index.deleteIndex();
-                console.log(`Deleted vector index at ${path}`);
-            }
-
-            return res.sendStatus(200);
-        } catch (error) {
-            console.error(error);
-            return res.sendStatus(500);
+router.post('/purge', jsonParser, async (req, res) => {
+    try {
+        if (!req.body.collectionId) {
+            return res.sendStatus(400);
         }
-    });
-}
 
-module.exports = { registerEndpoints };
+        const collectionId = String(req.body.collectionId);
+
+        const sources = ['transformers', 'openai'];
+        for (const source of sources) {
+            const index = await getIndex(collectionId, source, false);
+
+            const exists = await index.isIndexCreated();
+
+            if (!exists) {
+                continue;
+            }
+
+            const path = index.folderPath;
+            await index.deleteIndex();
+            console.log(`Deleted vector index at ${path}`);
+        }
+
+        return res.sendStatus(200);
+    } catch (error) {
+        console.error(error);
+        return res.sendStatus(500);
+    }
+});
+
+module.exports = { router };

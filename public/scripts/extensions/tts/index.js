@@ -10,7 +10,7 @@ import { NovelTtsProvider } from './novel.js';
 import { power_user } from '../../power-user.js';
 import { registerSlashCommand } from '../../slash-commands.js';
 import { OpenAITtsProvider } from './openai.js';
-import {XTTSTtsProvider} from './xtts.js';
+import { XTTSTtsProvider } from './xtts.js';
 export { talkingAnimation };
 
 const UPDATE_INTERVAL = 1000;
