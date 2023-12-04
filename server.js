@@ -3618,7 +3618,7 @@ app.use('/api/horde', require('./src/endpoints/horde').router);
 require('./src/endpoints/vectors').registerEndpoints(app, jsonParser);
 
 // Chat translation
-require('./src/endpoints/translate').registerEndpoints(app, jsonParser);
+app.use('/api/translate', require('./src/endpoints/translate').router);
 
 // Emotion classification
 app.use('/api/extra/classify', require('./src/endpoints/classify').router);
