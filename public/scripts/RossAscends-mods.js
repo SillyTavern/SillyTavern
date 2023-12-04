@@ -898,12 +898,16 @@ export function initRossMods() {
 
     //this makes the chat input text area resize vertically to match the text size (limited by CSS at 50% window height)
     $('#send_textarea').on('input', function () {
+        const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
         const chatBlock = $('#chat');
         const originalScrollBottom = chatBlock[0].scrollHeight - (chatBlock.scrollTop() + chatBlock.outerHeight());
         this.style.height = window.getComputedStyle(this).getPropertyValue('min-height');
         this.style.height = this.scrollHeight + 0.1 + 'px';
-        const newScrollTop = Math.round(chatBlock[0].scrollHeight - (chatBlock.outerHeight() + originalScrollBottom));
-        chatBlock.scrollTop(newScrollTop);
+
+        if (!isFirefox) {
+            const newScrollTop = Math.round(chatBlock[0].scrollHeight - (chatBlock.outerHeight() + originalScrollBottom));
+            chatBlock.scrollTop(newScrollTop);
+        }
         saveUserInput();
     });
 
