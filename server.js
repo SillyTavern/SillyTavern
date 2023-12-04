@@ -3585,7 +3585,7 @@ require('./src/endpoints/tokenizers').registerEndpoints(app, jsonParser);
 require('./src/endpoints/presets').registerEndpoints(app, jsonParser);
 
 // Secrets managemenet
-require('./src/endpoints/secrets').registerEndpoints(app, jsonParser);
+app.use('/api/secrets', require('./src/endpoints/secrets').router);
 
 // Thumbnail generation
 require('./src/endpoints/thumbnails').registerEndpoints(app, jsonParser);
