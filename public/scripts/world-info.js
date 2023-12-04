@@ -1780,9 +1780,10 @@ async function checkWorldInfo(chat, maxContext) {
                                 console.debug(`WI UID:${entry.uid}: Filtering for secondary keyword - "${secondarySubstituted}".`);
                                 
                                 // Simplified AND/NOT if statement. (Proper fix for PR#1356 by Bronya)
-                                if (selectiveLogic === 0 && secondarySubstituted && matchKeys(textToScan, secondarySubstituted.trim()) ||
-                                selectiveLogic === 1 && !(secondarySubstituted && matchKeys(textToScan, secondarySubstituted.trim()))) {
-                                    if (selectiveLogic === 0) {
+                                if (selectiveLogic === 0 && (secondarySubstituted && matchKeys(textToScan, secondarySubstituted.trim())) || // If AND logic and the main checks pass
+                                selectiveLogic === 1 && !(secondarySubstituted && matchKeys(textToScan, secondarySubstituted.trim()))) { // OR if NOT logic and the main checks do not pass
+                                    // Differ both logic statements in the debugger
+                                    if (selectiveLogic === 0) { 
                                         console.debug(`(AND Check) Activating WI Entry ${entry.uid}. Found match for word: ${substituted} ${secondarySubstituted}`);
                                     } else {
                                         console.debug(`(NOT Check) Activating WI Entry ${entry.uid}. Found match for word "${substituted}" without secondary keyword: ${secondarySubstituted}`);
