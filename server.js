@@ -3609,7 +3609,7 @@ app.use('/api/sprites', require('./src/endpoints/sprites').router);
 app.use('/api/content', require('./src/endpoints/content-manager').router);
 
 // Stable Diffusion generation
-require('./src/endpoints/stable-diffusion').registerEndpoints(app, jsonParser);
+app.use('/api/sd', require('./src/endpoints/stable-diffusion').router);
 
 // LLM and SD Horde generation
 app.use('/api/horde', require('./src/endpoints/horde').router);
