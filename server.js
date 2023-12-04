@@ -3591,7 +3591,7 @@ require('./src/endpoints/secrets').registerEndpoints(app, jsonParser);
 require('./src/endpoints/thumbnails').registerEndpoints(app, jsonParser);
 
 // NovelAI generation
-require('./src/endpoints/novelai').registerEndpoints(app, jsonParser);
+app.use('/api/novelai', require('./src/endpoints/novelai').router);
 
 // Third-party extensions
 app.use('/api/extensions', require('./src/endpoints/extensions').router);
