@@ -3615,7 +3615,7 @@ require('./src/endpoints/stable-diffusion').registerEndpoints(app, jsonParser);
 app.use('/api/horde', require('./src/endpoints/horde').router);
 
 // Vector storage DB
-require('./src/endpoints/vectors').registerEndpoints(app, jsonParser);
+app.use('/api/vector', require('./src/endpoints/vectors').router);
 
 // Chat translation
 app.use('/api/translate', require('./src/endpoints/translate').router);
