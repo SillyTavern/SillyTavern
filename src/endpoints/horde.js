@@ -1,7 +1,9 @@
 const fetch = require('node-fetch').default;
+const express = require('express');
 const AIHorde = require('../ai_horde');
 const { getVersion, delay } = require('../util');
 const { readSecret, SECRET_KEYS } = require('./secrets');
+const { jsonParser } = require('../express-common');
 
 const ANONYMOUS_KEY = '0000000000';
 
@@ -52,221 +54,214 @@ function sanitizeHordeImagePrompt(prompt) {
     return prompt;
 }
 
-/**
- *
- * @param {import("express").Express} app
- * @param {any} jsonParser
- */
-function registerEndpoints(app, jsonParser) {
-    app.post('/api/horde/generate-text', jsonParser, async (request, response) => {
+const router = express.Router();
+
+router.post('/generate-text', jsonParser, async (request, response) => {
+    const api_key_horde = readSecret(SECRET_KEYS.HORDE) || ANONYMOUS_KEY;
+    const url = 'https://horde.koboldai.net/api/v2/generate/text/async';
+
+    console.log(request.body);
+    try {
+        const result = await fetch(url, {
+            method: 'POST',
+            body: JSON.stringify(request.body),
+            headers: {
+                'Content-Type': 'application/json',
+                'apikey': api_key_horde,
+                'Client-Agent': String(request.header('Client-Agent')),
+            },
+        });
+
+        if (!result.ok) {
+            const message = await result.text();
+            console.log('Horde returned an error:', message);
+            return response.send({ error: { message } });
+        }
+
+        const data = await result.json();
+        return response.send(data);
+    } catch (error) {
+        console.log(error);
+        return response.send({ error: true });
+    }
+});
+
+router.post('/sd-samplers', jsonParser, async (_, response) => {
+    try {
+        const ai_horde = await getHordeClient();
+        const samplers = Object.values(ai_horde.ModelGenerationInputStableSamplers);
+        response.send(samplers);
+    } catch (error) {
+        console.error(error);
+        response.sendStatus(500);
+    }
+});
+
+router.post('/sd-models', jsonParser, async (_, response) => {
+    try {
+        const ai_horde = await getHordeClient();
+        const models = await ai_horde.getModels();
+        response.send(models);
+    } catch (error) {
+        console.error(error);
+        response.sendStatus(500);
+    }
+});
+
+router.post('/caption-image', jsonParser, async (request, response) => {
+    try {
         const api_key_horde = readSecret(SECRET_KEYS.HORDE) || ANONYMOUS_KEY;
-        const url = 'https://horde.koboldai.net/api/v2/generate/text/async';
+        const ai_horde = await getHordeClient();
+        const result = await ai_horde.postAsyncInterrogate({
+            source_image: request.body.image,
+            forms: [{ name: AIHorde.ModelInterrogationFormTypes.caption }],
+        }, { token: api_key_horde });
 
-        console.log(request.body);
-        try {
-            const result = await fetch(url, {
-                method: 'POST',
-                body: JSON.stringify(request.body),
-                headers: {
-                    'Content-Type': 'application/json',
-                    'apikey': api_key_horde,
-                    'Client-Agent': String(request.header('Client-Agent')),
-                },
-            });
-
-            if (!result.ok) {
-                const message = await result.text();
-                console.log('Horde returned an error:', message);
-                return response.send({ error: { message } });
-            }
-
-            const data = await result.json();
-            return response.send(data);
-        } catch (error) {
-            console.log(error);
-            return response.send({ error: true });
-        }
-    });
-
-    app.post('/api/horde/sd-samplers', jsonParser, async (_, response) => {
-        try {
-            const ai_horde = await getHordeClient();
-            const samplers = Object.values(ai_horde.ModelGenerationInputStableSamplers);
-            response.send(samplers);
-        } catch (error) {
-            console.error(error);
-            response.sendStatus(500);
-        }
-    });
-
-    app.post('/api/horde/sd-models', jsonParser, async (_, response) => {
-        try {
-            const ai_horde = await getHordeClient();
-            const models = await ai_horde.getModels();
-            response.send(models);
-        } catch (error) {
-            console.error(error);
-            response.sendStatus(500);
-        }
-    });
-
-    app.post('/api/horde/caption-image', jsonParser, async (request, response) => {
-        try {
-            const api_key_horde = readSecret(SECRET_KEYS.HORDE) || ANONYMOUS_KEY;
-            const ai_horde = await getHordeClient();
-            const result = await ai_horde.postAsyncInterrogate({
-                source_image: request.body.image,
-                forms: [{ name: AIHorde.ModelInterrogationFormTypes.caption }],
-            }, { token: api_key_horde });
-
-            if (!result.id) {
-                console.error('Image interrogation request is not satisfyable:', result.message || 'unknown error');
-                return response.sendStatus(400);
-            }
-
-            const MAX_ATTEMPTS = 200;
-            const CHECK_INTERVAL = 3000;
-
-            for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-                await delay(CHECK_INTERVAL);
-                const status = await ai_horde.getInterrogationStatus(result.id);
-                console.log(status);
-
-                if (status.state === AIHorde.HordeAsyncRequestStates.done) {
-
-                    if (status.forms === undefined) {
-                        console.error('Image interrogation request failed: no forms found.');
-                        return response.sendStatus(500);
-                    }
-
-                    console.log('Image interrogation result:', status);
-                    const caption = status?.forms[0]?.result?.caption || '';
-
-                    if (!caption) {
-                        console.error('Image interrogation request failed: no caption found.');
-                        return response.sendStatus(500);
-                    }
-
-                    return response.send({ caption });
-                }
-
-                if (status.state === AIHorde.HordeAsyncRequestStates.faulted || status.state === AIHorde.HordeAsyncRequestStates.cancelled) {
-                    console.log('Image interrogation request is not successful.');
-                    return response.sendStatus(503);
-                }
-            }
-
-        } catch (error) {
-            console.error(error);
-            response.sendStatus(500);
-        }
-    });
-
-    app.post('/api/horde/user-info', jsonParser, async (_, response) => {
-        const api_key_horde = readSecret(SECRET_KEYS.HORDE);
-
-        if (!api_key_horde) {
-            return response.send({ anonymous: true });
-        }
-
-        try {
-            const ai_horde = await getHordeClient();
-            const user = await ai_horde.findUser({ token: api_key_horde });
-            return response.send(user);
-        } catch (error) {
-            console.error(error);
-            return response.sendStatus(500);
-        }
-    });
-
-    app.post('/api/horde/generate-image', jsonParser, async (request, response) => {
-        if (!request.body.prompt) {
+        if (!result.id) {
+            console.error('Image interrogation request is not satisfyable:', result.message || 'unknown error');
             return response.sendStatus(400);
         }
 
         const MAX_ATTEMPTS = 200;
         const CHECK_INTERVAL = 3000;
-        const PROMPT_THRESHOLD = 5000;
 
-        try {
-            const maxLength = PROMPT_THRESHOLD - String(request.body.negative_prompt).length - 5;
-            if (String(request.body.prompt).length > maxLength) {
-                console.log('Stable Horde prompt is too long, truncating...');
-                request.body.prompt = String(request.body.prompt).substring(0, maxLength);
-            }
+        for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+            await delay(CHECK_INTERVAL);
+            const status = await ai_horde.getInterrogationStatus(result.id);
+            console.log(status);
 
-            // Sanitize prompt if requested
-            if (request.body.sanitize) {
-                const sanitized = sanitizeHordeImagePrompt(request.body.prompt);
+            if (status.state === AIHorde.HordeAsyncRequestStates.done) {
 
-                if (request.body.prompt !== sanitized) {
-                    console.log('Stable Horde prompt was sanitized.');
-                }
-
-                request.body.prompt = sanitized;
-            }
-
-            const api_key_horde = readSecret(SECRET_KEYS.HORDE) || ANONYMOUS_KEY;
-            console.log('Stable Horde request:', request.body);
-
-            const ai_horde = await getHordeClient();
-            const generation = await ai_horde.postAsyncImageGenerate(
-                {
-                    prompt: `${request.body.prompt} ### ${request.body.negative_prompt}`,
-                    params:
-                    {
-                        sampler_name: request.body.sampler,
-                        hires_fix: request.body.enable_hr,
-                        // @ts-ignore - use_gfpgan param is not in the type definition, need to update to new ai_horde @ https://github.com/ZeldaFan0225/ai_horde/blob/main/index.ts
-                        use_gfpgan: request.body.restore_faces,
-                        cfg_scale: request.body.scale,
-                        steps: request.body.steps,
-                        width: request.body.width,
-                        height: request.body.height,
-                        karras: Boolean(request.body.karras),
-                        n: 1,
-                    },
-                    r2: false,
-                    nsfw: request.body.nfsw,
-                    models: [request.body.model],
-                },
-                { token: api_key_horde });
-
-            if (!generation.id) {
-                console.error('Image generation request is not satisfyable:', generation.message || 'unknown error');
-                return response.sendStatus(400);
-            }
-
-            for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-                await delay(CHECK_INTERVAL);
-                const check = await ai_horde.getImageGenerationCheck(generation.id);
-                console.log(check);
-
-                if (check.done) {
-                    const result = await ai_horde.getImageGenerationStatus(generation.id);
-                    if (result.generations === undefined) return response.sendStatus(500);
-                    return response.send(result.generations[0].img);
-                }
-
-                /*
-                if (!check.is_possible) {
-                    return response.sendStatus(503);
-                }
-                */
-
-                if (check.faulted) {
+                if (status.forms === undefined) {
+                    console.error('Image interrogation request failed: no forms found.');
                     return response.sendStatus(500);
                 }
+
+                console.log('Image interrogation result:', status);
+                const caption = status?.forms[0]?.result?.caption || '';
+
+                if (!caption) {
+                    console.error('Image interrogation request failed: no caption found.');
+                    return response.sendStatus(500);
+                }
+
+                return response.send({ caption });
             }
 
-            return response.sendStatus(504);
-        } catch (error) {
-            console.error(error);
-            return response.sendStatus(500);
+            if (status.state === AIHorde.HordeAsyncRequestStates.faulted || status.state === AIHorde.HordeAsyncRequestStates.cancelled) {
+                console.log('Image interrogation request is not successful.');
+                return response.sendStatus(503);
+            }
         }
-    });
-}
 
-module.exports = {
-    registerEndpoints,
-};
+    } catch (error) {
+        console.error(error);
+        response.sendStatus(500);
+    }
+});
+
+router.post('/user-info', jsonParser, async (_, response) => {
+    const api_key_horde = readSecret(SECRET_KEYS.HORDE);
+
+    if (!api_key_horde) {
+        return response.send({ anonymous: true });
+    }
+
+    try {
+        const ai_horde = await getHordeClient();
+        const user = await ai_horde.findUser({ token: api_key_horde });
+        return response.send(user);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+router.post('/generate-image', jsonParser, async (request, response) => {
+    if (!request.body.prompt) {
+        return response.sendStatus(400);
+    }
+
+    const MAX_ATTEMPTS = 200;
+    const CHECK_INTERVAL = 3000;
+    const PROMPT_THRESHOLD = 5000;
+
+    try {
+        const maxLength = PROMPT_THRESHOLD - String(request.body.negative_prompt).length - 5;
+        if (String(request.body.prompt).length > maxLength) {
+            console.log('Stable Horde prompt is too long, truncating...');
+            request.body.prompt = String(request.body.prompt).substring(0, maxLength);
+        }
+
+        // Sanitize prompt if requested
+        if (request.body.sanitize) {
+            const sanitized = sanitizeHordeImagePrompt(request.body.prompt);
+
+            if (request.body.prompt !== sanitized) {
+                console.log('Stable Horde prompt was sanitized.');
+            }
+
+            request.body.prompt = sanitized;
+        }
+
+        const api_key_horde = readSecret(SECRET_KEYS.HORDE) || ANONYMOUS_KEY;
+        console.log('Stable Horde request:', request.body);
+
+        const ai_horde = await getHordeClient();
+        const generation = await ai_horde.postAsyncImageGenerate(
+            {
+                prompt: `${request.body.prompt} ### ${request.body.negative_prompt}`,
+                params:
+                {
+                    sampler_name: request.body.sampler,
+                    hires_fix: request.body.enable_hr,
+                    // @ts-ignore - use_gfpgan param is not in the type definition, need to update to new ai_horde @ https://github.com/ZeldaFan0225/ai_horde/blob/main/index.ts
+                    use_gfpgan: request.body.restore_faces,
+                    cfg_scale: request.body.scale,
+                    steps: request.body.steps,
+                    width: request.body.width,
+                    height: request.body.height,
+                    karras: Boolean(request.body.karras),
+                    n: 1,
+                },
+                r2: false,
+                nsfw: request.body.nfsw,
+                models: [request.body.model],
+            },
+            { token: api_key_horde });
+
+        if (!generation.id) {
+            console.error('Image generation request is not satisfyable:', generation.message || 'unknown error');
+            return response.sendStatus(400);
+        }
+
+        for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+            await delay(CHECK_INTERVAL);
+            const check = await ai_horde.getImageGenerationCheck(generation.id);
+            console.log(check);
+
+            if (check.done) {
+                const result = await ai_horde.getImageGenerationStatus(generation.id);
+                if (result.generations === undefined) return response.sendStatus(500);
+                return response.send(result.generations[0].img);
+            }
+
+            /*
+            if (!check.is_possible) {
+                return response.sendStatus(503);
+            }
+            */
+
+            if (check.faulted) {
+                return response.sendStatus(500);
+            }
+        }
+
+        return response.sendStatus(504);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+module.exports = { router };

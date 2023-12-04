@@ -1,8 +1,10 @@
 const fs = require('fs');
 const path = require('path');
+const express = require('express');
 const fetch = require('node-fetch').default;
 const sanitize = require('sanitize-filename');
 const { getConfigValue } = require('../util');
+const { jsonParser } = require('../express-common');
 const contentDirectory = path.join(process.cwd(), 'default/content');
 const contentLogPath = path.join(contentDirectory, 'content.log');
 const contentIndexPath = path.join(contentDirectory, 'index.json');
@@ -302,62 +304,57 @@ function parseJannyUrl(url) {
     return uuid;
 }
 
-/**
- * Registers endpoints for custom content management
- * @param {import('express').Express} app Express app
- * @param {any} jsonParser JSON parser middleware
- */
-function registerEndpoints(app, jsonParser) {
-    app.post('/api/content/import', jsonParser, async (request, response) => {
-        if (!request.body.url) {
-            return response.sendStatus(400);
-        }
+const router = express.Router();
 
-        try {
-            const url = request.body.url;
-            let result;
-            let type;
+router.post('/import', jsonParser, async (request, response) => {
+    if (!request.body.url) {
+        return response.sendStatus(400);
+    }
 
-            const isJannnyContent = url.includes('janitorai');
-            if (isJannnyContent) {
-                const uuid = parseJannyUrl(url);
-                if (!uuid) {
-                    return response.sendStatus(404);
-                }
+    try {
+        const url = request.body.url;
+        let result;
+        let type;
 
-                type = 'character';
-                result = await downloadJannyCharacter(uuid);
-            } else {
-                const chubParsed = parseChubUrl(url);
-                type = chubParsed?.type;
-
-                if (chubParsed?.type === 'character') {
-                    console.log('Downloading chub character:', chubParsed.id);
-                    result = await downloadChubCharacter(chubParsed.id);
-                }
-                else if (chubParsed?.type === 'lorebook') {
-                    console.log('Downloading chub lorebook:', chubParsed.id);
-                    result = await downloadChubLorebook(chubParsed.id);
-                }
-                else {
-                    return response.sendStatus(404);
-                }
+        const isJannnyContent = url.includes('janitorai');
+        if (isJannnyContent) {
+            const uuid = parseJannyUrl(url);
+            if (!uuid) {
+                return response.sendStatus(404);
             }
 
-            if (result.fileType) response.set('Content-Type', result.fileType);
-            response.set('Content-Disposition', `attachment; filename="${result.fileName}"`);
-            response.set('X-Custom-Content-Type', type);
-            return response.send(result.buffer);
-        } catch (error) {
-            console.log('Importing custom content failed', error);
-            return response.sendStatus(500);
+            type = 'character';
+            result = await downloadJannyCharacter(uuid);
+        } else {
+            const chubParsed = parseChubUrl(url);
+            type = chubParsed?.type;
+
+            if (chubParsed?.type === 'character') {
+                console.log('Downloading chub character:', chubParsed.id);
+                result = await downloadChubCharacter(chubParsed.id);
+            }
+            else if (chubParsed?.type === 'lorebook') {
+                console.log('Downloading chub lorebook:', chubParsed.id);
+                result = await downloadChubLorebook(chubParsed.id);
+            }
+            else {
+                return response.sendStatus(404);
+            }
         }
-    });
-}
+
+        if (result.fileType) response.set('Content-Type', result.fileType);
+        response.set('Content-Disposition', `attachment; filename="${result.fileName}"`);
+        response.set('X-Custom-Content-Type', type);
+        return response.send(result.buffer);
+    } catch (error) {
+        console.log('Importing custom content failed', error);
+        return response.sendStatus(500);
+    }
+});
 
 module.exports = {
     checkForNewContent,
-    registerEndpoints,
     getDefaultPresets,
     getDefaultPresetFile,
+    router,
 };
