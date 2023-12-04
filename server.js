@@ -3609,7 +3609,7 @@ require('./src/endpoints/content-manager').registerEndpoints(app, jsonParser);
 require('./src/endpoints/stable-diffusion').registerEndpoints(app, jsonParser);
 
 // LLM and SD Horde generation
-require('./src/endpoints/horde').registerEndpoints(app, jsonParser);
+app.use('/api/horde', require('./src/endpoints/horde').router);
 
 // Vector storage DB
 require('./src/endpoints/vectors').registerEndpoints(app, jsonParser);
