@@ -4,5 +4,4 @@ const express = require('express');
 const jsonParser = express.json({ limit: '200mb' });
 const urlencodedParser = express.urlencoded({ extended: true, limit: '200mb' });
 
-module.exports = {jsonParser, urlencodedParser};
-
+module.exports = { jsonParser, urlencodedParser };
