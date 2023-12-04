@@ -1,10 +1,12 @@
 const fs = require('fs');
 const path = require('path');
+const express = require('express');
 const sanitize = require('sanitize-filename');
 const jimp = require('jimp');
 const writeFileAtomicSync = require('write-file-atomic').sync;
 const { DIRECTORIES } = require('../constants');
 const { getConfigValue } = require('../util');
+const { jsonParser } = require('../express-common');
 
 /**
  * Gets a path to thumbnail folder based on the type.
@@ -150,53 +152,46 @@ async function ensureThumbnailCache() {
     console.log(`Done! Generated: ${bgFiles.length} preview images`);
 }
 
+const router = express.Router();
 
-/**
- * Registers the endpoints for the thumbnail management.
- * @param {import('express').Express} app Express app
- * @param {any} jsonParser JSON parser middleware
- */
-function registerEndpoints(app, jsonParser) {
-    // Important: Do not change a path to this endpoint. It is used in the client code and saved to chat files.
-    app.get('/thumbnail', jsonParser, async function (request, response) {
-        if (typeof request.query.file !== 'string' || typeof request.query.type !== 'string') return response.sendStatus(400);
+// Important: This route must be mounted as '/thumbnail'. It is used in the client code and saved to chat files.
+router.get('/', jsonParser, async function (request, response) {
+    if (typeof request.query.file !== 'string' || typeof request.query.type !== 'string') return response.sendStatus(400);
 
-        const type = request.query.type;
-        const file = sanitize(request.query.file);
+    const type = request.query.type;
+    const file = sanitize(request.query.file);
 
-        if (!type || !file) {
-            return response.sendStatus(400);
-        }
+    if (!type || !file) {
+        return response.sendStatus(400);
+    }
 
-        if (!(type == 'bg' || type == 'avatar')) {
-            return response.sendStatus(400);
-        }
+    if (!(type == 'bg' || type == 'avatar')) {
+        return response.sendStatus(400);
+    }
 
-        if (sanitize(file) !== file) {
-            console.error('Malicious filename prevented');
-            return response.sendStatus(403);
-        }
+    if (sanitize(file) !== file) {
+        console.error('Malicious filename prevented');
+        return response.sendStatus(403);
+    }
 
-        if (getConfigValue('disableThumbnails', false) == true) {
-            let folder = getOriginalFolder(type);
-            if (folder === undefined) return response.sendStatus(400);
-            const pathToOriginalFile = path.join(folder, file);
-            return response.sendFile(pathToOriginalFile, { root: process.cwd() });
-        }
+    if (getConfigValue('disableThumbnails', false) == true) {
+        let folder = getOriginalFolder(type);
+        if (folder === undefined) return response.sendStatus(400);
+        const pathToOriginalFile = path.join(folder, file);
+        return response.sendFile(pathToOriginalFile, { root: process.cwd() });
+    }
 
-        const pathToCachedFile = await generateThumbnail(type, file);
+    const pathToCachedFile = await generateThumbnail(type, file);
 
-        if (!pathToCachedFile) {
-            return response.sendStatus(404);
-        }
+    if (!pathToCachedFile) {
+        return response.sendStatus(404);
+    }
 
-        return response.sendFile(pathToCachedFile, { root: process.cwd() });
-    });
-
-}
+    return response.sendFile(pathToCachedFile, { root: process.cwd() });
+});
 
 module.exports = {
     invalidateThumbnail,
-    registerEndpoints,
     ensureThumbnailCache,
+    router,
 };
