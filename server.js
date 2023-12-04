@@ -3594,7 +3594,7 @@ require('./src/endpoints/thumbnails').registerEndpoints(app, jsonParser);
 require('./src/endpoints/novelai').registerEndpoints(app, jsonParser);
 
 // Third-party extensions
-require('./src/endpoints/extensions').registerEndpoints(app, jsonParser);
+app.use('/api/extensions', require('./src/endpoints/extensions').router);
 
 // Asset management
 require('./src/endpoints/assets').registerEndpoints(app, jsonParser);
