@@ -1757,16 +1757,28 @@ async function checkWorldInfo(chat, maxContext) {
             }
 
             if (Array.isArray(entry.key) && entry.key.length) { //check for keywords existing
+                
                 // If selectiveLogic isn't found, assume it's AND, only do this once per entry
                 const selectiveLogic = entry.selectiveLogic ?? 0;
+                let causeWords = {
+                    primary: "",
+                    secondary: ""
+                };
 
                 primary: for (let key of entry.key) {
+                    // For Debug Purposes
+                    causeWords = {
+                        primary: "",
+                        secondary: ""
+                    };
                     const substituted = substituteParams(key);
 
                     console.debug(`${entry.uid}: ${substituted}`);
 
                     if (substituted && matchKeys(textToScan, substituted.trim())) {
-                        console.debug(`WI UID ${entry.uid} found by primary match: ${substituted}.`);
+                        console.debug(`${entry.uid}: got primary match`);
+                        // Add Primary to Debug Dictionary
+                        causeWords.primary = substituted;
 
                         //selective logic begins
                         if (
@@ -1774,31 +1786,46 @@ async function checkWorldInfo(chat, maxContext) {
                             Array.isArray(entry.keysecondary) && //always true
                             entry.keysecondary.length //ignore empties
                         ) {
-                            console.debug(`WI UID:${entry.uid} found. Checking logic: ${entry.selectiveLogic}`);
+                            console.debug(`uid:${entry.uid}: checking logic: ${entry.selectiveLogic}`);
                             secondary: for (let keysecondary of entry.keysecondary) {
                                 const secondarySubstituted = substituteParams(keysecondary);
-                                console.debug(`WI UID:${entry.uid}: Filtering for secondary keyword - "${secondarySubstituted}".`);
-                                
-                                // Simplified AND/NOT if statement. (Proper fix for PR#1356 by Bronya)
-                                if (selectiveLogic === 0 && secondarySubstituted && matchKeys(textToScan, secondarySubstituted.trim()) ||
-                                selectiveLogic === 1 && !(secondarySubstituted && matchKeys(textToScan, secondarySubstituted.trim()))) {
-                                    if (selectiveLogic === 0) {
-                                        console.debug(`(AND Check) Activating WI Entry ${entry.uid}. Found match for word: ${substituted} ${secondarySubstituted}`);
-                                    } else {
-                                        console.debug(`(NOT Check) Activating WI Entry ${entry.uid}. Found match for word "${substituted}" without secondary keyword: ${secondarySubstituted}`);
+                                console.debug(`uid:${entry.uid}: filtering ${secondarySubstituted}`);
+
+                                //AND operator
+                                if (selectiveLogic === 0) {
+                                    console.debug('Saw AND logic, checking...');
+                                    if (secondarySubstituted && matchKeys(textToScan, secondarySubstituted.trim())) {
+                                        console.debug(`activating entry ${entry.uid} with AND found: ${substituted} ${secondarySubstituted}`);
+                                        // Add Secondary to Debug Dictionary
+                                        causeWords.secondary = secondarySubstituted;
+
+                                        activatedNow.add(entry);
+                                        break secondary;
                                     }
-                                    activatedNow.add(entry);
-                                    break secondary;
+                                }
+
+                                //NOT operator
+                                if (selectiveLogic === 1) {
+                                    console.debug('Saw NOT logic, checking...');
+                                    // Since AND is opposite of NOT, this should be opposite too.
+                                    if (!(secondarySubstituted && matchKeys(textToScan, secondarySubstituted.trim()))) {
+                                        console.debug(`activating entry ${entry.uid} with NOT found: ${substituted} ${secondarySubstituted}`);
+                                        causeWords.secondary = secondarySubstituted;
+
+                                        activatedNow.add(entry);
+                                        break secondary;
+                                    }
                                 }
                             }
-                        // Handle cases where secondary is empty
+                            //handle cases where secondary is empty
                         } else {
-                            console.debug(`WI UID ${entry.uid}: Activated without filter logic.`);
+                            console.debug(`uid ${entry.uid}: activated without filter logic`);
                             activatedNow.add(entry);
                             break primary;
                         }
-                    } else { console.debug(`No active entries for logic checks for word: ${substituted}.`); }
+                    } else { console.debug('no active entries for logic checks yet'); }
                 }
+                console.debug(`DEBUG Output: ${entry.uid}. Primary Word Trigger: ${causeWords.primary} | Secondary Word Trigger: ${causeWords.secondary}.`)
             }
         }
 
