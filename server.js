@@ -3621,7 +3621,7 @@ require('./src/endpoints/translate').registerEndpoints(app, jsonParser);
 require('./src/endpoints/classify').registerEndpoints(app, jsonParser);
 
 // Image captioning
-require('./src/endpoints/caption').registerEndpoints(app, jsonParser);
+app.use('/api/extra/caption', require('./src/endpoints/caption').router);
 
 // Web search extension
 require('./src/endpoints/serpapi').registerEndpoints(app, jsonParser);
