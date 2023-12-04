@@ -50,6 +50,7 @@ util.inspect.defaultOptions.maxStringLength = null;
 
 // local library imports
 const basicAuthMiddleware = require('./src/middleware/basicAuthMiddleware');
+const { jsonParser, urlencodedParser } = require('./src/express-common.js');
 const characterCardParser = require('./src/character-card-parser.js');
 const contentManager = require('./src/endpoints/content-manager');
 const statsHelpers = require('./statsHelpers.js');
@@ -215,8 +216,6 @@ var chatsPath = 'public/chats/';
 const SETTINGS_FILE = './public/settings.json';
 const AVATAR_WIDTH = 400;
 const AVATAR_HEIGHT = 600;
-const jsonParser = express.json({ limit: '200mb' });
-const urlencodedParser = express.urlencoded({ extended: true, limit: '200mb' });
 const { DIRECTORIES, UPLOADS_PATH, PALM_SAFETY, TEXTGEN_TYPES, CHAT_COMPLETION_SOURCES } = require('./src/constants');
 const { TavernCardValidator } = require('./src/validator/TavernCardValidator');
 
