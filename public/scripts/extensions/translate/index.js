@@ -1,4 +1,4 @@
-export {translate};
+export { translate };
 
 import {
     callPopup,

@@ -3597,7 +3597,10 @@ require('./src/endpoints/novelai').registerEndpoints(app, jsonParser);
 require('./src/endpoints/extensions').registerEndpoints(app, jsonParser);
 
 // Asset management
-require('./src/endpoints/assets').registerEndpoints(app, jsonParser);
+app.use('/api/assets', require('./src/endpoints/assets').router);
+
+// File management
+app.use('/api/files', require('./src/endpoints/files').router);
 
 // Character sprite management
 require('./src/endpoints/sprites').registerEndpoints(app, jsonParser, urlencodedParser);
@@ -3618,10 +3621,10 @@ require('./src/endpoints/vectors').registerEndpoints(app, jsonParser);
 require('./src/endpoints/translate').registerEndpoints(app, jsonParser);
 
 // Emotion classification
-require('./src/endpoints/classify').registerEndpoints(app, jsonParser);
+app.use('/api/extra/classify', require('./src/endpoints/classify').router);
 
 // Image captioning
-require('./src/endpoints/caption').registerEndpoints(app, jsonParser);
+app.use('/api/extra/caption', require('./src/endpoints/caption').router);
 
 // Web search extension
 require('./src/endpoints/serpapi').registerEndpoints(app, jsonParser);
