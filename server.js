@@ -3606,7 +3606,7 @@ app.use('/api/files', require('./src/endpoints/files').router);
 require('./src/endpoints/sprites').registerEndpoints(app, jsonParser, urlencodedParser);
 
 // Custom content management
-require('./src/endpoints/content-manager').registerEndpoints(app, jsonParser);
+app.use('/api/content', require('./src/endpoints/content-manager').router);
 
 // Stable Diffusion generation
 require('./src/endpoints/stable-diffusion').registerEndpoints(app, jsonParser);
