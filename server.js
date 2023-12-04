@@ -3603,7 +3603,7 @@ app.use('/api/assets', require('./src/endpoints/assets').router);
 app.use('/api/files', require('./src/endpoints/files').router);
 
 // Character sprite management
-require('./src/endpoints/sprites').registerEndpoints(app, jsonParser, urlencodedParser);
+app.use('/api/sprites', require('./src/endpoints/sprites').router);
 
 // Custom content management
 app.use('/api/content', require('./src/endpoints/content-manager').router);
