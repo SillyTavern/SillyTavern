@@ -1374,6 +1374,7 @@ const newEntryTemplate = {
     probability: 100,
     useProbability: true,
     depth: DEFAULT_DEPTH,
+    group: '',
 };
 
 function createWorldInfoEntry(name, data, fromSlashCommand = false) {
@@ -1970,6 +1971,7 @@ function convertAgnaiMemoryBook(inputObj) {
             displayIndex: index,
             probability: null,
             useProbability: false,
+            group: '',
         };
     });
 
@@ -1996,6 +1998,7 @@ function convertRisuLorebook(inputObj) {
             displayIndex: index,
             probability: entry.activationPercent ?? null,
             useProbability: entry.activationPercent ?? false,
+            group: '',
         };
     });
 
@@ -2027,6 +2030,7 @@ function convertNovelLorebook(inputObj) {
             displayIndex: index,
             probability: null,
             useProbability: false,
+            group: '',
         };
     });
 
@@ -2060,6 +2064,7 @@ function convertCharacterBook(characterBook) {
             useProbability: entry.extensions?.useProbability ?? false,
             depth: entry.extensions?.depth ?? DEFAULT_DEPTH,
             selectiveLogic: entry.extensions?.selectiveLogic ?? 0,
+            group: entry.extensions?.group ?? '',
         };
     });
 
