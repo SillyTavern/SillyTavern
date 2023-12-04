@@ -2914,7 +2914,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         let textareaText;
         if (type !== 'regenerate' && type !== 'swipe' && type !== 'quiet' && !isImpersonate && !dryRun) {
             is_send_press = true;
-            textareaText = $('#send_textarea').val();
+            textareaText = String($('#send_textarea').val());
             $('#send_textarea').val('').trigger('input');
         } else {
             textareaText = '';
@@ -2960,7 +2960,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
         //*********************************
 
         //for normal messages sent from user..
-        if ((textareaText != '' || hasPendingFileAttachment()) && !automatic_trigger && type !== 'quiet') {
+        if ((textareaText != '' || hasPendingFileAttachment()) && !automatic_trigger && type !== 'quiet' && !dryRun) {
             // If user message contains no text other than bias - send as a system message
             if (messageBias && replaceBiasMarkup(textareaText).trim().length === 0) {
                 sendSystemMessage(system_message_types.GENERIC, ' ', { bias: messageBias });
@@ -2969,7 +2969,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                 await sendMessageAsUser(textareaText, messageBias);
             }
         }
-        else if (textareaText == '' && !automatic_trigger && type === undefined && main_api == 'openai' && oai_settings.send_if_empty.trim().length > 0) {
+        else if (textareaText == '' && !automatic_trigger && !dryRun && type === undefined && main_api == 'openai' && oai_settings.send_if_empty.trim().length > 0) {
             // Use send_if_empty if set and the user message is empty. Only when sending messages normally
             await sendMessageAsUser(oai_settings.send_if_empty.trim(), messageBias);
         }
