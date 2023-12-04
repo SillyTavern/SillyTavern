@@ -3621,7 +3621,7 @@ require('./src/endpoints/vectors').registerEndpoints(app, jsonParser);
 require('./src/endpoints/translate').registerEndpoints(app, jsonParser);
 
 // Emotion classification
-require('./src/endpoints/classify').registerEndpoints(app, jsonParser);
+app.use('/api/extra/classify', require('./src/endpoints/classify').router);
 
 // Image captioning
 app.use('/api/extra/caption', require('./src/endpoints/caption').router);
