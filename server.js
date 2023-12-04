@@ -3600,7 +3600,7 @@ require('./src/endpoints/extensions').registerEndpoints(app, jsonParser);
 require('./src/endpoints/assets').registerEndpoints(app, jsonParser);
 
 // Character sprite management
-require('./src/endpoints/sprites').registerEndpoints(app, jsonParser, urlencodedParser);
+app.use('/api/sprites', require('./src/endpoints/sprites').router);
 
 // Custom content management
 require('./src/endpoints/content-manager').registerEndpoints(app, jsonParser);
