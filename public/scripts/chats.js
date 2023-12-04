@@ -302,7 +302,7 @@ async function viewMessageFile(messageId) {
     modalTemplate.addClass('file_modal');
     addCopyToCodeBlocks(modalTemplate);
 
-    callPopup(modalTemplate, 'text');
+    callPopup(modalTemplate, 'text', '', { wide: true, large: true });
 }
 
 /**
