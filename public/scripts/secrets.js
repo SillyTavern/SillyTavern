@@ -49,7 +49,7 @@ function updateSecretDisplay() {
 }
 
 async function viewSecrets() {
-    const response = await fetch('/viewsecrets', {
+    const response = await fetch('/api/secrets/view', {
         method: 'POST',
         headers: getRequestHeaders(),
     });
