@@ -9073,10 +9073,15 @@ jQuery(async function () {
             return;
         }
 
-        if (selected_group) {
-            await openGroupChat(selected_group, file_name);
-        } else {
-            await openCharacterChat(file_name);
+        try {
+            showLoader();
+            if (selected_group) {
+                await openGroupChat(selected_group, file_name);
+            } else {
+                await openCharacterChat(file_name);
+            }
+        } finally {
+            hideLoader();
         }
 
         $('#shadow_select_chat_popup').css('display', 'none');
