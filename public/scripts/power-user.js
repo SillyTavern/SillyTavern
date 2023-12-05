@@ -801,6 +801,7 @@ async function CreateZenSliders(elmnt) {
             handleText = steps[stepNumber];
             handle.text(handleText);
             newSlider.val(stepNumber);
+            numVal = steps[stepNumber];
         }
         //special handling for TextCompletion rep pen range slider, pulls text aliases for step values from an array
         else if (newSlider.attr('id') == 'rep_pen_range_textgenerationwebui_zenslider') {
