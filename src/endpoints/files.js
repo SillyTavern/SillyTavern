@@ -16,13 +16,12 @@ router.post('/upload', jsonParser, async (request, response) => {
             return response.status(400).send('No upload data specified');
         }
 
-        const safeInput = validateAssetFileName(request.body.name);
+        // Validate filename
+        const validation = validateAssetFileName(request.body.name);
+        if (validation.error)
+            return response.status(400).send(validation.message);
 
-        if (!safeInput) {
-            return response.status(400).send('Invalid upload name');
-        }
-
-        const pathToUpload = path.join(DIRECTORIES.files, safeInput);
+        const pathToUpload = path.join(DIRECTORIES.files, request.body.name);
         writeFileSyncAtomic(pathToUpload, request.body.data, 'base64');
         const url = path.normalize(pathToUpload.replace('public' + path.sep, ''));
         return response.send({ path: url });

@@ -12,31 +12,39 @@ const VALID_CATEGORIES = ['bgm', 'ambient', 'blip', 'live2d'];
 /**
  * Validates the input filename for the asset.
  * @param {string} inputFilename Input filename
- * @returns {string} Normalized or empty path if invalid
+ * @returns {{error: boolean, message?: string}} Whether validation failed, and why if so
  */
 function validateAssetFileName(inputFilename) {
     if (!/^[a-zA-Z0-9_\-.]+$/.test(inputFilename)) {
-        console.debug('Bad request: illegal character in filename, only alphanumeric, \'_\', \'-\' are accepted.');
-        return '';
+        return {
+            error: true,
+            message: 'Illegal character in filename; only alphanumeric, \'_\', \'-\' are accepted.',
+        };
     }
 
     const inputExtension = path.extname(inputFilename).toLowerCase();
     if (UNSAFE_EXTENSIONS.some(ext => ext === inputExtension)) {
-        console.debug('Bad request: forbidden file extension.');
-        return '';
+        return {
+            error: true,
+            message: 'Forbidden file extension.',
+        };
     }
 
     if (inputFilename.startsWith('.')) {
-        console.debug('Bad request: filename cannot start with \'.\'');
-        return '';
+        return {
+            error: true,
+            message: 'Filename cannot start with \'.\'',
+        };
     }
 
     if (sanitize(inputFilename) !== inputFilename) {
-        console.debug('Bad request: reserved or long filename');
-        return '';
+        return {
+            error: true,
+            message: 'Reserved or long filename.',
+        };
     }
 
-    return inputFilename;
+    return { error: false };
 }
 
 // Recursive function to get files
@@ -141,13 +149,13 @@ router.post('/download', jsonParser, async (request, response) => {
         return response.sendStatus(400);
     }
 
-    // Sanitize filename
-    const safe_input = validateAssetFileName(request.body.filename);
-    if (safe_input == '')
-        return response.sendStatus(400);
+    // Validate filename
+    const validation = validateAssetFileName(request.body.filename);
+    if (validation.error)
+        return response.status(400).send(validation.message);
 
-    const temp_path = path.join(DIRECTORIES.assets, 'temp', safe_input);
-    const file_path = path.join(DIRECTORIES.assets, category, safe_input);
+    const temp_path = path.join(DIRECTORIES.assets, 'temp', request.body.filename);
+    const file_path = path.join(DIRECTORIES.assets, category, request.body.filename);
     console.debug('Request received to download', url, 'to', file_path);
 
     try {
@@ -199,12 +207,12 @@ router.post('/delete', jsonParser, async (request, response) => {
         return response.sendStatus(400);
     }
 
-    // Sanitize filename
-    const safe_input = validateAssetFileName(request.body.filename);
-    if (safe_input == '')
-        return response.sendStatus(400);
+    // Validate filename
+    const validation = validateAssetFileName(request.body.filename);
+    if (validation.error)
+        return response.status(400).send(validation.message);
 
-    const file_path = path.join(DIRECTORIES.assets, category, safe_input);
+    const file_path = path.join(DIRECTORIES.assets, category, request.body.filename);
     console.debug('Request received to delete', category, file_path);
 
     try {
