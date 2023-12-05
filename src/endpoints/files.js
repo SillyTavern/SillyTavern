@@ -23,7 +23,7 @@ router.post('/upload', jsonParser, async (request, response) => {
 
         const pathToUpload = path.join(DIRECTORIES.files, request.body.name);
         writeFileSyncAtomic(pathToUpload, request.body.data, 'base64');
-        const url = path.normalize(pathToUpload.replace('public' + path.sep, ''));
+        const url = path.normalize(pathToUpload.replace('public' + path.sep, '').replace(/\\/g, '/'));
         return response.send({ path: url });
     } catch (error) {
         console.log(error);

@@ -1588,7 +1588,8 @@ app.post('/uploadimage', jsonParser, async (request, response) => {
         const imageBuffer = Buffer.from(base64Data, 'base64');
         await fs.promises.writeFile(pathToNewFile, imageBuffer);
         // send the path to the image, relative to the client folder, which means removing the first folder from the path which is 'public'
-        pathToNewFile = pathToNewFile.split(path.sep).slice(1).join(path.sep);
+        // Use forward slashes, even on Windows
+        pathToNewFile = pathToNewFile.split(path.sep).slice(1).join('/');
         response.send({ path: pathToNewFile });
     } catch (error) {
         console.log(error);

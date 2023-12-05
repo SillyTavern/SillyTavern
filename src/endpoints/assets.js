@@ -102,7 +102,7 @@ router.post('/get', jsonParser, async (_, response) => {
                         file = path.normalize(file.replace('public' + path.sep, ''));
                         if (file.includes('model') && file.endsWith('.json')) {
                             //console.debug("Asset live2d model found:",file)
-                            output[folder].push(path.normalize(path.join(file)));
+                            output[folder].push(path.normalize(file).replace(/\\/g, '/'));
                         }
                     }
                     continue;
@@ -115,7 +115,7 @@ router.post('/get', jsonParser, async (_, response) => {
                     });
                 output[folder] = [];
                 for (const file of files) {
-                    output[folder].push(path.join('assets', folder, file));
+                    output[folder].push(path.join('assets', folder, file).replace(/\\/g, '/'));
                 }
             }
         }

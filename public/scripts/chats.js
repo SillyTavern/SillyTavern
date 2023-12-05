@@ -167,7 +167,7 @@ export async function uploadFileAttachment(fileName, base64Data) {
         }
 
         const responseData = await result.json();
-        return responseData.path.replace(/\\/g, '/');
+        return responseData.path;
     } catch (error) {
         toastr.error(String(error), 'Could not upload file');
         console.error('Could not upload file', error);
