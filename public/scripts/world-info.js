@@ -1791,25 +1791,26 @@ async function checkWorldInfo(chat, maxContext) {
                                     hasAnyMatch = true;
                                 }
 
-                                // Simplified AND/NAND if statement. (Proper fix for PR#1356 by Bronya)
-                                // If AND logic and the main checks pass OR if NOT logic and the main checks do not pass
+                                // Simplified AND ONE/NOT ONE (AND/NOR) if statement. (Proper fix for PR#1356 by Bronya)
+                                // If AND ONE logic and the main checks pass OR if NOT ONE logic and the main checks do not pass
                                 if ((selectiveLogic === world_info_logic.AND && hasSecondaryMatch) || (selectiveLogic === world_info_logic.NOT_ALL && !hasSecondaryMatch)) {
                                     // Differ both logic statements in the debugger
                                     if (selectiveLogic === world_info_logic.AND) {
-                                        console.debug(`(AND Check) Activating WI Entry ${entry.uid}. Found match for word: ${substituted} ${secondarySubstituted}`);
+                                        console.debug(`(AND ONE Check) Activating WI Entry ${entry.uid}. Found match for word: ${substituted} ${secondarySubstituted}`);
                                     } else {
-                                        console.debug(`(NOT AND Check) Activating WI Entry ${entry.uid}. Found match for word "${substituted}" without secondary keyword: ${secondarySubstituted}`);
+                                        console.debug(`(NOT ONE Check) Activating WI Entry ${entry.uid}. Found match for word "${substituted}" without secondary keyword: ${secondarySubstituted}`);
                                     }
                                     activatedNow.add(entry);
                                     break secondary;
                                 }
                             }
 
-                            // Handle NOT OR logic
+                            // Handle NOT ALL (NOT AND) logic
                             if (selectiveLogic === world_info_logic.NOT_ONE && !hasAnyMatch) {
-                                console.debug(`(NOT OR Check) Activating WI Entry ${entry.uid}. Found match for word "${substituted}" without secondary keyword.`);
+                                console.debug(`(NOT ALL Check) Activating WI Entry ${entry.uid}. Found match for word "${substituted}" without secondary keyword.`);
                                 activatedNow.add(entry);
                             }
+                            
                         // Handle cases where secondary is empty
                         } else {
                             console.debug(`WI UID ${entry.uid}: Activated without filter logic.`);
