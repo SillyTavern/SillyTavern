@@ -35,6 +35,12 @@ const world_info_insertion_strategy = {
     global_first: 2,
 };
 
+const world_info_logic = {
+    AND_ONE: 0,
+    NOT_ALL: 1,
+    NOT_ONE: 2,
+};
+
 let world_info = {};
 let selected_world_info = [];
 let world_names;
@@ -843,7 +849,7 @@ function getWorldEntry(name, data, entry) {
         const uid = $(this).data('uid');
         const value = Number($(this).val());
         console.debug(`logic for ${entry.uid} set to ${value}`);
-        data.entries[uid].selectiveLogic = !isNaN(value) ? value : 0;
+        data.entries[uid].selectiveLogic = !isNaN(value) ? value : world_info_logic.AND_ONE;
         setOriginalDataValue(data, uid, 'selectiveLogic', data.entries[uid].selectiveLogic);
         saveWorldInfo(name, data);
     });
@@ -1365,7 +1371,7 @@ const newEntryTemplate = {
     content: '',
     constant: false,
     selective: true,
-    selectiveLogic: 0,
+    selectiveLogic: world_info_logic.AND_ONE,
     addMemo: false,
     order: 100,
     position: 0,
@@ -1759,53 +1765,58 @@ async function checkWorldInfo(chat, maxContext) {
             if (Array.isArray(entry.key) && entry.key.length) { //check for keywords existing
                 // If selectiveLogic isn't found, assume it's AND, only do this once per entry
                 const selectiveLogic = entry.selectiveLogic ?? 0;
-                let notFlag = true;
+
                 primary: for (let key of entry.key) {
                     const substituted = substituteParams(key);
+
                     console.debug(`${entry.uid}: ${substituted}`);
+
                     if (substituted && matchKeys(textToScan, substituted.trim())) {
-                        console.debug(`${entry.uid}: got primary match`);
+                        console.debug(`WI UID ${entry.uid} found by primary match: ${substituted}.`);
+
                         //selective logic begins
                         if (
                             entry.selective && //all entries are selective now
                             Array.isArray(entry.keysecondary) && //always true
                             entry.keysecondary.length //ignore empties
                         ) {
-                            console.debug(`uid:${entry.uid}: checking logic: ${entry.selectiveLogic}`);
+                            console.debug(`WI UID:${entry.uid} found. Checking logic: ${entry.selectiveLogic}`);
+                            let hasAnyMatch = false;
                             secondary: for (let keysecondary of entry.keysecondary) {
                                 const secondarySubstituted = substituteParams(keysecondary);
-                                console.debug(`uid:${entry.uid}: filtering ${secondarySubstituted}`);
-                                //AND operator
-                                if (selectiveLogic === 0) {
-                                    console.debug('saw AND logic, checking..');
-                                    if (secondarySubstituted && matchKeys(textToScan, secondarySubstituted.trim())) {
-                                        console.debug(`activating entry ${entry.uid} with AND found`);
-                                        activatedNow.add(entry);
-                                        break secondary;
-                                    }
+                                const hasSecondaryMatch = secondarySubstituted && matchKeys(textToScan, secondarySubstituted.trim());
+                                console.debug(`WI UID:${entry.uid}: Filtering for secondary keyword - "${secondarySubstituted}".`);
+
+                                if (hasSecondaryMatch) {
+                                    hasAnyMatch = true;
                                 }
-                                //NOT operator
-                                if (selectiveLogic === 1) {
-                                    console.debug(`uid ${entry.uid}: checking NOT logic for ${secondarySubstituted}`);
-                                    if (secondarySubstituted && matchKeys(textToScan, secondarySubstituted.trim())) {
-                                        console.debug(`uid ${entry.uid}: canceled; filtered out by ${secondarySubstituted}`);
-                                        notFlag = false;
-                                        break primary;
+
+                                // Simplified AND ONE / NOT ALL if statement. (Proper fix for PR#1356 by Bronya)
+                                // If AND ONE logic and the main checks pass OR if NOT ALL logic and the main checks do not pass
+                                if ((selectiveLogic === world_info_logic.AND_ONE && hasSecondaryMatch) || (selectiveLogic === world_info_logic.NOT_ALL && !hasSecondaryMatch)) {
+                                    // Differ both logic statements in the debugger
+                                    if (selectiveLogic === world_info_logic.AND_ONE) {
+                                        console.debug(`(AND ONE Check) Activating WI Entry ${entry.uid}. Found match for word: ${substituted} ${secondarySubstituted}`);
+                                    } else {
+                                        console.debug(`(NOT ALL Check) Activating WI Entry ${entry.uid}. Found match for word "${substituted}" without secondary keyword: ${secondarySubstituted}`);
                                     }
+                                    activatedNow.add(entry);
+                                    break secondary;
                                 }
                             }
-                            //handle cases where secondary is empty
+
+                            // Handle NOT ONE logic
+                            if (selectiveLogic === world_info_logic.NOT_ONE && !hasAnyMatch) {
+                                console.debug(`(NOT ONE Check) Activating WI Entry ${entry.uid}, no secondary keywords found.`);
+                                activatedNow.add(entry);
+                            }
+                        // Handle cases where secondary is empty
                         } else {
-                            console.debug(`uid ${entry.uid}: activated without filter logic`);
+                            console.debug(`WI UID ${entry.uid}: Activated without filter logic.`);
                             activatedNow.add(entry);
                             break primary;
                         }
-                    } else { console.debug('no active entries for logic checks yet'); }
-                }
-                //for a NOT all entries must be checked, a single match invalidates activation
-                if (selectiveLogic === 1 && notFlag) {
-                    console.debug(`${entry.uid}: activated; passed NOT filter`);
-                    activatedNow.add(entry);
+                    } else { console.debug(`No active entries for logic checks for word: ${substituted}.`); }
                 }
             }
         }
@@ -1963,6 +1974,7 @@ function convertAgnaiMemoryBook(inputObj) {
             content: entry.entry,
             constant: false,
             selective: false,
+            selectiveLogic: world_info_logic.AND_ONE,
             order: entry.weight,
             position: 0,
             disable: !entry.enabled,
@@ -1990,6 +2002,7 @@ function convertRisuLorebook(inputObj) {
             content: entry.content,
             constant: entry.alwaysActive,
             selective: entry.selective,
+            selectiveLogic: world_info_logic.AND_ONE,
             order: entry.insertorder,
             position: world_info_position.before,
             disable: false,
@@ -2022,6 +2035,7 @@ function convertNovelLorebook(inputObj) {
             content: entry.text,
             constant: false,
             selective: false,
+            selectiveLogic: world_info_logic.AND_ONE,
             order: entry.contextConfig?.budgetPriority ?? 0,
             position: 0,
             disable: !entry.enabled,
@@ -2063,7 +2077,7 @@ function convertCharacterBook(characterBook) {
             probability: entry.extensions?.probability ?? null,
             useProbability: entry.extensions?.useProbability ?? false,
             depth: entry.extensions?.depth ?? DEFAULT_DEPTH,
-            selectiveLogic: entry.extensions?.selectiveLogic ?? 0,
+            selectiveLogic: entry.extensions?.selectiveLogic ?? world_info_logic.AND_ONE,
             group: entry.extensions?.group ?? '',
         };
     });
