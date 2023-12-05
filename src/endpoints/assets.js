@@ -10,11 +10,11 @@ const { jsonParser } = require('../express-common');
 const VALID_CATEGORIES = ['bgm', 'ambient', 'blip', 'live2d'];
 
 /**
- * Sanitizes the input filename for theasset.
+ * Validates the input filename for the asset.
  * @param {string} inputFilename Input filename
  * @returns {string} Normalized or empty path if invalid
  */
-function sanitizeAssetFileName(inputFilename) {
+function validateAssetFileName(inputFilename) {
     if (!/^[a-zA-Z0-9_\-.]+$/.test(inputFilename)) {
         console.debug('Bad request: illegal character in filename, only alphanumeric, \'_\', \'-\' are accepted.');
         return '';
@@ -28,6 +28,11 @@ function sanitizeAssetFileName(inputFilename) {
 
     if (inputFilename.startsWith('.')) {
         console.debug('Bad request: filename cannot start with \'.\'');
+        return '';
+    }
+
+    if (sanitize(inputFilename) !== inputFilename) {
+        console.debug('Bad request: reserved or long filename');
         return '';
     }
 
@@ -124,7 +129,6 @@ router.post('/get', jsonParser, async (_, response) => {
 router.post('/download', jsonParser, async (request, response) => {
     const url = request.body.url;
     const inputCategory = request.body.category;
-    const inputFilename = sanitize(request.body.filename);
 
     // Check category
     let category = null;
@@ -138,7 +142,7 @@ router.post('/download', jsonParser, async (request, response) => {
     }
 
     // Sanitize filename
-    const safe_input = sanitizeAssetFileName(inputFilename);
+    const safe_input = validateAssetFileName(request.body.filename);
     if (safe_input == '')
         return response.sendStatus(400);
 
@@ -183,7 +187,6 @@ router.post('/download', jsonParser, async (request, response) => {
  */
 router.post('/delete', jsonParser, async (request, response) => {
     const inputCategory = request.body.category;
-    const inputFilename = sanitize(request.body.filename);
 
     // Check category
     let category = null;
@@ -197,7 +200,7 @@ router.post('/delete', jsonParser, async (request, response) => {
     }
 
     // Sanitize filename
-    const safe_input = sanitizeAssetFileName(inputFilename);
+    const safe_input = validateAssetFileName(request.body.filename);
     if (safe_input == '')
         return response.sendStatus(400);
 
@@ -236,6 +239,7 @@ router.post('/delete', jsonParser, async (request, response) => {
  */
 router.post('/character', jsonParser, async (request, response) => {
     if (request.query.name === undefined) return response.sendStatus(400);
+    // For backwards compatibility, don't reject invalid character names, just sanitize them
     const name = sanitize(request.query.name.toString());
     const inputCategory = request.query.category;
 
@@ -289,4 +293,4 @@ router.post('/character', jsonParser, async (request, response) => {
     }
 });
 
-module.exports = { router, sanitizeAssetFileName };
+module.exports = { router, validateAssetFileName };
