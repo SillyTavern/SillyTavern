@@ -37,8 +37,8 @@ const world_info_insertion_strategy = {
 
 const world_info_logic = {
     AND_ONE: 0,
-    NOT_ONE: 1,
-    NOT_ALL: 2,
+    NOT_ALL: 1,
+    NOT_ONE: 2,
 };
 
 let world_info = {};
@@ -1791,26 +1791,25 @@ async function checkWorldInfo(chat, maxContext) {
                                     hasAnyMatch = true;
                                 }
 
-                                // Simplified AND ONE / NOT ONE if statement. (Proper fix for PR#1356 by Bronya)
-                                // If AND ONE logic and the main checks pass OR if NOT ONE logic and the main checks do not pass
-                                if ((selectiveLogic === world_info_logic.AND_ONE && hasSecondaryMatch) || (selectiveLogic === world_info_logic.NOT_ONE && !hasSecondaryMatch)) {
+                                // Simplified AND ONE / NOT ALL if statement. (Proper fix for PR#1356 by Bronya)
+                                // If AND ONE logic and the main checks pass OR if NOT ALL logic and the main checks do not pass
+                                if ((selectiveLogic === world_info_logic.AND_ONE && hasSecondaryMatch) || (selectiveLogic === world_info_logic.NOT_ALL && !hasSecondaryMatch)) {
                                     // Differ both logic statements in the debugger
                                     if (selectiveLogic === world_info_logic.AND_ONE) {
                                         console.debug(`(AND ONE Check) Activating WI Entry ${entry.uid}. Found match for word: ${substituted} ${secondarySubstituted}`);
                                     } else {
-                                        console.debug(`(NOT ONE Check) Activating WI Entry ${entry.uid}. Found match for word "${substituted}" without secondary keyword: ${secondarySubstituted}`);
+                                        console.debug(`(NOT ALL Check) Activating WI Entry ${entry.uid}. Found match for word "${substituted}" without secondary keyword: ${secondarySubstituted}`);
                                     }
                                     activatedNow.add(entry);
                                     break secondary;
                                 }
                             }
 
-                            // Handle NOT ALL logic
-                            if (selectiveLogic === world_info_logic.NOT_ALL && !hasAnyMatch) {
-                                console.debug(`(NOT ALL Check) Activating WI Entry ${entry.uid}, no secondary keywords found.`);
+                            // Handle NOT ONE logic
+                            if (selectiveLogic === world_info_logic.NOT_ONE && !hasAnyMatch) {
+                                console.debug(`(NOT ONE Check) Activating WI Entry ${entry.uid}, no secondary keywords found.`);
                                 activatedNow.add(entry);
                             }
-                            
                         // Handle cases where secondary is empty
                         } else {
                             console.debug(`WI UID ${entry.uid}: Activated without filter logic.`);
