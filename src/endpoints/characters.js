@@ -18,6 +18,7 @@ const { TavernCardValidator } = require('../validator/TavernCardValidator');
 const characterCardParser = require('../character-card-parser.js');
 const { readWorldInfoFile, convertWorldInfoToCharacterBook } = require('../worldinfo');
 const { invalidateThumbnail } = require('./thumbnails');
+const { importRisuSprites } = require('./sprites');
 
 let characters = {};
 
@@ -498,7 +499,15 @@ router.post('/merge-attributes', jsonParser, async function (request, response) 
     const avatarPath = path.join(DIRECTORIES.characters, update.avatar);
 
     try {
-        let character = JSON.parse(await charaRead(avatarPath));
+        const pngStringData = await charaRead(avatarPath);
+
+        if (!pngStringData) {
+            console.error('Error: invalid character file.');
+            response.status(400).send('Error: invalid character file.');
+            return;
+        }
+
+        let character = JSON.parse(pngStringData);
         character = deepMerge(character, update);
 
         const validator = new TavernCardValidator(character);
@@ -695,7 +704,6 @@ router.post('/import', urlencodedParser, async function (request, response) {
     let uploadPath = path.join(UPLOADS_PATH, filedata.filename);
     var format = request.body.file_type;
     const defaultAvatarPath = './public/img/ai4.png';
-    const { importRisuSprites } = require('./src/endpoints/sprites');
     //console.log(format);
     if (filedata) {
         if (format == 'json') {
