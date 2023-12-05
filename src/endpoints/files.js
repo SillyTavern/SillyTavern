@@ -2,7 +2,7 @@ const path = require('path');
 const writeFileSyncAtomic = require('write-file-atomic').sync;
 const express = require('express');
 const router = express.Router();
-const { checkAssetFileName } = require('./assets');
+const { sanitizeAssetFileName } = require('./assets');
 const { jsonParser } = require('../express-common');
 const { DIRECTORIES } = require('../constants');
 
@@ -16,7 +16,7 @@ router.post('/upload', jsonParser, async (request, response) => {
             return response.status(400).send('No upload data specified');
         }
 
-        const safeInput = checkAssetFileName(request.body.name);
+        const safeInput = sanitizeAssetFileName(request.body.name);
 
         if (!safeInput) {
             return response.status(400).send('Invalid upload name');
