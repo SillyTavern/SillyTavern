@@ -15,19 +15,14 @@ const VALID_CATEGORIES = ['bgm', 'ambient', 'blip', 'live2d'];
  * @param {string} inputFilename Input filename
  * @returns {string} Normalized or empty path if invalid
  */
-function checkAssetFileName(inputFilename) {
-    // Sanitize filename
-    if (inputFilename.indexOf('\0') !== -1) {
-        console.debug('Bad request: poisong null bytes in filename.');
-        return '';
-    }
-
+function sanitizeAssetFileName(inputFilename) {
     if (!/^[a-zA-Z0-9_\-.]+$/.test(inputFilename)) {
         console.debug('Bad request: illegal character in filename, only alphanumeric, \'_\', \'-\' are accepted.');
         return '';
     }
 
-    if (UNSAFE_EXTENSIONS.some(ext => inputFilename.toLowerCase().endsWith(ext))) {
+    const inputExtension = path.extname(inputFilename).toLowerCase();
+    if (UNSAFE_EXTENSIONS.some(ext => ext === inputExtension)) {
         console.debug('Bad request: forbidden file extension.');
         return '';
     }
@@ -37,7 +32,7 @@ function checkAssetFileName(inputFilename) {
         return '';
     }
 
-    return path.normalize(inputFilename).replace(/^(\.\.(\/|\\|$))+/, '');
+    return inputFilename;
 }
 
 // Recursive function to get files
@@ -144,7 +139,7 @@ router.post('/download', jsonParser, async (request, response) => {
     }
 
     // Sanitize filename
-    const safe_input = checkAssetFileName(inputFilename);
+    const safe_input = sanitizeAssetFileName(inputFilename);
     if (safe_input == '')
         return response.sendStatus(400);
 
@@ -203,7 +198,7 @@ router.post('/delete', jsonParser, async (request, response) => {
     }
 
     // Sanitize filename
-    const safe_input = checkAssetFileName(inputFilename);
+    const safe_input = sanitizeAssetFileName(inputFilename);
     if (safe_input == '')
         return response.sendStatus(400);
 
@@ -305,7 +300,7 @@ router.post('/upload', jsonParser, async (request, response) => {
             return response.status(400).send('No upload data specified');
         }
 
-        const safeInput = checkAssetFileName(request.body.name);
+        const safeInput = sanitizeAssetFileName(request.body.name);
 
         if (!safeInput) {
             return response.status(400).send('Invalid upload name');
@@ -321,4 +316,4 @@ router.post('/upload', jsonParser, async (request, response) => {
     }
 });
 
-module.exports = { router, checkAssetFileName };
+module.exports = { router, sanitizeAssetFileName };
