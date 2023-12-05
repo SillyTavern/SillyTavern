@@ -51,12 +51,12 @@ function validateAssetFileName(inputFilename) {
 // Recursive function to get files
 function getFiles(dir, files = []) {
     // Get an array of all files and directories in the passed directory using fs.readdirSync
-    const fileList = fs.readdirSync(dir);
+    const fileList = fs.readdirSync(dir, { withFileTypes: true });
     // Create the full path of the file/directory by concatenating the passed directory and file/directory name
     for (const file of fileList) {
-        const name = `${dir}/${file}`;
+        const name = path.join(dir, file.name);
         // Check if the current file/directory is a directory using fs.statSync
-        if (fs.statSync(name).isDirectory()) {
+        if (file.isDirectory()) {
             // If it is a directory, recursively call the getFiles function with the directory path and the files array
             getFiles(name, files);
         } else {
@@ -84,12 +84,10 @@ router.post('/get', jsonParser, async (_, response) => {
 
     try {
         if (fs.existsSync(folderPath) && fs.statSync(folderPath).isDirectory()) {
-            const folders = fs.readdirSync(folderPath)
-                .filter(filename => {
-                    return fs.statSync(path.join(folderPath, filename)).isDirectory();
-                });
+            const folders = fs.readdirSync(folderPath, { withFileTypes: true })
+                .filter(file => file.isDirectory());
 
-            for (const folder of folders) {
+            for (const { name: folder } of folders) {
                 if (folder == 'temp')
                     continue;
 
@@ -270,15 +268,16 @@ router.post('/character', jsonParser, async (request, response) => {
 
             // Live2d assets
             if (category == 'live2d') {
-                const folders = fs.readdirSync(folderPath);
-                for (let modelFolder of folders) {
+                const folders = fs.readdirSync(folderPath, { withFileTypes: true });
+                for (const folderInfo of folders) {
+                    if (!folderInfo.isDirectory()) continue;
+
+                    const modelFolder = folderInfo.name;
                     const live2dModelPath = path.join(folderPath, modelFolder);
-                    if (fs.statSync(live2dModelPath).isDirectory()) {
-                        for (let file of fs.readdirSync(live2dModelPath)) {
-                            //console.debug("Character live2d model found:", file)
-                            if (file.includes('model') && file.endsWith('.json'))
-                                output.push(path.join('characters', name, category, modelFolder, file));
-                        }
+                    for (let file of fs.readdirSync(live2dModelPath)) {
+                        //console.debug("Character live2d model found:", file)
+                        if (file.includes('model') && file.endsWith('.json'))
+                            output.push(path.join('characters', name, category, modelFolder, file));
                     }
                 }
                 return response.send(output);
