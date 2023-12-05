@@ -188,7 +188,7 @@ import { getFriendlyTokenizerName, getTokenCount, getTokenizerModel, initTokeniz
 import { createPersona, initPersonas, selectCurrentPersona, setPersonaDescription } from './scripts/personas.js';
 import { getBackgrounds, initBackgrounds } from './scripts/backgrounds.js';
 import { hideLoader, showLoader } from './scripts/loader.js';
-import { BulkEditOverlay } from './scripts/BulkEditOverlay.js';
+import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
 import { loadMancerModels } from './scripts/mancer-settings.js';
 import { getFileAttachment, hasPendingFileAttachment, populateFileAttachment } from './scripts/chats.js';
 import { replaceVariableMacros } from './scripts/variables.js';
@@ -322,7 +322,9 @@ eventSource.on(event_types.MESSAGE_SENT, processExtensionHelpers);
 eventSource.on(event_types.CHAT_CHANGED, processChatSlashCommands);
 
 const characterGroupOverlay = new BulkEditOverlay();
+const characterContextMenu = new CharacterContextMenu(characterGroupOverlay);
 eventSource.on(event_types.CHARACTER_PAGE_LOADED, characterGroupOverlay.onPageLoad);
+console.debug('Character context menu initialized', characterContextMenu);
 
 hljs.addPlugin({ 'before:highlightElement': ({ el }) => { el.textContent = el.innerText; } });
 
