@@ -288,6 +288,16 @@ function tryParse(str) {
     }
 }
 
+/**
+ * Takes a path to a client-accessible file in the `public` folder and converts it to a relative URL segment that the
+ * client can fetch it from. This involves stripping the `public/` prefix and always using `/` as the separator.
+ * @param {string} inputPath The path to be converted.
+ * @returns The relative URL path from which the client can access the file.
+ */
+function clientRelativePath(inputPath) {
+    return path.normalize(inputPath).split(path.sep).slice(1).join('/');
+}
+
 module.exports = {
     getConfig,
     getConfigValue,
@@ -302,4 +312,5 @@ module.exports = {
     uuidv4,
     humanizedISO8601DateTime,
     tryParse,
+    clientRelativePath,
 };

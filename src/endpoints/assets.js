@@ -6,6 +6,7 @@ const fetch = require('node-fetch').default;
 const { finished } = require('stream/promises');
 const { DIRECTORIES, UNSAFE_EXTENSIONS } = require('../constants');
 const { jsonParser } = require('../express-common');
+const { clientRelativePath } = require('../util');
 
 const VALID_CATEGORIES = ['bgm', 'ambient', 'blip', 'live2d'];
 
@@ -99,10 +100,9 @@ router.post('/get', jsonParser, async (_, response) => {
                     const files = getFiles(live2d_folder);
                     //console.debug("FILE FOUND:",files)
                     for (let file of files) {
-                        file = path.normalize(file.replace('public' + path.sep, ''));
                         if (file.includes('model') && file.endsWith('.json')) {
                             //console.debug("Asset live2d model found:",file)
-                            output[folder].push(path.normalize(file).replace(/\\/g, '/'));
+                            output[folder].push(clientRelativePath(file));
                         }
                     }
                     continue;
@@ -115,7 +115,7 @@ router.post('/get', jsonParser, async (_, response) => {
                     });
                 output[folder] = [];
                 for (const file of files) {
-                    output[folder].push(path.join('assets', folder, file).replace(/\\/g, '/'));
+                    output[folder].push(`assets/${folder}/${file}`);
                 }
             }
         }
