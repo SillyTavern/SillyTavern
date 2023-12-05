@@ -37,8 +37,8 @@ const world_info_insertion_strategy = {
 
 const world_info_logic = {
     AND_ONE: 0,
-    NOT_ALL: 1,
-    NOT_ONE: 2,
+    NOT_ONE: 1,
+    NOT_ALL: 2,
 };
 
 let world_info = {};
@@ -1793,7 +1793,7 @@ async function checkWorldInfo(chat, maxContext) {
 
                                 // Simplified AND ONE / NOT ONE if statement. (Proper fix for PR#1356 by Bronya)
                                 // If AND ONE logic and the main checks pass OR if NOT ONE logic and the main checks do not pass
-                                if ((selectiveLogic === world_info_logic.AND_ONE && hasSecondaryMatch) || (selectiveLogic === world_info_logic.NOT_ALL && !hasSecondaryMatch)) {
+                                if ((selectiveLogic === world_info_logic.AND_ONE && hasSecondaryMatch) || (selectiveLogic === world_info_logic.NOT_ONE && !hasSecondaryMatch)) {
                                     // Differ both logic statements in the debugger
                                     if (selectiveLogic === world_info_logic.AND_ONE) {
                                         console.debug(`(AND ONE Check) Activating WI Entry ${entry.uid}. Found match for word: ${substituted} ${secondarySubstituted}`);
@@ -1806,7 +1806,7 @@ async function checkWorldInfo(chat, maxContext) {
                             }
 
                             // Handle NOT ALL logic
-                            if (selectiveLogic === world_info_logic.NOT_ONE && !hasAnyMatch) {
+                            if (selectiveLogic === world_info_logic.NOT_ALL && !hasAnyMatch) {
                                 console.debug(`(NOT ALL Check) Activating WI Entry ${entry.uid}, no secondary keywords found.`);
                                 activatedNow.add(entry);
                             }
