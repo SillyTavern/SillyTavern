@@ -48,7 +48,7 @@ const { jsonParser, urlencodedParser } = require('./src/express-common.js');
 const contentManager = require('./src/endpoints/content-manager');
 const statsHelpers = require('./statsHelpers.js');
 const { readSecret, migrateSecrets, SECRET_KEYS } = require('./src/endpoints/secrets');
-const { delay, getVersion, getConfigValue, color, uuidv4, humanizedISO8601DateTime, tryParse, clientRelativePath } = require('./src/util');
+const { delay, getVersion, getConfigValue, color, uuidv4, humanizedISO8601DateTime, tryParse, clientRelativePath, removeFileExtension } = require('./src/util');
 const { invalidateThumbnail, ensureThumbnailCache } = require('./src/endpoints/thumbnails');
 const { getTokenizerModel, getTiktokenTokenizer, loadTokenizers, TEXT_COMPLETION_MODELS, getSentencepiceTokenizer, sentencepieceTokenizers } = require('./src/endpoints/tokenizers');
 const { convertClaudePrompt } = require('./src/chat-completion');
@@ -1573,9 +1573,11 @@ app.post('/uploadimage', jsonParser, async (request, response) => {
         }
 
         // Constructing filename and path
-        let filename = `${Date.now()}.${format}`;
+        let filename;
         if (request.body.filename) {
-            filename = `${request.body.filename}.${format}`;
+            filename = `${removeFileExtension(request.body.filename)}.${format}`;
+        } else {
+            filename = `${Date.now()}.${format}`;
         }
 
         // if character is defined, save to a sub folder for that character

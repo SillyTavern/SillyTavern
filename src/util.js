@@ -298,6 +298,15 @@ function clientRelativePath(inputPath) {
     return path.normalize(inputPath).split(path.sep).slice(1).join('/');
 }
 
+/**
+ * Strip the last file extension from a given file name. If there are multiple extensions, only the last is removed.
+ * @param {string} filename The file name to remove the extension from.
+ * @returns The file name, sans extension
+ */
+function removeFileExtension(filename) {
+    return filename.replace(/\.[^.]+$/, '');
+}
+
 module.exports = {
     getConfig,
     getConfigValue,
@@ -313,4 +322,5 @@ module.exports = {
     humanizedISO8601DateTime,
     tryParse,
     clientRelativePath,
+    removeFileExtension,
 };
