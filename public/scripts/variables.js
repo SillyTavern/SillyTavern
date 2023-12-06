@@ -2,7 +2,7 @@ import { chat_metadata, getCurrentChatId, saveSettingsDebounced, sendSystemMessa
 import { extension_settings, saveMetadataDebounced } from './extensions.js';
 import { executeSlashCommands, registerSlashCommand } from './slash-commands.js';
 
-function getLocalVariable(name, args={}) {
+function getLocalVariable(name, args = {}) {
     if (!chat_metadata.variables) {
         chat_metadata.variables = {};
     }
@@ -30,7 +30,7 @@ function setLocalVariable(name, value) {
     return value;
 }
 
-function getGlobalVariable(name, args={}) {
+function getGlobalVariable(name, args = {}) {
     let globalVariable = extension_settings.variables.global[name];
     if (args.index !== undefined) {
         try {
