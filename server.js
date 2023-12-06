@@ -68,7 +68,7 @@ dns.setDefaultResultOrder('ipv4first');
 const cliArguments = yargs(hideBin(process.argv))
     .option('autorun', {
         type: 'boolean',
-        default: null,
+        default: false,
         describe: 'Automatically launch SillyTavern in the browser.',
     }).option('corsProxy', {
         type: 'boolean',
@@ -118,7 +118,7 @@ if (fs.existsSync(whitelistPath)) {
 }
 
 const whitelistMode = getConfigValue('whitelistMode', true);
-const autorun = getConfigValue('autorun', false) && cliArguments.autorun !== false && !cliArguments.ssl;
+const autorun = (getConfigValue('autorun', false) || cliArguments.autorun) && !cliArguments.ssl;
 const enableExtensions = getConfigValue('enableExtensions', true);
 const listen = getConfigValue('listen', false);
 
@@ -195,7 +195,7 @@ const SETTINGS_FILE = './public/settings.json';
 const { DIRECTORIES, UPLOADS_PATH, PALM_SAFETY, TEXTGEN_TYPES, CHAT_COMPLETION_SOURCES, AVATAR_WIDTH, AVATAR_HEIGHT } = require('./src/constants');
 
 // CSRF Protection //
-if (cliArguments.disableCsrf === false) {
+if (!cliArguments.disableCsrf) {
     const CSRF_SECRET = crypto.randomBytes(8).toString('hex');
     const COOKIES_SECRET = crypto.randomBytes(8).toString('hex');
 
@@ -281,7 +281,7 @@ app.use(function (req, res, next) {
     next();
 });
 
-if (getConfigValue('enableCorsProxy', false) === true || cliArguments.corsProxy === true) {
+if (getConfigValue('enableCorsProxy', false) || cliArguments.corsProxy) {
     const bodyParser = require('body-parser');
     app.use(bodyParser.json());
     console.log('Enabling CORS proxy');
@@ -2740,7 +2740,7 @@ if (listen && !getConfigValue('whitelistMode', true) && !getConfigValue('basicAu
     }
 }
 
-if (true === cliArguments.ssl) {
+if (cliArguments.ssl) {
     https.createServer(
         {
             cert: fs.readFileSync(cliArguments.certPath),
