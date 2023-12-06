@@ -103,7 +103,7 @@ router.post('/save-openai', jsonParser, function (request, response) {
     const name = sanitize(request.query.name);
     if (!name) return response.sendStatus(400);
 
-    const filename = `${name}.settings`;
+    const filename = `${name}.json`;
     const fullpath = path.join(DIRECTORIES.openAI_Settings, filename);
     writeFileAtomicSync(fullpath, JSON.stringify(request.body, null, 4), 'utf-8');
     return response.send({ name });
@@ -116,7 +116,7 @@ router.post('/delete-openai', jsonParser, function (request, response) {
     }
 
     const name = request.body.name;
-    const pathToFile = path.join(DIRECTORIES.openAI_Settings, `${name}.settings`);
+    const pathToFile = path.join(DIRECTORIES.openAI_Settings, `${name}.json`);
 
     if (fs.existsSync(pathToFile)) {
         fs.rmSync(pathToFile);
