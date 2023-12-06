@@ -306,7 +306,7 @@ app.use(function (req, res, next) {
     next();
 });
 
-if (getConfigValue('enableCorsProxy', false) === true || cliArguments.corsProxy) {
+if (getConfigValue('enableCorsProxy', false) || cliArguments.corsProxy) {
     const bodyParser = require('body-parser');
     app.use(bodyParser.json());
     console.log('Enabling CORS proxy');
