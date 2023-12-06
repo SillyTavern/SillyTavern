@@ -1049,7 +1049,7 @@ class PromptManager {
         const groupMembers = this.getActiveGroupCharacters();
         const preparedPrompt = new Prompt(prompt);
 
-        if (original) {
+        if (typeof original === 'string') {
             if (0 < groupMembers.length) preparedPrompt.content = substituteParams(prompt.content ?? '', null, null, original, groupMembers.join(', '));
             else preparedPrompt.content = substituteParams(prompt.content, null, null, original);
         } else {
