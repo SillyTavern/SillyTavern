@@ -1300,7 +1300,7 @@ app.post('/listimgfiles/:folder', (req, res) => {
 });
 
 
-app.post('/getgroups', jsonParser, (_, response) => {
+app.post('/api/groups/all', jsonParser, (_, response) => {
     const groups = [];
 
     if (!fs.existsSync(DIRECTORIES.groups)) {
@@ -1344,7 +1344,7 @@ app.post('/getgroups', jsonParser, (_, response) => {
     return response.send(groups);
 });
 
-app.post('/creategroup', jsonParser, (request, response) => {
+app.post('/api/groups/create', jsonParser, (request, response) => {
     if (!request.body) {
         return response.sendStatus(400);
     }
@@ -1375,7 +1375,7 @@ app.post('/creategroup', jsonParser, (request, response) => {
     return response.send(groupMetadata);
 });
 
-app.post('/editgroup', jsonParser, (request, response) => {
+app.post('/api/groups/edit', jsonParser, (request, response) => {
     if (!request.body || !request.body.id) {
         return response.sendStatus(400);
     }
@@ -1387,7 +1387,7 @@ app.post('/editgroup', jsonParser, (request, response) => {
     return response.send({ ok: true });
 });
 
-app.post('/deletegroup', jsonParser, async (request, response) => {
+app.post('/api/groups/delete', jsonParser, async (request, response) => {
     if (!request.body || !request.body.id) {
         return response.sendStatus(400);
     }
@@ -2247,6 +2247,12 @@ redirect('/importchat', '/api/chats/import');
 redirect('/getgroupchat', '/api/chats/group/get');
 redirect('/deletegroupchat', '/api/chats/group/delete');
 redirect('/savegroupchat', '/api/chats/group/save');
+
+// Redirect deprecated group API endpoints
+redirect('/getgroups', '/api/groups/all');
+redirect('/creategroup', '/api/groups/create');
+redirect('/editgroup', '/api/groups/edit');
+redirect('/deletegroup', '/api/groups/delete');
 
 // ** REST CLIENT ASYNC WRAPPERS **
 

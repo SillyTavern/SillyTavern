@@ -116,7 +116,7 @@ setInterval(groupChatAutoModeWorker, 5000);
 const saveGroupDebounced = debounce(async (group, reload) => await _save(group, reload), 500);
 
 async function _save(group, reload = true) {
-    await fetch('/editgroup', {
+    await fetch('/api/groups/edit', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify(group),
@@ -476,7 +476,7 @@ export async function renameGroupMember(oldAvatar, newAvatar, newName) {
 }
 
 async function getGroups() {
-    const response = await fetch('/getgroups', {
+    const response = await fetch('/api/groups/all', {
         method: 'POST',
         headers: getRequestHeaders(),
     });
@@ -968,7 +968,7 @@ function activateNaturalOrder(members, input, lastMessage, allowSelfResponses, i
 async function deleteGroup(id) {
     const group = groups.find((x) => x.id === id);
 
-    const response = await fetch('/deletegroup', {
+    const response = await fetch('/api/groups/delete', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({ id: id }),
@@ -1521,7 +1521,7 @@ async function createGroup() {
     const chatName = humanizedDateTime();
     const chats = [chatName];
 
-    const createGroupResponse = await fetch('/creategroup', {
+    const createGroupResponse = await fetch('/api/groups/create', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({

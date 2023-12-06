@@ -251,7 +251,7 @@ async function convertSoloToGroupChat() {
     const metadata = Object.assign({}, chat_metadata);
     delete metadata.main_chat;
 
-    const createGroupResponse = await fetch('/creategroup', {
+    const createGroupResponse = await fetch('/api/groups/create', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
