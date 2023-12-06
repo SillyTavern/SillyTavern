@@ -2,9 +2,10 @@ const path = require('path');
 const writeFileSyncAtomic = require('write-file-atomic').sync;
 const express = require('express');
 const router = express.Router();
-const { sanitizeAssetFileName } = require('./assets');
+const { validateAssetFileName } = require('./assets');
 const { jsonParser } = require('../express-common');
 const { DIRECTORIES } = require('../constants');
+const { clientRelativePath } = require('../util');
 
 router.post('/upload', jsonParser, async (request, response) => {
     try {
@@ -16,15 +17,14 @@ router.post('/upload', jsonParser, async (request, response) => {
             return response.status(400).send('No upload data specified');
         }
 
-        const safeInput = sanitizeAssetFileName(request.body.name);
+        // Validate filename
+        const validation = validateAssetFileName(request.body.name);
+        if (validation.error)
+            return response.status(400).send(validation.message);
 
-        if (!safeInput) {
-            return response.status(400).send('Invalid upload name');
-        }
-
-        const pathToUpload = path.join(DIRECTORIES.files, safeInput);
+        const pathToUpload = path.join(DIRECTORIES.files, request.body.name);
         writeFileSyncAtomic(pathToUpload, request.body.data, 'base64');
-        const url = path.normalize(pathToUpload.replace('public' + path.sep, ''));
+        const url = clientRelativePath(pathToUpload);
         return response.send({ path: url });
     } catch (error) {
         console.log(error);

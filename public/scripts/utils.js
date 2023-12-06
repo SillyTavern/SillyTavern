@@ -950,7 +950,7 @@ export async function saveBase64AsFile(base64Data, characterName, filename = '',
     // If the response is successful, get the saved image path from the server's response
     if (response.ok) {
         const responseData = await response.json();
-        return responseData.path.replace(/\\/g, '/'); // Replace backslashes with forward slashes
+        return responseData.path;
     } else {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to upload the image to the server');
