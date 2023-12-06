@@ -877,14 +877,15 @@ app.post('/getstats', jsonParser, function (request, response) {
  * @param {Object} request - Express request object.
  * @param {Object} response - Express response object.
  */
-app.post('/recreatestats', jsonParser, function (request, response) {
-    if (statsHelpers.loadStatsFile(DIRECTORIES.chats, DIRECTORIES.characters, true)) {
+app.post('/recreatestats', jsonParser, async function (request, response) {
+    try {
+        await statsHelpers.loadStatsFile(DIRECTORIES.chats, DIRECTORIES.characters, true);
         return response.sendStatus(200);
-    } else {
+    } catch (error) {
+        console.error(error);
         return response.sendStatus(500);
     }
 });
-
 
 
 /**

@@ -147,7 +147,7 @@ async function collectAndCreateStats(chatsPath, charactersPath) {
  * @param {string} charactersPath - The path to the directory containing the character files.
  */
 async function loadStatsFile(chatsPath, charactersPath, recreateStats = false) {
-    if(recreateStats) {
+    if (recreateStats) {
         charStats = await collectAndCreateStats(chatsPath, charactersPath); // Call your function to collect and create stats
         await saveStatsToFile();
         console.debug('Stats recreated and saved to file.');
