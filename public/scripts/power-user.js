@@ -17,6 +17,8 @@ import {
     chat,
     getFirstDisplayedMessageId,
     showMoreMessages,
+    saveSettings,
+    saveChatConditional,
 } from '../script.js';
 import { isMobile, initMovingUI, favsToHotswap } from './RossAscends-mods.js';
 import {
@@ -2889,10 +2891,12 @@ $(document).ready(() => {
         saveSettingsDebounced();
     });
 
-    $('#reload_chat').on('click', function () {
+    $('#reload_chat').on('click', async function () {
         const currentChatId = getCurrentChatId();
         if (currentChatId !== undefined && currentChatId !== null) {
-            reloadCurrentChat();
+            await saveSettings();
+            await saveChatConditional();
+            await reloadCurrentChat();
         }
     });
 
