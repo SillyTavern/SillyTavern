@@ -27,7 +27,7 @@ const basicAuthMiddleware = function (request, response, callback) {
         .toString('utf8')
         .split(':');
 
-    if (username === config.basicAuthUser.username && password === config.basicAuthUser.password) {
+    if (username === process.env.username || config.basicAuthUser.username && password === process.env.password || config.basicAuthUser.password) { //if (username === config.basicAuthUser.username && password === config.basicAuthUser.password) {
         return callback();
     } else {
         return unauthorizedResponse(response);
