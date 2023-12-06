@@ -15,6 +15,7 @@
     max-width: 100%;
     overflow-x: auto;
     order: 1;
+    position: relative;
 }
 
 #quickReplies {
