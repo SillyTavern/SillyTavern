@@ -1060,7 +1060,7 @@ app.post('/getsettings', jsonParser, (request, response) => {
     });
 });
 
-app.post('/getworldinfo', jsonParser, (request, response) => {
+app.post('/api/worldinfo/get', jsonParser, (request, response) => {
     if (!request.body?.name) {
         return response.sendStatus(400);
     }
@@ -1070,7 +1070,7 @@ app.post('/getworldinfo', jsonParser, (request, response) => {
     return response.send(file);
 });
 
-app.post('/deleteworldinfo', jsonParser, (request, response) => {
+app.post('/api/worldinfo/delete', jsonParser, (request, response) => {
     if (!request.body?.name) {
         return response.sendStatus(400);
     }
@@ -1132,7 +1132,7 @@ function getImages(path) {
         .sort(Intl.Collator().compare);
 }
 
-app.post('/importworldinfo', urlencodedParser, (request, response) => {
+app.post('/api/worldinfo/import', urlencodedParser, (request, response) => {
     if (!request.file) return response.sendStatus(400);
 
     const filename = `${path.parse(sanitize(request.file.originalname)).name}.json`;
@@ -1167,7 +1167,7 @@ app.post('/importworldinfo', urlencodedParser, (request, response) => {
     return response.send({ name: worldName });
 });
 
-app.post('/editworldinfo', jsonParser, (request, response) => {
+app.post('/api/worldinfo/edit', jsonParser, (request, response) => {
     if (!request.body) {
         return response.sendStatus(400);
     }
@@ -2133,6 +2133,12 @@ redirect('/getgroups', '/api/groups/all');
 redirect('/creategroup', '/api/groups/create');
 redirect('/editgroup', '/api/groups/edit');
 redirect('/deletegroup', '/api/groups/delete');
+
+// Redirect deprecated worldinfo API endpoints
+redirect('/getworldinfo', '/api/worldinfo/get');
+redirect('/deleteworldinfo', '/api/worldinfo/delete');
+redirect('/importworldinfo', '/api/worldinfo/import');
+redirect('/editworldinfo', '/api/worldinfo/edit');
 
 // ** REST CLIENT ASYNC WRAPPERS **
 
