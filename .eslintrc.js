@@ -12,7 +12,7 @@ module.exports = {
     overrides: [
         {
             // Server-side files (plus this configuration file)
-            files: ['src/**/*.js', 'server.js', '.eslintrc.js'],
+            files: ['src/**/*.js', './*.js'],
             env: {
                 node: true,
             },

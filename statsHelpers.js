@@ -6,18 +6,18 @@
  * as well as a utility for humanizing generation time from milliseconds.
  */
 
-const fs = require("fs");
-const path = require("path");
-const util = require("util");
-const writeFileAtomic = require("write-file-atomic");
+const fs = require('fs');
+const path = require('path');
+const util = require('util');
+const writeFileAtomic = require('write-file-atomic');
 const writeFile = util.promisify(writeFileAtomic);
 const readFile = util.promisify(fs.readFile);
 const readdir = util.promisify(fs.readdir);
-const crypto = require("crypto");
+const crypto = require('crypto');
 
 let charStats = {};
 let lastSaveTimestamp = 0;
-const statsFilePath = "public/stats.json";
+const statsFilePath = 'public/stats.json';
 
 /**
  * Convert a timestamp to an integer timestamp.
@@ -46,7 +46,7 @@ function timestampToMoment(timestamp) {
         return null;
     }
 
-    if (typeof timestamp === "number") {
+    if (typeof timestamp === 'number') {
         return timestamp;
     }
 
@@ -60,15 +60,15 @@ function timestampToMoment(timestamp) {
         hour,
         minute,
         second,
-        millisecond
+        millisecond,
     ) => {
-        return `${year}-${month.padStart(2, "0")}-${day.padStart(
+        return `${year}-${month.padStart(2, '0')}-${day.padStart(
             2,
-            "0"
-        )}T${hour.padStart(2, "0")}:${minute.padStart(
+            '0',
+        )}T${hour.padStart(2, '0')}:${minute.padStart(
             2,
-            "0"
-        )}:${second.padStart(2, "0")}.${millisecond.padStart(3, "0")}Z`;
+            '0',
+        )}:${second.padStart(2, '0')}.${millisecond.padStart(3, '0')}Z`;
     };
     const isoTimestamp1 = timestamp.replace(pattern1, replacement1);
     if (!isNaN(new Date(isoTimestamp1))) {
@@ -78,30 +78,30 @@ function timestampToMoment(timestamp) {
     const pattern2 = /(\w+)\s(\d{1,2}),\s(\d{4})\s(\d{1,2}):(\d{1,2})(am|pm)/i;
     const replacement2 = (match, month, day, year, hour, minute, meridiem) => {
         const monthNames = [
-            "January",
-            "February",
-            "March",
-            "April",
-            "May",
-            "June",
-            "July",
-            "August",
-            "September",
-            "October",
-            "November",
-            "December",
+            'January',
+            'February',
+            'March',
+            'April',
+            'May',
+            'June',
+            'July',
+            'August',
+            'September',
+            'October',
+            'November',
+            'December',
         ];
         const monthNum = monthNames.indexOf(month) + 1;
         const hour24 =
-            meridiem.toLowerCase() === "pm"
+            meridiem.toLowerCase() === 'pm'
                 ? (parseInt(hour, 10) % 12) + 12
                 : parseInt(hour, 10) % 12;
-        return `${year}-${monthNum.toString().padStart(2, "0")}-${day.padStart(
+        return `${year}-${monthNum.toString().padStart(2, '0')}-${day.padStart(
             2,
-            "0"
-        )}T${hour24.toString().padStart(2, "0")}:${minute.padStart(
+            '0',
+        )}T${hour24.toString().padStart(2, '0')}:${minute.padStart(
             2,
-            "0"
+            '0',
         )}:00Z`;
     };
     const isoTimestamp2 = timestamp.replace(pattern2, replacement2);
@@ -120,13 +120,13 @@ function timestampToMoment(timestamp) {
  * @returns {Object} The aggregated stats object.
  */
 async function collectAndCreateStats(chatsPath, charactersPath) {
-    console.log("Collecting and creating stats...");
+    console.log('Collecting and creating stats...');
     const files = await readdir(charactersPath);
 
-    const pngFiles = files.filter((file) => file.endsWith(".png"));
+    const pngFiles = files.filter((file) => file.endsWith('.png'));
 
     let processingPromises = pngFiles.map((file, index) =>
-        calculateStats(chatsPath, file, index)
+        calculateStats(chatsPath, file, index),
     );
     const statsArr = await Promise.all(processingPromises);
 
@@ -150,22 +150,22 @@ async function loadStatsFile(chatsPath, charactersPath, recreateStats = false) {
     if(recreateStats) {
         charStats = await collectAndCreateStats(chatsPath, charactersPath); // Call your function to collect and create stats
         await saveStatsToFile();
-        console.debug("Stats recreated and saved to file.");
+        console.debug('Stats recreated and saved to file.');
         return true;
     }
     try {
-        const statsFileContent = await readFile(statsFilePath, "utf-8");
+        const statsFileContent = await readFile(statsFilePath, 'utf-8');
         charStats = JSON.parse(statsFileContent);
     } catch (err) {
         // If the file doesn't exist or is invalid, initialize stats
-        if (err.code === "ENOENT" || err instanceof SyntaxError) {
+        if (err.code === 'ENOENT' || err instanceof SyntaxError) {
             charStats = await collectAndCreateStats(chatsPath, charactersPath); // Call your function to collect and create stats
             await saveStatsToFile();
         } else {
             throw err; // Rethrow the error if it's something we didn't expect
         }
     }
-    console.debug("Stats loaded from files.");
+    console.debug('Stats loaded from files.');
 }
 /**
  * Saves the current state of charStats to a file, only if the data has changed since the last save.
@@ -177,7 +177,7 @@ async function saveStatsToFile() {
             await writeFile(statsFilePath, JSON.stringify(charStats));
             lastSaveTimestamp = Date.now();
         } catch (error) {
-            console.log("Failed to save stats to file.", error);
+            console.log('Failed to save stats to file.', error);
         }
     } else {
         //console.debug('Stats have not changed since last save. Skipping file write.');
@@ -192,7 +192,7 @@ async function writeStatsToFileAndExit() {
     try {
         await saveStatsToFile();
     } catch (err) {
-        console.error("Failed to write stats to file:", err);
+        console.error('Failed to write stats to file:', err);
     } finally {
         process.exit();
     }
@@ -207,8 +207,8 @@ async function writeStatsToFileAndExit() {
  */
 function readAndParseFile(filepath) {
     try {
-        let file = fs.readFileSync(filepath, "utf8");
-        let lines = file.split("\n");
+        let file = fs.readFileSync(filepath, 'utf8');
+        let lines = file.split('\n');
         return lines;
     } catch (error) {
         console.error(`Error reading file at ${filepath}: ${error}`);
@@ -248,9 +248,7 @@ function countWordsInString(str) {
  * @return {object}          An object containing the calculated statistics.
  */
 const calculateStats = (chatsPath, item, index) => {
-    const char_dir = path.join(chatsPath, item.replace(".png", ""));
-    let chat_size = 0;
-    let date_last_chat = 0;
+    const char_dir = path.join(chatsPath, item.replace('.png', ''));
     const stats = {
         total_gen_time: 0,
         user_word_count: 0,
@@ -260,7 +258,7 @@ const calculateStats = (chatsPath, item, index) => {
         total_swipe_count: 0,
         chat_size: 0,
         date_last_chat: 0,
-        date_first_chat: new Date("9999-12-31T23:59:59.999Z").getTime(),
+        date_first_chat: new Date('9999-12-31T23:59:59.999Z').getTime(),
     };
     let uniqueGenStartTimes = new Set();
 
@@ -271,7 +269,7 @@ const calculateStats = (chatsPath, item, index) => {
                 const result = calculateTotalGenTimeAndWordCount(
                     char_dir,
                     chat,
-                    uniqueGenStartTimes
+                    uniqueGenStartTimes,
                 );
                 stats.total_gen_time += result.totalGenTime || 0;
                 stats.user_word_count += result.userWordCount || 0;
@@ -284,11 +282,11 @@ const calculateStats = (chatsPath, item, index) => {
                 stats.chat_size += chatStat.size;
                 stats.date_last_chat = Math.max(
                     stats.date_last_chat,
-                    Math.floor(chatStat.mtimeMs)
+                    Math.floor(chatStat.mtimeMs),
                 );
                 stats.date_first_chat = Math.min(
                     stats.date_first_chat,
-                    result.firstChatTime
+                    result.firstChatTime,
                 );
             }
         }
@@ -325,7 +323,7 @@ function setCharStats(stats) {
 function calculateTotalGenTimeAndWordCount(
     char_dir,
     chat,
-    uniqueGenStartTimes
+    uniqueGenStartTimes,
 ) {
     let filepath = path.join(char_dir, chat);
     let lines = readAndParseFile(filepath);
@@ -336,17 +334,17 @@ function calculateTotalGenTimeAndWordCount(
     let nonUserMsgCount = 0;
     let userMsgCount = 0;
     let totalSwipeCount = 0;
-    let firstChatTime = new Date("9999-12-31T23:59:59.999Z").getTime();
+    let firstChatTime = new Date('9999-12-31T23:59:59.999Z').getTime();
 
-    for (let [index, line] of lines.entries()) {
+    for (let line of lines) {
         if (line.length) {
             try {
                 let json = JSON.parse(line);
                 if (json.mes) {
                     let hash = crypto
-                        .createHash("sha256")
+                        .createHash('sha256')
                         .update(json.mes)
-                        .digest("hex");
+                        .digest('hex');
                     if (uniqueGenStartTimes.has(hash)) {
                         continue;
                     }
@@ -358,7 +356,7 @@ function calculateTotalGenTimeAndWordCount(
                 if (json.gen_started && json.gen_finished) {
                     let genTime = calculateGenTime(
                         json.gen_started,
-                        json.gen_finished
+                        json.gen_finished,
                     );
                     totalGenTime += genTime;
 
@@ -397,7 +395,7 @@ function calculateTotalGenTimeAndWordCount(
                         if (swipe.gen_started && swipe.gen_finished) {
                             totalGenTime += calculateGenTime(
                                 swipe.gen_started,
-                                swipe.gen_finished
+                                swipe.gen_finished,
                             );
                         }
                     }
