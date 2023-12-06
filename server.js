@@ -74,7 +74,7 @@ dns.setDefaultResultOrder('ipv4first');
 const cliArguments = yargs(hideBin(process.argv))
     .option('autorun', {
         type: 'boolean',
-        default: true,
+        default: false,
         describe: 'Automatically launch SillyTavern in the browser.',
     }).option('corsProxy', {
         type: 'boolean',
@@ -124,7 +124,7 @@ if (fs.existsSync(whitelistPath)) {
 }
 
 const whitelistMode = getConfigValue('whitelistMode', true);
-const autorun = getConfigValue('autorun', false) && cliArguments.autorun && !cliArguments.ssl;
+const autorun = (getConfigValue('autorun', false) || cliArguments.autorun) && !cliArguments.ssl;
 const enableExtensions = getConfigValue('enableExtensions', true);
 const listen = getConfigValue('listen', false);
 
