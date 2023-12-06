@@ -2576,6 +2576,34 @@ app.post('/tokenize_via_api', jsonParser, async function (request, response) {
     }
 });
 
+/**
+ * Redirect a deprecated API endpoint URL to its replacement. Because fetch, form submissions, and $.ajax follow
+ * redirects, this is transparent to client-side code.
+ * @param {string} src The URL to redirect from.
+ * @param {string} destination The URL to redirect to.
+ */
+function redirect(src, destination) {
+    app.use(src, (req, res) => {
+        console.warn(`API endpoint ${src} is deprecated; use ${destination} instead`);
+        // HTTP 301 causes the request to become a GET. 308 preserves the request method.
+        res.redirect(308, destination);
+    });
+}
+
+// Redirect deprecated character API endpoints
+redirect('/createcharacter', '/api/characters/create');
+redirect('/renamecharacter', '/api/characters/rename');
+redirect('/editcharacter', '/api/characters/edit');
+redirect('/editcharacterattribute', '/api/characters/edit-attribute');
+redirect('/v2/editcharacterattribute', '/api/characters/merge-attributes');
+redirect('/deletecharacter', '/api/characters/delete');
+redirect('/getcharacters', '/api/characters/all');
+redirect('/getonecharacter', '/api/characters/get');
+redirect('/getallchatsofcharacter', '/api/characters/chats');
+redirect('/importcharacter', '/api/characters/import');
+redirect('/dupecharacter', '/api/characters/duplicate');
+redirect('/exportcharacter', '/api/characters/export');
+
 // ** REST CLIENT ASYNC WRAPPERS **
 
 /**
