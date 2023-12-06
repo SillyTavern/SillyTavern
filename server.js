@@ -2236,6 +2236,18 @@ redirect('/importcharacter', '/api/characters/import');
 redirect('/dupecharacter', '/api/characters/duplicate');
 redirect('/exportcharacter', '/api/characters/export');
 
+// Redirect deprecated chat API endpoints
+redirect('/savechat', '/api/chats/save');
+redirect('/getchat', '/api/chats/get');
+redirect('/renamechat', '/api/chats/rename');
+redirect('/delchat', '/api/chats/delete');
+redirect('/exportchat', '/api/chats/export');
+redirect('/importgroupchat', '/api/chats/group/import');
+redirect('/importchat', '/api/chats/import');
+redirect('/getgroupchat', '/api/chats/group/get');
+redirect('/deletegroupchat', '/api/chats/group/delete');
+redirect('/savegroupchat', '/api/chats/group/save');
+
 // ** REST CLIENT ASYNC WRAPPERS **
 
 /**
