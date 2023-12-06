@@ -32,19 +32,26 @@ If you insist on installing via a zip, here is the tedious process for doing the
 
 4. Copy the following files/folders as necessary(*) from your old ST installation:
 
+  - Assets
   - Backgrounds
   - Characters
   - Chats
+  - Context
   - Groups
   - Group chats
+  - Instruct
+  - movingUI
   - KoboldAI Settings
   - NovelAI Settings
-  - OpenAI Settings
-  - TextGen Settings (textgen = ooba)
+  - OpenAI Settings (Chat Completion API)
+  - TextGen Settings (Text Completion API)
+  - QuickReplies
   - Themes
   - User Avatars
   - Worlds
+  - User
   - settings.json
+  - secrets.json <---- this one is in the base folder, not /public/
 
   (*) 'As necessary' = "If you made any custom content related to those folders".
   None of the folders are mandatory, so only copy what you need.
