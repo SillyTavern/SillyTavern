@@ -59,6 +59,7 @@ module.exports = {
         'eol-last': ['error', 'always'],
         'no-trailing-spaces': 'error',
         'object-curly-spacing': ['error', 'always'],
+        'space-infix-ops': 'error',
 
         // These rules should eventually be enabled.
         'no-async-promise-executor': 'off',
