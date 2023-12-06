@@ -2,12 +2,20 @@ import { chat_metadata, getCurrentChatId, saveSettingsDebounced, sendSystemMessa
 import { extension_settings, saveMetadataDebounced } from './extensions.js';
 import { executeSlashCommands, registerSlashCommand } from './slash-commands.js';
 
-function getLocalVariable(name) {
+function getLocalVariable(name, args={}) {
     if (!chat_metadata.variables) {
         chat_metadata.variables = {};
     }
 
-    const localVariable = chat_metadata?.variables[name];
+    let localVariable = chat_metadata?.variables[name];
+    if (args.index !== undefined) {
+        try {
+            localVariable = JSON.parse(localVariable);
+            localVariable = localVariable[Number(args.index)];
+        } catch {
+            // that didn't work
+        }
+    }
 
     return (localVariable === '' || isNaN(Number(localVariable))) ? (localVariable || '') : Number(localVariable);
 }
@@ -22,8 +30,16 @@ function setLocalVariable(name, value) {
     return value;
 }
 
-function getGlobalVariable(name) {
-    const globalVariable = extension_settings.variables.global[name];
+function getGlobalVariable(name, args={}) {
+    let globalVariable = extension_settings.variables.global[name];
+    if (args.index !== undefined) {
+        try {
+            globalVariable = JSON.parse(globalVariable);
+            globalVariable = globalVariable[Number(args.index)];
+        } catch {
+            // that didn't work
+        }
+    }
 
     return (globalVariable === '' || isNaN(Number(globalVariable))) ? (globalVariable || '') : Number(globalVariable);
 }
@@ -536,10 +552,10 @@ function sqrtValuesCallback(value) {
 export function registerVariableCommands() {
     registerSlashCommand('listvar', listVariablesCallback, [], ' – list registered chat variables', true, true);
     registerSlashCommand('setvar', (args, value) => setLocalVariable(args.key || args.name, value), [], '<span class="monospace">key=varname (value)</span> – set a local variable value and pass it down the pipe, e.g. <tt>/setvar key=color green</tt>', true, true);
-    registerSlashCommand('getvar', (_, value) => getLocalVariable(value), [], '<span class="monospace">(key)</span> – get a local variable value and pass it down the pipe, e.g. <tt>/getvar height</tt>', true, true);
+    registerSlashCommand('getvar', (args, value) => getLocalVariable(value, args), [], '<span class="monospace">index=listIndex (key)</span> – get a local variable value and pass it down the pipe, index is optional, e.g. <tt>/getvar height</tt> or <tt>/getvar index=3 costumes</tt>', true, true);
     registerSlashCommand('addvar', (args, value) => addLocalVariable(args.key || args.name, value), [], '<span class="monospace">key=varname (increment)</span> – add a value to a local variable and pass the result down the pipe, e.g. <tt>/addvar score 10</tt>', true, true);
     registerSlashCommand('setglobalvar', (args, value) => setGlobalVariable(args.key || args.name, value), [], '<span class="monospace">key=varname (value)</span> – set a global variable value and pass it down the pipe, e.g. <tt>/setglobalvar key=color green</tt>', true, true);
-    registerSlashCommand('getglobalvar', (_, value) => getGlobalVariable(value), [], '<span class="monospace">(key)</span> – get a global variable value and pass it down the pipe, e.g. <tt>/getglobalvar height</tt>', true, true);
+    registerSlashCommand('getglobalvar', (args, value) => getGlobalVariable(value, args), [], '<span class="monospace">index=listIndex (key)</span> – get a global variable value and pass it down the pipe, index is optional, e.g. <tt>/getglobalvar height</tt> or <tt>/getglobalvar index=3 costumes</tt>', true, true);
     registerSlashCommand('addglobalvar', (args, value) => addGlobalVariable(args.key || args.name, value), [], '<span class="monospace">key=varname (increment)</span> – add a value to a global variable and pass the result down the pipe, e.g. <tt>/addglobalvar score 10</tt>', true, true);
     registerSlashCommand('incvar', (_, value) => incrementLocalVariable(value), [], '<span class="monospace">(key)</span> – increment a local variable by 1 and pass the result down the pipe, e.g. <tt>/incvar score</tt>', true, true);
     registerSlashCommand('decvar', (_, value) => decrementLocalVariable(value), [], '<span class="monospace">(key)</span> – decrement a local variable by 1 and pass the result down the pipe, e.g. <tt>/decvar score</tt>', true, true);
