@@ -42,7 +42,7 @@ async function getExistingChatNames() {
         const data = await getGroupPastChats(selected_group);
         return data.map(x => x.file_name);
     } else {
-        const response = await fetch('/getallchatsofcharacter', {
+        const response = await fetch('/api/characters/chats', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify({ avatar_url: characters[this_chid].avatar }),

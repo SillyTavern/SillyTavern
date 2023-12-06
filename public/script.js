@@ -188,7 +188,7 @@ import { getFriendlyTokenizerName, getTokenCount, getTokenizerModel, initTokeniz
 import { createPersona, initPersonas, selectCurrentPersona, setPersonaDescription } from './scripts/personas.js';
 import { getBackgrounds, initBackgrounds } from './scripts/backgrounds.js';
 import { hideLoader, showLoader } from './scripts/loader.js';
-import { BulkEditOverlay } from './scripts/BulkEditOverlay.js';
+import { BulkEditOverlay, CharacterContextMenu } from './scripts/BulkEditOverlay.js';
 import { loadMancerModels } from './scripts/mancer-settings.js';
 import { getFileAttachment, hasPendingFileAttachment, populateFileAttachment } from './scripts/chats.js';
 import { replaceVariableMacros } from './scripts/variables.js';
@@ -322,7 +322,9 @@ eventSource.on(event_types.MESSAGE_SENT, processExtensionHelpers);
 eventSource.on(event_types.CHAT_CHANGED, processChatSlashCommands);
 
 const characterGroupOverlay = new BulkEditOverlay();
+const characterContextMenu = new CharacterContextMenu(characterGroupOverlay);
 eventSource.on(event_types.CHARACTER_PAGE_LOADED, characterGroupOverlay.onPageLoad);
+console.debug('Character context menu initialized', characterContextMenu);
 
 hljs.addPlugin({ 'before:highlightElement': ({ el }) => { el.textContent = el.innerText; } });
 
@@ -1190,7 +1192,7 @@ export function getEntitiesList({ doFilter } = {}) {
 }
 
 export async function getOneCharacter(avatarUrl) {
-    const response = await fetch('/getonecharacter', {
+    const response = await fetch('/api/characters/get', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
@@ -1214,7 +1216,7 @@ export async function getOneCharacter(avatarUrl) {
 }
 
 async function getCharacters() {
-    var response = await fetch('/getcharacters', {
+    var response = await fetch('/api/characters/all', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
@@ -1270,7 +1272,7 @@ async function replaceCurrentChat() {
     await clearChat();
     chat.length = 0;
 
-    const chatsResponse = await fetch('/getallchatsofcharacter', {
+    const chatsResponse = await fetch('/api/characters/chats', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({ avatar_url: characters[this_chid].avatar }),
@@ -4166,7 +4168,7 @@ async function DupeChar() {
     }
 
     const body = { avatar_url: characters[this_chid].avatar };
-    const response = await fetch('/dupecharacter', {
+    const response = await fetch('/api/characters/duplicate', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify(body),
@@ -4793,7 +4795,7 @@ async function renameCharacter() {
 
     if (newValue && newValue !== characters[this_chid].name) {
         const body = JSON.stringify({ avatar_url: oldAvatar, new_name: newValue });
-        const response = await fetch('/renamecharacter', {
+        const response = await fetch('/api/characters/rename', {
             method: 'POST',
             headers: getRequestHeaders(),
             body,
@@ -5883,7 +5885,7 @@ export async function getChatsFromFiles(data, isGroupChat) {
 async function getPastCharacterChats() {
     if (!characters[this_chid]) return;
 
-    const response = await fetch('/getallchatsofcharacter', {
+    const response = await fetch('/api/characters/chats', {
         method: 'POST',
         body: JSON.stringify({ avatar_url: characters[this_chid].avatar }),
         headers: getRequestHeaders(),
@@ -6841,7 +6843,7 @@ async function createOrEditCharacter(e) {
     if ($('#form_create').attr('actiontype') == 'createcharacter') {
         if ($('#character_name_pole').val().length > 0) {
             //if the character name text area isn't empty (only posible when creating a new character)
-            let url = '/createcharacter';
+            let url = '/api/characters/create';
 
             if (crop_data != undefined) {
                 url += `?crop=${encodeURIComponent(JSON.stringify(crop_data))}`;
@@ -6923,7 +6925,7 @@ async function createOrEditCharacter(e) {
             toastr.error('Name is required');
         }
     } else {
-        let url = '/editcharacter';
+        let url = '/api/characters/edit';
 
         if (crop_data != undefined) {
             url += `?crop=${encodeURIComponent(JSON.stringify(crop_data))}`;
@@ -7468,7 +7470,7 @@ async function importCharacter(file) {
 
     const data = await jQuery.ajax({
         type: 'POST',
-        url: '/importcharacter',
+        url: '/api/characters/import',
         data: formData,
         async: true,
         cache: false,
@@ -7576,7 +7578,7 @@ export async function handleDeleteCharacter(popup_type, this_chid, delete_chats)
 
     const msg = { avatar_url: avatar, delete_chats: delete_chats };
 
-    const response = await fetch('/deletecharacter', {
+    const response = await fetch('/api/characters/delete', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify(msg),
@@ -8990,7 +8992,7 @@ jQuery(async function () {
         await createOrEditCharacter();
         const body = { format, avatar_url: characters[this_chid].avatar };
 
-        const response = await fetch('/exportcharacter', {
+        const response = await fetch('/api/characters/export', {
             method: 'POST',
             headers: getRequestHeaders(),
             body: JSON.stringify(body),
@@ -9073,10 +9075,15 @@ jQuery(async function () {
             return;
         }
 
-        if (selected_group) {
-            await openGroupChat(selected_group, file_name);
-        } else {
-            await openCharacterChat(file_name);
+        try {
+            showLoader();
+            if (selected_group) {
+                await openGroupChat(selected_group, file_name);
+            } else {
+                await openCharacterChat(file_name);
+            }
+        } finally {
+            hideLoader();
         }
 
         $('#shadow_select_chat_popup').css('display', 'none');
