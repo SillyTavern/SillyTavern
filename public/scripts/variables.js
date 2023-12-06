@@ -549,6 +549,16 @@ function sqrtValuesCallback(value) {
     return performOperation(value, Math.sqrt, true);
 }
 
+function lenValuesCallback(value) {
+    let parsedValue = value;
+    try {
+        parsedValue = JSON.parse(value);
+    } catch {
+        // could not parse
+    }
+    return parsedValue.length;
+}
+
 export function registerVariableCommands() {
     registerSlashCommand('listvar', listVariablesCallback, [], ' – list registered chat variables', true, true);
     registerSlashCommand('setvar', (args, value) => setLocalVariable(args.key || args.name, value), [], '<span class="monospace">key=varname (value)</span> – set a local variable value and pass it down the pipe, e.g. <tt>/setvar key=color green</tt>', true, true);
@@ -579,4 +589,5 @@ export function registerVariableCommands() {
     registerSlashCommand('abs', (_, value) => absValuesCallback(value), [], '<span class="monospace">(a)</span> – performs an absolute value operation of a value and passes the result down the pipe, can use variable names, e.g. <tt>/abs i</tt>', true, true);
     registerSlashCommand('sqrt', (_, value) => sqrtValuesCallback(value), [], '<span class="monospace">(a)</span> – performs a square root operation of a value and passes the result down the pipe, can use variable names, e.g. <tt>/sqrt i</tt>', true, true);
     registerSlashCommand('round', (_, value) => roundValuesCallback(value), [], '<span class="monospace">(a)</span> – rounds a value and passes the result down the pipe, can use variable names, e.g. <tt>/round i</tt>', true, true);
+    registerSlashCommand('len', (_, value) => lenValuesCallback(value), [], '<span class="monospace">(a)</span> – gets the length of a value and passes the result down the pipe, can use variable names, e.g. <tt>/len i</tt>', true, true);
 }
