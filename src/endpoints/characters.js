@@ -16,7 +16,7 @@ const { jsonParser, urlencodedParser } = require('../express-common');
 const { deepMerge, humanizedISO8601DateTime, tryParse } = require('../util');
 const { TavernCardValidator } = require('../validator/TavernCardValidator');
 const characterCardParser = require('../character-card-parser.js');
-const { readWorldInfoFile, convertWorldInfoToCharacterBook } = require('../worldinfo');
+const { readWorldInfoFile } = require('./worldinfo');
 const { invalidateThumbnail } = require('./thumbnails');
 const { importRisuSprites } = require('./sprites');
 
@@ -328,6 +328,46 @@ function charaFormatData(data) {
     }
 
     return char;
+}
+
+/**
+ * @param {string} name Name of World Info file
+ * @param {object} entries Entries object
+ */
+function convertWorldInfoToCharacterBook(name, entries) {
+    /** @type {{ entries: object[]; name: string }} */
+    const result = { entries: [], name };
+
+    for (const index in entries) {
+        const entry = entries[index];
+
+        const originalEntry = {
+            id: entry.uid,
+            keys: entry.key,
+            secondary_keys: entry.keysecondary,
+            comment: entry.comment,
+            content: entry.content,
+            constant: entry.constant,
+            selective: entry.selective,
+            insertion_order: entry.order,
+            enabled: !entry.disable,
+            position: entry.position == 0 ? 'before_char' : 'after_char',
+            extensions: {
+                position: entry.position,
+                exclude_recursion: entry.excludeRecursion,
+                display_index: entry.displayIndex,
+                probability: entry.probability ?? null,
+                useProbability: entry.useProbability ?? false,
+                depth: entry.depth ?? 4,
+                selectiveLogic: entry.selectiveLogic ?? 0,
+                group: entry.group ?? '',
+            },
+        };
+
+        result.entries.push(originalEntry);
+    }
+
+    return result;
 }
 
 const router = express.Router();
