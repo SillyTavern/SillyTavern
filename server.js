@@ -723,7 +723,7 @@ app.post('/api/textgenerationwebui/generate', jsonParser, async function (reques
     }
 });
 
-app.post('/savechat', jsonParser, function (request, response) {
+app.post('/api/chats/save', jsonParser, function (request, response) {
     try {
         var dir_name = String(request.body.avatar_url).replace('.png', '');
         let chat_data = request.body.chat;
@@ -737,7 +737,7 @@ app.post('/savechat', jsonParser, function (request, response) {
     }
 });
 
-app.post('/getchat', jsonParser, function (request, response) {
+app.post('/api/chats/get', jsonParser, function (request, response) {
     try {
         const dirName = String(request.body.avatar_url).replace('.png', '');
         const chatDirExists = fs.existsSync(DIRECTORIES.chats + dirName);
@@ -830,7 +830,7 @@ app.post('/getstatus', jsonParser, async function (request, response) {
 });
 
 
-app.post('/renamechat', jsonParser, async function (request, response) {
+app.post('/api/chats/rename', jsonParser, async function (request, response) {
     if (!request.body || !request.body.original_file || !request.body.renamed_file) {
         return response.sendStatus(400);
     }
@@ -967,8 +967,8 @@ app.post('/delbackground', jsonParser, function (request, response) {
     return response.send('ok');
 });
 
-app.post('/delchat', jsonParser, function (request, response) {
-    console.log('/delchat entered');
+app.post('/api/chats/delete', jsonParser, function (request, response) {
+    console.log('/api/chats/delete entered');
     if (!request.body) {
         console.log('no request body seen');
         return response.sendStatus(400);
@@ -1237,7 +1237,7 @@ function getImages(path) {
         .sort(Intl.Collator().compare);
 }
 
-app.post('/exportchat', jsonParser, async function (request, response) {
+app.post('/api/chats/export', jsonParser, async function (request, response) {
     if (!request.body.file || (!request.body.avatar_url && request.body.is_group === false)) {
         return response.sendStatus(400);
     }
@@ -1305,7 +1305,7 @@ app.post('/exportchat', jsonParser, async function (request, response) {
     }
 });
 
-app.post('/importgroupchat', urlencodedParser, function (request, response) {
+app.post('/api/chats/group/import', urlencodedParser, function (request, response) {
     try {
         const filedata = request.file;
 
@@ -1325,7 +1325,7 @@ app.post('/importgroupchat', urlencodedParser, function (request, response) {
     }
 });
 
-app.post('/importchat', urlencodedParser, function (request, response) {
+app.post('/api/chats/import', urlencodedParser, function (request, response) {
     if (!request.body) return response.sendStatus(400);
 
     var format = request.body.file_type;
@@ -1344,7 +1344,7 @@ app.post('/importchat', urlencodedParser, function (request, response) {
         if (format === 'json') {
             const jsonData = JSON.parse(data);
             if (jsonData.histories !== undefined) {
-                //console.log('/importchat confirms JSON histories are defined');
+                //console.log('/api/chats/import confirms JSON histories are defined');
                 const chat = {
                     from(history) {
                         return [
@@ -1701,7 +1701,7 @@ app.post('/editgroup', jsonParser, (request, response) => {
     return response.send({ ok: true });
 });
 
-app.post('/getgroupchat', jsonParser, (request, response) => {
+app.post('/api/chats/group/get', jsonParser, (request, response) => {
     if (!request.body || !request.body.id) {
         return response.sendStatus(400);
     }
@@ -1721,7 +1721,7 @@ app.post('/getgroupchat', jsonParser, (request, response) => {
     }
 });
 
-app.post('/deletegroupchat', jsonParser, (request, response) => {
+app.post('/api/chats/group/delete', jsonParser, (request, response) => {
     if (!request.body || !request.body.id) {
         return response.sendStatus(400);
     }
@@ -1737,7 +1737,7 @@ app.post('/deletegroupchat', jsonParser, (request, response) => {
     return response.send({ error: true });
 });
 
-app.post('/savegroupchat', jsonParser, (request, response) => {
+app.post('/api/chats/group/save', jsonParser, (request, response) => {
     if (!request.body || !request.body.id) {
         return response.sendStatus(400);
     }

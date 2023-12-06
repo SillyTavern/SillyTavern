@@ -152,7 +152,7 @@ async function regenerateGroup() {
 }
 
 async function loadGroupChat(chatId) {
-    const response = await fetch('/getgroupchat', {
+    const response = await fetch('/api/chats/group/get', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({ id: chatId }),
@@ -401,7 +401,7 @@ async function saveGroupChat(groupId, shouldSaveGroup) {
     const group = groups.find(x => x.id == groupId);
     const chat_id = group.chat_id;
     group['date_last_chat'] = Date.now();
-    const response = await fetch('/savegroupchat', {
+    const response = await fetch('/api/chats/group/save', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({ id: chat_id, chat: [...chat] }),
@@ -455,7 +455,7 @@ export async function renameGroupMember(oldAvatar, newAvatar, newName) {
                     }
 
                     if (hadChanges) {
-                        const saveChatResponse = await fetch('/savegroupchat', {
+                        const saveChatResponse = await fetch('/api/chats/group/save', {
                             method: 'POST',
                             headers: getRequestHeaders(),
                             body: JSON.stringify({ id: chatId, chat: [...messages] }),
@@ -1659,7 +1659,7 @@ export async function deleteGroupChat(groupId, chatId) {
     delete group.past_metadata[chatId];
     updateChatMetadata(group.chat_metadata, true);
 
-    const response = await fetch('/deletegroupchat', {
+    const response = await fetch('/api/chats/group/delete', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({ id: chatId }),
@@ -1679,7 +1679,7 @@ export async function deleteGroupChat(groupId, chatId) {
 export async function importGroupChat(formData) {
     await jQuery.ajax({
         type: 'POST',
-        url: '/importgroupchat',
+        url: '/api/chats/group/import',
         data: formData,
         beforeSend: function () {
         },
@@ -1720,7 +1720,7 @@ export async function saveGroupBookmarkChat(groupId, name, metadata, mesId) {
 
     await editGroup(groupId, true, false);
 
-    await fetch('/savegroupchat', {
+    await fetch('/api/chats/group/save', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({ id: name, chat: [...trimmed_chat] }),
