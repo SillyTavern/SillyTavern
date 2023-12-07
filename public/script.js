@@ -8161,6 +8161,7 @@ jQuery(async function () {
         };
 
         try {
+            showLoader();
             const response = await fetch('/api/chats/rename', {
                 method: 'POST',
                 body: JSON.stringify(body),
@@ -8195,6 +8196,8 @@ jQuery(async function () {
         } catch {
             await delay(500);
             await callPopup('An error has occurred. Chat was not renamed.', 'text');
+        } finally {
+            hideLoader();
         }
     });
 
