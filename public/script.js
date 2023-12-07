@@ -8427,6 +8427,7 @@ jQuery(async function () {
                 select_rm_characters();
                 sendSystemMessage(system_message_types.WELCOME);
                 eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
+                await getClientVersion();
             } else {
                 toastr.info('Please stop the message generation first.');
             }
