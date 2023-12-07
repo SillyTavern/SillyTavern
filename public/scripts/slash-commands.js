@@ -1524,7 +1524,11 @@ async function executeSlashCommands(text, unescape = false) {
             unnamedArg = unnamedArg.replace(/{{pipe}}/i, pipeResult || '');
         }
 
+        let oldPipeResult = pipeResult;
         pipeResult = await result.command.callback(result.args, unnamedArg);
+        if (pipeResult === undefined && oldPipeResult !== undefined) {
+            pipeResult = oldPipeResult;
+        }
 
         if (result.command.interruptsGeneration) {
             interrupt = true;
