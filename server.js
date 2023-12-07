@@ -45,7 +45,6 @@ util.inspect.defaultOptions.maxStringLength = null;
 const basicAuthMiddleware = require('./src/middleware/basicAuthMiddleware');
 const { jsonParser, urlencodedParser } = require('./src/express-common.js');
 const contentManager = require('./src/endpoints/content-manager');
-const statsHelpers = require('./statsHelpers.js');
 const { readSecret, migrateSecrets, SECRET_KEYS } = require('./src/endpoints/secrets');
 const { delay, getVersion, getConfigValue, color, uuidv4, tryParse, clientRelativePath, removeFileExtension, generateTimestamp, removeOldBackups } = require('./src/util');
 const { invalidateThumbnail, ensureThumbnailCache } = require('./src/endpoints/thumbnails');
@@ -98,8 +97,6 @@ process.chdir(directory);
 const app = express();
 app.use(compression());
 app.use(responseTime());
-
-// impoort from statsHelpers.js
 
 const server_port = process.env.SILLY_TAVERN_PORT || getConfigValue('port', 8000);
 
@@ -2066,7 +2063,8 @@ app.use('/api/groups', require('./src/endpoints/groups').router);
 app.use('/api/worldinfo', require('./src/endpoints/worldinfo').router);
 
 // Stats calculation
-app.use('/api/stats', require('./src/endpoints/stats').router);
+const statsEndpoint = require('./src/endpoints/stats');
+app.use('/api/stats', statsEndpoint.router);
 
 // Character sprite management
 app.use('/api/sprites', require('./src/endpoints/sprites').router);
@@ -2120,17 +2118,20 @@ const setupTasks = async function () {
     cleanUploads();
 
     await loadTokenizers();
-    await statsHelpers.loadStatsFile(DIRECTORIES.chats, DIRECTORIES.characters);
+    await statsEndpoint.init();
+
+    const exitProcess = () => {
+        statsEndpoint.onExit();
+        process.exit();
+    };
 
     // Set up event listeners for a graceful shutdown
-    process.on('SIGINT', statsHelpers.writeStatsToFileAndExit);
-    process.on('SIGTERM', statsHelpers.writeStatsToFileAndExit);
+    process.on('SIGINT', exitProcess);
+    process.on('SIGTERM', exitProcess);
     process.on('uncaughtException', (err) => {
         console.error('Uncaught exception:', err);
-        statsHelpers.writeStatsToFileAndExit();
+        exitProcess();
     });
-
-    setInterval(statsHelpers.saveStatsToFile, 5 * 60 * 1000);
 
     console.log('Launching...');
 
