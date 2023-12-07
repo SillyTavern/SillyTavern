@@ -1,52 +1,50 @@
 import {
+    Generate,
+    activateSendButtons,
     addOneMessage,
+    callPopup,
     characters,
     chat,
     chat_metadata,
+    comment_avatar,
+    deactivateSendButtons,
     default_avatar,
     eventSource,
     event_types,
+    extension_prompt_types,
     extractMessageBias,
+    generateQuietPrompt,
+    generateRaw,
     getThumbnailUrl,
+    is_send_press,
+    main_api,
+    name1,
+    reloadCurrentChat,
     replaceBiasMarkup,
     saveChatConditional,
+    sendMessageAsUser,
     sendSystemMessage,
+    setCharacterId,
+    setCharacterName,
+    setExtensionPrompt,
     setUserName,
     substituteParams,
-    comment_avatar,
     system_avatar,
     system_message_types,
-    setCharacterId,
-    generateQuietPrompt,
-    reloadCurrentChat,
-    sendMessageAsUser,
-    name1,
-    Generate,
     this_chid,
-    setCharacterName,
-    generateRaw,
-    callPopup,
-    deactivateSendButtons,
-    activateSendButtons,
-    main_api,
-    is_send_press,
-    extension_prompt_types,
-    setExtensionPrompt,
 } from '../script.js';
 import { getMessageTimeStamp } from './RossAscends-mods.js';
-import { findGroupMemberId, groups, is_group_generating, resetSelectedGroup, saveGroupChat, selected_group } from './group-chats.js';
-import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
-import { addEphemeralStoppingString, chat_styles, flushEphemeralStoppingStrings, power_user } from './power-user.js';
-import { autoSelectPersona } from './personas.js';
-import { getContext, saveMetadataDebounced } from './extensions.js';
 import { hideChatMessage, unhideChatMessage } from './chats.js';
+import { getContext, saveMetadataDebounced } from './extensions.js';
+import { getRegexedString, regex_placement } from './extensions/regex/engine.js';
+import { findGroupMemberId, groups, is_group_generating, resetSelectedGroup, saveGroupChat, selected_group } from './group-chats.js';
+import { autoSelectPersona } from './personas.js';
+import { addEphemeralStoppingString, chat_styles, flushEphemeralStoppingStrings, power_user } from './power-user.js';
+import { decodeTextTokens, getFriendlyTokenizerName, getTextTokens, getTokenCount } from './tokenizers.js';
 import { delay, isFalseBoolean, isTrueBoolean, stringToRange, trimToEndSentence, trimToStartSentence, waitUntilCondition } from './utils.js';
 import { registerVariableCommands, resolveVariable } from './variables.js';
-import { decodeTextTokens, getFriendlyTokenizerName, getTextTokens, getTokenCount } from './tokenizers.js';
 export {
-    executeSlashCommands,
-    registerSlashCommand,
-    getSlashCommandsHelp,
+    executeSlashCommands, getSlashCommandsHelp, registerSlashCommand,
 };
 
 class SlashCommandParser {
@@ -167,7 +165,8 @@ parser.addCommand('memberup', moveGroupMemberUpCallback, ['upmember'], '<span cl
 parser.addCommand('memberdown', moveGroupMemberDownCallback, ['downmember'], '<span class="monospace">(member index or name)</span> – moves a group member down in the group chat list', true, true);
 parser.addCommand('peek', peekCallback, [], '<span class="monospace">(message index or range)</span> – shows a group member character card without switching chats', true, true);
 parser.addCommand('delswipe', deleteSwipeCallback, ['swipedel'], '<span class="monospace">(optional 1-based id)</span> – deletes a swipe from the last chat message. If swipe id not provided - deletes the current swipe.', true, true);
-parser.addCommand('echo', echoCallback, [], '<span class="monospace">(text)</span> – echoes the text to toast message. Useful for pipes debugging.', true, true);
+parser.addCommand('echo', echoCallback, [], '<span class="monospace">(title=string severity=info/warning/error/success [text])</span> – echoes the text to toast message. Useful for pipes debugging.', true, true);
+// '<span class="monospace">(text)</span> – echoes the text to toast message. Useful for pipes debugging.', true, true);
 parser.addCommand('gen', generateCallback, [], '<span class="monospace">(lock=on/off [prompt])</span> – generates text using the provided prompt and passes it to the next command through the pipe, optionally locking user input while generating.', true, true);
 parser.addCommand('genraw', generateRawCallback, [], '<span class="monospace">(lock=on/off [prompt])</span> – generates text using the provided prompt and passes it to the next command through the pipe, optionally locking user input while generating. Does not include chat history or character card. Use instruct=off to skip instruct formatting, e.g. <tt>/genraw instruct=off Why is the sky blue?</tt>. Use stop=... with a JSON-serialized array to add one-time custom stop strings, e.g. <tt>/genraw stop=["\\n"] Say hi</tt>', true, true);
 parser.addCommand('addswipe', addSwipeCallback, ['swipeadd'], '<span class="monospace">(text)</span> – adds a swipe to the last chat message.', true, true);
@@ -175,11 +174,11 @@ parser.addCommand('abort', abortCallback, [], ' – aborts the slash command bat
 parser.addCommand('fuzzy', fuzzyCallback, [], 'list=["a","b","c"] (search value) – performs a fuzzy match of the provided search using the provided list of value and passes the closest match to the next command through the pipe.', true, true);
 parser.addCommand('pass', (_, arg) => arg, ['return'], '<span class="monospace">(text)</span> – passes the text to the next command through the pipe.', true, true);
 parser.addCommand('delay', delayCallback, ['wait', 'sleep'], '<span class="monospace">(milliseconds)</span> – delays the next command in the pipe by the specified number of milliseconds.', true, true);
-parser.addCommand('input', inputCallback, ['prompt'], '<span class="monospace">(prompt)</span> – shows a popup with the provided prompt and passes the user input to the next command through the pipe.', true, true);
+parser.addCommand('input', inputCallback, ['prompt'], '<span class="monospace">(default="string" large=on/off wide=on/off okButton="string" rows=number [text])</span> – Shows a popup with the provided text and an input field. The default argument is the default value of the input field, and the text argument is the text to display.', true, true);
 parser.addCommand('run', runCallback, ['call', 'exec'], '<span class="monospace">(QR label)</span> – runs a Quick Reply with the specified name from the current preset.', true, true);
 parser.addCommand('messages', getMessagesCallback, ['message'], '<span class="monospace">(names=off/on [message index or range])</span> – returns the specified message or range of messages as a string.', true, true);
 parser.addCommand('setinput', setInputCallback, [], '<span class="monospace">(text)</span> – sets the user input to the specified text and passes it to the next command through the pipe.', true, true);
-parser.addCommand('popup', popupCallback, [], '<span class="monospace">(text)</span> – shows a blocking popup with the specified text.', true, true);
+parser.addCommand('popup', popupCallback, [], '<span class="monospace">(large=on/off wide=on/off okButton="string" text)</span> – shows a blocking popup with the specified text and buttons. Returns the input value into the pipe or empty string if canceled.', true, true);
 parser.addCommand('buttons', buttonsCallback, [], '<span class="monospace">labels=["a","b"] (text)</span> – shows a blocking popup with the specified text and buttons. Returns the clicked button label into the pipe or empty string if canceled.', true, true);
 parser.addCommand('trimtokens', trimTokensCallback, [], '<span class="monospace">limit=number (direction=start/end [text])</span> – trims the start or end of text to the specified number of tokens.', true, true);
 parser.addCommand('trimstart', trimStartCallback, [], '<span class="monospace">(text)</span> – trims the text to the start of the first full sentence.', true, true);
@@ -400,10 +399,15 @@ async function buttonsCallback(args, text) {
     }
 }
 
-async function popupCallback(_, value) {
+async function popupCallback(args, value) {
     const safeValue = DOMPurify.sanitize(value || '');
+    const popupOptions = {
+        large: isTrueBoolean(args?.large),
+        wide: isTrueBoolean(args?.wide),
+        okButton: args?.okButton !== undefined && typeof args?.okButton === 'string' ? args.okButton : 'Ok',
+    };
     await delay(1);
-    await callPopup(safeValue, 'text', '');
+    await callPopup(safeValue, 'text', '', popupOptions);
     await delay(1);
     return value;
 }
@@ -479,11 +483,18 @@ async function delayCallback(_, amount) {
     await delay(amount);
 }
 
-async function inputCallback(_, prompt) {
+async function inputCallback(args, prompt) {
+    const safeValue = DOMPurify.sanitize(prompt || '');
+    const defaultInput = args?.default !== undefined && typeof args?.default === 'string' ? args.default : '';
+    const popupOptions = {
+        large: isTrueBoolean(args?.large),
+        wide: isTrueBoolean(args?.wide),
+        okButton: args?.okButton !== undefined && typeof args?.okButton === 'string' ? args.okButton : 'Ok',
+        rows: args?.rows !== undefined && typeof args?.rows === 'string' ? isNaN(Number(args.rows)) ? 4 : Number(args.rows) : 4,
+    };
     // Do not remove this delay, otherwise the prompt will not show up
     await delay(1);
-    const safeValue = DOMPurify.sanitize(prompt || '');
-    const result = await callPopup(safeValue, 'input', '', { okButton: 'Ok' });
+    const result = await callPopup(safeValue, 'input', defaultInput, popupOptions);
     await delay(1);
     return result || '';
 }
@@ -525,9 +536,7 @@ function setEphemeralStopStrings(value) {
         try {
             const stopStrings = JSON.parse(value);
             if (Array.isArray(stopStrings)) {
-                for (const stopString of stopStrings) {
-                    addEphemeralStoppingString(stopString);
-                }
+                stopStrings.forEach(stopString => addEphemeralStoppingString(stopString));
             }
         } catch {
             // Do nothing
@@ -587,14 +596,29 @@ async function generateCallback(args, value) {
     }
 }
 
-async function echoCallback(_, arg) {
-    if (!String(arg)) {
+async function echoCallback(args, value) {
+    const safeValue = DOMPurify.sanitize(value || '');
+    if (safeValue === '') {
         console.warn('WARN: No argument provided for /echo command');
         return;
     }
-
-    toastr.info(String(arg));
-    return arg;
+    const title = args?.title !== undefined && typeof args?.title === 'string' ? args.title : undefined;
+    const severity = args?.severity !== undefined && typeof args?.severity === 'string' ? args.severity : 'info';
+    switch (severity) {
+        case 'error':
+            toastr.error(safeValue, title);
+            break;
+        case 'warning':
+            toastr.warning(safeValue, title);
+            break;
+        case 'success':
+            toastr.success(safeValue, title);
+            break;
+        case 'info':
+        default:
+            toastr.info(safeValue, title);
+            break;
+    }
 }
 
 async function addSwipeCallback(_, arg) {
