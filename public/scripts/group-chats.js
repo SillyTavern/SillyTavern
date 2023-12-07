@@ -658,7 +658,6 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         let activationText = '';
         let isUserInput = false;
         let isGenerationDone = false;
-        let isGenerationAborted = false;
 
         if (userInput?.length && !by_auto_mode) {
             isUserInput = true;
@@ -673,14 +672,8 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         const resolveOriginal = params.resolve;
         const rejectOriginal = params.reject;
 
-        if (params.signal instanceof AbortSignal) {
-            if (params.signal.aborted) {
+        if (params.signal instanceof AbortSignal && params.signal.aborted) {
                 throw new Error('Already aborted signal passed. Group generation stopped');
-            }
-
-            params.signal.onabort = () => {
-                isGenerationAborted = true;
-            };
         }
 
         if (typeof params.resolve === 'function') {
@@ -760,7 +753,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             // TODO: This is awful. Refactor this
             while (true) {
                 deactivateSendButtons();
-                if (isGenerationAborted) {
+                if (params.signal instanceof AbortSignal && params.signal.aborted) {
                     throw new Error('Group generation aborted');
                 }
 
