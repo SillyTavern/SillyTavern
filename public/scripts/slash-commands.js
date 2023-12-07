@@ -174,7 +174,7 @@ parser.addCommand('abort', abortCallback, [], ' – aborts the slash command bat
 parser.addCommand('fuzzy', fuzzyCallback, [], 'list=["a","b","c"] (search value) – performs a fuzzy match of the provided search using the provided list of value and passes the closest match to the next command through the pipe.', true, true);
 parser.addCommand('pass', (_, arg) => arg, ['return'], '<span class="monospace">(text)</span> – passes the text to the next command through the pipe.', true, true);
 parser.addCommand('delay', delayCallback, ['wait', 'sleep'], '<span class="monospace">(milliseconds)</span> – delays the next command in the pipe by the specified number of milliseconds.', true, true);
-parser.addCommand('input', inputCallback, ['prompt'], '<span class="monospace">(input="string" large=on/off wide=on/off okButton="string" rows=number text)</span> – Shows a popup with the provided text and an input field. The input argument is the default value of the input field, and the text argument is the text to display.', true, true);
+parser.addCommand('input', inputCallback, ['prompt'], '<span class="monospace">(default="string" large=on/off wide=on/off okButton="string" rows=number [text])</span> – Shows a popup with the provided text and an input field. The default argument is the default value of the input field, and the text argument is the text to display.', true, true);
 parser.addCommand('run', runCallback, ['call', 'exec'], '<span class="monospace">(QR label)</span> – runs a Quick Reply with the specified name from the current preset.', true, true);
 parser.addCommand('messages', getMessagesCallback, ['message'], '<span class="monospace">(names=off/on [message index or range])</span> – returns the specified message or range of messages as a string.', true, true);
 parser.addCommand('setinput', setInputCallback, [], '<span class="monospace">(text)</span> – sets the user input to the specified text and passes it to the next command through the pipe.', true, true);
@@ -485,7 +485,7 @@ async function delayCallback(_, amount) {
 
 async function inputCallback(args, prompt) {
     const safeValue = DOMPurify.sanitize(prompt || '');
-    const input = args?.input !== undefined && typeof args?.input === 'string' ? args.input : '';
+    const defaultInput = args?.default !== undefined && typeof args?.default === 'string' ? args.default : '';
     const popupOptions = {
         large: isTrueBoolean(args?.large),
         wide: isTrueBoolean(args?.wide),
@@ -494,7 +494,7 @@ async function inputCallback(args, prompt) {
     };
     // Do not remove this delay, otherwise the prompt will not show up
     await delay(1);
-    const result = await callPopup(safeValue, 'input', input, popupOptions);
+    const result = await callPopup(safeValue, 'input', defaultInput, popupOptions);
     await delay(1);
     return result || '';
 }
