@@ -216,7 +216,6 @@ const default_settings = {
     openrouter_sort_models: 'alphabetically',
     jailbreak_system: false,
     reverse_proxy: '',
-    legacy_streaming: false,
     chat_completion_source: chat_completion_sources.OPENAI,
     max_context_unlocked: false,
     api_url_scale: '',
@@ -270,7 +269,6 @@ const oai_settings = {
     openrouter_sort_models: 'alphabetically',
     jailbreak_system: false,
     reverse_proxy: '',
-    legacy_streaming: false,
     chat_completion_source: chat_completion_sources.OPENAI,
     max_context_unlocked: false,
     api_url_scale: '',
@@ -2277,7 +2275,6 @@ function loadOpenAISettings(data, settings) {
     oai_settings.openai_max_tokens = settings.openai_max_tokens ?? default_settings.openai_max_tokens;
     oai_settings.bias_preset_selected = settings.bias_preset_selected ?? default_settings.bias_preset_selected;
     oai_settings.bias_presets = settings.bias_presets ?? default_settings.bias_presets;
-    oai_settings.legacy_streaming = settings.legacy_streaming ?? default_settings.legacy_streaming;
     oai_settings.max_context_unlocked = settings.max_context_unlocked ?? default_settings.max_context_unlocked;
     oai_settings.send_if_empty = settings.send_if_empty ?? default_settings.send_if_empty;
     oai_settings.wi_format = settings.wi_format ?? default_settings.wi_format;
@@ -2340,7 +2337,6 @@ function loadOpenAISettings(data, settings) {
     $('#wrap_in_quotes').prop('checked', oai_settings.wrap_in_quotes);
     $('#names_in_completion').prop('checked', oai_settings.names_in_completion);
     $('#jailbreak_system').prop('checked', oai_settings.jailbreak_system);
-    $('#legacy_streaming').prop('checked', oai_settings.legacy_streaming);
     $('#openai_show_external_models').prop('checked', oai_settings.show_external_models);
     $('#openai_external_category').toggle(oai_settings.show_external_models);
     $('#use_ai21_tokenizer').prop('checked', oai_settings.use_ai21_tokenizer);
@@ -2545,7 +2541,6 @@ async function saveOpenAIPreset(name, settings, triggerUi = true) {
         bias_preset_selected: settings.bias_preset_selected,
         reverse_proxy: settings.reverse_proxy,
         proxy_password: settings.proxy_password,
-        legacy_streaming: settings.legacy_streaming,
         max_context_unlocked: settings.max_context_unlocked,
         wi_format: settings.wi_format,
         scenario_format: settings.scenario_format,
@@ -2906,7 +2901,6 @@ function onSettingsPresetChange() {
         continue_nudge_prompt: ['#continue_nudge_prompt_textarea', 'continue_nudge_prompt', false],
         bias_preset_selected: ['#openai_logit_bias_preset', 'bias_preset_selected', false],
         reverse_proxy: ['#openai_reverse_proxy', 'reverse_proxy', false],
-        legacy_streaming: ['#legacy_streaming', 'legacy_streaming', true],
         wi_format: ['#wi_format_textarea', 'wi_format', false],
         scenario_format: ['#scenario_format_textarea', 'scenario_format', false],
         personality_format: ['#personality_format_textarea', 'personality_format', false],
@@ -3659,11 +3653,6 @@ $(document).ready(async function () {
     $('#group_nudge_prompt_restore').on('click', function () {
         oai_settings.group_nudge_prompt = default_group_nudge_prompt;
         $('#group_nudge_prompt_textarea').val(oai_settings.group_nudge_prompt);
-        saveSettingsDebounced();
-    });
-
-    $('#legacy_streaming').on('input', function () {
-        oai_settings.legacy_streaming = !!$(this).prop('checked');
         saveSettingsDebounced();
     });
 
