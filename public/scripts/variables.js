@@ -43,7 +43,7 @@ function setLocalVariable(name, value, args = {}) {
                 }
                 localVariable[args.index] = value;
             } else {
-                if (localVariable  === null) {
+                if (localVariable === null) {
                     localVariable = [];
                 }
                 localVariable[numIndex] = value;
@@ -92,7 +92,7 @@ function setGlobalVariable(name, value, args = {}) {
                 }
                 globalVariable[args.index] = value;
             } else {
-                if (globalVariable  === null) {
+                if (globalVariable === null) {
                     globalVariable = [];
                 }
                 globalVariable[numIndex] = value;
@@ -116,7 +116,9 @@ function addLocalVariable(name, value) {
             setGlobalVariable(name, JSON.stringify(parsedValue));
             return parsedValue;
         }
-    } catch {}
+    } catch {
+        // ignore non-array values
+    }
     const increment = Number(value);
 
     if (isNaN(increment) || isNaN(Number(currentValue))) {
@@ -144,7 +146,9 @@ function addGlobalVariable(name, value) {
             setGlobalVariable(name, JSON.stringify(parsedValue));
             return parsedValue;
         }
-    } catch {}
+    } catch {
+        // ignore non-array values
+    }
     const increment = Number(value);
 
     if (isNaN(increment) || isNaN(Number(currentValue))) {

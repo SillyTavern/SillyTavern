@@ -166,8 +166,7 @@ parser.addCommand('memberdown', moveGroupMemberDownCallback, ['downmember'], '<s
 parser.addCommand('peek', peekCallback, [], '<span class="monospace">(message index or range)</span> – shows a group member character card without switching chats', true, true);
 parser.addCommand('delswipe', deleteSwipeCallback, ['swipedel'], '<span class="monospace">(optional 1-based id)</span> – deletes a swipe from the last chat message. If swipe id not provided - deletes the current swipe.', true, true);
 parser.addCommand('echo', echoCallback, [], '<span class="monospace">(title=string severity=info/warning/error/success [text])</span> – echoes the text to toast message. Useful for pipes debugging.', true, true);
-parser.addCommand('#', (_, value) => undefined, [], ' – a comment, does nothing, e.g. <tt>/# the next three commands switch variables a and b</tt>', true, true);
-// '<span class="monospace">(text)</span> – echoes the text to toast message. Useful for pipes debugging.', true, true);
+parser.addCommand('#', (_, value) => '', [], ' – a comment, does nothing, e.g. <tt>/# the next three commands switch variables a and b</tt>', true, true);
 parser.addCommand('gen', generateCallback, [], '<span class="monospace">(lock=on/off [prompt])</span> – generates text using the provided prompt and passes it to the next command through the pipe, optionally locking user input while generating.', true, true);
 parser.addCommand('genraw', generateRawCallback, [], '<span class="monospace">(lock=on/off [prompt])</span> – generates text using the provided prompt and passes it to the next command through the pipe, optionally locking user input while generating. Does not include chat history or character card. Use instruct=off to skip instruct formatting, e.g. <tt>/genraw instruct=off Why is the sky blue?</tt>. Use stop=... with a JSON-serialized array to add one-time custom stop strings, e.g. <tt>/genraw stop=["\\n"] Say hi</tt>', true, true);
 parser.addCommand('addswipe', addSwipeCallback, ['swipeadd'], '<span class="monospace">(text)</span> – adds a swipe to the last chat message.', true, true);
@@ -1525,11 +1524,7 @@ async function executeSlashCommands(text, unescape = false) {
             unnamedArg = unnamedArg.replace(/{{pipe}}/i, pipeResult || '');
         }
 
-        let oldPipeResult = pipeResult;
         pipeResult = await result.command.callback(result.args, unnamedArg);
-        if (pipeResult === undefined && oldPipeResult !== undefined) {
-            pipeResult = oldPipeResult;
-        }
 
         if (result.command.interruptsGeneration) {
             interrupt = true;
