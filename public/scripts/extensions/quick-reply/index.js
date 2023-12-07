@@ -885,8 +885,8 @@ jQuery(async () => {
     await loadSettings('init');
     addQuickReplyBar();
 
-    eventSource.on(event_types.MESSAGE_RECEIVED, onMessageReceived);
-    eventSource.on(event_types.MESSAGE_SENT, onMessageSent);
+    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, onMessageReceived);
+    eventSource.on(event_types.USER_MESSAGE_RENDERED, onMessageSent);
     eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
     eventSource.on(event_types.APP_READY, onAppReady);
 });
