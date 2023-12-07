@@ -7,6 +7,8 @@ const mime = require('mime-types');
 const yaml = require('yaml');
 const { default: simpleGit } = require('simple-git');
 
+const { DIRECTORIES } = require('./constants');
+
 /**
  * Returns the config object from the config.yaml file.
  * @returns {object} Config object
@@ -307,6 +309,34 @@ function removeFileExtension(filename) {
     return filename.replace(/\.[^.]+$/, '');
 }
 
+function generateTimestamp() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+
+    return `${year}${month}${day}-${hours}${minutes}${seconds}`;
+}
+
+/**
+ * @param {string} prefix
+ */
+function removeOldBackups(prefix) {
+    const MAX_BACKUPS = 25;
+
+    let files = fs.readdirSync(DIRECTORIES.backups).filter(f => f.startsWith(prefix));
+    if (files.length > MAX_BACKUPS) {
+        files = files.map(f => path.join(DIRECTORIES.backups, f));
+        files.sort((a, b) => fs.statSync(a).mtimeMs - fs.statSync(b).mtimeMs);
+
+        fs.rmSync(files[0]);
+    }
+}
+
+
 module.exports = {
     getConfig,
     getConfigValue,
@@ -323,4 +353,6 @@ module.exports = {
     tryParse,
     clientRelativePath,
     removeFileExtension,
+    generateTimestamp,
+    removeOldBackups,
 };
