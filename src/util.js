@@ -6,6 +6,7 @@ const yauzl = require('yauzl');
 const mime = require('mime-types');
 const yaml = require('yaml');
 const { default: simpleGit } = require('simple-git');
+const { Readable } = require('stream');
 
 const { DIRECTORIES } = require('./constants');
 
@@ -346,6 +347,27 @@ function getImages(path) {
         .sort(Intl.Collator().compare);
 }
 
+/**
+ * Pipe a fetch() response to an Express.js Response, including status code.
+ * @param {Response} from The Fetch API response to pipe from.
+ * @param {Express.Response} to The Express response to pipe to.
+ */
+function forwardFetchResponse(from, to) {
+    to.statusCode = from.status;
+    to.statusMessage = from.statusText;
+    from.body.pipe(to);
+
+    to.socket.on('close', function () {
+        if (from.body instanceof Readable) from.body.destroy(); // Close the remote stream
+        to.end(); // End the Express response
+    });
+
+    from.body.on('end', function () {
+        console.log('Streaming request finished');
+        to.end();
+    });
+}
+
 module.exports = {
     getConfig,
     getConfigValue,
@@ -365,4 +387,5 @@ module.exports = {
     generateTimestamp,
     removeOldBackups,
     getImages,
+    forwardFetchResponse,
 };
