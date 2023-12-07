@@ -76,10 +76,9 @@ router.post('/upload', urlencodedParser, function (request, response) {
     const filename = request.file.originalname;
 
     try {
-        fs.copyFileSync(img_path, path.join('public/backgrounds/', filename));
+        fs.renameSync(img_path, path.join('public/backgrounds/', filename));
         invalidateThumbnail('bg', filename);
         response.send(filename);
-        fs.unlinkSync(img_path);
     } catch (err) {
         console.error(err);
         response.sendStatus(500);
