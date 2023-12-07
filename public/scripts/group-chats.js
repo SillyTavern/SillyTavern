@@ -612,11 +612,11 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
     if (online_status === 'no_connection') {
         is_group_generating = false;
         setSendButtonState(false);
-        return;
+        return Promise.resolve();
     }
 
     if (is_group_generating) {
-        return false;
+        return Promise.resolve();
     }
 
     // Auto-navigate back to group menu
@@ -630,7 +630,7 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
 
     if (!group || !Array.isArray(group.members) || !group.members.length) {
         sendSystemMessage(system_message_types.EMPTY, '', { isSmallSys: true });
-        return;
+        return Promise.resolve();
     }
 
     try {
@@ -717,32 +717,16 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
             setCharacterName(characters[chId].name);
 
             // Wait for generation to finish
-            await new Promise(async (resolve, reject) => {
-                await Generate(generateType, {
-                    automatic_trigger: by_auto_mode,
-                    ...(params || {}),
-                    resolve: function(...args) {
-                        if (typeof params.resolve === 'function') {
-                            params.resolve(...args);
-                        }
-                        resolve();
-                    },
-                    reject: function(...args) {
-                        if (typeof params.reject === 'function') {
-                            params.reject(...args);
-                        }
-                        reject();
-                    },
-                });
+            const generateFinished = await Generate(generateType, { automatic_trigger: by_auto_mode, ...(params || {}) });
+            await generateFinished;
 
-                if (type !== 'swipe' && type !== 'impersonate' && !isStreamingEnabled()) {
-                    // update indicator and scroll down
-                    typingIndicator
-                        .find('.typing_indicator_name')
-                        .text(characters[chId].name);
-                    typingIndicator.show();
-                }
-            });
+            if (type !== 'swipe' && type !== 'impersonate' && !isStreamingEnabled()) {
+                // update indicator and scroll down
+                typingIndicator
+                    .find('.typing_indicator_name')
+                    .text(characters[chId].name);
+                typingIndicator.show();
+            }
         }
     } finally {
         typingIndicator.hide();
@@ -755,6 +739,8 @@ async function generateGroupWrapper(by_auto_mode, type = null, params = {}) {
         activateSendButtons();
         showSwipeButtons();
     }
+
+    return Promise.resolve();
 }
 
 function getLastMessageGenerationId() {
