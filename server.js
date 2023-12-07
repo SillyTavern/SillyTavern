@@ -788,13 +788,11 @@ app.post('/getstatus', jsonParser, async function (request, response) {
  * @param {Object} response - The HTTP response object.
  * @returns {void}
  */
-app.post('/getstats', jsonParser, function (request, response) {
+app.post('/api/stats/get', jsonParser, function (request, response) {
     response.send(JSON.stringify(statsHelpers.getCharStats()));
 });
 
 /**
- * Endpoint: POST /recreatestats
- *
  * Triggers the recreation of statistics from chat files.
  * - If successful: returns a 200 OK status.
  * - On failure: returns a 500 Internal Server Error status.
@@ -802,7 +800,7 @@ app.post('/getstats', jsonParser, function (request, response) {
  * @param {Object} request - Express request object.
  * @param {Object} response - Express response object.
  */
-app.post('/recreatestats', jsonParser, async function (request, response) {
+app.post('/api/stats/recreate', jsonParser, async function (request, response) {
     try {
         await statsHelpers.recreateStats(DIRECTORIES.chats, DIRECTORIES.characters);
         return response.sendStatus(200);
@@ -823,7 +821,7 @@ app.post('/recreatestats', jsonParser, async function (request, response) {
  * @returns {void}
  *
 */
-app.post('/updatestats', jsonParser, function (request, response) {
+app.post('/api/stats/update', jsonParser, function (request, response) {
     if (!request.body) return response.sendStatus(400);
     statsHelpers.setCharStats(request.body);
     return response.sendStatus(200);
@@ -2050,6 +2048,11 @@ redirect('/getworldinfo', '/api/worldinfo/get');
 redirect('/deleteworldinfo', '/api/worldinfo/delete');
 redirect('/importworldinfo', '/api/worldinfo/import');
 redirect('/editworldinfo', '/api/worldinfo/edit');
+
+// Redirect deprecated stats API endpoints
+redirect('/getstats', '/api/stats/get');
+redirect('/recreatestats', '/api/stats/recreate');
+redirect('/updatestats', '/api/stats/update');
 
 // ** REST CLIENT ASYNC WRAPPERS **
 
