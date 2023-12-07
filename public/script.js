@@ -1249,7 +1249,7 @@ async function getCharacters() {
 }
 
 async function delChat(chatfile) {
-    const response = await fetch('/delchat', {
+    const response = await fetch('/api/chats/delete', {
         method: 'POST',
         headers: getRequestHeaders(),
         body: JSON.stringify({
@@ -3883,7 +3883,7 @@ async function Generate(type, { automatic_trigger, force_name2, resolve, reject,
                         toastr.error(data.response, 'API Error');
                     }
                 }
-                console.debug('/savechat called by /Generate');
+                console.debug('/api/chats/save called by /Generate');
 
                 await saveChatConditional();
                 is_send_press = false;
@@ -4903,7 +4903,7 @@ async function renamePastChats(newAvatar, newValue) {
     for (const { file_name } of pastChats) {
         try {
             const fileNameWithoutExtension = file_name.replace('.jsonl', '');
-            const getChatResponse = await fetch('/getchat', {
+            const getChatResponse = await fetch('/api/chats/get', {
                 method: 'POST',
                 headers: getRequestHeaders(),
                 body: JSON.stringify({
@@ -4927,7 +4927,7 @@ async function renamePastChats(newAvatar, newValue) {
                     }
                 }
 
-                const saveChatResponse = await fetch('/savechat', {
+                const saveChatResponse = await fetch('/api/chats/save', {
                     method: 'POST',
                     headers: getRequestHeaders(),
                     body: JSON.stringify({
@@ -5018,7 +5018,7 @@ async function saveChat(chat_name, withMetadata, mesId) {
     ];
     return jQuery.ajax({
         type: 'POST',
-        url: '/savechat',
+        url: '/api/chats/save',
         data: JSON.stringify({
             ch_name: characters[this_chid].name,
             file_name: file_name,
@@ -5110,11 +5110,11 @@ function getThumbnailUrl(type, file) {
 }
 
 async function getChat() {
-    //console.log('/getchat -- entered for -- ' + characters[this_chid].name);
+    //console.log('/api/chats/get -- entered for -- ' + characters[this_chid].name);
     try {
         const response = await $.ajax({
             type: 'POST',
-            url: '/getchat',
+            url: '/api/chats/get',
             data: JSON.stringify({
                 ch_name: characters[this_chid].name,
                 file_name: characters[this_chid].chat,
@@ -5875,7 +5875,7 @@ export async function getChatsFromFiles(data, isGroupChat) {
     let chat_promise = chat_list.map(({ file_name }) => {
         return new Promise(async (res, rej) => {
             try {
-                const endpoint = isGroupChat ? '/getgroupchat' : '/getchat';
+                const endpoint = isGroupChat ? '/api/chats/group/get' : '/api/chats/get';
                 const requestBody = isGroupChat
                     ? JSON.stringify({ id: file_name })
                     : JSON.stringify({
@@ -6562,7 +6562,7 @@ export async function saveChatConditional() {
 async function importCharacterChat(formData) {
     await jQuery.ajax({
         type: 'POST',
-        url: '/importchat',
+        url: '/api/chats/import',
         data: formData,
         beforeSend: function () {
         },
@@ -8161,7 +8161,8 @@ jQuery(async function () {
         };
 
         try {
-            const response = await fetch('/renamechat', {
+            showLoader();
+            const response = await fetch('/api/chats/rename', {
                 method: 'POST',
                 body: JSON.stringify(body),
                 headers: getRequestHeaders(),
@@ -8193,8 +8194,11 @@ jQuery(async function () {
             $('#option_select_chat').trigger('click');
             $('#options').hide();
         } catch {
+            hideLoader();
             await delay(500);
             await callPopup('An error has occurred. Chat was not renamed.', 'text');
+        } finally {
+            hideLoader();
         }
     });
 
@@ -8215,7 +8219,7 @@ jQuery(async function () {
         };
         console.log(body);
         try {
-            const response = await fetch('/exportchat', {
+            const response = await fetch('/api/chats/export', {
                 method: 'POST',
                 body: JSON.stringify(body),
                 headers: getRequestHeaders(),
