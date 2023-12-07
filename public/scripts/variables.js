@@ -111,7 +111,7 @@ function addLocalVariable(name, value) {
     const currentValue = getLocalVariable(name) || 0;
     try {
         const parsedValue = JSON.parse(currentValue);
-        if (typeof parsedValue == 'object' && parsedValue instanceof Array) {
+        if (Array.isArray(parsedValue)) {
             parsedValue.push(value);
             setGlobalVariable(name, JSON.stringify(parsedValue));
             return parsedValue;
@@ -139,7 +139,7 @@ function addGlobalVariable(name, value) {
     const currentValue = getGlobalVariable(name) || 0;
     try {
         const parsedValue = JSON.parse(currentValue);
-        if (typeof parsedValue == 'object' && parsedValue instanceof Array) {
+        if (Array.isArray(parsedValue)) {
             parsedValue.push(value);
             setGlobalVariable(name, JSON.stringify(parsedValue));
             return parsedValue;
