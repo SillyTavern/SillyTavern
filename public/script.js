@@ -8194,6 +8194,7 @@ jQuery(async function () {
             $('#option_select_chat').trigger('click');
             $('#options').hide();
         } catch {
+            hideLoader();
             await delay(500);
             await callPopup('An error has occurred. Chat was not renamed.', 'text');
         } finally {
