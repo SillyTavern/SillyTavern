@@ -11,7 +11,15 @@ function getLocalVariable(name, args = {}) {
     if (args.index !== undefined) {
         try {
             localVariable = JSON.parse(localVariable);
-            localVariable = localVariable[Number(args.index)];
+            const numIndex = Number(args.index);
+            if (Number.isNaN(numIndex)) {
+                localVariable = localVariable[args.index];
+            } else {
+                localVariable = localVariable[Number(args.index)];
+            }
+            if (typeof localVariable == 'object') {
+                localVariable = JSON.stringify(localVariable);
+            }
         } catch {
             // that didn't work
         }
@@ -35,7 +43,15 @@ function getGlobalVariable(name, args = {}) {
     if (args.index !== undefined) {
         try {
             globalVariable = JSON.parse(globalVariable);
-            globalVariable = globalVariable[Number(args.index)];
+            const numIndex = Number(args.index);
+            if (Number.isNaN(numIndex)) {
+                globalVariable = globalVariable[args.index];
+            } else {
+                globalVariable = globalVariable[Number(args.index)];
+            }
+            if (typeof globalVariable == 'object') {
+                globalVariable = JSON.stringify(globalVariable);
+            }
         } catch {
             // that didn't work
         }
