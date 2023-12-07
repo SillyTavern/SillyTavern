@@ -10,6 +10,7 @@ import {
 import {
     power_user,
 } from './power-user.js';
+import EventSourceStream from './sse-stream.js';
 import { getSortableDelay } from './utils.js';
 
 export const kai_settings = {
@@ -160,37 +161,21 @@ export async function generateKoboldWithStreaming(generate_data, signal) {
         method: 'POST',
         signal: signal,
     });
+    const eventStream = new EventSourceStream();
+    response.body.pipeThrough(eventStream);
+    const reader = eventStream.readable.getReader();
 
     return async function* streamData() {
-        const decoder = new TextDecoder();
-        const reader = response.body.getReader();
-        let getMessage = '';
-        let messageBuffer = '';
+        let text = '';
         while (true) {
             const { done, value } = await reader.read();
-            let response = decoder.decode(value);
-            let eventList = [];
+            if (done) return;
 
-            // ReadableStream's buffer is not guaranteed to contain full SSE messages as they arrive in chunks
-            // We need to buffer chunks until we have one or more full messages (separated by double newlines)
-            messageBuffer += response;
-            eventList = messageBuffer.split('\n\n');
-            // Last element will be an empty string or a leftover partial message
-            messageBuffer = eventList.pop();
-
-            for (let event of eventList) {
-                for (let subEvent of event.split('\n')) {
-                    if (subEvent.startsWith('data')) {
-                        let data = JSON.parse(subEvent.substring(5));
-                        getMessage += (data?.token || '');
-                        yield { text: getMessage, swipes: [] };
-                    }
-                }
+            const data = JSON.parse(value.data);
+            if (data?.token) {
+                text += data.token;
             }
-
-            if (done) {
-                return;
-            }
+            yield { text, swipes: [] };
         }
     };
 }

@@ -14,6 +14,7 @@ import {
     power_user,
     registerDebugFunction,
 } from './power-user.js';
+import EventSourceStream from './sse-stream.js';
 import { SENTENCEPIECE_TOKENIZERS, getTextTokens, tokenizers } from './tokenizers.js';
 import { getSortableDelay, onlyUnique } from './utils.js';
 
@@ -475,55 +476,30 @@ async function generateTextGenWithStreaming(generate_data, signal) {
         method: 'POST',
         signal: signal,
     });
+    const eventStream = new EventSourceStream();
+    response.body.pipeThrough(eventStream);
+    const reader = eventStream.readable.getReader();
 
     return async function* streamData() {
-        const decoder = new TextDecoder();
-        const reader = response.body.getReader();
-        let getMessage = '';
-        let messageBuffer = '';
+        let text = '';
         const swipes = [];
         while (true) {
             const { done, value } = await reader.read();
-            // We don't want carriage returns in our messages
-            let response = decoder.decode(value).replace(/\r/g, '');
+            if (done) return;
+            if (value.data === '[DONE]') return;
 
-            tryParseStreamingError(response);
+            tryParseStreamingError(response, value.data);
 
-            let eventList = [];
+            let data = JSON.parse(value.data);
 
-            messageBuffer += response;
-            eventList = messageBuffer.split('\n\n');
-            // Last element will be an empty string or a leftover partial message
-            messageBuffer = eventList.pop();
-
-            for (let event of eventList) {
-                if (event.startsWith('event: completion')) {
-                    event = event.split('\n')[1];
-                }
-
-                if (typeof event !== 'string' || !event.length)
-                    continue;
-
-                if (!event.startsWith('data'))
-                    continue;
-                if (event == 'data: [DONE]') {
-                    return;
-                }
-                let data = JSON.parse(event.substring(6));
-
-                if (data?.choices[0]?.index > 0) {
-                    const swipeIndex = data.choices[0].index - 1;
-                    swipes[swipeIndex] = (swipes[swipeIndex] || '') + data.choices[0].text;
-                } else {
-                    getMessage += data?.choices[0]?.text || '';
-                }
-
-                yield { text: getMessage, swipes: swipes };
+            if (data?.choices[0]?.index > 0) {
+                const swipeIndex = data.choices[0].index - 1;
+                swipes[swipeIndex] = (swipes[swipeIndex] || '') + data.choices[0].text;
+            } else {
+                text += data?.choices[0]?.text || '';
             }
 
-            if (done) {
-                return;
-            }
+            yield { text, swipes };
         }
     };
 }

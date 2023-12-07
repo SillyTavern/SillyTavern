@@ -44,6 +44,7 @@ import {
 import { getCustomStoppingStrings, persona_description_positions, power_user } from './power-user.js';
 import { SECRET_KEYS, secret_state, writeSecret } from './secrets.js';
 
+import EventSourceStream from './sse-stream.js';
 import {
     delay,
     download,
@@ -1565,57 +1566,22 @@ async function sendOpenAIRequest(type, messages, signal) {
     });
 
     if (stream) {
+        const eventStream = new EventSourceStream();
+        response.body.pipeThrough(eventStream);
+        const reader = eventStream.readable.getReader();
         return async function* streamData() {
-            const decoder = new TextDecoder();
-            const reader = response.body.getReader();
-            let getMessage = '';
-            let messageBuffer = '';
+            let text = '';
             while (true) {
                 const { done, value } = await reader.read();
-                let decoded = decoder.decode(value);
+                if (done) return;
+                if (value.data === '[DONE]') return;
 
-                // Claude's streaming SSE messages are separated by \r
-                if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
-                    decoded = decoded.replace(/\r/g, '');
-                }
+                tryParseStreamingError(response, value.data);
 
-                tryParseStreamingError(response, decoded);
+                // the first and last messages are undefined, protect against that
+                text += getStreamingReply(JSON.parse(value.data));
 
-                let eventList = [];
-
-                // ReadableStream's buffer is not guaranteed to contain full SSE messages as they arrive in chunks
-                // We need to buffer chunks until we have one or more full messages (separated by double newlines)
-                if (!oai_settings.legacy_streaming) {
-                    messageBuffer += decoded;
-                    eventList = messageBuffer.split('\n\n');
-                    // Last element will be an empty string or a leftover partial message
-                    messageBuffer = eventList.pop();
-                } else {
-                    eventList = decoded.split('\n');
-                }
-
-                for (let event of eventList) {
-                    if (event.startsWith('event: completion')) {
-                        event = event.split('\n')[1];
-                    }
-
-                    if (typeof event !== 'string' || !event.length)
-                        continue;
-
-                    if (!event.startsWith('data'))
-                        continue;
-                    if (event == 'data: [DONE]') {
-                        return;
-                    }
-                    let data = JSON.parse(event.substring(6));
-                    // the first and last messages are undefined, protect against that
-                    getMessage = getStreamingReply(getMessage, data);
-                    yield { text: getMessage, swipes: [] };
-                }
-
-                if (done) {
-                    return;
-                }
+                yield { text, swipes: [] };
             }
         };
     }
@@ -1633,13 +1599,12 @@ async function sendOpenAIRequest(type, messages, signal) {
     }
 }
 
-function getStreamingReply(getMessage, data) {
+function getStreamingReply(data) {
     if (oai_settings.chat_completion_source == chat_completion_sources.CLAUDE) {
-        getMessage += data?.completion || '';
+        return data?.completion || '';
     } else {
-        getMessage += data.choices[0]?.delta?.content || data.choices[0]?.message?.content || data.choices[0]?.text || '';
+        return data.choices[0]?.delta?.content || data.choices[0]?.message?.content || data.choices[0]?.text || '';
     }
-    return getMessage;
 }
 
 function handleWindowError(err) {

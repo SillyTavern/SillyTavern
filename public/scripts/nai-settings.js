@@ -10,6 +10,7 @@ import {
 import { getCfgPrompt } from './cfg-scale.js';
 import { MAX_CONTEXT_DEFAULT, MAX_RESPONSE_DEFAULT } from './power-user.js';
 import { getTextTokens, tokenizers } from './tokenizers.js';
+import EventSourceStream from './sse-stream.js';
 import {
     getSortableDelay,
     getStringHash,
@@ -663,24 +664,6 @@ export function adjustNovelInstructionPrompt(prompt) {
     return stripedPrompt;
 }
 
-function tryParseStreamingError(decoded) {
-    try {
-        const data = JSON.parse(decoded);
-
-        if (!data) {
-            return;
-        }
-
-        if (data.message && data.statusCode >= 400) {
-            toastr.error(data.message, 'Error');
-            throw new Error(data);
-        }
-    }
-    catch {
-        // No JSON. Do nothing.
-    }
-}
-
 export async function generateNovelWithStreaming(generate_data, signal) {
     generate_data.streaming = nai_settings.streaming_novel;
 
@@ -690,39 +673,27 @@ export async function generateNovelWithStreaming(generate_data, signal) {
         method: 'POST',
         signal: signal,
     });
+    const eventStream = new EventSourceStream();
+    response.body.pipeThrough(eventStream);
+    const reader = eventStream.readable.getReader();
 
     return async function* streamData() {
-        const decoder = new TextDecoder();
-        const reader = response.body.getReader();
-        let getMessage = '';
-        let messageBuffer = '';
+        let text = '';
         while (true) {
             const { done, value } = await reader.read();
-            let decoded = decoder.decode(value);
-            let eventList = [];
+            if (done) return;
 
-            tryParseStreamingError(decoded);
-
-            // ReadableStream's buffer is not guaranteed to contain full SSE messages as they arrive in chunks
-            // We need to buffer chunks until we have one or more full messages (separated by double newlines)
-            messageBuffer += decoded;
-            eventList = messageBuffer.split('\n\n');
-            // Last element will be an empty string or a leftover partial message
-            messageBuffer = eventList.pop();
-
-            for (let event of eventList) {
-                for (let subEvent of event.split('\n')) {
-                    if (subEvent.startsWith('data')) {
-                        let data = JSON.parse(subEvent.substring(5));
-                        getMessage += (data?.token || '');
-                        yield { text: getMessage, swipes: [] };
-                    }
-                }
+            const data = JSON.parse(value.data);
+            if (data.message && data.statusCode >= 400) {
+                toastr.error(data.message, 'Error');
+                throw new Error(data);
             }
 
-            if (done) {
-                return;
+            if (data.token) {
+                text += data.token;
             }
+
+            yield { text, swipes: [] };
         }
     };
 }
