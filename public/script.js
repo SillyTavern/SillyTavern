@@ -2046,7 +2046,6 @@ function substituteParams(content, _name1, _name2, _original, _group, _replaceCh
         content = content.replace(/{{original}}/i, _original);
     }
     content = diceRollReplace(content);
-    content = randomReplace(content);
     content = replaceInstructMacros(content);
     content = replaceVariableMacros(content);
     content = content.replace(/{{newline}}/gi, '\n');
@@ -2097,6 +2096,7 @@ function substituteParams(content, _name1, _name2, _original, _group, _replaceCh
         return utcTime;
     });
     content = bannedWordsReplace(content);
+    content = randomReplace(content);
     return content;
 }
 
