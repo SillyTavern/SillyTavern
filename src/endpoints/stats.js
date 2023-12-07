@@ -1,19 +1,16 @@
-/**
- * @fileoverview This file contains various utility functions related to
- * character and user statistics, such as creating an HTML stat block,
- * calculating total stats, and creating an HTML report from the provided stats.
- * It also provides methods for handling user stats and character stats,
- * as well as a utility for humanizing generation time from milliseconds.
- */
-
 const fs = require('fs');
 const path = require('path');
-const util = require('util');
+const express = require('express');
 const writeFileAtomic = require('write-file-atomic');
-const writeFile = util.promisify(writeFileAtomic);
-const readFile = util.promisify(fs.readFile);
-const readdir = util.promisify(fs.readdir);
+const util = require('util');
 const crypto = require('crypto');
+
+const writeFile = util.promisify(writeFileAtomic);
+const readFile = fs.promises.readFile;
+const readdir = fs.promises.readdir;
+
+const { jsonParser } = require('../express-common');
+const { DIRECTORIES } = require('../constants');
 
 let charStats = {};
 let lastSaveTimestamp = 0;
@@ -139,33 +136,30 @@ async function collectAndCreateStats(chatsPath, charactersPath) {
     return finalStats;
 }
 
+async function recreateStats(chatsPath, charactersPath) {
+    charStats = await collectAndCreateStats(chatsPath, charactersPath);
+    await saveStatsToFile();
+    console.debug('Stats (re)created and saved to file.');
+}
+
 /**
  * Loads the stats file into memory. If the file doesn't exist or is invalid,
  * initializes stats by collecting and creating them for each character.
- *
- * @param {string} chatsPath - The path to the directory containing the chat files.
- * @param {string} charactersPath - The path to the directory containing the character files.
  */
-async function loadStatsFile(chatsPath, charactersPath, recreateStats = false) {
-    if (recreateStats) {
-        charStats = await collectAndCreateStats(chatsPath, charactersPath); // Call your function to collect and create stats
-        await saveStatsToFile();
-        console.debug('Stats recreated and saved to file.');
-        return true;
-    }
+async function init() {
     try {
         const statsFileContent = await readFile(statsFilePath, 'utf-8');
         charStats = JSON.parse(statsFileContent);
     } catch (err) {
         // If the file doesn't exist or is invalid, initialize stats
         if (err.code === 'ENOENT' || err instanceof SyntaxError) {
-            charStats = await collectAndCreateStats(chatsPath, charactersPath); // Call your function to collect and create stats
-            await saveStatsToFile();
+            recreateStats(DIRECTORIES.chats, DIRECTORIES.characters);
         } else {
             throw err; // Rethrow the error if it's something we didn't expect
         }
     }
-    console.debug('Stats loaded from files.');
+    // Save stats every 5 minutes
+    setInterval(saveStatsToFile, 5 * 60 * 1000);
 }
 /**
  * Saves the current state of charStats to a file, only if the data has changed since the last save.
@@ -188,13 +182,11 @@ async function saveStatsToFile() {
  * Attempts to save charStats to a file and then terminates the process.
  * If an error occurs during the file write, it logs the error before exiting.
  */
-async function writeStatsToFileAndExit() {
+async function onExit() {
     try {
         await saveStatsToFile();
     } catch (err) {
         console.error('Failed to write stats to file:', err);
-    } finally {
-        process.exit();
     }
 }
 
@@ -422,10 +414,59 @@ function calculateTotalGenTimeAndWordCount(
     };
 }
 
+const router = express.Router();
+
+/**
+ * Handle a POST request to get the stats object
+ *
+ * This function returns the stats object that was calculated by the `calculateStats` function.
+ *
+ *
+ * @param {Object} request - The HTTP request object.
+ * @param {Object} response - The HTTP response object.
+ * @returns {void}
+ */
+router.post('/get', jsonParser, function (request, response) {
+    response.send(JSON.stringify(getCharStats()));
+});
+
+/**
+ * Triggers the recreation of statistics from chat files.
+ * - If successful: returns a 200 OK status.
+ * - On failure: returns a 500 Internal Server Error status.
+ *
+ * @param {Object} request - Express request object.
+ * @param {Object} response - Express response object.
+ */
+router.post('/recreate', jsonParser, async function (request, response) {
+    try {
+        await recreateStats(DIRECTORIES.chats, DIRECTORIES.characters);
+        return response.sendStatus(200);
+    } catch (error) {
+        console.error(error);
+        return response.sendStatus(500);
+    }
+});
+
+
+/**
+ * Handle a POST request to update the stats object
+ *
+ * This function updates the stats object with the data from the request body.
+ *
+ * @param {Object} request - The HTTP request object.
+ * @param {Object} response - The HTTP response object.
+ * @returns {void}
+ *
+*/
+router.post('/update', jsonParser, function (request, response) {
+    if (!request.body) return response.sendStatus(400);
+    setCharStats(request.body);
+    return response.sendStatus(200);
+});
+
 module.exports = {
-    saveStatsToFile,
-    loadStatsFile,
-    writeStatsToFileAndExit,
-    getCharStats,
-    setCharStats,
+    router,
+    init,
+    onExit,
 };

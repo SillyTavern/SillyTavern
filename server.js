@@ -45,7 +45,6 @@ util.inspect.defaultOptions.maxStringLength = null;
 const basicAuthMiddleware = require('./src/middleware/basicAuthMiddleware');
 const { jsonParser, urlencodedParser } = require('./src/express-common.js');
 const contentManager = require('./src/endpoints/content-manager');
-const statsHelpers = require('./statsHelpers.js');
 const { readSecret, migrateSecrets, SECRET_KEYS } = require('./src/endpoints/secrets');
 const { delay, getVersion, getConfigValue, color, uuidv4, tryParse, clientRelativePath, removeFileExtension, generateTimestamp, removeOldBackups } = require('./src/util');
 const { invalidateThumbnail, ensureThumbnailCache } = require('./src/endpoints/thumbnails');
@@ -98,8 +97,6 @@ process.chdir(directory);
 const app = express();
 app.use(compression());
 app.use(responseTime());
-
-// impoort from statsHelpers.js
 
 const server_port = process.env.SILLY_TAVERN_PORT || getConfigValue('port', 8000);
 
@@ -776,57 +773,6 @@ app.post('/getstatus', jsonParser, async function (request, response) {
         console.log(error);
         return response.send({ result: 'no_connection' });
     }
-});
-
-/**
- * Handle a POST request to get the stats object
- *
- * This function returns the stats object that was calculated by the `calculateStats` function.
- *
- *
- * @param {Object} request - The HTTP request object.
- * @param {Object} response - The HTTP response object.
- * @returns {void}
- */
-app.post('/getstats', jsonParser, function (request, response) {
-    response.send(JSON.stringify(statsHelpers.getCharStats()));
-});
-
-/**
- * Endpoint: POST /recreatestats
- *
- * Triggers the recreation of statistics from chat files.
- * - If successful: returns a 200 OK status.
- * - On failure: returns a 500 Internal Server Error status.
- *
- * @param {Object} request - Express request object.
- * @param {Object} response - Express response object.
- */
-app.post('/recreatestats', jsonParser, async function (request, response) {
-    try {
-        await statsHelpers.loadStatsFile(DIRECTORIES.chats, DIRECTORIES.characters, true);
-        return response.sendStatus(200);
-    } catch (error) {
-        console.error(error);
-        return response.sendStatus(500);
-    }
-});
-
-
-/**
- * Handle a POST request to update the stats object
- *
- * This function updates the stats object with the data from the request body.
- *
- * @param {Object} request - The HTTP request object.
- * @param {Object} response - The HTTP response object.
- * @returns {void}
- *
-*/
-app.post('/updatestats', jsonParser, function (request, response) {
-    if (!request.body) return response.sendStatus(400);
-    statsHelpers.setCharStats(request.body);
-    return response.sendStatus(200);
 });
 
 
@@ -2051,6 +1997,11 @@ redirect('/deleteworldinfo', '/api/worldinfo/delete');
 redirect('/importworldinfo', '/api/worldinfo/import');
 redirect('/editworldinfo', '/api/worldinfo/edit');
 
+// Redirect deprecated stats API endpoints
+redirect('/getstats', '/api/stats/get');
+redirect('/recreatestats', '/api/stats/recreate');
+redirect('/updatestats', '/api/stats/update');
+
 // ** REST CLIENT ASYNC WRAPPERS **
 
 /**
@@ -2111,6 +2062,10 @@ app.use('/api/groups', require('./src/endpoints/groups').router);
 // World info management
 app.use('/api/worldinfo', require('./src/endpoints/worldinfo').router);
 
+// Stats calculation
+const statsEndpoint = require('./src/endpoints/stats');
+app.use('/api/stats', statsEndpoint.router);
+
 // Character sprite management
 app.use('/api/sprites', require('./src/endpoints/sprites').router);
 
@@ -2163,17 +2118,20 @@ const setupTasks = async function () {
     cleanUploads();
 
     await loadTokenizers();
-    await statsHelpers.loadStatsFile(DIRECTORIES.chats, DIRECTORIES.characters);
+    await statsEndpoint.init();
+
+    const exitProcess = () => {
+        statsEndpoint.onExit();
+        process.exit();
+    };
 
     // Set up event listeners for a graceful shutdown
-    process.on('SIGINT', statsHelpers.writeStatsToFileAndExit);
-    process.on('SIGTERM', statsHelpers.writeStatsToFileAndExit);
+    process.on('SIGINT', exitProcess);
+    process.on('SIGTERM', exitProcess);
     process.on('uncaughtException', (err) => {
         console.error('Uncaught exception:', err);
-        statsHelpers.writeStatsToFileAndExit();
+        exitProcess();
     });
-
-    setInterval(statsHelpers.saveStatsToFile, 5 * 60 * 1000);
 
     console.log('Launching...');
 
