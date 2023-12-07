@@ -628,6 +628,7 @@ function generateQuickReplyElements() {
             <span class="drag-handle ui-sortable-handle">☰</span>
             <input class="text_pole wide30p" id="quickReply${i}Label" placeholder="(Button label)">
             <span class="menu_button menu_button_icon" id="quickReply${i}CtxButton" title="Additional options: context menu, auto-execution">⋮</span>
+            <span class="menu_button menu_button_icon editor_maximize fa-solid fa-maximize" data-for="quickReply${i}Mes" id="quickReply${i}ExpandButton" title="Expand the editor"></span>
             <textarea id="quickReply${i}Mes" placeholder="(Custom message or /command)" class="text_pole widthUnset flex1 autoSetHeight" rows="2"></textarea>
         </div>
         `;
@@ -697,6 +698,7 @@ function saveQROrder() {
         $(this).find('input').attr('id', `quickReply${i}Label`);
         $(this).find('textarea').attr('id', `quickReply${i}Mes`);
         $(this).find(`#quickReply${oldOrder}CtxButton`).attr('id', `quickReply${i}CtxButton`);
+        $(this).find(`#quickReply${oldOrder}ExpandButton`).attr('id', `quickReply${i}ExpandButton`);
         i++;
     });
 
