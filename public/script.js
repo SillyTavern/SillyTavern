@@ -1982,6 +1982,46 @@ function getLastMessage() {
 }
 
 /**
+ * Returns the ID of the last swipe.
+ * @returns {string} The 1-based ID of the last swipe
+ */
+function getLastSwipeId() {
+    const index = chat?.length - 1;
+
+    if (!isNaN(index) && index >= 0) {
+        const swipes = chat[index].swipes;
+
+        if (!Array.isArray(swipes) || swipes.length === 0) {
+            return '';
+        }
+
+        return String(swipes.length);
+    }
+
+    return '';
+}
+
+/**
+ * Returns the ID of the current swipe.
+ * @returns {string} The 1-based ID of the current swipe.
+ */
+function getCurrentSwipeId() {
+    const index = chat?.length - 1;
+
+    if (!isNaN(index) && index >= 0) {
+        const swipeId = chat[index].swipe_id;
+
+        if (swipeId === undefined || isNaN(swipeId)) {
+            return '';
+        }
+
+        return String(swipeId + 1);
+    }
+
+    return '';
+}
+
+/**
  * Substitutes {{macro}} parameters in a string.
  * @param {string} content - The string to substitute parameters in.
  * @param {*} _name1 - The name of the user. Uses global name1 if not provided.
@@ -2030,6 +2070,8 @@ function substituteParams(content, _name1, _name2, _original, _group, _replaceCh
     content = content.replace(/{{group}}/gi, _group);
     content = content.replace(/{{lastMessage}}/gi, getLastMessage());
     content = content.replace(/{{lastMessageId}}/gi, getLastMessageId());
+    content = content.replace(/{{lastSwipeId}}/gi, getLastSwipeId());
+    content = content.replace(/{{currentSwipeId}}/gi, getCurrentSwipeId());
 
     content = content.replace(/<USER>/gi, _name1);
     content = content.replace(/<BOT>/gi, _name2);
