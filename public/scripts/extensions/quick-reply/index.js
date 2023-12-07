@@ -1,6 +1,6 @@
 import { saveSettingsDebounced, callPopup, getRequestHeaders, substituteParams, eventSource, event_types } from '../../../script.js';
 import { getContext, extension_settings } from '../../extensions.js';
-import { initScrollHeight, resetScrollHeight, getSortableDelay, escapeHtml } from '../../utils.js';
+import { getSortableDelay, escapeHtml } from '../../utils.js';
 import { executeSlashCommands, registerSlashCommand } from '../../slash-commands.js';
 import { ContextMenu } from './src/ContextMenu.js';
 import { MenuItem } from './src/MenuItem.js';
@@ -98,7 +98,6 @@ async function loadSettings(type) {
 function onQuickReplyInput(id) {
     extension_settings.quickReply.quickReplySlots[id - 1].mes = $(`#quickReply${id}Mes`).val();
     $(`#quickReply${id}`).attr('title', String($(`#quickReply${id}Mes`).val()));
-    resetScrollHeight($(`#quickReply${id}Mes`));
     saveSettingsDebounced();
 }
 
@@ -632,7 +631,8 @@ function generateQuickReplyElements() {
             <span class="drag-handle ui-sortable-handle">☰</span>
             <input class="text_pole wide30p" id="quickReply${i}Label" placeholder="(Button label)">
             <span class="menu_button menu_button_icon" id="quickReply${i}CtxButton" title="Additional options: context menu, auto-execution">⋮</span>
-            <textarea id="quickReply${i}Mes" placeholder="(Custom message or /command)" class="text_pole widthUnset flex1 autoSetHeight" rows="2"></textarea>
+            <span class="menu_button menu_button_icon editor_maximize fa-solid fa-maximize" data-for="quickReply${i}Mes" id="quickReply${i}ExpandButton" title="Expand the editor"></span>
+            <textarea id="quickReply${i}Mes" placeholder="(Custom message or /command)" class="text_pole widthUnset flex1" rows="2"></textarea>
         </div>
         `;
     }
@@ -645,12 +645,6 @@ function generateQuickReplyElements() {
         $(`#quickReply${i}CtxButton`).on('click', function () { onQuickReplyCtxButtonClick(this.closest('[data-order]').getAttribute('data-order')); });
         $(`#quickReplyContainer > [data-order="${i}"]`).attr('data-contextMenu', JSON.stringify(extension_settings.quickReply.quickReplySlots[i - 1]?.contextMenu ?? []));
     }
-
-    $('.quickReplySettings .inline-drawer-toggle').off('click').on('click', function () {
-        for (let i = 1; i <= extension_settings.quickReply.numberOfSlots; i++) {
-            initScrollHeight($(`#quickReply${i}Mes`));
-        }
-    });
 }
 
 async function applyQuickReplyPreset(name) {
@@ -701,6 +695,7 @@ function saveQROrder() {
         $(this).find('input').attr('id', `quickReply${i}Label`);
         $(this).find('textarea').attr('id', `quickReply${i}Mes`);
         $(this).find(`#quickReply${oldOrder}CtxButton`).attr('id', `quickReply${i}CtxButton`);
+        $(this).find(`#quickReply${oldOrder}ExpandButton`).attr({ 'data-for': `quickReply${i}Mes`, 'id': `quickReply${i}ExpandButton` });
         i++;
     });
 
