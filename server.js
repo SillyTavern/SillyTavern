@@ -51,7 +51,6 @@ const { delay, getVersion, getConfigValue, color, uuidv4, tryParse, clientRelati
 const { invalidateThumbnail, ensureThumbnailCache } = require('./src/endpoints/thumbnails');
 const { getTokenizerModel, getTiktokenTokenizer, loadTokenizers, TEXT_COMPLETION_MODELS, getSentencepiceTokenizer, sentencepieceTokenizers } = require('./src/endpoints/tokenizers');
 const { convertClaudePrompt } = require('./src/chat-completion');
-const { readWorldInfoFile } = require('./src/worldinfo');
 
 // Work around a node v20.0.0, v20.1.0, and v20.2.0 bug. The issue was fixed in v20.3.0.
 // https://github.com/nodejs/node/issues/47822#issuecomment-1564708870
@@ -1060,34 +1059,6 @@ app.post('/getsettings', jsonParser, (request, response) => {
     });
 });
 
-app.post('/getworldinfo', jsonParser, (request, response) => {
-    if (!request.body?.name) {
-        return response.sendStatus(400);
-    }
-
-    const file = readWorldInfoFile(request.body.name);
-
-    return response.send(file);
-});
-
-app.post('/deleteworldinfo', jsonParser, (request, response) => {
-    if (!request.body?.name) {
-        return response.sendStatus(400);
-    }
-
-    const worldInfoName = request.body.name;
-    const filename = sanitize(`${worldInfoName}.json`);
-    const pathToWorldInfo = path.join(DIRECTORIES.worlds, filename);
-
-    if (!fs.existsSync(pathToWorldInfo)) {
-        throw new Error(`World info file ${filename} doesn't exist.`);
-    }
-
-    fs.rmSync(pathToWorldInfo);
-
-    return response.sendStatus(200);
-});
-
 app.post('/savetheme', jsonParser, (request, response) => {
     if (!request.body || !request.body.name) {
         return response.sendStatus(400);
@@ -1131,66 +1102,6 @@ function getImages(path) {
         })
         .sort(Intl.Collator().compare);
 }
-
-app.post('/importworldinfo', urlencodedParser, (request, response) => {
-    if (!request.file) return response.sendStatus(400);
-
-    const filename = `${path.parse(sanitize(request.file.originalname)).name}.json`;
-
-    let fileContents = null;
-
-    if (request.body.convertedData) {
-        fileContents = request.body.convertedData;
-    } else {
-        const pathToUpload = path.join(UPLOADS_PATH, request.file.filename);
-        fileContents = fs.readFileSync(pathToUpload, 'utf8');
-        fs.unlinkSync(pathToUpload);
-    }
-
-    try {
-        const worldContent = JSON.parse(fileContents);
-        if (!('entries' in worldContent)) {
-            throw new Error('File must contain a world info entries list');
-        }
-    } catch (err) {
-        return response.status(400).send('Is not a valid world info file');
-    }
-
-    const pathToNewFile = path.join(DIRECTORIES.worlds, filename);
-    const worldName = path.parse(pathToNewFile).name;
-
-    if (!worldName) {
-        return response.status(400).send('World file must have a name');
-    }
-
-    writeFileAtomicSync(pathToNewFile, fileContents);
-    return response.send({ name: worldName });
-});
-
-app.post('/editworldinfo', jsonParser, (request, response) => {
-    if (!request.body) {
-        return response.sendStatus(400);
-    }
-
-    if (!request.body.name) {
-        return response.status(400).send('World file must have a name');
-    }
-
-    try {
-        if (!('entries' in request.body.data)) {
-            throw new Error('World info must contain an entries list');
-        }
-    } catch (err) {
-        return response.status(400).send('Is not a valid world info file');
-    }
-
-    const filename = `${sanitize(request.body.name)}.json`;
-    const pathToFile = path.join(DIRECTORIES.worlds, filename);
-
-    writeFileAtomicSync(pathToFile, JSON.stringify(request.body.data, null, 4));
-
-    return response.send({ ok: true });
-});
 
 app.post('/uploaduseravatar', urlencodedParser, async (request, response) => {
     if (!request.file) return response.sendStatus(400);
@@ -2134,6 +2045,12 @@ redirect('/creategroup', '/api/groups/create');
 redirect('/editgroup', '/api/groups/edit');
 redirect('/deletegroup', '/api/groups/delete');
 
+// Redirect deprecated worldinfo API endpoints
+redirect('/getworldinfo', '/api/worldinfo/get');
+redirect('/deleteworldinfo', '/api/worldinfo/delete');
+redirect('/importworldinfo', '/api/worldinfo/import');
+redirect('/editworldinfo', '/api/worldinfo/edit');
+
 // ** REST CLIENT ASYNC WRAPPERS **
 
 /**
@@ -2190,6 +2107,9 @@ app.use('/api/chats', require('./src/endpoints/chats').router);
 
 // Group management
 app.use('/api/groups', require('./src/endpoints/groups').router);
+
+// World info management
+app.use('/api/worldinfo', require('./src/endpoints/worldinfo').router);
 
 // Character sprite management
 app.use('/api/sprites', require('./src/endpoints/sprites').router);
