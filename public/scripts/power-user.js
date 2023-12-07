@@ -813,6 +813,7 @@ async function CreateZenSliders(elmnt) {
             if (numVal === offVal) { handle.text('Off').css('color', 'rgba(128,128,128,0.5'); }
             else if (numVal === allVal) { handle.text('All'); }
             else { handle.css('color', ''); }
+            numVal = steps[stepNumber];
         }
         //everything else uses the flat slider value
         //also note: the above sliders are not custom inputtable due to the array aliasing

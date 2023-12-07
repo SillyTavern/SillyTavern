@@ -7732,7 +7732,7 @@ jQuery(async function () {
     registerSlashCommand('dupe', DupeChar, [], '– duplicates the currently selected character', true, true);
     registerSlashCommand('api', connectAPISlash, [], '<span class="monospace">(kobold, horde, novel, ooba, oai, claude, windowai, openrouter, scale, ai21, palm)</span> – connect to an API', true, true);
     registerSlashCommand('impersonate', doImpersonate, ['imp'], '– calls an impersonation response', true, true);
-    registerSlashCommand('api/chats/delete', doDeleteChat, [], '– deletes the current chat', true, true);
+    registerSlashCommand('delchat', doDeleteChat, [], '– deletes the current chat', true, true);
     registerSlashCommand('closechat', doCloseChat, [], '– closes the current chat', true, true);
     registerSlashCommand('panels', doTogglePanels, ['togglepanels'], '– toggle UI panels on/off', true, true);
     registerSlashCommand('forcesave', doForceSave, [], '– forces a save of the current chat and settings', true, true);
@@ -8161,6 +8161,7 @@ jQuery(async function () {
         };
 
         try {
+            showLoader();
             const response = await fetch('/api/chats/rename', {
                 method: 'POST',
                 body: JSON.stringify(body),
@@ -8193,8 +8194,11 @@ jQuery(async function () {
             $('#option_select_chat').trigger('click');
             $('#options').hide();
         } catch {
+            hideLoader();
             await delay(500);
             await callPopup('An error has occurred. Chat was not renamed.', 'text');
+        } finally {
+            hideLoader();
         }
     });
 
@@ -8352,7 +8356,7 @@ jQuery(async function () {
         if (id == 'option_select_chat') {
             if ((selected_group && !is_group_generating) || (this_chid !== undefined && !is_send_press) || fromSlashCommand) {
                 displayPastChats();
-                //this is just to avoid the shadow for past chat view when using /api/chats/delete
+                //this is just to avoid the shadow for past chat view when using /delchat
                 //however, the dialog popup still gets one..
                 if (!fromSlashCommand) {
                     console.log('displaying shadow');
