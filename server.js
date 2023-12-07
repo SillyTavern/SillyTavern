@@ -777,7 +777,7 @@ app.post('/getstatus', jsonParser, async function (request, response) {
 
 
 
-app.post('/getbackgrounds', jsonParser, function (request, response) {
+app.post('/api/backgrounds/all', jsonParser, function (request, response) {
     var images = getImages('public/backgrounds');
     response.send(JSON.stringify(images));
 
@@ -807,7 +807,7 @@ app.post('/deleteuseravatar', jsonParser, function (request, response) {
     return response.sendStatus(404);
 });
 
-app.post('/setbackground', jsonParser, function (request, response) {
+app.post('/api/backgrounds/set', jsonParser, function (request, response) {
     try {
         const bg = `#bg1 {background-image: url('../backgrounds/${request.body.bg}');}`;
         writeFileAtomicSync('public/css/bg_load.css', bg, 'utf8');
@@ -818,7 +818,7 @@ app.post('/setbackground', jsonParser, function (request, response) {
     }
 });
 
-app.post('/delbackground', jsonParser, function (request, response) {
+app.post('/api/backgrounds/delete', jsonParser, function (request, response) {
     if (!request.body) return response.sendStatus(400);
 
     if (request.body.bg !== sanitize(request.body.bg)) {
@@ -838,7 +838,7 @@ app.post('/delbackground', jsonParser, function (request, response) {
     return response.send('ok');
 });
 
-app.post('/renamebackground', jsonParser, function (request, response) {
+app.post('/api/backgrounds/rename', jsonParser, function (request, response) {
     if (!request.body) return response.sendStatus(400);
 
     const oldFileName = path.join(DIRECTORIES.backgrounds, sanitize(request.body.old_bg));
@@ -859,7 +859,7 @@ app.post('/renamebackground', jsonParser, function (request, response) {
     return response.send('ok');
 });
 
-app.post('/downloadbackground', urlencodedParser, function (request, response) {
+app.post('/api/backgrounds/upload', urlencodedParser, function (request, response) {
     response_dw_bg = response;
     if (!request.body || !request.file) return response.sendStatus(400);
 
@@ -2001,6 +2001,13 @@ redirect('/editworldinfo', '/api/worldinfo/edit');
 redirect('/getstats', '/api/stats/get');
 redirect('/recreatestats', '/api/stats/recreate');
 redirect('/updatestats', '/api/stats/update');
+
+// Redirect deprecated backgrounds API endpoints
+redirect('/getbackgrounds', '/api/backgrounds/all');
+redirect('/setbackground', '/api/backgrounds/set');
+redirect('/delbackground', '/api/backgrounds/delete');
+redirect('/renamebackground', '/api/backgrounds/rename');
+redirect('/downloadbackground', '/api/backgrounds/upload'); // yes, the downloadbackground endpoint actually uploads one
 
 // ** REST CLIENT ASYNC WRAPPERS **
 
