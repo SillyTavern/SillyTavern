@@ -778,55 +778,6 @@ app.post('/getstatus', jsonParser, async function (request, response) {
     }
 });
 
-/**
- * Handle a POST request to get the stats object
- *
- * This function returns the stats object that was calculated by the `calculateStats` function.
- *
- *
- * @param {Object} request - The HTTP request object.
- * @param {Object} response - The HTTP response object.
- * @returns {void}
- */
-app.post('/api/stats/get', jsonParser, function (request, response) {
-    response.send(JSON.stringify(statsHelpers.getCharStats()));
-});
-
-/**
- * Triggers the recreation of statistics from chat files.
- * - If successful: returns a 200 OK status.
- * - On failure: returns a 500 Internal Server Error status.
- *
- * @param {Object} request - Express request object.
- * @param {Object} response - Express response object.
- */
-app.post('/api/stats/recreate', jsonParser, async function (request, response) {
-    try {
-        await statsHelpers.recreateStats(DIRECTORIES.chats, DIRECTORIES.characters);
-        return response.sendStatus(200);
-    } catch (error) {
-        console.error(error);
-        return response.sendStatus(500);
-    }
-});
-
-
-/**
- * Handle a POST request to update the stats object
- *
- * This function updates the stats object with the data from the request body.
- *
- * @param {Object} request - The HTTP request object.
- * @param {Object} response - The HTTP response object.
- * @returns {void}
- *
-*/
-app.post('/api/stats/update', jsonParser, function (request, response) {
-    if (!request.body) return response.sendStatus(400);
-    statsHelpers.setCharStats(request.body);
-    return response.sendStatus(200);
-});
-
 
 
 app.post('/getbackgrounds', jsonParser, function (request, response) {
@@ -2113,6 +2064,9 @@ app.use('/api/groups', require('./src/endpoints/groups').router);
 
 // World info management
 app.use('/api/worldinfo', require('./src/endpoints/worldinfo').router);
+
+// Stats calculation
+app.use('/api/stats', require('./src/endpoints/stats').router);
 
 // Character sprite management
 app.use('/api/sprites', require('./src/endpoints/sprites').router);
