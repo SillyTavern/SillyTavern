@@ -804,7 +804,7 @@ app.post('/getstats', jsonParser, function (request, response) {
  */
 app.post('/recreatestats', jsonParser, async function (request, response) {
     try {
-        await statsHelpers.loadStatsFile(DIRECTORIES.chats, DIRECTORIES.characters, true);
+        await statsHelpers.recreateStats(DIRECTORIES.chats, DIRECTORIES.characters);
         return response.sendStatus(200);
     } catch (error) {
         console.error(error);

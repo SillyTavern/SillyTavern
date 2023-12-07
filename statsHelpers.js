@@ -140,27 +140,32 @@ async function collectAndCreateStats(chatsPath, charactersPath) {
 }
 
 /**
+ * Collect and update the stats file.
+ *
+ * @param {string} chatsPath - The path to the directory containing the chat files.
+ * @param {string} charactersPath - The path to the directory containing the character files.
+ */
+async function recreateStats(chatsPath, charactersPath) {
+    charStats = await collectAndCreateStats(chatsPath, charactersPath);
+    await saveStatsToFile();
+    console.debug('Stats (re)created and saved to file.');
+}
+
+/**
  * Loads the stats file into memory. If the file doesn't exist or is invalid,
  * initializes stats by collecting and creating them for each character.
  *
  * @param {string} chatsPath - The path to the directory containing the chat files.
  * @param {string} charactersPath - The path to the directory containing the character files.
  */
-async function loadStatsFile(chatsPath, charactersPath, recreateStats = false) {
-    if (recreateStats) {
-        charStats = await collectAndCreateStats(chatsPath, charactersPath); // Call your function to collect and create stats
-        await saveStatsToFile();
-        console.debug('Stats recreated and saved to file.');
-        return true;
-    }
+async function loadStatsFile(chatsPath, charactersPath) {
     try {
         const statsFileContent = await readFile(statsFilePath, 'utf-8');
         charStats = JSON.parse(statsFileContent);
     } catch (err) {
         // If the file doesn't exist or is invalid, initialize stats
         if (err.code === 'ENOENT' || err instanceof SyntaxError) {
-            charStats = await collectAndCreateStats(chatsPath, charactersPath); // Call your function to collect and create stats
-            await saveStatsToFile();
+            recreateStats(chatsPath, charactersPath);
         } else {
             throw err; // Rethrow the error if it's something we didn't expect
         }
@@ -425,6 +430,7 @@ function calculateTotalGenTimeAndWordCount(
 module.exports = {
     saveStatsToFile,
     loadStatsFile,
+    recreateStats,
     writeStatsToFileAndExit,
     getCharStats,
     setCharStats,
