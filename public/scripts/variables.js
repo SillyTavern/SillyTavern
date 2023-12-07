@@ -109,6 +109,14 @@ function setGlobalVariable(name, value, args = {}) {
 
 function addLocalVariable(name, value) {
     const currentValue = getLocalVariable(name) || 0;
+    try {
+        const parsedValue = JSON.parse(currentValue);
+        if (typeof parsedValue == 'object' && parsedValue instanceof Array) {
+            parsedValue.push(value);
+            setGlobalVariable(name, JSON.stringify(parsedValue));
+            return parsedValue;
+        }
+    } catch {}
     const increment = Number(value);
 
     if (isNaN(increment) || isNaN(Number(currentValue))) {
@@ -129,6 +137,14 @@ function addLocalVariable(name, value) {
 
 function addGlobalVariable(name, value) {
     const currentValue = getGlobalVariable(name) || 0;
+    try {
+        const parsedValue = JSON.parse(currentValue);
+        if (typeof parsedValue == 'object' && parsedValue instanceof Array) {
+            parsedValue.push(value);
+            setGlobalVariable(name, JSON.stringify(parsedValue));
+            return parsedValue;
+        }
+    } catch {}
     const increment = Number(value);
 
     if (isNaN(increment) || isNaN(Number(currentValue))) {
