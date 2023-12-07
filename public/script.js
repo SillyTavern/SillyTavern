@@ -1291,7 +1291,7 @@ async function replaceCurrentChat() {
 
         // start new chat
         else {
-            characters[this_chid].chat = name2 + ' - ' + humanizedDateTime();
+            characters[this_chid].chat = `${name2} - ${humanizedDateTime()}`;
             $('#selected_chat_pole').val(characters[this_chid].chat);
             saveCharacterDebounced();
             await getChat();
@@ -8026,7 +8026,7 @@ jQuery(async function () {
             else {
                 //RossAscends: added character name to new chat filenames and replaced Date.now() with humanizedDateTime;
                 chat_metadata = {};
-                characters[this_chid].chat = name2 + '-' + humanizedDateTime();
+                characters[this_chid].chat = `${name2} - ${humanizedDateTime()}`;
                 $('#selected_chat_pole').val(characters[this_chid].chat);
                 await getChat();
                 await createOrEditCharacter();
@@ -8427,6 +8427,7 @@ jQuery(async function () {
                 select_rm_characters();
                 sendSystemMessage(system_message_types.WELCOME);
                 eventSource.emit(event_types.CHAT_CHANGED, getCurrentChatId());
+                await getClientVersion();
             } else {
                 toastr.info('Please stop the message generation first.');
             }

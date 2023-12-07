@@ -1176,7 +1176,7 @@ async function sendWindowAIRequest(messages, signal, stream) {
             await delay(1);
 
             if (lastContent !== content) {
-                yield content;
+                yield { text: content, swipes: [] };
             }
 
             lastContent = content;

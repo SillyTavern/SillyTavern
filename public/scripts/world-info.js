@@ -295,7 +295,7 @@ function registerWorldInfoSlashCommands() {
             return '';
         }
 
-        const entry = entries.find(x => x.uid === uid);
+        const entry = entries.find(x => String(x.uid) === String(uid));
 
         if (!entry) {
             toastr.warning('Valid UID is required');
@@ -1102,6 +1102,19 @@ function getWorldEntry(name, data, entry) {
     orderInput.val(entry.order).trigger('input');
     orderInput.css('width', 'calc(3em + 15px)');
 
+    // group
+    const groupInput = template.find('input[name="group"]');
+    groupInput.data('uid', entry.uid);
+    groupInput.on('input', function () {
+        const uid = $(this).data('uid');
+        const value = String($(this).val()).trim();
+
+        data.entries[uid].group = value;
+        setOriginalDataValue(data, uid, 'extensions.group', data.entries[uid].group);
+        saveWorldInfo(name, data);
+    });
+    groupInput.val(entry.group ?? '').trigger('input');
+
     // probability
     if (entry.probability === undefined) {
         entry.probability = null;
@@ -1810,8 +1823,8 @@ async function checkWorldInfo(chat, maxContext) {
                                 console.debug(`(NOT ANY Check) Activating WI Entry ${entry.uid}, no secondary keywords found.`);
                                 activatedNow.add(entry);
                             }
-                        // Handle cases where secondary is empty
                         } else {
+                            // Handle cases where secondary is empty
                             console.debug(`WI UID ${entry.uid}: Activated without filter logic.`);
                             activatedNow.add(entry);
                             break primary;
@@ -1827,10 +1840,12 @@ async function checkWorldInfo(chat, maxContext) {
         let newContent = '';
         const textToScanTokens = getTokenCount(allActivatedText);
         const probabilityChecksBefore = failedProbabilityChecks.size;
+
+        filterByInclusionGroups(newEntries, allActivatedEntries);
+
         console.debug('-- PROBABILITY CHECKS BEGIN --');
         for (const entry of newEntries) {
             const rollValue = Math.random() * 100;
-
 
             if (entry.useProbability && rollValue > entry.probability) {
                 console.debug(`WI entry ${entry.uid} ${entry.key} failed probability check, skipping`);
@@ -1937,6 +1952,72 @@ async function checkWorldInfo(chat, maxContext) {
     }
 
     return { worldInfoBefore, worldInfoAfter, WIDepthEntries };
+}
+
+/**
+ * Filters entries by inclusion groups.
+ * @param {object[]} newEntries Entries activated on current recursion level
+ * @param {Set<object>} allActivatedEntries Set of all activated entries
+ */
+function filterByInclusionGroups(newEntries, allActivatedEntries) {
+    console.debug('-- INCLUSION GROUP CHECKS BEGIN --');
+    const grouped = newEntries.filter(x => x.group).reduce((acc, item) => {
+        if (!acc[item.group]) {
+            acc[item.group] = [];
+        }
+        acc[item.group].push(item);
+        return acc;
+    }, {});
+
+    if (Object.keys(grouped).length === 0) {
+        console.debug('No inclusion groups found');
+        return;
+    }
+
+    for (const [key, group] of Object.entries(grouped)) {
+        console.debug(`Checking inclusion group '${key}' with ${group.length} entries`, group);
+
+        if (!Array.isArray(group) || group.length <= 1) {
+            console.debug('Skipping inclusion group check, only one entry');
+            continue;
+        }
+
+        if (Array.from(allActivatedEntries).some(x => x.group === key)) {
+            console.debug(`Skipping inclusion group check, group already activated '${key}'`);
+            continue;
+        }
+
+        // Do weighted random using probability of entry as weight
+        const totalWeight = group.reduce((acc, item) => acc + item.probability, 0);
+        const rollValue = Math.random() * totalWeight;
+        let currentWeight = 0;
+        let winner = null;
+
+        for (const entry of group) {
+            currentWeight += entry.probability;
+
+            if (rollValue <= currentWeight) {
+                console.debug(`Activated inclusion group '${key}' with entry '${entry.uid}'`, entry);
+                winner = entry;
+                break;
+            }
+        }
+
+        if (!winner) {
+            console.debug(`Failed to activate inclusion group '${key}', no winner found`);
+            continue;
+        }
+
+        // Remove every group item from newEntries but the winner
+        for (const entry of group) {
+            if (entry === winner) {
+                continue;
+            }
+
+            console.debug(`Removing loser from inclusion group '${key}' entry '${entry.uid}'`, entry);
+            newEntries.splice(newEntries.indexOf(entry), 1);
+        }
+    }
 }
 
 function matchKeys(haystack, needle) {

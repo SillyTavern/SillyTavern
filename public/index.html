@@ -4122,24 +4122,32 @@
                             <div class="world_entry_thin_controls commentContainer">
                             </div>
                         </div>
-                        <div class="flex-container flexFlowColumn flexNoGap wide100p">
-                            <div class="flex-container justifySpaceBetween">
-                                <label for="characterFilter" class="">
-                                    <small data-i18n="Filter to Character(s)">Filter to Character(s)</small>
-                                </label>
-                                <label class="checkbox flex-container alignitemscenter">
-                                    <input type="checkbox" name="character_exclusion" />
-                                    <span data-i18n="Character Exclusion">
-                                        <small>Character Exclusion</small>
-                                    </span>
-                                </label>
+                        <div class="flex-container wide100p flexGap10">
+                            <div class="flex1 flex-container flexFlowColumn flexNoGap">
+                                <div class="flex-container justifySpaceBetween">
+                                    <label for="characterFilter" class="">
+                                        <small data-i18n="Filter to Character(s)">Filter to Character(s)</small>
+                                    </label>
+                                    <label class="checkbox flex-container alignitemscenter">
+                                        <input type="checkbox" name="character_exclusion" />
+                                        <span data-i18n="Character Exclusion">
+                                            <small>Character Exclusion</small>
+                                        </span>
+                                    </label>
+                                </div>
+                                <div class="range-block-range">
+                                    <select name="characterFilter" multiple>
+                                        <option value="">
+                                            <span data-i18n="-- Characters not found --">-- Characters not found --</span>
+                                        </option>
+                                    </select>
+                                </div>
                             </div>
-                            <div class="range-block-range">
-                                <select name="characterFilter" multiple>
-                                    <option value="">
-                                        <span data-i18n="-- Characters not found --">-- Characters not found --</span>
-                                    </option>
-                                </select>
+                            <div class="flex1 flex-container flexFlowColumn flexNoGap">
+                                <label for="group">
+                                    <small data-i18n="">Inclusion Group</small>
+                                </label>
+                                <input type="text" class="text_pole" name="group" rows="1" data-i18n="[placeholder]Only one entry with the same label will be activated" placeholder="Only one entry with the same label will be activated">
                             </div>
                         </div>
                         <div name="WIEntryBottomControls" class="flex-container flex1 justifySpaceBetween world_entry_form_horizontal">
